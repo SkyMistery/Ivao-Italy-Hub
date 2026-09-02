@@ -1,0 +1,37 @@
+# Local development services. Production runs on a shared MariaDB provided by the hosting panel,
+# so the image here pins the very same minor version (design M0 section 0.3).
+services:
+  mariadb:
+    image: mariadb:11.4.10
+    container_name: ivaohub-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ivaohub-root
+      MARIADB_DATABASE: ivaohub
+      MARIADB_USER: ivaohub
+      MARIADB_PASSWORD: ivaohub
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-allowed-packet=16M
+    ports:
+      - '3306:3306'
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Fake SMTP server with a web UI on http://localhost:8025, used from M1 on.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ivaohub-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+volumes:
+  mariadb-data:

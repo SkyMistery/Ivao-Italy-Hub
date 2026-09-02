@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+@import '@ivao/atmosphere-react/theme.css';
+@import '@ivao/atmosphere-react/styles.css';
+
+@source '../../src';

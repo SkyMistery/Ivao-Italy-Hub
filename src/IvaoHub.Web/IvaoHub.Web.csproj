@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <SpaRoot>$(MSBuildThisFileDirectory)..\..\web\</SpaRoot>
+    <SpaDist>$(SpaRoot)dist\</SpaDist>
+    <!-- Set to false to publish without rebuilding the SPA (the CI does not need it twice). -->
+    <BuildSpaOnPublish Condition="'$(BuildSpaOnPublish)' == ''">true</BuildSpaOnPublish>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IvaoHub.Core\IvaoHub.Core.csproj" />
+    <ProjectReference Include="..\IvaoHub.Modules.Atc\IvaoHub.Modules.Atc.csproj" />
+  </ItemGroup>
+
+  <!--
+    Builds the SPA and adds its output (including locales/, emitted by the Vite build) under
+    wwwroot/ of the published package. It runs only on `dotnet publish`, never on `dotnet build`
+    or `dotnet run`: during development Vite serves the SPA and proxies /api, /auth and /health
+    to Kestrel. The working tree is left untouched on purpose.
+  -->
+  <Target Name="PublishSpa" BeforeTargets="ComputeFilesToPublish" Condition="'$(BuildSpaOnPublish)' == 'true'">
+    <Exec Command="pnpm install --frozen-lockfile" WorkingDirectory="$(SpaRoot)" />
+    <Exec Command="pnpm build" WorkingDirectory="$(SpaRoot)" />
+    <ItemGroup>
+      <SpaBuildOutput Include="$(SpaDist)**\*" />
+      <ResolvedFileToPublish Include="@(SpaBuildOutput)"
+                             RelativePath="wwwroot\%(RecursiveDir)%(Filename)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+</Project>
