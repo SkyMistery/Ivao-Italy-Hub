@@ -1,0 +1,22 @@
+# Normalize line endings: LF in the repository, LF in the working tree.
+* text=auto eol=lf
+
+# Binary files must never be normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.pdf binary
+
+# Generated sources: keep them in git, hide them from language statistics and diffs.
+*.gen.ts linguist-generated
+web/src/shared/api/schema.d.ts linguist-generated
+pnpm-lock.yaml linguist-generated -diff
+
+# Windows-only scripts keep CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf

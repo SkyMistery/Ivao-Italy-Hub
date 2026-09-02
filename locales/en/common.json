@@ -1,0 +1,9 @@
+{
+  "app": {
+    "title": "IVAO Division Hub"
+  },
+  "home": {
+    "heading": "The hub is up",
+    "lead": "Repository bootstrap only: the application skeleton builds, the tests run and the CI is green."
+  }
+}

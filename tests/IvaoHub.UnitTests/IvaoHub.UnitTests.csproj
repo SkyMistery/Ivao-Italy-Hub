@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\IvaoHub.Core\IvaoHub.Core.csproj" />
+    <ProjectReference Include="..\..\src\IvaoHub.Modules.Atc\IvaoHub.Modules.Atc.csproj" />
+  </ItemGroup>
+
+</Project>

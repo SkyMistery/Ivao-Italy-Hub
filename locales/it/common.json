@@ -1,0 +1,9 @@
+{
+  "app": {
+    "title": "IVAO Division Hub"
+  },
+  "home": {
+    "heading": "L'hub è attivo",
+    "lead": "Solo bootstrap del repository: lo scheletro dell'applicazione compila, i test girano e la CI è verde."
+  }
+}

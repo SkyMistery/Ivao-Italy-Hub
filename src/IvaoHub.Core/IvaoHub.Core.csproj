@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The core: domain, EF Core, the IVAO API client and the Content folder.
+    It never references IvaoHub.Web nor any IvaoHub.Modules.* project (design M0 section 6.2).
+    Empty in F0 on purpose: the backbone is built in F1-F4.
+  -->
+
+</Project>

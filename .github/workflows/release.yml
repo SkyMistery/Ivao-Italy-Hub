@@ -1,0 +1,54 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  CI: 'true'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Publish self-contained package
+        run: >
+          dotnet publish src/IvaoHub.Web
+          --configuration Release
+          --runtime linux-x64
+          --self-contained
+          --output artifacts/publish
+
+      - name: Zip the package
+        run: zip -r ivao-division-hub-${{ github.ref_name }}.zip artifacts/publish
+
+      - name: Create the GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ivao-division-hub-${{ github.ref_name }}.zip
+          generate_release_notes: true
