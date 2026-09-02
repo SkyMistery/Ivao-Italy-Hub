@@ -1,3 +1,4 @@
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
@@ -11,6 +12,9 @@ internal static class HubPipeline
 {
     private const string CorrelationIdHeader = "X-Correlation-Id";
 
+    /// <summary>What the generated client puts in X-Requested-With on every mutation.</summary>
+    public const string RequestedWithValue = "hub";
+
     /// <summary>
     /// Everything a browser or Cloudflare could cache from the API is explicitly not cacheable.
     /// The static files of the SPA keep their own, normal caching.
@@ -23,6 +27,35 @@ internal static class HubPipeline
                 || context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
             {
                 context.Response.Headers.CacheControl = "no-store";
+            }
+
+            await next();
+        });
+    }
+
+    /// <summary>
+    /// Refuses any state changing call that does not carry the header our own client always sends.
+    /// A cross site form can post to us with the cookie attached, but it cannot set a header
+    /// (plan section 6.4). SameSite=Lax already covers most of it; this is the second lock.
+    /// </summary>
+    public static IApplicationBuilder UseCrossSiteRequestGuard(this WebApplication app)
+    {
+        string[] safeMethods = ["GET", "HEAD", "OPTIONS", "TRACE"];
+
+        return app.Use(async (context, next) =>
+        {
+            var path = context.Request.Path;
+            var guarded = path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWithSegments("/auth/logout", StringComparison.OrdinalIgnoreCase);
+
+            if (guarded && !safeMethods.Contains(context.Request.Method, StringComparer.OrdinalIgnoreCase))
+            {
+                var header = context.Request.Headers.XRequestedWith.ToString();
+                if (!string.Equals(header, RequestedWithValue, StringComparison.Ordinal))
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return;
+                }
             }
 
             await next();
@@ -108,6 +141,11 @@ internal static class HubPipeline
 
         var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
         var applied = await initializer.MigrateAsync(app.Lifetime.ApplicationStopping);
+
+        // Reads division.json only when the database holds no super administrator at all, and
+        // leaves an audit row whenever the effective set has moved (plan section 6.3).
+        await scope.ServiceProvider.GetRequiredService<SuperadminService>()
+            .BootstrapAsync(app.Lifetime.ApplicationStopping);
 
         var division = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value;
 

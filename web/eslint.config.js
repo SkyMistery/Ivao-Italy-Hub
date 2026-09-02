@@ -102,6 +102,12 @@ export default tseslint.config(
     },
   },
   {
+    // A TanStack route file exports both its Route and its component: that is the shape the
+    // generator expects, so fast refresh does not get a say.
+    files: ['src/routes/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     files: ['src/shared/api/**/*.{ts,tsx}'],
     rules: { 'no-restricted-globals': 'off' },
   },

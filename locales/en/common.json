@@ -2,8 +2,42 @@
   "app": {
     "title": "IVAO Division Hub"
   },
+  "common": {
+    "loading": "Loading..."
+  },
+  "nav": {
+    "home": "Home",
+    "staff": "Staff"
+  },
   "home": {
     "heading": "The hub is up",
     "lead": "Repository bootstrap only: the application skeleton builds, the tests run and the CI is green."
+  },
+  "auth": {
+    "login": "Sign in with IVAO",
+    "logout": "Sign out",
+    "signedInAs": "Signed in as {{name}}"
+  },
+  "me": {
+    "title": "Your account",
+    "vid": "VID",
+    "staff": "Staff",
+    "superadmin": "Super administrator",
+    "positions": "Staff positions",
+    "departments": "Departments",
+    "firs": "FIRs",
+    "permissions": "Effective permissions",
+    "none": "None"
+  },
+  "loginError": {
+    "title": "The sign in did not complete",
+    "retry": "Try again",
+    "reason": {
+      "portal": "IVAO refused the sign in. This usually means the consent was declined, or the application is not enabled for your account.",
+      "correlation": "The round trip could not be matched to this browser. It usually happens when the page was left open too long, or cookies were cleared halfway through.",
+      "nonce": "The answer from IVAO could not be validated. Try again; if it keeps happening, it is a problem on our side.",
+      "profile": "IVAO did not tell us who you are, so no account could be opened.",
+      "unknown": "Something went wrong on the way back from IVAO."
+    }
   }
 }

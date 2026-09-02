@@ -1,37 +1,39 @@
 namespace IvaoHub.Core.Division;
 
 /// <summary>
-/// Owner of a row. Same vocabulary as the staff positions, so a position maps onto a department
-/// without a translation table (plan section 7). Stored as a string, never as a number.
+/// Owner of a row. These are the department codes IVAO itself uses, so a staff position maps onto a
+/// department without a translation table (plan section 7). Stored as a string, never as a number.
+/// <para>Note that the codes are not a mechanical suffix: ATC operations is <c>AOD</c> but training
+/// is <c>TD</c>, and headquarters is plain <c>HQ</c>.</para>
 /// </summary>
 public enum Department
 {
     /// <summary>Division headquarters: director and assistant director.</summary>
     HQ,
 
-    /// <summary>Special operations.</summary>
-    SO,
+    /// <summary>Special operations department.</summary>
+    SOD,
 
-    /// <summary>Flight operations.</summary>
-    FO,
+    /// <summary>Flight operations department.</summary>
+    FOD,
 
-    /// <summary>ATC operations.</summary>
-    AO,
+    /// <summary>ATC operations department.</summary>
+    AOD,
 
-    /// <summary>Training.</summary>
-    TR,
+    /// <summary>Training department.</summary>
+    TD,
 
-    /// <summary>Membership.</summary>
-    MB,
+    /// <summary>Membership department.</summary>
+    MD,
 
-    /// <summary>Events.</summary>
-    EV,
+    /// <summary>Events department.</summary>
+    ED,
 
-    /// <summary>Public relations.</summary>
-    PR,
+    /// <summary>Public relations department.</summary>
+    PRD,
 
-    /// <summary>Web development.</summary>
-    WM,
+    /// <summary>Web development department.</summary>
+    WD,
 }
 
 /// <summary>Who may read a row. The global query filter of F4 turns this into a where clause.</summary>

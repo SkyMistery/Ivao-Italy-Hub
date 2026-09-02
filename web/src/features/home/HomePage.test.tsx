@@ -20,13 +20,13 @@ beforeAll(async () => {
   });
 });
 
-test('renders the translated title and heading, never a literal', () => {
+test('renders translated text, never a literal', () => {
   render(
     <I18nextProvider i18n={i18n}>
       <HomePage />
     </I18nextProvider>,
   );
 
-  expect(screen.getByText(englishCommon.app.title)).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: englishCommon.home.heading })).toBeInTheDocument();
+  expect(screen.getByText(englishCommon.home.lead)).toBeInTheDocument();
 });
