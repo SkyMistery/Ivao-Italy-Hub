@@ -4,10 +4,8 @@ using IvaoHub.Core.Division;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -55,8 +53,7 @@ public static class IvaoAuthenticationExtensions
         // The OpenID Connect options need the OAuth client and the environment, so they are
         // configured through the options pipeline rather than in the AddOpenIdConnect callback.
         services.AddOptions<OpenIdConnectOptions>(HubClaims.IvaoScheme)
-            .Configure<IOptions<IvaoOAuthOptions>, IHostEnvironment>(
-                (options, ivao, environment) => ConfigureOpenIdConnect(options, ivao.Value, environment));
+            .Configure<IOptions<IvaoOAuthOptions>>((options, ivao) => ConfigureOpenIdConnect(options, ivao.Value));
 
         services.AddAuthorization();
         return services;
@@ -113,18 +110,28 @@ public static class IvaoAuthenticationExtensions
         };
     }
 
-    private static void ConfigureOpenIdConnect(
-        OpenIdConnectOptions options,
-        IvaoOAuthOptions ivao,
-        IHostEnvironment environment)
+    private static void ConfigureOpenIdConnect(OpenIdConnectOptions options, IvaoOAuthOptions ivao)
     {
-        // In development the host listens on http, and with Always the browser would drop the
-        // cookie: a login that spins without saying why. It is also the only environment where the
-        // real login is exercised by hand, so the exception earns its keep.
-        options.CorrelationCookie.SecurePolicy = environment.IsDevelopment()
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        // The two cookies that carry the round trip. Their settings follow the scheme of the
+        // callback, not the environment, because that is what the browser actually judges them by.
+        //
+        // Over https the framework default is right: SameSite=None marked Secure.
+        //
+        // Over http, which is how the login is exercised in development, that same default is
+        // silently fatal: a cookie declared SameSite=None without Secure is rejected outright by
+        // every current browser, so nothing comes back and the callback fails with "Correlation
+        // failed" while looking like a network problem. Lax is both accepted and sufficient here:
+        // the return from IVAO is a top level GET navigation, which Lax cookies are sent on.
+        var callbackIsHttps = string.Equals(
+            new Uri(ivao.RedirectUri).Scheme,
+            Uri.UriSchemeHttps,
+            StringComparison.OrdinalIgnoreCase);
+
+        options.CorrelationCookie.SecurePolicy =
+            callbackIsHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+        options.CorrelationCookie.SameSite = callbackIsHttps ? SameSiteMode.None : SameSiteMode.Lax;
         options.NonceCookie.SecurePolicy = options.CorrelationCookie.SecurePolicy;
+        options.NonceCookie.SameSite = options.CorrelationCookie.SameSite;
 
         options.Authority = ivao.Authority;
         options.ClientId = ivao.ClientId;

@@ -187,6 +187,24 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Contains("redirect_uri=http%3A%2F%2Flocalhost%2Fauth%2Fcallback", response.Headers.Location.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task TheRoundTripCookiesAreAcceptableToABrowser()
+    {
+        // A cookie declared SameSite=None without Secure is rejected outright by every current
+        // browser, and the failure surfaces much later as "Correlation failed", which reads like a
+        // network problem. Over plain http the two round trip cookies must therefore be Lax.
+        var token = TestContext.Current.CancellationToken;
+        using var client = _factory.CreateApiClient();
+
+        using var response = await client.GetAsync("/auth/login", token);
+        var cookies = response.Headers.TryGetValues("Set-Cookie", out var values) ? values.ToArray() : [];
+
+        Assert.NotEmpty(cookies);
+        Assert.DoesNotContain(cookies, cookie =>
+            cookie.Contains("samesite=none", StringComparison.OrdinalIgnoreCase)
+            && !cookie.Contains("secure", StringComparison.OrdinalIgnoreCase));
+    }
+
     [Theory]
     [InlineData("//evil.example", "/")]
     [InlineData("/\\evil.example", "/")]
