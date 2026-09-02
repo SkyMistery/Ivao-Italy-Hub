@@ -1,0 +1,33 @@
+# Private working notes of the maintainer — never part of the product
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# Secrets and per-environment configuration
+config/ivao-oauth.json
+segreti/
+hub-keys/
+*.env
+!*.example.json
+
+# Build output
+bin/
+obj/
+artifacts/
+web/dist/
+web/node_modules/
+node_modules/
+
+# Local data and logs
+data/
+logs/
+diagnostica/
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vs/
+.idea/
+*.user
+.DS_Store
