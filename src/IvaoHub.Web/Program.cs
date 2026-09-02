@@ -10,11 +10,11 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Where config/, locales/, segreti/, hub-keys/, logs/ and diagnostica/ are. In production they sit
+// Where config/, locales/, secrets/, hub-keys/, logs/ and diagnostics/ are. In production they sit
 // next to the application; during development they are at the root of the repository.
 var paths = HubPaths.Resolve(builder.Environment.ContentRootPath);
 
-// Precedence: appsettings < segreti/*.json < config/ivao-oauth.json < environment variables.
+// Precedence: appsettings < secrets/*.json < config/ivao-oauth.json < environment variables.
 foreach (var secretFile in HubConfiguration.SecretFiles(paths))
 {
     builder.Configuration.AddJsonFile(secretFile, optional: true, reloadOnChange: true);

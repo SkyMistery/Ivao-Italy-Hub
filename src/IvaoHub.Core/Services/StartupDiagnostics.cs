@@ -4,16 +4,16 @@ using System.Text;
 namespace IvaoHub.Core.Services;
 
 /// <summary>
-/// Writes <c>diagnostica/avvio.txt</c> at every start: which package is running, which migrations
+/// Writes <c>diagnostics/startup.txt</c> at every start: which package is running, which migrations
 /// it applied, which modules are on. It is the first thing to read after an FTP deploy, and it
 /// never contains a secret (design M0 section 2.4).
 /// </summary>
 /// <remarks>
-/// The folder keeps the name the deployment sheets and the nginx deny rules already use.
+/// The folder is denied by the web server: it is read over FTP, never over HTTP.
 /// </remarks>
 public static class StartupDiagnostics
 {
-    public const string FileName = "avvio.txt";
+    public const string FileName = "startup.txt";
 
     public static async Task WriteAsync(
         HubPaths paths,

@@ -5,7 +5,7 @@ CLAUDE.local.md
 
 # Secrets and per-environment configuration
 /config/ivao-oauth.json
-/segreti/
+/secrets/
 /hub-keys/
 *.env
 !*.example.json
@@ -24,7 +24,7 @@ node_modules/
 # Local data and logs
 /data/
 /logs/
-/diagnostica/
+/diagnostics/
 *.db
 *.db-shm
 *.db-wal

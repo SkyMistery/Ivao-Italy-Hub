@@ -49,7 +49,7 @@ public static class HubDbContextServiceCollectionExtensions
             throw new InvalidOperationException(
                 "The connection string 'ConnectionStrings:Default' is not configured. "
                 + "In development it is in appsettings.Development.json; in production it belongs to a file "
-                + "under segreti/ or to the ConnectionStrings__Default environment variable.");
+                + "under secrets/ or to the ConnectionStrings__Default environment variable.");
         }
 
         return connectionString;

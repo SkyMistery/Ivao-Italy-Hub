@@ -40,7 +40,7 @@ dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-proj
 
 - **Configurazione**: `config/division.json` (IT, versionato: è comportamento, non un segreto) +
   `division.example.json` commentato + `ivao-oauth.example.json`. `config/ivao-oauth.json` è gitignored.
-  Precedenza: `appsettings` < `segreti/*.json` < `config/ivao-oauth.json` < variabili d'ambiente.
+  Precedenza: `appsettings` < `secrets/*.json` < `config/ivao-oauth.json` < variabili d'ambiente.
 - **Opzioni validate all'avvio**: `DivisionOptions` (codice 2–3 maiuscole, `defaultLocale` dentro `locales`,
   `name` per ogni lingua, timezone reale) e `IvaoOAuthOptions` (campi obbligatori, `RedirectUri` che finisce
   con `/auth/callback`, `LoginUrl` con `/auth/login`, stesso host). Senza configurazione valida **l'app non
@@ -53,10 +53,10 @@ dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-proj
   `AddHubDbContext` e `AddModuleDbContext<T>` (già pronto, storia migrazioni `__EFMigrationsHistory_<modulo>`).
 - **16 tabelle** create dalla migrazione `Initial`, con `row_version timestamp(6)` gestito dal server e
   `security_stamp` su `hub_users`. `cms_search_index` ha una riga per lingua più l'indice FULLTEXT `(title, text)`.
-- **Avvio**: `HubPaths` trova `config/`, `locales/`, `segreti/`, `hub-keys/`, `logs/`, `diagnostica/`;
+- **Avvio**: `HubPaths` trova `config/`, `locales/`, `secrets/`, `hub-keys/`, `logs/`, `diagnostics/`;
   Serilog (console + `logs/hub-.log` giornaliero) con `X-Correlation-Id` per richiesta; Data Protection
   persistente su `hub-keys/`; `ForwardedHeaders` e `AllowedHosts` obbligatori solo in Production.
-  Prima del traffico: validazione opzioni → `Migrate()` → `diagnostica/avvio.txt`.
+  Prima del traffico: validazione opzioni → `Migrate()` → `diagnostics/startup.txt`.
 - **Endpoint**: `/health` con ping DB reale, `/api/version` (`version`, `commit`, `builtAt`, `dotnet`),
   `Cache-Control: no-store` su `/api/*` e `/health`.
 - **Test**: 33 verdi. `DivisionOptionsValidationTests`, `IvaoOAuthOptionsValidationTests` (unit);
@@ -103,6 +103,8 @@ dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-proj
 - `docs/UI-GUIDELINES.md` è **F6**; `docs/FORKING.md` va completato in **F8/F9**.
 - Il chunk JS supera i 500 kB: lo split per route arriva con i layout di F6.
 - Licenza ancora «TBD» (piano §15.5).
-- **Da decidere con Carmine**: la cartella `diagnostica/` e il file `avvio.txt` hanno nomi italiani, contro la
-  regola «tutto in inglese» di `CLAUDE.md` §1, ma sono i nomi che il design §2.4 e i fogli di deploy di vIPI
-  usano già. Per ora si segue il design.
+- ~~Nomi italiani delle cartelle di runtime~~ **deciso con Carmine il 2 set 2026**: valgono le nostre regole,
+  non quelle di vIPI (che resta un riferimento su *come* funziona il deploy, non sui nomi). `segreti/` è
+  diventata `secrets/`, `diagnostica/` è diventata `diagnostics/` e `avvio.txt` è diventato `startup.txt`;
+  piano 00 portato a v0.20 con la riga di changelog, design `01` §2.3–2.4, piano `02` F1 e `CLAUDE.md` §6
+  allineati. Nessuna path del prodotto contiene più una parola italiana.

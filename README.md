@@ -42,7 +42,7 @@ Open <http://localhost:5173>. Vite proxies `/api`, `/auth` and `/health` to Kest
 the API behave exactly as they do in the single published process.
 
 The application refuses to start when its configuration is incomplete, and says which field is
-wrong. `diagnostica/avvio.txt` records what started, which migrations it applied and which modules
+wrong. `diagnostics/startup.txt` records what started, which migrations it applied and which modules
 are on; it never contains a secret.
 
 ### Configuration files
@@ -51,7 +51,7 @@ are on; it never contains a secret.
 | --- | --- | --- |
 | `config/division.json` | yes | Behaviour of the division: code, languages, time zone, optional modules. Not a secret. |
 | `config/ivao-oauth.json` | **no** | The OAuth client of the division. Copy the example and fill it in, or use `Ivao__*` environment variables. |
-| `segreti/*.json` | **no** | Connection string, SMTP and anything else that must not be read from the web. |
+| `secrets/*.json` | **no** | Connection string, SMTP and anything else that must not be read from the web. |
 | `hub-keys/` | **no** | Data Protection keys. Persistent: never delete them, or everybody is logged out. |
 
 ## Checks

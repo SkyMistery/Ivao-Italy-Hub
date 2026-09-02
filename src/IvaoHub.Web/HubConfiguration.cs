@@ -6,7 +6,7 @@ namespace IvaoHub.Web;
 internal static class HubConfiguration
 {
     /// <summary>
-    /// Every <c>*.json</c> under <c>segreti/</c>, in a stable order. The folder is never in the
+    /// Every <c>*.json</c> under <c>secrets/</c>, in a stable order. The folder is never in the
     /// repository and the web server denies access to it (plan section 11.3).
     /// </summary>
     public static IEnumerable<string> SecretFiles(HubPaths paths)

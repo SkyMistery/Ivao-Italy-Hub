@@ -23,7 +23,7 @@
 | Fase | Nome | Dipende da | Risultato verificabile |
 |---|---|---|---|
 | F0 | Bootstrap del repository | — | `dotnet build`, `pnpm build`, CI verde, `/health` risponde, SPA servita |
-| F1 | Configurazione, avvio, DB del nucleo | F0 | opzioni validate, `Migrate()` all'avvio su MariaDB reale, `diagnostica/avvio.txt`, `/api/version` |
+| F1 | Configurazione, avvio, DB del nucleo | F0 | opzioni validate, `Migrate()` all'avvio su MariaDB reale, `diagnostics/startup.txt`, `/api/version` |
 | F2 | Auth BFF, utenti, ruoli, superadmin, `/api/me` | F1 | login reale con credenziali di test; `/api/me` completo; test StaffRoleMap e permessi (FIR riconosciute solo dopo F3) |
 | F3 | `IvaoApiClient` e dati `ref_` | F1 | job di sync, tabelle popolate (o fixture), posizioni FIR riconosciute |
 | F4 | Spina dorsale del dominio | F2 | `Localized<T>`, interceptor, query filter, policy provider + handler unico, `IProjectable`, test integrazione verdi |
@@ -79,10 +79,10 @@ Non fare: DbContext, auth, opzioni, componenti custom.
 Task:
 1. `DivisionOptions` + validatore (design §2.1), `config/division.json` IT e `division.example.json`.
 2. `IvaoOAuthOptions` + validatore fail-fast (§2.2), `ivao-oauth.example.json`; l'app **non parte** se il file manca o è incompleto, con messaggio senza secret.
-3. Caricamento `segreti/*.json`, `appsettings.Development.json` con connection string docker (`MaximumPoolSize=15`), Serilog (file `logs/` + console, `RequestLoggingMiddleware` con correlation id), Data Protection su `hub-keys/` (`SetApplicationName("IvaoHub")`), `ForwardedHeaders` condizionali, `AllowedHosts` obbligatorio in Production.
+3. Caricamento `secrets/*.json`, `appsettings.Development.json` con connection string docker (`MaximumPoolSize=15`), Serilog (file `logs/` + console, `RequestLoggingMiddleware` con correlation id), Data Protection su `hub-keys/` (`SetApplicationName("IvaoHub")`), `ForwardedHeaders` condizionali, `AllowedHosts` obbligatorio in Production.
 4. `HubDbContext` in `Core/Data` con `MariaDbServerVersion(11.4.10)`, `UseSnakeCaseNamingConvention` (EFCore.NamingConventions) + `LocalizedColumnConvention` (suffisso `_i18n`, design §3.1) — tutte le tabelle/colonne snake_case, prefissi via `ToTable("hub_users")` esplicito per entità.
 5. Entità e configurazione (solo scaffolding, senza logica): `HubUser`, `UserStaffPosition`, `UserGrant`, `UserToken`, `DivisionSetting`, `AuditLogEntry`, `JobLogEntry`, `IvaoCenter`, `IvaoAirport`, `Content`, `ContentVersion`, `Link`, `SearchIndexEntry` (una riga per lingua, FULLTEXT `(title, text)` creato nella migrazione `Initial` con `migrationBuilder.Sql`), `CalendarEntry`, `AwardSignal` — colonne come piano §7 e design §3.11, unicità contenuti `(kind, slug, is_template)`. `Localized<T>` con record, converter EF e comparer si fanno **qui** (design §3.1, parte EF) perché la migrazione ne ha bisogno; F4 aggiunge la parte API/validazione. Una sola implementazione.
-6. Migrazione `Initial`; `Database.Migrate()` all'avvio dentro `IHostedService` che gira **prima** di `app.Run` accettare traffico (usare `IHostApplicationLifetime` o eseguire la migrazione in `Program` prima di `app.Run()`); `diagnostica/avvio.txt` (§2.4).
+6. Migrazione `Initial`; `Database.Migrate()` all'avvio dentro `IHostedService` che gira **prima** di `app.Run` accettare traffico (usare `IHostApplicationLifetime` o eseguire la migrazione in `Program` prima di `app.Run()`); `diagnostics/startup.txt` (§2.4).
 7. `/api/version`, `/health` con ping DB (`HealthChecks` + `AddMySql` o query `SELECT 1`), `Cache-Control: no-store` su `/api/*` e `/health` via middleware.
 8. Test: `DivisionOptionsValidationTests`, `IvaoOAuthOptionsValidationTests`, integrazione `MigrationsApplyOnRealMariaDb` (da zero + secondo avvio idempotente, verifica charset `utf8mb4`), `HealthAndVersionEndpoints`.
 

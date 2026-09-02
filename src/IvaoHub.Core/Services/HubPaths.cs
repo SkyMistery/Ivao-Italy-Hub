@@ -1,8 +1,8 @@
 namespace IvaoHub.Core.Services;
 
 /// <summary>
-/// Where the files that are not code live: <c>config/</c>, <c>locales/</c>, <c>segreti/</c>,
-/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostica/</c>.
+/// Where the files that are not code live: <c>config/</c>, <c>locales/</c>, <c>secrets/</c>,
+/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>.
 /// </summary>
 /// <remarks>
 /// In production they sit next to the application, which is also the content root. During
@@ -24,10 +24,10 @@ public sealed class HubPaths
 
     public string Config => Path.Combine(Root, "config");
     public string Locales => Path.Combine(Root, "locales");
-    public string Secrets => Path.Combine(Root, "segreti");
+    public string Secrets => Path.Combine(Root, "secrets");
     public string DataProtectionKeys => Path.Combine(Root, "hub-keys");
     public string Logs => Path.Combine(Root, "logs");
-    public string Diagnostics => Path.Combine(Root, "diagnostica");
+    public string Diagnostics => Path.Combine(Root, "diagnostics");
 
     public string DivisionFile => Path.Combine(Config, "division.json");
     public string OAuthFile => Path.Combine(Config, "ivao-oauth.json");
