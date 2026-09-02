@@ -1,9 +1,11 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.20 — 2 settembre 2026 (nomi delle cartelle di runtime in inglese)
+**Versione documento:** 0.21 — 3 settembre 2026 (codici dei dipartimenti come li scrive IVAO)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Prossimo passo: fase F0 con Claude Code. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.21** (3 set 2026): i codici dei dipartimenti diventano quelli che usa **IVAO**, confermati da Carmine: `HQ`, **`SOD`**, **`FOD`**, **`AOD`**, **`TD`**, **`MD`**, **`ED`**, **`PRD`**, **`WD`** (prima erano `HQ`, `SO`, `FO`, `AO`, `TR`, `MB`, `EV`, `PR`, `WM`). Non è un suffisso meccanico: ATC operations è `AOD` ma training è `TD`, e l'headquarters resta `HQ`. I **suffissi delle posizioni staff** non cambiano (`AOC`, `AOAC`, `AOA1`, `TC`, `TAC`, `TA1`, `T01`…): cambia solo il dipartimento su cui mappano. La colonna `owner_department` passa da `varchar(2)` a `varchar(4)` con una migrazione **additiva** (`WidenDepartmentCodes`) che converte anche le righe già scritte; `Initial` non è stata toccata. Aggiornate §7 e il design `01` §3.2.
 
 **Changelog 0.20** (2 set 2026, notte): le cartelle di runtime prendono un nome **inglese**, coerente con la regola §4.2 «tutto ciò che non è documentazione interna è in inglese»: la cartella dei segreti si chiama **`secrets/`**, quella della diagnostica **`diagnostics/`** e il file di avvio **`startup.txt`** (prima erano `segreti/`, `diagnostica/` e `avvio.txt`). I nomi italiani venivano da vIPI, che resta un riferimento su *come* funziona il deploy su Plesk, non un vincolo sui nomi. Aggiornate §2.5, §11.3, §14 e il design `01` §2.3-2.4; chi forka non trova più una parola italiana dentro una path.
 
@@ -414,7 +416,7 @@ Schema `ref_` — **dati di riferimento IVAO**, nel nucleo perché servono a pi�
 | `ivao_centers` | `id` (es. `LIRR`) | `name`, `country_id`, `raw_json`, `synced_at` | snapshot di `/v2/centers?countryId=…`: le FIR non si configurano |
 | `ivao_airports` | `icao` | `name`, `country_id`, `center_id FK`, `runways_json`, `raw_json`, `synced_at` | snapshot di `/v2/airports/all?countryId=…&includeRunways=true`; indice `(country_id)`, `(center_id)` |
 
-**Convenzione `owner_department`** (§9.0): ogni riga editoriale o operativa — pagina, news, documento, voce di calendario, messaggio di contatto, evento, tour, sessione — porta `owner_department` (enum: `HQ`, `SO`, `FO`, `AO`, `TR`, `MB`, `EV`, `PR`, `WM`; stesso vocabolario di `StaffRoleMap`). Le policy confrontano quel valore con i dipartimenti delle posizioni staff dell'utente; `Director` e `Web` (WM) passano sempre. Indice su `(owner_department, status)` ovunque.
+**Convenzione `owner_department`** (§9.0): ogni riga editoriale o operativa — pagina, news, documento, voce di calendario, messaggio di contatto, evento, tour, sessione — porta `owner_department` (enum: `HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`, `WD` — i codici che usa IVAO, non un suffisso meccanico; stesso vocabolario di `StaffRoleMap`). Le policy confrontano quel valore con i dipartimenti delle posizioni staff dell'utente; `Director` e `Web` (`WD`) passano sempre. Indice su `(owner_department, status)` ovunque.
 
 **Convenzione traduzioni** (§16.1): nessuna tabella `*_translations`. Ogni campo tradotto è una colonna JSON `{ "it": …, "en": … }` mappata su `Localized<T>`; un solo converter EF, un solo componente di editing, un solo validatore «tutte le lingue di `division.locales` prima di pubblicare». Nelle tabelle qui sotto i campi `*_i18n` sono di questo tipo.
 

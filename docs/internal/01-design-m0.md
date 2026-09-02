@@ -166,7 +166,7 @@ public static class LocalizedExtensions { public static Localized<string> L(this
 ### 3.2 Interfacce trasversali ed enum
 
 ```csharp
-public enum Department { HQ, SO, FO, AO, TR, MB, EV, PR, WM }         // stesso vocabolario di StaffRoleMap; serializzato come stringa
+public enum Department { HQ, SOD, FOD, AOD, TD, MD, ED, PRD, WD }     // codici IVAO; stesso vocabolario di StaffRoleMap; serializzato come stringa
 public enum Visibility { Public, Members, Staff, Department }
 public enum PublishStatus { Draft, Published }
 
@@ -181,7 +181,7 @@ public interface IAuditable
 public interface IHasFir { string? Fir { get; } }                       // opzionale, per firStaffScope = own (nessuna entità di M0 la usa)
 ```
 
-Colonne: `owner_department varchar(2)`, `visibility varchar(16)`, `status varchar(16)`, `created_at/updated_at datetime(6)`, `created_by/updated_by int`. Indice `(owner_department, status)` dove esistono entrambi.
+Colonne: `owner_department varchar(4)`, `visibility varchar(16)`, `status varchar(16)`, `created_at/updated_at datetime(6)`, `created_by/updated_by int`. Indice `(owner_department, status)` dove esistono entrambi.
 
 ### 3.3 `ICurrentUser` e `HubPrincipal`
 

@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026 — fine **F2** (auth BFF, utenti, ruoli, superadmin, `/api/me`).
+**Ultimo aggiornamento:** 3 settembre 2026 — fine **F2** (auth BFF, utenti, ruoli, superadmin, `/api/me`), login reale con IVAO verificato.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Branch corrente:** `m0/f2-auth`. **Prossima fase:** F3 — `IvaoApiClient` e dati `ref_` (può girare in parallelo a F4–F5).
 
@@ -102,6 +102,7 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
 | `Department`, `Visibility`, `PublishStatus`, `StaffLevel` definiti in F1 | Le colonne della migrazione hanno bisogno del vocabolario; le **interfacce** restano a F4. |
 | `.editorconfig` esenta `**/Migrations/*.cs`; `.gitignore` ancora le cartelle di runtime alla radice | File generati; e su Windows git confronta i pattern senza distinguere maiuscole. |
 | Le cartelle di runtime hanno nomi inglesi (`secrets/`, `diagnostics/`, `startup.txt`) | Deciso il 2 set 2026: valgono le nostre regole, non quelle di vIPI (piano v0.20). |
+| I codici dei dipartimenti sono quelli di IVAO: `HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`, `WD` | Confermati da Carmine il 3 set 2026 (piano v0.21). Non e' un suffisso meccanico: ATC operations e' `AOD` ma training e' `TD`. I **suffissi delle posizioni** non cambiano, cambia il dipartimento su cui mappano. La colonna e' passata a `varchar(4)` con la migrazione additiva `WidenDepartmentCodes`, che converte anche le righe gia' scritte; `Initial` non si tocca. |
 
 ## 5. Letture del design da confermare (F2)
 
@@ -117,14 +118,18 @@ allargare i permessi, mai stringerli a sorpresa.
 3. **`Permissions.Manage` e `Admin.Access` vanno solo a Director e Web.** Design §3.7 li dichiara globali;
    il piano §6.3 diceva «coordinatori per il proprio dipartimento». Con F8 (schermata grant in modalità
    globale) la lettura del design è quella coerente.
-4. **I nomi dei campi rating e Discord nel payload IVAO non sono verificati.** `IvaoUserProfileReader` li
-   legge in modo difensivo (numero, oggetto con `id`, o stringa) e in caso di forma inattesa scrive `null`
-   invece di rompere il login. Da confermare al primo login vero guardando `hub_users`.
+4. ~~I nomi dei campi rating e Discord nel payload IVAO non sono verificati~~ **verificato il 3 set 2026 con
+   il login reale**: `divisionId`, `countryId`, `firstName`, `lastName`, `publicNickname` e i due rating
+   arrivano corretti; le posizioni `IT-AOA1` e `IT-T03` sono state lette come `AOD/Advisor` e `TD/Member`.
+   Resta aperto solo `discord_id`, che torna `null` pur avendo lo scope `discord`: o l'account non ha
+   Discord collegato, o il campo si chiama diversamente da `discordId`/`discordUserId`.
 
 ## 6. Debiti e cose da fare presto
 
-- **Il login vero non è ancora stato eseguito end-to-end**: serve Carmine con le credenziali di test. Tutto il
-  resto di F2 è coperto dai test; questo no, per costruzione.
+- ~~Il login vero non è ancora stato eseguito~~ **fatto il 3 set 2026**: giro completo fino a `/me`, riga in
+  `hub_users`, posizioni lette, token IVAO cifrati a DB. Ha fatto emergere un bug reale (i cookie del giro
+  uscivano `SameSite=None` senza `Secure` su http, quindi il browser li scartava): corretto, con test.
+- `discord_id` resta `null` dopo il login reale: da chiarire se è il nome del campo o l'account senza Discord.
 - Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota: è **F3**. `UserSyncService` legge già
   la tabella, quindi si accendono da sole appena il job la riempie.
 - **`locales/` e `config/*.example.json` non finiscono nel pacchetto pubblicato**: servirà in **F4** con

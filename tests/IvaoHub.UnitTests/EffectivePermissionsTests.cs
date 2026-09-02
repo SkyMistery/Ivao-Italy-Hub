@@ -16,7 +16,7 @@ public sealed class EffectivePermissionsTests
     private static readonly DateTime Now = new(2026, 9, 2, 12, 0, 0, DateTimeKind.Utc);
 
     private static StaffPosition Events(StaffLevel level = StaffLevel.Coordinator) =>
-        new("IT-EC", Department.EV, level, null, StaffRole.Events);
+        new("IT-EC", Department.ED, level, null, StaffRole.Events);
 
     private static StaffPosition Director() =>
         new("IT-DIR", Department.HQ, StaffLevel.Coordinator, null, StaffRole.Director);
@@ -60,8 +60,8 @@ public sealed class EffectivePermissionsTests
     {
         var permissions = Calculate([Events()]);
 
-        Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.EV));
-        Assert.False(Holds(permissions, CorePermissions.ContentEdit, Department.FO));
+        Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.ED));
+        Assert.False(Holds(permissions, CorePermissions.ContentEdit, Department.FOD));
         Assert.DoesNotContain(permissions, p => CorePermissions.IsGlobalPermission(p.Name));
     }
 
@@ -95,8 +95,8 @@ public sealed class EffectivePermissionsTests
 
         var permissions = Calculate([position]);
 
-        Assert.True(Holds(permissions, CorePermissions.ContentView, Department.FO));
-        Assert.False(Holds(permissions, CorePermissions.ContentEdit, Department.FO));
+        Assert.True(Holds(permissions, CorePermissions.ContentView, Department.FOD));
+        Assert.False(Holds(permissions, CorePermissions.ContentEdit, Department.FOD));
     }
 
     [Fact]
@@ -110,42 +110,42 @@ public sealed class EffectivePermissionsTests
     [Fact]
     public void AGrantAddsAPermissionOnAnotherDepartment()
     {
-        var permissions = Calculate([Events()], [Grant(CorePermissions.LinksEdit, Department.FO)]);
+        var permissions = Calculate([Events()], [Grant(CorePermissions.LinksEdit, Department.FOD)]);
 
-        Assert.True(Holds(permissions, CorePermissions.LinksEdit, Department.FO));
+        Assert.True(Holds(permissions, CorePermissions.LinksEdit, Department.FOD));
         Assert.Contains(permissions, p => p.Name == CorePermissions.LinksEdit && p.Source == "grant:1");
     }
 
     [Fact]
     public void EditImpliesViewEvenWhenItComesFromAGrant()
     {
-        var permissions = Calculate(grants: [Grant(CorePermissions.LinksEdit, Department.FO)]);
+        var permissions = Calculate(grants: [Grant(CorePermissions.LinksEdit, Department.FOD)]);
 
-        Assert.True(Holds(permissions, CorePermissions.LinksView, Department.FO));
+        Assert.True(Holds(permissions, CorePermissions.LinksView, Department.FOD));
     }
 
     [Fact]
     public void AnExpiredGrantIsWorthNothing()
     {
-        var expired = Grant(CorePermissions.LinksEdit, Department.FO, expiresAt: Now.AddDays(-1));
+        var expired = Grant(CorePermissions.LinksEdit, Department.FOD, expiresAt: Now.AddDays(-1));
 
-        Assert.False(Holds(Calculate(grants: [expired]), CorePermissions.LinksEdit, Department.FO));
+        Assert.False(Holds(Calculate(grants: [expired]), CorePermissions.LinksEdit, Department.FOD));
     }
 
     [Fact]
     public void AGrantThatHasNotExpiredYetStillCounts()
     {
-        var live = Grant(CorePermissions.LinksEdit, Department.FO, expiresAt: Now.AddDays(1));
+        var live = Grant(CorePermissions.LinksEdit, Department.FOD, expiresAt: Now.AddDays(1));
 
-        Assert.True(Holds(Calculate(grants: [live]), CorePermissions.LinksEdit, Department.FO));
+        Assert.True(Holds(Calculate(grants: [live]), CorePermissions.LinksEdit, Department.FOD));
     }
 
     [Fact]
     public void ASuspendedGrantIsWorthNothingButIsNotDeleted()
     {
-        var suspended = Grant(CorePermissions.LinksEdit, Department.FO, suspendedAt: Now.AddDays(-1));
+        var suspended = Grant(CorePermissions.LinksEdit, Department.FOD, suspendedAt: Now.AddDays(-1));
 
-        Assert.False(Holds(Calculate(grants: [suspended]), CorePermissions.LinksEdit, Department.FO));
+        Assert.False(Holds(Calculate(grants: [suspended]), CorePermissions.LinksEdit, Department.FOD));
     }
 
     [Theory]
@@ -164,18 +164,18 @@ public sealed class EffectivePermissionsTests
     [Fact]
     public void AGrantOfAnUnknownPermissionIsIgnored()
     {
-        Assert.Empty(Calculate(grants: [Grant("Nonsense.Edit", Department.FO)]));
+        Assert.Empty(Calculate(grants: [Grant("Nonsense.Edit", Department.FOD)]));
     }
 
     [Fact]
     public void ADenyRemovesADerivedPermissionOnThatDepartment()
     {
-        var deny = Grant(CorePermissions.ContentPublish, Department.EV, GrantEffect.Deny);
+        var deny = Grant(CorePermissions.ContentPublish, Department.ED, GrantEffect.Deny);
 
         var permissions = Calculate([Events()], [deny]);
 
-        Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.EV));
-        Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.EV));
+        Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.ED));
+        Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.ED));
     }
 
     [Fact]
@@ -191,21 +191,21 @@ public sealed class EffectivePermissionsTests
     [Fact]
     public void ADenyOnOneDepartmentBitesEvenWhenThePermissionIsHeldEverywhere()
     {
-        var deny = Grant(CorePermissions.ContentPublish, Department.FO, GrantEffect.Deny);
+        var deny = Grant(CorePermissions.ContentPublish, Department.FOD, GrantEffect.Deny);
 
         var permissions = Calculate([Director()], [deny]);
 
-        Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.FO));
-        Assert.True(Holds(permissions, CorePermissions.ContentPublish, Department.EV));
+        Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.FOD));
+        Assert.True(Holds(permissions, CorePermissions.ContentPublish, Department.ED));
     }
 
     [Fact]
     public void ADenyWinsOverAGrantOfTheSamePermission()
     {
-        var grant = Grant(CorePermissions.LinksEdit, Department.FO, id: 1);
-        var deny = Grant(CorePermissions.LinksEdit, Department.FO, GrantEffect.Deny, id: 2);
+        var grant = Grant(CorePermissions.LinksEdit, Department.FOD, id: 1);
+        var deny = Grant(CorePermissions.LinksEdit, Department.FOD, GrantEffect.Deny, id: 2);
 
-        Assert.False(Holds(Calculate(grants: [grant, deny]), CorePermissions.LinksEdit, Department.FO));
+        Assert.False(Holds(Calculate(grants: [grant, deny]), CorePermissions.LinksEdit, Department.FOD));
     }
 
     [Fact]
@@ -220,12 +220,12 @@ public sealed class EffectivePermissionsTests
     [Fact]
     public void TwoPositionsAddUp()
     {
-        var atc = new StaffPosition("IT-AOA1", Department.AO, StaffLevel.Advisor, null, StaffRole.AtcOps);
+        var atc = new StaffPosition("IT-AOA1", Department.AOD, StaffLevel.Advisor, null, StaffRole.AtcOps);
 
         var permissions = Calculate([Events(), atc]);
 
-        Assert.True(Holds(permissions, CorePermissions.ContentPublish, Department.EV));
-        Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.AO));
-        Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.AO));
+        Assert.True(Holds(permissions, CorePermissions.ContentPublish, Department.ED));
+        Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.AOD));
+        Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.AOD));
     }
 }

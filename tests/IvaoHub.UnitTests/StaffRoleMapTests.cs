@@ -19,44 +19,44 @@ public sealed class StaffRoleMapTests
     [InlineData("IT-DIR", Department.HQ, StaffLevel.Coordinator, StaffRole.Director)]
     [InlineData("IT-ADIR", Department.HQ, StaffLevel.Assistant, StaffRole.Director)]
     // Special operations
-    [InlineData("IT-SOC", Department.SO, StaffLevel.Coordinator, StaffRole.SpecialOps)]
-    [InlineData("IT-SOAC", Department.SO, StaffLevel.Assistant, StaffRole.SpecialOps)]
-    [InlineData("IT-SOA1", Department.SO, StaffLevel.Advisor, StaffRole.SpecialOps)]
-    [InlineData("IT-SOA9", Department.SO, StaffLevel.Advisor, StaffRole.SpecialOps)]
+    [InlineData("IT-SOC", Department.SOD, StaffLevel.Coordinator, StaffRole.SpecialOps)]
+    [InlineData("IT-SOAC", Department.SOD, StaffLevel.Assistant, StaffRole.SpecialOps)]
+    [InlineData("IT-SOA1", Department.SOD, StaffLevel.Advisor, StaffRole.SpecialOps)]
+    [InlineData("IT-SOA9", Department.SOD, StaffLevel.Advisor, StaffRole.SpecialOps)]
     // Flight operations
-    [InlineData("IT-FOC", Department.FO, StaffLevel.Coordinator, StaffRole.FlightOps)]
-    [InlineData("IT-FOAC", Department.FO, StaffLevel.Assistant, StaffRole.FlightOps)]
-    [InlineData("IT-FOA3", Department.FO, StaffLevel.Advisor, StaffRole.FlightOps)]
+    [InlineData("IT-FOC", Department.FOD, StaffLevel.Coordinator, StaffRole.FlightOps)]
+    [InlineData("IT-FOAC", Department.FOD, StaffLevel.Assistant, StaffRole.FlightOps)]
+    [InlineData("IT-FOA3", Department.FOD, StaffLevel.Advisor, StaffRole.FlightOps)]
     // ATC operations
-    [InlineData("IT-AOC", Department.AO, StaffLevel.Coordinator, StaffRole.AtcOps)]
-    [InlineData("IT-AOAC", Department.AO, StaffLevel.Assistant, StaffRole.AtcOps)]
-    [InlineData("IT-AOA1", Department.AO, StaffLevel.Advisor, StaffRole.AtcOps)]
+    [InlineData("IT-AOC", Department.AOD, StaffLevel.Coordinator, StaffRole.AtcOps)]
+    [InlineData("IT-AOAC", Department.AOD, StaffLevel.Assistant, StaffRole.AtcOps)]
+    [InlineData("IT-AOA1", Department.AOD, StaffLevel.Advisor, StaffRole.AtcOps)]
     // Training
-    [InlineData("IT-TC", Department.TR, StaffLevel.Coordinator, StaffRole.Training)]
-    [InlineData("IT-TAC", Department.TR, StaffLevel.Assistant, StaffRole.Training)]
-    [InlineData("IT-TA1", Department.TR, StaffLevel.Advisor, StaffRole.Training)]
-    [InlineData("IT-TA9", Department.TR, StaffLevel.Advisor, StaffRole.Training)]
+    [InlineData("IT-TC", Department.TD, StaffLevel.Coordinator, StaffRole.Training)]
+    [InlineData("IT-TAC", Department.TD, StaffLevel.Assistant, StaffRole.Training)]
+    [InlineData("IT-TA1", Department.TD, StaffLevel.Advisor, StaffRole.Training)]
+    [InlineData("IT-TA9", Department.TD, StaffLevel.Advisor, StaffRole.Training)]
     // Trainers
-    [InlineData("IT-T01", Department.TR, StaffLevel.Member, StaffRole.Trainer)]
-    [InlineData("IT-T09", Department.TR, StaffLevel.Member, StaffRole.Trainer)]
-    [InlineData("IT-T10", Department.TR, StaffLevel.Member, StaffRole.Trainer)]
-    [InlineData("IT-T99", Department.TR, StaffLevel.Member, StaffRole.Trainer)]
+    [InlineData("IT-T01", Department.TD, StaffLevel.Member, StaffRole.Trainer)]
+    [InlineData("IT-T09", Department.TD, StaffLevel.Member, StaffRole.Trainer)]
+    [InlineData("IT-T10", Department.TD, StaffLevel.Member, StaffRole.Trainer)]
+    [InlineData("IT-T99", Department.TD, StaffLevel.Member, StaffRole.Trainer)]
     // Membership
-    [InlineData("IT-MC", Department.MB, StaffLevel.Coordinator, StaffRole.Membership)]
-    [InlineData("IT-MAC", Department.MB, StaffLevel.Assistant, StaffRole.Membership)]
-    [InlineData("IT-MA2", Department.MB, StaffLevel.Advisor, StaffRole.Membership)]
+    [InlineData("IT-MC", Department.MD, StaffLevel.Coordinator, StaffRole.Membership)]
+    [InlineData("IT-MAC", Department.MD, StaffLevel.Assistant, StaffRole.Membership)]
+    [InlineData("IT-MA2", Department.MD, StaffLevel.Advisor, StaffRole.Membership)]
     // Events
-    [InlineData("IT-EC", Department.EV, StaffLevel.Coordinator, StaffRole.Events)]
-    [InlineData("IT-EAC", Department.EV, StaffLevel.Assistant, StaffRole.Events)]
-    [InlineData("IT-EA1", Department.EV, StaffLevel.Advisor, StaffRole.Events)]
+    [InlineData("IT-EC", Department.ED, StaffLevel.Coordinator, StaffRole.Events)]
+    [InlineData("IT-EAC", Department.ED, StaffLevel.Assistant, StaffRole.Events)]
+    [InlineData("IT-EA1", Department.ED, StaffLevel.Advisor, StaffRole.Events)]
     // Public relations
-    [InlineData("IT-PRC", Department.PR, StaffLevel.Coordinator, StaffRole.PublicRelations)]
-    [InlineData("IT-PRAC", Department.PR, StaffLevel.Assistant, StaffRole.PublicRelations)]
-    [InlineData("IT-PRA1", Department.PR, StaffLevel.Advisor, StaffRole.PublicRelations)]
+    [InlineData("IT-PRC", Department.PRD, StaffLevel.Coordinator, StaffRole.PublicRelations)]
+    [InlineData("IT-PRAC", Department.PRD, StaffLevel.Assistant, StaffRole.PublicRelations)]
+    [InlineData("IT-PRA1", Department.PRD, StaffLevel.Advisor, StaffRole.PublicRelations)]
     // Web development
-    [InlineData("IT-WM", Department.WM, StaffLevel.Coordinator, StaffRole.Web)]
-    [InlineData("IT-AWM", Department.WM, StaffLevel.Assistant, StaffRole.Web)]
-    [InlineData("IT-WMA1", Department.WM, StaffLevel.Advisor, StaffRole.Web)]
+    [InlineData("IT-WM", Department.WD, StaffLevel.Coordinator, StaffRole.Web)]
+    [InlineData("IT-AWM", Department.WD, StaffLevel.Assistant, StaffRole.Web)]
+    [InlineData("IT-WMA1", Department.WD, StaffLevel.Advisor, StaffRole.Web)]
     public void ReadsEveryDivisionalPosition(string raw, Department department, StaffLevel level, StaffRole role)
     {
         var parsed = StaffRoleMap.Parse(raw, "IT", ItalianFirs);
@@ -94,10 +94,10 @@ public sealed class StaffRoleMapTests
     }
 
     [Theory]
-    [InlineData("XX-EC", "XX", Department.EV, StaffRole.Events)]
+    [InlineData("XX-EC", "XX", Department.ED, StaffRole.Events)]
     [InlineData("XX-DIR", "XX", Department.HQ, StaffRole.Director)]
-    [InlineData("XXX-EC", "XXX", Department.EV, StaffRole.Events)]
-    [InlineData("XXX-WM", "XXX", Department.WM, StaffRole.Web)]
+    [InlineData("XXX-EC", "XXX", Department.ED, StaffRole.Events)]
+    [InlineData("XXX-WM", "XXX", Department.WD, StaffRole.Web)]
     public void WorksForAnyDivisionCode(string raw, string divisionCode, Department department, StaffRole role)
     {
         var parsed = StaffRoleMap.Parse(raw, divisionCode, NoFirs);
@@ -143,7 +143,7 @@ public sealed class StaffRoleMapTests
 
         Assert.NotNull(parsed);
         Assert.Equal("IT-EC", parsed.Raw);
-        Assert.Equal(Department.EV, parsed.Department);
+        Assert.Equal(Department.ED, parsed.Department);
     }
 
     [Fact]

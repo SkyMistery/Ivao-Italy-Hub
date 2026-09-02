@@ -7,7 +7,11 @@
  * generated from the OpenAPI document into `schema.d.ts`, and this file goes away.
  */
 
-export type Department = 'HQ' | 'SO' | 'FO' | 'AO' | 'TR' | 'MB' | 'EV' | 'PR' | 'WM';
+/**
+ * The department codes IVAO itself uses. Not a mechanical suffix: ATC operations is `AOD` but
+ * training is `TD`, and headquarters is plain `HQ`.
+ */
+export type Department = 'HQ' | 'SOD' | 'FOD' | 'AOD' | 'TD' | 'MD' | 'ED' | 'PRD' | 'WD';
 
 /** A field translated into the languages of the division. */
 export type LocalizedString = Record<string, string>;

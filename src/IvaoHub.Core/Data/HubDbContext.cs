@@ -54,7 +54,7 @@ public class HubDbContext(DbContextOptions<HubDbContext> options) : DbContext(op
 
         // Enums are stored as text: a column that can be read without the code next to it, and a
         // value that never shifts when somebody reorders the enum.
-        configurationBuilder.Properties<Department>().HaveConversion<string>().HaveMaxLength(2);
+        configurationBuilder.Properties<Department>().HaveConversion<string>().HaveMaxLength(4);
         configurationBuilder.Properties<Visibility>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<PublishStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<StaffLevel>().HaveConversion<string>().HaveMaxLength(16);

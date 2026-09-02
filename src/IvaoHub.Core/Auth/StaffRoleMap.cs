@@ -51,41 +51,41 @@ public static partial class StaffRoleMap
     private static readonly (Regex Pattern, Department Department, StaffLevel Level, StaffRole Role)[] DivisionalRules =
     [
         // Training comes first: T01-T99 before TA1-TA9, and both before TC and TAC.
-        (Trainer(), Department.TR, StaffLevel.Member, StaffRole.Trainer),
-        (TrainingAdvisor(), Department.TR, StaffLevel.Advisor, StaffRole.Training),
-        (Exact("TAC"), Department.TR, StaffLevel.Assistant, StaffRole.Training),
-        (Exact("TC"), Department.TR, StaffLevel.Coordinator, StaffRole.Training),
+        (Trainer(), Department.TD, StaffLevel.Member, StaffRole.Trainer),
+        (TrainingAdvisor(), Department.TD, StaffLevel.Advisor, StaffRole.Training),
+        (Exact("TAC"), Department.TD, StaffLevel.Assistant, StaffRole.Training),
+        (Exact("TC"), Department.TD, StaffLevel.Coordinator, StaffRole.Training),
 
         (Exact("DIR"), Department.HQ, StaffLevel.Coordinator, StaffRole.Director),
         (Exact("ADIR"), Department.HQ, StaffLevel.Assistant, StaffRole.Director),
 
-        (Advisor("SOA"), Department.SO, StaffLevel.Advisor, StaffRole.SpecialOps),
-        (Exact("SOAC"), Department.SO, StaffLevel.Assistant, StaffRole.SpecialOps),
-        (Exact("SOC"), Department.SO, StaffLevel.Coordinator, StaffRole.SpecialOps),
+        (Advisor("SOA"), Department.SOD, StaffLevel.Advisor, StaffRole.SpecialOps),
+        (Exact("SOAC"), Department.SOD, StaffLevel.Assistant, StaffRole.SpecialOps),
+        (Exact("SOC"), Department.SOD, StaffLevel.Coordinator, StaffRole.SpecialOps),
 
-        (Advisor("FOA"), Department.FO, StaffLevel.Advisor, StaffRole.FlightOps),
-        (Exact("FOAC"), Department.FO, StaffLevel.Assistant, StaffRole.FlightOps),
-        (Exact("FOC"), Department.FO, StaffLevel.Coordinator, StaffRole.FlightOps),
+        (Advisor("FOA"), Department.FOD, StaffLevel.Advisor, StaffRole.FlightOps),
+        (Exact("FOAC"), Department.FOD, StaffLevel.Assistant, StaffRole.FlightOps),
+        (Exact("FOC"), Department.FOD, StaffLevel.Coordinator, StaffRole.FlightOps),
 
-        (Advisor("AOA"), Department.AO, StaffLevel.Advisor, StaffRole.AtcOps),
-        (Exact("AOAC"), Department.AO, StaffLevel.Assistant, StaffRole.AtcOps),
-        (Exact("AOC"), Department.AO, StaffLevel.Coordinator, StaffRole.AtcOps),
+        (Advisor("AOA"), Department.AOD, StaffLevel.Advisor, StaffRole.AtcOps),
+        (Exact("AOAC"), Department.AOD, StaffLevel.Assistant, StaffRole.AtcOps),
+        (Exact("AOC"), Department.AOD, StaffLevel.Coordinator, StaffRole.AtcOps),
 
-        (Advisor("MA"), Department.MB, StaffLevel.Advisor, StaffRole.Membership),
-        (Exact("MAC"), Department.MB, StaffLevel.Assistant, StaffRole.Membership),
-        (Exact("MC"), Department.MB, StaffLevel.Coordinator, StaffRole.Membership),
+        (Advisor("MA"), Department.MD, StaffLevel.Advisor, StaffRole.Membership),
+        (Exact("MAC"), Department.MD, StaffLevel.Assistant, StaffRole.Membership),
+        (Exact("MC"), Department.MD, StaffLevel.Coordinator, StaffRole.Membership),
 
-        (Advisor("EA"), Department.EV, StaffLevel.Advisor, StaffRole.Events),
-        (Exact("EAC"), Department.EV, StaffLevel.Assistant, StaffRole.Events),
-        (Exact("EC"), Department.EV, StaffLevel.Coordinator, StaffRole.Events),
+        (Advisor("EA"), Department.ED, StaffLevel.Advisor, StaffRole.Events),
+        (Exact("EAC"), Department.ED, StaffLevel.Assistant, StaffRole.Events),
+        (Exact("EC"), Department.ED, StaffLevel.Coordinator, StaffRole.Events),
 
-        (Advisor("PRA"), Department.PR, StaffLevel.Advisor, StaffRole.PublicRelations),
-        (Exact("PRAC"), Department.PR, StaffLevel.Assistant, StaffRole.PublicRelations),
-        (Exact("PRC"), Department.PR, StaffLevel.Coordinator, StaffRole.PublicRelations),
+        (Advisor("PRA"), Department.PRD, StaffLevel.Advisor, StaffRole.PublicRelations),
+        (Exact("PRAC"), Department.PRD, StaffLevel.Assistant, StaffRole.PublicRelations),
+        (Exact("PRC"), Department.PRD, StaffLevel.Coordinator, StaffRole.PublicRelations),
 
-        (Advisor("WMA"), Department.WM, StaffLevel.Advisor, StaffRole.Web),
-        (Exact("AWM"), Department.WM, StaffLevel.Assistant, StaffRole.Web),
-        (Exact("WM"), Department.WM, StaffLevel.Coordinator, StaffRole.Web),
+        (Advisor("WMA"), Department.WD, StaffLevel.Advisor, StaffRole.Web),
+        (Exact("AWM"), Department.WD, StaffLevel.Assistant, StaffRole.Web),
+        (Exact("WM"), Department.WD, StaffLevel.Coordinator, StaffRole.Web),
     ];
 
     private static readonly (Regex Pattern, StaffLevel Level, StaffRole Role)[] FirRules =

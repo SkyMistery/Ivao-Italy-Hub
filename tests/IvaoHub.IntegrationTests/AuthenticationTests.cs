@@ -100,7 +100,7 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(600001, user.GetProperty("vid").GetInt32());
         Assert.True(user.GetProperty("isStaff").GetBoolean());
         Assert.False(user.GetProperty("isSuperadmin").GetBoolean());
-        Assert.Contains("EV", user.GetProperty("departments").EnumerateArray().Select(value => value.GetString()));
+        Assert.Contains("ED", user.GetProperty("departments").EnumerateArray().Select(value => value.GetString()));
 
         var permissions = body.GetProperty("permissions").EnumerateArray()
             .Select(permission => (
@@ -108,8 +108,8 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 Department: permission.GetProperty("department").GetString()))
             .ToArray();
 
-        Assert.Contains((CorePermissions.ContentPublish, "EV"), permissions);
-        Assert.DoesNotContain((CorePermissions.ContentPublish, "FO"), permissions);
+        Assert.Contains((CorePermissions.ContentPublish, "ED"), permissions);
+        Assert.DoesNotContain((CorePermissions.ContentPublish, "FOD"), permissions);
         Assert.DoesNotContain(permissions, permission => permission.Name == CorePermissions.PermissionsManage);
     }
 
