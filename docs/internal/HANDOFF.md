@@ -4,7 +4,8 @@
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
 **Ultimo aggiornamento:** 2 settembre 2026 — fine **F0** (bootstrap del repository).
-**Branch:** `m0/f0-bootstrap` (da `main`). **Prossima fase:** F1 — configurazione, avvio, DB del nucleo.
+**Branch:** `m0/f0-bootstrap` (da `main`) — PR https://github.com/SkyMistery/Ivao-Italy-Hub/pull/1, CI verde.
+**Remote:** `https://github.com/SkyMistery/Ivao-Italy-Hub` (pubblico). **Prossima fase:** F1 — configurazione, avvio, DB del nucleo.
 
 ---
 
@@ -81,4 +82,3 @@ dalla SPA); con `wwwroot` popolato `/` e `/login-error` restituiscono `index.htm
 - `docs/UI-GUIDELINES.md` è **F6**; `docs/FORKING.md` va completato in **F8/F9**.
 - Il chunk JS supera i 500 kB (avviso di Vite): lo split per route arriva con i layout di F6.
 - Licenza ancora «TBD» (piano §15.5).
-- L'identità git locale è impostata a `cgranatojr` (`git config user.name`): cambiarla se serve.
