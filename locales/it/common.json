@@ -2,8 +2,42 @@
   "app": {
     "title": "IVAO Division Hub"
   },
+  "common": {
+    "loading": "Caricamento..."
+  },
+  "nav": {
+    "home": "Home",
+    "staff": "Staff"
+  },
   "home": {
     "heading": "L'hub è attivo",
     "lead": "Solo bootstrap del repository: lo scheletro dell'applicazione compila, i test girano e la CI è verde."
+  },
+  "auth": {
+    "login": "Accedi con IVAO",
+    "logout": "Esci",
+    "signedInAs": "Sei {{name}}"
+  },
+  "me": {
+    "title": "Il tuo account",
+    "vid": "VID",
+    "staff": "Staff",
+    "superadmin": "Superadmin",
+    "positions": "Posizioni staff",
+    "departments": "Dipartimenti",
+    "firs": "FIR",
+    "permissions": "Permessi effettivi",
+    "none": "Nessuno"
+  },
+  "loginError": {
+    "title": "L'accesso non è andato a buon fine",
+    "retry": "Riprova",
+    "reason": {
+      "portal": "IVAO ha rifiutato l'accesso. Di solito significa che il consenso è stato negato, oppure che l'applicazione non è abilitata per il tuo account.",
+      "correlation": "Il giro di andata e ritorno non è stato riconosciuto da questo browser. Succede quando la pagina resta aperta troppo a lungo o i cookie vengono cancellati a metà.",
+      "nonce": "La risposta di IVAO non è stata validata. Riprova; se continua, il problema è dalla nostra parte.",
+      "profile": "IVAO non ci ha detto chi sei, quindi non è stato possibile aprire un account.",
+      "unknown": "Qualcosa è andato storto al ritorno da IVAO."
+    }
   }
 }

@@ -3,7 +3,9 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
+using IvaoHub.Web.Endpoints;
 using Microsoft.AspNetCore.DataProtection;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -58,7 +60,22 @@ builder.Services.AddDataProtection()
     .SetApplicationName("IvaoHub");
 
 builder.Services.AddHubDbContext();
+builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
+builder.Services.AddIvaoAuthentication();
+
+// The login is the one place an outsider can make the server do work before proving anything.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(AuthEndpoints.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+        }));
+});
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 builder.Services.AddSingleton(BuildInfo.FromAssembly(typeof(Program).Assembly));
 
@@ -85,11 +102,21 @@ if (app.Environment.IsProduction())
 app.UseCorrelationId();
 app.UseSerilogRequestLogging();
 app.UseNoStoreForApi();
+app.UseRateLimiter();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+// Before authentication: a request that cannot prove it came from our own client is refused
+// whatever it carries.
+app.UseCrossSiteRequestGuard();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapHealthChecks("/health");
+app.MapAuthEndpoints();
+app.MapMeEndpoints();
 
 app.MapGet("/api/version", (BuildInfo build) => Results.Ok(new
 {
