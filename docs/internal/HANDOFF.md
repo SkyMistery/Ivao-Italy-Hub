@@ -56,7 +56,7 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
 - `CorePermissions` (13 permessi, `global` dichiarato), `RolePermissionMatrix` (una tabella per livello) e
   `EffectivePermissionsCalculator` (derivati ∪ grant − deny, scadenza, sospensione, `Edit` implica `View`,
   mai globali via grant). Un permesso valido ovunque si salva **una volta sola** con dipartimento nullo:
-  altrimenti Director e WM porterebbero ~90 claim nel cookie.
+  altrimenti Director e web team porterebbero ~90 claim nel cookie.
 - BFF OIDC ereditato da vIPI: `code` + PKCE, nonce validato, `RequireState=false` con validator dedicato,
   `SaveTokens=false` con i token IVAO salvati **cifrati** in `hub_user_tokens`, `OnRemoteFailure` che manda
   a `/login-error` e **non** rimbalza al login.
@@ -71,7 +71,7 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
   `X-Requested-With: hub` prende 403. Rate limiting 10/min per IP su `/auth/*`.
 - Frontend: `shared/api/client.ts` (openapi-fetch, header CSRF, middleware 401), `features/me/queries.ts`,
   `AppShell` con login/logout, route `/me` e `/login-error` tradotte.
-- **145 test verdi** (119 unit + 26 di integrazione su container `mariadb:11.4.10`).
+- **146 test verdi** (119 unit + 27 di integrazione su container `mariadb:11.4.10`).
 
 ## 3. Regole già attive (non aggirarle nelle fasi successive)
 
