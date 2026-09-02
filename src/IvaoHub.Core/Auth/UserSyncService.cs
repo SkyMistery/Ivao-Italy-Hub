@@ -8,7 +8,12 @@ using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Core.Auth;
 
-/// <summary>What IVAO says about a person at the moment they log in.</summary>
+/// <summary>
+/// What IVAO says about a person at the moment they log in.
+/// <para><paramref name="LanguageId"/> is the language they chose on IVAO, used as their first
+/// language here. <paramref name="IvaoIsStaff"/> is what IVAO itself calls staff, which is wider
+/// than what this division calls staff and is therefore only ever recorded, never acted upon.</para>
+/// </summary>
 public sealed record IvaoUserProfile(
     int Vid,
     string FirstName,
@@ -19,6 +24,9 @@ public sealed record IvaoUserProfile(
     int? RatingAtc,
     int? RatingPilot,
     string? DiscordId,
+    string? LanguageId,
+    bool? IvaoIsStaff,
+    bool? IvaoIsSupervisor,
     IReadOnlyList<string> StaffPositions);
 
 /// <summary>The identity the hub hands to the cookie once a login has been processed.</summary>
@@ -79,10 +87,15 @@ public sealed class UserSyncService(
         user.RatingAtc = profile.RatingAtc;
         user.RatingPilot = profile.RatingPilot;
         user.DiscordId = profile.DiscordId;
+        user.IvaoIsStaff = profile.IvaoIsStaff;
+        user.IvaoIsSupervisor = profile.IvaoIsSupervisor;
+
+        // Ours means "holds a position of THIS division", which is what permissions and grants rest
+        // on. IVAO's own isStaff is wider and is kept alongside, never merged into this one.
         user.IsStaff = positions.Length > 0;
         user.LastLoginAt = clock.UtcNow;
         user.UpdatedAt = clock.UtcNow;
-        user.Locale ??= options.DefaultLocale;
+        user.Locale ??= PreferredLocale(profile.LanguageId, options);
 
         await ReplacePositionsAsync(profile.Vid, parsed, cancellationToken);
 
@@ -116,6 +129,24 @@ public sealed class UserSyncService(
             clock.UtcNow);
 
         return new SignedInUser(user, positions, permissions);
+    }
+
+    /// <summary>
+    /// The language IVAO has for the member, but only when the division actually speaks it;
+    /// otherwise the default of the division. Set once, at the first login: from F6 the member can
+    /// change it, and their choice must not be overwritten at every sign in.
+    /// </summary>
+    private static string PreferredLocale(string? languageId, DivisionOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(languageId))
+        {
+            return options.DefaultLocale;
+        }
+
+        var normalised = languageId.Trim().ToLowerInvariant().Split('-')[0];
+        return options.Locales.FirstOrDefault(
+            locale => string.Equals(locale, normalised, StringComparison.OrdinalIgnoreCase))
+            ?? options.DefaultLocale;
     }
 
     /// <summary>

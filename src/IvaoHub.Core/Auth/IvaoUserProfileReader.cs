@@ -51,6 +51,9 @@ public static class IvaoUserProfileReader
             // family_name, nickname, publicNickname and profile. The column stays, empty, for
             // whenever the hub links Discord itself the way the division's own bot does.
             DiscordId: null,
+            LanguageId: Text(userInfo, "languageId"),
+            IvaoIsStaff: Boolean(userInfo, "isStaff"),
+            IvaoIsSupervisor: Boolean(userInfo, "isSupervisor"),
             StaffPositions: StaffPositions(userInfo));
     }
 
@@ -106,6 +109,22 @@ public static class IvaoUserProfileReader
             JsonValueKind.Number => value.TryGetInt32(out var number) ? number : null,
             JsonValueKind.Object => Number(value, "id"),
             JsonValueKind.String => int.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var parsed) ? parsed : null,
+            _ => null,
+        };
+    }
+
+    private static bool? Boolean(JsonElement root, string property)
+    {
+        if (!root.TryGetProperty(property, out var element))
+        {
+            return null;
+        }
+
+        return element.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number => element.TryGetInt32(out var number) ? number != 0 : null,
             _ => null,
         };
     }

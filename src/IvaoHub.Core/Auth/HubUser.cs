@@ -31,6 +31,16 @@ public sealed class HubUser
     /// <summary>True as soon as at least one staff position of the division was recognised.</summary>
     public bool IsStaff { get; set; }
 
+    /// <summary>
+    /// What IVAO itself calls staff, kept as it comes. It is wider than <see cref="IsStaff"/>,
+    /// because it counts headquarters and other divisions, so it never feeds a permission: it is
+    /// there for the staff directory of M1. Null until the member has logged in.
+    /// </summary>
+    public bool? IvaoIsStaff { get; set; }
+
+    /// <summary>Whether IVAO marks the member as a supervisor. Same rule: recorded, never used to decide.</summary>
+    public bool? IvaoIsSupervisor { get; set; }
+
     /// <summary>The truth about super administrators; <c>division.json</c> only bootstraps it.</summary>
     public bool IsSuperadmin { get; set; }
 
