@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\IvaoHub.Core\IvaoHub.Core.csproj" />
     <ProjectReference Include="..\IvaoHub.Modules.Atc\IvaoHub.Modules.Atc.csproj" />
   </ItemGroup>

@@ -1,0 +1,40 @@
+{
+  "$comment": [
+    "Everything the code needs in order to behave like your division, and nothing else.",
+    "Content, links and translations are not configuration: they live in the database and in locales/.",
+    "Copy this file to division.json and edit it. It is versioned on purpose: it is behaviour, not a secret."
+  ],
+
+  "$comment.code": "Your division code as IVAO writes it, 2 or 3 upper case letters. Staff positions are matched as ^{code}-.",
+  "code": "XX",
+
+  "$comment.countryId": "ISO country used to ask the IVAO API for your FIRs and airports.",
+  "countryId": "XX",
+
+  "$comment.name": "Division name, one entry per language listed in locales.",
+  "name": { "en": "IVAO Example" },
+
+  "$comment.domain": "Public host of the division, used to build absolute links.",
+  "domain": "example.ivao.aero",
+
+  "$comment.locales": "Languages of the division. Every one of them needs a locales/{lang}/ directory.",
+  "locales": ["en"],
+
+  "$comment.defaultLocale": "Fallback language. It must be one of locales.",
+  "defaultLocale": "en",
+
+  "$comment.timezone": "IANA time zone, used to show local times next to UTC.",
+  "timezone": "UTC",
+
+  "$comment.icaoPrefixes": "Safety net for filters and validation; FIRs and airports themselves come from the IVAO API.",
+  "icaoPrefixes": ["XX"],
+
+  "$comment.modules": "Optional modules only. The department modules and the editorial core are always on.",
+  "modules": { "specialops": false },
+
+  "$comment.superAdmins": "Bootstrap only: read once, when no super administrator exists yet. After that the database is the truth.",
+  "superAdmins": [],
+
+  "$comment.firStaffScope": "all = FIR teams work on every FIR (default). own = each FIR team only sees its own FIR.",
+  "firStaffScope": "all"
+}

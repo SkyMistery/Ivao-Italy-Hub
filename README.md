@@ -7,9 +7,9 @@ The project is built to be **forked**: nothing about a particular division lives
 The behaviour of a division comes from `config/division.json`, its airspace from the IVAO API
 snapshots, and every piece of editorial content from the database.
 
-> **Status: M0, phase F0.** Only the repository skeleton exists: it builds, it is tested and the
-> CI is green. Configuration, database, authentication and the generic backbone arrive in the
-> phases that follow.
+> **Status: M0, phase F1.** The application validates its configuration, migrates its own database
+> and reports what is running. Authentication and the generic backbone arrive in the phases that
+> follow.
 
 ## Requirements
 
@@ -23,13 +23,16 @@ snapshots, and every piece of editorial content from the database.
 ## Running it locally
 
 ```bash
-# 1. Start MariaDB 11.4.10 and the fake SMTP server.
+# 1. Tell the application which division it is and which OAuth client to use.
+cp config/ivao-oauth.example.json config/ivao-oauth.json   # then fill it in; it is never committed
+
+# 2. Start MariaDB 11.4.10 and the fake SMTP server.
 docker compose up -d
 
-# 2. Start the API on http://localhost:5000
+# 3. Start the API on http://localhost:5000; it applies its migrations on the way up
 dotnet run --project src/IvaoHub.Web
 
-# 3. In another shell, start the SPA on http://localhost:5173
+# 4. In another shell, start the SPA on http://localhost:5173
 cd web
 pnpm install
 pnpm dev
@@ -38,11 +41,28 @@ pnpm dev
 Open <http://localhost:5173>. Vite proxies `/api`, `/auth` and `/health` to Kestrel, so the SPA and
 the API behave exactly as they do in the single published process.
 
+The application refuses to start when its configuration is incomplete, and says which field is
+wrong. `diagnostics/startup.txt` records what started, which migrations it applied and which modules
+are on; it never contains a secret.
+
+### Configuration files
+
+| File | In the repository | What it is |
+| --- | --- | --- |
+| `config/division.json` | yes | Behaviour of the division: code, languages, time zone, optional modules. Not a secret. |
+| `config/ivao-oauth.json` | **no** | The OAuth client of the division. Copy the example and fill it in, or use `Ivao__*` environment variables. |
+| `secrets/*.json` | **no** | Connection string, SMTP and anything else that must not be read from the web. |
+| `hub-keys/` | **no** | Data Protection keys. Persistent: never delete them, or everybody is logged out. |
+
 ## Checks
 
 ```bash
 dotnet build IvaoHub.sln
 dotnet test --solution IvaoHub.sln     # unit tests plus integration tests, Docker must be running
+
+# Adding a migration (additive only, never edit one that is already merged)
+dotnet tool restore
+dotnet dotnet-ef migrations add <Name> --project src/IvaoHub.Core --startup-project src/IvaoHub.Core
 
 cd web
 pnpm lint

@@ -126,13 +126,13 @@ Schema come piano §4.1. Caricato con `AddJsonFile("config/division.json", optio
 
 `AddJsonFile("config/ivao-oauth.json", optional: false, reloadOnChange: true)`; le variabili d'ambiente `Ivao__*` vincono. Validazione all'avvio (fail-fast, messaggio chiaro senza il secret): tutti i campi presenti, `RedirectUri` termina con `/auth/callback`, `LoginUrl` termina con `/auth/login`, stesso host per entrambi. Il secret non compare mai in log, `/api/me`, OpenAPI o pagine di errore.
 
-### 2.3 `segreti/*.json` e ambiente
+### 2.3 `secrets/*.json` e ambiente
 
-`Program.cs` aggiunge ogni `*.json` in `segreti/` (se la cartella esiste) **dopo** `appsettings.{Env}.json`, così vince. Chiavi attese: `ConnectionStrings:Default`, `Smtp:*` (M1), `DataProtection:KeysPath` (default `hub-keys/`). `ForwardedHeaders` (Cloudflare/nginx) abilitati con `KnownNetworks` svuotate solo in Production dietro proxy. `AllowedHosts` obbligatorio in Production.
+`Program.cs` aggiunge ogni `*.json` in `secrets/` (se la cartella esiste) **dopo** `appsettings.{Env}.json`, così vince. Chiavi attese: `ConnectionStrings:Default`, `Smtp:*` (M1), `DataProtection:KeysPath` (default `hub-keys/`). `ForwardedHeaders` (Cloudflare/nginx) abilitati con `KnownNetworks` svuotate solo in Production dietro proxy. `AllowedHosts` obbligatorio in Production.
 
 ### 2.4 Avvio
 
-Ordine in `Program.cs`: opzioni → Serilog (file rolling `logs/hub-.log` + console) → Data Protection su `hub-keys/` → DbContext (pool ≤ 15, `MaximumPoolSize=15` nella connection string di default) → auth (§4) → `ModuleRegistry` (scopre gli `IModule` referenziati da `IvaoHub.Web`, filtra con `division.modules`) → Quartz → endpoint. Poi, **prima di accettare traffico**: `Database.Migrate()` per il contesto del nucleo e per ogni modulo abilitato; bootstrap superadmin (§4.5); seed template (§5.6, per chiave di seed); scrittura di `diagnostica/avvio.txt` (versione, migrazioni applicate, moduli attivi, superadmin count — mai segreti). Se la migrazione fallisce l'app **non parte** e il file lo dice.
+Ordine in `Program.cs`: opzioni → Serilog (file rolling `logs/hub-.log` + console) → Data Protection su `hub-keys/` → DbContext (pool ≤ 15, `MaximumPoolSize=15` nella connection string di default) → auth (§4) → `ModuleRegistry` (scopre gli `IModule` referenziati da `IvaoHub.Web`, filtra con `division.modules`) → Quartz → endpoint. Poi, **prima di accettare traffico**: `Database.Migrate()` per il contesto del nucleo e per ogni modulo abilitato; bootstrap superadmin (§4.5); seed template (§5.6, per chiave di seed); scrittura di `diagnostics/startup.txt` (versione, migrazioni applicate, moduli attivi, superadmin count — mai segreti). Se la migrazione fallisce l'app **non parte** e il file lo dice.
 
 `/health` (liveness: DB ping) e `/api/version` (`{ version, commit, builtAt, dotnet }` da `AssemblyMetadata`) sono anonimi e `Cache-Control: no-store`.
 
