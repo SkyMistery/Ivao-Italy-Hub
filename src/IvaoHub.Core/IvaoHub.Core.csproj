@@ -3,7 +3,23 @@
   <!--
     The core: domain, EF Core, the IVAO API client and the Content folder.
     It never references IvaoHub.Web nor any IvaoHub.Modules.* project (design M0 section 6.2).
-    Empty in F0 on purpose: the backbone is built in F1-F4.
+    The framework reference is needed because the design puts the OIDC back end for front end
+    (Auth/) and the CRUD endpoint engine (MapCrud) inside the core, not in a separate host project.
   -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
+  </ItemGroup>
 
 </Project>

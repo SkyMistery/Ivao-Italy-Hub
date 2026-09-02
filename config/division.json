@@ -1,0 +1,13 @@
+{
+  "code": "IT",
+  "countryId": "IT",
+  "name": { "it": "IVAO Italia", "en": "IVAO Italy" },
+  "domain": "it.ivao.aero",
+  "defaultLocale": "it",
+  "locales": ["it", "en"],
+  "timezone": "Europe/Rome",
+  "icaoPrefixes": ["LI"],
+  "modules": { "specialops": true },
+  "superAdmins": [704798],
+  "firStaffScope": "all"
+}

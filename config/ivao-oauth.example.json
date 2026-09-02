@@ -1,0 +1,11 @@
+{
+  "Ivao": {
+    "Authority": "https://api.ivao.aero",
+    "ClientId": "<client id>",
+    "ClientSecret": "<client secret>",
+    "LoginUrl": "https://example.ivao.aero/auth/login",
+    "RedirectUri": "https://example.ivao.aero/auth/callback",
+    "PostLogoutRedirectUri": "https://example.ivao.aero/",
+    "Scopes": ["openid", "profile", "email", "discord"]
+  }
+}

@@ -4,16 +4,17 @@ CLAUDE.local.md
 .claude/
 
 # Secrets and per-environment configuration
-config/ivao-oauth.json
-segreti/
-hub-keys/
+/config/ivao-oauth.json
+/segreti/
+/hub-keys/
 *.env
 !*.example.json
 
 # Build output
 bin/
 obj/
-artifacts/
+/artifacts/
+/TestResults/
 web/dist/
 src/IvaoHub.Web/wwwroot/*
 !src/IvaoHub.Web/wwwroot/.gitkeep
@@ -21,9 +22,9 @@ web/node_modules/
 node_modules/
 
 # Local data and logs
-data/
-logs/
-diagnostica/
+/data/
+/logs/
+/diagnostica/
 *.db
 *.db-shm
 *.db-wal

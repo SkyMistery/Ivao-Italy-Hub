@@ -56,3 +56,11 @@ quote_type = single
 
 [{Directory.Build.props,Directory.Packages.props}]
 indent_size = 2
+
+# EF Core writes these files; they are reviewed, not styled. Applies to every context, including
+# the ones the modules will add.
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0161.severity = none
