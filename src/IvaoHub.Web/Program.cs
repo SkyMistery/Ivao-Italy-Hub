@@ -57,7 +57,7 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(paths.DataProtectionKeys))
     .SetApplicationName("IvaoHub");
 
-builder.Services.AddHubDbContext(HubConfiguration.ConnectionString(builder.Configuration));
+builder.Services.AddHubDbContext();
 builder.Services.AddScoped<HubDatabaseInitializer>();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 builder.Services.AddSingleton(BuildInfo.FromAssembly(typeof(Program).Assembly));

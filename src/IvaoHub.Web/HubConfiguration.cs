@@ -5,8 +5,6 @@ namespace IvaoHub.Web;
 /// <summary>Reading the configuration files of an installation, in one place.</summary>
 internal static class HubConfiguration
 {
-    private const string ConnectionStringName = "Default";
-
     /// <summary>
     /// Every <c>*.json</c> under <c>segreti/</c>, in a stable order. The folder is never in the
     /// repository and the web server denies access to it (plan section 11.3).
@@ -35,20 +33,6 @@ internal static class HubConfiguration
         }
 
         return new ConfigurationBuilder().AddJsonFile(paths.DivisionFile, optional: false).Build();
-    }
-
-    public static string ConnectionString(IConfiguration configuration)
-    {
-        var connectionString = configuration.GetConnectionString(ConnectionStringName);
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                "The connection string 'ConnectionStrings:Default' is not configured. "
-                + "In development it is in appsettings.Development.json; in production it belongs to a file "
-                + "under segreti/ or to the ConnectionStrings__Default environment variable.");
-        }
-
-        return connectionString;
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace IvaoHub.Core.Data;
@@ -9,10 +10,13 @@ namespace IvaoHub.Core.Data;
 /// </summary>
 public static class HubDbContextServiceCollectionExtensions
 {
-    public static IServiceCollection AddHubDbContext(this IServiceCollection services, string connectionString)
+    private const string ConnectionStringName = "Default";
+
+    public static IServiceCollection AddHubDbContext(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.AddDbContext<HubDbContext>(options => ConfigureHub(options, connectionString));
+        services.AddDbContext<HubDbContext>((provider, options) =>
+            Configure(options, ResolveConnectionString(provider), "__EFMigrationsHistory"));
         return services;
     }
 
@@ -20,24 +24,36 @@ public static class HubDbContextServiceCollectionExtensions
     /// A module context: same provider, same conventions, its own migration history table, and no
     /// foreign key towards another context (plan section 16.12).
     /// </summary>
-    public static IServiceCollection AddModuleDbContext<TContext>(
-        this IServiceCollection services,
-        string connectionString,
-        string moduleKey)
+    public static IServiceCollection AddModuleDbContext<TContext>(this IServiceCollection services, string moduleKey)
         where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
 
-        services.AddDbContext<TContext>(options => Configure(
+        services.AddDbContext<TContext>((provider, options) => Configure(
             options,
-            connectionString,
+            ResolveConnectionString(provider),
             $"__EFMigrationsHistory_{moduleKey}"));
         return services;
     }
 
-    private static void ConfigureHub(DbContextOptionsBuilder options, string connectionString) =>
-        Configure(options, connectionString, "__EFMigrationsHistory");
+    /// <summary>
+    /// Read when the context is built, not when the host is being configured: a test host and a
+    /// deployment both add configuration sources after that point.
+    /// </summary>
+    private static string ResolveConnectionString(IServiceProvider provider)
+    {
+        var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "The connection string 'ConnectionStrings:Default' is not configured. "
+                + "In development it is in appsettings.Development.json; in production it belongs to a file "
+                + "under segreti/ or to the ConnectionStrings__Default environment variable.");
+        }
+
+        return connectionString;
+    }
 
     private static void Configure(DbContextOptionsBuilder options, string connectionString, string historyTable)
     {
