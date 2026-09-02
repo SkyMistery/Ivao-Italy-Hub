@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -95,7 +96,7 @@ public sealed class UserSyncService(
         user.IsStaff = positions.Length > 0;
         user.LastLoginAt = clock.UtcNow;
         user.UpdatedAt = clock.UtcNow;
-        user.Locale ??= PreferredLocale(profile.LanguageId, options);
+        user.Locale ??= LocalePreference.Resolve(profile.LanguageId, options);
 
         await ReplacePositionsAsync(profile.Vid, parsed, cancellationToken);
 
@@ -129,24 +130,6 @@ public sealed class UserSyncService(
             clock.UtcNow);
 
         return new SignedInUser(user, positions, permissions);
-    }
-
-    /// <summary>
-    /// The language IVAO has for the member, but only when the division actually speaks it;
-    /// otherwise the default of the division. Set once, at the first login: from F6 the member can
-    /// change it, and their choice must not be overwritten at every sign in.
-    /// </summary>
-    private static string PreferredLocale(string? languageId, DivisionOptions options)
-    {
-        if (string.IsNullOrWhiteSpace(languageId))
-        {
-            return options.DefaultLocale;
-        }
-
-        var normalised = languageId.Trim().ToLowerInvariant().Split('-')[0];
-        return options.Locales.FirstOrDefault(
-            locale => string.Equals(locale, normalised, StringComparison.OrdinalIgnoreCase))
-            ?? options.DefaultLocale;
     }
 
     /// <summary>
