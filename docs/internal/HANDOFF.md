@@ -13,7 +13,7 @@
 | F1 configurazione, avvio, DB | mergiata (PR #2) |
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
-| F4 spina dorsale del dominio | in revisione (PR di F4) |
+| F4 spina dorsale del dominio | in revisione (PR #6) |
 | **F5 `MapCrud` e `links` (server)** | **prossima** |
 
 **Come si apre F5**: prompt di §C del piano di implementazione con `<N>` → `5`. Perimetro in §D:
