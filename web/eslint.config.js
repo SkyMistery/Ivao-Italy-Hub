@@ -48,7 +48,7 @@ const coreZones = coreDirectories.map((directory) => ({
  */
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'src/routeTree.gen.ts'],
+    ignores: ['dist/**', 'node_modules/**', 'src/routeTree.gen.ts', 'src/shared/api/schema.d.ts'],
   },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,

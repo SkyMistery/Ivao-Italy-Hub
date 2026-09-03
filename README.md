@@ -7,13 +7,16 @@ The project is built to be **forked**: nothing about a particular division lives
 The behaviour of a division comes from `config/division.json`, its airspace from the IVAO API
 snapshots, and every piece of editorial content from the database.
 
-> **Status: M0, phase F4 of nine.** The application validates its configuration and migrates its own
+> **Status: M0, phase F5 of nine.** The application validates its configuration and migrates its own
 > database, signs a member in with IVAO and computes what they are allowed to do, keeps a snapshot
 > of the airspace of the division, and carries the backbone everything else is built on: audit
 > columns, a per-department write guard, the visibility filter, the search projections and a single
-> authorization handler, all covered by tests against a real MariaDB. What is not there yet is
-> everything a visitor would see — the generic CRUD engine, the back office and the editorial
-> content arrive in the phases that follow.
+> authorization handler, all covered by tests against a real MariaDB. On top of it there is now one
+> generic CRUD engine: a resource of the back office — paging, sorting, searching, the department
+> filter, validation, optimistic concurrency — costs a configuration object, and `/api/links` is the
+> first one. The API describes itself in an OpenAPI document written at build time, from which the
+> typed client of the front end is generated. What is not there yet is everything a visitor would
+> see: the back office screens and the editorial content arrive in the phases that follow.
 
 ## Requirements
 
@@ -81,6 +84,11 @@ pnpm typecheck
 pnpm test
 pnpm i18n:check
 pnpm build
+
+# The typed API client. `dotnet build` writes artifacts/openapi/IvaoHub.Web.json; this turns it into
+# web/src/shared/api/schema.d.ts, which is committed. The CI regenerates it and fails on a diff, so
+# run it after changing an endpoint or a payload.
+pnpm gen:api
 ```
 
 ## Packaging
@@ -90,9 +98,11 @@ dotnet publish src/IvaoHub.Web -c Release -r linux-x64 --self-contained
 ```
 
 The publish target builds the SPA and places it, together with the language files, under
-`wwwroot/` inside the published package. Everything an installation owns — `config/`, `secrets/`,
-`hub-keys/` — stays outside the package and next to it on the server, so a deployment never
-overwrites the configuration or the keys.
+`wwwroot/` inside the published package. Next to the binaries the package also carries
+`locales/{lang}/*.json` — the copy the server itself reads — the `config/*.example.json` files to
+copy, and `LICENSE` and `NOTICE`. Everything an installation owns — `config/division.json`,
+`config/ivao-oauth.json`, `secrets/`, `hub-keys/` — stays outside the package and next to it on the
+server, so a deployment never overwrites the configuration or the keys.
 
 ## Repository layout
 

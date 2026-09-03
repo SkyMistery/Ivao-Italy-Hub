@@ -1,11 +1,16 @@
+using System.Text.Json.Serialization;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
 using IvaoHub.Web.Endpoints;
+using IvaoHub.Web.OpenApi;
+using Scalar.AspNetCore;
 using Microsoft.AspNetCore.DataProtection;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -51,10 +56,16 @@ builder.Services.AddOptions<DivisionOptions>()
 // The registry that knows the module keys arrives in F8; until then no key is checked.
 builder.Services.AddSingleton<IValidateOptions<DivisionOptions>>(new DivisionOptionsValidator());
 
-builder.Services.AddOptions<IvaoOAuthOptions>()
-    .Bind(builder.Configuration.GetSection(IvaoOAuthOptions.SectionName))
-    .ValidateOnStart();
+var oauth = builder.Services.AddOptions<IvaoOAuthOptions>()
+    .Bind(builder.Configuration.GetSection(IvaoOAuthOptions.SectionName));
 builder.Services.AddSingleton<IValidateOptions<IvaoOAuthOptions>, IvaoOAuthOptionsValidator>();
+
+if (!HubConfiguration.IsOpenApiDocumentGeneration)
+{
+    // An installation without an OAuth client must not come up. Describing the API is the one
+    // case where there is no client to have: the tool reads the endpoints and never signs anybody in.
+    oauth.ValidateOnStart();
+}
 
 // Persistent keys: losing them logs everybody out and makes the stored IVAO tokens unreadable,
 // which the code treats as absent (plan section 16.14). They are never deleted by a deploy.
@@ -63,12 +74,21 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(paths.DataProtectionKeys))
     .SetApplicationName("IvaoHub");
 
-// A localized field crosses the API as { "en": …, "it": … }: registered once, so no DTO has to
-// remember it and every endpoint speaks the same shape.
+// A localized field crosses the API as { "en": …, "it": … } and an enum as its name: registered
+// once, so no DTO has to remember it and every endpoint speaks the same shape.
 builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(new LocalizedJsonConverterFactory()));
+{
+    options.SerializerOptions.Converters.Add(new LocalizedJsonConverterFactory());
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
+    // A number is a number. The web defaults also accept "5" for 5, which makes every integer in
+    // the contract "integer or string" and every generated TypeScript field `number | string`;
+    // our own client has no reason to send one, so the contract says so.
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
 
 builder.Services.AddHubDbContext();
+builder.Services.AddHubCrud();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
 builder.Services.AddIvaoAuthentication();
@@ -95,7 +115,18 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 builder.Services.AddSingleton(BuildInfo.FromAssembly(typeof(Program).Assembly));
 
-if (builder.Environment.IsProduction())
+// The contract of the API, written to artifacts/openapi/ on every build and turned into the typed
+// client of the SPA. The transformer is what tells the form generator that a field is localized.
+builder.Services.AddOpenApi(options => options.AddSchemaTransformer(new LocalizedSchemaTransformer()));
+
+if (HubConfiguration.IsOpenApiDocumentGeneration)
+{
+    // The tool starts the host to read the endpoints out of it, so an ephemeral loopback port
+    // keeps a build out of the way of a development server that may well be running.
+    builder.WebHost.UseUrls("http://127.0.0.1:0");
+}
+
+if (builder.Environment.IsProduction() && !HubConfiguration.IsOpenApiDocumentGeneration)
 {
     HubConfiguration.RequireAllowedHosts(builder.Configuration);
 
@@ -115,6 +146,10 @@ if (app.Environment.IsProduction())
     app.UseForwardedHeaders();
 }
 
+// Every failure leaves as problem details, and the two the domain raises on its own become the
+// 403 and the 409 the API promises.
+app.UseExceptionHandler();
+
 app.UseCorrelationId();
 app.UseSerilogRequestLogging();
 app.UseNoStoreForApi();
@@ -130,23 +165,35 @@ app.UseCrossSiteRequestGuard();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapOpenApi();
+
+if (app.Environment.IsDevelopment())
+{
+    // A reader for the document while developing; the document itself is a build artefact.
+    app.MapScalarApiReference();
+}
+
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
 app.MapMeEndpoints();
+app.MapLinksEndpoints();
 
-app.MapGet("/api/version", (BuildInfo build) => Results.Ok(new
-{
-    version = build.Version,
-    commit = build.Commit,
-    builtAt = build.BuiltAt,
-    dotnet = build.Dotnet,
-}));
+app.MapGet("/api/version", (BuildInfo build) => TypedResults.Ok(
+    new VersionResponse(build.Version, build.Commit, build.BuiltAt, build.Dotnet)));
 
 app.MapSpaFallback();
 
-await app.InitializeAsync(paths);
+// Migrations, super administrator bootstrap and diagnostics: everything that needs a database, and
+// therefore everything the build time OpenAPI tool must not do.
+if (!HubConfiguration.IsOpenApiDocumentGeneration)
+{
+    await app.InitializeAsync(paths);
+}
 
 app.Run();
+
+/// <summary>What was deployed. Anonymous, and never cached, so a report can quote a build.</summary>
+internal sealed record VersionResponse(string Version, string Commit, DateTime BuiltAt, string Dotnet);
 
 /// <summary>Entry point marker, referenced by the integration tests through WebApplicationFactory.</summary>
 public partial class Program;

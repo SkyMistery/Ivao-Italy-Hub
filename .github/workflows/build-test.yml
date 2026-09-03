@@ -53,6 +53,13 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: web
 
+      # The typed client is generated from the OpenAPI document the .NET build wrote. It is
+      # committed, so a contract that moved on the server and a client that did not notice show up
+      # as a diff in the step below rather than as a runtime surprise.
+      - name: Generate the typed API client
+        run: pnpm gen:api
+        working-directory: web
+
       - name: Lint web
         run: pnpm lint
         working-directory: web
@@ -77,8 +84,8 @@ jobs:
         run: pnpm build
         working-directory: web
 
-      # The generated route tree is committed; a stale one has to fail the build, not surprise the
-      # next developer.
+      # The generated route tree and the generated API client are committed; a stale one has to
+      # fail the build, not surprise the next developer.
       - name: Fail on uncommitted generated files
         run: git diff --exit-code
 
@@ -92,6 +99,18 @@ jobs:
 
       - name: Check that the SPA is inside the package
         run: test -f artifacts/publish/wwwroot/index.html
+
+      # What an installation needs and no compiler produces: the language files the back end reads,
+      # the example configuration to copy, and the licence that Apache-2.0 section 4(d) wants
+      # travelling with every redistribution.
+      - name: Check that the package carries locales, examples and the licence
+        run: |
+          test -f artifacts/publish/locales/en/errors.json
+          test -f artifacts/publish/locales/it/errors.json
+          test -f artifacts/publish/config/division.example.json
+          test -f artifacts/publish/config/ivao-oauth.example.json
+          test -f artifacts/publish/LICENSE
+          test -f artifacts/publish/NOTICE
 
       - name: Upload package
         uses: actions/upload-artifact@v7

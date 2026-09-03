@@ -1,0 +1,29 @@
+{
+  "errors": {
+    "validation": {
+      "title": "Alcuni campi vanno corretti"
+    },
+    "forbidden": {
+      "title": "Non hai i permessi per farlo"
+    },
+    "conflict": {
+      "title": "Qualcun altro ha modificato questa riga nel frattempo"
+    },
+    "notFound": {
+      "title": "Non trovato"
+    },
+    "required": "Questo campo è obbligatorio.",
+    "localized": {
+      "missing": "Compila questo campo in tutte le lingue della divisione."
+    },
+    "url": {
+      "absolute": "Inserisci un indirizzo completo che inizi con http:// o https://"
+    },
+    "number": {
+      "min": "Inserisci un numero non inferiore al minimo."
+    },
+    "text": {
+      "tooLong": "Questo testo è troppo lungo."
+    }
+  }
+}

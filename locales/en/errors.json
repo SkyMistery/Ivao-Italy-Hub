@@ -1,0 +1,29 @@
+{
+  "errors": {
+    "validation": {
+      "title": "Some fields need attention"
+    },
+    "forbidden": {
+      "title": "You are not allowed to do that"
+    },
+    "conflict": {
+      "title": "Somebody else changed this in the meantime"
+    },
+    "notFound": {
+      "title": "Not found"
+    },
+    "required": "This field is required.",
+    "localized": {
+      "missing": "Fill this field in for every language of the division."
+    },
+    "url": {
+      "absolute": "Enter a full address starting with http:// or https://"
+    },
+    "number": {
+      "min": "Enter a number that is not smaller than the minimum."
+    },
+    "text": {
+      "tooLong": "This text is too long."
+    }
+  }
+}

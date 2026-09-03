@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
@@ -97,6 +98,10 @@ public class HubDbContext : DbContext
 
         modelBuilder.HasCharSet(CharSet).UseCollation(Collation);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(HubDbContext).Assembly);
+
+        // How to read one language out of a translated column in SQL. It maps a method to a
+        // MariaDB function: no table, no column, and therefore no migration.
+        LocalizedQuery.Register(modelBuilder);
 
         // Who may read what is decided here, for every entity that has an owner and a visibility,
         // and never again in an endpoint.

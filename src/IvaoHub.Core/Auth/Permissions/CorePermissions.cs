@@ -21,6 +21,9 @@ public static class CorePermissions
     public const string ContentPublish = "Content.Publish";
     public const string ContentManageTemplates = "Content.ManageTemplates";
 
+    /// <summary>The area the CRUD engine derives <c>Links.View</c> and <c>Links.Edit</c> from.</summary>
+    public const string LinksArea = "Links";
+
     public const string LinksView = "Links.View";
     public const string LinksEdit = "Links.Edit";
 

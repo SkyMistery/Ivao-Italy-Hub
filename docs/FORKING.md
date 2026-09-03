@@ -4,10 +4,11 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status: M0, phase F4 of nine.** The first two customisation points below are real and in use:
+> **Status: M0, phase F5 of nine.** The first two customisation points below are real and in use:
 > the division file is read and validated at start up, and the language files are the only place a
-> user visible string exists. The third one, the content, waits for the back office. This guide is
-> filled in with the step by step of a real fork at the end of M0.
+> user visible string exists — the server reads the same set for the messages it produces itself.
+> The third one, the content, waits for the back office screens. This guide is filled in with the
+> step by step of a real fork at the end of M0.
 
 ## The three customisation points
 
@@ -24,7 +25,13 @@ editing sources.
    is the truth and editing the file on the server achieves nothing.
 2. **`locales/{lang}/*.json`** — every string a user ever sees. Add a language directory, keep the
    same keys as the others, and list the language in `division.json`. `pnpm i18n:check` fails when
-   the sets diverge.
+   the sets diverge. There is one set for the whole product: the browser loads it, and so does the
+   server for the few messages it writes itself, such as the title of a validation answer. The API
+   never sends prose to the front end — a field that failed validation comes back as the key
+   `errors.localized.missing`, and the browser resolves it in the language it is drawing.
+
+   A language listed in `division.json` with no directory yet does not stop the application: the
+   reader gets the default language until you translate it.
 3. **The database** — every page, news item, document and link is content, created through the back
    office, never through a code change.
 

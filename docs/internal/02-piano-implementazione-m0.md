@@ -4,7 +4,7 @@
 > `00-piano-di-progettazione.md` v0.18 (§4, §6, §7, §9.3, §9.7, §16), design `01-design-m0.md` (firme e perimetro).
 > Questo file dice **in che ordine** si costruisce, **cosa** consegna ogni fase, **come si verifica** che sia finita.
 
-**Versione:** 1.1 — 3 settembre 2026 (F4 chiusa; `LocaleCatalog` spostato in F5)
+**Versione:** 1.2 — 3 settembre 2026 (F5 chiusa; due precisazioni al design da confermare, §D/F5)
 
 ---
 
@@ -156,6 +156,17 @@ Task:
 6. Test integrazione `MapCrudLinksEndToEnd` (design §8) con utenti finti: superadmin, staff ED coordinator, staff FOD advisor, membro, anonimo.
 
 Accettazione: `curl` autenticato (cookie di test) fa list/create/update/delete su `/api/links`; `schema.d.ts` generato e committato; `locales/`, gli `.example.json`, `LICENSE` e `NOTICE` presenti in `artifacts/publish`; test verdi.
+
+**Chiusa il 3 settembre 2026**, con 244 test verdi (194 unit + 50 integrazione) e due precisazioni al
+design da confermare: l'OpenAPI a build-time **esegue** l'entry point fino a `app.Run()` (§7.4 e §9
+punto 12 vanno riformulate) e un campo dichiarato `Localized<T>?` e non valorizzato viaggia `null`
+(§3.1 va precisata). Note in `docs/internal/decisions/`. Tre correzioni di rotta minori, nella
+tabella delle scelte di `HANDOFF.md`: `CrudOptions` ha un `ContextType`, `SearchFields` è una
+collezione con `Add` sovraccaricato perché una colonna tradotta non è una `string?`, e i parametri
+di lista sono il record `CrudListRequest` perché letti dalla query string non finivano nel contratto.
+Due bug reali trovati dai test: le policy dei permessi non dichiaravano lo schema del cookie e una
+chiamata anonima a `/api` prendeva 302 invece di 401; il converter JSON di `Localized<T>` lanciava
+su un riferimento nullo.
 
 ### F6 — Spina dorsale frontend
 
