@@ -52,3 +52,9 @@ authorization handler, and never a check written again inside a screen.
 
 The OAuth client credentials of your division, your database, your uploads and your Data Protection
 keys. None of them belong in the repository.
+
+## The licence
+
+[Apache License 2.0](../LICENSE). You may fork this and run it for your division without asking
+anybody; keep the copyright notice and the licence, and say which files you changed. What you write
+for your own division — your content, your translations, your modules — is yours.

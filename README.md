@@ -113,5 +113,6 @@ See [docs/FORKING.md](docs/FORKING.md).
 
 ## Licence
 
-**To be decided.** The `LICENSE` file is a placeholder; until a licence is chosen the code is
-published for review only.
+[Apache License 2.0](LICENSE), copyright 2026 Carmine Granato. Fork it, run it for your division,
+change what you need: the licence asks you to keep the notice, to state the files you changed, and
+it grants you the patent rights that come with the code.

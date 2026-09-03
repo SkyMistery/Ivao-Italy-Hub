@@ -5,7 +5,7 @@
 
 **Ultimo aggiornamento:** 3 settembre 2026 — fine **F4** (spina dorsale del dominio).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.23. **Design:** v1.2. **Test:** 214 verdi (174 unit + 40 integrazione).
+**Piano:** v0.24. **Design:** v1.2. **Test:** 214 verdi (174 unit + 40 integrazione).
 
 | Fase | Stato |
 |---|---|
@@ -264,7 +264,10 @@ allargare i permessi, mai stringerli a sorpresa.
   l'interceptor se ne accorge e non fa niente. Quando un modulo proietterà davvero (M1+), va deciso
   se condividere quelle entità o passare dal contesto del nucleo.
 - Il chunk JS supera i 500 kB: lo split per route arriva con i layout di F6.
-- Licenza ancora «TBD» (piano §15.5).
+- ~~Licenza ancora «TBD»~~ **decisa il 3 set 2026**: Apache-2.0, copyright «2026 Carmine Granato».
+  Testo canonico completo in `LICENSE`. Gli header di licenza nei singoli file **non** ci sono e non
+  servono: Apache-2.0 li raccomanda, non li impone, e metterli in ogni `.cs` e `.tsx` sarebbe rumore
+  in ogni diff futuro.
 - `Ivao:ApiScopes` e' vuoto: **misurato**, i due endpoint di riferimento non chiedono scope. Se in
   M2+ servira' `tracker` (chi e' online), si aggiunge li' senza toccare codice.
 - Le fixture IVAO coprono 3 centri e 3 aeroporti: bastano a provare upsert e riconoscimento FIR, non

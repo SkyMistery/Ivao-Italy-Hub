@@ -1,9 +1,11 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.23 — 3 settembre 2026 (spina dorsale di M0 in piedi: due correzioni al design)
+**Versione documento:** 0.24 — 3 settembre 2026 (spina dorsale di M0 in piedi; licenza decisa)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F4 chiuse, prossima F5. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.24** (3 set 2026, sera): **licenza decisa — Apache-2.0**, copyright «2026 Carmine Granato» (§15.5 punto 5, che restava aperto fra MIT e Apache-2.0; il criterio «coerente con gli SDK `ivao-italy`» non decideva da solo, perché quell'organizzazione è mista). Il file `LICENSE` porta ora il testo canonico completo al posto del `TBD`, che alla lettera non concedeva niente a nessuno e rendeva non forkabile un repository che si presenta come forkabile. Nessun header di licenza nei singoli file: Apache-2.0 li raccomanda ma non li impone, e sarebbero rumore in ogni diff. `README.md`, `docs/FORKING.md`, design `01` §10 e HANDOFF aggiornati; nota in `docs/internal/decisions/2026-09-03-licenza.md`.
 
 **Changelog 0.23** (3 set 2026, sera): chiusa la fase **F4**, la spina dorsale del dominio (PR #6). Due correzioni al design `01`, decise da Carmine e documentate in `docs/internal/decisions/`. (1) **`IProjectable.Project()` riceve un `ProjectionContext`** (lingue della divisione, lingua di default, `BlockDocumentWalker`): un'entità EF non si fa iniettare niente, ma un contenuto per proiettarsi ha bisogno delle lingue — cablarle sarebbe esattamente ciò che un hub forkabile non può fare, e farlo al posto suo nel `ProjectionWriter` toglierebbe a quello la sua unica ragione di esistere, cioè essere generico. Design §3.6 aggiornata. (2) **`ICurrentUser` fa due domande separate**, `Has(permission, department)` («su questa riga?») e `HasAny(permission)` («in generale?»), al posto di un solo metodo con il dipartimento opzionale: il comportamento è quello che §3.7 già pretendeva — senza risorsa basta un dipartimento qualsiasi, altrimenti in F5 la lista del back-office si chiuderebbe in faccia a ogni coordinatore — ma smette di dipendere da cosa significhi un `null`. Design §3.3 e §3.7 aggiornate. Inoltre **`LocaleCatalog` passa da F4 a F5**: il perimetro di F4 non lo elencava e il primo che ne ha davvero bisogno è il `ValidationProblem` di `MapCrud`; con lui si sistema anche il pacchetto pubblicato, che porta le lingue in `wwwroot/locales/` (per la SPA) ma non alla radice, dove le cerca il backend, e non porta affatto i `config/*.example.json` (piano `02` §D/F5).
 
@@ -268,7 +270,7 @@ Sì, si può fare — ma va deciso ora, perché costa poco all'inizio e tantissi
   - Un modulo disattivato dal file non può essere acceso dall'interfaccia (l'interfaccia non lo vede proprio): il file è il tetto, l'interfaccia lavora sotto.
 - Il ruolo dell'utente deriva dai claim IVAO `userStaffPositions` filtrati per `^{division.code}-` e per `^{fir}-` (FIR da `ivao_centers`), con il suffisso mappato dalla `StaffRoleMap` universale. Così una divisione XX o XXX funziona senza toccare codice né configurazione.
 - Brand: Atmosphere è uguale per tutti (è il punto). Personalizzabile solo: logo secondario divisionale, immagini hero, colore d'accento opzionale entro la palette Atmosphere.
-- Licenza open source (MIT o Apache-2.0, coerente con gli SDK `ivao-italy`), `README` di fork in inglese, template `.env.example`, `docs/FORKING.md`.
+- Licenza open source **Apache-2.0** (§15.5, decisa il 3 set 2026), `README` di fork in inglese, template `.env.example`, `docs/FORKING.md`.
 - Un **test automatico** che avvia l'app con `division.json` di una divisione fittizia ("XX") in lingua `en` e verifica che non compaiano stringhe italiane né riferimenti IT: è la rete di sicurezza contro le regressioni di forkabilità.
 
 ### 4.3 Cosa resta per forza della divisione che forka
@@ -712,7 +714,7 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 2c. **Hosting dell'hub**: chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
 3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente.
 4. ~~Editor contenuti~~ **Deciso**: pagine a blocchi con editor a lista (§9.3); il blocco `text` usa markdown con anteprima. Prerender SEO: **no per ora** (§16.11).
-5. **Licenza** del repository pubblico (MIT vs Apache-2.0).
+5. ~~Licenza del repository pubblico~~ **Decisa il 3 set 2026**: **Apache-2.0**, copyright «2026 Carmine Granato». Nota in `docs/internal/decisions/2026-09-03-licenza.md`.
 6. ~~Prefisso lingua negli URL~~ **Deciso: no per ora** (§16.11); lingua da profilo → cookie → `Accept-Language`.
 7. **Accesso ai DB esistenti** (PATS, sito Blazor) per stimare le migrazioni — `ivao-booking` non serve più (nessun import). Chi mantiene PATS oggi?
 7b. ~~Roster completo dello staff~~ **Deciso il 2 set 2026**: non esiste un endpoint IVAO per il roster; il roster dell'hub è **chi ha fatto login almeno una volta** (§16.13).

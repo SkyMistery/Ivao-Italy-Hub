@@ -62,7 +62,7 @@ ivao-division-hub/
 ├── Directory.Build.props               # nullable, warnings as errors, LangVersion, InvariantGlobalization=false
 ├── Directory.Packages.props            # central package management
 ├── IvaoHub.sln
-├── .editorconfig, .gitattributes, .gitignore, LICENSE (⚠️ §15.5), README.md (EN), docs/FORKING.md (EN), docs/UI-GUIDELINES.md (EN)
+├── .editorconfig, .gitattributes, .gitignore, LICENSE (Apache-2.0), README.md (EN), docs/FORKING.md (EN), docs/UI-GUIDELINES.md (EN)
 ├── .github/
 │   ├── workflows/build-test.yml        # restore/build/test .NET + Testcontainers, pnpm lint/typecheck/test/build, openapi check, publish artifact
 │   ├── workflows/release.yml           # su tag: zip publish/ + note
@@ -551,6 +551,5 @@ Frontend (Vitest): schemi zod dei blocchi (props di esempio validi), `SchemaForm
 
 ## 10. Ancora aperto (non blocca M0)
 
-- Licenza (§15.5): il file `LICENSE` si aggiunge con un placeholder «TBD» nel README finché Carmine non decide.
 - Dominio di staging e domande A9 (§15.2c, §15.3).
 - Tutte le voci di §15 del piano.
