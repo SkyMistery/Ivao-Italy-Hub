@@ -580,16 +580,22 @@ un contesto.
 
 ## 9. Igiene del repository
 
-- I branch `m0/f4-domain-backbone` e `m0/f5-mapcrud-links` sono **ancora sul remoto**: il repository
-  non cancella i branch al merge. Si possono togliere quando fa comodo
-  (`git push origin --delete <branch>`); niente ci dipende.
-- La strategia di merge è **squash**: su `main` c'è un commit per fase (F4 è `586a432`), non la
-  catena dei commit di lavoro. Chi cerca il dettaglio lo trova nella PR. F5 arriva sul branch con
-  due commit (`5e9c197` il codice, `6e68fd8` il numero della PR nell'handoff) che lo squash unisce.
+- **Sul remoto c'è solo `main`.** I branch delle fasi chiuse sono stati cancellati il 3 set 2026
+  (`git push origin --delete <branch>`): il repository non li cancella da se' al merge, quindi ogni
+  tanto vanno tolti a mano. Prima di cancellarne uno vale la pena guardare **la PR**, non
+  `git branch --merged`: una PR chiusa con squash lascia una punta che non è antenata di `main`, e
+  quel comando la dichiara «non fusa» pur essendoci dentro tutto.
+- La strategia di merge era **squash** fino a F4 e dalla PR #8 in poi è il **merge commit**. Il
+  criterio non è cambiato, è cambiato cosa lo soddisfa: quello che si vuole e' che `main` si legga
+  a granularità di fase, e `git log --first-parent` lo fa — una voce per fase, F5 è `03d7f96` —
+  mentre sotto resta il dettaglio, che con lo squash andava perso. Ha contato in due casi concreti:
+  la revisione di §8 arrivava con undici commit costruiti apposta perché un `git bisect` potesse
+  fermarsi su ciascuno, e il branch di F5 conteneva un merge di `main`, che schiacciato avrebbe
+  prodotto un commit unico contenente anche modifiche già presenti su `main`.
 - Se si lavora in un worktree sotto `.claude/worktrees/`, `git checkout main` lì dentro fallisce
   perché `main` è già in uso dal checkout principale: è normale, la sessione nuova parte dal
-  checkout principale. F5 è stata scritta in un worktree, e il branch è già sul remoto: dopo il
-  merge il worktree non serve più a niente.
+  checkout principale. Un worktree la cui fase è stata fusa non serve più a niente e si toglie con
+  `git worktree remove`.
 - `artifacts/` è gitignorata, quindi `artifacts/openapi/IvaoHub.Web.json` **non** è nel repository:
   lo riscrive `dotnet build`. Quello che è committato è il file che ne deriva,
   `web/src/shared/api/schema.d.ts`, marcato `linguist-generated` in `.gitattributes` e ignorato da
