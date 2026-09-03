@@ -71,7 +71,7 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
   `X-Requested-With: hub` prende 403. Rate limiting 10/min per IP su `/auth/*`.
 - Frontend: `shared/api/client.ts` (openapi-fetch, header CSRF, middleware 401), `features/me/queries.ts`,
   `AppShell` con login/logout, route `/me` e `/login-error` tradotte.
-- **146 test verdi** (119 unit + 27 di integrazione su container `mariadb:11.4.10`).
+- **166 test verdi** (139 unit + 27 di integrazione su container `mariadb:11.4.10`).
 
 ## 3. Regole già attive (non aggirarle nelle fasi successive)
 
@@ -102,6 +102,8 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
 | `Department`, `Visibility`, `PublishStatus`, `StaffLevel` definiti in F1 | Le colonne della migrazione hanno bisogno del vocabolario; le **interfacce** restano a F4. |
 | `.editorconfig` esenta `**/Migrations/*.cs`; `.gitignore` ancora le cartelle di runtime alla radice | File generati; e su Windows git confronta i pattern senza distinguere maiuscole. |
 | Le cartelle di runtime hanno nomi inglesi (`secrets/`, `diagnostics/`, `startup.txt`) | Deciso il 2 set 2026: valgono le nostre regole, non quelle di vIPI (piano v0.20). |
+| La lingua di un membro: `languageId` di IVAO se la divisione la parla, **altrimenti inglese** | Deciso da Carmine il 3 set 2026. L'inglese non e' il ripiego «della divisione» ma quello di IVAO e del progetto: una divisione italiana serve inglese a un tedesco, non italiano. La regola sta in un posto solo (`LocalePreference`), la usano il login e il selettore di lingua di F6. Si applica **solo alla creazione della riga**: la scelta esplicita dell'utente non si sovrascrive mai. Se una divisione non elenca l'inglese fra le sue lingue, si cade sul suo default, perche' deve poter rendere qualcosa. |
+| `ivao_is_staff` e `ivao_is_supervisor` sono registrati ma non decidono niente | Il nostro `is_staff` significa «ha una posizione di QUESTA divisione», ed e' quello su cui poggiano permessi e grant. Quello di IVAO include HQ e altre divisioni: tenerli separati evita di allargare il perimetro per sbaglio. Servono alla staff directory di M1. |
 | I codici dei dipartimenti sono quelli di IVAO: `HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`, `WD` | Confermati da Carmine il 3 set 2026 (piano v0.21). Non e' un suffisso meccanico: ATC operations e' `AOD` ma training e' `TD`. I **suffissi delle posizioni** non cambiano, cambia il dipartimento su cui mappano. La colonna e' passata a `varchar(4)` con la migrazione additiva `WidenDepartmentCodes`, che converte anche le righe gia' scritte; `Initial` non si tocca. |
 
 ## 5. Letture del design da confermare (F2)
@@ -118,18 +120,19 @@ allargare i permessi, mai stringerli a sorpresa.
 3. **`Permissions.Manage` e `Admin.Access` vanno solo a Director e Web.** Design §3.7 li dichiara globali;
    il piano §6.3 diceva «coordinatori per il proprio dipartimento». Con F8 (schermata grant in modalità
    globale) la lettura del design è quella coerente.
-4. ~~I nomi dei campi rating e Discord nel payload IVAO non sono verificati~~ **verificato il 3 set 2026 con
-   il login reale**: `divisionId`, `countryId`, `firstName`, `lastName`, `publicNickname` e i due rating
-   arrivano corretti; le posizioni `IT-AOA1` e `IT-T03` sono state lette come `AOD/Advisor` e `TD/Member`.
-   Resta aperto solo `discord_id`, che torna `null` pur avendo lo scope `discord`: o l'account non ha
-   Discord collegato, o il campo si chiama diversamente da `discordId`/`discordUserId`.
+4. ~~I nomi dei campi rating e Discord nel payload IVAO non sono verificati~~ **chiuso il 3 set 2026**:
+   il payload reale e' stato misurato e i suoi campi sono documentati in `IvaoUserProfileReaderTests`.
+   `IVAO non manda nessun campo Discord`, nemmeno con lo scope `discord` concesso: il tool Discord della
+   divisione (`ivao-italy/discord`) infatti fa un OAuth verso Discord in proprio e si salva l'id da se'.
+   La colonna `discord_id` resta vuota finche' l'hub non fara' lo stesso.
 
 ## 6. Debiti e cose da fare presto
 
 - ~~Il login vero non è ancora stato eseguito~~ **fatto il 3 set 2026**: giro completo fino a `/me`, riga in
   `hub_users`, posizioni lette, token IVAO cifrati a DB. Ha fatto emergere un bug reale (i cookie del giro
   uscivano `SameSite=None` senza `Secure` su http, quindi il browser li scartava): corretto, con test.
-- `discord_id` resta `null` dopo il login reale: da chiarire se è il nome del campo o l'account senza Discord.
+- Lo scope `discord` resta richiesto anche se il payload non restituisce niente (deciso da Carmine il
+  3 set 2026): serve gia' pronto per quando l'hub collegera' Discord.
 - Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota: è **F3**. `UserSyncService` legge già
   la tabella, quindi si accendono da sole appena il job la riempie.
 - **`locales/` e `config/*.example.json` non finiscono nel pacchetto pubblicato**: servirà in **F4** con

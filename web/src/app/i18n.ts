@@ -5,9 +5,12 @@ import { initReactI18next } from 'react-i18next';
 
 /**
  * The division owns its languages: `locales/{lng}/{ns}.json` at the root of the repository is the
- * only source of user facing text, read by the SPA and (from F1) by the backend as well.
- * The list of supported languages comes from `division.json` and is wired in F1; until then the
- * detector decides and anything missing falls back to the default language.
+ * only source of user facing text, read by the SPA and by the backend as well.
+ *
+ * English is the fallback, and not because this division happens to speak it: it is the language of
+ * IVAO and of this project, so it is what anyone falls back to when the division does not speak
+ * theirs. A signed in member is served the language on their account instead, which the server
+ * resolves with the same rule (`LocalePreference`).
  */
 export const DEFAULT_LOCALE = 'en';
 export const LOCALE_COOKIE = 'hub.lang';

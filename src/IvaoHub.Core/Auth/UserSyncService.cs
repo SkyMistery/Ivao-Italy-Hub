@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,12 @@ using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Core.Auth;
 
-/// <summary>What IVAO says about a person at the moment they log in.</summary>
+/// <summary>
+/// What IVAO says about a person at the moment they log in.
+/// <para><paramref name="LanguageId"/> is the language they chose on IVAO, used as their first
+/// language here. <paramref name="IvaoIsStaff"/> is what IVAO itself calls staff, which is wider
+/// than what this division calls staff and is therefore only ever recorded, never acted upon.</para>
+/// </summary>
 public sealed record IvaoUserProfile(
     int Vid,
     string FirstName,
@@ -19,6 +25,9 @@ public sealed record IvaoUserProfile(
     int? RatingAtc,
     int? RatingPilot,
     string? DiscordId,
+    string? LanguageId,
+    bool? IvaoIsStaff,
+    bool? IvaoIsSupervisor,
     IReadOnlyList<string> StaffPositions);
 
 /// <summary>The identity the hub hands to the cookie once a login has been processed.</summary>
@@ -79,10 +88,15 @@ public sealed class UserSyncService(
         user.RatingAtc = profile.RatingAtc;
         user.RatingPilot = profile.RatingPilot;
         user.DiscordId = profile.DiscordId;
+        user.IvaoIsStaff = profile.IvaoIsStaff;
+        user.IvaoIsSupervisor = profile.IvaoIsSupervisor;
+
+        // Ours means "holds a position of THIS division", which is what permissions and grants rest
+        // on. IVAO's own isStaff is wider and is kept alongside, never merged into this one.
         user.IsStaff = positions.Length > 0;
         user.LastLoginAt = clock.UtcNow;
         user.UpdatedAt = clock.UtcNow;
-        user.Locale ??= options.DefaultLocale;
+        user.Locale ??= LocalePreference.Resolve(profile.LanguageId, options);
 
         await ReplacePositionsAsync(profile.Vid, parsed, cancellationToken);
 

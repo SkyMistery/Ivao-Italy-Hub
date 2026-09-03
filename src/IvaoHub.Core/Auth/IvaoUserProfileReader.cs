@@ -9,6 +9,9 @@ namespace IvaoHub.Core.Auth;
 /// never an exception during a login. Getting a field name wrong does not throw, it silently
 /// removes an identity or a role, which is why nothing here is inferred from the profile as a whole:
 /// only the named fields are taken, and the rest of the payload is dropped.</para>
+/// <para>The field names were measured against the real payload on 3 September 2026, not guessed.
+/// The payload also carries an email address, which is deliberately not read: the hub keeps the
+/// minimum IVAO data it needs (plan section 6.4).</para>
 /// </summary>
 public static class IvaoUserProfileReader
 {
@@ -40,7 +43,17 @@ public static class IvaoUserProfileReader
             CountryId: Text(userInfo, "countryId") ?? Text(userInfo, "country"),
             RatingAtc: Rating(userInfo, "atcRating"),
             RatingPilot: Rating(userInfo, "pilotRating"),
-            DiscordId: Text(userInfo, "discordId") ?? Text(userInfo, "discordUserId"),
+            // IVAO does not expose a Discord id here. Measured against the real payload on
+            // 3 September 2026, with the "discord" scope granted: the fields are id, firstName,
+            // lastName, centerId, countryId, createdAt, divisionId, isStaff, isSupervisor,
+            // languageId, email, familyProfile, rating, gcas, hours, userStaffPositions,
+            // userStaffDetails, prCreator, ownedVirtualAirlines, groups, sub, given_name,
+            // family_name, nickname, publicNickname and profile. The column stays, empty, for
+            // whenever the hub links Discord itself the way the division's own bot does.
+            DiscordId: null,
+            LanguageId: Text(userInfo, "languageId"),
+            IvaoIsStaff: Boolean(userInfo, "isStaff"),
+            IvaoIsSupervisor: Boolean(userInfo, "isSupervisor"),
             StaffPositions: StaffPositions(userInfo));
     }
 
@@ -76,9 +89,8 @@ public static class IvaoUserProfileReader
     }
 
     /// <summary>
-    /// A rating, read either as a number or as an object with an <c>id</c>. The exact shape of the
-    /// IVAO ratings has not been measured against a real payload yet, so an unexpected shape is
-    /// worth null rather than a failed login.
+    /// A rating out of the <c>rating</c> object, read either as a number or as an object with an
+    /// <c>id</c>. An unexpected shape is worth null rather than a failed login.
     /// </summary>
     private static int? Rating(JsonElement root, string property)
     {
@@ -97,6 +109,22 @@ public static class IvaoUserProfileReader
             JsonValueKind.Number => value.TryGetInt32(out var number) ? number : null,
             JsonValueKind.Object => Number(value, "id"),
             JsonValueKind.String => int.TryParse(value.GetString(), CultureInfo.InvariantCulture, out var parsed) ? parsed : null,
+            _ => null,
+        };
+    }
+
+    private static bool? Boolean(JsonElement root, string property)
+    {
+        if (!root.TryGetProperty(property, out var element))
+        {
+            return null;
+        }
+
+        return element.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number => element.TryGetInt32(out var number) ? number != 0 : null,
             _ => null,
         };
     }
