@@ -70,7 +70,9 @@ public sealed class ArchitectureTests
         var file = Path.Combine(RepositoryRoot("src"), project, $"{project}.csproj");
         return XDocument.Load(file)
             .Descendants("ProjectReference")
-            .Select(reference => Path.GetFileNameWithoutExtension(reference.Attribute("Include")!.Value))
+            // A project file always spells its paths with backslashes, whatever runs the build.
+            .Select(reference => Path.GetFileNameWithoutExtension(
+                reference.Attribute("Include")!.Value.Replace('\\', '/')))
             .Order(StringComparer.Ordinal);
     }
 
