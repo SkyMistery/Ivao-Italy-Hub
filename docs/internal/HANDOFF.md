@@ -3,9 +3,9 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026 — fine **F3** (`IvaoApiClient` e dati `ref_`).
+**Ultimo aggiornamento:** 3 settembre 2026 — fine **F4** (spina dorsale del dominio).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.22. **Test:** 182 verdi (152 unit + 30 integrazione).
+**Piano:** v0.24. **Design:** v1.2. **Test:** 214 verdi (174 unit + 40 integrazione).
 
 | Fase | Stato |
 |---|---|
@@ -13,20 +13,22 @@
 | F1 configurazione, avvio, DB | mergiata (PR #2) |
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
-| **F4 spina dorsale del dominio** | **prossima** |
+| F4 spina dorsale del dominio | mergiata (PR #6) |
+| **F5 `MapCrud` e `links` (server)** | **prossima** |
 
-Niente PR aperte: `main` contiene tutto fino a F3 compresa. Una sessione nuova parte da
+Niente PR aperte: `main` contiene tutto fino a F4 compresa. Una sessione nuova parte da
 `git checkout main && git pull` e apre subito il branch della fase.
 
-**Come si apre F4**: prompt di §C del piano di implementazione con `<N>` → `4`. Perimetro in §D:
-`Localized<T>` lato API, interfacce trasversali (`IOwnedByDepartment`, `IVisible`, `IPublishable`,
-`IAuditable`), l'**unico** `HubSaveChangesInterceptor` (audit, guardia di scrittura per dipartimento,
-`hub_audit_log`, proiezioni in due tempi), il global query filter di visibilità,
-`BlockDocumentWalker`, `IProjectable` + `ProjectionWriter`, `HubPolicyProvider` +
-`DepartmentAuthorizationHandler` (l'unico), e i test di integrazione della spina dorsale.
-F4 non fa endpoint né frontend.
+**Come si apre F5**: prompt di §C del piano di implementazione con `<N>` → `5`. Perimetro in §D:
+`MapCrud<TEntity, …>` nelle due modalità (dipartimentale e globale), il CRUD di `links` senza codice
+a mano, `ExtraWritePolicy`, `ValidationProblem` con chiavi i18n, 409 su `row_version`, `LocaleCatalog`
+(arrivato da F4, punto 5), OpenAPI a build-time e `schema.d.ts` generato in CI.
 
-Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma F4 non le usa.
+Due cose che F5 eredita e deve usare, non riscrivere: la spina dorsale scrive audit e proiezioni da
+sola (a `MapCrud` non tocca nessuna delle due), e **`IgnoreQueryFilters` può comparire solo sotto
+`src/IvaoHub.Core/Data/Crud/`** — c'è un test di architettura che lo verifica su tutto `src/`.
+
+Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma F4 e F5 non le usano.
 
 ---
 
@@ -60,7 +62,7 @@ dotnet tool restore
 dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-project src/IvaoHub.Core
 ```
 
-## 2. Cosa c'è dopo F3
+## 2. Cosa c'è dopo F4
 
 **Configurazione e avvio (F1)**: `config/division.json` versionato + esempi; opzioni validate prima di toccare
 il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su Pomelo pinnato a MariaDB
@@ -109,6 +111,46 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
   `LIRR-CH` diventa `FirChief` appena lo snapshot esiste.
 - **182 test verdi** (152 unit + 30 di integrazione).
 
+**Spina dorsale (F4)**:
+
+- `Localized<T>` lato API: `LocalizedJsonConverterFactory` registrato una volta nelle `JsonOptions`
+  globali (oggetto `{ "en": …, "it": … }`, un campo assente torna **vuoto e mai null**), e
+  `LocalizedRules.Required(DivisionOptions)` per FluentValidation, che porta le lingue mancanti
+  nello stato del fallimento invece di dire «non valido».
+- Interfacce trasversali in `Division/DomainContracts.cs` (`IOwnedByDepartment`, `IVisible`,
+  `IPublishable`, `IAuditable`, `IHasFir`) più gli attributi `[PermissionArea]` e `[Audited]`.
+  Marcate: `Link` (tutte tranne publishable, più `IProjectable`), `ContentEntry` (tutte),
+  `UserGrant` (solo `IAuditable`), `HubUser` (solo `[Audited]`). `ContentVersion` non ha
+  dipartimento: eredita quello del contenuto.
+- `HubSaveChangesInterceptor`, **l'unico**, registrato da `AddHubDbContext` e da
+  `AddModuleDbContext<T>`: timestamp e audit di `IAuditable` (`created_*` scritti una volta sola e
+  mai riscritti), **guardia di scrittura per dipartimento** (`{Area}.Edit`, area dall'attributo o
+  dal nome del `DbSet`; spostare una riga fra dipartimenti richiede il permesso su entrambi) che
+  lancia `ForbiddenDomainException`, righe di `hub_audit_log` per `[Audited]`, e le proiezioni.
+- **Due tempi**: in `SavingChanges` si stampigliano le colonne, si applica la guardia e si raccoglie
+  cosa scrivere; in `SavedChanges`, quando le righe nuove hanno finalmente un id, si scrivono audit
+  e proiezioni con un secondo `SaveChanges` e un flag di rientranza per contesto. Se il chiamante
+  non aveva una transazione, l'interceptor ne apre una propria e la chiude lui; se ce l'aveva, resta
+  sua — in entrambi i casi la proiezione è **dentro** la transazione della scrittura.
+- Global query filter su ogni entità che è insieme `IVisible` e `IOwnedByDepartment`, costruito per
+  riflessione sul modello: `SeesEveryDepartment || Public || (membro && Members) || (staff && Staff)
+  || (Department && dipartimenti dell'utente)`, più `status == Published` per le `IPublishable`. Le
+  quattro proprietà stanno su `HubDbContext` e leggono `ICurrentUser` **quando la query parte**, non
+  quando il contesto viene costruito.
+- `BlockDocumentWalker` (puro `JsonNode`): `EnumerateBlocks`, `EnumerateSections`, `ExtractText` per
+  lingua e `ValidateEnvelope` (versione, 1 MB, id unici, profondità ≤ 3, tipi noti, chiavi che solo
+  un template può avere). Non conosce nessun blocco.
+- `IProjectable` + `ProjectionWriter`: upsert per `(source_module, source_id)`, **una riga per
+  lingua** in `cms_search_index`, una in `cms_calendar_entries`, e segnali award che non
+  sovrascrivono mai uno già gestito. Una bozza proietta `null` per convenzione dell'interceptor,
+  non per scelta dell'entità.
+- `PermissionRequirement`, `HubPolicyProvider` (ogni nome del catalogo diventa una policy; un nome
+  con il punto che non c'è nel catalogo è un'eccezione, non un divieto silenzioso) e
+  `DepartmentAuthorizationHandler`, **l'unico handler**, registrati dentro `AddIvaoAuthentication`.
+- **214 test verdi** (174 unit + 40 di integrazione). I sette test della spina dorsale di design §8
+  stanno in `DomainBackboneTests`; girano sul `DbContext` e su `IAuthorizationService` veri, con un
+  `TestCurrentUser` al posto del cookie perché F4 non ha ancora endpoint.
+
 **Provato contro l'API vera il 3 set 2026**: `client_credentials` **senza nessuno scope** basta per
 `/v2/centers` e `/v2/airports/all`. Per la divisione IT tornano 7 centri (LIBB, LIMM, LIPP, LIRO,
 LIRR, LIVK, LIZZ) e 221 aeroporti, tutti con le piste. Le fixture restano per la CI e per chi forka
@@ -129,6 +171,14 @@ senza credenziali.
   (Ci siamo cascati due volte: connection string in F1, fixture in F3.)
 - Un `ClaimsPrincipal` dell'hub si costruisce **solo** con `HubClaims.BuildIdentity`: il login vero e il
   login finto dei test producono lo stesso cookie, quindi i test provano la cosa vera.
+- Audit, timestamp e proiezioni **non si scrivono a mano**: li fa l'interceptor. Un servizio che
+  aggiunge una riga in `hub_audit_log` o in `cms_search_index` sta duplicando un meccanismo.
+- La visibilità **non si filtra in un endpoint**: c'è il global query filter. Il back office legge
+  con `IgnoreQueryFilters`, e solo da `src/IvaoHub.Core/Data/Crud/` (test di architettura).
+- Un handler di autorizzazione è **uno solo**; una policy è un permesso del catalogo. Chi ha bisogno
+  di un permesso nuovo lo aggiunge al catalogo e alla matrice, non scrive un handler.
+- Un contesto EF si registra **solo** con `AddHubDbContext`/`AddModuleDbContext<T>`: sono i due punti
+  che agganciano l'interceptor.
 
 ## 4. Scelte fatte finora che vale la pena conoscere
 
@@ -144,6 +194,12 @@ senza credenziali.
 | `RequireState = false` nel validator OIDC | ASP.NET Core non popola mai `ValidationContext.State`: con `true` il login si rompe con IDX21329 contro qualunque IdP. Lo `state` lo verifica l'handler col cookie di correlazione. |
 | Un permesso valido su tutti i dipartimenti si salva con dipartimento `null` | Il cookie viaggia a ogni richiesta: il prodotto cartesiano permessi × dipartimenti lo farebbe esplodere. Un deny su un dipartimento espande comunque l'entrata, quindi morde lo stesso. |
 | `UserGrant` non ha `granted_at`/`granted_by` separati | Sono `created_at`/`created_by` di `IAuditable`. |
+| `IProjectable.Project()` prende un `ProjectionContext` (lingue, lingua di default, walker) | Un'entità EF non si fa iniettare niente, ma per proiettarsi un contenuto ha bisogno delle lingue della divisione e del walker. Le alternative erano cablare le lingue (un hub forkabile non può) o mettere un ramo per `Content` nel `ProjectionWriter` (che smetterebbe di essere generico). Nota: `docs/internal/decisions/2026-09-03-projection-context.md`, **confermata**; design §3.6 corretta. |
+| Le righe di `hub_audit_log` si scrivono nel **secondo tempo**, non in `SavingChanges` | Prima del salvataggio una riga nuova non ha id: l'audit di una creazione punterebbe a `0`. Il prima/dopo si cattura comunque prima (il change tracker lo sa solo allora), si scrive dopo. |
+| `HubUser` è `[Audited]`, quindi **ogni login lascia una riga di audit** | È il prezzo per avere l'audit dei superadmin senza che un servizio se lo scriva da sé (debito di F2 chiuso). La riga di un update contiene **solo le colonne cambiate**, quindi un login pesa poco. Se in M1 dà fastidio, si restringe lì. |
+| `ICurrentUser` ha **due** metodi: `Has(permission, department)` e `HasAny(permission)` | Un solo metodo con il dipartimento opzionale lasciava indovinare cosa volesse dire `null` (Carmine l'ha letto come «solo se globale», che è una lettura legittima del nome). «Un dipartimento qualsiasi» serve davvero, perché è il caso di **ogni lista**: in F5 `MapCrud` controlla la policy quando una riga singola non c'è ancora e filtra per dipartimento subito dopo. Nota: `docs/internal/decisions/2026-09-03-has-and-has-any.md`, design §3.3 e §3.7 corrette. |
+| `HubDbContext` legge `ICurrentUser` **quando parte la query**, non nel costruttore | Un contesto può nascere prima che il cookie sia validato (la cache dello `stamp` ne costruisce uno): leggere subito congelerebbe una risposta anonima. Per lo stesso motivo `HttpContextCurrentUser` rilegge i claim quando cambia il `ClaimsPrincipal` della richiesta. |
+| Il flag di rientranza dell'interceptor è per contesto, non un campo di `HubDbContext` | Lo stesso interceptor scoped serve il contesto del nucleo e quello di ogni modulo: lo stato di un salvataggio non deve essere visibile all'altro. |
 | `Department`, `Visibility`, `PublishStatus`, `StaffLevel` definiti in F1 | Le colonne della migrazione hanno bisogno del vocabolario; le **interfacce** restano a F4. |
 | `.editorconfig` esenta `**/Migrations/*.cs`; `.gitignore` ancora le cartelle di runtime alla radice | File generati; e su Windows git confronta i pattern senza distinguere maiuscole. |
 | Le cartelle di runtime hanno nomi inglesi (`secrets/`, `diagnostics/`, `startup.txt`) | Deciso il 2 set 2026: valgono le nostre regole, non quelle di vIPI (piano v0.20). |
@@ -180,16 +236,44 @@ allargare i permessi, mai stringerli a sorpresa.
   3 set 2026): serve gia' pronto per quando l'hub collegera' Discord.
 - Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota: è **F3**. `UserSyncService` legge già
   la tabella, quindi si accendono da sole appena il job la riempie.
-- **`locales/` e `config/*.example.json` non finiscono nel pacchetto pubblicato**: servirà in **F4** con
-  `LocaleCatalog`.
-- L'audit dei superadmin lo scrive il servizio a mano: in **F4** lo sostituisce l'interceptor con `[Audited]`
-  e la scrittura diretta si toglie.
+- **Il pacchetto pubblicato non ha `locales/` alla radice né i `config/*.example.json`**, e manca
+  `LocaleCatalog`. Precisazione utile: le lingue **dentro `wwwroot/locales/` ci sono già** (le emette
+  il plugin `divisionLocales` di `vite.config.ts`, ed è da lì che la SPA le carica); quello che manca
+  è la copia alla radice, dove guarda `HubPaths.Locales`, cioè quella che serve al **backend**.
+  **Spostato a F5 e scritto lì**: punto 5 di `02-piano-implementazione-m0.md` §D/F5. Il primo che ne
+  ha davvero bisogno è il `ValidationProblem` di `MapCrud`.
+- ~~L'audit dei superadmin lo scrive il servizio a mano~~ **chiuso in F4**: `HubUser` è `[Audited]` e
+  `SuperadminService.WriteAuditAsync` non esiste più. Resta a mano la sola riga
+  `superadmin.set_changed`, che non è la scrittura di una riga ma un confronto fra due insiemi
+  (design §4.5).
 - `DivisionOptionsValidator` accetta le chiavi modulo note ma nessuno gliene passa: si accende in **F8**.
 - `shared/api/bootstrap.ts` e il tipo `ApiPaths` in `client.ts` sono scritti a mano: **F5** li sostituisce con
   `schema.d.ts` generato dall'OpenAPI.
-- Il test di architettura «nessun modulo referenzia un altro modulo» è **F4**; `docs/UI-GUIDELINES.md` è **F6**.
+- La documentazione è stata riallineata il 3 set 2026: `README.md` e `docs/FORKING.md` dicevano
+  ancora «phase F1» e «phase F0»; il design `01` descriveva l'interceptor e il query filter in una
+  forma che F4 ha poi cambiato; i codici di dipartimento del changelog 0.21 erano rimasti in una
+  decina di esempi. Vale la pena rifare lo stesso giro alla fine di ogni fase: costa dieci minuti e
+  l'alternativa è un documento che mente.
+- ~~Il test di architettura «nessun modulo referenzia un altro modulo»~~ **fatto in F4**
+  (`ArchitectureTests`, che legge i `.csproj` e non le assembly: un riferimento che il compilatore
+  elide perché nessuno lo usa ancora è comunque una dipendenza della build). `docs/UI-GUIDELINES.md`
+  resta **F6**.
+- Il catalogo dei permessi che `HubPolicyProvider` interroga è `CorePermissions` e basta: i permessi
+  dei moduli si aggiungono in **F8**, quando `IModule.Permissions` esiste.
+- `BlockDocumentWalker.ValidateEnvelope` accetta l'elenco dei tipi di blocco noti come parametro
+  opzionale: il registry vero (server ⇄ manifest) è **F7/F8**. Finché è `null`, il tipo non si
+  controlla.
+- Un contesto di modulo non scrive proiezioni né audit se non ha quelle tabelle nel proprio modello:
+  l'interceptor se ne accorge e non fa niente. Quando un modulo proietterà davvero (M1+), va deciso
+  se condividere quelle entità o passare dal contesto del nucleo.
 - Il chunk JS supera i 500 kB: lo split per route arriva con i layout di F6.
-- Licenza ancora «TBD» (piano §15.5).
+- ~~Licenza ancora «TBD»~~ **decisa il 3 set 2026**: Apache-2.0, copyright «2026 Carmine Granato».
+  Testo canonico completo in `LICENSE`, più un `NOTICE` alla radice. Gli header di licenza nei
+  singoli file **non** ci sono e non servono: Apache-2.0 li raccomanda, non li impone, e metterli in
+  ogni `.cs` e `.tsx` sarebbe rumore in ogni diff futuro.
+- `LICENSE` e `NOTICE` **non finiscono nel pacchetto pubblicato**, mentre Apache-2.0 §4(d) vuole che
+  il `NOTICE` viaggi con ogni ridistribuzione. Sta in **F5**, nello stesso target MSBuild che porta
+  `locales/` e i `config/*.example.json`.
 - `Ivao:ApiScopes` e' vuoto: **misurato**, i due endpoint di riferimento non chiedono scope. Se in
   M2+ servira' `tracker` (chi e' online), si aggiunge li' senza toccare codice.
 - Le fixture IVAO coprono 3 centri e 3 aeroporti: bastano a provare upsert e riconoscimento FIR, non

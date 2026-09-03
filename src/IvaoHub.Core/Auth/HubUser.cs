@@ -1,9 +1,12 @@
+using IvaoHub.Core.Division;
+
 namespace IvaoHub.Core.Auth;
 
 /// <summary>
 /// A person who has logged in at least once: there is no IVAO endpoint that lists the staff of a
 /// division, so the roster of the hub is exactly this table (plan section 16.13).
 /// </summary>
+[Audited]
 public sealed class HubUser
 {
     /// <summary>IVAO VID. Natural key, never a surrogate one.</summary>

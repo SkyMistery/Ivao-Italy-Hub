@@ -8,7 +8,8 @@ namespace IvaoHub.Core.Content;
 /// It is the guinea pig of M0 (plan section 16.15): localized, owned by a department, visible to
 /// somebody, audited, exposed by the generic CRUD engine and projected into the search index.
 /// </summary>
-public sealed class Link
+[Audited]
+public sealed class Link : IOwnedByDepartment, IVisible, IAuditable, IProjectable
 {
     public long Id { get; set; }
 
@@ -38,4 +39,30 @@ public sealed class Link
     public int UpdatedBy { get; set; }
 
     public DateTime RowVersion { get; set; }
+
+    string IProjectable.SourceModule => ProjectionSource.Core;
+
+    string IProjectable.SourceId => $"link:{Id}";
+
+    /// <summary>
+    /// A link is findable by its title and its description, and points at the site it links to:
+    /// there is no page of the hub to send the reader to.
+    /// </summary>
+    ProjectionSnapshot? IProjectable.Project(ProjectionContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (!IsActive)
+        {
+            return null;
+        }
+
+        return ProjectionSnapshot.ForSearch(new SearchProjection(
+            Kind: "link",
+            Url: Url,
+            OwnerDepartment: OwnerDepartment,
+            Visibility: Visibility,
+            Title: Title,
+            Text: Description ?? Localized<string>.Empty));
+    }
 }

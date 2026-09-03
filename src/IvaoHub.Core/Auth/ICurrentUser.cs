@@ -43,71 +43,94 @@ public interface ICurrentUser
     IReadOnlyList<EffectivePermission> Permissions { get; }
 
     /// <summary>
-    /// True when the user holds the permission, optionally on that department. A super
-    /// administrator always holds it: that is the whole point of the role.
+    /// True when the user holds the permission on that department. A permission held everywhere
+    /// (stored with no department) counts, and a super administrator always holds it: that is the
+    /// whole point of the role.
     /// </summary>
-    bool Has(string permission, Department? department = null);
+    bool Has(string permission, Department department);
+
+    /// <summary>
+    /// True when the user holds the permission somewhere: on one department, on all of them, or
+    /// as a global permission. It answers "may they do this at all", which is the only thing that
+    /// can be asked before a row is in hand — opening a list, for instance (design M0 section 3.7).
+    /// The department is then checked row by row.
+    /// </summary>
+    bool HasAny(string permission);
 }
 
 /// <summary>Reads the identity out of the application cookie. No database call per request.</summary>
 public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptions<DivisionOptions> division)
     : ICurrentUser
 {
-    private readonly Lazy<Snapshot> _snapshot = new(() => Read(accessor, division.Value));
+    private ClaimsPrincipal? _readFor;
+    private Snapshot? _snapshot;
 
-    public bool IsAuthenticated => _snapshot.Value.IsAuthenticated;
+    /// <summary>
+    /// Read from the claims of the request, and read again when the principal changes: the cookie
+    /// middleware sets it in the middle of the request, and anything resolved before that (the
+    /// security stamp check builds a context, for one) must not freeze an anonymous answer.
+    /// </summary>
+    private Snapshot Current
+    {
+        get
+        {
+            var principal = accessor.HttpContext?.User;
+            if (_snapshot is null || !ReferenceEquals(principal, _readFor))
+            {
+                _snapshot = Read(principal, division.Value);
+                _readFor = principal;
+            }
 
-    public int Vid => _snapshot.Value.Vid;
+            return _snapshot;
+        }
+    }
 
-    public string FirstName => _snapshot.Value.FirstName;
+    public bool IsAuthenticated => Current.IsAuthenticated;
 
-    public string LastName => _snapshot.Value.LastName;
+    public int Vid => Current.Vid;
 
-    public bool IsSuperadmin => _snapshot.Value.IsSuperadmin;
+    public string FirstName => Current.FirstName;
 
-    public bool IsStaff => _snapshot.Value.IsStaff;
+    public string LastName => Current.LastName;
 
-    public string Locale => _snapshot.Value.Locale;
+    public bool IsSuperadmin => Current.IsSuperadmin;
 
-    public IReadOnlySet<Department> Departments => _snapshot.Value.Departments;
+    public bool IsStaff => Current.IsStaff;
 
-    public bool HasAllDepartments => _snapshot.Value.HasAllDepartments;
+    public string Locale => Current.Locale;
 
-    public IReadOnlySet<string> Firs => _snapshot.Value.Firs;
+    public IReadOnlySet<Department> Departments => Current.Departments;
 
-    public IReadOnlyList<string> Positions => _snapshot.Value.Positions;
+    public bool HasAllDepartments => Current.HasAllDepartments;
 
-    public IReadOnlyList<EffectivePermission> Permissions => _snapshot.Value.Permissions;
+    public IReadOnlySet<string> Firs => Current.Firs;
 
-    public bool Has(string permission, Department? department = null)
+    public IReadOnlyList<string> Positions => Current.Positions;
+
+    public IReadOnlyList<EffectivePermission> Permissions => Current.Permissions;
+
+    public bool Has(string permission, Department department)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
 
-        if (IsSuperadmin)
-        {
-            return true;
-        }
-
-        foreach (var held in Permissions)
-        {
-            if (!string.Equals(held.Name, permission, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            // A permission with no department is held everywhere.
-            if (held.Department is null || held.Department == department)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        // A permission with no department is held everywhere: that is how a director and the web
+        // team travel with a handful of claims instead of one per department.
+        return IsSuperadmin
+            || Permissions.Any(held =>
+                string.Equals(held.Name, permission, StringComparison.Ordinal)
+                && (held.Department is null || held.Department == department));
     }
 
-    private static Snapshot Read(IHttpContextAccessor accessor, DivisionOptions division)
+    public bool HasAny(string permission)
     {
-        var principal = accessor.HttpContext?.User;
+        ArgumentException.ThrowIfNullOrWhiteSpace(permission);
+
+        return IsSuperadmin
+            || Permissions.Any(held => string.Equals(held.Name, permission, StringComparison.Ordinal));
+    }
+
+    private static Snapshot Read(ClaimsPrincipal? principal, DivisionOptions division)
+    {
         if (principal?.Identity?.IsAuthenticated != true)
         {
             return Snapshot.Anonymous(division.DefaultLocale);

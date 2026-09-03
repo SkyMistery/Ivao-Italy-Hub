@@ -16,7 +16,10 @@ namespace IvaoHub.IntegrationTests;
 /// the way a production deployment may supply it through <c>Ivao__*</c> environment variables, so
 /// the test never needs the credentials file that is not in the repository.
 /// </summary>
-public sealed class HubWebApplicationFactory(string connectionString, bool useIvaoFixtures = false)
+public sealed class HubWebApplicationFactory(
+    string connectionString,
+    bool useIvaoFixtures = false,
+    TestCurrentUser? currentUser = null)
     : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -41,6 +44,13 @@ public sealed class HubWebApplicationFactory(string connectionString, bool useIv
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<IStartupFilter, TestSignInStartupFilter>();
+
+            // F4 has no endpoints, so a test says who is asking instead of signing a cookie in.
+            // The tests of the identity itself leave this alone and use the real implementation.
+            if (currentUser is not null)
+            {
+                services.AddScoped<ICurrentUser>(_ => currentUser);
+            }
 
             // The endpoints of the identity provider are pinned instead of discovered: a test must
             // not depend on IVAO being reachable. What is still exercised is our own override of

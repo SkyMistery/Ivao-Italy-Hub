@@ -21,7 +21,8 @@ public enum GrantKind
 /// Who granted it and when are the audit columns: <c>created_by</c> and <c>created_at</c>, not a
 /// second pair of columns saying the same thing.
 /// </summary>
-public sealed class UserGrant
+[Audited]
+public sealed class UserGrant : IAuditable
 {
     public long Id { get; set; }
 
