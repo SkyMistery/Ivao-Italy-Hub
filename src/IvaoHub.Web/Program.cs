@@ -73,12 +73,10 @@ builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
 builder.Services.AddIvaoAuthentication();
 
-// The FIRs and airports of the division, and the job that keeps their snapshot fresh. The schedule
-// needs the time zone before the options are resolvable, so the file is read once here.
-builder.Services.AddIvaoIntegration(
-    builder.Configuration,
-    builder.Environment,
-    divisionConfiguration.Get<DivisionOptions>() ?? new DivisionOptions());
+// The FIRs and airports of the division, and the job that keeps their snapshot fresh. It reads
+// nothing at this point: the time zone of the schedule and the choice between the real client and
+// the fixtures are both resolved when the objects are built.
+builder.Services.AddIvaoIntegration();
 
 // The login is the one place an outsider can make the server do work before proving anything.
 builder.Services.AddRateLimiter(options =>
@@ -92,27 +90,66 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
         }));
 });
+
+// Strict transport security: written out rather than inherited, like the cookie flags.
+// Thirty days and not a year, and without includeSubDomains: this hub is one host under a domain
+// it shares with the rest of the division, and an HSTS policy is only as reversible as its longest
+// max-age. Preload is deliberately absent for the same reason.
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(30);
+    options.IncludeSubDomains = false;
+    options.Preload = false;
+});
+
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 builder.Services.AddSingleton(BuildInfo.FromAssembly(typeof(Program).Assembly));
 
 if (builder.Environment.IsProduction())
 {
     HubConfiguration.RequireAllowedHosts(builder.Configuration);
+}
 
-    // Cloudflare and nginx sit in front, and their addresses are not known in advance.
+// Cloudflare and nginx sit in front, so the address of the caller arrives in a header. Which
+// senders of that header are believed is declared, never "anybody": the login rate limiter and the
+// address recorded in hub_audit_log both rest on the answer. In production the list is required.
+var trustedProxies = HubConfiguration.TrustedProxies(
+    builder.Configuration,
+    required: builder.Environment.IsProduction());
+
+if (trustedProxies.Count > 0)
+{
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
+
+        foreach (var network in trustedProxies)
+        {
+            options.KnownIPNetworks.Add(network);
+        }
     });
 }
 
 var app = builder.Build();
 
-if (app.Environment.IsProduction())
+if (trustedProxies.Count > 0)
 {
     app.UseForwardedHeaders();
+}
+
+// After the forwarded headers, never before: both of these judge the request by its scheme, and
+// until the line above has run the scheme is the one of the hop from the proxy, not the one the
+// browser used.
+if (app.Environment.IsProduction())
+{
+    app.UseHsts();
+
+    if (HubConfiguration.RedirectToHttps(app.Configuration))
+    {
+        app.UseHttpsRedirection();
+    }
 }
 
 app.UseCorrelationId();
