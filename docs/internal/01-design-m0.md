@@ -4,7 +4,8 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 1.5 — 3 settembre 2026 (F6: §3.7 `HubPolicies.SignedIn` è l'unica policy che non è un permesso; §3.10 il bootstrap dichiara `hasAllDepartments`; §7.5 `DataList` prende i search params invece della route, `SchemaForm` conosce `hidden`; §7.1 `MarkdownContent` usa `react-markdown`)
+**Versione:** 1.6 — 3 settembre 2026 (giro di riallineamento di fine F6, §A.6 del piano di implementazione: §7.3 la ricetta 2 dichiara i suoi search params una volta sola e guarda il dipartimento prima di caricare)
+**Versione 1.5** — 3 settembre 2026 (F6: §3.7 `HubPolicies.SignedIn` è l'unica policy che non è un permesso; §3.10 il bootstrap dichiara `hasAllDepartments`; §7.5 `DataList` prende i search params invece della route, `SchemaForm` conosce `hidden`; §7.1 `MarkdownContent` usa `react-markdown`)
 **Versione 1.4** — 3 settembre 2026 (confermate le due note di F5: §7.4 e §9 punto 12 — l'OpenAPI a build-time **esegue** l'entry point, e ciò che conta è che lo faccia senza database e senza client OAuth; §3.1 — una lingua assente è vuota, un campo `Localized<T>?` non valorizzato è `null`)
 **Versione 1.3** — 3 settembre 2026 (revisione senior di fine F4: §3.3 `HasAllDepartments` è un claim, §3.4 il secondo tempo dell'interceptor gestisce il proprio fallimento, §3.6 le proiezioni sotto il query filter e lette in blocco, §2.3 proxy fidati obbligatori in produzione più HSTS e redirezione HTTPS)
 **Versione 1.2** — 3 settembre 2026 (allineato a ciò che F4 ha davvero costruito: §3.3, §3.4, §3.5, §3.6, §3.7, §5.3, più i codici di dipartimento di piano 0.21 rimasti negli esempi)
@@ -510,6 +511,8 @@ export const Route = createFileRoute('/_public/$slug')({
   notFoundComponent: NotFound, component: PublicContentPage,
 });
 ```
+
+Due precisazioni alla ricetta 2, misurate scrivendola davvero (F6). **`listSearch` non si dichiara nella route**: sta una volta sola in `shared/list/search.ts` come `listSearchSchema`, perché quei cinque parametri sono `CrudListRequest` e non una convenzione — un controllo a compile-time nello stesso file li confronta con `operations['LinksList']['parameters']['query']`, così un parametro che il server rinomina smette di compilare invece di smettere di funzionare in silenzio. E la route porta anche un **`beforeLoad` che rifiuta un dipartimento che il membro non raggiunge**, mandandolo a `/forbidden`: senza, il server narrebbe la lista a zero righe (è ciò che `TryNarrowToDepartments` fa) e un coordinatore che sbaglia a digitare l'indirizzo guarderebbe una tabella vuota chiedendosi dove sono finiti i link.
 
 Root context: `{ queryClient, bootstrap }`; `bootstrap` da `GET /api/me` con `staleTime: 60s`, invalidato dopo login/logout e dopo ogni mutazione su grant/moduli. Il router usa `basepath` `/` e il generatore (`@tanstack/router-plugin/vite`) scrive `routeTree.gen.ts` (in git, come raccomandato).
 
