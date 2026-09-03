@@ -253,11 +253,11 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // Take away every other one first, so that the one left really is the last.
         foreach (var vid in all.Where(vid => vid != last))
         {
-            await superadmins.RemoveAsync(vid, byVid: last, token);
+            await superadmins.RemoveAsync(vid, token);
         }
 
         var refused = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => superadmins.RemoveAsync(last, byVid: last, token));
+            () => superadmins.RemoveAsync(last, token));
 
         Assert.Contains("last super administrator", refused.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(last, await superadmins.ListAsync(token));

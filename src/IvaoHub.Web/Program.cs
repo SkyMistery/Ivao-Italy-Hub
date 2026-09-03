@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
 using IvaoHub.Web.Endpoints;
@@ -61,6 +62,11 @@ Directory.CreateDirectory(paths.DataProtectionKeys);
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(paths.DataProtectionKeys))
     .SetApplicationName("IvaoHub");
+
+// A localized field crosses the API as { "en": …, "it": … }: registered once, so no DTO has to
+// remember it and every endpoint speaks the same shape.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new LocalizedJsonConverterFactory()));
 
 builder.Services.AddHubDbContext();
 builder.Services.AddSingleton<IClock, SystemClock>();

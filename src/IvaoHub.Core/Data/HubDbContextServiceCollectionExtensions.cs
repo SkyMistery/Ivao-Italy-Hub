@@ -1,12 +1,17 @@
+using IvaoHub.Core.Content;
+using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Core.Data;
 
 /// <summary>
 /// The one place that builds a context on MariaDB. Every module context is registered through the
-/// sibling method, so nothing that is added here (the interceptor, in F4) can be forgotten.
+/// sibling method, so the save changes interceptor cannot be forgotten by a module: audit, write
+/// guard and projections are not something each context opts into.
 /// </summary>
 public static class HubDbContextServiceCollectionExtensions
 {
@@ -15,9 +20,33 @@ public static class HubDbContextServiceCollectionExtensions
     public static IServiceCollection AddHubDbContext(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddHubDomainServices();
         services.AddDbContext<HubDbContext>((provider, options) =>
-            Configure(options, ResolveConnectionString(provider), "__EFMigrationsHistory"));
+            Configure(options, provider, "__EFMigrationsHistory"));
         return services;
+    }
+
+    /// <summary>
+    /// What the interceptor needs in order to do its job: the writer of the projections, and the
+    /// languages of the division an entity has to project itself into.
+    /// </summary>
+    private static void AddHubDomainServices(this IServiceCollection services)
+    {
+        services.TryAddSingleton<BlockDocumentWalker>(provider =>
+            new BlockDocumentWalker(provider.GetRequiredService<IOptions<DivisionOptions>>().Value.Locales));
+
+        services.TryAddSingleton(provider =>
+        {
+            var division = provider.GetRequiredService<IOptions<DivisionOptions>>().Value;
+            return new ProjectionContext(
+                division.Locales,
+                division.DefaultLocale,
+                provider.GetRequiredService<BlockDocumentWalker>());
+        });
+
+        services.TryAddScoped<ProjectionWriter>();
+        services.TryAddScoped<HubSaveChangesInterceptor>();
     }
 
     /// <summary>
@@ -30,9 +59,10 @@ public static class HubDbContextServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(moduleKey);
 
+        services.AddHubDomainServices();
         services.AddDbContext<TContext>((provider, options) => Configure(
             options,
-            ResolveConnectionString(provider),
+            provider,
             $"__EFMigrationsHistory_{moduleKey}"));
         return services;
     }
@@ -55,12 +85,13 @@ public static class HubDbContextServiceCollectionExtensions
         return connectionString;
     }
 
-    private static void Configure(DbContextOptionsBuilder options, string connectionString, string historyTable)
+    private static void Configure(DbContextOptionsBuilder options, IServiceProvider provider, string historyTable)
     {
         options.UseMySql(
-            connectionString,
+            ResolveConnectionString(provider),
             new MariaDbServerVersion(HubDbContext.ServerVersion),
             mySql => mySql.MigrationsHistoryTable(historyTable));
         options.UseSnakeCaseNamingConvention();
+        options.AddInterceptors(provider.GetRequiredService<HubSaveChangesInterceptor>());
     }
 }

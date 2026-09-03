@@ -43,7 +43,9 @@ public interface ICurrentUser
     IReadOnlyList<EffectivePermission> Permissions { get; }
 
     /// <summary>
-    /// True when the user holds the permission, optionally on that department. A super
+    /// True when the user holds the permission on that department. Without a department the
+    /// question is "may they do this at all", so holding it on any department is enough
+    /// (design M0 section 3.7); the department is what the check on a row is for. A super
     /// administrator always holds it: that is the whole point of the role.
     /// </summary>
     bool Has(string permission, Department? department = null);
@@ -53,31 +55,52 @@ public interface ICurrentUser
 public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptions<DivisionOptions> division)
     : ICurrentUser
 {
-    private readonly Lazy<Snapshot> _snapshot = new(() => Read(accessor, division.Value));
+    private ClaimsPrincipal? _readFor;
+    private Snapshot? _snapshot;
 
-    public bool IsAuthenticated => _snapshot.Value.IsAuthenticated;
+    /// <summary>
+    /// Read from the claims of the request, and read again when the principal changes: the cookie
+    /// middleware sets it in the middle of the request, and anything resolved before that (the
+    /// security stamp check builds a context, for one) must not freeze an anonymous answer.
+    /// </summary>
+    private Snapshot Current
+    {
+        get
+        {
+            var principal = accessor.HttpContext?.User;
+            if (_snapshot is null || !ReferenceEquals(principal, _readFor))
+            {
+                _snapshot = Read(principal, division.Value);
+                _readFor = principal;
+            }
 
-    public int Vid => _snapshot.Value.Vid;
+            return _snapshot;
+        }
+    }
 
-    public string FirstName => _snapshot.Value.FirstName;
+    public bool IsAuthenticated => Current.IsAuthenticated;
 
-    public string LastName => _snapshot.Value.LastName;
+    public int Vid => Current.Vid;
 
-    public bool IsSuperadmin => _snapshot.Value.IsSuperadmin;
+    public string FirstName => Current.FirstName;
 
-    public bool IsStaff => _snapshot.Value.IsStaff;
+    public string LastName => Current.LastName;
 
-    public string Locale => _snapshot.Value.Locale;
+    public bool IsSuperadmin => Current.IsSuperadmin;
 
-    public IReadOnlySet<Department> Departments => _snapshot.Value.Departments;
+    public bool IsStaff => Current.IsStaff;
 
-    public bool HasAllDepartments => _snapshot.Value.HasAllDepartments;
+    public string Locale => Current.Locale;
 
-    public IReadOnlySet<string> Firs => _snapshot.Value.Firs;
+    public IReadOnlySet<Department> Departments => Current.Departments;
 
-    public IReadOnlyList<string> Positions => _snapshot.Value.Positions;
+    public bool HasAllDepartments => Current.HasAllDepartments;
 
-    public IReadOnlyList<EffectivePermission> Permissions => _snapshot.Value.Permissions;
+    public IReadOnlySet<string> Firs => Current.Firs;
+
+    public IReadOnlyList<string> Positions => Current.Positions;
+
+    public IReadOnlyList<EffectivePermission> Permissions => Current.Permissions;
 
     public bool Has(string permission, Department? department = null)
     {
@@ -95,8 +118,9 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
                 continue;
             }
 
-            // A permission with no department is held everywhere.
-            if (held.Department is null || held.Department == department)
+            // A permission with no department is held everywhere; and when no department was
+            // asked about, holding it anywhere answers the question.
+            if (department is null || held.Department is null || held.Department == department)
             {
                 return true;
             }
@@ -105,9 +129,8 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
         return false;
     }
 
-    private static Snapshot Read(IHttpContextAccessor accessor, DivisionOptions division)
+    private static Snapshot Read(ClaimsPrincipal? principal, DivisionOptions division)
     {
-        var principal = accessor.HttpContext?.User;
         if (principal?.Identity?.IsAuthenticated != true)
         {
             return Snapshot.Anonymous(division.DefaultLocale);

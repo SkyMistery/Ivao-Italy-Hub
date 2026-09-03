@@ -1,11 +1,14 @@
 using System.Globalization;
 using System.Security.Claims;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Division;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -55,8 +58,20 @@ public static class IvaoAuthenticationExtensions
         services.AddOptions<OpenIdConnectOptions>(HubClaims.IvaoScheme)
             .Configure<IOptions<IvaoOAuthOptions>>((options, ivao) => ConfigureOpenIdConnect(options, ivao.Value));
 
-        services.AddAuthorization();
+        AddHubAuthorization(services);
         return services;
+    }
+
+    /// <summary>
+    /// Every permission of the catalogue becomes a policy, and one handler answers all of them.
+    /// It is registered here, next to the authentication, so that a host cannot come up with the
+    /// identity in place and the authorization missing.
+    /// </summary>
+    private static void AddHubAuthorization(IServiceCollection services)
+    {
+        services.AddAuthorization();
+        services.Replace(ServiceDescriptor.Singleton<IAuthorizationPolicyProvider, HubPolicyProvider>());
+        services.AddScoped<IAuthorizationHandler, DepartmentAuthorizationHandler>();
     }
 
     private static void ConfigureCookie(CookieAuthenticationOptions options)

@@ -17,7 +17,9 @@ public enum ContentKind
 /// from. The body is an opaque tree of sections and blocks; the backend only ever checks the
 /// envelope and its size, never the properties of a block (plan section 16.5).
 /// </summary>
-public sealed class ContentEntry
+[Audited]
+[PermissionArea("Content")]
+public sealed class ContentEntry : IOwnedByDepartment, IVisible, IPublishable, IAuditable, IProjectable
 {
     public long Id { get; set; }
 
@@ -76,4 +78,45 @@ public sealed class ContentEntry
     public int UpdatedBy { get; set; }
 
     public DateTime RowVersion { get; set; }
+
+    /// <summary>Where the public site shows this row. One place decides, so the index agrees with it.</summary>
+    public string Url => Kind switch
+    {
+        ContentKind.News => $"/news/{Slug}",
+        ContentKind.Document => $"/documents/{Slug}",
+        _ => $"/{Slug}",
+    };
+
+    string IProjectable.SourceModule => ProjectionSource.Core;
+
+    string IProjectable.SourceId => $"content:{Id}";
+
+    /// <summary>
+    /// The text of a page is whatever its blocks say, in each language, extracted by the one
+    /// walker that knows the envelope. A template is a tool of the staff and is never findable;
+    /// a draft is stopped earlier, by the interceptor, for every publishable entity at once.
+    /// </summary>
+    ProjectionSnapshot? IProjectable.Project(ProjectionContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (IsTemplate)
+        {
+            return null;
+        }
+
+        var body = JsonNode.Parse(BodyJson);
+        var text = context.Locales.ToDictionary(
+            locale => locale,
+            locale => context.Blocks.ExtractText(body, locale),
+            StringComparer.OrdinalIgnoreCase);
+
+        return ProjectionSnapshot.ForSearch(new SearchProjection(
+            Kind: Kind.ToString().ToLowerInvariant(),
+            Url: Url,
+            OwnerDepartment: OwnerDepartment,
+            Visibility: Visibility,
+            Title: Title,
+            Text: new Localized<string>(text)));
+    }
 }

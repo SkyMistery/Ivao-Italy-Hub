@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -82,7 +81,7 @@ public sealed class SuperadminService(
             .ToListAsync(cancellationToken);
 
     /// <summary>Adds one. The caller must already be a super administrator; the endpoint enforces it.</summary>
-    public async Task AddAsync(int vid, int byVid, CancellationToken cancellationToken = default)
+    public async Task AddAsync(int vid, CancellationToken cancellationToken = default)
     {
         var user = await database.Users.FirstOrDefaultAsync(row => row.Vid == vid, cancellationToken)
             ?? throw new InvalidOperationException(
@@ -99,7 +98,9 @@ public sealed class SuperadminService(
         user.UpdatedAt = clock.UtcNow;
         stamps.Invalidate(vid);
 
-        await WriteAuditAsync("superadmin.added", vid, byVid, cancellationToken);
+        // The audit row is written by the interceptor, because HubUser is marked [Audited]: what
+        // changed, who changed it and whether they acted as a super administrator all come from
+        // the one place that already knows.
         await database.SaveChangesAsync(cancellationToken);
         await ReportChangesAsync(cancellationToken);
     }
@@ -109,7 +110,7 @@ public sealed class SuperadminService(
     /// recovered by editing <c>division.json</c> and restarting, which is not something to walk into
     /// by accident.
     /// </summary>
-    public async Task RemoveAsync(int vid, int byVid, CancellationToken cancellationToken = default)
+    public async Task RemoveAsync(int vid, CancellationToken cancellationToken = default)
     {
         var user = await database.Users.FirstOrDefaultAsync(row => row.Vid == vid && row.IsSuperadmin, cancellationToken);
         if (user is null)
@@ -130,7 +131,6 @@ public sealed class SuperadminService(
         user.UpdatedAt = clock.UtcNow;
         stamps.Invalidate(vid);
 
-        await WriteAuditAsync("superadmin.removed", vid, byVid, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
         await ReportChangesAsync(cancellationToken);
     }
@@ -183,23 +183,6 @@ public sealed class SuperadminService(
         }
 
         await database.SaveChangesAsync(cancellationToken);
-    }
-
-    // In F2 the service writes its own audit row; F4 replaces this with the save changes
-    // interceptor and the [Audited] attribute, and this method goes away.
-    private async Task WriteAuditAsync(string action, int vid, int byVid, CancellationToken cancellationToken)
-    {
-        database.AuditLog.Add(new AuditLogEntry
-        {
-            Vid = byVid,
-            Action = action,
-            Entity = AuditEntity,
-            EntityId = vid.ToString(CultureInfo.InvariantCulture),
-            IsSuperadmin = true,
-            At = clock.UtcNow,
-        });
-
-        await Task.CompletedTask;
     }
 
     private static string Hash(IEnumerable<int> vids)
