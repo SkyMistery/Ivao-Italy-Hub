@@ -5,7 +5,7 @@
 
 **Ultimo aggiornamento:** 3 settembre 2026 — fine **F4** (spina dorsale del dominio).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.23. **Design:** v1.1. **Test:** 214 verdi (174 unit + 40 integrazione).
+**Piano:** v0.23. **Design:** v1.2. **Test:** 214 verdi (174 unit + 40 integrazione).
 
 | Fase | Stato |
 |---|---|
@@ -233,10 +233,12 @@ allargare i permessi, mai stringerli a sorpresa.
   3 set 2026): serve gia' pronto per quando l'hub collegera' Discord.
 - Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota: è **F3**. `UserSyncService` legge già
   la tabella, quindi si accendono da sole appena il job la riempie.
-- **`locales/` e `config/*.example.json` non finiscono nel pacchetto pubblicato**: serve `LocaleCatalog`.
-  **Spostato a F5 e scritto lì**: è il punto 5 di `02-piano-implementazione-m0.md` §D/F5, insieme al
-  target MSBuild che li impacchetta. Il primo che ne ha davvero bisogno è il `ValidationProblem` di
-  `MapCrud`.
+- **Il pacchetto pubblicato non ha `locales/` alla radice né i `config/*.example.json`**, e manca
+  `LocaleCatalog`. Precisazione utile: le lingue **dentro `wwwroot/locales/` ci sono già** (le emette
+  il plugin `divisionLocales` di `vite.config.ts`, ed è da lì che la SPA le carica); quello che manca
+  è la copia alla radice, dove guarda `HubPaths.Locales`, cioè quella che serve al **backend**.
+  **Spostato a F5 e scritto lì**: punto 5 di `02-piano-implementazione-m0.md` §D/F5. Il primo che ne
+  ha davvero bisogno è il `ValidationProblem` di `MapCrud`.
 - ~~L'audit dei superadmin lo scrive il servizio a mano~~ **chiuso in F4**: `HubUser` è `[Audited]` e
   `SuperadminService.WriteAuditAsync` non esiste più. Resta a mano la sola riga
   `superadmin.set_changed`, che non è la scrittura di una riga ma un confronto fra due insiemi
@@ -244,6 +246,11 @@ allargare i permessi, mai stringerli a sorpresa.
 - `DivisionOptionsValidator` accetta le chiavi modulo note ma nessuno gliene passa: si accende in **F8**.
 - `shared/api/bootstrap.ts` e il tipo `ApiPaths` in `client.ts` sono scritti a mano: **F5** li sostituisce con
   `schema.d.ts` generato dall'OpenAPI.
+- La documentazione è stata riallineata il 3 set 2026: `README.md` e `docs/FORKING.md` dicevano
+  ancora «phase F1» e «phase F0»; il design `01` descriveva l'interceptor e il query filter in una
+  forma che F4 ha poi cambiato; i codici di dipartimento del changelog 0.21 erano rimasti in una
+  decina di esempi. Vale la pena rifare lo stesso giro alla fine di ogni fase: costa dieci minuti e
+  l'alternativa è un documento che mente.
 - ~~Il test di architettura «nessun modulo referenzia un altro modulo»~~ **fatto in F4**
   (`ArchitectureTests`, che legge i `.csproj` e non le assembly: un riferimento che il compilatore
   elide perché nessuno lo usa ancora è comunque una dipendenza della build). `docs/UI-GUIDELINES.md`

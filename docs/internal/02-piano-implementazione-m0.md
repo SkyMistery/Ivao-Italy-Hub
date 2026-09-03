@@ -152,8 +152,8 @@ Task:
 2. DTO `LinkListDto`, `LinkDetailDto`, `LinkWriteDto` + mapper Mapperly + `LinkWriteDtoValidator` (titolo `LocalizedRules.Required`, `Url` assoluta http/https, `Sort ≥ 0`).
 3. `app.MapCrud<Link, …>("/api/links", o => { o.PermissionArea = "Links"; … })` in `Core/Content/LinksEndpoints.cs` (estensione chiamata da `Program`), `AddOpenApi` con transformer `x-localized` + Scalar in dev, `ProblemDetails` globali (`AddProblemDetails` + `IExceptionHandler` per `ForbiddenDomainException` → 403, `DbUpdateConcurrencyException` → 409).
 4. OpenAPI a build-time con `Microsoft.Extensions.ApiDescription.Server` → `artifacts/openapi/IvaoHub.Web.json`; `pnpm gen:api` (`openapi-typescript` su quel file) → `web/src/shared/api/schema.d.ts`; step CI «build, genera, `git diff --exit-code`».
-5. `LocaleCatalog` (design §1 e §7.6): legge `locales/{lang}/*.json` e li rende al backend, che ne ha bisogno per i `ProblemDetails` di `MapCrud` (le chiavi `errors.*` che il punto 1 produce) e, in M1, per le mail. **Spostato qui da F4**: il perimetro di F4 non lo elencava e prima di `MapCrud` nessuno aveva un messaggio da tradurre lato server. Con lui vanno nel pacchetto pubblicato anche `locales/` e `config/*.example.json`, che oggi non ci finiscono (target MSBuild accanto a `PublishSpa`).
-6. Test integrazione `MapCrudLinksEndToEnd` (design §8) con utenti finti: superadmin, staff EV coordinator, staff FO advisor, membro, anonimo.
+5. `LocaleCatalog` (design §1 e §7.6): legge `locales/{lang}/*.json` e li rende al backend, che ne ha bisogno per i `ProblemDetails` di `MapCrud` (le chiavi `errors.*` che il punto 1 produce) e, in M1, per le mail. **Spostato qui da F4**: il perimetro di F4 non lo elencava e prima di `MapCrud` nessuno aveva un messaggio da tradurre lato server. Con lui va sistemato anche il pacchetto pubblicato: le lingue **ci sono già dentro `wwwroot/locales/`** (le emette il plugin `divisionLocales` di Vite, ed è da lì che la SPA le carica), ma **non** alla radice, che è dove guarda `HubPaths.Locales`; e i `config/*.example.json` non ci sono affatto, quindi chi scompatta il pacchetto non trova il file da copiare. Un target MSBuild accanto a `PublishSpa` risolve entrambe.
+6. Test integrazione `MapCrudLinksEndToEnd` (design §8) con utenti finti: superadmin, staff ED coordinator, staff FOD advisor, membro, anonimo.
 
 Accettazione: `curl` autenticato (cookie di test) fa list/create/update/delete su `/api/links`; `schema.d.ts` generato e committato; `locales/` e gli `.example.json` presenti in `artifacts/publish`; test verdi.
 
@@ -172,7 +172,7 @@ Task:
 8. `docs/UI-GUIDELINES.md` (EN, design §7.1); regole ESLint attive dalla F0 verificate.
 9. `pnpm i18n:check` esteso: chiavi statiche usate nel codice esistono in tutte le lingue.
 
-Accettazione: staff EV vede solo `/staff/ev/links`, crea/modifica un link con titolo in due lingue, errore server mostrato sul campo giusto; superadmin vede tutti i dipartimenti; ui-kit mostra tutti i componenti; Vitest e `i18n:check` verdi.
+Accettazione: staff ED vede solo `/staff/ed/links`, crea/modifica un link con titolo in due lingue, errore server mostrato sul campo giusto; superadmin vede tutti i dipartimenti; ui-kit mostra tutti i componenti; Vitest e `i18n:check` verdi.
 
 Non fare: editor dei contenuti, blocchi.
 
@@ -211,7 +211,7 @@ Task:
 8. **`ForkabilityXxDivision`** (design §8) + fixture `config/division.xx.json` per i test; script `pnpm i18n:check` include `errors` e `mail`.
 9. Test: `ModuleRegistryComposesNavAndExclusions`, `MaintenanceReturns503OnWrites`, `GrantsEndpointEnforcesStaffOnly`, `SearchRespectsVisibility`, `ForkabilityXxDivision`.
 
-Accettazione: `/api/me` mostra `atc` e `nav.atc` e la SPA rende `/atc` dal manifest del modulo; un `import` da `features/` a `modules/atc/` fa fallire il lint; `/services/vsop/x` non è intercettato dalla SPA (404 del backend); manutenzione su `atc` → `POST /api/atc/…` 503, `GET` passa; grant `Links.Edit` su FO a uno staff EV → può modificare i link FO **subito** (stamp), rimozione → 403; test XX verde.
+Accettazione: `/api/me` mostra `atc` e `nav.atc` e la SPA rende `/atc` dal manifest del modulo; un `import` da `features/` a `modules/atc/` fa fallire il lint; `/services/vsop/x` non è intercettato dalla SPA (404 del backend); manutenzione su `atc` → `POST /api/atc/…` 503, `GET` passa; grant `Links.Edit` su FOD a uno staff ED → può modificare i link FOD **subito** (stamp), rimozione → 403; test XX verde.
 
 ### F9 — Chiusura di M0
 

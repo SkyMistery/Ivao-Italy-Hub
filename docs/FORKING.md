@@ -4,15 +4,24 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status: M0, phase F0.** The three customisation points below are the design contract. The files
-> they refer to are created in the phases that follow, and this guide is filled in with the real
-> steps at the end of M0.
+> **Status: M0, phase F4 of nine.** The first two customisation points below are real and in use:
+> the division file is read and validated at start up, and the language files are the only place a
+> user visible string exists. The third one, the content, waits for the back office. This guide is
+> filled in with the step by step of a real fork at the end of M0.
 
 ## The three customisation points
 
 1. **`config/division.json`** — behaviour of the division: code, name, languages, default language,
    time zone, whether staff scope follows the FIR, which optional modules are enabled, and the VIDs
-   that bootstrap the first super administrators.
+   that bootstrap the first super administrators. It is validated before anything touches the
+   database: an application that cannot behave like your division refuses to start and says which
+   field is wrong, rather than starting and behaving like somebody else's.
+
+   Staff positions need no mapping table of yours either. They are matched as `^{code}-` and read
+   with the department codes IVAO itself uses (`HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`,
+   `WD`), so `XX-EC` is the events coordinator of division `XX` the same way `IT-EC` is of `IT`.
+   The super administrator list is read once, when the database holds none: after that the database
+   is the truth and editing the file on the server achieves nothing.
 2. **`locales/{lang}/*.json`** — every string a user ever sees. Add a language directory, keep the
    same keys as the others, and list the language in `division.json`. `pnpm i18n:check` fails when
    the sets diverge.
@@ -20,13 +29,24 @@ editing sources.
    office, never through a code change.
 
 The airspace of the division (FIRs and airports) is not configuration either: it is synchronised
-from the IVAO API into the `ref_` tables.
+from the IVAO API into the `ref_` tables, from your `countryId`, nightly and at the first start.
+It needs the OAuth client of your division; while you do not have one, the fixtures under
+`tests/fixtures/ivao/` stand in during development (`Ivao:UseFixtures=true`, refused outside it).
+If the API is unreachable the last snapshot is kept as it is: a snapshot a day old beats a site
+that will not come up.
 
 ## Adding a module
 
 Filled in at the end of M0, once the module contract is implemented. In short: one
 `IvaoHub.Modules.<Name>` project, one `web/src/modules/<key>/` folder, and one line in each of the
 two explicit lists (`IvaoHub.Web/Modules.cs` and `web/src/modules/index.ts`).
+
+## What a division never has to touch
+
+The rules that decide who may read and write what are generic, and none of them names a division:
+a row belongs to a department, has a visibility, and is filtered and authorised by one mechanism
+each. Adding a permission is a name in a catalogue and a line in a matrix; it is never a new
+authorization handler, and never a check written again inside a screen.
 
 ## What stays yours
 

@@ -4,7 +4,7 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 1.1 — 3 settembre 2026 (§3.3, §3.6 e §3.7 corretti in F4)
+**Versione:** 1.2 — 3 settembre 2026 (allineato a ciò che F4 ha davvero costruito: §3.3, §3.4, §3.5, §3.6, §3.7, §5.3, più i codici di dipartimento di piano 0.21 rimasti negli esempi)
 **Stato:** in implementazione (F0–F4 fatte)
 
 ---
@@ -200,7 +200,7 @@ public interface ICurrentUser
     bool Has(string permission, Department department);           // su quella riga; superadmin → true
     bool HasAny(string permission);                               // «può farlo, in generale»: un dipartimento qualsiasi, tutti, o globale
 }
-public readonly record struct EffectivePermission(string Name, Department? Department, string Source); // Source: "role:EV/coordinator" | "grant:123" | "superadmin"
+public readonly record struct EffectivePermission(string Name, Department? Department, string Source); // Source: "role:ED/coordinator" | "grant:123" | "superadmin"
 ```
 
 Implementazione `HttpContextCurrentUser` che legge i claim del cookie (§4.3); i permessi effettivi sono nel ticket (ricalcolati al login e quando un grant cambia → `SecurityStamp` in `hub_users` confrontato a ogni richiesta dal `CookieAuthenticationEvents.OnValidatePrincipal`, con cache 60 s per VID in `IMemoryCache`; chi scrive grant o superadmin **invalida la voce di cache** del VID toccato tramite `ISecurityStampCache.Invalidate(vid)`, così l'effetto è immediato).
@@ -211,15 +211,16 @@ Implementazione `HttpContextCurrentUser` che legge i claim del cookie (§4.3); i
 
 1. **Audit/timestamp** per ogni `IAuditable` aggiunto o modificato (`UtcNow` da `IClock`, VID da `ICurrentUser`, 0 per i job).
 2. **Guardia di scrittura**: per ogni entità `IOwnedByDepartment` aggiunta/modificata/eliminata, se `ICurrentUser.IsAuthenticated` e non `IsSuperadmin`, verifica `Has(requiredPermission, entity.OwnerDepartment)` dove il permesso richiesto è `<Area>.Edit` (l'area è dichiarata sull'entità con `[PermissionArea("Content")]`, default = nome del DbSet). Se fallisce → `ForbiddenDomainException` (mappata a 403). Questa è la **rete di sicurezza** che i test della spina dorsale colpiscono: nessun endpoint può scrivere in un dipartimento altrui nemmeno dimenticando la policy.
-3. **Righe di `hub_audit_log`** per ogni entità marcata `[Audited]` (before/after JSON delle proprietà scalari, `is_superadmin`).
-4. **Proiezioni** (§3.6) — in due tempi, perché prima del salvataggio le entità nuove non hanno `Id`: in `SavingChangesAsync` l'interceptor apre una transazione se non ce n'è una (e la segna come «propria») e raccoglie le entità `IProjectable` toccate con il loro stato; in `SavedChangesAsync`, con un flag di rientranza sul contesto (`HubDbContext.IsProjecting`) che disattiva i punti 1–4 durante il secondo giro, calcola gli snapshot, fa upsert/delete tramite `ProjectionWriter` e un secondo `SaveChanges`, poi fa commit della transazione propria; in `SaveChangesFailedAsync` fa rollback. Se la transazione era del chiamante, il commit resta al chiamante (le proiezioni sono comunque dentro). I test `ProjectionUpsertedInSameTransaction` coprono entrambi i casi.
+3. **Righe di `hub_audit_log`** per ogni entità marcata `[Audited]` (before/after JSON delle proprietà scalari, `is_superadmin`). Il prima/dopo si cattura qui, perché solo ora il change tracker lo sa, ma la riga si **scrive nel secondo tempo** insieme alle proiezioni: prima del salvataggio una riga nuova non ha `id` e l'audit di una creazione punterebbe a `0`. Per un update si registrano le sole proprietà cambiate; la colonna di concorrenza è esclusa.
+4. **Proiezioni** (§3.6) — in due tempi, perché prima del salvataggio le entità nuove non hanno `Id`: in `SavingChangesAsync` l'interceptor apre una transazione se non ce n'è una (e la segna come «propria») e raccoglie le entità `IProjectable` toccate con il loro stato; in `SavedChangesAsync`, con un flag di rientranza **per contesto** tenuto dall'interceptor (e non un campo di `HubDbContext`: lo stesso interceptor scoped serve il contesto del nucleo e quello di ogni modulo) che disattiva i punti 1–4 durante il secondo giro, calcola gli snapshot, fa upsert/delete tramite `ProjectionWriter` e un secondo `SaveChanges`, poi fa commit della transazione propria; in `SaveChangesFailedAsync` fa rollback. Se la transazione era del chiamante, il commit resta al chiamante (le proiezioni sono comunque dentro). I test `ProjectionUpsertedInSameTransaction` coprono entrambi i casi.
 
 Registrato una volta in `AddHubDbContext`; ogni `DbContext` di modulo lo riceve dallo stesso metodo (`AddModuleDbContext<T>`), quindi non può essere «dimenticato».
 
 ### 3.5 Global query filter di visibilità
 
-In `OnModelCreating`, per ogni entità che implementa **sia** `IVisible` **sia** `IOwnedByDepartment` (via reflection sul modello; `IVisible` da sola non basta perché `Department` richiede il proprietario), il filtro è costruito come **espressione su scalari** che il contesto legge da `ICurrentUser` a ogni istanza (EF Core 9 traduce solo campi/proprietà del contesto, non chiamate a servizi): `_visAll` (superadmin o `HasAllDepartments`), `_visStaff`, `_visMembers`, `_depts` (`List<Department>`) →
-`e => _visAll || e.Visibility == Public || (_visMembers && e.Visibility == Members) || (_visStaff && e.Visibility == Staff) || (e.Visibility == Department && _depts.Contains(e.OwnerDepartment))`. Le entità `IPublishable` aggiungono `&& e.Status == Published` nello stesso filtro (EF Core 9 ha un solo filtro per entità; i filtri nominati sono EF 10). Il **back-office** usa sempre `.IgnoreQueryFilters()` + filtro di dipartimento + policy, e lo fa **solo** dentro `MapCrud` (§3.9); le letture pubbliche non toccano mai `IgnoreQueryFilters`. Test `VisibilityFilterPerRole` e un test che nessun file fuori da `Core/Data/Crud/` contenga `IgnoreQueryFilters`.
+In `OnModelCreating`, per ogni entità che implementa **sia** `IVisible` **sia** `IOwnedByDepartment` (via reflection sul modello; `IVisible` da sola non basta perché `Department` richiede il proprietario), il filtro è costruito come **espressione su scalari** che il contesto legge da `ICurrentUser` a ogni istanza (EF Core 9 traduce solo campi/proprietà del contesto, non chiamate a servizi): `SeesEveryDepartment` (superadmin o `HasAllDepartments`), `SeesStaffRows`, `SeesMemberRows`, `VisibleDepartments` (`List<Department>`) →
+`e => SeesEveryDepartment || e.Visibility == Public || (SeesMemberRows && e.Visibility == Members) || (SeesStaffRows && e.Visibility == Staff) || (e.Visibility == Department && VisibleDepartments.Contains(e.OwnerDepartment))`.
+Sono **proprietà pubbliche** che leggono `ICurrentUser` quando la query parte, non campi valorizzati nel costruttore: un contesto può nascere prima che il cookie sia stato validato, e congelare lì la risposta darebbe a quella richiesta la visibilità di un anonimo. Le entità `IPublishable` aggiungono `&& e.Status == Published` nello stesso filtro (EF Core 9 ha un solo filtro per entità; i filtri nominati sono EF 10). Il **back-office** usa sempre `.IgnoreQueryFilters()` + filtro di dipartimento + policy, e lo fa **solo** dentro `MapCrud` (§3.9); le letture pubbliche non toccano mai `IgnoreQueryFilters`. Test `VisibilityFilterPerRole` e un test che nessun file fuori da `Core/Data/Crud/` contenga `IgnoreQueryFilters`.
 
 ### 3.6 `IProjectable` e le tre proiezioni
 
@@ -370,7 +371,7 @@ Il backend valida **solo** l'envelope (`schemaVersion` supportato, dimensione �
 
 ### 5.3 Walker generico
 
-`BlockDocumentWalker` (Core): `EnumerateBlocks(body)`, `ExtractText(body, locale)` (concatena tutte le stringhe foglia dentro `props`, risolvendo gli oggetti `Localized` per lingua — un oggetto è «localized» se tutte le chiavi sono lingue della divisione), `ValidateEnvelope(body, registry, isTemplate)`. Serve a ricerca, publish e validazione; nessuna conoscenza di schema.
+`BlockDocumentWalker` (Core), costruito con le lingue della divisione: `EnumerateBlocks(body)`, `EnumerateSections(body)`, `ExtractText(body, locale)` (concatena tutte le stringhe foglia dentro `props`, risolvendo gli oggetti `Localized` per lingua — un oggetto è «localized» se tutte le chiavi sono lingue della divisione), `ValidateEnvelope(body, knownBlockTypes?, isTemplate)`. I tipi noti arrivano come parametro perché il registry lo compongono i moduli (F7/F8): finché è `null` il tipo non si controlla, il resto dell'envelope sì. Serve a ricerca, publish e validazione; nessuna conoscenza di schema.
 
 ### 5.4 Registry dei blocchi e set minimo di M0
 
@@ -384,7 +385,7 @@ Set M0 (tutti nel nucleo): `heading` (level, text L), `text` (markdown L, saniti
 
 ### 5.6 Template seedati
 
-`seed/content-templates/*.json`: `section-page.json` (Landing/Section page: `hero` required+locked con `heading`+`text`; `body` libera; `links` derivata: `linkList` con `renderMode` fissato dal template), `about.json`, `policy.json` (tutto `locked`, sezioni `purpose`, `scope`, `rules`, `changelog`). Seed all'avvio guidato **solo** dalla chiave `template.system:<slug>` in `hub_division_settings`: ogni file di seed viene applicato una volta (così una release successiva può aggiungere template nuovi senza toccare quelli già modificati dallo staff). `OwnerDepartment = WM`, `Visibility = Staff`. «Nuovo da template» = `POST /api/content?templateId=` → copia profonda con nuovi `id` di sezione/blocco, `TemplateId` valorizzato, `Status = Draft`. Le pagine di sistema (home, `/start`, `/pilots`, `/about`) si seedano in **M1**; in M0 basta una pagina creata a mano dal template.
+`seed/content-templates/*.json`: `section-page.json` (Landing/Section page: `hero` required+locked con `heading`+`text`; `body` libera; `links` derivata: `linkList` con `renderMode` fissato dal template), `about.json`, `policy.json` (tutto `locked`, sezioni `purpose`, `scope`, `rules`, `changelog`). Seed all'avvio guidato **solo** dalla chiave `template.system:<slug>` in `hub_division_settings`: ogni file di seed viene applicato una volta (così una release successiva può aggiungere template nuovi senza toccare quelli già modificati dallo staff). `OwnerDepartment = WD`, `Visibility = Staff`. «Nuovo da template» = `POST /api/content?templateId=` → copia profonda con nuovi `id` di sezione/blocco, `TemplateId` valorizzato, `Status = Draft`. Le pagine di sistema (home, `/start`, `/pilots`, `/about`) si seedano in **M1**; in M0 basta una pagina creata a mano dal template.
 
 ### 5.7 Permessi dei contenuti
 
@@ -426,7 +427,7 @@ public interface IModule
 
 ### 6.4 `IvaoHub.Modules.Atc` in M0
 
-`Key = "atc"`, `Department = AO`, `IsOptional = false`, `SpaFallbackExclusions = ["/services/vsop", "/vsop", "/_content", "/_framework"]` (aggiunte a quelle del nucleo, §4 punto 5), `PublicNavigation = [{ key: "nav.atc", path: "/atc" }]`, un endpoint `GET /api/atc/ping`. Nessuna tabella. Frontend: `web/src/modules/atc/` con manifest, una route `/atc` (pagina segnaposto tradotta) e namespace i18n `atc`. Serve a provare `IModule`, la composizione del menu e l'esclusione dal fallback.
+`Key = "atc"`, `Department = AOD`, `IsOptional = false`, `SpaFallbackExclusions = ["/services/vsop", "/vsop", "/_content", "/_framework"]` (aggiunte a quelle del nucleo, §4 punto 5), `PublicNavigation = [{ key: "nav.atc", path: "/atc" }]`, un endpoint `GET /api/atc/ping`. Nessuna tabella. Frontend: `web/src/modules/atc/` con manifest, una route `/atc` (pagina segnaposto tradotta) e namespace i18n `atc`. Serve a provare `IModule`, la composizione del menu e l'esclusione dal fallback.
 
 ### 6.5 Confine del modulo anche nel frontend (deciso il 2 set 2026)
 
@@ -478,7 +479,7 @@ export const Route = createFileRoute('/_staff/staff/$dept/links')({
   loader: ({ context, deps, params }) => context.queryClient.ensureQueryData(linksListQuery(params.dept, deps)),
   component: LinksPage,
 });
-// deptParam (shared/api/department.ts) è l'UNICO punto che converte l'URL minuscolo ("ev") ↔ l'enum API ("EV"):
+// deptParam (shared/api/department.ts) è l'UNICO punto che converte l'URL minuscolo ("ed") ↔ l'enum API ("ED"):
 // lo usano le route, la Sidebar e i filter[ownerDepartment] di MapCrud.
 
 // (3) dettaglio pubblico — web/src/routes/_public/$slug.tsx
@@ -516,7 +517,7 @@ Unit (`IvaoHub.UnitTests`): `StaffRoleMapTests` (tabella completa, ordine dei pa
 
 Integrazione (`IvaoHub.IntegrationTests`, Testcontainers `mariadb:11.4.10`, `WebApplicationFactory` con `ICurrentUser` finto e `FixtureIvaoApiClient`):
 - `MigrationsApplyOnRealMariaDb` (catena completa da zero + idempotenza al secondo avvio);
-- `InterceptorFillsAuditAndTimestamps`, `InterceptorBlocksCrossDepartmentWrite` (staff EV scrive un link FO → 403 anche chiamando `SaveChanges` direttamente), `AuditLogWritten`;
+- `InterceptorFillsAuditAndTimestamps`, `InterceptorBlocksCrossDepartmentWrite` (staff ED scrive un link FOD → 403 anche chiamando `SaveChanges` direttamente), `AuditLogWritten`;
 - `ProjectionUpsertedInSameTransaction` (crea link → riga in `search_index`; update → aggiornata; delete → rimossa; rollback della transazione → nessuna riga), `DraftContentIsNotProjected`;
 - `VisibilityFilterPerRole` (anonimo/membro/staff/dipartimento/superadmin);
 - `MapCrudLinksEndToEnd` (list paginata/filtrata/ordinata/ricerca in lingua, get, create con `ValidationProblem` su lingua mancante, update con 409 su `row_version` stale, delete; 403 per dipartimento altrui; 401 anonimo);
