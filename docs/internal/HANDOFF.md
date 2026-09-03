@@ -3,8 +3,9 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026 — fine **F5** (`MapCrud` e `links` lato server), su un
-`main` che nel frattempo ha assorbito la **revisione senior** di F4 (PR #9).
+**Ultimo aggiornamento:** 3 settembre 2026, sera — fine **F5** (`MapCrud` e `links` lato server), su
+un `main` che nel frattempo ha assorbito la **revisione senior** di F4 (PR #9). Chiuse anche le due
+note che F5 lasciava aperte (PR #10) e l'igiene del repository (PR #11).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.26. **Design:** v1.4. **Test:** 280 verdi (210 unit + 70 integrazione).
 
@@ -24,9 +25,14 @@
 Niente PR aperte: `main` contiene tutto fino a F5 compresa, e le due note di F5 che erano «da
 confermare» sono state confermate — il design è a v1.4 e non c'è più nessuna frase in sospeso.
 
-`git checkout main && git pull` (dal **checkout principale**, non da un worktree: lì `main` è già in
-uso e il checkout fallisce), poi `git checkout -b m0/f6-frontend-backbone` e il prompt di §C con
-`<N>` → `6`.
+Il checkout principale è già allineato a `3561875` e pulito, e sul remoto c'è **solo `main`**:
+basta `git checkout -b m0/f6-frontend-backbone` e il prompt di §C con `<N>` → `6`. Da fare **dal
+checkout principale**, non da un worktree: lì `main` è già in uso e il checkout fallisce.
+
+⚠️ **Guardare le PR aperte prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in
+parallelo in worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha
+mergiato per prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è
+andato perso, ma è stato un caso. Un `gh pr list` costa due secondi.
 
 **Perimetro di F6** (§D del piano): i tre layout, le tre ricette del router, `DataList` e
 `SchemaForm`, `LocaleFields`, `useProblemDetails`, il back-office di `links` **senza una riga di JSX
@@ -530,6 +536,14 @@ obbligatorio (nessuno lo legge, e IVAO non ha un end session da cui tornare); `U
 non è più stato mutabile su un singleton ma una riga di log; i due significati di `HQ` documentati
 dove si incontrano; `mailpit` pinnato; `release.yml` che ora **dipende da `build-test`** invece di
 pubblicare a scatola chiusa; lo zip che si scompatta nell'applicazione e non in `artifacts/publish/`.
+
+**La catena di release è stata provata davvero**, il 3 set 2026, con un tag usa-e-getta
+(`v0.0.1-ci-test`) poi cancellato insieme alla sua release. Il `workflow_call` funziona: il job
+`verify / build-test` ha eseguito i 280 test e solo dopo è partito `release`, quindi **nessun tag
+può più pubblicare senza passare dai test**. Controllato anche l'archivio: si scompatta come
+applicazione e porta `LICENSE`, `NOTICE`, `config/*.example.json` e `locales/` alla radice — cioè
+tutto ciò che F5 punto 5 doveva aggiungere, incluso il `NOTICE` che Apache-2.0 §4(d) pretende
+viaggi con ogni ridistribuzione.
 
 ### 8.6 Quello che era stato lasciato aperto, e come è stato chiuso
 
