@@ -58,3 +58,7 @@ keys. None of them belong in the repository.
 [Apache License 2.0](../LICENSE). You may fork this and run it for your division without asking
 anybody; keep the copyright notice and the licence, and say which files you changed. What you write
 for your own division — your content, your translations, your modules — is yours.
+
+Keep the [`NOTICE`](../NOTICE) file too, and add your own division under the notices already in it
+rather than replacing them: that file is the one thing the licence asks you to carry forward
+verbatim, and it stays short for exactly that reason.

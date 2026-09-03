@@ -265,9 +265,12 @@ allargare i permessi, mai stringerli a sorpresa.
   se condividere quelle entità o passare dal contesto del nucleo.
 - Il chunk JS supera i 500 kB: lo split per route arriva con i layout di F6.
 - ~~Licenza ancora «TBD»~~ **decisa il 3 set 2026**: Apache-2.0, copyright «2026 Carmine Granato».
-  Testo canonico completo in `LICENSE`. Gli header di licenza nei singoli file **non** ci sono e non
-  servono: Apache-2.0 li raccomanda, non li impone, e metterli in ogni `.cs` e `.tsx` sarebbe rumore
-  in ogni diff futuro.
+  Testo canonico completo in `LICENSE`, più un `NOTICE` alla radice. Gli header di licenza nei
+  singoli file **non** ci sono e non servono: Apache-2.0 li raccomanda, non li impone, e metterli in
+  ogni `.cs` e `.tsx` sarebbe rumore in ogni diff futuro.
+- `LICENSE` e `NOTICE` **non finiscono nel pacchetto pubblicato**, mentre Apache-2.0 §4(d) vuole che
+  il `NOTICE` viaggi con ogni ridistribuzione. Sta in **F5**, nello stesso target MSBuild che porta
+  `locales/` e i `config/*.example.json`.
 - `Ivao:ApiScopes` e' vuoto: **misurato**, i due endpoint di riferimento non chiedono scope. Se in
   M2+ servira' `tracker` (chi e' online), si aggiunge li' senza toccare codice.
 - Le fixture IVAO coprono 3 centri e 3 aeroporti: bastano a provare upsert e riconoscimento FIR, non

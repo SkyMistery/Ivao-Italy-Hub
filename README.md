@@ -115,4 +115,5 @@ See [docs/FORKING.md](docs/FORKING.md).
 
 [Apache License 2.0](LICENSE), copyright 2026 Carmine Granato. Fork it, run it for your division,
 change what you need: the licence asks you to keep the notice, to state the files you changed, and
-it grants you the patent rights that come with the code.
+it grants you the patent rights that come with the code. [`NOTICE`](NOTICE) carries the attribution
+that travels with every copy; a fork keeps what is there and adds its own below it.
