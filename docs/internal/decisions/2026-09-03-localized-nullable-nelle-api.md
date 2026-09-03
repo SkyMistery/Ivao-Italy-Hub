@@ -1,8 +1,7 @@
 # Un campo `Localized<T>?` che nessuno ha scritto è `null` sul filo, non `{}`
 
 **Data:** 3 settembre 2026 — fase F5
-**Stato:** **decisa in corso d'opera, da confermare**. Se confermata, `01-design-m0.md` §3.1 va
-precisata (vedi in fondo).
+**Stato:** **confermata** il 3 settembre 2026. `01-design-m0.md` §3.1 precisata (design v1.4).
 
 ## Il design
 
@@ -42,7 +41,7 @@ Un campo **non** nullable continua a non poter essere null: `Title` è `Localize
 nessuno lo ha compilato, esce `{}` — perché lì la lettura in lingua è comunque possibile e vale la
 regola di F4.
 
-## Correzione da portare nel design, se confermata
+## Correzione portata nel design
 
 §3.1, parte API: dopo «serializzato come oggetto `{ "it": …, "en": … }`» aggiungere: «una lingua
 assente torna vuota e mai null; un campo **dichiarato** `Localized<T>?` e non valorizzato torna

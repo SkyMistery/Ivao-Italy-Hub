@@ -6,7 +6,7 @@
 **Ultimo aggiornamento:** 3 settembre 2026 — fine **F5** (`MapCrud` e `links` lato server), su un
 `main` che nel frattempo ha assorbito la **revisione senior** di F4 (PR #9).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.25. **Design:** v1.3 (due precisazioni di F5 da portarci, §5). **Test:** 280 verdi (210 unit + 70 integrazione).
+**Piano:** v0.26. **Design:** v1.4. **Test:** 280 verdi (210 unit + 70 integrazione).
 
 | Fase | Stato |
 |---|---|
@@ -16,21 +16,17 @@
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
 | F4 spina dorsale del dominio | mergiata (PR #6) |
 | F4bis revisione senior (correzioni, nessun perimetro nuovo) | mergiata (PR #9), vedi §8 |
-| F5 `MapCrud` e `links` (server) | **PR #8 aperta**, branch `m0/f5-mapcrud-links`, riallineato su `main` |
-| **F6 spina dorsale frontend** | **prossima**, dopo il merge di F5 |
+| F5 `MapCrud` e `links` (server) | mergiata (PR #8) |
+| **F6 spina dorsale frontend** | **prossima** |
 
-### Le prime tre cose da fare in una sessione nuova
+### Come si apre F6
 
-1. **Leggere e mergiare la PR #8** (<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/8>), con
-   squash come le precedenti. La CI è verde (`build-test`, 2m17s): 244 test, il diff di
-   `schema.d.ts` non si muove, e il pacchetto pubblicato porta `locales/`, gli `.example.json`,
-   `LICENSE` e `NOTICE`.
-2. **Confermare o correggere le due note di §5** marcate «da confermare». Non bloccano F6: sono due
-   frasi del design da riformulare, e finché non sono confermate il design resta a v1.2 così com'è.
-   Chi le conferma corregge `01-design-m0.md` §7.4, §9 punto 12 e §3.1 — le riformulazioni esatte
-   sono già scritte in fondo a ciascuna nota.
-3. **Aprire F6**: `git checkout main && git pull` (dal checkout principale, non da un worktree),
-   poi `git checkout -b m0/f6-frontend-backbone` e il prompt di §C con `<N>` → `6`.
+Niente PR aperte: `main` contiene tutto fino a F5 compresa, e le due note di F5 che erano «da
+confermare» sono state confermate — il design è a v1.4 e non c'è più nessuna frase in sospeso.
+
+`git checkout main && git pull` (dal **checkout principale**, non da un worktree: lì `main` è già in
+uso e il checkout fallisce), poi `git checkout -b m0/f6-frontend-backbone` e il prompt di §C con
+`<N>` → `6`.
 
 **Perimetro di F6** (§D del piano): i tre layout, le tre ricette del router, `DataList` e
 `SchemaForm`, `LocaleFields`, `useProblemDetails`, il back-office di `links` **senza una riga di JSX
@@ -350,8 +346,8 @@ senza credenziali.
 | `2026-09-03-projection-context.md` | `IProjectable.Project()` riceve un `ProjectionContext` (lingue, lingua di default, walker): un'entità EF non si fa iniettare niente. **Confermata**, design §3.6 corretta. |
 | `2026-09-03-has-and-has-any.md` | `ICurrentUser` fa due domande separate invece di una con il dipartimento opzionale. **Decisa da Carmine**, design §3.3 e §3.7 corrette. |
 | `2026-09-03-licenza.md` | Apache-2.0, copyright «2026 Carmine Granato», con `NOTICE` fin da subito e senza header per file. **Decisa da Carmine**, piano §15.5 punto 5 chiuso. |
-| `2026-09-03-openapi-a-build-time.md` | Il pacchetto Microsoft **esegue** il nostro `Program` fino a `app.Run()` per leggere gli endpoint: la frase del design «senza avviare l'app» è falsa, quella che conta («senza DB e senza client OAuth») la garantisce `HubConfiguration.IsOpenApiDocumentGeneration`. **Da confermare**, design §7.4 e §9 punto 12 da riformulare. |
-| `2026-09-03-localized-nullable-nelle-api.md` | Una **lingua** che manca resta vuota; un **campo** dichiarato `Localized<T>?` e non valorizzato esce `null`, come dice lo schema generato. Era un 500 sul primo `GET` di un link senza descrizione. **Da confermare**, design §3.1 da precisare. |
+| `2026-09-03-openapi-a-build-time.md` | Il pacchetto Microsoft **esegue** il nostro `Program` fino a `app.Run()` per leggere gli endpoint: la frase del design «senza avviare l'app» è falsa, quella che conta («senza DB e senza client OAuth») la garantisce `HubConfiguration.IsOpenApiDocumentGeneration`. **Confermata** il 3 set 2026; design §7.4 e §9 punto 12 riformulate. |
+| `2026-09-03-localized-nullable-nelle-api.md` | Una **lingua** che manca resta vuota; un **campo** dichiarato `Localized<T>?` e non valorizzato esce `null`, come dice lo schema generato. Era un 500 sul primo `GET` di un link senza descrizione. **Confermata** il 3 set 2026; design §3.1 precisata. |
 | `2026-09-03-reaches-every-department.md` | `HasAllDepartments` è un claim derivato dalle posizioni, non un indizio letto dalla lista dei permessi. Design §3.3 precisata. |
 | `2026-09-03-proxy-fidati.md` | Le reti dei proxy di cui si crede `X-Forwarded-For` si dichiarano, e in produzione sono obbligatorie. Design §2.3 precisata. |
 | `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
