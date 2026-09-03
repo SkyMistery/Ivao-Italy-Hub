@@ -1,5 +1,6 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Services;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
@@ -19,7 +20,8 @@ namespace IvaoHub.IntegrationTests;
 public sealed class HubWebApplicationFactory(
     string connectionString,
     bool useIvaoFixtures = false,
-    TestCurrentUser? currentUser = null)
+    TestCurrentUser? currentUser = null,
+    IInterceptor? extraInterceptor = null)
     : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -44,6 +46,15 @@ public sealed class HubWebApplicationFactory(
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<IStartupFilter, TestSignInStartupFilter>();
+
+            // EF Core picks up any IInterceptor registered in the application container, so a test
+            // can watch what the contexts of the host actually send to the database.
+            if (extraInterceptor is not null)
+            {
+                // As IInterceptor, which is the service type EF Core looks for; registering the
+                // concrete type would compile and be quietly ignored.
+                services.AddSingleton<IInterceptor>(extraInterceptor);
+            }
 
             // F4 has no endpoints, so a test says who is asking instead of signing a cookie in.
             // The tests of the identity itself leave this alone and use the real implementation.
