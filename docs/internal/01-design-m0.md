@@ -124,7 +124,7 @@ Schema come piano §4.1. Caricato con `AddJsonFile("config/division.json", optio
 
 ### 2.2 `config/ivao-oauth.json` → `IvaoOAuthOptions`
 
-`AddJsonFile("config/ivao-oauth.json", optional: false, reloadOnChange: true)`; le variabili d'ambiente `Ivao__*` vincono. Validazione all'avvio (fail-fast, messaggio chiaro senza il secret): tutti i campi presenti, `RedirectUri` termina con `/auth/callback`, `LoginUrl` termina con `/auth/login`, stesso host per entrambi. Il secret non compare mai in log, `/api/me`, OpenAPI o pagine di errore.
+`AddJsonFile("config/ivao-oauth.json", optional: **true**, reloadOnChange: true)`; le variabili d'ambiente `Ivao__*` vincono e da sole bastano (piano §6.1), quindi la garanzia «l'app non parte se manca» la dà il **validatore**, non il caricatore di file. Campi: `Authority`, `ClientId`, `ClientSecret`, `LoginUrl`, `RedirectUri`, `PostLogoutRedirectUri`, `Scopes` (del membro) e `ApiScopes` (dell'applicazione, `client_credentials`). Validazione all'avvio (fail-fast, messaggio chiaro senza il secret): tutti i campi presenti, `RedirectUri` termina con `/auth/callback`, `LoginUrl` termina con `/auth/login`, stesso host per entrambi. Il secret non compare mai in log, `/api/me`, OpenAPI o pagine di errore.
 
 ### 2.3 `secrets/*.json` e ambiente
 
@@ -331,7 +331,7 @@ All'avvio, se `SELECT COUNT(*) FROM hub_users WHERE is_superadmin = 1` è 0: per
 
 ### 4.6 `IvaoApiClient` e `ref_`
 
-`IvaoApiClient` (typed `HttpClient` + `AddStandardResilienceHandler`): `client_credentials` con cache del token; metodi M0: `GetCentersAsync(countryId)`, `GetAirportsAsync(countryId, includeRunways: true)`, `GetMeAsync(accessToken)`. `RefDataSyncJob` (Quartz, cron giornaliero 03:15 tz divisione + esecuzione all'avvio se le tabelle sono vuote) fa upsert in `ref_ivao_centers`/`ref_ivao_airports` con `raw_json`, scrive `hub_jobs_log`. Se l'API fallisce: log + riga `failed`, mai eccezione all'avvio. Con credenziali di test che non coprono questi endpoint → fixture JSON in `tests/fixtures/ivao/` e `IvaoApiClient` sostituibile con `FixtureIvaoApiClient` via `Ivao:UseFixtures=true` (solo Development).
+`IvaoApiClient` (typed `HttpClient` + `AddStandardResilienceHandler`): `client_credentials` con cache del token; metodi M0: `GetCentersAsync(countryId)`, `GetAirportsAsync(countryId, includeRunways: true)`, `GetMeAsync(accessToken)`. `RefDataSyncJob` (Quartz, cron giornaliero 03:15 tz divisione + esecuzione all'avvio se le tabelle sono vuote) fa upsert in `ref_ivao_centers`/`ref_ivao_airports` con `raw_json`, scrive `hub_jobs_log`. Se l'API fallisce: log + riga `failed`, mai eccezione all'avvio; se l'API risponde ma senza righe, lo snapshot resta com'era invece di svuotarsi. Gli scope del `client_credentials` stanno in `Ivao:ApiScopes`, separati da quelli del membro: **misurato il 3 set 2026**, `/v2/centers` e `/v2/airports/all` non ne richiedono nessuno (per IT: 7 centri, 221 aeroporti). Con credenziali che non coprono questi endpoint → fixture JSON in `tests/fixtures/ivao/` e `IvaoApiClient` sostituibile con `FixtureIvaoApiClient` via `Ivao:UseFixtures=true` (solo Development, rifiutato sia alla registrazione sia nel costruttore del client). Quale dei due client risponde si decide **quando il client viene costruito**, non quando viene registrato: un test host e un deploy aggiungono sorgenti di configurazione dopo la registrazione.
 
 ---
 

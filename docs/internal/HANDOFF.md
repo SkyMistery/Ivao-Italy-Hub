@@ -5,9 +5,29 @@
 
 **Ultimo aggiornamento:** 3 settembre 2026 — fine **F3** (`IvaoApiClient` e dati `ref_`).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Branch corrente:** `m0/f3-ivao-ref`. **Prossima fase:** F4 — spina dorsale del dominio (interceptor, query filter, `IProjectable`, handler unico).
+**Piano:** v0.22. **Test:** 182 verdi (152 unit + 30 integrazione).
 
-Fasi chiuse: **F0** (bootstrap, PR #1), **F1** (configurazione e DB, PR #2), **F2** (identità, PR #3 e #4), **F3**.
+| Fase | Stato |
+|---|---|
+| F0 bootstrap | mergiata (PR #1) |
+| F1 configurazione, avvio, DB | mergiata (PR #2) |
+| F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
+| **F3 `IvaoApiClient` e dati `ref_`** | **PR #5 aperta, CI verde, da mergiare** |
+| F4 spina dorsale del dominio | **prossima** |
+
+> ⚠️ **Prima cosa da fare in una sessione nuova**: mergiare la
+> [PR #5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/5) (squash, come le altre), poi
+> `git checkout main && git pull`. Il branch `m0/f3-ivao-ref` è ancora quello di lavoro.
+
+**Come si apre F4**: prompt di §C del piano di implementazione con `<N>` → `4`. Perimetro in §D:
+`Localized<T>` lato API, interfacce trasversali (`IOwnedByDepartment`, `IVisible`, `IPublishable`,
+`IAuditable`), l'**unico** `HubSaveChangesInterceptor` (audit, guardia di scrittura per dipartimento,
+`hub_audit_log`, proiezioni in due tempi), il global query filter di visibilità,
+`BlockDocumentWalker`, `IProjectable` + `ProjectionWriter`, `HubPolicyProvider` +
+`DepartmentAuthorizationHandler` (l'unico), e i test di integrazione della spina dorsale.
+F4 non fa endpoint né frontend.
+
+Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma F4 non le usa.
 
 ---
 
@@ -41,7 +61,7 @@ dotnet tool restore
 dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-project src/IvaoHub.Core
 ```
 
-## 2. Cosa c'è dopo F2
+## 2. Cosa c'è dopo F3
 
 **Configurazione e avvio (F1)**: `config/division.json` versionato + esempi; opzioni validate prima di toccare
 il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su Pomelo pinnato a MariaDB
@@ -171,3 +191,7 @@ allargare i permessi, mai stringerli a sorpresa.
 - Il test di architettura «nessun modulo referenzia un altro modulo» è **F4**; `docs/UI-GUIDELINES.md` è **F6**.
 - Il chunk JS supera i 500 kB: lo split per route arriva con i layout di F6.
 - Licenza ancora «TBD» (piano §15.5).
+- `Ivao:ApiScopes` e' vuoto: **misurato**, i due endpoint di riferimento non chiedono scope. Se in
+  M2+ servira' `tracker` (chi e' online), si aggiunge li' senza toccare codice.
+- Le fixture IVAO coprono 3 centri e 3 aeroporti: bastano a provare upsert e riconoscimento FIR, non
+  sono un campione realistico dell'Italia (che ne ha 7 e 221).

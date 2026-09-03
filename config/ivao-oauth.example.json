@@ -3,9 +3,16 @@
     "Authority": "https://api.ivao.aero",
     "ClientId": "<client id>",
     "ClientSecret": "<client secret>",
+
+    "$comment.urls": "These three must match, character for character, what is registered with IVAO for this client. Same scheme, host and port for all of them; locally that is http://localhost:5173.",
     "LoginUrl": "https://example.ivao.aero/auth/login",
     "RedirectUri": "https://example.ivao.aero/auth/callback",
     "PostLogoutRedirectUri": "https://example.ivao.aero/",
-    "Scopes": ["openid", "profile", "email", "discord"]
+
+    "$comment.Scopes": "What a member is asked for when they sign in. 'profile' is what brings their real name; without it the site knows a VID and nothing else.",
+    "Scopes": ["openid", "profile", "email", "discord"],
+
+    "$comment.ApiScopes": "What the application asks for itself, with client_credentials, to read data that belongs to nobody in particular. Measured on 3 September 2026: the reference endpoints need no scope at all, so leave this empty until something asks for one.",
+    "ApiScopes": []
   }
 }
