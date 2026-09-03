@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026, notte — fine **F6** (la spina dorsale del frontend).
+**Ultimo aggiornamento:** 3 settembre 2026, notte — **F6 mergiata** (PR #13, merge commit `ed3808e`).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.27. **Design:** v1.5. **Test:** 286 .NET verdi (210 unit + 76 integrazione) + 35 Vitest.
 
@@ -16,7 +16,7 @@
 | F4 spina dorsale del dominio | mergiata (PR #6) |
 | F4bis revisione senior (correzioni, nessun perimetro nuovo) | mergiata (PR #9), vedi §8 |
 | F5 `MapCrud` e `links` (server) | mergiata (PR #8) |
-| F6 spina dorsale frontend | **questa PR** |
+| F6 spina dorsale frontend | mergiata (PR #13) |
 | **F7 contenuti: entità, envelope, publish, blocchi, editor, template** | **prossima** |
 
 ### Come si apre F7
@@ -26,8 +26,9 @@ worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4
 prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
 ma è stato un caso. Costa due secondi.
 
-Con `main` allineato: `git checkout -b m0/f7-contenuti` e il prompt di §C con `<N>` → `7`. Dal
-checkout principale, non da un worktree: lì `main` è già in uso e il checkout fallisce (§9).
+Sul remoto c'è **solo `main`**, ed è a `ed3808e`: dal checkout principale basta `git pull`, poi
+`git checkout -b m0/f7-contenuti` e il prompt di §C con `<N>` → `7`. Dal checkout principale e non
+da un worktree: lì `main` è già in uso e il checkout fallisce (§9).
 
 **Perimetro di F7** (§D del piano): `ValidateEnvelope` completo, `cms_contents` e
 `cms_content_versions`, il servizio di pubblicazione con la cattura `frozen`, il registry dei
@@ -666,8 +667,8 @@ un contesto.
 
 ## 9. Igiene del repository
 
-- **Sul remoto c'è solo `main`.** I branch delle fasi chiuse sono stati cancellati il 3 set 2026
-  (`git push origin --delete <branch>`): il repository non li cancella da se' al merge, quindi ogni
+- **Sul remoto c'è solo `main`.** I branch delle fasi chiuse vengono cancellati appena la PR è
+  fusa — `m0/f6-frontend-backbone` subito dopo la #13 — con `git push origin --delete <branch>`: il repository non li cancella da se' al merge, quindi ogni
   tanto vanno tolti a mano. Prima di cancellarne uno vale la pena guardare **la PR**, non
   `git branch --merged`: una PR chiusa con squash lascia una punta che non è antenata di `main`, e
   quel comando la dichiara «non fusa» pur essendoci dentro tutto.
@@ -681,7 +682,13 @@ un contesto.
 - Se si lavora in un worktree sotto `.claude/worktrees/`, `git checkout main` lì dentro fallisce
   perché `main` è già in uso dal checkout principale: è normale, la sessione nuova parte dal
   checkout principale. Un worktree la cui fase è stata fusa non serve più a niente e si toglie con
-  `git worktree remove`.
+  `git worktree remove` — **dal checkout principale**, perché un worktree non può togliere se
+  stesso. Al 3 set 2026, dopo F6, ne restano parecchi di fasi già chiuse, e con loro i rami locali
+  che ci stanno sopra: `git worktree list` li elenca, `git worktree prune` ripulisce quelli le cui
+  cartelle non esistono più. I rami **locali** delle fasi fuse (`m0/f4-domain-backbone`,
+  `docs/repo-hygiene`, `claude/project-senior-review-627b8f`, …) si cancellano con `git branch -D`
+  una volta liberati: sono già dentro `main`, e `git branch --merged` non basta a dirlo perché una
+  PR chiusa con squash lascia una punta che non è antenata di `main`.
 - `artifacts/` è gitignorata, quindi `artifacts/openapi/IvaoHub.Web.json` **non** è nel repository:
   lo riscrive `dotnet build`. Quello che è committato è il file che ne deriva,
   `web/src/shared/api/schema.d.ts`, marcato `linguist-generated` in `.gitattributes` e ignorato da
