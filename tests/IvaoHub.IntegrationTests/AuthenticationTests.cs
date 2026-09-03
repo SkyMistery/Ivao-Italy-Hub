@@ -114,6 +114,28 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ApiMeSaysWhetherTheUserReachesEveryDepartment()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(600011, position: "IT-EC", cancellationToken: token);
+        await SeedUserAsync(600012, position: "IT-DIR", cancellationToken: token);
+
+        // A coordinator has one department, and the staff sidebar has to show only that one.
+        using var coordinator = _factory.CreateApiClient();
+        await _factory.SignInAsync(coordinator, 600011, token);
+        var asCoordinator = await coordinator.GetFromJsonAsync<JsonElement>("/api/me", token);
+        Assert.False(asCoordinator.GetProperty("user").GetProperty("hasAllDepartments").GetBoolean());
+
+        // The director reaches all of them, and it is stated rather than left to be worked out from
+        // the shape of the permission list, for the same reason the server does not work it out
+        // that way (docs/internal/decisions/2026-09-03-reaches-every-department.md).
+        using var director = _factory.CreateApiClient();
+        await _factory.SignInAsync(director, 600012, token);
+        var asDirector = await director.GetFromJsonAsync<JsonElement>("/api/me", token);
+        Assert.True(asDirector.GetProperty("user").GetProperty("hasAllDepartments").GetBoolean());
+    }
+
+    [Fact]
     public async Task SecurityStampInvalidatesTheCookie()
     {
         var token = TestContext.Current.CancellationToken;

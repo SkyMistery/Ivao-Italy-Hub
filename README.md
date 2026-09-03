@@ -7,16 +7,22 @@ The project is built to be **forked**: nothing about a particular division lives
 The behaviour of a division comes from `config/division.json`, its airspace from the IVAO API
 snapshots, and every piece of editorial content from the database.
 
-> **Status: M0, phase F5 of nine.** The application validates its configuration and migrates its own
+> **Status: M0, phase F6 of nine.** The application validates its configuration and migrates its own
 > database, signs a member in with IVAO and computes what they are allowed to do, keeps a snapshot
 > of the airspace of the division, and carries the backbone everything else is built on: audit
 > columns, a per-department write guard, the visibility filter, the search projections and a single
-> authorization handler, all covered by tests against a real MariaDB. On top of it there is now one
+> authorization handler, all covered by tests against a real MariaDB. On top of it there is one
 > generic CRUD engine: a resource of the back office — paging, sorting, searching, the department
 > filter, validation, optimistic concurrency — costs a configuration object, and `/api/links` is the
 > first one. The API describes itself in an OpenAPI document written at build time, from which the
-> typed client of the front end is generated. What is not there yet is everything a visitor would
-> see: the back office screens and the editorial content arrive in the phases that follow.
+> typed client of the front end is generated.
+>
+> The front end now has the matching half. Three layouts behind their guards, a list engine and a
+> form generator, and a back office for the links of a department that contains no table and no form
+> written by hand: a set of column descriptions and a schema, and the screens follow. Every string
+> comes from the language files, both languages are checked in CI, and `/staff/admin/ui-kit` shows
+> every component the hub can draw. What is not there yet is the editorial content: the block editor
+> and the public pages are the phases that follow.
 
 ## Requirements
 
@@ -140,7 +146,7 @@ server, so a deployment never overwrites the configuration or the keys.
 | `locales/{lang}/*.json` | The only set of language files; nothing else holds a string a user can read |
 | `config/` | `division.json` and the OAuth client configuration |
 | `tests/` | Unit tests and integration tests (Testcontainers, a real MariaDB of the production version) |
-| `docs/` | Public documentation: the forking guide, and the UI guidelines once the front end has them |
+| `docs/` | Public documentation: the [forking guide](docs/FORKING.md) and the [UI guidelines](docs/UI-GUIDELINES.md) |
 
 ## Forking
 

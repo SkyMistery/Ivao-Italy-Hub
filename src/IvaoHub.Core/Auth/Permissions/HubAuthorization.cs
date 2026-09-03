@@ -5,6 +5,16 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Core.Auth.Permissions;
 
 /// <summary>
+/// The policies that are not a permission of the catalogue. There is exactly one, and there is
+/// room for exactly one: "be signed in" is not a permission, it is the floor under all of them.
+/// </summary>
+public static class HubPolicies
+{
+    /// <summary>Any member with a valid application cookie. Nothing more is asked.</summary>
+    public const string SignedIn = "SignedIn";
+}
+
+/// <summary>
 /// "Hold this permission." The only requirement of the hub: everything else, above all the
 /// department a resource belongs to, is decided by the single handler.
 /// </summary>

@@ -11,8 +11,13 @@ import tseslint from 'typescript-eslint';
 const projectRoot = import.meta.dirname;
 const modulesRoot = join(projectRoot, 'src', 'modules');
 
-/** Directories that hold core code: none of them may depend on a module (design M0 section 6.5). */
-const coreDirectories = ['app', 'blocks', 'features', 'routes', 'shared'];
+/**
+ * Directories that hold core code: none of them may depend on a module (design M0 section 6.5).
+ * `app/` is the one exception, and only for `src/modules/index.ts`: the design puts the loader of
+ * the manifests there, so it has to be able to read the list. It still may not reach inside a
+ * module, which is what the second set of zones below says.
+ */
+const coreDirectories = ['blocks', 'features', 'routes', 'shared'];
 
 const moduleKeys = existsSync(modulesRoot)
   ? readdirSync(modulesRoot, { withFileTypes: true })
@@ -38,6 +43,16 @@ const coreZones = coreDirectories.map((directory) => ({
   target: `./src/${directory}`,
   from: './src/modules',
   message: 'The core must not depend on a module. Modules contribute through their manifest.',
+}));
+
+/**
+ * `app/` may read `src/modules/index.ts`, the list of manifests, and nothing else under it: the
+ * insides of a module are the module's own business, composed through the manifest.
+ */
+const loaderZones = moduleKeys.map((key) => ({
+  target: './src/app',
+  from: `./src/modules/${key}`,
+  message: "Read the manifest list in src/modules/index.ts, never a module's own files.",
 }));
 
 /**
@@ -96,7 +111,7 @@ export default tseslint.config(
         'error',
         {
           basePath: projectRoot,
-          zones: [...coreZones, ...crossModuleZones],
+          zones: [...coreZones, ...loaderZones, ...crossModuleZones],
         },
       ],
     },
@@ -104,8 +119,15 @@ export default tseslint.config(
   {
     // A TanStack route file exports both its Route and its component: that is the shape the
     // generator expects, so fast refresh does not get a say.
+    //
+    // A guard also stops a navigation by throwing the result of `redirect()`, which is a `Response`
+    // and not an `Error`. That is how the router is meant to be used (design M0 section 7.3), and
+    // it is allowed here rather than everywhere: throwing a non error anywhere else is still a bug.
     files: ['src/routes/**/*.tsx'],
-    rules: { 'react-refresh/only-export-components': 'off' },
+    rules: {
+      'react-refresh/only-export-components': 'off',
+      '@typescript-eslint/only-throw-error': ['error', { allow: [{ from: 'lib', name: 'Response' }] }],
+    },
   },
   {
     files: ['src/shared/api/**/*.{ts,tsx}'],

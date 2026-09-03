@@ -220,6 +220,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
 app.MapMeEndpoints();
+app.MapLocaleEndpoints();
 app.MapLinksEndpoints();
 
 app.MapGet("/api/version", (BuildInfo build) => TypedResults.Ok(

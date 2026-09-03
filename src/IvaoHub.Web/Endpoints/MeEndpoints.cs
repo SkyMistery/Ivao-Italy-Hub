@@ -29,6 +29,7 @@ internal static class MeEndpoints
                         user.Positions,
                         user.IsStaff,
                         user.IsSuperadmin,
+                        user.HasAllDepartments,
                         user.Locale,
                         [.. user.Departments.Select(department => department.ToString())],
                         [.. user.Firs])
@@ -73,6 +74,11 @@ internal sealed record BootstrapUser(
     IReadOnlyList<string> Positions,
     bool IsStaff,
     bool IsSuperadmin,
+    // The director, the web team and a super administrator reach every department, so the staff
+    // sidebar has to list all of them rather than the ones the positions name. It is stated here
+    // because the client must not guess it from the shape of the permission list, for the same
+    // reason the server does not (design M0 section 3.3).
+    bool HasAllDepartments,
     string Locale,
     IReadOnlyList<string> Departments,
     IReadOnlyList<string> Firs);

@@ -1,5 +1,7 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 
+import { ApiError, type HubProblem } from './problem';
+
 import type { paths } from './schema';
 
 /**
@@ -45,4 +47,24 @@ api.use(unauthorizedMiddleware);
 /** Where the browser goes to start a login. A Kestrel endpoint, not a route of this application. */
 export function loginHref(returnUrl: string): string {
   return `/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+}
+
+/**
+ * The answer of a call, or the refusal as an exception. Every `queries.ts` and `mutations.ts` ends
+ * with this line, so that no screen ever reads a status code and every refusal reaches
+ * `useProblemDetails` in the same shape.
+ */
+export function unwrap<T>(result: { data?: T | undefined; error?: unknown; response: Response }): T {
+  if (result.error !== undefined || result.data === undefined) {
+    throw new ApiError(result.response.status, result.error as HubProblem | undefined);
+  }
+
+  return result.data;
+}
+
+/** The same, for a call that answers 204 and has nothing to return. */
+export function unwrapEmpty(result: { error?: unknown; response: Response }): void {
+  if (result.error !== undefined || !result.response.ok) {
+    throw new ApiError(result.response.status, result.error as HubProblem | undefined);
+  }
 }

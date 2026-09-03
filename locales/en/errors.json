@@ -14,7 +14,8 @@
     },
     "required": "This field is required.",
     "localized": {
-      "missing": "Fill this field in for every language of the division."
+      "missing": "Fill this field in for every language of the division.",
+      "missingIn": "Still missing in: {{locales}}."
     },
     "url": {
       "absolute": "Enter a full address starting with http:// or https://"
@@ -24,6 +25,11 @@
     },
     "text": {
       "tooLong": "This text is too long."
-    }
+    },
+    "locale": {
+      "unsupported": "The division does not publish in that language."
+    },
+    "unknown": "Something went wrong. Try again.",
+    "title": "That did not work"
   }
 }

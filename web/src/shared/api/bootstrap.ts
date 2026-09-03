@@ -1,3 +1,4 @@
+import { DEPARTMENTS, isDepartment } from './department';
 import type { components } from './schema';
 
 /**
@@ -49,4 +50,19 @@ export function holdsPermission(bootstrap: Bootstrap, name: string, department: 
  */
 export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boolean {
   return bootstrap.permissions.some((permission) => permission.name === name);
+}
+
+/**
+ * The departments a staff member may work in: their own, or every one of them when the role
+ * reaches everywhere. `hasAllDepartments` is a fact of the role, stated by the server; it is not
+ * read off the shape of the permission list, for the same reason the server does not read it that
+ * way (design M0 §3.3).
+ */
+export function reachableDepartments(bootstrap: Bootstrap): Department[] {
+  const user = bootstrap.user;
+  if (!user) {
+    return [];
+  }
+
+  return user.hasAllDepartments ? [...DEPARTMENTS] : user.departments.filter(isDepartment);
 }
