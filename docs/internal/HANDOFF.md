@@ -15,7 +15,7 @@
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
 | F4 spina dorsale del dominio | mergiata (PR #6) |
-| F5 `MapCrud` e `links` (server) | **PR aperta**, branch `m0/f5-mapcrud-links` |
+| F5 `MapCrud` e `links` (server) | **PR #8 aperta**, branch `m0/f5-mapcrud-links` |
 | **F6 spina dorsale frontend** | **prossima**, dopo il merge di F5 |
 
 Una sessione nuova parte da `git checkout main && git pull` (dal checkout principale, non da un
