@@ -9,86 +9,284 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LoginErrorRouteImport } from './routes/login-error'
-import { Route as MeRouteImport } from './routes/me'
+import { Route as MemberRouteImport } from './routes/_member'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as StaffRouteImport } from './routes/_staff'
+import { Route as MemberMeRouteImport } from './routes/_member/me'
+import { Route as PublicIndexRouteImport } from './routes/_public/index'
+import { Route as PublicForbiddenRouteImport } from './routes/_public/forbidden'
+import { Route as PublicLoginErrorRouteImport } from './routes/_public/login-error'
+import { Route as StaffStaffIndexRouteImport } from './routes/_staff/staff.index'
+import { Route as StaffStaffDeptLinksRouteImport } from './routes/_staff/staff.$dept.links'
+import { Route as StaffStaffAdminUiKitRouteImport } from './routes/_staff/staff.admin.ui-kit'
+import { Route as StaffStaffDeptLinksIdRouteImport } from './routes/_staff/staff.$dept.links.$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const MemberRoute = MemberRouteImport.update({
+  id: '/_member',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginErrorRoute = LoginErrorRouteImport.update({
-  id: '/login-error',
-  path: '/login-error',
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MeRoute = MeRouteImport.update({
+const StaffRoute = StaffRouteImport.update({
+  id: '/_staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberMeRoute = MemberMeRouteImport.update({
   id: '/me',
   path: '/me',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => MemberRoute,
+} as any)
+const PublicIndexRoute = PublicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicForbiddenRoute = PublicForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicLoginErrorRoute = PublicLoginErrorRouteImport.update({
+  id: '/login-error',
+  path: '/login-error',
+  getParentRoute: () => PublicRoute,
+} as any)
+const StaffStaffIndexRoute = StaffStaffIndexRouteImport.update({
+  id: '/staff/',
+  path: '/staff/',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffStaffDeptLinksRoute = StaffStaffDeptLinksRouteImport.update({
+  id: '/staff/$dept/links',
+  path: '/staff/$dept/links',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffStaffAdminUiKitRoute = StaffStaffAdminUiKitRouteImport.update({
+  id: '/staff/admin/ui-kit',
+  path: '/staff/admin/ui-kit',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffStaffDeptLinksIdRoute = StaffStaffDeptLinksIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => StaffStaffDeptLinksRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login-error': typeof LoginErrorRoute
-  '/me': typeof MeRoute
+  '/': typeof PublicIndexRoute
+  '/me': typeof MemberMeRoute
+  '/forbidden': typeof PublicForbiddenRoute
+  '/login-error': typeof PublicLoginErrorRoute
+  '/staff/': typeof StaffStaffIndexRoute
+  '/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
+  '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login-error': typeof LoginErrorRoute
-  '/me': typeof MeRoute
+  '/': typeof PublicIndexRoute
+  '/me': typeof MemberMeRoute
+  '/forbidden': typeof PublicForbiddenRoute
+  '/login-error': typeof PublicLoginErrorRoute
+  '/staff': typeof StaffStaffIndexRoute
+  '/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
+  '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/login-error': typeof LoginErrorRoute
-  '/me': typeof MeRoute
+  '/_member': typeof MemberRouteWithChildren
+  '/_public': typeof PublicRouteWithChildren
+  '/_staff': typeof StaffRouteWithChildren
+  '/_member/me': typeof MemberMeRoute
+  '/_public/forbidden': typeof PublicForbiddenRoute
+  '/_public/login-error': typeof PublicLoginErrorRoute
+  '/_public/': typeof PublicIndexRoute
+  '/_staff/staff/': typeof StaffStaffIndexRoute
+  '/_staff/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
+  '/_staff/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/_staff/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login-error' | '/me'
+  fullPaths:
+    | '/'
+    | '/me'
+    | '/forbidden'
+    | '/login-error'
+    | '/staff/'
+    | '/staff/$dept/links'
+    | '/staff/admin/ui-kit'
+    | '/staff/$dept/links/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login-error' | '/me'
-  id: '__root__' | '/' | '/login-error' | '/me'
+  to:
+    | '/'
+    | '/me'
+    | '/forbidden'
+    | '/login-error'
+    | '/staff'
+    | '/staff/$dept/links'
+    | '/staff/admin/ui-kit'
+    | '/staff/$dept/links/$id'
+  id:
+    | '__root__'
+    | '/_member'
+    | '/_public'
+    | '/_staff'
+    | '/_member/me'
+    | '/_public/forbidden'
+    | '/_public/login-error'
+    | '/_public/'
+    | '/_staff/staff/'
+    | '/_staff/staff/$dept/links'
+    | '/_staff/staff/admin/ui-kit'
+    | '/_staff/staff/$dept/links/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LoginErrorRoute: typeof LoginErrorRoute
-  MeRoute: typeof MeRoute
+  MemberRoute: typeof MemberRouteWithChildren
+  PublicRoute: typeof PublicRouteWithChildren
+  StaffRoute: typeof StaffRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_member': {
+      id: '/_member'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof MemberRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login-error': {
-      id: '/login-error'
-      path: '/login-error'
-      fullPath: '/login-error'
-      preLoaderRoute: typeof LoginErrorRouteImport
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/me': {
-      id: '/me'
+    '/_staff': {
+      id: '/_staff'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof StaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_member/me': {
+      id: '/_member/me'
       path: '/me'
       fullPath: '/me'
-      preLoaderRoute: typeof MeRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof MemberMeRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_public/': {
+      id: '/_public/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/forbidden': {
+      id: '/_public/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof PublicForbiddenRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/login-error': {
+      id: '/_public/login-error'
+      path: '/login-error'
+      fullPath: '/login-error'
+      preLoaderRoute: typeof PublicLoginErrorRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_staff/staff/': {
+      id: '/_staff/staff/'
+      path: '/staff'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof StaffStaffIndexRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/$dept/links': {
+      id: '/_staff/staff/$dept/links'
+      path: '/staff/$dept/links'
+      fullPath: '/staff/$dept/links'
+      preLoaderRoute: typeof StaffStaffDeptLinksRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/admin/ui-kit': {
+      id: '/_staff/staff/admin/ui-kit'
+      path: '/staff/admin/ui-kit'
+      fullPath: '/staff/admin/ui-kit'
+      preLoaderRoute: typeof StaffStaffAdminUiKitRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/$dept/links/$id': {
+      id: '/_staff/staff/$dept/links/$id'
+      path: '/$id'
+      fullPath: '/staff/$dept/links/$id'
+      preLoaderRoute: typeof StaffStaffDeptLinksIdRouteImport
+      parentRoute: typeof StaffStaffDeptLinksRoute
     }
   }
 }
 
+interface MemberRouteChildren {
+  MemberMeRoute: typeof MemberMeRoute
+}
+
+const MemberRouteChildren: MemberRouteChildren = {
+  MemberMeRoute: MemberMeRoute,
+}
+
+const MemberRouteWithChildren =
+  MemberRoute._addFileChildren(MemberRouteChildren)
+
+interface PublicRouteChildren {
+  PublicForbiddenRoute: typeof PublicForbiddenRoute
+  PublicLoginErrorRoute: typeof PublicLoginErrorRoute
+  PublicIndexRoute: typeof PublicIndexRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicForbiddenRoute: PublicForbiddenRoute,
+  PublicLoginErrorRoute: PublicLoginErrorRoute,
+  PublicIndexRoute: PublicIndexRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
+interface StaffStaffDeptLinksRouteChildren {
+  StaffStaffDeptLinksIdRoute: typeof StaffStaffDeptLinksIdRoute
+}
+
+const StaffStaffDeptLinksRouteChildren: StaffStaffDeptLinksRouteChildren = {
+  StaffStaffDeptLinksIdRoute: StaffStaffDeptLinksIdRoute,
+}
+
+const StaffStaffDeptLinksRouteWithChildren =
+  StaffStaffDeptLinksRoute._addFileChildren(StaffStaffDeptLinksRouteChildren)
+
+interface StaffRouteChildren {
+  StaffStaffIndexRoute: typeof StaffStaffIndexRoute
+  StaffStaffDeptLinksRoute: typeof StaffStaffDeptLinksRouteWithChildren
+  StaffStaffAdminUiKitRoute: typeof StaffStaffAdminUiKitRoute
+}
+
+const StaffRouteChildren: StaffRouteChildren = {
+  StaffStaffIndexRoute: StaffStaffIndexRoute,
+  StaffStaffDeptLinksRoute: StaffStaffDeptLinksRouteWithChildren,
+  StaffStaffAdminUiKitRoute: StaffStaffAdminUiKitRoute,
+}
+
+const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LoginErrorRoute: LoginErrorRoute,
-  MeRoute: MeRoute,
+  MemberRoute: MemberRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren,
+  StaffRoute: StaffRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

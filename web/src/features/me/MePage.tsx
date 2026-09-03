@@ -2,14 +2,12 @@ import { Badge, H1, H3, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { loginHref } from '../../shared/api/client';
-
 import { bootstrapQuery } from './queries';
 
 /**
- * What the hub knows about the person who is signed in. In F6 this becomes the member dashboard
- * composed of the widgets registered by the modules; here it is the proof that the identity, the
- * positions and the effective permissions came through the login intact.
+ * What the hub knows about the person who is signed in: the proof that the identity, the positions
+ * and the effective permissions came through the login intact. It becomes the member dashboard
+ * composed of the widgets the modules register, in M1.
  */
 export function MePage() {
   const { t } = useTranslation();
@@ -21,16 +19,9 @@ export function MePage() {
 
   const user = bootstrap?.user ?? null;
   if (user === null) {
-    return (
-      <>
-        <H1>{t('me.title')}</H1>
-        <Lead>
-          <a className="underline" href={loginHref('/me')}>
-            {t('auth.login')}
-          </a>
-        </Lead>
-      </>
-    );
+    // The `_member` layout does not let an anonymous visitor this far; this is the moment between
+    // a sign out and the redraw, not a state to design for.
+    return <Lead>{t('common.loading')}</Lead>;
   }
 
   return (
