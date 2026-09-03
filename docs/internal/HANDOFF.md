@@ -3,9 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026, notte — **F6 mergiata** (PR #13, merge commit `ed3808e`).
+**Ultimo aggiornamento:** 3 settembre 2026, notte — **F6 chiusa**: PR #13 (`ed3808e`) e la sua
+coda documentale #14 (`ea2ce70`) fuse, CI verde su `main` dopo entrambe, repository ripulito (§9).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.27. **Design:** v1.5. **Test:** 286 .NET verdi (210 unit + 76 integrazione) + 35 Vitest.
+**Piano:** v0.27. **Design:** v1.6. **Test:** 286 .NET verdi (210 unit + 76 integrazione) + 35 Vitest.
 
 | Fase | Stato |
 |---|---|
@@ -459,11 +460,17 @@ allargare i permessi, mai stringerli a sorpresa.
   ancora «phase F1» e «phase F0»; il design `01` descriveva l'interceptor e il query filter in una
   forma che F4 ha poi cambiato; i codici di dipartimento del changelog 0.21 erano rimasti in una
   decina di esempi. Vale la pena rifare lo stesso giro alla fine di ogni fase: costa dieci minuti e
-  l'alternativa è un documento che mente.
+  l'alternativa è un documento che mente. **Rifatto a fine F6**, e ha trovato di nuovo qualcosa:
+  `README.md` e `docs/FORKING.md` fermi a «phase F5», §9 che descriveva worktree e rami locali
+  cancellati un'ora prima, e la ricetta 2 del design che dichiarava i search params dentro la route
+  quando il codice li tiene in un posto solo. Nessuna di queste è grave da sola; tutte insieme sono
+  il motivo per cui una sessione nuova legge una cosa e ne trova un'altra.
 - ~~Il test di architettura «nessun modulo referenzia un altro modulo»~~ **fatto in F4**
   (`ArchitectureTests`, che legge i `.csproj` e non le assembly: un riferimento che il compilatore
-  elide perché nessuno lo usa ancora è comunque una dipendenza della build). `docs/UI-GUIDELINES.md`
-  resta **F6**.
+  elide perché nessuno lo usa ancora è comunque una dipendenza della build).
+  ~~`docs/UI-GUIDELINES.md` resta F6~~ **scritta in F6**: le quattro regole, ciascuna con la cosa
+  che la fa fallire (ESLint, `i18n:check`, il test della ui-kit) invece di un revisore che se la
+  ricorda.
 - Il catalogo dei permessi che `HubPolicyProvider` interroga è `CorePermissions` e basta: i permessi
   dei moduli si aggiungono in **F8**, quando `IModule.Permissions` esiste.
 - `BlockDocumentWalker.ValidateEnvelope` accetta l'elenco dei tipi di blocco noti come parametro
@@ -667,11 +674,12 @@ un contesto.
 
 ## 9. Igiene del repository
 
-- **Sul remoto c'è solo `main`.** I branch delle fasi chiuse vengono cancellati appena la PR è
-  fusa — `m0/f6-frontend-backbone` subito dopo la #13 — con `git push origin --delete <branch>`: il repository non li cancella da se' al merge, quindi ogni
-  tanto vanno tolti a mano. Prima di cancellarne uno vale la pena guardare **la PR**, non
-  `git branch --merged`: una PR chiusa con squash lascia una punta che non è antenata di `main`, e
-  quel comando la dichiara «non fusa» pur essendoci dentro tutto.
+- **Sul remoto c'è solo `main`.** GitHub non cancella un branch da sé quando fonde la PR, quindi lo
+  si toglie a mano con `git push origin --delete <branch>` — meglio subito dopo il merge che «ogni
+  tanto»: `m0/f6-frontend-backbone` e `docs/f6-merged` sono stati tolti così. Prima di cancellarne
+  uno vale la pena guardare **la PR**, non `git branch --merged`: una PR chiusa con squash lascia
+  una punta che non è antenata di `main`, e quel comando la dichiara «non fusa» pur essendoci
+  dentro tutto.
 - La strategia di merge era **squash** fino a F4 e dalla PR #8 in poi è il **merge commit**. Il
   criterio non è cambiato, è cambiato cosa lo soddisfa: quello che si vuole e' che `main` si legga
   a granularità di fase, e `git log --first-parent` lo fa — una voce per fase, F5 è `03d7f96` —
@@ -683,12 +691,14 @@ un contesto.
   perché `main` è già in uso dal checkout principale: è normale, la sessione nuova parte dal
   checkout principale. Un worktree la cui fase è stata fusa non serve più a niente e si toglie con
   `git worktree remove` — **dal checkout principale**, perché un worktree non può togliere se
-  stesso. Al 3 set 2026, dopo F6, ne restano parecchi di fasi già chiuse, e con loro i rami locali
-  che ci stanno sopra: `git worktree list` li elenca, `git worktree prune` ripulisce quelli le cui
-  cartelle non esistono più. I rami **locali** delle fasi fuse (`m0/f4-domain-backbone`,
-  `docs/repo-hygiene`, `claude/project-senior-review-627b8f`, …) si cancellano con `git branch -D`
-  una volta liberati: sono già dentro `main`, e `git branch --merged` non basta a dirlo perché una
-  PR chiusa con squash lascia una punta che non è antenata di `main`.
+  stesso. Fatto a fine F6: c'erano tre worktree di fasi già chiuse oltre a quella in corso, e
+  tredici rami locali di cui undici già dentro `main`; adesso restano `main` e la sessione viva. Il giro è `git worktree list`, poi
+  `git worktree remove <path>` su quelle pulite, poi `git branch -D` sui rami che restano liberi.
+  Due avvertenze imparate facendolo: **si guarda la PR, non `git branch --merged`**, perché le fasi
+  fino a F4 furono fuse con squash e le loro punte non sono antenate di `main` (`m0/f4-domain-backbone`
+  e `docs/handoff-f5` sembrano «non fuse» e non lo sono); e su Windows la cartella può restare lì
+  vuota con un «permission denied» se una sessione ci ha ancora dentro la propria directory di
+  lavoro — git non la considera più una worktree, sparisce da sé quando quell'handle si chiude.
 - `artifacts/` è gitignorata, quindi `artifacts/openapi/IvaoHub.Web.json` **non** è nel repository:
   lo riscrive `dotnet build`. Quello che è committato è il file che ne deriva,
   `web/src/shared/api/schema.d.ts`, marcato `linguist-generated` in `.gitattributes` e ignorato da
