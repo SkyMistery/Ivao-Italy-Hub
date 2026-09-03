@@ -3,7 +3,11 @@
     "title": "IVAO Division Hub"
   },
   "common": {
-    "loading": "Caricamento..."
+    "loading": "Caricamento...",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica"
   },
   "nav": {
     "home": "Home",
@@ -38,6 +42,144 @@
       "nonce": "La risposta di IVAO non è stata validata. Riprova; se continua, il problema è dalla nostra parte.",
       "profile": "IVAO non ci ha detto chi sei, quindi non è stato possibile aprire un account.",
       "unknown": "Qualcosa è andato storto al ritorno da IVAO."
+    }
+  },
+  "theme": {
+    "toggle": "Passa da chiaro a scuro"
+  },
+  "footer": {
+    "legal": [
+      {
+        "label": "IVAO",
+        "href": "https://www.ivao.aero"
+      },
+      {
+        "label": "Termini e condizioni",
+        "href": "https://www.ivao.aero/termsandconditions.htm"
+      },
+      {
+        "label": "Informativa sulla privacy",
+        "href": "https://www.ivao.aero/privacy.htm"
+      },
+      {
+        "label": "Regolamento",
+        "href": "https://www.ivao.aero/rules.htm"
+      }
+    ],
+    "disclaimer": "{{division}} è una divisione di IVAO, una rete di simulazione di volo senza scopo di lucro. Niente di quanto pubblicato qui è destinato all'aviazione reale.",
+    "version": "Versione {{version}}"
+  },
+  "status": {
+    "active": "Attivo",
+    "inactive": "Non attivo"
+  },
+  "visibility": {
+    "Public": "Pubblico",
+    "Members": "Membri",
+    "Staff": "Staff",
+    "Department": "Dipartimento"
+  },
+  "form": {
+    "empty": "Vuoto",
+    "copyFrom": "Copia da {{language}}",
+    "addEntry": "Aggiungi",
+    "removeEntry": "Rimuovi",
+    "submitHint": "Premi Invio per salvare."
+  },
+  "list": {
+    "search": "Cerca",
+    "actions": "Azioni",
+    "total_one": "{{count}} riga",
+    "total_other": "{{count}} righe",
+    "empty": {
+      "title": "Non c'è ancora niente",
+      "description": "Tutto quello che questo dipartimento crea comparirà in questo elenco.",
+      "noMatch": "Nessuna riga corrisponde alla ricerca."
+    }
+  },
+  "notFound": {
+    "title": "Questa pagina non esiste",
+    "description": "L'indirizzo potrebbe non essere più valido, oppure la pagina è stata rimossa.",
+    "home": "Torna alla home"
+  },
+  "forbidden": {
+    "title": "Questa pagina non è per te",
+    "description": "Hai fatto l'accesso, ma le tue posizioni staff non aprono questa pagina. Se pensi che dovrebbero, parlane con il tuo direttore.",
+    "home": "Torna alla home"
+  },
+  "admin": {
+    "title": "Amministrazione"
+  },
+  "links": {
+    "title": "Link",
+    "description": "Gli indirizzi che questo dipartimento pubblica sul sito della divisione.",
+    "create": "Nuovo link",
+    "edit": "Modifica link",
+    "delete": {
+      "title": "Eliminare questo link?",
+      "description": "Sparisce subito dal sito, e l'operazione non si può annullare."
+    },
+    "fields": {
+      "title": "Titolo",
+      "url": "Indirizzo",
+      "description": "Descrizione",
+      "category": "Categoria",
+      "sort": "Ordine",
+      "isActive": "Pubblicato",
+      "visibility": "Visibile a",
+      "ownerDepartment": "Dipartimento",
+      "updatedAt": "Ultima modifica"
+    },
+    "options": {
+      "visibility": {
+        "Public": "Tutti",
+        "Members": "Membri",
+        "Staff": "Staff",
+        "Department": "Questo dipartimento"
+      }
+    }
+  },
+  "uiKit": {
+    "title": "Galleria dei componenti",
+    "description": "Tutti i componenti dell'hub e tutti i blocchi del registry, con props di esempio.",
+    "components": "Componenti",
+    "blocks": "Blocchi",
+    "noBlocks": "Il registry dei blocchi è vuoto; i blocchi editoriali arrivano con l'editor dei contenuti.",
+    "sample": {
+      "heroTitle": "Vola con la divisione",
+      "heroLead": "Una frase che dice a cosa serve questa pagina.",
+      "sectionTitle": "Una sezione di pagina",
+      "statLabel": "Voli questo mese",
+      "pageTitle": "Titolo di una pagina",
+      "pageBody": "Qui va quello che la pagina mette sotto il titolo.",
+      "markdown": "Un paragrafo con **grassetto**, *corsivo* e un [link](https://www.ivao.aero).\n\n- primo\n- secondo",
+      "problem": "Qualcun altro ha modificato questa riga nel frattempo.",
+      "form": {
+        "fields": {
+          "title": "Titolo",
+          "note": "Nota",
+          "reference": "Riferimento",
+          "weight": "Peso",
+          "published": "Pubblicato",
+          "visibility": "Visibile a"
+        },
+        "options": {
+          "visibility": {
+            "Public": "Tutti",
+            "Members": "Membri",
+            "Staff": "Staff",
+            "Department": "Questo dipartimento"
+          }
+        }
+      },
+      "list": {
+        "fields": {
+          "title": "Titolo",
+          "url": "Indirizzo",
+          "isActive": "Pubblicato",
+          "updatedAt": "Ultima modifica"
+        }
+      }
     }
   }
 }

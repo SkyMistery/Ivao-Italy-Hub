@@ -3,7 +3,11 @@
     "title": "IVAO Division Hub"
   },
   "common": {
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
   },
   "nav": {
     "home": "Home",
@@ -38,6 +42,144 @@
       "nonce": "The answer from IVAO could not be validated. Try again; if it keeps happening, it is a problem on our side.",
       "profile": "IVAO did not tell us who you are, so no account could be opened.",
       "unknown": "Something went wrong on the way back from IVAO."
+    }
+  },
+  "theme": {
+    "toggle": "Switch between light and dark"
+  },
+  "footer": {
+    "legal": [
+      {
+        "label": "IVAO",
+        "href": "https://www.ivao.aero"
+      },
+      {
+        "label": "Terms and conditions",
+        "href": "https://www.ivao.aero/termsandconditions.htm"
+      },
+      {
+        "label": "Privacy policy",
+        "href": "https://www.ivao.aero/privacy.htm"
+      },
+      {
+        "label": "Rules and regulations",
+        "href": "https://www.ivao.aero/rules.htm"
+      }
+    ],
+    "disclaimer": "{{division}} is a division of IVAO, a non-commercial flight simulation network. Nothing published here is intended for real world aviation.",
+    "version": "Version {{version}}"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Not active"
+  },
+  "visibility": {
+    "Public": "Public",
+    "Members": "Members",
+    "Staff": "Staff",
+    "Department": "Department"
+  },
+  "form": {
+    "empty": "Empty",
+    "copyFrom": "Copy from {{language}}",
+    "addEntry": "Add",
+    "removeEntry": "Remove",
+    "submitHint": "Press Enter to save."
+  },
+  "list": {
+    "search": "Search",
+    "actions": "Actions",
+    "total_one": "{{count}} row",
+    "total_other": "{{count}} rows",
+    "empty": {
+      "title": "Nothing here yet",
+      "description": "Everything this department creates will show up in this list.",
+      "noMatch": "No row matches that search."
+    }
+  },
+  "notFound": {
+    "title": "This page does not exist",
+    "description": "The address may be out of date, or the page may have been removed.",
+    "home": "Back to the home page"
+  },
+  "forbidden": {
+    "title": "This is not for you",
+    "description": "You are signed in, but your staff positions do not open this page. If you think they should, talk to your director.",
+    "home": "Back to the home page"
+  },
+  "admin": {
+    "title": "Administration"
+  },
+  "links": {
+    "title": "Links",
+    "description": "The addresses this department publishes on the division site.",
+    "create": "New link",
+    "edit": "Edit link",
+    "delete": {
+      "title": "Delete this link?",
+      "description": "It disappears from the site straight away, and this cannot be undone."
+    },
+    "fields": {
+      "title": "Title",
+      "url": "Address",
+      "description": "Description",
+      "category": "Category",
+      "sort": "Order",
+      "isActive": "Published",
+      "visibility": "Visible to",
+      "ownerDepartment": "Department",
+      "updatedAt": "Last change"
+    },
+    "options": {
+      "visibility": {
+        "Public": "Everybody",
+        "Members": "Members",
+        "Staff": "Staff",
+        "Department": "This department"
+      }
+    }
+  },
+  "uiKit": {
+    "title": "Component gallery",
+    "description": "Every custom component of the hub and every block of the registry, with example props.",
+    "components": "Components",
+    "blocks": "Blocks",
+    "noBlocks": "The block registry is empty; the editorial blocks arrive with the content editor.",
+    "sample": {
+      "heroTitle": "Fly with the division",
+      "heroLead": "One sentence that says what this page is for.",
+      "sectionTitle": "A section of a page",
+      "statLabel": "Flights this month",
+      "pageTitle": "A page title",
+      "pageBody": "Whatever the page puts under its title goes here.",
+      "markdown": "A paragraph with **bold**, *italic* and a [link](https://www.ivao.aero).\n\n- first\n- second",
+      "problem": "Somebody else changed this in the meantime.",
+      "form": {
+        "fields": {
+          "title": "Title",
+          "note": "Note",
+          "reference": "Reference",
+          "weight": "Weight",
+          "published": "Published",
+          "visibility": "Visible to"
+        },
+        "options": {
+          "visibility": {
+            "Public": "Everybody",
+            "Members": "Members",
+            "Staff": "Staff",
+            "Department": "This department"
+          }
+        }
+      },
+      "list": {
+        "fields": {
+          "title": "Title",
+          "url": "Address",
+          "isActive": "Published",
+          "updatedAt": "Last change"
+        }
+      }
     }
   }
 }
