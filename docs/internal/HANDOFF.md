@@ -692,13 +692,39 @@ un contesto.
   checkout principale. Un worktree la cui fase è stata fusa non serve più a niente e si toglie con
   `git worktree remove` — **dal checkout principale**, perché un worktree non può togliere se
   stesso. Fatto a fine F6: c'erano tre worktree di fasi già chiuse oltre a quella in corso, e
-  tredici rami locali di cui undici già dentro `main`; adesso restano `main` e la sessione viva. Il giro è `git worktree list`, poi
-  `git worktree remove <path>` su quelle pulite, poi `git branch -D` sui rami che restano liberi.
-  Due avvertenze imparate facendolo: **si guarda la PR, non `git branch --merged`**, perché le fasi
-  fino a F4 furono fuse con squash e le loro punte non sono antenate di `main` (`m0/f4-domain-backbone`
-  e `docs/handoff-f5` sembrano «non fuse» e non lo sono); e su Windows la cartella può restare lì
-  vuota con un «permission denied» se una sessione ci ha ancora dentro la propria directory di
-  lavoro — git non la considera più una worktree, sparisce da sé quando quell'handle si chiude.
+  tredici rami locali di cui undici già dentro `main`; adesso restano `main` e la sessione viva.
+  Il giro è `git worktree list`, poi `git worktree remove <path>` su quelle pulite, poi
+  `git branch -D` sui rami che restano liberi. **Si guarda la PR, non `git branch --merged`**,
+  perché le fasi fino a F4 furono fuse con squash e le loro punte non sono antenate di `main`:
+  `m0/f4-domain-backbone` e `docs/handoff-f5` sembrano «non fuse» e non lo sono.
+
+- ⚠️ **`git worktree remove` su Windows fallisce con «Filename too long» finché c'è
+  `web/node_modules`.** Non è un permesso e non è un handle aperto: è `MAX_PATH`. Le cartelle di
+  pnpm — `web/node_modules/.pnpm/@pacchetto+nome@versione_hash/node_modules/…` — sfondano i 260
+  caratteri; misurato a fine F6 su una worktree sola: **360 percorsi oltre il limite, il più lungo
+  295 caratteri**. Il guaio è che il comando fallisce **dopo** aver già cancellato quasi tutto,
+  `.git` compreso, quindi git fa il prune della worktree e sul disco resta un mezzo scheletro che
+  non è più una worktree e non è nemmeno una cartella vuota. Confonde parecchio.
+
+  Due modi per non prenderla in faccia. Il primo, già fatto qui: `git config core.longpaths true`
+  sul repository, che è **locale a `.git/config`** e quindi ogni clone nuovo va rifatto — è il
+  motivo per cui sta scritto qui e non solo nella configurazione. Il secondo, se ci si è già dentro:
+  svuotare `web/node_modules` **prima**, e l'unico strumento che sui percorsi lunghi funziona
+  davvero è `robocopy`, perché `rd /s /q`, `rm -rf` e `Remove-Item -Recurse` si fermano tutti a 260:
+
+  ```
+  mkdir %TEMP%\vuota
+  robocopy %TEMP%\vuota "<path della worktree>\web\node_modules" /MIR /XJ /R:0 /W:0
+  git worktree remove --force "<path della worktree>"
+  ```
+
+  `/XJ` esclude le junction, così robocopy toglie il link e non insegue il contenuto dello store
+  condiviso di pnpm. Verificato con un canarino su `web/node_modules` del checkout principale prima
+  e dopo: intatto.
+
+  Alla fine può comunque restare **la sola cartella radice, vuota, «busy»**, se una sessione ci ha
+  ancora dentro la propria directory di lavoro. Quella è innocua — git non la considera più una
+  worktree — e sparisce da sé quando quella sessione si chiude.
 - `artifacts/` è gitignorata, quindi `artifacts/openapi/IvaoHub.Web.json` **non** è nel repository:
   lo riscrive `dotnet build`. Quello che è committato è il file che ne deriva,
   `web/src/shared/api/schema.d.ts`, marcato `linguist-generated` in `.gitattributes` e ignorato da
