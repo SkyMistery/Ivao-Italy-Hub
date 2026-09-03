@@ -78,8 +78,21 @@ public sealed class IvaoUserTokenStore(
         }
     }
 
+    /// <summary>
+    /// Tracked, not <c>ExecuteDelete</c>. A bulk delete goes straight to the server and never
+    /// reaches the save changes interceptor, so it would be a hole in the audit, in the write guard
+    /// and in the projections. It costs one extra query on a logout, which is a good price for
+    /// having exactly one way into the database.
+    /// </summary>
     public async Task DeleteAsync(int vid, CancellationToken cancellationToken = default)
     {
-        await database.UserTokens.Where(token => token.Vid == vid).ExecuteDeleteAsync(cancellationToken);
+        var rows = await database.UserTokens.Where(token => token.Vid == vid).ToListAsync(cancellationToken);
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        database.UserTokens.RemoveRange(rows);
+        await database.SaveChangesAsync(cancellationToken);
     }
 }

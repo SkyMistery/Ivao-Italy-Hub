@@ -54,6 +54,26 @@ public sealed class DivisionOptionsValidationTests
         Assert.Contains(result.Failures, failure => failure.Contains("'code'", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("li")]
+    [InlineData("LIRRX")]
+    [InlineData("L1")]
+    public void RejectsAnIcaoPrefixThatIsNotOne(string prefix)
+    {
+        // Otherwise it is a field nobody looks at until the day it is wrong, and a lower case or
+        // over long prefix simply matches nothing, in silence.
+        var result = Validate(Valid() with { IcaoPrefixes = [prefix] });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure => failure.Contains("'icaoPrefixes'", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AcceptsNoIcaoPrefixAtAll()
+    {
+        Assert.True(Validate(Valid() with { IcaoPrefixes = [] }).Succeeded);
+    }
+
     [Fact]
     public void RejectsADefaultLocaleThatIsNotInTheList()
     {
@@ -100,6 +120,6 @@ public sealed class DivisionOptionsValidationTests
             DefaultLocale = "en",
         };
 
-        Assert.Equal("IVAO Example", options.ResolveName("fr"));
+        Assert.Equal("IVAO Example", options.Name[options.DefaultLocale]);
     }
 }

@@ -23,7 +23,6 @@ public sealed class IvaoOAuthOptionsValidator : IValidateOptions<IvaoOAuthOption
         RequireValue(options.Authority, nameof(options.Authority), failures);
         RequireValue(options.ClientId, nameof(options.ClientId), failures);
         RequireValue(options.ClientSecret, nameof(options.ClientSecret), failures);
-        RequireValue(options.PostLogoutRedirectUri, nameof(options.PostLogoutRedirectUri), failures);
 
         var login = RequireAbsoluteUrl(options.LoginUrl, nameof(options.LoginUrl), failures);
         var redirect = RequireAbsoluteUrl(options.RedirectUri, nameof(options.RedirectUri), failures);
@@ -42,6 +41,14 @@ public sealed class IvaoOAuthOptionsValidator : IValidateOptions<IvaoOAuthOption
             && !login.GetLeftPart(UriPartial.Authority).Equals(redirect.GetLeftPart(UriPartial.Authority), StringComparison.OrdinalIgnoreCase))
         {
             failures.Add("ivao-oauth.json: 'LoginUrl' and 'RedirectUri' must be on the same scheme, host and port.");
+        }
+
+        if (options.Scopes.Length > 0 && !options.Scopes.Contains("openid", StringComparer.Ordinal))
+        {
+            // Without it the answer carries no id token, and the flow then validates a nonce that
+            // will never arrive: the login fails late, complaining about the nonce rather than
+            // about the scope that is actually missing.
+            failures.Add("ivao-oauth.json: 'Scopes' must contain \"openid\": the sign in is OpenID Connect.");
         }
 
         if (options.Scopes.Length == 0)

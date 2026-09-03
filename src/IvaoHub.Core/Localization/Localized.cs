@@ -63,8 +63,18 @@ public sealed record Localized<T> : IReadOnlyDictionary<string, T>
         _ => false,
     };
 
+    /// <summary>
+    /// Compared through the dictionary of the other side, so that the keys are matched the way this
+    /// type stores them: case insensitively. Set arithmetic over the pairs would compare the keys
+    /// ordinally instead, and make <c>{"EN": "x"}</c> differ from <c>{"en": "x"}</c> even though
+    /// both resolve to the same value.
+    /// </summary>
     public bool Equals(Localized<T>? other) =>
-        other is not null && _values.Count == other._values.Count && !_values.Except(other._values).Any();
+        other is not null
+        && _values.Count == other._values.Count
+        && _values.All(pair =>
+            other._values.TryGetValue(pair.Key, out var value)
+            && EqualityComparer<T>.Default.Equals(pair.Value, value));
 
     public override int GetHashCode()
     {

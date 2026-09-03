@@ -28,6 +28,7 @@ public sealed class MapCrudLinksEndToEndTests(MariaDbFixture mariaDb) : IAsyncLi
     private const int EventsCoordinatorVid = 610002;
     private const int FlightOpsAdvisorVid = 610003;
     private const int MemberVid = 610004;
+    private const int HeadquartersVid = 610005;
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -57,6 +58,32 @@ public sealed class MapCrudLinksEndToEndTests(MariaDbFixture mariaDb) : IAsyncLi
 
         // Signed in but holding no permission at all: the policy on the endpoint says no.
         Assert.Equal(HttpStatusCode.Forbidden, memberResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task AHeadquartersPositionIsRefusedADepartmentalList()
+    {
+        // The one interaction between this phase and the review that came after it, pinned because
+        // nothing else covers it.
+        //
+        // A position of IVAO headquarters is staff, and holds Content.View with no department
+        // because it reads the content of the division. It does not, however, reach every
+        // department: that is a fact of the role and it now travels in its own claim, where it used
+        // to be guessed from the shape of the permission list -- and the guess said yes, which let
+        // a read-only outside role into the back office of every department.
+        //
+        // So it owns no department and reaches none, and TryNarrowToDepartments has nothing to
+        // narrow to. 403 is the honest answer, and it is the one the engine already gives: the back
+        // office is departmental, and headquarters is not a department of this division.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(HeadquartersVid, position: "HQ-WMA1", cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, HeadquartersVid, token);
+
+        using var response = await client.GetAsync(new Uri(LinksEndpoints.Pattern, UriKind.Relative), token);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

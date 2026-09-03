@@ -22,6 +22,7 @@ public static class StartupDiagnostics
         string divisionCode,
         IReadOnlyList<string> appliedMigrations,
         IReadOnlyList<string> enabledModules,
+        DateTime startedAtUtc,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(paths);
@@ -30,7 +31,7 @@ public static class StartupDiagnostics
         ArgumentNullException.ThrowIfNull(enabledModules);
 
         var report = new StringBuilder()
-            .Append(CultureInfo.InvariantCulture, $"started at    {DateTime.UtcNow:O}\n")
+            .Append(CultureInfo.InvariantCulture, $"started at    {startedAtUtc:O}\n")
             .Append(CultureInfo.InvariantCulture, $"version       {build.Version}\n")
             .Append(CultureInfo.InvariantCulture, $"commit        {build.Commit}\n")
             .Append(CultureInfo.InvariantCulture, $"built at      {build.BuiltAt:O}\n")

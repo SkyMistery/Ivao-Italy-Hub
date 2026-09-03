@@ -11,6 +11,11 @@ public enum AwardSignalStatus
 /// <summary>
 /// "This member may deserve something": a projection written by a module through
 /// <c>IProjectable</c>. A human decides, the code only points.
+/// <para>Deliberately not <c>IVisible</c> nor <c>IOwnedByDepartment</c>, unlike the other two
+/// projections: a signal belongs to a member, not to a department, and there is nothing to compare
+/// an owner against. It is a global resource in the sense of design section 3.9 — like
+/// <c>UserGrant</c> and <c>AuditLogEntry</c> — read behind the global permission
+/// <c>Awards.Assign</c> and never filtered by department.</para>
 /// </summary>
 public sealed class AwardSignal
 {

@@ -37,7 +37,9 @@ internal sealed class UserStaffPositionConfiguration : IEntityTypeConfiguration<
         builder.ToTable("hub_user_staff_positions");
         builder.HasKey(position => new { position.Vid, position.Position });
         builder.Property(position => position.Position).HasMaxLength(32);
-        builder.Property(position => position.Fir).HasMaxLength(4);
+        // As wide as ref_ivao_centers.id: a FIR here is one of those, and a column narrower than
+        // its source is a truncation waiting for the first centre with a longer identifier.
+        builder.Property(position => position.Fir).HasMaxLength(8);
         builder.HasOne(position => position.User)
             .WithMany(user => user.StaffPositions)
             .HasForeignKey(position => position.Vid)

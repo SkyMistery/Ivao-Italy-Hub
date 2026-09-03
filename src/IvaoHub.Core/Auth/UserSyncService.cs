@@ -72,12 +72,13 @@ public sealed class UserSyncService(
         var user = await database.Users.FirstOrDefaultAsync(row => row.Vid == profile.Vid, cancellationToken);
         if (user is null)
         {
+            // Locale is deliberately left null here: it is decided a few lines below by the one
+            // rule that knows how, and a value set now would make that rule unreachable.
             user = new HubUser
             {
                 Vid = profile.Vid,
                 CreatedAt = clock.UtcNow,
                 SecurityStamp = SuperadminService.NewStamp(),
-                Locale = options.DefaultLocale,
             };
             database.Users.Add(user);
         }
@@ -98,6 +99,9 @@ public sealed class UserSyncService(
         user.IsStaff = positions.Length > 0;
         user.LastLoginAt = clock.UtcNow;
         user.UpdatedAt = clock.UtcNow;
+
+        // Only when there is nothing to keep: the language IVAO has for them if the division speaks
+        // it, English otherwise. A member who has chosen one here is never overwritten by a login.
         user.Locale ??= LocalePreference.Resolve(profile.LanguageId, options);
 
         await ReplacePositionsAsync(profile.Vid, parsed, cancellationToken);

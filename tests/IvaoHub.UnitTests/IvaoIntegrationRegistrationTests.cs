@@ -1,39 +1,53 @@
-using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace IvaoHub.UnitTests;
 
-/// <summary>Fixtures are a development convenience, and must never be one in production.</summary>
+/// <summary>
+/// Fixtures are a development convenience, and must never be one in production.
+/// <para>The guard is checked where it actually stands: on the object that would serve the invented
+/// airspace. It used to stand at registration as well, reading configuration before a test host or
+/// a deployment had finished adding their sources — which is the very thing the hub decided not to
+/// do (HANDOFF section 3). Resolving the client is therefore the honest test: it exercises the
+/// choice at the moment it is really made.</para>
+/// </summary>
 public sealed class IvaoIntegrationRegistrationTests
 {
-    private static DivisionOptions Division() =>
-        new() { Code = "XX", CountryId = "XX", Domain = "x", Timezone = "UTC", DefaultLocale = "en", Locales = ["en"] };
+    private static ServiceProvider Provider(bool useFixtures, string environment)
+    {
+        var services = new ServiceCollection();
 
-    private static IConfiguration Configuration(bool useFixtures) =>
-        new ConfigurationBuilder()
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 [IvaoServiceCollectionExtensions.UseFixturesKey] = useFixtures ? "true" : "false",
             })
-            .Build();
+            .Build());
+
+        services.AddSingleton<IHostEnvironment>(new Environment(environment));
+        services.AddSingleton(HubPaths.Resolve(AppContext.BaseDirectory));
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddIvaoIntegration();
+
+        return services.BuildServiceProvider();
+    }
 
     [Fact]
     public void RefusesFixturesOutsideDevelopment()
     {
         // A live site serving invented airspace would be worse than a live site with none.
-        var services = new ServiceCollection();
+        using var provider = Provider(useFixtures: true, environment: "Production");
+        using var scope = provider.CreateScope();
 
-        var refused = Assert.Throws<InvalidOperationException>(() =>
-        {
-            services.AddIvaoIntegration(Configuration(useFixtures: true), new Environment("Production"), Division());
-        });
+        var refused = Assert.Throws<InvalidOperationException>(
+            () => scope.ServiceProvider.GetRequiredService<IIvaoApiClient>());
 
         Assert.Contains("only allowed in development", refused.Message, StringComparison.Ordinal);
     }
@@ -41,35 +55,45 @@ public sealed class IvaoIntegrationRegistrationTests
     [Fact]
     public void AllowsFixturesInDevelopment()
     {
-        var services = new ServiceCollection();
+        using var provider = Provider(useFixtures: true, environment: "Development");
+        using var scope = provider.CreateScope();
 
-        services.AddIvaoIntegration(Configuration(useFixtures: true), new Environment("Development"), Division());
-
-        Assert.Contains(services, service => service.ServiceType == typeof(IIvaoApiClient));
+        Assert.IsType<FixtureIvaoApiClient>(scope.ServiceProvider.GetRequiredService<IIvaoApiClient>());
     }
 
     [Fact]
-    public void TheFixtureClientItselfRefusesToExistOutsideDevelopment()
+    public void TheChoiceIsMadeWhenTheClientIsBuiltAndNotWhenItIsRegistered()
     {
-        // The registration guard reads configuration that a deployment may add later, so the object
-        // that would actually serve the invented airspace refuses on its own too.
-        var refused = Assert.Throws<InvalidOperationException>(() => new FixtureIvaoApiClient(
-            HubPaths.Resolve(AppContext.BaseDirectory),
-            new Environment("Production"),
-            NullLogger<FixtureIvaoApiClient>.Instance));
+        // The configuration source arrives after AddIvaoIntegration has already run, exactly as it
+        // does in a test host and in a deployment. The client must still come out as a fixture one.
+        var services = new ServiceCollection();
+        services.AddSingleton<IHostEnvironment>(new Environment("Development"));
+        services.AddSingleton(HubPaths.Resolve(AppContext.BaseDirectory));
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddIvaoIntegration();
 
-        Assert.Contains("only allowed in development", refused.Message, StringComparison.Ordinal);
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [IvaoServiceCollectionExtensions.UseFixturesKey] = "true",
+            })
+            .Build());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<FixtureIvaoApiClient>(scope.ServiceProvider.GetRequiredService<IIvaoApiClient>());
     }
 
     [Fact]
-    public void UsesTheRealClientWhenFixturesAreOff()
+    public void RegistersTheDirectoryAndTheSyncJob()
     {
         var services = new ServiceCollection();
-
-        services.AddIvaoIntegration(Configuration(useFixtures: false), new Environment("Production"), Division());
+        services.AddIvaoIntegration();
 
         Assert.Contains(services, service => service.ServiceType == typeof(IFirDirectory));
         Assert.Contains(services, service => service.ServiceType == typeof(RefDataSyncJob));
+        Assert.Contains(services, service => service.ServiceType == typeof(IIvaoApiClient));
     }
 
     private sealed class Environment(string name) : IHostEnvironment

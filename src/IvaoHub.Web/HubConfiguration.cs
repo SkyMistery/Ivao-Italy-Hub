@@ -1,3 +1,4 @@
+using System.Net;
 using System.Reflection;
 using IvaoHub.Core.Services;
 
@@ -49,8 +50,11 @@ internal static class HubConfiguration
     }
 
     /// <summary>
-    /// In production the host list must be explicit: the OIDC redirect URI is built from the Host
-    /// header, so a wildcard would let a forged header send the login somewhere else.
+    /// In production the host list must be explicit. Host header filtering is what keeps a request
+    /// carrying a forged <c>Host</c> from being served at all: absolute links, cookies scoped by
+    /// host and anything that echoes the host back are only as trustworthy as this list.
+    /// <para>The OIDC redirect URI is deliberately not part of that: it is taken verbatim from
+    /// <c>ivao-oauth.json</c> and never rebuilt from the request (design M0 section 4).</para>
     /// </summary>
     public static void RequireAllowedHosts(IConfiguration configuration)
     {
@@ -58,7 +62,72 @@ internal static class HubConfiguration
         if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts.Split(';').Any(host => host.Trim() == "*"))
         {
             throw new InvalidOperationException(
-                "'AllowedHosts' must list the real host names in production, without '*'.");
+                "'AllowedHosts' must list the real host names in production, without '*'. "
+                + "Set it in a file under secrets/ or in the AllowedHosts environment variable, "
+                + "for example \"it.ivao.aero;www.it.ivao.aero\".");
         }
+    }
+
+    /// <summary>Set to false when the proxy in front already refuses plain http itself.</summary>
+    public const string RedirectToHttpsKey = "Https:Redirect";
+
+    /// <summary>
+    /// Whether the application answers a plain http request with a redirect to https.
+    /// <para>On by default in production. It is safe there because the scheme is taken from
+    /// <c>X-Forwarded-Proto</c> of a declared proxy (see <see cref="TrustedProxies"/>), so a request
+    /// that reached the proxy over https is not redirected again: the loop that makes people afraid
+    /// of this middleware comes from trusting nobody for that header, which this application no
+    /// longer does. An installation whose proxy already redirects can turn it off.</para>
+    /// </summary>
+    public static bool RedirectToHttps(IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        return configuration.GetValue(RedirectToHttpsKey, defaultValue: true);
+    }
+
+    /// <summary>Configuration section holding the networks whose forwarded headers are believed.</summary>
+    public const string TrustedProxiesKey = "ForwardedHeaders:TrustedNetworks";
+
+    /// <summary>
+    /// The proxies whose <c>X-Forwarded-For</c> and <c>X-Forwarded-Proto</c> may be believed, as
+    /// CIDR networks.
+    /// <para>This has to be spelled out, and the application refuses to start in production
+    /// without it. Believing those headers from anybody means believing the client about its own
+    /// address: the per IP rate limiter on the login is then bypassed by changing a header on
+    /// every request, and the address in <c>hub_audit_log</c> becomes whatever the writer felt
+    /// like. The list is the front doors of the installation — the Cloudflare ranges, or the
+    /// address of the nginx in front — and nothing else.</para>
+    /// </summary>
+    public static IReadOnlyList<IPNetwork> TrustedProxies(IConfiguration configuration, bool required)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        var configured = configuration.GetSection(TrustedProxiesKey).Get<string[]>() ?? [];
+        var networks = new List<IPNetwork>();
+
+        foreach (var entry in configured.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            if (!IPNetwork.TryParse(entry.Trim(), out var network))
+            {
+                throw new InvalidOperationException(
+                    $"'{TrustedProxiesKey}' contains '{entry}', which is not a CIDR network such as "
+                    + "\"173.245.48.0/20\" or \"2400:cb00::/32\".");
+            }
+
+            networks.Add(network);
+        }
+
+        if (networks.Count == 0 && required)
+        {
+            throw new InvalidOperationException(
+                $"'{TrustedProxiesKey}' must list the networks of the proxies in front of this "
+                + "installation, in CIDR form. Without it the application would believe the "
+                + "X-Forwarded-For of any caller, which turns the rate limiting of the login and "
+                + "the addresses in the audit log into something the caller chooses. Behind "
+                + "Cloudflare, use the ranges Cloudflare publishes; behind a local reverse proxy, "
+                + "its own address, for example \"127.0.0.1/32\".");
+        }
+
+        return networks;
     }
 }

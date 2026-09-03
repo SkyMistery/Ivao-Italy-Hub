@@ -168,6 +168,7 @@ internal static class HubPipeline
             division.Code,
             applied,
             enabledModules: [],
+            scope.ServiceProvider.GetRequiredService<IClock>().UtcNow,
             app.Lifetime.ApplicationStopping);
     }
 }

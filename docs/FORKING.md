@@ -55,6 +55,24 @@ a row belongs to a department, has a visibility, and is filtered and authorised 
 each. Adding a permission is a name in a catalogue and a line in a matrix; it is never a new
 authorization handler, and never a check written again inside a screen.
 
+## Before it goes live
+
+Two settings are about your server rather than your division, so they live in `secrets/*.json` or in
+environment variables, and the application refuses to start in production without them:
+
+- **`AllowedHosts`** — your real host names, `;` separated, without `*`.
+- **`ForwardedHeaders:TrustedNetworks`** — the CIDR networks of whatever sits in front of the
+  application. Only those senders are believed when they say, through `X-Forwarded-For`, which
+  address a request came from; and that address is what the rate limiting on the login counts and
+  what the audit log records. Behind Cloudflare, use the ranges Cloudflare publishes; behind a
+  reverse proxy on the same machine, `127.0.0.1/32`.
+
+One more thing to change before the first start, and it is easy to miss because it is not a secret:
+**`superAdmins` in `config/division.json` still holds the VIDs of the division this repository was
+written for**. That list is read once, when the database holds no super administrator at all — so
+whoever is in it on your very first start becomes the person who can do everything on your hub. Put
+your own VIDs there, or empty the list and add yourself later from the database.
+
 ## What stays yours
 
 The OAuth client credentials of your division, your database, your uploads and your Data Protection

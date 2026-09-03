@@ -32,6 +32,11 @@
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 
+  <!-- The integration tests exercise the host, including the internal configuration helpers. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="IvaoHub.IntegrationTests" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\IvaoHub.Core\IvaoHub.Core.csproj" />
     <ProjectReference Include="..\IvaoHub.Modules.Atc\IvaoHub.Modules.Atc.csproj" />

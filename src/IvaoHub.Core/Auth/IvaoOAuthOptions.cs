@@ -29,7 +29,12 @@ public sealed record IvaoOAuthOptions
     [Required]
     public string RedirectUri { get; init; } = string.Empty;
 
-    [Required]
+    /// <summary>
+    /// Where IVAO would send the browser after an RP initiated logout. Nothing reads it today:
+    /// signing out is local, because IVAO exposes no end session endpoint to come back from. It
+    /// stays declared, and optional, so that an installation can fill it in the day it does — a
+    /// setting that is demanded but never used only teaches people that the file lies.
+    /// </summary>
     public string PostLogoutRedirectUri { get; init; } = string.Empty;
 
     /// <summary>The scopes asked of a member when they sign in.</summary>
