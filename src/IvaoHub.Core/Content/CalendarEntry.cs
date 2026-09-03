@@ -7,8 +7,14 @@ namespace IvaoHub.Core.Content;
 /// One calendar for the whole division (plan section 9.5). Entries that belong to a module are
 /// projections written by the interceptor in the same transaction as the source row; the rest are
 /// created by the staff.
+/// <para>Owner, visibility and audit columns are declared, not merely present: the global query
+/// filter therefore applies, and an entry the staff writes by hand needs <c>Calendar.Edit</c> on
+/// its department and gets its four audit columns from the interceptor. The rows the interceptor
+/// writes in its own second pass are stamped by <see cref="ProjectionWriter"/> instead, because a
+/// projection is the result of a write and not a write of its own.</para>
 /// </summary>
-public sealed class CalendarEntry
+[PermissionArea("Calendar")]
+public sealed class CalendarEntry : IOwnedByDepartment, IVisible, IAuditable
 {
     public long Id { get; set; }
 

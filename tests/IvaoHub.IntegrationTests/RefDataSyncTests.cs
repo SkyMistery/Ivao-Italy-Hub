@@ -1,8 +1,13 @@
+using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -162,6 +167,101 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.True(await database.UserStaffPositions.AnyAsync(
             row => row.Vid == 700002 && row.Position == "LFFF-CH",
             token));
+    }
+
+    [Fact]
+    public async Task WhatIvaoNoLongerListsLeavesTheSnapshot()
+    {
+        // The endpoints answer with the whole set for a country, so a row missing from a non empty
+        // answer has been decommissioned. Keeping it would go on making a staff position of a FIR
+        // that no longer exists look like one of ours.
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            database.IvaoCenters.Add(new IvaoCenter
+            {
+                Id = "LIZZ",
+                Name = "A centre IVAO has since retired",
+                CountryId = "IT",
+                RawJson = "{}",
+            });
+            await database.SaveChangesAsync(token);
+        }
+
+        await SyncAsync(token);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+            Assert.False(await database.IvaoCenters.AnyAsync(center => center.Id == "LIZZ", token));
+            Assert.True(await database.IvaoCenters.AnyAsync(center => center.Id == "LIRR", token));
+        }
+    }
+
+    [Fact]
+    public async Task AFailedRunWritesTheJobRowAndNoneOfTheSnapshotItHadStaged()
+    {
+        // The failure path used to save the job row with everything the run had already tracked
+        // still in the change tracker: the row said "failed" over a snapshot that was half written.
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var namesBefore = await database.IvaoCenters.AsNoTracking()
+            .ToDictionaryAsync(center => center.Id, center => center.Name, token);
+
+        var job = new RefDataSyncJob(
+            new HalfBrokenIvaoApiClient(),
+            database,
+            scope.ServiceProvider.GetRequiredService<IFirDirectory>(),
+            scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>(),
+            scope.ServiceProvider.GetRequiredService<IClock>(),
+            NullLogger<RefDataSyncJob>.Instance);
+
+        // It never throws: a synchronisation that could have waited until tomorrow must not be the
+        // thing that takes the site down.
+        Assert.Equal((0, 0), await job.RunAsync(token));
+
+        var last = await database.JobsLog.AsNoTracking()
+            .Where(entry => entry.Job == RefDataSyncJob.JobName)
+            .OrderByDescending(entry => entry.Id)
+            .FirstAsync(token);
+
+        Assert.Equal("failed", last.Status);
+        Assert.NotNull(last.FinishedAt);
+
+        // The centres the broken run had already staged did not reach the database with it.
+        var namesAfter = await database.IvaoCenters.AsNoTracking()
+            .ToDictionaryAsync(center => center.Id, center => center.Name, token);
+
+        Assert.Equal(namesBefore, namesAfter);
+    }
+
+    /// <summary>Answers for the centres, then falls over on the airports, halfway through a run.</summary>
+    private sealed class HalfBrokenIvaoApiClient : IIvaoApiClient
+    {
+        public Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(
+            string countryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoCenterDto>>(
+            [
+                new("LIRR", "Renamed by a run that will not finish", countryId, "{}"),
+            ]);
+
+        public Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(
+            string countryId,
+            bool includeRunways = true,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("IVAO fell over halfway through.");
+
+        public Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
+            Task.FromResult<JsonElement?>(null);
     }
 
     [Fact]

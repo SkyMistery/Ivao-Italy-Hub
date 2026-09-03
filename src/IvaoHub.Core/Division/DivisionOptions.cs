@@ -35,7 +35,12 @@ public sealed record DivisionOptions
     [Required]
     public string Timezone { get; init; } = string.Empty;
 
-    /// <summary>Safety net for filters; the FIRs and airports themselves come from the IVAO API.</summary>
+    /// <summary>
+    /// The ICAO prefixes of the division, upper case, 1 to 4 letters. A safety net rather than a
+    /// source: the FIRs and the airports themselves come from the IVAO API. The synchronisation
+    /// uses them to notice that a snapshot has nothing to do with this division, which is what a
+    /// wrong <see cref="CountryId"/> looks like from the inside.
+    /// </summary>
     public string[] IcaoPrefixes { get; init; } = [];
 
     /// <summary>Optional modules only. Department modules and the editorial core are always on.</summary>
@@ -50,14 +55,7 @@ public sealed record DivisionOptions
     /// <summary>How far the authority of a FIR team reaches.</summary>
     public FirStaffScope FirStaffScope { get; init; } = FirStaffScope.All;
 
-    /// <summary>The division name in the requested language, falling back to the default one.</summary>
-    public string ResolveName(string locale)
-    {
-        if (Name.TryGetValue(locale, out var value))
-        {
-            return value;
-        }
-
-        return Name.TryGetValue(DefaultLocale, out var fallback) ? fallback : Code;
-    }
+    // There is deliberately no ResolveName here. Falling back from one language to another is a
+    // rule the hub already has, in Localized<T>.Resolve, and a second copy of it on this type had
+    // no caller and would have been the copy that drifted.
 }

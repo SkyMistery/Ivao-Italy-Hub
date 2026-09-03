@@ -4,7 +4,8 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 1.2 — 3 settembre 2026 (allineato a ciò che F4 ha davvero costruito: §3.3, §3.4, §3.5, §3.6, §3.7, §5.3, più i codici di dipartimento di piano 0.21 rimasti negli esempi)
+**Versione:** 1.3 — 3 settembre 2026 (revisione senior di fine F4: §3.3 `HasAllDepartments` è un claim, §3.4 il secondo tempo dell'interceptor gestisce il proprio fallimento, §3.6 le proiezioni sotto il query filter e lette in blocco, §2.3 proxy fidati obbligatori in produzione più HSTS e redirezione HTTPS)
+**Versione 1.2** — 3 settembre 2026 (allineato a ciò che F4 ha davvero costruito: §3.3, §3.4, §3.5, §3.6, §3.7, §5.3, più i codici di dipartimento di piano 0.21 rimasti negli esempi)
 **Stato:** in implementazione (F0–F4 fatte)
 
 ---
@@ -128,7 +129,11 @@ Schema come piano §4.1. Caricato con `AddJsonFile("config/division.json", optio
 
 ### 2.3 `secrets/*.json` e ambiente
 
-`Program.cs` aggiunge ogni `*.json` in `secrets/` (se la cartella esiste) **dopo** `appsettings.{Env}.json`, così vince. Chiavi attese: `ConnectionStrings:Default`, `Smtp:*` (M1), `DataProtection:KeysPath` (default `hub-keys/`). `ForwardedHeaders` (Cloudflare/nginx) abilitati con `KnownNetworks` svuotate solo in Production dietro proxy. `AllowedHosts` obbligatorio in Production.
+`Program.cs` aggiunge ogni `*.json` in `secrets/` (se la cartella esiste) **dopo** `appsettings.{Env}.json`, così vince. Chiavi attese: `ConnectionStrings:Default`, `Smtp:*` (M1), `DataProtection:KeysPath` (default `hub-keys/`). `AllowedHosts` obbligatorio in Production (host filtering: una richiesta con `Host` falsificato non va servita affatto; il `redirect_uri` OIDC non c'entra, quello viene preso alla lettera da `ivao-oauth.json`).
+
+In Production si aggiungono **HSTS** (trenta giorni, senza `includeSubDomains` né preload: l'hub è un host sotto un dominio condiviso, e una policy HSTS è reversibile solo quanto il suo `max-age`) e la **redirezione a https**, disattivabile con `Https:Redirect=false` per chi la fa già fare al proxy. Entrambe vanno **dopo** `UseForwardedHeaders`: prima, lo schema è quello del salto dal proxy e la redirezione diventa un ciclo.
+
+`ForwardedHeaders:TrustedNetworks` è l'elenco **in CIDR** dei proxy di cui si crede `X-Forwarded-For`/`X-Forwarded-Proto`, e in Production è **obbligatorio**: senza, l'applicazione non parte. Svuotare `KnownNetworks` e `KnownProxies` senza rimpiazzarle — che è ciò che si faceva — non vuol dire «fidati di Cloudflare» ma «fidati di chiunque», e su quell'indirizzo poggiano il rate limiter di `/auth/*` (aggirabile cambiando un header a ogni richiesta) e la colonna `ip` di `hub_audit_log`. Con la lista vuota fuori da Production il middleware **non entra nella pipeline**, quindi in sviluppo l'indirizzo è quello vero della connessione. Nota: `docs/internal/decisions/2026-09-03-proxy-fidati.md`.
 
 ### 2.4 Avvio
 
@@ -203,6 +208,10 @@ public interface ICurrentUser
 public readonly record struct EffectivePermission(string Name, Department? Department, string Source); // Source: "role:ED/coordinator" | "grant:123" | "superadmin"
 ```
 
+`HasAllDepartments` è un **fatto del ruolo** e viaggia in un claim suo (`alldept`), scritto da `HubClaims.BuildIdentity` da `RolePermissionMatrix.ReachesEveryDepartment` sulle posizioni. **Non si deduce dalla forma della lista dei permessi**: l'entrata «permesso non-globale con dipartimento `null`» appartiene anche a una posizione di IVAO HQ (che deve solo leggere) e viene consumata dall'espansione di un deny (§6.3), quindi come indizio sbaglia in tutt'e due le direzioni. Nota: `docs/internal/decisions/2026-09-03-reaches-every-department.md`; test `ReachesEveryDepartmentTests`.
+
+`PermissionSet.Has/HasAny` contengono la regola vera e propria, così che i doppioni di test rispondano con **lo stesso codice** e non con una copia.
+
 Implementazione `HttpContextCurrentUser` che legge i claim del cookie (§4.3); i permessi effettivi sono nel ticket (ricalcolati al login e quando un grant cambia → `SecurityStamp` in `hub_users` confrontato a ogni richiesta dal `CookieAuthenticationEvents.OnValidatePrincipal`, con cache 60 s per VID in `IMemoryCache`; chi scrive grant o superadmin **invalida la voce di cache** del VID toccato tramite `ISecurityStampCache.Invalidate(vid)`, così l'effetto è immediato).
 
 ### 3.4 `HubSaveChangesInterceptor` — l'unico interceptor
@@ -212,7 +221,7 @@ Implementazione `HttpContextCurrentUser` che legge i claim del cookie (§4.3); i
 1. **Audit/timestamp** per ogni `IAuditable` aggiunto o modificato (`UtcNow` da `IClock`, VID da `ICurrentUser`, 0 per i job).
 2. **Guardia di scrittura**: per ogni entità `IOwnedByDepartment` aggiunta/modificata/eliminata, se `ICurrentUser.IsAuthenticated` e non `IsSuperadmin`, verifica `Has(requiredPermission, entity.OwnerDepartment)` dove il permesso richiesto è `<Area>.Edit` (l'area è dichiarata sull'entità con `[PermissionArea("Content")]`, default = nome del DbSet). Se fallisce → `ForbiddenDomainException` (mappata a 403). Questa è la **rete di sicurezza** che i test della spina dorsale colpiscono: nessun endpoint può scrivere in un dipartimento altrui nemmeno dimenticando la policy.
 3. **Righe di `hub_audit_log`** per ogni entità marcata `[Audited]` (before/after JSON delle proprietà scalari, `is_superadmin`). Il prima/dopo si cattura qui, perché solo ora il change tracker lo sa, ma la riga si **scrive nel secondo tempo** insieme alle proiezioni: prima del salvataggio una riga nuova non ha `id` e l'audit di una creazione punterebbe a `0`. Per un update si registrano le sole proprietà cambiate; la colonna di concorrenza è esclusa.
-4. **Proiezioni** (§3.6) — in due tempi, perché prima del salvataggio le entità nuove non hanno `Id`: in `SavingChangesAsync` l'interceptor apre una transazione se non ce n'è una (e la segna come «propria») e raccoglie le entità `IProjectable` toccate con il loro stato; in `SavedChangesAsync`, con un flag di rientranza **per contesto** tenuto dall'interceptor (e non un campo di `HubDbContext`: lo stesso interceptor scoped serve il contesto del nucleo e quello di ogni modulo) che disattiva i punti 1–4 durante il secondo giro, calcola gli snapshot, fa upsert/delete tramite `ProjectionWriter` e un secondo `SaveChanges`, poi fa commit della transazione propria; in `SaveChangesFailedAsync` fa rollback. Se la transazione era del chiamante, il commit resta al chiamante (le proiezioni sono comunque dentro). I test `ProjectionUpsertedInSameTransaction` coprono entrambi i casi.
+4. **Proiezioni** (§3.6) — in due tempi, perché prima del salvataggio le entità nuove non hanno `Id`: in `SavingChangesAsync` l'interceptor apre una transazione se non ce n'è una (e la segna come «propria») e raccoglie le entità `IProjectable` toccate con il loro stato; in `SavedChangesAsync`, con un flag di rientranza **per contesto** tenuto dall'interceptor (e non un campo di `HubDbContext`: lo stesso interceptor scoped serve il contesto del nucleo e quello di ogni modulo) che disattiva i punti 1–4 durante il secondo giro, calcola gli snapshot, fa upsert/delete tramite `ProjectionWriter` e un secondo `SaveChanges`, poi fa commit della transazione propria; in `SaveChangesFailedAsync` fa rollback. **Anche il secondo tempo può fallire per conto suo** (un `Project()` che inciampa sui propri dati, una riga di proiezione che viola un vincolo): in quel caso l'interceptor fa rollback della transazione propria e rilascia lo stato, altrimenti la scrittura resterebbe né committata né annullata e la voce resterebbe nella tabella dei pending. Test `InterceptorFailureTests`. Se la transazione era del chiamante, il commit resta al chiamante (le proiezioni sono comunque dentro). I test `ProjectionUpsertedInSameTransaction` coprono entrambi i casi.
 
 Registrato una volta in `AddHubDbContext`; ogni `DbContext` di modulo lo riceve dallo stesso metodo (`AddModuleDbContext<T>`), quindi non può essere «dimenticato».
 
@@ -246,7 +255,11 @@ public sealed record CalendarProjection(string Kind, DateTime StartsAtUtc, DateT
 public sealed record AwardSignalProjection(int Vid, string Reason);
 ```
 
-Tabelle nel nucleo: `cms_search_index` con **una riga per lingua** — chiave univoca `(source_module, source_id, locale)`, colonne `kind`, `url`, `owner_department`, `visibility`, `title varchar(512)`, `text mediumtext` con indice FULLTEXT `(title, text)` — così il FULLTEXT esiste per qualunque insieme di lingue di `division.locales` senza colonne cablate per lingua (una migrazione non può conoscere le lingue di chi forka) e senza tabelle `*_translations`: è una proiezione, riscritta integralmente a ogni upsert; `cms_calendar_entries`, `cms_award_signals` (`status = pending` alla creazione, mai sovrascritto se già `handled`). L'upsert è per chiave `(source_module, source_id)`; `Project() == null` o entità eliminata → delete. Un'entità `IPublishable` in `Draft` proietta `null` **per convenzione applicata dall'interceptor**, non da ogni entità.
+Tabelle nel nucleo: `cms_search_index` con **una riga per lingua** — chiave univoca `(source_module, source_id, locale)`, colonne `kind`, `url`, `owner_department`, `visibility`, `title varchar(512)`, `text mediumtext` con indice FULLTEXT `(title, text)` — così il FULLTEXT esiste per qualunque insieme di lingue di `division.locales` senza colonne cablate per lingua (una migrazione non può conoscere le lingue di chi forka) e senza tabelle `*_translations`: è una proiezione, riscritta integralmente a ogni upsert; `cms_calendar_entries`, `cms_award_signals` (`status = pending` alla creazione, mai sovrascritto se già `handled`). `cms_search_index` e `cms_calendar_entries` implementano `IVisible`+`IOwnedByDepartment`, quindi il **global query filter di §3.5 si applica anche a loro**: un endpoint di ricerca o di calendario non può restituire una riga che il lettore non deve vedere. `cms_award_signals` no, di proposito: non ha dipartimento, è una risorsa globale nel senso di §3.9. `ProjectionWriter` è il **secondo e ultimo** posto autorizzato a `IgnoreQueryFilters` (il primo è `Data/Crud/`): deve ritrovare la riga da riscrivere chiunque stia scrivendo, o ne inserirebbe una seconda contro la chiave unica.
+
+La lettura è **una sola per salvataggio**, non una per riga: `ProjectionWriter.Load`/`LoadAsync` caricano tutto ciò che le sorgenti toccate hanno proiettato finora (tre query per modulo), `Apply` non fa I/O. È dentro la transazione della scrittura, quindi ogni round trip è un lock tenuto aperto. La stessa separazione dà al percorso sincrono un'implementazione sincrona vera invece di bloccare su una asincrona.
+
+L'upsert è per chiave `(source_module, source_id)`; `Project() == null` o entità eliminata → delete. Un'entità `IPublishable` in `Draft` proietta `null` **per convenzione applicata dall'interceptor**, non da ogni entità.
 
 ### 3.7 Permessi: grammatica, catalogo, policy, un solo handler
 

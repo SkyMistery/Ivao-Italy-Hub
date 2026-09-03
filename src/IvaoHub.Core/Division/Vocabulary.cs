@@ -8,7 +8,12 @@ namespace IvaoHub.Core.Division;
 /// </summary>
 public enum Department
 {
-    /// <summary>Division headquarters: director and assistant director.</summary>
+    /// <summary>
+    /// Headquarters <b>of this division</b>: its director and assistant director (<c>IT-DIR</c>,
+    /// <c>IT-ADIR</c>). Not to be confused with the <c>HQ-</c> prefix of a staff position, which
+    /// means IVAO headquarters and belongs to no division at all: those map to
+    /// <c>StaffRole.HqStaff</c> with no department (see <c>StaffRoleMap</c>).
+    /// </summary>
     HQ,
 
     /// <summary>Special operations department.</summary>

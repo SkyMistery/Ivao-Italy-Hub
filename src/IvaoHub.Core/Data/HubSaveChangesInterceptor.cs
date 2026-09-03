@@ -7,6 +7,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -32,7 +33,8 @@ public sealed class HubSaveChangesInterceptor(
     ICurrentUser currentUser,
     IClock clock,
     ProjectionWriter projections,
-    ProjectionContext projectionContext) : SaveChangesInterceptor
+    ProjectionContext projectionContext,
+    IHttpContextAccessor? httpContext = null) : SaveChangesInterceptor
 {
     private static readonly JsonSerializerOptions AuditJson = BuildAuditJsonOptions();
 
@@ -87,16 +89,25 @@ public sealed class HubSaveChangesInterceptor(
         {
             pending.IsProjecting = true;
             WriteAuditRows(pending);
-            ApplyProjectionsAsync(pending, CancellationToken.None).GetAwaiter().GetResult();
+            ApplyProjections(pending);
             pending.Context.SaveChanges();
+            pending.OwnTransaction?.Commit();
+        }
+        catch
+        {
+            // The second pass can throw on its own account: an entity whose Project() trips over
+            // its own data, a projection row that violates a constraint. Without this the
+            // transaction opened above would be left open and the entry left in _pending, and the
+            // caller would see a failure whose write is neither committed nor rolled back.
+            pending.OwnTransaction?.Rollback();
+            throw;
         }
         finally
         {
             pending.IsProjecting = false;
+            Release(pending);
         }
 
-        pending.OwnTransaction?.Commit();
-        Release(pending);
         return base.SavedChanges(eventData, result);
     }
 
@@ -118,18 +129,30 @@ public sealed class HubSaveChangesInterceptor(
             WriteAuditRows(pending);
             await ApplyProjectionsAsync(pending, cancellationToken);
             await pending.Context.SaveChangesAsync(cancellationToken);
+
+            if (pending.OwnTransaction is not null)
+            {
+                await pending.OwnTransaction.CommitAsync(cancellationToken);
+            }
+        }
+        catch
+        {
+            // See the synchronous twin: a failure of the second pass must not leave the transaction
+            // this interceptor opened hanging, nor the entry behind in _pending. The rollback is
+            // not cancellable, because giving up on it is how a connection stays poisoned.
+            if (pending.OwnTransaction is not null)
+            {
+                await pending.OwnTransaction.RollbackAsync(CancellationToken.None);
+            }
+
+            throw;
         }
         finally
         {
             pending.IsProjecting = false;
+            Release(pending);
         }
 
-        if (pending.OwnTransaction is not null)
-        {
-            await pending.OwnTransaction.CommitAsync(cancellationToken);
-        }
-
-        Release(pending);
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
@@ -137,7 +160,9 @@ public sealed class HubSaveChangesInterceptor(
     {
         ArgumentNullException.ThrowIfNull(eventData);
 
-        if (eventData.Context is not null && _pending.TryGetValue(eventData.Context, out var pending))
+        // Not when the failure is the second pass itself: SavedChanges owns the cleanup there, and
+        // rolling back and releasing here would leave it holding a transaction already disposed.
+        if (TakeCompleted(eventData.Context) is { } pending)
         {
             pending.OwnTransaction?.Rollback();
             Release(pending);
@@ -152,11 +177,12 @@ public sealed class HubSaveChangesInterceptor(
     {
         ArgumentNullException.ThrowIfNull(eventData);
 
-        if (eventData.Context is not null && _pending.TryGetValue(eventData.Context, out var pending))
+        // Same as the synchronous twin: the second pass cleans up after itself.
+        if (TakeCompleted(eventData.Context) is { } pending)
         {
             if (pending.OwnTransaction is not null)
             {
-                await pending.OwnTransaction.RollbackAsync(cancellationToken);
+                await pending.OwnTransaction.RollbackAsync(CancellationToken.None);
             }
 
             Release(pending);
@@ -312,6 +338,10 @@ public sealed class HubSaveChangesInterceptor(
             return;
         }
 
+        // Only meaningful once the forwarded headers are trusted, which they are exactly as far as
+        // the proxies the installation declares: see HubConfiguration.TrustedProxies.
+        var ip = httpContext?.HttpContext?.Connection.RemoteIpAddress?.ToString();
+
         foreach (var audit in pending.Audits)
         {
             pending.Context.Set<AuditLogEntry>().Add(new AuditLogEntry
@@ -322,6 +352,7 @@ public sealed class HubSaveChangesInterceptor(
                 EntityId = audit.Key ?? ReadKey(audit.Entry),
                 BeforeJson = audit.Before,
                 AfterJson = audit.After,
+                Ip = ip,
                 IsSuperadmin = currentUser.IsSuperadmin,
                 At = audit.At,
             });
@@ -330,23 +361,44 @@ public sealed class HubSaveChangesInterceptor(
 
     private async Task ApplyProjectionsAsync(Pending pending, CancellationToken cancellationToken)
     {
-        foreach (var projection in pending.Projections)
+        var requests = BuildRequests(pending);
+        if (requests.Count == 0)
         {
+            return;
+        }
+
+        var state = await ProjectionWriter.LoadAsync(pending.Context, requests, cancellationToken);
+        projections.Apply(pending.Context, state, requests, projectionContext);
+    }
+
+    private void ApplyProjections(Pending pending)
+    {
+        var requests = BuildRequests(pending);
+        if (requests.Count == 0)
+        {
+            return;
+        }
+
+        var state = ProjectionWriter.Load(pending.Context, requests);
+        projections.Apply(pending.Context, state, requests, projectionContext);
+    }
+
+    /// <summary>
+    /// What every touched row wants to look like, decided in one place before anything is read: the
+    /// writer then loads what those sources have projected so far in three queries for the whole
+    /// save, instead of three for each row.
+    /// </summary>
+    private List<ProjectionRequest> BuildRequests(Pending pending) =>
+    [
+        .. pending.Projections.Select(projection => new ProjectionRequest(
+            projection.Entity.SourceModule,
+            projection.Entity.SourceId,
             // A draft has nothing public to find: the rule lives here, once, instead of in every
             // entity that can be published.
-            var snapshot = projection.Removed || projection.Entity is IPublishable { Status: not PublishStatus.Published }
+            projection.Removed || projection.Entity is IPublishable { Status: not PublishStatus.Published }
                 ? null
-                : projection.Entity.Project(projectionContext);
-
-            await projections.ApplyAsync(
-                pending.Context,
-                projection.Entity.SourceModule,
-                projection.Entity.SourceId,
-                snapshot,
-                projectionContext,
-                cancellationToken);
-        }
-    }
+                : projection.Entity.Project(projectionContext))),
+    ];
 
     private Pending? TakeCompleted(DbContext? context)
     {

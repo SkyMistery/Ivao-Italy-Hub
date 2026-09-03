@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Core.Division;
@@ -10,16 +11,21 @@ namespace IvaoHub.Core.Division;
 public sealed partial class DivisionOptionsValidator : IValidateOptions<DivisionOptions>
 {
     private readonly IReadOnlyCollection<string> _knownModuleKeys;
+    private readonly ILogger<DivisionOptionsValidator>? _logger;
 
     /// <param name="knownModuleKeys">
     /// Keys the module registry knows about. Unknown keys are a warning, not a failure, so that a
-    /// division can keep a key for a module it has not merged yet.
+    /// division can keep a key for a module it has not merged yet. The registry that fills this in
+    /// arrives in F8; until then nothing is known and nothing is reported.
     /// </param>
-    public DivisionOptionsValidator(IReadOnlyCollection<string>? knownModuleKeys = null) =>
+    /// <param name="logger">Where an unknown key is reported. A validator has no other way out.</param>
+    public DivisionOptionsValidator(
+        IReadOnlyCollection<string>? knownModuleKeys = null,
+        ILogger<DivisionOptionsValidator>? logger = null)
+    {
         _knownModuleKeys = knownModuleKeys ?? [];
-
-    /// <summary>Module keys that were configured but are unknown to the registry.</summary>
-    public IReadOnlyList<string> UnknownModuleKeys { get; private set; } = [];
+        _logger = logger;
+    }
 
     public ValidateOptionsResult Validate(string? name, DivisionOptions options)
     {
@@ -67,6 +73,18 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
             }
         }
 
+        foreach (var prefix in options.IcaoPrefixes)
+        {
+            // Checked because it is otherwise a field nobody ever looks at until the day it is
+            // wrong: a lower case or over long prefix would silently match nothing.
+            if (!IcaoPrefix().IsMatch(prefix))
+            {
+                failures.Add(
+                    $"division.json: 'icaoPrefixes' contains '{prefix}'; a prefix is 1 to 4 upper "
+                    + "case letters, for example \"LI\".");
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(options.Timezone))
         {
             failures.Add("division.json: 'timezone' is required.");
@@ -76,7 +94,17 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
             failures.Add($"division.json: 'timezone' ({options.Timezone}) is not a time zone this machine knows.");
         }
 
-        UnknownModuleKeys = [.. options.Modules.Keys.Where(key => !_knownModuleKeys.Contains(key))];
+        // Reported, not remembered. This object is a singleton and validation can run more than
+        // once, so a property holding the result of the last call is a field that means nothing to
+        // whoever reads it and is unsafe for whoever reads it from another thread.
+        var unknown = options.Modules.Keys.Where(key => !_knownModuleKeys.Contains(key)).ToArray();
+        if (unknown.Length > 0 && _knownModuleKeys.Count > 0)
+        {
+            _logger?.LogWarning(
+                "division.json enables {Count} module(s) the registry does not know: {Keys}.",
+                unknown.Length,
+                string.Join(", ", unknown));
+        }
 
         return failures.Count == 0
             ? ValidateOptionsResult.Success
@@ -98,4 +126,7 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
 
     [GeneratedRegex("^[A-Z]{2,3}$")]
     private static partial Regex DivisionCode();
+
+    [GeneratedRegex("^[A-Z]{1,4}$")]
+    private static partial Regex IcaoPrefix();
 }

@@ -1,6 +1,7 @@
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -93,5 +94,10 @@ public static class HubDbContextServiceCollectionExtensions
             mySql => mySql.MigrationsHistoryTable(historyTable));
         options.UseSnakeCaseNamingConvention();
         options.AddInterceptors(provider.GetRequiredService<HubSaveChangesInterceptor>());
+
+        // Anything else the host registered as an IInterceptor: EF Core does not pick those up on
+        // its own once interceptors are added by hand here. It is how a diagnostic — a command
+        // logger, a counter in a test — is attached without a second way of building a context.
+        options.AddInterceptors(provider.GetServices<IInterceptor>());
     }
 }

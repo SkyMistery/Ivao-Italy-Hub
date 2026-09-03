@@ -11,8 +11,10 @@ namespace IvaoHub.Core.Data;
 /// return a row it should not, whatever the endpoint forgot: there is no "and remember to filter
 /// by visibility" left to forget.
 /// <para>The filter is an expression over scalars of the context, because that is what EF Core 9
-/// can translate: it reads the current user once, when the context is built, and the values are
-/// re-read for every query on the instance that is running it.</para>
+/// can translate: it cannot call a service, but it can read a property of the context running the
+/// query. Those properties read <c>ICurrentUser</c> <b>when the query runs</b>, never when the
+/// context is built — a context can well exist before the cookie has been validated, and reading
+/// early would freeze an anonymous answer into every query that instance later serves.</para>
 /// </summary>
 public static class VisibilityQueryFilter
 {

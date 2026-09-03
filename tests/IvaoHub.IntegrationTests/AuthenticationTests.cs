@@ -205,6 +205,37 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
             && !cookie.Contains("secure", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task TheApplicationCookieSpellsOutAllThreeOfItsProtections()
+    {
+        // HttpOnly and SameSite were written out on purpose, "because a default is something that
+        // changes with the version of the framework, and this cookie is the only credential the
+        // site issues" — and Secure, the third of the three, was the one left to the default.
+        // It now follows the scheme of the callback, like the cookies of the OIDC round trip: over
+        // https it is Always, and over the plain http a developer signs in on it must not be, or
+        // the browser would simply never send it back.
+        var token = TestContext.Current.CancellationToken;
+        var vid = await SeedUserAsync(700411, cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        using var response = await client.PostAsync(
+            new Uri($"{TestSignInStartupFilter.Path}?vid={vid}", UriKind.Relative),
+            content: null,
+            token);
+
+        response.EnsureSuccessStatusCode();
+
+        var cookie = Assert.Single(
+            response.Headers.GetValues("Set-Cookie"),
+            value => value.StartsWith("hub.auth=", StringComparison.Ordinal));
+
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("samesite=lax", cookie, StringComparison.OrdinalIgnoreCase);
+
+        // The callback of the test host is http://localhost/auth/callback.
+        Assert.DoesNotContain("secure", cookie, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData("//evil.example", "/")]
     [InlineData("/\\evil.example", "/")]

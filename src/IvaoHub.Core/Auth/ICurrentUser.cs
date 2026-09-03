@@ -109,25 +109,13 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
 
     public IReadOnlyList<EffectivePermission> Permissions => Current.Permissions;
 
-    public bool Has(string permission, Department department)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(permission);
+    // The rule itself lives in PermissionSet, so that a test double answers with the very same
+    // code rather than with a copy of it.
+    public bool Has(string permission, Department department) =>
+        PermissionSet.Has(Permissions, IsSuperadmin, permission, department);
 
-        // A permission with no department is held everywhere: that is how a director and the web
-        // team travel with a handful of claims instead of one per department.
-        return IsSuperadmin
-            || Permissions.Any(held =>
-                string.Equals(held.Name, permission, StringComparison.Ordinal)
-                && (held.Department is null || held.Department == department));
-    }
-
-    public bool HasAny(string permission)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(permission);
-
-        return IsSuperadmin
-            || Permissions.Any(held => string.Equals(held.Name, permission, StringComparison.Ordinal));
-    }
+    public bool HasAny(string permission) =>
+        PermissionSet.HasAny(Permissions, IsSuperadmin, permission);
 
     private static Snapshot Read(ClaimsPrincipal? principal, DivisionOptions division)
     {
@@ -148,10 +136,13 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
 
         var isSuperadmin = principal.HasClaim(HubClaims.Superadmin, "1");
 
-        // Held everywhere is stored as a permission with no department; that is also what tells us
-        // the user reaches every department without listing them one by one.
-        var hasAllDepartments = isSuperadmin
-            || permissions.Any(permission => permission.Department is null && !CorePermissions.IsGlobalPermission(permission.Name));
+        // Stated by its own claim, which HubClaims.BuildIdentity derives from the staff positions.
+        // It used to be guessed from the permission list — "somebody holds a departmental
+        // permission with no department, so they must reach every department" — and that guess was
+        // wrong in both directions: a headquarters position, which only reads, came out reaching
+        // everything, while one deny against a director expanded their last department-less
+        // permission and quietly took seven departments away from them.
+        var hasAllDepartments = isSuperadmin || principal.HasClaim(HubClaims.AllDepartments, "1");
 
         return new Snapshot(
             IsAuthenticated: true,

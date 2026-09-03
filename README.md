@@ -55,13 +55,38 @@ The application refuses to start when its configuration is incomplete, and says 
 wrong. `diagnostics/startup.txt` records what started, which migrations it applied and which modules
 are on; it never contains a secret.
 
+### What production needs on top of development
+
+Two settings have no sensible default, so the application refuses to start in production without
+them. Both belong in `secrets/*.json` or in environment variables, never in `division.json`: they
+describe the installation, not the division.
+
+| Setting | Why |
+| --- | --- |
+| `AllowedHosts` | The real host names, `;` separated, without `*`. Host filtering is what stops a request carrying a forged `Host` from being served at all. |
+| `ForwardedHeaders:TrustedNetworks` | The CIDR networks of the proxies in front, whose `X-Forwarded-For` may be believed — the ranges Cloudflare publishes, or `127.0.0.1/32` for a local reverse proxy. Believing that header from anybody means the caller chooses its own address, which turns the rate limiting on the login and the addresses in the audit log into decoration. |
+
+Production also sends HSTS and redirects plain http to https. Set `Https:Redirect` to `false` if the
+proxy in front already refuses http itself.
+
+```json
+{
+  "AllowedHosts": "it.ivao.aero;www.it.ivao.aero",
+  "ForwardedHeaders": { "TrustedNetworks": ["173.245.48.0/20", "2400:cb00::/32"] }
+}
+```
+
+In development none of this applies: hosts are not filtered, no HSTS or redirection is added, and
+with no trusted network the forwarded headers are not read at all, so the address is the one the
+connection really came from.
+
 ### Configuration files
 
 | File | In the repository | What it is |
 | --- | --- | --- |
 | `config/division.json` | yes | Behaviour of the division: code, languages, time zone, optional modules. Not a secret. |
 | `config/ivao-oauth.json` | **no** | The OAuth client of the division. Copy the example and fill it in, or use `Ivao__*` environment variables. |
-| `secrets/*.json` | **no** | Connection string, SMTP and anything else that must not be read from the web. |
+| `secrets/*.json` | **no** | Connection string, SMTP, `AllowedHosts`, the trusted proxies, and anything else that must not be read from the web. |
 | `hub-keys/` | **no** | Data Protection keys. Persistent: never delete them, or everybody is logged out. |
 
 ## Checks

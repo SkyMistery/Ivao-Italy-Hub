@@ -50,6 +50,45 @@ public sealed class EffectivePermissionsTests
         permissions.Any(p => p.Name == name && (p.Department is null || p.Department == department));
 
     [Fact]
+    public void APermissionReachedTwiceIsListedOnce()
+    {
+        // The same permission from a role and from a grant is one permission. Every entry becomes a
+        // claim in the cookie that travels with every request, so a duplicate is not cosmetic.
+        var permissions = Calculate(
+            [Events()],
+            [Grant(CorePermissions.LinksEdit, Department.ED)]);
+
+        var links = permissions
+            .Where(permission => permission.Name == CorePermissions.LinksEdit)
+            .ToArray();
+
+        Assert.Single(links);
+
+        // And the surviving entry names the role, because that is what tells an administrator that
+        // deleting the grant would change nothing.
+        Assert.StartsWith(
+            EffectivePermissionsCalculator.RoleSourcePrefix,
+            links[0].Source,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ThereIsNeverMoreThanOneEntryPerNameAndDepartment()
+    {
+        var permissions = Calculate(
+            [Events(), Director()],
+            [Grant(CorePermissions.ContentEdit, Department.ED, id: 7)]);
+
+        var duplicates = permissions
+            .GroupBy(permission => (permission.Name, permission.Department))
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key.ToString())
+            .ToArray();
+
+        Assert.Empty(duplicates);
+    }
+
+    [Fact]
     public void AMemberWithNoPositionHoldsNothing()
     {
         Assert.Empty(Calculate());

@@ -9,8 +9,11 @@ import { initReactI18next } from 'react-i18next';
  *
  * English is the fallback, and not because this division happens to speak it: it is the language of
  * IVAO and of this project, so it is what anyone falls back to when the division does not speak
- * theirs. A signed in member is served the language on their account instead, which the server
- * resolves with the same rule (`LocalePreference`).
+ * theirs. The server picks a signed in member's language with the same rule (`LocalePreference`)
+ * and returns it as `user.locale` in the bootstrap.
+ *
+ * Applying it here is F6, together with the language switcher that writes the cookie this detector
+ * reads. Until then the browser decides, and `hub.lang` is only ever read, never written.
  */
 export const DEFAULT_LOCALE = 'en';
 export const LOCALE_COOKIE = 'hub.lang';
