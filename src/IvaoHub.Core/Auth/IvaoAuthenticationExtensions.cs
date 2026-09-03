@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Claims;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -58,6 +59,11 @@ public static class IvaoAuthenticationExtensions
         services.AddOptions<OpenIdConnectOptions>(HubClaims.IvaoScheme)
             .Configure<IOptions<IvaoOAuthOptions>>((options, ivao) => ConfigureOpenIdConnect(options, ivao.Value));
 
+        // The one setting of the application cookie that needs the OAuth client to be decided.
+        services.AddOptions<CookieAuthenticationOptions>(HubClaims.CookieScheme)
+            .Configure<IOptions<IvaoOAuthOptions>>((options, ivao) =>
+                options.Cookie.SecurePolicy = SecurePolicyFor(ivao.Value));
+
         AddHubAuthorization(services);
         return services;
     }
@@ -83,6 +89,12 @@ public static class IvaoAuthenticationExtensions
         // Written out rather than inherited: a default is something that changes with the version of
         // the framework, and this cookie is the only credential the site issues.
         options.Cookie.HttpOnly = true;
+
+        // Secure is the third of the three and is decided next to the other two, not left to the
+        // default: it depends on the scheme of the callback, so the value itself is set through the
+        // options pipeline in AddIvaoAuthentication. Anything but "Always" outside development is a
+        // credential that a downgraded hop can read.
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 
         // Lax and not Strict: coming back from IVAO is a cross site navigation, and Strict would not
         // send the cookie on the first hop after the login.
@@ -110,7 +122,10 @@ public static class IvaoAuthenticationExtensions
 
             if (stampInCookie is null || !int.TryParse(vidClaim, CultureInfo.InvariantCulture, out var vid))
             {
+                // Sign out as well, exactly as the branch below does: rejecting alone leaves the
+                // unusable cookie in the browser, and it comes back on every single request.
                 context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(HubClaims.CookieScheme);
                 return;
             }
 
@@ -125,6 +140,19 @@ public static class IvaoAuthenticationExtensions
         };
     }
 
+    /// <summary>
+    /// Whether a cookie of this installation may only travel over https. It follows the scheme of
+    /// the callback, which is what the browser actually judges the round trip by: https everywhere
+    /// in production, and "as the request came" in development, where the login is exercised over
+    /// http on localhost and an Always cookie would simply never be sent back.
+    /// </summary>
+    private static CookieSecurePolicy SecurePolicyFor(IvaoOAuthOptions ivao) =>
+        CallbackIsHttps(ivao) ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+
+    private static bool CallbackIsHttps(IvaoOAuthOptions ivao) =>
+        Uri.TryCreate(ivao.RedirectUri, UriKind.Absolute, out var redirect)
+        && string.Equals(redirect.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
+
     private static void ConfigureOpenIdConnect(OpenIdConnectOptions options, IvaoOAuthOptions ivao)
     {
         // The two cookies that carry the round trip. Their settings follow the scheme of the
@@ -137,10 +165,7 @@ public static class IvaoAuthenticationExtensions
         // every current browser, so nothing comes back and the callback fails with "Correlation
         // failed" while looking like a network problem. Lax is both accepted and sufficient here:
         // the return from IVAO is a top level GET navigation, which Lax cookies are sent on.
-        var callbackIsHttps = string.Equals(
-            new Uri(ivao.RedirectUri).Scheme,
-            Uri.UriSchemeHttps,
-            StringComparison.OrdinalIgnoreCase);
+        var callbackIsHttps = CallbackIsHttps(ivao);
 
         options.CorrelationCookie.SecurePolicy =
             callbackIsHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
@@ -191,10 +216,12 @@ public static class IvaoAuthenticationExtensions
 
                 // HttpContext.Items and not AuthenticationProperties: the latter is serialised into
                 // the cookie, and these are credentials.
+                var clock = context.HttpContext.RequestServices.GetRequiredService<IClock>();
+
                 context.HttpContext.Items[TokensItemKey] = new IvaoUserTokens(
                     accessToken,
                     response.RefreshToken,
-                    DateTime.UtcNow.Add(lifetime),
+                    clock.UtcNow.Add(lifetime),
                     response.Scope);
             }
 

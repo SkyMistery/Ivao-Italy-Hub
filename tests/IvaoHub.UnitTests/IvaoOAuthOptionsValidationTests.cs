@@ -52,6 +52,27 @@ public sealed class IvaoOAuthOptionsValidationTests
     }
 
     [Fact]
+    public void RejectsScopesWithoutOpenId()
+    {
+        // Without it IVAO answers with no id token, and the flow then fails validating a nonce that
+        // was never going to arrive: the message talks about the nonce, and the missing scope is
+        // the last thing anybody thinks to look at.
+        var result = Validate(Valid() with { Scopes = ["profile", "email"] });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure => failure.Contains("openid", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AcceptsAMissingPostLogoutRedirectUri()
+    {
+        // Nothing reads it: signing out is local, because IVAO has no end session endpoint to come
+        // back from. Demanding it would only teach a division that the file asks for things that
+        // do not matter.
+        Assert.True(Validate(Valid() with { PostLogoutRedirectUri = "" }).Succeeded);
+    }
+
+    [Fact]
     public void RejectsALoginUrlThatDoesNotEndWithTheLoginPath()
     {
         var result = Validate(Valid() with { LoginUrl = "https://example.ivao.aero/signin" });

@@ -35,7 +35,13 @@ public sealed class SecurityStampCache(IMemoryCache cache, HubDbContext database
             .Select(user => user.SecurityStamp)
             .FirstOrDefaultAsync(cancellationToken);
 
-        cache.Set(Key(vid), stamp, Lifetime);
+        // A missing user is not cached: remembering "no such VID" for a minute would make the very
+        // first request after a login race the row that login has just written.
+        if (stamp is not null)
+        {
+            cache.Set(Key(vid), stamp, Lifetime);
+        }
+
         return stamp;
     }
 
