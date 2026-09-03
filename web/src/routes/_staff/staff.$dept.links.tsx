@@ -1,10 +1,11 @@
 import { Button } from '@ivao/atmosphere-react';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { linkColumns } from '../../features/links/list';
 import { linksListQuery } from '../../features/links/queries';
+import { reachableDepartments } from '../../shared/api/bootstrap';
 import { deptParam } from '../../shared/api/department';
 import { DataList, listSearchSchema } from '../../shared/list';
 import { PageShell } from '../../shared/ui';
@@ -21,6 +22,14 @@ export const Route = createFileRoute('/_staff/staff/$dept/links')({
   params: {
     parse: ({ dept }) => ({ dept: deptParam.parse(dept) }),
     stringify: ({ dept }) => ({ dept: deptParam.format(dept) }),
+  },
+  // A department in the address bar is not a department the member may work in. Without this the
+  // server would simply narrow the list to nothing and a coordinator who mistyped would be looking
+  // at an empty table wondering where the links went, instead of being told.
+  beforeLoad: ({ context, params }) => {
+    if (!reachableDepartments(context.bootstrap).includes(params.dept)) {
+      throw redirect({ to: '/forbidden' });
+    }
   },
   validateSearch: listSearchSchema,
   loaderDeps: ({ search }) => search,
