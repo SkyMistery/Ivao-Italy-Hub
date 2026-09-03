@@ -3,9 +3,9 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026 — fine **F4** (spina dorsale del dominio).
+**Ultimo aggiornamento:** 3 settembre 2026 — fine **F4**, più la **revisione senior** che l'ha seguita.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.24. **Design:** v1.2. **Test:** 214 verdi (174 unit + 40 integrazione).
+**Piano:** v0.25. **Design:** v1.3. **Test:** 249 verdi (190 unit + 59 integrazione).
 
 | Fase | Stato |
 |---|---|
@@ -14,6 +14,7 @@
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
 | F4 spina dorsale del dominio | mergiata (PR #6) |
+| F4bis revisione senior (correzioni, nessun perimetro nuovo) | vedi §8 |
 | **F5 `MapCrud` e `links` (server)** | **prossima** |
 
 Niente PR aperte: `main` contiene tutto fino a F4 compresa. Una sessione nuova parte da
@@ -24,14 +25,19 @@ Niente PR aperte: `main` contiene tutto fino a F4 compresa. Una sessione nuova p
 a mano, `ExtraWritePolicy`, `ValidationProblem` con chiavi i18n, 409 su `row_version`, `LocaleCatalog`
 (arrivato da F4, punto 5), OpenAPI a build-time e `schema.d.ts` generato in CI.
 
+**Prima di aprire F5, leggere §8.** La revisione ha cambiato due comportamenti su cui F5 poggia
+direttamente: `HasAllDepartments` (da cui dipende il filtro di dipartimento di `MapCrud`, design
+§3.9) e la gestione dell'errore nel secondo tempo dell'interceptor.
+
 Tre cose che F5 eredita dalla spina dorsale e deve usare, non riscrivere:
 
 1. **Audit e proiezioni li scrive l'interceptor.** A `MapCrud` non tocca nessuna delle due: se si
    trova a scrivere una riga di `hub_audit_log` o di `cms_search_index`, sta duplicando.
-2. **`IgnoreQueryFilters` può comparire solo sotto `src/IvaoHub.Core/Data/Crud/`.** Il filtro di
-   visibilità nasconde le bozze e i dipartimenti altrui anche allo staff, quindi la lista del
-   back-office **deve** ignorarlo e rifiltrare per dipartimento — ma solo lì dentro. Un test di
-   architettura lo verifica su tutto `src/`.
+2. **`IgnoreQueryFilters` può comparire solo sotto `src/IvaoHub.Core/Data/Crud/`** (e in
+   `ProjectionWriter.cs`, che deve ritrovare la riga da riscrivere chiunque stia scrivendo). Il
+   filtro di visibilità nasconde le bozze e i dipartimenti altrui anche allo staff, quindi la lista
+   del back-office **deve** ignorarlo e rifiltrare per dipartimento — ma solo lì dentro. Un test di
+   architettura verifica l'allow-list su tutto `src/`.
 3. **La guardia dell'interceptor è una rete, non il controllo.** Quando morde lancia
    `ForbiddenDomainException`, cioè un'eccezione a metà transazione, non un 403 pulito: `MapCrud`
    deve comunque chiamare `AuthorizeAsync` sulla risorsa **prima**, e mappare l'eccezione a 403 solo
@@ -118,7 +124,8 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
 - `IvaoApiTokenProvider`: token `client_credentials` in cache fino a 60 s prima della scadenza; un
   token che vale meno del margine si usa e non si conserva. Gli scope dell'applicazione (`ApiScopes`)
   sono separati da quelli del membro: `client_credentials` non chiede `openid profile email`.
-- `RefDataSyncJob`: upsert (mai duplicati) in `ref_ivao_centers` e `ref_ivao_airports` con il
+- `RefDataSyncJob`: upsert (mai duplicati) — e, dalla revisione di §8, cancellazione di ciò che una
+  risposta **non vuota** non elenca più — in `ref_ivao_centers` e `ref_ivao_airports` con il
   `raw_json` intero, riga in `hub_jobs_log`, cron 03:15 nel fuso della divisione, ed esecuzione
   all'avvio se le tabelle sono vuote. Se IVAO non risponde, la tabella resta com'era.
 - `FixtureIvaoApiClient` con `Ivao:UseFixtures=true`, **rifiutato fuori da Development** sia alla
@@ -195,6 +202,19 @@ senza credenziali.
   di un permesso nuovo lo aggiunge al catalogo e alla matrice, non scrive un handler.
 - Un contesto EF si registra **solo** con `AddHubDbContext`/`AddModuleDbContext<T>`: sono i due punti
   che agganciano l'interceptor.
+- **Niente `ExecuteDelete`/`ExecuteUpdate`**: vanno dritti al server e non passano dall'interceptor,
+  quindi sono un buco nell'audit, nella guardia e nelle proiezioni. Un test di architettura li vieta
+  su tutto `src/`.
+- **`HasAllDepartments` non si deduce dai permessi**: è il claim `alldept`, scritto da
+  `HubClaims.BuildIdentity`. Chi ha bisogno di sapere «raggiunge ogni dipartimento?» lo chiede a
+  `ICurrentUser`, non alla forma della lista.
+- **La regola «tiene questo permesso?» sta in `PermissionSet`**, e la chiamano sia
+  `HttpContextCurrentUser` sia i doppioni dei test. Una copia in un test è un posto dove il codice
+  provato e quello vero divergono in silenzio.
+- **Le proiezioni si leggono una volta per salvataggio, non una per riga.** `ProjectionWriter`
+  separa `Load`/`LoadAsync` da `Apply` apposta: sono dentro la transazione della scrittura, e ogni
+  round trip in più è un lock tenuto aperto più a lungo. `ProjectionBatchingTests` lo fissa
+  contando gli statement veri.
 
 ## 4. Scelte fatte finora che vale la pena conoscere
 
@@ -230,6 +250,9 @@ senza credenziali.
 | `2026-09-03-projection-context.md` | `IProjectable.Project()` riceve un `ProjectionContext` (lingue, lingua di default, walker): un'entità EF non si fa iniettare niente. **Confermata**, design §3.6 corretta. |
 | `2026-09-03-has-and-has-any.md` | `ICurrentUser` fa due domande separate invece di una con il dipartimento opzionale. **Decisa da Carmine**, design §3.3 e §3.7 corrette. |
 | `2026-09-03-licenza.md` | Apache-2.0, copyright «2026 Carmine Granato», con `NOTICE` fin da subito e senza header per file. **Decisa da Carmine**, piano §15.5 punto 5 chiuso. |
+| `2026-09-03-reaches-every-department.md` | `HasAllDepartments` è un claim derivato dalle posizioni, non un indizio letto dalla lista dei permessi. Design §3.3 precisata. |
+| `2026-09-03-proxy-fidati.md` | Le reti dei proxy di cui si crede `X-Forwarded-For` si dichiarano, e in produzione sono obbligatorie. Design §2.3 precisata. |
+| `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
 serve a non ridiscutere fra sei mesi una cosa già discussa.
@@ -312,7 +335,133 @@ allargare i permessi, mai stringerli a sorpresa.
 
 ---
 
-## 8. Igiene del repository
+## 8. Revisione senior di fine F4 (3 set 2026)
+
+Rilettura di tutto il repository come se fosse di altri, prima di aprire F5. Undici delle
+segnalazioni iniziali si sono rivelate cose già previste dal piano (le esclusioni `/vsop` di F0 che
+F8 sostituisce, `GetMeAsync` chiesto da F3, `react-hook-form`/`lucide-react` installati da F0 per
+F6, `SearchIndexEntry` che diventa `IVisible` in F8 §6, `AddProblemDetails` in F5 §3,
+`ValidateEnvelope` cablato in F7, il pacchetto completato in F5 §5): **non erano difetti, era la
+revisione che non aveva ancora letto il piano di implementazione**. Quello che resta è qui.
+
+### 8.1 Bug corretti
+
+| Cosa | Dove era | Perché contava |
+|---|---|---|
+| **La lingua del membro non veniva mai decisa dalla regola** | `UserSyncService`: la riga nuova nasceva con `Locale = DefaultLocale`, quindi il `??=` sotto era irraggiungibile | Ogni nuovo iscritto di ogni divisione prendeva la lingua della divisione. La regola documentata (§4, «`languageId` di IVAO se la divisione la parla, altrimenti inglese») funzionava per i soli superadmin bootstrappati, che nascono senza lingua. Test: `UserSyncTests`. |
+| **`HasAllDepartments` dedotto invece che dichiarato** | `HttpContextCurrentUser` | Sbagliava in due direzioni opposte: dava «vede tutto» a una posizione IVAO HQ (scavalcando l'intero filtro di visibilità) e lo **toglieva** a un Director colpito da un deny, lasciandolo con il solo `HQ`. In F5 sarebbe stato un **403** su ogni lista (design §3.9). Nota di decisione dedicata. |
+| **Il secondo tempo dell'interceptor non gestiva il proprio fallimento** | `HubSaveChangesInterceptor.SavedChanges(Async)` | Un'eccezione nella proiezione lasciava la transazione **aperta** e la voce in `_pending`: scrittura né committata né annullata, connessione avvelenata per il prossimo. Raggiungibile oggi con un `body_json` non valido, perché la validazione dell'envelope è F7. Test: `InterceptorFailureTests`. |
+| **Il ramo di errore del sync scriveva i dati parziali** | `RefDataSyncJob` | Il `SaveChanges` che salvava la riga «failed» portava con sé tutto ciò che il run aveva già tracciato: riga «failed» sopra uno snapshot mezzo scritto. Ora il change tracker si svuota prima. Aggiunto anche lo stato `partial`. Test: `RefDataSyncTests`. |
+| **Permessi duplicati nel cookie** | `EffectivePermissionsCalculator` | `EffectivePermission` include `Source` nell'uguaglianza (è la firma del design §3.3, non si tocca), quindi lo stesso permesso da ruolo **e** da grant faceva due entrate, cioè due claim identici in un cookie che viaggia a ogni richiesta. Deduplicato su `(nome, dipartimento)`, vince il ruolo. |
+
+### 8.2 Sicurezza
+
+- **`X-Forwarded-For` creduto da chiunque.** `KnownIPNetworks`/`KnownProxies` erano svuotate senza
+  rimpiazzo: il rate limiter di `/auth/*` si aggirava cambiando un header, e l'indirizzo dell'audit
+  lo sceglieva chi scriveva. Ora `ForwardedHeaders:TrustedNetworks` è obbligatorio in produzione, e
+  fuori produzione, se vuoto, il middleware non entra affatto. Nota di decisione dedicata.
+- **Il cookie `hub.auth` non dichiarava `SecurePolicy`.** Erano scritti a mano `HttpOnly` e
+  `SameSite` «perché un default cambia con la versione del framework», e mancava proprio il terzo,
+  sull'unica credenziale che il sito emette. Ora segue lo schema del callback, come i cookie del
+  giro OIDC.
+- **`OnValidatePrincipal` rigettava senza fare sign-out** nel ramo del cookie malformato: il cookie
+  inutilizzabile restava nel browser e ripercorreva quel ramo a ogni richiesta. Il ramo sotto lo
+  faceva già.
+- **`hub_audit_log.ip`** era a specifica (piano §7) e non veniva mai popolata. Ora sì — il che ha
+  senso solo dopo il punto sui proxy, non prima.
+- **HSTS e redirezione HTTPS** in produzione, subito dopo i forwarded headers. Vedi §8.6.
+
+### 8.3 Coerenza con le regole già scritte
+
+- **Terza violazione di «la configurazione si legge quando il servizio viene costruito»** (§3):
+  `AddIvaoIntegration` prendeva `IConfiguration`, `IHostEnvironment` e `DivisionOptions` alla
+  registrazione. Ora non prende **niente**: il fuso del cron passa da `QuartzOptions` via options
+  pipeline, e la scelta fixture/reale resta nella factory scoped, con la guardia dove conta già
+  (il costruttore di `FixtureIvaoApiClient`).
+- **`ExecuteDeleteAsync` scavalcava l'interceptor** in `IvaoUserTokenStore`. Sostituito con una
+  cancellazione tracciata, e aggiunto il test di architettura che lo vieta ovunque sotto `src/`.
+- **`TestCurrentUser` riscriveva la regola di autorizzazione** che avrebbe dovuto esercitare. Ora
+  entrambe le implementazioni chiamano `PermissionSet.Has/HasAny`: stesso codice, non una copia.
+- **Il test «un solo handler» non vedeva `IvaoHub.Web`** (il progetto unit non lo referenzia).
+  Rinominato per dire cosa copre davvero, e affiancato da un test sui **sorgenti** di tutto `src/`,
+  che prende anche un handler dichiarato e mai registrato.
+
+### 8.4 Documentazione corretta
+
+- `VisibilityQueryFilter` diceva «legge l'utente quando il contesto viene costruito»: il contrario
+  del codice, del commento di `HubDbContext` dieci righe più in là e di questo file.
+- `HubConfiguration.RequireAllowedHosts` motivava con «il redirect URI OIDC è costruito dall'header
+  Host»: il contrario del design §4, dove il `redirect_uri` è preso alla lettera da configurazione.
+- La home diceva ancora «Solo bootstrap del repository» (testo di F0), in entrambe le lingue.
+- `README.md` e `docs/FORKING.md` non dicevano che **in produzione servono `AllowedHosts` e i proxy
+  fidati**, senza i quali l'applicazione non parte. Ora c'è una tabella con l'esempio.
+- `docs/FORKING.md` non avvertiva che `superAdmins` in `division.json` contiene i VID **di questa**
+  divisione: chi forka e avvia senza toccarlo si ritrova un superadmin altrui.
+- Il commento di `i18n.ts` descriveva al presente la lingua dell'account, che è F6.
+- `holdsPermission` lato SPA aveva la firma con dipartimento opzionale che la decisione
+  `2026-09-03-has-and-has-any.md` aveva scartato lato server. Ora sono due funzioni.
+
+### 8.5 Minori
+
+`ResolveName` rimosso e `IcaoPrefixes` reso reale (vedi §8.6);
+`fir` passato a `varchar(8)` come `ref_ivao_centers.id` (migrazione additiva
+`WidenStaffPositionFir`); potatura dello snapshot `ref_`; `Localized.Equals` che confronta le chiavi
+con il comparer che il dizionario usa davvero (`OrdinalIgnoreCase`); `SecurityStampCache` che non
+memorizza più «questo VID non esiste»; `IClock` al posto di `DateTime.UtcNow` in `OnTokenValidated`
+e `StartupDiagnostics`; `openid` preteso fra gli `Scopes`; `PostLogoutRedirectUri` non più
+obbligatorio (nessuno lo legge, e IVAO non ha un end session da cui tornare); `UnknownModuleKeys`
+non è più stato mutabile su un singleton ma una riga di log; i due significati di `HQ` documentati
+dove si incontrano; `mailpit` pinnato; `release.yml` che ora **dipende da `build-test`** invece di
+pubblicare a scatola chiusa; lo zip che si scompatta nell'applicazione e non in `artifacts/publish/`.
+
+### 8.6 Quello che era stato lasciato aperto, e come è stato chiuso
+
+La prima passata aveva lasciato sei punti «di proposito». Sono stati chiusi tutti.
+
+- **L'N+1 di `ProjectionWriter`** — era il punto rinviato a F5. Chiuso adesso, perché rinviarlo
+  significava consegnare a F5 un meccanismo che `MapCrud` avrebbe subito usato in massa. Lettura e
+  scrittura sono ora separate: `Load`/`LoadAsync` leggono **una volta per l'intero salvataggio**
+  (tre query, non tre per riga), `Apply` non fa I/O. Un salvataggio di dodici righe che prima
+  costava trentasei query ne costa tre. Test: `ProjectionBatchingTests`, che conta gli statement
+  veri con un `DbCommandInterceptor` — la proprietà è invisibile finché qualcuno non rimette il
+  ciclo dentro, quindi va fissata.
+- **Il `GetAwaiter().GetResult()` del percorso sincrono** — sparito con la stessa separazione: la
+  duplicazione fra sincrono e asincrono è ora di tre query, non di tutto il ragionamento.
+- **HSTS e redirezione HTTPS** — ci sono, in produzione, **dopo** i forwarded headers (prima, lo
+  schema è quello del salto dal proxy e la redirezione è un ciclo infinito). HSTS a trenta giorni,
+  senza `includeSubDomains` e senza preload: l'hub è un host sotto un dominio condiviso con il resto
+  della divisione, e una policy HSTS è reversibile solo quanto il suo `max-age` più lungo. La
+  redirezione si spegne con `Https:Redirect=false` per chi la fa già fare al proxy.
+- **`CalendarEntry`** — è `IAuditable`, `IOwnedByDepartment`, `IVisible` e `[PermissionArea("Calendar")]`.
+  Le voci che lo staff scriverà a mano in M1 hanno quindi guardia di scrittura (`Calendar.Edit` sul
+  proprio dipartimento) e le quattro colonne di audit dall'interceptor; quelle proiettate le
+  stampiglia `ProjectionWriter`, perché una proiezione è il risultato di una scrittura, non una
+  scrittura. La domanda «basterà in M1?» ha adesso una risposta invece di un rinvio.
+- **Le proiezioni fuori dal query filter** — `SearchIndexEntry` e `CalendarEntry` dichiarano owner e
+  visibilità, quindi il filtro globale si applica anche a loro: le due tabelle su cui si costruiscono
+  ricerca e calendario non sono più le uniche senza rete. `AwardSignal` resta fuori **per decisione**,
+  non per dimenticanza: non ha un dipartimento contro cui confrontare nulla, è una risorsa globale
+  nel senso del design §3.9, come `UserGrant` e `AuditLogEntry`, letta dietro `Awards.Assign`.
+  `ProjectionWriter` legge le due tabelle con `IgnoreQueryFilters` — è il secondo e ultimo posto in
+  cui compare, l'allow-list del test di architettura ora ne elenca due — perché deve trovare la riga
+  da riscrivere chiunque sia loggato, altrimenti ne inserirebbe una seconda contro una chiave unica.
+  Test: `ProjectionVisibilityTests`, che copre entrambe le metà. **F8 §6 trova questa parte già
+  fatta**, e gli resta l'endpoint `/api/search`.
+- **`IcaoPrefixes` e `ResolveName`** — `ResolveName` è stato **rimosso**: era una seconda copia della
+  regola di fallback fra lingue che `Localized<T>.Resolve` già implementa, senza chiamanti, cioè
+  esattamente la copia destinata a divergere. `IcaoPrefixes` invece è diventato reale: validato
+  all'avvio (1–4 lettere maiuscole, così un refuso non resta muto) e usato dal sync come rete di
+  sicurezza — se **nessun** aeroporto tornato da IVAO comincia con uno dei prefissi, la riga di log
+  dice di controllare `countryId`, che è la causa quasi certa.
+
+Una nota di metodo: `AddHubDbContext`/`AddModuleDbContext` ora agganciano anche gli `IInterceptor`
+registrati nel container. EF Core non li raccoglie da sé quando gli interceptor vengono aggiunti a
+mano, e serviva un modo di attaccare una diagnostica senza aprire una seconda strada per costruire
+un contesto.
+
+---
+
+## 9. Igiene del repository
 
 - Il branch `m0/f4-domain-backbone` è **ancora sul remoto**: il repository non cancella i branch al
   merge. Si può togliere quando fa comodo (`git push origin --delete m0/f4-domain-backbone`); niente

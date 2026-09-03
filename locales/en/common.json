@@ -11,7 +11,7 @@
   },
   "home": {
     "heading": "The hub is up",
-    "lead": "Repository bootstrap only: the application skeleton builds, the tests run and the CI is green."
+    "lead": "The public site arrives with the editorial content; for now this page only shows that the division, its languages and your session are being read from the right places."
   },
   "auth": {
     "login": "Sign in with IVAO",

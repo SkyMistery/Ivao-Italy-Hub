@@ -11,7 +11,7 @@
   },
   "home": {
     "heading": "L'hub è attivo",
-    "lead": "Solo bootstrap del repository: lo scheletro dell'applicazione compila, i test girano e la CI è verde."
+    "lead": "Il sito pubblico arriva con i contenuti editoriali; per ora questa pagina mostra solo che la divisione, le sue lingue e la tua sessione vengono lette dai posti giusti."
   },
   "auth": {
     "login": "Accedi con IVAO",
