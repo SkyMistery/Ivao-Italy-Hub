@@ -1,6 +1,6 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 
-import type { Bootstrap } from './bootstrap';
+import type { paths } from './schema';
 
 /**
  * The only place that talks to the API. Every call carries `X-Requested-With: hub`, which the
@@ -9,25 +9,10 @@ import type { Bootstrap } from './bootstrap';
  *
  * ESLint forbids `fetch` anywhere outside this folder, so there is no second way in.
  *
- * The typed surface arrives in F5, generated from the OpenAPI document into `schema.d.ts`. Until
- * then the paths used by F2 are declared here by hand.
+ * The typed surface is `schema.d.ts`, generated from the OpenAPI document the build emits. It is
+ * committed, and the CI regenerates it and fails on a diff: a path or a field that moved on the
+ * server cannot quietly go stale here (design M0 section 7.4).
  */
-export interface ApiPaths {
-  '/api/me': {
-    get: {
-      responses: {
-        200: { content: { 'application/json': Bootstrap } };
-      };
-    };
-  };
-  '/auth/logout': {
-    post: {
-      responses: {
-        204: { content: never };
-      };
-    };
-  };
-}
 
 /** What the server checks for on every state changing call. */
 export const REQUESTED_WITH = 'hub';
@@ -50,7 +35,7 @@ const unauthorizedMiddleware: Middleware = {
   },
 };
 
-export const api = createClient<ApiPaths>({
+export const api = createClient<paths>({
   baseUrl: '/',
   headers: { 'X-Requested-With': REQUESTED_WITH },
 });

@@ -43,6 +43,11 @@ public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options) : 
         if (CorePermissions.IsKnown(policyName))
         {
             return new AuthorizationPolicyBuilder()
+                // The application cookie, not the round trip to IVAO. The default challenge scheme
+                // is the identity provider, which is right for /auth/login and wrong for an API
+                // call: a caller that is not signed in needs 401 and a status code it can act on,
+                // never a redirect to a consent screen it cannot render.
+                .AddAuthenticationSchemes(HubClaims.CookieScheme)
                 .RequireAuthenticatedUser()
                 .AddRequirements(new PermissionRequirement(policyName))
                 .Build();

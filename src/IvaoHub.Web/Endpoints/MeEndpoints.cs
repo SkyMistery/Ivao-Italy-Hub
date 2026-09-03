@@ -18,7 +18,9 @@ internal static class MeEndpoints
         {
             var options = division.Value;
 
-            return Results.Ok(new BootstrapResponse(
+            // Typed rather than IResult so that the shape reaches the OpenAPI document, and from
+            // there the generated client: the payload of the bootstrap is written once.
+            return TypedResults.Ok(new BootstrapResponse(
                 User: user.IsAuthenticated
                     ? new BootstrapUser(
                         user.Vid,

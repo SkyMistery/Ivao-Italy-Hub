@@ -46,7 +46,16 @@ public sealed class LocalizedJsonConverter<T> : JsonConverter<Localized<T>>
     public override void Write(Utf8JsonWriter writer, Localized<T> value, JsonSerializerOptions options)
     {
         ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(value);
+
+        // A property declared Localized<T>? and left unset — the description of a link, say — is
+        // null, and this converter is asked to write it because it handles null. Absent stays
+        // absent: the contract declares the field nullable, and turning it into an empty object
+        // would make "nobody wrote a description" indistinguishable from "it was cleared".
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
 
         writer.WriteStartObject();
         foreach (var (locale, item) in value)

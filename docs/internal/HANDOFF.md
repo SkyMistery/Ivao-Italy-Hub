@@ -3,9 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026 — fine **F4**, più la **revisione senior** che l'ha seguita.
+**Ultimo aggiornamento:** 3 settembre 2026 — fine **F5** (`MapCrud` e `links` lato server), su un
+`main` che nel frattempo ha assorbito la **revisione senior** di F4 (PR #9).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.25. **Design:** v1.3. **Test:** 249 verdi (190 unit + 59 integrazione).
+**Piano:** v0.25. **Design:** v1.3 (due precisazioni di F5 da portarci, §5). **Test:** 280 verdi (210 unit + 70 integrazione).
 
 | Fase | Stato |
 |---|---|
@@ -14,36 +15,53 @@
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
 | F4 spina dorsale del dominio | mergiata (PR #6) |
-| F4bis revisione senior (correzioni, nessun perimetro nuovo) | vedi §8 |
-| **F5 `MapCrud` e `links` (server)** | **prossima** |
+| F4bis revisione senior (correzioni, nessun perimetro nuovo) | mergiata (PR #9), vedi §8 |
+| F5 `MapCrud` e `links` (server) | **PR #8 aperta**, branch `m0/f5-mapcrud-links`, riallineato su `main` |
+| **F6 spina dorsale frontend** | **prossima**, dopo il merge di F5 |
 
-Niente PR aperte: `main` contiene tutto fino a F4 compresa. Una sessione nuova parte da
-`git checkout main && git pull` e apre subito il branch della fase.
+### Le prime tre cose da fare in una sessione nuova
 
-**Come si apre F5**: prompt di §C del piano di implementazione con `<N>` → `5`. Perimetro in §D:
-`MapCrud<TEntity, …>` nelle due modalità (dipartimentale e globale), il CRUD di `links` senza codice
-a mano, `ExtraWritePolicy`, `ValidationProblem` con chiavi i18n, 409 su `row_version`, `LocaleCatalog`
-(arrivato da F4, punto 5), OpenAPI a build-time e `schema.d.ts` generato in CI.
+1. **Leggere e mergiare la PR #8** (<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/8>), con
+   squash come le precedenti. La CI è verde (`build-test`, 2m17s): 244 test, il diff di
+   `schema.d.ts` non si muove, e il pacchetto pubblicato porta `locales/`, gli `.example.json`,
+   `LICENSE` e `NOTICE`.
+2. **Confermare o correggere le due note di §5** marcate «da confermare». Non bloccano F6: sono due
+   frasi del design da riformulare, e finché non sono confermate il design resta a v1.2 così com'è.
+   Chi le conferma corregge `01-design-m0.md` §7.4, §9 punto 12 e §3.1 — le riformulazioni esatte
+   sono già scritte in fondo a ciascuna nota.
+3. **Aprire F6**: `git checkout main && git pull` (dal checkout principale, non da un worktree),
+   poi `git checkout -b m0/f6-frontend-backbone` e il prompt di §C con `<N>` → `6`.
 
-**Prima di aprire F5, leggere §8.** La revisione ha cambiato due comportamenti su cui F5 poggia
-direttamente: `HasAllDepartments` (da cui dipende il filtro di dipartimento di `MapCrud`, design
-§3.9) e la gestione dell'errore nel secondo tempo dell'interceptor.
+**Perimetro di F6** (§D del piano): i tre layout, le tre ricette del router, `DataList` e
+`SchemaForm`, `LocaleFields`, `useProblemDetails`, il back-office di `links` **senza una riga di JSX
+di tabella o di form**, `/staff/admin/ui-kit`, `docs/UI-GUIDELINES.md`.
 
-Tre cose che F5 eredita dalla spina dorsale e deve usare, non riscrivere:
+> **Nota di merge.** F5 è stata scritta su un `main` che non conteneva ancora la revisione di §8, e
+> le due sono state riunite qui. La revisione tocca F5 in un punto solo, e in meglio:
+> `TryNarrowToDepartments` legge `ICurrentUser.HasAllDepartments`, che ora è un claim invece di un
+> indizio letto dalla lista dei permessi — un Director colpito da un deny vedeva la lista ristretta
+> al solo `HQ`, e adesso no. L'allow-list di `IgnoreQueryFilters` ha inoltre **due** voci:
+> `Core/Data/Crud/` (F5) e `ProjectionWriter.cs` (revisione).
 
-1. **Audit e proiezioni li scrive l'interceptor.** A `MapCrud` non tocca nessuna delle due: se si
-   trova a scrivere una riga di `hub_audit_log` o di `cms_search_index`, sta duplicando.
-2. **`IgnoreQueryFilters` può comparire solo sotto `src/IvaoHub.Core/Data/Crud/`** (e in
-   `ProjectionWriter.cs`, che deve ritrovare la riga da riscrivere chiunque stia scrivendo). Il
-   filtro di visibilità nasconde le bozze e i dipartimenti altrui anche allo staff, quindi la lista
-   del back-office **deve** ignorarlo e rifiltrare per dipartimento — ma solo lì dentro. Un test di
-   architettura verifica l'allow-list su tutto `src/`.
-3. **La guardia dell'interceptor è una rete, non il controllo.** Quando morde lancia
-   `ForbiddenDomainException`, cioè un'eccezione a metà transazione, non un 403 pulito: `MapCrud`
-   deve comunque chiamare `AuthorizeAsync` sulla risorsa **prima**, e mappare l'eccezione a 403 solo
-   come ultima difesa (perimetro F5 punto 3).
+Quattro cose che F6 eredita da F5 e deve usare, non riscrivere:
 
-Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma F4 e F5 non le usano.
+1. **I tipi dell'API non si scrivono a mano.** `web/src/shared/api/schema.d.ts` è generato
+   (`pnpm gen:api`) dal documento OpenAPI che scrive `dotnet build`, ed è committato; la CI lo
+   rigenera e fallisce sul diff. `bootstrap.ts` ora è solo un elenco di alias di quel file.
+2. **I parametri di lista sono un tipo, non una convenzione.** `CrudListRequest` (`page`,
+   `pageSize`, `sort`, `dir`, `q`) sta nell'OpenAPI, quindi i search params tipizzati della
+   ricetta 2 devono coincidere con quelli. `filter[nome]=valore` non è nel documento perché i suoi
+   nomi sono le proprietà dell'entità: l'elenco ammesso è `CrudOptions.Filterable`, e un nome fuori
+   elenco prende 400.
+3. **Un campo tradotto si riconosce dal contratto.** Nello schema, `LocalizedString` porta
+   `x-localized: true`: è quello che `SchemaForm` deve leggere per disegnare `LocaleFields`, invece
+   di indovinare dal nome del campo.
+4. **Gli errori arrivano come chiavi i18n.** `errors[campo] = ["errors.localized.missing"]`, e
+   quando mancano delle lingue l'estensione `localized` dice **quali**: `useProblemDetails` deve
+   risolvere la chiave e usare quell'estensione, non inventarsi un messaggio.
+
+Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
+nessuno.
 
 ---
 
@@ -64,11 +82,19 @@ carattere** con quelli registrati su IVAO per quel client (in locale: `http://lo
 Controlli:
 
 ```bash
-dotnet build IvaoHub.sln
+dotnet build IvaoHub.sln                                    # scrive artifacts/openapi/IvaoHub.Web.json
+cd web && pnpm gen:api && git diff --exit-code               # rigenera schema.d.ts: deve non muoversi
 dotnet test --solution IvaoHub.sln --configuration Release  # richiede Docker (Testcontainers)
 cd web && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm i18n:check && pnpm build
 dotnet publish src/IvaoHub.Web -c Release -r linux-x64 --self-contained -o artifacts/publish
 ```
+
+⚠️ **`dotnet build` esegue il nostro `Program` per un istante.** È così che
+`Microsoft.Extensions.ApiDescription.Server` legge gli endpoint (misurato: se non arriva a
+`app.Run()`, il documento esce con `"paths": { }`). Non tocca il database e non chiede il client
+OAuth, perché `HubConfiguration.IsOpenApiDocumentGeneration` gli toglie da davanti la validazione di
+Production, `ValidateOnStart` dell'OAuth e `InitializeAsync`, e apre una porta effimera sul loopback
+invece della 5000. Nota: `docs/internal/decisions/2026-09-03-openapi-a-build-time.md`.
 
 ⚠️ **Se `dotnet test` dice «Zero tests ran» con exit code 5, non crederci.** È successo il 3 set 2026 su
 Windows in **Debug**: il comando tornava in 110 ms senza eseguire niente, mentre il binario lanciato a
@@ -84,7 +110,7 @@ dotnet tool restore
 dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-project src/IvaoHub.Core
 ```
 
-## 2. Cosa c'è dopo F4
+## 2. Cosa c'è dopo F5
 
 **Configurazione e avvio (F1)**: `config/division.json` versionato + esempi; opzioni validate prima di toccare
 il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su Pomelo pinnato a MariaDB
@@ -174,6 +200,62 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
   stanno in `DomainBackboneTests`; girano sul `DbContext` e su `IAuthorizationService` veri, con un
   `TestCurrentUser` al posto del cookie perché F4 non ha ancora endpoint.
 
+**`MapCrud` e `links` (F5)**:
+
+- **`MapCrud<TEntity, TListDto, TDetailDto, TWriteDto>`** in `src/IvaoHub.Core/Data/Crud/`, unico
+  motore CRUD del server. Genera `GET`/`GET {id}`/`POST`/`PUT {id}`/`DELETE {id}` con paginazione
+  (`pageSize` **tagliato a 100**: una lista non è un modo di scaricare la tabella), `sort`/`dir` e
+  `filter[...]` su **allow-list** (un nome fuori elenco è 400, non un filtro ignorato in silenzio),
+  `q` sulle colonne dichiarate, validazione FluentValidation, 409 sulla concorrenza.
+- **Due modalità, un ramo.** Dipartimentale quando l'entità è `IOwnedByDepartment`: lista filtrata
+  sui `Departments` dell'utente (nessun filtro per chi ha `HasAllDepartments`; 403 per chi tiene il
+  permesso ma non ha dipartimenti), e `AuthorizeAsync(entity)` su ogni riga. Globale altrimenti
+  (`UserGrant`, `AuditLogEntry` in F8): solo la policy, nessun filtro, nessuna risorsa.
+- **`AuthorizeAsync` è chiamato due volte su un `PUT`**: sulla riga com'è salvata (nessuno modifica
+  ciò che non è suo) e sulla riga come diventerebbe (nessuno regala una riga a un altro
+  dipartimento). Test: `MovingARowToAnotherDepartmentNeedsThePermissionOnBothSides`.
+- **`ExtraWritePolicy`** è l'unico gancio di estensione, pronto per `Content.ManageTemplates` in F7.
+- **`LocalizedQuery`**, il solo posto che legge una lingua da una colonna JSON in SQL: una
+  `HasDbFunction` che diventa `JSON_UNQUOTE(JSON_EXTRACT(col, '$."it"'))`. Due dettagli che sono
+  costati tempo e che non vanno rimossi: il parametro `field` ha bisogno di
+  `HasParameter("field").HasStoreType("json")`, altrimenti la validazione del modello rifiuta
+  `Localized<string>` come tipo non mappabile; e le due `SqlFunctionExpression` hanno bisogno di un
+  **type mapping esplicito**, altrimenti «Expression … does not have a type mapping assigned».
+- **La concorrenza non ha bisogno di un'interfaccia nuova.** Il motore trova la colonna di
+  concorrenza dai metadati EF e, dopo `Apply`, ne copia il valore corrente in `OriginalValue`: una
+  `rowVersion` vecchia finisce nel `WHERE`, non aggiorna nessuna riga e diventa 409. Un payload che
+  non porta versione (`0001-01-01`) significa «la riga com'è adesso».
+- **`ValidationProblem` con chiavi i18n**: `errors[campo] = ["errors.localized.missing"]`, più
+  l'estensione `localized` che dice **quali lingue** mancano (dallo stato del fallimento di
+  `LocalizedRules`). Il `title` invece è una frase, risolta dal `LocaleCatalog` nella lingua
+  dell'utente: un chiamante che non è la nostra SPA riceve comunque qualcosa di leggibile.
+- **`LocaleCatalog`** (`Core/Localization/`): legge `locales/{lang}/*.json` e li appiattisce in una
+  mappa per lingua. I namespace sono un dettaglio di caricamento del client, non parte della chiave,
+  quindi `nav.home` e `errors.localized.missing` si scrivono uguali sul server; due namespace che
+  dichiarano la stessa chiave sono un'eccezione, non un ordine di lettura da indovinare.
+- **`DomainExceptionHandler`** (`Core/Services/`) + `AddProblemDetails`: `ForbiddenDomainException`
+  → 403 (e un warning nei log, perché se morde la rete dell'interceptor significa che una policy è
+  stata dimenticata), `DbUpdateConcurrencyException` → 409.
+- **Le policy dei permessi autenticano sul cookie**, non sullo schema di challenge di default: uno
+  `RequireAuthorization("Links.View")` su `/api` deve rispondere **401**, non un 302 verso IVAO.
+  Era un bug latente da F2 che nessuno poteva vedere finché non esisteva un endpoint protetto.
+- **`/api/links`** in `Core/Content/LinksEndpoints.cs`: ~40 righe di configurazione e nient'altro.
+  DTO più mapper Mapperly (`LinkDtos.cs`) e `LinkWriteDtoValidator` (titolo in tutte le lingue, URL
+  assoluta http/https, `Sort ≥ 0`, lunghezze delle colonne).
+- **OpenAPI a build-time** in `artifacts/openapi/IvaoHub.Web.json`, con il transformer che marca
+  ogni `Localized<T>` come `x-localized: true` **e ne scrive la forma** (`additionalProperties`):
+  un tipo con un converter proprio è opaco alla generazione dello schema e senza questo arriverebbe
+  in TypeScript come `unknown`. `/api/me` e `/api/version` sono passati a `TypedResults` perché il
+  loro payload finisse nel documento.
+- **`pnpm gen:api`** → `web/src/shared/api/schema.d.ts`, committato, con uno step di CI che lo
+  rigenera e fallisce sul diff. `client.ts` è ora `createClient<paths>` e `bootstrap.ts` è solo un
+  elenco di alias: il tipo `ApiPaths` scritto a mano non esiste più.
+- **Il pacchetto pubblicato** porta `locales/`, i `config/*.example.json`, `LICENSE` e `NOTICE`
+  (target `PublishHubFiles`), verificato da uno step di CI.
+- **244 test verdi** (194 unit + 50 di integrazione). I dieci di `MapCrudLinksEndToEndTests` girano
+  sul cookie vero e sulle policy vere, con cinque identità: superadmin, coordinatore ED, advisor
+  FOD, membro, anonimo.
+
 **Provato contro l'API vera il 3 set 2026**: `client_credentials` **senza nessuno scope** basta per
 `/v2/centers` e `/v2/airports/all`. Per la divisione IT tornano 7 centri (LIBB, LIMM, LIPP, LIRO,
 LIRR, LIVK, LIZZ) e 221 aeroporti, tutti con le piste. Le fixture restano per la CI e per chi forka
@@ -202,6 +284,18 @@ senza credenziali.
   di un permesso nuovo lo aggiunge al catalogo e alla matrice, non scrive un handler.
 - Un contesto EF si registra **solo** con `AddHubDbContext`/`AddModuleDbContext<T>`: sono i due punti
   che agganciano l'interceptor.
+- Un CRUD si espone **solo** con `MapCrud`. Un endpoint scritto a mano che pagina, filtra o
+  autorizza una riga sta riscrivendo il motore; se il motore non copre il caso, si estende il
+  motore (regola (b) di CLAUDE.md §5).
+- La paginazione, l'allow-list di `sort` e `filter`, e il `ValidationProblem` vivono **una volta**,
+  in `Core/Data/Crud/`. Nessun endpoint reinventa l'envelope della lista: è `PagedResult<T>`.
+- I tipi TypeScript dell'API si **generano** (`pnpm gen:api`); nessuno li scrive a mano. Un endpoint
+  nuovo che risponde `IResult` invece di `TypedResults` non finisce nel documento e quindi non
+  esiste per il client: si tipizza la risposta.
+- Il server non manda prose nella parte macchina di una risposta: `errors[campo]` sono chiavi i18n.
+  Le frasi le risolve il `LocaleCatalog`, dagli stessi `locales/` della SPA.
+- Un permesso del catalogo diventa una policy che autentica sul **cookie applicativo**: `/api`
+  risponde 401 a chi non è autenticato, mai un redirect.
 - **Niente `ExecuteDelete`/`ExecuteUpdate`**: vanno dritti al server e non passano dall'interceptor,
   quindi sono un buco nell'audit, nella guardia e nelle proiezioni. Un test di architettura li vieta
   su tutto `src/`.
@@ -239,6 +333,12 @@ senza credenziali.
 | `Department`, `Visibility`, `PublishStatus`, `StaffLevel` definiti in F1 | Le colonne della migrazione hanno bisogno del vocabolario; le **interfacce** restano a F4. |
 | `.editorconfig` esenta `**/Migrations/*.cs`; `.gitignore` ancora le cartelle di runtime alla radice | File generati; e su Windows git confronta i pattern senza distinguere maiuscole. |
 | Le cartelle di runtime hanno nomi inglesi (`secrets/`, `diagnostics/`, `startup.txt`) | Deciso il 2 set 2026: valgono le nostre regole, non quelle di vIPI (piano v0.20). |
+| `CrudOptions` ha un `ContextType` (default `HubDbContext`) | Il design dà `Source` come `Func<DbContext, IQueryable<T>>` ma la firma di `MapCrud` ha quattro parametri di tipo e nessuno per il contesto: qualcuno deve dire *quale* contesto risolvere dal container. Un modulo scriverà `o.ContextType = typeof(AtcDbContext)`; il nucleo non scrive niente. Alternativa scartata: un quinto parametro di tipo su ogni chiamata, per un valore che è quasi sempre lo stesso. |
+| `CrudOptions.SearchFields` è una collezione con `Add` sovraccaricato invece di `IList<Expression<Func<T,string?>>>` | Una colonna tradotta non è una `string?`, quindi la firma del design non la accetta. Con due `Add` la sintassi d'uso resta identica (`o.SearchFields.Add(x => x.Title)`) e il tipo decide da sé se serve il JSON path: l'estrazione resta in un helper solo, `LocalizedQuery`. |
+| I parametri di lista sono un record `CrudListRequest` con `[FromQuery(Name=…)]`, non letti dalla query string | Letti a mano non finivano nell'OpenAPI, quindi il client generato non li conosceva. Gli attributi servono per il **case**: senza, l'`[AsParameters]` li pubblica `Page`/`PageSize` e il resto dell'API è camelCase. |
+| `JsonNumberHandling.Strict` nelle `JsonOptions` | I default web accettano anche `"5"` per `5`, e lo schema generato lo dichiara: ogni intero diventava «integer oppure string» e ogni campo TypeScript `number` oppure `string`. La nostra SPA non ha ragione di mandare un numero come stringa, e il contratto lo dice. |
+| Il documento OpenAPI si genera solo quando **non** c'è un `RuntimeIdentifier` | Lo strumento deve *eseguire* l'assembly compilato, e un `publish -r linux-x64 --self-contained` da Windows non può. Il documento è un artefatto di build, non di pubblicazione: `dotnet build` lo scrive, `dotnet publish` non ne ha bisogno. |
+| Le policy dei permessi dichiarano `AddAuthenticationSchemes(CookieScheme)` | `DefaultChallengeScheme` è IVAO, che è giusto per `/auth/login` e sbagliato per `/api`: senza questa riga una chiamata non autenticata prendeva 302 verso il consenso invece di 401. |
 | La lingua di un membro: `languageId` di IVAO se la divisione la parla, **altrimenti inglese** | Deciso da Carmine il 3 set 2026. L'inglese non e' il ripiego «della divisione» ma quello di IVAO e del progetto: una divisione italiana serve inglese a un tedesco, non italiano. La regola sta in un posto solo (`LocalePreference`), la usano il login e il selettore di lingua di F6. Si applica **solo alla creazione della riga**: la scelta esplicita dell'utente non si sovrascrive mai. Se una divisione non elenca l'inglese fra le sue lingue, si cade sul suo default, perche' deve poter rendere qualcosa. |
 | `ivao_is_staff` e `ivao_is_supervisor` sono registrati ma non decidono niente | Il nostro `is_staff` significa «ha una posizione di QUESTA divisione», ed e' quello su cui poggiano permessi e grant. Quello di IVAO include HQ e altre divisioni: tenerli separati evita di allargare il perimetro per sbaglio. Servono alla staff directory di M1. |
 | I codici dei dipartimenti sono quelli di IVAO: `HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`, `WD` | Confermati da Carmine il 3 set 2026 (piano v0.21). Non e' un suffisso meccanico: ATC operations e' `AOD` ma training e' `TD`. I **suffissi delle posizioni** non cambiano, cambia il dipartimento su cui mappano. La colonna e' passata a `varchar(4)` con la migrazione additiva `WidenDepartmentCodes`, che converte anche le righe gia' scritte; `Initial` non si tocca. |
@@ -250,6 +350,8 @@ senza credenziali.
 | `2026-09-03-projection-context.md` | `IProjectable.Project()` riceve un `ProjectionContext` (lingue, lingua di default, walker): un'entità EF non si fa iniettare niente. **Confermata**, design §3.6 corretta. |
 | `2026-09-03-has-and-has-any.md` | `ICurrentUser` fa due domande separate invece di una con il dipartimento opzionale. **Decisa da Carmine**, design §3.3 e §3.7 corrette. |
 | `2026-09-03-licenza.md` | Apache-2.0, copyright «2026 Carmine Granato», con `NOTICE` fin da subito e senza header per file. **Decisa da Carmine**, piano §15.5 punto 5 chiuso. |
+| `2026-09-03-openapi-a-build-time.md` | Il pacchetto Microsoft **esegue** il nostro `Program` fino a `app.Run()` per leggere gli endpoint: la frase del design «senza avviare l'app» è falsa, quella che conta («senza DB e senza client OAuth») la garantisce `HubConfiguration.IsOpenApiDocumentGeneration`. **Da confermare**, design §7.4 e §9 punto 12 da riformulare. |
+| `2026-09-03-localized-nullable-nelle-api.md` | Una **lingua** che manca resta vuota; un **campo** dichiarato `Localized<T>?` e non valorizzato esce `null`, come dice lo schema generato. Era un 500 sul primo `GET` di un link senza descrizione. **Da confermare**, design §3.1 da precisare. |
 | `2026-09-03-reaches-every-department.md` | `HasAllDepartments` è un claim derivato dalle posizioni, non un indizio letto dalla lista dei permessi. Design §3.3 precisata. |
 | `2026-09-03-proxy-fidati.md` | Le reti dei proxy di cui si crede `X-Forwarded-For` si dichiarano, e in produzione sono obbligatorie. Design §2.3 precisata. |
 | `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
@@ -290,19 +392,18 @@ allargare i permessi, mai stringerli a sorpresa.
   3 set 2026): serve gia' pronto per quando l'hub collegera' Discord.
 - ~~Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota~~ **chiuso in F3**: il job
   riempie la tabella all'avvio quando è vuota, e `IFirDirectory` la legge per tutti.
-- **Il pacchetto pubblicato non ha `locales/` alla radice né i `config/*.example.json`**, e manca
-  `LocaleCatalog`. Precisazione utile: le lingue **dentro `wwwroot/locales/` ci sono già** (le emette
-  il plugin `divisionLocales` di `vite.config.ts`, ed è da lì che la SPA le carica); quello che manca
-  è la copia alla radice, dove guarda `HubPaths.Locales`, cioè quella che serve al **backend**.
-  **Spostato a F5 e scritto lì**: punto 5 di `02-piano-implementazione-m0.md` §D/F5. Il primo che ne
-  ha davvero bisogno è il `ValidationProblem` di `MapCrud`.
+- ~~Il pacchetto pubblicato non ha `locales/` alla radice né i `config/*.example.json`, e manca
+  `LocaleCatalog`~~ **chiuso in F5**: il target `PublishHubFiles` mette nel pacchetto `locales/`, i
+  `config/*.example.json`, `LICENSE` e `NOTICE`, con uno step di CI che lo verifica; `LocaleCatalog`
+  legge `locales/{lang}/*.json` per il server.
 - ~~L'audit dei superadmin lo scrive il servizio a mano~~ **chiuso in F4**: `HubUser` è `[Audited]` e
   `SuperadminService.WriteAuditAsync` non esiste più. Resta a mano la sola riga
   `superadmin.set_changed`, che non è la scrittura di una riga ma un confronto fra due insiemi
   (design §4.5).
 - `DivisionOptionsValidator` accetta le chiavi modulo note ma nessuno gliene passa: si accende in **F8**.
-- `shared/api/bootstrap.ts` e il tipo `ApiPaths` in `client.ts` sono scritti a mano: **F5** li sostituisce con
-  `schema.d.ts` generato dall'OpenAPI.
+- ~~`shared/api/bootstrap.ts` e il tipo `ApiPaths` in `client.ts` sono scritti a mano~~ **chiuso in
+  F5**: `schema.d.ts` è generato dall'OpenAPI e committato, `client.ts` è `createClient<paths>` e
+  `bootstrap.ts` è un elenco di alias del contratto.
 - La documentazione è stata riallineata il 3 set 2026: `README.md` e `docs/FORKING.md` dicevano
   ancora «phase F1» e «phase F0»; il design `01` descriveva l'interceptor e il query filter in una
   forma che F4 ha poi cambiato; i codici di dipartimento del changelog 0.21 erano rimasti in una
@@ -325,13 +426,33 @@ allargare i permessi, mai stringerli a sorpresa.
   Testo canonico completo in `LICENSE`, più un `NOTICE` alla radice. Gli header di licenza nei
   singoli file **non** ci sono e non servono: Apache-2.0 li raccomanda, non li impone, e metterli in
   ogni `.cs` e `.tsx` sarebbe rumore in ogni diff futuro.
-- `LICENSE` e `NOTICE` **non finiscono nel pacchetto pubblicato**, mentre Apache-2.0 §4(d) vuole che
-  il `NOTICE` viaggi con ogni ridistribuzione. Sta in **F5**, nello stesso target MSBuild che porta
-  `locales/` e i `config/*.example.json`.
+- ~~`LICENSE` e `NOTICE` non finiscono nel pacchetto pubblicato~~ **chiuso in F5**, nello stesso
+  target `PublishHubFiles`.
 - `Ivao:ApiScopes` e' vuoto: **misurato**, i due endpoint di riferimento non chiedono scope. Se in
   M2+ servira' `tracker` (chi e' online), si aggiunge li' senza toccare codice.
 - Le fixture IVAO coprono 3 centri e 3 aeroporti: bastano a provare upsert e riconoscimento FIR, non
   sono un campione realistico dell'Italia (che ne ha 7 e 221).
+- **`MapCrud` non ha ancora nessuna entità in modalità globale.** Il ramo esiste ed è scritto, ma il
+  primo uso vero (`UserGrant` e `hub_audit_log` in sola lettura) è **F8**: finché non c'è, quel ramo
+  è coperto solo dal codice e non da un test end-to-end.
+- **`ExtraWritePolicy` non è ancora usato da nessuno.** Nasce per `Content.ManageTemplates` in
+  **F7**; oggi è provato solo dal fatto che compila e che il ramo non morde quando è nullo.
+- **La ricerca `q` ignora l'accento e la maiuscola per collation, non per scelta.** `LIKE` su
+  `utf8mb4_unicode_ci` è già case e accent insensitive, che è quello che vogliamo; ma la ricerca
+  della lista **non** passa dal FULLTEXT di `cms_search_index`. Quella è `/api/search` in **F8**, ed
+  è un altro meccanismo: qui si cerca dentro la tabella del back-office, lì nell'indice pubblico.
+- **`pageSize` è tagliato a 100 e `DefaultPageSize` è 25**, cablati nel motore. Se una schermata di
+  F6 ne vorrà altri, diventano configurazione di `CrudOptions`, non un numero in più nel motore.
+- **`CrudScope` risolve il contesto per `Type` dal container.** Funziona perché ogni contesto è
+  registrato da `AddHubDbContext`/`AddModuleDbContext<T>`; un contesto registrato in un altro modo
+  darebbe un `InvalidOperationException` a runtime e non a build. Il test di architettura che
+  potrebbe pinnarlo (nessun `AddDbContext` fuori da quei due punti) non c'è: vale la pena scriverlo
+  in **F8**, con il primo contesto di modulo davvero registrato.
+- **Il `filter[...]` fa un solo confronto, l'uguaglianza.** Basta a F6 (dipartimento, visibilità,
+  categoria, attivo). Intervalli e `in` non ci sono, e se servissero andrebbero nel motore.
+- **Nessun test verifica il documento OpenAPI in sé** (che `/api/links` ci sia, che
+  `LocalizedString` porti `x-localized`). Lo step di CI `pnpm gen:api && git diff --exit-code` lo
+  copre di sponda: se il documento cambia forma, `schema.d.ts` si muove e la build cade.
 
 ---
 
@@ -463,11 +584,17 @@ un contesto.
 
 ## 9. Igiene del repository
 
-- Il branch `m0/f4-domain-backbone` è **ancora sul remoto**: il repository non cancella i branch al
-  merge. Si può togliere quando fa comodo (`git push origin --delete m0/f4-domain-backbone`); niente
-  ci dipende.
+- I branch `m0/f4-domain-backbone` e `m0/f5-mapcrud-links` sono **ancora sul remoto**: il repository
+  non cancella i branch al merge. Si possono togliere quando fa comodo
+  (`git push origin --delete <branch>`); niente ci dipende.
 - La strategia di merge è **squash**: su `main` c'è un commit per fase (F4 è `586a432`), non la
-  catena dei commit di lavoro. Chi cerca il dettaglio lo trova nella PR.
+  catena dei commit di lavoro. Chi cerca il dettaglio lo trova nella PR. F5 arriva sul branch con
+  due commit (`5e9c197` il codice, `6e68fd8` il numero della PR nell'handoff) che lo squash unisce.
 - Se si lavora in un worktree sotto `.claude/worktrees/`, `git checkout main` lì dentro fallisce
   perché `main` è già in uso dal checkout principale: è normale, la sessione nuova parte dal
-  checkout principale.
+  checkout principale. F5 è stata scritta in un worktree, e il branch è già sul remoto: dopo il
+  merge il worktree non serve più a niente.
+- `artifacts/` è gitignorata, quindi `artifacts/openapi/IvaoHub.Web.json` **non** è nel repository:
+  lo riscrive `dotnet build`. Quello che è committato è il file che ne deriva,
+  `web/src/shared/api/schema.d.ts`, marcato `linguist-generated` in `.gitattributes` e ignorato da
+  Prettier e da ESLint come `routeTree.gen.ts`.

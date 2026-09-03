@@ -1,4 +1,5 @@
 using System.Net;
+using System.Reflection;
 using IvaoHub.Core.Services;
 
 namespace IvaoHub.Web;
@@ -6,6 +7,18 @@ namespace IvaoHub.Web;
 /// <summary>Reading the configuration files of an installation, in one place.</summary>
 internal static class HubConfiguration
 {
+    /// <summary>
+    /// The build time OpenAPI tool invokes this entry point in its own process in order to read
+    /// the endpoints, so the application is being described rather than started: there is no
+    /// database, no OAuth client and no port to bind, and there must be none (design M0 section
+    /// 7.4). Recognised by the entry assembly, which is the tool and not this application; under
+    /// the test host it is neither, and the check stays false as it must.
+    /// </summary>
+    public static bool IsOpenApiDocumentGeneration { get; } = string.Equals(
+        Assembly.GetEntryAssembly()?.GetName().Name,
+        "GetDocument.Insider",
+        StringComparison.Ordinal);
+
     /// <summary>
     /// Every <c>*.json</c> under <c>secrets/</c>, in a stable order. The folder is never in the
     /// repository and the web server denies access to it (plan section 11.3).

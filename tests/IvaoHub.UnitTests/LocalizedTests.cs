@@ -90,4 +90,20 @@ public sealed class LocalizedTests
         // A field the client left out is an empty value, never null: no caller has to guard.
         Assert.Equal(Localized<string>.Empty, JsonSerializer.Deserialize<Localized<string>>("null", options));
     }
+
+    [Fact]
+    public void AFieldThatIsItselfOptionalTravelsAsNullAndNotAsAnEmptyObject()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options.Converters.Add(new LocalizedJsonConverterFactory());
+
+        // Two different absences. A missing language inside the value is empty, so that reading it
+        // never needs a guard; a whole field declared optional and never written is null, because
+        // "nobody wrote a description" is not "the description is blank" — and because that is what
+        // the generated contract declares. See docs/internal/decisions/2026-09-03-localized-nullable-nelle-api.md.
+        Assert.Equal("""{"description":null}""", JsonSerializer.Serialize(new Optional(null), options));
+        Assert.Equal("""{"description":{}}""", JsonSerializer.Serialize(new Optional(Localized<string>.Empty), options));
+    }
+
+    private sealed record Optional(Localized<string>? Description);
 }

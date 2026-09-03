@@ -1,13 +1,34 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <SpaRoot>$(MSBuildThisFileDirectory)..\..\web\</SpaRoot>
+    <RepositoryRoot>$(MSBuildThisFileDirectory)..\..\</RepositoryRoot>
+    <SpaRoot>$(RepositoryRoot)web\</SpaRoot>
     <SpaDist>$(SpaRoot)dist\</SpaDist>
     <!-- Set to false to publish without rebuilding the SPA (the CI does not need it twice). -->
     <BuildSpaOnPublish Condition="'$(BuildSpaOnPublish)' == ''">true</BuildSpaOnPublish>
+
+    <!--
+      The OpenAPI document is written on every build, without a running application: the typed
+      client of the single page application is generated from this file, and neither a database nor
+      an OAuth client is available at build time (design M0 section 7.4).
+    -->
+    <OpenApiDocumentsDirectory>$(RepositoryRoot)artifacts\openapi\</OpenApiDocumentsDirectory>
+
+    <!--
+      Writing the document means executing the built assembly, which a self contained publish for
+      another runtime cannot do from the build host. The document is a build artefact anyway:
+      `dotnet build` writes it, and `dotnet publish -r <rid>` has no reason to write it again.
+    -->
+    <OpenApiGenerateDocumentsOnBuild Condition="'$(RuntimeIdentifier)' != ''">false</OpenApiGenerateDocumentsOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 
@@ -34,6 +55,32 @@
       <SpaBuildOutput Include="$(SpaDist)**\*" />
       <ResolvedFileToPublish Include="@(SpaBuildOutput)"
                              RelativePath="wwwroot\%(RecursiveDir)%(Filename)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    What an installation needs next to the binaries and that no compiler produces: the language
+    files the back end reads through HubPaths.Locales, the example configuration files whoever
+    unpacks the package has to copy, and the licence. Apache-2.0 section 4(d) asks for the NOTICE
+    to travel with every redistribution, so it belongs in the package and not only in the
+    repository. The SPA has its own copy of locales/ under wwwroot/, emitted by the Vite build;
+    this one is the copy the server reads.
+  -->
+  <Target Name="PublishHubFiles" BeforeTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <HubLocaleFile Include="$(RepositoryRoot)locales\**\*.json" />
+      <HubExampleConfig Include="$(RepositoryRoot)config\*.example.json" />
+      <HubLegalFile Include="$(RepositoryRoot)LICENSE;$(RepositoryRoot)NOTICE" />
+
+      <ResolvedFileToPublish Include="@(HubLocaleFile)"
+                             RelativePath="locales\%(RecursiveDir)%(Filename)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+      <ResolvedFileToPublish Include="@(HubExampleConfig)"
+                             RelativePath="config\%(Filename)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+      <ResolvedFileToPublish Include="@(HubLegalFile)"
+                             RelativePath="%(Filename)%(Extension)"
                              CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
   </Target>
