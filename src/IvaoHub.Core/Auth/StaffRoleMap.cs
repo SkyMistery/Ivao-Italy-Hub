@@ -40,7 +40,12 @@ public sealed record StaffPosition(string Raw, Department? Department, StaffLeve
 /// </summary>
 public static partial class StaffRoleMap
 {
-    /// <summary>Prefix of the positions of IVAO headquarters, which belong to no division.</summary>
+    /// <summary>
+    /// Prefix of the positions of IVAO headquarters, which belong to no division.
+    /// <para>It is spelled the same as <see cref="Department.HQ"/> and means something else: this
+    /// is IVAO above every division, that is the head of one. A position with this prefix gets no
+    /// department, which is precisely the difference.</para>
+    /// </summary>
     private const string HeadquartersPrefix = "HQ";
 
     /// <summary>
