@@ -1,6 +1,8 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
+using Microsoft.EntityFrameworkCore;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Options;
 using Serilog.Context;
@@ -146,6 +148,16 @@ internal static class HubPipeline
         // leaves an audit row whenever the effective set has moved (plan section 6.3).
         await scope.ServiceProvider.GetRequiredService<SuperadminService>()
             .BootstrapAsync(app.Lifetime.ApplicationStopping);
+
+        // The first start of an installation has no airspace yet, and a hub that does not know its
+        // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
+        // never a site that refuses to come up.
+        if (!await scope.ServiceProvider.GetRequiredService<HubDbContext>().IvaoCenters.AnyAsync(
+                app.Lifetime.ApplicationStopping))
+        {
+            await scope.ServiceProvider.GetRequiredService<RefDataSyncJob>()
+                .RunAsync(app.Lifetime.ApplicationStopping);
+        }
 
         var division = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value;
 

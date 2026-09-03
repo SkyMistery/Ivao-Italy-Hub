@@ -16,7 +16,8 @@ namespace IvaoHub.IntegrationTests;
 /// the way a production deployment may supply it through <c>Ivao__*</c> environment variables, so
 /// the test never needs the credentials file that is not in the repository.
 /// </summary>
-public sealed class HubWebApplicationFactory(string connectionString) : WebApplicationFactory<Program>
+public sealed class HubWebApplicationFactory(string connectionString, bool useIvaoFixtures = false)
+    : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -34,6 +35,7 @@ public sealed class HubWebApplicationFactory(string connectionString) : WebAppli
                 ["Ivao:RedirectUri"] = "http://localhost/auth/callback",
                 ["Ivao:PostLogoutRedirectUri"] = "http://localhost/",
                 ["Ivao:Scopes:0"] = "openid",
+                ["Ivao:UseFixtures"] = useIvaoFixtures ? "true" : "false",
             }));
 
         builder.ConfigureTestServices(services =>

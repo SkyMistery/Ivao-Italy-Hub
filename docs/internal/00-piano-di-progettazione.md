@@ -1,9 +1,11 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.21 — 3 settembre 2026 (codici dei dipartimenti come li scrive IVAO)
+**Versione documento:** 0.22 — 3 settembre 2026 (scope dell'applicazione separati da quelli del membro)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Prossimo passo: fase F0 con Claude Code. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.22** (3 set 2026): il file `config/ivao-oauth.json` guadagna la chiave **`ApiScopes`**, separata da `Scopes`: gli scope che l'applicazione chiede per se' con `client_credentials` non sono quelli che si chiedono al membro (`client_credentials` non ha `openid`, `profile` o `email` da chiedere). **Misurato il 3 set 2026 contro l'API vera**: per `/v2/centers` e `/v2/airports/all` basta un token `client_credentials` **senza alcuno scope**, quindi `ApiScopes` resta vuoto finche' non servira' `tracker` o simili; le credenziali della divisione IT coprono entrambi gli endpoint (7 centri e 221 aeroporti). Le fixture di `Ivao:UseFixtures=true` restano per la CI e per chi forka senza credenziali. Aggiornate §6.1 e il design `01` §2.2 e §4.6.
 
 **Changelog 0.21** (3 set 2026): i codici dei dipartimenti diventano quelli che usa **IVAO**, confermati da Carmine: `HQ`, **`SOD`**, **`FOD`**, **`AOD`**, **`TD`**, **`MD`**, **`ED`**, **`PRD`**, **`WD`** (prima erano `HQ`, `SO`, `FO`, `AO`, `TR`, `MB`, `EV`, `PR`, `WM`). Non è un suffisso meccanico: ATC operations è `AOD` ma training è `TD`, e l'headquarters resta `HQ`. I **suffissi delle posizioni staff** non cambiano (`AOC`, `AOAC`, `AOA1`, `TC`, `TAC`, `TA1`, `T01`…): cambia solo il dipartimento su cui mappano. La colonna `owner_department` passa da `varchar(2)` a `varchar(4)` con una migrazione **additiva** (`WidenDepartmentCodes`) che converte anche le righe già scritte; `Initial` non è stata toccata. Aggiornate §7 e il design `01` §3.2.
 
@@ -358,7 +360,8 @@ Punto di partenza del codice: **`Vipi.Host/Auth/VipiStandaloneAuthExtensions.cs`
     "LoginUrl": "https://it.ivao.aero/auth/login",
     "RedirectUri": "https://it.ivao.aero/auth/callback",
     "PostLogoutRedirectUri": "https://it.ivao.aero/",
-    "Scopes": ["openid", "profile", "email", "discord"]
+    "Scopes": ["openid", "profile", "email", "discord"],
+    "ApiScopes": []
   }
 }
 ```
@@ -367,7 +370,7 @@ Regole: il file è caricato all'avvio con `AddJsonFile("config/ivao-oauth.json",
 
 ### 6.2 Server-to-server
 
-Un `IvaoApiClient` con `client_credentials` (scope `tracker` ecc.) e token cache per: whazzup/tracker (chi è online in FIR italiane), ATC bookings, dati aeroporti. Un solo client tipizzato, retry con Polly, rate limit rispettoso.
+Un `IvaoApiClient` con `client_credentials` (scope in `ApiScopes`, separati da quelli del membro; **misurato il 3 set 2026**: centri e aeroporti non ne richiedono nessuno) e token cache per: whazzup/tracker (chi è online in FIR italiane), ATC bookings, dati aeroporti. Un solo client tipizzato, retry con Polly, rate limit rispettoso.
 
 ### 6.3 Autorizzazione
 

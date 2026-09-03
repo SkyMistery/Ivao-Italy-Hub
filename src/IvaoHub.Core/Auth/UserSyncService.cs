@@ -1,5 +1,6 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
@@ -43,6 +44,7 @@ public sealed record SignedInUser(
 /// </summary>
 public sealed class UserSyncService(
     HubDbContext database,
+    IFirDirectory firs,
     IOptions<DivisionOptions> division,
     IClock clock,
     ILogger<UserSyncService> logger)
@@ -52,7 +54,7 @@ public sealed class UserSyncService(
         ArgumentNullException.ThrowIfNull(profile);
 
         var options = division.Value;
-        var firIds = await ReadFirIdsAsync(cancellationToken);
+        var firIds = await firs.GetFirIdsAsync(cancellationToken);
 
         var parsed = profile.StaffPositions
             .Select(raw => (Raw: raw, Position: StaffRoleMap.Parse(raw, options.Code, firIds)))
@@ -145,7 +147,7 @@ public sealed class UserSyncService(
         }
 
         var options = division.Value;
-        var firIds = await ReadFirIdsAsync(cancellationToken);
+        var firIds = await firs.GetFirIdsAsync(cancellationToken);
 
         var positions = await database.UserStaffPositions
             .Where(position => position.Vid == vid)
@@ -199,12 +201,4 @@ public sealed class UserSyncService(
             row.SyncedAt = clock.UtcNow;
         }
     }
-
-    /// <summary>
-    /// The FIRs of the division, from the reference snapshot. Empty until F3 fills
-    /// <c>ref_ivao_centers</c>, which only means FIR positions are not recognised yet.
-    /// </summary>
-    private async Task<IReadOnlySet<string>> ReadFirIdsAsync(CancellationToken cancellationToken) =>
-        (await database.IvaoCenters.AsNoTracking().Select(center => center.Id).ToListAsync(cancellationToken))
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 }
