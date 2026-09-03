@@ -24,9 +24,18 @@ Niente PR aperte: `main` contiene tutto fino a F4 compresa. Una sessione nuova p
 a mano, `ExtraWritePolicy`, `ValidationProblem` con chiavi i18n, 409 su `row_version`, `LocaleCatalog`
 (arrivato da F4, punto 5), OpenAPI a build-time e `schema.d.ts` generato in CI.
 
-Due cose che F5 eredita e deve usare, non riscrivere: la spina dorsale scrive audit e proiezioni da
-sola (a `MapCrud` non tocca nessuna delle due), e **`IgnoreQueryFilters` può comparire solo sotto
-`src/IvaoHub.Core/Data/Crud/`** — c'è un test di architettura che lo verifica su tutto `src/`.
+Tre cose che F5 eredita dalla spina dorsale e deve usare, non riscrivere:
+
+1. **Audit e proiezioni li scrive l'interceptor.** A `MapCrud` non tocca nessuna delle due: se si
+   trova a scrivere una riga di `hub_audit_log` o di `cms_search_index`, sta duplicando.
+2. **`IgnoreQueryFilters` può comparire solo sotto `src/IvaoHub.Core/Data/Crud/`.** Il filtro di
+   visibilità nasconde le bozze e i dipartimenti altrui anche allo staff, quindi la lista del
+   back-office **deve** ignorarlo e rifiltrare per dipartimento — ma solo lì dentro. Un test di
+   architettura lo verifica su tutto `src/`.
+3. **La guardia dell'interceptor è una rete, non il controllo.** Quando morde lancia
+   `ForbiddenDomainException`, cioè un'eccezione a metà transazione, non un 403 pulito: `MapCrud`
+   deve comunque chiamare `AuthorizeAsync` sulla risorsa **prima**, e mappare l'eccezione a 403 solo
+   come ultima difesa (perimetro F5 punto 3).
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma F4 e F5 non le usano.
 
@@ -50,10 +59,17 @@ Controlli:
 
 ```bash
 dotnet build IvaoHub.sln
-dotnet test --solution IvaoHub.sln                          # richiede Docker (Testcontainers)
+dotnet test --solution IvaoHub.sln --configuration Release  # richiede Docker (Testcontainers)
 cd web && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm i18n:check && pnpm build
 dotnet publish src/IvaoHub.Web -c Release -r linux-x64 --self-contained -o artifacts/publish
 ```
+
+⚠️ **Se `dotnet test` dice «Zero tests ran» con exit code 5, non crederci.** È successo il 3 set 2026 su
+Windows in **Debug**: il comando tornava in 110 ms senza eseguire niente, mentre il binario lanciato a
+mano (`tests/IvaoHub.UnitTests/bin/Debug/net10.0/IvaoHub.UnitTests.exe`) eseguiva e passava tutti i
+test. In **Release**, che è come gira la CI, funziona. Causa non trovata (sospetto il canale fra
+`dotnet test` e l'host di Microsoft.Testing.Platform); non è un problema del repository. Regola
+pratica: si verifica come verifica la CI, in Release, e in caso di dubbio si lancia il binario.
 
 Nuova migrazione (**solo additiva**, mai modificare una già mergiata):
 
@@ -207,7 +223,18 @@ senza credenziali.
 | `ivao_is_staff` e `ivao_is_supervisor` sono registrati ma non decidono niente | Il nostro `is_staff` significa «ha una posizione di QUESTA divisione», ed e' quello su cui poggiano permessi e grant. Quello di IVAO include HQ e altre divisioni: tenerli separati evita di allargare il perimetro per sbaglio. Servono alla staff directory di M1. |
 | I codici dei dipartimenti sono quelli di IVAO: `HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`, `WD` | Confermati da Carmine il 3 set 2026 (piano v0.21). Non e' un suffisso meccanico: ATC operations e' `AOD` ma training e' `TD`. I **suffissi delle posizioni** non cambiano, cambia il dipartimento su cui mappano. La colonna e' passata a `varchar(4)` con la migrazione additiva `WidenDepartmentCodes`, che converte anche le righe gia' scritte; `Initial` non si tocca. |
 
-## 5. Letture del design da confermare (F2)
+## 5. Decisioni scritte (`docs/internal/decisions/`)
+
+| File | Cosa dice |
+|---|---|
+| `2026-09-03-projection-context.md` | `IProjectable.Project()` riceve un `ProjectionContext` (lingue, lingua di default, walker): un'entità EF non si fa iniettare niente. **Confermata**, design §3.6 corretta. |
+| `2026-09-03-has-and-has-any.md` | `ICurrentUser` fa due domande separate invece di una con il dipartimento opzionale. **Decisa da Carmine**, design §3.3 e §3.7 corrette. |
+| `2026-09-03-licenza.md` | Apache-2.0, copyright «2026 Carmine Granato», con `NOTICE` fin da subito e senza header per file. **Decisa da Carmine**, piano §15.5 punto 5 chiuso. |
+
+Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
+serve a non ridiscutere fra sei mesi una cosa già discussa.
+
+## 6. Letture del design da confermare (F2)
 
 Il design non copre questi casi; ho scelto sempre l'opzione **più restrittiva**, così una correzione può solo
 allargare i permessi, mai stringerli a sorpresa.
@@ -227,15 +254,19 @@ allargare i permessi, mai stringerli a sorpresa.
    divisione (`ivao-italy/discord`) infatti fa un OAuth verso Discord in proprio e si salva l'id da se'.
    La colonna `discord_id` resta vuota finche' l'hub non fara' lo stesso.
 
-## 6. Debiti e cose da fare presto
+## 7. Debiti e cose da fare presto
+
+> I punti barrati restano scritti apposta: dicono che una cosa è stata chiusa e in che modo, così
+> non si riapre da sola alla fase dopo.
+
 
 - ~~Il login vero non è ancora stato eseguito~~ **fatto il 3 set 2026**: giro completo fino a `/me`, riga in
   `hub_users`, posizioni lette, token IVAO cifrati a DB. Ha fatto emergere un bug reale (i cookie del giro
   uscivano `SameSite=None` senza `Secure` su http, quindi il browser li scartava): corretto, con test.
 - Lo scope `discord` resta richiesto anche se il payload non restituisce niente (deciso da Carmine il
   3 set 2026): serve gia' pronto per quando l'hub collegera' Discord.
-- Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota: è **F3**. `UserSyncService` legge già
-  la tabella, quindi si accendono da sole appena il job la riempie.
+- ~~Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota~~ **chiuso in F3**: il job
+  riempie la tabella all'avvio quando è vuota, e `IFirDirectory` la legge per tutti.
 - **Il pacchetto pubblicato non ha `locales/` alla radice né i `config/*.example.json`**, e manca
   `LocaleCatalog`. Precisazione utile: le lingue **dentro `wwwroot/locales/` ci sono già** (le emette
   il plugin `divisionLocales` di `vite.config.ts`, ed è da lì che la SPA le carica); quello che manca
@@ -278,3 +309,16 @@ allargare i permessi, mai stringerli a sorpresa.
   M2+ servira' `tracker` (chi e' online), si aggiunge li' senza toccare codice.
 - Le fixture IVAO coprono 3 centri e 3 aeroporti: bastano a provare upsert e riconoscimento FIR, non
   sono un campione realistico dell'Italia (che ne ha 7 e 221).
+
+---
+
+## 8. Igiene del repository
+
+- Il branch `m0/f4-domain-backbone` è **ancora sul remoto**: il repository non cancella i branch al
+  merge. Si può togliere quando fa comodo (`git push origin --delete m0/f4-domain-backbone`); niente
+  ci dipende.
+- La strategia di merge è **squash**: su `main` c'è un commit per fase (F4 è `586a432`), non la
+  catena dei commit di lavoro. Chi cerca il dettaglio lo trova nella PR.
+- Se si lavora in un worktree sotto `.claude/worktrees/`, `git checkout main` lì dentro fallisce
+  perché `main` è già in uso dal checkout principale: è normale, la sessione nuova parte dal
+  checkout principale.
