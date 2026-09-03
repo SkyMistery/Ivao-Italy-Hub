@@ -3,11 +3,11 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026 — fine **F2** (auth BFF, utenti, ruoli, superadmin, `/api/me`), login reale con IVAO verificato.
+**Ultimo aggiornamento:** 3 settembre 2026 — fine **F3** (`IvaoApiClient` e dati `ref_`).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Branch corrente:** `m0/f2-auth`. **Prossima fase:** F3 — `IvaoApiClient` e dati `ref_` (può girare in parallelo a F4–F5).
+**Branch corrente:** `m0/f3-ivao-ref`. **Prossima fase:** F4 — spina dorsale del dominio (interceptor, query filter, `IProjectable`, handler unico).
 
-Fasi chiuse: **F0** (bootstrap, PR #1), **F1** (configurazione e DB, PR #2), **F2**.
+Fasi chiuse: **F0** (bootstrap, PR #1), **F1** (configurazione e DB, PR #2), **F2** (identità, PR #3 e #4), **F3**.
 
 ---
 
@@ -73,6 +73,28 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
   `AppShell` con login/logout, route `/me` e `/login-error` tradotte.
 - **166 test verdi** (139 unit + 27 di integrazione su container `mariadb:11.4.10`).
 
+**Dati di riferimento (F3)**:
+
+- `IvaoApiClient` tipizzato, unico punto che parla con IVAO, con retry e circuit breaker dallo
+  `StandardResilienceHandler`. Non lancia mai su chiamata fallita: uno snapshot vecchio di un giorno
+  batte un sito fermo.
+- `IvaoApiTokenProvider`: token `client_credentials` in cache fino a 60 s prima della scadenza; un
+  token che vale meno del margine si usa e non si conserva. Gli scope dell'applicazione (`ApiScopes`)
+  sono separati da quelli del membro: `client_credentials` non chiede `openid profile email`.
+- `RefDataSyncJob`: upsert (mai duplicati) in `ref_ivao_centers` e `ref_ivao_airports` con il
+  `raw_json` intero, riga in `hub_jobs_log`, cron 03:15 nel fuso della divisione, ed esecuzione
+  all'avvio se le tabelle sono vuote. Se IVAO non risponde, la tabella resta com'era.
+- `FixtureIvaoApiClient` con `Ivao:UseFixtures=true`, **rifiutato fuori da Development** sia alla
+  registrazione sia nel costruttore. Le fixture stanno in `tests/fixtures/ivao/`.
+- `IFirDirectory` con cache: `UserSyncService` non legge più la tabella a mano, e una posizione
+  `LIRR-CH` diventa `FirChief` appena lo snapshot esiste.
+- **182 test verdi** (152 unit + 30 di integrazione).
+
+**Provato contro l'API vera il 3 set 2026**: `client_credentials` **senza nessuno scope** basta per
+`/v2/centers` e `/v2/airports/all`. Per la divisione IT tornano 7 centri (LIBB, LIMM, LIPP, LIRO,
+LIRR, LIVK, LIZZ) e 221 aeroporti, tutti con le piste. Le fixture restano per la CI e per chi forka
+senza credenziali.
+
 ## 3. Regole già attive (non aggirarle nelle fasi successive)
 
 - ESLint blocca `fetch` fuori da `shared/api`, `<svg>` fuori da `shared/icons` e `blocks`, import dal nucleo
@@ -82,6 +104,10 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
 - La concorrenza ottimistica passa da `HasRowVersion(...)`.
 - Le migrazioni sono **solo additive**; `Initial` non si tocca più.
 - L'identità si legge **solo** da `ICurrentUser`. Nessun endpoint guarda i claim a mano.
+- Con IVAO parla **solo** `IvaoApiClient`: retry, circuit breaker e cache del token esistono una volta.
+- Una configurazione che decide quale servizio usare si legge **quando il servizio viene costruito**,
+  non quando viene registrato: un test host e un deploy aggiungono sorgenti dopo la registrazione.
+  (Ci siamo cascati due volte: connection string in F1, fixture in F3.)
 - Un `ClaimsPrincipal` dell'hub si costruisce **solo** con `HubClaims.BuildIdentity`: il login vero e il
   login finto dei test producono lo stesso cookie, quindi i test provano la cosa vera.
 

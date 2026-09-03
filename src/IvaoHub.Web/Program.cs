@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
 using IvaoHub.Web.Endpoints;
@@ -39,8 +40,10 @@ builder.Services.AddSerilog((services, logger) => logger
 // The behaviour of the division is its own configuration file: it never mixes with the settings of
 // the application, and a key of one can never shadow a key of the other.
 builder.Services.AddSingleton(paths);
+
+var divisionConfiguration = HubConfiguration.DivisionFile(paths);
 builder.Services.AddOptions<DivisionOptions>()
-    .Bind(HubConfiguration.DivisionFile(paths))
+    .Bind(divisionConfiguration)
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
@@ -63,6 +66,13 @@ builder.Services.AddHubDbContext();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
 builder.Services.AddIvaoAuthentication();
+
+// The FIRs and airports of the division, and the job that keeps their snapshot fresh. The schedule
+// needs the time zone before the options are resolvable, so the file is read once here.
+builder.Services.AddIvaoIntegration(
+    builder.Configuration,
+    builder.Environment,
+    divisionConfiguration.Get<DivisionOptions>() ?? new DivisionOptions());
 
 // The login is the one place an outsider can make the server do work before proving anything.
 builder.Services.AddRateLimiter(options =>

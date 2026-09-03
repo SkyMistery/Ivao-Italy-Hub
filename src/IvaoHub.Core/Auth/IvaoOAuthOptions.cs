@@ -32,5 +32,13 @@ public sealed record IvaoOAuthOptions
     [Required]
     public string PostLogoutRedirectUri { get; init; } = string.Empty;
 
+    /// <summary>The scopes asked of a member when they sign in.</summary>
     public string[] Scopes { get; init; } = [];
+
+    /// <summary>
+    /// The scopes the application asks for itself, with <c>client_credentials</c>, to read data
+    /// that belongs to nobody in particular. Empty means a token with no scope at all, which is
+    /// what the reference endpoints need today.
+    /// </summary>
+    public string[] ApiScopes { get; init; } = [];
 }

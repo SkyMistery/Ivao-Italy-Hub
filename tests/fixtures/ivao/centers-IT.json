@@ -1,0 +1,20 @@
+[
+  {
+    "centerId": "LIRR",
+    "name": "Roma",
+    "countryId": "IT",
+    "position": { "latitude": 41.8, "longitude": 12.6 }
+  },
+  {
+    "centerId": "LIMM",
+    "name": "Milano",
+    "countryId": "IT",
+    "position": { "latitude": 45.5, "longitude": 9.2 }
+  },
+  {
+    "centerId": "LIBB",
+    "name": "Brindisi",
+    "countryId": "IT",
+    "position": { "latitude": 40.7, "longitude": 17.9 }
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "icao": "LIRF",
+    "name": "Roma Fiumicino",
+    "countryId": "IT",
+    "centerId": "LIRR",
+    "runways": [
+      { "name": "16R/34L", "length": 3900 },
+      { "name": "16L/34R", "length": 3900 },
+      { "name": "07/25", "length": 3309 }
+    ]
+  },
+  {
+    "icao": "LIMC",
+    "name": "Milano Malpensa",
+    "countryId": "IT",
+    "centerId": "LIMM",
+    "runways": [
+      { "name": "17L/35R", "length": 3920 },
+      { "name": "17R/35L", "length": 3920 }
+    ]
+  },
+  {
+    "icao": "LIBD",
+    "name": "Bari Karol Wojtyla",
+    "countryId": "IT",
+    "centerId": "LIBB",
+    "runways": [{ "name": "07/25", "length": 2990 }]
+  }
+]
