@@ -35,7 +35,7 @@ public sealed class ArchitectureTests
     }
 
     [Fact]
-    public void ThereIsExactlyOneAuthorizationHandlerInTheWholeSolution()
+    public void ThereIsExactlyOneAuthorizationHandlerInTheAssembliesThisProjectSees()
     {
         var handlers = new[] { Core, Atc }
             .SelectMany(assembly => assembly.GetTypes())
@@ -45,12 +45,66 @@ public sealed class ArchitectureTests
         Assert.Equal(["DepartmentAuthorizationHandler"], handlers.Select(handler => handler.Name));
     }
 
+    /// <summary>
+    /// The same rule over the whole of <c>src/</c>, read from the sources.
+    /// <para>The reflection test above only sees the two assemblies this project references, so it
+    /// is blind to <c>IvaoHub.Web</c> — which is exactly where writing "just one handler for this
+    /// case" is most tempting. Reading the sources also catches a handler that is declared but
+    /// never registered, which no container can see. The integration test
+    /// <c>AuthorizationHandlerIsTheOnlyOne</c> covers the other half: what the real host actually
+    /// resolves.</para>
+    /// </summary>
+    [Fact]
+    public void NoSourceFileOutsideTheAuthorizationOfTheCoreDeclaresAHandler()
+    {
+        var offenders = SourceFiles()
+            .Where(file => Declares(File.ReadAllText(file)))
+            .Where(file => Path.GetFileName(file) != "HubAuthorization.cs")
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
+    /// A bulk operation goes straight to the server and never reaches the save changes interceptor,
+    /// so it writes without audit, without the department guard and without projections. There is
+    /// one way into the database, and it is <c>SaveChanges</c>.
+    /// </summary>
+    [Fact]
+    public void NothingBypassesTheInterceptorWithABulkOperation()
+    {
+        var offenders = SourceFiles()
+            .Where(file =>
+            {
+                var text = File.ReadAllText(file);
+                return text.Contains(".ExecuteDelete", StringComparison.Ordinal)
+                    || text.Contains(".ExecuteUpdate", StringComparison.Ordinal);
+            })
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
+    /// A base list, not a mention. Both shapes a handler can be declared with are covered:
+    /// <c>: AuthorizationHandler&lt;T&gt;</c> and <c>: IAuthorizationHandler</c>.
+    /// </summary>
+    private static bool Declares(string source) =>
+        source.Contains(": AuthorizationHandler<", StringComparison.Ordinal)
+        || source.Contains(": IAuthorizationHandler", StringComparison.Ordinal);
+
     [Fact]
     public void OnlyTheCrudEngineIsAllowedToIgnoreTheQueryFilters()
     {
         var offenders = SourceFiles()
             .Where(file => File.ReadAllText(file).Contains(".IgnoreQueryFilters(", StringComparison.Ordinal))
             .Where(file => !file.Replace('\\', '/').Contains("/IvaoHub.Core/Data/Crud/", StringComparison.Ordinal))
+            // The projection writer is the second and last place, and it is not a reader serving
+            // anybody: it has to find the row it is about to rewrite whoever happens to be logged
+            // in, or it would insert a duplicate instead of updating.
+            .Where(file => Path.GetFileName(file) != "ProjectionWriter.cs")
             .Select(Path.GetFileName)
             .ToArray();
 
