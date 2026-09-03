@@ -4,7 +4,8 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 1.3 — 3 settembre 2026 (revisione senior di fine F4: §3.3 `HasAllDepartments` è un claim, §3.4 il secondo tempo dell'interceptor gestisce il proprio fallimento, §3.6 le proiezioni sotto il query filter e lette in blocco, §2.3 proxy fidati obbligatori in produzione più HSTS e redirezione HTTPS)
+**Versione:** 1.4 — 3 settembre 2026 (confermate le due note di F5: §7.4 e §9 punto 12 — l'OpenAPI a build-time **esegue** l'entry point, e ciò che conta è che lo faccia senza database e senza client OAuth; §3.1 — una lingua assente è vuota, un campo `Localized<T>?` non valorizzato è `null`)
+**Versione 1.3** — 3 settembre 2026 (revisione senior di fine F4: §3.3 `HasAllDepartments` è un claim, §3.4 il secondo tempo dell'interceptor gestisce il proprio fallimento, §3.6 le proiezioni sotto il query filter e lette in blocco, §2.3 proxy fidati obbligatori in produzione più HSTS e redirezione HTTPS)
 **Versione 1.2** — 3 settembre 2026 (allineato a ciò che F4 ha davvero costruito: §3.3, §3.4, §3.5, §3.6, §3.7, §5.3, più i codici di dipartimento di piano 0.21 rimasti negli esempi)
 **Stato:** in implementazione (F0–F4 fatte)
 
@@ -164,7 +165,7 @@ public static class LocalizedExtensions { public static Localized<string> L(this
 ```
 
 - **EF**: `LocalizedConverter<T>` (JSON ↔ `Localized<T>`, `System.Text.Json`, `WriteIndented=false`, chiavi ordinate) + `LocalizedComparer<T>`; registrati una volta in `HubDbContext.ConfigureConventions` per `Localized<string>` e `Localized<JsonNode>`; colonna MariaDB `json` (Pomelo `HasColumnType("json")`). Nomi: si usa `EFCore.NamingConventions` (`UseSnakeCaseNamingConvention`) per tutto, più **una** convenzione del modello (`LocalizedColumnConvention`, in `ConfigureConventions`) che appende `_i18n` alle colonne di tipo `Localized<T>`: `Title` → `title_i18n`. Un solo posto decide i nomi.
-- **API**: serializzato come oggetto `{ "it": "...", "en": "..." }`; il `JsonConverter` è registrato nelle `JsonOptions` globali. OpenAPI: schema `LocalizedString` = `additionalProperties: string` con `x-localized: true` (estensione usata dal generatore di form per scegliere `LocaleFields`).
+- **API**: serializzato come oggetto `{ "it": "...", "en": "..." }`; il `JsonConverter` è registrato nelle `JsonOptions` globali. Una **lingua** assente torna vuota e mai null; un **campo dichiarato** `Localized<T>?` e non valorizzato torna `null`, che è quello che lo schema OpenAPI dichiara — sono due cose diverse, e confonderle costava un 500 sul primo `GET` di un link senza descrizione. Nota: `docs/internal/decisions/2026-09-03-localized-nullable-nelle-api.md`. OpenAPI: schema `LocalizedString` = `additionalProperties: string` con `x-localized: true` (estensione usata dal generatore di form per scegliere `LocaleFields`).
 - **Validazione**: `LocalizedRules.Required(DivisionOptions)` per FluentValidation → errore `errors.localized.missing` con `locales` mancanti; regola «tutte le lingue prima di pubblicare» vive in `ContentPublishService` (§5.5), non nei DTO (una bozza può essere incompleta).
 - **Lettura pubblica**: la SPA riceve sempre l'oggetto intero e risolve con `useLocalized()` (locale corrente → `defaultLocale`); niente endpoint «per lingua».
 
@@ -506,7 +507,8 @@ Root context: `{ queryClient, bootstrap }`; `bootstrap` da `GET /api/me` con `st
 
 ### 7.4 API client e Query
 
-Il documento OpenAPI si genera **a build-time**, senza avviare l'app (che senza `ivao-oauth.json` e DB non parte): `Microsoft.Extensions.ApiDescription.Server` in `IvaoHub.Web.csproj` (`OpenApiDocumentsDirectory = artifacts/openapi/`) emette `IvaoHub.Web.json` a ogni `dotnet build`; `pnpm gen:api` → `openapi-typescript artifacts/openapi/IvaoHub.Web.json` → `shared/api/schema.d.ts` (in git; la CI rigenera e fallisce se il diff non è vuoto). Il transformer che marca `Localized<T>` con `x-localized` è registrato in `AddOpenApi` e quindi finisce anche nel documento a build-time. `shared/api/client.ts` = `createClient<paths>({ baseUrl: '/', headers: { 'X-Requested-With': 'hub' } })` + middleware che, su 401, invalida il bootstrap. Convenzione: ogni feature espone `queries.ts` con `queryOptions(...)` e `mutations.ts`; **nessun `fetch` diretto** (ESLint `no-restricted-globals: fetch` fuori da `shared/api/`).
+Il documento OpenAPI si genera **a build-time**, **senza database e senza client OAuth**: `Microsoft.Extensions.ApiDescription.Server` in `IvaoHub.Web.csproj` (`OpenApiDocumentsDirectory = artifacts/openapi/`) emette `IvaoHub.Web.json` a ogni `dotnet build`. Lo strumento **esegue l'entry point fino a `app.Run()`**, perché è lì che gli endpoint minimal API esistono (sono registrati dopo `builder.Build()`, e un tool che si fermasse alla costruzione dell'host li perderebbe tutti: misurato, con `app.Run()` saltata il documento usciva con `"paths": { }`); `HubConfiguration.IsOpenApiDocumentGeneration` gli toglie da davanti l'irrigidimento di Production, la validazione OAuth e `InitializeAsync`. Nota: `docs/internal/decisions/2026-09-03-openapi-a-build-time.md`.
+`pnpm gen:api` → `openapi-typescript artifacts/openapi/IvaoHub.Web.json` → `shared/api/schema.d.ts` (in git; la CI rigenera e fallisce se il diff non è vuoto). Il transformer che marca `Localized<T>` con `x-localized` è registrato in `AddOpenApi` e quindi finisce anche nel documento a build-time. `shared/api/client.ts` = `createClient<paths>({ baseUrl: '/', headers: { 'X-Requested-With': 'hub' } })` + middleware che, su 401, invalida il bootstrap. Convenzione: ogni feature espone `queries.ts` con `queryOptions(...)` e `mutations.ts`; **nessun `fetch` diretto** (ESLint `no-restricted-globals: fetch` fuori da `shared/api/`).
 
 ### 7.5 Motore lista (`DataList`) e generatore form (`SchemaForm`)
 
@@ -554,7 +556,7 @@ Frontend (Vitest): schemi zod dei blocchi (props di esempio validi), `SchemaForm
 6. `security_stamp` in `hub_users` per invalidare il cookie quando cambiano grant/superadmin.
 7. `cms_search_index` con una riga per lingua (`source_module, source_id, locale`) e FULLTEXT su `title`/`text`: FULLTEXT senza colonne cablate per lingua e senza tabelle `*_translations` (è una proiezione riscritta a ogni upsert, non un'entità).
 11. Unicità slug dei contenuti su `(kind, slug, is_template)` (niente indici filtrati in MariaDB).
-12. OpenAPI generato a build-time (`Microsoft.Extensions.ApiDescription.Server`), non da un'app in esecuzione.
+12. OpenAPI generato a build-time (`Microsoft.Extensions.ApiDescription.Server`), senza database e senza client OAuth. Lo strumento esegue l'entry point fino a `app.Run()` — è l'unico modo di vedere gli endpoint minimal API — e `IsOpenApiDocumentGeneration` disinnesca ciò che pretenderebbe un'installazione vera (§7.4).
 13. `/login-error` come route SPA; sotto `/auth` solo `login`, `callback`, `logout` esclusi dal fallback.
 14. `MapCrud` in due modalità (dipartimentale / globale) con `ReadPolicy`/`WritePolicy`/`ReadOnly` espliciti; `Edit` implica `View`.
 15. I moduli non sono plugin a runtime (monorepo + ricompilazione), ma il confine è netto anche nel frontend: `web/src/modules/<key>/` con manifest unico, elenchi espliciti dei moduli sia in `IvaoHub.Web/Modules.cs` sia in `web/src/modules/index.ts`, regola ESLint sui percorsi (§6.5).

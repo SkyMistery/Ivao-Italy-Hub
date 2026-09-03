@@ -1,9 +1,17 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.25 — 3 settembre 2026 (revisione senior di fine F4: tre decisioni)
+**Versione documento:** 0.26 — 3 settembre 2026 (F5 chiusa; confermate le due note che aveva lasciato aperte)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F4 chiuse, prossima F5. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.26** (3 set 2026, sera): chiusa la fase **F5** (PR #8) e **confermate le due note lasciate aperte da quella fase**, con le correzioni portate nel design (v1.4).
+
+(1) **L'OpenAPI a build-time esegue davvero l'applicazione.** §7.4 e §9 punto 12 dicevano «senza avviare l'app»: è falso. `Microsoft.Extensions.ApiDescription.Server` invoca il nostro `Program` per riflessione e lo lascia arrivare fino ad `app.Run()`, perché è lì che gli endpoint minimal API esistono — sono registrati **dopo** `builder.Build()`, e la prova è secca: con `app.Run()` saltata il documento usciva con `"paths": { }`. Ciò che è vero e che conta è l'altra metà, cioè **senza database e senza client OAuth**, e a garantirla è `HubConfiguration.IsOpenApiDocumentGeneration`, che riconosce il processo dal nome dell'assembly d'ingresso e gli toglie da davanti l'irrigidimento di Production, la validazione OAuth e `InitializeAsync`. Il riconoscimento è volutamente specifico: sotto `WebApplicationFactory` l'assembly d'ingresso è l'host dei test, quindi il flag resta falso e i test di integrazione continuano a migrare e servire per davvero. **Questa è anche la ragione per cui la revisione di 0.25 ha dovuto esentare i proxy fidati**: la stessa guardia serviva a `ForwardedHeaders:TrustedNetworks`, e senza di essa ogni build falliva su un'impostazione obbligatoria in produzione mentre scriveva un file JSON.
+
+(2) **Un campo `Localized<T>?` non valorizzato esce `null`, non `{}`.** §3.1 va letta su due piani distinti, e confonderli costava un 500 sul primo `GET` di un link senza descrizione: una **lingua** che manca dentro un `Localized<T>` torna vuota e mai null (regola di F4, intatta, così nessun chiamante distingue fra «assente» e «vuota»); un **campo dichiarato** `Localized<T>?` e mai scritto torna `null`, che è quello che lo schema OpenAPI generato già dichiara. Rendere `{}` anche il secondo caso mentirebbe al client generato e renderebbe indistinguibili «nessuno ha mai scritto una descrizione» e «la descrizione è stata svuotata» — che è esattamente la ragione per cui la colonna è nullable a database.
+
+Note in `docs/internal/decisions/2026-09-03-openapi-a-build-time.md` e `2026-09-03-localized-nullable-nelle-api.md`, entrambe passate da «da confermare» a **confermata**.
 
 **Changelog 0.25** (3 set 2026, sera): **revisione senior di tutto il repository** prima di aprire F5, letto come se fosse di altri. Ha prodotto tre decisioni, tutte con nota in `docs/internal/decisions/`.
 

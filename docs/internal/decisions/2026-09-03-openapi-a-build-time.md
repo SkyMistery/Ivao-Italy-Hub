@@ -1,8 +1,8 @@
 # L'OpenAPI a build-time avvia l'app per un istante: come l'abbiamo reso innocuo
 
 **Data:** 3 settembre 2026 — fase F5
-**Stato:** **decisa in corso d'opera, da confermare**. Se confermata, `01-design-m0.md` §7.4 e
-§9 punto 12 vanno riformulate (vedi in fondo).
+**Stato:** **confermata** il 3 settembre 2026. `01-design-m0.md` §7.4 e §9 punto 12 riformulate
+(design v1.4).
 
 ## Il design
 
@@ -67,7 +67,7 @@ generazione quando c'è un `RuntimeIdentifier`.
   client OAuth non parte» è di §2.2 e resta intera; l'unica eccezione è un processo che descrive
   l'API e non fa accedere nessuno.
 
-## Correzione da portare nel design, se confermata
+## Correzione portata nel design
 
 §7.4 e §9 punto 12: sostituire «senza avviare l'app» con «senza database e senza client OAuth: lo
 strumento esegue l'entry point fino a `app.Run()`, perché è lì che gli endpoint minimal API
