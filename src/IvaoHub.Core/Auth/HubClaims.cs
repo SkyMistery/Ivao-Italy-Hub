@@ -21,6 +21,15 @@ public static class HubClaims
     public const string Vid = "vid";
     public const string Superadmin = "sa";
     public const string Staff = "staff";
+
+    /// <summary>
+    /// The director, the web team and a super administrator reach every department. It is a fact of
+    /// the role, so it is stated here rather than guessed from the shape of the permission list: a
+    /// deny that expands one permission into explicit departments must not be able to change it
+    /// (design M0 section 3.3).
+    /// </summary>
+    public const string AllDepartments = "alldept";
+
     public const string Department = "dept";
     public const string Fir = "fir";
     public const string Permission = "perm";
@@ -93,6 +102,13 @@ public static class HubClaims
         }
 
         var materialised = positions.ToArray();
+
+        // Computed here, from the positions, so that the real login and the fake login of the tests
+        // cannot disagree about it: this method is the only place a hub cookie is composed.
+        if (isSuperadmin || materialised.Any(RolePermissionMatrix.ReachesEveryDepartment))
+        {
+            identity.AddClaim(new Claim(AllDepartments, "1"));
+        }
 
         foreach (var department in materialised
             .Select(position => position.Department)

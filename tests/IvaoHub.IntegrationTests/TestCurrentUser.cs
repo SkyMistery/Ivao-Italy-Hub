@@ -35,16 +35,14 @@ public sealed class TestCurrentUser : ICurrentUser
 
     public IReadOnlyList<EffectivePermission> Permissions { get; private set; } = [];
 
-    /// <summary>The same rules the real implementation applies, including the superadmin bypass.</summary>
+    // Not "the same rules as" the real implementation: literally the same code. A test double that
+    // reimplements the rule it is meant to exercise can keep passing while production drifts away
+    // from it, which is the one failure a test suite must not have.
     public bool Has(string permission, Department department) =>
-        IsSuperadmin
-        || Permissions.Any(held =>
-            string.Equals(held.Name, permission, StringComparison.Ordinal)
-            && (held.Department is null || held.Department == department));
+        PermissionSet.Has(Permissions, IsSuperadmin, permission, department);
 
     public bool HasAny(string permission) =>
-        IsSuperadmin
-        || Permissions.Any(held => string.Equals(held.Name, permission, StringComparison.Ordinal));
+        PermissionSet.HasAny(Permissions, IsSuperadmin, permission);
 
     public void Anonymous()
     {
@@ -91,5 +89,35 @@ public sealed class TestCurrentUser : ICurrentUser
         IsStaff = true;
         IsSuperadmin = true;
         HasAllDepartments = true;
+    }
+
+    /// <summary>
+    /// The director of the division: reaches every department, and holds every departmental
+    /// permission with no department attached, exactly as the calculator produces them.
+    /// </summary>
+    public void Director(int vid)
+    {
+        Member(vid);
+        IsStaff = true;
+        HasAllDepartments = true;
+        Departments = new HashSet<Department> { Department.HQ };
+        Permissions =
+        [
+            .. CorePermissions.Departmental.Select(name =>
+                new EffectivePermission(name, null, "role:Director")),
+            .. CorePermissions.Global.Select(name =>
+                new EffectivePermission(name, null, "role:Director")),
+        ];
+    }
+
+    /// <summary>
+    /// A position of IVAO headquarters: staff, reads the content of the division, owns no
+    /// department and reaches none. It is the identity that used to come out reaching everything.
+    /// </summary>
+    public void HeadquartersStaff(int vid)
+    {
+        Member(vid);
+        IsStaff = true;
+        Permissions = [new EffectivePermission(CorePermissions.ContentView, null, "role:HqStaff")];
     }
 }
