@@ -11,6 +11,9 @@ import { defineConfig, type Plugin } from 'vite';
 /** The backend during development; Vite proxies the host endpoints to it. */
 const KESTREL_ORIGIN = 'http://localhost:5000';
 
+/** The framework itself: matched by package folder, so `react-markdown` is not one of them. */
+const REACT_CORE = ['react', 'react-dom', 'scheduler'];
+
 /** Language files live at the root of the repository and are shared with the backend. */
 const LOCALES_DIR = fileURLToPath(new URL('../locales', import.meta.url));
 
@@ -79,6 +82,36 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        /**
+         * The router splits the screens on its own (`autoCodeSplitting`); what is left in one lump
+         * is the libraries, and they do not all change together. Three groups, by how often they
+         * move and who needs them: the framework every page needs, the design system every page
+         * also needs but which ships on its own cadence, and the editor's markdown renderer, which
+         * only the pages that show prose ever load.
+         */
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+
+          if (REACT_CORE.some((packageName) => id.includes(`/node_modules/${packageName}/`))) {
+            return 'react';
+          }
+
+          if (id.includes('@ivao') || id.includes('@radix-ui') || id.includes('lucide-react')) {
+            return 'atmosphere';
+          }
+
+          if (id.includes('react-markdown') || id.includes('remark') || id.includes('micromark')) {
+            return 'markdown';
+          }
+
+          return undefined;
+        },
+      },
+    },
   },
   test: {
     environment: 'jsdom',
