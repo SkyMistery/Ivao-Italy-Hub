@@ -12,12 +12,11 @@
 | F0 bootstrap | mergiata (PR #1) |
 | F1 configurazione, avvio, DB | mergiata (PR #2) |
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
-| **F3 `IvaoApiClient` e dati `ref_`** | **PR #5 aperta, CI verde, da mergiare** |
-| F4 spina dorsale del dominio | **prossima** |
+| F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
+| **F4 spina dorsale del dominio** | **prossima** |
 
-> ⚠️ **Prima cosa da fare in una sessione nuova**: mergiare la
-> [PR #5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/5) (squash, come le altre), poi
-> `git checkout main && git pull`. Il branch `m0/f3-ivao-ref` è ancora quello di lavoro.
+Niente PR aperte: `main` contiene tutto fino a F3 compresa. Una sessione nuova parte da
+`git checkout main && git pull` e apre subito il branch della fase.
 
 **Come si apre F4**: prompt di §C del piano di implementazione con `<N>` → `4`. Perimetro in §D:
 `Localized<T>` lato API, interfacce trasversali (`IOwnedByDepartment`, `IVisible`, `IPublishable`,
