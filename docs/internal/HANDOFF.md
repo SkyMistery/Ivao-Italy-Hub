@@ -5,7 +5,7 @@
 
 **Ultimo aggiornamento:** 3 settembre 2026 — fine **F4** (spina dorsale del dominio).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.22. **Test:** 209 verdi (169 unit + 40 integrazione).
+**Piano:** v0.23. **Design:** v1.1. **Test:** 214 verdi (174 unit + 40 integrazione).
 
 | Fase | Stato |
 |---|---|
@@ -18,8 +18,8 @@
 
 **Come si apre F5**: prompt di §C del piano di implementazione con `<N>` → `5`. Perimetro in §D:
 `MapCrud<TEntity, …>` nelle due modalità (dipartimentale e globale), il CRUD di `links` senza codice
-a mano, `ExtraWritePolicy`, `ValidationProblem` con chiavi i18n, 409 su `row_version`, OpenAPI a
-build-time e `schema.d.ts` generato in CI.
+a mano, `ExtraWritePolicy`, `ValidationProblem` con chiavi i18n, 409 su `row_version`, `LocaleCatalog`
+(arrivato da F4, punto 5), OpenAPI a build-time e `schema.d.ts` generato in CI.
 
 Due cose che F5 eredita e deve usare, non riscrivere: la spina dorsale scrive audit e proiezioni da
 sola (a `MapCrud` non tocca nessuna delle due), e **`IgnoreQueryFilters` può comparire solo sotto
@@ -144,7 +144,7 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
 - `PermissionRequirement`, `HubPolicyProvider` (ogni nome del catalogo diventa una policy; un nome
   con il punto che non c'è nel catalogo è un'eccezione, non un divieto silenzioso) e
   `DepartmentAuthorizationHandler`, **l'unico handler**, registrati dentro `AddIvaoAuthentication`.
-- **209 test verdi** (169 unit + 40 di integrazione). I sette test della spina dorsale di design §8
+- **214 test verdi** (174 unit + 40 di integrazione). I sette test della spina dorsale di design §8
   stanno in `DomainBackboneTests`; girano sul `DbContext` e su `IAuthorizationService` veri, con un
   `TestCurrentUser` al posto del cookie perché F4 non ha ancora endpoint.
 
@@ -191,10 +191,10 @@ senza credenziali.
 | `RequireState = false` nel validator OIDC | ASP.NET Core non popola mai `ValidationContext.State`: con `true` il login si rompe con IDX21329 contro qualunque IdP. Lo `state` lo verifica l'handler col cookie di correlazione. |
 | Un permesso valido su tutti i dipartimenti si salva con dipartimento `null` | Il cookie viaggia a ogni richiesta: il prodotto cartesiano permessi × dipartimenti lo farebbe esplodere. Un deny su un dipartimento espande comunque l'entrata, quindi morde lo stesso. |
 | `UserGrant` non ha `granted_at`/`granted_by` separati | Sono `created_at`/`created_by` di `IAuditable`. |
-| `IProjectable.Project()` prende un `ProjectionContext` (lingue, lingua di default, walker) | Un'entità EF non si fa iniettare niente, ma per proiettarsi un contenuto ha bisogno delle lingue della divisione e del walker. Le alternative erano cablare le lingue (un hub forkabile non può) o mettere un ramo per `Content` nel `ProjectionWriter` (che smetterebbe di essere generico). Nota: `docs/internal/decisions/2026-09-03-projection-context.md`, da confermare. |
+| `IProjectable.Project()` prende un `ProjectionContext` (lingue, lingua di default, walker) | Un'entità EF non si fa iniettare niente, ma per proiettarsi un contenuto ha bisogno delle lingue della divisione e del walker. Le alternative erano cablare le lingue (un hub forkabile non può) o mettere un ramo per `Content` nel `ProjectionWriter` (che smetterebbe di essere generico). Nota: `docs/internal/decisions/2026-09-03-projection-context.md`, **confermata**; design §3.6 corretta. |
 | Le righe di `hub_audit_log` si scrivono nel **secondo tempo**, non in `SavingChanges` | Prima del salvataggio una riga nuova non ha id: l'audit di una creazione punterebbe a `0`. Il prima/dopo si cattura comunque prima (il change tracker lo sa solo allora), si scrive dopo. |
 | `HubUser` è `[Audited]`, quindi **ogni login lascia una riga di audit** | È il prezzo per avere l'audit dei superadmin senza che un servizio se lo scriva da sé (debito di F2 chiuso). La riga di un update contiene **solo le colonne cambiate**, quindi un login pesa poco. Se in M1 dà fastidio, si restringe lì. |
-| `ICurrentUser.Has(nome)` senza dipartimento significa «su un dipartimento qualsiasi» | Design §3.7 lo dice esplicitamente («basta un dipartimento qualsiasi, o globale»); l'implementazione di F2 rispondeva invece «solo se globale», e nessuno la usava ancora. Il controllo su una riga passa sempre il dipartimento, quindi la modifica non allarga niente di ciò che protegge le risorse. |
+| `ICurrentUser` ha **due** metodi: `Has(permission, department)` e `HasAny(permission)` | Un solo metodo con il dipartimento opzionale lasciava indovinare cosa volesse dire `null` (Carmine l'ha letto come «solo se globale», che è una lettura legittima del nome). «Un dipartimento qualsiasi» serve davvero, perché è il caso di **ogni lista**: in F5 `MapCrud` controlla la policy quando una riga singola non c'è ancora e filtra per dipartimento subito dopo. Nota: `docs/internal/decisions/2026-09-03-has-and-has-any.md`, design §3.3 e §3.7 corrette. |
 | `HubDbContext` legge `ICurrentUser` **quando parte la query**, non nel costruttore | Un contesto può nascere prima che il cookie sia validato (la cache dello `stamp` ne costruisce uno): leggere subito congelerebbe una risposta anonima. Per lo stesso motivo `HttpContextCurrentUser` rilegge i claim quando cambia il `ClaimsPrincipal` della richiesta. |
 | Il flag di rientranza dell'interceptor è per contesto, non un campo di `HubDbContext` | Lo stesso interceptor scoped serve il contesto del nucleo e quello di ogni modulo: lo stato di un salvataggio non deve essere visibile all'altro. |
 | `Department`, `Visibility`, `PublishStatus`, `StaffLevel` definiti in F1 | Le colonne della migrazione hanno bisogno del vocabolario; le **interfacce** restano a F4. |
@@ -234,8 +234,9 @@ allargare i permessi, mai stringerli a sorpresa.
 - Le posizioni FIR non si riconoscono finché `ref_ivao_centers` è vuota: è **F3**. `UserSyncService` legge già
   la tabella, quindi si accendono da sole appena il job la riempie.
 - **`locales/` e `config/*.example.json` non finiscono nel pacchetto pubblicato**: serve `LocaleCatalog`.
-  Spostato a **F5**, non fatto in F4: la fase F4 del piano (§D) non lo elenca, e il primo che ne ha
-  davvero bisogno è il `ValidationProblem` di `MapCrud`, che è F5.
+  **Spostato a F5 e scritto lì**: è il punto 5 di `02-piano-implementazione-m0.md` §D/F5, insieme al
+  target MSBuild che li impacchetta. Il primo che ne ha davvero bisogno è il `ValidationProblem` di
+  `MapCrud`.
 - ~~L'audit dei superadmin lo scrive il servizio a mano~~ **chiuso in F4**: `HubUser` è `[Audited]` e
   `SuperadminService.WriteAuditAsync` non esiste più. Resta a mano la sola riga
   `superadmin.set_changed`, che non è la scrittura di una riga ma un confronto fra due insiemi

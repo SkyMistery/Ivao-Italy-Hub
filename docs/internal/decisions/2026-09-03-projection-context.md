@@ -1,7 +1,8 @@
 # `IProjectable.Project()` riceve un `ProjectionContext`
 
 **Data:** 3 settembre 2026 — fase F4
-**Stato:** applicata, da confermare (regola (b): estensione di un meccanismo del design, non un meccanismo nuovo)
+**Stato:** **confermata da Carmine il 3 settembre 2026**. `01-design-m0.md` §3.6 corretta, changelog del
+piano 0.23.
 
 ## Il design
 
@@ -57,8 +58,8 @@ Il resto di §3.6 non cambia: `null` continua a voler dire «togli ogni proiezio
 «una bozza non si proietta» resta nell'interceptor e non nelle entità, e l'upsert resta per chiave
 `(source_module, source_id)`.
 
-## Cosa serve da Carmine
+## Esito
 
-Solo un sì o un no. Se è sì, in `01-design-m0.md` §3.6 va corretta la firma. Se è no, l'unica altra
-strada praticabile è spostare l'estrazione del testo fuori dall'entità, e allora `SearchProjection`
-deve poter portare il corpo grezzo invece del testo già estratto.
+Sì. La firma di `01-design-m0.md` §3.6 è stata corretta e il `ProjectionContext` è documentato lì
+accanto. L'alternativa scartata era spostare l'estrazione del testo fuori dall'entità, con
+`SearchProjection` che avrebbe dovuto portare il corpo grezzo invece del testo già estratto.

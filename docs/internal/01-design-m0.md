@@ -4,8 +4,8 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 1.0 — 2 settembre 2026
-**Stato:** pronto per l'implementazione
+**Versione:** 1.1 — 3 settembre 2026 (§3.3, §3.6 e §3.7 corretti in F4)
+**Stato:** in implementazione (F0–F4 fatte)
 
 ---
 
@@ -197,7 +197,8 @@ public interface ICurrentUser
     bool HasAllDepartments { get; }                     // Director (DIR/ADIR), Web (WM/AWM) o superadmin: vede/scrive ogni dipartimento
     IReadOnlySet<string> Firs { get; }                  // dalle posizioni FIR
     IReadOnlyList<EffectivePermission> Permissions { get; }
-    bool Has(string permission, Department? department = null);   // superadmin → true
+    bool Has(string permission, Department department);           // su quella riga; superadmin → true
+    bool HasAny(string permission);                               // «può farlo, in generale»: un dipartimento qualsiasi, tutti, o globale
 }
 public readonly record struct EffectivePermission(string Name, Department? Department, string Source); // Source: "role:EV/coordinator" | "grant:123" | "superadmin"
 ```
@@ -227,8 +228,11 @@ public interface IProjectable
 {
     string SourceModule { get; }                          // "core" | "events" | …
     string SourceId { get; }                              // stabile per l'entità, es. "link:42"
-    ProjectionSnapshot? Project();                        // null = rimuovi ogni proiezione
+    ProjectionSnapshot? Project(ProjectionContext ctx);   // null = rimuovi ogni proiezione
 }
+// Ciò che un'entità può sapere della divisione mentre si proietta: un'entità EF non si fa iniettare
+// niente, ma le lingue e il walker le servono per forza (decisione del 3 set 2026).
+public sealed record ProjectionContext(IReadOnlyList<string> Locales, string DefaultLocale, BlockDocumentWalker Blocks);
 public sealed record ProjectionSnapshot(
     SearchProjection? Search,
     CalendarProjection? Calendar,
@@ -250,7 +254,7 @@ Tabelle nel nucleo: `cms_search_index` con **una riga per lingua** — chiave un
 - **Derivazione**: `RolePermissionMatrix` (codice, una tabella): per ogni `(Department, StaffLevel)` → elenco di permessi sul **proprio** dipartimento; `Director` (HQ coordinator/assistant) e `Web` (WM/AWM) → tutti i permessi dipartimentali su **tutti** i dipartimenti + i globali; advisor → `View/Edit` ma non `Publish/ManageTemplates`; `Trainer` → nessun permesso di nucleo; `HqStaff` → `Content.View` su tutto. La matrice è un file solo, testato riga per riga.
 - **Grant** (`hub_user_grants`): `kind ∈ {permission}`, `value` = nome permesso, `department` nullable (null = tutti), `effect ∈ {grant, deny}`, `expires_at`, `suspended_at`, `granted_by`, `reason`; audit standard (`IAuditable`), **non** `IOwnedByDepartment` (è gestita in modalità globale da `MapCrud`, §3.9). Effettivi = derivati ∪ grant − deny. Vincoli server: grant solo a VID con `is_staff = true`; mai `Permissions.Manage` né globali per grant.
 - **Policy provider**: `HubPolicyProvider : IAuthorizationPolicyProvider` — qualsiasi nome `X.Y` presente nel catalogo diventa una policy con `PermissionRequirement("X.Y")`; nomi ignoti → eccezione all'avvio (test che enumera gli attributi `[Authorize(Policy)]` e i `RequireAuthorization("...")`).
-- **L'unico handler**: `DepartmentAuthorizationHandler : AuthorizationHandler<PermissionRequirement>`. Senza risorsa → `ICurrentUser.Has(name)` (basta un dipartimento qualsiasi, o globale). Con risorsa `IOwnedByDepartment` → `Has(name, resource.OwnerDepartment)`; con `IHasFir` e `firStaffScope = own` → la FIR della risorsa deve essere tra `ICurrentUser.Firs` salvo Director/coordinatori. Endpoint minimal API usano `authorizationService.AuthorizeAsync(user, entity, "Content.Edit")` **solo dentro `MapCrud`** e nei servizi del nucleo; un modulo non chiama mai `AuthorizeAsync` con logica propria.
+- **L'unico handler**: `DepartmentAuthorizationHandler : AuthorizationHandler<PermissionRequirement>`. Senza risorsa → `ICurrentUser.HasAny(name)` (basta un dipartimento qualsiasi, o globale: negare qui chiuderebbe a ogni coordinatore la lista del proprio dipartimento, che il `MapCrud` filtra riga per riga subito dopo). Con risorsa `IOwnedByDepartment` → `Has(name, resource.OwnerDepartment)`; con `IHasFir` e `firStaffScope = own` → la FIR della risorsa deve essere tra `ICurrentUser.Firs` salvo Director/coordinatori. Endpoint minimal API usano `authorizationService.AuthorizeAsync(user, entity, "Content.Edit")` **solo dentro `MapCrud`** e nei servizi del nucleo; un modulo non chiama mai `AuthorizeAsync` con logica propria.
 
 ### 3.8 `StaffRoleMap`
 

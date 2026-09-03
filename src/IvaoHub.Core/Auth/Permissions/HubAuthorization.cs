@@ -85,10 +85,11 @@ public sealed class DepartmentAuthorizationHandler(ICurrentUser currentUser, IOp
     private bool IsAllowed(object? resource, string permission)
     {
         // Without a resource the question is "may they do this at all": holding the permission on
-        // any department, or globally, is enough. The row itself is checked when there is one.
+        // any department, or globally, is enough, and the department is checked row by row later.
+        // Denying here would close the list of their own department to every coordinator.
         if (resource is not IOwnedByDepartment owned)
         {
-            return currentUser.Has(permission);
+            return currentUser.HasAny(permission);
         }
 
         if (!currentUser.Has(permission, owned.OwnerDepartment))

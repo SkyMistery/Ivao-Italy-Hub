@@ -4,7 +4,7 @@
 > `00-piano-di-progettazione.md` v0.18 (§4, §6, §7, §9.3, §9.7, §16), design `01-design-m0.md` (firme e perimetro).
 > Questo file dice **in che ordine** si costruisce, **cosa** consegna ogni fase, **come si verifica** che sia finita.
 
-**Versione:** 1.0 — 2 settembre 2026
+**Versione:** 1.1 — 3 settembre 2026 (F4 chiusa; `LocaleCatalog` spostato in F5)
 
 ---
 
@@ -138,6 +138,11 @@ Accettazione: tutti i test sopra verdi; nessun endpoint ancora (i test usano il 
 
 Non fare: endpoint, frontend.
 
+**Chiusa il 3 settembre 2026** (PR #6), con due correzioni al design confermate da Carmine:
+`IProjectable.Project()` riceve un `ProjectionContext` (§3.6) e `ICurrentUser` espone due domande
+separate, `Has(permission, department)` e `HasAny(permission)` (§3.3, §3.7). Note in
+`docs/internal/decisions/`. `LocaleCatalog` è passato a F5.
+
 ### F5 — `MapCrud` e `links` (server)
 
 **Obiettivo**: il CRUD di un'entità costa una configurazione, non codice.
@@ -147,9 +152,10 @@ Task:
 2. DTO `LinkListDto`, `LinkDetailDto`, `LinkWriteDto` + mapper Mapperly + `LinkWriteDtoValidator` (titolo `LocalizedRules.Required`, `Url` assoluta http/https, `Sort ≥ 0`).
 3. `app.MapCrud<Link, …>("/api/links", o => { o.PermissionArea = "Links"; … })` in `Core/Content/LinksEndpoints.cs` (estensione chiamata da `Program`), `AddOpenApi` con transformer `x-localized` + Scalar in dev, `ProblemDetails` globali (`AddProblemDetails` + `IExceptionHandler` per `ForbiddenDomainException` → 403, `DbUpdateConcurrencyException` → 409).
 4. OpenAPI a build-time con `Microsoft.Extensions.ApiDescription.Server` → `artifacts/openapi/IvaoHub.Web.json`; `pnpm gen:api` (`openapi-typescript` su quel file) → `web/src/shared/api/schema.d.ts`; step CI «build, genera, `git diff --exit-code`».
-5. Test integrazione `MapCrudLinksEndToEnd` (design §8) con utenti finti: superadmin, staff EV coordinator, staff FO advisor, membro, anonimo.
+5. `LocaleCatalog` (design §1 e §7.6): legge `locales/{lang}/*.json` e li rende al backend, che ne ha bisogno per i `ProblemDetails` di `MapCrud` (le chiavi `errors.*` che il punto 1 produce) e, in M1, per le mail. **Spostato qui da F4**: il perimetro di F4 non lo elencava e prima di `MapCrud` nessuno aveva un messaggio da tradurre lato server. Con lui vanno nel pacchetto pubblicato anche `locales/` e `config/*.example.json`, che oggi non ci finiscono (target MSBuild accanto a `PublishSpa`).
+6. Test integrazione `MapCrudLinksEndToEnd` (design §8) con utenti finti: superadmin, staff EV coordinator, staff FO advisor, membro, anonimo.
 
-Accettazione: `curl` autenticato (cookie di test) fa list/create/update/delete su `/api/links`; `schema.d.ts` generato e committato; test verdi.
+Accettazione: `curl` autenticato (cookie di test) fa list/create/update/delete su `/api/links`; `schema.d.ts` generato e committato; `locales/` e gli `.example.json` presenti in `artifacts/publish`; test verdi.
 
 ### F6 — Spina dorsale frontend
 

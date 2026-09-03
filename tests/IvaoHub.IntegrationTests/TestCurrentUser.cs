@@ -35,12 +35,16 @@ public sealed class TestCurrentUser : ICurrentUser
 
     public IReadOnlyList<EffectivePermission> Permissions { get; private set; } = [];
 
-    /// <summary>The same rule the real implementation applies, including the superadmin bypass.</summary>
-    public bool Has(string permission, Department? department = null) =>
+    /// <summary>The same rules the real implementation applies, including the superadmin bypass.</summary>
+    public bool Has(string permission, Department department) =>
         IsSuperadmin
         || Permissions.Any(held =>
             string.Equals(held.Name, permission, StringComparison.Ordinal)
-            && (department is null || held.Department is null || held.Department == department));
+            && (held.Department is null || held.Department == department));
+
+    public bool HasAny(string permission) =>
+        IsSuperadmin
+        || Permissions.Any(held => string.Equals(held.Name, permission, StringComparison.Ordinal));
 
     public void Anonymous()
     {

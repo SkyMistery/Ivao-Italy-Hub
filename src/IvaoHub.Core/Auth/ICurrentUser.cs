@@ -43,12 +43,19 @@ public interface ICurrentUser
     IReadOnlyList<EffectivePermission> Permissions { get; }
 
     /// <summary>
-    /// True when the user holds the permission on that department. Without a department the
-    /// question is "may they do this at all", so holding it on any department is enough
-    /// (design M0 section 3.7); the department is what the check on a row is for. A super
-    /// administrator always holds it: that is the whole point of the role.
+    /// True when the user holds the permission on that department. A permission held everywhere
+    /// (stored with no department) counts, and a super administrator always holds it: that is the
+    /// whole point of the role.
     /// </summary>
-    bool Has(string permission, Department? department = null);
+    bool Has(string permission, Department department);
+
+    /// <summary>
+    /// True when the user holds the permission somewhere: on one department, on all of them, or
+    /// as a global permission. It answers "may they do this at all", which is the only thing that
+    /// can be asked before a row is in hand — opening a list, for instance (design M0 section 3.7).
+    /// The department is then checked row by row.
+    /// </summary>
+    bool HasAny(string permission);
 }
 
 /// <summary>Reads the identity out of the application cookie. No database call per request.</summary>
@@ -102,31 +109,24 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
 
     public IReadOnlyList<EffectivePermission> Permissions => Current.Permissions;
 
-    public bool Has(string permission, Department? department = null)
+    public bool Has(string permission, Department department)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
 
-        if (IsSuperadmin)
-        {
-            return true;
-        }
+        // A permission with no department is held everywhere: that is how a director and the web
+        // team travel with a handful of claims instead of one per department.
+        return IsSuperadmin
+            || Permissions.Any(held =>
+                string.Equals(held.Name, permission, StringComparison.Ordinal)
+                && (held.Department is null || held.Department == department));
+    }
 
-        foreach (var held in Permissions)
-        {
-            if (!string.Equals(held.Name, permission, StringComparison.Ordinal))
-            {
-                continue;
-            }
+    public bool HasAny(string permission)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(permission);
 
-            // A permission with no department is held everywhere; and when no department was
-            // asked about, holding it anywhere answers the question.
-            if (department is null || held.Department is null || held.Department == department)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return IsSuperadmin
+            || Permissions.Any(held => string.Equals(held.Name, permission, StringComparison.Ordinal));
     }
 
     private static Snapshot Read(ClaimsPrincipal? principal, DivisionOptions division)
