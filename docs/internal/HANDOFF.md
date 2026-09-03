@@ -13,8 +13,11 @@
 | F1 configurazione, avvio, DB | mergiata (PR #2) |
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
-| F4 spina dorsale del dominio | in revisione (PR #6) |
+| F4 spina dorsale del dominio | mergiata (PR #6) |
 | **F5 `MapCrud` e `links` (server)** | **prossima** |
+
+Niente PR aperte: `main` contiene tutto fino a F4 compresa. Una sessione nuova parte da
+`git checkout main && git pull` e apre subito il branch della fase.
 
 **Come si apre F5**: prompt di §C del piano di implementazione con `<N>` → `5`. Perimetro in §D:
 `MapCrud<TEntity, …>` nelle due modalità (dipartimentale e globale), il CRUD di `links` senza codice
