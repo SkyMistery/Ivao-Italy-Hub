@@ -4,7 +4,7 @@
 > `00-piano-di-progettazione.md` v0.18 (§4, §6, §7, §9.3, §9.7, §16), design `01-design-m0.md` (firme e perimetro).
 > Questo file dice **in che ordine** si costruisce, **cosa** consegna ogni fase, **come si verifica** che sia finita.
 
-**Versione:** 1.2 — 3 settembre 2026 (F5 chiusa; due precisazioni al design da confermare, §D/F5)
+**Versione:** 1.3 — 3 settembre 2026 (F6 chiusa; una decisione — `react-markdown` — e tre precisazioni al design, §D/F6)
 
 ---
 
@@ -28,7 +28,7 @@
 | F3 | `IvaoApiClient` e dati `ref_` | F1 | job di sync, tabelle popolate (o fixture), posizioni FIR riconosciute |
 | F4 | Spina dorsale del dominio | F2 | `Localized<T>`, interceptor, query filter, policy provider + handler unico, `IProjectable`, test integrazione verdi |
 | F5 | `MapCrud` e `links` (server) | F4 | CRUD `links` senza codice a mano, OpenAPI, client TS generato in CI |
-| F6 | Spina dorsale frontend | F2, F5 | layout, ricette router, `DataList`, `SchemaForm`, `LocaleFields`, back-office `links`, ui-kit, `UI-GUIDELINES.md` |
+| F6 | Spina dorsale frontend | F2, F5 | layout, ricette router, `DataList`, `SchemaForm`, `LocaleFields`, back-office `links`, ui-kit, `UI-GUIDELINES.md` — **fatta** |
 | F7 | Contenuti: entità, envelope, publish, blocchi, editor, template | F5, F6 | pagina da template → editor → publish → resa pubblica; `frozen` catturato |
 | F8 | Moduli, admin, manutenzione, ricerca, forkabilità | F6, F7 | `IModule` + `atc`, `/staff/admin/{permissions,modules,ui-kit}`, `/api/search`, test XX |
 | F9 | Chiusura M0 | tutte | demo end-to-end da script, HANDOFF, tag `v0.1.0-m0` |
@@ -186,6 +186,15 @@ Task:
 Accettazione: staff ED vede solo `/staff/ed/links`, crea/modifica un link con titolo in due lingue, errore server mostrato sul campo giusto; superadmin vede tutti i dipartimenti; ui-kit mostra tutti i componenti; Vitest e `i18n:check` verdi.
 
 Non fare: editor dei contenuti, blocchi.
+
+**Chiusa il 3 set 2026.** Una decisione e tre precisazioni al design (v1.5):
+
+1. **`react-markdown`** per `MarkdownContent`: il design lo mette nell'elenco chiuso ma §0.3 non pinnava nessun renderer. Decisa da Carmine; nota in `docs/internal/decisions/2026-09-03-markdown-content.md`.
+2. **`DataList` prende `search` e `onSearchChange`**, non l'oggetto `route`: farlo entrare nel router significherebbe riallargare i search params a `unknown` e buttare via la tipizzazione della ricetta 2. Le due righe di collegamento stanno nel file di route; nessuna riga di JSX di tabella. Design §7.5 e `web/src/routes/README.md`.
+3. **Il bootstrap dichiara `hasAllDepartments`** (design §3.10): la sidebar deve elencare tutti i dipartimenti a director/web/superadmin, e §3 dell'HANDOFF vieta di dedurlo dalla forma della lista dei permessi.
+4. **`HubPolicies.SignedIn`** (design §3.7): `PUT /api/me/locale` chiede solo di essere autenticati, che non è un permesso del catalogo. Una policy sola, registrata una volta.
+
+Fuori perimetro dichiarato: `col.department()` esiste come helper ma la lista dei link non lo usa, perché la route filtra già su un dipartimento solo e la colonna direbbe la stessa cosa a ogni riga. Il campo `ownerDepartment` del form è `hidden` e viene dal path: spostare un link fra dipartimenti non è nell'accettazione di F6 e il server lo rifiuterebbe comunque a chi non ha il permesso su entrambi.
 
 ### F7 — Contenuti: entità, envelope, publish, blocchi, editor, template
 

@@ -3,11 +3,9 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026, sera — fine **F5** (`MapCrud` e `links` lato server), su
-un `main` che nel frattempo ha assorbito la **revisione senior** di F4 (PR #9). Chiuse anche le due
-note che F5 lasciava aperte (PR #10) e l'igiene del repository (PR #11).
+**Ultimo aggiornamento:** 3 settembre 2026, notte — fine **F6** (la spina dorsale del frontend).
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.26. **Design:** v1.4. **Test:** 280 verdi (210 unit + 70 integrazione).
+**Piano:** v0.27. **Design:** v1.5. **Test:** 286 .NET verdi (210 unit + 76 integrazione) + 35 Vitest.
 
 | Fase | Stato |
 |---|---|
@@ -18,49 +16,44 @@ note che F5 lasciava aperte (PR #10) e l'igiene del repository (PR #11).
 | F4 spina dorsale del dominio | mergiata (PR #6) |
 | F4bis revisione senior (correzioni, nessun perimetro nuovo) | mergiata (PR #9), vedi §8 |
 | F5 `MapCrud` e `links` (server) | mergiata (PR #8) |
-| **F6 spina dorsale frontend** | **prossima** |
+| F6 spina dorsale frontend | **questa PR** |
+| **F7 contenuti: entità, envelope, publish, blocchi, editor, template** | **prossima** |
 
-### Come si apre F6
+### Come si apre F7
 
-Niente PR aperte: `main` contiene tutto fino a F5 compresa, e le due note di F5 che erano «da
-confermare» sono state confermate — il design è a v1.4 e non c'è più nessuna frase in sospeso.
+⚠️ **`gh pr list` prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in parallelo in
+worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha mergiato per
+prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
+ma è stato un caso. Costa due secondi.
 
-Il checkout principale è già allineato a `3561875` e pulito, e sul remoto c'è **solo `main`**:
-basta `git checkout -b m0/f6-frontend-backbone` e il prompt di §C con `<N>` → `6`. Da fare **dal
-checkout principale**, non da un worktree: lì `main` è già in uso e il checkout fallisce.
+Con `main` allineato: `git checkout -b m0/f7-contenuti` e il prompt di §C con `<N>` → `7`. Dal
+checkout principale, non da un worktree: lì `main` è già in uso e il checkout fallisce (§9).
 
-⚠️ **Guardare le PR aperte prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in
-parallelo in worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha
-mergiato per prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è
-andato perso, ma è stato un caso. Un `gh pr list` costa due secondi.
+**Perimetro di F7** (§D del piano): `ValidateEnvelope` completo, `cms_contents` e
+`cms_content_versions`, il servizio di pubblicazione con la cattura `frozen`, il registry dei
+blocchi vero, l'editor a lista di `/staff/$dept/content/$id`, i template seedati, la resa pubblica.
 
-**Perimetro di F6** (§D del piano): i tre layout, le tre ricette del router, `DataList` e
-`SchemaForm`, `LocaleFields`, `useProblemDetails`, il back-office di `links` **senza una riga di JSX
-di tabella o di form**, `/staff/admin/ui-kit`, `docs/UI-GUIDELINES.md`.
+Cinque cose che F7 eredita da F6 e deve usare, non riscrivere:
 
-> **Nota di merge.** F5 è stata scritta su un `main` che non conteneva ancora la revisione di §8, e
-> le due sono state riunite qui. La revisione tocca F5 in un punto solo, e in meglio:
-> `TryNarrowToDepartments` legge `ICurrentUser.HasAllDepartments`, che ora è un claim invece di un
-> indizio letto dalla lista dei permessi — un Director colpito da un deny vedeva la lista ristretta
-> al solo `HQ`, e adesso no. L'allow-list di `IgnoreQueryFilters` ha inoltre **due** voci:
-> `Core/Data/Crud/` (F5) e `ProjectionWriter.cs` (revisione).
-
-Quattro cose che F6 eredita da F5 e deve usare, non riscrivere:
-
-1. **I tipi dell'API non si scrivono a mano.** `web/src/shared/api/schema.d.ts` è generato
-   (`pnpm gen:api`) dal documento OpenAPI che scrive `dotnet build`, ed è committato; la CI lo
-   rigenera e fallisce sul diff. `bootstrap.ts` ora è solo un elenco di alias di quel file.
-2. **I parametri di lista sono un tipo, non una convenzione.** `CrudListRequest` (`page`,
-   `pageSize`, `sort`, `dir`, `q`) sta nell'OpenAPI, quindi i search params tipizzati della
-   ricetta 2 devono coincidere con quelli. `filter[nome]=valore` non è nel documento perché i suoi
-   nomi sono le proprietà dell'entità: l'elenco ammesso è `CrudOptions.Filterable`, e un nome fuori
-   elenco prende 400.
-3. **Un campo tradotto si riconosce dal contratto.** Nello schema, `LocalizedString` porta
-   `x-localized: true`: è quello che `SchemaForm` deve leggere per disegnare `LocaleFields`, invece
-   di indovinare dal nome del campo.
-4. **Gli errori arrivano come chiavi i18n.** `errors[campo] = ["errors.localized.missing"]`, e
-   quando mancano delle lingue l'estensione `localized` dice **quali**: `useProblemDetails` deve
-   risolvere la chiave e usare quell'estensione, non inventarsi un messaggio.
+1. **Il registry dei blocchi esiste già, vuoto.** `web/src/blocks/registry.ts` è l'elenco del
+   nucleo; `app/registry.ts` lo compone con quelli dei moduli. Un blocco aggiunto lì **deve**
+   comparire in `/staff/admin/ui-kit`, altrimenti `features/admin/uiKit.test.ts` fallisce — e le
+   sue `example` props devono passare il suo stesso schema zod, che è l'altra metà dello stesso
+   test. Il `BlockRegistration` è in `shared/modules.ts`.
+2. **Il form delle proprietà di un blocco è `SchemaForm`.** È lo stesso generatore delle entità:
+   `readFields` cammina lo schema zod, `localized()` marca un campo tradotto, `.meta({ multiline })`
+   chiede una textarea, `.meta({ hidden })` tiene un campo nel payload e fuori dallo schermo. Se un
+   tipo non è coperto, il generatore **lancia** invece di saltare il campo: si estende
+   `shared/forms/schema.ts` (regola (b)), non si scrive il form a mano.
+3. **Gli errori del server arrivano già risolti.** `useProblemDetails` mappa `errors[campo]` sul
+   campo, legge l'estensione `localized` per dire *quali* lingue mancano, e manda in `ProblemAlert`
+   quello che non riguarda un campo (409, 403). Un endpoint nuovo che risponde `ValidationProblem`
+   con chiavi i18n funziona senza toccare niente lato client.
+4. **Una lista è `DataList` + un elenco di colonne.** `features/<x>/list.ts` resta TypeScript senza
+   JSX: `col.localized('title')`, `col.badge('visibility', 'content')`, `col.date('updatedAt')`.
+   `sortable` dichiara ciò che il server ha messo in `CrudOptions.Sortable`, non una preferenza.
+5. **Le tre ricette del router sono scritte.** `web/src/routes/README.md` le riporta con il perché
+   di ogni riga; la terza (dettaglio pubblico `/_public/$slug`) è proprio quella che F7 riempie.
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
 nessuno.
@@ -112,7 +105,7 @@ dotnet tool restore
 dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-project src/IvaoHub.Core
 ```
 
-## 2. Cosa c'è dopo F5
+## 2. Cosa c'è dopo F6
 
 **Configurazione e avvio (F1)**: `config/division.json` versionato + esempi; opzioni validate prima di toccare
 il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su Pomelo pinnato a MariaDB
@@ -263,6 +256,39 @@ il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su 
 LIRR, LIVK, LIZZ) e 221 aeroporti, tutti con le piste. Le fixture restano per la CI e per chi forka
 senza credenziali.
 
+**Spina dorsale frontend (F6)**:
+
+- **Tre layout dietro le loro guardie**, ricetta 1 del design: `_public` (aperto), `_member`
+  (`/me`, redirect al login per `href` perché `/auth/login` è un endpoint Kestrel), `_staff`
+  (`/staff/*`, redirect al login se anonimo e a `/forbidden` se non staff — due risposte diverse
+  apposta, mandare la seconda al login è un ciclo). Il bootstrap si carica **una volta** nel root
+  con `ensureQueryData` e sta nel context: nessuna guardia fa una fetch propria.
+- **`DataList`**: `DataTable` di Atmosphere in modalità server-side, guidato dai search params
+  tipizzati della route. La paginazione la disegniamo noi perché quella di Atmosphere scrive
+  «Rows per page» in inglese; il menu di visibilità colonne è spento per lo stesso motivo. Le
+  colonne sono **descrizioni** (`col.localized`, `col.badge`, `col.date`, `col.department`,
+  `col.boolean`, `col.number`, `col.text`), così `features/<x>/list.ts` resta TypeScript senza JSX.
+- **`SchemaForm`**: cammina uno schema zod 4 e disegna il form. `localized()` → `LocaleFields` (una
+  tab per lingua, badge «vuoto», bottone «copia da»), `.meta({ multiline })` → textarea,
+  `.meta({ hidden })` → campo che viaggia e non si vede (`rowVersion`), `z.enum` → select con le
+  etichette da `<ns>.options.<path>.<valore>`. Un tipo non coperto **lancia**. Dentro una lista
+  ripetibile l'etichetta usa il path dello schema e l'indice resta solo nel nome del campo.
+- **`useProblemDetails`**: `errors[campo]` → il campo, con la chiave i18n risolta; se l'estensione
+  `localized` dice quali lingue mancano, la frase le **nomina** (`Intl.DisplayNames`, così una
+  lingua nuova non ha bisogno di una chiave sua). Quello che non riguarda un campo (409, 403) va in
+  `ProblemAlert`.
+- **Back-office `links`**: `/staff/$dept/links` e `/staff/$dept/links/$id`, **zero JSX di tabella o
+  di form**. Il perimetro di F6 è dimostrato lì e da nessuna altra parte.
+- **`/staff/admin/ui-kit`** dietro `Admin.Access`: monta ogni componente dell'elenco chiuso e ogni
+  blocco del registry. `UI_KIT_SECTIONS` è una lista di dati e non markup, apposta: il test la legge
+  senza montare router, query client e i18n.
+- **`shared/modules.ts`** (`ModuleManifest`, `BlockRegistration`, `WidgetRegistration`,
+  `RouteDefinition`) e **`app/registry.ts`**, che compone il registry del nucleo con quelli dei
+  moduli. Vuoti: il primo modulo è F8.
+- **`PUT /api/me/locale`** (`Core/Auth/LocaleEndpoints.cs`) e **`hasAllDepartments`** nel bootstrap.
+- **35 test Vitest** (generatore per ogni tipo di campo, `LocaleFields`, `ProblemDetails`,
+  registry ⇄ ui-kit, schema-entità ⇄ contratto, `deptParam`, search params) e **286 .NET**.
+
 ## 3. Regole già attive (non aggirarle nelle fasi successive)
 
 - ESLint blocca `fetch` fuori da `shared/api`, `<svg>` fuori da `shared/icons` e `blocks`, import dal nucleo
@@ -307,6 +333,21 @@ senza credenziali.
 - **La regola «tiene questo permesso?» sta in `PermissionSet`**, e la chiamano sia
   `HttpContextCurrentUser` sia i doppioni dei test. Una copia in un test è un posto dove il codice
   provato e quello vero divergono in silenzio.
+- **Una schermata di back-office non contiene una tabella né un form.** Una lista è un elenco di
+  `ColumnSpec` più `DataList`; un form è uno schema zod più `SchemaForm`. Se il generatore non copre
+  un caso, si estende il generatore (`shared/forms/schema.ts`): lancia apposta invece di saltare il
+  campo, così la scorciatoia non è nemmeno silenziosa.
+- **Nessuna stringa utente nel codice, e adesso è verificato anche sul codice.** `pnpm i18n:check`
+  controlla che le lingue siano allineate **e** che ogni chiave scritta come stringa letterale in
+  `src/` esista in tutte. Una chiave costruita a runtime non è raggiungibile: chi ne aggiunge una
+  aggiunge anche il test che rende il testo.
+- **Solo `shared/api/department.ts` converte un dipartimento fra URL ed enum.** Lo usano le route,
+  la sidebar e il `filter[ownerDepartment]`. Un secondo posto è un posto dove `ed` e `ED` divergono.
+- **`filter[nome]=valore` si scrive in un posto solo lato client**, `listQuerySerializer`: non è nel
+  contratto (i suoi nomi sono le proprietà dell'entità), quindi il client generato non lo tipizza.
+- **`web/src/modules/index.ts` lo legge solo `app/registry.ts`.** ESLint vieta a `blocks/`,
+  `features/`, `routes/` e `shared/` di toccare `src/modules`, e vieta ad `app/` di entrare dentro
+  una cartella di modulo: la lista dei manifest sì, le sue viscere no.
 - **Le proiezioni si leggono una volta per salvataggio, non una per riga.** `ProjectionWriter`
   separa `Load`/`LoadAsync` da `Apply` apposta: sono dentro la transazione della scrittura, e ogni
   round trip in più è un lock tenuto aperto più a lungo. `ProjectionBatchingTests` lo fissa
@@ -344,6 +385,12 @@ senza credenziali.
 | La lingua di un membro: `languageId` di IVAO se la divisione la parla, **altrimenti inglese** | Deciso da Carmine il 3 set 2026. L'inglese non e' il ripiego «della divisione» ma quello di IVAO e del progetto: una divisione italiana serve inglese a un tedesco, non italiano. La regola sta in un posto solo (`LocalePreference`), la usano il login e il selettore di lingua di F6. Si applica **solo alla creazione della riga**: la scelta esplicita dell'utente non si sovrascrive mai. Se una divisione non elenca l'inglese fra le sue lingue, si cade sul suo default, perche' deve poter rendere qualcosa. |
 | `ivao_is_staff` e `ivao_is_supervisor` sono registrati ma non decidono niente | Il nostro `is_staff` significa «ha una posizione di QUESTA divisione», ed e' quello su cui poggiano permessi e grant. Quello di IVAO include HQ e altre divisioni: tenerli separati evita di allargare il perimetro per sbaglio. Servono alla staff directory di M1. |
 | I codici dei dipartimenti sono quelli di IVAO: `HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`, `WD` | Confermati da Carmine il 3 set 2026 (piano v0.21). Non e' un suffisso meccanico: ATC operations e' `AOD` ma training e' `TD`. I **suffissi delle posizioni** non cambiano, cambia il dipartimento su cui mappano. La colonna e' passata a `varchar(4)` con la migrazione additiva `WidenDepartmentCodes`, che converte anche le righe gia' scritte; `Initial` non si tocca. |
+| Il tipo di una colonna e quello di un `ColumnDef` si prendono da `DataTableProps<T>['columns'][number]` | Carmine ha chiesto di **non** aggiungere `@tanstack/react-table` fra le dipendenze dirette. È già lì come transitiva di Atmosphere, ma importarla sarebbe una dipendenza fantasma; passare dai props che Atmosphere esporta davvero è onesto e non aggiunge niente al `package.json`. |
+| `DataList` prende `search` e `onSearchChange`, non l'oggetto `route` | Il design abbozzava `route`. Un componente generico che entrasse nel router dovrebbe riallargare i search params a `unknown`, cioè buttare via la tipizzazione della ricetta 2. Due righe di collegamento nel file di route, dove i tipi ci sono. Design §7.5 corretta. |
+| `RouterAnchor` è l'unico posto che allarga un `href` a un `to` di TanStack | Sidebar e NavigationMenu di Atmosphere passano una stringa; il `Link` è tipizzato sull'albero delle route generato, che è ciò che rende un refuso un errore di build. Un cast, in un adattatore solo, invece di uno per ogni voce di menu costruita dai dati. |
+| I link legali del footer stanno in `locales/{lng}/common.json` come array di `{label, href}` | Sono contenuto, non codice: un fork li cambia dove cambia ogni altra frase. `i18n:check` tratta un array come una chiave sola, quindi le due lingue restano allineate senza doverne contare gli elementi. |
+| Il cookie `hub.lang` lo scrive il client, `hub_users.locale` lo scrive il server | Sono due cose diverse: la preferenza del browser (l'unica che ha un anonimo) e quella del membro (che lo segue su un altro browser). Nessuno dei due scrive quella dell'altro. |
+| `setup.ts` dei test stubba `ResizeObserver` e le pointer capture | jsdom li dichiara e non li implementa, e ogni componente Atmosphere costruito su un popper Radix si misura al mount. Uno stub basta: un test asserisce su ruoli e testo, mai su una dimensione. |
 
 ## 5. Decisioni scritte (`docs/internal/decisions/`)
 
@@ -357,6 +404,7 @@ senza credenziali.
 | `2026-09-03-reaches-every-department.md` | `HasAllDepartments` è un claim derivato dalle posizioni, non un indizio letto dalla lista dei permessi. Design §3.3 precisata. |
 | `2026-09-03-proxy-fidati.md` | Le reti dei proxy di cui si crede `X-Forwarded-For` si dichiarano, e in produzione sono obbligatorie. Design §2.3 precisata. |
 | `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
+| `2026-09-03-markdown-content.md` | `MarkdownContent` usa `react-markdown`: albero React, mai `innerHTML`, HTML grezzo non abilitato. **Decisa da Carmine**, design §7.1. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
 serve a non ridiscutere fra sei mesi una cosa già discussa.
@@ -423,7 +471,10 @@ allargare i permessi, mai stringerli a sorpresa.
 - Un contesto di modulo non scrive proiezioni né audit se non ha quelle tabelle nel proprio modello:
   l'interceptor se ne accorge e non fa niente. Quando un modulo proietterà davvero (M1+), va deciso
   se condividere quelle entità o passare dal contesto del nucleo.
-- Il chunk JS supera i 500 kB: lo split per route arriva con i layout di F6.
+- ~~Il chunk JS supera i 500 kB~~ **chiuso in F6**: il router splitta per route
+  (`autoCodeSplitting`) e `manualChunks` separa React (192 kB), Atmosphere (422 kB) e il renderer
+  Markdown (118 kB), che è caricato solo dalle pagine che mostrano prosa. Nessun avviso di Rollup.
+  Atmosphere resta il pezzo più grosso e non c'è molto da fare: è una dipendenza sola.
 - ~~Licenza ancora «TBD»~~ **decisa il 3 set 2026**: Apache-2.0, copyright «2026 Carmine Granato».
   Testo canonico completo in `LICENSE`, più un `NOTICE` alla radice. Gli header di licenza nei
   singoli file **non** ci sono e non servono: Apache-2.0 li raccomanda, non li impone, e metterli in
@@ -452,6 +503,27 @@ allargare i permessi, mai stringerli a sorpresa.
   in **F8**, con il primo contesto di modulo davvero registrato.
 - **Il `filter[...]` fa un solo confronto, l'uguaglianza.** Basta a F6 (dipartimento, visibilità,
   categoria, attivo). Intervalli e `in` non ci sono, e se servissero andrebbero nel motore.
+- **Nessun test end-to-end del browser.** Playwright è previsto dal design (§8, «solo `pnpm e2e`,
+  non bloccante in M0») e in F6 non è stato aggiunto: i 35 Vitest coprono i pezzi, ma «staff ED
+  apre `/staff/ed/links`, crea un link, vede l'errore sul campo giusto» è stato verificato leggendo
+  il codice e non eseguendolo. È il candidato naturale per **F9**, dove il piano chiede già la demo
+  end-to-end da script.
+- **Il form dei link non permette di spostare un link fra dipartimenti.** `ownerDepartment` è
+  `hidden` e viene dal path della route. Non era nell'accettazione di F6; il giorno che servisse,
+  è una select ristretta a `reachableDepartments`, non un campo libero — il server rifiuta comunque
+  chi non ha il permesso su **entrambi** i dipartimenti, perché `MapCrud` controlla la riga com'è e
+  come diventerebbe.
+- **`col.department()` non è usato da nessuna lista.** Esiste come helper e la ui-kit non lo monta
+  isolato (lo copre `DepartmentBadge`): la lista dei link filtra già su un dipartimento solo, quindi
+  la colonna direbbe la stessa cosa a ogni riga. Il primo uso vero è una lista in modalità globale,
+  cioè **F8**.
+- **La lingua del server e quella dello schermo possono divergere per un istante.**
+  `PUT /api/me/locale` riemette il cookie, quindi la richiesta successiva è già nella lingua nuova;
+  ma una risposta **già in volo** quando l'utente cambia lingua arriva nella precedente. Non vale la
+  pena inseguirla: riguarda solo il titolo di un `ProblemDetails`, e le chiavi dei campi le risolve
+  comunque il client.
+- **`LocaleSwitcher` scrive `hub.lang` con `document.cookie`.** È l'unico punto del client che
+  scrive un cookie a mano. Se ne servisse un secondo, va estratto un helper prima, non copiato.
 - **Nessun test verifica il documento OpenAPI in sé** (che `/api/links` ci sia, che
   `LocalizedString` porti `x-localized`). Lo step di CI `pnpm gen:api && git diff --exit-code` lo
   copre di sponda: se il documento cambia forma, `schema.d.ts` si muove e la build cade.
