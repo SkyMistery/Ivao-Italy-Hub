@@ -72,10 +72,27 @@ export interface Bootstrap {
   version: string;
 }
 
-/** True when the user holds the permission, on that department or on every one of them. */
-export function holdsPermission(bootstrap: Bootstrap, name: string, department?: Department): boolean {
+/**
+ * True when the user holds the permission on that department. A permission with no department is
+ * held everywhere.
+ *
+ * Two functions, not one with an optional department, for the same reason the server has `Has` and
+ * `HasAny` rather than one method (docs/internal/decisions/2026-09-03-has-and-has-any.md): a single
+ * one leaves the caller guessing what leaving the department out was supposed to mean, and the
+ * likeliest guess — "any department" — is the opposite of what it did.
+ */
+export function holdsPermission(bootstrap: Bootstrap, name: string, department: Department): boolean {
   return bootstrap.permissions.some(
     (permission) =>
       permission.name === name && (permission.department === null || permission.department === department),
   );
+}
+
+/**
+ * True when the user holds the permission somewhere: on one department, on all of them, or as a
+ * global permission. It answers "may they do this at all" — whether to show a menu entry, whether
+ * to open a list — and the department is then checked row by row.
+ */
+export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boolean {
+  return bootstrap.permissions.some((permission) => permission.name === name);
 }
