@@ -15,16 +15,25 @@
 | F2 auth BFF, ruoli, permessi, `/api/me` | mergiata (PR #3 e #4) |
 | F3 `IvaoApiClient` e dati `ref_` | mergiata (PR #5) |
 | F4 spina dorsale del dominio | mergiata (PR #6) |
-| F5 `MapCrud` e `links` (server) | **PR #8 aperta**, branch `m0/f5-mapcrud-links` |
+| F5 `MapCrud` e `links` (server) | **PR #8 aperta, CI verde**, branch `m0/f5-mapcrud-links` |
 | **F6 spina dorsale frontend** | **prossima**, dopo il merge di F5 |
 
-Una sessione nuova parte da `git checkout main && git pull` (dal checkout principale, non da un
-worktree) e apre subito il branch della fase.
+### Le prime tre cose da fare in una sessione nuova
 
-**Come si apre F6**: prompt di §C del piano di implementazione con `<N>` → `6`. Perimetro in §D:
-i tre layout, le tre ricette del router, `DataList` e `SchemaForm`, `LocaleFields`,
-`useProblemDetails`, il back-office di `links` **senza una riga di JSX di tabella o di form**,
-`/staff/admin/ui-kit`, `docs/UI-GUIDELINES.md`.
+1. **Leggere e mergiare la PR #8** (<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/8>), con
+   squash come le precedenti. La CI è verde (`build-test`, 2m17s): 244 test, il diff di
+   `schema.d.ts` non si muove, e il pacchetto pubblicato porta `locales/`, gli `.example.json`,
+   `LICENSE` e `NOTICE`.
+2. **Confermare o correggere le due note di §5** marcate «da confermare». Non bloccano F6: sono due
+   frasi del design da riformulare, e finché non sono confermate il design resta a v1.2 così com'è.
+   Chi le conferma corregge `01-design-m0.md` §7.4, §9 punto 12 e §3.1 — le riformulazioni esatte
+   sono già scritte in fondo a ciascuna nota.
+3. **Aprire F6**: `git checkout main && git pull` (dal checkout principale, non da un worktree),
+   poi `git checkout -b m0/f6-frontend-backbone` e il prompt di §C con `<N>` → `6`.
+
+**Perimetro di F6** (§D del piano): i tre layout, le tre ricette del router, `DataList` e
+`SchemaForm`, `LocaleFields`, `useProblemDetails`, il back-office di `links` **senza una riga di JSX
+di tabella o di form**, `/staff/admin/ui-kit`, `docs/UI-GUIDELINES.md`.
 
 Quattro cose che F6 eredita da F5 e deve usare, non riscrivere:
 
@@ -424,11 +433,17 @@ allargare i permessi, mai stringerli a sorpresa.
 
 ## 8. Igiene del repository
 
-- Il branch `m0/f4-domain-backbone` è **ancora sul remoto**: il repository non cancella i branch al
-  merge. Si può togliere quando fa comodo (`git push origin --delete m0/f4-domain-backbone`); niente
-  ci dipende.
+- I branch `m0/f4-domain-backbone` e `m0/f5-mapcrud-links` sono **ancora sul remoto**: il repository
+  non cancella i branch al merge. Si possono togliere quando fa comodo
+  (`git push origin --delete <branch>`); niente ci dipende.
 - La strategia di merge è **squash**: su `main` c'è un commit per fase (F4 è `586a432`), non la
-  catena dei commit di lavoro. Chi cerca il dettaglio lo trova nella PR.
+  catena dei commit di lavoro. Chi cerca il dettaglio lo trova nella PR. F5 arriva sul branch con
+  due commit (`5e9c197` il codice, `6e68fd8` il numero della PR nell'handoff) che lo squash unisce.
 - Se si lavora in un worktree sotto `.claude/worktrees/`, `git checkout main` lì dentro fallisce
   perché `main` è già in uso dal checkout principale: è normale, la sessione nuova parte dal
-  checkout principale.
+  checkout principale. F5 è stata scritta in un worktree, e il branch è già sul remoto: dopo il
+  merge il worktree non serve più a niente.
+- `artifacts/` è gitignorata, quindi `artifacts/openapi/IvaoHub.Web.json` **non** è nel repository:
+  lo riscrive `dotnet build`. Quello che è committato è il file che ne deriva,
+  `web/src/shared/api/schema.d.ts`, marcato `linguist-generated` in `.gitattributes` e ignorato da
+  Prettier e da ESLint come `routeTree.gen.ts`.
