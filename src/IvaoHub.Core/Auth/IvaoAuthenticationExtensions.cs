@@ -75,7 +75,14 @@ public static class IvaoAuthenticationExtensions
     /// </summary>
     private static void AddHubAuthorization(IServiceCollection services)
     {
-        services.AddAuthorization();
+        services.AddAuthorization(options => options.AddPolicy(
+            HubPolicies.SignedIn,
+            policy => policy
+                // The application cookie, never the round trip to IVAO: an API call that is not
+                // signed in needs 401, not a redirect to a consent screen (see HubPolicyProvider).
+                .AddAuthenticationSchemes(HubClaims.CookieScheme)
+                .RequireAuthenticatedUser()));
+
         services.Replace(ServiceDescriptor.Singleton<IAuthorizationPolicyProvider, HubPolicyProvider>());
         services.AddScoped<IAuthorizationHandler, DepartmentAuthorizationHandler>();
     }

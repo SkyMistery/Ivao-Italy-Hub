@@ -14,7 +14,8 @@
     },
     "required": "Questo campo è obbligatorio.",
     "localized": {
-      "missing": "Compila questo campo in tutte le lingue della divisione."
+      "missing": "Compila questo campo in tutte le lingue della divisione.",
+      "missingIn": "Manca ancora in: {{locales}}."
     },
     "url": {
       "absolute": "Inserisci un indirizzo completo che inizi con http:// o https://"
@@ -24,6 +25,11 @@
     },
     "text": {
       "tooLong": "Questo testo è troppo lungo."
-    }
+    },
+    "locale": {
+      "unsupported": "La divisione non pubblica in quella lingua."
+    },
+    "unknown": "Qualcosa è andato storto. Riprova.",
+    "title": "Non ha funzionato"
   }
 }

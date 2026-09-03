@@ -66,6 +66,26 @@ public static class HubClaims
     }
 
     /// <summary>
+    /// The same identity with a different language. It is here, next to <see cref="BuildIdentity"/>,
+    /// because the shape of a hub cookie is decided in one file and nowhere else: a member who
+    /// switches language must not have to sign in again before the server answers them in it.
+    /// </summary>
+    public static ClaimsIdentity WithLocale(ClaimsIdentity identity, string locale)
+    {
+        ArgumentNullException.ThrowIfNull(identity);
+        ArgumentException.ThrowIfNullOrWhiteSpace(locale);
+
+        var replaced = new ClaimsIdentity(
+            identity.Claims.Where(claim => claim.Type != Locale),
+            CookieScheme,
+            ClaimTypes.NameIdentifier,
+            ClaimTypes.Role);
+
+        replaced.AddClaim(new Claim(Locale, locale));
+        return replaced;
+    }
+
+    /// <summary>
     /// Builds the application identity. This is the only place a hub cookie is composed, so a test
     /// authentication handler produces exactly the same principal as a real IVAO login.
     /// </summary>

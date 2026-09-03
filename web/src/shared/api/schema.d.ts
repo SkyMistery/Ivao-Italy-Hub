@@ -39,6 +39,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/locale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["MeSetLocale"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -228,6 +244,7 @@ export interface components {
             positions: string[];
             isStaff: boolean;
             isSuperadmin: boolean;
+            hasAllDepartments: boolean;
             locale: string;
             departments: string[];
             firs: string[];
@@ -312,6 +329,14 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /** @description The language as the division spells it, which is what the client should settle on. */
+        LocaleResponse: {
+            locale: string;
+        };
+        /** @description The language a member is choosing, as they spell it: `it`, or `it-IT`. */
+        LocaleWriteDto: {
+            locale: string;
+        };
         /**
          * @description A field translated into the languages of the division: one JSON column on the row, never a
          *     separate translations table (plan section 16.1). Keys are language codes ("it", "en") and are
@@ -370,6 +395,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    MeSetLocale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocaleWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocaleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
     LinksList: {
         parameters: {
             query?: {
