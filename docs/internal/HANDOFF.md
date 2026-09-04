@@ -9,10 +9,13 @@ il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono di
 su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.32. **Design:** v2.1. **Piano di implementazione:** v1.6.
-**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **3 smoke Playwright**. Nessuno skippato.
+**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **8 smoke Playwright**. Nessuno skippato.
 
-⚠️ **`v0.1.0-m0` è stato rifatto.** Il primo tag puntava a un'applicazione che **non si apriva in un
-browser**: vedi §11. La correzione è dentro lo stesso tag.
+⚠️ **Due difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
+cosa vista due volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
+composizione dei provider (nessuna schermata si disegnava, §11), poi quella delle route (nessun form
+del back-office era raggiungibile, §12). Entrambi corretti, entrambi con una rete che fallisce se
+qualcuno li rifà.
 
 | Fase | Stato |
 |---|---|
@@ -651,6 +654,7 @@ quello che ha *trovato*:
 | `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. **Decisa da Carmine** il 4 set 2026; design §5.6 corretto. |
 | `2026-09-04-grant-e-sessione.md` | Un grant invalida la sessione del suo titolare attraverso l'**entità** (`IAffectsUserSession`, applicata dall'interceptor) e non attraverso un secondo gancio di `MapCrud`: vale per chiunque scriva la riga. Dice anche che cosa significa davvero «subito» — il cookie vecchio prende 401, non viene riscritto. **Decisa da Carmine** il 4 set 2026; design §3.4 e §3.7 aggiornate. |
 | `2026-09-04-frozen-e-visibilita.md` | Una cattura `frozen` non può essere più visibile della pagina che la contiene: la pubblicazione passa al provider un `DataBlockContext`, e `VisibilityCeiling` dice cosa ci sta dentro. **Decisa da Carmine** il 4 set 2026; design §5.5 corretta. |
+| `2026-09-04-rotte-di-dettaglio.md` | Una lista e il suo dettaglio sono **tre** route: layout con la guardia e l'`Outlet`, `index` con i search params, dettaglio fratello. Scritte in due, il dettaglio non si disegnava mai e nessun form del back-office era raggiungibile. **Decisa da Carmine** il 4 set 2026; design §7.3 corretta. |
 | `2026-09-04-smoke-in-un-browser.md` | Lo smoke in un browser diventa **bloccante** in CI e non aspetta M1: un `TooltipProvider` mancante ha ucciso ogni schermata dietro un layout con 353 test .NET e 74 Vitest verdi, perché provavano i pezzi e nessuno provava la composizione. Contiene anche il perché l'albero dei provider è diventato un componente. **Decisa da Carmine** il 4 set 2026; design §8 corretta. |
 | `2026-09-04-m0-review.md` | La revisione §16.E su tutto il codice di M0: le undici domande verificate riga per riga, le tre eccezioni (schermate senza una risorsa paginata dietro), le tre stringhe visibili trovate e corrette, e un rilievo rimandato a M1 (`LocalizedExtensions`, helper di test che vive in `src/`). Scritta in F9. |
 
@@ -1270,3 +1274,76 @@ controllo che costa trenta secondi e va rifatto ogni volta che se ne scrive uno.
 Un test che monta un pezzo prova il pezzo. **Se il prodotto è fatto di composizione, qualcosa deve
 montare la composizione**, e in questo repository sono `Chrome.test.tsx` e `pnpm e2e`. Non vanno
 indeboliti per far passare una fase.
+
+---
+
+## 12. Nessun form del back-office era raggiungibile (4 set 2026)
+
+Il secondo difetto trovato aprendo l'applicazione a mano, poche ore dopo il primo, e **della stessa
+famiglia**: §11 era la composizione dei provider, questo è la composizione delle route.
+
+### Il sintomo, e perché era difficile da leggere
+
+«Vado su links, clicco su nuovo link, non funziona nulla.» L'indirizzo cambiava davvero
+(`/staff/ed/links/new`), il server non riceveva nessuna chiamata, la console non mostrava nessuna
+eccezione. Tutto sembrava a posto tranne il fatto che non succedeva niente.
+
+`staff.$dept.links.$id.tsx` era un route **figlio** di `staff.$dept.links.tsx`, e in TanStack un
+figlio si disegna dentro l'`<Outlet />` del padre. Il componente della lista non ne rendeva nessuno.
+Quindi la lista restava sullo schermo e il form non compariva mai — per **tutte e tre** le coppie:
+`links`, `content`, `admin/permissions`. Non si poteva creare un link, aprire l'editor di una
+pagina, né toccare un grant.
+
+**Il dettaglio che l'ha confermato senza ipotesi** era nell'URL stesso:
+`/staff/ed/links/new?page=1&pageSize=25&dir=asc`. Quei parametri sono la paginazione della lista, e
+il form se li portava dietro perché ne era figlio ed ereditava il suo `validateSearch`.
+
+### Come si è arrivati alla diagnosi, che è la parte riutilizzabile
+
+Tre ipotesi, tutte plausibili, **tutte sbagliate**, e tutte scartate con un test usa-e-getta invece
+che a occhio:
+
+1. «La `stringify` del padre butta via `id` quando si costruisce il link» → `buildLocation` sul
+   router vero restituisce `/staff/ed/links/new`. Falso.
+2. «`Button asChild` di Atmosphere ingoia il click» → il DOM è un `<a href="/target">` corretto.
+   Falso. (Sospetto ragionevole, dopo aver scoperto la mattina che `DarkModeToggle` scarta i
+   `children`.)
+3. «La `parse` del padre perde `id` al match» → il figlio riceve `{dept: "ED", id: "new"}`. Falso.
+
+Ognuna sarebbe stata una diagnosi convincente da raccontare. **Nessuna era vera**, e la cosa che ha
+sbloccato è stata chiedere a Carmine le due informazioni che solo il suo browser aveva: se l'URL
+cambiava, e che cosa diceva la console. La risposta ha eliminato metà dello spazio in un colpo. La
+lezione: quando tre ipotesi cadono, il problema non è nei pezzi che si stanno guardando — e
+l'osservazione di chi ha lo schermo davanti vale più di una quarta ipotesi.
+
+### Che cosa c'è adesso
+
+- La ricetta è **tre route** invece di due (design §7.3, corretto; nota di decisione dedicata):
+  layout con il parse del dipartimento, la guardia e l'`Outlet`; `index` con i search params e il
+  loader; dettaglio fratello. Guardia scritta una volta per entrambe, e i search params della lista
+  non seguono più il form.
+- `web/e2e/back-office.spec.ts`: quattro smoke su una **sessione staff finta** — un coordinatore con
+  `hasAllDepartments: false` e un solo dipartimento, perché un superadmin non eserciterebbe la
+  guardia. Le asserzioni guardano **due metà insieme**: l'indirizzo è cambiato *e* la cosa promessa è
+  sullo schermo. Una metà sola è ciò che ha lasciato passare il difetto.
+- Verificato togliendo l'`Outlet`: **tre dei quattro falliscono**.
+
+### Un rumore in console che non è un difetto nostro
+
+Nella stessa sessione è comparso `Unknown event handler property `onValueChange`. It will be
+ignored.` su ogni pagina. **Non è un nostro bug e il selettore di lingua funziona**: il `Select` di
+Atmosphere spande le proprie rest props **due volte** — una su `Select.Root` di Radix, che è quella
+che gestisce il cambio, e una sul `div` del viewport, dove React la ignora e si lamenta
+(`dist/atmosphere-react.js:15655`). Verificato con uno smoke che cambia lingua e pretende che il
+nome della divisione passi da «IVAO Example» a «IVAO Esempio».
+
+Sta scritto qui, e in un commento accanto al test, perché è il tipo di avviso che qualcuno «sistema»
+togliendo `onValueChange` — cioè rompendo il selettore per far tacere un rumore di terze parti.
+
+### La regola che ne esce, e che vale più della correzione
+
+**Una ricetta che si copia è un moltiplicatore.** §7.3 documentava la ricetta 2 nella forma
+sbagliata ed è stata copiata tre volte, fedelmente, da chi faceva esattamente ciò che il progetto
+chiede. Quando una ricetta è giusta fa risparmiare tre volte; quando è sbagliata replica il difetto
+tre volte e nessuno lo rimette in discussione, perché copiarla *è* la procedura. Se M1 aggiunge una
+ricetta a §7.3, il momento di provarla in un browser è **prima** che diventi il quarto esemplare.

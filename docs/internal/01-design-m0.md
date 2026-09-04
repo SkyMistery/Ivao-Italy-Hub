@@ -4,7 +4,8 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 2.1 — 4 settembre 2026 (dopo il tag: §8 lo smoke in un browser diventa **bloccante** e non aspetta M1 — un `TooltipProvider` mancante aveva ucciso ogni schermata con tutti i test verdi; nota `decisions/2026-09-04-smoke-in-un-browser.md`)
+**Versione:** 2.2 — 4 settembre 2026 (§7.3 la ricetta 2 è **tre file**, non uno: layout con la guardia e l'`Outlet`, `index` con i search params, dettaglio fratello — scritta in un file solo, il dettaglio non si disegnava mai e nessun form del back-office era raggiungibile)
+**Versione 2.1** — 4 settembre 2026 (dopo il tag: §8 lo smoke in un browser diventa **bloccante** e non aspetta M1 — un `TooltipProvider` mancante aveva ucciso ogni schermata con tutti i test verdi; nota `decisions/2026-09-04-smoke-in-un-browser.md`)
 **Versione 2.0** — 4 settembre 2026 (F9, chiusura di M0: §8 i tre test del superadmin e dello `security_stamp` prendono il nome vero del metodo, che F2 aveva scritto in forma più esplicita; nessun'altra correzione — la revisione §16.E su tutto il codice non ha trovato nessuna divergenza fra questo documento e ciò che è stato costruito)
 **Versione 1.9** — 4 settembre 2026 (F8: §3.4 l'interceptor rinfresca lo `security_stamp` di chi una scrittura riguarda (`IAffectsUserSession`); §3.7 il catalogo dei permessi è composto, `PermissionCatalog`; §3.10 il bootstrap porta widget e catalogo dei permessi, e i moduli con `enabled`; §6.1 `ModuleBase`; §6.3 `WidgetRegistry` composto dal container; §7.5 `.meta({ choices })` vale anche per una stringa)
 **Versione 1.8** — 4 settembre 2026 (giro sui debiti di F7: §5.5 un `IDataBlockProvider` riceve un `DataBlockContext` e una cattura non può essere più visibile della pagina che la contiene; §7.5 il generatore legge il `.default()` di un campo, disegna una select per un numero con `choices` e dà a una scelta opzionale la via del ritorno; §7.7 il badge dice se un blocco è una cattura o lo diventerà)
@@ -531,16 +532,25 @@ export const Route = createFileRoute('/_staff')({
   component: StaffLayout,
 });
 
-// (2) lista con search params tipizzati — web/src/routes/_staff/staff.$dept.links.tsx
-const listSearch = z.object({ page: z.number().int().min(1).default(1), pageSize: z.number().int().max(100).default(25),
-  sort: z.string().optional(), dir: z.enum(['asc','desc']).default('asc'), q: z.string().optional() });
+// (2) lista con search params tipizzati — TRE file, non uno
+// (2a) il layout: possiede il dipartimento e la sua guardia, e disegna il figlio che ha matchato
+//      web/src/routes/_staff/staff.$dept.links.tsx
 export const Route = createFileRoute('/_staff/staff/$dept/links')({
   params: { parse: ({ dept }) => ({ dept: deptParam.parse(dept) }), stringify: ({ dept }) => ({ dept: deptParam.format(dept) }) },
-  validateSearch: listSearch,
+  beforeLoad: ({ context, params }) => { if (!reachableDepartments(context.bootstrap).includes(params.dept)) throw redirect({ to: '/forbidden' }); },
+  component: Outlet,                                  // ← senza questo, il dettaglio non si disegna MAI
+});
+
+// (2b) la lista: i suoi search params, il suo loader — web/src/routes/_staff/staff.$dept.links.index.tsx
+export const Route = createFileRoute('/_staff/staff/$dept/links/')({
+  validateSearch: listSearchSchema,                   // sta in shared/list/search.ts, non qui
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps, params }) => context.queryClient.ensureQueryData(linksListQuery(params.dept, deps)),
   component: LinksPage,
 });
+
+// (2c) il dettaglio: web/src/routes/_staff/staff.$dept.links.$id.tsx — eredita dipartimento e guardia,
+//      e NON eredita i search params della lista.
 // deptParam (shared/api/department.ts) è l'UNICO punto che converte l'URL minuscolo ("ed") ↔ l'enum API ("ED"):
 // lo usano le route, la Sidebar e i filter[ownerDepartment] di MapCrud.
 
@@ -550,6 +560,15 @@ export const Route = createFileRoute('/_public/$slug')({
   notFoundComponent: NotFound, component: PublicContentPage,
 });
 ```
+
+⚠️ **La ricetta 2 era scritta in un file solo, e quella forma è sbagliata.** Fino al 4 set 2026 la lista *era*
+la route `/staff/$dept/links` e il dettaglio ne era il **figlio**: in TanStack un figlio si disegna dentro l'`Outlet`
+del padre, il componente della lista non ne aveva uno, e quindi **nessun form del back-office era raggiungibile**.
+Cliccando «nuovo link» l'indirizzo cambiava, non partiva nessuna chiamata, non veniva lanciata nessuna eccezione, e
+la lista restava sullo schermo. Valeva per tutte e tre le coppie — `links`, `content`, `admin/permissions`. Il
+sintomo secondario che l'ha confermato: l'URL del dettaglio portava `?page=1&pageSize=25&dir=asc`, cioè i search
+params della lista, ereditati perché era un figlio. La forma qui sopra è quella corretta; il layout è il posto dove
+la guardia si scrive una volta per entrambe le schermate. Nota `decisions/2026-09-04-rotte-di-dettaglio.md`.
 
 Due precisazioni alla ricetta 2, misurate scrivendola davvero (F6). **`listSearch` non si dichiara nella route**: sta una volta sola in `shared/list/search.ts` come `listSearchSchema`, perché quei cinque parametri sono `CrudListRequest` e non una convenzione — un controllo a compile-time nello stesso file li confronta con `operations['LinksList']['parameters']['query']`, così un parametro che il server rinomina smette di compilare invece di smettere di funzionare in silenzio. E la route porta anche un **`beforeLoad` che rifiuta un dipartimento che il membro non raggiunge**, mandandolo a `/forbidden`: senza, il server narrebbe la lista a zero righe (è ciò che `TryNarrowToDepartments` fa) e un coordinatore che sbaglia a digitare l'indirizzo guarderebbe una tabella vuota chiedendosi dove sono finiti i link.
 
