@@ -14,6 +14,12 @@ interface CommonStrings {
   readonly footer: { readonly version: string };
   readonly theme: { readonly toggle: string };
   readonly auth: { readonly login: string };
+  readonly common: { readonly edit: string };
+  readonly links: {
+    readonly title: string;
+    readonly create: string;
+    readonly fields: { readonly url: string };
+  };
 }
 
 export const englishCommon = JSON.parse(

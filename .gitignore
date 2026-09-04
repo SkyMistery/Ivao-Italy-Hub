@@ -25,6 +25,9 @@ web/playwright-report/
 web/test-results/
 web/blob-report/
 web/.playwright/
+
+# Scratch directory of the TanStack Router plugin.
+web/.tanstack/
 node_modules/
 
 # Local data and logs
