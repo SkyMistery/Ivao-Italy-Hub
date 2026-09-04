@@ -14,11 +14,14 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as StaffRouteImport } from './routes/_staff'
 import { Route as MemberMeRouteImport } from './routes/_member/me'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
+import { Route as PublicSlugRouteImport } from './routes/_public/$slug'
 import { Route as PublicForbiddenRouteImport } from './routes/_public/forbidden'
 import { Route as PublicLoginErrorRouteImport } from './routes/_public/login-error'
 import { Route as StaffStaffIndexRouteImport } from './routes/_staff/staff.index'
+import { Route as StaffStaffDeptContentRouteImport } from './routes/_staff/staff.$dept.content'
 import { Route as StaffStaffDeptLinksRouteImport } from './routes/_staff/staff.$dept.links'
 import { Route as StaffStaffAdminUiKitRouteImport } from './routes/_staff/staff.admin.ui-kit'
+import { Route as StaffStaffDeptContentIdRouteImport } from './routes/_staff/staff.$dept.content.$id'
 import { Route as StaffStaffDeptLinksIdRouteImport } from './routes/_staff/staff.$dept.links.$id'
 
 const MemberRoute = MemberRouteImport.update({
@@ -43,6 +46,11 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicSlugRoute = PublicSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicForbiddenRoute = PublicForbiddenRouteImport.update({
   id: '/forbidden',
   path: '/forbidden',
@@ -58,6 +66,11 @@ const StaffStaffIndexRoute = StaffStaffIndexRouteImport.update({
   path: '/staff/',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffStaffDeptContentRoute = StaffStaffDeptContentRouteImport.update({
+  id: '/staff/$dept/content',
+  path: '/staff/$dept/content',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffStaffDeptLinksRoute = StaffStaffDeptLinksRouteImport.update({
   id: '/staff/$dept/links',
   path: '/staff/$dept/links',
@@ -68,6 +81,11 @@ const StaffStaffAdminUiKitRoute = StaffStaffAdminUiKitRouteImport.update({
   path: '/staff/admin/ui-kit',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffStaffDeptContentIdRoute = StaffStaffDeptContentIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => StaffStaffDeptContentRoute,
+} as any)
 const StaffStaffDeptLinksIdRoute = StaffStaffDeptLinksIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -77,21 +95,27 @@ const StaffStaffDeptLinksIdRoute = StaffStaffDeptLinksIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/me': typeof MemberMeRoute
+  '/$slug': typeof PublicSlugRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
   '/staff/': typeof StaffStaffIndexRoute
+  '/staff/$dept/content': typeof StaffStaffDeptContentRouteWithChildren
   '/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
   '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/me': typeof MemberMeRoute
+  '/$slug': typeof PublicSlugRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
   '/staff': typeof StaffStaffIndexRoute
+  '/staff/$dept/content': typeof StaffStaffDeptContentRouteWithChildren
   '/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
   '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
 }
 export interface FileRoutesById {
@@ -100,12 +124,15 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteWithChildren
   '/_staff': typeof StaffRouteWithChildren
   '/_member/me': typeof MemberMeRoute
+  '/_public/$slug': typeof PublicSlugRoute
   '/_public/forbidden': typeof PublicForbiddenRoute
   '/_public/login-error': typeof PublicLoginErrorRoute
   '/_public/': typeof PublicIndexRoute
   '/_staff/staff/': typeof StaffStaffIndexRoute
+  '/_staff/staff/$dept/content': typeof StaffStaffDeptContentRouteWithChildren
   '/_staff/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
   '/_staff/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/_staff/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
   '/_staff/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
 }
 export interface FileRouteTypes {
@@ -113,21 +140,27 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/me'
+    | '/$slug'
     | '/forbidden'
     | '/login-error'
     | '/staff/'
+    | '/staff/$dept/content'
     | '/staff/$dept/links'
     | '/staff/admin/ui-kit'
+    | '/staff/$dept/content/$id'
     | '/staff/$dept/links/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/me'
+    | '/$slug'
     | '/forbidden'
     | '/login-error'
     | '/staff'
+    | '/staff/$dept/content'
     | '/staff/$dept/links'
     | '/staff/admin/ui-kit'
+    | '/staff/$dept/content/$id'
     | '/staff/$dept/links/$id'
   id:
     | '__root__'
@@ -135,12 +168,15 @@ export interface FileRouteTypes {
     | '/_public'
     | '/_staff'
     | '/_member/me'
+    | '/_public/$slug'
     | '/_public/forbidden'
     | '/_public/login-error'
     | '/_public/'
     | '/_staff/staff/'
+    | '/_staff/staff/$dept/content'
     | '/_staff/staff/$dept/links'
     | '/_staff/staff/admin/ui-kit'
+    | '/_staff/staff/$dept/content/$id'
     | '/_staff/staff/$dept/links/$id'
   fileRoutesById: FileRoutesById
 }
@@ -187,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicIndexRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/$slug': {
+      id: '/_public/$slug'
+      path: '/$slug'
+      fullPath: '/$slug'
+      preLoaderRoute: typeof PublicSlugRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/forbidden': {
       id: '/_public/forbidden'
       path: '/forbidden'
@@ -208,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffStaffIndexRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/_staff/staff/$dept/content': {
+      id: '/_staff/staff/$dept/content'
+      path: '/staff/$dept/content'
+      fullPath: '/staff/$dept/content'
+      preLoaderRoute: typeof StaffStaffDeptContentRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/_staff/staff/$dept/links': {
       id: '/_staff/staff/$dept/links'
       path: '/staff/$dept/links'
@@ -221,6 +271,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/staff/admin/ui-kit'
       preLoaderRoute: typeof StaffStaffAdminUiKitRouteImport
       parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/$dept/content/$id': {
+      id: '/_staff/staff/$dept/content/$id'
+      path: '/$id'
+      fullPath: '/staff/$dept/content/$id'
+      preLoaderRoute: typeof StaffStaffDeptContentIdRouteImport
+      parentRoute: typeof StaffStaffDeptContentRoute
     }
     '/_staff/staff/$dept/links/$id': {
       id: '/_staff/staff/$dept/links/$id'
@@ -244,12 +301,14 @@ const MemberRouteWithChildren =
   MemberRoute._addFileChildren(MemberRouteChildren)
 
 interface PublicRouteChildren {
+  PublicSlugRoute: typeof PublicSlugRoute
   PublicForbiddenRoute: typeof PublicForbiddenRoute
   PublicLoginErrorRoute: typeof PublicLoginErrorRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
+  PublicSlugRoute: PublicSlugRoute,
   PublicForbiddenRoute: PublicForbiddenRoute,
   PublicLoginErrorRoute: PublicLoginErrorRoute,
   PublicIndexRoute: PublicIndexRoute,
@@ -257,6 +316,19 @@ const PublicRouteChildren: PublicRouteChildren = {
 
 const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
+
+interface StaffStaffDeptContentRouteChildren {
+  StaffStaffDeptContentIdRoute: typeof StaffStaffDeptContentIdRoute
+}
+
+const StaffStaffDeptContentRouteChildren: StaffStaffDeptContentRouteChildren = {
+  StaffStaffDeptContentIdRoute: StaffStaffDeptContentIdRoute,
+}
+
+const StaffStaffDeptContentRouteWithChildren =
+  StaffStaffDeptContentRoute._addFileChildren(
+    StaffStaffDeptContentRouteChildren,
+  )
 
 interface StaffStaffDeptLinksRouteChildren {
   StaffStaffDeptLinksIdRoute: typeof StaffStaffDeptLinksIdRoute
@@ -271,12 +343,14 @@ const StaffStaffDeptLinksRouteWithChildren =
 
 interface StaffRouteChildren {
   StaffStaffIndexRoute: typeof StaffStaffIndexRoute
+  StaffStaffDeptContentRoute: typeof StaffStaffDeptContentRouteWithChildren
   StaffStaffDeptLinksRoute: typeof StaffStaffDeptLinksRouteWithChildren
   StaffStaffAdminUiKitRoute: typeof StaffStaffAdminUiKitRoute
 }
 
 const StaffRouteChildren: StaffRouteChildren = {
   StaffStaffIndexRoute: StaffStaffIndexRoute,
+  StaffStaffDeptContentRoute: StaffStaffDeptContentRouteWithChildren,
   StaffStaffDeptLinksRoute: StaffStaffDeptLinksRouteWithChildren,
   StaffStaffAdminUiKitRoute: StaffStaffAdminUiKitRoute,
 }

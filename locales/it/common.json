@@ -144,7 +144,7 @@
     "description": "Tutti i componenti dell'hub e tutti i blocchi del registry, con props di esempio.",
     "components": "Componenti",
     "blocks": "Blocchi",
-    "noBlocks": "Il registry dei blocchi è vuoto; i blocchi editoriali arrivano con l'editor dei contenuti.",
+    "noBlocks": "Nessun blocco registrato.",
     "sample": {
       "heroTitle": "Vola con la divisione",
       "heroLead": "Una frase che dice a cosa serve questa pagina.",
@@ -179,6 +179,166 @@
           "isActive": "Pubblicato",
           "updatedAt": "Ultima modifica"
         }
+      }
+    }
+  },
+  "content": {
+    "title": "Pagine",
+    "description": "Quello che questo dipartimento pubblica sul sito della divisione.",
+    "create": "Nuova pagina",
+    "edit": "Modifica pagina",
+    "newFromTemplate": "Nuova da un template",
+    "chooseTemplate": "Scegli un template",
+    "templateRefused": "La pagina non e' stata creata. Controlla che l'indirizzo sia libero e scritto con lettere minuscole, cifre e trattini.",
+    "delete": {
+      "title": "Eliminare questa pagina?",
+      "description": "Sparisce subito dal sito, insieme a tutto quello che ne e' stato pubblicato, e non si torna indietro."
+    },
+    "fields": {
+      "title": "Titolo",
+      "slug": "Indirizzo",
+      "kind": "Tipo",
+      "visibility": "Visibile a",
+      "summary": "Sommario",
+      "status": "Stato",
+      "isTemplate": "Template",
+      "ownerDepartment": "Dipartimento",
+      "publishedAt": "Pubblicata",
+      "updatedAt": "Ultima modifica",
+      "template": "Template"
+    },
+    "options": {
+      "kind": {
+        "Page": "Pagina",
+        "News": "Notizia",
+        "Document": "Documento"
+      },
+      "status": {
+        "Draft": "Bozza",
+        "Published": "Pubblicata"
+      },
+      "visibility": {
+        "Public": "Tutti",
+        "Members": "Membri",
+        "Staff": "Staff",
+        "Department": "Questo dipartimento"
+      }
+    },
+    "section": {
+      "fields": {
+        "title": "Nome",
+        "layout": "Disposizione",
+        "background": "Sfondo",
+        "padding": "Spaziatura",
+        "width": "Larghezza"
+      },
+      "options": {
+        "layout": {
+          "stacked": "Uno sotto l'altro",
+          "1/2+1/2": "Due colonne uguali",
+          "1/3+2/3": "Stretta, poi larga",
+          "2/3+1/3": "Larga, poi stretta",
+          "3x1/3": "Tre colonne uguali"
+        },
+        "background": {
+          "none": "Nessuno",
+          "muted": "Tenue",
+          "accent": "Accento"
+        },
+        "padding": {
+          "none": "Nessuna",
+          "sm": "Stretta",
+          "md": "Normale",
+          "lg": "Ampia"
+        },
+        "width": {
+          "narrow": "Stretta",
+          "default": "Normale",
+          "wide": "Larga",
+          "full": "Tutta la pagina"
+        }
+      }
+    },
+    "editor": {
+      "structure": "Di cosa e' fatta questa pagina",
+      "properties": "Proprieta'",
+      "nothingSelected": "Scegli una sezione o un blocco a sinistra per modificarlo.",
+      "noSections": "Questa pagina non ha ancora sezioni.",
+      "untitledSection": "Sezione senza nome",
+      "addSection": "Aggiungi una sezione",
+      "addBlock": "Aggiungi:",
+      "removeSection": "Elimina questa sezione",
+      "removeBlock": "Elimina questo blocco",
+      "duplicate": "Duplica",
+      "moveUp": "Sposta su",
+      "moveDown": "Sposta giu'",
+      "locked": "Fissata dal template",
+      "lockedSection": "Il template fissa questa sezione. I suoi blocchi si possono comunque modificare, uno alla volta.",
+      "applySection": "Applica alla sezione",
+      "applyBlock": "Applica al blocco",
+      "saveDraft": "Salva bozza",
+      "preview": "Anteprima",
+      "backToEditing": "Torna alla modifica",
+      "publish": "Pubblica",
+      "saveBeforePublishing": "Salva la bozza prima di pubblicare: va in pubblico quello che e' salvato, non quello che e' a schermo.",
+      "publishRefused": "Questa pagina non si puo' ancora pubblicare",
+      "renderMode": "Cosa mostra questo blocco",
+      "renderModes": {
+        "live": "La risposta del momento in cui si legge",
+        "frozen": "Quello che diceva quando la pagina e' stata pubblicata"
+      },
+      "renderModeHint": "Un blocco catturato smette di cambiare finche' qualcuno non ripubblica la pagina.",
+      "column": "Colonna",
+      "columnNumber": "Colonna {{number}}"
+    }
+  },
+  "blocks": {
+    "captured": "Catturato alla pubblicazione",
+    "unknown": "Questa pagina usa un blocco di tipo \"{{type}}\" che questo browser non sa disegnare. Probabilmente e' un modulo non installato.",
+    "unknownShort": "Blocco sconosciuto ({{type}})",
+    "heading": {
+      "label": "Titolo",
+      "fields": {
+        "level": "Livello",
+        "text": "Testo"
+      }
+    },
+    "text": {
+      "label": "Testo",
+      "fields": {
+        "markdown": "Testo"
+      }
+    },
+    "callout": {
+      "label": "Riquadro",
+      "fields": {
+        "tone": "Tono",
+        "title": "Titolo",
+        "text": "Testo"
+      },
+      "options": {
+        "tone": {
+          "info": "Da sapere",
+          "success": "Buona notizia",
+          "warning": "Attenzione",
+          "danger": "Importante"
+        }
+      }
+    },
+    "cta": {
+      "label": "Pulsante",
+      "fields": {
+        "label": "Etichetta",
+        "href": "Indirizzo"
+      }
+    },
+    "linkList": {
+      "label": "Elenco di link",
+      "empty": "Nessun link da mostrare.",
+      "fields": {
+        "category": "Categoria",
+        "department": "Dipartimento",
+        "limit": "Quanti al massimo"
       }
     }
   }

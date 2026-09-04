@@ -4,13 +4,15 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status: M0, phase F6 of nine.** The first two customisation points below are real and in use:
-> the division file is read and validated at start up, and the language files are the only place a
-> user visible string exists — the server reads the same set for the messages it produces itself,
-> the front end reads it for every screen, and CI fails when the two languages drift apart or when
-> the code asks for a key neither of them has. The legal footer of the site is in there too, so a
-> fork changes those links by translating a file. The third point, the content, waits for the block
-> editor. This guide is filled in with the step by step of a real fork at the end of M0.
+> **Status: M0, phase F7 of nine.** All three customisation points below are now real. The division
+> file is read and validated at start up. The language files are the only place a user visible
+> string exists — the server reads the same set for the messages it produces itself, the front end
+> reads it for every screen, and CI fails when the two languages drift apart or when the code asks
+> for a key neither of them has; the legal footer is in there too, so a fork changes those links by
+> translating a file. And the content is content: pages live in the database, the templates a fresh
+> installation starts with are seeded from `seed/content-templates/*.json` in the languages the
+> division actually speaks, and no sentence of any of it is in the code. This guide is filled in
+> with the step by step of a real fork at the end of M0.
 
 ## The three customisation points
 

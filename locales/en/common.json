@@ -144,7 +144,7 @@
     "description": "Every custom component of the hub and every block of the registry, with example props.",
     "components": "Components",
     "blocks": "Blocks",
-    "noBlocks": "The block registry is empty; the editorial blocks arrive with the content editor.",
+    "noBlocks": "No block is registered.",
     "sample": {
       "heroTitle": "Fly with the division",
       "heroLead": "One sentence that says what this page is for.",
@@ -179,6 +179,166 @@
           "isActive": "Published",
           "updatedAt": "Last change"
         }
+      }
+    }
+  },
+  "content": {
+    "title": "Pages",
+    "description": "What this department publishes on the division site.",
+    "create": "New page",
+    "edit": "Edit page",
+    "newFromTemplate": "New from a template",
+    "chooseTemplate": "Choose a template",
+    "templateRefused": "That page could not be created. Check the address is free and spelled with lower case letters, digits and dashes.",
+    "delete": {
+      "title": "Delete this page?",
+      "description": "It disappears from the site straight away, together with everything ever published of it, and this cannot be undone."
+    },
+    "fields": {
+      "title": "Title",
+      "slug": "Address",
+      "kind": "Kind",
+      "visibility": "Visible to",
+      "summary": "Summary",
+      "status": "Status",
+      "isTemplate": "Template",
+      "ownerDepartment": "Department",
+      "publishedAt": "Published",
+      "updatedAt": "Last change",
+      "template": "Template"
+    },
+    "options": {
+      "kind": {
+        "Page": "Page",
+        "News": "News",
+        "Document": "Document"
+      },
+      "status": {
+        "Draft": "Draft",
+        "Published": "Published"
+      },
+      "visibility": {
+        "Public": "Everybody",
+        "Members": "Members",
+        "Staff": "Staff",
+        "Department": "This department"
+      }
+    },
+    "section": {
+      "fields": {
+        "title": "Name",
+        "layout": "Layout",
+        "background": "Background",
+        "padding": "Spacing",
+        "width": "Width"
+      },
+      "options": {
+        "layout": {
+          "stacked": "One under the other",
+          "1/2+1/2": "Two equal columns",
+          "1/3+2/3": "Narrow, then wide",
+          "2/3+1/3": "Wide, then narrow",
+          "3x1/3": "Three equal columns"
+        },
+        "background": {
+          "none": "None",
+          "muted": "Muted",
+          "accent": "Accent"
+        },
+        "padding": {
+          "none": "None",
+          "sm": "Tight",
+          "md": "Normal",
+          "lg": "Generous"
+        },
+        "width": {
+          "narrow": "Narrow",
+          "default": "Normal",
+          "wide": "Wide",
+          "full": "Full width"
+        }
+      }
+    },
+    "editor": {
+      "structure": "What this page is made of",
+      "properties": "Properties",
+      "nothingSelected": "Pick a section or a block on the left to edit it.",
+      "noSections": "This page has no sections yet.",
+      "untitledSection": "Section without a name",
+      "addSection": "Add a section",
+      "addBlock": "Add:",
+      "removeSection": "Remove this section",
+      "removeBlock": "Remove this block",
+      "duplicate": "Duplicate",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "locked": "Fixed by the template",
+      "lockedSection": "The template fixes this section. Its blocks can still be edited, one at a time.",
+      "applySection": "Apply to the section",
+      "applyBlock": "Apply to the block",
+      "saveDraft": "Save draft",
+      "preview": "Preview",
+      "backToEditing": "Back to editing",
+      "publish": "Publish",
+      "saveBeforePublishing": "Save the draft before publishing: what goes public is what is stored, not what is on screen.",
+      "publishRefused": "This page cannot be published yet",
+      "renderMode": "What this block shows",
+      "renderModes": {
+        "live": "The answer of the moment it is read",
+        "frozen": "What it said when the page was published"
+      },
+      "renderModeHint": "A captured block stops changing until somebody publishes the page again.",
+      "column": "Column",
+      "columnNumber": "Column {{number}}"
+    }
+  },
+  "blocks": {
+    "captured": "Captured at publication",
+    "unknown": "This page uses a block of type \"{{type}}\" that this browser cannot draw. It is probably a module that is not installed.",
+    "unknownShort": "Unknown block ({{type}})",
+    "heading": {
+      "label": "Heading",
+      "fields": {
+        "level": "Level",
+        "text": "Text"
+      }
+    },
+    "text": {
+      "label": "Text",
+      "fields": {
+        "markdown": "Text"
+      }
+    },
+    "callout": {
+      "label": "Callout",
+      "fields": {
+        "tone": "Tone",
+        "title": "Title",
+        "text": "Text"
+      },
+      "options": {
+        "tone": {
+          "info": "Worth knowing",
+          "success": "Good news",
+          "warning": "Careful",
+          "danger": "Important"
+        }
+      }
+    },
+    "cta": {
+      "label": "Button",
+      "fields": {
+        "label": "Label",
+        "href": "Address"
+      }
+    },
+    "linkList": {
+      "label": "Link list",
+      "empty": "No link to show.",
+      "fields": {
+        "category": "Category",
+        "department": "Department",
+        "limit": "How many at most"
       }
     }
   }

@@ -100,15 +100,20 @@ There is still no table markup in a route file.
 ```tsx
 export const Route = createFileRoute('/_public/$slug')({
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(publicContentQuery('page', params.slug)),
+    context.queryClient.ensureQueryData(publicContentQuery('Page', params.slug)),
   notFoundComponent: NotFound,
+  errorComponent: NotFound,
   component: PublicContentPage,
 });
 ```
 
-Arrives with the content of F7. The shape is the one above: load in the loader, never in the
-component, and give the route its own `notFoundComponent` so a slug that does not exist is a page
-and not an error boundary.
+Load in the loader, never in the component, and give the route its own `notFoundComponent` so a
+slug that does not exist is a page and not an error boundary. `errorComponent` is there for the
+same reason: the API answers 404 for a page that is not published, which reaches the router as a
+thrown `ApiError` rather than as a not-found.
+
+The static routes of `_public/` win over this one, so `/forbidden` stays `/forbidden`: a page an
+editor creates cannot take an address the application already owns.
 
 ## Layout of the folder
 

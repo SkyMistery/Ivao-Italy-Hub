@@ -3,10 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 3 settembre 2026, notte — **F6 chiusa**: PR #13 (`ed3808e`) e la sua
-coda documentale #14 (`ea2ce70`) fuse, CI verde su `main` dopo entrambe, repository ripulito (§9).
+**Ultimo aggiornamento:** 4 settembre 2026 — **F7 pronta per la PR** sul ramo `m0/f7-contenuti`,
+partito da `main` a `eb56a0f`.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.27. **Design:** v1.6. **Test:** 286 .NET verdi (210 unit + 76 integrazione) + 35 Vitest.
+**Piano:** v0.28. **Design:** v1.7. **Test:** 307 .NET verdi (224 unit + 83 integrazione) + 64 Vitest.
 
 | Fase | Stato |
 |---|---|
@@ -18,44 +18,45 @@ coda documentale #14 (`ea2ce70`) fuse, CI verde su `main` dopo entrambe, reposit
 | F4bis revisione senior (correzioni, nessun perimetro nuovo) | mergiata (PR #9), vedi §8 |
 | F5 `MapCrud` e `links` (server) | mergiata (PR #8) |
 | F6 spina dorsale frontend | mergiata (PR #13) |
-| **F7 contenuti: entità, envelope, publish, blocchi, editor, template** | **prossima** |
+| F7 contenuti: entità, envelope, publish, blocchi, editor, template | **fatta**, in attesa di merge |
+| **F8 moduli, admin, manutenzione, ricerca, forkabilità** | **prossima** |
 
-### Come si apre F7
+### Come si apre F8
 
 ⚠️ **`gh pr list` prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in parallelo in
 worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha mergiato per
 prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
 ma è stato un caso. Costa due secondi.
 
-Sul remoto c'è **solo `main`**, ed è a `ed3808e`: dal checkout principale basta `git pull`, poi
-`git checkout -b m0/f7-contenuti` e il prompt di §C con `<N>` → `7`. Dal checkout principale e non
-da un worktree: lì `main` è già in uso e il checkout fallisce (§9).
+Sul remoto c'è **solo `main`**: dal checkout principale basta `git pull`, poi
+`git checkout -b m0/f8-moduli` e il prompt di §C con `<N>` → `8`. Dal checkout principale e non da
+un worktree: lì `main` è già in uso e il checkout fallisce (§9).
 
-**Perimetro di F7** (§D del piano): `ValidateEnvelope` completo, `cms_contents` e
-`cms_content_versions`, il servizio di pubblicazione con la cattura `frozen`, il registry dei
-blocchi vero, l'editor a lista di `/staff/$dept/content/$id`, i template seedati, la resa pubblica.
+**Perimetro di F8** (§D del piano): `IModule` e il primo modulo (`atc`), `/staff/admin/{permissions,
+modules,ui-kit}`, la manutenzione, `/api/search` sul FULLTEXT di `cms_search_index`, e il test della
+divisione fittizia `XX`.
 
-Cinque cose che F7 eredita da F6 e deve usare, non riscrivere:
+Sei cose che F8 eredita e deve usare, non riscrivere:
 
-1. **Il registry dei blocchi esiste già, vuoto.** `web/src/blocks/registry.ts` è l'elenco del
-   nucleo; `app/registry.ts` lo compone con quelli dei moduli. Un blocco aggiunto lì **deve**
-   comparire in `/staff/admin/ui-kit`, altrimenti `features/admin/uiKit.test.ts` fallisce — e le
-   sue `example` props devono passare il suo stesso schema zod, che è l'altra metà dello stesso
-   test. Il `BlockRegistration` è in `shared/modules.ts`.
-2. **Il form delle proprietà di un blocco è `SchemaForm`.** È lo stesso generatore delle entità:
-   `readFields` cammina lo schema zod, `localized()` marca un campo tradotto, `.meta({ multiline })`
-   chiede una textarea, `.meta({ hidden })` tiene un campo nel payload e fuori dallo schermo. Se un
-   tipo non è coperto, il generatore **lancia** invece di saltare il campo: si estende
-   `shared/forms/schema.ts` (regola (b)), non si scrive il form a mano.
-3. **Gli errori del server arrivano già risolti.** `useProblemDetails` mappa `errors[campo]` sul
-   campo, legge l'estensione `localized` per dire *quali* lingue mancano, e manda in `ProblemAlert`
-   quello che non riguarda un campo (409, 403). Un endpoint nuovo che risponde `ValidationProblem`
-   con chiavi i18n funziona senza toccare niente lato client.
-4. **Una lista è `DataList` + un elenco di colonne.** `features/<x>/list.ts` resta TypeScript senza
-   JSX: `col.localized('title')`, `col.badge('visibility', 'content')`, `col.date('updatedAt')`.
-   `sortable` dichiara ciò che il server ha messo in `CrudOptions.Sortable`, non una preferenza.
-5. **Le tre ricette del router sono scritte.** `web/src/routes/README.md` le riporta con il perché
-   di ogni riga; la terza (dettaglio pubblico `/_public/$slug`) è proprio quella che F7 riempie.
+1. **Il registry dei blocchi è composto dal container, su tutti e due i lati.** Un modulo aggiunge
+   `IBlockDescriptor` al `IServiceCollection` e `BlockRegistry` lo trova; lato client aggiunge una
+   `BlockRegistration` al proprio manifest e `app/registry.ts` la compone. Un blocco che compare in
+   uno solo dei due si vede: il renderer disegna «blocco sconosciuto» allo staff, e la ui-kit monta
+   ciò che il client ha. Il terzo lato del test — server ⇄ manifest ⇄ ui-kit — è F8.
+2. **`CorePermissions` è ancora l'unico catalogo.** `HubPolicyProvider` interroga quello; i permessi
+   dei moduli arrivano con `IModule.Permissions`, e `PolicyNamesTests` va esteso insieme.
+3. **`MapCrud` in modalità globale non ha ancora un uso vero.** `UserGrant` e `hub_audit_log` in
+   sola lettura sono i primi: il ramo esiste, è scritto, e finora lo copre solo il compilatore.
+4. **`DefaultFilters` e `CrudSource.BackOffice` esistono** (F7): una lista che deve nascondere
+   qualcosa lo dichiara, e chi ha bisogno di leggere con i filtri spenti lo chiede a `Data/Crud/`
+   invece di scrivere `IgnoreQueryFilters`.
+5. **`/api/search` è un altro meccanismo dalla ricerca delle liste.** La `q` di `MapCrud` è un
+   `LIKE` sul back-office; `/api/search` legge il FULLTEXT di `cms_search_index`, che l'interceptor
+   riempie da solo per ogni `IProjectable` pubblicato.
+6. **Il seeder dei template è il modello per qualunque altro seed**: un file per riga, una chiave
+   `<qualcosa>:<slug>` in `hub_division_settings` che dice «già applicato», e testi che sono chiavi
+   i18n risolte al seed. Una release nuova aggiunge un file senza toccare quello che lo staff ha già
+   modificato.
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
 nessuno.
@@ -100,6 +101,12 @@ test. In **Release**, che è come gira la CI, funziona. Causa non trovata (sospe
 `dotnet test` e l'host di Microsoft.Testing.Platform); non è un problema del repository. Regola
 pratica: si verifica come verifica la CI, in Release, e in caso di dubbio si lancia il binario.
 
+⚠️ **`seed/content-templates/*.json` fa parte dell'installazione**, come `locales/`. `HubPaths.Seed`
+lo trova, `PublishHubFiles` lo mette nel pacchetto, e `ContentTemplateSeeder` lo applica una volta
+sola per file, ricordandoselo con la chiave `template.system:<slug>` in `hub_division_settings`. Un
+pacchetto senza quella cartella parte lo stesso, con un warning e zero template: un sito senza
+template è un sito, un sito che non si avvia no.
+
 Nuova migrazione (**solo additiva**, mai modificare una già mergiata):
 
 ```bash
@@ -107,7 +114,7 @@ dotnet tool restore
 dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-project src/IvaoHub.Core
 ```
 
-## 2. Cosa c'è dopo F6
+## 2. Cosa c'è dopo F7
 
 **Configurazione e avvio (F1)**: `config/division.json` versionato + esempi; opzioni validate prima di toccare
 il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su Pomelo pinnato a MariaDB
@@ -291,6 +298,56 @@ senza credenziali.
 - **35 test Vitest** (generatore per ogni tipo di campo, `LocaleFields`, `ProblemDetails`,
   registry ⇄ ui-kit, schema-entità ⇄ contratto, `deptParam`, search params) e **286 .NET**.
 
+**Contenuti (F7)** — la fase che dimostra §9.3 del piano per intero:
+
+- **`BlockDocumentWalker.ValidateEnvelope` completo.** Oltre a versione, dimensione, `id` univoci,
+  profondità e tipo noto, ora controlla `layout` (insieme chiuso), `renderMode ∈ {live, frozen}` e
+  `column` **dentro le colonne che il layout della sua sezione ha**. Nuovo `MissingLocales(body)`:
+  ogni valore tradotto dentro le `props` che non è scritto in tutte le lingue, col suo percorso —
+  è la metà di §5.5 che la pubblicazione chiede, l'altra è `Title.HasAll`.
+- **`BlockRegistry` + `IBlockDescriptor`** (`Core/Content/BlockRegistry.cs`): composto dal container
+  da ogni `IBlockDescriptor` registrato, quindi un modulo aggiunge un blocco senza che il nucleo ne
+  sappia il nome. `CoreBlocks.All` sono i cinque di §5.4. Pubblicati in `/api/me` come
+  `BootstrapBlock` (era `string[]`).
+- **`IDataBlockProvider` + `DataBlockProviders` + `LinkListProvider`**, e
+  `GET /api/blocks/data/{type}?props=<base64url>`. Il provider legge **senza** `IgnoreQueryFilters`:
+  è un lettore come gli altri, e la visibilità la decide il global query filter. Le `props`
+  viaggiano base64**url** perché un `+` in una query string è uno spazio; il server accetta
+  entrambi gli alfabeti.
+- **`/api/content` è `MapCrud`**, come `links`, con tre cose in più registrate sullo stesso gruppo:
+  `POST /from-template/{templateId}`, `POST /{id}/publish`, `GET /public/{kind}/{slug}`. Il motore
+  non ha imparato niente sui contenuti; le tre cose che una pagina sa fare e un link no stanno
+  fuori dal motore, nello stesso file.
+- **`ExtraWritePolicy` ha il suo primo uso vero**: `IsTemplate → Content.ManageTemplates`. Il test
+  `TemplateEditRequiresManageTemplates` lo prova con un advisor WD, che tiene `Content.Edit` su WD
+  e non `ManageTemplates`: è l'unica identità che distingue il gancio dalla policy di scrittura.
+- **`ContentPublishService`**: (1) tutte le lingue, sul titolo e dentro le `props`, altrimenti 400
+  con un percorso per problema e l'estensione `localized`; (2) ogni blocco `Data` con
+  `renderMode = frozen` viene risolto **adesso** e la risposta finisce in `frozen`, mentre ogni
+  altro blocco vede il proprio `frozen` azzerato — senza quello, rimettere un blocco `live` non
+  cambierebbe niente; (3) `ContentVersion` con `Version = max+1`; (4) `Status = Published`, che è
+  ciò che fa proiettare l'interceptor e passare il query filter. Tutto dentro **una** transazione
+  esplicita, che l'interceptor riusa invece di aprirne una sua.
+- **La bozza non viene riscritta.** La cattura vive nella versione. Ripubblicare cattura di nuovo,
+  ed è tutto ciò che «ripubblica per aggiornare» significa.
+- **`ContentTemplateSeeder`** e `seed/content-templates/{section-page,about,policy}.json`. I file
+  portano `{ "$t": "seed.templates…" }` al posto del testo, risolto al seed nelle lingue della
+  divisione: una divisione che parla solo inglese non riceve una parola di italiano. Due test unit
+  li validano con lo stesso walker dell'API e rifiutano un oggetto tradotto scritto a mano dentro
+  un seed.
+- **Frontend `web/src/blocks/`**: `envelope.ts` (zod dell'envelope, `readBody` che non lancia mai),
+  `schemas.ts`, `blocks.tsx`, `core.ts`, `registry.ts`, `ContentRenderer.tsx`, `data.ts`. Il
+  renderer disegna sezioni e colonne, mostra la cattura quando c'è e chiede al provider quando non
+  c'è, e avvisa **solo lo staff** di un blocco che non sa disegnare.
+- **Editor a lista** (`features/content/`): albero sezioni/blocchi a sinistra, `SchemaForm` di ciò
+  che è selezionato a destra, metadati in alto, anteprima con lo **stesso** renderer del pubblico.
+  Le regole del template (`locked`, `required`, `allowedBlocks`) l'editor le legge **dal template**,
+  per `key` di sezione: la copia non le porta con sé, e non potrebbe.
+- **`/_public/$slug`**: la ricetta 3 del design, che legge solo la versione pubblicata.
+- **307 test .NET** (224 unit + 83 integrazione) e **64 Vitest**. I sette di
+  `ContentEndToEndTests` sono l'accettazione di M0 eseguita: da template, pubblicata, letta da un
+  anonimo, un link in più che **non** la cambia, e il ritorno a `live` che la fa cambiare.
+
 ## 3. Regole già attive (non aggirarle nelle fasi successive)
 
 - ESLint blocca `fetch` fuori da `shared/api`, `<svg>` fuori da `shared/icons` e `blocks`, import dal nucleo
@@ -350,6 +407,24 @@ senza credenziali.
 - **`web/src/modules/index.ts` lo legge solo `app/registry.ts`.** ESLint vieta a `blocks/`,
   `features/`, `routes/` e `shared/` di toccare `src/modules`, e vieta ad `app/` di entrare dentro
   una cartella di modulo: la lista dei manifest sì, le sue viscere no.
+- **Il backend non legge mai una `props`.** Valida l'envelope, ne estrae il testo per la ricerca
+  con il walker, e passa le proprietà opache al provider. Lo schema di un blocco esiste **solo** in
+  TypeScript, ed è lo stesso che `SchemaForm` disegna: una copia in C# sarebbe la seconda
+  descrizione di un blocco, cioè quella che va fuori sincrono.
+- **`IgnoreQueryFilters` si chiede a `CrudSource.BackOffice<T>`.** Il test di architettura non è
+  cambiato: quella chiamata esiste solo in `Core/Data/Crud/` e in `ProjectionWriter`. Chi ha
+  bisogno di leggere una bozza — la pubblicazione è la prima — chiede lì.
+- **Un seed scrive come l'installazione, cioè da anonimo.** La guardia di scrittura
+  dell'interceptor lascia stare chi non è autenticato proprio perché è l'applicazione stessa. Vale
+  anche per i test: il doppione di `ICurrentUser` di `HubWebApplicationFactory` è anonimo finché
+  `ApplicationStarted` non è passato, altrimenti l'avvio girerebbe come il coordinatore che il test
+  aveva in mente e il seeder si prenderebbe un 403.
+- **Un blocco è tre file, non uno.** Schema in `blocks/schemas.ts`, componente in `blocks.tsx`,
+  registrazione in `core.ts`. Non è pedanteria: un modulo che esporta componenti e costanti insieme
+  perde il fast refresh, ed è una cosa che si paga ogni giorno.
+- **Le chiavi i18n costruite a runtime hanno il loro test.** `pnpm i18n:check` non le vede;
+  `blocks/registry.test.ts` legge i file di lingua e controlla `blocks.<tipo>.label`, i campi e le
+  opzioni di ogni blocco del registry. Chi aggiunge un blocco non aggiunge un test: quello c'è già.
 - **Le proiezioni si leggono una volta per salvataggio, non una per riga.** `ProjectionWriter`
   separa `Load`/`LoadAsync` da `Apply` apposta: sono dentro la transazione della scrittura, e ogni
   round trip in più è un lock tenuto aperto più a lungo. `ProjectionBatchingTests` lo fissa
@@ -407,6 +482,8 @@ senza credenziali.
 | `2026-09-03-proxy-fidati.md` | Le reti dei proxy di cui si crede `X-Forwarded-For` si dichiarano, e in produzione sono obbligatorie. Design §2.3 precisata. |
 | `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
 | `2026-09-03-markdown-content.md` | `MarkdownContent` usa `react-markdown`: albero React, mai `innerHTML`, HTML grezzo non abilitato. **Decisa da Carmine**, design §7.1. |
+| `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. Design §5.6 corretto. **Da confermare.** |
+| `2026-09-04-frozen-e-visibilita.md` | La cattura `frozen` risolve con l'identità di chi pubblica, come dice il design §5.5 — e quindi può congelare righe più riservate della pagina. Tre opzioni, raccomandata la (2). **Aperta: serve una decisione di Carmine.** |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
 serve a non ridiscutere fra sei mesi una cosa già discussa.
@@ -473,9 +550,10 @@ allargare i permessi, mai stringerli a sorpresa.
   ricorda.
 - Il catalogo dei permessi che `HubPolicyProvider` interroga è `CorePermissions` e basta: i permessi
   dei moduli si aggiungono in **F8**, quando `IModule.Permissions` esiste.
-- `BlockDocumentWalker.ValidateEnvelope` accetta l'elenco dei tipi di blocco noti come parametro
-  opzionale: il registry vero (server ⇄ manifest) è **F7/F8**. Finché è `null`, il tipo non si
-  controlla.
+- ~~`BlockDocumentWalker.ValidateEnvelope` accetta l'elenco dei tipi di blocco noti come parametro
+  opzionale~~ **chiuso in F7** per il lato server: `BlockRegistry.Types` è quello che il validatore
+  riceve, e un tipo sconosciuto è 400 sul percorso del blocco. Il terzo lato — che il **manifest di
+  un modulo** dichiari lo stesso insieme del server — è F8.
 - Un contesto di modulo non scrive proiezioni né audit se non ha quelle tabelle nel proprio modello:
   l'interceptor se ne accorge e non fa niente. Quando un modulo proietterà davvero (M1+), va deciso
   se condividere quelle entità o passare dal contesto del nucleo.
@@ -496,8 +574,9 @@ allargare i permessi, mai stringerli a sorpresa.
 - **`MapCrud` non ha ancora nessuna entità in modalità globale.** Il ramo esiste ed è scritto, ma il
   primo uso vero (`UserGrant` e `hub_audit_log` in sola lettura) è **F8**: finché non c'è, quel ramo
   è coperto solo dal codice e non da un test end-to-end.
-- **`ExtraWritePolicy` non è ancora usato da nessuno.** Nasce per `Content.ManageTemplates` in
-  **F7**; oggi è provato solo dal fatto che compila e che il ramo non morde quando è nullo.
+- ~~**`ExtraWritePolicy` non è ancora usato da nessuno**~~ **chiuso in F7**:
+  `IsTemplate → Content.ManageTemplates`, provato end-to-end con un advisor WD, che è l'unica
+  identità che distingue il gancio dalla policy di scrittura.
 - **La ricerca `q` ignora l'accento e la maiuscola per collation, non per scelta.** `LIKE` su
   `utf8mb4_unicode_ci` è già case e accent insensitive, che è quello che vogliamo; ma la ricerca
   della lista **non** passa dal FULLTEXT di `cms_search_index`. Quella è `/api/search` in **F8**, ed
@@ -532,6 +611,35 @@ allargare i permessi, mai stringerli a sorpresa.
   comunque il client.
 - **`LocaleSwitcher` scrive `hub.lang` con `document.cookie`.** È l'unico punto del client che
   scrive un cookie a mano. Se ne servisse un secondo, va estratto un helper prima, non copiato.
+- **La cattura `frozen` vede quello che vede chi pubblica.** È ciò che il design §5.5 dice, ed è
+  anche il motivo per cui un coordinatore che pubblica una pagina `Public` può congelarci dentro
+  righe `Staff`. Il percorso `live` è corretto per costruzione. Tre opzioni, una raccomandazione e
+  il perché non l'ho corretto da solo in
+  `docs/internal/decisions/2026-09-04-frozen-e-visibilita.md`. **Da decidere con Carmine.**
+- **«Nuovo da template» è `POST /api/content/from-template/{templateId}`** e non la query string
+  che il design scriveva: `POST /api/content` è già la creazione generata da `MapCrud`, e le
+  minimal API non instradano per query string. Nota
+  `docs/internal/decisions/2026-09-04-nuovo-da-template.md`, design §5.6 corretto.
+- **Il `department` di un `linkList` è una stringa libera.** Dovrebbe essere una select dei
+  dipartimenti, ma il generatore non ha un modo di disegnare una `z.enum` **opzionale** con una voce
+  «nessuno»: il valore vuoto è riservato dal Select di Atmosphere. Nel frattempo `LinkListProvider`
+  tratta un dipartimento che non riconosce come «nessun filtro»; sarebbe più sicuro trattarlo come
+  «nessuna riga», ed è una riga. Il modo giusto è estendere `shared/forms/schema.ts`, in **F8**.
+- **`seo` non ha un campo nell'editor.** È un `Localized<JsonNode>`, e il generatore disegna
+  stringhe tradotte, non oggetti tradotti. Viene rimandato indietro esattamente come è arrivato, in
+  modo da non perderlo; il giorno che una schermata lo vorrà, è un tipo nuovo nel generatore.
+- **Il `level` di un `heading` è un numero libero.** Una select sarebbe più chiara, ma ogni stringa
+  dentro `props` finisce nell'indice di ricerca come testo della pagina, e `"2"` non è testo. Il
+  renderer lo limita a 1–4; il generatore lo disegna come input numerico.
+- **Un cambio di template non si propaga, e l'editor non lo mostra ancora.** Il design lo mette in
+  M1 («l'editor mostra le sezioni nuove/tolte»): oggi le regole del template si leggono per `key`,
+  e una sezione che il template ha aggiunto dopo semplicemente non c'è sulla pagina.
+- **L'anteprima disegna un blocco `frozen` con i dati catturati**, con il badge «catturato alla
+  pubblicazione». Il design §7.7 chiedeva anche i dati **live** accanto, per confronto: non c'è, e
+  serve una seconda chiamata al provider dentro l'anteprima. Piccolo, non urgente.
+- **Nessun test end-to-end del browser, ancora.** «Il coordinatore apre l'editor, aggiunge un
+  blocco, pubblica» è coperto dai test di integrazione lato API e da 64 Vitest sui pezzi, ma non è
+  stato eseguito in un browser. Resta il candidato di **F9**, dove il piano chiede già la demo.
 - **Nessun test verifica il documento OpenAPI in sé** (che `/api/links` ci sia, che
   `LocalizedString` porti `x-localized`). Lo step di CI `pnpm gen:api && git diff --exit-code` lo
   copre di sponda: se il documento cambia forma, `schema.d.ts` si muove e la build cade.

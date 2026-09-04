@@ -4,12 +4,13 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 1.6 — 3 settembre 2026 (giro di riallineamento di fine F6, §A.6 del piano di implementazione: §7.3 la ricetta 2 dichiara i suoi search params una volta sola e guarda il dipartimento prima di caricare)
+**Versione:** 1.7 — 4 settembre 2026 (F7: §3.9 `CrudOptions.DefaultFilters` e `CrudSource.BackOffice`; §5.2 l'envelope controlla anche `layout`, `renderMode` e `column`; §5.4 la forma vera di una registrazione di blocco e dei descrittori del server; §5.6 «nuovo da template» è una rotta sua)
+**Versione 1.6** — 3 settembre 2026 (giro di riallineamento di fine F6, §A.6 del piano di implementazione: §7.3 la ricetta 2 dichiara i suoi search params una volta sola e guarda il dipartimento prima di caricare)
 **Versione 1.5** — 3 settembre 2026 (F6: §3.7 `HubPolicies.SignedIn` è l'unica policy che non è un permesso; §3.10 il bootstrap dichiara `hasAllDepartments`; §7.5 `DataList` prende i search params invece della route, `SchemaForm` conosce `hidden`; §7.1 `MarkdownContent` usa `react-markdown`)
 **Versione 1.4** — 3 settembre 2026 (confermate le due note di F5: §7.4 e §9 punto 12 — l'OpenAPI a build-time **esegue** l'entry point, e ciò che conta è che lo faccia senza database e senza client OAuth; §3.1 — una lingua assente è vuota, un campo `Localized<T>?` non valorizzato è `null`)
 **Versione 1.3** — 3 settembre 2026 (revisione senior di fine F4: §3.3 `HasAllDepartments` è un claim, §3.4 il secondo tempo dell'interceptor gestisce il proprio fallimento, §3.6 le proiezioni sotto il query filter e lette in blocco, §2.3 proxy fidati obbligatori in produzione più HSTS e redirezione HTTPS)
 **Versione 1.2** — 3 settembre 2026 (allineato a ciò che F4 ha davvero costruito: §3.3, §3.4, §3.5, §3.6, §3.7, §5.3, più i codici di dipartimento di piano 0.21 rimasti negli esempi)
-**Stato:** in implementazione (F0–F6 fatte)
+**Stato:** in implementazione (F0–F7 fatte)
 
 ---
 
@@ -304,6 +305,7 @@ public sealed class CrudOptions<…>
     public Expression<Func<TEntity, object>> DefaultOrder { get; set; }
     public IList<Expression<Func<TEntity, string?>>> SearchFields { get; }   // colonne per ?q= (su Localized usa JSON_EXTRACT per lingua corrente)
     public IList<string> Filterable { get; }                    // nomi proprietà ammessi in ?filter[prop]=
+    public IDictionary<string,string> DefaultFilters { get; }   // filtro applicato se il chiamante non nomina quella proprietà (F7)
     public IList<string> Sortable { get; }
     public bool AllowDelete { get; set; } = true;
     public Func<TEntity, TListDto> ToList; Func<TEntity, TDetailDto> ToDetail; Action<TWriteDto, TEntity> Apply;  // Mapperly
@@ -313,6 +315,17 @@ public sealed class CrudOptions<…>
 ```
 
 Genera: `GET pattern?page&pageSize&sort&dir&q&filter[...]` → `PagedResult<TListDto>`; `GET pattern/{id}`; `POST pattern`; `PUT pattern/{id}`; `DELETE pattern/{id}` (gli ultimi tre assenti se `ReadOnly`). **Modalità dipartimentale** (`TEntity : IOwnedByDepartment`): policy `ReadPolicy`/`WritePolicy`, filtro di dipartimento sulla lista (`ICurrentUser.Departments`, o nessun filtro se `HasAllDepartments`; utenti senza dipartimenti né `HasAllDepartments` → 403), `AuthorizeAsync(entity)` sulla singola risorsa. **Modalità globale** (entità senza dipartimento: `UserGrant`, `AuditLogEntry`): solo la policy globale (`Permissions.Manage`, `Audit.View`), nessun filtro di dipartimento, nessuna `AuthorizeAsync` con risorsa. Le due modalità sono lo stesso codice con un ramo, non due helper. Poi: validazione FluentValidation → `ValidationProblem` (400, `errors` per campo con chiavi i18n `errors.*`), 409 su `DbUpdateConcurrencyException` (colonna `row_version timestamp(6)`), audit e proiezioni dall'interceptor. I DTO portano `[OpenApiListConfig]`-like metadata? **No**: la configurazione di lista/form del frontend è in TypeScript (§7.5); il server espone solo lo schema OpenAPI. `MapCrud` è l'unico posto in cui compaiono `AuthorizeAsync` e la paginazione.
+
+**Due aggiunte di F7, entrambe regola (b).** `DefaultFilters` è un filtro che la lista applica
+finché il chiamante non nomina quella proprietà da sé: serve a `content`, la cui lista non mostra i
+template e li mostra con `filter[isTemplate]=true`, e non insegna al motore che cosa sia un
+template. Ogni nome che vi compare deve stare anche in `Filterable`, altrimenti `MapCrud` lancia
+all'avvio: un filtro di default che il chiamante non può scavalcare è una lista che mente in
+silenzio. E `CrudSource.BackOffice<T>(db)` è la lettura «filtri di visibilità spenti» estratta in un
+metodo con un nome, in `Data/Crud/`: la usa il motore e la usa `ContentPublishService`, che deve
+poter leggere una bozza. Il test di architettura non cambia — `IgnoreQueryFilters` continua a
+esistere solo in quella cartella e in `ProjectionWriter` — ed è proprio perché ora c'è un posto a
+cui chiederlo che non serve scriverlo altrove.
 
 ### 3.10 `/api/me` — bootstrap
 
@@ -389,7 +402,7 @@ All'avvio, se `SELECT COUNT(*) FROM hub_users WHERE is_superadmin = 1` è 0: per
 }
 ```
 
-Il backend valida **solo** l'envelope (`schemaVersion` supportato, dimensione ≤ 1 MB, `id` univoci, profondità ≤ 3, `type` presente in `registries.blocks`, `required/locked/allowedBlocks` accettati solo su `is_template`), con un `JsonNode` walker. `props` è opaco. Sezione `layout ∈ {stacked, 1/2+1/2, 1/3+2/3, 2/3+1/3, 3x1/3}` (con `stacked` i blocchi vanno in colonna; con le colonne ogni blocco porta `column: 0..n`).
+Il backend valida **solo** l'envelope (`schemaVersion` supportato, dimensione ≤ 1 MB, `id` univoci, profondità ≤ 3, `type` presente in `registries.blocks`, `required/locked/allowedBlocks` accettati solo su `is_template`, e — completati in F7 — `layout` fra quelli previsti, `renderMode ∈ {live, frozen}`, `column` dentro le colonne che il layout della **sua** sezione ha), con un `JsonNode` walker. `props` è opaco. Sezione `layout ∈ {stacked, 1/2+1/2, 1/3+2/3, 2/3+1/3, 3x1/3}` (con `stacked` i blocchi vanno in colonna; con le colonne ogni blocco porta `column: 0..n`).
 
 ### 5.3 Walker generico
 
@@ -397,7 +410,7 @@ Il backend valida **solo** l'envelope (`schemaVersion` supportato, dimensione �
 
 ### 5.4 Registry dei blocchi e set minimo di M0
 
-Frontend `web/src/blocks/registry.ts`: `registerBlock({ type, version, schema: zod, kind: 'content'|'data', alwaysLive?, component, editorLabelKey, icon })`. Backend `IBlockDescriptor` (`type, version, kind, alwaysLive, providerKey?`) registrato dal nucleo e dai moduli (`IModule.Blocks`) e pubblicato in `/api/me` — il **client** verifica all'avvio che ogni descrittore server abbia il componente registrato (warning per lo staff nella ui-kit).
+Frontend `web/src/blocks/`: una `BlockRegistration` è `{ type, version, kind: 'Content'|'Data', alwaysLive?, schema: zod, component, example, exampleData?, editorLabelKey, icon }` — `kind` è scritto come lo scrive il server, perché è lo stesso valore che arriva da `/api/me` e un enum del contratto viaggia col suo nome come tutti gli altri. Le tre parti stanno in tre file (`schemas.ts`, `blocks.tsx`, `core.ts`) perché un file che esporta componenti e costanti insieme perde il fast refresh; `registry.ts` è l'elenco del nucleo e `app/registry.ts` lo compone con quelli dei moduli. Backend `IBlockDescriptor` (`type, version, kind, alwaysLive, providerKey?`) registrato dal nucleo e dai moduli (`IModule.Blocks`), composto in un `BlockRegistry` dal container e pubblicato in `/api/me` — il **client** verifica che ogni descrittore server abbia il componente registrato (il renderer mostra «blocco sconosciuto» solo allo staff, la ui-kit monta tutto ciò che il registry dichiara).
 
 Set M0 (tutti nel nucleo): `heading` (level, text L), `text` (markdown L, sanitizzato con `rehype-sanitize` in un solo componente `MarkdownContent`), `callout` (tone, title L, text L), `cta` (label L, href), `linkList` (**Data**: `category?`, `department?`, `limit`; provider server `LinkListProvider` → `{ items: [{title, url, description}] }`), `networkStats` **non** in M0 (M1, sempre-live). Basta a dimostrare live/frozen e sezioni libere/strutturate/derivate.
 
@@ -407,7 +420,7 @@ Set M0 (tutti nel nucleo): `heading` (level, text L), `text` (markdown L, saniti
 
 ### 5.6 Template seedati
 
-`seed/content-templates/*.json`: `section-page.json` (Landing/Section page: `hero` required+locked con `heading`+`text`; `body` libera; `links` derivata: `linkList` con `renderMode` fissato dal template), `about.json`, `policy.json` (tutto `locked`, sezioni `purpose`, `scope`, `rules`, `changelog`). Seed all'avvio guidato **solo** dalla chiave `template.system:<slug>` in `hub_division_settings`: ogni file di seed viene applicato una volta (così una release successiva può aggiungere template nuovi senza toccare quelli già modificati dallo staff). `OwnerDepartment = WD`, `Visibility = Staff`. «Nuovo da template» = `POST /api/content?templateId=` → copia profonda con nuovi `id` di sezione/blocco, `TemplateId` valorizzato, `Status = Draft`. Le pagine di sistema (home, `/start`, `/pilots`, `/about`) si seedano in **M1**; in M0 basta una pagina creata a mano dal template.
+`seed/content-templates/*.json`: `section-page.json` (Landing/Section page: `hero` required+locked con `heading`+`text`; `body` libera; `links` derivata: `linkList` con `renderMode` fissato dal template), `about.json`, `policy.json` (tutto `locked`, sezioni `purpose`, `scope`, `rules`, `changelog`). Seed all'avvio guidato **solo** dalla chiave `template.system:<slug>` in `hub_division_settings`: ogni file di seed viene applicato una volta (così una release successiva può aggiungere template nuovi senza toccare quelli già modificati dallo staff). `OwnerDepartment = WD`, `Visibility = Staff`. «Nuovo da template» = `POST /api/content/from-template/{templateId}` con corpo `{ ownerDepartment, slug }` → copia profonda con nuovi `id` di sezione/blocco, `frozen` azzerato, `required/locked/allowedBlocks` **tolti** (una pagina che li portasse potrebbe sollevarsi le restrizioni da sola), `TemplateId` valorizzato, `Status = Draft`, `Visibility = Staff`. Non è una query su `POST /api/content` perché quella rotta è già la creazione normale generata da `MapCrud`, e le minimal API non instradano per query string: nota `docs/internal/decisions/2026-09-04-nuovo-da-template.md`. Le restrizioni del template continuano a valere sulla pagina perché **l'editor le legge dal template**, per `key` di sezione, non perché la copia le porti con sé. Le pagine di sistema (home, `/start`, `/pilots`, `/about`) si seedano in **M1**; in M0 basta una pagina creata a mano dal template.
 
 ### 5.7 Permessi dei contenuti
 
@@ -550,7 +563,7 @@ Integrazione (`IvaoHub.IntegrationTests`, Testcontainers `mariadb:11.4.10`, `Web
 - `VisibilityFilterPerRole` (anonimo/membro/staff/dipartimento/superadmin);
 - `MapCrudLinksEndToEnd` (list paginata/filtrata/ordinata/ricerca in lingua, get, create con `ValidationProblem` su lingua mancante, update con 409 su `row_version` stale, delete; 403 per dipartimento altrui; 401 anonimo);
 - `AuthorizationHandlerIsTheOnlyOne` (riflessione: una sola implementazione di `IAuthorizationHandler` non-framework);
-- `ContentPublishFreezesDataBlocks`, `PublicReadsOnlyPublishedVersion`, `NewFromTemplateDeepCopies`, `TemplateEditRequiresManageTemplates`;
+- `ContentPublishFreezesDataBlocks`, `PublicReadsOnlyPublishedVersion`, `NewFromTemplateDeepCopies`, `TemplateEditRequiresManageTemplates`, `EnvelopeValidationRejectsUnknownBlockAndDepth`, `PublishRejectsMissingLocales`, `TheSystemTemplatesAreSeededOnceAndStayOutOfTheOrdinaryList`;
 - `SuperadminBootstrapOnlyWhenNone`, `CannotRemoveLastSuperadmin`, `SecurityStampInvalidatesCookie`;
 - `ModuleRegistryComposesNavAndExclusions` (atc), `MaintenanceReturns503OnWrites`;
 - **`ForkabilityXxDivision`**: avvio con `division.json` `{ code: "XX", locales: ["en"], superAdmins: [] }`, chiama `/api/me`, `/`, `/staff/admin/ui-kit` (HTML) e verifica che nessuna risposta contenga `IT-`, `LIRR`, `Italia`, `Italy`, `it.ivao.aero` e che i seed siano in `en`.

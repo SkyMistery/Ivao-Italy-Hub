@@ -87,8 +87,11 @@ function describe(
 /**
  * "it" reads as "Italian" to an English speaker and "italiano" to an Italian one. The browser owns
  * that table, so the division does not have to carry a name for every language it might add.
+ *
+ * Exported because publication says the same thing about a path inside a page rather than about a
+ * field, and the sentence must not be written twice.
  */
-function languageNames(locales: string[], language: string): string {
+export function languageNames(locales: string[], language: string): string {
   const names = new Intl.DisplayNames([language], { type: 'language' });
   const list = new Intl.ListFormat(language, { style: 'long', type: 'conjunction' });
   return list.format(locales.map((locale) => names.of(locale) ?? locale));
