@@ -1,9 +1,40 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.31 — 4 settembre 2026 (**M0 chiusa**: F9, la revisione §16.E su tutto il codice, la demo da eseguire a mano, i passi reali di un fork, il tag `v0.1.0-m0`)
+**Versione documento:** 0.32 — 4 settembre 2026 (hotfix dopo il tag: l'applicazione non si apriva in un browser, e nessuno dei 427 test poteva vederlo)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. Prossima milestone **M1**, il sito pubblico. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.32** (4 set 2026, dopo il tag): **`v0.1.0-m0` puntava a un'applicazione che non si
+apriva.** `DarkModeToggle` di Atmosphere si avvolge da sé in un `Tooltip` di Radix, un tooltip senza
+`TooltipProvider` **lancia** invece di degradare, e `main.tsx` non ne montava uno. Poiché quel
+componente sta in `Chrome.tsx`, cioè nel frame di tutti e tre i layout, **ogni schermata dietro un
+layout era morta**. Corretto dentro lo stesso tag, rifatto sul commit dell'hotfix.
+
+La parte che vale la pena scrivere nel piano non è il difetto: è **perché 353 test .NET e 74 Vitest
+erano verdi**, e lo erano legittimamente. Il guasto non stava in un componente ma **nell'albero**, e
+niente montava l'albero: l'harness dei test dà a un pezzo per volta il minimo che gli serve, nessun
+test montava `Chrome`, e nessuno montava i provider dell'applicazione — tanto che `ThemeProvider`, la
+prima volta che è stato montato in un test, ha chiesto un `window.matchMedia` che jsdom non ha e che
+in nove fasi nessuno aveva mai dovuto stubare. **Il punto cieco stava esattamente dove il sistema fa
+la sua scommessa più grossa**, cioè che una schermata sia composizione di pezzi generici.
+
+**Una decisione**, in `docs/internal/decisions/2026-09-04-smoke-in-un-browser.md`: lo smoke in un
+browser diventa **bloccante in CI** e non aspetta M1. Il design §8 lo dichiarava «solo `pnpm e2e`,
+non bloccante in M0»; il costo di quel timore è stato misurato ed è un tag di release su
+un'applicazione che non parte. Uno smoke che non può fermare una release non è una rete, è un
+rapporto. Restano tre reti nuove, tutte **verificate togliendo la correzione** — un test di
+regressione che passa in entrambi i casi non è un test: `HubProviders` (l'albero dei provider è un
+componente, montato sia dall'applicazione sia dal test, perché la prima stesura del test elencava i
+provider per conto suo e sarebbe rimasta verde con l'applicazione rotta), `Chrome.test.tsx`, e tre
+smoke Playwright su Chromium contro il bundle di produzione. Resta scoperta, e scritta come debito,
+la metà con l'API vera e una pagina pubblicata da un seed.
+
+Trovate di rimbalzo due cose già corrette: il tooltip del selettore di tema mostrava l'inglese di
+Atmosphere perché riceveva `aria-label` ma non `title` — **terza stringa non tradotta in due giorni
+che sopravvive perché si vede solo passandoci sopra** — e i tipi di Atmosphere pretendono `children`
+su `DarkModeToggle` mentre il runtime li scarta, quindi la nostra icona era markup morto da F6.
+Test: 353 .NET, **76 Vitest**, **3 Playwright**. Design a 2.1, HANDOFF §11.
 
 **Changelog 0.31** (4 set 2026): chiusa la fase **F9**, e con lei **M0**. Nessun meccanismo nuovo:
 F9 è la fase che verifica invece di costruire, e quello che ha prodotto è la prova che le altre

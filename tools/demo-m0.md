@@ -308,14 +308,23 @@ dotnet test --solution IvaoHub.sln --configuration Release
 cd web
 pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm i18n:check && pnpm build
 pnpm gen:api && git diff --exit-code        # the generated client must not move
+
+pnpm e2e:install                            # once: the browser the smoke suite drives
+pnpm e2e                                    # Chromium against the production build
 ```
 
 Run them in **Release**. On Windows, `dotnet test` in Debug has been seen to report "Zero tests ran"
 with exit code 5 while the test binary run by hand passes everything; Release is how CI runs and
 Release is what to trust.
 
-Expect **353 .NET tests** (253 unit, 100 integration against a real MariaDB 11.4.10 in a container)
-and **74 Vitest**. None is skipped, and the backbone tests of the design are among them.
+Expect **353 .NET tests** (253 unit, 100 integration against a real MariaDB 11.4.10 in a container),
+**76 Vitest** and **3 Playwright smokes**. None is skipped, and the backbone tests of the design are
+among them.
+
+The smoke suite is the youngest and has the shortest story: `v0.1.0-m0` was first tagged on a build
+that did not open in a browser at all — a missing provider took down every screen behind a layout,
+while every one of the other tests stayed green, because they mounted pieces and nothing mounted the
+tree. Three tests in a real browser now stand between that and a release.
 
 - [ ] **Point 4 of the definition of done** — the backbone tests pass, and so does the
       fictional division.

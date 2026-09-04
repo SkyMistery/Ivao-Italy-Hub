@@ -141,6 +141,10 @@ pnpm test
 pnpm i18n:check
 pnpm build
 
+# The smoke suite: Chromium against the production build. It needs its browser once.
+pnpm e2e:install
+pnpm e2e
+
 # The typed API client. `dotnet build` writes artifacts/openapi/IvaoHub.Web.json; this turns it into
 # web/src/shared/api/schema.d.ts, which is committed. The CI regenerates it and fails on a diff, so
 # run it after changing an endpoint or a payload.
