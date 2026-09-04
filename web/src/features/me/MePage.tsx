@@ -1,83 +1,56 @@
-import { Badge, H1, H3, Lead } from '@ivao/atmosphere-react';
+import { H1 } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+
+import { registry } from '../../app/registry';
 
 import { bootstrapQuery } from './queries';
 
 /**
- * What the hub knows about the person who is signed in: the proof that the identity, the positions
- * and the effective permissions came through the login intact. It becomes the member dashboard
- * composed of the widgets the modules register, in M1.
+ * The member dashboard. It holds no tile of its own: the server declares what belongs on it in
+ * `registries.widgets`, this composes whatever the browser has a component for, and a module adds
+ * one by putting it in its manifest (design M0 §6.3 and §6.5).
+ *
+ * A tile the server declares and this build cannot draw is said out loud rather than left as a gap,
+ * and only to the staff — the same rule the block renderer follows, for the same reason: a visitor
+ * cannot act on it, and somebody who can needs to know the two sides are out of step.
  */
 export function MePage() {
   const { t } = useTranslation();
-  const { data: bootstrap, isPending } = useQuery(bootstrapQuery);
+  const { data: bootstrap } = useQuery(bootstrapQuery);
 
-  if (isPending) {
-    return <Lead>{t('common.loading')}</Lead>;
-  }
+  const declared = bootstrap?.registries.widgets ?? [];
+  const isStaff = bootstrap?.user?.isStaff === true || bootstrap?.user?.isSuperadmin === true;
 
-  const user = bootstrap?.user ?? null;
-  if (user === null) {
-    // The `_member` layout does not let an anonymous visitor this far; this is the moment between
-    // a sign out and the redraw, not a state to design for.
-    return <Lead>{t('common.loading')}</Lead>;
-  }
+  const missing = declared
+    .filter((widget) => !registry.widgets.some((known) => known.key === widget.key))
+    .map((widget) => widget.key);
 
   return (
     <>
       <H1>{t('me.title')}</H1>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="filled" text={`${t('me.vid')}: ${user.vid}`} />
-        {user.isStaff ? <Badge variant="flat" text={t('me.staff')} /> : null}
-        {user.isSuperadmin ? <Badge variant="leaked" text={t('me.superadmin')} /> : null}
+      {isStaff && missing.length > 0 ? (
+        <div className="border-border text-muted-foreground rounded-md border border-dashed p-4 text-sm">
+          {t('widgets.unknown', { keys: missing.join(', ') })}
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-8">
+        {declared.map((widget) => {
+          const known = registry.widgets.find((candidate) => candidate.key === widget.key);
+          if (!known) {
+            return null;
+          }
+
+          const Widget = known.component;
+          return (
+            <section key={widget.key} className="flex flex-col gap-3">
+              <Widget />
+            </section>
+          );
+        })}
       </div>
-
-      <Lead>{[user.firstName, user.lastName].filter((part) => part.length > 0).join(' ')}</Lead>
-
-      <section className="flex flex-col gap-1">
-        <H3>{t('me.positions')}</H3>
-        <Values values={[...user.positions]} empty={t('me.none')} />
-      </section>
-
-      <section className="flex flex-col gap-1">
-        <H3>{t('me.departments')}</H3>
-        <Values values={[...user.departments]} empty={t('me.none')} />
-      </section>
-
-      <section className="flex flex-col gap-1">
-        <H3>{t('me.firs')}</H3>
-        <Values values={[...user.firs]} empty={t('me.none')} />
-      </section>
-
-      <section className="flex flex-col gap-1">
-        <H3>{t('me.permissions')}</H3>
-        <Values
-          values={(bootstrap?.permissions ?? []).map((permission) =>
-            permission.department === null
-              ? permission.name
-              : `${permission.name} (${permission.department})`,
-          )}
-          empty={t('me.none')}
-        />
-      </section>
     </>
-  );
-}
-
-function Values({ values, empty }: { values: string[]; empty: string }) {
-  if (values.length === 0) {
-    return <p className="text-muted-foreground">{empty}</p>;
-  }
-
-  return (
-    <ul className="flex flex-wrap gap-2">
-      {values.map((value) => (
-        <li key={value}>
-          <Badge variant="flat" text={value} />
-        </li>
-      ))}
-    </ul>
   );
 }

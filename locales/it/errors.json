@@ -50,6 +50,19 @@
     },
     "content": {
       "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella."
+    },
+    "maintenance": {
+      "title": "Questa parte del sito al momento non accetta modifiche"
+    },
+    "grant": {
+      "unknownPermission": "Questa installazione non ha un permesso con questo nome.",
+      "globalPermission": "Un permesso che non è legato a un dipartimento non si assegna a mano.",
+      "notStaff": "Quel VID non è staff di questa divisione, o non ha mai fatto login.",
+      "alreadyExpired": "Scegli una data futura, oppure lasciala vuota per un permesso che non scade."
+    },
+    "superadmin": {
+      "neverLoggedIn": "Quel VID non ha mai fatto login, quindi l’hub non sa ancora nulla di lui.",
+      "lastOne": "L’ultimo super amministratore non si può togliere."
     }
   }
 }

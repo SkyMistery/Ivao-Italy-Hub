@@ -1,0 +1,10 @@
+{
+  "_source": "web/src/modules/atc/locales",
+  "nav": {
+    "atc": "ATC"
+  },
+  "atc": {
+    "title": "ATC operations",
+    "lead": "What this department publishes arrives with the module itself. For now this page is here to show that a module brings its own route, its own menu entry and its own words, and that the core knows none of them."
+  }
+}

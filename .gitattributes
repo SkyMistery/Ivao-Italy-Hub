@@ -15,6 +15,9 @@
 # Generated sources: keep them in git, hide them from language statistics and diffs.
 *.gen.ts linguist-generated
 web/src/shared/api/schema.d.ts linguist-generated
+
+# Copied from web/src/modules/<key>/locales/ by `pnpm i18n:sync`; edit the original, never these.
+locales/*/atc.json linguist-generated
 pnpm-lock.yaml linguist-generated -diff
 
 # Windows-only scripts keep CRLF.

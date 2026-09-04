@@ -78,6 +78,14 @@ jobs:
         run: pnpm test
         working-directory: web
 
+      # A module keeps its own words next to its own code and they are copied into locales/, which
+      # is the one set of language files the SPA, the back end and the check below all read. The
+      # copies are committed for the same reason the API client is: a `dotnet run` with no pnpm in
+      # sight still has to find every language file.
+      - name: Sync the language files of the modules
+        run: pnpm i18n:sync
+        working-directory: web
+
       - name: Check language files
         run: pnpm i18n:check
         working-directory: web
@@ -86,8 +94,8 @@ jobs:
         run: pnpm build
         working-directory: web
 
-      # The generated route tree and the generated API client are committed; a stale one has to
-      # fail the build, not surprise the next developer.
+      # The generated route tree, the generated API client and the copied module language files are
+      # all committed; a stale one has to fail the build, not surprise the next developer.
       - name: Fail on uncommitted generated files
         run: git diff --exit-code
 

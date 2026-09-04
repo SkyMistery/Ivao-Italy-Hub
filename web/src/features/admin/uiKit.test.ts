@@ -10,8 +10,9 @@ import { UI_KIT_BLOCKS, UI_KIT_SECTIONS } from './uiKitSections';
  * block of the registry are checked against: something that exists but is not shown there is
  * something nobody looks at, and it rots.
  *
- * In F8 this grows a third side — server ⇄ manifest ⇄ ui-kit — when a module declares blocks the
- * server also knows about.
+ * The third side — server ⇄ manifest ⇄ ui-kit — is `web/src/modules/manifest.test.ts`, which reads
+ * both halves of every module, and the section at the top of the gallery, which compares what the
+ * server declares in `/api/me` with what this build registered.
  */
 
 test('every component of the closed list has a section in the gallery', () => {

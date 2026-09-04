@@ -11,7 +11,8 @@
   },
   "nav": {
     "home": "Home",
-    "staff": "Staff"
+    "staff": "Staff",
+    "modules": "Modules"
   },
   "home": {
     "heading": "The hub is up",
@@ -180,6 +181,16 @@
           "updatedAt": "Last change"
         }
       }
+    },
+    "registry": {
+      "title": "Registries",
+      "description": "What the server declares, against what this build of the front end registered. The two halves of a module are compiled separately, so they can disagree.",
+      "agree": "The two sides agree: {{blocks}} block(s) and {{widgets}} tile(s).",
+      "blockMissingHere": "The server declares the block \"{{type}}\" and this build cannot draw it. The front end was probably not rebuilt with the module.",
+      "blockMissingOnServer": "This build registers the block \"{{type}}\" and the server does not know it. A page using it would be refused on save.",
+      "blockVersion": "The block {{detail}} is known to both sides at different versions.",
+      "widgetMissingHere": "The server declares the dashboard tile \"{{key}}\" and this build cannot draw it.",
+      "widgetMissingOnServer": "This build registers the dashboard tile \"{{key}}\" and the server does not declare it, so nothing will ask for it."
     }
   },
   "content": {
@@ -364,5 +375,81 @@
       }
     },
     "willBeCaptured": "Live now, captured when you publish"
+  },
+  "widgets": {
+    "welcome": {
+      "title": "Your account"
+    },
+    "unknown": "This installation declares a dashboard tile this browser cannot draw: {{keys}}. It is probably a module the front end was not rebuilt for."
+  },
+  "grants": {
+    "title": "Permissions",
+    "description": "Permissions given to a single member by name, on top of what their staff positions already give them.",
+    "create": "New permission",
+    "edit": "Edit permission",
+    "formHint": "A permission scoped to no department is held on every one of them. A deny always wins over a grant.",
+    "delete": {
+      "title": "Delete this permission?",
+      "description": "The member loses it on their very next request, and this cannot be undone."
+    },
+    "fields": {
+      "vid": "VID",
+      "kind": "Kind",
+      "value": "Permission",
+      "department": "Department",
+      "effect": "Effect",
+      "expiresAt": "Expires (YYYY-MM-DD, empty for never)",
+      "suspendedAt": "Suspended",
+      "reason": "Reason",
+      "updatedAt": "Last change"
+    },
+    "options": {
+      "effect": {
+        "Grant": "Grant",
+        "Deny": "Deny"
+      },
+      "department": {
+        "none": "Every department"
+      }
+    }
+  },
+  "superadmins": {
+    "title": "Super administrators",
+    "description": "They bypass every policy. Only a super administrator sees this list or changes it, and the last one cannot be removed.",
+    "add": "Add a super administrator",
+    "remove": {
+      "title": "Remove this super administrator?",
+      "description": "VID {{vid}} loses the bypass on their very next request."
+    },
+    "fields": {
+      "vid": "VID"
+    }
+  },
+  "modules": {
+    "title": "Modules",
+    "description": "What this build was compiled with, and whether each one is accepting changes.",
+    "disabled": "Switched off",
+    "closed": "Closed",
+    "open": "Open for changes",
+    "close": "Close for changes",
+    "openHint": "Accepting changes.",
+    "closedHint": "Reads still work; nothing can be changed.",
+    "empty": {
+      "title": "No module",
+      "description": "This build was compiled without any module."
+    }
+  },
+  "audit": {
+    "title": "Audit log",
+    "description": "Every write on a row the hub records, written by the save changes interceptor and by nothing else.",
+    "fields": {
+      "at": "When",
+      "vid": "VID",
+      "action": "Action",
+      "entity": "Table",
+      "entityId": "Row",
+      "isSuperadmin": "As super administrator",
+      "ip": "Address"
+    }
   }
 }

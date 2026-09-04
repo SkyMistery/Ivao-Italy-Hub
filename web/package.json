@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "i18n:sync": "node scripts/sync-module-locales.mjs",
     "i18n:check": "node scripts/i18n-check.mjs",
     "gen:api": "openapi-typescript ../artifacts/openapi/IvaoHub.Web.json -o src/shared/api/schema.d.ts"
   },

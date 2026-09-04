@@ -50,6 +50,19 @@
     },
     "content": {
       "templateNotPublishable": "A template is not published: make a page from it and publish that."
+    },
+    "maintenance": {
+      "title": "This part of the site is closed for changes right now"
+    },
+    "grant": {
+      "unknownPermission": "This installation has no permission by that name.",
+      "globalPermission": "A permission that is not scoped to a department cannot be granted by hand.",
+      "notStaff": "That VID is not staff of this division, or has never signed in.",
+      "alreadyExpired": "Choose a date in the future, or leave it empty for a grant that does not expire."
+    },
+    "superadmin": {
+      "neverLoggedIn": "That VID has never signed in, so the hub knows nothing about them yet.",
+      "lastOne": "The last super administrator cannot be removed."
     }
   }
 }

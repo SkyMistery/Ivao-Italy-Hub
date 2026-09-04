@@ -11,7 +11,8 @@
   },
   "nav": {
     "home": "Home",
-    "staff": "Staff"
+    "staff": "Staff",
+    "modules": "Moduli"
   },
   "home": {
     "heading": "L'hub è attivo",
@@ -180,6 +181,16 @@
           "updatedAt": "Ultima modifica"
         }
       }
+    },
+    "registry": {
+      "title": "Registri",
+      "description": "Quello che dichiara il server, accanto a quello che questa build del front end ha registrato. Le due metà di un modulo si compilano separatamente, quindi possono non coincidere.",
+      "agree": "Le due parti coincidono: {{blocks}} blocco/blocchi e {{widgets}} riquadro/riquadri.",
+      "blockMissingHere": "Il server dichiara il blocco «{{type}}» e questa build non sa disegnarlo. Probabilmente il front end non è stato ricompilato con il modulo.",
+      "blockMissingOnServer": "Questa build registra il blocco «{{type}}» e il server non lo conosce. Una pagina che lo usasse verrebbe rifiutata al salvataggio.",
+      "blockVersion": "Il blocco {{detail}} è noto a tutte e due le parti con versioni diverse.",
+      "widgetMissingHere": "Il server dichiara il riquadro «{{key}}» e questa build non sa disegnarlo.",
+      "widgetMissingOnServer": "Questa build registra il riquadro «{{key}}» e il server non lo dichiara, quindi nessuno lo chiederà."
     }
   },
   "content": {
@@ -364,5 +375,81 @@
       }
     },
     "willBeCaptured": "Ora dal vivo, catturato quando pubblichi"
+  },
+  "widgets": {
+    "welcome": {
+      "title": "Il tuo account"
+    },
+    "unknown": "Questa installazione dichiara un riquadro che questo browser non sa disegnare: {{keys}}. Probabilmente è un modulo per cui il front end non è stato ricompilato."
+  },
+  "grants": {
+    "title": "Permessi",
+    "description": "Permessi dati a un singolo membro per nome, in aggiunta a quelli che le sue posizioni di staff gli danno già.",
+    "create": "Nuovo permesso",
+    "edit": "Modifica permesso",
+    "formHint": "Un permesso senza dipartimento vale su tutti. Un divieto vince sempre su una concessione.",
+    "delete": {
+      "title": "Eliminare questo permesso?",
+      "description": "Il membro lo perde alla richiesta successiva, e non si può annullare."
+    },
+    "fields": {
+      "vid": "VID",
+      "kind": "Tipo",
+      "value": "Permesso",
+      "department": "Dipartimento",
+      "effect": "Effetto",
+      "expiresAt": "Scade (AAAA-MM-GG, vuoto = mai)",
+      "suspendedAt": "Sospeso",
+      "reason": "Motivo",
+      "updatedAt": "Ultima modifica"
+    },
+    "options": {
+      "effect": {
+        "Grant": "Concedi",
+        "Deny": "Vieta"
+      },
+      "department": {
+        "none": "Tutti i dipartimenti"
+      }
+    }
+  },
+  "superadmins": {
+    "title": "Super amministratori",
+    "description": "Scavalcano ogni policy. Solo un super amministratore vede questo elenco o lo cambia, e l’ultimo non si può togliere.",
+    "add": "Aggiungi un super amministratore",
+    "remove": {
+      "title": "Togliere questo super amministratore?",
+      "description": "Il VID {{vid}} perde lo scavalco alla richiesta successiva."
+    },
+    "fields": {
+      "vid": "VID"
+    }
+  },
+  "modules": {
+    "title": "Moduli",
+    "description": "Con che cosa è stata compilata questa installazione, e se ciascuno accetta modifiche.",
+    "disabled": "Spento",
+    "closed": "Chiuso",
+    "open": "Riapri alle modifiche",
+    "close": "Chiudi alle modifiche",
+    "openHint": "Accetta modifiche.",
+    "closedHint": "Le letture funzionano; non si può modificare nulla.",
+    "empty": {
+      "title": "Nessun modulo",
+      "description": "Questa installazione è stata compilata senza moduli."
+    }
+  },
+  "audit": {
+    "title": "Registro delle modifiche",
+    "description": "Ogni scrittura su una riga che l’hub registra, scritta dall’interceptor di salvataggio e da nient’altro.",
+    "fields": {
+      "at": "Quando",
+      "vid": "VID",
+      "action": "Azione",
+      "entity": "Tabella",
+      "entityId": "Riga",
+      "isSuperadmin": "Da super amministratore",
+      "ip": "Indirizzo"
+    }
   }
 }

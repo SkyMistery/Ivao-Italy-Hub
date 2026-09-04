@@ -1,13 +1,14 @@
 import { ThemeProvider } from '@ivao/atmosphere-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 
 import { createI18n } from './app/i18n';
+import { registry } from './app/registry';
+import { createHubRouter } from './app/router';
 import { bootstrapKey } from './features/me/queries';
-import { routeTree } from './routeTree.gen';
 import { setUnauthorizedHandler } from './shared/api/client';
 import './styles/index.css';
 
@@ -20,8 +21,9 @@ setUnauthorizedHandler(() => {
 });
 
 // The router carries the query client, and the root route puts the bootstrap next to it: a guard
-// then reads `context.bootstrap` without a fetch of its own (design M0 §7.3).
-const router = createRouter({ routeTree, context: { queryClient } });
+// then reads `context.bootstrap` without a fetch of its own (design M0 §7.3). Building it lives in
+// `app/router.ts`, which is also where the routes the modules declare join the tree.
+const router = createHubRouter(queryClient);
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -36,7 +38,7 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <I18nextProvider i18n={createI18n()}>
+    <I18nextProvider i18n={createI18n(registry.i18nNamespaces)}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <RouterProvider router={router} />
