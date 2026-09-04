@@ -1,9 +1,43 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.32 — 4 settembre 2026 (hotfix dopo il tag: l'applicazione non si apriva in un browser, e nessuno dei 427 test poteva vederlo)
+**Versione documento:** 0.33 — 4 settembre 2026 (secondo hotfix: nessun form del back-office era raggiungibile. Stessa famiglia del primo — i test provano i pezzi, niente provava la composizione)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. Prossima milestone **M1**, il sito pubblico. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.33** (4 set 2026, secondo hotfix): **nessun form del back-office era raggiungibile in
+un browser.** Le tre route di dettaglio — `links`, `content`, `admin/permissions` — erano **figlie**
+delle rispettive liste, e in TanStack un figlio si disegna dentro l'`Outlet` del padre: nessun
+componente di lista ne rendeva uno. Cliccando «nuovo link» l'indirizzo cambiava, non partiva nessuna
+chiamata, non veniva lanciata nessuna eccezione, e la lista restava sullo schermo. Non si poteva
+creare o modificare un link, aprire l'editor di una pagina, né toccare un grant: la metà «form» di
+F6 e F7 non era mai stata raggiunta.
+
+**È lo stesso difetto del changelog 0.32 visto una seconda volta**, e questa è la ragione per cui
+merita una riga nel piano e non solo una nota: lì era la composizione dei **provider**, qui è la
+composizione delle **route**. In entrambi i casi ogni pezzo preso da solo era corretto — verificato
+uno per uno durante la diagnosi: il router costruisce l'href giusto, `Button asChild` produce un
+vero `<a href>`, la `parse` del padre non perde `id`. Tre ipotesi, tutte plausibili, tutte false. Il
+guasto non era in nessun pezzo, ed è esattamente il punto cieco che questo progetto ha per
+costruzione, perché tutto ciò che fa è comporre pezzi generici.
+
+**Una decisione**, `docs/internal/decisions/2026-09-04-rotte-di-dettaglio.md`: una lista e il suo
+dettaglio sono **tre** route — un layout che possiede la guardia e rende l'`Outlet`, un `index` con
+i search params e il loader, un dettaglio fratello. Scartata l'alternativa di un `<Outlet />` dentro
+ogni lista: farebbe comparire il form sotto la tabella, che è un layout master-detail che nessuno ha
+progettato, e soprattutto lascerebbe in piedi la struttura in cui il difetto è possibile.
+
+**Design §7.3 corretta**, ed è la lezione che vale più della correzione: la ricetta 2 era scritta in
+un file solo, cioè **nella forma sbagliata**, ed è stata copiata tre volte fedelmente da chi faceva
+esattamente ciò che il progetto chiede. **Una ricetta che si copia è un moltiplicatore**: giusta fa
+risparmiare tre volte, sbagliata replica il difetto tre volte e nessuno lo rimette in discussione,
+perché copiarla *è* la procedura. Una ricetta nuova va provata in un browser prima di diventare il
+quarto esemplare.
+
+Rete: `web/e2e/back-office.spec.ts`, quattro smoke con una sessione staff finta — un coordinatore
+con un solo dipartimento, non un superadmin, perché solo il primo esercita la guardia. Verificati
+togliendo l'`Outlet`: tre su quattro falliscono. Test: 353 .NET, 76 Vitest, **7 Playwright**. Design
+a 2.2, HANDOFF §12.
 
 **Changelog 0.32** (4 set 2026, dopo il tag): **`v0.1.0-m0` puntava a un'applicazione che non si
 apriva.** `DarkModeToggle` di Atmosphere si avvolge da sé in un `Tooltip` di Radix, un tooltip senza

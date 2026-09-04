@@ -318,7 +318,7 @@ with exit code 5 while the test binary run by hand passes everything; Release is
 Release is what to trust.
 
 Expect **353 .NET tests** (253 unit, 100 integration against a real MariaDB 11.4.10 in a container),
-**76 Vitest** and **3 Playwright smokes**. None is skipped, and the backbone tests of the design are
+**76 Vitest** and **7 Playwright smokes**. None is skipped, and the backbone tests of the design are
 among them.
 
 The smoke suite is the youngest and has the shortest story: `v0.1.0-m0` was first tagged on a build
