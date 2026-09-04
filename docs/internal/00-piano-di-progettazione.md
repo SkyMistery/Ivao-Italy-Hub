@@ -1,9 +1,56 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.30 — 4 settembre 2026 (F8: i moduli, l'amministrazione, la manutenzione, la ricerca e il test della divisione fittizia XX)
+**Versione documento:** 0.31 — 4 settembre 2026 (**M0 chiusa**: F9, la revisione §16.E su tutto il codice, la demo da eseguire a mano, i passi reali di un fork, il tag `v0.1.0-m0`)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F8 chiuse, prossima F9 (chiusura di M0). Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. Prossima milestone **M1**, il sito pubblico. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.31** (4 set 2026): chiusa la fase **F9**, e con lei **M0**. Nessun meccanismo nuovo:
+F9 è la fase che verifica invece di costruire, e quello che ha prodotto è la prova che le altre
+otto hanno fatto quello che dicevano.
+
+La **revisione §16.E su tutto il codice di M0** (`docs/internal/decisions/2026-09-04-m0-review.md`)
+ha letto le undici domande del template di PR una per una contro 119 file `.cs`, 110 `.ts`/`.tsx` e
+40 file di test. Il risultato in breve: zero tabelle `*_translations`, un solo authorization handler,
+zero `fetch` a mano, zero componenti fuori dall'elenco chiuso, zero FK fra contesti, zero SMTP, zero
+riferimenti fra moduli, zero `ExecuteDelete`, `IgnoreQueryFilters` nei due soli posti che l'allow-list
+prevede, migrazioni additive (i `Drop` sono tutti dentro `Down()`), nessun `TODO` in tutto il
+repository, e tutte e dodici le decisioni di M0 citate dai documenti. Le eccezioni sono **tre
+schermate che non passano dal motore lista+form** — `/staff/admin/modules`, l'elenco dei VID di
+`SuperadminPanel`, e il dettaglio di `/staff/admin/audit` che semplicemente non esiste — e tutte e
+tre per la stessa ragione, che vale la pena avere scritta: **dietro non c'è una risorsa paginata**.
+`DataList` è il motore di una lista servita dal server; dove la risposta è l'elenco del bootstrap o
+un `IReadOnlyList<int>`, usarlo avrebbe voluto dire inventare un endpoint per farlo funzionare. Se
+M1 si trovasse con la quarta, la domanda da farsi non è «uso `DataList`?» ma «questa risposta doveva
+essere una risorsa?».
+
+La revisione ha trovato **tre stringhe visibili all'utente nel codice**, tutte corrette dentro la
+fase (regola (a), ed è l'unica modifica al codice di produzione che F9 contiene): un
+`aria-label="breadcrumb"` in `PageShell` — sopravvissuto tanto a lungo proprio perché **non si
+vede**, lo legge solo uno screen reader, e lo faceva in inglese a un lettore italiano su ogni pagina
+di `/staff` — un `placeholder="my-new-page"` nel selettore di template, e il dominio
+`it.ivao.aero` dentro il messaggio con cui l'applicazione si rifiuta di partire in produzione senza
+`AllowedHosts`. Quest'ultimo non è una chiave i18n e resta in inglese di proposito, ma nominava
+**questa** divisione dentro `src/`, che è la regola di forkabilità di §4: dopo la correzione `src/`
+non contiene più il dominio della divisione da nessuna parte. `ForkabilityXxDivisionTests` non poteva
+prenderlo, perché controlla le risposte HTTP e quel messaggio non ne è una — il che è il limite di
+quel test, e vale la pena saperlo.
+
+**`tools/demo-m0.md`** (in inglese, come tutta la documentazione pubblica) è la demo end-to-end che
+§16.15 chiede: da una cartella vuota a una pagina pubblicata, in sette parti, con la checklist
+«definizione di fatto» del design §0.1 spuntata punto per punto e, sotto ogni parte, il nome del test
+che asserisce la stessa proprietà. Non è uno script: uno script che passa dice che lo script passa.
+**`docs/FORKING.md`** guadagna i passi reali di un fork — i sei comandi e le sei cose da fare dopo,
+`division.json`, `ivao-oauth.json`, `locales/`, il primo login, i template seedati e le pagine — e la
+frase che riassume tutto: nessuno di quei passi è la modifica di un file sorgente.
+
+**Playwright non è entrato in M0**, deciso da Carmine all'apertura di F9: non è fra i cinque task
+della fase, il design §8 lo dichiara «solo `pnpm e2e`, non bloccante», e la demo che il piano chiede
+è quella da eseguire a mano. Resta la prima voce del backlog di M1.
+
+Stato finale di M0: **353 test .NET** (253 unit + 100 di integrazione su MariaDB 11.4.10 vera) e
+**74 Vitest**, nessuno skippato; sedici tabelle, quattro migrazioni additive, un modulo, tre
+schermate di amministrazione, e un pacchetto self-contained che si scompatta come applicazione.
 
 **Changelog 0.30** (4 set 2026): chiusa la fase **F8**. Il nucleo compone i moduli e non ne nomina
 nessuno: `IModule` (con `ModuleBase`, che rende opzionale tutto tranne la chiave), `ModuleRegistry`
@@ -771,7 +818,7 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 
 | Fase | Contenuto | Uscita |
 |---|---|---|
-| **M0 — Fondamenta** | Repo, soluzione .NET, SPA Vite+Atmosphere, docker-compose, CI, `division.json`, i18n IT/EN, login OIDC BFF con credenziali di test, `users` + ruoli, layout pubblico/riservato, dashboard vuota; **la spina dorsale generica di §16** (`Localized<T>`, interfacce trasversali + interceptor + authorization handler, grammatica permessi, `IProjectable`, motore lista+form, endpoint di bootstrap) **dimostrata end-to-end** su `links` e su un primo `cms_contents` creato da template (§16.15) | Skeleton navigabile, login funzionante, meccanismi generici provati. Design: `01-design-m0.md`; fasi: `02-piano-implementazione-m0.md`. Il **deploy su staging Plesk** è spostato a M1 (deciso 2 set 2026: attende le risposte A9) |
+| **M0 — Fondamenta** ✅ **chiusa** (4 set 2026, `v0.1.0-m0`) | Repo, soluzione .NET, SPA Vite+Atmosphere, docker-compose, CI, `division.json`, i18n IT/EN, login OIDC BFF con credenziali di test, `users` + ruoli, layout pubblico/riservato, dashboard vuota; **la spina dorsale generica di §16** (`Localized<T>`, interfacce trasversali + interceptor + authorization handler, grammatica permessi, `IProjectable`, motore lista+form, endpoint di bootstrap) **dimostrata end-to-end** su `links` e su un primo `cms_contents` creato da template (§16.15) | Skeleton navigabile, login funzionante, meccanismi generici provati. Design: `01-design-m0.md`; fasi: `02-piano-implementazione-m0.md`. Il **deploy su staging Plesk** è spostato a M1 (deciso 2 set 2026: attende le risposte A9). Demo da eseguire a mano: `tools/demo-m0.md`; revisione finale: `decisions/2026-09-04-m0-review.md` |
 | **M1 — Sito pubblico** | Primo pacchetto self-contained e deploy su staging Plesk (foglio `LEGGIMI`); nucleo editoriale: pagine a blocchi (editor a lista, set iniziale di blocchi), news, documenti per dipartimento, calendario unico (con sole voci interne per ora), media, contatti, staff directory, live status; pagina `/start`; back-office per dipartimento; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO/i18n URL; migrazione contenuti dal Blazor | Sostituisce `it.ivao.aero` |
 | **M2 — Eventi** | Modulo Events: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, back-office Events. Nessun import | Spegne `ivao-booking` |
 | **M3 — Tour** | Modulo Flight Ops: tour, leg, PIREP, validatore automatico, classifiche, award con mail, voci nel calendario; design ereditato da `Ivao Italy Toursystem` | I tour IT lasciano `tours.th.ivao.aero` |

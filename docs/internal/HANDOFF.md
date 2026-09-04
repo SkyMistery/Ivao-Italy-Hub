@@ -3,12 +3,13 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 4 settembre 2026 — **F8 chiusa**: PR #20 fusa su `main` (`b46d57b`), CI
-verde, con un merge commit vero (due genitori, verificato). Il nucleo compone i moduli, le tre
-schermate di amministrazione esistono, `/api/search` legge il FULLTEXT e la divisione fittizia XX si
-avvia da zero su un database proprio.
+**Ultimo aggiornamento:** 4 settembre 2026 — **M0 è chiusa.** F9 ha verificato invece di costruire:
+la checklist §16.E letta su tutto il codice, la demo da eseguire a mano, i passi reali di un fork, e
+il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono dimostrate end-to-end
+su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.30. **Design:** v1.9. **Test:** 353 .NET verdi (253 unit + 100 integrazione) + 74 Vitest.
+**Piano:** v0.31. **Design:** v2.0. **Piano di implementazione:** v1.6.
+**Test:** 353 .NET verdi (253 unit + 100 integrazione) + 74 Vitest. Nessuno skippato.
 
 | Fase | Stato |
 |---|---|
@@ -22,47 +23,36 @@ avvia da zero su un database proprio.
 | F6 spina dorsale frontend | mergiata (PR #13) |
 | F7 contenuti: entità, envelope, publish, blocchi, editor, template | mergiata (PR #17) |
 | F8 moduli, admin, manutenzione, ricerca, forkabilità | mergiata (PR #20) |
-| **F9 chiusura di M0** | **prossima** |
+| **F9 chiusura di M0** | **fatta** |
 
-### Come si apre F9
+### Il tag
+
+**Non è ancora stato spinto**, per scelta: F9 lo prepara, lo spinge Carmine dopo aver fuso la PR.
+Dal checkout principale, con `main` già aggiornato:
+
+```bash
+git checkout main && git pull
+git tag -a v0.1.0-m0 -m "M0: foundations and the generic backbone, proven end to end"
+git push origin v0.1.0-m0
+```
+
+Il tag fa partire `release.yml`, che **dipende da `build-test`**: i 353 test girano prima, e solo
+dopo esce la release con lo zip del pacchetto self-contained. Provato davvero il 3 set 2026 con un
+tag usa-e-getta poi cancellato: nessun tag può pubblicare senza passare dai test.
+
+### Come si apre M1
 
 ⚠️ **`gh pr list` prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in parallelo in
 worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha mergiato per
 prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
 ma è stato un caso. Costa due secondi.
 
-Dal checkout principale (non da un worktree: lì `main` è già in uso e il checkout fallisce, §9):
-`git pull`, poi `git checkout -b m0/f9-chiusura` e il prompt di §C con `<N>` → `9`.
-
-**Perimetro di F9** (§D del piano): l'HANDOFF definitivo, `tools/demo-m0.md` in inglese con i passi
-della demo di F7/F8 e la checklist «definizione di fatto» del design §0.1 spuntata, la revisione
-della checklist §16.E su tutto il codice di M0 con le eccezioni scritte in
-`docs/internal/decisions/2026-XX-XX-m0-review.md`, il riallineamento di `FORKING.md` con i passi
-reali, e il tag `v0.1.0-m0` con la release CI.
-
-Cinque cose che F9 eredita e deve sapere:
-
-1. **Il giro di riallineamento della documentazione va rifatto.** Costa dieci minuti e ha trovato
-   qualcosa ogni volta che è stato fatto (§7). F8 ha toccato `README.md`, `docs/FORKING.md`
-   («Adding a module» adesso è scritta per davvero), `docs/UI-GUIDELINES.md`, il design e il piano.
-2. **Playwright non c'è ancora**, e F9 è dove il piano chiede la demo end-to-end da script. È il
-   candidato naturale: `pnpm e2e`, non bloccante in M0 (design §8).
-3. **`ForkabilityXxDivision` è il modello di come si avvia una seconda installazione** dentro i
-   test: `IVAOHUB_ROOT` su una radice temporanea, un database proprio creato come root, e la catena
-   di migrazioni che gira da zero. Se la demo di F9 vuole partire pulita, quella è la ricetta.
-4. **`config/division.xx.json` esiste** ed è la divisione fittizia. Non è un esempio per chi forka
-   (quello è `division.example.json`): è il soggetto di un test.
-5. **Le eccezioni alla checklist §16.E che F8 conosce sono tre**, e sono nel corpo della PR: la
-   schermata dei moduli non usa `DataList` (non c'è una risorsa dietro: sono tre fatti e un bottone
-   per riga), `TheSpaDoesNotAnswerForWhatAModuleExcluded` asserisce sul registry oltre che sulla
-   risposta perché il test host non ha un `index.html` da servire, e `AtcModule` non dichiara nessun
-   permesso — il ramo dei permessi di modulo è provato con un modulo finto in
-   `ModuleCompositionTests`.
-
-**F8 non lascia niente di aperto** che non sia scritto in §7.
+**M1 non ha ancora un design.** M0 ne ha avuto uno (`01-design-m0.md`) prima di una riga di codice,
+e il piano §13 dice che ogni milestone ne riceve uno: il primo lavoro di M1 è scriverlo, non aprire
+un branch. Quello che M1 deve coprire è in §10 qui sotto.
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
-nessuno.
+nessuno se non chi vuole rifare il login vero.
 
 ---
 
@@ -74,6 +64,18 @@ docker compose up -d                                        # MariaDB 11.4.10 + 
 dotnet run --project src/IvaoHub.Web                        # API su :5000, migra il DB da sola
 cd web && pnpm install && pnpm dev                          # SPA su :5173 (proxy /api, /auth, /health)
 ```
+
+**Dove stanno le credenziali** (mai *quali*, e mai in chat né in un commit):
+
+| Cosa | Dove | Chi la conosce |
+|---|---|---|
+| Client OAuth IVAO della divisione | `config/ivao-oauth.json`, gitignored; in alternativa le variabili `Ivao__*` | Carmine. In sviluppo si usa il client di test, registrato su `http://localhost:5173`. |
+| Connection string, SMTP, `AllowedHosts`, reti dei proxy fidati | `secrets/<nome-non-indovinabile>.json`, gitignored, o variabili d'ambiente | L'installazione. In sviluppo basta `appsettings.Development.json`. |
+| Chiavi Data Protection | `hub-keys/`, gitignored e **persistente** | Nessuno: si perdono e si perdono i token IVAO salvati, che il codice tratta come assenti forzando il re-login. |
+| Credenziali del container MariaDB di sviluppo | `docker-compose.yml`, in chiaro e va bene così | Chiunque: è un database usa-e-getta in locale. |
+
+Nessuno di questi file è nel repository, e nessuno finisce nel pacchetto pubblicato: stanno
+**accanto** all'applicazione sul server, così un deploy non li sovrascrive mai.
 
 Il login vero si prova da <http://localhost:5173>: «Accedi con IVAO» → consenso → ritorno su `/me`.
 Perché funzioni, `LoginUrl` e `RedirectUri` in `config/ivao-oauth.json` devono coincidere **carattere per
@@ -443,6 +445,34 @@ senza credenziali.
   sola chiave `en`.
 - **353 test .NET** (253 unit + 100 integrazione) e **74 Vitest**.
 
+**Chiusura (F9)** — la fase che verifica invece di costruire, e che quindi vale soprattutto per
+quello che ha *trovato*:
+
+- **La revisione §16.E su tutto il codice** sta in `decisions/2026-09-04-m0-review.md`: le undici
+  domande del template di PR lette una per una contro 119 file `.cs`, 110 `.ts`/`.tsx` e 40 file di
+  test. Le eccezioni sono **tre schermate** che non passano dal motore lista+form, e sono tutte lo
+  stesso caso: dietro non c'è una risorsa paginata (l'elenco dei moduli è quello del bootstrap,
+  quello dei superadmin è un `IReadOnlyList<int>`, e il dettaglio dell'audit non esiste). Tutto il
+  resto — nessun `*_translations`, un handler solo, nessun `fetch` a mano, nessun componente fuori
+  dall'elenco, nessuna FK fra contesti, nessun `ExecuteDelete`, `IgnoreQueryFilters` nei due soli
+  posti previsti, migrazioni additive, zero `TODO` — è verificato riga per riga e non a memoria.
+- **Tre stringhe visibili all'utente erano nel codice**, e sono l'unica modifica al codice di
+  produzione che F9 contiene. La più istruttiva è `aria-label="breadcrumb"` in `PageShell`: era lì
+  da F6 ed è sopravvissuta a tre giri di revisione **perché non si vede** — la legge solo uno screen
+  reader, e lo faceva in inglese a un lettore italiano su ogni pagina di `/staff`. Le altre due sono
+  un `placeholder` di esempio e il dominio di questa divisione dentro il messaggio con cui l'app si
+  rifiuta di partire senza `AllowedHosts`. Quest'ultima `ForkabilityXxDivisionTests` non poteva
+  prenderla: quel test controlla le **risposte HTTP**, e un messaggio di avvio non è una risposta.
+  È un limite del test che vale la pena conoscere.
+- **`tools/demo-m0.md`** (inglese): la demo end-to-end che §16.15 chiede, in sette parti, dalla
+  cartella vuota alla pagina pubblicata, con la checklist «definizione di fatto» del design §0.1
+  spuntata e il nome del test che asserisce la stessa cosa sotto ogni parte.
+- **`docs/FORKING.md`** ha i passi reali di un fork, in ordine, e la frase che li riassume: nessuno
+  di quei passi è la modifica di un file sorgente.
+- **Playwright non è entrato in M0**, deciso da Carmine all'apertura della fase: non è fra i cinque
+  task di F9, il design §8 lo dichiara non bloccante, e la demo che il piano chiede è quella da
+  eseguire a mano. È la prima voce del backlog di M1 (§10).
+
 ## 3. Regole già attive (non aggirarle nelle fasi successive)
 
 - ESLint blocca `fetch` fuori da `shared/api`, `<svg>` fuori da `shared/icons` e `blocks`, import dal nucleo
@@ -609,6 +639,7 @@ senza credenziali.
 | `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. **Decisa da Carmine** il 4 set 2026; design §5.6 corretto. |
 | `2026-09-04-grant-e-sessione.md` | Un grant invalida la sessione del suo titolare attraverso l'**entità** (`IAffectsUserSession`, applicata dall'interceptor) e non attraverso un secondo gancio di `MapCrud`: vale per chiunque scriva la riga. Dice anche che cosa significa davvero «subito» — il cookie vecchio prende 401, non viene riscritto. **Decisa da Carmine** il 4 set 2026; design §3.4 e §3.7 aggiornate. |
 | `2026-09-04-frozen-e-visibilita.md` | Una cattura `frozen` non può essere più visibile della pagina che la contiene: la pubblicazione passa al provider un `DataBlockContext`, e `VisibilityCeiling` dice cosa ci sta dentro. **Decisa da Carmine** il 4 set 2026; design §5.5 corretta. |
+| `2026-09-04-m0-review.md` | La revisione §16.E su tutto il codice di M0: le undici domande verificate riga per riga, le tre eccezioni (schermate senza una risorsa paginata dietro), le tre stringhe visibili trovate e corrette, e un rilievo rimandato a M1 (`LocalizedExtensions`, helper di test che vive in `src/`). Scritta in F9. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
 serve a non ridiscutere fra sei mesi una cosa già discussa.
@@ -662,6 +693,12 @@ allargare i permessi, mai stringerli a sorpresa.
 - ~~`shared/api/bootstrap.ts` e il tipo `ApiPaths` in `client.ts` sono scritti a mano~~ **chiuso in
   F5**: `schema.d.ts` è generato dall'OpenAPI e committato, `client.ts` è `createClient<paths>` e
   `bootstrap.ts` è un elenco di alias del contratto.
+- **Il giro di riallineamento della documentazione, fatto a fine F9** — la sesta volta, e ha trovato
+  qualcosa anche stavolta: `README.md` e `docs/FORKING.md` fermi a «phase F8 of nine», il design che
+  chiamava tre test della spina dorsale con nomi che F2 aveva poi scritto in forma più esplicita, e
+  `docs/FORKING.md` che prometteva «i passi di un fork vero alla fine di M0» senza averli. Tutte e
+  tre corrette. La lezione è sempre la stessa e ormai ha sei conferme: **costa dieci minuti e non è
+  mai stato inutile.**
 - La documentazione è stata riallineata il 3 set 2026: `README.md` e `docs/FORKING.md` dicevano
   ancora «phase F1» e «phase F0»; il design `01` descriveva l'interceptor e il query filter in una
   forma che F4 ha poi cambiato; i codici di dipartimento del changelog 0.21 erano rimasti in una
@@ -737,11 +774,12 @@ allargare i permessi, mai stringerli a sorpresa.
   lo eserciti. Il primo è M2.
 - **Il `filter[...]` fa un solo confronto, l'uguaglianza.** Basta a F6 (dipartimento, visibilità,
   categoria, attivo). Intervalli e `in` non ci sono, e se servissero andrebbero nel motore.
-- **Nessun test end-to-end del browser.** Playwright è previsto dal design (§8, «solo `pnpm e2e`,
-  non bloccante in M0») e in F6 non è stato aggiunto: i 35 Vitest coprono i pezzi, ma «staff ED
-  apre `/staff/ed/links`, crea un link, vede l'errore sul campo giusto» è stato verificato leggendo
-  il codice e non eseguendolo. È il candidato naturale per **F9**, dove il piano chiede già la demo
-  end-to-end da script.
+- **Nessun test end-to-end del browser**, e in M0 non ce ne sarà uno. Playwright è previsto dal
+  design (§8, «solo `pnpm e2e`, non bloccante in M0»); **F9 non l'ha aggiunto**, deciso da Carmine:
+  non è fra i cinque task della fase e la demo end-to-end che il piano chiede è `tools/demo-m0.md`,
+  eseguita a mano. Quindi «staff ED apre `/staff/ed/links`, crea un link, vede l'errore sul campo
+  giusto» resta verificato leggendo il codice e non eseguendolo. **Prima voce del backlog di M1**,
+  §10.
 - **Il form dei link non permette di spostare un link fra dipartimenti.** `ownerDepartment` è
   `hidden` e viene dal path della route. Non era nell'accettazione di F6; il giorno che servisse,
   è una select ristretta a `reachableDepartments`, non un campo libero — il server rifiuta comunque
@@ -789,9 +827,9 @@ allargare i permessi, mai stringerli a sorpresa.
   già dati live, solo senza dirlo. Ora il badge distingue «catturato alla pubblicazione» (una
   versione) da «ora dal vivo, catturato quando pubblichi» (una bozza), e lo vede solo lo staff.
 - **Nessun test end-to-end del browser, ancora.** «Il coordinatore apre l'editor, aggiunge un
-  blocco, pubblica» è coperto dai test di integrazione lato API e da 69 Vitest sui pezzi, ma non è
-  stato eseguito in un browser. Non è un debito di F7: il design §8 mette Playwright fra le cose
-  «solo `pnpm e2e`, non bloccante in M0», e il piano chiede la demo da script in **F9**.
+  blocco, pubblica» è coperto dai test di integrazione lato API e da 74 Vitest sui pezzi, ma non è
+  stato eseguito in un browser. Non è un debito di F7 e non lo è di F9: il design §8 mette Playwright
+  fra le cose «solo `pnpm e2e`, non bloccante in M0». Passa a M1 (§10), dove è il punto 1.
 - **Nessun test verifica il documento OpenAPI in sé** (che `/api/links` ci sia, che
   `LocalizedString` porti `x-localized`). Lo step di CI `pnpm gen:api && git diff --exit-code` lo
   copre di sponda: se il documento cambia forma, `schema.d.ts` si muove e la build cade.
@@ -1052,3 +1090,74 @@ un contesto.
   lo riscrive `dotnet build`. Quello che è committato è il file che ne deriva,
   `web/src/shared/api/schema.d.ts`, marcato `linguist-generated` in `.gitattributes` e ignorato da
   Prettier e da ESLint come `routeTree.gen.ts`.
+
+---
+
+## 10. Cosa manca per M1
+
+M0 ha costruito i meccanismi; M1 è la milestone in cui si vede che erano quelli giusti, perché il
+sito pubblico dovrebbe essere **configurazione molto più che codice**. Se non lo è, il posto dove
+scoprirlo è qui.
+
+**Prima di qualsiasi branch**: M1 riceve un documento di design come M0 (piano §13), e il perimetro
+qui sotto è il suo indice di partenza, non la sua sostituzione.
+
+### Il perimetro che il piano assegna a M1
+
+| Cosa | Perché dovrebbe costare poco | Dove sta scritto |
+|---|---|---|
+| **Sito pubblico**: navigazione, home, pagine di sistema seedate | Il renderer, l'editor, i template e la pubblicazione esistono; mancano le pagine e il menu | piano §9.1, §9.3 |
+| **News e documenti** | Sono `kind` di `cms_contents`, cioè **due righe di configurazione** e non due tabelle. Se richiedono più di questo, la §9.3 non ha retto | piano §9.3, design §5 |
+| **Calendario con UI** | `cms_calendar_entries` esiste già ed è riempito dalle proiezioni; `CalendarEntry` è già `IAuditable`, `IOwnedByDepartment`, `IVisible` e `[PermissionArea("Calendar")]` | HANDOFF §8.6 |
+| **Schermata di ricerca (⌘K)** | `GET /api/search` esiste e legge il FULLTEXT dietro il query filter. Restano due domande che M0 ha lasciato aperte: l'ordinamento per rilevanza sopra la paginazione, e l'evidenziazione | §7, `SearchEndpoints.cs` |
+| **Media library, contatti, staff directory, live status** | Il roster è «chi ha fatto login almeno una volta» (piano §16.D punto 13). `ivao_is_staff` e `ivao_is_supervisor` sono già registrati apposta e non decidono niente | piano §9.4, §9.5 |
+| **Servizio notifiche** e il namespace `mail` nei file di lingua | Il namespace nascerà da sé: `pnpm i18n:check` legge tutti quelli che trova | §7 |
+| **Deploy su staging Plesk** e il foglio `LEGGIMI` | Escluso da M0 per decisione (2 set 2026), in attesa delle risposte A9 | piano §13, §15.2c |
+| **Set di blocchi completo ed editor rifinito** (dnd-kit, anteprima multi-device, «allinea al template») | Il registry dei blocchi e il generatore di form sono estendibili; le convenzioni dei blocchi si decidono con il set davanti | design §0.2, piano §16.C |
+
+### Debiti che M1 eredita, in ordine di quanto costano se ignorati
+
+1. **Playwright, `pnpm e2e`.** È l'unica cosa che il design §8 prevede e che M0 non ha. Oggi «lo
+   staff apre l'editor, aggiunge un blocco, pubblica» è coperto dai test di integrazione lato API e
+   da 74 Vitest sui pezzi, ma non è mai stato **eseguito in un browser**. Lo smoke che il design
+   descrive è minimo — anonimo su `/` e su una pagina pubblicata dal seed di test — e non blocca la
+   build. Farlo presto in M1 significa averlo mentre le schermate si moltiplicano, invece di
+   scriverlo dopo.
+2. **Un cambio di template non si propaga, e l'editor non lo mostra.** Il design §7.7 lo mette
+   esplicitamente in M1 («Differenze rispetto al template»). La regola resta quella di M0 — un
+   template non riscrive mai una pagina da solo — ma l'editor deve **dire** che una sezione nuova
+   esiste.
+3. **`seo` non ha un campo nell'editor.** È un `Localized<JsonNode>` di cui il design non dice la
+   forma, e M1 è l'unica milestone che ha una ragione per deciderla. Servirà un tipo nuovo al
+   generatore di form — «oggetto tradotto» — che è un'estensione, non un form scritto a mano.
+4. **`expiresAt` di un grant è una casella di testo.** Il generatore non ha un tipo «data»; il
+   giorno che serve davvero, si estende `shared/forms/schema.ts` (che lancia apposta invece di
+   saltare un campo che non sa disegnare).
+5. **Il primo permesso di modulo vero, e il primo `DbContext` di modulo.** `AtcModule` non dichiara
+   permessi e non ha un contesto: entrambi i rami sono scritti, testati con un modulo finto, e non
+   ancora esercitati da un modulo reale. Il primo vero è M2 (Events), ma se un modulo di M1 li tocca
+   è lì che si scopre se `AddModuleDbContext<T>` regge.
+6. **Le posizioni FIR non danno nessun permesso** (§6 punto 1). È la lettura più restrittiva del
+   design, scelta in F2 apposta perché una correzione possa solo allargare. `firStaffScope` esiste
+   in `division.json` e in M1 va deciso cosa significa davvero.
+7. **`LocalizedExtensions` vive in `src/` e non ha chiamanti di produzione** (nota di revisione di
+   F9). `.L(italiano, inglese)` cabla `"it"` e `"en"` ed è usato solo dai test; `ToLocalized<T>` non
+   è usato da nessuno. Va spostato nei progetti di test al primo giro che li tocca comunque.
+8. **`HubUser` è `[Audited]`, quindi ogni login lascia una riga di audit.** In M0 è il prezzo
+   corretto (l'audit dei superadmin senza che un servizio se lo scriva da sé) e la riga pesa poco
+   perché contiene solo le colonne cambiate. Se in M1 la tabella dà fastidio, si restringe lì.
+9. **La cache della manutenzione è di cinque secondi e il processo è uno solo.** Con Passenger
+   oggi va bene; il giorno che i processi sono due, la risposta è un invalidamento condiviso, non
+   una cache più corta.
+10. **La ricerca non ordina per rilevanza in modo esplicito e non evidenzia niente**, e InnoDB
+    ignora le parole più corte di tre lettere. Nessuna delle tre è un bug: sono decisioni che la
+    schermata di ricerca di M1 deve prendere.
+
+### Quello che M1 non deve rimettere in discussione
+
+Le regole di §3 e le scelte di §4 di questo documento sono la spina dorsale, non un'opinione di M0:
+un campo tradotto è una colonna JSON, un CRUD è `MapCrud`, una schermata di back-office è una
+configurazione, l'autorizzazione è un handler solo, l'audit e le proiezioni le scrive l'interceptor,
+e l'identità si legge da `ICurrentUser`. Se M1 trova un caso che un meccanismo non copre, la regola
+(b) di CLAUDE.md §5 dice di **estendere il meccanismo**; la (c) dice di fermarsi e scrivere una
+nota. Nessuna delle due dice di aggirarlo.
