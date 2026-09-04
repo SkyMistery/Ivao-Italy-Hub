@@ -22,7 +22,7 @@ public enum GrantKind
 /// second pair of columns saying the same thing.
 /// </summary>
 [Audited]
-public sealed class UserGrant : IAuditable
+public sealed class UserGrant : IAuditable, IAffectsUserSession
 {
     public long Id { get; set; }
 
@@ -56,4 +56,11 @@ public sealed class UserGrant : IAuditable
     public DateTime RowVersion { get; set; }
 
     public HubUser? User { get; set; }
+
+    /// <summary>
+    /// Changing a grant changes what its holder may do, so their cookie has to stop being believed
+    /// at once rather than at their next login. The interceptor does it, for whoever writes the row
+    /// (design M0 section 3.3).
+    /// </summary>
+    int IAffectsUserSession.AffectedVid => Vid;
 }
