@@ -89,6 +89,10 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddHubDbContext();
 builder.Services.AddHubCrud();
+
+// The block registry, the providers that answer for data blocks, publication and the seeder of the
+// system templates. A module adds its blocks to the same registry in F8.
+builder.Services.AddHubContent();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
 builder.Services.AddIvaoAuthentication();
@@ -222,6 +226,8 @@ app.MapAuthEndpoints();
 app.MapMeEndpoints();
 app.MapLocaleEndpoints();
 app.MapLinksEndpoints();
+app.MapContentEndpoints();
+app.MapBlockDataEndpoint();
 
 app.MapGet("/api/version", (BuildInfo build) => TypedResults.Ok(
     new VersionResponse(build.Version, build.Commit, build.BuiltAt, build.Dotnet)));

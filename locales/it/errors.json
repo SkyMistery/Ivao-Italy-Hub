@@ -30,6 +30,26 @@
       "unsupported": "La divisione non pubblica in quella lingua."
     },
     "unknown": "Qualcosa è andato storto. Riprova.",
-    "title": "Non ha funzionato"
+    "title": "Non ha funzionato",
+    "slug": {
+      "invalid": "Usa lettere minuscole, cifre e trattini singoli."
+    },
+    "body": {
+      "notAnObject": "Questa pagina non ha ancora contenuto.",
+      "tooLarge": "Questa pagina e' troppo grande per essere salvata. Spostane una parte in una pagina a se'.",
+      "schemaVersion": "Questa pagina e' stata scritta da una versione piu' recente dell'hub.",
+      "tooDeep": "Le sezioni non possono annidarsi piu' in profondita' di cosi'.",
+      "idMissing": "Questa sezione o questo blocco ha perso il suo identificativo.",
+      "idDuplicated": "Due sezioni o due blocchi hanno lo stesso identificativo.",
+      "blockTypeMissing": "Questo blocco non dice cosa e'.",
+      "blockTypeUnknown": "Questo blocco e' di un tipo che l'hub non conosce.",
+      "templateOnlyKey": "Solo un template puo' fissare questo. Cambialo sul template.",
+      "layoutUnknown": "Questa sezione chiede una disposizione che non esiste.",
+      "renderModeUnknown": "Questo blocco chiede di essere reso in un modo che non esiste.",
+      "columnOutOfRange": "Questo blocco e' in una colonna che la sua sezione non ha."
+    },
+    "content": {
+      "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella."
+    }
   }
 }

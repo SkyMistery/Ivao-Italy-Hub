@@ -103,12 +103,13 @@ jobs:
         run: test -f artifacts/publish/wwwroot/index.html
 
       # What an installation needs and no compiler produces: the language files the back end reads,
-      # the example configuration to copy, and the licence that Apache-2.0 section 4(d) wants
-      # travelling with every redistribution.
-      - name: Check that the package carries locales, examples and the licence
+      # the templates a fresh installation starts with, the example configuration to copy, and the
+      # licence that Apache-2.0 section 4(d) wants travelling with every redistribution.
+      - name: Check that the package carries locales, seeds, examples and the licence
         run: |
           test -f artifacts/publish/locales/en/errors.json
           test -f artifacts/publish/locales/it/errors.json
+          test -f artifacts/publish/seed/content-templates/section-page.json
           test -f artifacts/publish/config/division.example.json
           test -f artifacts/publish/config/ivao-oauth.example.json
           test -f artifacts/publish/LICENSE

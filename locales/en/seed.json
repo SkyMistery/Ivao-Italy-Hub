@@ -1,0 +1,59 @@
+{
+  "seed": {
+    "templates": {
+      "sectionPage": {
+        "title": "Section page",
+        "summary": "A page with a hero, a free body and the links of the department.",
+        "hero": {
+          "section": "Hero",
+          "heading": "The title of this page",
+          "text": "One or two sentences saying what the reader will find here."
+        },
+        "body": {
+          "section": "Body"
+        },
+        "links": {
+          "section": "Links",
+          "heading": "Useful links"
+        }
+      },
+      "about": {
+        "title": "About page",
+        "summary": "Who the department is, what it does and how to reach it.",
+        "intro": {
+          "section": "Introduction",
+          "heading": "About us",
+          "text": "What this part of the division is for, in a paragraph."
+        },
+        "team": {
+          "section": "Team"
+        },
+        "contact": {
+          "section": "Contact",
+          "title": "Getting in touch",
+          "text": "Say here who to write to, and what to expect."
+        }
+      },
+      "policy": {
+        "title": "Policy document",
+        "summary": "A rule of the division, written the same way every time.",
+        "purpose": {
+          "section": "Purpose",
+          "text": "Why this policy exists and what problem it settles."
+        },
+        "scope": {
+          "section": "Scope",
+          "text": "Who it applies to, and when."
+        },
+        "rules": {
+          "section": "Rules",
+          "text": "The rules themselves, one per paragraph."
+        },
+        "changelog": {
+          "section": "Changelog",
+          "text": "What changed in this policy, and when."
+        }
+      }
+    }
+  }
+}

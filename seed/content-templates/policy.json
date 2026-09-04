@@ -1,0 +1,87 @@
+{
+  "slug": "policy",
+  "kind": "Document",
+  "title": { "$t": "seed.templates.policy.title" },
+  "summary": { "$t": "seed.templates.policy.summary" },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_purpose",
+        "key": "purpose",
+        "title": { "$t": "seed.templates.policy.purpose.section" },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "narrow",
+        "required": true,
+        "locked": true,
+        "blocks": [
+          {
+            "id": "b_purpose_text",
+            "type": "text",
+            "version": 1,
+            "props": { "markdown": { "$t": "seed.templates.policy.purpose.text" } }
+          }
+        ]
+      },
+      {
+        "id": "s_scope",
+        "key": "scope",
+        "title": { "$t": "seed.templates.policy.scope.section" },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "narrow",
+        "required": true,
+        "locked": true,
+        "blocks": [
+          {
+            "id": "b_scope_text",
+            "type": "text",
+            "version": 1,
+            "props": { "markdown": { "$t": "seed.templates.policy.scope.text" } }
+          }
+        ]
+      },
+      {
+        "id": "s_rules",
+        "key": "rules",
+        "title": { "$t": "seed.templates.policy.rules.section" },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "narrow",
+        "required": true,
+        "locked": true,
+        "blocks": [
+          {
+            "id": "b_rules_text",
+            "type": "text",
+            "version": 1,
+            "props": { "markdown": { "$t": "seed.templates.policy.rules.text" } }
+          }
+        ]
+      },
+      {
+        "id": "s_changelog",
+        "key": "changelog",
+        "title": { "$t": "seed.templates.policy.changelog.section" },
+        "layout": "stacked",
+        "background": "muted",
+        "padding": "md",
+        "width": "narrow",
+        "required": true,
+        "locked": true,
+        "blocks": [
+          {
+            "id": "b_changelog_text",
+            "type": "text",
+            "version": 1,
+            "props": { "markdown": { "$t": "seed.templates.policy.changelog.text" } }
+          }
+        ]
+      }
+    ]
+  }
+}

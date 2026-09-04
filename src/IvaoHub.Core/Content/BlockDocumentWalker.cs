@@ -17,6 +17,13 @@ public sealed record BlockDocumentNode(JsonObject Node, string Path, int Depth)
 /// <summary>One thing wrong with a body. The message is an i18n key, never prose.</summary>
 public sealed record BlockDocumentError(string Key, string Path);
 
+/// <summary>
+/// A translated value inside a body that does not carry every language of the division, and where
+/// it sits. Publication refuses a page holding any of these, naming each one, because a visitor
+/// reading in the other language would be shown a hole.
+/// </summary>
+public sealed record BlockDocumentMissingLocale(string Path, IReadOnlyList<string> Locales);
+
 /// <summary>The outcome of validating an envelope.</summary>
 public sealed record BlockDocumentValidation(IReadOnlyList<BlockDocumentError> Errors)
 {
@@ -43,12 +50,32 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// <summary>The only envelope version M0 knows how to read.</summary>
     public const int SupportedSchemaVersion = 1;
 
+    /// <summary>
+    /// How a section arranges its blocks. A closed set: with <c>stacked</c> the blocks follow one
+    /// another, with any other layout each block says which column it is in.
+    /// </summary>
+    public static readonly IReadOnlyList<string> Layouts = ["stacked", "1/2+1/2", "1/3+2/3", "2/3+1/3", "3x1/3"];
+
+    /// <summary>
+    /// What a data block does when the page is read: ask the provider now, or show what was
+    /// captured when the page was published. A content block carries neither.
+    /// </summary>
+    public static readonly IReadOnlyList<string> RenderModes = ["live", "frozen"];
+
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 
     private readonly HashSet<string> _locales = new(locales, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Every block of the body, in reading order, nested sections included.</summary>
-    public IEnumerable<BlockDocumentNode> EnumerateBlocks(JsonNode? body)
+    public IEnumerable<BlockDocumentNode> EnumerateBlocks(JsonNode? body) =>
+        EnumerateBlocksBySection(body).Select(pair => pair.Block);
+
+    /// <summary>
+    /// The same blocks, each with the section it sits in. A block is only readable next to its
+    /// section for the things the section decides -- which column it may claim -- so the pairing is
+    /// the enumeration and <see cref="EnumerateBlocks"/> is the half of it most callers want.
+    /// </summary>
+    public IEnumerable<(BlockDocumentNode Section, BlockDocumentNode Block)> EnumerateBlocksBySection(JsonNode? body)
     {
         if (body is not JsonObject root)
         {
@@ -66,7 +93,9 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             {
                 if (blocks[index] is JsonObject block)
                 {
-                    yield return new BlockDocumentNode(block, $"{section.Path}.blocks[{index}]", section.Depth);
+                    yield return (
+                        section,
+                        new BlockDocumentNode(block, $"{section.Path}.blocks[{index}]", section.Depth));
                 }
             }
         }
@@ -145,9 +174,10 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
 
             CheckIdentifier(section, identifiers, errors);
             CheckTemplateOnlyKeys(section, isTemplate, errors);
+            CheckLayout(section, errors);
         }
 
-        foreach (var block in EnumerateBlocks(root))
+        foreach (var (section, block) in EnumerateBlocksBySection(root))
         {
             CheckIdentifier(block, identifiers, errors);
 
@@ -159,9 +189,31 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             {
                 errors.Add(new BlockDocumentError("errors.body.blockTypeUnknown", block.Path));
             }
+
+            CheckRenderMode(block, errors);
+            CheckColumn(section, block, errors);
         }
 
         return errors.Count == 0 ? BlockDocumentValidation.Valid : new BlockDocumentValidation(errors);
+    }
+
+    /// <summary>
+    /// Every translated value inside the body that is not written in all the languages of the
+    /// division, with the path that names it. It is the second half of the rule publication
+    /// enforces, the first being the title of the row itself (design M0 section 5.5).
+    /// <para>A draft is allowed to be incomplete, so nothing calls this on a write: it is asked
+    /// once, when somebody is about to show the page to the public.</para>
+    /// </summary>
+    public IReadOnlyList<BlockDocumentMissingLocale> MissingLocales(JsonNode? body)
+    {
+        var missing = new List<BlockDocumentMissingLocale>();
+
+        foreach (var block in EnumerateBlocks(body))
+        {
+            CollectMissingLocales(block.Node["props"], $"{block.Path}.props", missing);
+        }
+
+        return missing;
     }
 
     /// <summary>
@@ -256,6 +308,104 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
         else if (!identifiers.Add(node.Id))
         {
             errors.Add(new BlockDocumentError("errors.body.idDuplicated", node.Path));
+        }
+    }
+
+    /// <summary>
+    /// How many columns a layout has. Anything but <c>stacked</c> is a row of columns, and the
+    /// count is what a block's <c>column</c> is checked against.
+    /// </summary>
+    public static int ColumnsOf(string? layout) => layout switch
+    {
+        null or "stacked" => 1,
+        "3x1/3" => 3,
+        _ => 2,
+    };
+
+    private static void CheckLayout(BlockDocumentNode section, List<BlockDocumentError> errors)
+    {
+        if (section.Node["layout"] is JsonValue value
+            && value.TryGetValue<string>(out var layout)
+            && !Layouts.Contains(layout, StringComparer.Ordinal))
+        {
+            errors.Add(new BlockDocumentError("errors.body.layoutUnknown", $"{section.Path}.layout"));
+        }
+    }
+
+    /// <summary>
+    /// A render mode the server does not know would be read by the renderer as "not frozen" and
+    /// quietly turn a captured block back into a live one, which is the one thing publication is
+    /// there to prevent.
+    /// </summary>
+    private static void CheckRenderMode(BlockDocumentNode block, List<BlockDocumentError> errors)
+    {
+        if (block.Node["renderMode"] is JsonValue value
+            && value.TryGetValue<string>(out var mode)
+            && !RenderModes.Contains(mode, StringComparer.Ordinal))
+        {
+            errors.Add(new BlockDocumentError("errors.body.renderModeUnknown", $"{block.Path}.renderMode"));
+        }
+    }
+
+    /// <summary>
+    /// With columns, a block says which one it is in; the number has to be one the layout of its
+    /// own section actually has, or the block would be drawn nowhere.
+    /// </summary>
+    private static void CheckColumn(
+        BlockDocumentNode section,
+        BlockDocumentNode block,
+        List<BlockDocumentError> errors)
+    {
+        if (block.Node["column"] is not JsonValue value || !value.TryGetValue<int>(out var column))
+        {
+            return;
+        }
+
+        var layout = (section.Node["layout"] as JsonValue)?.GetValue<string>();
+        if (column < 0 || column >= ColumnsOf(layout))
+        {
+            errors.Add(new BlockDocumentError("errors.body.columnOutOfRange", $"{block.Path}.column"));
+        }
+    }
+
+    private void CollectMissingLocales(JsonNode? node, string path, List<BlockDocumentMissingLocale> missing)
+    {
+        switch (node)
+        {
+            case JsonObject localized when IsLocalizedObject(localized):
+                var absent = _locales
+                    .Where(locale => !localized.TryGetPropertyValue(locale, out var written)
+                        || written is not JsonValue value
+                        || !value.TryGetValue<string>(out var text)
+                        || string.IsNullOrWhiteSpace(text))
+                    .Order(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                if (absent.Length > 0)
+                {
+                    missing.Add(new BlockDocumentMissingLocale(path, absent));
+                }
+
+                break;
+
+            case JsonObject obj:
+                foreach (var pair in obj)
+                {
+                    CollectMissingLocales(pair.Value, $"{path}.{pair.Key}", missing);
+                }
+
+                break;
+
+            case JsonArray array:
+                for (var index = 0; index < array.Count; index++)
+                {
+                    CollectMissingLocales(array[index], $"{path}[{index}]", missing);
+                }
+
+                break;
+
+            default:
+                break;
         }
     }
 

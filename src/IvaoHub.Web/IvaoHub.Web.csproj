@@ -70,11 +70,15 @@
   <Target Name="PublishHubFiles" BeforeTargets="ComputeFilesToPublish">
     <ItemGroup>
       <HubLocaleFile Include="$(RepositoryRoot)locales\**\*.json" />
+      <HubSeedFile Include="$(RepositoryRoot)seed\**\*.json" />
       <HubExampleConfig Include="$(RepositoryRoot)config\*.example.json" />
       <HubLegalFile Include="$(RepositoryRoot)LICENSE;$(RepositoryRoot)NOTICE" />
 
       <ResolvedFileToPublish Include="@(HubLocaleFile)"
                              RelativePath="locales\%(RecursiveDir)%(Filename)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+      <ResolvedFileToPublish Include="@(HubSeedFile)"
+                             RelativePath="seed\%(RecursiveDir)%(Filename)%(Extension)"
                              CopyToPublishDirectory="PreserveNewest" />
       <ResolvedFileToPublish Include="@(HubExampleConfig)"
                              RelativePath="config\%(Filename)%(Extension)"

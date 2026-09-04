@@ -1,4 +1,5 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
@@ -148,6 +149,11 @@ internal static class HubPipeline
         // leaves an audit row whenever the effective set has moved (plan section 6.3).
         await scope.ServiceProvider.GetRequiredService<SuperadminService>()
             .BootstrapAsync(app.Lifetime.ApplicationStopping);
+
+        // The system templates, each applied once and never again: a release may add one without
+        // undoing what the staff has done to the ones already there (design M0 section 5.6).
+        await scope.ServiceProvider.GetRequiredService<ContentTemplateSeeder>()
+            .SeedAsync(app.Lifetime.ApplicationStopping);
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,

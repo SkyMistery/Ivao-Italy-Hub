@@ -50,6 +50,24 @@ public static class CrudProblems
                     .ToArray(),
                 StringComparer.Ordinal);
 
+        return Validation(errors, missingLocales, catalog, locale);
+    }
+
+    /// <summary>
+    /// The same answer, from a caller that is not a FluentValidation validator. Publication is the
+    /// first: its rules are about the row as a whole and about a tree of blocks, not about the
+    /// fields of a payload, but a refusal has to reach the form in exactly one shape.
+    /// </summary>
+    public static IResult Validation(
+        IReadOnlyDictionary<string, string[]> errors,
+        IReadOnlyDictionary<string, string[]> missingLocales,
+        LocaleCatalog catalog,
+        string locale)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        ArgumentNullException.ThrowIfNull(missingLocales);
+        ArgumentNullException.ThrowIfNull(catalog);
+
         var extensions = new Dictionary<string, object?>(StringComparer.Ordinal);
         if (missingLocales.Count > 0)
         {
@@ -57,7 +75,7 @@ public static class CrudProblems
         }
 
         return Results.ValidationProblem(
-            errors,
+            errors.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
             title: catalog.Resolve(locale, ValidationTitleKey),
             extensions: extensions);
     }

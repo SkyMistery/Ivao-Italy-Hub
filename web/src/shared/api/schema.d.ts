@@ -55,6 +55,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blocks/data/{type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BlockData"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -190,10 +206,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentList"];
+        put?: never;
+        post: operations["ContentCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentGet"];
+        put: operations["ContentUpdate"];
+        post?: never;
+        delete: operations["ContentDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/from-template/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ContentCreateFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ContentPublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/public/{kind}/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentPublicRead"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description What a block is made of. A BlockKind.Content block draws what an editor typed into it; a
+         *     BlockKind.Data block draws what the hub knows, asked of a provider (design M0 section 5.4).
+         * @enum {unknown}
+         */
+        BlockKind: "Content" | "Data";
+        /**
+         * @description One block, as the server declares it. What it looks like and what its properties mean live in
+         *     TypeScript and nowhere else (CLAUDE.md section 2); this is the envelope side of it.
+         */
+        BootstrapBlock: {
+            type: string;
+            /** Format: int32 */
+            version: number;
+            kind: components["schemas"]["BlockKind"];
+            alwaysLive: boolean;
+        };
         BootstrapDivision: {
             code: string;
             name: {
@@ -220,7 +333,7 @@ export interface components {
             department: null | string;
         };
         BootstrapRegistries: {
-            blocks: string[];
+            blocks: components["schemas"]["BootstrapBlock"][];
             widgets: string[];
         };
         /**
@@ -250,6 +363,99 @@ export interface components {
             firs: string[];
         };
         /**
+         * @description A content row in full, as the editor loads it. JsonNode ContentDetailDto.Body travels as the JSON it is:
+         *     the backend never learned what a block means and it is not going to start here.
+         */
+        ContentDetailDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["ContentKind"];
+            slug: string;
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            /** Format: int64 */
+            templateId: null | number;
+            isTemplate: boolean;
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: null | components["schemas"]["LocalizedOfstring"];
+            seo: null | components["schemas"]["LocalizedOfJsonNode"];
+            body: components["schemas"]["JsonNode"];
+            /** Format: int32 */
+            schemaVersion: number;
+            /** Format: int64 */
+            publishedVersionId: null | number;
+            /** Format: date-time */
+            publishedAt: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description What "new from template" needs to know that the template does not say. */
+        ContentFromTemplateRequest: {
+            ownerDepartment: components["schemas"]["Department"];
+            slug: string;
+        };
+        /**
+         * @description What an editorial row is. One table for all three (plan section 9.3).
+         * @enum {unknown}
+         */
+        ContentKind: "Page" | "News" | "Document";
+        /**
+         * @description A content row as a list shows it. The body is deliberately absent: a list of pages does not
+         *     need a megabyte of blocks per row to draw a table.
+         */
+        ContentListDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["ContentKind"];
+            slug: string;
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            status: components["schemas"]["PublishStatus"];
+            isTemplate: boolean;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            publishedAt: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description What publication is told, beyond which row it is about. */
+        ContentPublishRequest: {
+            /** @description A line for the staff about what changed. Never shown to a visitor. */
+            changelog: null | string;
+        };
+        /**
+         * @description What a client may set on a content row.
+         *     Four things are missing on purpose. The audit columns and publishedAt are filled by
+         *     the interceptor and by publication. status is not a field either: a page becomes public
+         *     by being published, which is an endpoint with its own permission, not a checkbox. And
+         *     templateId is written once, by "new from template", so that the record of where a page
+         *     came from cannot be rewritten afterwards.
+         */
+        ContentWriteDto: {
+            kind: components["schemas"]["ContentKind"];
+            slug: string;
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            isTemplate: boolean;
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: null | components["schemas"]["LocalizedOfstring"];
+            seo: null | components["schemas"]["LocalizedOfJsonNode"];
+            body: components["schemas"]["JsonNode"];
+            /** Format: int32 */
+            schemaVersion: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
          * @description Owner of a row. These are the department codes IVAO itself uses, so a staff position maps onto a
          *     department without a translation table (plan section 7). Stored as a string, never as a number.
          *     Note that the codes are not a mechanical suffix: ATC operations is AOD but training
@@ -268,6 +474,7 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        JsonNode: unknown;
         /** @description A link as the form shows it, with the audit trail and the version to write back. */
         LinkDetailDto: {
             /** Format: int64 */
@@ -342,6 +549,14 @@ export interface components {
          *     separate translations table (plan section 16.1). Keys are language codes ("it", "en") and are
          *     kept sorted so that two equal values always serialise to the same JSON.
          */
+        LocalizedOfJsonNode: {
+            [key: string]: unknown;
+        };
+        /**
+         * @description A field translated into the languages of the division: one JSON column on the row, never a
+         *     separate translations table (plan section 16.1). Keys are language codes ("it", "en") and are
+         *     kept sorted so that two equal values always serialise to the same JSON.
+         */
         LocalizedOfstring: {
             [key: string]: string;
         };
@@ -349,6 +564,29 @@ export interface components {
         NavItem: {
             key: string;
             path: string;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfContentListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["ContentListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
         };
         /**
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
@@ -373,6 +611,30 @@ export interface components {
              */
             total: number;
         };
+        /**
+         * @description What the public site is given: the published version and nothing about the draft behind it.
+         *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
+         *     any of them.
+         */
+        PublicContentDto: {
+            kind: components["schemas"]["ContentKind"];
+            slug: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: null | components["schemas"]["LocalizedOfstring"];
+            seo: null | components["schemas"]["LocalizedOfJsonNode"];
+            body: components["schemas"]["JsonNode"];
+            /** Format: int32 */
+            schemaVersion: number;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            publishedAt: string;
+        };
+        /**
+         * @description Editorial state. The public site only ever reads published rows.
+         * @enum {unknown}
+         */
+        PublishStatus: "Draft" | "Published";
         /** @description What was deployed. Anonymous, and never cached, so a report can quote a build. */
         VersionResponse: {
             version: string;
@@ -425,6 +687,37 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+        };
+    };
+    BlockData: {
+        parameters: {
+            query?: {
+                props?: string;
+            };
+            header?: never;
+            path: {
+                type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JsonNode"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -575,6 +868,277 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfContentListDto"];
+                };
+            };
+        };
+    };
+    ContentCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ContentWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ContentGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ContentWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentCreateFromTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentFromTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["ContentPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentPublicRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: components["schemas"]["ContentKind"];
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicContentDto"];
+                };
             };
             /** @description Not Found */
             404: {

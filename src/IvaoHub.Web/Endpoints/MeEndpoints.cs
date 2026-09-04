@@ -1,4 +1,5 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,11 @@ internal static class MeEndpoints
 {
     public static void MapMeEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/me", (ICurrentUser user, IOptions<DivisionOptions> division, BuildInfo build) =>
+        app.MapGet("/api/me", (
+            ICurrentUser user,
+            IOptions<DivisionOptions> division,
+            BlockRegistry blocks,
+            BuildInfo build) =>
         {
             var options = division.Value;
 
@@ -48,7 +53,16 @@ internal static class MeEndpoints
                 Navigation: new BootstrapNavigation(
                     Public: [new NavItem("nav.home", "/")],
                     Staff: user.IsStaff ? [new NavItem("nav.staff", "/staff")] : []),
-                Registries: new BootstrapRegistries([], []),
+                // The blocks the server knows. The client checks that it has a component for each
+                // one and warns the staff in the ui-kit when it does not: a page built on a block
+                // this browser cannot draw is better said out loud than drawn as a gap.
+                Registries: new BootstrapRegistries(
+                    [.. blocks.All.Select(block => new BootstrapBlock(
+                        block.Type,
+                        block.Version,
+                        block.Kind,
+                        block.AlwaysLive))],
+                    []),
                 Version: build.Version));
         });
     }
@@ -101,4 +115,12 @@ internal sealed record BootstrapNavigation(IReadOnlyList<NavItem> Public, IReadO
 /// <summary><paramref name="Key"/> is a translation key such as <c>nav.home</c>.</summary>
 internal sealed record NavItem(string Key, string Path);
 
-internal sealed record BootstrapRegistries(IReadOnlyList<string> Blocks, IReadOnlyList<string> Widgets);
+internal sealed record BootstrapRegistries(
+    IReadOnlyList<BootstrapBlock> Blocks,
+    IReadOnlyList<string> Widgets);
+
+/// <summary>
+/// One block, as the server declares it. What it looks like and what its properties mean live in
+/// TypeScript and nowhere else (CLAUDE.md section 2); this is the envelope side of it.
+/// </summary>
+internal sealed record BootstrapBlock(string Type, int Version, BlockKind Kind, bool AlwaysLive);

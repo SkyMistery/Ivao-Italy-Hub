@@ -1,0 +1,59 @@
+{
+  "seed": {
+    "templates": {
+      "sectionPage": {
+        "title": "Pagina di sezione",
+        "summary": "Una pagina con un'apertura, un corpo libero e i link del dipartimento.",
+        "hero": {
+          "section": "Apertura",
+          "heading": "Il titolo di questa pagina",
+          "text": "Una o due frasi che dicono cosa il lettore troverà qui."
+        },
+        "body": {
+          "section": "Corpo"
+        },
+        "links": {
+          "section": "Link",
+          "heading": "Link utili"
+        }
+      },
+      "about": {
+        "title": "Pagina «chi siamo»",
+        "summary": "Chi è il dipartimento, di cosa si occupa e come contattarlo.",
+        "intro": {
+          "section": "Introduzione",
+          "heading": "Chi siamo",
+          "text": "A cosa serve questa parte della divisione, in un paragrafo."
+        },
+        "team": {
+          "section": "Squadra"
+        },
+        "contact": {
+          "section": "Contatti",
+          "title": "Come scriverci",
+          "text": "Indica qui a chi scrivere e cosa aspettarsi."
+        }
+      },
+      "policy": {
+        "title": "Documento di regolamento",
+        "summary": "Una regola della divisione, scritta sempre nello stesso modo.",
+        "purpose": {
+          "section": "Scopo",
+          "text": "Perché questo regolamento esiste e quale problema risolve."
+        },
+        "scope": {
+          "section": "Ambito",
+          "text": "A chi si applica, e quando."
+        },
+        "rules": {
+          "section": "Regole",
+          "text": "Le regole vere e proprie, una per paragrafo."
+        },
+        "changelog": {
+          "section": "Storico",
+          "text": "Cosa è cambiato in questo regolamento, e quando."
+        }
+      }
+    }
+  }
+}
