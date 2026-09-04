@@ -21,8 +21,9 @@ import { useProblemDetails } from './useProblemDetails';
  * The form generator. A back office screen declares a zod schema that mirrors the write DTO and
  * gets the form; it never writes a field, a label or an error line by hand (design M0 §7.5).
  *
- * The same generator draws the properties of a block in F7, which is why nothing here knows what
- * an entity is.
+ * The same generator draws the properties of a block, which is why nothing here knows what an
+ * entity is: it is handed a schema and a prefix for the labels, and an entity and a block look
+ * exactly alike from in here.
  *
  * Labels come from i18n under `<labels>.fields.<path>`, and the choices of a select under
  * `<labels>.options.<path>.<value>`: a screen carries no user facing string either.

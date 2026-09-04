@@ -10,8 +10,9 @@ import type { z } from 'zod';
  * `web/src/modules/index.ts` is the explicit list of them, the mirror image of
  * `IvaoHub.Web/Modules.cs` (design M0 §6.5). ESLint keeps it drawn.
  *
- * Nothing here exists yet: the first module is `atc`, in F8. The types and the loader are in F6 so
- * that the shape a module has to fit is decided before there is one to bend it.
+ * No module exists yet — the first is `atc`, in F8 — but `BlockRegistration` is already in use by
+ * the blocks of the core, which is the point: a module's blocks and the core's are the same shape,
+ * and the shape was decided before there was a module to bend it.
  */
 
 /** What a block is made of, spelled the way the server declares it in `/api/me`. */

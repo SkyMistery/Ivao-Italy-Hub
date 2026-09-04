@@ -407,7 +407,7 @@ Il backend valida **solo** l'envelope (`schemaVersion` supportato, dimensione �
 
 ### 5.3 Walker generico
 
-`BlockDocumentWalker` (Core), costruito con le lingue della divisione: `EnumerateBlocks(body)`, `EnumerateSections(body)`, `ExtractText(body, locale)` (concatena tutte le stringhe foglia dentro `props`, risolvendo gli oggetti `Localized` per lingua — un oggetto è «localized» se tutte le chiavi sono lingue della divisione), `ValidateEnvelope(body, knownBlockTypes?, isTemplate)`. I tipi noti arrivano come parametro perché il registry lo compongono i moduli (F7/F8): finché è `null` il tipo non si controlla, il resto dell'envelope sì. Serve a ricerca, publish e validazione; nessuna conoscenza di schema.
+`BlockDocumentWalker` (Core), costruito con le lingue della divisione: `EnumerateBlocks(body)`, `EnumerateSections(body)`, `ExtractText(body, locale)` (concatena tutte le stringhe foglia dentro `props`, risolvendo gli oggetti `Localized` per lingua — un oggetto è «localized» se tutte le chiavi sono lingue della divisione), `ValidateEnvelope(body, knownBlockTypes?, isTemplate)`. I tipi noti arrivano come parametro perché il registry lo compongono i moduli: finché è `null` il tipo non si controlla, il resto dell'envelope sì. **Da F7 il chiamante vero lo passa sempre** (`BlockRegistry.Types`, dentro `ContentWriteDtoValidator`); il parametro resta opzionale per chi valida un envelope senza avere un registry sottomano, come fa il test dei seed. Serve a ricerca, publish e validazione; nessuna conoscenza di schema.
 
 ### 5.4 Registry dei blocchi e set minimo di M0
 
