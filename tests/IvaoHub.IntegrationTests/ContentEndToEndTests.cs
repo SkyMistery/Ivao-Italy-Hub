@@ -385,21 +385,99 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Equal(JsonValueKind.Null, block.GetProperty("frozen").ValueKind);
 
         // And what the browser would ask for is the whole list, the third link included.
-        var props = Convert.ToBase64String(
-            System.Text.Encoding.UTF8.GetBytes($$"""{"category":"{{category}}","limit":10}"""))
-            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
-
-        var resolved = await anonymous.GetFromJsonAsync<JsonElement>(
-            new Uri($"/api/blocks/data/{CoreBlocks.LinkList}?props={props}", UriKind.Relative),
-            token);
+        var resolved = await anonymous.GetFromJsonAsync<JsonElement>(BlockDataUri(category), token);
 
         Assert.Equal(3, resolved.GetProperty("items").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task PublishingDoesNotFreezeWhatThePageMayNotShow()
+    {
+        // The other half of the capture (design M0 section 5.5, note 2026-09-04-frozen-e-visibilita).
+        // A super administrator sees every link there is, so without a ceiling the staff-only one
+        // would be copied into a public page and handed to anybody who opened it.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
+
+        var category = $"mixed-{Guid.NewGuid():N}"[..16];
+        await SeedLinkAsync(Department.ED, $"https://example.org/{category}/open", category, 0, token);
+        await SeedLinkAsync(
+            Department.ED,
+            $"https://example.org/{category}/secret",
+            category,
+            1,
+            token,
+            Visibility.Staff);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, SuperadminVid, token);
+
+        // Live, as the person publishing: both links, because that is what they may see.
+        var asStaff = await client.GetFromJsonAsync<JsonElement>(BlockDataUri(category), token);
+        Assert.Equal(2, asStaff.GetProperty("items").GetArrayLength());
+
+        var slug = $"ceiling-{Guid.NewGuid():N}"[..20];
+        var id = await CreateAsync(
+            client,
+            Department.ED,
+            slug,
+            Body(category: category, mode: "frozen"),
+            Visibility.Public,
+            token);
+
+        await PublishAsync(client, id, token);
+
+        using var anonymous = _factory.CreateApiClient();
+        var published = await anonymous.GetFromJsonAsync<JsonElement>(PublicUri(slug), token);
+
+        var captured = FrozenItems(published);
+        Assert.Equal(1, captured.GetArrayLength());
+        Assert.EndsWith("/open", captured[0].GetProperty("url").GetString()!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ABlockAskingForADepartmentNobodyKnowsShowsNothing()
+    {
+        // A property with a typo in it must narrow to nothing, never widen to everything: the
+        // opposite mistake would quietly put every department's links on a page.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
+
+        var category = $"typo-{Guid.NewGuid():N}"[..16];
+        await SeedLinkAsync(Department.ED, $"https://example.org/{category}/one", category, 0, token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, SuperadminVid, token);
+
+        var known = await client.GetFromJsonAsync<JsonElement>(BlockDataUri(category, "ED"), token);
+        Assert.Equal(1, known.GetProperty("items").GetArrayLength());
+
+        var mistyped = await client.GetFromJsonAsync<JsonElement>(BlockDataUri(category, "EDD"), token);
+        Assert.Equal(0, mistyped.GetProperty("items").GetArrayLength());
     }
 
     // ---- helpers -----------------------------------------------------------------------------
 
     private static Uri PublicUri(string slug) =>
         new($"{ContentEndpoints.Pattern}/public/{ContentKind.Page}/{slug}", UriKind.Relative);
+
+    /// <summary>
+    /// A live block, asked the way the browser asks: the properties base64url encoded, because a
+    /// query string reads a plain base64 <c>+</c> as a space.
+    /// </summary>
+    private static Uri BlockDataUri(string category, string? department = null)
+    {
+        var props = department is null
+            ? $$"""{"category":"{{category}}","limit":10}"""
+            : $$"""{"category":"{{category}}","department":"{{department}}","limit":10}""";
+
+        var encoded = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(props))
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=');
+
+        return new Uri($"/api/blocks/data/{CoreBlocks.LinkList}?props={encoded}", UriKind.Relative);
+    }
 
     private static string? Heading(JsonElement content, string locale) =>
         content.GetProperty("body").GetProperty("sections")[0]
@@ -620,7 +698,8 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         string url,
         string category,
         int sort,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Visibility visibility = Visibility.Public)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
@@ -628,7 +707,7 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         database.Links.Add(new Link
         {
             OwnerDepartment = department,
-            Visibility = Visibility.Public,
+            Visibility = visibility,
             Title = new Localized<string>(
             [
                 new KeyValuePair<string, string>("it", $"Link {sort}"),

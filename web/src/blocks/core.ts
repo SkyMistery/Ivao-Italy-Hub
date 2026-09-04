@@ -84,7 +84,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     kind: 'Data',
     schema: linkListSchema,
     component: LinkListBlock,
-    example: { category: '', department: '', limit: 10 },
+    example: { category: '', limit: 10 },
     // The gallery is a page about the components: a data block shows this rather than whatever
     // this installation happens to hold today, or nothing at all on a fresh one.
     exampleData: {

@@ -143,6 +143,11 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
  * A data block shows the capture the version carries, and asks the provider only when there is
  * none. That is the whole of live and frozen on this side: publication decided which it is, and
  * the renderer does not get a second opinion.
+ *
+ * A draft never carries a capture — publication writes it into the version, not back into the
+ * draft — so the editor's preview shows live data for a block that will be frozen. That is right,
+ * and it would be misleading unsaid: the badge says which of the two a member is looking at
+ * (design M0 §7.7).
  */
 function DataBlockView({
   block,
@@ -162,11 +167,19 @@ function DataBlockView({
 
   const data = live ? (query.isPending ? undefined : (query.data ?? null)) : captured;
 
+  // Three states, two of which only the staff is told about: this is a capture; this is live but
+  // will be captured the next time somebody publishes; this is live and stays live.
+  const badge = !live
+    ? t('blocks.captured')
+    : block.renderMode === 'frozen'
+      ? t('blocks.willBeCaptured')
+      : null;
+
   return (
     <div className="flex flex-col gap-2">
-      {staff && !live ? (
+      {staff && badge !== null ? (
         <div>
-          <Badge variant="flat" color="gray" text={t('blocks.captured')} />
+          <Badge variant="flat" color="gray" text={badge} />
         </div>
       ) : null}
       <Component props={block.props} data={data} />

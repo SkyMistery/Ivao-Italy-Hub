@@ -75,9 +75,21 @@ declared in `CrudOptions.Sortable`; a column that claims more gets a 400.
 
 A form is a zod schema in `features/<x>/schema.ts` mirroring the write DTO, handed to `SchemaForm`.
 The schema carries types and what is required, and nothing else: every real rule belongs to the
-server, which answers with it anyway. `.meta({ multiline: true })` asks for a textarea,
-`.meta({ hidden: true })` keeps a field in the payload and off the screen, and `localized()` marks a
-translated field, which becomes one tab per language.
+server, which answers with it anyway.
+
+What the schema may say about how a field is drawn:
+
+- `localized()` marks a translated field, which becomes one tab per language;
+- `.meta({ multiline: true })` asks for a textarea;
+- `.meta({ hidden: true })` keeps a field in the payload and off the screen — `rowVersion`;
+- `.meta({ choices: [1, 2, 3] })` on a **number** draws a select. A number and not a `z.enum`
+  because every string inside a block's properties is extracted as the text of the page for the
+  search index, and a heading level is not text;
+- `.default(10)` is read as well, so what a new row or a new block starts with lives next to the
+  field rather than in a second place that can drift;
+- an **optional** `z.enum` also gets a "nothing chosen" entry, labelled
+  `<labels>.options.<path>.none`. A select has no gesture for going back, so without it the first
+  choice a coordinator makes would be permanent.
 
 If the generator does not cover a case, extend the generator. Writing the form by hand is what this
 whole mechanism exists to avoid, and the reviewer's checklist asks about it.

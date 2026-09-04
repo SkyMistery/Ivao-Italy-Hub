@@ -14,7 +14,7 @@ import type { z } from 'zod';
 
 import { LocaleFields } from './LocaleFields';
 import { ProblemAlert } from './ProblemAlert';
-import { readFields, type FieldNode } from './schema';
+import { NO_CHOICE, readFields, type FieldNode } from './schema';
 import { useProblemDetails } from './useProblemDetails';
 
 /**
@@ -141,7 +141,24 @@ function Field({
     case 'number':
       return (
         <Row id={name} label={label} error={error}>
-          <Input id={name} type="number" {...register(name, { valueAsNumber: true })} />
+          {node.choices === null ? (
+            <Input id={name} type="number" {...register(name, { valueAsNumber: true })} />
+          ) : (
+            <Controller
+              control={control}
+              name={name}
+              render={({ field }) => (
+                <Select
+                  {...(typeof field.value === 'number' ? { value: String(field.value) } : {})}
+                  onValueChange={(chosen) => field.onChange(Number(chosen))}
+                  items={node.choices!.map((choice) => ({
+                    value: String(choice),
+                    label: t(`${labels}.options.${node.path}.${choice}`),
+                  }))}
+                />
+              )}
+            />
+          )}
         </Row>
       );
 
@@ -174,11 +191,18 @@ function Field({
             render={({ field }) => (
               <Select
                 {...(typeof field.value === 'string' ? { value: field.value } : {})}
-                onValueChange={field.onChange}
-                items={node.options.map((option) => ({
-                  value: option,
-                  label: t(`${labels}.options.${node.path}.${option}`),
-                }))}
+                // An optional enum needs a way back to "nothing chosen", and a select has no such
+                // gesture: leaving it out would make the first choice permanent.
+                onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? undefined : chosen)}
+                items={[
+                  ...(node.optional
+                    ? [{ value: NO_CHOICE, label: t(`${labels}.options.${node.path}.none`) }]
+                    : []),
+                  ...node.options.map((option) => ({
+                    value: option,
+                    label: t(`${labels}.options.${node.path}.${option}`),
+                  })),
+                ]}
               />
             )}
           />

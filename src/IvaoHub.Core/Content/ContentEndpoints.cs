@@ -127,7 +127,9 @@ public static class ContentEndpoints
                     return Results.BadRequest(new { props = "errors.body.notAnObject" });
                 }
 
-                var resolved = await provider.ResolveAsync(decoded, http.RequestAborted);
+                // Read live, by whoever is asking: the query filter has already had the last word,
+                // and there is no page keeping the answer afterwards.
+                var resolved = await provider.ResolveAsync(decoded, DataBlockContext.Reader, http.RequestAborted);
                 return Results.Ok(resolved);
             })
             .WithName("BlockData")

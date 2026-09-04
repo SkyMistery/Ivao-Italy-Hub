@@ -1,7 +1,7 @@
-# La cattura `frozen` vede quello che vede chi pubblica
+# La cattura `frozen` non può essere più visibile della pagina che la contiene
 
 **Data:** 4 settembre 2026 — F7
-**Stato:** implementato **come il design lo descrive**; la conseguenza va decisa da Carmine
+**Stato:** **decisa** (Carmine, 4 set 2026: «sistema i debiti»). Implementata l'opzione 2.
 
 ## Il fatto
 
@@ -17,32 +17,61 @@ link `Staff` e `Members` che lui vede — e quella cattura finisce nella version
 un anonimo. Il filtro di visibilità protegge la riga `cms_contents`, non il contenuto che qualcuno
 ha copiato dentro la versione.
 
-Non è un buco nel meccanismo: è il meccanismo applicato al momento sbagliato. Il percorso `live` è
-corretto per costruzione (`GET /api/blocks/data/{type}` risolve con l'`ICurrentUser` del lettore).
+Non era un buco nel meccanismo: era il meccanismo applicato al momento sbagliato. Il percorso `live`
+è corretto per costruzione (`GET /api/blocks/data/{type}` risolve con l'`ICurrentUser` del lettore).
 
-## Perché non l'ho corretto da solo
+## Cosa si è deciso
 
-La correzione ovvia — risolvere un blocco `frozen` con la visibilità del **contenuto** invece che
-con quella di chi pubblica — vuole una seconda strada per la visibilità accanto al query filter, o
-un `ICurrentUser` sintetico costruito dalla riga. È un meccanismo nuovo: regola (c) di CLAUDE.md §5.
+**L'opzione 2**: la pubblicazione dice al provider dove finirà la risposta, e il provider si ferma a
+ciò che quella pagina può mostrare.
 
-## Le opzioni
+```csharp
+public sealed record DataBlockContext(ContentAudience? Page)
+{
+    public static readonly DataBlockContext Reader;                       // qualcuno sta leggendo adesso
+    public static DataBlockContext Publishing(Visibility v, Department d); // sta per essere congelata
+}
+Task<JsonNode> ResolveAsync(JsonNode? props, DataBlockContext context, CancellationToken ct);
+```
 
-1. **Lasciarlo così e dirlo nell'editor.** Un blocco `frozen` mostra un avviso: «cattura quello che
-   vedi tu adesso». Costo: una chiave i18n. Rischio: dipende da chi legge l'avviso.
-2. **`DataBlockContext`**: la pubblicazione passa al provider anche `Visibility` e
-   `OwnerDepartment` del contenuto, e un provider che legge righe `IVisible` scarta quelle più
-   riservate della pagina. È un contratto in più su `IDataBlockProvider`, non una seconda copia del
-   filtro. Costo: una riga nell'interfaccia e una nel provider; va nel design §5.5.
-3. **Congelare solo il pubblico.** Un blocco `frozen` cattura sempre come farebbe un anonimo. Più
-   semplice di (2) e più restrittivo di quanto probabilmente serve (una pagina `Staff` con un
-   elenco di link `Staff` catturerebbe zero righe).
+`Page` è `null` sul percorso `live`: lì il lettore è il lettore, e il query filter ha già detto
+l'ultima parola. È valorizzato solo alla pubblicazione.
 
-**Raccomandazione: (2).** È l'unica che dice la cosa vera — una cattura non può essere più visibile
-della pagina che la contiene — e non riapre il query filter.
+Il tetto è una **tabella**, non un ordinamento, in `Core/Division/VisibilityCeiling.cs`:
 
-## Nel frattempo
+| pagina | può contenere righe |
+|---|---|
+| `Public` | `Public` |
+| `Members` | `Public`, `Members` |
+| `Staff` | `Public`, `Members`, `Staff` |
+| `Department` | le tre sopra, più righe `Department` **dello stesso dipartimento** |
 
-F7 è chiusa con il comportamento del design (opzione 0). Il test
-`ContentPublishFreezesDataBlocks` cattura link `Public`, quindi non copre il caso; è scritto qui
-apposta perché non si perda.
+Le quattro visibilità non sono davvero una scala — `Department` è più stretta di `Staff` ma indica
+un dipartimento in particolare — e una tabella si legge e si prova riga per riga, come
+`RolePermissionMatrix`. L'ultima riga è la ragione per cui `Allows` prende anche i due dipartimenti:
+«visibile a un dipartimento» nomina persone diverse per ognuno.
+
+## Perché non è una seconda copia del query filter
+
+Rispondono a due domande diverse, e il filtro non può rispondere alla seconda:
+
+- **query filter**: «questo lettore può vedere questa riga?» Resta l'unico a rispondere.
+- **`VisibilityCeiling`**: «questa riga può essere *copiata dentro* una pagina che leggerà qualcun
+  altro?» Esiste solo perché la pubblicazione copia, ed è la sola cosa che copia.
+
+Un provider che non tiene righe (nessuno, oggi) può ignorare il contesto.
+
+## Cosa si tocca
+
+- `docs/internal/01-design-m0.md` §5.5: la firma di `ResolveAsync` e il tetto.
+- `IDataBlockProvider`, `LinkListProvider`, `ContentPublishService`, `ContentEndpoints`.
+- Test: `VisibilityCeilingTests` (la tabella riga per riga) e
+  `PublishingDoesNotFreezeWhatThePageMayNotShow` (un superadmin che pubblica una pagina pubblica
+  cattura il link `Public` e non quello `Staff`, mentre dal vivo li vede tutti e due).
+
+## Nota di contorno, decisa nello stesso giro
+
+`LinkListProvider` trattava un `department` che non riconosce come «nessun filtro». Adesso lo tratta
+come «nessuna riga»: una proprietà con un refuso deve restringere a niente, mai allargare a tutto.
+Test `ABlockAskingForADepartmentNobodyKnowsShowsNothing`. Lato editor il campo non è più testo
+libero ma una select dei dipartimenti, quindi il refuso può arrivare solo da una chiamata API a mano.

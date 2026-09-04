@@ -1,9 +1,33 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.28 — 4 settembre 2026 (F7 chiusa: i contenuti a sezioni, end to end)
+**Versione documento:** 0.29 — 4 settembre 2026 (giro sui debiti di F7: la domanda aperta sulla cattura `frozen` è decisa)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F7 chiuse, prossima F8. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.29** (4 set 2026, sera): giro sui debiti che F7 aveva scoperto, prima del merge.
+
+**La domanda aperta di 0.28 è decisa**, con l'opzione raccomandata: una cattura `frozen` non può
+essere più visibile della pagina che la contiene. La pubblicazione dice al provider dove finirà la
+risposta (`DataBlockContext`), e il provider si ferma a ciò che quella pagina può mostrare; il
+tetto è una **tabella** in `VisibilityCeiling`, non un ordinamento, perché `Department` è più
+stretta di `Staff` ma nomina persone diverse per ogni dipartimento. Non è una seconda copia del
+query filter: quello risponde «questo lettore può vedere questa riga», questo risponde «questa riga
+può essere copiata dentro una pagina che leggerà qualcun altro», ed esiste solo perché la
+pubblicazione copia. Nota `2026-09-04-frozen-e-visibilita.md` aggiornata a **decisa**.
+
+**Il generatore di form ha imparato tre cose**, tutte regola (b), tutte perché un blocco le
+chiedeva: legge il `.default()` che un campo dichiara (così «con cosa nasce un blocco nuovo» sta
+accanto al campo e non in un secondo posto); disegna una **select** per un numero annotato
+`.meta({ choices })` — un numero e non un `z.enum`, perché ogni stringa dentro le `props` finisce
+nell'indice di ricerca come testo della pagina e il livello di un titolo non è testo; e dà a una
+`z.enum` **opzionale** la voce «nessuno», senza la quale una select non ha modo di tornare indietro
+e la prima scelta sarebbe definitiva. Il `department` di un `linkList` smette così di essere testo
+libero, e un nome che il server non riconosce restringe a **nessuna riga** invece che a tutte.
+
+E l'anteprima dell'editor dice quello che sta facendo: una bozza non porta nessuna cattura — la
+pubblicazione la scrive nella versione — quindi un blocco `frozen` in anteprima mostra dati live, e
+il badge distingue «catturato alla pubblicazione» da «ora dal vivo, catturato quando pubblichi».
 
 **Changelog 0.28** (4 set 2026): chiusa la fase **F7**, i contenuti. È la fase che dimostra §9.3 per intero: una riga di `cms_contents` nata da un template, modificata in un editor a lista, pubblicata, e letta da un anonimo — con un blocco Data catturato alla pubblicazione che **non** cambia quando cambiano i link sotto, e che torna a cambiare appena lo si rimette `live` e si ripubblica. Il test `ContentPublishFreezesDataBlocks` è quella demo, eseguita invece che descritta.
 

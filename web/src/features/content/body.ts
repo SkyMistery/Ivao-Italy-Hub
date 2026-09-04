@@ -230,17 +230,24 @@ export function defaultProps(
 }
 
 function defaultOf(field: FieldNode, locales: readonly string[]): unknown {
+  if (field.defaultValue !== undefined) {
+    // What the schema says beats what the kind implies: a `limit` that declares 10 starts at 10.
+    return field.defaultValue;
+  }
+
   switch (field.kind) {
     case 'localized':
       return emptyLocalized(locales);
     case 'text':
       return '';
     case 'number':
-      return 0;
+      return field.choices?.[0] ?? 0;
     case 'boolean':
       return false;
     case 'enum':
-      return field.options[0] ?? '';
+      // An optional choice starts at "nothing chosen", which is absent from the payload rather
+      // than an empty string the server would have to interpret.
+      return field.optional ? undefined : (field.options[0] ?? '');
     case 'list':
       return [];
     case 'object':

@@ -35,7 +35,17 @@ function keysOf(type: string, fields: FieldNode[]): string[] {
   return fields.flatMap((field) => [
     `blocks.${type}.fields.${field.path}`,
     ...(field.kind === 'enum'
-      ? field.options.map((option) => `blocks.${type}.options.${field.path}.${option}`)
+      ? [
+          ...field.options.map((option) => `blocks.${type}.options.${field.path}.${option}`),
+          // An optional enum draws a way back to "nothing chosen", and that entry has a label
+          // like any other.
+          ...(field.optional ? [`blocks.${type}.options.${field.path}.none`] : []),
+        ]
+      : []),
+    // A number with a closed set of values is drawn as a select too, and its choices are labelled
+    // the same way — otherwise a heading level would read "3" and mean nothing.
+    ...(field.kind === 'number' && field.choices !== null
+      ? field.choices.map((choice) => `blocks.${type}.options.${field.path}.${choice}`)
       : []),
     ...(field.kind === 'object' || field.kind === 'list' ? keysOf(type, field.children) : []),
   ]);

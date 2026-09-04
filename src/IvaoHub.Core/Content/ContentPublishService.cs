@@ -71,7 +71,7 @@ public sealed class ContentPublishService(
             return failure;
         }
 
-        await FreezeAsync(body, cancellationToken);
+        await FreezeAsync(body, DataBlockContext.Publishing(content.Visibility, content.OwnerDepartment), cancellationToken);
 
         var now = clock.UtcNow;
         var version = new ContentVersion
@@ -149,8 +149,14 @@ public sealed class ContentPublishService(
     /// Captures what every data block asking to be frozen says right now, and clears the capture of
     /// every block that does not: a block switched back to live must stop showing what it caught
     /// last time, or "change it to live and republish" would change nothing.
+    /// <para>The provider is told which page the answer is going into, and stops at what that page
+    /// may show. A capture outlives the person who made it: it is read by whoever opens the page,
+    /// and it must not carry rows only the publisher could see.</para>
     /// </summary>
-    private async Task FreezeAsync(JsonNode body, CancellationToken cancellationToken)
+    private async Task FreezeAsync(
+        JsonNode body,
+        DataBlockContext context,
+        CancellationToken cancellationToken)
     {
         foreach (var block in walker.EnumerateBlocks(body))
         {
@@ -169,7 +175,10 @@ public sealed class ContentPublishService(
 
             // The properties travel to the provider exactly as the editor wrote them; nothing here
             // reads them (plan section 16.5).
-            var resolved = await provider.ResolveAsync(block.Node["props"]?.DeepClone(), cancellationToken);
+            var resolved = await provider.ResolveAsync(
+                block.Node["props"]?.DeepClone(),
+                context,
+                cancellationToken);
             block.Node["frozen"] = resolved;
         }
     }

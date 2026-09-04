@@ -301,6 +301,14 @@
       "fields": {
         "level": "Level",
         "text": "Text"
+      },
+      "options": {
+        "level": {
+          "1": "Main heading",
+          "2": "Section",
+          "3": "Subsection",
+          "4": "Minor heading"
+        }
       }
     },
     "text": {
@@ -339,7 +347,22 @@
         "category": "Category",
         "department": "Department",
         "limit": "How many at most"
+      },
+      "options": {
+        "department": {
+          "none": "Every department",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        }
       }
-    }
+    },
+    "willBeCaptured": "Live now, captured when you publish"
   }
 }

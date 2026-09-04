@@ -301,6 +301,14 @@
       "fields": {
         "level": "Livello",
         "text": "Testo"
+      },
+      "options": {
+        "level": {
+          "1": "Titolo principale",
+          "2": "Sezione",
+          "3": "Sottosezione",
+          "4": "Titolo minore"
+        }
       }
     },
     "text": {
@@ -339,7 +347,22 @@
         "category": "Categoria",
         "department": "Dipartimento",
         "limit": "Quanti al massimo"
+      },
+      "options": {
+        "department": {
+          "none": "Ogni dipartimento",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        }
       }
-    }
+    },
+    "willBeCaptured": "Ora dal vivo, catturato quando pubblichi"
   }
 }

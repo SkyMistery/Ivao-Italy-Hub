@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 
 import { readBody, type Body } from '../../blocks';
-import { calloutSchema, headingSchema } from '../../blocks/schemas';
+import { calloutSchema, headingSchema, linkListSchema } from '../../blocks/schemas';
 
 import {
   addBlock,
@@ -104,5 +104,17 @@ test('a new block starts with the properties its own schema describes', () => {
 });
 
 test('defaults are read off the schema, not written next to the block', () => {
-  expect(defaultProps(headingSchema, LOCALES)).toEqual({ level: 0, text: { it: '', en: '' } });
+  // A number with a closed set of values starts at the first of them, not at zero: zero is not a
+  // heading level, and a select cannot show it.
+  expect(defaultProps(headingSchema, LOCALES)).toEqual({ level: 1, text: { it: '', en: '' } });
+});
+
+test('a choice that is optional starts at nothing chosen, and leaves the payload', () => {
+  const props = defaultProps(linkListSchema, LOCALES);
+
+  expect(props.department).toBeUndefined();
+  expect(JSON.parse(JSON.stringify(props))).toEqual({ category: '', limit: 10 });
+
+  // And what starts there is valid: a block added to a page must not be born refused.
+  expect(linkListSchema.safeParse(props).success).toBe(true);
 });

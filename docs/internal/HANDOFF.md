@@ -3,10 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 4 settembre 2026 — **F7 pronta per la PR** sul ramo `m0/f7-contenuti`,
-partito da `main` a `eb56a0f`.
+**Ultimo aggiornamento:** 4 settembre 2026, sera — **F7 in PR #17** sul ramo `m0/f7-contenuti`,
+partito da `main` a `eb56a0f`, più il giro sui debiti che la fase aveva scoperto.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.28. **Design:** v1.7. **Test:** 307 .NET verdi (224 unit + 83 integrazione) + 64 Vitest.
+**Piano:** v0.29. **Design:** v1.8. **Test:** 322 .NET verdi (237 unit + 85 integrazione) + 69 Vitest.
 
 | Fase | Stato |
 |---|---|
@@ -344,7 +344,18 @@ senza credenziali.
   Le regole del template (`locked`, `required`, `allowedBlocks`) l'editor le legge **dal template**,
   per `key` di sezione: la copia non le porta con sé, e non potrebbe.
 - **`/_public/$slug`**: la ricetta 3 del design, che legge solo la versione pubblicata.
-- **307 test .NET** (224 unit + 83 integrazione) e **64 Vitest**. I sette di
+- **Una cattura non può essere più visibile della pagina che la contiene.** Un provider riceve un
+  `DataBlockContext`: `null` sul percorso `live` — lì il lettore è il lettore e il query filter ha
+  già risposto — e la visibilità più il dipartimento del contenuto quando la risposta sta per
+  essere congelata. Il tetto è una tabella in `Core/Division/VisibilityCeiling.cs`, non un
+  ordinamento. **Non è una seconda copia del query filter**: quello risponde «questo lettore può
+  vedere questa riga», questo risponde «questa riga può essere copiata dentro una pagina che
+  leggerà qualcun altro», ed esiste solo perché la pubblicazione copia.
+- **Il generatore di form ha imparato tre cose** (tutte regola (b), tutte chieste da un blocco):
+  legge il `.default()` di un campo; disegna una select per un numero `.meta({ choices })`; dà a
+  una `z.enum` opzionale la voce «nessuno». Senza l'ultima, una select non ha modo di tornare
+  indietro e la prima scelta sarebbe definitiva.
+- **322 test .NET** (237 unit + 85 integrazione) e **69 Vitest**. I nove di
   `ContentEndToEndTests` sono l'accettazione di M0 eseguita: da template, pubblicata, letta da un
   anonimo, un link in più che **non** la cambia, e il ritorno a `live` che la fa cambiare.
 
@@ -411,6 +422,10 @@ senza credenziali.
   con il walker, e passa le proprietà opache al provider. Lo schema di un blocco esiste **solo** in
   TypeScript, ed è lo stesso che `SchemaForm` disegna: una copia in C# sarebbe la seconda
   descrizione di un blocco, cioè quella che va fuori sincrono.
+- **Il query filter risponde a una domanda sola: «questo lettore può vedere questa riga».** Chi
+  *copia* una riga dentro qualcosa che leggerà qualcun altro — oggi solo la pubblicazione, con un
+  blocco `frozen` — ha una seconda domanda, e la risposta è `VisibilityCeiling`. Non allargare il
+  query filter per coprirla, e non scrivere un terzo posto che ragiona sulle visibilità.
 - **`IgnoreQueryFilters` si chiede a `CrudSource.BackOffice<T>`.** Il test di architettura non è
   cambiato: quella chiamata esiste solo in `Core/Data/Crud/` e in `ProjectionWriter`. Chi ha
   bisogno di leggere una bozza — la pubblicazione è la prima — chiede lì.
@@ -483,7 +498,7 @@ senza credenziali.
 | `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
 | `2026-09-03-markdown-content.md` | `MarkdownContent` usa `react-markdown`: albero React, mai `innerHTML`, HTML grezzo non abilitato. **Decisa da Carmine**, design §7.1. |
 | `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. Design §5.6 corretto. **Da confermare.** |
-| `2026-09-04-frozen-e-visibilita.md` | La cattura `frozen` risolve con l'identità di chi pubblica, come dice il design §5.5 — e quindi può congelare righe più riservate della pagina. Tre opzioni, raccomandata la (2). **Aperta: serve una decisione di Carmine.** |
+| `2026-09-04-frozen-e-visibilita.md` | Una cattura `frozen` non può essere più visibile della pagina che la contiene: la pubblicazione passa al provider un `DataBlockContext`, e `VisibilityCeiling` dice cosa ci sta dentro. **Decisa da Carmine** il 4 set 2026; design §5.5 corretta. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
 serve a non ridiscutere fra sei mesi una cosa già discussa.
@@ -611,35 +626,41 @@ allargare i permessi, mai stringerli a sorpresa.
   comunque il client.
 - **`LocaleSwitcher` scrive `hub.lang` con `document.cookie`.** È l'unico punto del client che
   scrive un cookie a mano. Se ne servisse un secondo, va estratto un helper prima, non copiato.
-- **La cattura `frozen` vede quello che vede chi pubblica.** È ciò che il design §5.5 dice, ed è
-  anche il motivo per cui un coordinatore che pubblica una pagina `Public` può congelarci dentro
-  righe `Staff`. Il percorso `live` è corretto per costruzione. Tre opzioni, una raccomandazione e
-  il perché non l'ho corretto da solo in
-  `docs/internal/decisions/2026-09-04-frozen-e-visibilita.md`. **Da decidere con Carmine.**
+- ~~**La cattura `frozen` vede quello che vede chi pubblica**~~ **chiuso il 4 set 2026** con
+  l'opzione raccomandata: `DataBlockContext` + `VisibilityCeiling`, e i due test
+  `VisibilityCeilingTests` e `PublishingDoesNotFreezeWhatThePageMayNotShow`. Nota aggiornata a
+  «decisa».
 - **«Nuovo da template» è `POST /api/content/from-template/{templateId}`** e non la query string
   che il design scriveva: `POST /api/content` è già la creazione generata da `MapCrud`, e le
   minimal API non instradano per query string. Nota
   `docs/internal/decisions/2026-09-04-nuovo-da-template.md`, design §5.6 corretto.
-- **Il `department` di un `linkList` è una stringa libera.** Dovrebbe essere una select dei
-  dipartimenti, ma il generatore non ha un modo di disegnare una `z.enum` **opzionale** con una voce
-  «nessuno»: il valore vuoto è riservato dal Select di Atmosphere. Nel frattempo `LinkListProvider`
-  tratta un dipartimento che non riconosce come «nessun filtro»; sarebbe più sicuro trattarlo come
-  «nessuna riga», ed è una riga. Il modo giusto è estendere `shared/forms/schema.ts`, in **F8**.
-- **`seo` non ha un campo nell'editor.** È un `Localized<JsonNode>`, e il generatore disegna
-  stringhe tradotte, non oggetti tradotti. Viene rimandato indietro esattamente come è arrivato, in
-  modo da non perderlo; il giorno che una schermata lo vorrà, è un tipo nuovo nel generatore.
-- **Il `level` di un `heading` è un numero libero.** Una select sarebbe più chiara, ma ogni stringa
-  dentro `props` finisce nell'indice di ricerca come testo della pagina, e `"2"` non è testo. Il
-  renderer lo limita a 1–4; il generatore lo disegna come input numerico.
-- **Un cambio di template non si propaga, e l'editor non lo mostra ancora.** Il design lo mette in
-  M1 («l'editor mostra le sezioni nuove/tolte»): oggi le regole del template si leggono per `key`,
-  e una sezione che il template ha aggiunto dopo semplicemente non c'è sulla pagina.
-- **L'anteprima disegna un blocco `frozen` con i dati catturati**, con il badge «catturato alla
-  pubblicazione». Il design §7.7 chiedeva anche i dati **live** accanto, per confronto: non c'è, e
-  serve una seconda chiamata al provider dentro l'anteprima. Piccolo, non urgente.
+- ~~**Il `department` di un `linkList` è una stringa libera**~~ **chiuso il 4 set 2026**: il
+  generatore disegna una `z.enum` opzionale con la voce «nessuno» (sentinella `NO_CHOICE`, perché
+  la stringa vuota è riservata dal Select), e `LinkListProvider` tratta un nome che non riconosce
+  come **nessuna riga** invece che come nessun filtro — un refuso deve restringere, mai allargare.
+- **`seo` non ha un campo nell'editor, e resta così di proposito.** È un `Localized<JsonNode>` e il
+  design non dice **cosa ci sta dentro**: inventarne la forma adesso sarebbe decidere per M1, che è
+  la milestone del sito pubblico e l'unica che ha una ragione per averne una. Viene rimandato
+  indietro esattamente come è arrivato, quindi non si perde. Quando M1 gliela darà, il generatore
+  avrà bisogno di un tipo nuovo — «oggetto tradotto» — che è un'estensione, non un form a mano.
+- ~~**Il `level` di un `heading` è un numero libero**~~ **chiuso il 4 set 2026**: resta un numero,
+  perché ogni stringa dentro `props` finisce nell'indice di ricerca come testo della pagina e `"2"`
+  non è testo — ma `.meta({ choices })` fa disegnare al generatore una select, quindi un livello
+  che non esiste non si può nemmeno digitare.
+- **Un cambio di template non si propaga, e l'editor non lo mostra ancora.** Non è un debito di F7:
+  il design §7.7 lo mette in **M1** a parole («Differenze rispetto al template: M1»). Oggi le regole
+  del template si leggono per `key`, e una sezione che il template ha aggiunto dopo semplicemente
+  non c'è sulla pagina — che è il comportamento voluto, perché un template non deve mai riscrivere
+  una pagina da solo (CLAUDE.md §2).
+- ~~**L'anteprima non dice se un blocco è una cattura**~~ **chiuso il 4 set 2026**, e la vecchia
+  riga di questo elenco descriveva male il fatto: una bozza non porta **nessuna** cattura — la
+  pubblicazione la scrive nella versione, non all'indietro nella bozza — quindi l'anteprima mostrava
+  già dati live, solo senza dirlo. Ora il badge distingue «catturato alla pubblicazione» (una
+  versione) da «ora dal vivo, catturato quando pubblichi» (una bozza), e lo vede solo lo staff.
 - **Nessun test end-to-end del browser, ancora.** «Il coordinatore apre l'editor, aggiunge un
-  blocco, pubblica» è coperto dai test di integrazione lato API e da 64 Vitest sui pezzi, ma non è
-  stato eseguito in un browser. Resta il candidato di **F9**, dove il piano chiede già la demo.
+  blocco, pubblica» è coperto dai test di integrazione lato API e da 69 Vitest sui pezzi, ma non è
+  stato eseguito in un browser. Non è un debito di F7: il design §8 mette Playwright fra le cose
+  «solo `pnpm e2e`, non bloccante in M0», e il piano chiede la demo da script in **F9**.
 - **Nessun test verifica il documento OpenAPI in sé** (che `/api/links` ci sia, che
   `LocalizedString` porti `x-localized`). Lo step di CI `pnpm gen:api && git diff --exit-code` lo
   copre di sponda: se il documento cambia forma, `schema.d.ts` si muove e la build cade.
