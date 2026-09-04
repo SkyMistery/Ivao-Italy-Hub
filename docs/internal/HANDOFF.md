@@ -3,8 +3,9 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 4 settembre 2026, sera — **F7 in PR #17** sul ramo `m0/f7-contenuti`,
-partito da `main` a `eb56a0f`, più il giro sui debiti che la fase aveva scoperto.
+**Ultimo aggiornamento:** 4 settembre 2026, sera — **F7 chiusa**: PR #17 fusa su `main`
+(`0d8df95`), CI verde. Comprendeva la fase, il giro sui debiti che la fase stessa aveva scoperto, e
+il riallineamento dei commenti rimasti al futuro. Sul merge c'è una storia, ed è in §9.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.29. **Design:** v1.8. **Test:** 322 .NET verdi (237 unit + 85 integrazione) + 69 Vitest.
 
@@ -18,7 +19,7 @@ partito da `main` a `eb56a0f`, più il giro sui debiti che la fase aveva scopert
 | F4bis revisione senior (correzioni, nessun perimetro nuovo) | mergiata (PR #9), vedi §8 |
 | F5 `MapCrud` e `links` (server) | mergiata (PR #8) |
 | F6 spina dorsale frontend | mergiata (PR #13) |
-| F7 contenuti: entità, envelope, publish, blocchi, editor, template | **fatta**, in attesa di merge |
+| F7 contenuti: entità, envelope, publish, blocchi, editor, template | mergiata (PR #17) |
 | **F8 moduli, admin, manutenzione, ricerca, forkabilità** | **prossima** |
 
 ### Come si apre F8
@@ -28,7 +29,7 @@ worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4
 prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
 ma è stato un caso. Costa due secondi.
 
-Sul remoto c'è **solo `main`**: dal checkout principale basta `git pull`, poi
+Sul remoto c'è **solo `main`**, ed è a `0d8df95`: dal checkout principale basta `git pull`, poi
 `git checkout -b m0/f8-moduli` e il prompt di §C con `<N>` → `8`. Dal checkout principale e non da
 un worktree: lì `main` è già in uso e il checkout fallisce (§9).
 
@@ -57,6 +58,13 @@ Sei cose che F8 eredita e deve usare, non riscrivere:
    `<qualcosa>:<slug>` in `hub_division_settings` che dice «già applicato», e testi che sono chiavi
    i18n risolte al seed. Una release nuova aggiunge un file senza toccare quello che lo staff ha già
    modificato.
+
+**Una cosa che F7 lascia aperta e che non blocca niente**: la nota
+`2026-09-04-nuovo-da-template.md` aspetta solo una conferma. «Nuovo da template» è
+`POST /api/content/from-template/{templateId}` e non la query string che il design scriveva, perché
+`POST /api/content` è già la creazione generata da `MapCrud` e le minimal API non instradano per
+query string. Il design §5.6 è già corretto; se Carmine preferisce la forma con la query string, il
+costo è sul contratto ed è scritto nella nota.
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
 nessuno.
@@ -809,6 +817,24 @@ un contesto.
   uno vale la pena guardare **la PR**, non `git branch --merged`: una PR chiusa con squash lascia
   una punta che non è antenata di `main`, e quel comando la dichiara «non fusa» pur essendoci
   dentro tutto.
+- ⚠️ **F7 è stata fusa in squash per sbaglio, e poi rifatta** (4 set 2026). La riga qui sotto c'era
+  già e non è bastata: `gh pr merge <n> --squash` è uscito dalle dita di una sessione che aveva
+  letto §9 il giorno prima. **Il comando giusto è `gh pr merge <n> --merge`**, e il modo di
+  accorgersene in due secondi è `git rev-list --parents -n 1 origin/main`: un merge commit ha
+  **due** genitori, uno squash ne ha uno.
+
+  La correzione è stata possibile perché il ramo della PR era ancora sul remoto: merge commit
+  ricostruito a mano (`git checkout --detach <main precedente>`, `git merge --no-ff <punta del
+  ramo>`), verificato che l'albero fosse **identico** allo squash con `git diff --quiet <squash>
+  HEAD` — cambia la forma della storia, mai il contenuto — e poi
+  `git push --force-with-lease=main:<squash> origin HEAD:main`. Il `--force-with-lease` con lo SHA
+  esplicito è il punto: se `main` si fosse mosso nel frattempo, il push si sarebbe rifiutato invece
+  di cancellare il lavoro di qualcun altro. La PR resta segnata «merged» e punta a uno SHA che non
+  è più su `main`; è cosmetico, i suoi commit sono tutti dentro il merge commit nuovo.
+
+  Da farsi **subito**, non «ogni tanto»: dopo un force push su `main` la CI va rilanciata, perché
+  quella verde era passata sul commit che non c'è più.
+
 - La strategia di merge era **squash** fino a F4 e dalla PR #8 in poi è il **merge commit**. Il
   criterio non è cambiato, è cambiato cosa lo soddisfa: quello che si vuole e' che `main` si legga
   a granularità di fase, e `git log --first-parent` lo fa — una voce per fase, F5 è `03d7f96` —
