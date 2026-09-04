@@ -1,7 +1,7 @@
 # «Nuovo da template» è una rotta sua, non una query su `POST /api/content`
 
 **Data:** 4 settembre 2026 — F7
-**Stato:** deciso durante l'implementazione, da confermare a Carmine
+**Stato:** **decisa** (Carmine, 4 set 2026)
 
 ## Cosa serviva
 
@@ -45,7 +45,8 @@ design §5.2).
 - `docs/internal/01-design-m0.md` §5.6: la riga dell'endpoint.
 - Niente altro: permessi, copia, validazione e test restano come il design li descrive.
 
-## Da chiedere a Carmine
+## Confermata
 
-Solo conferma. Se preferisce la forma con la query string, l'alternativa praticabile è la (2), con
-il costo sul contratto descritto sopra.
+Carmine, 4 settembre 2026. Le due alternative gli sono state messe davanti — un nome diverso per la
+rotta, oppure la forma con la query string pagando la tipizzazione del client su quella chiamata —
+e la rotta resta questa.
