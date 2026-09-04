@@ -19,6 +19,12 @@ web/dist/
 src/IvaoHub.Web/wwwroot/*
 !src/IvaoHub.Web/wwwroot/.gitkeep
 web/node_modules/
+
+# Playwright: the browsers it downloads, the report it writes and the traces of a failed run.
+web/playwright-report/
+web/test-results/
+web/blob-report/
+web/.playwright/
 node_modules/
 
 # Local data and logs

@@ -8,8 +8,11 @@ la checklist §16.E letta su tutto il codice, la demo da eseguire a mano, i pass
 il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono dimostrate end-to-end
 su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.31. **Design:** v2.0. **Piano di implementazione:** v1.6.
-**Test:** 353 .NET verdi (253 unit + 100 integrazione) + 74 Vitest. Nessuno skippato.
+**Piano:** v0.32. **Design:** v2.1. **Piano di implementazione:** v1.6.
+**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **3 smoke Playwright**. Nessuno skippato.
+
+⚠️ **`v0.1.0-m0` è stato rifatto.** Il primo tag puntava a un'applicazione che **non si apriva in un
+browser**: vedi §11. La correzione è dentro lo stesso tag.
 
 | Fase | Stato |
 |---|---|
@@ -635,6 +638,7 @@ quello che ha *trovato*:
 | `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. **Decisa da Carmine** il 4 set 2026; design §5.6 corretto. |
 | `2026-09-04-grant-e-sessione.md` | Un grant invalida la sessione del suo titolare attraverso l'**entità** (`IAffectsUserSession`, applicata dall'interceptor) e non attraverso un secondo gancio di `MapCrud`: vale per chiunque scriva la riga. Dice anche che cosa significa davvero «subito» — il cookie vecchio prende 401, non viene riscritto. **Decisa da Carmine** il 4 set 2026; design §3.4 e §3.7 aggiornate. |
 | `2026-09-04-frozen-e-visibilita.md` | Una cattura `frozen` non può essere più visibile della pagina che la contiene: la pubblicazione passa al provider un `DataBlockContext`, e `VisibilityCeiling` dice cosa ci sta dentro. **Decisa da Carmine** il 4 set 2026; design §5.5 corretta. |
+| `2026-09-04-smoke-in-un-browser.md` | Lo smoke in un browser diventa **bloccante** in CI e non aspetta M1: un `TooltipProvider` mancante ha ucciso ogni schermata dietro un layout con 353 test .NET e 74 Vitest verdi, perché provavano i pezzi e nessuno provava la composizione. Contiene anche il perché l'albero dei provider è diventato un componente. **Decisa da Carmine** il 4 set 2026; design §8 corretta. |
 | `2026-09-04-m0-review.md` | La revisione §16.E su tutto il codice di M0: le undici domande verificate riga per riga, le tre eccezioni (schermate senza una risorsa paginata dietro), le tre stringhe visibili trovate e corrette, e un rilievo rimandato a M1 (`LocalizedExtensions`, helper di test che vive in `src/`). Scritta in F9. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
@@ -1138,12 +1142,13 @@ qui sotto è il suo indice di partenza, non la sua sostituzione.
 
 ### Debiti che M1 eredita, in ordine di quanto costano se ignorati
 
-1. **Playwright, `pnpm e2e`.** È l'unica cosa che il design §8 prevede e che M0 non ha. Oggi «lo
-   staff apre l'editor, aggiunge un blocco, pubblica» è coperto dai test di integrazione lato API e
-   da 74 Vitest sui pezzi, ma non è mai stato **eseguito in un browser**. Lo smoke che il design
-   descrive è minimo — anonimo su `/` e su una pagina pubblicata dal seed di test — e non blocca la
-   build. Farlo presto in M1 significa averlo mentre le schermate si moltiplicano, invece di
-   scriverlo dopo.
+1. ~~**Playwright, `pnpm e2e`.**~~ **Chiuso il 4 set 2026, a forza** (§11): esiste `pnpm e2e`, tre
+   smoke su Chromium contro il bundle di produzione, **bloccanti in CI**. Quello che **resta
+   scoperto** è la metà che il design §8 immaginava e che questa suite non fa: il giro con l'**API
+   vera** e una `/{slug}` pubblicata da un seed. Oggi `/api/me` arriva da `e2e/fixtures.ts` e ogni
+   altra chiamata `/api` fallisce apposta. Quindi «lo staff apre l'editor, aggiunge un blocco,
+   pubblica» **non è ancora stato eseguito in un browser**, ed è questo il debito che M1 eredita:
+   un servizio MariaDB in CI, l'API avviata e attesa su `/health`, e la SPA servita davanti.
 2. **Un cambio di template non si propaga, e l'editor non lo mostra.** Il design §7.7 lo mette
    esplicitamente in M1 («Differenze rispetto al template»). La regola resta quella di M0 — un
    template non riscrive mai una pagina da solo — ma l'editor deve **dire** che una sezione nuova
@@ -1182,3 +1187,73 @@ configurazione, l'autorizzazione è un handler solo, l'audit e le proiezioni le 
 e l'identità si legge da `ICurrentUser`. Se M1 trova un caso che un meccanismo non copre, la regola
 (b) di CLAUDE.md §5 dice di **estendere il meccanismo**; la (c) dice di fermarsi e scrivere una
 nota. Nessuna delle due dice di aggirarlo.
+
+---
+
+## 11. L'applicazione non si apriva, e il tag di M0 lo diceva (4 set 2026)
+
+Va letto per intero da chi apre M1, perché è il difetto più istruttivo che questo repository abbia
+prodotto finora — non per cosa era, che è banale, ma per **quanto è stato invisibile**.
+
+### Che cosa succedeva
+
+Subito dopo aver spinto `v0.1.0-m0`, la prima apertura di <http://localhost:5173> ha dato una
+pagina rossa: `` `Tooltip` must be used within `TooltipProvider` ``.
+
+`DarkModeToggle` di Atmosphere **si avvolge da sé in un `Tooltip` di Radix** (letto nel bundle,
+`dist/atmosphere-react.js:11801`); un `Tooltip` senza il suo provider **lancia** invece di
+degradare; `main.tsx` non montava `TooltipProvider`. E `DarkModeToggle` sta in `Chrome.tsx`, che è
+il frame di **tutti e tre i layout** — quindi non era rotta la home: era rotta **ogni schermata
+dietro un layout**. Il tag che dichiarava M0 finita puntava a un'applicazione che non si apriva.
+
+### Perché nessuno dei 427 test l'ha visto
+
+Questa è la parte che conta. I test erano verdi **legittimamente**: il difetto non era in un
+componente, era **nell'albero**.
+
+- `harness.tsx` monta `I18nextProvider` e `QueryClientProvider` attorno a **un componente per
+  volta**, ed è giusto così: dare a un pezzo il minimo che gli serve è il suo lavoro.
+- **Nessun test montava `Chrome`**, e nessuno montava affatto i provider dell'applicazione. La
+  prova: la prima volta che abbiamo montato `ThemeProvider` in un test, ha chiesto un
+  `window.matchMedia` che jsdom non ha — un buco che nessuno aveva mai dovuto stubare in nove fasi.
+- Quindi la composizione non era provata da niente, **mentre l'intero progetto è costruito
+  sull'idea che le schermate siano composizione**. Il punto cieco stava esattamente dove il sistema
+  fa la sua scommessa più grossa.
+
+### Come è stato chiuso, e la parte da non disfare
+
+Tre reti, in ordine di quanto sono difficili da aggirare:
+
+1. **`web/src/app/Providers.tsx`** — l'albero dei provider è ora `HubProviders`, un componente, e
+   lo montano **sia `main.tsx` sia il test**. Un provider si aggiunge lì e in nessun altro posto.
+
+   ⚠️ **La prima versione del test elencava i provider per conto suo, ed era inutile**: sarebbe
+   rimasta verde con l'applicazione rotta. È esattamente la copia che diverge in silenzio contro
+   cui §3 mette in guardia, e ci siamo cascati dentro il commit che serviva a non cascarci. Se
+   qualcuno «semplifica» `Chrome.test.tsx` inlineando i provider, la rete torna a essere finta.
+2. **`web/src/app/layouts/Chrome.test.tsx`** — monta `Shell` dentro `HubProviders` e dentro un
+   router in memoria (i link dell'header sono `Link` di TanStack). Il router va **atteso**:
+   `findBy*`, non `getBy*`, perché risolve la prima rotta dopo il primo paint.
+3. **`web/e2e/` + `pnpm e2e`, bloccante in CI** — tre smoke su Chromium contro il **bundle di
+   produzione** (`vite preview`), non contro il dev server. Nota di decisione dedicata.
+
+**Entrambe le reti sono state verificate togliendo il provider**: il Vitest fallisce, e due dei tre
+smoke falliscono. Un test di regressione che passa in entrambi i casi non è un test, ed è un
+controllo che costa trenta secondi e va rifatto ogni volta che se ne scrive uno.
+
+### Due cose trovate di rimbalzo
+
+- **`DarkModeToggle` riceveva `aria-label` ma non `title`**, e il tooltip visibile restava
+  l'inglese di Atmosphere. È la **terza** stringa non tradotta in due giorni che sopravvive perché
+  «non la si guarda mai» — dopo l'`aria-label="breadcrumb"` e il messaggio di avvio della revisione
+  §16.E. La famiglia è una sola: *stringhe che appaiono solo al passaggio del mouse, a uno screen
+  reader, o in un fallimento*. Se M1 vuole una rete per questa famiglia, il posto è lo smoke.
+- **I tipi di Atmosphere pretendono `children` su `DarkModeToggle` e il runtime li scarta**
+  (`children` è assegnato **dopo** lo spread delle props). Il nostro `<Moon>` era markup morto da
+  F6. Ora si passa `{null}`, che è l'unico modo onesto di soddisfare un tipo sbagliato.
+
+### La regola che ne esce
+
+Un test che monta un pezzo prova il pezzo. **Se il prodotto è fatto di composizione, qualcosa deve
+montare la composizione**, e in questo repository sono `Chrome.test.tsx` e `pnpm e2e`. Non vanno
+indeboliti per far passare una fase.

@@ -1,6 +1,5 @@
 import { Button, DarkModeToggle, Navbar, NavigationMenu, Separator, Subtle } from '@ivao/atmosphere-react';
 import { Link } from '@tanstack/react-router';
-import { Moon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -49,8 +48,15 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
 
         <div className="ml-auto flex items-center gap-2">
           <LocaleSwitcher locales={bootstrap.division.locales} signedIn={user !== null} />
-          <DarkModeToggle aria-label={t('theme.toggle')}>
-            <Moon aria-hidden className="size-4" />
+          {/* `title` is the tooltip, `aria-label` is the accessible name: passing only the second
+              leaves the tooltip on Atmosphere's own English, and a tooltip is not something a
+              screenshot review notices because it only appears on hover.
+
+              `children` is null because the component demands the prop in its types and then
+              overwrites it: it draws a sun or a moon from the current theme. Anything passed here
+              is dead markup, so the honest thing to pass is nothing. */}
+          <DarkModeToggle title={t('theme.toggle')} aria-label={t('theme.toggle')}>
+            {null}
           </DarkModeToggle>
 
           {user === null ? (

@@ -63,7 +63,16 @@ const loaderZones = moduleKeys.map((key) => ({
  */
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'src/routeTree.gen.ts', 'src/shared/api/schema.d.ts'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'src/routeTree.gen.ts',
+      'src/shared/api/schema.d.ts',
+      // What a Playwright run leaves behind: a report, traces and screenshots of a failure.
+      'test-results/**',
+      'playwright-report/**',
+      'blob-report/**',
+    ],
   },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
