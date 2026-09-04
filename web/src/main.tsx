@@ -1,10 +1,9 @@
-import { ThemeProvider } from '@ivao/atmosphere-react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { I18nextProvider } from 'react-i18next';
 
+import { HubProviders } from './app/Providers';
 import { createI18n } from './app/i18n';
 import { registry } from './app/registry';
 import { createHubRouter } from './app/router';
@@ -38,12 +37,8 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <I18nextProvider i18n={createI18n(registry.i18nNamespaces)}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <RouterProvider router={router} />
-        </ThemeProvider>
-      </QueryClientProvider>
-    </I18nextProvider>
+    <HubProviders i18n={createI18n(registry.i18nNamespaces)} queryClient={queryClient}>
+      <RouterProvider router={router} />
+    </HubProviders>
   </StrictMode>,
 );
