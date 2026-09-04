@@ -9,13 +9,14 @@ il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono di
 su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.32. **Design:** v2.1. **Piano di implementazione:** v1.6.
-**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **8 smoke Playwright**. Nessuno skippato.
+**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **9 smoke Playwright**. Nessuno skippato.
 
 ⚠️ **Due difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
-cosa vista due volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
+cosa vista **tre** volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
 composizione dei provider (nessuna schermata si disegnava, §11), poi quella delle route (nessun form
-del back-office era raggiungibile, §12). Entrambi corretti, entrambi con una rete che fallisce se
-qualcuno li rifà.
+del back-office era raggiungibile, §12), poi quella del layout (tutto funzionava, dentro una colonna
+da 255 px, §13). Tutti corretti, tutti con una rete che fallisce se qualcuno li rifà — e la terza
+misura la **geometria**, perché le prime due asserivano sul testo e il testo era giusto.
 
 | Fase | Stato |
 |---|---|
@@ -1356,3 +1357,82 @@ sbagliata ed è stata copiata tre volte, fedelmente, da chi faceva esattamente c
 chiede. Quando una ricetta è giusta fa risparmiare tre volte; quando è sbagliata replica il difetto
 tre volte e nessuno lo rimette in discussione, perché copiarla *è* la procedura. Se M1 aggiunge una
 ricetta a §7.3, il momento di provarla in un browser è **prima** che diventi il quarto esemplare.
+
+---
+
+## 13. Il back-office era disegnato in una colonna da 255 pixel (4 set 2026)
+
+Terzo difetto della giornata, trovato guardando le schermate invece di leggerle. **Della stessa
+famiglia degli altri due** — un contratto di Atmosphere assunto e mai verificato in un browser — ma
+con una differenza che conta: gli altri due impedivano a qualcosa di funzionare, questo lasciava
+funzionare tutto **nel posto sbagliato**.
+
+### Che cosa succedeva
+
+Ogni schermata di `/staff` era disegnata in una colonna larga **255 pixel**, in alto a sinistra, con
+il resto della finestra vuoto; la tabella era tagliata e il bottone «Close sidebar» compariva **due
+volte**.
+
+`StaffLayout` componeva così:
+
+```tsx
+<SidebarProvider><SidebarContainer>   {/* ← noi */}
+  <Sidebar items={…} />               {/* ← che porta con sé un ALTRO provider e un ALTRO container */}
+  <main className="w-full flex-1">…</main>
+</SidebarContainer></SidebarProvider>
+```
+
+Due cose che non sapevamo, e che stanno nel bundle:
+
+1. **`Sidebar` è già completo**: si avvolge da sé in `SidebarProvider` e `SidebarContainer`.
+2. **`SidebarContainer` non è un guscio a due colonne: è l'`<aside>`**, con classe `w-72`.
+
+Quindi la sidebar vera **e** il `<main>` finivano dentro un aside da 288 px, impilati. Misurato:
+`main` a `x=16, width=255, y=542` in un viewport da 1280. La forma giusta è che la riga la facciamo
+noi e la sidebar no:
+
+```tsx
+<div className="flex flex-1 items-stretch">
+  <Sidebar … />
+  <main className="min-w-0 flex-1 px-4 py-8"><Outlet /></main>
+</div>
+```
+
+Dopo: `main` a `x=288, width=992`.
+
+### Perché nemmeno gli smoke l'hanno visto
+
+Perché **asserivano sul testo, e il testo era giusto**. Tutte le parole erano presenti, nell'ordine
+previsto, cliccabili: gli otto smoke passavano su un back-office inutilizzabile. È il limite di un
+test che chiede «c'è?» e non «dov'è?».
+
+La rete nuova (`back-office.spec.ts`) misura quindi la **geometria**: `main.x > 200`,
+`main.width > 600`, e un solo «Close sidebar». Verificata rimettendo il layout vecchio: fallisce con
+`Received: 16`.
+
+### Tre falsi allarmi, evitati controllando
+
+Vale la pena scriverli, perché in un giro visivo la tentazione di riportare tutto ciò che sembra
+storto è forte, e tre delle cinque cose che sembravano difetti non lo erano:
+
+- **`grants.options.effect.Allow` a schermo come chiave grezza.** `GrantEffect` è `Grant | Deny`:
+  `Allow` l'aveva inventato la mia fixture. Mostrare la chiave per un valore che non esiste è il
+  comportamento giusto.
+- **La data ripetuta due volte in ogni cella.** Voluto: `DateCell` mostra UTC **e** il fuso della
+  divisione, e la fixture aveva `timezone: "UTC"`, quindi le due righe coincidevano.
+- **Gli smoke del back-office rossi contro il pacchetto pubblicato** (§«Il tag»): mancava il
+  fallback SPA nel server di prova.
+
+Regola pratica per il prossimo giro visivo: **prima di chiamare difetto qualcosa, controllare se è
+la fixture.** Costa un grep e ha salvato tre segnalazioni sbagliate su cinque.
+
+### Due cose viste e **non** corrette, che aspettano una decisione
+
+1. **L'intestazione di colonna e l'etichetta del form sono la stessa chiave** (`<ns>.fields.<campo>`,
+   `DataList.tsx:92`). Per `grants.expiresAt` l'etichetta porta il formato — «Expires (YYYY-MM-DD,
+   empty for never)», che il debito noto di §7 spiega — e come intestazione diventa alta cinque righe
+   e schiaccia la tabella. Le due strade sono dare alle colonne una chiave propria con fallback
+   (`<ns>.columns.<campo>` → `<ns>.fields.<campo>`, estensione del motore) oppure dare a
+   `SchemaForm` un concetto di «suggerimento» separato dall'etichetta. Entrambe sono decisioni.
+2. **I campi tradotti sono più stretti degli altri** nel form: `LocaleFields` sta intorno ai 400 px
+   mentre un `Input` normale arriva a 960. Si vede solo a schermo, e mai in un test.
