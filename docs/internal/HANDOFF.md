@@ -3,9 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 4 settembre 2026 — **F8 scritta**, in attesa di merge. Il nucleo compone
-i moduli, le tre schermate di amministrazione esistono, `/api/search` legge il FULLTEXT e la
-divisione fittizia XX si avvia da zero su un database proprio.
+**Ultimo aggiornamento:** 4 settembre 2026 — **F8 chiusa**: PR #20 fusa su `main` (`b46d57b`), CI
+verde, con un merge commit vero (due genitori, verificato). Il nucleo compone i moduli, le tre
+schermate di amministrazione esistono, `/api/search` legge il FULLTEXT e la divisione fittizia XX si
+avvia da zero su un database proprio.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.30. **Design:** v1.9. **Test:** 353 .NET verdi (253 unit + 100 integrazione) + 74 Vitest.
 
@@ -20,7 +21,7 @@ divisione fittizia XX si avvia da zero su un database proprio.
 | F5 `MapCrud` e `links` (server) | mergiata (PR #8) |
 | F6 spina dorsale frontend | mergiata (PR #13) |
 | F7 contenuti: entità, envelope, publish, blocchi, editor, template | mergiata (PR #17) |
-| F8 moduli, admin, manutenzione, ricerca, forkabilità | scritta, in attesa di merge |
+| F8 moduli, admin, manutenzione, ricerca, forkabilità | mergiata (PR #20) |
 | **F9 chiusura di M0** | **prossima** |
 
 ### Come si apre F9
@@ -971,6 +972,13 @@ un contesto.
 
 ## 9. Igiene del repository
 
+- **Il giro di pulizia di F8, fatto subito dopo il merge** (4 set 2026), come questa sezione dice di
+  fare e non «ogni tanto»: `m0/f8-moduli` tolto dal remoto insieme al merge, e in locale tolti
+  quello e **sei rami vuoti** lasciati da sessioni precedenti (`claude/vai-con-f8-*`,
+  `claude/procediamo-con-f8-*`, `claude/branch-change-issue-*`). Erano tutti fermi su `2bc3b87`,
+  cioè esattamente `main`: zero commit propri, quindi `git branch -d` — quello che rifiuta se c'è
+  qualcosa dentro — li ha accettati tutti. Adesso in locale c'è solo `main`, e nessuna worktree
+  oltre al checkout principale.
 - **Sul remoto c'è solo `main`.** GitHub non cancella un branch da sé quando fonde la PR, quindi lo
   si toglie a mano con `git push origin --delete <branch>` — meglio subito dopo il merge che «ogni
   tanto»: `m0/f6-frontend-backbone` e `docs/f6-merged` sono stati tolti così. Prima di cancellarne
