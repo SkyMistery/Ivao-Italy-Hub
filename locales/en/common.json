@@ -7,7 +7,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
-    "edit": "Edit"
+    "edit": "Edit",
+    "breadcrumb": "Breadcrumb"
   },
   "nav": {
     "home": "Home",
@@ -301,7 +302,8 @@
       "renderModeHint": "A captured block stops changing until somebody publishes the page again.",
       "column": "Column",
       "columnNumber": "Column {{number}}"
-    }
+    },
+    "slugPlaceholder": "my-new-page"
   },
   "blocks": {
     "captured": "Captured at publication",

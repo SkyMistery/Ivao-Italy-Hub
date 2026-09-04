@@ -2,6 +2,7 @@ import { H1, Lead } from '@ivao/atmosphere-react';
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * The frame of a back office page: where you are, what the page is called, and what you can do on
@@ -27,10 +28,14 @@ export function PageShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  // The label of the trail is read out loud and never seen, which is exactly why it was the last
+  // English string left in a component: nobody looking at the screen could notice it.
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col gap-6">
       {breadcrumb.length === 0 ? null : (
-        <nav aria-label="breadcrumb">
+        <nav aria-label={t('common.breadcrumb')}>
           <ol className="text-muted-foreground flex flex-wrap items-center gap-1 text-sm">
             {breadcrumb.map((crumb, index) => (
               <li key={crumb.label} className="flex items-center gap-1">

@@ -4,15 +4,75 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status: M0, phase F8 of nine.** All three customisation points below are now real. The division
-> file is read and validated at start up. The language files are the only place a user visible
-> string exists — the server reads the same set for the messages it produces itself, the front end
-> reads it for every screen, and CI fails when the two languages drift apart or when the code asks
-> for a key neither of them has; the legal footer is in there too, so a fork changes those links by
-> translating a file. And the content is content: pages live in the database, the templates a fresh
-> installation starts with are seeded from `seed/content-templates/*.json` in the languages the
-> division actually speaks, and no sentence of any of it is in the code. This guide is filled in
-> with the step by step of a real fork at the end of M0.
+> **Status: M0 complete (`v0.1.0-m0`).** The foundations and the generic backbone are done and
+> proven end to end. What is here works: configuration, sign-in, permissions, the CRUD engine, the
+> generated back office screens, pages made from templates and published, the module boundary, and
+> the administration screens. What is not here yet is the public site around those pages —
+> navigation, news, documents, the search screen and the calendar are M1. Fork it now if you want to
+> follow along or build a module; wait for M1 if you want to replace a division website today.
+
+## Forking it, start to finish
+
+Ten minutes, and none of it is editing a source file.
+
+**First, take the two copies you are going to fill in.**
+
+```bash
+git clone https://github.com/<you>/<your-fork>.git
+cd <your-fork>
+
+cp config/division.example.json config/division.json     # versioned: it is behaviour, not a secret
+cp config/ivao-oauth.example.json config/ivao-oauth.json # never committed
+```
+
+Copy the examples rather than editing the Italian `division.json` that comes with the repository:
+the example is the file that explains every field, one comment per key.
+
+**Then fill them in, before the first start.** The application validates both and refuses to come up
+if either is incomplete, which is deliberate: an application that cannot behave like your division
+should not start and behave like somebody else's.
+
+1. **`config/division.json`.** `code` and `countryId` are yours, `locales` is the languages you
+   publish in, `defaultLocale` is the one a reader gets when theirs is not among them, `timezone`
+   decides when the nightly jobs run, `icaoPrefixes` is validated at start up so a typo is not
+   silent, and **`superAdmins` must be your own VIDs** — see the warning further down. Naming an
+   optional module you do not have is a warning at every start rather than an error, so you can keep
+   the key for a module you have not merged yet.
+2. **`config/ivao-oauth.json`.** The OAuth client of your division, from
+   <https://api.ivao.aero>. `LoginUrl` and `RedirectUri` must match, character for character, what
+   IVAO has registered for that client — locally `http://localhost:5173/auth/login` and
+   `http://localhost:5173/auth/callback`. If the file is incomplete the application names the
+   missing field without printing a secret.
+3. **Your language, if it is neither English nor Italian.** Copy `locales/en/` to
+   `locales/<lang>/`, translate the values, and list `<lang>` in `division.json`. `pnpm i18n:check`
+   fails if the key sets have drifted. A language listed with no directory yet does not stop
+   anything — readers get the default language until you translate it.
+
+**Now start it.**
+
+```bash
+docker compose up -d                    # MariaDB and a fake SMTP server, for development
+dotnet run --project src/IvaoHub.Web    # validates, migrates, seeds the templates, pulls your airspace
+cd web && pnpm install && pnpm dev      # the single page application
+```
+
+**And finish from the browser, not from an editor.**
+
+4. **Sign in for the first time**, at <http://localhost:5173>. Your VID becomes a row in `hub_users`,
+   your IVAO positions become departments and levels, and if the table held no super administrator
+   at all, the VIDs in `superAdmins` become one. That list is read **once**: after that the database
+   is the truth and editing the file achieves nothing.
+5. **Translate the seeded templates, or replace them.** `seed/content-templates/*.json` carry
+   `{ "$t": "seed.templates…" }` rather than sentences, resolved at seed time into the languages you
+   listed — so a division that publishes only in Polish gets no English text. Each file is applied
+   **once**, remembered by a key in `hub_division_settings`; to change what a fresh installation
+   starts with, edit the file before the first start, or edit the template in the back office
+   afterwards.
+6. **Write your pages.** `/staff/<department>/content` — new from a template, edit, publish. Nothing
+   about a page is in the code.
+
+What you do **not** do at any point: edit a `.cs` or `.tsx` file, add a translations table, write a
+screen, or look for the place where the division is hardcoded. There isn't one.
 
 ## The three customisation points
 

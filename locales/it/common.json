@@ -7,7 +7,8 @@
     "save": "Salva",
     "cancel": "Annulla",
     "delete": "Elimina",
-    "edit": "Modifica"
+    "edit": "Modifica",
+    "breadcrumb": "Percorso di navigazione"
   },
   "nav": {
     "home": "Home",
@@ -301,7 +302,8 @@
       "renderModeHint": "Un blocco catturato smette di cambiare finche' qualcuno non ripubblica la pagina.",
       "column": "Colonna",
       "columnNumber": "Colonna {{number}}"
-    }
+    },
+    "slugPlaceholder": "la-mia-nuova-pagina"
   },
   "blocks": {
     "captured": "Catturato alla pubblicazione",

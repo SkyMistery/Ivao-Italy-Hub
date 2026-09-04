@@ -4,7 +4,8 @@
 > **firme** dei meccanismi decisi in §16 e il perimetro esatto di M0; il piano di lavoro passo-passo è in
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
-**Versione:** 1.9 — 4 settembre 2026 (F8: §3.4 l'interceptor rinfresca lo `security_stamp` di chi una scrittura riguarda (`IAffectsUserSession`); §3.7 il catalogo dei permessi è composto, `PermissionCatalog`; §3.10 il bootstrap porta widget e catalogo dei permessi, e i moduli con `enabled`; §6.1 `ModuleBase`; §6.3 `WidgetRegistry` composto dal container; §7.5 `.meta({ choices })` vale anche per una stringa)
+**Versione:** 2.0 — 4 settembre 2026 (F9, chiusura di M0: §8 i tre test del superadmin e dello `security_stamp` prendono il nome vero del metodo, che F2 aveva scritto in forma più esplicita; nessun'altra correzione — la revisione §16.E su tutto il codice non ha trovato nessuna divergenza fra questo documento e ciò che è stato costruito)
+**Versione 1.9** — 4 settembre 2026 (F8: §3.4 l'interceptor rinfresca lo `security_stamp` di chi una scrittura riguarda (`IAffectsUserSession`); §3.7 il catalogo dei permessi è composto, `PermissionCatalog`; §3.10 il bootstrap porta widget e catalogo dei permessi, e i moduli con `enabled`; §6.1 `ModuleBase`; §6.3 `WidgetRegistry` composto dal container; §7.5 `.meta({ choices })` vale anche per una stringa)
 **Versione 1.8** — 4 settembre 2026 (giro sui debiti di F7: §5.5 un `IDataBlockProvider` riceve un `DataBlockContext` e una cattura non può essere più visibile della pagina che la contiene; §7.5 il generatore legge il `.default()` di un campo, disegna una select per un numero con `choices` e dà a una scelta opzionale la via del ritorno; §7.7 il badge dice se un blocco è una cattura o lo diventerà)
 **Versione 1.7** — 4 settembre 2026 (F7: §3.9 `CrudOptions.DefaultFilters` e `CrudSource.BackOffice`; §5.2 l'envelope controlla anche `layout`, `renderMode` e `column`; §5.4 la forma vera di una registrazione di blocco e dei descrittori del server; §5.6 «nuovo da template» è una rotta sua)
 **Versione 1.6** — 3 settembre 2026 (giro di riallineamento di fine F6, §A.6 del piano di implementazione: §7.3 la ricetta 2 dichiara i suoi search params una volta sola e guarda il dipartimento prima di caricare)
@@ -12,7 +13,7 @@
 **Versione 1.4** — 3 settembre 2026 (confermate le due note di F5: §7.4 e §9 punto 12 — l'OpenAPI a build-time **esegue** l'entry point, e ciò che conta è che lo faccia senza database e senza client OAuth; §3.1 — una lingua assente è vuota, un campo `Localized<T>?` non valorizzato è `null`)
 **Versione 1.3** — 3 settembre 2026 (revisione senior di fine F4: §3.3 `HasAllDepartments` è un claim, §3.4 il secondo tempo dell'interceptor gestisce il proprio fallimento, §3.6 le proiezioni sotto il query filter e lette in blocco, §2.3 proxy fidati obbligatori in produzione più HSTS e redirezione HTTPS)
 **Versione 1.2** — 3 settembre 2026 (allineato a ciò che F4 ha davvero costruito: §3.3, §3.4, §3.5, §3.6, §3.7, §5.3, più i codici di dipartimento di piano 0.21 rimasti negli esempi)
-**Stato:** in implementazione (F0–F8 fatte)
+**Stato:** **M0 chiusa** (F0–F9 fatte, tag `v0.1.0-m0`). Il perimetro di questo documento è costruito per intero; la demo da eseguire a mano è `tools/demo-m0.md`, la revisione finale è `decisions/2026-09-04-m0-review.md`. Da qui in avanti il documento è un riferimento, non un piano.
 
 ---
 
@@ -588,7 +589,7 @@ Integrazione (`IvaoHub.IntegrationTests`, Testcontainers `mariadb:11.4.10`, `Web
 - `MapCrudLinksEndToEnd` (list paginata/filtrata/ordinata/ricerca in lingua, get, create con `ValidationProblem` su lingua mancante, update con 409 su `row_version` stale, delete; 403 per dipartimento altrui; 401 anonimo);
 - `AuthorizationHandlerIsTheOnlyOne` (riflessione: una sola implementazione di `IAuthorizationHandler` non-framework);
 - `ContentPublishFreezesDataBlocks`, `PublicReadsOnlyPublishedVersion`, `NewFromTemplateDeepCopies`, `TemplateEditRequiresManageTemplates`, `EnvelopeValidationRejectsUnknownBlockAndDepth`, `PublishRejectsMissingLocales`, `TheSystemTemplatesAreSeededOnceAndStayOutOfTheOrdinaryList`, `PublishingDoesNotFreezeWhatThePageMayNotShow`;
-- `SuperadminBootstrapOnlyWhenNone`, `CannotRemoveLastSuperadmin`, `SecurityStampInvalidatesCookie`;
+- `SuperadminIsBootstrappedFromTheDivisionFileOnlyWhenThereIsNoneAtAll`, `TheLastSuperAdministratorCannotBeRemoved`, `SecurityStampInvalidatesTheCookie`;
 - `ModuleRegistryComposesNavAndExclusions` (atc), `MaintenanceReturns503OnWrites`, `GrantsEndpointEnforcesStaffOnly`, `AGrantReachesTheNextRequestAndItsRemovalTheOneAfter`, `SearchRespectsVisibility`;
 - **`ForkabilityXxDivision`**: avvio con `division.json` `{ code: "XX", locales: ["en"], superAdmins: [] }`, chiama `/api/me`, `/`, `/staff/admin/ui-kit` (HTML) e verifica che nessuna risposta contenga `IT-`, `LIRR`, `Italia`, `Italy`, `it.ivao.aero` e che i seed siano in `en`.
 

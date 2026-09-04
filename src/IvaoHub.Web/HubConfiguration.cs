@@ -64,7 +64,7 @@ internal static class HubConfiguration
             throw new InvalidOperationException(
                 "'AllowedHosts' must list the real host names in production, without '*'. "
                 + "Set it in a file under secrets/ or in the AllowedHosts environment variable, "
-                + "for example \"it.ivao.aero;www.it.ivao.aero\".");
+                + "for example \"hub.example.org;www.hub.example.org\".");
         }
     }
 

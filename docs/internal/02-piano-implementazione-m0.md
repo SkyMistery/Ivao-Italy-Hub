@@ -4,7 +4,7 @@
 > `00-piano-di-progettazione.md` v0.18 (§4, §6, §7, §9.3, §9.7, §16), design `01-design-m0.md` (firme e perimetro).
 > Questo file dice **in che ordine** si costruisce, **cosa** consegna ogni fase, **come si verifica** che sia finita.
 
-**Versione:** 1.5 — 4 settembre 2026 (F8 chiusa; una decisione — un grant invalida la sessione attraverso l'entità e non attraverso un gancio del motore CRUD — e tre precisazioni al design, §D/F8)
+**Versione:** 1.6 — 4 settembre 2026 (**F9 chiusa, e con lei M0**: revisione §16.E su tutto il codice (`decisions/2026-09-04-m0-review.md`), `tools/demo-m0.md`, `FORKING.md` con i passi reali di un fork, tre stringhe visibili corrette, tag `v0.1.0-m0`)
 
 ---
 
@@ -31,7 +31,7 @@
 | F6 | Spina dorsale frontend | F2, F5 | layout, ricette router, `DataList`, `SchemaForm`, `LocaleFields`, back-office `links`, ui-kit, `UI-GUIDELINES.md` — **fatta** |
 | F7 | Contenuti: entità, envelope, publish, blocchi, editor, template | F5, F6 | pagina da template → editor → publish → resa pubblica; `frozen` catturato — **fatta** |
 | F8 | Moduli, admin, manutenzione, ricerca, forkabilità | F6, F7 | `IModule` + `atc`, `/staff/admin/{permissions,modules,audit,ui-kit}`, `/api/search`, test XX — **fatta** |
-| F9 | Chiusura M0 | tutte | demo end-to-end da script, HANDOFF, tag `v0.1.0-m0` |
+| F9 | Chiusura M0 | tutte | demo end-to-end da script, HANDOFF, tag `v0.1.0-m0` — **fatta** |
 
 F3 può girare in parallelo a F4–F5 (non si toccano). Tutto il resto è sequenziale.
 
@@ -243,6 +243,18 @@ Task:
 5. Tag `v0.1.0-m0`, release CI con artefatto.
 
 Accettazione: Carmine esegue `tools/demo-m0.md` da zero (clone, docker-compose, run) e ogni punto passa.
+
+**Fatta il 4 settembre 2026.** I cinque task sono chiusi; il tag lo spinge Carmine dopo il merge, e
+il comando esatto è nell'HANDOFF. Playwright **non** è entrato in F9: non è fra i cinque task, il
+design §8 lo dichiara non bloccante in M0, e la demo end-to-end che il piano chiede è
+`tools/demo-m0.md`, eseguita a mano. Deciso da Carmine all'apertura della fase; resta la prima voce
+del backlog di M1.
+
+La revisione §16.E (task 3) ha trovato **tre stringhe visibili all'utente nel codice** — un
+`aria-label` inglese letto solo da uno screen reader, un `placeholder` di esempio, e il dominio di
+questa divisione dentro il messaggio con cui l'app si rifiuta di partire senza `AllowedHosts` — e le
+ha chiuse, che è quanto la regola (a) prescrive. Sono l'unica modifica al codice di produzione che
+F9 contiene. Tutto il resto della revisione è nella nota.
 
 ---
 
