@@ -12,10 +12,14 @@ public sealed class MariaDbFixture : IAsyncLifetime
 {
     private const string Image = "mariadb:11.4.10";
 
+    /// <summary>What the container gives root. Declared rather than defaulted, so it is readable.</summary>
+    private const string RootPassword = "ivaohub-root";
+
     private readonly MariaDbContainer _container = new MariaDbBuilder(Image)
         .WithDatabase("ivaohub")
         .WithUsername("ivaohub")
         .WithPassword("ivaohub")
+        .WithEnvironment("MARIADB_ROOT_PASSWORD", RootPassword)
         .WithCommand(
             "--character-set-server=utf8mb4",
             "--collation-server=utf8mb4_unicode_ci")
@@ -23,6 +27,18 @@ public sealed class MariaDbFixture : IAsyncLifetime
 
     /// <summary>Connection string with the pool cap that the shared production server imposes.</summary>
     public string ConnectionString => _container.GetConnectionString() + ";MaximumPoolSize=15";
+
+    /// <summary>
+    /// The same server as root. Exactly one test needs it — the forkability one, which starts a
+    /// second installation on a database of its own so that the migration chain runs from zero — and
+    /// the application user of a MariaDB container may not create a database.
+    /// <para>The image is given this password for root by the builder below, so it is not a guess.</para>
+    /// </summary>
+    public string RootConnectionString => new MySqlConnector.MySqlConnectionStringBuilder(ConnectionString)
+    {
+        UserID = "root",
+        Password = RootPassword,
+    }.ConnectionString;
 
     public ValueTask InitializeAsync() => new(_container.StartAsync());
 

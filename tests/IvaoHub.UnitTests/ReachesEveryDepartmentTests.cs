@@ -105,7 +105,7 @@ public sealed class ReachesEveryDepartmentTests
     public void ADenyOnEveryDepartmentalPermissionStillLeavesTheDirectorReachingEveryDepartment()
     {
         // The extreme of the case above: nothing department-less survives in the list at all.
-        var grants = CorePermissions.Departmental
+        var grants = PermissionCatalog.Core.Departmental
             .Select((name, index) => new UserGrant
             {
                 Id = index + 1,
@@ -121,7 +121,7 @@ public sealed class ReachesEveryDepartmentTests
         var user = SignedIn([Director()], permissions);
 
         Assert.DoesNotContain(permissions, permission =>
-            permission.Department is null && !CorePermissions.IsGlobalPermission(permission.Name));
+            permission.Department is null && !PermissionCatalog.Core.IsGlobal(permission.Name));
 
         Assert.True(user.HasAllDepartments);
     }
@@ -129,7 +129,7 @@ public sealed class ReachesEveryDepartmentTests
     private static IReadOnlyList<EffectivePermission> Calculate(
         IEnumerable<StaffPosition> positions,
         IEnumerable<UserGrant>? grants = null) =>
-        EffectivePermissionsCalculator.Calculate(positions, grants ?? [], isSuperadmin: false, Now);
+        EffectivePermissionsCalculator.Calculate(positions, grants ?? [], isSuperadmin: false, Now, PermissionCatalog.Core);
 
     /// <summary>The real cookie identity: what a login would have written, read back.</summary>
     private static HttpContextCurrentUser SignedIn(

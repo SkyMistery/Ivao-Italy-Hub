@@ -44,7 +44,7 @@ public sealed class EffectivePermissionsTests
         IEnumerable<StaffPosition>? positions = null,
         IEnumerable<UserGrant>? grants = null,
         bool isSuperadmin = false) =>
-        EffectivePermissionsCalculator.Calculate(positions ?? [], grants ?? [], isSuperadmin, Now);
+        EffectivePermissionsCalculator.Calculate(positions ?? [], grants ?? [], isSuperadmin, Now, PermissionCatalog.Core);
 
     private static bool Holds(IReadOnlyList<EffectivePermission> permissions, string name, Department? department) =>
         permissions.Any(p => p.Name == name && (p.Department is null || p.Department == department));
@@ -101,7 +101,7 @@ public sealed class EffectivePermissionsTests
 
         Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.ED));
         Assert.False(Holds(permissions, CorePermissions.ContentEdit, Department.FOD));
-        Assert.DoesNotContain(permissions, p => CorePermissions.IsGlobalPermission(p.Name));
+        Assert.DoesNotContain(permissions, p => PermissionCatalog.Core.IsGlobal(p.Name));
     }
 
     [Fact]

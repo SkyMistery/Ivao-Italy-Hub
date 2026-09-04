@@ -81,14 +81,14 @@ public sealed class RolePermissionMatrixTests
     [Fact]
     public void EveryDepartmentalAreaDeclaresBothViewAndEdit()
     {
-        var areas = CorePermissions.Departmental
+        var areas = PermissionCatalog.Core.Departmental
             .Select(name => name[..name.IndexOf('.', StringComparison.Ordinal)])
             .Distinct(StringComparer.Ordinal);
 
         foreach (var area in areas)
         {
-            Assert.Contains($"{area}.View", CorePermissions.Departmental);
-            Assert.Contains($"{area}.Edit", CorePermissions.Departmental);
+            Assert.Contains($"{area}.View", PermissionCatalog.Core.Departmental);
+            Assert.Contains($"{area}.Edit", PermissionCatalog.Core.Departmental);
         }
     }
 
@@ -99,8 +99,8 @@ public sealed class RolePermissionMatrixTests
         {
             foreach (var name in RolePermissionMatrix.OnOwnDepartment(level))
             {
-                Assert.True(CorePermissions.IsKnown(name), name);
-                Assert.False(CorePermissions.IsGlobalPermission(name), name);
+                Assert.True(PermissionCatalog.Core.IsKnown(name), name);
+                Assert.False(PermissionCatalog.Core.IsGlobal(name), name);
             }
         }
     }
