@@ -77,7 +77,7 @@ export function TemplatePicker({
             id="newSlug"
             value={slug}
             onChange={(event) => setSlug(event.target.value)}
-            placeholder="my-new-page"
+            placeholder={t('content.slugPlaceholder')}
           />
         </div>
 
