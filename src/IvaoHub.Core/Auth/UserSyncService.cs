@@ -46,6 +46,7 @@ public sealed class UserSyncService(
     HubDbContext database,
     IFirDirectory firs,
     IOptions<DivisionOptions> division,
+    PermissionCatalog catalogue,
     IClock clock,
     ILogger<UserSyncService> logger)
 {
@@ -133,7 +134,8 @@ public sealed class UserSyncService(
             positions,
             grants,
             user.IsSuperadmin,
-            clock.UtcNow);
+            clock.UtcNow,
+            catalogue);
 
         return new SignedInUser(user, positions, permissions);
     }
@@ -168,7 +170,7 @@ public sealed class UserSyncService(
         return new SignedInUser(
             user,
             parsed,
-            EffectivePermissionsCalculator.Calculate(parsed, grants, user.IsSuperadmin, clock.UtcNow));
+            EffectivePermissionsCalculator.Calculate(parsed, grants, user.IsSuperadmin, clock.UtcNow, catalogue));
     }
 
     private async Task ReplacePositionsAsync(

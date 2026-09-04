@@ -72,37 +72,44 @@ public static class EffectivePermissionsCalculator
     /// <summary>Source prefix of a permission handed out to a single member by name.</summary>
     public const string GrantSourcePrefix = "grant:";
 
+    /// <remarks>
+    /// The catalogue is core plus modules: a grant naming a module permission is honoured on an
+    /// installation that has that module and ignored on one that does not, which is the same rule
+    /// that has always applied to a permission the code no longer declares.
+    /// </remarks>
     public static IReadOnlyList<EffectivePermission> Calculate(
         IEnumerable<StaffPosition> positions,
         IEnumerable<UserGrant> grants,
         bool isSuperadmin,
-        DateTime nowUtc)
+        DateTime nowUtc,
+        PermissionCatalog catalogue)
     {
         ArgumentNullException.ThrowIfNull(positions);
         ArgumentNullException.ThrowIfNull(grants);
+        ArgumentNullException.ThrowIfNull(catalogue);
 
         // The super administrator bypasses every policy. The full list is still produced, because
         // the SPA hides menus by permission and an empty list would hide everything.
         if (isSuperadmin)
         {
-            return [.. CorePermissions.All.Select(p => new EffectivePermission(p.Name, null, SuperadminSource))];
+            return [.. catalogue.All.Select(p => new EffectivePermission(p.Name, null, SuperadminSource))];
         }
 
         var effective = new HashSet<EffectivePermission>();
 
         foreach (var position in positions)
         {
-            AddDerived(effective, position);
+            AddDerived(effective, position, catalogue);
         }
 
         var active = grants
             .Where(grant => grant.Kind == GrantKind.Permission)
             .Where(grant => grant.SuspendedAt is null)
             .Where(grant => grant.ExpiresAt is null || grant.ExpiresAt > nowUtc)
-            .Where(grant => CorePermissions.IsKnown(grant.Value))
+            .Where(grant => catalogue.IsKnown(grant.Value))
             // A grant may never confer a global permission, nor the right to hand out permissions:
             // the perimeter of the staff is always decided by IVAO (plan section 6.3).
-            .Where(grant => !CorePermissions.IsGlobalPermission(grant.Value))
+            .Where(grant => !catalogue.IsGlobal(grant.Value))
             .ToArray();
 
         foreach (var grant in active.Where(grant => grant.Effect == GrantEffect.Grant))
@@ -116,7 +123,7 @@ public static class EffectivePermissionsCalculator
         // Edit implies View, in one place, before the denies so that an explicit deny still wins.
         foreach (var permission in effective.ToArray())
         {
-            if (CorePermissions.ViewOf(permission.Name) is { } view && view != permission.Name)
+            if (catalogue.ViewOf(permission.Name) is { } view && view != permission.Name)
             {
                 effective.Add(permission with { Name = view });
             }
@@ -147,17 +154,20 @@ public static class EffectivePermissionsCalculator
         _ => 2,
     };
 
-    private static void AddDerived(HashSet<EffectivePermission> effective, StaffPosition position)
+    private static void AddDerived(
+        HashSet<EffectivePermission> effective,
+        StaffPosition position,
+        PermissionCatalog catalogue)
     {
         if (RolePermissionMatrix.ReachesEveryDepartment(position))
         {
             var source = $"{RoleSourcePrefix}{position.Role}";
-            foreach (var name in CorePermissions.Departmental)
+            foreach (var name in catalogue.Departmental)
             {
                 effective.Add(new EffectivePermission(name, null, source));
             }
 
-            foreach (var name in CorePermissions.Global)
+            foreach (var name in catalogue.Global)
             {
                 effective.Add(new EffectivePermission(name, null, source));
             }

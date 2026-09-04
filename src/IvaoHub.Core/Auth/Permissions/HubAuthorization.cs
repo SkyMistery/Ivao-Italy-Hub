@@ -31,7 +31,13 @@ public sealed class PermissionRequirement(string permission) : IAuthorizationReq
 /// by hand (design M0 section 3.7). A name that is not in the catalogue is a mistake, and it is
 /// raised as one instead of quietly denying everybody.
 /// </summary>
-public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options) : IAuthorizationPolicyProvider
+/// <remarks>
+/// The catalogue is injected rather than read from a static list because what a fork installs is
+/// not known at compile time: a module permission has to become a policy exactly like one of the
+/// core, or the module's own endpoints would deny everybody.
+/// </remarks>
+public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options, PermissionCatalog catalogue)
+    : IAuthorizationPolicyProvider
 {
     private readonly DefaultAuthorizationPolicyProvider _fallback = new(options);
 
@@ -50,7 +56,7 @@ public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options) : 
             return declared;
         }
 
-        if (CorePermissions.IsKnown(policyName))
+        if (catalogue.IsKnown(policyName))
         {
             return new AuthorizationPolicyBuilder()
                 // The application cookie, not the round trip to IVAO. The default challenge scheme
