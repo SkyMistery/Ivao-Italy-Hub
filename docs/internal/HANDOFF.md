@@ -59,12 +59,11 @@ Sei cose che F8 eredita e deve usare, non riscrivere:
    i18n risolte al seed. Una release nuova aggiunge un file senza toccare quello che lo staff ha già
    modificato.
 
-**Una cosa che F7 lascia aperta e che non blocca niente**: la nota
-`2026-09-04-nuovo-da-template.md` aspetta solo una conferma. «Nuovo da template» è
+**F7 non lascia niente di aperto.** L'ultima nota in sospeso,
+`2026-09-04-nuovo-da-template.md`, è stata confermata il 4 set 2026: «nuovo da template» è
 `POST /api/content/from-template/{templateId}` e non la query string che il design scriveva, perché
 `POST /api/content` è già la creazione generata da `MapCrud` e le minimal API non instradano per
-query string. Il design §5.6 è già corretto; se Carmine preferisce la forma con la query string, il
-costo è sul contratto ed è scritto nella nota.
+query string.
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
 nessuno.
@@ -505,7 +504,7 @@ senza credenziali.
 | `2026-09-03-proxy-fidati.md` | Le reti dei proxy di cui si crede `X-Forwarded-For` si dichiarano, e in produzione sono obbligatorie. Design §2.3 precisata. |
 | `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
 | `2026-09-03-markdown-content.md` | `MarkdownContent` usa `react-markdown`: albero React, mai `innerHTML`, HTML grezzo non abilitato. **Decisa da Carmine**, design §7.1. |
-| `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. Design §5.6 corretto. **Da confermare.** |
+| `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. **Decisa da Carmine** il 4 set 2026; design §5.6 corretto. |
 | `2026-09-04-frozen-e-visibilita.md` | Una cattura `frozen` non può essere più visibile della pagina che la contiene: la pubblicazione passa al provider un `DataBlockContext`, e `VisibilityCeiling` dice cosa ci sta dentro. **Decisa da Carmine** il 4 set 2026; design §5.5 corretta. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
