@@ -4,7 +4,7 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status: M0, phase F7 of nine.** All three customisation points below are now real. The division
+> **Status: M0, phase F8 of nine.** All three customisation points below are now real. The division
 > file is read and validated at start up. The language files are the only place a user visible
 > string exists — the server reads the same set for the messages it produces itself, the front end
 > reads it for every screen, and CI fails when the two languages drift apart or when the code asks
@@ -48,9 +48,74 @@ that will not come up.
 
 ## Adding a module
 
-Filled in at the end of M0, once the module contract is implemented. In short: one
-`IvaoHub.Modules.<Name>` project, one `web/src/modules/<key>/` folder, and one line in each of the
-two explicit lists (`IvaoHub.Web/Modules.cs` and `web/src/modules/index.ts`).
+A module is not a plugin loaded at run time: it is added to the monorepo and the application is
+recompiled. The boundary is drawn as if it were one anyway, so that nothing in the core ever names
+a module and the day it has to become a real plugin the perimeter to extract is already there.
+
+Four things, and the first two are where all of the module's own code lives:
+
+1. **`src/IvaoHub.Modules.<Name>/`** — a project that references `IvaoHub.Core` and nothing else.
+   One class implementing `IModule` (start from `ModuleBase`, which makes everything optional):
+
+   ```csharp
+   public sealed class RosterModule : ModuleBase
+   {
+       public const string ModuleKey = "roster";
+
+       public override string Key => ModuleKey;
+       public override Department? Department => IvaoHub.Core.Division.Department.AOD;
+
+       public override IReadOnlyList<PermissionDescriptor> Permissions =>
+           [new("Roster.View", IsGlobal: false), new("Roster.Edit", IsGlobal: false)];
+
+       public override IReadOnlyList<NavItemDescriptor> PublicNavigation =>
+           [new NavItemDescriptor("nav.roster", "/roster")];
+
+       public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+           services.AddModuleDbContext<RosterDbContext>(ModuleKey);
+
+       public override IEnumerable<Type> DbContextTypes => [typeof(RosterDbContext)];
+
+       public override void MapEndpoints(IEndpointRouteBuilder endpoints) =>
+           endpoints.MapCrud<Controller, ControllerListDto, ControllerDetailDto, ControllerWriteDto>(
+               $"/api/{ModuleKey}/controllers",
+               options => { /* … */ });
+   }
+   ```
+
+   Its permissions join the one catalogue and become policies like the core's; its blocks join the
+   one block registry; its widgets join the one widget registry; its endpoints live under
+   `/api/{Key}` and nowhere else. A context of its own is registered with `AddModuleDbContext<T>`,
+   which gives it its own `__EFMigrationsHistory_<key>` table and attaches the save changes
+   interceptor — audit, the department write guard and the projections are not something a module
+   opts into. There is never a foreign key between two contexts, and never a second authorization
+   handler.
+
+2. **`web/src/modules/<key>/`** — all of the module's React code, and no other folder holds any of
+   it. `index.ts` exports exactly one `ModuleManifest`: its blocks, its widgets, its routes and the
+   i18n namespaces it brings. Its language files live in `web/src/modules/<key>/locales/{lang}/`;
+   `pnpm i18n:sync` copies them into `locales/`, which is the one set the browser, the back end and
+   `pnpm i18n:check` all read, and CI fails if the copies are stale.
+
+3. **One line in `src/IvaoHub.Web/Modules.cs`** and **one in `web/src/modules/index.ts`**. Those two
+   lists are the only places a module is named. Nothing is scanned: which modules a build has is a
+   question you answer by opening a file.
+
+4. **`config/division.json`** if the module is optional (`IsOptional => true`): a division switches
+   one off with `"modules": { "roster": false }`. Silence means on, so a release that adds a module
+   works without every division editing its configuration first. A department module is not
+   optional and cannot be switched off.
+
+ESLint keeps the boundary drawn on the front end: nothing under `blocks/`, `features/`, `routes/` or
+`shared/` may import from `src/modules`, `app/` may read the list of manifests but not a module's own
+files, and no module may import from another. On the back end an architecture test reads the project
+files and fails if a module references anything but `IvaoHub.Core`.
+
+A module can be closed for changes without a deploy: `PUT /api/admin/modules/{key}/maintenance`,
+behind `Modules.Manage` and with a screen at `/staff/admin/modules`. Reads keep working — a
+department reorganising its data wants nobody to change anything, not its pages to go blank — and
+every other verb under `/api/{key}` answers 503. A job of the module asks `IsInMaintenanceAsync` at
+the top of its run for the same reason.
 
 ## What a division never has to touch
 

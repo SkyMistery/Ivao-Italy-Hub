@@ -4,7 +4,7 @@
 > `00-piano-di-progettazione.md` v0.18 (§4, §6, §7, §9.3, §9.7, §16), design `01-design-m0.md` (firme e perimetro).
 > Questo file dice **in che ordine** si costruisce, **cosa** consegna ogni fase, **come si verifica** che sia finita.
 
-**Versione:** 1.4 — 4 settembre 2026 (F7 chiusa; una decisione — «nuovo da template» come rotta sua — una domanda aperta sulla cattura `frozen`, e due precisazioni al design, §D/F7)
+**Versione:** 1.5 — 4 settembre 2026 (F8 chiusa; una decisione — un grant invalida la sessione attraverso l'entità e non attraverso un gancio del motore CRUD — e tre precisazioni al design, §D/F8)
 
 ---
 
@@ -30,7 +30,7 @@
 | F5 | `MapCrud` e `links` (server) | F4 | CRUD `links` senza codice a mano, OpenAPI, client TS generato in CI |
 | F6 | Spina dorsale frontend | F2, F5 | layout, ricette router, `DataList`, `SchemaForm`, `LocaleFields`, back-office `links`, ui-kit, `UI-GUIDELINES.md` — **fatta** |
 | F7 | Contenuti: entità, envelope, publish, blocchi, editor, template | F5, F6 | pagina da template → editor → publish → resa pubblica; `frozen` catturato — **fatta** |
-| F8 | Moduli, admin, manutenzione, ricerca, forkabilità | F6, F7 | `IModule` + `atc`, `/staff/admin/{permissions,modules,ui-kit}`, `/api/search`, test XX |
+| F8 | Moduli, admin, manutenzione, ricerca, forkabilità | F6, F7 | `IModule` + `atc`, `/staff/admin/{permissions,modules,audit,ui-kit}`, `/api/search`, test XX — **fatta** |
 | F9 | Chiusura M0 | tutte | demo end-to-end da script, HANDOFF, tag `v0.1.0-m0` |
 
 F3 può girare in parallelo a F4–F5 (non si toccano). Tutto il resto è sequenziale.

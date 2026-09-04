@@ -3,11 +3,11 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 4 settembre 2026, sera — **F7 chiusa**: PR #17 fusa su `main`
-(`0d8df95`), CI verde. Comprendeva la fase, il giro sui debiti che la fase stessa aveva scoperto, e
-il riallineamento dei commenti rimasti al futuro. Sul merge c'è una storia, ed è in §9.
+**Ultimo aggiornamento:** 4 settembre 2026 — **F8 scritta**, in attesa di merge. Il nucleo compone
+i moduli, le tre schermate di amministrazione esistono, `/api/search` legge il FULLTEXT e la
+divisione fittizia XX si avvia da zero su un database proprio.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.29. **Design:** v1.8. **Test:** 322 .NET verdi (237 unit + 85 integrazione) + 69 Vitest.
+**Piano:** v0.30. **Design:** v1.9. **Test:** 353 .NET verdi (253 unit + 100 integrazione) + 74 Vitest.
 
 | Fase | Stato |
 |---|---|
@@ -20,50 +20,45 @@ il riallineamento dei commenti rimasti al futuro. Sul merge c'è una storia, ed 
 | F5 `MapCrud` e `links` (server) | mergiata (PR #8) |
 | F6 spina dorsale frontend | mergiata (PR #13) |
 | F7 contenuti: entità, envelope, publish, blocchi, editor, template | mergiata (PR #17) |
-| **F8 moduli, admin, manutenzione, ricerca, forkabilità** | **prossima** |
+| F8 moduli, admin, manutenzione, ricerca, forkabilità | scritta, in attesa di merge |
+| **F9 chiusura di M0** | **prossima** |
 
-### Come si apre F8
+### Come si apre F9
 
 ⚠️ **`gh pr list` prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in parallelo in
 worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha mergiato per
 prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
 ma è stato un caso. Costa due secondi.
 
-Sul remoto c'è **solo `main`**, ed è a `0d8df95`: dal checkout principale basta `git pull`, poi
-`git checkout -b m0/f8-moduli` e il prompt di §C con `<N>` → `8`. Dal checkout principale e non da
-un worktree: lì `main` è già in uso e il checkout fallisce (§9).
+Dal checkout principale (non da un worktree: lì `main` è già in uso e il checkout fallisce, §9):
+`git pull`, poi `git checkout -b m0/f9-chiusura` e il prompt di §C con `<N>` → `9`.
 
-**Perimetro di F8** (§D del piano): `IModule` e il primo modulo (`atc`), `/staff/admin/{permissions,
-modules,ui-kit}`, la manutenzione, `/api/search` sul FULLTEXT di `cms_search_index`, e il test della
-divisione fittizia `XX`.
+**Perimetro di F9** (§D del piano): l'HANDOFF definitivo, `tools/demo-m0.md` in inglese con i passi
+della demo di F7/F8 e la checklist «definizione di fatto» del design §0.1 spuntata, la revisione
+della checklist §16.E su tutto il codice di M0 con le eccezioni scritte in
+`docs/internal/decisions/2026-XX-XX-m0-review.md`, il riallineamento di `FORKING.md` con i passi
+reali, e il tag `v0.1.0-m0` con la release CI.
 
-Sei cose che F8 eredita e deve usare, non riscrivere:
+Cinque cose che F9 eredita e deve sapere:
 
-1. **Il registry dei blocchi è composto dal container, su tutti e due i lati.** Un modulo aggiunge
-   `IBlockDescriptor` al `IServiceCollection` e `BlockRegistry` lo trova; lato client aggiunge una
-   `BlockRegistration` al proprio manifest e `app/registry.ts` la compone. Un blocco che compare in
-   uno solo dei due si vede: il renderer disegna «blocco sconosciuto» allo staff, e la ui-kit monta
-   ciò che il client ha. Il terzo lato del test — server ⇄ manifest ⇄ ui-kit — è F8.
-2. **`CorePermissions` è ancora l'unico catalogo.** `HubPolicyProvider` interroga quello; i permessi
-   dei moduli arrivano con `IModule.Permissions`, e `PolicyNamesTests` va esteso insieme.
-3. **`MapCrud` in modalità globale non ha ancora un uso vero.** `UserGrant` e `hub_audit_log` in
-   sola lettura sono i primi: il ramo esiste, è scritto, e finora lo copre solo il compilatore.
-4. **`DefaultFilters` e `CrudSource.BackOffice` esistono** (F7): una lista che deve nascondere
-   qualcosa lo dichiara, e chi ha bisogno di leggere con i filtri spenti lo chiede a `Data/Crud/`
-   invece di scrivere `IgnoreQueryFilters`.
-5. **`/api/search` è un altro meccanismo dalla ricerca delle liste.** La `q` di `MapCrud` è un
-   `LIKE` sul back-office; `/api/search` legge il FULLTEXT di `cms_search_index`, che l'interceptor
-   riempie da solo per ogni `IProjectable` pubblicato.
-6. **Il seeder dei template è il modello per qualunque altro seed**: un file per riga, una chiave
-   `<qualcosa>:<slug>` in `hub_division_settings` che dice «già applicato», e testi che sono chiavi
-   i18n risolte al seed. Una release nuova aggiunge un file senza toccare quello che lo staff ha già
-   modificato.
+1. **Il giro di riallineamento della documentazione va rifatto.** Costa dieci minuti e ha trovato
+   qualcosa ogni volta che è stato fatto (§7). F8 ha toccato `README.md`, `docs/FORKING.md`
+   («Adding a module» adesso è scritta per davvero), `docs/UI-GUIDELINES.md`, il design e il piano.
+2. **Playwright non c'è ancora**, e F9 è dove il piano chiede la demo end-to-end da script. È il
+   candidato naturale: `pnpm e2e`, non bloccante in M0 (design §8).
+3. **`ForkabilityXxDivision` è il modello di come si avvia una seconda installazione** dentro i
+   test: `IVAOHUB_ROOT` su una radice temporanea, un database proprio creato come root, e la catena
+   di migrazioni che gira da zero. Se la demo di F9 vuole partire pulita, quella è la ricetta.
+4. **`config/division.xx.json` esiste** ed è la divisione fittizia. Non è un esempio per chi forka
+   (quello è `division.example.json`): è il soggetto di un test.
+5. **Le eccezioni alla checklist §16.E che F8 conosce sono tre**, e sono nel corpo della PR: la
+   schermata dei moduli non usa `DataList` (non c'è una risorsa dietro: sono tre fatti e un bottone
+   per riga), `TheSpaDoesNotAnswerForWhatAModuleExcluded` asserisce sul registry oltre che sulla
+   risposta perché il test host non ha un `index.html` da servire, e `AtcModule` non dichiara nessun
+   permesso — il ramo dei permessi di modulo è provato con un modulo finto in
+   `ModuleCompositionTests`.
 
-**F7 non lascia niente di aperto.** L'ultima nota in sospeso,
-`2026-09-04-nuovo-da-template.md`, è stata confermata il 4 set 2026: «nuovo da template» è
-`POST /api/content/from-template/{templateId}` e non la query string che il design scriveva, perché
-`POST /api/content` è già la creazione generata da `MapCrud` e le minimal API non instradano per
-query string.
+**F8 non lascia niente di aperto** che non sia scritto in §7.
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
 nessuno.
@@ -121,7 +116,7 @@ dotnet tool restore
 dotnet dotnet-ef migrations add <Nome> --project src/IvaoHub.Core --startup-project src/IvaoHub.Core
 ```
 
-## 2. Cosa c'è dopo F7
+## 2. Cosa c'è dopo F8
 
 **Configurazione e avvio (F1)**: `config/division.json` versionato + esempi; opzioni validate prima di toccare
 il DB; `Localized<T>` con converter EF e convenzione `_i18n`; `HubDbContext` su Pomelo pinnato a MariaDB
@@ -300,7 +295,7 @@ senza credenziali.
   senza montare router, query client e i18n.
 - **`shared/modules.ts`** (`ModuleManifest`, `BlockRegistration`, `WidgetRegistration`,
   `RouteDefinition`) e **`app/registry.ts`**, che compone il registry del nucleo con quelli dei
-  moduli. Vuoti: il primo modulo è F8.
+  moduli. Riempiti in F8: `atc` è il primo.
 - **`PUT /api/me/locale`** (`Core/Auth/LocaleEndpoints.cs`) e **`hasAllDepartments`** nel bootstrap.
 - **35 test Vitest** (generatore per ogni tipo di campo, `LocaleFields`, `ProblemDetails`,
   registry ⇄ ui-kit, schema-entità ⇄ contratto, `deptParam`, search params) e **286 .NET**.
@@ -365,6 +360,87 @@ senza credenziali.
 - **322 test .NET** (237 unit + 85 integrazione) e **69 Vitest**. I nove di
   `ContentEndToEndTests` sono l'accettazione di M0 eseguita: da template, pubblicata, letta da un
   anonimo, un link in più che **non** la cambia, e il ritorno a `live` che la fa cambiare.
+
+**Moduli, amministrazione, ricerca (F8)** — la fase in cui il nucleo smette di essere l'unica cosa:
+
+- **`IModule` e `ModuleBase`** (`Core/Modules/`): chiave, dipartimento, opzionalità, permessi, voci di
+  menu pubbliche e di staff, blocchi, widget, esclusioni dal fallback della SPA, `ConfigureServices`,
+  `MapEndpoints`, `DbContextTypes`. `ModuleBase` rende vuoto tutto tranne `Key`, quindi `AtcModule`
+  è lungo trenta righe e non centotrenta.
+- **`ModuleRegistry`** riceve l'elenco esplicito di `IvaoHub.Web/Modules.cs`, esclude gli opzionali
+  che `division.modules` nomina con `false` (**il silenzio vale sì**: una release che aggiunge un
+  modulo non deve aspettare che ogni divisione modifichi la configurazione), e compone
+  `PublicNavigation`, `StaffNavigation`, `SpaFallbackExclusions`. `ForApiPath` dice a quale modulo
+  appartiene una richiesta leggendo il percorso, ed è scritta a mano invece che con una regex perché
+  gira su ogni richiesta.
+- **Le esclusioni cablate di F0 non ci sono più**: `HubPipeline` tiene le sue sei (`/api`, i tre
+  `/auth/*`, `/health`, `/openapi`, `/scalar`) e il resto — `/services/vsop`, `/vsop`, `/_content`,
+  `/_framework` — arriva da `AtcModule`, che è il modulo che sa perché esistono.
+- **`ModuleMaintenanceMiddleware`** sta **prima del routing** e dopo l'autenticazione: mentre un
+  modulo è chiuso, ogni verbo che non sia `GET`/`HEAD`/`OPTIONS`/`TRACE` sotto `/api/<key>` prende
+  503 con il titolo risolto da `errors.maintenance.title` e l'estensione `module` — anche su un
+  indirizzo che quel modulo non ha, perché «chiuso» vale per il prefisso e non per l'elenco delle
+  rotte. Le letture passano: un dipartimento che riorganizza i propri dati non vuole che le sue
+  pagine diventino bianche, vuole che nessuno tocchi niente.
+- **`PermissionCatalog`** (`Auth/Permissions/`): il catalogo diventa **composto**, nucleo ∪ moduli
+  abilitati, e lo interrogano `HubPolicyProvider`, `EffectivePermissionsCalculator` e
+  `GrantWriteDtoValidator`. `CorePermissions` resta i nomi e la lista del nucleo; `PermissionCatalog.Core`
+  è il catalogo di un hub senza moduli, ed è quello che usano i test unitari.
+- **`MapCrud` in modalità globale ha tre usi veri**: `/api/admin/grants` (lettura e scrittura dietro
+  `Permissions.Manage`), `/api/admin/audit` (`ReadOnly = true`, dietro `Audit.View`), e fuori dal
+  motore `/api/admin/superadmins`, che è visibile **solo a un superadmin** — il catalogo non ha
+  niente sopra `Permissions.Manage`, di proposito, perché un permesso capace di distribuire lo
+  scavalco renderebbe lo scavalco ordinario.
+- **`GrantWriteDtoValidator`** impone le tre regole che sono il perimetro del modello dei permessi:
+  solo un nome del catalogo, mai un permesso globale, solo a chi questa divisione conta come staff.
+  Ognuna risponde con la propria chiave i18n sul campo giusto.
+- **`IAffectsUserSession`** (nota `2026-09-04-grant-e-sessione.md`, decisa da Carmine): l'entità
+  dichiara di quale VID decide la sessione, e l'interceptor rigenera lo `security_stamp` **dentro la
+  transazione** e svuota la cache **dopo il commit**. `UserGrant` è la prima e in M0 l'unica.
+- **`DomainRefusalException`** (`Core/Services/`): «non si può, ed ecco la chiave i18n del perché».
+  `DomainExceptionHandler` la trasforma nello stesso 400 con una chiave per campo che produce un
+  validatore, quindi «l'ultimo superadmin non si toglie» arriva al form per la strada che il form
+  già conosce. `SuperadminService` non lancia più frasi inglesi.
+- **`GET /api/search`** (`Core/Content/SearchEndpoints.cs`) + **`FullTextSearch`** (`Core/Data/`):
+  `EF.Functions.Match` in modalità natural language su `title`/`text` di `cms_search_index`, filtrato
+  per lingua, **senza** `IgnoreQueryFilters` — le righe dell'indice dichiarano proprietario e
+  visibilità, quindi il query filter globale le restringe come qualsiasi altra cosa. Anonimo.
+  M0 si ferma all'endpoint: la schermata è M1.
+- **`DivisionSetting` è `[Audited]`**: accendere la manutenzione lascia una riga, scritta
+  dall'interceptor e non dal servizio. Effetto collaterale voluto: anche i template seedati e il
+  cambio dell'hash dei superadmin lasciano una riga, con VID 0, che è la risposta giusta per una cosa
+  che un'installazione fa a se stessa.
+- **`/api/me` porta tre cose in più**: `modules` (tutti quelli della build, con `enabled` e
+  `maintenance`), `registries.widgets` e `registries.permissions` — il **catalogo**, non i permessi
+  di chi chiede. Non esiste nessun `GET /api/admin/modules`: la stessa domanda con due risposte
+  sarebbe la seconda cosa da tenere allineata.
+- **`WidgetRegistry`** è composto dal container come `BlockRegistry`; il nucleo registra `welcome`,
+  `/me` è diventata la dashboard che compone quello che il server dichiara, e `WelcomeWidget` è
+  quello che prima era il corpo di `MePage`.
+- **Frontend del modulo**: `web/src/modules/atc/` con manifest, pagina, e `locales/{en,it}/atc.json`;
+  `pnpm i18n:sync` li copia in `locales/`, i copiati sono **committati** e la CI fallisce sul diff —
+  stessa ricetta di `pnpm gen:api`, e per due ragioni concrete: un `dotnet run` senza pnpm deve
+  comunque trovare ogni file di lingua, e un `dotnet publish` non deve dipendere da quale dei due
+  target MSBuild ha girato per primo.
+- **Le rotte dei moduli si registrano dal manifest**, in `app/router.ts`: il generatore di TanStack
+  scansiona una cartella sola e il codice di un modulo sta altrove, quindi le rotte entrano
+  nell'albero generato per l'altra via che il design §6.5 prevede. Sono montate sotto `_public`, così
+  una pagina di modulo ha lo stesso header e lo stesso footer di tutte le altre; non sono in
+  `FileRouteTypes`, quindi `<Link to="/atc">` non compilerebbe — ed è esattamente il caso per cui
+  `RouterAnchor` esiste già.
+- **Tre schermate di amministrazione**: `/staff/admin/permissions` (+ `$id` e il pannello superadmin),
+  `/staff/admin/modules`, `/staff/admin/audit`. La prima è la ricetta 2 senza dipartimento
+  nell'indirizzo, e sembra identica a quelle dipartimentali: è il punto di avere un motore solo.
+- **La ui-kit ha il terzo lato**: una sezione in cima confronta quello che il server dichiara con
+  quello che questa build ha registrato (`registryDiff.ts`, funzione pura), e lo dice a parole. Il
+  test `web/src/modules/manifest.test.ts` legge i sorgenti C# dei moduli e i manifest e pretende che
+  dichiarino gli stessi blocchi, gli stessi widget e le stesse chiavi.
+- **`ForkabilityXxDivision`**: `IVAOHUB_ROOT` su una radice temporanea con `config/division.xx.json`,
+  `locales/en/` e `seed/`, un database creato apposta (come root, perché l'utente applicativo di un
+  container MariaDB non può crearne uno), e la catena di migrazioni che gira da zero. Nessuna
+  risposta contiene `IT-`, `LIRR`, `Italia`, `Italy` o `it.ivao.aero`, e i template seedati hanno la
+  sola chiave `en`.
+- **353 test .NET** (253 unit + 100 integrazione) e **74 Vitest**.
 
 ## 3. Regole già attive (non aggirarle nelle fasi successive)
 
@@ -447,6 +523,23 @@ senza credenziali.
 - **Le chiavi i18n costruite a runtime hanno il loro test.** `pnpm i18n:check` non le vede;
   `blocks/registry.test.ts` legge i file di lingua e controlla `blocks.<tipo>.label`, i campi e le
   opzioni di ogni blocco del registry. Chi aggiunge un blocco non aggiunge un test: quello c'è già.
+- **Un modulo si aggiunge in due elenchi espliciti e in nessun altro posto**: `IvaoHub.Web/Modules.cs`
+  e `web/src/modules/index.ts`. Niente scansione delle assembly, niente `import` dinamico: «quali
+  moduli ha questa build?» è una domanda a cui si risponde aprendo un file.
+- **Il catalogo dei permessi si chiede a `PermissionCatalog`, mai a `CorePermissions`.** La seconda è
+  il contributo del nucleo; il primo è quello che l'installazione ha davvero, moduli inclusi.
+- **Un contesto EF si registra solo con `AddHubDbContext`/`AddModuleDbContext<T>`**, ed è ora un
+  test di architettura (`AddDbContext<` vietato altrove sotto `src/`). Un contesto registrato a mano
+  scriverebbe senza audit, senza guardia e senza proiezioni, e `MapCrud` — che risolve il contesto
+  per tipo dal container — lo servirebbe volentieri.
+- **Una riga che decide la sessione di qualcuno lo dichiara** (`IAffectsUserSession`), e lo stamp lo
+  rigenera l'interceptor. Un servizio che scrivesse `user.SecurityStamp = …` per conto proprio
+  starebbe duplicando un meccanismo, esattamente come chi scrive una riga di audit a mano.
+- **Un endpoint di modulo vive sotto `/api/<key>` e da nessun'altra parte.** È ciò che rende
+  possibile la manutenzione: il middleware riconosce il modulo dal percorso.
+- **Le parole di un modulo stanno in `web/src/modules/<key>/locales/`**, e `pnpm i18n:sync` le copia
+  in `locales/`. Le copie sono committate e portano `_source`: chi le modifica sta modificando la
+  copia sbagliata, e la CI glielo dice con un diff.
 - **Le proiezioni si leggono una volta per salvataggio, non una per riga.** `ProjectionWriter`
   separa `Load`/`LoadAsync` da `Apply` apposta: sono dentro la transazione della scrittura, e ogni
   round trip in più è un lock tenuto aperto più a lungo. `ProjectionBatchingTests` lo fissa
@@ -489,6 +582,14 @@ senza credenziali.
 | `RouterAnchor` è l'unico posto che allarga un `href` a un `to` di TanStack | Sidebar e NavigationMenu di Atmosphere passano una stringa; il `Link` è tipizzato sull'albero delle route generato, che è ciò che rende un refuso un errore di build. Un cast, in un adattatore solo, invece di uno per ogni voce di menu costruita dai dati. |
 | I link legali del footer stanno in `locales/{lng}/common.json` come array di `{label, href}` | Sono contenuto, non codice: un fork li cambia dove cambia ogni altra frase. `i18n:check` tratta un array come una chiave sola, quindi le due lingue restano allineate senza doverne contare gli elementi. |
 | Il cookie `hub.lang` lo scrive il client, `hub_users.locale` lo scrive il server | Sono due cose diverse: la preferenza del browser (l'unica che ha un anonimo) e quella del membro (che lo segue su un altro browser). Nessuno dei due scrive quella dell'altro. |
+| Il catalogo dei permessi è un **singleton composto** e non una lista statica | Che cosa contenga dipende da quali moduli sono compilati dentro, e non è noto a compile time. `PermissionCatalog.Core` resta per chi non ha un container a cui chiedere. |
+| L'interceptor prende `IMemoryCache` e non `ISecurityStampCache` | Quella legge attraverso `HubDbContext`, che è costruito con l'interceptor dentro: chiederla lì sarebbe chiedere al container di costruire un contesto per costruire un contesto. La chiave sta comunque in un posto solo, `SecurityStampCache.Forget`. |
+| `AddHubModules` prende `DivisionOptions` già legato, non `IOptions` | Quali moduli sono accesi va saputo **mentre** il container si costruisce — un servizio non si registra dopo — quindi è un valore e non una pipeline di opzioni. È l'unica eccezione alla regola «la configurazione si legge quando il servizio viene costruito», e `ModuleRegistryComposesNavAndExclusions` verifica che le due letture coincidano sull'applicazione vera. |
+| Non esiste `GET /api/admin/modules` | `/api/me` porta già quello stato, perché il client ne ha bisogno per disegnarsi. Una seconda risposta alla stessa domanda è una seconda cosa da tenere allineata. |
+| `POST /api/atc/ping` esiste solo come bersaglio del test di manutenzione | Il middleware sta prima del routing, quindi un `POST` su un indirizzo che il modulo non ha risponde 503 quando è chiuso e 404/405 quando è aperto. È esattamente la proprietà che serviva provare, senza inventare una scrittura che il modulo non ha. |
+| La schermata dei moduli non usa `DataList` | `DataList` è il motore di una lista **paginata e ordinata lato server** su una risorsa. Qui non c'è una risorsa: la lista è quella del bootstrap, e ogni riga è tre fatti e un bottone. Usarlo avrebbe voluto dire inventare un endpoint per farlo funzionare. |
+| Le rotte dei moduli entrano nell'albero a runtime, con `addChildren` | Il generatore di TanStack scansiona una cartella sola, e il codice di un modulo sta altrove per decisione (design §6.5). `addChildren` sostituisce i figli **e restituisce lo stesso oggetto** che l'albero generato già tiene, quindi appendere a quelli che ci sono è come una rotta di modulo si aggiunge senza ricostruire l'albero. |
+| `_source` dentro i file di lingua copiati | Un file generato che non dice di esserlo è un file che qualcuno modifica sul posto. `i18n:check` lo tratta come una chiave qualsiasi, quindi le due lingue restano allineate. |
 | `setup.ts` dei test stubba `ResizeObserver` e le pointer capture | jsdom li dichiara e non li implementa, e ogni componente Atmosphere costruito su un popper Radix si misura al mount. Uno stub basta: un test asserisce su ruoli e testo, mai su una dimensione. |
 
 ## 5. Decisioni scritte (`docs/internal/decisions/`)
@@ -505,6 +606,7 @@ senza credenziali.
 | `2026-09-03-snapshot-ref-potatura.md` | Lo snapshot `ref_` cancella ciò che IVAO non elenca più, solo su risposta non vuota. |
 | `2026-09-03-markdown-content.md` | `MarkdownContent` usa `react-markdown`: albero React, mai `innerHTML`, HTML grezzo non abilitato. **Decisa da Carmine**, design §7.1. |
 | `2026-09-04-nuovo-da-template.md` | «Nuovo da template» è una rotta sua e non una query su `POST /api/content`, che è già la creazione generata da `MapCrud`. **Decisa da Carmine** il 4 set 2026; design §5.6 corretto. |
+| `2026-09-04-grant-e-sessione.md` | Un grant invalida la sessione del suo titolare attraverso l'**entità** (`IAffectsUserSession`, applicata dall'interceptor) e non attraverso un secondo gancio di `MapCrud`: vale per chiunque scriva la riga. Dice anche che cosa significa davvero «subito» — il cookie vecchio prende 401, non viene riscritto. **Decisa da Carmine** il 4 set 2026; design §3.4 e §3.7 aggiornate. |
 | `2026-09-04-frozen-e-visibilita.md` | Una cattura `frozen` non può essere più visibile della pagina che la contiene: la pubblicazione passa al provider un `DataBlockContext`, e `VisibilityCeiling` dice cosa ci sta dentro. **Decisa da Carmine** il 4 set 2026; design §5.5 corretta. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
@@ -551,7 +653,11 @@ allargare i permessi, mai stringerli a sorpresa.
   `SuperadminService.WriteAuditAsync` non esiste più. Resta a mano la sola riga
   `superadmin.set_changed`, che non è la scrittura di una riga ma un confronto fra due insiemi
   (design §4.5).
-- `DivisionOptionsValidator` accetta le chiavi modulo note ma nessuno gliene passa: si accende in **F8**.
+- ~~`DivisionOptionsValidator` accetta le chiavi modulo note ma nessuno gliene passa~~ **chiuso in
+  F8**: `Program` gli passa le chiavi di `Modules.All` (tutte, non solo quelle accese: nominare un
+  modulo per spegnerlo è il senso della chiave). `config/division.json` di questa divisione nomina
+  `specialops`, che questa build non ha: è un **warning a ogni avvio**, ed è il comportamento
+  voluto — una divisione può tenersi la chiave di un modulo che non ha ancora mergiato.
 - ~~`shared/api/bootstrap.ts` e il tipo `ApiPaths` in `client.ts` sono scritti a mano~~ **chiuso in
   F5**: `schema.d.ts` è generato dall'OpenAPI e committato, `client.ts` è `createClient<paths>` e
   `bootstrap.ts` è un elenco di alias del contratto.
@@ -570,12 +676,24 @@ allargare i permessi, mai stringerli a sorpresa.
   ~~`docs/UI-GUIDELINES.md` resta F6~~ **scritta in F6**: le quattro regole, ciascuna con la cosa
   che la fa fallire (ESLint, `i18n:check`, il test della ui-kit) invece di un revisore che se la
   ricorda.
-- Il catalogo dei permessi che `HubPolicyProvider` interroga è `CorePermissions` e basta: i permessi
-  dei moduli si aggiungono in **F8**, quando `IModule.Permissions` esiste.
+- ~~Il catalogo dei permessi che `HubPolicyProvider` interroga è `CorePermissions` e basta~~
+  **chiuso in F8**: `PermissionCatalog` è composto da nucleo ∪ moduli abilitati, e lo interrogano il
+  policy provider, il calcolatore dei permessi effettivi e il validatore di un grant.
+- **`AtcModule` non dichiara nessun permesso**, quindi il percorso «un permesso di modulo diventa una
+  policy» è provato con un **modulo finto** in `ModuleCompositionTests` e non da un modulo vero. È la
+  scelta onesta: il design §6.4 dice che `atc` in M0 è una voce di menu e un `ping`, e inventargli un
+  permesso avrebbe voluto dire inventare anche una riga nella matrice dei ruoli per non lasciarlo a
+  disposizione del solo superadmin. Il primo permesso di modulo vero è M2.
 - ~~`BlockDocumentWalker.ValidateEnvelope` accetta l'elenco dei tipi di blocco noti come parametro
   opzionale~~ **chiuso in F7** per il lato server: `BlockRegistry.Types` è quello che il validatore
   riceve, e un tipo sconosciuto è 400 sul percorso del blocco. Il terzo lato — che il **manifest di
-  un modulo** dichiari lo stesso insieme del server — è F8.
+  un modulo** dichiari lo stesso insieme del server — è **chiuso in F8**:
+  `web/src/modules/manifest.test.ts` legge i `*Module.cs` dei progetti di modulo e i manifest, e
+  pretende che dichiarino gli stessi blocchi, gli stessi widget e le stesse chiavi. Il C# lo legge
+  con due regex volutamente strette (`ModuleKey = "…"`, `new BlockDescriptor("…"`) e **fallisce se una
+  regex smette di corrispondere** invece di concludere che un modulo non dichiara niente: è la
+  convenzione che un modulo accetta, cioè scrivere la propria chiave e i propri blocchi come
+  letterali.
 - Un contesto di modulo non scrive proiezioni né audit se non ha quelle tabelle nel proprio modello:
   l'interceptor se ne accorge e non fa niente. Quando un modulo proietterà davvero (M1+), va deciso
   se condividere quelle entità o passare dal contesto del nucleo.
@@ -593,23 +711,29 @@ allargare i permessi, mai stringerli a sorpresa.
   M2+ servira' `tracker` (chi e' online), si aggiunge li' senza toccare codice.
 - Le fixture IVAO coprono 3 centri e 3 aeroporti: bastano a provare upsert e riconoscimento FIR, non
   sono un campione realistico dell'Italia (che ne ha 7 e 221).
-- **`MapCrud` non ha ancora nessuna entità in modalità globale.** Il ramo esiste ed è scritto, ma il
-  primo uso vero (`UserGrant` e `hub_audit_log` in sola lettura) è **F8**: finché non c'è, quel ramo
-  è coperto solo dal codice e non da un test end-to-end.
+- ~~**`MapCrud` non ha ancora nessuna entità in modalità globale**~~ **chiuso in F8**: `UserGrant` e
+  `AuditLogEntry` (quest'ultima con `ReadOnly = true`) sono i due usi veri, e
+  `ModuleAndAdminEndToEndTests` li esercita sul cookie vero e sulle policy vere.
 - ~~**`ExtraWritePolicy` non è ancora usato da nessuno**~~ **chiuso in F7**:
   `IsTemplate → Content.ManageTemplates`, provato end-to-end con un advisor WD, che è l'unica
   identità che distingue il gancio dalla policy di scrittura.
 - **La ricerca `q` ignora l'accento e la maiuscola per collation, non per scelta.** `LIKE` su
   `utf8mb4_unicode_ci` è già case e accent insensitive, che è quello che vogliamo; ma la ricerca
-  della lista **non** passa dal FULLTEXT di `cms_search_index`. Quella è `/api/search` in **F8**, ed
-  è un altro meccanismo: qui si cerca dentro la tabella del back-office, lì nell'indice pubblico.
+  della lista **non** passa dal FULLTEXT di `cms_search_index`. Quella è `/api/search`, **fatta in
+  F8**, ed è un altro meccanismo: qui si cerca dentro la tabella del back-office, lì nell'indice
+  pubblico. Due cose che `/api/search` non fa e che M1 dovrà decidere: **non ordina per rilevanza**
+  in modo esplicito (in natural language mode MariaDB restituisce già le righe in quell'ordine per un
+  `MATCH` nel `WHERE`, ma non è una garanzia che si possa paginare sopra) e non evidenzia niente. E
+  InnoDB ignora le parole più corte di `innodb_ft_min_token_size` (tre, di default): una ricerca di
+  due lettere non torna niente, e non è un bug nostro.
 - **`pageSize` è tagliato a 100 e `DefaultPageSize` è 25**, cablati nel motore. Se una schermata di
   F6 ne vorrà altri, diventano configurazione di `CrudOptions`, non un numero in più nel motore.
-- **`CrudScope` risolve il contesto per `Type` dal container.** Funziona perché ogni contesto è
-  registrato da `AddHubDbContext`/`AddModuleDbContext<T>`; un contesto registrato in un altro modo
-  darebbe un `InvalidOperationException` a runtime e non a build. Il test di architettura che
-  potrebbe pinnarlo (nessun `AddDbContext` fuori da quei due punti) non c'è: vale la pena scriverlo
-  in **F8**, con il primo contesto di modulo davvero registrato.
+- ~~**`CrudScope` risolve il contesto per `Type` dal container** e nessun test pinna che i contesti
+  passino dai due metodi giusti~~ **chiuso in F8**:
+  `AContextIsOnlyEverRegisteredByTheTwoMethodsThatAttachTheInterceptor` vieta `AddDbContext<` fuori da
+  `HubDbContextServiceCollectionExtensions.cs`. Nota che `atc` **non ha un contesto**: il ramo
+  `AddModuleDbContext<T>` + `MigrateAsync` all'avvio esiste, è scritto e non ha ancora un modulo che
+  lo eserciti. Il primo è M2.
 - **Il `filter[...]` fa un solo confronto, l'uguaglianza.** Basta a F6 (dipartimento, visibilità,
   categoria, attivo). Intervalli e `in` non ci sono, e se servissero andrebbero nel motore.
 - **Nessun test end-to-end del browser.** Playwright è previsto dal design (§8, «solo `pnpm e2e`,
@@ -622,10 +746,9 @@ allargare i permessi, mai stringerli a sorpresa.
   è una select ristretta a `reachableDepartments`, non un campo libero — il server rifiuta comunque
   chi non ha il permesso su **entrambi** i dipartimenti, perché `MapCrud` controlla la riga com'è e
   come diventerebbe.
-- **`col.department()` non è usato da nessuna lista.** Esiste come helper e la ui-kit non lo monta
-  isolato (lo copre `DepartmentBadge`): la lista dei link filtra già su un dipartimento solo, quindi
-  la colonna direbbe la stessa cosa a ogni riga. Il primo uso vero è una lista in modalità globale,
-  cioè **F8**.
+- ~~**`col.department()` non è usato da nessuna lista**~~ **chiuso in F8**: la lista dei grant lo usa,
+  ed è esattamente il caso per cui esisteva — una lista in modalità globale, dove ogni riga può
+  appartenere a un dipartimento diverso o a nessuno.
 - **La lingua del server e quella dello schermo possono divergere per un istante.**
   `PUT /api/me/locale` riemette il cookie, quindi la richiesta successiva è già nella lingua nuova;
   ma una risposta **già in volo** quando l'utente cambia lingua arriva nella precedente. Non vale la
@@ -671,6 +794,39 @@ allargare i permessi, mai stringerli a sorpresa.
 - **Nessun test verifica il documento OpenAPI in sé** (che `/api/links` ci sia, che
   `LocalizedString` porti `x-localized`). Lo step di CI `pnpm gen:api && git diff --exit-code` lo
   copre di sponda: se il documento cambia forma, `schema.d.ts` si muove e la build cade.
+- **«Il grant morde subito» significa che il cookie vecchio prende 401**, non che la sessione continua
+  con i permessi nuovi. `OnValidatePrincipal` **rigetta** il cookie quando lo stamp cambia (design
+  §3.3, deciso in F2), quindi la sequenza vera è: grant → 401 → login rifatto (silenzioso con IVAO
+  per chi ha già dato il consenso) → permessi nuovi. È la proprietà di sicurezza giusta e la
+  chiudono i test; ricostruire il principal invece di rigettarlo cambierebbe una decisione di F2 e
+  non è stato fatto in F8. Se in M1 dà fastidio, si riapre lì.
+- **`expiresAt` di un grant è una casella di testo.** Il generatore di form non ha un tipo «data», e
+  inventarlo in F8 avrebbe voluto dire anche la conversione fra ISO e `datetime-local`. L'etichetta
+  dice il formato (`YYYY-MM-DD`, vuoto = mai) e il server rifiuta una data già passata con
+  `errors.grant.alreadyExpired`. Il giorno che serve davvero, è un'estensione del generatore, non un
+  form scritto a mano.
+- **`/staff/admin/audit` non ha una schermata di dettaglio.** `MapCrud` mappa comunque
+  `GET /api/admin/audit/{id}`, che risponde con `beforeJson`/`afterJson`; la lista non li mostra
+  perché sono JSON di forma diversa per ogni entità e disegnarli bene è un componente, cioè una
+  decisione (c).
+- **Non esiste ancora un namespace `mail`.** Il task 8 di F8 chiedeva che `pnpm i18n:check`
+  includesse `errors` e `mail`: lo script legge **tutti** i namespace che trova, quindi `errors` è
+  già coperto e `mail` lo sarà da sé il giorno che il servizio notifiche di M1 lo crea. Non c'è
+  niente da aggiungere allo script.
+- **`ForkabilityXxDivisionTests` scrive una variabile d'ambiente del processo** (`IVAOHUB_ROOT`) e la
+  rimette a posto in `DisposeAsync`. È sicuro perché i test di integrazione stanno tutti in una
+  collection sola e girano quindi uno alla volta, e perché l'unica classe fuori da quella collection
+  (`TrustedProxiesTests`) non costruisce un host. Se un giorno se ne aggiunge una che lo fa, questa
+  è la premessa che salta.
+- **Il test manifest legge il C# con due regex.** È una convenzione dichiarata in testa al file — un
+  modulo scrive la propria chiave e i propri blocchi come letterali — e il test **fallisce** se la
+  chiave non si trova, invece di concludere che il modulo non dichiara niente. Un modulo che
+  costruisse il nome di un blocco a runtime lo romperebbe, ed è il momento giusto per accorgersene.
+- **La cattura della manutenzione è di cinque secondi** (design §6.1). Chi la accende non aspetta:
+  `SetMaintenanceAsync` riscrive la cache subito, perché cinque secondi della risposta precedente
+  sembrano un bottone rotto. Ma un'installazione **con più processi** avrebbe cinque secondi di
+  disallineamento fra loro; oggi il processo è uno solo (Passenger), e quando non lo sarà più la
+  risposta è un invalidamento condiviso, non una cache più corta.
 
 ---
 
