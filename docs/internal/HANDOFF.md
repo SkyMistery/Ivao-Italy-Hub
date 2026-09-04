@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 4 settembre 2026 — **M0 è chiusa.** F9 ha verificato invece di costruire:
+**Ultimo aggiornamento:** 4 settembre 2026 — **M0 è chiusa, fusa e taggata.** F9 ha verificato invece di costruire:
 la checklist §16.E letta su tutto il codice, la demo da eseguire a mano, i passi reali di un fork, e
 il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono dimostrate end-to-end
 su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
@@ -23,22 +23,18 @@ su `links` e su una pagina nata da un template, che è esattamente ciò che §16
 | F6 spina dorsale frontend | mergiata (PR #13) |
 | F7 contenuti: entità, envelope, publish, blocchi, editor, template | mergiata (PR #17) |
 | F8 moduli, admin, manutenzione, ricerca, forkabilità | mergiata (PR #20) |
-| **F9 chiusura di M0** | **fatta** |
+| **F9 chiusura di M0** | **fusa** (PR #22, `0c387d8`), tag `v0.1.0-m0` e release pubblicata |
 
 ### Il tag
 
-**Non è ancora stato spinto**, per scelta: F9 lo prepara, lo spinge Carmine dopo aver fuso la PR.
-Dal checkout principale, con `main` già aggiornato:
+**`v0.1.0-m0` è spinto** e punta a `0c387d8`, il merge commit di F9 (PR #22, due genitori,
+verificato). La release è pubblicata: `ivao-division-hub-v0.1.0-m0.zip`, 54,6 MB, scaricata e
+scompattata per controllo — si apre come applicazione e porta `wwwroot/`, `locales/{en,it}/`,
+`seed/content-templates/`, i due `config/*.example.json`, `LICENSE` e `NOTICE`, con dentro le
+correzioni i18n di F9.
 
-```bash
-git checkout main && git pull
-git tag -a v0.1.0-m0 -m "M0: foundations and the generic backbone, proven end to end"
-git push origin v0.1.0-m0
-```
-
-Il tag fa partire `release.yml`, che **dipende da `build-test`**: i 353 test girano prima, e solo
-dopo esce la release con lo zip del pacchetto self-contained. Provato davvero il 3 set 2026 con un
-tag usa-e-getta poi cancellato: nessun tag può pubblicare senza passare dai test.
+`release.yml` **dipende da `build-test`**: i 353 test sono girati prima che uscisse lo zip. È la
+proprietà per cui quella dipendenza esiste, e stavolta è servita davvero.
 
 ### Come si apre M1
 
@@ -1041,6 +1037,31 @@ un contesto.
   Da farsi **subito**, non «ogni tanto»: dopo un force push su `main` la CI va rilanciata, perché
   quella verde era passata sul commit che non c'è più.
 
+- ⚠️ **Il tag di M0 è finito una volta sul commit sbagliato, e la release è stata fermata in
+  volo** (4 set 2026). Il rapporto di chiusura di F9 finiva con un blocco `bash` che cominciava con
+  `git checkout main && git pull && git tag -a v0.1.0-m0 … && git push origin v0.1.0-m0`, e diceva
+  «prima però fondi la PR» **nella prosa sotto**. Il blocco è stato eseguito: ha lasciato il ramo
+  della fase, ha taggato la punta di **F8**, ha spinto il tag e ha fatto partire `release.yml` sul
+  commit sbagliato. Nessun lavoro perso e **nessuna release pubblicata**: il run è stato annullato
+  con circa novanta secondi di margine, e `gh release list` era ancora vuoto.
+
+  La causa non è la distrazione di nessuno: **nell'app desktop ogni blocco marcato `bash` ha un
+  bottone «Run»**, quindi un blocco è un'offerta di eseguire, non un esempio. Una precondizione
+  scritta accanto non la fa rispettare a nessuno. La regola che ne esce, e vale per ogni consegna
+  futura: *ciò che sta in un blocco eseguibile deve essere corretto anche se è l'unica cosa che
+  gira*. Se un comando dipende da un passo fatto a mano — un merge, una revisione — o quel passo
+  entra nello stesso blocco, oppure il comando si scrive in linea fra backtick, così va copiato
+  apposta.
+
+  Il sintomo, per riconoscerlo la prossima volta, è ingannevole: **i file «cambiano da soli» sul
+  disco**. Non è un bug dell'editor né una sessione parallela, è `git checkout` che ha portato via
+  il ramo della fase. Il modo di accorgersene in due secondi è `git status` seguito da
+  `gh pr view <n> --json state`.
+
+  La correzione: annullare il run (`gh run cancel <id>`) **prima** che pubblichi, fondere la PR,
+  poi spostare il tag — `git push origin :refs/tags/v0.1.0-m0`, `git tag -d`, ricrearlo sul merge
+  commit, rispingerlo. Cancellare un tag già spinto è sicuro **solo** finché non c'è una release
+  attaccata: quello è il motivo per cui il run va fermato per primo.
 - La strategia di merge era **squash** fino a F4 e dalla PR #8 in poi è il **merge commit**. Il
   criterio non è cambiato, è cambiato cosa lo soddisfa: quello che si vuole e' che `main` si legga
   a granularità di fase, e `git log --first-parent` lo fa — una voce per fase, F5 è `03d7f96` —
