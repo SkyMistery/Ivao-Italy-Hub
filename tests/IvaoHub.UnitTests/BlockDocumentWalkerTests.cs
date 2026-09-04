@@ -143,4 +143,87 @@ public sealed class BlockDocumentWalkerTests
         var result = Walker.ValidateEnvelope(JsonNode.Parse("[]"));
         Assert.Equal([new BlockDocumentError("errors.body.notAnObject", "$")], result.Errors);
     }
+
+    [Fact]
+    public void RefusesALayoutAndARenderModeItDoesNotKnow()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "layout": "1/4+3/4", "blocks": [
+            { "id": "b", "type": "text", "renderMode": "cached" } ] } ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["text"]);
+
+        Assert.Contains(result.Errors, error => error is { Key: "errors.body.layoutUnknown", Path: "sections[0].layout" });
+        Assert.Contains(
+            result.Errors,
+            error => error is { Key: "errors.body.renderModeUnknown", Path: "sections[0].blocks[0].renderMode" });
+    }
+
+    [Theory]
+    [InlineData("stacked", 1)]
+    [InlineData("1/2+1/2", 2)]
+    [InlineData("2/3+1/3", 2)]
+    [InlineData("3x1/3", 3)]
+    public void ABlockMayOnlyClaimAColumnItsSectionHas(string layout, int columns)
+    {
+        // The last column of the layout is fine; the one after it is not, and that is the whole
+        // rule: a block in a column that does not exist would be drawn nowhere.
+        Assert.True(Walker.ValidateEnvelope(Column(layout, columns - 1), ["text"]).IsValid);
+
+        var beyond = Walker.ValidateEnvelope(Column(layout, columns), ["text"]);
+        Assert.Contains(
+            beyond.Errors,
+            error => error is { Key: "errors.body.columnOutOfRange", Path: "sections[0].blocks[0].column" });
+
+        var negative = Walker.ValidateEnvelope(Column(layout, -1), ["text"]);
+        Assert.Contains(negative.Errors, error => error.Key == "errors.body.columnOutOfRange");
+    }
+
+    [Fact]
+    public void NamesEveryTranslatedValueInsideTheBlocksThatIsNotWrittenInEveryLanguage()
+    {
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "blocks": [
+            { "id": "b_1", "type": "callout", "props": {
+                "tone": "info",
+                "title": { "it": "Attenzione", "en": "Careful" },
+                "text": { "it": "Solo in italiano" } } },
+            { "id": "b_2", "type": "heading", "props": {
+                "level": 2,
+                "text": { "it": "  ", "en": "Only English" } } } ] } ]
+        }
+        """);
+
+        var missing = Walker.MissingLocales(body);
+
+        // A value written in both languages is not reported, a whitespace one is: a page whose
+        // English title is three spaces is not a page that has been translated.
+        Assert.Equal(
+            ["sections[0].blocks[0].props.text", "sections[0].blocks[1].props.text"],
+            missing.Select(gap => gap.Path));
+        Assert.Equal(["en"], missing[0].Locales);
+        Assert.Equal(["it"], missing[1].Locales);
+    }
+
+    [Fact]
+    public void ATranslatedValueThatIsCompleteIsNotReported()
+    {
+        // The body of the other tests is written in both languages throughout, which is exactly
+        // what publication is allowed to let through.
+        Assert.Empty(Walker.MissingLocales(JsonNode.Parse(Body)));
+    }
+
+    private static JsonNode? Column(string layout, int column) => JsonNode.Parse($$"""
+    {
+      "schemaVersion": 1,
+      "sections": [ { "id": "s", "layout": "{{layout}}", "blocks": [
+        { "id": "b", "type": "text", "column": {{column}} } ] } ]
+    }
+    """);
 }

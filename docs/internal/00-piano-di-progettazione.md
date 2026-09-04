@@ -1,9 +1,43 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.27 — 3 settembre 2026 (F6 chiusa: la spina dorsale frontend)
+**Versione documento:** 0.29 — 4 settembre 2026 (giro sui debiti di F7: la domanda aperta sulla cattura `frozen` è decisa)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F6 chiuse, prossima F7. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F7 chiuse, prossima F8. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.29** (4 set 2026, sera): giro sui debiti che F7 aveva scoperto, prima del merge.
+
+**La domanda aperta di 0.28 è decisa**, con l'opzione raccomandata: una cattura `frozen` non può
+essere più visibile della pagina che la contiene. La pubblicazione dice al provider dove finirà la
+risposta (`DataBlockContext`), e il provider si ferma a ciò che quella pagina può mostrare; il
+tetto è una **tabella** in `VisibilityCeiling`, non un ordinamento, perché `Department` è più
+stretta di `Staff` ma nomina persone diverse per ogni dipartimento. Non è una seconda copia del
+query filter: quello risponde «questo lettore può vedere questa riga», questo risponde «questa riga
+può essere copiata dentro una pagina che leggerà qualcun altro», ed esiste solo perché la
+pubblicazione copia. Nota `2026-09-04-frozen-e-visibilita.md` aggiornata a **decisa**.
+
+**Il generatore di form ha imparato tre cose**, tutte regola (b), tutte perché un blocco le
+chiedeva: legge il `.default()` che un campo dichiara (così «con cosa nasce un blocco nuovo» sta
+accanto al campo e non in un secondo posto); disegna una **select** per un numero annotato
+`.meta({ choices })` — un numero e non un `z.enum`, perché ogni stringa dentro le `props` finisce
+nell'indice di ricerca come testo della pagina e il livello di un titolo non è testo; e dà a una
+`z.enum` **opzionale** la voce «nessuno», senza la quale una select non ha modo di tornare indietro
+e la prima scelta sarebbe definitiva. Il `department` di un `linkList` smette così di essere testo
+libero, e un nome che il server non riconosce restringe a **nessuna riga** invece che a tutte.
+
+E l'anteprima dell'editor dice quello che sta facendo: una bozza non porta nessuna cattura — la
+pubblicazione la scrive nella versione — quindi un blocco `frozen` in anteprima mostra dati live, e
+il badge distingue «catturato alla pubblicazione» da «ora dal vivo, catturato quando pubblichi».
+
+**Changelog 0.28** (4 set 2026): chiusa la fase **F7**, i contenuti. È la fase che dimostra §9.3 per intero: una riga di `cms_contents` nata da un template, modificata in un editor a lista, pubblicata, e letta da un anonimo — con un blocco Data catturato alla pubblicazione che **non** cambia quando cambiano i link sotto, e che torna a cambiare appena lo si rimette `live` e si ripubblica. Il test `ContentPublishFreezesDataBlocks` è quella demo, eseguita invece che descritta.
+
+Il registry dei blocchi esiste ora su tutti e due i lati: cinque descrittori nel nucleo (`heading`, `text`, `callout`, `cta`, `linkList`) pubblicati da `/api/me`, e cinque registrazioni TypeScript con schema, componente ed esempio. Il backend continua a non sapere che cosa significhi una `props`: valida l'envelope, estrae il testo per la ricerca, e passa le proprietà opache al provider. `LinkListProvider` è il primo `IDataBlockProvider`, e risponde sia alla pubblicazione sia a `GET /api/blocks/data/{type}` — stesso servizio, stesse regole di visibilità, momenti diversi.
+
+**Una decisione** e **una domanda aperta**, entrambe scritte in `docs/internal/decisions/`. La decisione: «nuovo da template» è `POST /api/content/from-template/{templateId}` e non una query su `POST /api/content`, perché quella rotta è già la creazione generata da `MapCrud` e le minimal API non instradano per query string; l'alternativa sarebbe stata insegnare al motore CRUD che cosa sia un template, cioè il caso speciale che §16.6 vieta. La domanda aperta: **la cattura `frozen` vede quello che vede chi pubblica**, che è ciò che §9.3 e il design §5.5 dicono, ma significa che un coordinatore che pubblica una pagina pubblica può congelarci dentro righe `Staff`. Il percorso `live` è corretto per costruzione. Tre opzioni e una raccomandazione in `2026-09-04-frozen-e-visibilita.md`.
+
+**Due precisazioni al design** (v1.7), tutte e due estensioni di meccanismi esistenti e non meccanismi nuovi. (1) `CrudOptions.DefaultFilters`: un filtro che la lista applica finché il chiamante non nomina quella proprietà — così la lista dei contenuti nasconde i template senza che il motore sappia che cosa sia un template. (2) `CrudSource.BackOffice<T>`: la lettura con i filtri di visibilità spenti diventa un metodo con un nome dentro `Data/Crud/`, che il servizio di pubblicazione può chiedere invece di scrivere `IgnoreQueryFilters` per conto suo; il test di architettura resta identico.
+
+E una cosa che i test hanno trovato da soli: il seed dei template scriveva **con l'identità di chi stava usando il sito**, perché il doppione di `ICurrentUser` dei test di integrazione valeva anche durante l'avvio dell'applicazione. In produzione non succede — fuori da una richiesta non c'è nessun autenticato, ed è proprio su questo che la guardia di scrittura dell'interceptor conta — ma il doppione mentiva, e ora è anonimo finché `ApplicationStarted` non è passato.
 
 **Changelog 0.27** (3 set 2026, notte): chiusa la fase **F6**, la spina dorsale del frontend. Tre layout dietro le loro guardie (`_public`, `_member`, `_staff`), le tre ricette del router copiate e documentate in `web/src/routes/README.md`, `DataList` e `SchemaForm`, `LocaleFields`, `useProblemDetails`, i componenti dell'elenco chiuso di §16.C, `/staff/admin/ui-kit`, e il back-office di `links` — che è il punto di tutto: **nessuna riga di JSX di tabella o di form**, solo un elenco di colonne e uno schema zod. `docs/UI-GUIDELINES.md` scritta.
 

@@ -1,6 +1,6 @@
 import { Sidebar, SidebarContainer, SidebarProvider, type SidebarProps } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
-import { Link2, ShieldCheck } from 'lucide-react';
+import { FileText, Link2, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { type Bootstrap, holdsPermissionAnywhere, reachableDepartments } from '../../shared/api/bootstrap';
@@ -12,7 +12,7 @@ import { RouterAnchor } from './RouterAnchor';
 /**
  * The back office. One group per department the member may work in — their own, or all of them
  * when the role reaches everywhere — and under each, the resources of that department. In M0 there
- * is one resource, `links`; F7 and F8 add theirs to the same list (design M0 §7.2).
+ * are two, `content` and `links`; F8 adds what the modules bring to the same list (design M0 §7.2).
  *
  * The administration group only appears for whoever holds `Admin.Access`. A menu entry that leads
  * to a 403 is a menu entry that teaches people to ignore the menu.
@@ -31,6 +31,12 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
     title: department,
     Icon: ShieldCheck,
     items: [
+      {
+        title: t('content.title'),
+        description: t('content.description'),
+        Icon: FileText,
+        href: `/staff/${deptParam.format(department)}/content`,
+      },
       {
         title: t('links.title'),
         description: t('links.description'),

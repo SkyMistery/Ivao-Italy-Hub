@@ -18,16 +18,44 @@ export interface FieldMeta {
   multiline?: boolean;
   /** Carried by the form and submitted, never shown. `rowVersion` is the reason this exists. */
   hidden?: boolean;
+  /**
+   * A number with a closed set of values: a select rather than a free input. It exists because a
+   * `z.enum` would make the value a *string*, and every string inside a block's properties is
+   * extracted as the text of the page for the search index — the level of a heading is not text
+   * (design M0 §5.3).
+   */
+  choices?: number[];
+}
+
+/**
+ * What a select puts in the DOM for "nothing chosen". An optional enum needs one because the empty
+ * string is reserved by the underlying select, and `undefined` is not a value a DOM node can hold.
+ * No option of any schema of this hub is spelled like this.
+ */
+export const NO_CHOICE = '__none__';
+
+/**
+ * What every field says about itself, whatever its kind.
+ *
+ * `defaultValue` is the one the schema declares with `.default(...)`, and it is read rather than
+ * guessed: what a new row or a new block starts with belongs next to the field it belongs to, and
+ * a caller that invented its own would be the second description of the same thing.
+ */
+interface FieldCommon {
+  path: string;
+  meta: FieldMeta;
+  optional: boolean;
+  defaultValue: unknown;
 }
 
 export type FieldNode =
-  | { kind: 'text'; path: string; meta: FieldMeta; optional: boolean }
-  | { kind: 'number'; path: string; meta: FieldMeta; optional: boolean }
-  | { kind: 'boolean'; path: string; meta: FieldMeta; optional: boolean }
-  | { kind: 'enum'; path: string; meta: FieldMeta; optional: boolean; options: string[] }
-  | { kind: 'localized'; path: string; meta: FieldMeta; optional: boolean }
-  | { kind: 'object'; path: string; meta: FieldMeta; optional: boolean; children: FieldNode[] }
-  | { kind: 'list'; path: string; meta: FieldMeta; optional: boolean; children: FieldNode[] };
+  | ({ kind: 'text' } & FieldCommon)
+  | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
+  | ({ kind: 'boolean' } & FieldCommon)
+  | ({ kind: 'enum'; options: string[] } & FieldCommon)
+  | ({ kind: 'localized' } & FieldCommon)
+  | ({ kind: 'object'; children: FieldNode[] } & FieldCommon)
+  | ({ kind: 'list'; children: FieldNode[] } & FieldCommon);
 
 /**
  * A translated field. The server marks the same thing in the contract with `x-localized`; here the
@@ -46,6 +74,8 @@ interface ZodInternals {
   element?: unknown;
   entries?: Record<string, string>;
   shape?: Record<string, unknown>;
+  /** Present on a `default` wrapper, and in zod 4 it is the value itself and not a thunk. */
+  defaultValue?: unknown;
 }
 
 function definition(schema: unknown): ZodInternals {
@@ -62,20 +92,28 @@ function annotation(schema: unknown): FieldMeta {
  * on the way: `z.string().meta({ multiline: true }).optional()` keeps its annotation, and so does
  * the same pair written the other way round.
  */
-function unwrap(schema: unknown): { inner: unknown; meta: FieldMeta; optional: boolean } {
+function unwrap(schema: unknown): {
+  inner: unknown;
+  meta: FieldMeta;
+  optional: boolean;
+  defaultValue: unknown;
+} {
   const wrappers = new Set(['optional', 'nullable', 'default', 'prefault', 'nonoptional', 'readonly']);
 
   let current = schema;
   let meta: FieldMeta = annotation(current);
   let optional = false;
+  let defaultValue: unknown = undefined;
 
   for (;;) {
     const def = definition(current);
     if (!wrappers.has(def.type) || def.innerType === undefined) {
-      return { inner: current, meta, optional };
+      return { inner: current, meta, optional, defaultValue };
     }
 
     optional ||= def.type === 'optional' || def.type === 'nullable';
+    // The outermost default wins, which is the one the schema was written with.
+    defaultValue ??= def.type === 'default' || def.type === 'prefault' ? def.defaultValue : undefined;
     current = def.innerType;
     meta = { ...annotation(current), ...meta };
   }
@@ -98,9 +136,9 @@ export function readFields(schema: z.ZodType, prefix = ''): FieldNode[] {
 }
 
 function readField(schema: unknown, path: string): FieldNode {
-  const { inner, meta, optional } = unwrap(schema);
+  const { inner, meta, optional, defaultValue } = unwrap(schema);
   const def = definition(inner);
-  const common = { path, meta, optional };
+  const common: FieldCommon = { path, meta, optional, defaultValue };
 
   if (meta.localized === true) {
     // Annotated wins over shape: a translated field is a record, and a record of anything else is
@@ -113,7 +151,7 @@ function readField(schema: unknown, path: string): FieldNode {
       return { kind: 'text', ...common };
     case 'number':
     case 'int':
-      return { kind: 'number', ...common };
+      return { kind: 'number', ...common, choices: meta.choices ?? null };
     case 'boolean':
       return { kind: 'boolean', ...common };
     case 'enum':

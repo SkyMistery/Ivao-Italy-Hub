@@ -94,8 +94,14 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   { name: 'ConfirmDialog' satisfies UiKitComponent, render: () => <ConfirmDialogSample /> },
 ];
 
-/** The blocks of the registry, each with the example props it registered. Empty until F7. */
+/**
+ * The blocks of the registry, each with the example props it registered.
+ *
+ * A data block is mounted with its `exampleData` rather than with an answer from the server: the
+ * gallery is a page about the components, and a block that called the API here would show whatever
+ * this installation happens to hold today — or nothing at all, on a fresh one.
+ */
 export const UI_KIT_BLOCKS: readonly UiKitSection[] = registry.blocks.map((block) => ({
   name: block.type,
-  render: () => <block.component props={block.example} />,
+  render: () => <block.component props={block.example} data={block.exampleData ?? null} />,
 }));

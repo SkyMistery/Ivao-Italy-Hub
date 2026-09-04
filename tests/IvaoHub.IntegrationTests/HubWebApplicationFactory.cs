@@ -58,9 +58,21 @@ public sealed class HubWebApplicationFactory(
 
             // F4 has no endpoints, so a test says who is asking instead of signing a cookie in.
             // The tests of the identity itself leave this alone and use the real implementation.
+            //
+            // Nobody is signed in while the application is starting, and the backbone rests on it:
+            // the write guard of the interceptor leaves an anonymous caller alone precisely because
+            // an anonymous caller is the installation itself -- a migration, a job, the seed of the
+            // system templates. The real implementation reads an HTTP context and so is anonymous
+            // there by construction; a fake registered flatly would instead make the whole start up
+            // sequence run as whichever coordinator the test had in mind, and the seeder would be
+            // refused the department it seeds into. ApplicationStarted is the line between the two.
             if (currentUser is not null)
             {
-                services.AddScoped<ICurrentUser>(_ => currentUser);
+                services.AddScoped<ICurrentUser>(provider =>
+                    provider.GetRequiredService<IHostApplicationLifetime>()
+                        .ApplicationStarted.IsCancellationRequested
+                            ? currentUser
+                            : StartUpUser);
             }
 
             // The endpoints of the identity provider are pinned instead of discovered: a test must
@@ -96,4 +108,7 @@ public sealed class HubWebApplicationFactory(
 
     /// <summary>The repository root the host resolved, so a test can read the files it wrote.</summary>
     public HubPaths Paths => Services.GetRequiredService<HubPaths>();
+
+    /// <summary>Nobody, which is who the installation is while it is starting itself up.</summary>
+    private static readonly TestCurrentUser StartUpUser = new();
 }

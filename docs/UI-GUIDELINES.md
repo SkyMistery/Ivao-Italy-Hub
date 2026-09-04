@@ -38,6 +38,11 @@ For M0 it is exactly:
 
 The list lives in `web/src/shared/ui/catalog.ts`. Everything else is Atmosphere.
 
+A screen of a feature — the section tree of the content editor, the template picker — is not on the
+list and does not belong on it: the list is the pieces that are meant to be reused, and a component
+that only one feature has any use for lives in `features/<x>/` where it can change without anybody
+else noticing. The question to ask is "would a second screen mount this?", not "is it a component?".
+
 Adding one is a decision: write it in `docs/internal/decisions/`, add it to the catalogue, add a
 section to `/staff/admin/ui-kit`, and add a line to this file saying what it is for. The test next
 to the gallery fails until the section exists, so a component cannot quietly stop being shown.
@@ -70,12 +75,59 @@ declared in `CrudOptions.Sortable`; a column that claims more gets a 400.
 
 A form is a zod schema in `features/<x>/schema.ts` mirroring the write DTO, handed to `SchemaForm`.
 The schema carries types and what is required, and nothing else: every real rule belongs to the
-server, which answers with it anyway. `.meta({ multiline: true })` asks for a textarea,
-`.meta({ hidden: true })` keeps a field in the payload and off the screen, and `localized()` marks a
-translated field, which becomes one tab per language.
+server, which answers with it anyway.
+
+What the schema may say about how a field is drawn:
+
+- `localized()` marks a translated field, which becomes one tab per language;
+- `.meta({ multiline: true })` asks for a textarea;
+- `.meta({ hidden: true })` keeps a field in the payload and off the screen — `rowVersion`;
+- `.meta({ choices: [1, 2, 3] })` on a **number** draws a select. A number and not a `z.enum`
+  because every string inside a block's properties is extracted as the text of the page for the
+  search index, and a heading level is not text;
+- `.default(10)` is read as well, so what a new row or a new block starts with lives next to the
+  field rather than in a second place that can drift;
+- an **optional** `z.enum` also gets a "nothing chosen" entry, labelled
+  `<labels>.options.<path>.none`. A select has no gesture for going back, so without it the first
+  choice a coordinator makes would be permanent.
 
 If the generator does not cover a case, extend the generator. Writing the form by hand is what this
 whole mechanism exists to avoid, and the reviewer's checklist asks about it.
+
+## A block is a schema, a component and an example
+
+A page is a tree of sections and blocks. What a block *means* exists in exactly one place, and that
+place is TypeScript: the server stores `body_json` as an opaque document, checks its envelope — the
+identifiers, the depth, the type against the registry — and never reads a property.
+
+So a block is three things, in three files under `web/src/blocks/`:
+
+- a zod schema in `schemas.ts`, which is what `SchemaForm` turns into the property form an editor
+  fills in. The annotations are the same ones an entity form uses: `localized()`, `.meta({
+  multiline: true })`, `.meta({ hidden: true })`;
+- a component in `blocks.tsx`, handed `props` and — for a data block — `data`. It decides nothing
+  about the page around it and never takes a language as a prop: `useLocalized()` knows which one is
+  on screen;
+- a registration in `core.ts` tying the two together with a type, a version, an icon, the i18n key
+  of its name, and `example` properties the gallery mounts.
+
+Three files rather than one because a module that exports components and constants together loses
+fast refresh, which is a thing you notice every day.
+
+A **data block** shows something the hub knows rather than something an editor typed. The server
+answers for it (`IDataBlockProvider`), and the page decides *when* the question is asked: `live`
+means the browser asks as it draws, `frozen` means publication asked once and stored the answer, so
+the page keeps saying what it said that day until somebody publishes it again.
+
+Two rules with something that fails behind them. Every block of the registry has a section in
+`/staff/admin/ui-kit`, and its `example` has to satisfy its own schema — the test next to the
+gallery is both halves. And every key a block asks for at run time (`blocks.<type>.label`,
+`blocks.<type>.fields.<path>`, `blocks.<type>.options.<path>.<value>`) has to exist in every
+language: `pnpm i18n:check` cannot see keys built at run time, so `blocks/registry.test.ts` reads
+the language files and checks them, which is the test rule 1 tells you to write.
+
+The conventions for what a block should look like — spacing, when to use a callout rather than a
+heading — are M1. What is fixed now is the shape.
 
 ## Times
 

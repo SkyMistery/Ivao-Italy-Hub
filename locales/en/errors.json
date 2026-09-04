@@ -30,6 +30,26 @@
       "unsupported": "The division does not publish in that language."
     },
     "unknown": "Something went wrong. Try again.",
-    "title": "That did not work"
+    "title": "That did not work",
+    "slug": {
+      "invalid": "Use lower case letters, digits and single dashes."
+    },
+    "body": {
+      "notAnObject": "This page has no content yet.",
+      "tooLarge": "This page is too large to save. Move some of it to a page of its own.",
+      "schemaVersion": "This page was written by a newer version of the hub.",
+      "tooDeep": "Sections cannot be nested any deeper than this.",
+      "idMissing": "This section or block has lost its identifier.",
+      "idDuplicated": "Two sections or blocks share one identifier.",
+      "blockTypeMissing": "This block does not say what it is.",
+      "blockTypeUnknown": "This block is of a type the hub does not know.",
+      "templateOnlyKey": "Only a template may fix this. Change it on the template instead.",
+      "layoutUnknown": "This section asks for a layout that does not exist.",
+      "renderModeUnknown": "This block asks to be drawn in a way that does not exist.",
+      "columnOutOfRange": "This block is in a column its section does not have."
+    },
+    "content": {
+      "templateNotPublishable": "A template is not published: make a page from it and publish that."
+    }
   }
 }

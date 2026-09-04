@@ -105,6 +105,27 @@ describe('the walk over the schema', () => {
 
     expect(() => readFields(schema)).toThrow(/does not draw a "date" at "when"/);
   });
+
+  test('reads the default a field declares, so nobody else has to know it', () => {
+    const schema = z.object({ limit: z.number().int().default(10), free: z.number().int() });
+    const [limit, free] = readFields(schema);
+
+    expect(limit?.defaultValue).toBe(10);
+    expect(free?.defaultValue).toBeUndefined();
+  });
+
+  test('carries the closed set of a number that has one', () => {
+    const schema = z.object({
+      level: z
+        .number()
+        .int()
+        .meta({ choices: [1, 2, 3] }),
+    });
+    const [field] = readFields(schema);
+
+    expect(field?.kind).toBe('number');
+    expect(field?.kind === 'number' && field.choices).toEqual([1, 2, 3]);
+  });
 });
 
 describe('the form it draws', () => {
@@ -162,6 +183,72 @@ describe('the form it draws', () => {
 
     await user.click(screen.getByRole('button', { name: /Remove/ }));
     expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+  });
+
+  test('a number with a closed set of values is a select, not a free input', async () => {
+    // A number and not a `z.enum` on purpose: a string inside a block's properties is extracted as
+    // the text of the page for the search index, and a heading level is not text.
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(() => Promise.resolve());
+
+    renderWithProviders(
+      <SchemaForm
+        schema={z.object({
+          level: z
+            .number()
+            .int()
+            .meta({ choices: [1, 2, 3] }),
+        })}
+        defaults={{ level: 1 }}
+        locales={LOCALES}
+        labels="test"
+        onSubmit={onSubmit}
+        submitLabel="Save"
+      />,
+      {
+        i18n: createTestI18n({
+          test: { fields: { level: 'Level' }, options: { level: { 1: 'One', 2: 'Two', 3: 'Three' } } },
+        }),
+      },
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: 'Two' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    // A number goes back as a number: a select hands out strings, and the payload must not.
+    expect(onSubmit).toHaveBeenCalledWith({ level: 2 });
+  });
+
+  test('an optional choice offers a way back to nothing chosen', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(() => Promise.resolve());
+
+    renderWithProviders(
+      <SchemaForm
+        schema={z.object({ department: z.enum(['ED', 'FOD']).optional() })}
+        defaults={{ department: 'ED' as const }}
+        locales={LOCALES}
+        labels="test"
+        onSubmit={onSubmit}
+        submitLabel="Save"
+      />,
+      {
+        i18n: createTestI18n({
+          test: {
+            fields: { department: 'Department' },
+            options: { department: { none: 'Every department', ED: 'ED', FOD: 'FOD' } },
+          },
+        }),
+      },
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: 'Every department' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    // Not the sentinel the select needed in the DOM: the payload says the field is absent.
+    expect(onSubmit).toHaveBeenCalledWith({ department: undefined });
   });
 
   test('a hidden field is never drawn but is still submitted', async () => {

@@ -122,6 +122,19 @@ public static class MapCrudExtensions
         {
             throw new InvalidOperationException($"MapCrud for {typeof(TEntity).Name} needs Apply to accept writes.");
         }
+
+        var undeclared = options.DefaultFilters.Keys
+            .Where(name => !options.Filterable.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+
+        if (undeclared.Length > 0)
+        {
+            // A default filter a caller cannot override is a list that lies quietly; saying so at
+            // start up is cheaper than finding out from an empty table.
+            throw new InvalidOperationException(
+                $"MapCrud for {typeof(TEntity).Name} defaults filters that are not filterable: "
+                + string.Join(", ", undeclared) + ".");
+        }
     }
 
     // ---- the five endpoints -------------------------------------------------------------------
@@ -299,7 +312,7 @@ public static class MapCrudExtensions
         DbContext database,
         CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options)
         where TEntity : class =>
-        options.Source is null ? database.Set<TEntity>().IgnoreQueryFilters() : options.Source(database);
+        options.Source is null ? CrudSource.BackOffice<TEntity>(database) : options.Source(database);
 
     /// <summary>
     /// Departmental mode: the list only ever holds rows of the departments the user belongs to.
@@ -346,6 +359,8 @@ public static class MapCrudExtensions
     {
         badRequest = null;
 
+        var asked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var (key, values) in request)
         {
             if (!key.StartsWith("filter[", StringComparison.Ordinal) || !key.EndsWith(']'))
@@ -354,32 +369,67 @@ public static class MapCrudExtensions
             }
 
             var name = key[7..^1];
-            var declared = options.Filterable.FirstOrDefault(
-                allowed => string.Equals(allowed, name, StringComparison.OrdinalIgnoreCase));
+            asked.Add(name);
 
-            var property = declared is null ? null : typeof(TEntity).GetProperty(declared);
-            if (property is null)
+            if (!TryApplyFilter(name, values.ToString(), options, ref query, out badRequest))
             {
-                // An allow list, not a free query language: an unknown filter is a mistake in the
-                // caller, and a silent one would quietly return the whole table.
-                badRequest = Results.BadRequest(new { filter = name });
                 return false;
             }
-
-            if (!TryConvert(values.ToString(), property.PropertyType, out var value))
-            {
-                badRequest = Results.BadRequest(new { filter = name });
-                return false;
-            }
-
-            var entity = Expression.Parameter(typeof(TEntity), "entity");
-            var comparison = Expression.Equal(
-                Expression.Property(entity, property),
-                Expression.Constant(value, property.PropertyType));
-
-            query = query.Where(Expression.Lambda<Func<TEntity, bool>>(comparison, entity));
         }
 
+        // What the caller did not mention, the resource decides. `filter[isTemplate]=false` and no
+        // filter at all mean the same thing here, and that is deliberate: the caller who wants the
+        // templates asks for them.
+        foreach (var (name, value) in options.DefaultFilters)
+        {
+            if (asked.Contains(name))
+            {
+                continue;
+            }
+
+            if (!TryApplyFilter(name, value, options, ref query, out badRequest))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryApplyFilter<TEntity, TListDto, TDetailDto, TWriteDto>(
+        string name,
+        string raw,
+        CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options,
+        ref IQueryable<TEntity> query,
+        out IResult? badRequest)
+        where TEntity : class
+    {
+        badRequest = null;
+
+        var declared = options.Filterable.FirstOrDefault(
+            allowed => string.Equals(allowed, name, StringComparison.OrdinalIgnoreCase));
+
+        var property = declared is null ? null : typeof(TEntity).GetProperty(declared);
+        if (property is null)
+        {
+            // An allow list, not a free query language: an unknown filter is a mistake in the
+            // caller, and a silent one would quietly return the whole table.
+            badRequest = Results.BadRequest(new { filter = name });
+            return false;
+        }
+
+        if (!TryConvert(raw, property.PropertyType, out var value))
+        {
+            badRequest = Results.BadRequest(new { filter = name });
+            return false;
+        }
+
+        var entity = Expression.Parameter(typeof(TEntity), "entity");
+        var comparison = Expression.Equal(
+            Expression.Property(entity, property),
+            Expression.Constant(value, property.PropertyType));
+
+        query = query.Where(Expression.Lambda<Func<TEntity, bool>>(comparison, entity));
         return true;
     }
 

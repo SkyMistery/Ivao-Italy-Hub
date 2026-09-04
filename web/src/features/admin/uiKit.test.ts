@@ -31,7 +31,8 @@ test('every block of the registry has a section in the gallery', () => {
 });
 
 test('a block registers example props that its own schema accepts', () => {
-  // Empty until F7 adds the first block; the check is here so that it is not forgotten then.
+  // The other half of "every block is in the gallery": what is shown there has to be a block that
+  // actually works, and example props its own schema refuses are a block nobody has ever mounted.
   for (const block of registry.blocks) {
     expect(block.schema.safeParse(block.example).success).toBe(true);
   }

@@ -7,7 +7,7 @@ The project is built to be **forked**: nothing about a particular division lives
 The behaviour of a division comes from `config/division.json`, its airspace from the IVAO API
 snapshots, and every piece of editorial content from the database.
 
-> **Status: M0, phase F6 of nine.** The application validates its configuration and migrates its own
+> **Status: M0, phase F7 of nine.** The application validates its configuration and migrates its own
 > database, signs a member in with IVAO and computes what they are allowed to do, keeps a snapshot
 > of the airspace of the division, and carries the backbone everything else is built on: audit
 > columns, a per-department write guard, the visibility filter, the search projections and a single
@@ -17,12 +17,20 @@ snapshots, and every piece of editorial content from the database.
 > first one. The API describes itself in an OpenAPI document written at build time, from which the
 > typed client of the front end is generated.
 >
-> The front end now has the matching half. Three layouts behind their guards, a list engine and a
-> form generator, and a back office for the links of a department that contains no table and no form
-> written by hand: a set of column descriptions and a schema, and the screens follow. Every string
-> comes from the language files, both languages are checked in CI, and `/staff/admin/ui-kit` shows
-> every component the hub can draw. What is not there yet is the editorial content: the block editor
-> and the public pages are the phases that follow.
+> The front end has the matching half. Three layouts behind their guards, a list engine and a form
+> generator, and back office screens that contain no table and no form written by hand: a set of
+> column descriptions and a schema, and the screens follow. Every string comes from the language
+> files, both languages are checked in CI, and `/staff/admin/ui-kit` shows every component and every
+> block the hub can draw.
+>
+> Editorial content is in. A page is a tree of sections and blocks stored as one opaque document:
+> the server checks the envelope, extracts the text of it for search, and never learns what a block
+> means — the schema of a block exists only in TypeScript, and is what draws its property form. A
+> page is made from a template, edited in a list editor, and published, which is what writes the
+> version the public reads; a draft is never public. A block that shows data of the hub can be left
+> live, or captured when the page is published so that it keeps saying what it said that day. What
+> is not there yet is the site around the pages: navigation, news and search are the phases that
+> follow.
 
 ## Requirements
 
@@ -130,8 +138,8 @@ dotnet publish src/IvaoHub.Web -c Release -r linux-x64 --self-contained
 
 The publish target builds the SPA and places it, together with the language files, under
 `wwwroot/` inside the published package. Next to the binaries the package also carries
-`locales/{lang}/*.json` — the copy the server itself reads — the `config/*.example.json` files to
-copy, and `LICENSE` and `NOTICE`. Everything an installation owns — `config/division.json`,
+`locales/{lang}/*.json` — the copy the server itself reads — `seed/content-templates/*.json`, the
+`config/*.example.json` files to copy, and `LICENSE` and `NOTICE`. Everything an installation owns — `config/division.json`,
 `config/ivao-oauth.json`, `secrets/`, `hub-keys/` — stays outside the package and next to it on the
 server, so a deployment never overwrites the configuration or the keys.
 
@@ -144,6 +152,7 @@ server, so a deployment never overwrites the configuration or the keys.
 | `src/IvaoHub.Modules.*` | One project per department module; each references only the core |
 | `web/` | The single page application |
 | `locales/{lang}/*.json` | The only set of language files; nothing else holds a string a user can read |
+| `seed/content-templates/` | The page templates a fresh installation starts with, carrying translation keys rather than text |
 | `config/` | `division.json` and the OAuth client configuration |
 | `tests/` | Unit tests and integration tests (Testcontainers, a real MariaDB of the production version) |
 | `docs/` | Public documentation: the [forking guide](docs/FORKING.md) and the [UI guidelines](docs/UI-GUIDELINES.md) |

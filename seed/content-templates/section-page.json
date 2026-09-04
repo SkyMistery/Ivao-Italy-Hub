@@ -1,0 +1,75 @@
+{
+  "slug": "section-page",
+  "kind": "Page",
+  "title": { "$t": "seed.templates.sectionPage.title" },
+  "summary": { "$t": "seed.templates.sectionPage.summary" },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_hero",
+        "key": "hero",
+        "title": { "$t": "seed.templates.sectionPage.hero.section" },
+        "layout": "stacked",
+        "background": "muted",
+        "padding": "lg",
+        "width": "default",
+        "required": true,
+        "locked": true,
+        "blocks": [
+          {
+            "id": "b_hero_heading",
+            "type": "heading",
+            "version": 1,
+            "props": { "level": 1, "text": { "$t": "seed.templates.sectionPage.hero.heading" } }
+          },
+          {
+            "id": "b_hero_text",
+            "type": "text",
+            "version": 1,
+            "props": { "markdown": { "$t": "seed.templates.sectionPage.hero.text" } }
+          }
+        ]
+      },
+      {
+        "id": "s_body",
+        "key": "body",
+        "title": { "$t": "seed.templates.sectionPage.body.section" },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "required": false,
+        "locked": false,
+        "allowedBlocks": ["heading", "text", "callout", "cta"],
+        "blocks": []
+      },
+      {
+        "id": "s_links",
+        "key": "links",
+        "title": { "$t": "seed.templates.sectionPage.links.section" },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "required": false,
+        "locked": true,
+        "blocks": [
+          {
+            "id": "b_links_heading",
+            "type": "heading",
+            "version": 1,
+            "props": { "level": 2, "text": { "$t": "seed.templates.sectionPage.links.heading" } }
+          },
+          {
+            "id": "b_links_list",
+            "type": "linkList",
+            "version": 1,
+            "renderMode": "frozen",
+            "props": { "limit": 10 }
+          }
+        ]
+      }
+    ]
+  }
+}
