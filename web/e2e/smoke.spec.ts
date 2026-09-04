@@ -59,3 +59,25 @@ test('an address that belongs to nobody is a not found, not a crash', async ({ p
 
   await expect(page.getByText('Something went wrong!')).toHaveCount(0);
 });
+
+test('the language switcher actually switches', async ({ page }) => {
+  await page.goto('/');
+
+  const heading = page.getByRole('heading').first();
+  await expect(heading).toHaveText('IVAO Example');
+
+  await page.getByRole('combobox').first().click();
+  await page.getByRole('option', { name: /italian|italiano/i }).click();
+
+  // The name of the division is a `Localized<T>` resolved by the client, so it changing is proof
+  // that the language really changed and not merely that a select closed.
+  await expect(heading).toHaveText('IVAO Esempio');
+});
+
+/**
+ * Note for whoever sees `Unknown event handler property onValueChange` in the console: it is
+ * Atmosphere's, not ours. Its `Select` spreads its rest props twice — once onto Radix's
+ * `Select.Root`, which is what handles the change, and once onto the viewport `div`, where React
+ * ignores it and complains. The test above is what says the handler still runs. Do not "fix" it by
+ * removing `onValueChange`.
+ */

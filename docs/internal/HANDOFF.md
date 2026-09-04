@@ -9,7 +9,7 @@ il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono di
 su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.32. **Design:** v2.1. **Piano di implementazione:** v1.6.
-**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **7 smoke Playwright**. Nessuno skippato.
+**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **8 smoke Playwright**. Nessuno skippato.
 
 ⚠️ **Due difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
 cosa vista due volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
@@ -1327,6 +1327,18 @@ l'osservazione di chi ha lo schermo davanti vale più di una quarta ipotesi.
   guardia. Le asserzioni guardano **due metà insieme**: l'indirizzo è cambiato *e* la cosa promessa è
   sullo schermo. Una metà sola è ciò che ha lasciato passare il difetto.
 - Verificato togliendo l'`Outlet`: **tre dei quattro falliscono**.
+
+### Un rumore in console che non è un difetto nostro
+
+Nella stessa sessione è comparso `Unknown event handler property `onValueChange`. It will be
+ignored.` su ogni pagina. **Non è un nostro bug e il selettore di lingua funziona**: il `Select` di
+Atmosphere spande le proprie rest props **due volte** — una su `Select.Root` di Radix, che è quella
+che gestisce il cambio, e una sul `div` del viewport, dove React la ignora e si lamenta
+(`dist/atmosphere-react.js:15655`). Verificato con uno smoke che cambia lingua e pretende che il
+nome della divisione passi da «IVAO Example» a «IVAO Esempio».
+
+Sta scritto qui, e in un commento accanto al test, perché è il tipo di avviso che qualcuno «sistema»
+togliendo `onValueChange` — cioè rompendo il selettore per far tacere un rumore di terze parti.
 
 ### La regola che ne esce, e che vale più della correzione
 
