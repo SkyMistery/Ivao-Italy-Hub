@@ -818,6 +818,11 @@ allargare i permessi, mai stringerli a sorpresa.
   collection sola e girano quindi uno alla volta, e perché l'unica classe fuori da quella collection
   (`TrustedProxiesTests`) non costruisce un host. Se un giorno se ne aggiunge una che lo fa, questa
   è la premessa che salta.
+- **Tutti i test di integrazione scrivono nello stesso database**, e l'ordine dei metodi dentro una
+  classe non è garantito. Un test che **conta** righe deve quindi cercare una parola sua: la prima
+  versione di `SearchEndpointTests` ne condivideva una fra due test, e in locale l'ordine lo
+  nascondeva mentre in CI no. Costa una costante, e il tipo di rosso che produce («aspettavo 1, ne ho
+  2») fa perdere venti minuti a cercarlo nel codice di produzione.
 - **Il test manifest legge il C# con due regex.** È una convenzione dichiarata in testa al file — un
   modulo scrive la propria chiave e i propri blocchi come letterali — e il test **fallisce** se la
   chiave non si trova, invece di concludere che il modulo non dichiara niente. Un modulo che

@@ -33,8 +33,14 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// Long enough for InnoDB to index it: a FULLTEXT index ignores words shorter than
     /// <c>innodb_ft_min_token_size</c>, which is three by default, and a test that used a short word
     /// would fail for a reason that has nothing to do with the code.
+    /// <para>A word of its own per test, and not one shared by the class: the whole assembly writes
+    /// into one database, so a row another test seeded would be counted here. It is exactly what
+    /// happened the first time — locally the order of the two tests hid it, on CI it did not.</para>
     /// </summary>
     private const string Needle = "zurigo";
+
+    /// <summary>The word of the empty query test, so that its own row is never counted above.</summary>
+    private const string OtherNeedle = "amburgo";
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -85,7 +91,7 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
     public async Task AnEmptyQueryIsAnEmptyPageAndNotTheWholeSite()
     {
         var token = TestContext.Current.CancellationToken;
-        await SeedLinkAsync(Department.ED, Visibility.Public, $"{Needle} qualcosa", token);
+        await SeedLinkAsync(Department.ED, Visibility.Public, $"{OtherNeedle} qualcosa", token);
 
         using var client = _factory.CreateApiClient();
         var page = await client.GetFromJsonAsync<JsonElement>($"{SearchEndpoints.Pattern}?q=", token);
