@@ -7,7 +7,7 @@ The project is built to be **forked**: nothing about a particular division lives
 The behaviour of a division comes from `config/division.json`, its airspace from the IVAO API
 snapshots, and every piece of editorial content from the database.
 
-> **Status: M0, phase F8 of nine.** The application validates its configuration and migrates its own
+> **Status: M0 complete — `v0.1.0-m0`.** The application validates its configuration and migrates its own
 > database, signs a member in with IVAO and computes what they are allowed to do, keeps a snapshot
 > of the airspace of the division, and carries the backbone everything else is built on: audit
 > columns, a per-department write guard, the visibility filter, the search projections and a single
@@ -40,8 +40,14 @@ snapshots, and every piece of editorial content from the database.
 > the very next request. `GET /api/search` reads the FULLTEXT index the projections fill, through
 > the same visibility filter as everything else.
 >
-> What is not there yet is the public site around the pages: navigation, news and the search screen
-> are M1.
+> What is not there yet is the public site around the pages: navigation, news, documents, the
+> calendar and the search screen are M1.
+>
+> The claim M0 makes is a narrow one and worth stating plainly: everything above was built out of
+> six mechanisms, each written once — one way to translate a field, one interceptor, one
+> authorization handler, one CRUD engine, one list-and-form generator, one bootstrap call — so that
+> the next resource costs a configuration object rather than a screen. [`tools/demo-m0.md`](tools/demo-m0.md)
+> is how you check that from an empty folder in twenty minutes, rather than taking our word for it.
 
 ## Requirements
 
@@ -167,6 +173,7 @@ server, so a deployment never overwrites the configuration or the keys.
 | `config/` | `division.json` and the OAuth client configuration |
 | `tests/` | Unit tests and integration tests (Testcontainers, a real MariaDB of the production version) |
 | `docs/` | Public documentation: the [forking guide](docs/FORKING.md) and the [UI guidelines](docs/UI-GUIDELINES.md) |
+| `tools/` | Walk-throughs meant to be followed by hand, starting with [the M0 demo](tools/demo-m0.md) |
 
 ## Forking
 
