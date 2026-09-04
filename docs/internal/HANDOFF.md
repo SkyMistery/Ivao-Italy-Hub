@@ -33,17 +33,26 @@ qualcuno li rifà.
 
 ### Il tag
 
-**`v0.1.0-m0` punta a `5786202`**, il merge commit dell'hotfix (PR #24, due genitori, verificato).
-Ci è arrivato al **terzo** tentativo, e i due precedenti sono la storia di §9 e §11: il primo tag
-era finito sulla punta di F8 perché il rapporto di chiusura conteneva un blocco eseguibile che
-saltava il merge; il secondo puntava a F9 fusa, che era il commit giusto ma un'applicazione che non
-si apriva in un browser.
+**`v0.1.0-m0` punta a `2f5427f`**, il merge commit del secondo hotfix (PR #26, due genitori,
+verificato). Ci è arrivato al **quarto** tentativo, e i tre precedenti sono la storia di §9, §11 e
+§12: il primo tag era finito sulla punta di F8 perché il rapporto di chiusura conteneva un blocco
+eseguibile che saltava il merge; il secondo puntava a F9 fusa, che era il commit giusto ma
+un'applicazione che non si apriva in un browser; il terzo a un'applicazione che si apriva e in cui
+nessun form del back-office era raggiungibile.
 
 La release è pubblicata e **verificata sull'artefatto, non sul commit**: lo zip
-(`ivao-division-hub-v0.1.0-m0.zip`, 54,6 MB) è stato scaricato, scompattato, il suo `wwwroot/`
-servito staticamente, e i tre smoke Playwright sono stati eseguiti **contro quello** — cioè contro
-il file che qualcuno scaricherebbe, non contro una build locale dello stesso commit. Tutti e tre
-verdi. Porta `wwwroot/`, `locales/{en,it}/`, `seed/content-templates/`, i due
+(`ivao-division-hub-v0.1.0-m0.zip`) è stato scaricato, scompattato, il suo `wwwroot/` servito, e
+**tutti e otto** gli smoke Playwright eseguiti **contro quello** — cioè contro il file che qualcuno
+scaricherebbe, non contro una build locale dello stesso commit. Otto su otto.
+
+⚠️ **Il server con cui lo si serve deve fare il fallback SPA.** Al primo tentativo i quattro smoke
+del back-office sono usciti rossi contro un pacchetto perfettamente sano: `python -m http.server` è
+statico e basta, quindi un indirizzo profondo come `/staff/ed/links` risponde **404** invece di
+servire `index.html`, che è quello che in produzione fa `MapFallbackToFile`. Era un difetto del
+banco di prova, non della build — e per due minuti è sembrato il terzo bug della giornata. Lo script
+che serve con il fallback sta nello scratchpad della sessione; ricrearlo è una decina di righe, e
+il controllo che dice subito da che parte sta il problema è
+`curl -o /dev/null -w '%{http_code}' <host>/staff/ed/links`: 404 è il server, non il pacchetto. Porta `wwwroot/`, `locales/{en,it}/`, `seed/content-templates/`, i due
 `config/*.example.json`, `LICENSE` e `NOTICE`.
 
 ⚠️ **Un grep su un bundle minificato non è una verifica.** Il primo tentativo di controllare che la
@@ -51,8 +60,8 @@ correzione fosse dentro il pacchetto è stato cercare `TooltipProvider` negli as
 i nomi sono manglati e il risultato non distingue «il provider è nel bundle» da «il provider è
 montato». La verifica è **comportamentale** o non è.
 
-`release.yml` **dipende da `build-test`**, che dallo stesso giorno include i tre smoke in un
-browser: i 353 test .NET, i 76 Vitest e i 3 Playwright girano prima che lo zip esista. È la
+`release.yml` **dipende da `build-test`**, che dallo stesso giorno include gli smoke in un browser:
+i 353 test .NET, i 76 Vitest e gli 8 Playwright girano prima che lo zip esista. È la
 proprietà per cui quella dipendenza esiste, ed è servita due volte in un giorno.
 
 ### Come si apre M1
