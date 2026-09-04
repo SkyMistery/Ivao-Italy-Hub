@@ -30,14 +30,27 @@ browser**: vedi §11. La correzione è dentro lo stesso tag.
 
 ### Il tag
 
-**`v0.1.0-m0` è spinto** e punta a `0c387d8`, il merge commit di F9 (PR #22, due genitori,
-verificato). La release è pubblicata: `ivao-division-hub-v0.1.0-m0.zip`, 54,6 MB, scaricata e
-scompattata per controllo — si apre come applicazione e porta `wwwroot/`, `locales/{en,it}/`,
-`seed/content-templates/`, i due `config/*.example.json`, `LICENSE` e `NOTICE`, con dentro le
-correzioni i18n di F9.
+**`v0.1.0-m0` punta a `5786202`**, il merge commit dell'hotfix (PR #24, due genitori, verificato).
+Ci è arrivato al **terzo** tentativo, e i due precedenti sono la storia di §9 e §11: il primo tag
+era finito sulla punta di F8 perché il rapporto di chiusura conteneva un blocco eseguibile che
+saltava il merge; il secondo puntava a F9 fusa, che era il commit giusto ma un'applicazione che non
+si apriva in un browser.
 
-`release.yml` **dipende da `build-test`**: i 353 test sono girati prima che uscisse lo zip. È la
-proprietà per cui quella dipendenza esiste, e stavolta è servita davvero.
+La release è pubblicata e **verificata sull'artefatto, non sul commit**: lo zip
+(`ivao-division-hub-v0.1.0-m0.zip`, 54,6 MB) è stato scaricato, scompattato, il suo `wwwroot/`
+servito staticamente, e i tre smoke Playwright sono stati eseguiti **contro quello** — cioè contro
+il file che qualcuno scaricherebbe, non contro una build locale dello stesso commit. Tutti e tre
+verdi. Porta `wwwroot/`, `locales/{en,it}/`, `seed/content-templates/`, i due
+`config/*.example.json`, `LICENSE` e `NOTICE`.
+
+⚠️ **Un grep su un bundle minificato non è una verifica.** Il primo tentativo di controllare che la
+correzione fosse dentro il pacchetto è stato cercare `TooltipProvider` negli asset: inutile, perché
+i nomi sono manglati e il risultato non distingue «il provider è nel bundle» da «il provider è
+montato». La verifica è **comportamentale** o non è.
+
+`release.yml` **dipende da `build-test`**, che dallo stesso giorno include i tre smoke in un
+browser: i 353 test .NET, i 76 Vitest e i 3 Playwright girano prima che lo zip esista. È la
+proprietà per cui quella dipendenza esiste, ed è servita due volte in un giorno.
 
 ### Come si apre M1
 
