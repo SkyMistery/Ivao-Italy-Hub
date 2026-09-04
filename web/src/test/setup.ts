@@ -15,6 +15,20 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 
+// `ThemeProvider` asks the operating system whether it prefers dark, and jsdom has no
+// `matchMedia` at all. Answering "no preference" is the right stub: a test that cares about a
+// theme sets it explicitly, and one that does not should get the light one deterministically.
+globalThis.matchMedia ??= ((query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener: () => {},
+  removeListener: () => {},
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  dispatchEvent: () => false,
+})) as typeof globalThis.matchMedia;
+
 Element.prototype.scrollIntoView = () => {};
 Element.prototype.hasPointerCapture = () => false;
 Element.prototype.setPointerCapture = () => {};
