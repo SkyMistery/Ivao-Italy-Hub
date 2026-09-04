@@ -85,6 +85,11 @@ What the schema may say about how a field is drawn:
 - `.meta({ choices: [1, 2, 3] })` on a **number** draws a select. A number and not a `z.enum`
   because every string inside a block's properties is extracted as the text of the page for the
   search index, and a heading level is not text;
+- `.meta({ choices: ['Links.Edit', 'Content.Edit'] })` on a **string** draws a select whose options
+  are the values themselves, with no i18n key each. It is for a set only known at run time — the
+  permission catalogue, whose members depend on which modules are installed — and whose members are
+  identifiers rather than prose: `Links.Edit` reads `Links.Edit` in every language, exactly as a VID
+  or a department code does;
 - `.default(10)` is read as well, so what a new row or a new block starts with lives next to the
   field rather than in a second place that can drift;
 - an **optional** `z.enum` also gets a "nothing chosen" entry, labelled

@@ -15,7 +15,8 @@ namespace IvaoHub.UnitTests;
 /// </summary>
 public sealed class PolicyNamesTests
 {
-    private static readonly HubPolicyProvider Provider = new(Options.Create(new AuthorizationOptions()));
+    private static readonly HubPolicyProvider Provider =
+        new(Options.Create(new AuthorizationOptions()), PermissionCatalog.Core);
 
     [Fact]
     public async Task EveryPermissionOfTheCatalogueIsAPolicy()
@@ -49,21 +50,21 @@ public sealed class PolicyNamesTests
             .ToArray();
 
         Assert.All(used, policy => Assert.True(
-            CorePermissions.IsKnown(policy),
+            PermissionCatalog.Core.IsKnown(policy),
             $"The policy '{policy}' is used but is not in the catalogue."));
     }
 
     [Fact]
     public void EveryDepartmentalAreaDeclaresBothViewAndEdit()
     {
-        var areas = CorePermissions.Departmental
+        var areas = PermissionCatalog.Core.Departmental
             .Select(name => name[..name.IndexOf('.', StringComparison.Ordinal)])
             .Distinct();
 
         foreach (var area in areas)
         {
-            Assert.True(CorePermissions.IsKnown($"{area}.View"), $"{area} has no View permission.");
-            Assert.True(CorePermissions.IsKnown($"{area}.Edit"), $"{area} has no Edit permission.");
+            Assert.True(PermissionCatalog.Core.IsKnown($"{area}.View"), $"{area} has no View permission.");
+            Assert.True(PermissionCatalog.Core.IsKnown($"{area}.Edit"), $"{area} has no Edit permission.");
         }
     }
 }

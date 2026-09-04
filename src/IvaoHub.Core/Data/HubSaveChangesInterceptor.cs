@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace IvaoHub.Core.Data;
 
@@ -24,7 +25,9 @@ namespace IvaoHub.Core.Data;
 /// <c>SaveChanges</c> directly with the policy forgotten;</item>
 /// <item>a row in <c>hub_audit_log</c> for every entity marked <see cref="AuditedAttribute"/>;</item>
 /// <item>the projections into search, calendar and award signals, inside the very transaction of
-/// the write.</item>
+/// the write;</item>
+/// <item>a fresh <c>security_stamp</c> for every member whose session a written row decides
+/// (<see cref="IAffectsUserSession"/>), so a permission that changed bites on the next request.</item>
 /// </list>
 /// <para>The last two run in a second pass, after the save: before it, a new row has no identifier
 /// and there would be nothing to point an audit row or a projection at.</para>
@@ -34,6 +37,7 @@ public sealed class HubSaveChangesInterceptor(
     IClock clock,
     ProjectionWriter projections,
     ProjectionContext projectionContext,
+    IMemoryCache cache,
     IHttpContextAccessor? httpContext = null) : SaveChangesInterceptor
 {
     private static readonly JsonSerializerOptions AuditJson = BuildAuditJsonOptions();
@@ -90,8 +94,10 @@ public sealed class HubSaveChangesInterceptor(
             pending.IsProjecting = true;
             WriteAuditRows(pending);
             ApplyProjections(pending);
+            RefreshStaleSessions(pending);
             pending.Context.SaveChanges();
             pending.OwnTransaction?.Commit();
+            ForgetStaleSessions(pending);
         }
         catch
         {
@@ -128,12 +134,15 @@ public sealed class HubSaveChangesInterceptor(
             pending.IsProjecting = true;
             WriteAuditRows(pending);
             await ApplyProjectionsAsync(pending, cancellationToken);
+            await RefreshStaleSessionsAsync(pending, cancellationToken);
             await pending.Context.SaveChangesAsync(cancellationToken);
 
             if (pending.OwnTransaction is not null)
             {
                 await pending.OwnTransaction.CommitAsync(cancellationToken);
             }
+
+            ForgetStaleSessions(pending);
         }
         catch
         {
@@ -224,9 +233,14 @@ public sealed class HubSaveChangesInterceptor(
             {
                 pending.Projections.Add(new PendingProjection(projectable, entry.State == EntityState.Deleted));
             }
+
+            if (entry.Entity is IAffectsUserSession { AffectedVid: > 0 } session && CanReachUsers(context))
+            {
+                pending.StaleSessions.Add(session.AffectedVid);
+            }
         }
 
-        if (pending.Audits.Count == 0 && pending.Projections.Count == 0)
+        if (pending.Audits.Count == 0 && pending.Projections.Count == 0 && pending.StaleSessions.Count == 0)
         {
             return null;
         }
@@ -329,6 +343,62 @@ public sealed class HubSaveChangesInterceptor(
             After: after,
             Vid: vid,
             At: now));
+    }
+
+    /// <summary>
+    /// Whether this context can see <c>hub_users</c> at all. A module context has its own model
+    /// and no user table in it, so there is nothing to stamp and nothing to fail about; the same
+    /// answer <c>ProjectionWriter.CanProject</c> gives about the projection tables.
+    /// </summary>
+    private static bool CanReachUsers(DbContext context) =>
+        context.Model.FindEntityType(typeof(HubUser)) is not null;
+
+    /// <summary>
+    /// A new stamp for every member a written row decides the session of. It is set inside the same
+    /// transaction as the write, so a rollback takes it back with everything else: a stamp that
+    /// survived a failed grant would sign every one of that member's devices out for nothing.
+    /// </summary>
+    private static void RefreshStaleSessions(Pending pending)
+    {
+        foreach (var user in LoadStaleUsers(pending))
+        {
+            user.SecurityStamp = SuperadminService.NewStamp();
+        }
+    }
+
+    private static async Task RefreshStaleSessionsAsync(Pending pending, CancellationToken cancellationToken)
+    {
+        if (pending.StaleSessions.Count == 0)
+        {
+            return;
+        }
+
+        var users = await pending.Context.Set<HubUser>()
+            .Where(user => pending.StaleSessions.Contains(user.Vid))
+            .ToListAsync(cancellationToken);
+
+        foreach (var user in users)
+        {
+            user.SecurityStamp = SuperadminService.NewStamp();
+        }
+    }
+
+    private static List<HubUser> LoadStaleUsers(Pending pending) =>
+        pending.StaleSessions.Count == 0
+            ? []
+            : [.. pending.Context.Set<HubUser>().Where(user => pending.StaleSessions.Contains(user.Vid))];
+
+    /// <summary>
+    /// After the commit, and only after it: the cache holds what the database says, so dropping the
+    /// entry before the write is durable would be inviting the next request to read the old row
+    /// back in and cache it again.
+    /// </summary>
+    private void ForgetStaleSessions(Pending pending)
+    {
+        foreach (var vid in pending.StaleSessions)
+        {
+            SecurityStampCache.Forget(cache, vid);
+        }
     }
 
     private void WriteAuditRows(Pending pending)
@@ -484,6 +554,9 @@ public sealed class HubSaveChangesInterceptor(
         public List<PendingAudit> Audits { get; } = [];
 
         public List<PendingProjection> Projections { get; } = [];
+
+        /// <summary>VIDs whose cookie has to stop being believed once this write is committed.</summary>
+        public HashSet<int> StaleSessions { get; } = [];
 
         /// <summary>
         /// The second pass has to land in the same transaction as the write. When the caller opened

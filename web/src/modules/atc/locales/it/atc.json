@@ -1,0 +1,9 @@
+{
+  "nav": {
+    "atc": "ATC"
+  },
+  "atc": {
+    "title": "Operazioni ATC",
+    "lead": "Quello che questo dipartimento pubblica arriva insieme al modulo. Per ora questa pagina serve a mostrare che un modulo porta con sé la propria rotta, la propria voce di menu e le proprie parole, e che il nucleo non ne conosce nessuna."
+  }
+}

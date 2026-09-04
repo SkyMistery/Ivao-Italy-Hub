@@ -19,12 +19,17 @@ export interface FieldMeta {
   /** Carried by the form and submitted, never shown. `rowVersion` is the reason this exists. */
   hidden?: boolean;
   /**
-   * A number with a closed set of values: a select rather than a free input. It exists because a
-   * `z.enum` would make the value a *string*, and every string inside a block's properties is
-   * extracted as the text of the page for the search index — the level of a heading is not text
-   * (design M0 §5.3).
+   * A closed set of values, drawn as a select rather than a free input, with the values themselves
+   * as the labels. Two different needs, one annotation:
+   * <br />— a **number**, because a `z.enum` would make the value a *string*, and every string
+   * inside a block's properties is extracted as the text of the page for the search index: the
+   * level of a heading is not text (design M0 §5.3);
+   * <br />— a **string** whose set is only known at runtime, so it cannot be a `z.enum` at all. The
+   * permission catalogue is the first: what it holds depends on which modules are installed, and
+   * its members are identifiers rather than prose — `Links.Edit` is shown as `Links.Edit` in every
+   * language, exactly as a VID or a department code is.
    */
-  choices?: number[];
+  choices?: readonly number[] | readonly string[];
 }
 
 /**
@@ -49,7 +54,7 @@ interface FieldCommon {
 }
 
 export type FieldNode =
-  | ({ kind: 'text' } & FieldCommon)
+  | ({ kind: 'text'; choices: string[] | null } & FieldCommon)
   | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
@@ -135,6 +140,15 @@ export function readFields(schema: z.ZodType, prefix = ''): FieldNode[] {
   return Object.entries(shape).map(([name, field]) => readField(field, prefix ? `${prefix}.${name}` : name));
 }
 
+/** The values of a `choices` annotation, when they are the kind this field can hold. */
+function stringChoices(choices: FieldMeta['choices']): string[] | null {
+  return choices?.every((choice) => typeof choice === 'string') ? [...choices] : null;
+}
+
+function numberChoices(choices: FieldMeta['choices']): number[] | null {
+  return choices?.every((choice) => typeof choice === 'number') ? [...choices] : null;
+}
+
 function readField(schema: unknown, path: string): FieldNode {
   const { inner, meta, optional, defaultValue } = unwrap(schema);
   const def = definition(inner);
@@ -148,10 +162,10 @@ function readField(schema: unknown, path: string): FieldNode {
 
   switch (def.type) {
     case 'string':
-      return { kind: 'text', ...common };
+      return { kind: 'text', ...common, choices: stringChoices(meta.choices) };
     case 'number':
     case 'int':
-      return { kind: 'number', ...common, choices: meta.choices ?? null };
+      return { kind: 'number', ...common, choices: numberChoices(meta.choices) };
     case 'boolean':
       return { kind: 'boolean', ...common };
     case 'enum':

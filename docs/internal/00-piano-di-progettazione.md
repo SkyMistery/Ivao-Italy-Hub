@@ -1,9 +1,47 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.29 — 4 settembre 2026 (giro sui debiti di F7: la domanda aperta sulla cattura `frozen` è decisa)
+**Versione documento:** 0.30 — 4 settembre 2026 (F8: i moduli, l'amministrazione, la manutenzione, la ricerca e il test della divisione fittizia XX)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F7 chiuse, prossima F8. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **Design di M0 scritto** (`01-design-m0.md`, firme e perimetro) con piano di implementazione a fasi F0–F9 (`02-piano-implementazione-m0.md`). Implementazione in corso: F0–F8 chiuse, prossima F9 (chiusura di M0). Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.30** (4 set 2026): chiusa la fase **F8**. Il nucleo compone i moduli e non ne nomina
+nessuno: `IModule` (con `ModuleBase`, che rende opzionale tutto tranne la chiave), `ModuleRegistry`
+alimentato dai due elenchi espliciti — `IvaoHub.Web/Modules.cs` e `web/src/modules/index.ts` — e
+`IvaoHub.Modules.Atc` come primo modulo vero, che porta una voce di menu, quattro esclusioni dal
+fallback della SPA, un endpoint e una rotta React con il proprio namespace i18n. Le esclusioni
+cablate di F0 non ci sono più: le compone il registry.
+
+**Una decisione**, scritta in `docs/internal/decisions/2026-09-04-grant-e-sessione.md` e presa con
+Carmine: un grant rigenera lo `security_stamp` del suo titolare attraverso un'**interfaccia
+sull'entità** (`IAffectsUserSession`, applicata dall'interceptor nella stessa transazione) e non
+attraverso un secondo gancio di `MapCrud`. La ragione è la stessa che ha messo la guardia di
+scrittura nell'interceptor: un gancio sul motore CRUD è dimenticabile, un'interfaccia sull'entità
+no. Effetto reale, scritto per non farsi illusioni: il cookie vecchio viene **rifiutato** alla
+richiesta successiva (401), non riscritto, e chi ha già dato il consenso a IVAO rifà il login in
+silenzio.
+
+**Il catalogo dei permessi diventa composto** (`PermissionCatalog` = nucleo ∪ moduli abilitati): lo
+interrogano il policy provider, il calcolatore dei permessi effettivi e il validatore di un grant,
+perché un permesso di modulo dev'essere un permesso ovunque o in nessun posto.
+
+**`MapCrud` in modalità globale ha finalmente tre usi veri**: `/api/admin/grants`, `/api/admin/audit`
+in sola lettura, e — appena fuori dal motore — `/api/admin/superadmins`. La schermata dei grant
+offre i permessi che l'installazione ha davvero, perché `/api/me` pubblica il catalogo; e il
+generatore di form ha imparato la quinta annotazione, `.meta({ choices })` **su una stringa**, per
+un insieme che si conosce solo a runtime.
+
+**`GET /api/search`** legge il FULLTEXT di `cms_search_index` (helper unico in `Core/Data/`,
+`EF.Functions.Match`), attraverso lo stesso query filter di tutto il resto: nessun endpoint decide
+chi vede che cosa. Solo l'endpoint: la schermata è M1.
+
+**La manutenzione** chiude un modulo alle scritture e lascia passare le letture, prima del routing,
+con la riga di audit scritta dall'interceptor (`DivisionSetting` è ora `[Audited]`).
+
+**`ForkabilityXxDivision`** avvia un'installazione della divisione fittizia XX su un database
+proprio, con `config/division.xx.json`, una sola lingua e i suoi seed: la catena di migrazioni gira
+da zero e nessuna risposta nomina l'Italia. È il test che rende la forkabilità un fatto invece che
+un'intenzione.
 
 **Changelog 0.29** (4 set 2026, sera): giro sui debiti che F7 aveva scoperto, prima del merge.
 

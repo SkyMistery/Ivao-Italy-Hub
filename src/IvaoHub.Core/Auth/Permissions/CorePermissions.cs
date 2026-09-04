@@ -36,7 +36,11 @@ public static class CorePermissions
     public const string AwardsAssign = "Awards.Assign";
     public const string AdminAccess = "Admin.Access";
 
-    /// <summary>The whole catalogue of the core, in a stable order.</summary>
+    /// <summary>
+    /// The core's own contribution to the catalogue, in a stable order. It is not "the catalogue":
+    /// what the installation runs with is this plus every <c>IModule.Permissions</c>, composed into
+    /// <see cref="PermissionCatalog"/>, which is what anything asking "is this a permission?" asks.
+    /// </summary>
     public static readonly IReadOnlyList<PermissionDescriptor> All =
     [
         new(ContentView, IsGlobal: false),
@@ -53,35 +57,4 @@ public static class CorePermissions
         new(AwardsAssign, IsGlobal: true),
         new(AdminAccess, IsGlobal: true),
     ];
-
-    /// <summary>The departmental permissions, the ones a coordinator holds on their own department.</summary>
-    public static readonly IReadOnlyList<string> Departmental =
-        [.. All.Where(permission => !permission.IsGlobal).Select(permission => permission.Name)];
-
-    /// <summary>The permissions that have no department, and that a grant may therefore never confer.</summary>
-    public static readonly IReadOnlyList<string> Global =
-        [.. All.Where(permission => permission.IsGlobal).Select(permission => permission.Name)];
-
-    private static readonly Dictionary<string, PermissionDescriptor> ByName =
-        All.ToDictionary(permission => permission.Name, StringComparer.Ordinal);
-
-    public static bool IsKnown(string? name) => name is not null && ByName.ContainsKey(name);
-
-    public static bool IsGlobalPermission(string name) => ByName.TryGetValue(name, out var found) && found.IsGlobal;
-
-    /// <summary>
-    /// The view permission of the same area, so that <c>Edit</c> can imply <c>View</c> in one place.
-    /// Returns null when the name has no matching view permission.
-    /// </summary>
-    public static string? ViewOf(string name)
-    {
-        var dot = name.IndexOf('.', StringComparison.Ordinal);
-        if (dot <= 0)
-        {
-            return null;
-        }
-
-        var view = string.Concat(name.AsSpan(0, dot), ".View");
-        return IsKnown(view) ? view : null;
-    }
 }

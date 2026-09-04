@@ -1,0 +1,12 @@
+{
+  "code": "XX",
+  "countryId": "XX",
+  "name": { "en": "Example Division" },
+  "domain": "example.org",
+  "defaultLocale": "en",
+  "locales": ["en"],
+  "timezone": "UTC",
+  "icaoPrefixes": ["XX"],
+  "modules": {},
+  "superAdmins": []
+}

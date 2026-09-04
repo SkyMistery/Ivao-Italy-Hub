@@ -309,10 +309,14 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await superadmins.RemoveAsync(vid, token);
         }
 
-        var refused = await Assert.ThrowsAsync<InvalidOperationException>(
+        // A refusal of the domain, carrying the i18n key of the reason rather than a sentence: the
+        // exception handler turns it into the same 400 with a key per field that a validator
+        // produces, so the screen shows the reason in the language it is drawing.
+        var refused = await Assert.ThrowsAsync<DomainRefusalException>(
             () => superadmins.RemoveAsync(last, token));
 
-        Assert.Contains("last super administrator", refused.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("vid", refused.Field);
+        Assert.Equal("errors.superadmin.lastOne", refused.MessageKey);
         Assert.Contains(last, await superadmins.ListAsync(token));
     }
 

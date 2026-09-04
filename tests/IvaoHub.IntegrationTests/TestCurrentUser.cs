@@ -72,7 +72,7 @@ public sealed class TestCurrentUser : ICurrentUser
         Member(vid);
         IsStaff = true;
         Departments = new HashSet<Department> { department };
-        Permissions = [.. CorePermissions.Departmental.Select(name =>
+        Permissions = [.. PermissionCatalog.Core.Departmental.Select(name =>
             new EffectivePermission(name, department, "role:test"))];
     }
 
@@ -103,9 +103,9 @@ public sealed class TestCurrentUser : ICurrentUser
         Departments = new HashSet<Department> { Department.HQ };
         Permissions =
         [
-            .. CorePermissions.Departmental.Select(name =>
+            .. PermissionCatalog.Core.Departmental.Select(name =>
                 new EffectivePermission(name, null, "role:Director")),
-            .. CorePermissions.Global.Select(name =>
+            .. PermissionCatalog.Core.Global.Select(name =>
                 new EffectivePermission(name, null, "role:Director")),
         ];
     }

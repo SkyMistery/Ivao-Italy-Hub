@@ -3,6 +3,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Modules;
 using Microsoft.EntityFrameworkCore;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Options;
@@ -86,26 +87,30 @@ internal static class HubPipeline
     }
 
     /// <summary>
-    /// Serves index.html for everything the SPA router owns. The list of prefixes it must not
-    /// touch is hardcoded until F8 composes it from the module registry.
-    /// Note: <c>/login-error</c> is a translated SPA route and is deliberately not excluded.
+    /// What the core itself answers for and the single page application must therefore not swallow.
+    /// A module adds its own through <c>IModule.SpaFallbackExclusions</c>, and the two are composed
+    /// below: this list holds nothing that belongs to a module (design M0 section 6.4).
+    /// <para>Note that <c>/login-error</c> is a translated SPA route and is deliberately absent.</para>
+    /// </summary>
+    private static readonly string[] CoreSpaFallbackExclusions =
+    [
+        "/api",
+        "/auth/login",
+        "/auth/callback",
+        "/auth/logout",
+        "/health",
+        "/openapi",
+        "/scalar",
+    ];
+
+    /// <summary>
+    /// Serves index.html for everything the SPA router owns, and hands back to the server every
+    /// prefix the core or a module claims.
     /// </summary>
     public static void MapSpaFallback(this WebApplication app)
     {
-        string[] exclusions =
-        [
-            "/api",
-            "/auth/login",
-            "/auth/callback",
-            "/auth/logout",
-            "/health",
-            "/openapi",
-            "/scalar",
-            "/services/vsop",
-            "/vsop",
-            "/_content",
-            "/_framework",
-        ];
+        var registry = app.Services.GetRequiredService<ModuleRegistry>();
+        string[] exclusions = [.. CoreSpaFallbackExclusions, .. registry.SpaFallbackExclusions];
 
         app.MapFallback(async context =>
         {
@@ -145,6 +150,15 @@ internal static class HubPipeline
         var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
         var applied = await initializer.MigrateAsync(app.Lifetime.ApplicationStopping);
 
+        // Then the contexts of the modules, each with its own migration history table. A module
+        // with no table of its own -- atc, in M0 -- declares none and nothing happens here.
+        var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
+        foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes))
+        {
+            var context = (DbContext)scope.ServiceProvider.GetRequiredService(contextType);
+            await context.Database.MigrateAsync(app.Lifetime.ApplicationStopping);
+        }
+
         // Reads division.json only when the database holds no super administrator at all, and
         // leaves an audit row whenever the effective set has moved (plan section 6.3).
         await scope.ServiceProvider.GetRequiredService<SuperadminService>()
@@ -173,7 +187,7 @@ internal static class HubPipeline
             app.Environment.EnvironmentName,
             division.Code,
             applied,
-            enabledModules: [],
+            enabledModules: [.. registry.EnabledKeys],
             scope.ServiceProvider.GetRequiredService<IClock>().UtcNow,
             app.Lifetime.ApplicationStopping);
     }

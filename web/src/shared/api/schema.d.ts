@@ -71,6 +71,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -286,10 +302,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GrantsList"];
+        put?: never;
+        post: operations["GrantsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/grants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GrantsGet"];
+        put: operations["GrantsUpdate"];
+        post?: never;
+        delete: operations["GrantsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/superadmins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SuperadminsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/superadmins/{vid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SuperadminsAdd"];
+        delete: operations["SuperadminsRemove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuditList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuditGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/modules/{key}/maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ModuleSetMaintenance"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/atc/ping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AtcPing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description What `GET /api/atc/ping` answers. Typed, so that it reaches the OpenAPI document
+         *                 and from there the generated client, like every other response of the hub.
+         */
+        AtcPing: {
+            module: string;
+        };
+        /**
+         * @description One row in full. `BeforeJson` and `AfterJson` are the scalar columns as they were and
+         *     as they became, exactly as the interceptor wrote them: they travel as text, because what they
+         *     contain depends on the entity and the hub does not model it.
+         */
+        AuditDetailDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            vid: number;
+            action: string;
+            entity: string;
+            entityId: string;
+            beforeJson: null | string;
+            afterJson: null | string;
+            isSuperadmin: boolean;
+            ip: null | string;
+            /** Format: date-time */
+            at: string;
+        };
+        /** @description One row of the audit log, as the list shows it. The before and after stay out. */
+        AuditListDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            vid: number;
+            action: string;
+            entity: string;
+            entityId: string;
+            isSuperadmin: boolean;
+            ip: null | string;
+            /** Format: date-time */
+            at: string;
+        };
         /**
          * @description What a block is made of. A BlockKind.Content block draws what an editor typed into it; a
          *     BlockKind.Data block draws what the hub knows, asked of a provider (design M0 section 5.4).
@@ -317,6 +502,11 @@ export interface components {
             timezone: string;
             firStaffScope: string;
         };
+        /**
+         * @description One module of this build. Enabled is false for an optional module the
+         *     division switched off: it is compiled in and silent, and saying so is what lets the
+         *     administration screen show it as something that can be switched back on.
+         */
         BootstrapModule: {
             key: string;
             department: null | string;
@@ -332,9 +522,21 @@ export interface components {
             name: string;
             department: null | string;
         };
+        /**
+         * @description One permission of the catalogue: core plus whatever the installed modules declare. It is here so
+         *     that the screen which hands a permission out can offer the ones that exist rather than a text
+         *     box — the set is not knowable at compile time, because it depends on which modules were built in.
+         *     Not sensitive: the catalogue is in the source of every fork. What is sensitive is who
+         *     holds what, and that is Permissions above, which only ever describes the caller.
+         */
+        BootstrapPermissionName: {
+            name: string;
+            isGlobal: boolean;
+        };
         BootstrapRegistries: {
             blocks: components["schemas"]["BootstrapBlock"][];
-            widgets: string[];
+            widgets: components["schemas"]["BootstrapWidget"][];
+            permissions: components["schemas"]["BootstrapPermissionName"][];
         };
         /**
          * @description The bootstrap payload. Menu entries are translation keys, never text: the server does not know
@@ -361,6 +563,13 @@ export interface components {
             locale: string;
             departments: string[];
             firs: string[];
+        };
+        /** @description One dashboard tile, on the same terms as a block: the envelope, never the drawing. */
+        BootstrapWidget: {
+            key: string;
+            department: null | string;
+            titleKey: string;
+            sizes: string[];
         };
         /**
          * @description A content row in full, as the editor loads it. JsonNode ContentDetailDto.Body travels as the JSON it is:
@@ -463,6 +672,83 @@ export interface components {
          * @enum {unknown}
          */
         Department: "HQ" | "SOD" | "FOD" | "AOD" | "TD" | "MD" | "ED" | "PRD" | "WD";
+        /** @description A grant as the form loads it, with the audit trail and the version to write back. */
+        GrantDetailDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            vid: number;
+            kind: components["schemas"]["GrantKind"];
+            value: string;
+            department: null | components["schemas"]["Department"];
+            effect: components["schemas"]["GrantEffect"];
+            /** Format: date-time */
+            expiresAt: null | string;
+            /** Format: date-time */
+            suspendedAt: null | string;
+            reason: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a grant does to a permission.
+         * @enum {unknown}
+         */
+        GrantEffect: "Grant" | "Deny";
+        /**
+         * @description What a grant talks about. Only permissions for now.
+         * @enum {unknown}
+         */
+        GrantKind: "Permission";
+        /**
+         * @description A grant as the list shows it. There is no department to narrow this list by: a grant is a
+         *     global resource, read and written behind `Permissions.Manage` and nothing else
+         *     (design M0 section 3.9).
+         */
+        GrantListDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            vid: number;
+            value: string;
+            department: null | components["schemas"]["Department"];
+            effect: components["schemas"]["GrantEffect"];
+            /** Format: date-time */
+            expiresAt: null | string;
+            /** Format: date-time */
+            suspendedAt: null | string;
+            reason: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description What an administrator may set.
+         *     SuspendedAt is deliberately absent: it is written by the login when IVAO stops
+         *     listing the member as staff, and a grant is suspended rather than deleted so that it comes back
+         *     on its own if the position does. Letting a form set it would make the two meanings of "this
+         *     grant is asleep" indistinguishable.
+         */
+        GrantWriteDto: {
+            /** Format: int32 */
+            vid: number;
+            kind: components["schemas"]["GrantKind"];
+            value: string;
+            department: null | components["schemas"]["Department"];
+            effect: components["schemas"]["GrantEffect"];
+            /** Format: date-time */
+            expiresAt: null | string;
+            reason: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         HttpValidationProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -560,6 +846,10 @@ export interface components {
         LocalizedOfstring: {
             [key: string]: string;
         };
+        /** @description What an administrator sets on a module. One switch, and that is the whole screen. */
+        ModuleMaintenanceRequest: {
+            maintenance: boolean;
+        };
         /** @description Key is a translation key such as `nav.home`. */
         NavItem: {
             key: string;
@@ -569,9 +859,55 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfAuditListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["AuditListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfContentListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ContentListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfGrantListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["GrantListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -612,6 +948,29 @@ export interface components {
             total: number;
         };
         /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfSearchHitDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["SearchHitDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
          * @description What the public site is given: the published version and nothing about the draft behind it.
          *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
          *     any of them.
@@ -635,6 +994,15 @@ export interface components {
          * @enum {unknown}
          */
         PublishStatus: "Draft" | "Published";
+        /** @description One hit. What it is and where it lives; the page itself is fetched by following it. */
+        SearchHitDto: {
+            sourceModule: string;
+            sourceId: string;
+            kind: string;
+            url: string;
+            ownerDepartment: components["schemas"]["Department"];
+            title: string;
+        };
         /** @description What was deployed. Anonymous, and never cached, so a report can quote a build. */
         VersionResponse: {
             version: string;
@@ -718,6 +1086,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    Search: {
+        parameters: {
+            query?: {
+                q?: string;
+                page?: number;
+                pageSize?: number;
+                locale?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfSearchHitDto"];
+                };
             };
         };
     };
@@ -1146,6 +1539,347 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GrantsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfGrantListDto"];
+                };
+            };
+        };
+    };
+    GrantsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GrantWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GrantsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GrantsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GrantWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GrantsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SuperadminsList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number[];
+                };
+            };
+        };
+    };
+    SuperadminsAdd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    SuperadminsRemove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    AuditList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfAuditListDto"];
+                };
+            };
+        };
+    };
+    AuditGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ModuleSetMaintenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleMaintenanceRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AtcPing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtcPing"];
+                };
             };
         };
     };

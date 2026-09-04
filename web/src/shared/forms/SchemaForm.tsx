@@ -128,16 +128,36 @@ function Field({
         />
       );
 
-    case 'text':
+    case 'text': {
+      // Bound to a constant so the narrowing survives into the render callback below: `node` is a
+      // parameter, and TypeScript will not carry a narrowing on one into a closure.
+      const choices = node.choices;
+
       return (
         <Row id={name} label={label} error={error}>
-          {node.meta.multiline === true ? (
+          {choices !== null ? (
+            <Controller
+              control={control}
+              name={name}
+              render={({ field }) => (
+                <Select
+                  {...(typeof field.value === 'string' && field.value !== '' ? { value: field.value } : {})}
+                  onValueChange={(chosen) => field.onChange(chosen)}
+                  // The values are the labels, and deliberately: a set only known at runtime — the
+                  // permission catalogue, which depends on the modules installed — cannot have an
+                  // i18n key per member, and its members are identifiers rather than prose.
+                  items={choices.map((choice) => ({ value: choice, label: choice }))}
+                />
+              )}
+            />
+          ) : node.meta.multiline === true ? (
             <Textarea id={name} rows={6} {...register(name)} />
           ) : (
             <Input id={name} {...register(name)} />
           )}
         </Row>
       );
+    }
 
     case 'number':
       return (

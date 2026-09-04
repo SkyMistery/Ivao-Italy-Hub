@@ -7,7 +7,7 @@ The project is built to be **forked**: nothing about a particular division lives
 The behaviour of a division comes from `config/division.json`, its airspace from the IVAO API
 snapshots, and every piece of editorial content from the database.
 
-> **Status: M0, phase F7 of nine.** The application validates its configuration and migrates its own
+> **Status: M0, phase F8 of nine.** The application validates its configuration and migrates its own
 > database, signs a member in with IVAO and computes what they are allowed to do, keeps a snapshot
 > of the airspace of the division, and carries the backbone everything else is built on: audit
 > columns, a per-department write guard, the visibility filter, the search projections and a single
@@ -28,9 +28,20 @@ snapshots, and every piece of editorial content from the database.
 > means — the schema of a block exists only in TypeScript, and is what draws its property form. A
 > page is made from a template, edited in a list editor, and published, which is what writes the
 > version the public reads; a draft is never public. A block that shows data of the hub can be left
-> live, or captured when the page is published so that it keeps saying what it said that day. What
-> is not there yet is the site around the pages: navigation, news and search are the phases that
-> follow.
+> live, or captured when the page is published so that it keeps saying what it said that day.
+>
+> And the core now composes modules. A module is a project and a folder — `IvaoHub.Modules.<Name>`
+> and `web/src/modules/<key>/` — named in one explicit list on each side; it contributes its
+> endpoints, its menu entries, its blocks, its dashboard tiles, its permissions and the addresses the
+> single page application must not answer for, and nothing in the core ever names one. Each can be
+> closed for maintenance on its own: reads keep working, writes answer 503. The administration
+> screens are there too — who holds which permission, who administers the system, what happened —
+> and a permission handed out by name bites at once, because the session it belongs to is refused on
+> the very next request. `GET /api/search` reads the FULLTEXT index the projections fill, through
+> the same visibility filter as everything else.
+>
+> What is not there yet is the public site around the pages: navigation, news and the search screen
+> are M1.
 
 ## Requirements
 

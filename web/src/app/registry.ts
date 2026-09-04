@@ -1,4 +1,5 @@
 import { coreBlocks } from '../blocks/registry';
+import { coreWidgets } from '../features/me/widgets';
 import { moduleManifests } from '../modules';
 import type { BlockRegistration, RouteDefinition, WidgetRegistration } from '../shared/modules';
 
@@ -7,9 +8,8 @@ import type { BlockRegistration, RouteDefinition, WidgetRegistration } from '../
  * `web/src/modules/index.ts`: everything else in the core sees the composed result and never a
  * module (design M0 §6.5, enforced by `import-x/no-restricted-paths`).
  *
- * There is nothing to compose yet — the first module arrives in F8 — but composing zero manifests
- * is the same code as composing three, and having it now means F8 adds a line to a list rather than
- * a mechanism to the core.
+ * Composing zero manifests is the same code as composing three, which is why this existed before
+ * there was a module: adding one is a line in `web/src/modules/index.ts` and nothing here.
  */
 
 export interface Registry {
@@ -21,7 +21,7 @@ export interface Registry {
 
 export function composeRegistry(): Registry {
   const blocks: BlockRegistration[] = [...coreBlocks];
-  const widgets: WidgetRegistration[] = [];
+  const widgets: WidgetRegistration[] = [...coreWidgets];
   const routes: RouteDefinition[] = [];
   const namespaces = new Set<string>(['common', 'errors']);
 
@@ -35,7 +35,13 @@ export function composeRegistry(): Registry {
       blocks.push(block);
     }
 
-    widgets.push(...manifest.widgets);
+    for (const widget of manifest.widgets) {
+      if (widgets.some((existing) => existing.key === widget.key)) {
+        throw new Error(`Widget "${widget.key}" is registered twice; module "${manifest.key}" is one.`);
+      }
+      widgets.push(widget);
+    }
+
     routes.push(...manifest.routes);
     for (const namespace of manifest.i18nNamespaces) {
       namespaces.add(namespace);

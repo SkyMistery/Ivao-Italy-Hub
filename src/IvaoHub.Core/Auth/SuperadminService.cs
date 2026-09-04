@@ -83,10 +83,10 @@ public sealed class SuperadminService(
     /// <summary>Adds one. The caller must already be a super administrator; the endpoint enforces it.</summary>
     public async Task AddAsync(int vid, CancellationToken cancellationToken = default)
     {
+        // The roster of the hub is exactly the people who have logged in at least once, so a VID
+        // nobody has seen is not somebody to promote: it is a typo.
         var user = await database.Users.FirstOrDefaultAsync(row => row.Vid == vid, cancellationToken)
-            ?? throw new InvalidOperationException(
-                $"VID {vid} has never logged in, so the hub knows nothing about them. "
-                + "The roster of the hub is exactly the people who have logged in at least once.");
+            ?? throw new DomainRefusalException("vid", "errors.superadmin.neverLoggedIn");
 
         if (user.IsSuperadmin)
         {
@@ -121,9 +121,9 @@ public sealed class SuperadminService(
         var count = await database.Users.CountAsync(row => row.IsSuperadmin, cancellationToken);
         if (count <= 1)
         {
-            throw new InvalidOperationException(
-                "The last super administrator cannot be removed: the division would be left with nobody "
-                + "able to grant that role back.");
+            // Removing the last one leaves a division that can only be recovered by editing
+            // division.json and restarting, which is not somewhere to walk into by accident.
+            throw new DomainRefusalException("vid", "errors.superadmin.lastOne");
         }
 
         user.IsSuperadmin = false;

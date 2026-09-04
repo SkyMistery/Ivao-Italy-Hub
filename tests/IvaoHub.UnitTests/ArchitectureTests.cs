@@ -88,6 +88,26 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
+    /// The two registration points of a context are the two places that attach the save changes
+    /// interceptor. A context registered any other way compiles, resolves and quietly writes without
+    /// audit, without the department guard and without projections — and the CRUD engine, which
+    /// resolves a context by type from the container, would serve it happily.
+    /// <para>Now that a module can bring a context of its own, this is worth pinning: the first one
+    /// to be registered by hand would be the first to escape the backbone.</para>
+    /// </summary>
+    [Fact]
+    public void AContextIsOnlyEverRegisteredByTheTwoMethodsThatAttachTheInterceptor()
+    {
+        var offenders = SourceFiles()
+            .Where(file => File.ReadAllText(file).Contains("AddDbContext<", StringComparison.Ordinal))
+            .Where(file => Path.GetFileName(file) != "HubDbContextServiceCollectionExtensions.cs")
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
     /// A base list, not a mention. Both shapes a handler can be declared with are covered:
     /// <c>: AuthorizationHandler&lt;T&gt;</c> and <c>: IAuthorizationHandler</c>.
     /// </summary>

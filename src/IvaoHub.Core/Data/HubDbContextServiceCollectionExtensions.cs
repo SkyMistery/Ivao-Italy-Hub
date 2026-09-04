@@ -34,6 +34,11 @@ public static class HubDbContextServiceCollectionExtensions
     /// </summary>
     private static void AddHubDomainServices(this IServiceCollection services)
     {
+        // The interceptor forgets a cached security stamp when a grant moves; the reader of that
+        // cache lives elsewhere and cannot be injected here without asking the container to build a
+        // context in order to build a context.
+        services.AddMemoryCache();
+
         services.TryAddSingleton<BlockDocumentWalker>(provider =>
             new BlockDocumentWalker(provider.GetRequiredService<IOptions<DivisionOptions>>().Value.Locales));
 

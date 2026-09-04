@@ -6,6 +6,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
 using IvaoHub.Web.Endpoints;
@@ -53,8 +54,12 @@ builder.Services.AddOptions<DivisionOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-// The registry that knows the module keys arrives in F8; until then no key is checked.
-builder.Services.AddSingleton<IValidateOptions<DivisionOptions>>(new DivisionOptionsValidator());
+// Which modules exist is the explicit list, so the validator can say that division.json names one
+// this build does not have. Every module, not only the enabled ones: naming a module in order to
+// switch it off is the whole point of the key.
+builder.Services.AddSingleton<IValidateOptions<DivisionOptions>>(provider => new DivisionOptionsValidator(
+    [.. Modules.All.Select(module => module.Key)],
+    provider.GetService<ILogger<DivisionOptionsValidator>>()));
 
 var oauth = builder.Services.AddOptions<IvaoOAuthOptions>()
     .Bind(builder.Configuration.GetSection(IvaoOAuthOptions.SectionName));
@@ -90,8 +95,17 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddHubDbContext();
 builder.Services.AddHubCrud();
 
+// The modules of this build, and everything they contribute: permissions into the one catalogue,
+// blocks into the one block registry, widgets into the one widget registry, their own services.
+// It comes before the pieces that read those registries, and it is the only place the core is told
+// that modules exist at all (design M0 section 6.1).
+builder.Services.AddHubModules(
+    Modules.All,
+    builder.Configuration,
+    divisionConfiguration.Get<DivisionOptions>() ?? new DivisionOptions());
+
 // The block registry, the providers that answer for data blocks, publication and the seeder of the
-// system templates. A module adds its blocks to the same registry in F8.
+// system templates. A module adds its blocks to the same registry, below.
 builder.Services.AddHubContent();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
@@ -213,6 +227,11 @@ app.UseCrossSiteRequestGuard();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// A module closed for maintenance answers reads and refuses writes. After authentication so that
+// the refusal is written in the language of whoever is asking, and before routing so that a write
+// to an address the module does not even have is refused too.
+app.UseModuleMaintenance();
+
 app.MapOpenApi();
 
 if (app.Environment.IsDevelopment())
@@ -228,6 +247,17 @@ app.MapLocaleEndpoints();
 app.MapLinksEndpoints();
 app.MapContentEndpoints();
 app.MapBlockDataEndpoint();
+app.MapSearchEndpoint();
+
+// The administration of the hub itself: who holds which permission, who administers the system,
+// what happened, and which modules are open. Three of the four are the CRUD engine in global mode.
+app.MapGrantEndpoints();
+app.MapSuperadminEndpoints();
+app.MapAuditEndpoints();
+app.MapModuleAdminEndpoints();
+
+// Last, so that a module cannot shadow a route of the core by mapping the same pattern first.
+app.MapModuleEndpoints();
 
 app.MapGet("/api/version", (BuildInfo build) => TypedResults.Ok(
     new VersionResponse(build.Version, build.Commit, build.BuiltAt, build.Dotnet)));

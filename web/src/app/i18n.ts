@@ -15,11 +15,17 @@ import { initReactI18next } from 'react-i18next';
  * `LocaleSwitcher` writes `hub.lang`, which is what this detector reads; a signed in member's
  * choice also goes to `hub_users.locale` through `PUT /api/me/locale`, so it follows them to
  * another browser.
+ *
+ * Which namespaces to load is the composed registry's answer, not a list written here: a module
+ * declares its own in its manifest and `pnpm i18n:sync` puts the files where this can fetch them.
+ * They are passed in rather than read from `app/registry` directly, because the registry pulls in
+ * every block and widget component of the application and half of those reach back here — the
+ * composition root is where the two meet, and it is the one place with no cycle to make.
  */
 export const DEFAULT_LOCALE = 'en';
 export const LOCALE_COOKIE = 'hub.lang';
 
-export function createI18n(): I18n {
+export function createI18n(namespaces: readonly string[]): I18n {
   const instance = i18next.createInstance();
 
   void instance
@@ -28,13 +34,13 @@ export function createI18n(): I18n {
     .use(initReactI18next)
     .init({
       fallbackLng: DEFAULT_LOCALE,
-      ns: ['common', 'errors'],
+      ns: [...namespaces],
       defaultNS: 'common',
-      // The server sends i18n keys in the machine readable part of a refusal, and they are the
-      // keys of `errors.json` with no namespace in front, because the server does not have
-      // namespaces: `errors.localized.missing`. Falling back to that file is what lets the client
-      // resolve them without every call site remembering where they live.
-      fallbackNS: 'errors',
+      // A namespace is where a file is, never part of a key: the server proves it, because it
+      // sends the keys of a refusal with no namespace in front (`errors.localized.missing`) and
+      // its own catalogue has none. So everything that is not the default is a fallback, and a key
+      // is written the same wherever it lives -- including `nav.atc`, which belongs to a module.
+      fallbackNS: namespaces.filter((namespace) => namespace !== 'common'),
       backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' },
       detection: {
         order: ['cookie', 'navigator'],

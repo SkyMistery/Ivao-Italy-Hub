@@ -14,9 +14,9 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
     private readonly ILogger<DivisionOptionsValidator>? _logger;
 
     /// <param name="knownModuleKeys">
-    /// Keys the module registry knows about. Unknown keys are a warning, not a failure, so that a
-    /// division can keep a key for a module it has not merged yet. The registry that fills this in
-    /// arrives in F8; until then nothing is known and nothing is reported.
+    /// The keys of every module this build has, from the explicit list. Unknown keys are a warning
+    /// and not a failure, so that a division can keep a key for a module it has not merged yet;
+    /// nothing is reported when nothing is known, which is the case of a host with no modules.
     /// </param>
     /// <param name="logger">Where an unknown key is reported. A validator has no other way out.</param>
     public DivisionOptionsValidator(
