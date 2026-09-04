@@ -19,7 +19,9 @@
     "test:watch": "vitest",
     "i18n:sync": "node scripts/sync-module-locales.mjs",
     "i18n:check": "node scripts/i18n-check.mjs",
-    "gen:api": "openapi-typescript ../artifacts/openapi/IvaoHub.Web.json -o src/shared/api/schema.d.ts"
+    "gen:api": "openapi-typescript ../artifacts/openapi/IvaoHub.Web.json -o src/shared/api/schema.d.ts",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.1",
@@ -41,6 +43,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/router-plugin": "1.168.35",
     "@testing-library/jest-dom": "7.0.1",

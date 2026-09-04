@@ -99,6 +99,25 @@ jobs:
       - name: Fail on uncommitted generated files
         run: git diff --exit-code
 
+      # A browser, opening the built bundle. Every test above mounts a piece; this is the only one
+      # that assembles them, and the fault that made it exist -- a provider missing above the
+      # router, which took down every screen -- was invisible to all 74 of the unit tests.
+      - name: Install the smoke browser
+        run: pnpm e2e:install
+        working-directory: web
+
+      - name: Smoke test in a browser
+        run: pnpm e2e
+        working-directory: web
+
+      - name: Upload the smoke report when it fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: web/playwright-report
+          retention-days: 7
+
       - name: Publish self-contained package
         run: >
           dotnet publish src/IvaoHub.Web
