@@ -9,8 +9,12 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 1.4 — 5 settembre 2026 (**G1 è chiusa**: la media library esiste, e tre estensioni
-generiche di `MapCrud` sono nate per non aggirarlo. La prossima fase è G2.)
+**Versione:** 1.5 — 5 settembre 2026 (**G2 è chiusa**: il generatore disegna i cinque tipi che i
+blocchi chiederanno, e due deviazioni dalla lettera di questa pagina sono scritte dentro la fase. La
+prossima è G3.)
+
+**1.4** — **G1 è chiusa**: la media library esiste, e tre estensioni
+generiche di `MapCrud` sono nate per non aggirarlo.
 
 **1.3** — due decisioni di Carmine entrano nelle fasi: la **lettura
 condivisa dei template** in G5, e la **dashboard di dipartimento** in G8 — quest'ultima con la forma
@@ -84,7 +88,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 |---|---|---|---|
 | G0 | Rete e2e con l'API vera in CI — **fatta** | — | `pnpm e2e:full`: crea da template → blocchi → pubblica → anonimo vede il pubblicato, in un browser, contro MariaDB vera |
 | G1 | Media library — **fatta** | G0 | upload, servizio dei file dietro il query filter, `MediaPicker`, back-office generato |
-| G2 | Le cinque estensioni di `SchemaForm` | G1 | media, icona, data, oggetto tradotto, riordino; debiti n.3 e n.4 chiusi |
+| G2 | Le cinque estensioni di `SchemaForm` — **fatta** | G1 | media, icona, data, oggetto tradotto, riordino; debiti n.3 e n.4 chiusi |
 | G3 | I 16 blocchi Content / Layout / Interactive / Structure | G2 | 21 blocchi nella ui-kit, convenzioni in `UI-GUIDELINES.md` (chiude piano §16.C) |
 | G4 | I 6 blocchi Data e i loro provider | G3 | 27 blocchi; `networkStats` mai congelato; provider dietro il query filter |
 | G5 | News, documenti, categorie | G4 | due `kind`, due configurazioni di lista, cinque rotte pubbliche, `cms_categories` |
@@ -295,6 +299,29 @@ oggetto tradotto e non come JSON grezzo; `SchemaForm` continua a **lanciare** su
 disegnare — è la proprietà per cui nessuno scrive un form a mano — e c'è il test che lo pretende.
 
 **Non fare**: dnd-kit, blocchi.
+
+**Chiusa il 5 settembre 2026**, con undici Vitest nuovi e uno smoke che li misura tutti e cinque
+nella galleria, accanto alle suite che c'erano. Il racconto è in `HANDOFF.md` §16; qui restano le due
+cose che **questa pagina diceva diversamente**, entrambe da conoscere prima di aprire G3.
+
+1. ⚠️ **L'allowlist delle icone sta in `web/src/shared/icons/`, non in `web/src/blocks/icons.ts`.**
+   `blocks/` importa già il generatore (per `localized()`), quindi il generatore che importa
+   `blocks/` chiuderebbe un ciclo fra i due. La cartella è quella che il design §1.4 aveva già
+   previsto per M1 e nasce una volta sola. G3 la legge da lì.
+2. ⚠️ **Le icone sono una griglia di radio, non un select.** `SelectItemProps` di Atmosphere ha
+   `label?: string`: un select può elencare i nomi e nient'altro, e un nome senza la sua figura è la
+   scelta che nessuno può fare. L'insieme resta chiuso, che è ciò di cui parla la regola. Quinto
+   contratto di Atmosphere misurato invece che assunto.
+
+E una terza cosa, decisa **smontando** la propria idea: avevo aggiunto una famiglia di chiavi
+`groups` per non far collidere il nome di un gruppo con quelli dei suoi figli, poi ho misurato
+i18next e ho scoperto che una chiave puntata si risolve in entrambi i modi. La famiglia nuova è stata
+tolta e la convenzione resta quella che i test usano da M0: `"seo"` accanto a `"seo.title"`, piatte.
+G3, che è pieno di `cards[]` e `items[]`, è il primo a incontrarla davvero.
+
+Il conto della fase: **zero endpoint scritti a mano**, **zero componenti custom nuovi** (`LocaleTabs`
+è il guscio che `LocaleFields` e l'oggetto tradotto condividono, interno a `shared/forms`), **cinque
+estensioni** del generatore — cioè esattamente quelle che il design §1.6 prevedeva.
 
 ---
 

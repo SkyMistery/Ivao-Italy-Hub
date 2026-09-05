@@ -4,6 +4,6 @@ export { DepartmentBadge, VisibilityBadge, StatusBadge, type Visibility } from '
 export { LocaleSwitcher } from './LocaleSwitcher';
 export { MarkdownContent } from './MarkdownContent';
 export { ConfirmDialog } from './ConfirmDialog';
-export { MediaPicker, type PickableMedia } from './MediaPicker';
+export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';
 export { NotFound, Forbidden } from './status-pages';
 export { UI_KIT_COMPONENTS, type UiKitComponent } from './catalog';

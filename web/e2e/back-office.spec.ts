@@ -147,3 +147,41 @@ test('the preview of a file is a picture with a real size, inside the column it 
   expect(preview!.height).toBeLessThanOrEqual(200);
   expect(preview!.x + preview!.width).toBeLessThanOrEqual(main!.x + main!.width);
 });
+
+test('the gallery draws every kind of field the generator learned, and they are usable sizes', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/staff/admin/ui-kit');
+
+  await expect(page.getByText('Something went wrong!')).toHaveCount(0);
+
+  // A day and an instant are native inputs, so a browser brings the calendar and this hub does not
+  // have to. What the hub owes is the second line, and it is the half a fixture in UTC could never
+  // have shown: the sample holds noon UTC, and the division sits in Rome.
+  await expect(page.locator('input[type="date"]')).toHaveCount(1);
+  const instant = page.locator('input[type="datetime-local"]');
+  await expect(instant).toHaveValue('2026-06-01T12:00');
+  // Exact, and for a reason worth remembering: "2:00" is a substring of "12:00", so a loose match
+  // here passed happily while the echo was showing UTC twice. Noon UTC on the first of June is two
+  // in the afternoon in Rome.
+  await expect(page.getByText(/Europe\/Rome/).first()).toHaveText('6/1/26, 2:00 PM Europe/Rome');
+
+  // The icons are a closed set drawn as pictures, and the reason they are a grid and not a select
+  // is that a name without its picture is unusable — so the picture has to have a size. jsdom
+  // cannot see this at all: it does no layout.
+  const icon = page.getByRole('radio', { name: 'plane', exact: true });
+  await expect(icon).toBeVisible();
+
+  const box = await icon.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThanOrEqual(32);
+  expect(box!.height).toBeGreaterThanOrEqual(32);
+
+  // A translated object is tabs with real fields inside, not a JSON box.
+  await expect(page.getByRole('tab', { name: /English/ })).not.toHaveCount(0);
+
+  // And a list can be reordered, with the ends saying they have nowhere to go.
+  await expect(page.getByRole('button', { name: 'Move down' })).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'Move up' }).first()).toBeDisabled();
+});

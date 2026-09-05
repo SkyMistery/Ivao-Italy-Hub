@@ -31,7 +31,9 @@ export function grantSchema(bootstrap: Bootstrap) {
     // `EffectivePermissionsCalculator` reads as "held everywhere".
     department: z.enum(DEPARTMENTS).optional(),
     effect: z.enum(['Grant', 'Deny']),
-    expiresAt: z.string().optional(),
+    // A day, not a text box. The value the form carries stays an ISO instant in UTC — the column
+    // is a `DateTime` — and the field converts, so nothing downstream had to change.
+    expiresAt: z.string().optional().meta({ date: true }),
     reason: z.string().optional().meta({ multiline: true }),
     // The version the form was loaded with. Sending back a stale one is how the server finds out
     // somebody else saved first, and answers 409.

@@ -31,10 +31,17 @@ export interface PickableMedia {
 }
 
 /** A page of rows, in the shape every list of the hub answers with. */
-interface MediaPage<TRow> {
+export interface MediaPage<TRow extends PickableMedia = PickableMedia> {
   items: TRow[];
   total: number;
 }
+
+/**
+ * The library a picker chooses from, as query options. Named because the form generator carries it
+ * from the screen down to whichever field asked for a media: the generator cannot build it itself,
+ * since which department's library to show is a fact of the screen and not of the schema.
+ */
+export type MediaLibraryQuery = UseQueryOptions<MediaPage, Error, MediaPage, readonly unknown[]>;
 
 export function MediaPicker<TRow extends PickableMedia, TKey extends readonly unknown[]>({
   query,

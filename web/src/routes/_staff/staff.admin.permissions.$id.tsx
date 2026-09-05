@@ -73,6 +73,10 @@ function GrantForm() {
     >
       <SchemaForm
         schema={grantSchema(bootstrap)}
+        division={{
+          defaultLocale: bootstrap.division.defaultLocale,
+          timezone: bootstrap.division.timezone,
+        }}
         defaults={grant === null ? emptyGrant() : toFormValues(grant)}
         locales={bootstrap.division.locales}
         labels="grants"

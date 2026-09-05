@@ -8,6 +8,7 @@ import { registry } from '../../app/registry';
 import { ContentRenderer, columnsOf, readBody, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { SchemaForm } from '../../shared/forms';
+import type { MediaLibraryQuery } from '../../shared/ui';
 import { ConfirmDialog, SectionHeader } from '../../shared/ui';
 
 import { BlockProperties, SectionProperties } from './BlockProperties';
@@ -47,6 +48,8 @@ export function ContentEditor({
   content,
   department,
   locales,
+  division,
+  mediaLibrary,
   onSave,
   onPublish,
   onDelete,
@@ -56,6 +59,10 @@ export function ContentEditor({
   content: ContentDetailDto | null;
   department: Department;
   locales: readonly string[];
+  /** The two facts the `seo` field needs: which language is the fallback, and where the division is. */
+  division: { defaultLocale: string; timezone: string };
+  /** The library the picture of `seo` is chosen from — this department's. */
+  mediaLibrary: MediaLibraryQuery;
   onSave: (values: ContentFormValues, body: Body) => Promise<unknown>;
   /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
   onPublish: (() => void) | null;
@@ -99,6 +106,8 @@ export function ContentEditor({
         defaults={content === null ? emptyContent(department, locales) : toFormValues(content, locales)}
         locales={locales}
         labels="content"
+        division={division}
+        mediaLibrary={mediaLibrary}
         onSubmit={async (values) => {
           await onSave(values, body);
           setUnsaved(false);

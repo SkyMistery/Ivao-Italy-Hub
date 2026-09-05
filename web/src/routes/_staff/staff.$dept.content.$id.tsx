@@ -9,6 +9,7 @@ import {
   useUpdateContent,
 } from '../../features/content/mutations';
 import { contentQuery, type ContentDetailDto } from '../../features/content/queries';
+import { mediaPickerQuery } from '../../features/media/queries';
 import { deptParam } from '../../shared/api/department';
 import { PageShell } from '../../shared/ui';
 
@@ -53,18 +54,22 @@ function ContentForm() {
         content={content}
         department={dept}
         locales={locales}
+        division={{
+          defaultLocale: bootstrap.division.defaultLocale,
+          timezone: bootstrap.division.timezone,
+        }}
+        // The library of this department: a page picks its social picture out of its own files.
+        mediaLibrary={mediaPickerQuery(dept)}
         busy={create.isPending || update.isPending || publish.isPending || remove.isPending}
         publishError={publish.error}
         onSave={async (values, body) => {
-          const seo = content?.seo ?? null;
-
           if (isNew) {
-            const created = await create.mutateAsync({ values, body, seo });
+            const created = await create.mutateAsync({ values, body });
             await navigate({ to: '/staff/$dept/content/$id', params: { dept, id: String(created.id) } });
             return created;
           }
 
-          return update.mutateAsync({ values, body, seo });
+          return update.mutateAsync({ values, body });
         }}
         onPublish={isNew ? null : () => publish.mutate(null)}
         onDelete={isNew ? null : () => remove.mutate(Number(id), { onSuccess: backToList })}
