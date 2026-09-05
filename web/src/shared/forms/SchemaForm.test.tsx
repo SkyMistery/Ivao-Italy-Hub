@@ -264,3 +264,55 @@ describe('the form it draws', () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ rowVersion: 'v1' }));
   });
 });
+
+describe('the sentence under a field', () => {
+  /**
+   * A label names a field; a hint explains it. They were one key until a label that carried a
+   * format hint -- "Expires (YYYY-MM-DD, empty for never)" -- became a column header five lines
+   * tall, because `DataList` builds a header from that same key. One key, one job.
+   *
+   * Drawn from `<ns>.hints.<path>` when the language files carry one, and from nothing otherwise:
+   * a hint is words, so it lives in `locales/` rather than in the schema.
+   */
+  const schema = z.object({ expiresAt: z.string(), reason: z.string(), title: localized() });
+
+  const withHints = {
+    test: {
+      fields: { expiresAt: 'Expires', reason: 'Reason', title: 'Title' },
+      hints: { expiresAt: 'Empty means never. Format: YYYY-MM-DD.', title: 'In every language.' },
+    },
+  };
+
+  function renderIt() {
+    return renderWithProviders(
+      <SchemaForm
+        schema={schema}
+        defaults={{ expiresAt: '', reason: '', title: { en: '', it: '' } }}
+        locales={LOCALES}
+        labels="test"
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />,
+      { i18n: createTestI18n(withHints) },
+    );
+  }
+
+  test('is drawn for a field whose hint key exists', () => {
+    renderIt();
+    expect(screen.getByText('Empty means never. Format: YYYY-MM-DD.')).toBeInTheDocument();
+  });
+
+  test('is drawn for a translated field too, which has no Row of its own', () => {
+    renderIt();
+    expect(screen.getByText('In every language.')).toBeInTheDocument();
+  });
+
+  test('leaves a field without one alone, rather than printing the key', () => {
+    renderIt();
+
+    // The failure this guards against is the i18next default: a missing key comes back as the key,
+    // so a naive implementation would draw "test.hints.reason" under half the form.
+    expect(screen.queryByText(/test\.hints\./)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Reason')).toBeInTheDocument();
+  });
+});

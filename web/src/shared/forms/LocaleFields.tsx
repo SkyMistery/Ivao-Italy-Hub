@@ -2,6 +2,8 @@ import { Badge, Button, Input, Label, Tabs, Textarea } from '@ivao/atmosphere-re
 import { useTranslation } from 'react-i18next';
 import { useFormContext, useWatch } from 'react-hook-form';
 
+import { FieldHint } from './SchemaForm';
+
 /**
  * One translated field, a tab per language of the division. A field is a single JSON column and
  * never a row per language (plan §16.1), so what is on screen is one value with several entries.
@@ -13,12 +15,15 @@ import { useFormContext, useWatch } from 'react-hook-form';
 export function LocaleFields({
   path,
   label,
+  hint,
   locales,
   multiline,
   error,
 }: {
   path: string;
   label: string;
+  /** The sentence under the field, when `<ns>.hints.<path>` exists. See `SchemaForm`. */
+  hint?: string | undefined;
   locales: readonly string[];
   multiline: boolean;
   error: string | undefined;
@@ -81,7 +86,15 @@ export function LocaleFields({
       <Label asChild>
         <legend>{label}</legend>
       </Label>
-      <Tabs tabs={tabs} {...(locales[0] === undefined ? {} : { defaultValue: locales[0] })} />
+      <FieldHint hint={hint} />
+      {/* `w-full` on purpose: Atmosphere's `Tabs` pins itself to `w-[400px]`, so without this a
+          translated field is 400px wide while every plain input next to it is the width of the
+          form. It merges rather than fights, because that className goes through `cn`. */}
+      <Tabs
+        className="w-full"
+        tabs={tabs}
+        {...(locales[0] === undefined ? {} : { defaultValue: locales[0] })}
+      />
       {error === undefined ? null : (
         <p role="alert" className="text-destructive text-sm">
           {error}

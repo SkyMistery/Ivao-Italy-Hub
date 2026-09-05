@@ -400,7 +400,7 @@
       "value": "Permesso",
       "department": "Dipartimento",
       "effect": "Effetto",
-      "expiresAt": "Scade (AAAA-MM-GG, vuoto = mai)",
+      "expiresAt": "Scadenza",
       "suspendedAt": "Sospeso",
       "reason": "Motivo",
       "updatedAt": "Ultima modifica"
@@ -413,6 +413,9 @@
       "department": {
         "none": "Tutti i dipartimenti"
       }
+    },
+    "hints": {
+      "expiresAt": "Lascia vuoto per un permesso che non scade mai. Formato: AAAA-MM-GG."
     }
   },
   "superadmins": {

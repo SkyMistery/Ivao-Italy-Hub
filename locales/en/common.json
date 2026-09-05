@@ -400,7 +400,7 @@
       "value": "Permission",
       "department": "Department",
       "effect": "Effect",
-      "expiresAt": "Expires (YYYY-MM-DD, empty for never)",
+      "expiresAt": "Expires",
       "suspendedAt": "Suspended",
       "reason": "Reason",
       "updatedAt": "Last change"
@@ -413,6 +413,9 @@
       "department": {
         "none": "Every department"
       }
+    },
+    "hints": {
+      "expiresAt": "Leave it empty for a permission that never expires. Format: YYYY-MM-DD."
     }
   },
   "superadmins": {

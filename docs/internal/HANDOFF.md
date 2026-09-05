@@ -9,7 +9,7 @@ il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono di
 su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
 **Piano:** v0.32. **Design:** v2.1. **Piano di implementazione:** v1.6.
-**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **76 Vitest** + **9 smoke Playwright**. Nessuno skippato.
+**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **79 Vitest** + **10 smoke Playwright**. Nessuno skippato.
 
 ⚠️ **Due difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
 cosa vista **tre** volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
@@ -1493,13 +1493,34 @@ storto è forte, e tre delle cinque cose che sembravano difetti non lo erano:
 Regola pratica per il prossimo giro visivo: **prima di chiamare difetto qualcosa, controllare se è
 la fixture.** Costa un grep e ha salvato tre segnalazioni sbagliate su cinque.
 
-### Due cose viste e **non** corrette, che aspettano una decisione
+### Le due cose viste qui, **corrette il 5 set 2026**
 
-1. **L'intestazione di colonna e l'etichetta del form sono la stessa chiave** (`<ns>.fields.<campo>`,
-   `DataList.tsx:92`). Per `grants.expiresAt` l'etichetta porta il formato — «Expires (YYYY-MM-DD,
-   empty for never)», che il debito noto di §7 spiega — e come intestazione diventa alta cinque righe
-   e schiaccia la tabella. Le due strade sono dare alle colonne una chiave propria con fallback
-   (`<ns>.columns.<campo>` → `<ns>.fields.<campo>`, estensione del motore) oppure dare a
-   `SchemaForm` un concetto di «suggerimento» separato dall'etichetta. Entrambe sono decisioni.
-2. **I campi tradotti sono più stretti degli altri** nel form: `LocaleFields` sta intorno ai 400 px
-   mentre un `Input` normale arriva a 960. Si vede solo a schermo, e mai in un test.
+Erano rimaste aperte perché richiedevano una scelta. Entrambe chiuse estendendo un meccanismo, mai
+aggirandolo (CLAUDE.md §5, regola (b)).
+
+1. **Un'etichetta faceva due lavori.** `<ns>.fields.<campo>` è insieme l'etichetta del form e
+   l'intestazione di colonna di `DataList`, e `grants.fields.expiresAt` portava il formato dentro
+   l'etichetta — «Expires (YYYY-MM-DD, empty for never)» — quindi la tabella dei grant aveva
+   un'intestazione alta cinque righe che tagliava le colonne a destra.
+
+   **Scelta: separare il suggerimento dall'etichetta, non dare alle colonne una chiave propria.**
+   `SchemaForm` disegna ora una frase sotto un campo quando `<ns>.hints.<campo>` esiste nei file di
+   lingua — niente flag nello schema, perché un suggerimento è **parole** e le parole stanno in
+   `locales/`. L'etichetta torna «Expires» / «Scadenza», e l'intestazione di colonna diventa corta
+   **di conseguenza**, senza una seconda chiave da tenere allineata. La strada scartata
+   (`<ns>.columns.<campo>` con fallback) avrebbe lasciato in piedi la causa e aggiunto due chiavi per
+   lo stesso campo, cioè un posto dove far divergere lista e form.
+
+   ⚠️ La trappola dell'implementazione: i18next restituisce **la chiave** quando manca, quindi senza
+   `i18n.exists()` mezza form avrebbe mostrato `test.hints.reason`. C'è un test che lo fissa, ed è
+   verificato togliendo la guardia.
+2. **Un campo tradotto era largo 400 px** accanto a input larghi 960: **`Tabs` di Atmosphere si
+   pinna a `w-[400px]`** (`dist/atmosphere-react.js:18568`), e `LocaleFields` è costruito su quello.
+   Risolto con un `className="w-full"`, che si fonde invece di litigare perché quella libreria passa
+   la classe da `cn`. **Quarto contratto di Atmosphere in due giorni** che andava misurato e non
+   assunto, dopo `DarkModeToggle`, `Select` e `SidebarContainer`.
+
+Entrambe hanno una rete, ed entrambe le reti sono state verificate rompendo la correzione: il test
+del suggerimento fallisce senza la guardia, e quello della larghezza esce `Received: 400`. Il secondo
+è di nuovo **geometria in un browser**, perché jsdom non fa layout — è la stessa lezione di §13, e
+ormai è una categoria: *ciò che si vede e basta si prova solo guardando*.
