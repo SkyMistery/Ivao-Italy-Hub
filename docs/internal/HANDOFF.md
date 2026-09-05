@@ -34,17 +34,18 @@ misura la **geometria**, perché le prime due asserivano sul testo e il testo er
 
 ### Il tag
 
-**`v0.1.0-m0` punta a `2f5427f`**, il merge commit del secondo hotfix (PR #26, due genitori,
-verificato). Ci è arrivato al **quarto** tentativo, e i tre precedenti sono la storia di §9, §11 e
-§12: il primo tag era finito sulla punta di F8 perché il rapporto di chiusura conteneva un blocco
-eseguibile che saltava il merge; il secondo puntava a F9 fusa, che era il commit giusto ma
-un'applicazione che non si apriva in un browser; il terzo a un'applicazione che si apriva e in cui
-nessun form del back-office era raggiungibile.
+**`v0.1.0-m0` punta a `fc0edb2`**, il merge commit del terzo hotfix (PR #28, due genitori,
+verificato). Ci è arrivato al **quinto** tentativo, e i quattro precedenti sono la storia di §9, §11,
+§12 e §13 — **nessuno è stato lo stesso errore due volte**: il primo tag era finito sulla punta di
+F8 perché il rapporto di chiusura conteneva un blocco eseguibile che saltava il merge; il secondo
+puntava a F9 fusa, un'applicazione che non si apriva in un browser; il terzo a una che si apriva e
+in cui nessun form del back-office era raggiungibile; il quarto a una in cui il back-office era
+raggiungibile e disegnato in una colonna da 255 pixel.
 
 La release è pubblicata e **verificata sull'artefatto, non sul commit**: lo zip
 (`ivao-division-hub-v0.1.0-m0.zip`) è stato scaricato, scompattato, il suo `wwwroot/` servito, e
-**tutti e otto** gli smoke Playwright eseguiti **contro quello** — cioè contro il file che qualcuno
-scaricherebbe, non contro una build locale dello stesso commit. Otto su otto.
+**tutti e nove** gli smoke Playwright eseguiti **contro quello** — cioè contro il file che qualcuno
+scaricherebbe, non contro una build locale dello stesso commit. Nove su nove, geometria del layout compresa.
 
 ⚠️ **Il server con cui lo si serve deve fare il fallback SPA.** Al primo tentativo i quattro smoke
 del back-office sono usciti rossi contro un pacchetto perfettamente sano: `python -m http.server` è
@@ -62,8 +63,42 @@ i nomi sono manglati e il risultato non distingue «il provider è nel bundle» 
 montato». La verifica è **comportamentale** o non è.
 
 `release.yml` **dipende da `build-test`**, che dallo stesso giorno include gli smoke in un browser:
-i 353 test .NET, i 76 Vitest e gli 8 Playwright girano prima che lo zip esista. È la
+i 353 test .NET, i 76 Vitest e i 9 Playwright girano prima che lo zip esista. È la
 proprietà per cui quella dipendenza esiste, ed è servita due volte in un giorno.
+
+### Il giro visivo: tre punti su quattro fatti, il quarto no
+
+Fatto e verde: le due liste affiancate **sembrano la stessa schermata** (è il punto di avere un
+motore solo, e regge); la **ui-kit nei due temi** monta tutto senza zone chiare rimaste; il **cambio
+lingua** funziona ed è ora uno smoke.
+
+⚠️ **Non fatto: anteprima dell'editor contro pagina pubblica.** Richiede un contenuto pubblicato
+dietro una **sessione IVAO vera**, che né gli smoke né io possiamo produrre — gli smoke stubbano
+`/api/me`. È l'ultimo punto della «definizione di fatto» di M0 (§0.1 punto 3) che nessuno ha ancora
+guardato con gli occhi, anche se `ContentEndToEndTests` lo asserisce lato API. La cosa da guardare è
+che le due rese siano **indistinguibili**: è lo stesso `ContentRenderer`, e se divergono non lo
+stanno usando entrambe. Attenzione a due trappole: il badge dei blocchi Data lo vede **solo lo
+staff**, quindi in finestra anonima non c'è ed è corretto; e se si modifica la bozza dopo aver
+pubblicato, le due **devono** divergere.
+
+### Che cosa ha trovato davvero il giro visivo, e perché conta per M1
+
+Tre difetti in un giorno, tutti trovati **guardando l'applicazione**, nessuno da un test. E i tre
+sono una scala, che vale la pena leggere in ordine perché descrive un punto cieco che si restringe:
+
+| | Che cosa non funzionava | Perché i test non lo vedevano |
+|---|---|---|
+| §11 | Nessuna schermata si disegnava | Nessun test montava l'albero dei provider |
+| §12 | Nessun form era raggiungibile | Nessun test montava la composizione delle route |
+| §13 | Tutto funzionava, in una colonna da 255 px | Ogni test chiedeva «c'è?», nessuno «dov'è?» |
+
+Ogni rete nuova ha chiuso il buco che la precedente lasciava aperto, e l'ultima ha dovuto misurare
+**pixel** perché il testo era corretto. Se M1 aggiunge schermate, la domanda da farsi non è «ho
+scritto i test?» ma **«che cosa, di questa schermata, un test non può vedere?»**.
+
+Le due cose viste e non corrette in §13 — l'intestazione di colonna che riusa la chiave
+dell'etichetta del form, e i campi tradotti più stretti degli altri — restano decisioni aperte per
+M1.
 
 ### Come si apre M1
 
@@ -1166,6 +1201,38 @@ qui sotto è il suo indice di partenza, non la sua sostituzione.
 | **Servizio notifiche** e il namespace `mail` nei file di lingua | Il namespace nascerà da sé: `pnpm i18n:check` legge tutti quelli che trova | §7 |
 | **Deploy su staging Plesk** e il foglio `LEGGIMI` | Escluso da M0 per decisione (2 set 2026), in attesa delle risposte A9 | piano §13, §15.2c |
 | **Set di blocchi completo ed editor rifinito** (dnd-kit, anteprima multi-device, «allinea al template») | Il registry dei blocchi e il generatore di form sono estendibili; le convenzioni dei blocchi si decidono con il set davanti | design §0.2, piano §16.C |
+
+### Il primo lavoro di M1 è il set dei blocchi, e il catalogo esiste già
+
+Domanda arrivata il 5 set 2026, e vale la pena che la risposta non si ricostruisca da capo: **i
+blocchi di un vero page builder — tabelle, card con link, gallery, accordion, tabs, hero, stats —
+non mancano, sono rimandati**, e il piano li ha già catalogati.
+
+- **Il catalogo sta in `00-piano §9.3`** (l'analisi di `va.ivao.aero`, il backend del template HQ):
+  24 blocchi in cinque gruppi — Content (Text, Hero, Image, Video, Embed), Layout (Card Grid, Icon
+  Grid, Columns, Gallery, Logo Grid, Tabs), Data (Stats, Network Stats, Virtual Airlines, Calendar,
+  Table, Progress/Timeline), Interactive (Accordion/FAQ, Testimonial, CTA, Alert/Notice, Button
+  Group), Structure (Spacer, Divider). M0 ne ha **cinque**, e il design §5.4 dice perché: bastano a
+  dimostrare live/frozen e le tre forme di sezione.
+- ⚠️ **`Columns` non deve diventare un blocco.** In §9.3 il livello *Row* del Page Builder HQ è già
+  diventato una **proprietà della sezione** (`layout`: `stacked`, `1/2+1/2`, `1/3+2/3`, `3×1/3`…), e
+  l'envelope lo valida: F7 controlla che il `column` di un blocco stia dentro le colonne che il
+  layout della sua sezione ha. Aggiungerlo come blocco sarebbe un secondo modo di fare la stessa
+  cosa (CLAUDE.md §2). È l'errore più facile da fare copiando la palette di HQ voce per voce.
+- **L'elenco chiuso della ui-kit e il registry dei blocchi sono due cose diverse.** I quindici
+  componenti sono pezzi React riusati fra schermate; i blocchi sono un registry a parte, e un blocco
+  `Table` non aggiunge di per sé un componente all'elenco. La ui-kit **monta tutto ciò che il
+  registry dichiara**, quindi un blocco nuovo compare lì da solo: nessuno deve ricordarsi di
+  aggiungerlo.
+- **Le icone sono già decise e non vanno ridiscusse**: `lucide-react` (piano §16.C, design §7.1,
+  `UI-GUIDELINES.md` §2), e **ogni blocco ne dichiara una** — il tipo lo impone
+  (`shared/modules.ts:59`). `web/src/shared/icons/` non esiste ancora perché in nove fasi nessuna
+  icona è mai mancata dal set; nascerà la prima volta che serve.
+
+Aggiungere un blocco non è spuntare una lista: è uno schema zod, un componente, una registrazione,
+le chiavi i18n di etichetta e campi, e per quelli **Data** un provider lato server. Piano §16.C dice
+che le convenzioni dei blocchi si decidono **con il set davanti**: è esattamente il lavoro del
+documento di design di M1.
 
 ### Debiti che M1 eredita, in ordine di quanto costano se ignorati
 
