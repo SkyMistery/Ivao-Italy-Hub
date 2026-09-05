@@ -14,8 +14,8 @@ sono dimostrate end-to-end su `links` e su una pagina nata da un template, che �
 nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
 chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
 piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #39, `main`
-è **undici PR avanti** al tag `v0.1.0-m0`.
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #40, `main`
+è **dodici PR avanti** al tag `v0.1.0-m0`.
 **Piano:** v0.39. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
 **Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.5
 (`04-piano-implementazione-m1.md`, fasi G0–G12): **G0, G1 e G2 sono chiuse** (§14, §15, §16), la
