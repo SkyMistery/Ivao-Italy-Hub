@@ -85,3 +85,19 @@ test('the content sits beside the sidebar, not underneath it in a narrow column'
   // And exactly one way to collapse it, not two.
   await expect(page.getByText(/close sidebar/i)).toHaveCount(1);
 });
+
+test('a translated field is as wide as a plain one', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/staff/ed/links/new');
+  await expect(page.getByLabel(englishCommon.links.fields.url)).toBeVisible();
+
+  // Geometry again, and again because nothing else can see it. Atmosphere's `Tabs` pins itself to
+  // `w-[400px]`, and `LocaleFields` is built on it -- so the title of a link was drawn 400px wide
+  // next to an address input the full width of the form. Every assertion about text passed.
+  const localized = await page.locator('fieldset input').first().boundingBox();
+  const plain = await page.locator('input[name="url"]').first().boundingBox();
+
+  expect(localized).not.toBeNull();
+  expect(plain).not.toBeNull();
+  expect(localized!.width).toBeGreaterThan(plain!.width * 0.9);
+});

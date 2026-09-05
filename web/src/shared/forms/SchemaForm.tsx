@@ -105,7 +105,7 @@ function Field({
   locales: readonly string[];
   labels: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { register, control, formState } = useFormContext();
 
   if (node.meta.hidden === true) {
@@ -114,6 +114,17 @@ function Field({
   }
 
   const label = t(`${labels}.fields.${node.path}`);
+
+  // The sentence under a field, drawn only when the language files carry one. It is a convention
+  // rather than a schema flag on purpose: a hint is words, and words live in `locales/`.
+  //
+  // It exists because a label was doing two jobs. `grants.fields.expiresAt` used to read "Expires
+  // (YYYY-MM-DD, empty for never)", and `DataList` builds a column header from the same key -- so
+  // the grants table had a header five lines tall. One key, one job: the label names the field, the
+  // hint explains it, and the header gets the short one for free.
+  const hintKey = `${labels}.hints.${node.path}`;
+  const hint = i18n.exists(hintKey) ? t(hintKey) : undefined;
+
   const error = errorAt(formState.errors, name);
 
   switch (node.kind) {
@@ -122,6 +133,7 @@ function Field({
         <LocaleFields
           path={name}
           label={label}
+          hint={hint}
           locales={locales}
           multiline={node.meta.multiline === true}
           error={error}
@@ -134,7 +146,7 @@ function Field({
       const choices = node.choices;
 
       return (
-        <Row id={name} label={label} error={error}>
+        <Row id={name} label={label} hint={hint} error={error}>
           {choices !== null ? (
             <Controller
               control={control}
@@ -161,7 +173,7 @@ function Field({
 
     case 'number':
       return (
-        <Row id={name} label={label} error={error}>
+        <Row id={name} label={label} hint={hint} error={error}>
           {node.choices === null ? (
             <Input id={name} type="number" {...register(name, { valueAsNumber: true })} />
           ) : (
@@ -205,7 +217,7 @@ function Field({
 
     case 'enum':
       return (
-        <Row id={name} label={label} error={error}>
+        <Row id={name} label={label} hint={hint} error={error}>
           <Controller
             control={control}
             name={name}
@@ -310,21 +322,32 @@ function RepeatableList({
 function Row({
   id,
   label,
+  hint,
   error,
   children,
 }: {
   id: string;
   label: string;
+  hint: string | undefined;
   error: string | undefined;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1">
       <Label htmlFor={id}>{label}</Label>
+      <FieldHint hint={hint} />
       {children}
       <FieldError error={error} />
     </div>
   );
+}
+
+export function FieldHint({ hint }: { hint: string | undefined }) {
+  if (hint === undefined) {
+    return null;
+  }
+
+  return <p className="text-muted-foreground text-sm">{hint}</p>;
 }
 
 function FieldError({ error }: { error: string | undefined }) {
