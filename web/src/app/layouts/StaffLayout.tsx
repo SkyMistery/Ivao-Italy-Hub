@@ -1,4 +1,4 @@
-import { Sidebar, SidebarContainer, SidebarProvider, type SidebarProps } from '@ivao/atmosphere-react';
+import { Sidebar, type SidebarProps } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
 import { Boxes, FileText, KeyRound, Link2, ScrollText, ShieldCheck, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -112,18 +112,22 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
     <div className="bg-body text-foreground flex min-h-screen flex-col">
       <AppHeader bootstrap={bootstrap} />
 
-      <SidebarProvider>
-        <SidebarContainer>
-          <Sidebar
-            items={items}
-            asLink={RouterAnchor}
-            isActiveCheck={(href) => location.pathname === href || location.pathname.startsWith(`${href}/`)}
-          />
-          <main className="w-full flex-1 px-4 py-8">
-            <Outlet />
-          </main>
-        </SidebarContainer>
-      </SidebarProvider>
+      {/* `Sidebar` is the whole thing: it brings its own `SidebarProvider` and its own
+          `SidebarContainer`, and `SidebarContainer` is not a two column shell -- it *is* the
+          `<aside>`, `w-72` wide. Wrapping our own around it put both the real sidebar and this
+          `<main>` inside a 288px aside, so every back office screen was drawn in a narrow column
+          with the rest of the window empty, and the collapse button appeared twice. The row is
+          ours to make; the sidebar is not. */}
+      <div className="flex flex-1 items-stretch">
+        <Sidebar
+          items={items}
+          asLink={RouterAnchor}
+          isActiveCheck={(href) => location.pathname === href || location.pathname.startsWith(`${href}/`)}
+        />
+        <main className="min-w-0 flex-1 px-4 py-8">
+          <Outlet />
+        </main>
+      </div>
 
       <AppFooter bootstrap={bootstrap} />
     </div>

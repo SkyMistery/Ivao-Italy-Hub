@@ -1,9 +1,39 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.33 — 4 settembre 2026 (secondo hotfix: nessun form del back-office era raggiungibile. Stessa famiglia del primo — i test provano i pezzi, niente provava la composizione)
+**Versione documento:** 0.34 — 4 settembre 2026 (terzo hotfix: il back-office era disegnato in una colonna da 255 px. Un test che chiede «c'è?» non chiede «dov'è?»)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. Prossima milestone **M1**, il sito pubblico. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.34** (4 set 2026, terzo hotfix): **ogni schermata di `/staff` era disegnata in una
+colonna larga 255 pixel**, in alto a sinistra, con il resto della finestra vuoto, la tabella tagliata
+e il bottone «Close sidebar» ripetuto due volte. `StaffLayout` avvolgeva `Sidebar` in un
+`SidebarProvider` e un `SidebarContainer` propri; ma **`Sidebar` è già completo** — porta i suoi — e
+**`SidebarContainer` non è un guscio a due colonne: è l'`<aside>`**, largo `w-72`. Sidebar e `<main>`
+finivano quindi impilati dentro un aside da 288 px. Misurato prima: `main` a `x=16, width=255`; dopo:
+`x=288, width=992`.
+
+**Terza volta in un giorno che un contratto di Atmosphere è stato assunto invece che verificato in un
+browser** (dopo `DarkModeToggle`, che scarta i `children` e vuole `title` e non `aria-label`, e il
+`Select` che spande le props due volte). Il piano lo registra perché è diventato un modello: le firme
+TypeScript di quella libreria non descrivono come i suoi componenti vanno **composti**, e la
+composizione è esattamente ciò su cui questo progetto poggia.
+
+La differenza rispetto agli altri due hotfix, e la ragione della rete nuova: qui **funzionava tutto**.
+Tutte le parole c'erano, nell'ordine giusto, cliccabili — gli otto smoke passavano su un back-office
+inutilizzabile. Un test che chiede «c'è?» non chiede «dov'è?». Il nono smoke misura quindi la
+**geometria** (`main.x > 200`, `main.width > 600`, un solo «Close sidebar»), ed è verificato
+rimettendo il layout vecchio: fallisce con `Received: 16`.
+
+Il difetto è emerso da una **verifica visiva guidata**: schermate reali catturate in Chromium con una
+sessione staff finta, e guardate. Tre delle cinque cose che sembravano difetti erano invece artefatti
+della fixture o comportamenti voluti (un valore d'enum inesistente, la doppia data che è UTC più il
+fuso della divisione, gli smoke rossi per un server di prova senza fallback SPA): **prima di chiamare
+difetto qualcosa, si controlla se è la fixture.** Restano due cose viste e non corrette perché
+richiedono una decisione, scritte in HANDOFF §13: l'intestazione di colonna che riusa la chiave
+dell'etichetta del form, e i campi tradotti più stretti degli altri.
+
+Test: 353 .NET, 76 Vitest, **9 Playwright**. HANDOFF §13.
 
 **Changelog 0.33** (4 set 2026, secondo hotfix): **nessun form del back-office era raggiungibile in
 un browser.** Le tre route di dettaglio — `links`, `content`, `admin/permissions` — erano **figlie**

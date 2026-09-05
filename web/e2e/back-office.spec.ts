@@ -64,3 +64,24 @@ test('a department the member does not reach is a refusal, not an empty table', 
 
   await expect(page).toHaveURL(/\/forbidden/);
 });
+
+test('the content sits beside the sidebar, not underneath it in a narrow column', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/staff/ed/links');
+  await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
+
+  const main = await page.locator('main').first().boundingBox();
+  expect(main).not.toBeNull();
+
+  // Geometry, because this is a fault no assertion about text can see. `Sidebar` brings its own
+  // `SidebarProvider` and its own `SidebarContainer`, and `SidebarContainer` is not a two column
+  // shell -- it *is* the `<aside>`, 288px wide. Wrapping our own around it put the sidebar and the
+  // main region inside that aside, so every back office screen was drawn in a 255px column with
+  // the rest of the window empty, and the collapse button appeared twice. Everything still said
+  // the right words, in the right order, in the wrong place.
+  expect(main!.x).toBeGreaterThan(200);
+  expect(main!.width).toBeGreaterThan(600);
+
+  // And exactly one way to collapse it, not two.
+  await expect(page.getByText(/close sidebar/i)).toHaveCount(1);
+});
