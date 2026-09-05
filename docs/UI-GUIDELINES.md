@@ -83,6 +83,11 @@ A form is a zod schema in `features/<x>/schema.ts` mirroring the write DTO, hand
 The schema carries types and what is required, and nothing else: every real rule belongs to the
 server, which answers with it anyway.
 
+A field that holds other fields — a translated object, a list, a nested object — is named in the
+language files **flat**: `"seo"` for the group and `"seo.title"` beside it, rather than nesting
+`title` inside `seo`. i18next resolves a dotted key either way, and a nested `seo` would be an
+object where the group's own name has to be a word.
+
 What the schema may say about how a field is drawn:
 
 - `localized()` marks a translated field, which becomes one tab per language;
@@ -100,7 +105,25 @@ What the schema may say about how a field is drawn:
   field rather than in a second place that can drift;
 - an **optional** `z.enum` also gets a "nothing chosen" entry, labelled
   `<labels>.options.<path>.none`. A select has no gesture for going back, so without it the first
-  choice a coordinator makes would be permanent.
+  choice a coordinator makes would be permanent;
+- `.meta({ media: true })` on a **number** is a file of the media library, chosen in `MediaPicker`.
+  Never a number to type: a free identifier is how a page ends up pointing at a file somebody
+  deleted years ago. The screen hands `SchemaForm` the library to choose from (`mediaLibrary`),
+  because which department's files to show is a fact of the screen and not of the schema;
+- `.meta({ icon: true })` on a **string** is an icon out of the allow list in `web/src/shared/icons`,
+  drawn as a grid of pictures. It is not a select: Atmosphere's takes a plain string per option, so
+  a select could only ever list the names — and a name without its picture is the choice nobody can
+  make;
+- `.meta({ date: true })` is a calendar day and `.meta({ datetime: true })` an instant. **The value
+  is always ISO in UTC**, whatever the browser's own time zone is. An instant shows the division's
+  local time underneath, which is the rule every list follows; a day does not, because "the same day
+  elsewhere" is not a fact a day has, and echoing one is only ever a chance to read the wrong day.
+  Both need `division` on `SchemaForm`;
+- `localizedObject({ ... })` is a small object per language: language tabs, and inside each of them
+  the generator again. `seo` is the first, and it is how a translated JSON column becomes fields a
+  coordinator can fill in rather than JSON they have to write;
+- a **list** of objects can be reordered with the up and down buttons beside add and remove. They
+  are what a keyboard reaches, and they stay when dragging arrives.
 
 If the generator does not cover a case, extend the generator. Writing the form by hand is what this
 whole mechanism exists to avoid, and the reviewer's checklist asks about it.
@@ -157,6 +180,16 @@ plain: a free numeric field produces pages pointing at files that were deleted y
 The alternative text is written **once**, next to the file, and a block that leaves its own `alt`
 empty inherits it. Writing it at every use is how a picture ends up described three different ways
 and undescribed the fourth time.
+
+## Icons a block or an entity can choose
+
+`web/src/shared/icons/index.ts` is the allow list an `.meta({ icon: true })` field offers, and the
+place an icon `lucide` genuinely lacks would be drawn by hand. It lives in `shared/` rather than in
+`blocks/` because the form generator reads it and `blocks/` already imports the generator: the other
+way round would close a circle between the two.
+
+Growing the list is adding a line. It is not a decision, because what it draws from — `lucide` — was
+decided once and is not up for discussion.
 
 ## Times
 

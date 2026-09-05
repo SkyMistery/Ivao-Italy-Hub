@@ -16,7 +16,10 @@ export const anonymousBootstrap = {
     name: { en: 'IVAO Example', it: 'IVAO Esempio' },
     locales: ['en', 'it'],
     defaultLocale: 'en',
-    timezone: 'UTC',
+    // Not UTC, deliberately. A hub shows every time in UTC *and* where the division lives, and a
+    // fixture whose division sits in UTC makes the two lines identical — which is exactly how a
+    // screen showing UTC twice would pass unnoticed (HANDOFF §13, third false alarm).
+    timezone: 'Europe/Rome',
     firStaffScope: 'all',
   },
   modules: [],
@@ -79,6 +82,9 @@ export const staffBootstrap = {
     { name: 'Links.Edit', department: 'ED' },
     { name: 'Media.View', department: 'ED' },
     { name: 'Media.Edit', department: 'ED' },
+    // The gallery is behind `Admin.Access`, and the gallery is where every kind of field the form
+    // generator draws is mounted at once — which is the only screen that can be looked at whole.
+    { name: 'Admin.Access', department: null },
   ],
   navigation: {
     public: [{ key: 'nav.home', path: '/' }],

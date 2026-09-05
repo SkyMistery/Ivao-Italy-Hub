@@ -68,7 +68,11 @@ const mediaLabels = { fields: { picture: 'Picture' } };
 
 test('a media field is the library, and never a number to type', async () => {
   const onSubmit = vi.fn(() => Promise.resolve());
-  render(mediaSchema, { picture: undefined }, { labels: mediaLabels, mediaLibrary: library, division: DIVISION, onSubmit });
+  render(
+    mediaSchema,
+    { picture: undefined },
+    { labels: mediaLabels, mediaLibrary: library, division: DIVISION, onSubmit },
+  );
 
   // Nothing to type: no number box anywhere on the form. That is the whole point of the field —
   // a free identifier produces pages pointing at files deleted years ago.
@@ -132,9 +136,7 @@ test('a day is a date input, and what it hands the server is an instant in UTC',
 
   // Midnight, and said in UTC: the column is a `DateTime`, and a date with no zone is a date that
   // means a different instant depending on who saved it.
-  expect(onSubmit).toHaveBeenCalledWith(
-    expect.objectContaining({ expiresAt: '2026-12-31T00:00:00Z' }),
-  );
+  expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: '2026-12-31T00:00:00Z' }));
 });
 
 test('an instant shows the time of the division under the UTC one, and stays UTC', async () => {
@@ -164,9 +166,7 @@ test('an instant shows the time of the division under the UTC one, and stays UTC
   fireEvent.change(input, { target: { value: '2026-02-20T07:30' } });
   await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-  expect(onSubmit).toHaveBeenCalledWith(
-    expect.objectContaining({ startsAt: '2026-02-20T07:30:00Z' }),
-  );
+  expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ startsAt: '2026-02-20T07:30:00Z' }));
 });
 
 test('an instant with nowhere to show local time says so rather than showing UTC alone', () => {

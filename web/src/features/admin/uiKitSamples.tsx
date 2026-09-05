@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import type { Bootstrap } from '../../shared/api/bootstrap';
-import { ProblemAlert, SchemaForm, localized } from '../../shared/forms';
+import { ProblemAlert, SchemaForm, localized, localizedObject } from '../../shared/forms';
 import { DataList, col, listSearchSchema, type ColumnSpec, type Page } from '../../shared/list';
 import {
   ConfirmDialog,
@@ -17,6 +17,7 @@ import {
   PageShell,
   SectionHeader,
   StatTile,
+  type MediaLibraryQuery,
   type PickableMedia,
 } from '../../shared/ui';
 
@@ -28,7 +29,11 @@ import {
  * `uiKitSections.tsx` is what puts them in order; nothing here knows about the list.
  */
 
-/** A schema that exercises every kind of field the generator draws. */
+/**
+ * A schema that exercises every kind of field the generator draws — including the five it learned
+ * in G2, which is what makes this gallery the place to check one rather than a screen that happens
+ * to use it.
+ */
 const sampleSchema = z.object({
   title: localized(),
   note: z.string().meta({ multiline: true }),
@@ -36,6 +41,15 @@ const sampleSchema = z.object({
   weight: z.number().int(),
   published: z.boolean(),
   visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
+  picture: z.number().optional().meta({ media: true }),
+  icon: z.string().optional().meta({ icon: true }),
+  happensAt: z.string().optional().meta({ datetime: true }),
+  expiresOn: z.string().optional().meta({ date: true }),
+  seo: localizedObject({
+    title: z.string().optional(),
+    ogImageMediaId: z.number().optional().meta({ media: true }),
+  }).optional(),
+  cards: z.array(z.object({ name: z.string() })),
 });
 
 const localizedOnlySchema = z.object({ title: localized() });
@@ -100,8 +114,12 @@ const sampleMedia: PickableMedia[] = [
   },
 ];
 
-const sampleMediaQuery = queryOptions({
-  queryKey: ['ui-kit', 'sample-media'] as const,
+// The key is typed as the loose one the picker's prop declares: a library is carried around by a
+// component that cannot know which resource it came from.
+const sampleMediaKey: readonly unknown[] = ['ui-kit', 'sample-media'];
+
+const sampleMediaQuery: MediaLibraryQuery = queryOptions({
+  queryKey: sampleMediaKey,
   queryFn: () => Promise.resolve({ items: sampleMedia, total: sampleMedia.length }),
   staleTime: Number.POSITIVE_INFINITY,
 });
@@ -178,8 +196,9 @@ export function LocaleFieldsSample({ locales }: { locales: readonly string[] }) 
   );
 }
 
-export function SchemaFormSample({ locales }: { locales: readonly string[] }) {
+export function SchemaFormSample({ bootstrap }: { bootstrap: Bootstrap }) {
   const { t } = useTranslation();
+  const locales = bootstrap.division.locales;
 
   return (
     <SchemaForm
@@ -191,11 +210,21 @@ export function SchemaFormSample({ locales }: { locales: readonly string[] }) {
         weight: 0,
         published: true,
         visibility: 'Public',
+        happensAt: '2026-06-01T12:00:00Z',
+        seo: Object.fromEntries(locales.map((locale) => [locale, { title: '' }])),
+        cards: [{ name: 'One' }, { name: 'Two' }],
       }}
       locales={locales}
       labels="uiKit.sample.form"
       submitLabel={t('common.save')}
       onSubmit={() => Promise.resolve()}
+      // The gallery is a page about the components, so the library is the two invented files above
+      // rather than whatever this installation happens to hold today.
+      mediaLibrary={sampleMediaQuery}
+      division={{
+        defaultLocale: bootstrap.division.defaultLocale,
+        timezone: bootstrap.division.timezone,
+      }}
     />
   );
 }

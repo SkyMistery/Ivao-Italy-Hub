@@ -3,24 +3,24 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, e di M1 sono fatte due fasi**: design
+**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, e di M1 sono fatte tre fasi**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** — il giro contro l'API vera in
-un browser, che chiude il debito n.1 di §10 (**§14**) — e **G1**, la media library (**§16**). Il
-prossimo lavoro è **G2**, le cinque estensioni di `SchemaForm` — si apre con il prompt di `04-` §C,
-`<N>` = 2. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+un browser, che chiude il debito n.1 di §10 (**§14**) — **G1**, la media library (**§15**), e **G2**,
+le cinque estensioni del generatore di form (**§16**). Il prossimo lavoro è **G3**, i sedici blocchi
+Content/Layout/Interactive/Structure — si apre con il prompt di `04-` §C, `<N>` = 3. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
 mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
 sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
 §16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
 nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
 chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
 piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #38, `main`
-è **dieci PR avanti** al tag `v0.1.0-m0`.
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #39, `main`
+è **undici PR avanti** al tag `v0.1.0-m0`.
 **Piano:** v0.39. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.4
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0 e G1 sono chiuse** (§14, §16), la prossima è
-**G2**.
-**Test:** 366 .NET verdi (258 unit + 108 integrazione) + **86 Vitest** + **12 smoke Playwright** +
+**Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.5
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0, G1 e G2 sono chiuse** (§14, §15, §16), la
+prossima è **G3**.
+**Test:** 366 .NET verdi (258 unit + 108 integrazione) + **97 Vitest** + **13 smoke Playwright** +
 **3 del giro pieno** (`pnpm e2e:full`, G0 di M1).
 Nessuno skippato, **rieseguiti tutti e quattro il 5 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
@@ -684,6 +684,16 @@ quello che ha *trovato*:
 - **Le parole di un modulo stanno in `web/src/modules/<key>/locales/`**, e `pnpm i18n:sync` le copia
   in `locales/`. Le copie sono committate e portano `_source`: chi le modifica sta modificando la
   copia sbagliata, e la CI glielo dice con un diff.
+- **Nessun form si scrive a mano, e il generatore lo rende impossibile piuttosto che sconsigliato**:
+  su un tipo che non sa disegnare **lancia**, e da G2 lancia anche su un campo media senza libreria e
+  su un istante senza fuso. Quella proprietà non si indebolisce per far passare una fase.
+- **Un identificativo di media non si digita mai**: `.meta({ media: true })` apre `MediaPicker`.
+  Un'icona non si digita: `.meta({ icon: true })` offre l'allowlist di `shared/icons`. Una data e un
+  istante sono input nativi il cui valore resta **ISO in UTC**, e un istante mostra sotto l'ora del
+  fuso della divisione.
+- **Le chiavi i18n dei figli di un gruppo si scrivono piatte**: `"seo"` accanto a `"seo.title"`.
+  i18next risolve una chiave puntata in entrambi i modi (misurato), e un `seo` annidato sarebbe un
+  oggetto dove il nome del gruppo deve essere una parola.
 - **Un file caricato non tiene il nome che aveva.** Il nome su disco lo genera `MediaStorage` e non
   deriva mai da quello dell'upload: due dipartimenti che caricano `logo.png` non si sovrascrivono, e
   un nome che qualcuno ha digitato non diventa un percorso. La stessa classe è l'unica che apre un
@@ -935,7 +945,12 @@ allargare i permessi, mai stringerli a sorpresa.
   generatore disegna una `z.enum` opzionale con la voce «nessuno» (sentinella `NO_CHOICE`, perché
   la stringa vuota è riservata dal Select), e `LinkListProvider` tratta un nome che non riconosce
   come **nessuna riga** invece che come nessun filtro — un refuso deve restringere, mai allargare.
-- **`seo` non ha un campo nell'editor, e resta così di proposito.** È un `Localized<JsonNode>` e il
+- ~~**`seo` non ha un campo nell'editor.**~~ **chiuso in G2**: è un `localizedObject` con la forma che
+  il design M1 §9.2 decide — `{ title, description, ogImageMediaId }` per lingua — e viaggia nei
+  valori del form invece di essere trasportato intatto dalla schermata. `ogImageMediaId` è il primo
+  campo media vero dell'hub. La riga qui sotto resta perché dice **perché** era stato rimandato, ed è
+  la ragione per cui la forma l'ha decisa M1 e non F7.
+- **(storico) `seo` non aveva un campo nell'editor, di proposito.** È un `Localized<JsonNode>` e il
   design non dice **cosa ci sta dentro**: inventarne la forma adesso sarebbe decidere per M1, che è
   la milestone del sito pubblico e l'unica che ha una ragione per averne una. Viene rimandato
   indietro esattamente come è arrivato, quindi non si perde. Quando M1 gliela darà, il generatore
@@ -967,11 +982,10 @@ allargare i permessi, mai stringerli a sorpresa.
   per chi ha già dato il consenso) → permessi nuovi. È la proprietà di sicurezza giusta e la
   chiudono i test; ricostruire il principal invece di rigettarlo cambierebbe una decisione di F2 e
   non è stato fatto in F8. Se in M1 dà fastidio, si riapre lì.
-- **`expiresAt` di un grant è una casella di testo.** Il generatore di form non ha un tipo «data», e
-  inventarlo in F8 avrebbe voluto dire anche la conversione fra ISO e `datetime-local`. L'etichetta
-  dice il formato (`YYYY-MM-DD`, vuoto = mai) e il server rifiuta una data già passata con
-  `errors.grant.alreadyExpired`. Il giorno che serve davvero, è un'estensione del generatore, non un
-  form scritto a mano.
+- ~~**`expiresAt` di un grant è una casella di testo.**~~ **chiuso in G2**: `.meta({ date: true })` è
+  un input nativo, e il valore che arriva al server è un istante ISO in UTC invece di un testo che
+  .NET interpretava senza fuso. L'etichetta non porta più il formato — quello è mestiere dell'input —
+  e il suggerimento dice la sola cosa che l'input non dice, cioè che vuoto significa «mai».
 - **`/staff/admin/audit` non ha una schermata di dettaglio.** `MapCrud` mappa comunque
   `GET /api/admin/audit/{id}`, che risponde con `beforeJson`/`afterJson`; la lista non li mostra
   perché sono JSON di forma diversa per ogni entità e disegnarli bene è un componente, cioè una
@@ -1791,22 +1805,122 @@ codice.
 
 ---
 
-## 16. Da dove riparte la prossima sessione (5 set 2026)
+## 16. G2 di M1: il generatore di form sa disegnare tutto (5 set 2026)
 
-### Si apre G2
+Le cinque estensioni che il design §1.6 chiedeva. Non sono cinque comodità: sono le cinque cose che i
+ventidue blocchi di G3 chiedono, e senza le quali qualcuno avrebbe scritto un form a mano — che è
+esattamente ciò che tutto questo meccanismo esiste per rendere impossibile.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 2: le **cinque estensioni di `SchemaForm`** — selettore
-di media, selettore di icona, data e ora, oggetto tradotto, riordino dentro una lista. Chiude di
-rimbalzo i debiti n.3 (`seo`) e n.4 (`expiresAt`) di §10.
+### Che cosa il generatore sa fare adesso
 
-Due cose che G1 lascia già pronte e che non vanno rifatte:
+| Annotazione | Che cosa disegna | Che cosa promette |
+|---|---|---|
+| `.meta({ media: true })` su un numero | `MediaPicker`, la libreria di G1 | Un id non si digita mai: un campo numerico libero produce pagine che puntano a file cancellati |
+| `.meta({ icon: true })` su una stringa | Una griglia di icone dell'allowlist | Insieme chiuso, e ogni voce mostra la propria figura |
+| `.meta({ date: true })` / `datetime` | Input nativo | Il valore nel form è **sempre ISO in UTC**, qualunque sia il fuso del browser |
+| `localizedObject({ … })` | Schede per lingua, e dentro il generatore stesso | Un coordinatore riempie campi, non scrive JSON |
+| liste | Su e giù accanto ad aggiungi e rimuovi | Sono i pulsanti che una tastiera raggiunge; il drag-and-drop di G11 **non** li sostituisce |
 
-- **`MediaPicker` esiste** ed è nell'elenco chiuso. `.meta({ media: true })` deve **montarlo**, non
-  scriverne un altro; la query da passargli è `mediaPickerQuery(department)` in
-  `web/src/features/media/queries.ts`.
-- **Il generatore lancia apposta** su un tipo che non sa disegnare. Quella proprietà non si
-  indebolisce per far passare la fase: è ciò che rende impossibile scrivere un form a mano senza
-  accorgersene.
+Due estensioni non restano senza cliente, ed è voluto: **`expiresAt` di un grant** smette di essere
+una casella di testo (debito n.4 chiuso) e **`seo`** diventa un campo vero, `{ title, description,
+ogImageMediaId }` per lingua come decide il design §9.2 (debito n.3 chiuso). `ogImageMediaId` è il
+primo campo media vero dell'hub: G1 ha costruito il selettore, G2 gli dà qualcuno che lo monta.
+
+`SchemaForm` guadagna due props, entrambe opzionali: `mediaLibrary` (la libreria da cui scegliere) e
+`division` (lingua di default e fuso). Non sono in `locales` perché **solo due tipi di campo su
+undici** ne hanno bisogno; un form che non ha né media né istanti non se le vede chiedere. E se un
+campo le pretende senza averle, il generatore **lancia** e dice quale manca — la stessa disciplina
+che ha su un tipo che non sa disegnare.
+
+### Tre cose decise scrivendo, e perché
+
+1. ⚠️ **L'allowlist delle icone sta in `web/src/shared/icons/`, non in `blocks/icons.ts`** come
+   diceva il piano. Motivo tecnico e non estetico: `blocks/` importa già il generatore (per
+   `localized()`), quindi il generatore che importa `blocks/` chiuderebbe un ciclo fra i due. La
+   cartella è quella che il design §1.4 aveva già messo in conto per M1, e nasce una volta. **G3 la
+   legge da lì.**
+2. ⚠️ **Le icone sono una griglia di radio, non un select** come diceva il piano. `SelectItemProps`
+   di Atmosphere ha `label?: string`: un select può elencare i **nomi** e nient'altro, e un nome
+   senza la sua figura è precisamente la scelta che nessuno può fare. L'insieme resta chiuso — che è
+   ciò di cui parla la regola — e un `radiogroup` è una cosa che la tastiera già sa percorrere.
+   Quinto contratto di Atmosphere misurato invece che assunto, dopo `DarkModeToggle`, `Select`,
+   `SidebarContainer` e `Tabs`.
+3. **Le chiavi dei figli di un gruppo si scrivono piatte**: `"seo"` accanto a `"seo.title"`, non
+   `seo` annidato. Avevo introdotto una famiglia `groups` per evitare la collisione fra il nome del
+   gruppo e i suoi figli, poi **l'ho misurata** con i18next invece di dedurla: una chiave puntata si
+   risolve in entrambi i modi, quindi la famiglia nuova non serviva e la convenzione che i test di
+   `SchemaForm` usano da M0 bastava. Un concetto in meno, trovato smontando il proprio.
+
+### Un guscio condiviso invece di un secondo
+
+`LocaleFields` e l'oggetto tradotto avevano bisogno della stessa cornice — schede per lingua, badge
+«vuoto» su quelle ancora da riempire — e la cornice è stata estratta in `shared/forms/LocaleTabs.tsx`
+invece di essere scritta due volte. Quello che resta a `LocaleFields` è ciò che appartiene a una
+stringa: il pulsante «copia dall'italiano». **I tre test di `LocaleFields` non sono stati toccati**, e
+sono la prova che il rifattore non ha cambiato quello che quel campo fa.
+
+### I test, e due lezioni che sono costate tempo
+
+Undici Vitest in `shared/forms/extensions.test.tsx` — uno per estensione, i due rifiuti (media senza
+libreria, istante senza fuso) e quello che pretende che il generatore **continui a lanciare** su un
+tipo che non sa disegnare — più uno smoke sulla galleria che li misura tutti e cinque insieme.
+
+⚠️ **Verificati rompendo, in due giri**: il primo ha rotto le cinque conversioni e ha fatto cadere
+otto test su undici; i tre rimasti verdi proteggevano cose che non avevo rotto, quindi il **secondo**
+giro ha rotto anche quelle (i pulsanti agli estremi, il rifiuto dell'istante senza fuso, il lancio su
+un tipo ignoto) e le ha fatte cadere. Un giro solo avrebbe lasciato credere che tre test fossero
+inutili.
+
+Due cose che sono costate tempo davvero, e che vale la pena non ripetere:
+
+1. ⚠️ **`git checkout -- <file>` su lavoro non committato lo cancella.** Rimettendo a posto i file
+   rotti del primo giro ho usato `git checkout --` invece delle copie che avevo fatto: `HEAD` era
+   `main`, e mezz'ora di `SchemaForm.tsx` e `schema.ts` è sparita. Ricostruita dagli script della
+   sessione. **Regola**: prima di rompere qualcosa apposta, si committa; e si ripristina dalle copie,
+   mai da git.
+2. ⚠️ **`"2:00"` sta dentro `"12:00"`.** Lo smoke che doveva provare che l'orario locale non è UTC
+   passava con l'orario UTC, perché l'asserzione era un `/2:00.*Europe\/Rome/`. Ora è un `toHaveText`
+   esatto e cade come deve. È la stessa famiglia dei tre difetti di §11–§13: un'asserzione che chiede
+   «c'è?» invece di «è quello?».
+
+E una terza, più piccola: la fixture degli smoke aveva `timezone: 'UTC'`, che rende le due righe di
+ogni orario identiche — HANDOFF §13 lo aveva già segnalato come falso allarme. Ora è `Europe/Rome`,
+quindi uno schermo che mostrasse UTC due volte non passa più.
+
+### Che cosa la fase non ha fatto
+
+- **Nessun blocco usa ancora le estensioni**: è G3. Quello che c'è è il primo cliente di ciascuna
+  dove esisteva già una schermata — `expiresAt` e `seo` — e la galleria, che le monta tutte e cinque.
+- **Niente `dnd-kit`**: è G11, e il su/giù non gli lascerà il posto.
+- **Nessuna nota di decisione**: le tre scelte qui sopra sono estensioni o correzioni di dettaglio
+  dentro il perimetro della fase, non meccanismi nuovi. Le prime due sono deviazioni dalla lettera
+  del piano con il motivo scritto, e vanno lette prima di G3.
+
+---
+
+## 17. Da dove riparte la prossima sessione (5 set 2026)
+
+### Si apre G3
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 3: i **sedici blocchi** Content, Layout, Interactive e
+Structure. È il grosso del volume di M1 e **zero meccanismo nuovo**: ogni blocco costa cinque cose e
+non una di più (design §1.3), e se ne serve una sesta è un segnale, non un task.
+
+Quattro cose che G1 e G2 lasciano pronte e che **non vanno rifatte**:
+
+- **`.meta({ media: true })` monta `MediaPicker`**: otto blocchi su ventidue nominano una media, e
+  nessuno di loro deve disegnare un campo. La libreria gliela passa la schermata (`mediaLibrary`).
+- **`.meta({ icon: true })` legge `web/src/shared/icons/`** — non `blocks/icons.ts`, che non esiste:
+  il generatore importa quella cartella e `blocks/` importa il generatore. Un'icona che manca è una
+  riga lì.
+- **Le chiavi dei figli si scrivono piatte** (`"cards"` accanto a `"cards.name"`): i blocchi pieni di
+  `cards[]` e `items[]` sono i primi a incontrarlo.
+- **Il generatore lancia** su ciò che non sa disegnare. Se un blocco chiede un sesto tipo di campo,
+  la risposta è estendere il generatore o fermarsi — mai un form scritto a mano.
+
+⚠️ E i due disallineamenti che il piano segna dentro G3 restano da chiudere lì: `BACKGROUNDS` ha tre
+valori e il design ne vuole quattro (`image` + `mediaId`), `WIDTHS` ne ha quattro e il design ne
+nomina tre.
 
 ### Deciso e già collocato, da non ridiscutere
 
@@ -1814,6 +1928,8 @@ Due cose che G1 lascia già pronte e che non vanno rifatte:
   implementa nel **primo task di G5**; senza, §9.1 del design non ha il dato da mostrare.
 - **`mediaId` e `mediaIds` sono i due nomi con cui un blocco nomina un file** (§15): scritto in
   `docs/UI-GUIDELINES.md`, e G3 ci si attiene.
+- **Le icone sono una griglia e non un select** (§16), perché il `Select` di Atmosphere prende una
+  stringa per opzione. Non si riapre: è stato misurato.
 
 ### Aperto, e serve una risposta di Carmine prima di G8
 
@@ -1824,7 +1940,7 @@ Tre domande, con la raccomandazione già scritta nella nota:
 2. la vede **solo il proprio dipartimento** o qualunque staff? — raccomandato il proprio;
 3. entra in **M1/G8** o slitta a M2? — raccomandato G8, se blocchi.
 
-Nulla di tutto questo blocca G2–G4.
+Nulla di tutto questo blocca G3–G4.
 
 ### Il banco e2e, in due righe
 
@@ -1836,8 +1952,12 @@ quello di sviluppo, e non lo ripulisce: ogni giro crea la propria pagina. Il res
 
 ### Igiene
 
-Niente da ripulire: `docs/design-m1` e `m1/g1-media-library` sono stati cancellati alla fusione di
-#38, e `git branch -a` mostra soltanto `main`.
+Niente da ripulire: i branch delle fasi vengono cancellati alla fusione, e `git branch -a` mostra
+soltanto `main`.
+
+⚠️ **`git checkout -- <file>` su lavoro non committato lo cancella**, e in G2 è costato mezz'ora
+(§16). Prima di rompere qualcosa apposta per provare un test si committa, e si ripristina dalle
+proprie copie.
 
 ⚠️ **Docker Desktop di questa macchina è caduto due volte durante G1**, e non per colpa del
 progetto: al riavvio il backend non riesce a rimuovere due socket rimasti da un crash precedente

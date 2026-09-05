@@ -65,7 +65,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   },
   {
     name: 'SchemaForm' satisfies UiKitComponent,
-    render: (bootstrap) => <SchemaFormSample locales={bootstrap.division.locales} />,
+    render: (bootstrap) => <SchemaFormSample bootstrap={bootstrap} />,
   },
   { name: 'ProblemAlert' satisfies UiKitComponent, render: () => <ProblemAlertSample /> },
   {

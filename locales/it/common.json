@@ -209,7 +209,16 @@
           "reference": "Riferimento",
           "weight": "Peso",
           "published": "Pubblicato",
-          "visibility": "Visibile a"
+          "visibility": "Visibile a",
+          "picture": "Immagine",
+          "icon": "Icona",
+          "happensAt": "Quando",
+          "expiresOn": "Scade il",
+          "seo": "Condivisione",
+          "seo.title": "Titolo",
+          "seo.ogImageMediaId": "Immagine di condivisione",
+          "cards": "Schede",
+          "cards.name": "Nome"
         },
         "options": {
           "visibility": {
@@ -217,6 +226,9 @@
             "Members": "Membri",
             "Staff": "Staff",
             "Department": "Questo dipartimento"
+          },
+          "icon": {
+            "none": "Nessuna icona"
           }
         }
       },

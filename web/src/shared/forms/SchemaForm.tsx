@@ -128,15 +128,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
  * index. They are the same everywhere except inside a list, and keeping them apart is what stops
  * the second entry of a list from asking i18n for `aliases.1.name`.
  */
-function Field({
-  node,
-  name = node.path,
-  env,
-}: {
-  node: FieldNode;
-  name?: string;
-  env: FormEnvironment;
-}) {
+function Field({ node, name = node.path, env }: { node: FieldNode; name?: string; env: FormEnvironment }) {
   const { t, i18n } = useTranslation();
   const { register, control, formState } = useFormContext();
   const { locales, labels } = env;
@@ -179,9 +171,7 @@ function Field({
       );
 
     case 'localizedObject':
-      return (
-        <LocalizedObject node={node} name={name} env={env} label={label} hint={hint} error={error} />
-      );
+      return <LocalizedObject node={node} name={name} env={env} label={label} hint={hint} error={error} />;
 
     case 'media': {
       if (env.mediaLibrary === undefined || env.division === undefined) {
@@ -652,11 +642,7 @@ function Instant({
                 onChange={(event) => {
                   const written = event.target.value;
                   field.onChange(
-                    written === ''
-                      ? undefined
-                      : node.withTime
-                        ? `${written}:00Z`
-                        : `${written}T00:00:00Z`,
+                    written === '' ? undefined : node.withTime ? `${written}:00Z` : `${written}T00:00:00Z`,
                   );
                 }}
               />

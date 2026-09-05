@@ -31,9 +31,7 @@ function trimLocalized(value: Record<string, string>): LocalizedString | null {
  * translated string is: an object full of empty strings would be a page claiming a description it
  * has not got.
  */
-function trimLocalizedObject(
-  value: ContentFormValues['seo'],
-): ContentWriteDto['seo'] {
+function trimLocalizedObject(value: ContentFormValues['seo']): ContentWriteDto['seo'] {
   const written = Object.entries(value ?? {}).filter(([, entry]) =>
     Object.values(entry ?? {}).some(
       (field) => field !== undefined && field !== null && String(field).trim() !== '',
@@ -123,9 +121,7 @@ function spreadSeo(
         {
           title: typeof entry.title === 'string' ? entry.title : '',
           description: typeof entry.description === 'string' ? entry.description : '',
-          ...(typeof entry.ogImageMediaId === 'number'
-            ? { ogImageMediaId: entry.ogImageMediaId }
-            : {}),
+          ...(typeof entry.ogImageMediaId === 'number' ? { ogImageMediaId: entry.ogImageMediaId } : {}),
         },
       ];
     }),
