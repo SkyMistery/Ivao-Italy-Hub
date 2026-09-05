@@ -1,9 +1,25 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.36 — 5 settembre 2026 (M1 ha il suo design: il set dei blocchi deciso, lo staging Plesk spostato a M2)
+**Versione documento:** 0.37 — 5 settembre 2026 (M1 ha anche il suo piano di implementazione: fasi G0–G12, tre decisioni prese scrivendolo)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha il suo documento di design** (`03-design-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi; manca il piano di implementazione. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.37** (5 set 2026): **M1 ha il suo piano di implementazione**,
+`04-piano-implementazione-m1.md` v1.1 — tredici fasi G0–G12, una per sessione, con i prompt di apertura
+e i rischi, come `02-` per M0. §13 lo nomina accanto al design nella riga M1.
+
+Scriverlo ha richiesto **tre decisioni** che il design lasciava a chi implementa, prese da Carmine lo
+stesso giorno. Le prime due non toccano questo piano e vivono nella fase che le riguarda: le dimensioni
+di un'immagine le legge un **parser di header** per PNG/JPEG/WebP in un helper del nucleo, invece di una
+dipendenza (`ImageSharp` ha una licenza da verificare, `SkiaSharp` porta asset nativi dentro un pacchetto
+self-contained); e l'upload multipart convive con `MapCrud` **estendendo `CrudOptions`** perché una
+risorsa possa non mappare la create — non spostando l'upload su un secondo indirizzo, che sarebbe il
+secondo modo di creare una media (§16.2). La terza ha corretto una **contraddizione dentro il design di
+M1**, che è passato a v1.1: §5.2 nominava la tabella delle preferenze di notifica e §10.2 non la
+contava. La forma decisa è `hub_notification_preferences` (`Vid`, `Type`, `Enabled`) e non una colonna
+di `hub_users`, perché al secondo tipo di notifica la colonna costerebbe una migrazione; le tabelle
+nuove di M1 sono **sei**, non cinque.
 
 **Changelog 0.36** (5 set 2026): **M1 ha il suo documento di design**, `03-design-m1.md`, come
 §13 chiede per ogni milestone. Il piano cambia in tre punti, e tutti e tre nascono da una decisione
@@ -986,7 +1002,7 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 | Fase | Contenuto | Uscita |
 |---|---|---|
 | **M0 — Fondamenta** ✅ **chiusa** (4 set 2026, `v0.1.0-m0`) | Repo, soluzione .NET, SPA Vite+Atmosphere, docker-compose, CI, `division.json`, i18n IT/EN, login OIDC BFF con credenziali di test, `users` + ruoli, layout pubblico/riservato, dashboard vuota; **la spina dorsale generica di §16** (`Localized<T>`, interfacce trasversali + interceptor + authorization handler, grammatica permessi, `IProjectable`, motore lista+form, endpoint di bootstrap) **dimostrata end-to-end** su `links` e su un primo `cms_contents` creato da template (§16.15) | Skeleton navigabile, login funzionante, meccanismi generici provati. Design: `01-design-m0.md`; fasi: `02-piano-implementazione-m0.md`. Il **deploy su staging Plesk** è spostato a M1 (deciso 2 set 2026: attende le risposte A9). Demo da eseguire a mano: `tools/demo-m0.md`; revisione finale: `decisions/2026-09-04-m0-review.md` |
-| **M1 — Sito pubblico** | Nucleo editoriale: pagine a blocchi (**set completo dei blocchi del nucleo**, 22 nuovi), news, documenti per dipartimento con vocabolario delle categorie, calendario unico con UI (con sole voci interne per ora), media library, contatti + servizio notifiche, staff directory, live status; **menu editoriale**; pagine di sistema seedate (`/start`, `/pilots`, `/atc`, `/about`, home); back-office per dipartimento; schermata di ricerca; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO minima; migrazione contenuti dal Blazor **a mano dall'editor**. Il **giro e2e contro l'API vera** è la prima fase. Design: `03-design-m1.md` | Sostituisce `it.ivao.aero` |
+| **M1 — Sito pubblico** | Nucleo editoriale: pagine a blocchi (**set completo dei blocchi del nucleo**, 22 nuovi), news, documenti per dipartimento con vocabolario delle categorie, calendario unico con UI (con sole voci interne per ora), media library, contatti + servizio notifiche, staff directory, live status; **menu editoriale**; pagine di sistema seedate (`/start`, `/pilots`, `/atc`, `/about`, home); back-office per dipartimento; schermata di ricerca; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO minima; migrazione contenuti dal Blazor **a mano dall'editor**. Il **giro e2e contro l'API vera** è la prima fase. Design: `03-design-m1.md`; fasi: `04-piano-implementazione-m1.md` (G0–G12) | Sostituisce `it.ivao.aero` |
 | **M2 — Eventi** | **Primo pacchetto self-contained e deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026 perché dipende dalle risposte A9 (§15.2c); modulo Events: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import | Spegne `ivao-booking` |
 | **M3 — Tour** | Modulo Flight Ops: tour, leg, PIREP, validatore automatico, classifiche, award con mail, voci nel calendario; design ereditato da `Ivao Italy Toursystem` | I tour IT lasciano `tours.th.ivao.aero` |
 | **M4 — Training** | Modulo Training: richieste, trainer, disponibilità, sessioni, esiti, mock exam, group training, import storico se possibile | Spegne `training.ivao.it` |
