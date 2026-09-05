@@ -1,9 +1,41 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.34 — 4 settembre 2026 (terzo hotfix: il back-office era disegnato in una colonna da 255 px. Un test che chiede «c'è?» non chiede «dov'è?»)
+**Versione documento:** 0.35 — 5 settembre 2026 (una seconda domanda accanto a «questo nomina l'Italia?»: «questo nomina IVAO?»)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. Prossima milestone **M1**, il sito pubblico. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.35** (5 set 2026): §4.2 guadagna una regola, accanto a quella che il progetto
+applica dal primo giorno. Il piano chiede da sempre **«questo nomina l'Italia?»** — nessun codice
+ICAO, nome FIR, posizione staff o URL italiano nel codice. La regola nuova è la stessa domanda un
+livello sopra: **«questo nomina IVAO?»**, e se la risposta è sì il codice sta dentro il perimetro
+che già esiste — `Core/Ivao/`, la metà IVAO di `Core/Auth/`, le tabelle `ref_ivao_*` e l'enum
+`Department` — e da nessun'altra parte.
+
+Non è un meccanismo nuovo e non introduce un'astrazione: è una domanda da farsi mentre si scrive.
+Un `IIdentityProvider` o un `Department` configurabile oggi sarebbero codice speculativo che
+peggiora questo prodotto — l'enum compra sicurezza a compile time — e per §16.E richiederebbero
+comunque una nota di decisione prima. La regola è gratis, l'astrazione no.
+
+Il perimetro è stato **misurato**, non stimato, leggendo tutti i 119 file `.cs` e i 117 `.ts`/`.tsx`
+a `369851a`: tolto il namespace `IvaoHub.*`, i file che nominano davvero IVAO sono **una ventina su
+119**, e **13 tabelle su 15** non sanno cosa sia. La spina dorsale di §16 — contratti di dominio,
+motore CRUD, modello editoriale, `Localized<T>`, sistema a moduli, audit, grant, permessi, i18n —
+ne è già completamente libera. La regola serve a tenerla tale mentre M1 e i moduli di dipartimento
+aggiungono molte volte il volume attuale sopra: ogni riferimento che sfugge adesso si paga a mano
+dopo.
+
+Il perimetro è stato anche **verificato**, non solo dichiarato: `IIvaoApiClient` risulta usato
+soltanto dentro `Core/Ivao/`, e i due soli punti fuori perimetro che importano quel namespace sono
+`HubDbContext` (i `DbSet` dei dati `ref_`) e la composition root di `IvaoHub.Web` — entrambi
+inevitabili e registrati come tali in §4.2, perché una regola che dichiara fuori posto due file che
+stanno al posto giusto è una regola che si impara a ignorare.
+
+La rete che esiste — il test della divisione fittizia «XX» — prende l'Italia, non IVAO. Se un
+giorno il perimetro va reso meccanico, la via a buon mercato è un test di architettura che verifica
+che nulla fuori da `Core/Ivao/` e `Core/Auth/Ivao*` importi il client IVAO. **Non è deciso**, e per
+§16.E vorrebbe una nota di decisione: resta scritto qui perché il giorno che servirà non si debba
+ricominciare a cercare da dove.
 
 **Changelog 0.34** (4 set 2026, terzo hotfix): **ogni schermata di `/staff` era disegnata in una
 colonna larga 255 pixel**, in alto a sinistra, con il resto della finestra vuoto, la tabella tagliata
@@ -504,6 +536,23 @@ Sì, si può fare — ma va deciso ora, perché costa poco all'inizio e tantissi
 - **Lingua del progetto: inglese.** Tutto il codice (identificatori, nomi di file, tabelle e colonne, chiavi i18n, commenti), i messaggi di commit, i nomi di branch, le issue/PR e tutta la documentazione destinata al pubblico (`README.md`, `FORKING.md`, `docs/api`, ADR, changelog, `.example` di configurazione, fogli di deploy) sono in **inglese**: chi forka non deve capire l'italiano. Unica eccezione voluta: la documentazione **interna di progetto** — questo piano, i documenti di design dei moduli, l'`HANDOFF` — resta in italiano perché la legge Carmine ogni giorno, e vive separata in `docs/internal/` (esclusa dai link del README e con una nota in testa che dice che è interna). Le stringhe italiane esistono in un solo posto: `locales/it/`.
 - Nessuna stringa visibile all'utente nel codice: sempre chiave i18n.
 - Nessun codice ICAO, nome FIR, posizione staff o URL italiano nel codice: FIR e centri dall'API IVAO, il resto da `division.json`/DB.
+- **«Questo nomina IVAO?»** — la stessa domanda della riga sopra, un livello più in alto. Il codice
+  specifico di IVAO vive dentro un perimetro che esiste già e non ne esce: `src/IvaoHub.Core/Ivao/`
+  (il client, il token provider, il job dei dati `ref_`, le fixture), la metà IVAO di
+  `src/IvaoHub.Core/Auth/` (`IvaoAuthenticationExtensions`, `IvaoOAuthOptions` e il suo validatore,
+  `IvaoOidcProtocolValidator`, `IvaoUserProfileReader`, `IvaoUserTokenStore`, `UserSyncService`,
+  `StaffRoleMap`), le tabelle `ref_ivao_*` e l'enum `Department` di `Division/Vocabulary.cs`.
+  Tutto il resto — i contratti di dominio, il motore CRUD, il modello editoriale, `Localized<T>`,
+  il sistema a moduli, audit, grant, permessi, i18n — oggi ne è libero e ci resta. Un modulo in
+  particolare non parla mai con IVAO da sé: c'è un solo `IIvaoApiClient` e lo si usa (§16).
+  Due punti fuori dal perimetro nominano IVAO per forza, ed è giusto così: `Data/HubDbContext.cs`,
+  che espone i `DbSet` dei dati `ref_`, e la composition root di `IvaoHub.Web` (`Program.cs`,
+  `HubPipeline.cs`), che registra i servizi. Una radice di composizione nomina tutto: è il suo
+  mestiere. **Verificato il 5 set 2026**: `IIvaoApiClient` è usato solo dentro `Core/Ivao/` (più
+  due test), e nessun altro file del nucleo generico importa `IvaoHub.Core.Ivao`.
+  È una domanda da farsi mentre si scrive, **non un'astrazione da costruire**: la stessa disciplina
+  che rende il fork di un'altra divisione una questione di configurazione tiene il nucleo generico
+  riusabile in generale, e costa zero finché si paga riga per riga invece che tutta insieme dopo.
 - I **moduli sono feature flag su due livelli**, perché su Plesk "riavviare" significa FTP + `tmp/restart.txt` e non deve essere l'unico modo per spegnere qualcosa:
   - `modules.<nome> = false` in `division.json` (letto **all'avvio**): il modulo non viene registrato nel processo — niente rotte, menu, job, né nuove migrazioni. È la scelta strutturale di *quali moduli usa questa divisione*, cambia raramente e richiede un riavvio. ⚠️ Le migrazioni già applicate **non vengono mai annullate** e i dati restano: disattivare nasconde, non cancella; riattivare riporta tutto com'era. All'avvio l'app avvisa nel log se un modulo disattivato ha ancora tabelle popolate.
   - `maintenance` **a caldo** da `/staff/modules` (Director e superadmin, con audit): il modulo resta caricato ma risponde 503 con una pagina cortese e tradotta, sparisce dal menu e i suoi job vanno in pausa. Nessun riavvio, effetto immediato, reversibile con un clic. È il livello per "il booking ha un problema, spegnilo finché non lo sistemo" e per le finestre di manutenzione annunciate.
