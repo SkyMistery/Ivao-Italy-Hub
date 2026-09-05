@@ -66,6 +66,21 @@ montato». La verifica è **comportamentale** o non è.
 i 353 test .NET, i 76 Vitest e i 9 Playwright girano prima che lo zip esista. È la
 proprietà per cui quella dipendenza esiste, ed è servita due volte in un giorno.
 
+### Il giro visivo: tre punti su quattro fatti, il quarto no
+
+Fatto e verde: le due liste affiancate **sembrano la stessa schermata** (è il punto di avere un
+motore solo, e regge); la **ui-kit nei due temi** monta tutto senza zone chiare rimaste; il **cambio
+lingua** funziona ed è ora uno smoke.
+
+⚠️ **Non fatto: anteprima dell'editor contro pagina pubblica.** Richiede un contenuto pubblicato
+dietro una **sessione IVAO vera**, che né gli smoke né io possiamo produrre — gli smoke stubbano
+`/api/me`. È l'ultimo punto della «definizione di fatto» di M0 (§0.1 punto 3) che nessuno ha ancora
+guardato con gli occhi, anche se `ContentEndToEndTests` lo asserisce lato API. La cosa da guardare è
+che le due rese siano **indistinguibili**: è lo stesso `ContentRenderer`, e se divergono non lo
+stanno usando entrambe. Attenzione a due trappole: il badge dei blocchi Data lo vede **solo lo
+staff**, quindi in finestra anonima non c'è ed è corretto; e se si modifica la bozza dopo aver
+pubblicato, le due **devono** divergere.
+
 ### Che cosa ha trovato davvero il giro visivo, e perché conta per M1
 
 Tre difetti in un giorno, tutti trovati **guardando l'applicazione**, nessuno da un test. E i tre
@@ -1186,6 +1201,38 @@ qui sotto è il suo indice di partenza, non la sua sostituzione.
 | **Servizio notifiche** e il namespace `mail` nei file di lingua | Il namespace nascerà da sé: `pnpm i18n:check` legge tutti quelli che trova | §7 |
 | **Deploy su staging Plesk** e il foglio `LEGGIMI` | Escluso da M0 per decisione (2 set 2026), in attesa delle risposte A9 | piano §13, §15.2c |
 | **Set di blocchi completo ed editor rifinito** (dnd-kit, anteprima multi-device, «allinea al template») | Il registry dei blocchi e il generatore di form sono estendibili; le convenzioni dei blocchi si decidono con il set davanti | design §0.2, piano §16.C |
+
+### Il primo lavoro di M1 è il set dei blocchi, e il catalogo esiste già
+
+Domanda arrivata il 5 set 2026, e vale la pena che la risposta non si ricostruisca da capo: **i
+blocchi di un vero page builder — tabelle, card con link, gallery, accordion, tabs, hero, stats —
+non mancano, sono rimandati**, e il piano li ha già catalogati.
+
+- **Il catalogo sta in `00-piano §9.3`** (l'analisi di `va.ivao.aero`, il backend del template HQ):
+  24 blocchi in cinque gruppi — Content (Text, Hero, Image, Video, Embed), Layout (Card Grid, Icon
+  Grid, Columns, Gallery, Logo Grid, Tabs), Data (Stats, Network Stats, Virtual Airlines, Calendar,
+  Table, Progress/Timeline), Interactive (Accordion/FAQ, Testimonial, CTA, Alert/Notice, Button
+  Group), Structure (Spacer, Divider). M0 ne ha **cinque**, e il design §5.4 dice perché: bastano a
+  dimostrare live/frozen e le tre forme di sezione.
+- ⚠️ **`Columns` non deve diventare un blocco.** In §9.3 il livello *Row* del Page Builder HQ è già
+  diventato una **proprietà della sezione** (`layout`: `stacked`, `1/2+1/2`, `1/3+2/3`, `3×1/3`…), e
+  l'envelope lo valida: F7 controlla che il `column` di un blocco stia dentro le colonne che il
+  layout della sua sezione ha. Aggiungerlo come blocco sarebbe un secondo modo di fare la stessa
+  cosa (CLAUDE.md §2). È l'errore più facile da fare copiando la palette di HQ voce per voce.
+- **L'elenco chiuso della ui-kit e il registry dei blocchi sono due cose diverse.** I quindici
+  componenti sono pezzi React riusati fra schermate; i blocchi sono un registry a parte, e un blocco
+  `Table` non aggiunge di per sé un componente all'elenco. La ui-kit **monta tutto ciò che il
+  registry dichiara**, quindi un blocco nuovo compare lì da solo: nessuno deve ricordarsi di
+  aggiungerlo.
+- **Le icone sono già decise e non vanno ridiscusse**: `lucide-react` (piano §16.C, design §7.1,
+  `UI-GUIDELINES.md` §2), e **ogni blocco ne dichiara una** — il tipo lo impone
+  (`shared/modules.ts:59`). `web/src/shared/icons/` non esiste ancora perché in nove fasi nessuna
+  icona è mai mancata dal set; nascerà la prima volta che serve.
+
+Aggiungere un blocco non è spuntare una lista: è uno schema zod, un componente, una registrazione,
+le chiavi i18n di etichetta e campi, e per quelli **Data** un provider lato server. Piano §16.C dice
+che le convenzioni dei blocchi si decidono **con il set davanti**: è esattamente il lavoro del
+documento di design di M1.
 
 ### Debiti che M1 eredita, in ordine di quanto costano se ignorati
 
