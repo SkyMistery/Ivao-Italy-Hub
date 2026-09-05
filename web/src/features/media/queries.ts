@@ -4,6 +4,7 @@ import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap } from '../../shared/api/client';
 import type { components } from '../../shared/api/schema';
 import { listQuerySerializer, toQuery, listSearchSchema, type ListSearch } from '../../shared/list';
+import type { MediaLibraryQuery, MediaPage, PickableMedia } from '../../shared/ui';
 
 /**
  * Every call the media library makes, as query options. A component never fetches: it asks for
@@ -13,7 +14,7 @@ import { listQuerySerializer, toQuery, listSearchSchema, type ListSearch } from 
 export type MediaListDto = components['schemas']['MediaListDto'];
 export type MediaDetailDto = components['schemas']['MediaDetailDto'];
 export type MediaWriteDto = components['schemas']['MediaWriteDto'];
-export type MediaPage = components['schemas']['PagedResultOfMediaListDto'];
+export type MediaListPage = components['schemas']['PagedResultOfMediaListDto'];
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
 
 export const mediaKey = ['media'] as const;
@@ -34,7 +35,7 @@ export function mediaUsageKey(mediaId: number) {
 export function mediaListQuery(department: Department, search: ListSearch) {
   return queryOptions({
     queryKey: mediaListKey(department, search),
-    queryFn: async (): Promise<MediaPage> =>
+    queryFn: async (): Promise<MediaListPage> =>
       unwrap(
         await api.GET('/api/media', {
           params: { query: toQuery(search) },
@@ -57,11 +58,31 @@ const PICKER_PAGE_SIZE = 24;
 
 /**
  * What `MediaPicker` chooses from: the newest files of one department. It is the same resource and
- * the same list engine as the back office screen, asked for a smaller page.
+ * the same list engine as the back office screen, asked for a smaller page and narrowed to what a
+ * picker actually draws — which is also what lets the form generator carry it without knowing that
+ * `/api/media` exists.
  */
-export function mediaPickerQuery(department: Department) {
+export function mediaPickerQuery(department: Department): MediaLibraryQuery {
   const search = listSearchSchema.parse({ pageSize: PICKER_PAGE_SIZE, sort: 'createdAt', dir: 'desc' });
-  return mediaListQuery(department, search);
+
+  // Typed as the loose key the generator's prop declares: a picker is carried around by a
+  // component that cannot know which resource it came from, so the key has to stop being specific
+  // right here rather than at every place that passes it on.
+  const queryKey: readonly unknown[] = [...mediaKey, 'picker', department, PICKER_PAGE_SIZE];
+
+  return queryOptions({
+    queryKey,
+    queryFn: async (): Promise<MediaPage<PickableMedia>> => {
+      const page = unwrap(
+        await api.GET('/api/media', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ ownerDepartment: department }),
+        }),
+      );
+
+      return { items: page.items, total: page.total };
+    },
+  });
 }
 
 /**

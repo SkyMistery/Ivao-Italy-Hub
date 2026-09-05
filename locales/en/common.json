@@ -86,7 +86,9 @@
     "copyFrom": "Copy from {{language}}",
     "addEntry": "Add",
     "removeEntry": "Remove",
-    "submitHint": "Press Enter to save."
+    "submitHint": "Press Enter to save.",
+    "moveUp": "Move up",
+    "moveDown": "Move down"
   },
   "list": {
     "search": "Search",
@@ -261,7 +263,11 @@
       "ownerDepartment": "Department",
       "publishedAt": "Published",
       "updatedAt": "Last change",
-      "template": "Template"
+      "template": "Template",
+      "seo": "Search engines and sharing",
+      "seo.title": "Title",
+      "seo.description": "Description",
+      "seo.ogImageMediaId": "Sharing picture"
     },
     "options": {
       "kind": {
@@ -347,7 +353,10 @@
       "column": "Column",
       "columnNumber": "Column {{number}}"
     },
-    "slugPlaceholder": "my-new-page"
+    "slugPlaceholder": "my-new-page",
+    "hints": {
+      "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used."
+    }
   },
   "blocks": {
     "captured": "Captured at publication",
@@ -459,7 +468,7 @@
       }
     },
     "hints": {
-      "expiresAt": "Leave it empty for a permission that never expires. Format: YYYY-MM-DD."
+      "expiresAt": "Empty means the grant never expires."
     }
   },
   "superadmins": {

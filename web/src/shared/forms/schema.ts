@@ -30,6 +30,24 @@ export interface FieldMeta {
    * language, exactly as a VID or a department code is.
    */
   choices?: readonly number[] | readonly string[];
+  /**
+   * A file of the media library, held as its identifier. The field opens `MediaPicker` and shows
+   * what was chosen; it is never a number to type, because a free numeric field produces pages
+   * pointing at files that were deleted years ago (design M1 section 1.5).
+   */
+  media?: boolean;
+  /**
+   * An icon, held as a `lucide` name out of the allow list in `shared/icons`. A choice among thirty
+   * pictures is a choice; a box for any of the thousands `lucide` ships is a text field with extra
+   * steps.
+   */
+  icon?: boolean;
+  /** A calendar day, held as an ISO instant at midnight UTC. */
+  date?: boolean;
+  /** An instant, held as ISO UTC and shown in UTC and in the time zone of the division. */
+  datetime?: boolean;
+  /** One small object per language. Set by `localizedObject()`, never written by hand. */
+  localizedObject?: boolean;
 }
 
 /**
@@ -59,6 +77,10 @@ export type FieldNode =
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
   | ({ kind: 'localized' } & FieldCommon)
+  | ({ kind: 'media' } & FieldCommon)
+  | ({ kind: 'icon' } & FieldCommon)
+  | ({ kind: 'instant'; withTime: boolean } & FieldCommon)
+  | ({ kind: 'localizedObject'; children: FieldNode[] } & FieldCommon)
   | ({ kind: 'object'; children: FieldNode[] } & FieldCommon)
   | ({ kind: 'list'; children: FieldNode[] } & FieldCommon);
 
@@ -72,11 +94,26 @@ export function localized() {
   return z.record(z.string(), z.string()).meta({ localized: true });
 }
 
+/**
+ * A translated **object**: one value per language, each of them a small record rather than a line
+ * of text. `Seo` is the first — a title, a description and a picture per language (design M1
+ * section 9.2) — and it is why this exists: a coordinator does not write JSON, and the column is a
+ * `Localized<JsonNode>` that nothing could draw before.
+ *
+ * The shape is handed in rather than inferred so that its fields are drawn by the same rules as
+ * any other object's: a media selector inside a language tab is a media selector.
+ */
+export function localizedObject<TShape extends z.ZodRawShape>(shape: TShape) {
+  return z.record(z.string(), z.object(shape)).meta({ localizedObject: true });
+}
+
 /** The shape zod exposes. Narrow on purpose: only what the walk below actually looks at. */
 interface ZodInternals {
   type: string;
   innerType?: unknown;
   element?: unknown;
+  /** The value schema of a record, which is what a translated object holds per language. */
+  valueType?: unknown;
   entries?: Record<string, string>;
   shape?: Record<string, unknown>;
   /** Present on a `default` wrapper, and in zod 4 it is the value itself and not a thunk. */
@@ -158,6 +195,32 @@ function readField(schema: unknown, path: string): FieldNode {
     // Annotated wins over shape: a translated field is a record, and a record of anything else is
     // not something this generator draws.
     return { kind: 'localized', ...common };
+  }
+
+  if (meta.localizedObject === true) {
+    // The children are read from the *value* schema of the record, once, and drawn inside every
+    // language tab: one description of what a language holds, not one per language.
+    const value = definition(inner).valueType;
+    if (value === undefined) {
+      throw new Error(`A localized object at "${path}" has no shape. Build it with localizedObject().`);
+    }
+
+    return { kind: 'localizedObject', ...common, children: readFields(value as z.ZodType, path) };
+  }
+
+  // Annotations that decide what a field *is*, before its type gets a say. Each of them is a
+  // promise about the value — an identifier of the media library, a name from the icon allow list,
+  // an ISO instant — that the plain type could not carry on its own.
+  if (meta.media === true) {
+    return { kind: 'media', ...common };
+  }
+
+  if (meta.icon === true) {
+    return { kind: 'icon', ...common };
+  }
+
+  if (meta.date === true || meta.datetime === true) {
+    return { kind: 'instant', ...common, withTime: meta.datetime === true };
   }
 
   switch (def.type) {

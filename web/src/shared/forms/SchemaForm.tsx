@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, H4, Input, Label, Select, Switch, Textarea } from '@ivao/atmosphere-react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Button, H4, Input, Label, Select, Subtle, Switch, Textarea } from '@ivao/atmosphere-react';
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   Controller,
@@ -8,14 +8,34 @@ import {
   useFieldArray,
   useForm,
   useFormContext,
+  useWatch,
   type FieldErrors,
 } from 'react-hook-form';
+import type { ReactElement } from 'react';
 import type { z } from 'zod';
 
+import { ICON_NAMES, iconByName } from '../icons';
+import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
+
 import { LocaleFields } from './LocaleFields';
+import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
 import { NO_CHOICE, readFields, type FieldNode } from './schema';
 import { useProblemDetails } from './useProblemDetails';
+
+/**
+ * What a field needs to know beyond its own schema. One object rather than four props because it
+ * is threaded through every level of a nested form, and because two of the four only matter to two
+ * kinds of field: a form with no media field never has to be handed a library.
+ */
+interface FormEnvironment {
+  locales: readonly string[];
+  labels: string;
+  /** The page a media field chooses from. A media field without one throws, and says why. */
+  mediaLibrary?: MediaLibraryQuery | undefined;
+  /** The two facts about the division a media field and an instant need. */
+  division?: { defaultLocale: string; timezone: string } | undefined;
+}
 
 /**
  * The form generator. A back office screen declares a zod schema that mirrors the write DTO and
@@ -36,6 +56,8 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   onSubmit,
   submitLabel,
   secondaryAction,
+  mediaLibrary,
+  division,
 }: {
   schema: z.ZodType<TValues, TValues>;
   defaults: TValues;
@@ -47,6 +69,17 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   onSubmit: (values: TValues) => Promise<unknown>;
   submitLabel: string;
   secondaryAction?: React.ReactNode;
+  /**
+   * The page of the media library a `.meta({ media: true })` field chooses from. The generator
+   * cannot build it: which department's library to show is a fact of the screen, not of the schema.
+   */
+  mediaLibrary?: MediaLibraryQuery;
+  /**
+   * The default language and the time zone of the division. Only two kinds of field need them — a
+   * media field, to announce a thumbnail, and an instant, to say what a UTC time is locally — so a
+   * form with neither is never asked for them.
+   */
+  division?: { defaultLocale: string; timezone: string };
 }) {
   const { t } = useTranslation();
   const form = useForm({
@@ -55,6 +88,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   });
   const problem = useProblemDetails(form);
   const fields = readFields(schema);
+  const env: FormEnvironment = { locales, labels, mediaLibrary, division };
 
   const submit = form.handleSubmit(async (values) => {
     problem.reset();
@@ -72,7 +106,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
         <div className="flex flex-col gap-5">
           {fields.map((field) => (
-            <Field key={field.path} node={field} locales={locales} labels={labels} />
+            <Field key={field.path} node={field} env={env} />
           ))}
         </div>
 
@@ -97,22 +131,26 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 function Field({
   node,
   name = node.path,
-  locales,
-  labels,
+  env,
 }: {
   node: FieldNode;
   name?: string;
-  locales: readonly string[];
-  labels: string;
+  env: FormEnvironment;
 }) {
   const { t, i18n } = useTranslation();
   const { register, control, formState } = useFormContext();
+  const { locales, labels } = env;
 
   if (node.meta.hidden === true) {
     // Carried and submitted, never drawn: the row version is the reason this exists.
     return null;
   }
 
+  // A field that holds other fields is named the same way any other is. The children of `seo` are
+  // written flat in the language files — `"seo.title"` beside `"seo"` — rather than nested, so the
+  // group keeps a name of its own: i18next resolves a dotted key either way, while a nested `seo`
+  // would be an object where a word has to be. Measured rather than assumed, and it is the shape
+  // the tests of this file have used since M0.
   const label = t(`${labels}.fields.${node.path}`);
 
   // The sentence under a field, drawn only when the language files carry one. It is a convention
@@ -137,6 +175,61 @@ function Field({
           locales={locales}
           multiline={node.meta.multiline === true}
           error={error}
+        />
+      );
+
+    case 'localizedObject':
+      return (
+        <LocalizedObject node={node} name={name} env={env} label={label} hint={hint} error={error} />
+      );
+
+    case 'media': {
+      if (env.mediaLibrary === undefined || env.division === undefined) {
+        // The same discipline as an unknown type: the generator says what is missing instead of
+        // drawing a field that cannot work. A media identifier is never typed by hand.
+        throw new Error(
+          `SchemaForm draws the media field at "${node.path}" only when it is given mediaLibrary ` +
+            'and division. Hand it the library of the department the screen is about.',
+        );
+      }
+
+      const library = env.mediaLibrary;
+      const defaultLocale = env.division.defaultLocale;
+
+      return (
+        <Row id={name} label={label} hint={hint} error={error}>
+          <Controller
+            control={control}
+            name={name}
+            render={({ field }) => (
+              <MediaPicker
+                query={library}
+                value={typeof field.value === 'number' ? field.value : null}
+                // Undefined and not null when nothing is chosen: an optional field that is absent
+                // is absent, and a null would be a value the contract does not have.
+                onChange={(chosen) => field.onChange(chosen ?? undefined)}
+                locale={i18n.language}
+                defaultLocale={defaultLocale}
+              />
+            )}
+          />
+        </Row>
+      );
+    }
+
+    case 'icon':
+      return <IconChoice node={node} name={name} labels={labels} label={label} hint={hint} error={error} />;
+
+    case 'instant':
+      return (
+        <Instant
+          node={node}
+          name={name}
+          label={label}
+          hint={hint}
+          error={error}
+          locale={i18n.language}
+          timezone={env.division?.timezone}
         />
       );
 
@@ -253,35 +346,32 @@ function Field({
               key={child.path}
               node={child}
               name={`${name}${child.path.slice(node.path.length)}`}
-              locales={locales}
-              labels={labels}
+              env={env}
             />
           ))}
         </fieldset>
       );
 
     case 'list':
-      return <RepeatableList node={node} name={name} locales={locales} labels={labels} label={label} />;
+      return <RepeatableList node={node} name={name} env={env} label={label} />;
   }
 }
 
-/** A list of objects: add, remove, and the same generator again for each entry. */
+/** A list of objects: add, remove, reorder, and the same generator again for each entry. */
 function RepeatableList({
   node,
   name,
-  locales,
-  labels,
+  env,
   label,
 }: {
   node: Extract<FieldNode, { kind: 'list' }>;
   name: string;
-  locales: readonly string[];
-  labels: string;
+  env: FormEnvironment;
   label: string;
 }) {
   const { t } = useTranslation();
   const { control } = useFormContext();
-  const { fields, append, remove } = useFieldArray({ control, name });
+  const { fields, append, remove, move } = useFieldArray({ control, name });
 
   return (
     <fieldset className="border-border flex flex-col gap-4 rounded-md border p-4">
@@ -296,11 +386,33 @@ function RepeatableList({
               key={child.path}
               node={child}
               name={`${name}.${index}${child.path.slice(node.path.length)}`}
-              locales={locales}
-              labels={labels}
+              env={env}
             />
           ))}
-          <div>
+          <div className="flex flex-wrap items-center gap-1">
+            {/* Up and down rather than dragging, and they stay when dragging arrives in G11: this
+                is the pair that works from a keyboard, and reordering is something an editor does
+                far more often than adding. */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={index === 0}
+              aria-label={t('form.moveUp')}
+              onClick={() => move(index, index - 1)}
+            >
+              <ChevronUp aria-hidden className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={index === fields.length - 1}
+              aria-label={t('form.moveDown')}
+              onClick={() => move(index, index + 1)}
+            >
+              <ChevronDown aria-hidden className="size-4" />
+            </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>
               <Trash2 aria-hidden className="mr-2 size-4" />
               {t('form.removeEntry')}
@@ -317,6 +429,262 @@ function RepeatableList({
       </div>
     </fieldset>
   );
+}
+
+/**
+ * A translated object: the language tabs of any translated field, and inside each one the very same
+ * generator drawing the same shape. `Seo` is the first of them — a title, a description and a
+ * picture per language (design M1 section 9.2) — and the point is that a coordinator fills in
+ * fields instead of writing the JSON the column used to hold.
+ */
+function LocalizedObject({
+  node,
+  name,
+  env,
+  label,
+  hint,
+  error,
+}: {
+  node: Extract<FieldNode, { kind: 'localizedObject' }>;
+  name: string;
+  env: FormEnvironment;
+  label: string;
+  hint: string | undefined;
+  error: string | undefined;
+}) {
+  const { control } = useFormContext();
+  const value = (useWatch({ control, name }) ?? {}) as Record<string, Record<string, unknown>>;
+
+  // A language counts as written when anything in it is: it is the same question the badge on a
+  // translated string asks, asked of an object.
+  const isWritten = (locale: string) =>
+    Object.values(value[locale] ?? {}).some(
+      (entry) => typeof entry === 'number' || (typeof entry === 'string' && entry.trim() !== ''),
+    );
+
+  return (
+    <LocaleTabs
+      label={label}
+      hint={hint}
+      locales={env.locales}
+      isWritten={isWritten}
+      error={error}
+      renderContent={(locale) => (
+        <div className="flex flex-col gap-4">
+          {node.children.map((child) => (
+            <Field
+              key={child.path}
+              node={child}
+              name={`${name}.${locale}${child.path.slice(node.path.length)}`}
+              env={env}
+            />
+          ))}
+        </div>
+      )}
+    />
+  );
+}
+
+/**
+ * An icon, out of the allow list. It is drawn as a grid of pictures rather than as a select, and
+ * for a reason worth writing down: Atmosphere's `Select` takes a plain string per option, so a
+ * select could only ever list the names — and a name without its picture is exactly the choice
+ * nobody can make. The set stays closed either way, which is what the rule is about (design M1
+ * section 1.5), and a radio group is what a keyboard already knows how to walk.
+ */
+function IconChoice({
+  node,
+  name,
+  labels,
+  label,
+  hint,
+  error,
+}: {
+  node: Extract<FieldNode, { kind: 'icon' }>;
+  name: string;
+  labels: string;
+  label: string;
+  hint: string | undefined;
+  error: string | undefined;
+}) {
+  const { t } = useTranslation();
+  const { control } = useFormContext();
+
+  return (
+    <fieldset className="flex flex-col gap-1">
+      <Label asChild>
+        <legend>{label}</legend>
+      </Label>
+      <FieldHint hint={hint} />
+
+      <Controller
+        control={control}
+        name={name}
+        render={({ field }) => (
+          <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+            {node.optional ? (
+              <IconOption
+                chosen={typeof field.value !== 'string' || field.value === ''}
+                label={t(`${labels}.options.${node.path}.none`)}
+                onChoose={() => field.onChange(undefined)}
+              />
+            ) : null}
+
+            {ICON_NAMES.map((iconName) => (
+              <IconOption
+                key={iconName}
+                chosen={field.value === iconName}
+                label={iconName}
+                icon={iconName}
+                onChoose={() => field.onChange(iconName)}
+              />
+            ))}
+          </div>
+        )}
+      />
+
+      <FieldError error={error} />
+    </fieldset>
+  );
+}
+
+/**
+ * The picture of every icon of the allow list, drawn once when this module loads rather than looked
+ * up while a form renders. The table is frozen and never changes, so there is nothing to recompute
+ * — and a component read out of a map inside a render is one React has to treat as new every pass.
+ */
+const ICON_GLYPHS: Readonly<Record<string, ReactElement>> = Object.fromEntries(
+  ICON_NAMES.map((iconName) => {
+    const Icon = iconByName(iconName)!;
+    return [iconName, <Icon aria-hidden className="size-5" />];
+  }),
+);
+
+function IconOption({
+  chosen,
+  label,
+  icon,
+  onChoose,
+}: {
+  chosen: boolean;
+  label: string;
+  icon?: string;
+  onChoose: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={chosen}
+      aria-label={label}
+      title={label}
+      onClick={onChoose}
+      className={`border-border bg-card flex size-10 items-center justify-center rounded-md border ${
+        chosen ? 'ring-primary ring-2' : ''
+      }`}
+    >
+      {icon === undefined ? (
+        <span className="text-muted-foreground text-xs">&mdash;</span>
+      ) : (
+        (ICON_GLYPHS[icon] ?? null)
+      )}
+    </button>
+  );
+}
+
+/**
+ * A day, or an instant. What the form carries is **always ISO in UTC**, whatever the browser's own
+ * time zone happens to be, because that is what the server stores and what a hub read from two
+ * countries has to mean the same thing in both.
+ *
+ * The input is fed the UTC wall clock by slicing the string rather than by parsing it into a
+ * `Date`: parsing drags the browser's zone into a value that has nothing to do with it, which is
+ * the classic way a date moves by a day overnight.
+ *
+ * A **day** shows no second line. "The same day, elsewhere" is not a fact a date has, and echoing
+ * one would only ever be a chance to read the wrong day. An **instant** does show the division's
+ * local time under it, which is the rule `DateCell` follows in every list.
+ */
+function Instant({
+  node,
+  name,
+  label,
+  hint,
+  error,
+  locale,
+  timezone,
+}: {
+  node: Extract<FieldNode, { kind: 'instant' }>;
+  name: string;
+  label: string;
+  hint: string | undefined;
+  error: string | undefined;
+  locale: string;
+  timezone: string | undefined;
+}) {
+  const { control } = useFormContext();
+
+  if (node.withTime && timezone === undefined) {
+    throw new Error(
+      `SchemaForm draws the instant at "${node.path}" only when it is given division.timezone: ` +
+        'a UTC time with nothing beside it is a time somebody has to convert in their head.',
+    );
+  }
+
+  const width = node.withTime ? 16 : 10;
+
+  return (
+    <Row id={name} label={label} hint={hint} error={error}>
+      <Controller
+        control={control}
+        name={name}
+        render={({ field }) => {
+          const iso = typeof field.value === 'string' ? field.value : '';
+
+          return (
+            <div className="flex flex-col gap-1">
+              <Input
+                id={name}
+                type={node.withTime ? 'datetime-local' : 'date'}
+                className="max-w-xs"
+                value={iso.slice(0, width)}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  const written = event.target.value;
+                  field.onChange(
+                    written === ''
+                      ? undefined
+                      : node.withTime
+                        ? `${written}:00Z`
+                        : `${written}T00:00:00Z`,
+                  );
+                }}
+              />
+              {node.withTime && iso !== '' && timezone !== undefined ? (
+                <Subtle className="tabular-nums">{localTime(iso, locale, timezone)}</Subtle>
+              ) : null}
+            </div>
+          );
+        }}
+      />
+    </Row>
+  );
+}
+
+/** The same instant where the division lives, named, so nobody converts it in their head. */
+function localTime(iso: string, locale: string, timezone: string): string {
+  const instant = new Date(iso.endsWith('Z') ? iso : `${iso}Z`);
+  if (Number.isNaN(instant.getTime())) {
+    return '';
+  }
+
+  const shown = new Intl.DateTimeFormat(locale, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: timezone,
+  }).format(instant);
+
+  return `${shown} ${timezone}`;
 }
 
 function Row({

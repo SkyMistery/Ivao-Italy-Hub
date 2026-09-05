@@ -26,7 +26,24 @@ function trimLocalized(value: Record<string, string>): LocalizedString | null {
   return written.length === 0 ? null : Object.fromEntries(written);
 }
 
-export function toWriteDto(values: ContentFormValues, body: Body, seo: unknown): ContentWriteDto {
+/**
+ * A language of a translated object with nothing written in it is absent, exactly as an empty
+ * translated string is: an object full of empty strings would be a page claiming a description it
+ * has not got.
+ */
+function trimLocalizedObject(
+  value: ContentFormValues['seo'],
+): ContentWriteDto['seo'] {
+  const written = Object.entries(value ?? {}).filter(([, entry]) =>
+    Object.values(entry ?? {}).some(
+      (field) => field !== undefined && field !== null && String(field).trim() !== '',
+    ),
+  );
+
+  return written.length === 0 ? null : Object.fromEntries(written);
+}
+
+export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteDto {
   return {
     kind: values.kind,
     slug: values.slug.trim(),
@@ -37,9 +54,7 @@ export function toWriteDto(values: ContentFormValues, body: Body, seo: unknown):
     // rather than being handed a field that quietly became null.
     title: values.title,
     summary: trimLocalized(values.summary),
-    // Sent back exactly as it was loaded: no screen edits it yet, and dropping it on every save
-    // would be a way of losing it (see `schema.ts`).
-    seo: seo as ContentWriteDto['seo'],
+    seo: trimLocalizedObject(values.seo),
     body,
     schemaVersion: body.schemaVersion,
     rowVersion: values.rowVersion,
@@ -62,6 +77,7 @@ export function emptyContent(
     isTemplate: false,
     title: emptyLocalized(locales),
     summary: emptyLocalized(locales),
+    seo: emptySeo(locales),
     rowVersion: '',
   };
 }
@@ -79,14 +95,46 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     isTemplate: content.isTemplate,
     title: spread(content.title),
     summary: spread(content.summary),
+    seo: spreadSeo(content.seo, locales),
     rowVersion: content.rowVersion,
   };
+}
+
+/** One empty entry per language, so every tab of the translated object has something to fill in. */
+function emptySeo(locales: readonly string[]): ContentFormValues['seo'] {
+  return Object.fromEntries(locales.map((locale) => [locale, { title: '', description: '' }]));
+}
+
+/**
+ * What the server stored, spread over the languages of the division. The column is a
+ * `Localized<JsonNode>` — opaque to the backend by design — so the shape is read here, where the
+ * schema that draws it also lives.
+ */
+function spreadSeo(
+  value: Record<string, unknown> | null | undefined,
+  locales: readonly string[],
+): ContentFormValues['seo'] {
+  return Object.fromEntries(
+    locales.map((locale) => {
+      const entry = (value?.[locale] ?? {}) as Record<string, unknown>;
+
+      return [
+        locale,
+        {
+          title: typeof entry.title === 'string' ? entry.title : '',
+          description: typeof entry.description === 'string' ? entry.description : '',
+          ...(typeof entry.ogImageMediaId === 'number'
+            ? { ogImageMediaId: entry.ogImageMediaId }
+            : {}),
+        },
+      ];
+    }),
+  );
 }
 
 interface ContentWrite {
   values: ContentFormValues;
   body: Body;
-  seo: unknown;
 }
 
 export function useCreateContent() {
@@ -94,7 +142,7 @@ export function useCreateContent() {
 
   return useMutation({
     mutationFn: async (write: ContentWrite): Promise<ContentDetailDto> =>
-      unwrap(await api.POST('/api/content', { body: toWriteDto(write.values, write.body, write.seo) })),
+      unwrap(await api.POST('/api/content', { body: toWriteDto(write.values, write.body) })),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: contentKey });
     },
@@ -109,7 +157,7 @@ export function useUpdateContent(id: number) {
       unwrap(
         await api.PUT('/api/content/{id}', {
           params: { path: { id: String(id) } },
-          body: toWriteDto(write.values, write.body, write.seo),
+          body: toWriteDto(write.values, write.body),
         }),
       ),
     onSuccess: async (content) => {

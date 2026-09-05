@@ -86,7 +86,9 @@
     "copyFrom": "Copia da {{language}}",
     "addEntry": "Aggiungi",
     "removeEntry": "Rimuovi",
-    "submitHint": "Premi Invio per salvare."
+    "submitHint": "Premi Invio per salvare.",
+    "moveUp": "Sposta su",
+    "moveDown": "Sposta giù"
   },
   "list": {
     "search": "Cerca",
@@ -261,7 +263,11 @@
       "ownerDepartment": "Dipartimento",
       "publishedAt": "Pubblicata",
       "updatedAt": "Ultima modifica",
-      "template": "Template"
+      "template": "Template",
+      "seo": "Motori di ricerca e condivisione",
+      "seo.title": "Titolo",
+      "seo.description": "Descrizione",
+      "seo.ogImageMediaId": "Immagine di condivisione"
     },
     "options": {
       "kind": {
@@ -347,7 +353,10 @@
       "column": "Colonna",
       "columnNumber": "Colonna {{number}}"
     },
-    "slugPlaceholder": "la-mia-nuova-pagina"
+    "slugPlaceholder": "la-mia-nuova-pagina",
+    "hints": {
+      "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina."
+    }
   },
   "blocks": {
     "captured": "Catturato alla pubblicazione",
@@ -459,7 +468,7 @@
       }
     },
     "hints": {
-      "expiresAt": "Lascia vuoto per un permesso che non scade mai. Formato: AAAA-MM-GG."
+      "expiresAt": "Vuoto significa che il permesso non scade."
     }
   },
   "superadmins": {

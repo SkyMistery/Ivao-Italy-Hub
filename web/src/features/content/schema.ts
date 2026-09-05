@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { LAYOUTS, BACKGROUNDS, PADDINGS, WIDTHS } from '../../blocks';
 import { DEPARTMENTS } from '../../shared/api/department';
-import { localized } from '../../shared/forms';
+import { localized, localizedObject } from '../../shared/forms';
 
 /**
  * The metadata of a content row, as a zod schema mirroring `ContentWriteDto`. Types and what is
@@ -12,9 +12,10 @@ import { localized } from '../../shared/forms';
  * The body is not here. It is edited by the section tree, not by a field, and it travels with the
  * same payload; `mutations.ts` is where the two are put back together.
  *
- * `seo` is not here either, and that is a gap rather than a decision: it is a translated *object*
- * per language, and the form generator draws translated strings. Until a screen needs it, it is
- * sent back exactly as it was loaded.
+ * `seo` **is** here, since G2: it is a translated *object* — a title, a description and a picture
+ * per language — and the generator learned to draw one rather than being handed a JSON box. What
+ * goes in it is the minimum a page needs to be shared: design M1 §9.2 decided that, and decided it
+ * once.
  */
 export const contentMetadataSchema = z.object({
   kind: z.enum(['Page', 'News', 'Document']),
@@ -27,6 +28,13 @@ export const contentMetadataSchema = z.object({
   isTemplate: z.boolean().meta({ hidden: true }),
   title: localized(),
   summary: localized().meta({ multiline: true }),
+  seo: localizedObject({
+    title: z.string().optional(),
+    description: z.string().optional().meta({ multiline: true }),
+    // The first real client of the media selector: a picture is chosen out of the library, never
+    // by typing a number (design M1 §1.5).
+    ogImageMediaId: z.number().optional().meta({ media: true }),
+  }).optional(),
   rowVersion: z.string().meta({ hidden: true }),
 });
 
