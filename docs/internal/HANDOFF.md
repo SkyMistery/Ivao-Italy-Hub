@@ -3,15 +3,22 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 4 settembre 2026 — **M0 è chiusa, fusa e taggata.** F9 ha verificato invece di costruire:
-la checklist §16.E letta su tutto il codice, la demo da eseguire a mano, i passi reali di un fork, e
-il tag `v0.1.0-m0`. Le fondamenta e la spina dorsale generica esistono e sono dimostrate end-to-end
-su `links` e su una pagina nata da un template, che è esattamente ciò che §16.15 del piano chiedeva.
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico).
-**Piano:** v0.32. **Design:** v2.1. **Piano di implementazione:** v1.6.
-**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **79 Vitest** + **10 smoke Playwright**. Nessuno skippato.
+**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa e la coda è finita: il prossimo lavoro è
+M1.** F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
+sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
+§16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
+nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
+chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
+piano (§3, ultima voce). **Non resta niente di M0 da finire.**
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). `main` è a `b435532`,
+tre PR avanti al tag.
+**Piano:** v0.35. **Design:** v2.1. **Piano di implementazione:** v1.6.
+**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **79 Vitest** + **10 smoke Playwright**.
+Nessuno skippato, **rieseguiti tutti e tre il 5 set 2026** contro la MariaDB vera prima di scrivere
+questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
-⚠️ **Due difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
+⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
 cosa vista **tre** volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
 composizione dei provider (nessuna schermata si disegnava, §11), poi quella delle route (nessun form
 del back-office era raggiungibile, §12), poi quella del layout (tutto funzionava, dentro una colonna
@@ -96,9 +103,10 @@ Ogni rete nuova ha chiuso il buco che la precedente lasciava aperto, e l'ultima 
 **pixel** perché il testo era corretto. Se M1 aggiunge schermate, la domanda da farsi non è «ho
 scritto i test?» ma **«che cosa, di questa schermata, un test non può vedere?»**.
 
-Le due cose viste e non corrette in §13 — l'intestazione di colonna che riusa la chiave
-dell'etichetta del form, e i campi tradotti più stretti degli altri — restano decisioni aperte per
-M1.
+Le due cose viste e non corrette in §13 — l'intestazione di colonna che riusava la chiave
+dell'etichetta del form, e i campi tradotti più stretti degli altri — **sono state chiuse il 5 set
+2026** (PR #30), entrambe estendendo un meccanismo invece di aggirarlo: il racconto e le due trappole
+che nascondevano stanno in fondo a §13. **M1 non le eredita.**
 
 ### Come si apre M1
 
@@ -109,7 +117,15 @@ ma è stato un caso. Costa due secondi.
 
 **M1 non ha ancora un design.** M0 ne ha avuto uno (`01-design-m0.md`) prima di una riga di codice,
 e il piano §13 dice che ogni milestone ne riceve uno: il primo lavoro di M1 è scriverlo, non aprire
-un branch. Quello che M1 deve coprire è in §10 qui sotto.
+un branch. Quello che M1 deve coprire è in §10 qui sotto, e il primo capitolo di quel design è il
+**set dei blocchi**, perché il piano §16.C dice che le convenzioni dei blocchi si decidono con il set
+davanti e il catalogo delle 24 voci esiste già in §9.3 (§10 lo riassume, comprese le due trappole:
+`Columns` non deve diventare un blocco, e la ui-kit monta da sé quello che il registry dichiara).
+
+**Il punto di partenza è pulito, e vale la pena saperlo prima di cercare code da finire.** Nessuna PR
+aperta, working tree pulito, i 442 test verdi rieseguiti oggi, nessun difetto noto in sospeso, e le
+due decisioni che il giro visivo aveva lasciato aperte sono state prese (§13). Quello che M1 eredita
+sono **debiti scelti**, elencati e ordinati in §10, non lavoro non finito.
 
 Serve solo Docker attivo: le credenziali IVAO ci sono e funzionano, ma da F4 in poi non le usa
 nessuno se non chi vuole rifare il login vero.
@@ -543,6 +559,17 @@ quello che ha *trovato*:
 - Le migrazioni sono **solo additive**; `Initial` non si tocca più.
 - L'identità si legge **solo** da `ICurrentUser`. Nessun endpoint guarda i claim a mano.
 - Con IVAO parla **solo** `IvaoApiClient`: retry, circuit breaker e cache del token esistono una volta.
+- **«Questo nomina IVAO?»** — regola nuova del 5 set 2026 (piano §4.2, PR #31), accanto a quella che
+  il progetto applica dal primo giorno, «questo nomina l'Italia?». Il codice specifico di IVAO sta in
+  `Core/Ivao/`, nella metà IVAO di `Core/Auth/` (`Ivao*.cs`, `UserSyncService`, `StaffRoleMap`), nelle
+  tabelle `ref_ivao_*` e nell'enum `Department` — **una ventina di file su 119** — e da nessun'altra
+  parte. Fuori dal perimetro lo nominano per forza, e va bene, solo `HubDbContext` (i `DbSet` dei dati
+  `ref_`) e la composition root di `IvaoHub.Web`. Verificato, non assunto: `IIvaoApiClient` risulta
+  usato solo dentro `Core/Ivao/`, e **13 tabelle su 15** non sanno cosa sia IVAO.
+  È una domanda da farsi mentre si scrive, **non un'astrazione da costruire**: un `IIdentityProvider`
+  o un `Department` configurabile sarebbero codice speculativo che peggiora questo prodotto, e per
+  CLAUDE.md §5 vorrebbero comunque una nota di decisione prima. **Conta adesso** perché M1 e i moduli
+  di dipartimento aggiungeranno molte volte il volume attuale sopra un nucleo che oggi è pulito.
 - Una configurazione che decide quale servizio usare si legge **quando il servizio viene costruito**,
   non quando viene registrato: un test host e un deploy aggiungono sorgenti dopo la registrazione.
   (Ci siamo cascati due volte: connection string in F1, fixture in F3.)
@@ -1236,8 +1263,11 @@ documento di design di M1.
 
 ### Debiti che M1 eredita, in ordine di quanto costano se ignorati
 
-1. ~~**Playwright, `pnpm e2e`.**~~ **Chiuso il 4 set 2026, a forza** (§11): esiste `pnpm e2e`, tre
-   smoke su Chromium contro il bundle di produzione, **bloccanti in CI**. Quello che **resta
+1. ~~**Playwright, `pnpm e2e`.**~~ **Chiuso il 4 set 2026, a forza** (§11): esiste `pnpm e2e`, e al
+   5 set 2026 sono **dieci** test su Chromium contro il bundle di produzione, **bloccanti in CI** —
+   quattro in `smoke.spec.ts` e sei in `back-office.spec.ts`, cresciuti a ogni difetto trovato
+   guardando (§11, §12, §13), e gli ultimi due misurano **geometria** perché il testo era già
+   corretto. Quello che **resta
    scoperto** è la metà che il design §8 immaginava e che questa suite non fa: il giro con l'**API
    vera** e una `/{slug}` pubblicata da un seed. Oggi `/api/me` arriva da `e2e/fixtures.ts` e ogni
    altra chiamata `/api` fallisce apposta. Quindi «lo staff apre l'editor, aggiunge un blocco,
