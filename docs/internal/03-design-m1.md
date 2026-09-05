@@ -1,10 +1,16 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.0 — 5 settembre 2026
+**Versione documento:** 1.1 — 5 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.1** (5 set 2026): scrivendo il piano di implementazione (`04-piano-implementazione-m1.md`)
+è emersa una **contraddizione dentro questo documento**: §5.2 diceva che in M1 «esiste la tabella» delle
+preferenze di notifica, e §10.2 elencava cinque tabelle nuove senza contarla. Decisa da Carmine la forma
+— `hub_notification_preferences` — e corrette §5.2, §10.2 (che ora dice **sei**), §12 (la previsione da
+verificare alla chiusura) e §13 punto 12. Nient'altro del perimetro cambia.
 
 > M0 ha costruito i meccanismi. M1 è la milestone in cui si vede **se erano quelli giusti**, perché il
 > sito pubblico dovrebbe essere configurazione molto più che codice (piano §16.15). Questo documento è
@@ -404,8 +410,11 @@ toccarla.
   dal backend con `LocaleCatalog` che già esiste. È il namespace che HANDOFF §7 diceva sarebbe nato da
   sé, e `pnpm i18n:check` lo prende in carico senza modifiche perché legge tutti quelli che trova.
 - In sviluppo l'SMTP è **Mailpit**, già in `docker-compose.yml` dal primo giorno.
-- Preferenze per tipo di notifica in `/me/profile`: in M1 esiste la tabella e una sola preferenza
-  (contatti del proprio dipartimento). Nessuna schermata elaborata finché non ci sono tipi da scegliere.
+- Preferenze per tipo di notifica in `/me/profile`: in M1 nasce la tabella
+  **`hub_notification_preferences`** (`Vid`, `Type`, `Enabled`) con una sola preferenza dentro — i
+  contatti del proprio dipartimento. Nessuna schermata elaborata finché non ci sono tipi da scegliere.
+  Una tabella e non una colonna su `hub_users`: al secondo tipo di notifica la colonna costerebbe una
+  migrazione, la tabella una riga (deciso il 5 set 2026; §10.2 la conta).
 
 ---
 
@@ -554,8 +563,13 @@ Nessun handler nuovo. Ogni riga qui sopra è un nome nel catalogo e una riga nel
 
 ### 10.2 Tabelle nuove
 
-`cms_media`, `cms_categories`, `cms_menu_items`, `cms_contact_messages`, `hub_notifications`. Cinque,
-tutte con lo stesso stampo (localized + dipartimento + visibilità + audit), tutte **additive**.
+`cms_media`, `cms_categories`, `cms_menu_items`, `cms_contact_messages`, `hub_notifications`,
+`hub_notification_preferences`. **Sei**, tutte **additive**. Le prime quattro hanno lo stesso stampo
+(localized + dipartimento + visibilità + audit); le due `hub_` no, perché una coda e una preferenza non
+appartengono a un dipartimento e non si traducono.
+
+⚠️ Fino alla v1.0 di questo documento erano **cinque**: §5.2 nominava la tabella delle preferenze e
+questo elenco non la contava. La sesta non è perimetro nuovo, è la stessa tabella contata una volta.
 
 ### 10.3 Migrazioni
 
@@ -629,7 +643,7 @@ con una fase per sessione e i prompt di apertura, come `02-` per M0. È l'ordine
 | **G11** | Editor: differenze dal template, dnd-kit, anteprima multi-device | Le rifiniture dopo che l'editor è stato usato davvero in G8 |
 | **G12** | Migrazione a mano dei contenuti, giro visivo, chiusura | Il giro visivo di M0 ha trovato tre difetti in un giorno: si rifà |
 
-**La previsione da verificare alla chiusura**: M1 aggiunge cinque tabelle, tre aree di permessi, cinque
+**La previsione da verificare alla chiusura**: M1 aggiunge sei tabelle, tre aree di permessi, cinque
 estensioni al generatore di form, quattro componenti custom (`CalendarView`, `ContactForm`,
 `LiveStatusStrip`, `MediaPicker`) e **un solo endpoint scritto a mano** (l'upload multipart). Tutto il
 resto — 22 blocchi, sei schermate di back-office, otto rotte pubbliche — dovrebbe essere
@@ -663,7 +677,8 @@ non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
 11. **Le media stanno su disco con nome opaco**, servite da una rotta con il query filter davanti, e
     l'upload è **l'unico endpoint scritto a mano** di M1 (§2).
 12. **Il servizio notifiche nasce in M1** con i contatti come unico mittente di intenti, coda + Quartz,
-    template nel namespace `mail` dei file di lingua (§5.2).
+    template nel namespace `mail` dei file di lingua, e le preferenze in una **tabella**
+    (`hub_notification_preferences`) e non in una colonna di `hub_users` (§5.2, §10.2).
 13. **Le tre risposte della ricerca**: rilevanza esplicita con punteggio selezionato una volta,
     evidenziazione lato client su uno `snippet` per lingua, parole corte **dette** all'utente (§7).
 14. **Quattro componenti custom nuovi** nell'elenco chiuso: `CalendarView`, `ContactForm`,

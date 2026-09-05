@@ -4,18 +4,19 @@
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
 **Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, e M1 è aperta: ha il suo documento di
-design** (`03-design-m1.md`, «Come si apre M1» qui sotto). Il prossimo lavoro è il piano di
-implementazione di M1. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+design e il suo piano di implementazione** (`03-design-m1.md`, `04-piano-implementazione-m1.md`,
+«Come si apre M1» qui sotto). Il prossimo lavoro è la fase **G0**, la rete e2e con l'API vera. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
 mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
 sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
 §16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
 nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
 chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
 piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). `main` è a `58114e2`,
-quattro PR avanti al tag.
-**Piano:** v0.36. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.0 (`03-design-m1.md`, 5 set 2026) — **scritto**; il piano di implementazione di M1 no.
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). `main` è a `9c2ad2b`,
+cinque PR avanti al tag.
+**Piano:** v0.37. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
+**Design M1:** v1.1 (`03-design-m1.md`). **Piano di implementazione M1:** v1.1
+(`04-piano-implementazione-m1.md`, fasi G0–G12, nessuna aperta).
 **Test:** 353 .NET verdi (253 unit + 100 integrazione) + **79 Vitest** + **10 smoke Playwright**.
 Nessuno skippato, **rieseguiti tutti e tre il 5 set 2026** contro la MariaDB vera prima di scrivere
 questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
@@ -129,8 +130,18 @@ possiede; lo **staging Plesk esce da M1 ed entra in M2** (le risposte A9 non ci 
 blocca M2); la **migrazione dei contenuti dal Blazor è manuale**, nessun import; il **debito n.1** —
 il giro e2e contro l'API vera — è la **prima** fase di M1, non l'ultima.
 
-**Quello che manca prima di un branch di codice è il piano di implementazione**, `04-piano-implementazione-m1.md`:
-una fase per sessione e i prompt di apertura, come `02-` per M0. §12 del design è l'ordine, non il piano.
+**Il piano di implementazione c'è**, `04-piano-implementazione-m1.md` v1.1: una fase per sessione, i
+prompt di apertura in §C, i rischi in §E, come `02-` per M0. §12 del design era l'ordine; il piano è
+quello che dice cosa consegna ogni fase e con quali test si chiude. Si apre da **G0**.
+
+Scrivendolo sono state prese **tre decisioni** che il design lasciava a chi implementa, tutte del 5 set
+2026: le dimensioni di un'immagine le legge un **parser di header** per PNG/JPEG/WebP in un helper del
+nucleo (niente `ImageSharp`, niente `SkiaSharp` con i suoi asset nativi in un self-contained);
+l'upload multipart convive con `MapCrud` **estendendo `CrudOptions`** perché una risorsa possa non
+mappare la create, non spostando l'upload su un secondo indirizzo; e le preferenze di notifica sono la
+tabella `hub_notification_preferences`, non una colonna di `hub_users`. La terza ha corretto una
+contraddizione dentro il design — §5.2 nominava una tabella che §10.2 non contava — che è passato a
+**v1.1** e ora dice **sei** tabelle nuove.
 
 **Il punto di partenza è pulito, e vale la pena saperlo prima di cercare code da finire.** Nessuna PR
 aperta, working tree pulito, i 442 test verdi rieseguiti oggi, nessun difetto noto in sospeso, e le
