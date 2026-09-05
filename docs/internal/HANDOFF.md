@@ -3,17 +3,19 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa e la coda è finita: il prossimo lavoro è
-M1.** F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, e M1 è aperta: ha il suo documento di
+design** (`03-design-m1.md`, «Come si apre M1» qui sotto). Il prossimo lavoro è il piano di
+implementazione di M1. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
 mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
 sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
 §16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
 nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
 chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
-piano (§3, ultima voce). **Non resta niente di M0 da finire.**
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). `main` è a `b435532`,
-tre PR avanti al tag.
-**Piano:** v0.35. **Design:** v2.1. **Piano di implementazione:** v1.6.
+piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). `main` è a `58114e2`,
+quattro PR avanti al tag.
+**Piano:** v0.36. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
+**Design M1:** v1.0 (`03-design-m1.md`, 5 set 2026) — **scritto**; il piano di implementazione di M1 no.
 **Test:** 353 .NET verdi (253 unit + 100 integrazione) + **79 Vitest** + **10 smoke Playwright**.
 Nessuno skippato, **rieseguiti tutti e tre il 5 set 2026** contro la MariaDB vera prima di scrivere
 questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
@@ -115,12 +117,20 @@ worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4
 prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
 ma è stato un caso. Costa due secondi.
 
-**M1 non ha ancora un design.** M0 ne ha avuto uno (`01-design-m0.md`) prima di una riga di codice,
-e il piano §13 dice che ogni milestone ne riceve uno: il primo lavoro di M1 è scriverlo, non aprire
-un branch. Quello che M1 deve coprire è in §10 qui sotto, e il primo capitolo di quel design è il
-**set dei blocchi**, perché il piano §16.C dice che le convenzioni dei blocchi si decidono con il set
-davanti e il catalogo delle 24 voci esiste già in §9.3 (§10 lo riassume, comprese le due trappole:
-`Columns` non deve diventare un blocco, e la ui-kit monta da sé quello che il registry dichiara).
+**M1 ha il suo design**, scritto il 5 set 2026: `03-design-m1.md` v1.0. Copre il perimetro, il set
+dei blocchi (22 nuovi, il catalogo di §9.3 meno `Columns`, meno le tre già coperte da M0, meno quelle
+di proprietà di un modulo), le **convenzioni dei blocchi** che chiudono piano §16.C, news e documenti,
+il calendario con UI, media, contatti e notifiche, staff directory e live status, la ricerca, il menu
+editoriale e le pagine di sistema, le rifiniture dell'editor, e l'ordine di lavoro proposto in tredici
+fasi G0–G12.
+
+Quattro decisioni prese aprendo M1, il 5 set 2026: il set dei blocchi è **tutto** quello che il nucleo
+possiede; lo **staging Plesk esce da M1 ed entra in M2** (le risposte A9 non ci sono, e §15.2c ora
+blocca M2); la **migrazione dei contenuti dal Blazor è manuale**, nessun import; il **debito n.1** —
+il giro e2e contro l'API vera — è la **prima** fase di M1, non l'ultima.
+
+**Quello che manca prima di un branch di codice è il piano di implementazione**, `04-piano-implementazione-m1.md`:
+una fase per sessione e i prompt di apertura, come `02-` per M0. §12 del design è l'ordine, non il piano.
 
 **Il punto di partenza è pulito, e vale la pena saperlo prima di cercare code da finire.** Nessuna PR
 aperta, working tree pulito, i 442 test verdi rieseguiti oggi, nessun difetto noto in sospeso, e le
@@ -1213,8 +1223,9 @@ M0 ha costruito i meccanismi; M1 è la milestone in cui si vede che erano quelli
 sito pubblico dovrebbe essere **configurazione molto più che codice**. Se non lo è, il posto dove
 scoprirlo è qui.
 
-**Prima di qualsiasi branch**: M1 riceve un documento di design come M0 (piano §13), e il perimetro
-qui sotto è il suo indice di partenza, non la sua sostituzione.
+**Fatto il 5 set 2026**: M1 ha ricevuto il suo documento di design, `03-design-m1.md` v1.0 (piano
+§13). Il perimetro qui sotto è stato il suo indice di partenza; da adesso in poi, **su M1 vince il
+design**, e questa sezione resta come il racconto di che cosa M0 ha lasciato aperto e perché.
 
 ### Il perimetro che il piano assegna a M1
 
@@ -1262,6 +1273,12 @@ che le convenzioni dei blocchi si decidono **con il set davanti**: è esattament
 documento di design di M1.
 
 ### Debiti che M1 eredita, in ordine di quanto costano se ignorati
+
+**Dove sono finiti** (design M1, 5 set 2026): il n.1 è la **prima fase** di M1 (§11.1); il n.2 (le
+differenze rispetto al template) è §9.1; il n.3 (`seo`) è §9.2, che ne decide la forma; il n.4
+(`expiresAt`) si chiude di rimbalzo con le estensioni del generatore di form (§1.6); il n.10 (le tre
+domande della ricerca) è §7. Il n.6 (`firStaffScope`) resta aperto e passa a M2. Gli altri restano
+com'erano, ed è una scelta scritta.
 
 1. ~~**Playwright, `pnpm e2e`.**~~ **Chiuso il 4 set 2026, a forza** (§11): esiste `pnpm e2e`, e al
    5 set 2026 sono **dieci** test su Chromium contro il bundle di produzione, **bloccanti in CI** —
