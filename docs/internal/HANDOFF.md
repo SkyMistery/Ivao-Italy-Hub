@@ -14,8 +14,8 @@ sono dimostrate end-to-end su `links` e su una pagina nata da un template, che �
 nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
 chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
 piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #37, `main`
-è **nove PR avanti** al tag `v0.1.0-m0`.
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #38, `main`
+è **dieci PR avanti** al tag `v0.1.0-m0`.
 **Piano:** v0.39. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
 **Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.4
 (`04-piano-implementazione-m1.md`, fasi G0–G12): **G0 e G1 sono chiuse** (§14, §16), la prossima è
@@ -1836,8 +1836,8 @@ quello di sviluppo, e non lo ripulisce: ogni giro crea la propria pagina. Il res
 
 ### Igiene
 
-Il branch `docs/design-m1` (locale e su origin) è di una sessione precedente e la sua PR #33 è già
-fusa: si può cancellare.
+Niente da ripulire: `docs/design-m1` e `m1/g1-media-library` sono stati cancellati alla fusione di
+#38, e `git branch -a` mostra soltanto `main`.
 
 ⚠️ **Docker Desktop di questa macchina è caduto due volte durante G1**, e non per colpa del
 progetto: al riavvio il backend non riesce a rimuovere due socket rimasti da un crash precedente
