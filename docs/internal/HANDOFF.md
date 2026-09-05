@@ -6,17 +6,17 @@
 **Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, M1 è aperta e la sua prima fase è
 fatta**: design (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`) e **G0**, il giro
 contro l'API vera in un browser, che chiude il debito n.1 di §10 (il racconto è in **§14**). Il
-prossimo lavoro è **G1**, la media library. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+prossimo lavoro è **G1**, la media library — si apre con il prompt di `04-` §C, `<N>` = 1. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
 mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
 sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
 §16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
 nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
 chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
 piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #35, `main`
-è **sette PR avanti** al tag `v0.1.0-m0`.
-**Piano:** v0.37. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.1 (`03-design-m1.md`). **Piano di implementazione M1:** v1.1
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #36, `main`
+è **otto PR avanti** al tag `v0.1.0-m0`.
+**Piano:** v0.38. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
+**Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.3
 (`04-piano-implementazione-m1.md`, fasi G0–G12): **G0 è chiusa** (§14), la prossima è **G1**.
 **Test:** 355 .NET verdi (253 unit + 102 integrazione) + **79 Vitest** + **10 smoke Playwright** +
 **3 del giro pieno** (`pnpm e2e:full`, G0 di M1).
@@ -1659,6 +1659,51 @@ prima. Entra in **G8**; la forma va confermata prima di aprire la fase. Piano v0
 
 ### Che cosa resta di G0
 
-Niente. La fase è chiusa quando la PR è verde: tre test nuovi in CI con il servizio MariaDB,
-`E2EBenchTests` (2), e le suite di M0 tutte ancora verdi.
+Niente. La fase è chiusa: PR #35 fusa con la CI verde — tre test nuovi in CI con il servizio
+MariaDB, `E2EBenchTests` (2), e le suite di M0 tutte ancora verdi.
+
+---
+
+## 15. Da dove riparte la prossima sessione (5 set 2026)
+
+### Si apre G1
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 1: la **media library**. Due cose la fase le ha già
+decise e non vanno riaperte:
+
+- le **dimensioni di un'immagine** le legge un parser di header per PNG/JPEG/WebP in un helper del
+  nucleo — niente `ImageSharp` (licenza da verificare) né `SkiaSharp` (asset nativi in un pacchetto
+  self-contained). Se un formato futuro chiede di più, è una (c) con la nota;
+- l'**upload multipart** convive con `MapCrud` estendendo `CrudOptions` perché una risorsa possa non
+  mappare la create, in modo **generico** dentro `Core/Data/Crud/` — non con un ramo che nomina la
+  media, e non spostando l'upload su un secondo indirizzo.
+
+### Deciso e già collocato, da non ridiscutere
+
+- **I template sono di dipartimento e li legge tutto lo staff** (piano §9.3, design M1 §9.4). Si
+  implementa nel **primo task di G5**; senza, §9.1 del design non ha il dato da mostrare.
+
+### Aperto, e serve una risposta di Carmine prima di G8
+
+La **dashboard di dipartimento** (design M1 §14, `decisions/2026-09-05-dashboard-di-dipartimento.md`).
+Tre domande, con la raccomandazione già scritta nella nota:
+
+1. **blocchi** (una riga di `cms_contents` per dipartimento) o **widget**? — raccomandati i blocchi;
+2. la vede **solo il proprio dipartimento** o qualunque staff? — raccomandato il proprio;
+3. entra in **M1/G8** o slitta a M2? — raccomandato G8, se blocchi.
+
+Nulla di tutto questo blocca G1–G4.
+
+### Il banco e2e, in due righe
+
+`docker compose up -d mariadb`, poi da `web/`: `pnpm e2e:full`. Pubblica in `artifacts/e2e-bench/`,
+avvia su <http://127.0.0.1:5080>, aspetta `/health`, gira. `E2E_SKIP_PUBLISH=1` riusa l'ultima
+pubblicazione mentre si lavora sulle spec. Scrive in un database suo, **`ivaohub_e2e`**, mai in
+quello di sviluppo, e non lo ripulisce: ogni giro crea la propria pagina. Il resto in
+`web/e2e/full/README.md`.
+
+### Igiene
+
+Il branch `docs/design-m1` (locale e su origin) è di una sessione precedente e la sua PR #33 è già
+fusa: si può cancellare.
 
