@@ -34,17 +34,18 @@ misura la **geometria**, perché le prime due asserivano sul testo e il testo er
 
 ### Il tag
 
-**`v0.1.0-m0` punta a `2f5427f`**, il merge commit del secondo hotfix (PR #26, due genitori,
-verificato). Ci è arrivato al **quarto** tentativo, e i tre precedenti sono la storia di §9, §11 e
-§12: il primo tag era finito sulla punta di F8 perché il rapporto di chiusura conteneva un blocco
-eseguibile che saltava il merge; il secondo puntava a F9 fusa, che era il commit giusto ma
-un'applicazione che non si apriva in un browser; il terzo a un'applicazione che si apriva e in cui
-nessun form del back-office era raggiungibile.
+**`v0.1.0-m0` punta a `fc0edb2`**, il merge commit del terzo hotfix (PR #28, due genitori,
+verificato). Ci è arrivato al **quinto** tentativo, e i quattro precedenti sono la storia di §9, §11,
+§12 e §13 — **nessuno è stato lo stesso errore due volte**: il primo tag era finito sulla punta di
+F8 perché il rapporto di chiusura conteneva un blocco eseguibile che saltava il merge; il secondo
+puntava a F9 fusa, un'applicazione che non si apriva in un browser; il terzo a una che si apriva e
+in cui nessun form del back-office era raggiungibile; il quarto a una in cui il back-office era
+raggiungibile e disegnato in una colonna da 255 pixel.
 
 La release è pubblicata e **verificata sull'artefatto, non sul commit**: lo zip
 (`ivao-division-hub-v0.1.0-m0.zip`) è stato scaricato, scompattato, il suo `wwwroot/` servito, e
-**tutti e otto** gli smoke Playwright eseguiti **contro quello** — cioè contro il file che qualcuno
-scaricherebbe, non contro una build locale dello stesso commit. Otto su otto.
+**tutti e nove** gli smoke Playwright eseguiti **contro quello** — cioè contro il file che qualcuno
+scaricherebbe, non contro una build locale dello stesso commit. Nove su nove, geometria del layout compresa.
 
 ⚠️ **Il server con cui lo si serve deve fare il fallback SPA.** Al primo tentativo i quattro smoke
 del back-office sono usciti rossi contro un pacchetto perfettamente sano: `python -m http.server` è
@@ -62,8 +63,27 @@ i nomi sono manglati e il risultato non distingue «il provider è nel bundle» 
 montato». La verifica è **comportamentale** o non è.
 
 `release.yml` **dipende da `build-test`**, che dallo stesso giorno include gli smoke in un browser:
-i 353 test .NET, i 76 Vitest e gli 8 Playwright girano prima che lo zip esista. È la
+i 353 test .NET, i 76 Vitest e i 9 Playwright girano prima che lo zip esista. È la
 proprietà per cui quella dipendenza esiste, ed è servita due volte in un giorno.
+
+### Che cosa ha trovato davvero il giro visivo, e perché conta per M1
+
+Tre difetti in un giorno, tutti trovati **guardando l'applicazione**, nessuno da un test. E i tre
+sono una scala, che vale la pena leggere in ordine perché descrive un punto cieco che si restringe:
+
+| | Che cosa non funzionava | Perché i test non lo vedevano |
+|---|---|---|
+| §11 | Nessuna schermata si disegnava | Nessun test montava l'albero dei provider |
+| §12 | Nessun form era raggiungibile | Nessun test montava la composizione delle route |
+| §13 | Tutto funzionava, in una colonna da 255 px | Ogni test chiedeva «c'è?», nessuno «dov'è?» |
+
+Ogni rete nuova ha chiuso il buco che la precedente lasciava aperto, e l'ultima ha dovuto misurare
+**pixel** perché il testo era corretto. Se M1 aggiunge schermate, la domanda da farsi non è «ho
+scritto i test?» ma **«che cosa, di questa schermata, un test non può vedere?»**.
+
+Le due cose viste e non corrette in §13 — l'intestazione di colonna che riusa la chiave
+dell'etichetta del form, e i campi tradotti più stretti degli altri — restano decisioni aperte per
+M1.
 
 ### Come si apre M1
 
