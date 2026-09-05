@@ -1628,15 +1628,17 @@ lezione di §11: una rete che non si prova rompendola non è una rete.
 
 ### Due cose viste facendo il giro, nessuna corretta qui
 
-1. ⚠️ **I template di sistema li vede solo il dipartimento Web.** `ContentTemplateSeeder` li semina
+1. ⚠️ **I template di sistema li vedeva solo il dipartimento Web.** `ContentTemplateSeeder` li semina
    con `OwnerDepartment = WD` e `Content.View` è di dipartimento: per un coordinatore ED,
-   `filter[isTemplate]=true` risponde **zero righe** e «Nuovo da template» non compare affatto.
-   Verificato nel browser con una sessione `IT-EC` vera. Tocca G5, G8 e soprattutto G11 (l'editor
-   legge il template per mostrare le differenze: se appartiene a un altro dipartimento, non può).
-   **Serve una decisione**: `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`, con tre
-   strade e una raccomandata. Nel frattempo il banco firma come coordinatore **Web** (`IT-WM`), che è
-   chi costruisce il sito — ma quel ruolo raggiunge ogni dipartimento, quindi **il giro non esercita
-   la guardia di dipartimento**: quella resta di `back-office.spec.ts`.
+   `filter[isTemplate]=true` rispondeva **zero righe** e «Nuovo da template» non compariva affatto.
+   Verificato nel browser con una sessione `IT-EC` vera. **Deciso lo stesso giorno da Carmine**: il
+   template resta di un dipartimento — ognuno si fa i suoi — ma **lo legge tutto lo staff**, e chi
+   vuole divergere ne prende una copia che diventa sua. Nota:
+   `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`; si implementa nel **primo task di
+   G5**, e senza di essa §9.1 del design (le differenze rispetto al template) non avrebbe il dato da
+   mostrare a nessuno fuori da WD. Nel frattempo il banco firma come coordinatore **Web** (`IT-WM`),
+   che è chi costruisce il sito — ma quel ruolo raggiunge ogni dipartimento, quindi **il giro non
+   esercita la guardia di dipartimento**: quella resta di `back-office.spec.ts`.
 2. ⚠️ **Pubblicare non dice niente a schermo.** Si clicca «Pubblica», la chiamata parte, la riga
    cambia versione e sullo schermo non cambia nulla di visibile. Non è un difetto di correttezza — la
    cache viene aggiornata e il form si rimonta sulla versione nuova — ma è la cosa che, guardando, si
@@ -1644,6 +1646,16 @@ lezione di §11: una rete che non si prova rompendola non è una rete.
    Di rimbalzo: modificare **nello stesso millisecondo** in cui la pubblicazione risponde salva contro
    la versione precedente e prende 409, giustamente. Una persona non digita così in fretta; il test sì,
    e infatti ricarica la pagina come farebbe chi torna a cambiare qualcosa.
+
+### Una cosa che non c'era in nessun documento: la dashboard di dipartimento
+
+Chiesta da Carmine il 5 set 2026 aprendo M1. I documenti conoscevano solo la dashboard **personale**
+`/me`, che compone i widget del registry; `/staff/{dept}` non esiste nemmeno come schermata, e il
+piano §8.2 chiamava `/staff/{dept}/**` «spazio del dipartimento» senza dire che cosa si vedesse
+arrivandoci. È il caso **(c)** di `CLAUDE.md` §5, quindi è stata scritta prima di essere codificata:
+`decisions/2026-09-05-dashboard-di-dipartimento.md` misura il bivio (una riga di `cms_contents` per
+dipartimento contro una disposizione di widget, che vorrebbe un secondo editor) e raccomanda la
+prima. Entra in **G8**; la forma va confermata prima di aprire la fase. Piano v0.38, design M1 v1.2.
 
 ### Che cosa resta di G0
 

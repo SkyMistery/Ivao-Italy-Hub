@@ -1,9 +1,29 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.37 — 5 settembre 2026 (M1 ha anche il suo piano di implementazione: fasi G0–G12, tre decisioni prese scrivendolo)
+**Versione documento:** 0.38 — 5 settembre 2026 (i template sono di dipartimento e li legge tutto lo staff; ogni dipartimento nasce con la propria dashboard)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha il suo documento di design** (`03-design-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi; manca il piano di implementazione. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.38** (5 set 2026): due decisioni di Carmine dopo la prima fase di M1, e la prima
+delle due è nata **facendo** il giro in un browser invece che leggendolo.
+
+**I template sono strumenti di dipartimento, e ogni staff li legge tutti** (§9.3). G0 ha mostrato che
+i tre template seminati appartengono a WD e che `Content.View` è di dipartimento: per un coordinatore
+di qualunque altro dipartimento «Nuovo da template» non esisteva affatto, e — peggio — una pagina nata
+da un template che il suo editore non può leggere perde nell'editor i vincoli di quel template. Ogni
+dipartimento si fa i propri template e li modifica con il `Content.ManageTemplates` che ha già sul
+proprio; la lettura diventa comune, la scrittura resta dove era. Usare il template di un altro crea
+una pagina **nel proprio** dipartimento; copiarlo — una copia che diventa tua — è il modo di
+divergere e si costruisce quando serve. Nota:
+`decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`; lavoro in G5 del piano di M1.
+
+**Ogni dipartimento nasce con una dashboard** (§8.2), che poi modifica. Non era in nessun documento:
+il piano conosceva `/staff/{dept}/**` come «spazio del dipartimento» senza dire che cosa si vedesse
+arrivandoci, e `/me` è la dashboard di una **persona**. La forma raccomandata la scrive
+`decisions/2026-09-05-dashboard-di-dipartimento.md` — una riga di `cms_contents` per dipartimento,
+seminata da un template e modificata nell'editor che esiste, invece di un secondo modo di comporre
+una schermata — ed è **da confermare** prima di G8, che è dove entra.
 
 **Changelog 0.37** (5 set 2026): **M1 ha il suo piano di implementazione**,
 `04-piano-implementazione-m1.md` v1.1 — tredici fasi G0–G12, una per sessione, con i prompt di apertura
@@ -806,6 +826,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /about                     Divisione, staff directory (da claim IVAO), partner, contatti
 /me                        Dashboard personale; /me/profile, /me/bookings, /me/training, /me/tours
 /staff                     Back-office: entri e vedi SOLO il tuo dipartimento (§9.0); DIR/ADIR/WM vedono tutti
+/staff/{dept}              Dashboard del dipartimento: seminata alla nascita, poi modificata dal dipartimento nell'editor dei contenuti (riga di `cms_contents` con visibilità `department`)
 /staff/{dept}/**           Spazio del dipartimento: le sue pagine, news, documenti, voci di calendario, contatti + le schermate del suo modulo (es. /staff/ev/events, /staff/tr/requests, /staff/fo/tours)
 /staff/admin/**            Solo Director/WM/superadmin: utenti e grant, moduli/maintenance, impostazioni divisione, audit
 /{locale}/...              prefisso lingua opzionale per SEO delle pagine pubbliche
@@ -873,9 +894,11 @@ Deciso da Carmine: **tutti i contenuti creati dal sito sono documenti modulari**
 - **Il template è un contenuto anch'esso**: una riga di `cms_contents` con `is_template = true`, stesso dipartimento, stesso editor. In più, per ogni sezione, porta tre attributi che il contenuto normale ignora: `required`, `locked` (struttura fissa: si compila, non si ristruttura) e `allowedBlocks`. «Nuovo da template» è una copia profonda che conserva `template_id`. Niente tabella dei template, niente editor dei template. I template di sistema (Landing, Section page, About, Contact, Onboarding, Verbale, Guida, Policy) e quelli portati dai moduli sono **seed JSON**, non codice, e chi forka li modifica dall'interfaccia.
 - **Cambio di template dopo la creazione dei figli** (deciso): nessuna propagazione automatica del contenuto. Nell'**editor** il contenuto figlio mostra la sezione nuova da compilare ed evidenzia quella che il template ha tolto, con un'azione «allinea»; il **pubblico** continua a vedere la versione pubblicata, congelata in `cms_content_versions`, finché qualcuno non ripubblica. È lo stesso patto di vIPI: documento pubblico congelato, editor che mostra cosa non va.
 - **Chi crea o modifica template** (deciso): solo Director, Assistant Director, WM, AWM e, per il proprio dipartimento, coordinator e assistant coordinator — permesso `Content.ManageTemplates` nella grammatica di §16.3. Advisor e membri usano i template, non li cambiano.
+- **Chi li legge** (deciso il 5 set 2026, dopo G0 di M1): **tutto lo staff, di qualunque dipartimento**. Il template appartiene a un dipartimento — ognuno si fa i suoi — ma la lettura è comune: altrimenti i template di sistema, che nascono nel dipartimento Web, sarebbero invisibili a tutti gli altri e «Nuovo da template» non comparirebbe nemmeno; e una pagina nata da un template che il suo editore non può leggere perde nell'editor i vincoli di quel template, cioè la riga precedente smette di valere. Usare il template di un altro dipartimento crea una pagina **nel proprio**; **copiarlo** nel proprio — una copia che da quel momento è sua — è il modo di divergere, e si costruisce quando serve davvero. La scrittura resta dove è: `Content.ManageTemplates` sul dipartimento che possiede il template. Nota: `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`.
 - **Pubblicazione e versioni**: ogni «Pubblica» crea una riga in `cms_content_versions` (fotografia di titolo e `body_json`); il sito pubblico legge **solo** la versione pubblicata.
 - **Blocchi Data: live o frozen, a scelta** (deciso da Carmine, come le sezioni derivate di vIPI). Ogni blocco *Data* porta `renderMode: live | frozen`. *Live*: la versione pubblicata interroga i dati al momento della lettura (un elenco «prossimi eventi» in una pagina di sezione). *Frozen*: alla pubblicazione il renderer cattura il risultato del blocco e lo salva nella versione (`frozen_json` accanto alle `props`), così un verbale o una policy fotografano i dati di quel giorno anche se la fonte cambia. Il template può fissare il `renderMode` di una sezione `locked`; alcuni blocchi sono **sempre live** per natura (`networkStats`: uno stato della rete congelato è un dato scaduto spacciato per attuale, la stessa regola del METAR in vIPI) e non espongono il toggle. Non si prende il ciclo AIRAC di vIPI: qui la «release» è la singola pubblicazione.
 - **Rendering**: ogni `type` ha un componente React in `web/src/blocks/` costruito con Atmosphere; registry `type → componente`; blocchi sconosciuti rendono un avviso solo per lo staff. Lo schema dei blocchi vive **solo** in TypeScript/zod (§16.5): il backend tratta `body_json` come opaco (controlla `schema_version` e dimensione), estrae il testo per la ricerca con un walker generico delle stringhe e non replica lo schema in C#. Sanitizzazione di markdown ed `embed` (allowlist di host) in un solo componente. Per il SEO delle pagine pubbliche non si fa prerender (§16.11).
+- **La dashboard di un dipartimento è una riga come le altre** (deciso il 5 set 2026, forma da confermare): ogni dipartimento nasce con la propria, seminata da un template, con visibilità `department`, e la modifica nello stesso editor. Non è una seconda macchina per comporre schermate: i widget restano le tile della dashboard **personale** `/me`, dove la composizione è per persona e non editoriale. Nota: `decisions/2026-09-05-dashboard-di-dipartimento.md`.
 - **Editor** (`/staff/{dept}/contents`): albero di sezioni e blocchi «a lista» con aggiungi / sposta su-giù / duplica / elimina, form proprietà generato dallo schema zod, anteprima nella stessa pagina, bozza/pubblicato, lingue affiancate nello stesso form («copia dall'altra lingua»). Niente canvas, niente drag libero (al più `dnd-kit` sulla lista, in un secondo momento). Le sezioni `locked` mostrano solo i campi da compilare.
 - **Le pagine «di sistema»** (home, `/start`, `/pilots`, `/about`) sono righe `kind = page` seedate al primo avvio dai template con contenuto Lorem tradotto: chi forka le riempie dall'editor, mai dal codice.
 - **Confine con vIPI invariato**: SOP, LoA, vPIV e spazi aerei restano in vIPI (§9.4); questo modello serve a tutto il resto.

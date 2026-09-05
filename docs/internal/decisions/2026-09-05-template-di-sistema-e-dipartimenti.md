@@ -1,53 +1,82 @@
-# I template di sistema li vede solo il dipartimento Web
+# I template sono strumenti di dipartimento, e ogni staff può leggerli
 
-**Data:** 5 settembre 2026 — trovata in G0 di M1, **aperta**
-**Serve una decisione di Carmine.** G0 si è chiusa senza toccarla: è fuori dal suo perimetro.
+**Data:** 5 settembre 2026 — trovata in G0 di M1, **decisa da Carmine lo stesso giorno**
+**Dove va implementata:** G5 (`04-piano-implementazione-m1.md`)
 
-## Cosa succede
+## Cosa succedeva
 
 `ContentTemplateSeeder` semina i tre template di sistema (`section-page`, `about`, `policy`) con
-`OwnerDepartment = WD`. `Content.View` è un permesso **di dipartimento**, e il global query filter
-applica la stessa regola alla lista dei template.
+`OwnerDepartment = WD`. Per un coordinatore ED (posizione `IT-EC`, verificato nel browser durante
+G0) `GET /api/content?filter[isTemplate]=true` risponde **zero righe**, e `TemplatePicker` non rende
+niente quando l'elenco è vuoto: «Nuovo da template» semplicemente non esiste per lui.
 
-Conseguenza, verificata nel browser durante G0 con un coordinatore ED vero (posizione `IT-EC`):
+Tre cancelli, e il primo è già aperto:
 
-- `GET /api/content?filter[isTemplate]=true` risponde **zero righe**;
-- `TemplatePicker` non rende niente quando i template sono zero (è scritto così apposta: un select
-  vuoto invita a cliccare);
-- quindi per un coordinatore che non sia del dipartimento Web **«Nuovo da template» non esiste**, e
-  l'unica via è la pagina vuota.
+1. **il filtro di visibilità non c'entra**: i template sono `Visibility.Staff` e il global query
+   filter lascia passare le righe `Staff` a qualunque staff, di qualunque dipartimento;
+2. **il restringimento della lista** di `MapCrud` (`TryNarrowToDepartments`) la limita ai dipartimenti
+   dell'utente: è questo che risponde zero;
+3. **l'handler unico** chiede `Content.View` *sul dipartimento della riga*: 403 sul dettaglio, e
+   soprattutto nel `from-template`, che quella verifica la fa esplicitamente.
 
-Un coordinatore Web (`IT-WM`) li vede tutti, e infatti il giro di G0 gira come lui.
+⚠️ Conseguenza non ovvia dello stato attuale, letta nel codice: se una pagina nasce da un template
+che il suo editore non può leggere, `contentQuery(templateId)` risponde 403, `templateRules` cade su
+`NO_RULES` e **le sezioni `locked` smettono di apparire bloccate**. Le restrizioni non viaggiano
+nella copia e il server non le rivalida: sono consigli dell'editor. G11 («differenze rispetto al
+template») non avrebbe il dato da mostrare.
 
-## Perché conta adesso
+## La decisione
 
-Non è un difetto di G0 e non blocca M1, ma tocca tre fasi che arrivano:
+**Un template è uno strumento di dipartimento**: appartiene a chi lo possiede, e ogni dipartimento
+si fa i suoi. Ma **ogni staff può leggerli tutti**.
 
-- **G5** (news e documenti): ogni dipartimento crea le proprie righe, e il modo previsto per farlo
-  è partire da un template;
-- **G8** (pagine di sistema seedate): stessa famiglia di righe;
-- **G11** (differenze rispetto al template): l'editor legge il template di una pagina per `key` di
-  sezione. Se il template appartiene a un altro dipartimento, un coordinatore che apre una pagina
-  nata da quel template **non può leggerlo** — le differenze non gliele può mostrare nessuno.
-  Questa è la conseguenza meno ovvia e la più fastidiosa.
+- **Lettura condivisa.** Qualunque membro dello staff legge qualunque template — l'elenco e il corpo.
+  Non è una concessione grande: i template sono `Visibility.Staff` per costruzione, non sono mai
+  pubblicabili (`PublishAsync` li rifiuta), e non contengono dati, solo struttura e testo di esempio.
+- **Scrittura invariata.** Modificare un template resta `Content.ManageTemplates` **sul dipartimento
+  che lo possiede** (`ExtraWritePolicy` + handler dipartimentale). Ogni coordinatore ha già quel
+  permesso sul proprio dipartimento: può creare, modificare e cancellare i propri template, e non
+  toccare quelli altrui.
+- **Usare quello di un altro dipartimento è permesso**, e crea una pagina **nel proprio**: è
+  esattamente ciò che `CreateFromTemplateAsync` già chiede — `Content.View` sul template,
+  `Content.Edit` sul dipartimento di destinazione — e che il suo commento dichiara a parole
+  («*a coordinator may use a template without being allowed to change one*»). Era una porta
+  costruita con cura in un muro senza corridoio; questa decisione apre il corridoio.
+- **Copiare un template nel proprio dipartimento** è il modo di divergere: la copia nasce di
+  proprietà di chi la chiede, e da quel momento è sua. **Non si costruisce ora**: la copia è la
+  stessa copia profonda di `CreateFromTemplateAsync` con `IsTemplate = true` e
+  `Content.ManageTemplates` sulla destinazione, quindi è un secondo uso di codice che esiste, e si
+  scrive quando qualcuno vuole davvero divergere — non prima.
 
-## Le tre strade, con una raccomandazione
+## Come si implementa, e perché tocca la spina dorsale
 
-1. **I template di sistema sono leggibili da tutti gli staff, e modificabili solo da chi ha
-   `Content.ManageTemplates` sul dipartimento che li possiede.** È una riga nella policy di lettura
-   di `MapCrud` per `Content` quando `is_template = true`, non un handler nuovo. Coerente con come
-   il prodotto li descrive: «pagine di sistema», non «pagine del dipartimento Web».
-   **Raccomandata**: è la lettura che il resto del design dà già per scontata (M1 §8.2, §9.1), ed è
-   l'unica che fa funzionare G11 per tutti.
-2. **Ogni dipartimento riceve una copia dei template al seed.** Nessun cambio di policy, ma
-   moltiplica le righe per dipartimento, e una correzione a un template di sistema in una release
-   successiva non raggiunge le copie. Contro `CLAUDE.md` §2.
-3. **Si lascia com'è**: i template li usa solo il dipartimento Web, che costruisce il sito. È
-   difendibile per le pagine, non lo è per news e documenti di G5.
+Due punti, ed entrambi vanno estesi in modo **generico**: nessuno dei due deve sapere che cosa sia
+un template (`CLAUDE.md` §2, piano §16.6).
 
-## Nel frattempo
+1. **Il restringimento della lista**: `CrudOptions` guadagna un predicato di righe leggibili da tutti
+   — `options.SharedForReading = content => content.IsTemplate` — che il motore mette in `OR` con il
+   filtro di dipartimento. Il motore continua a non sapere che cosa sia un template: sa che questa
+   risorsa dichiara alcune righe condivise.
+2. **L'handler unico**: una riga che si dichiara condivisa passa la verifica quando il permesso è di
+   **lettura**. Non un secondo handler — la regola sta dentro l'unico che esiste, come già ci sta
+   quella delle FIR.
 
-Il banco e2e firma come coordinatore **Web** (`IT-WM`), il che è realistico — è chi costruisce il
-sito — ma va saputo: quel ruolo raggiunge ogni dipartimento, quindi il giro di G0 **non** esercita
-la guardia di dipartimento. Quella resta coperta da `web/e2e/back-office.spec.ts`, che gira con un
-coordinatore di un dipartimento solo.
+⚠️ I due punti devono dire la stessa cosa: uno è un'espressione SQL, l'altro un controllo in memoria.
+La forma raccomandata è **una sola fonte** sull'entità (un'espressione statica che l'istanza compila),
+con il test che li confronta. È lo stesso rischio della coppia `blockEnvelopeSchema` /
+`BlockDocumentWalker`, che questo repository tiene onesta con un test di integrazione.
+
+Costo stimato: mezza giornata con i test della spina dorsale. Nessuna migrazione, nessun permesso
+nuovo, nessuna schermata nuova.
+
+## Cosa si è scartato
+
+- **Copia per dipartimento al seed**: dà l'effetto della biblioteca condivisa e il debito delle
+  fotocopie. Il seed si applica una volta per chiave, quindi una release che corregge
+  `section-page` non raggiungerebbe mai le copie già seminate: fra sei mesi ci sono nove varianti
+  dello stesso template e nessuno sa quale sia quella buona.
+- **Lasciare tutto com'è**: coerente (ogni dipartimento si fa i suoi da zero, e già oggi può — crea
+  una pagina, spunta «Template», salva), ma i tre template seminati resterebbero un attrezzo del solo
+  dipartimento Web, e G11 mostrerebbe le differenze solo a chi possiede il template.
+- **Distinguere «template di sistema» da «template di dipartimento»**: richiederebbe una colonna
+  nuova e un concetto in più. La privacy di un template non è un bisogno che il prodotto ha espresso.
