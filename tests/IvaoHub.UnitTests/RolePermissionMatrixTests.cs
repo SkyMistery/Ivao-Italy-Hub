@@ -22,6 +22,8 @@ public sealed class RolePermissionMatrixTests
             CorePermissions.ContentManageTemplates,
             CorePermissions.LinksView,
             CorePermissions.LinksEdit,
+            CorePermissions.MediaView,
+            CorePermissions.MediaEdit,
             CorePermissions.CalendarView,
             CorePermissions.CalendarEdit,
         ];
@@ -44,6 +46,7 @@ public sealed class RolePermissionMatrixTests
 
         Assert.Contains(CorePermissions.ContentEdit, permissions);
         Assert.Contains(CorePermissions.LinksEdit, permissions);
+        Assert.Contains(CorePermissions.MediaEdit, permissions);
         Assert.Contains(CorePermissions.CalendarEdit, permissions);
         Assert.DoesNotContain(CorePermissions.ContentPublish, permissions);
         Assert.DoesNotContain(CorePermissions.ContentManageTemplates, permissions);

@@ -77,6 +77,8 @@ export const staffBootstrap = {
   permissions: [
     { name: 'Links.View', department: 'ED' },
     { name: 'Links.Edit', department: 'ED' },
+    { name: 'Media.View', department: 'ED' },
+    { name: 'Media.Edit', department: 'ED' },
   ],
   navigation: {
     public: [{ key: 'nav.home', path: '/' }],
@@ -104,6 +106,54 @@ export const oneLink = {
   total: 1,
 };
 
+/** One page of the media library, the shape `MapCrud` answers a list with. */
+export const oneMedia = {
+  items: [
+    {
+      id: 9,
+      ownerDepartment: 'ED',
+      visibility: 'Staff',
+      fileName: 'banner.png',
+      contentType: 'image/png',
+      byteSize: 2048,
+      width: 640,
+      height: 360,
+      alt: { en: 'A runway at dawn', it: 'Una pista all alba' },
+      category: null,
+      url: '/media/9/banner.png',
+      createdAt: '2026-09-05T09:00:00Z',
+      updatedAt: '2026-09-05T09:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 25,
+  total: 1,
+};
+
+/** The same file as its metadata form loads it. */
+export const oneMediaDetail = {
+  ...oneMedia.items[0],
+  title: null,
+  hasFile: true,
+  deletedAt: null,
+  createdBy: 111111,
+  updatedBy: 111111,
+  rowVersion: '2026-09-05T09:00:00Z',
+};
+
+/** An empty page, for the "which contents use this file" filter of the content list. */
+export const noContent = { items: [], page: 1, pageSize: 25, total: 0 };
+
+/**
+ * A real picture, 8 by 8 and red, so that a test can measure the box a browser gives it. A stub
+ * answering a broken image would draw the alternative text instead, and the two look nothing alike
+ * on screen but exactly alike to an assertion about text.
+ */
+const RED_8X8_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAFElEQVR42mP8z8BQz0AEYBxVSF+FANqkA/8ZBEwuAAAAAElFTkSuQmCC',
+  'base64',
+);
+
 /**
  * The same stubbing, for a signed in member of the staff: `/api/me` answers with a coordinator and
  * `/api/links` with one page. Anything else under `/api` still fails the test rather than being
@@ -122,9 +172,35 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneLink) }),
   );
 
+  await page.route('**/api/media/*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(oneMediaDetail),
+    }),
+  );
+
+  await page.route('**/api/media?**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneMedia) }),
+  );
+
+  await page.route('**/api/content**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(noContent) }),
+  );
+
+  // Not under /api, so the guard below never sees it: the file route is served by Kestrel.
+  await page.route('**/media/9/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: RED_8X8_PNG }),
+  );
+
   await page.route('**/api/**', (route) => {
     const url = route.request().url();
-    if (url.includes('/api/me') || url.includes('/api/links')) {
+    if (
+      url.includes('/api/me') ||
+      url.includes('/api/links') ||
+      url.includes('/api/media') ||
+      url.includes('/api/content')
+    ) {
       return route.fallback();
     }
 

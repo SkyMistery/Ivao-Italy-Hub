@@ -37,6 +37,27 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     public bool AllowDelete { get; set; } = true;
 
     /// <summary>
+    /// Set to false for a resource whose rows cannot be brought into existence by a JSON payload.
+    /// The media library is the reason it exists: an upload is a multipart request, a row without
+    /// a file on disk must not be able to exist, and moving the upload to a second address would
+    /// have been a second way of creating a media (implementation plan M1, G1).
+    /// <para>It is deliberately a property of the engine and not a branch about one entity: what a
+    /// resource says here is "the create of this resource is not a JSON create", which is a thing
+    /// any resource may be.</para>
+    /// </summary>
+    public bool MapCreate { get; set; } = true;
+
+    /// <summary>
+    /// What deleting a row of this resource means, when it does not mean removing it. The engine
+    /// calls this instead of <c>Remove</c> and saves afterwards, so the audit row, the guard and
+    /// the projections are the ones of an ordinary write.
+    /// <para>The media library is the first: its rows outlive the deletion because an already
+    /// published page names the identifier, and it is the <b>file</b> that goes — and only when
+    /// nothing published still shows it.</para>
+    /// </summary>
+    public Func<TEntity, IServiceProvider, CancellationToken, Task>? Delete { get; set; }
+
+    /// <summary>
     /// Which context owns the entity. The core answers for its own; a module points this at its
     /// own context, which <c>AddModuleDbContext</c> registered with the same interceptor.
     /// </summary>
@@ -50,6 +71,18 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
 
     /// <summary>Property names accepted in <c>?filter[name]=value</c>. Anything else is refused.</summary>
     public IList<string> Filterable { get; } = [];
+
+    /// <summary>
+    /// Filters that are not an equality on a column of the entity. <see cref="Filterable"/> covers
+    /// the ordinary case and covers it in one line; this is for a question the row alone cannot
+    /// answer — "which contents use this media?" reads a JSON body, not a column.
+    /// <para>The function is handed the query and the raw value and returns the narrowed query, or
+    /// null when the value makes no sense, which the engine answers with 400 exactly as it does
+    /// for an unknown filter. The name lives in the same space as <see cref="Filterable"/>, so no
+    /// resource can declare both.</para>
+    /// </summary>
+    public IDictionary<string, Func<IQueryable<TEntity>, string, IQueryable<TEntity>?>> CustomFilters { get; } =
+        new Dictionary<string, Func<IQueryable<TEntity>, string, IQueryable<TEntity>?>>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Property names accepted in <c>?sort=</c>. Anything else is refused.</summary>
     public IList<string> Sortable { get; } = [];

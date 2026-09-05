@@ -101,3 +101,49 @@ test('a translated field is as wide as a plain one', async ({ page }) => {
   expect(plain).not.toBeNull();
   expect(localized!.width).toBeGreaterThan(plain!.width * 0.9);
 });
+
+test('the media library opens and offers the one control the form generator has no notion of', async ({
+  page,
+}) => {
+  await page.goto('/staff/ed/media');
+
+  await expect(page.getByText('Something went wrong!')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: englishCommon.media.title })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'banner.png', exact: true })).toBeVisible();
+
+  // Uploading is not a field of any schema, so it is the one place in the back office with a
+  // control written by hand. The button has to be visible and the input behind it must not be.
+  await expect(page.getByRole('button', { name: englishCommon.media.upload })).toBeVisible();
+  await expect(page.locator('input[type="file"]')).toBeHidden();
+});
+
+test('the preview of a file is a picture with a real size, inside the column it belongs to', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/staff/ed/media/9');
+
+  await expect(page.getByLabel(englishCommon.media.fields.category)).toBeVisible();
+
+  // Two things no assertion about text can see, and the media library is nothing but these two.
+  //
+  // First: the bytes arrived. A file that did not — a wrong address, the route swallowed by the
+  // SPA fallback, a visibility filter saying no — still leaves an <img> in the page carrying its
+  // alternative text, which reads exactly right to every other kind of assertion.
+  const picture = page.getByRole('img', { name: 'A runway at dawn' });
+  await expect(picture).toBeVisible();
+  expect(await picture.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+
+  // Second: the box it is given is a real one, capped, and inside the column it belongs to. The
+  // library holds anything from an icon to a photograph, so the preview must not be the file's own
+  // size or this screen is a different shape for every row.
+  const preview = await picture.boundingBox();
+  const main = await page.locator('main').first().boundingBox();
+
+  expect(preview).not.toBeNull();
+  expect(main).not.toBeNull();
+
+  expect(preview!.height).toBeGreaterThan(20);
+  expect(preview!.height).toBeLessThanOrEqual(200);
+  expect(preview!.x + preview!.width).toBeLessThanOrEqual(main!.x + main!.width);
+});

@@ -3,25 +3,27 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, M1 è aperta e la sua prima fase è
-fatta**: design (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`) e **G0**, il giro
-contro l'API vera in un browser, che chiude il debito n.1 di §10 (il racconto è in **§14**). Il
-prossimo lavoro è **G1**, la media library — si apre con il prompt di `04-` §C, `<N>` = 1. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, e di M1 sono fatte due fasi**: design
+(`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** — il giro contro l'API vera in
+un browser, che chiude il debito n.1 di §10 (**§14**) — e **G1**, la media library (**§16**). Il
+prossimo lavoro è **G2**, le cinque estensioni di `SchemaForm` — si apre con il prompt di `04-` §C,
+`<N>` = 2. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
 mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
 sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
 §16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
 nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
 chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
 piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
-**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #36, `main`
-è **otto PR avanti** al tag `v0.1.0-m0`.
-**Piano:** v0.38. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.3
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0 è chiusa** (§14), la prossima è **G1**.
-**Test:** 355 .NET verdi (253 unit + 102 integrazione) + **79 Vitest** + **10 smoke Playwright** +
+**Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). Con il merge di #37, `main`
+è **nove PR avanti** al tag `v0.1.0-m0`.
+**Piano:** v0.39. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
+**Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.4
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0 e G1 sono chiuse** (§14, §16), la prossima è
+**G2**.
+**Test:** 366 .NET verdi (258 unit + 108 integrazione) + **86 Vitest** + **12 smoke Playwright** +
 **3 del giro pieno** (`pnpm e2e:full`, G0 di M1).
-Nessuno skippato, **rieseguiti tutti e tre il 5 set 2026** contro la MariaDB vera prima di scrivere
-questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
+Nessuno skippato, **rieseguiti tutti e quattro il 5 set 2026** contro la MariaDB vera prima di
+scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
 ⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
 cosa vista **tre** volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
@@ -682,6 +684,16 @@ quello che ha *trovato*:
 - **Le parole di un modulo stanno in `web/src/modules/<key>/locales/`**, e `pnpm i18n:sync` le copia
   in `locales/`. Le copie sono committate e portano `_source`: chi le modifica sta modificando la
   copia sbagliata, e la CI glielo dice con un diff.
+- **Un file caricato non tiene il nome che aveva.** Il nome su disco lo genera `MediaStorage` e non
+  deriva mai da quello dell'upload: due dipartimenti che caricano `logo.png` non si sovrascrivono, e
+  un nome che qualcuno ha digitato non diventa un percorso. La stessa classe è l'unica che apre un
+  file della libreria, e apre solo ciò che ha la forma che ha generato.
+- **Che tipo sia un file lo dicono i suoi byte, mai l'intestazione che li accompagnava.**
+  `MediaFormats.Detect` decide sia se un caricamento entra sia con che cosa viene servito.
+- **`mediaId` e `mediaIds` sono i due nomi con cui un blocco nomina un file**, e sono una
+  convenzione dichiarata in `docs/UI-GUIDELINES.md` perché il server non può leggere lo schema di un
+  blocco. `JsonQuery` è l'unico posto che chiede a un `body_json` se nomina un id; un blocco che
+  inventasse un terzo nome si vedrebbe cancellare il file sotto i piedi.
 - **Le proiezioni si leggono una volta per salvataggio, non una per riga.** `ProjectionWriter`
   separa `Load`/`LoadAsync` da `Apply` apposta: sono dentro la transazione della scrittura, e ogni
   round trip in più è un lock tenuto aperto più a lungo. `ProjectionBatchingTests` lo fissa
@@ -885,8 +897,11 @@ allargare i permessi, mai stringerli a sorpresa.
   `HubDbContextServiceCollectionExtensions.cs`. Nota che `atc` **non ha un contesto**: il ramo
   `AddModuleDbContext<T>` + `MigrateAsync` all'avvio esiste, è scritto e non ha ancora un modulo che
   lo eserciti. Il primo è M2.
-- **Il `filter[...]` fa un solo confronto, l'uguaglianza.** Basta a F6 (dipartimento, visibilità,
-  categoria, attivo). Intervalli e `in` non ci sono, e se servissero andrebbero nel motore.
+- ~~**Il `filter[...]` fa un solo confronto, l'uguaglianza.**~~ **allargato in G1**: l'uguaglianza su
+  una colonna resta `CrudOptions.Filterable`, e un filtro che è una domanda e non un confronto —
+  «quali pagine usano questo file?» — è `CrudOptions.CustomFilters`, che riceve la query e il valore
+  grezzo e la restringe. Intervalli e `in` non ci sono ancora; il giorno che servissero, il posto
+  ormai esiste ed è quello.
 - **Nessun test end-to-end del browser**, e in M0 non ce ne sarà uno. Playwright è previsto dal
   design (§8, «solo `pnpm e2e`, non bloccante in M0»); **F9 non l'ha aggiunto**, deciso da Carmine:
   non è fra i cinque task della fase e la demo end-to-end che il piano chiede è `tools/demo-m0.md`,
@@ -1664,24 +1679,141 @@ MariaDB, `E2EBenchTests` (2), e le suite di M0 tutte ancora verdi.
 
 ---
 
-## 15. Da dove riparte la prossima sessione (5 set 2026)
+## 15. G1 di M1: la media library (5 set 2026)
 
-### Si apre G1
+Un'immagine caricata una volta si riusa ovunque. È la fase che viene prima dei blocchi perché otto
+dei ventidue la nominano, e il design la descrive per intero in §2 di `03-design-m1.md`.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 1: la **media library**. Due cose la fase le ha già
-decise e non vanno riaperte:
+### Che cosa c'è adesso
 
-- le **dimensioni di un'immagine** le legge un parser di header per PNG/JPEG/WebP in un helper del
-  nucleo — niente `ImageSharp` (licenza da verificare) né `SkiaSharp` (asset nativi in un pacchetto
-  self-contained). Se un formato futuro chiede di più, è una (c) con la nota;
-- l'**upload multipart** convive con `MapCrud` estendendo `CrudOptions` perché una risorsa possa non
-  mappare la create, in modo **generico** dentro `Core/Data/Crud/` — non con un ramo che nomina la
-  media, e non spostando l'upload su un secondo indirizzo.
+- **`cms_media`** (`MediaAsset`): `IOwnedByDepartment, IVisible, IAuditable`, e **non**
+  `IProjectable` — un file non si cerca da sé, si cerca la pagina che lo usa. Migrazione
+  `AddMediaLibrary`, puramente additiva: una tabella e tre indici, nessuna colonna esistente toccata.
+- **I file stanno su disco**, sotto `HubPaths.Media` (o `Media:Directory`), in cartelle
+  `anno/mese`. Il nome su disco è **opaco** (`2026/09/<32 esadecimali><estensione>`) e non deriva mai
+  da quello caricato: due dipartimenti che caricano `logo.png` ottengono due file, e un nome che
+  qualcuno ha digitato non diventa mai un percorso.
+- **`POST /api/media`** è l'**unico endpoint scritto a mano** che M1 aveva previsto. Valida
+  dimensione e tipo contro `MediaOptions`, scrive i byte e **poi** la riga.
+  ⚠️ Il tipo lo decidono i **byte**, mai l'intestazione del multipart: un caricamento che dichiara
+  `image/png` e contiene HTML è il trucco più vecchio che ci sia, e `MediaFormats.Detect` lo rifiuta.
+- **`GET /media/{id}/{nome}`** serve il file da Kestrel dietro il **query filter**: una media
+  `Staff` risponde **404** a un anonimo, non 403 — un 403 confermerebbe che a quell'id c'è qualcosa.
+  Cache lunga e `immutable` solo per una media pubblica, `private` per tutte le altre. `/media` è in
+  `SpaFallbackExclusions`, o la SPA se lo mangerebbe.
+- **Larghezza e altezza** le legge `ImageHeader`, un parser di intestazioni per PNG, JPEG e WebP in
+  una sessantina di righe, senza dipendenze (deciso il 5 set 2026, `04-` G1). ⚠️ **Quei tre formati
+  sono il perimetro**: un formato che chiede di più è una (c) con la nota, non un allargamento
+  silenzioso di quel file.
+- **Cancellare prende il file, non la riga.** La riga sopravvive perché una pagina già pubblicata
+  ne nomina l'id e un browser ne ha in cache l'indirizzo; i byte se ne vanno **solo** se nessuna
+  versione pubblicata li mostra ancora. Chi cancella vede prima **dove è usata**.
+- **`MediaPicker`** entra nell'elenco chiuso (sedicesimo componente), con la sua sezione nella
+  ui-kit. Sceglie e basta: caricare è della schermata della libreria, e un selettore che caricasse
+  sarebbe un secondo modo di far entrare un file nell'hub.
+- Permessi **`Media.View`** e **`Media.Edit`**, nel catalogo e nella matrice, con la riga di test.
+  Nessun handler nuovo.
+
+### Tre estensioni generiche a `MapCrud`, e perché non erano aggiramenti
+
+Sono tutte regola (b) di `CLAUDE.md` §5 — si estende il meccanismo — e vivono in `Core/Data/Crud/`
+senza nominare la media da nessuna parte. Vanno conosciute perché le userà chi viene dopo.
+
+| Estensione | Che cosa dice | Perché |
+|---|---|---|
+| `CrudOptions.MapCreate` | «questa risorsa non ha una create JSON» | Una riga `cms_media` senza file non deve poter esistere. L'alternativa scartata era spostare l'upload su un secondo indirizzo, cioè due modi di creare una media (previsto in `04-` G1) |
+| `CrudOptions.Delete` | «che cosa significa cancellare, qui» | Il motore chiama questo invece di `Remove` e salva lo stesso: audit, guardia e proiezioni restano quelle di una scrittura qualsiasi |
+| `CrudOptions.CustomFilters` | un `filter[nome]` che non è un'uguaglianza su una colonna | «Quali pagine usano questo file?» si legge dentro un `body_json`, non in una colonna. Chiude di sponda il debito di §7 sul `filter` che fa un solo confronto |
+
+⚠️ `CustomFilters` e `Filterable` vivono nello stesso spazio di nomi e il motore **rifiuta di
+partire** se una risorsa dichiara lo stesso nome in tutti e due: un filtro che è insieme colonna e
+funzione è un filtro il cui comportamento dipende dall'ordine in cui questo file li guarda.
+
+### La domanda che il server non può fare al blocco, e come si risponde senza aggirarla
+
+Il backend non legge mai una `props` (§3), quindi non sa che cosa sia un `hero` né una `gallery`. Ma
+per non cancellare il file sotto una pagina già pubblicata deve poter chiedere: **questo documento
+JSON nomina questo id?**
+
+La risposta è `Core/Data/JsonQuery.cs`, accanto a `FullTextSearch`: una funzione mappata sul modello
+(`JSON_CONTAINS(JSON_EXTRACT(documento, percorso), candidato)`, come fa già `LocalizedQuery`),
+nessuna tabella e nessuna migrazione. Il percorso è ricorsivo (`$**.mediaId`, `$**.mediaIds[*]`),
+quindi trova un id a qualsiasi profondità senza sapere com'è fatta una sezione.
+
+⚠️ **`mediaId` e `mediaIds` sono una convenzione, non un tipo.** È scritta in `docs/UI-GUIDELINES.md`
+perché è l'unica cosa su cui i due lati devono mettersi d'accordo per nome: un blocco che inventasse
+un terzo nome si vedrebbe cancellare il file sotto i piedi. **Verificata su MariaDB vera**, non
+assunta: `MediaUsageQueryFindsPagesByMediaId` trova sia la props singola sia quella dentro la lista.
+
+### I test, e il fatto che sono stati rotti
+
+Sei di integrazione (`MediaEndToEndTests`, MariaDB vera più una cartella su disco tutta loro), cinque
+unitari su `ImageHeader` e `MediaFormats`, sette Vitest (`MediaPicker`, più `describeProblem`), due
+smoke nuovi.
+
+⚠️ **Sono passati tutti al primo giro, il che non vuol dire niente** (§A.10 del piano M1). Quindi
+sono stati verificati **rompendo** ciò che proteggono, tutti insieme: servire senza il query filter,
+cancellare il file sempre, dimenticare che una gallery tiene una lista, derivare il nome su disco da
+quello caricato, credere al `Content-Type` dichiarato. **Sei rotture, sei rossi, ognuno sul test
+giusto.** Lo stesso per i due smoke (il file servito come 404: il preview resta nella pagina, con il
+suo testo alternativo, e solo `naturalWidth` lo smaschera) e per gli unitari.
+
+⚠️ **E una trappola dell'ambiente, che è costata mezz'ora**: dopo aver rimesso a posto i file rotti i
+test sono rimasti rossi, perché `cp` più `mv` avevano restituito ai sorgenti un mtime **più vecchio**
+di `bin/`, e MSBuild li ha considerati aggiornati. Non era un difetto: era una build vecchia. Se un
+test resta rosso dopo un ripristino, `touch` sui file e ricompilare **prima** di cercare la causa nel
+codice.
+
+### Che cosa la fase non ha fatto, ed è giusto così
+
+- **Nessun blocco usa ancora una media**: è G3, e il campo `.meta({ media: true })` del generatore è
+  G2. `MediaPicker` esiste, è nella ui-kit e ha i suoi test, ma nessuna schermata di prodotto lo
+  monta ancora — sarà G2 a farlo.
+- **Nessuna nota di decisione**: la fase non ha incontrato un caso (c). Le due cose che potevano
+  diventarlo — il parser delle dimensioni e la convivenza fra l'upload e `MapCrud` — erano già decise
+  nel piano prima di aprire la sessione, ed è esattamente il motivo per cui quella riga esisteva.
+- **Il recupero dei file orfani non esiste.** Un file resta finché una versione pubblicata lo mostra;
+  quando quella versione viene sostituita, il file resta comunque. Non è un difetto della fase: è che
+  «passare a ripulire» è un job, e un job che cancella file va deciso prima di essere scritto.
+
+### Debiti nuovi che G1 lascia
+
+1. **Nessuno ripulisce i file che nessuna versione nomina più.** Vedi sopra: la riga è marcata, il
+   file resta. Finché la libreria è piccola non si nota; il giorno che si nota, è un job con una
+   decisione dietro, non un `Delete` in più dentro l'endpoint.
+2. **Il limite di dimensione è controllato dopo che il corpo è arrivato.** `file.Length` esiste
+   perché Kestrel ha già bufferizzato il multipart: il rifiuto è corretto, ma i byte hanno viaggiato.
+   Un limite vero si mette sul corpo della richiesta, ed è configurazione del server (Passenger e
+   Cloudflare hanno la propria): da guardare quando M2 farà il pacchetto e lo staging.
+3. **`ContentEntry.CoverMediaId` e `FileMediaId` non hanno ancora un campo nell'editor**: sono
+   colonne che esistono da M0 e che G5 (news e documenti) userà. `JsonQuery.UsingMedia` le conta già,
+   quindi il giorno che una news avrà una copertina l'uso sarà trovato senza toccare quella query.
+
+---
+
+## 16. Da dove riparte la prossima sessione (5 set 2026)
+
+### Si apre G2
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 2: le **cinque estensioni di `SchemaForm`** — selettore
+di media, selettore di icona, data e ora, oggetto tradotto, riordino dentro una lista. Chiude di
+rimbalzo i debiti n.3 (`seo`) e n.4 (`expiresAt`) di §10.
+
+Due cose che G1 lascia già pronte e che non vanno rifatte:
+
+- **`MediaPicker` esiste** ed è nell'elenco chiuso. `.meta({ media: true })` deve **montarlo**, non
+  scriverne un altro; la query da passargli è `mediaPickerQuery(department)` in
+  `web/src/features/media/queries.ts`.
+- **Il generatore lancia apposta** su un tipo che non sa disegnare. Quella proprietà non si
+  indebolisce per far passare la fase: è ciò che rende impossibile scrivere un form a mano senza
+  accorgersene.
 
 ### Deciso e già collocato, da non ridiscutere
 
 - **I template sono di dipartimento e li legge tutto lo staff** (piano §9.3, design M1 §9.4). Si
   implementa nel **primo task di G5**; senza, §9.1 del design non ha il dato da mostrare.
+- **`mediaId` e `mediaIds` sono i due nomi con cui un blocco nomina un file** (§15): scritto in
+  `docs/UI-GUIDELINES.md`, e G3 ci si attiene.
 
 ### Aperto, e serve una risposta di Carmine prima di G8
 
@@ -1692,7 +1824,7 @@ Tre domande, con la raccomandazione già scritta nella nota:
 2. la vede **solo il proprio dipartimento** o qualunque staff? — raccomandato il proprio;
 3. entra in **M1/G8** o slitta a M2? — raccomandato G8, se blocchi.
 
-Nulla di tutto questo blocca G1–G4.
+Nulla di tutto questo blocca G2–G4.
 
 ### Il banco e2e, in due righe
 
@@ -1707,3 +1839,10 @@ quello di sviluppo, e non lo ripulisce: ogni giro crea la propria pagina. Il res
 Il branch `docs/design-m1` (locale e su origin) è di una sessione precedente e la sua PR #33 è già
 fusa: si può cancellare.
 
+⚠️ **Docker Desktop di questa macchina è caduto due volte durante G1**, e non per colpa del
+progetto: al riavvio il backend non riesce a rimuovere due socket rimasti da un crash precedente
+(`%LOCALAPPDATA%\Docker\run\dockerInference` e `%LOCALAPPDATA%\docker-secrets-engine\engine.sock`) e
+si ferma con un dialogo. Il rimedio, autorizzato da Carmine e applicato due volte: chiudere Docker
+Desktop, **rinominare le due cartelle** (i singoli file non si lasciano cancellare), riavviare. Mai
+«Reset to factory defaults», che butterebbe immagini e volumi. Senza engine non gira nessun test di
+integrazione, quindi vale la pena saperlo prima di perderci tempo.

@@ -55,6 +55,26 @@ internal sealed class LinkConfiguration : IEntityTypeConfiguration<Link>
     }
 }
 
+internal sealed class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
+{
+    public void Configure(EntityTypeBuilder<MediaAsset> builder)
+    {
+        builder.ToTable("cms_media");
+        builder.HasKey(media => media.Id);
+        builder.Property(media => media.FileName).HasMaxLength(255).IsRequired();
+        builder.Property(media => media.StoredName).HasMaxLength(128).IsRequired();
+        builder.Property(media => media.ContentType).HasMaxLength(128).IsRequired();
+        builder.Property(media => media.Category).HasMaxLength(64);
+        builder.HasRowVersion(media => media.RowVersion);
+
+        // Two files never share a name on disk, and the database says so rather than trusting the
+        // generator that made it.
+        builder.HasIndex(media => media.StoredName).IsUnique();
+        builder.HasIndex(media => new { media.OwnerDepartment, media.DeletedAt });
+        builder.HasIndex(media => media.Category);
+    }
+}
+
 internal sealed class SearchIndexEntryConfiguration : IEntityTypeConfiguration<SearchIndexEntry>
 {
     public void Configure(EntityTypeBuilder<SearchIndexEntry> builder)

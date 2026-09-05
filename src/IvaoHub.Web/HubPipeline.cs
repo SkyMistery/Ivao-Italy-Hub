@@ -99,6 +99,7 @@ internal static class HubPipeline
         "/auth/callback",
         "/auth/logout",
         "/health",
+        "/media",
         "/openapi",
         "/scalar",
     ];

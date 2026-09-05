@@ -20,6 +20,11 @@ interface CommonStrings {
     readonly create: string;
     readonly fields: { readonly url: string };
   };
+  readonly media: {
+    readonly title: string;
+    readonly upload: string;
+    readonly fields: { readonly category: string };
+  };
   readonly notFound: { readonly title: string };
   readonly content: {
     readonly title: string;

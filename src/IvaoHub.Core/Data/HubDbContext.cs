@@ -61,6 +61,7 @@ public class HubDbContext : DbContext
     public DbSet<ContentEntry> Contents => Set<ContentEntry>();
     public DbSet<ContentVersion> ContentVersions => Set<ContentVersion>();
     public DbSet<Link> Links => Set<Link>();
+    public DbSet<MediaAsset> Media => Set<MediaAsset>();
     public DbSet<SearchIndexEntry> SearchIndex => Set<SearchIndexEntry>();
     public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();
     public DbSet<AwardSignal> AwardSignals => Set<AwardSignal>();
@@ -102,6 +103,10 @@ public class HubDbContext : DbContext
         // How to read one language out of a translated column in SQL. It maps a method to a
         // MariaDB function: no table, no column, and therefore no migration.
         LocalizedQuery.Register(modelBuilder);
+
+        // And how to ask a JSON body whether it mentions an identifier: the question standing
+        // between deleting a media and breaking a page that was already published.
+        JsonQuery.Register(modelBuilder);
 
         // Who may read what is decided here, for every entity that has an owner and a visibility,
         // and never again in an endpoint.

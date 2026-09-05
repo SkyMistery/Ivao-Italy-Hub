@@ -8,6 +8,7 @@ import { ApiError, type HubProblem } from '../api/problem';
 import { createTestI18n, renderWithProviders } from '../../test/harness';
 
 import { SchemaForm } from './SchemaForm';
+import { describeProblem } from './useProblemDetails';
 import { localized } from './schema';
 
 /**
@@ -83,4 +84,27 @@ test('something that is not a refusal at all still says something', async () => 
   await user.click(screen.getByRole('button', { name: 'Save' }));
 
   expect(await screen.findByRole('alert')).toHaveTextContent(englishErrors.errors.unknown);
+});
+
+/**
+ * The same refusal, for the one control of the back office that is not a form. An upload has a
+ * button and no fields, so the keys the server sent have nowhere to land except above it — and the
+ * two keys the upload can answer with are resolved here rather than shown as keys.
+ */
+test('a refusal about a control that is not a form becomes one sentence', () => {
+  const i18n = createTestI18n();
+  const t = i18n.getFixedT(null, null);
+
+  expect(describeProblem(undefined, t, 'en')).toBeNull();
+
+  expect(describeProblem(new ApiError(400, { errors: { file: ['errors.media.tooLarge'] } }), t, 'en')).toBe(
+    englishErrors.errors.media.tooLarge,
+  );
+
+  expect(
+    describeProblem(new ApiError(400, { errors: { file: ['errors.media.typeNotAllowed'] } }), t, 'en'),
+  ).toBe(englishErrors.errors.media.typeNotAllowed);
+
+  // And a refusal with nothing to say about a field still says what happened.
+  expect(describeProblem(new ApiError(403, undefined), t, 'en')).toBe(englishErrors.errors.forbidden.title);
 });

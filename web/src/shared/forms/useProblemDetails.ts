@@ -65,6 +65,30 @@ export function useProblemDetails<TValues extends FieldValues>(form: UseFormRetu
 }
 
 /**
+ * The same refusal, for a control that is not a form. An upload has one button and no fields to
+ * point an error at, so everything the server said becomes the one sentence above it.
+ *
+ * It lives next to the hook rather than in the screen that needed it first, so that a refusal is
+ * never worded two ways; anything with fields uses the hook.
+ */
+export function describeProblem(error: unknown, t: TFunction, language: string): string | null {
+  if (error === null || error === undefined) {
+    return null;
+  }
+
+  if (!(error instanceof ApiError)) {
+    return t('errors.unknown');
+  }
+
+  const fields = Object.entries(error.problem?.errors ?? {});
+  if (fields.length === 0) {
+    return statusSummary(error, t);
+  }
+
+  return fields.map(([field, keys]) => describe(keys, error.problem, field, t, language)).join(' ');
+}
+
+/**
  * One field, one sentence. When the key is "some languages are missing" the extension says which,
  * and naming them is the whole reason the server carries that state (design M0 §3.1).
  */

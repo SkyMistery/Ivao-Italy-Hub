@@ -1,5 +1,5 @@
 /**
- * The closed list of custom components of M0 (design §7.1). Adding one is a decision, written down
+ * The closed list of custom components (design M0 §7.1, design M1 §12). Adding one is a decision, written down
  * in `docs/UI-GUIDELINES.md` and added here; it is not something a screen does on its own.
  *
  * The list lives in its own file because two things read it: `/staff/admin/ui-kit`, which mounts
@@ -22,6 +22,7 @@ export const UI_KIT_COMPONENTS = [
   'VisibilityBadge',
   'StatusBadge',
   'ConfirmDialog',
+  'MediaPicker',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

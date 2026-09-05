@@ -256,6 +256,8 @@ app.MapAuthEndpoints();
 app.MapMeEndpoints();
 app.MapLocaleEndpoints();
 app.MapLinksEndpoints();
+app.MapMediaEndpoints();
+app.MapMediaFileEndpoint();
 app.MapContentEndpoints();
 app.MapBlockDataEndpoint();
 app.MapSearchEndpoint();

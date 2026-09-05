@@ -77,11 +77,16 @@ public static class MapCrudExtensions
         Delegate update = (HttpContext http, string id, TWriteDto body) => UpdateAsync(http, id, body, options);
         Delegate remove = (HttpContext http, string id) => DeleteAsync(http, id, options);
 
-        group.MapPost("/", create)
-            .WithName($"{options.PermissionArea}Create")
-            .Produces<TDetailDto>(StatusCodes.Status201Created)
-            .ProducesValidationProblem()
-            .RequireAuthorization(options.EffectiveWritePolicy);
+        // A resource whose rows are born some other way does not answer POST at all, rather than
+        // answering it with something that would leave a row nothing on disk belongs to.
+        if (options.MapCreate)
+        {
+            group.MapPost("/", create)
+                .WithName($"{options.PermissionArea}Create")
+                .Produces<TDetailDto>(StatusCodes.Status201Created)
+                .ProducesValidationProblem()
+                .RequireAuthorization(options.EffectiveWritePolicy);
+        }
 
         group.MapPut("/{id}", update)
             .WithName($"{options.PermissionArea}Update")
@@ -118,13 +123,33 @@ public static class MapCrudExtensions
             throw new InvalidOperationException($"MapCrud for {typeof(TEntity).Name} needs ToList and ToDetail.");
         }
 
+        if (options.ReadOnly && !options.MapCreate)
+        {
+            throw new InvalidOperationException(
+                $"MapCrud for {typeof(TEntity).Name} is read only, so MapCreate says nothing.");
+        }
+
         if (!options.ReadOnly && options.Apply is null)
         {
             throw new InvalidOperationException($"MapCrud for {typeof(TEntity).Name} needs Apply to accept writes.");
         }
 
+        var clashing = options.CustomFilters.Keys
+            .Where(name => options.Filterable.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+
+        if (clashing.Length > 0)
+        {
+            // One name, one meaning: a filter that is both a column and a function is a filter
+            // whose behaviour depends on the order this file happens to check them in.
+            throw new InvalidOperationException(
+                $"MapCrud for {typeof(TEntity).Name} declares filters both as columns and as functions: "
+                + string.Join(", ", clashing) + ".");
+        }
+
         var undeclared = options.DefaultFilters.Keys
             .Where(name => !options.Filterable.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .Where(name => !options.CustomFilters.ContainsKey(name))
             .ToArray();
 
         if (undeclared.Length > 0)
@@ -300,7 +325,17 @@ public static class MapCrudExtensions
             return Forbidden(scope);
         }
 
-        scope.Database.Remove(entity);
+        if (options.Delete is null)
+        {
+            scope.Database.Remove(entity);
+        }
+        else
+        {
+            // What deleting means is the resource's to say; that it is a write like any other,
+            // with the interceptor behind it, is the engine's.
+            await options.Delete(entity, scope.Services, http.RequestAborted);
+        }
+
         await scope.Database.SaveChangesAsync(http.RequestAborted);
 
         return Results.NoContent();
@@ -405,6 +440,19 @@ public static class MapCrudExtensions
         where TEntity : class
     {
         badRequest = null;
+
+        if (options.CustomFilters.TryGetValue(name, out var custom))
+        {
+            var narrowed = custom(query, raw);
+            if (narrowed is null)
+            {
+                badRequest = Results.BadRequest(new { filter = name });
+                return false;
+            }
+
+            query = narrowed;
+            return true;
+        }
 
         var declared = options.Filterable.FirstOrDefault(
             allowed => string.Equals(allowed, name, StringComparison.OrdinalIgnoreCase));
