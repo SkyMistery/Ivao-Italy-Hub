@@ -110,7 +110,13 @@ internal static class HubPipeline
     public static void MapSpaFallback(this WebApplication app)
     {
         var registry = app.Services.GetRequiredService<ModuleRegistry>();
-        string[] exclusions = [.. CoreSpaFallbackExclusions, .. registry.SpaFallbackExclusions];
+
+        // The bench signs itself in over an address of its own, and only while it is the bench.
+        string[] benchExclusions = app.Environment.IsEnvironment(HubEnvironments.E2E)
+            ? [E2E.E2ESignIn.PathPrefix]
+            : [];
+
+        string[] exclusions = [.. CoreSpaFallbackExclusions, .. registry.SpaFallbackExclusions, .. benchExclusions];
 
         app.MapFallback(async context =>
         {

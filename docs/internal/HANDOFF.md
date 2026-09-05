@@ -16,7 +16,8 @@ piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di 
 quattro PR avanti al tag.
 **Piano:** v0.36. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
 **Design M1:** v1.0 (`03-design-m1.md`, 5 set 2026) — **scritto**; il piano di implementazione di M1 no.
-**Test:** 353 .NET verdi (253 unit + 100 integrazione) + **79 Vitest** + **10 smoke Playwright**.
+**Test:** 355 .NET verdi (253 unit + 102 integrazione) + **79 Vitest** + **10 smoke Playwright** +
+**3 del giro pieno** (`pnpm e2e:full`, G0 di M1).
 Nessuno skippato, **rieseguiti tutti e tre il 5 set 2026** contro la MariaDB vera prima di scrivere
 questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
@@ -1571,3 +1572,68 @@ Entrambe hanno una rete, ed entrambe le reti sono state verificate rompendo la c
 del suggerimento fallisce senza la guardia, e quello della larghezza esce `Received: 400`. Il secondo
 è di nuovo **geometria in un browser**, perché jsdom non fa layout — è la stessa lezione di §13, e
 ormai è una categoria: *ciò che si vede e basta si prova solo guardando*.
+
+---
+
+## 14. G0 di M1: il giro contro l'API vera esiste (5 set 2026)
+
+**Il debito n.1 di §10 è chiuso.** «Uno staff apre l'editor, aggiunge un blocco, pubblica» è stato
+eseguito in un browser, contro MariaDB vera e l'applicazione pubblicata, e ora è tre test bloccanti
+in CI.
+
+### Come si esegue
+
+Serve Docker attivo (`docker compose up -d mariadb`), poi da `web/`:
+
+```bash
+pnpm e2e:full
+```
+
+Pubblica l'applicazione in `artifacts/e2e-bench/`, la avvia su <http://127.0.0.1:5080>, aspetta
+`/health` e gira. Il primo giro pubblica (un paio di minuti); mentre si lavora sulle spec,
+`E2E_SKIP_PUBLISH=1 pnpm e2e:full` riusa l'ultima pubblicazione. Il resto è in
+`web/e2e/full/README.md`.
+
+### Che cos'è il banco, e i due lucchetti
+
+Il banco è **l'applicazione pubblicata**: una sola origine per API e SPA, con il fallback del
+server. Non un server statico davanti — è esattamente il banco che in M0 produsse quattro test rossi
+contro un pacchetto sano («Il tag»), e uno dei tre test nuovi controlla proprio quel 200 per dire
+subito da che parte sta il problema.
+
+`POST /e2e/signin` firma un cookie applicativo vero per uno staff inventato. Esiste **solo** se
+l'ambiente è `E2E` **e** `E2E:Enabled` è vero; il flag altrove **ferma l'applicazione**
+(`HubConfiguration.RequireE2EEnvironment`, test in `E2EBenchTests`). Nota di decisione:
+`decisions/2026-09-05-ambiente-e2e.md`. Di rimbalzo `FixtureIvaoApiClient` accetta anche `E2E`: il
+banco gira senza credenziali IVAO e il sync `ref_` è atteso all'avvio.
+
+⚠️ **Entrambe le asserzioni che contano sono state verificate rompendole** (§A.10 del piano M1). E la
+prima versione del test «una bozza non è visibile» **è passata con la bozza pubblicata apposta**:
+asseriva l'assenza di un'intestazione che su una pagina pubblica non c'è in nessun caso. Ora asserisce
+il «questa pagina non esiste» e l'assenza del testo del template, e fallisce come deve. È la stessa
+lezione di §11: una rete che non si prova rompendola non è una rete.
+
+### Due cose viste facendo il giro, nessuna corretta qui
+
+1. ⚠️ **I template di sistema li vede solo il dipartimento Web.** `ContentTemplateSeeder` li semina
+   con `OwnerDepartment = WD` e `Content.View` è di dipartimento: per un coordinatore ED,
+   `filter[isTemplate]=true` risponde **zero righe** e «Nuovo da template» non compare affatto.
+   Verificato nel browser con una sessione `IT-EC` vera. Tocca G5, G8 e soprattutto G11 (l'editor
+   legge il template per mostrare le differenze: se appartiene a un altro dipartimento, non può).
+   **Serve una decisione**: `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`, con tre
+   strade e una raccomandata. Nel frattempo il banco firma come coordinatore **Web** (`IT-WM`), che è
+   chi costruisce il sito — ma quel ruolo raggiunge ogni dipartimento, quindi **il giro non esercita
+   la guardia di dipartimento**: quella resta di `back-office.spec.ts`.
+2. ⚠️ **Pubblicare non dice niente a schermo.** Si clicca «Pubblica», la chiamata parte, la riga
+   cambia versione e sullo schermo non cambia nulla di visibile. Non è un difetto di correttezza — la
+   cache viene aggiornata e il form si rimonta sulla versione nuova — ma è la cosa che, guardando, si
+   nota per prima. Da raccogliere in G11 (rifiniture dell'editor) o nel giro visivo di G12.
+   Di rimbalzo: modificare **nello stesso millisecondo** in cui la pubblicazione risponde salva contro
+   la versione precedente e prende 409, giustamente. Una persona non digita così in fretta; il test sì,
+   e infatti ricarica la pagina come farebbe chi torna a cambiare qualcosa.
+
+### Che cosa resta di G0
+
+Niente. La fase è chiusa quando la PR è verde: tre test nuovi in CI con il servizio MariaDB,
+`E2EBenchTests` (2), e le suite di M0 tutte ancora verdi.
+

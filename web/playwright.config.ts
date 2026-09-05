@@ -14,6 +14,9 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  // The round with the real API is its own configuration: it needs a database and a server, and
+  // this suite is the one that must stay fast and offline. `playwright.full.config.ts`.
+  testIgnore: '**/full/**',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

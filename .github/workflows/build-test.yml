@@ -20,6 +20,24 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
 
+    # The database the end to end bench runs against. The integration tests are unaffected: they
+    # bring their own container through Testcontainers, because there the database belongs to the
+    # test. Here it belongs to a *process* that has to be up before a browser opens anything, which
+    # is a different job and wants a different tool (design M1 section 11.1).
+    services:
+      mariadb:
+        image: mariadb:11.4.10
+        env:
+          MARIADB_ROOT_PASSWORD: ivaohub-root
+          MARIADB_DATABASE: ivaohub_e2e
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - uses: actions/checkout@v7
 
@@ -115,6 +133,24 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
+          path: web/playwright-report
+          retention-days: 7
+
+      # The round with the real API: a member of staff creates a page from a template, adds blocks,
+      # publishes, and a visitor reads what was published. The script publishes the application and
+      # runs it; Playwright waits on /health, which pings the database, so waiting on it means
+      # waiting for the migrations and the seed as well.
+      - name: The round, in a browser, against the real API
+        run: pnpm e2e:full
+        working-directory: web
+        env:
+          E2E_CONNECTION_STRING: Server=127.0.0.1;Port=3306;Database=ivaohub_e2e;User ID=root;Password=ivaohub-root;MaximumPoolSize=15;DefaultCommandTimeout=30
+
+      - name: Upload the round's report when it fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-full
           path: web/playwright-report
           retention-days: 7
 
