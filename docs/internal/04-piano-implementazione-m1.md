@@ -9,11 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 1.1 — 5 settembre 2026 (**le tre decisioni che il piano aveva sollevato sono prese**, e
-sono nelle fasi che le riguardano: il parser di header per le dimensioni delle immagini in G1,
-l'estensione di `CrudOptions` per non mappare la create in G1, la tabella `hub_notification_preferences`
-in G7 — quest'ultima ha corretto una contraddizione dentro il design, che è passato a v1.1. Nessuna fase
-aperta.)
+**Versione:** 1.2 — 5 settembre 2026 (**G0 è chiusa**, PR #35: il giro contro l'API vera gira in CI, e
+due cose viste facendone uno stanno in fondo alla fase — una chiede una decisione prima di G5. La
+prossima fase è G1.)
+
+**1.1** — le tre decisioni che il piano aveva sollevato sono prese, e stanno nelle fasi che le
+riguardano: il parser di header per le dimensioni delle immagini e l'estensione di `CrudOptions` per
+non mappare la create in G1, la tabella `hub_notification_preferences` in G7 — quest'ultima ha
+corretto una contraddizione dentro il design, che è passato a v1.1.
 
 ---
 
@@ -72,7 +75,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 
 | Fase | Nome | Dipende da | Risultato verificabile |
 |---|---|---|---|
-| G0 | Rete e2e con l'API vera in CI | — | `pnpm e2e:full`: crea da template → blocchi → pubblica → anonimo vede il pubblicato, in un browser, contro MariaDB vera |
+| G0 | Rete e2e con l'API vera in CI — **fatta** | — | `pnpm e2e:full`: crea da template → blocchi → pubblica → anonimo vede il pubblicato, in un browser, contro MariaDB vera |
 | G1 | Media library | G0 | upload, servizio dei file dietro il query filter, `MediaPicker`, back-office generato |
 | G2 | Le cinque estensioni di `SchemaForm` | G1 | media, icona, data, oggetto tradotto, riordino; debiti n.3 e n.4 chiusi |
 | G3 | I 16 blocchi Content / Layout / Interactive / Structure | G2 | 21 blocchi nella ui-kit, convenzioni in `UI-GUIDELINES.md` (chiude piano §16.C) |
@@ -159,6 +162,24 @@ divergenza deve cambiare esito); l'app rifiuta di partire con lo schema di prova
 smoke e i 442 test di M0 ancora verdi.
 
 **Non fare**: schermate nuove, blocchi nuovi, tabelle nuove.
+
+**Chiusa il 5 settembre 2026** (PR #35), con i tre test verdi in CI accanto ai 355 .NET, ai 79 Vitest
+e ai 10 smoke. Il banco è l'applicazione pubblicata; `POST /e2e/signin` è recintato due volte e il
+flag fuori dal suo ambiente ferma l'applicazione (`decisions/2026-09-05-ambiente-e2e.md`).
+
+Due cose emerse **facendo** il giro, nessuna corretta nella fase perché fuori perimetro:
+
+1. ⚠️ **I template di sistema li vede solo il dipartimento Web** (`OwnerDepartment = WD` e
+   `Content.View` è di dipartimento): per un coordinatore ED «Nuovo da template» non compare affatto.
+   Tocca G5, G8 e **G11**, dove l'editor deve leggere il template per mostrare le differenze. Serve
+   una decisione prima di G5: `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`. Nel
+   frattempo il banco firma come coordinatore Web, che però raggiunge ogni dipartimento — quindi il
+   giro **non** esercita la guardia di dipartimento, che resta di `back-office.spec.ts`.
+2. ⚠️ **Pubblicare non dice niente a schermo**: da raccogliere in G11 o nel giro visivo di G12.
+
+E una conferma della regola §A.10: la prima versione del test «una bozza non è visibile» **passava
+con la bozza pubblicata apposta**. Rompere la promessa del prodotto e guardare il test è ciò che l'ha
+trovato, in trenta secondi.
 
 ---
 

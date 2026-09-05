@@ -9,6 +9,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
+using IvaoHub.Web.E2E;
 using IvaoHub.Web.Endpoints;
 using IvaoHub.Web.OpenApi;
 using Scalar.AspNetCore;
@@ -159,6 +160,16 @@ if (builder.Environment.IsProduction() && !HubConfiguration.IsOpenApiDocumentGen
     HubConfiguration.RequireAllowedHosts(builder.Configuration);
 }
 
+// A way of signing in as staff without IVAO exists only on the end to end bench. The check runs
+// everywhere, including here, because what it is watching for is that flag turning up somewhere it
+// was never meant to be.
+HubConfiguration.RequireE2EEnvironment(builder.Configuration, builder.Environment);
+
+if (builder.Environment.IsEnvironment(HubEnvironments.E2E))
+{
+    builder.Services.AddE2ESignIn(builder.Configuration);
+}
+
 // Cloudflare and nginx sit in front, so the address of the caller arrives in a header. Which
 // senders of that header are believed is declared, never "anybody": the login rate limiter and the
 // address recorded in hub_audit_log both rest on the answer. In production the list is required.
@@ -261,6 +272,11 @@ app.MapModuleEndpoints();
 
 app.MapGet("/api/version", (BuildInfo build) => TypedResults.Ok(
     new VersionResponse(build.Version, build.Commit, build.BuiltAt, build.Dotnet)));
+
+if (app.Environment.IsEnvironment(HubEnvironments.E2E))
+{
+    app.MapE2ESignIn();
+}
 
 app.MapSpaFallback();
 

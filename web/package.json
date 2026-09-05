@@ -21,6 +21,7 @@
     "i18n:check": "node scripts/i18n-check.mjs",
     "gen:api": "openapi-typescript ../artifacts/openapi/IvaoHub.Web.json -o src/shared/api/schema.d.ts",
     "e2e": "playwright test",
+    "e2e:full": "playwright test --config playwright.full.config.ts",
     "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {

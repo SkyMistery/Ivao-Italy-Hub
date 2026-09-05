@@ -9,8 +9,8 @@ namespace IvaoHub.Core.Ivao;
 /// Reads the reference data from files instead of from IVAO, for when the OAuth client of a
 /// division is not allowed those endpoints, or when somebody wants to run the hub with no
 /// credentials at all (design M0 section 4.6).
-/// <para>Switched on with <c>Ivao:UseFixtures=true</c>, and refused outside development: a
-/// production site must never quietly serve invented airspace.</para>
+/// <para>Switched on with <c>Ivao:UseFixtures=true</c>, and refused outside development and the
+/// end to end bench: a production site must never quietly serve invented airspace.</para>
 /// </summary>
 public sealed class FixtureIvaoApiClient : IIvaoApiClient
 {
@@ -26,10 +26,16 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
 
         // The guard lives here as well as at registration, because configuration can arrive late:
         // this is the object that would actually serve the invented airspace.
-        if (!environment.IsDevelopment())
+        //
+        // The end to end bench is allowed it for the same reason development is, and needs it more:
+        // it runs with no IVAO credentials at all, and the start up sync of the reference data is
+        // awaited before the first request is served. Without the files it would spend that time
+        // failing against an API it cannot reach.
+        if (!environment.IsDevelopment() && !environment.IsEnvironment(HubEnvironments.E2E))
         {
             throw new InvalidOperationException(
-                $"{IvaoServiceCollectionExtensions.UseFixturesKey} is only allowed in development.");
+                $"{IvaoServiceCollectionExtensions.UseFixturesKey} is only allowed in development "
+                + $"and in the {HubEnvironments.E2E} environment.");
         }
 
         _paths = paths;

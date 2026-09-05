@@ -68,6 +68,32 @@ internal static class HubConfiguration
         }
     }
 
+    /// <summary>The flag that arms the end to end sign in, on top of the environment name.</summary>
+    public const string E2EEnabledKey = "E2E:Enabled";
+
+    /// <summary>
+    /// The end to end bench unlocks a way of becoming a staff member without proving anything, so
+    /// it is fenced twice: the environment must be <see cref="HubEnvironments.E2E"/> and the flag
+    /// must be set. This is the second half of that — the flag anywhere else stops the
+    /// application, loudly, instead of being quietly ignored.
+    /// <para>An installation that never heard of the bench is unaffected: no flag, no refusal.
+    /// What this catches is the copied configuration file, which is how such a thing actually
+    /// reaches a server that was never meant to have it.</para>
+    /// </summary>
+    public static void RequireE2EEnvironment(IConfiguration configuration, IHostEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        if (configuration.GetValue<bool>(E2EEnabledKey) && !environment.IsEnvironment(HubEnvironments.E2E))
+        {
+            throw new InvalidOperationException(
+                $"'{E2EEnabledKey}' is set while the environment is '{environment.EnvironmentName}'. "
+                + $"It signs anybody in as a member of staff and is only ever allowed with "
+                + $"ASPNETCORE_ENVIRONMENT={HubEnvironments.E2E}. Remove it from this installation's configuration.");
+        }
+    }
+
     /// <summary>Set to false when the proxy in front already refuses plain http itself.</summary>
     public const string RedirectToHttpsKey = "Https:Redirect";
 
