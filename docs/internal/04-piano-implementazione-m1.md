@@ -9,9 +9,12 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 1.3 — 5 settembre 2026 (due decisioni di Carmine entrano nelle fasi: la **lettura
+**Versione:** 1.4 — 5 settembre 2026 (**G1 è chiusa**: la media library esiste, e tre estensioni
+generiche di `MapCrud` sono nate per non aggirarlo. La prossima fase è G2.)
+
+**1.3** — due decisioni di Carmine entrano nelle fasi: la **lettura
 condivisa dei template** in G5, e la **dashboard di dipartimento** in G8 — quest'ultima con la forma
-da confermare, nota in `decisions/2026-09-05-dashboard-di-dipartimento.md`.)
+da confermare, nota in `decisions/2026-09-05-dashboard-di-dipartimento.md`.
 
 **1.2** — G0 è chiusa, PR #35: il giro contro l'API vera gira in CI, e
 due cose viste facendone uno stanno in fondo alla fase — una chiede una decisione prima di G5. La
@@ -80,7 +83,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | Fase | Nome | Dipende da | Risultato verificabile |
 |---|---|---|---|
 | G0 | Rete e2e con l'API vera in CI — **fatta** | — | `pnpm e2e:full`: crea da template → blocchi → pubblica → anonimo vede il pubblicato, in un browser, contro MariaDB vera |
-| G1 | Media library | G0 | upload, servizio dei file dietro il query filter, `MediaPicker`, back-office generato |
+| G1 | Media library — **fatta** | G0 | upload, servizio dei file dietro il query filter, `MediaPicker`, back-office generato |
 | G2 | Le cinque estensioni di `SchemaForm` | G1 | media, icona, data, oggetto tradotto, riordino; debiti n.3 e n.4 chiusi |
 | G3 | I 16 blocchi Content / Layout / Interactive / Structure | G2 | 21 blocchi nella ui-kit, convenzioni in `UI-GUIDELINES.md` (chiude piano §16.C) |
 | G4 | I 6 blocchi Data e i loro provider | G3 | 27 blocchi; `networkStats` mai congelato; provider dietro il query filter |
@@ -236,6 +239,29 @@ l'esistenza), `MediaDeleteKeepsFileWhileAVersionUsesIt`, `MediaUsageQueryFindsPa
 di `MediaPicker`; a mano, un'immagine caricata dal back-office ricompare nella lista e si scarica.
 
 **Non fare**: usarla nei blocchi (è G3), il campo `.meta({ media: true })` del generatore (è G2).
+
+**Chiusa il 5 settembre 2026**, con i sei test di integrazione, i cinque unitari del parser, i sette
+Vitest e i due smoke nuovi verdi accanto alle suite di M0 e ai tre del giro pieno. Il racconto è in
+`HANDOFF.md` §15; qui restano le tre cose che la fase ha deciso e che le fasi dopo useranno.
+
+1. **Tre estensioni di `MapCrud`, tutte regola (b), tutte in `Core/Data/Crud/` e nessuna che nomini
+   la media**: `MapCreate` (una risorsa che non ha una create JSON — era già previsto qui),
+   `Delete` (che cosa significa cancellare per questa risorsa: il motore chiama quello invece di
+   `Remove` e salva lo stesso, quindi audit, guardia e proiezioni non cambiano) e `CustomFilters`
+   (un `filter[nome]` che è una domanda e non un confronto su una colonna). L'ultima chiude di
+   sponda il debito di `HANDOFF` §7 sul `filter` che fa una sola uguaglianza.
+2. **`Core/Data/JsonQuery.cs`**, accanto a `FullTextSearch`: «questo documento JSON nomina questo
+   id?», come funzione mappata sul modello. È ciò che permette di non cancellare un file sotto una
+   pagina già pubblicata senza che il server sappia com'è fatto un blocco. ⚠️ Poggia sulla
+   convenzione `mediaId` / `mediaIds`, ora scritta in `docs/UI-GUIDELINES.md`: **G3 ci si attiene**.
+3. **Il conto**: un endpoint scritto a mano (l'upload, quello previsto), un componente custom
+   (`MediaPicker`, quello previsto), tre meccanismi nuovi — le tre estensioni sopra — e nessuna nota
+   di decisione, perché le due cose che potevano diventare una (c) erano già decise in questa pagina
+   prima che la sessione si aprisse.
+
+Due debiti nuovi, entrambi in `HANDOFF` §15: **nessuno ripulisce i file che nessuna versione nomina
+più**, e **il limite di dimensione morde dopo che il corpo è arrivato** (è configurazione del server,
+e il posto per guardarlo è il pacchetto di M2).
 
 ---
 

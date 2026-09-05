@@ -27,6 +27,15 @@ public static class ContentServiceCollectionExtensions
         services.AddScoped<IDataBlockProvider, LinkListProvider>();
         services.TryAddScoped<DataBlockProviders>();
 
+        // Where the uploaded files live. A singleton because it holds one path and no state; the
+        // limits it is built with are read when it is built, never when it is registered.
+        services.AddOptions<MediaOptions>()
+            .BindConfiguration(MediaOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.TryAddSingleton<MediaStorage>();
+
         services.TryAddScoped<ContentPublishService>();
         services.TryAddScoped<ContentTemplateSeeder>();
 

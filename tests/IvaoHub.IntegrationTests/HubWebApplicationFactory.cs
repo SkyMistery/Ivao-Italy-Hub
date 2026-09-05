@@ -21,9 +21,16 @@ public sealed class HubWebApplicationFactory(
     string connectionString,
     bool useIvaoFixtures = false,
     TestCurrentUser? currentUser = null,
-    IInterceptor? extraInterceptor = null)
+    IInterceptor? extraInterceptor = null,
+    string? mediaDirectory = null)
     : WebApplicationFactory<Program>
 {
+    /// <summary>
+    /// The upload limit a test host runs with. Small on purpose: a limit that can only be proven by
+    /// uploading eight megabytes is a limit nobody proves.
+    /// </summary>
+    public const int TestMediaMaxBytes = 64 * 1024;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -41,6 +48,10 @@ public sealed class HubWebApplicationFactory(
                 ["Ivao:PostLogoutRedirectUri"] = "http://localhost/",
                 ["Ivao:Scopes:0"] = "openid",
                 ["Ivao:UseFixtures"] = useIvaoFixtures ? "true" : "false",
+                // Uploads go to a directory of the test's own when it asks for one, so that the
+                // files a test writes are never the developer's own installation's.
+                ["Media:MaxBytes"] = TestMediaMaxBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["Media:Directory"] = mediaDirectory ?? string.Empty,
             }));
 
         builder.ConfigureTestServices(services =>

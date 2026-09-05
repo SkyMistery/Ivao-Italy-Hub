@@ -29,6 +29,10 @@
     "locale": {
       "unsupported": "The division does not publish in that language."
     },
+    "media": {
+      "tooLarge": "This file is larger than this hub accepts.",
+      "typeNotAllowed": "This hub does not accept files of that kind."
+    },
     "unknown": "Something went wrong. Try again.",
     "title": "That did not work",
     "slug": {

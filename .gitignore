@@ -32,6 +32,8 @@ node_modules/
 
 # Local data and logs
 /data/
+# Uploaded files: they belong to an installation, never to the repository.
+/media/
 /logs/
 /diagnostics/
 *.db

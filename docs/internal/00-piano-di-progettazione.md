@@ -1,9 +1,32 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.38 — 5 settembre 2026 (i template sono di dipartimento e li legge tutto lo staff; ogni dipartimento nasce con la propria dashboard)
+**Versione documento:** 0.39 — 5 settembre 2026 (il motore CRUD impara tre cose nuove, tutte configurazione: una risorsa senza create JSON, che cosa significa cancellare, e un filtro che è una domanda)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha il suo documento di design** (`03-design-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi; manca il piano di implementazione. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0 e G1 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.39** (5 set 2026): la media library (G1 di M1) è stata costruita **senza scrivere un
+caso speciale**, e per riuscirci `MapCrud` ha imparato tre cose. Sono estensioni, non eccezioni —
+regola (b) di §16.E — e stanno in §16.6 perché quello è il posto dove si legge che cos'è il motore.
+
+- **`CrudOptions.MapCreate`**: una risorsa può dichiarare di non avere una create JSON. Era già
+  previsto nel changelog 0.37 per l'upload multipart, ed è la forma con cui è stato fatto: una riga
+  `cms_media` senza file su disco non deve poter esistere, e un secondo indirizzo per «creare una
+  media» sarebbe stato il secondo modo di fare la stessa cosa.
+- **`CrudOptions.Delete`**: che cosa significa cancellare, per questa risorsa. Il motore chiama
+  quello invece di `Remove` e **salva lo stesso**, quindi audit, guardia di dipartimento e proiezioni
+  restano quelle di una scrittura qualsiasi. Serviva perché cancellare una media prende il file e non
+  la riga: la riga è ciò che una pagina già pubblicata nomina.
+- **`CrudOptions.CustomFilters`**: un `filter[nome]` che non è un'uguaglianza su una colonna. «Quali
+  pagine usano questo file?» si legge dentro un `body_json`, non in una colonna, e la risposta la dà
+  la lista dei contenuti — la risorsa che possiede il dato — invece di un endpoint nuovo. Allarga
+  l'unico confronto che il filtro sapeva fare, che era un limite scritto fra i debiti di M0.
+
+Accanto a loro nasce **`Core/Data/JsonQuery.cs`**, accanto a `FullTextSearch`: «questo documento JSON
+nomina questo id?», come funzione mappata sul modello, nessuna tabella e nessuna migrazione. ⚠️ Poggia
+su una convenzione — un blocco nomina un file in `mediaId` o in `mediaIds` — che è ora scritta in
+`docs/UI-GUIDELINES.md`, perché è l'unica cosa su cui il server e gli schemi in TypeScript devono
+mettersi d'accordo **per nome**: §16.5 resta intatta, il backend continua a non leggere una `props`.
 
 **Changelog 0.38** (5 set 2026): due decisioni di Carmine dopo la prima fase di M1, e la prima
 delle due è nata **facendo** il giro in un browser invece che leggendolo.
@@ -1088,6 +1111,7 @@ Criterio di Carmine: **quanto meno codice possibile; un pezzo usato in due punti
 4. **Proiezioni via `IProjectable`**: calendario, indice di ricerca e segnalazioni award sono proiezioni dello stesso interceptor, upsert con `source_module`+`source_id` **nella stessa transazione** del salvataggio. Niente MediatR (licenza commerciale dal 2025), niente bus, niente job di riconciliazione. Eventi asincroni solo per le notifiche.
 5. **Un solo documento a sezioni** (§9.3): editor, renderer e registry dei blocchi unici per pagine, news, documenti e per i corpi testuali dei moduli. Schema **solo** in TypeScript/zod; il backend tratta il JSON come opaco (`schema_version` + dimensione), estrae il testo per la ricerca con un walker generico delle stringhe; sanitizzazione markdown/`embed` (allowlist host) in un solo componente.
 6. **Un solo motore di back-office**: lista generica su `DataTable` Atmosphere guidata da una configurazione di colonne + form generato dallo schema zod (lo stesso dei blocchi) anche per le entità; lato server un helper `MapCrud<TEntity, TDto>` che porta già la policy di dipartimento. Regola: **valida il server, il client mostra** i `ProblemDetails` campo per campo.
+   Quando una risorsa non rientra, si estende `CrudOptions` e mai il motore con un ramo che la nomina: oggi può dire che una riga si scrive solo con un permesso in più (`ExtraWritePolicy`), che non ha una create JSON (`MapCreate`), che cosa significa cancellarla (`Delete`) e che accetta un filtro che è una domanda invece di un confronto su una colonna (`CustomFilters`). **Una schermata CRUD scritta a mano non si accetta**, e un endpoint scritto a mano accanto al motore è un evento da scrivere nel rapporto di chiusura della milestone.
 7. **Un solo endpoint di bootstrap** (`/api/me`): menu pubblico e staff, moduli abilitati / in maintenance, permessi effettivi, widget e blocchi registrati. La SPA non ha nulla di cablato.
 8. **Un solo set di file di lingua** `locales/{lang}/*.json`, letto sia dalla SPA sia dal backend (mail, errori). Niente `.resx`.
 

@@ -2,7 +2,7 @@ namespace IvaoHub.Core.Services;
 
 /// <summary>
 /// Where the files that are not code live: <c>config/</c>, <c>locales/</c>, <c>secrets/</c>,
-/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>seed/</c>.
+/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>seed/</c>, <c>media/</c>.
 /// </summary>
 /// <remarks>
 /// In production they sit next to the application, which is also the content root. During
@@ -27,6 +27,12 @@ public sealed class HubPaths
 
     /// <summary>What a fresh installation starts with: the system content templates.</summary>
     public string Seed => Path.Combine(Root, "seed");
+
+    /// <summary>
+    /// Uploaded files. On disk and never in a <c>longblob</c> (plan section 11.3), and outside the
+    /// package so that a deployment does not overwrite them.
+    /// </summary>
+    public string Media => Path.Combine(Root, "media");
     public string Secrets => Path.Combine(Root, "secrets");
     public string DataProtectionKeys => Path.Combine(Root, "hub-keys");
     public string Logs => Path.Combine(Root, "logs");

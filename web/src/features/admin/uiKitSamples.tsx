@@ -1,6 +1,7 @@
 import { Button } from '@ivao/atmosphere-react';
 import { queryOptions } from '@tanstack/react-query';
 import { Plane } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
@@ -12,9 +13,11 @@ import {
   EmptyState,
   Hero,
   MarkdownContent,
+  MediaPicker,
   PageShell,
   SectionHeader,
   StatTile,
+  type PickableMedia,
 } from '../../shared/ui';
 
 /**
@@ -70,6 +73,36 @@ const samplePage: Page<SampleRow> = {
 const sampleListQuery = queryOptions({
   queryKey: ['ui-kit', 'sample-list'] as const,
   queryFn: () => Promise.resolve(samplePage),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+/**
+ * Two files to choose between, one an image and one not, so the gallery shows both halves of the
+ * picker. The picture is a data URI rather than an upload: the gallery must not depend on an
+ * installation having a file in it.
+ */
+const sampleMedia: PickableMedia[] = [
+  {
+    id: 1,
+    fileName: 'banner.png',
+    contentType: 'image/png',
+    alt: { en: 'A blue square', it: 'Un quadrato blu' },
+    url:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk' +
+      'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  },
+  {
+    id: 2,
+    fileName: 'briefing.pdf',
+    contentType: 'application/pdf',
+    alt: { en: 'Briefing', it: 'Briefing' },
+    url: '#',
+  },
+];
+
+const sampleMediaQuery = queryOptions({
+  queryKey: ['ui-kit', 'sample-media'] as const,
+  queryFn: () => Promise.resolve({ items: sampleMedia, total: sampleMedia.length }),
   staleTime: Number.POSITIVE_INFINITY,
 });
 
@@ -163,6 +196,21 @@ export function SchemaFormSample({ locales }: { locales: readonly string[] }) {
       labels="uiKit.sample.form"
       submitLabel={t('common.save')}
       onSubmit={() => Promise.resolve()}
+    />
+  );
+}
+
+export function MediaPickerSample({ bootstrap }: { bootstrap: Bootstrap }) {
+  const { i18n } = useTranslation();
+  const [chosen, setChosen] = useState<number | null>(sampleMedia[0]?.id ?? null);
+
+  return (
+    <MediaPicker
+      query={sampleMediaQuery}
+      value={chosen}
+      onChange={setChosen}
+      locale={i18n.language}
+      defaultLocale={bootstrap.division.defaultLocale}
     />
   );
 }

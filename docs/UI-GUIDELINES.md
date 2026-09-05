@@ -30,11 +30,16 @@ Never inline an `<svg>` in a screen. ESLint refuses one anywhere outside `shared
 
 ## 3. The custom components are a closed list
 
-For M0 it is exactly:
+It is exactly:
 
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
-`StatusBadge`, `ConfirmDialog`.
+`StatusBadge`, `ConfirmDialog`, `MediaPicker`.
+
+`MediaPicker` chooses a file out of the library of a department, and it is on the list because two
+very different screens mount it: the library itself, and every block property that names a file. It
+picks and nothing else — uploading belongs to the library screen, and a picker that also uploaded
+would be a second way for a file to enter the hub.
 
 The list lives in `web/src/shared/ui/catalog.ts`. Everything else is Atmosphere.
 
@@ -51,8 +56,9 @@ When Atmosphere nearly does what is needed, wrap it rather than replace it — `
 Atmosphere's `DataTable` in server side mode, with the paging drawn by us because Atmosphere's own
 writes "Rows per page" in English. A component that does something genuinely new is a decision.
 
-`LiveStatusStrip`, `RatingBadge`, `AirportCard`, `EventTimeline` and `ContactForm` are M1 and are
-not to be started early.
+`CalendarView`, `ContactForm` and `LiveStatusStrip` are the rest of M1 and are added by the phases
+that need them; `RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist
+yet and are not to be started early.
 
 ## 4. Colours are tokens, and dark mode is not optional
 
@@ -133,6 +139,24 @@ the language files and checks them, which is the test rule 1 tells you to write.
 
 The conventions for what a block should look like — spacing, when to use a callout rather than a
 heading — are M1. What is fixed now is the shape.
+
+### How a block names a file
+
+A file in the media library is referred to by its identifier, and the property that holds it is
+called **`mediaId`**, or **`mediaIds`** when a block shows several — a gallery, a grid of logos.
+
+The names are a convention rather than a type because the server cannot read a block schema: it
+stores `body_json` as an opaque document. What it does know how to do is ask a JSON column whether
+it mentions an identifier, anywhere at any depth, under one of those two keys — and that is what
+stands between deleting a file and breaking a page that has already been published. A block that
+invented a third name would have its file deleted out from under it.
+
+Never draw such a property as a number field. `MediaPicker` is what fills it in, and the reason is
+plain: a free numeric field produces pages pointing at files that were deleted years ago.
+
+The alternative text is written **once**, next to the file, and a block that leaves its own `alt`
+empty inherits it. Writing it at every use is how a picture ends up described three different ways
+and undescribed the fourth time.
 
 ## Times
 

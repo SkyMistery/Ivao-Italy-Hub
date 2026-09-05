@@ -141,6 +141,50 @@
       }
     }
   },
+  "media": {
+    "title": "Libreria media",
+    "description": "File caricati una volta e usati ovunque",
+    "upload": "Carica un file",
+    "usedBy_one": "Usato da una pagina",
+    "usedBy_other": "Usato da {{count}} pagine",
+    "delete": {
+      "title": "Cancellare questo file?",
+      "description": "Il file viene rimosso. Nessuna pagina del sito lo sta mostrando.",
+      "inUse_one": "Una pagina pubblicata sta mostrando questo file, quindi il file resta e esce solo dalla libreria.",
+      "inUse_other": "{{count}} pagine pubblicate stanno mostrando questo file, quindi il file resta e esce solo dalla libreria."
+    },
+    "picker": {
+      "label": "File di questo dipartimento",
+      "empty": "Ancora nessun file",
+      "emptyHint": "Caricane uno nella libreria media di questo dipartimento.",
+      "chosen": "Scelto: #{{id}}",
+      "clear": "Non scegliere nessuno"
+    },
+    "fields": {
+      "fileName": "File",
+      "alt": "Testo alternativo",
+      "title": "Titolo",
+      "contentType": "Tipo",
+      "byteSize": "Dimensione in byte",
+      "dimensions": "Dimensioni in pixel",
+      "category": "Categoria",
+      "visibility": "Visibilità",
+      "ownerDepartment": "Dipartimento",
+      "url": "Indirizzo",
+      "createdAt": "Caricato"
+    },
+    "hints": {
+      "alt": "Che cosa viene detto a chi non può vedere l'immagine. Ogni blocco che mostra questo file lo eredita."
+    },
+    "options": {
+      "visibility": {
+        "Public": "Pubblico",
+        "Members": "Membri",
+        "Staff": "Staff",
+        "Department": "Dipartimento"
+      }
+    }
+  },
   "uiKit": {
     "title": "Galleria dei componenti",
     "description": "Tutti i componenti dell'hub e tutti i blocchi del registry, con props di esempio.",

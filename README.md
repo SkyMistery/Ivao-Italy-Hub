@@ -122,6 +122,7 @@ connection really came from.
 | `config/ivao-oauth.json` | **no** | The OAuth client of the division. Copy the example and fill it in, or use `Ivao__*` environment variables. |
 | `secrets/*.json` | **no** | Connection string, SMTP, `AllowedHosts`, the trusted proxies, and anything else that must not be read from the web. |
 | `hub-keys/` | **no** | Data Protection keys. Persistent: never delete them, or everybody is logged out. |
+| `media/` | **no** | Uploaded files, on disk and never in the database. Set `Media:Directory` to keep them on a disk of their own; `Media:MaxBytes` and `Media:AllowedContentTypes` are what an upload is measured against. |
 
 ## Checks
 
@@ -162,7 +163,9 @@ The publish target builds the SPA and places it, together with the language file
 `locales/{lang}/*.json` — the copy the server itself reads — `seed/content-templates/*.json`, the
 `config/*.example.json` files to copy, and `LICENSE` and `NOTICE`. Everything an installation owns — `config/division.json`,
 `config/ivao-oauth.json`, `secrets/`, `hub-keys/` — stays outside the package and next to it on the
-server, so a deployment never overwrites the configuration or the keys.
+server, so a deployment never overwrites the configuration or the keys. The same goes for
+`media/`: an uploaded file is part of what the installation owns, and a release that replaced the
+folder would empty the media library of every page that shows one.
 
 ## Repository layout
 

@@ -27,6 +27,12 @@ public static class CorePermissions
     public const string LinksView = "Links.View";
     public const string LinksEdit = "Links.Edit";
 
+    /// <summary>The area the CRUD engine derives <c>Media.View</c> and <c>Media.Edit</c> from.</summary>
+    public const string MediaArea = "Media";
+
+    public const string MediaView = "Media.View";
+    public const string MediaEdit = "Media.Edit";
+
     public const string CalendarView = "Calendar.View";
     public const string CalendarEdit = "Calendar.Edit";
 
@@ -49,6 +55,8 @@ public static class CorePermissions
         new(ContentManageTemplates, IsGlobal: false),
         new(LinksView, IsGlobal: false),
         new(LinksEdit, IsGlobal: false),
+        new(MediaView, IsGlobal: false),
+        new(MediaEdit, IsGlobal: false),
         new(CalendarView, IsGlobal: false),
         new(CalendarEdit, IsGlobal: false),
         new(PermissionsManage, IsGlobal: true),

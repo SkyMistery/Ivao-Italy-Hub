@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using FluentValidation;
@@ -63,6 +64,15 @@ public static class ContentEndpoints
                 // A template is a tool, not a page: it stays out of the list of what a department
                 // publishes, and `filter[isTemplate]=true` is how the template picker asks for it.
                 options.DefaultFilters[nameof(ContentEntry.IsTemplate)] = "false";
+
+                // "Which pages use this file?", asked of the resource that owns the answer rather
+                // than through an endpoint of its own. It is not an equality on a column — the
+                // identifier is somewhere inside an opaque body — so it is a function, and the
+                // function is the one helper of Core/Data that knows how to ask a JSON column.
+                options.CustomFilters[UsesMediaFilter] = (query, raw) =>
+                    long.TryParse(raw, CultureInfo.InvariantCulture, out var mediaId)
+                        ? query.UsingMedia(mediaId)
+                        : null;
 
                 options.SearchFields.Add(content => content.Title);
                 options.SearchFields.Add(content => content.Slug);
@@ -140,6 +150,12 @@ public static class ContentEndpoints
     }
 
     private const string ContentArea = "Content";
+
+    /// <summary>
+    /// <c>filter[usesMedia]=42</c>: the contents that show a file. Named here because the client
+    /// writes it too, and a filter name spelled twice is a filter name that drifts.
+    /// </summary>
+    public const string UsesMediaFilter = "usesMedia";
 
     private static async Task<IResult> CreateFromTemplateAsync(
         long templateId,

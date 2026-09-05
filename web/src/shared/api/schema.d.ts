@@ -222,6 +222,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MediaList"];
+        put?: never;
+        post: operations["MediaUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MediaGet"];
+        put: operations["MediaUpdate"];
+        post?: never;
+        delete: operations["MediaDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/content": {
         parameters: {
             query?: never;
@@ -760,6 +792,8 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** Format: binary */
+        IFormFile: string;
         JsonNode: unknown;
         /** @description A link as the form shows it, with the audit trail and the version to write back. */
         LinkDetailDto: {
@@ -846,6 +880,77 @@ export interface components {
         LocalizedOfstring: {
             [key: string]: string;
         };
+        /** @description A file as the metadata form shows it, with the version to write back. */
+        MediaDetailDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            fileName: string;
+            contentType: string;
+            /** Format: int64 */
+            byteSize: number;
+            /** Format: int32 */
+            width: null | number;
+            /** Format: int32 */
+            height: null | number;
+            alt: components["schemas"]["LocalizedOfstring"];
+            title: null | components["schemas"]["LocalizedOfstring"];
+            category: null | string;
+            url: string;
+            hasFile: boolean;
+            /** Format: date-time */
+            deletedAt: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description A file as a list and a picker show it. The address is part of the row because it is built the
+         *     same way everywhere and nobody should assemble it twice.
+         */
+        MediaListDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            fileName: string;
+            contentType: string;
+            /** Format: int64 */
+            byteSize: number;
+            /** Format: int32 */
+            width: null | number;
+            /** Format: int32 */
+            height: null | number;
+            alt: components["schemas"]["LocalizedOfstring"];
+            category: null | string;
+            url: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description What a client may set. Everything about the file itself — its name on disk, its type, its size,
+         *     its pixels — is what the upload measured and is not a payload: a row that could be told it is a
+         *     PNG would be a row that can lie about what is on the disk.
+         */
+        MediaWriteDto: {
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            alt: components["schemas"]["LocalizedOfstring"];
+            title: null | components["schemas"]["LocalizedOfstring"];
+            category: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description What an administrator sets on a module. One switch, and that is the whole screen. */
         ModuleMaintenanceRequest: {
             maintenance: boolean;
@@ -931,6 +1036,29 @@ export interface components {
         PagedResultOfLinkListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["LinkListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfMediaListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["MediaListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -1245,6 +1373,169 @@ export interface operations {
         };
     };
     LinksDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MediaList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfMediaListDto"];
+                };
+            };
+        };
+    };
+    MediaUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: components["schemas"]["IFormFile"];
+                } & {
+                    ownerDepartment: components["schemas"]["Department"];
+                } & {
+                    visibility?: components["schemas"]["Visibility"];
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    MediaGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MediaUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MediaWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MediaDelete: {
         parameters: {
             query?: never;
             header?: never;

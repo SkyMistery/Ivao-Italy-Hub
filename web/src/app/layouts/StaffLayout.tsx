@@ -1,6 +1,6 @@
 import { Sidebar, type SidebarProps } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
-import { Boxes, FileText, KeyRound, Link2, ScrollText, ShieldCheck, Sparkles } from 'lucide-react';
+import { Boxes, FileText, Images, KeyRound, Link2, ScrollText, ShieldCheck, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { type Bootstrap, holdsPermissionAnywhere, reachableDepartments } from '../../shared/api/bootstrap';
@@ -11,8 +11,8 @@ import { RouterAnchor } from './RouterAnchor';
 
 /**
  * The back office. One group per department the member may work in — their own, or all of them
- * when the role reaches everywhere — and under each, the resources of that department: `content`
- * and `links`, plus whatever the modules put in `navigation.staff`, which the server has already
+ * when the role reaches everywhere — and under each, the resources of that department: `content`,
+ * `links` and `media`, plus whatever the modules put in `navigation.staff`, which the server has already
  * narrowed to the entries this person may actually follow (design M0 §7.2).
  *
  * The administration group only appears for whoever holds `Admin.Access`, and each entry inside it
@@ -54,6 +54,12 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
         description: t('links.description'),
         Icon: Link2,
         href: `/staff/${deptParam.format(department)}/links`,
+      },
+      {
+        title: t('media.title'),
+        description: t('media.description'),
+        Icon: Images,
+        href: `/staff/${deptParam.format(department)}/media`,
       },
     ],
   }));

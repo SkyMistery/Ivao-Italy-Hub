@@ -141,6 +141,50 @@
       }
     }
   },
+  "media": {
+    "title": "Media library",
+    "description": "Files uploaded once and used anywhere",
+    "upload": "Upload a file",
+    "usedBy_one": "Used by one page",
+    "usedBy_other": "Used by {{count}} pages",
+    "delete": {
+      "title": "Delete this file?",
+      "description": "The file is removed. Nothing on the site is showing it.",
+      "inUse_one": "One published page is showing this file, so the file itself is kept and only leaves the library.",
+      "inUse_other": "{{count}} published pages are showing this file, so the file itself is kept and only leaves the library."
+    },
+    "picker": {
+      "label": "Files of this department",
+      "empty": "No files yet",
+      "emptyHint": "Upload one in the media library of this department first.",
+      "chosen": "Chosen: #{{id}}",
+      "clear": "Choose none"
+    },
+    "fields": {
+      "fileName": "File",
+      "alt": "Alternative text",
+      "title": "Title",
+      "contentType": "Type",
+      "byteSize": "Size in bytes",
+      "dimensions": "Size in pixels",
+      "category": "Category",
+      "visibility": "Visibility",
+      "ownerDepartment": "Department",
+      "url": "Address",
+      "createdAt": "Uploaded"
+    },
+    "hints": {
+      "alt": "What somebody who cannot see the picture is told instead. Every block that shows this file inherits it."
+    },
+    "options": {
+      "visibility": {
+        "Public": "Public",
+        "Members": "Members",
+        "Staff": "Staff",
+        "Department": "Department"
+      }
+    }
+  },
   "uiKit": {
     "title": "Component gallery",
     "description": "Every custom component of the hub and every block of the registry, with example props.",
