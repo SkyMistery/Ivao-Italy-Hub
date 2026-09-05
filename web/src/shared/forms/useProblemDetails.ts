@@ -85,9 +85,7 @@ export function describeProblem(error: unknown, t: TFunction, language: string):
     return statusSummary(error, t);
   }
 
-  return fields
-    .map(([field, keys]) => describe(keys, error.problem, field, t, language))
-    .join(' ');
+  return fields.map(([field, keys]) => describe(keys, error.problem, field, t, language)).join(' ');
 }
 
 /**

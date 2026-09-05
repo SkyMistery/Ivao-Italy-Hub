@@ -125,11 +125,6 @@ function MediaThumbnail({ media, alt }: { media: PickableMedia; alt: string }) {
   }
 
   return (
-    <img
-      src={media.url}
-      alt={alt}
-      loading="lazy"
-      className="bg-body h-24 w-full rounded object-contain"
-    />
+    <img src={media.url} alt={alt} loading="lazy" className="bg-body h-24 w-full rounded object-contain" />
   );
 }
