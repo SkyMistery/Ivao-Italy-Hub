@@ -9,7 +9,11 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 1.2 — 5 settembre 2026 (**G0 è chiusa**, PR #35: il giro contro l'API vera gira in CI, e
+**Versione:** 1.3 — 5 settembre 2026 (due decisioni di Carmine entrano nelle fasi: la **lettura
+condivisa dei template** in G5, e la **dashboard di dipartimento** in G8 — quest'ultima con la forma
+da confermare, nota in `decisions/2026-09-05-dashboard-di-dipartimento.md`.)
+
+**1.2** — G0 è chiusa, PR #35: il giro contro l'API vera gira in CI, e
 due cose viste facendone uno stanno in fondo alla fase — una chiede una decisione prima di G5. La
 prossima fase è G1.)
 
@@ -83,7 +87,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G5 | News, documenti, categorie | G4 | due `kind`, due configurazioni di lista, cinque rotte pubbliche, `cms_categories` |
 | G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
 | G7 | Contatti, servizio notifiche, namespace `mail` | G2 | un messaggio genera una mail in Mailpit passando dalla coda |
-| G8 | Menu editoriale, pagine di sistema, sito pubblico, SEO | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate |
+| G8 | Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate; ogni dipartimento apre `/staff/{dept}` e trova la propria dashboard |
 | G9 | Live status e staff directory | G4 | `LiveStatusStrip`, sezione staff di `/about`, nessun profilo pubblico |
 | G10 | Ricerca: schermata, rilevanza, evidenziazione | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
 | G11 | Editor: differenze dal template, dnd-kit, anteprima | G8 | tre stati della diff, «allinea» una differenza alla volta, su/giù da tastiera intatto |
@@ -349,26 +353,39 @@ la ui-kit monta **27** blocchi e ogni `exampleData` soddisfa il proprio schema.
 §9.3 non ha retto** — e se non è corta va scritto nel rapporto di chiusura.
 
 Task:
-1. Tabella `cms_categories` (`Kind`, `OwnerDepartment`, `Key` stabile, `Label` localizzata, `Sort`,
+1. **Prima di tutto, la lettura condivisa dei template** (design §9.4, decisa il 5 set 2026, nota
+   `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`). Senza, un coordinatore che non sia
+   del dipartimento Web non vede alcun template e «Nuovo da template» non compare: news e documenti
+   nascerebbero solo dalla pagina vuota. Due estensioni **generiche**, nessuna delle quali sa che cosa
+   sia un template: un predicato di righe condivise in `CrudOptions` che il motore mette in `OR` con
+   il filtro di dipartimento, e la stessa dichiarazione letta dall'**unico** authorization handler
+   quando il permesso è di lettura. ⚠️ I due lati devono dire la stessa cosa — uno è SQL, l'altro un
+   controllo in memoria: una sola fonte sull'entità e un test che li confronta, come per la coppia
+   envelope/walker. La scrittura non si muove: modificare un template resta `Content.ManageTemplates`
+   sul dipartimento che lo possiede. **Non** si costruisce qui la copia di un template in un altro
+   dipartimento: si scrive quando qualcuno vuole divergere davvero.
+2. Tabella `cms_categories` (`Kind`, `OwnerDepartment`, `Key` stabile, `Label` localizzata, `Sort`,
    `IsActive`), `IOwnedByDepartment, IAuditable`, `MapCrud` e back-office `/staff/{dept}/categories`.
    Migrazione additiva. **Seed vuoto**: le categorie le scrivono i coordinatori dall'interfaccia, ed è
    la risposta a piano §15.8 — non serviva sapere quali sono, serviva che non fossero codice.
    ⚠️ `ContentEntry.Category` resta una **stringa** e contiene la `Key`: nessuna FK, e una categoria
    cancellata lascia la riga con la sua chiave.
-2. Back-office: `/staff/{dept}/news` e `/staff/{dept}/documents` sono la **stessa** lista di
+3. Back-office: `/staff/{dept}/news` e `/staff/{dept}/documents` sono la **stessa** lista di
    `/staff/{dept}/content` con un filtro fisso su `kind` e una configurazione di colonne diversa (news:
    categoria, copertina, pin; documenti: categoria, ordine, file). Il form dei metadati è lo stesso
    `SchemaForm` con qualche campo in più o in meno. ⚠️ Ricetta a **tre** route (HANDOFF §12): layout con
    guardia e `Outlet`, `index` con i search params, dettaglio fratello. Se serve una route scritta a
    mano invece di una configurazione, è un segnale e va scritto.
-3. Pubblico: `/news`, `/news/{slug}`, `/documents`, `/documents/{dept}`, `/documents/{slug}` (design
+4. Pubblico: `/news`, `/news/{slug}`, `/documents`, `/documents/{dept}`, `/documents/{slug}` (design
    §3.3). ⚠️ `/documents`, non `/docs`: `ContentEntry.Url` lo scrive già così ed è quello che finisce in
    `search_index`; il piano è stato corretto in v0.36.
-4. Un documento con `FileMediaId` è una scheda con il download (la media di G1); senza, si legge nel
+5. Un documento con `FileMediaId` è una scheda con il download (la media di G1); senza, si legge nel
    browser come una pagina qualsiasi.
 
-**Accettazione**: `NoSecondContentEntity` (test di architettura: nessuna entità nuova con un corpo a
-blocchi), `PublicNewsShowsOnlyPublishedAndVisible`, `PinnedNewsComeFirst`,
+**Accettazione**: `TemplatesAreReadableByAnyStaff` e `TemplatesAreWritableOnlyByTheirDepartment` (la
+coppia che tiene onesta l'estensione del task 1, con il caso «coordinatore ED vede i template di WD e
+prende 403 se prova a modificarne uno»), `NoSecondContentEntity` (test di architettura: nessuna entità
+nuova con un corpo a blocchi), `PublicNewsShowsOnlyPublishedAndVisible`, `PinnedNewsComeFirst`,
 `DocumentWithFileOffersDownload`, `CategoryDeletionLeavesTheContentKey`,
 `CategoriesAreScopedToDepartment`; e2e con una misura sulla lista `/news`; **e la riga onesta nella
 PR**: è servita una colonna nuova non nullable? un secondo editor? un renderer separato? Se sì, §9.3
@@ -445,7 +462,7 @@ del destinatario.
 
 ---
 
-### G8 — Menu editoriale, pagine di sistema, sito pubblico, SEO
+### G8 — Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO
 
 **Obiettivo**: il sito pubblico esiste e **non lo disegna il codice**. Design §8. È la fase che risponde
 alla domanda di M1, ed è grossa: può prendere due sessioni (menu + pagine seedate, poi rotte pubbliche
@@ -471,12 +488,25 @@ Task:
 5. Rotte pubbliche `/`, `/start`, `/pilots`, `/atc`, `/about`, rese dal `ContentRenderer` che esiste.
    `/atc` è una pagina di sistema come le altre, più le card e i deep link verso vIPI che il modulo
    `atc` registra: il modulo resta a bassa complessità e **non** guadagna tabelle (piano §9.2).
-6. SEO minima (design §8.4): `<title>` e meta description dalla riga `Seo`, `og:` per pagine e news,
+6. **La dashboard di dipartimento** (design §14, nota
+   `decisions/2026-09-05-dashboard-di-dipartimento.md`). ⚠️ **Da confermare con Carmine prima di
+   aprire la fase**: la nota raccomanda una riga di `cms_contents` per dipartimento — `kind`
+   `Dashboard`, `slug` = codice del dipartimento, `visibility = Department`, nata da un template di
+   sistema, modificata nell'editor che già esiste e pubblicata come qualsiasi altra riga — contro
+   l'alternativa a widget, che vorrebbe un secondo editor di disposizione e allora non è M1. Con la
+   forma raccomandata il lavoro è: un valore in fondo a `ContentKind`, `Url` che per quel `kind` è
+   `/staff/{dept}` e non un indirizzo pubblico, un file in `seed/content-pages/` applicato **una
+   volta per dipartimento** con la chiave `page.dashboard:<dept>` in `hub_division_settings`, e la
+   rotta `/staff/$dept` che oggi non esiste. Nessun permesso nuovo: leggerla è `Content.View` sul
+   proprio dipartimento, modificarla `Content.Edit`.
+7. SEO minima (design §8.4): `<title>` e meta description dalla riga `Seo`, `og:` per pagine e news,
    `sitemap.xml` generata dalle righe pubblicate, `robots.txt`. ⚠️ Entrambi i file vanno in
    `SpaFallbackExclusions`, o la SPA se li mangia. Nessun prerender, nessun prefisso lingua negli URL.
 
 **Accettazione**: `MenuComposesEditorialAndModuleItems`, `MenuIsOwnedByTheWebDepartment` (un
 coordinatore di un altro dipartimento → 403), `SystemPagesSeedAppliesOnceAndKeepsStaffEdits`,
+`EveryDepartmentIsBornWithADashboard` e `ADashboardIsNotPublic` (una riga `Department` non esce mai
+dalla rotta pubblica, che serve solo `kind = Page`),
 `SitemapListsOnlyPublishedAndVisible`, `ForkabilityXxDivision` esteso a pagine seedate e menu;
 **e2e**: si toglie una voce dal menu e sparisce dal sito **senza ricompilare**, e una misura sulla home
 (la colonna di lettura non più stretta di *n* px, il menu che non copre il contenuto).

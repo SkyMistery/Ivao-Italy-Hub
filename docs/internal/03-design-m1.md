@@ -1,10 +1,18 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.1 — 5 settembre 2026
+**Versione documento:** 1.2 — 5 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.2** (5 set 2026): due cose decise dopo G0, entrambe nate dal **fare** il giro invece
+che dal leggerlo. **§9.4, i template**: sono strumenti di dipartimento, ma ogni staff li **legge**
+tutti — senza, otto dipartimenti su nove non vedono nemmeno «Nuovo da template», e §9.1 (le
+differenze rispetto al template) non ha il dato da mostrare. **§14, la dashboard di dipartimento**:
+non era in nessun documento, serve, ed entra in G8 nella forma raccomandata dalla nota
+`decisions/2026-09-05-dashboard-di-dipartimento.md` — una riga di `cms_contents` per dipartimento,
+non un secondo modo di comporre una schermata.
 
 **Changelog 1.1** (5 set 2026): scrivendo il piano di implementazione (`04-piano-implementazione-m1.md`)
 è emersa una **contraddizione dentro questo documento**: §5.2 diceva che in M1 «esiste la tabella» delle
@@ -546,6 +554,29 @@ JSON.
 - **Anteprima multi-device**: tre larghezze, la stessa pagina. Non è un emulatore, è un `max-width`.
 - **Il badge dell'anteprima** che F7 ha introdotto resta com'è, e resta visibile solo allo staff.
 
+### 9.4 Di chi sono i template, e chi li legge (deciso il 5 set 2026)
+
+Un template **appartiene a un dipartimento**: ogni dipartimento si fa i suoi, e li modifica con il
+`Content.ManageTemplates` che ogni coordinatore ha già sul proprio. Quello che cambia rispetto a M0 è
+che **ogni staff li legge tutti** — l'elenco e il corpo.
+
+Motivo, trovato in G0 con una sessione vera: i tre template seminati appartengono a WD, `Content.View`
+è di dipartimento, e quindi per un coordinatore ED `filter[isTemplate]=true` risponde zero righe e il
+selettore non compare affatto. Peggio: una pagina nata da un template che il suo editore non può
+leggere perde i vincoli del template nell'editor (`templateRules` cade su `NO_RULES`), perché le
+restrizioni non viaggiano nella copia — quindi **§9.1 non funzionerebbe** per nessuno fuori da WD.
+
+Non è una concessione grande: i template sono `Visibility.Staff`, non sono pubblicabili, e non
+contengono dati ma struttura. La scrittura non si muove di un millimetro. **Usare** il template di un
+altro dipartimento crea una pagina **nel proprio**, che è già ciò che `CreateFromTemplateAsync`
+chiede; **copiarlo** nel proprio dipartimento — una copia che diventa tua — è il modo di divergere e
+si costruisce quando serve, perché è la stessa copia profonda che esiste.
+
+Si implementa estendendo due meccanismi in modo generico, mai insegnando loro che cosa sia un
+template: un predicato di righe condivise in `CrudOptions` per il restringimento della lista, e la
+stessa dichiarazione letta dall'**unico** authorization handler quando il permesso è di lettura.
+Nota: `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`. Lavoro in **G5**.
+
 ---
 
 ## 10. Permessi, tabelle e migrazioni
@@ -637,7 +668,7 @@ con una fase per sessione e i prompt di apertura, come `02-` per M0. È l'ordine
 | **G5** | News, documenti, categorie | Configurazione, non codice. Se costa più di una fase, §9.3 non ha retto |
 | **G6** | Calendario: CRUD interne, `/calendar`, `CalendarView` | |
 | **G7** | Contatti + servizio notifiche + namespace `mail` | Il servizio nasce con un solo mittente di intenti |
-| **G8** | Menu editoriale, pagine di sistema seedate, sito pubblico, SEO minima | Ha bisogno dei blocchi (G3/G4) per avere qualcosa da mostrare |
+| **G8** | Menu editoriale, pagine di sistema seedate, **dashboard di dipartimento** (§14), sito pubblico, SEO minima | Ha bisogno dei blocchi (G3/G4) per avere qualcosa da mostrare; la dashboard è la stessa macchina di seed, una riga per dipartimento |
 | **G9** | Live status e staff directory | |
 | **G10** | Ricerca: schermata, rilevanza, evidenziazione | |
 | **G11** | Editor: differenze dal template, dnd-kit, anteprima multi-device | Le rifiniture dopo che l'editor è stato usato davvero in G8 |
@@ -687,11 +718,27 @@ non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
 15. **Cinque estensioni al generatore di form**, mai un form a mano (§1.6): media, icona, data,
     oggetto tradotto, riordino nelle liste. Chiudono anche i debiti n.3 e n.4 di HANDOFF §10.
 16. **La rete e2e con API vera è la prima fase di M1**, non l'ultima (§11.1, §12).
+17. **I template sono di dipartimento e li legge tutto lo staff** (§9.4): la scrittura resta
+    `Content.ManageTemplates` sul proprietario, usare quello di un altro crea una pagina nel proprio,
+    copiarlo nel proprio è il modo di divergere e si costruisce quando serve.
+18. **Ogni dipartimento nasce con una dashboard**, una riga di `cms_contents` seminata e poi
+    modificabile nell'editor che esiste — non un secondo modo di comporre una schermata (§14 e la
+    nota dedicata). Entra in G8; la forma è raccomandata e va confermata.
 
 ---
 
 ## 14. Ancora aperto (non blocca M1)
 
+- ⚠️ **La forma della dashboard di dipartimento.** Chiesta il 5 set 2026 e assente da ogni documento
+  fino a quel giorno: ogni dipartimento nasce con la propria dashboard, poi la modifica. La nota
+  `decisions/2026-09-05-dashboard-di-dipartimento.md` misura il bivio — **blocchi** (una riga di
+  `cms_contents` per dipartimento, `kind = Dashboard`, `visibility = Department`, seminata da un
+  template e modificata nell'editor che esiste) contro **widget** (le tile di `/me`, che però per
+  essere disposte per dipartimento vorrebbero un secondo editor) — e raccomanda i blocchi. Con quella
+  forma il lavoro è un delta piccolo dentro **G8**, che il seed delle pagine di sistema lo costruisce
+  comunque; con l'altra è un meccanismo nuovo e la sua casa è M2. Da confermare prima di G8.
+  È anche il primo cliente vero di §9.4: senza lettura condivisa dei template, otto dipartimenti su
+  nove non potrebbero leggere il proprio template di partenza.
 - ⚠️ **Risposte A9 di Ivao.It** (piano §15.2c) e **dominio di staging** (§15.3): ora bloccano M2, non M1.
 - ⚠️ **Cosa significa `firStaffScope`** (debito n.6 di HANDOFF §10). In M0 le posizioni FIR non danno
   nessun permesso, che è la lettura più restrittiva e quella che si può solo allargare. M1 non ne ha
