@@ -1,9 +1,32 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.35 — 5 settembre 2026 (una seconda domanda accanto a «questo nomina l'Italia?»: «questo nomina IVAO?»)
+**Versione documento:** 0.36 — 5 settembre 2026 (M1 ha il suo design: il set dei blocchi deciso, lo staging Plesk spostato a M2)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. Prossima milestone **M1**, il sito pubblico. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha il suo documento di design** (`03-design-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi; manca il piano di implementazione. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.36** (5 set 2026): **M1 ha il suo documento di design**, `03-design-m1.md`, come
+§13 chiede per ogni milestone. Il piano cambia in tre punti, e tutti e tre nascono da una decisione
+presa aprendo M1 invece che scoprendola a metà.
+
+**Lo staging Plesk esce da M1 ed entra in M2** (§13). Era in M1 dal 2 set 2026, quando M0 lo aveva
+ceduto in attesa delle risposte A9 di Ivao.It (§15.2c); quelle risposte al 5 set non ci sono ancora, e
+una milestone non si progetta intorno a una risposta che non è arrivata. Non si perde niente di
+concreto: la CI produce l'artefatto `publish/` da M0, quindi quello che si sposta è **il deploy**, non
+la capacità di pacchettizzare. §15.2c resta aperta e ora blocca M2.
+
+**La migrazione dei contenuti dal Blazor è manuale** (§13): si ricopia dall'editor, nessun import.
+Un mapper da un modello che non conosciamo verso l'envelope a blocchi sarebbe codice usato una volta
+sola, e ricopiare `/about` a mano è il collaudo vero dell'editor — se è faticoso, l'editor non è finito.
+
+**L'URL dei documenti è `/documents`, non `/docs`** (§8.2, §9.4). Non è una preferenza: `ContentEntry.Url`
+lo decide già così ed è l'unico punto che dice dove il pubblico legge una riga e cosa finisce in
+`search_index`. L'entità si chiama `Document`, il `kind` si chiama `document`: tre parole uguali e un
+URL diverso sono una cosa in più da ricordare.
+
+Il resto delle decisioni di M1 — 22 blocchi nuovi, le convenzioni dei blocchi che chiudono §16.C,
+il menu editoriale, il vocabolario delle categorie che chiude §15.8 senza doverne conoscere il
+contenuto — vive nel design e non duplica il piano: sono dettagli di una milestone, non architettura.
 
 **Changelog 0.35** (5 set 2026): §4.2 guadagna una regola, accanto a quella che il progetto
 applica dal primo giorno. Il piano chiede da sempre **«questo nomina l'Italia?»** — nessun codice
@@ -762,7 +785,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /training                  Modulo Training: richieste training/esami, disponibilità trainer, sessioni, esiti, mock exam
 /tours, /tours/{slug}      Modulo Flight Ops: tour, leg, classifica, award; /tours/{slug}/report per il PIREP
 /calendar                  Calendario unico (eventi, RFE, training, esami, tour; voci interne solo per staff)
-/docs, /docs/{dept}        Documenti per dipartimento (visibilità per ruolo)
+/documents, /documents/{dept}  Documenti per dipartimento (visibilità per ruolo); /documents/{slug} il singolo documento
 /news, /news/{slug}
 /about                     Divisione, staff directory (da claim IVAO), partner, contatti
 /me                        Dashboard personale; /me/profile, /me/bookings, /me/training, /me/tours
@@ -845,7 +868,7 @@ Deciso da Carmine: **tutti i contenuti creati dal sito sono documenti modulari**
 
 - Ogni documento è una riga di `cms_contents` con `kind = document` (§9.3) e ha `owner_department` obbligatorio, `category` (vocabolario per dipartimento: es. Training → syllabus, guide, materiale esami; Flight Ops → guide piloti, briefing; Membership → regolamenti, policy; HQ → verbali, policy divisionali), `visibility` (public / members / staff / department), **versioni** con changelog e data (`cms_content_versions`), corpo come file (PDF, `file_media_id`) **o** come contenuto a sezioni (§9.3), tipicamente da un template del dipartimento, per i documenti che conviene leggere nel browser.
 - **Confine netto con vIPI** (deciso): SOP, LoA, vPIV, spazi aerei, tutto ciò che è documentazione operativa per FIR/aeroporto vive **solo** in vIPI — anche quando il lettore è un pilota. Per gli **aeroporti e avvicinamenti militari** curati dal SOD vale il modello **fonte unica, viste per pubblico**: le vSOP contengono sia le info ATC sia la documentazione piloti e già oggi ogni sezione è marcata *per ATC / per piloti / per tutti*; il SOD continua a scrivere in un solo posto. vIPI esporrà un endpoint API con le sole sezioni piloti (lavoro nel suo backlog, sensato insieme al passaggio net10) e l'hub le **renderizza dentro `/pilots`** e nella pagina SO, come già consuma l'API delle statistiche ATC; finché l'API non c'è, deep link puntuali ai documenti. L'hub non ne tiene copia né indice: la sezione `/atc` e la pagina della FIR mostrano card e deep link verso vIPI. Regola pratica per lo staff: "se ha una FIR o un aeroporto come soggetto ed è operativo, è vIPI; altrimenti è un documento dell'hub".
-- Sul sito pubblico: `/docs` (tutti i pubblici, filtrabili), `/docs/{dept}` e il blocco `documentList` nelle pagine di sezione. Ricerca full-text sul titolo/sommario (MariaDB FULLTEXT), non sul PDF in prima fase.
+- Sul sito pubblico: `/documents` (tutti i pubblici, filtrabili), `/documents/{dept}` e il blocco `documentList` nelle pagine di sezione. Ricerca full-text sul titolo/sommario (MariaDB FULLTEXT), non sul PDF in prima fase.
 
 ### 9.5 Calendario unico
 
@@ -963,8 +986,8 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 | Fase | Contenuto | Uscita |
 |---|---|---|
 | **M0 — Fondamenta** ✅ **chiusa** (4 set 2026, `v0.1.0-m0`) | Repo, soluzione .NET, SPA Vite+Atmosphere, docker-compose, CI, `division.json`, i18n IT/EN, login OIDC BFF con credenziali di test, `users` + ruoli, layout pubblico/riservato, dashboard vuota; **la spina dorsale generica di §16** (`Localized<T>`, interfacce trasversali + interceptor + authorization handler, grammatica permessi, `IProjectable`, motore lista+form, endpoint di bootstrap) **dimostrata end-to-end** su `links` e su un primo `cms_contents` creato da template (§16.15) | Skeleton navigabile, login funzionante, meccanismi generici provati. Design: `01-design-m0.md`; fasi: `02-piano-implementazione-m0.md`. Il **deploy su staging Plesk** è spostato a M1 (deciso 2 set 2026: attende le risposte A9). Demo da eseguire a mano: `tools/demo-m0.md`; revisione finale: `decisions/2026-09-04-m0-review.md` |
-| **M1 — Sito pubblico** | Primo pacchetto self-contained e deploy su staging Plesk (foglio `LEGGIMI`); nucleo editoriale: pagine a blocchi (editor a lista, set iniziale di blocchi), news, documenti per dipartimento, calendario unico (con sole voci interne per ora), media, contatti, staff directory, live status; pagina `/start`; back-office per dipartimento; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO/i18n URL; migrazione contenuti dal Blazor | Sostituisce `it.ivao.aero` |
-| **M2 — Eventi** | Modulo Events: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, back-office Events. Nessun import | Spegne `ivao-booking` |
+| **M1 — Sito pubblico** | Nucleo editoriale: pagine a blocchi (**set completo dei blocchi del nucleo**, 22 nuovi), news, documenti per dipartimento con vocabolario delle categorie, calendario unico con UI (con sole voci interne per ora), media library, contatti + servizio notifiche, staff directory, live status; **menu editoriale**; pagine di sistema seedate (`/start`, `/pilots`, `/atc`, `/about`, home); back-office per dipartimento; schermata di ricerca; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO minima; migrazione contenuti dal Blazor **a mano dall'editor**. Il **giro e2e contro l'API vera** è la prima fase. Design: `03-design-m1.md` | Sostituisce `it.ivao.aero` |
+| **M2 — Eventi** | **Primo pacchetto self-contained e deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026 perché dipende dalle risposte A9 (§15.2c); modulo Events: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import | Spegne `ivao-booking` |
 | **M3 — Tour** | Modulo Flight Ops: tour, leg, PIREP, validatore automatico, classifiche, award con mail, voci nel calendario; design ereditato da `Ivao Italy Toursystem` | I tour IT lasciano `tours.th.ivao.aero` |
 | **M4 — Training** | Modulo Training: richieste, trainer, disponibilità, sessioni, esiti, mock exam, group training, import storico se possibile | Spegne `training.ivao.it` |
 | **M5 — vIPI dentro l'hub** | Allineamento TFM (vIPI su net10 + provider MariaDB), montaggio in-process sotto `/services/vsop`, `atc.it.ivao.aero` → redirect, spegnimento di `quickoverview.ivao.it` (già confluito in vIPI) | Un solo sito ATC+hub |
@@ -1000,7 +1023,7 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 2. **vIPI nell'hub — quando e come**: il montaggio in-process è la destinazione (§9 riga 7b), il nodo è il TFM. Da verificare in vIPI: può il ramo `net10.0` di `Vipi.Infrastructure` usare EF Core 9 + Pomelo 9 invece di EF Core 10 (le 65+ migrazioni sono generate con EF 10 ma applicate anche da EF 8 — con EF 9 dovrebbero passare)? Se sì, si sblocca insieme l'EOL di net8 e il montaggio. Decidere anche il dominio finale della parte ATC (`it.ivao.aero/services/vsop` con redirect da `atc.it.ivao.aero`, o viceversa proxy).
 2b. ~~Tour system e test system~~ **Deciso**: il tour system è il modulo `flightops` nel monorepo dell'hub (repo separato chiuso, design confluisce). Il test system è sospeso; se tornerà, sarà app separata (auth estratta in libreria solo allora).
 2d. **Storico tour**: importare i leg validati da `tours.th.ivao.aero` per le classifiche, o partire da zero come per gli eventi?
-2c. **Hosting dell'hub**: chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
+2c. **Hosting dell'hub** (blocca **M2**, non più M1: deciso il 5 set 2026): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
 3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente.
 4. ~~Editor contenuti~~ **Deciso**: pagine a blocchi con editor a lista (§9.3); il blocco `text` usa markdown con anteprima. Prerender SEO: **no per ora** (§16.11).
 5. ~~Licenza del repository pubblico~~ **Decisa il 3 set 2026**: **Apache-2.0**, copyright «2026 Carmine Granato». Nota in `docs/internal/decisions/2026-09-03-licenza.md`.
