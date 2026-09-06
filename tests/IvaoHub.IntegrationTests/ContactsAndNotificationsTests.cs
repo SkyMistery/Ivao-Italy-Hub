@@ -36,13 +36,27 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
 {
     // A range of its own: the suite shares one database across the collection, so two classes on
     // the same VID are one row.
+    //
+    // ⚠️ And a **department** of its own per test, which is the harder half. The database is shared
+    // by the whole class too, so a member seeded by one test is still staff of that department when
+    // the next one runs, and "who was queued" is then an answer about the order the tests happened
+    // to run in. It passed here and failed in CI on exactly that. Nobody below shares a department
+    // with anybody they are not meant to hear about.
     private const int SenderVid = 670001;
     private const int AtcCoordinatorVid = 670002;
-    private const int AtcAssistantVid = 670003;
+    private const int FlightOpsAssistantVid = 670003;
     private const int EventsCoordinatorVid = 670004;
+    private const int MembershipCoordinatorVid = 670005;
+    private const int TrainingCoordinatorVid = 670006;
+    private const int TrainingAssistantVid = 670007;
 
-    /// <summary>The shared inbox this class gives the ATC department, in the host it starts.</summary>
-    private const string AtcMailbox = "atc@example.org";
+    /// <summary>The departments this class gives a shared inbox to, in the host it starts.</summary>
+    private static readonly Department[] WithAMailbox =
+        [Department.AOD, Department.FOD, Department.MD, Department.TD];
+
+    /// <summary>The shared inbox of a department, as this class spells it.</summary>
+    private static string Mailbox(Department department) =>
+        $"{department.ToString().ToLowerInvariant()}@example.org";
 
     private HubWebApplicationFactory _plain = null!;
     private WebApplicationFactory<Program> _factory = null!;
@@ -56,7 +70,12 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
         // test that only passes in Italy.
         _factory = _plain.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             services.PostConfigure<DivisionOptions>(division =>
-                division.DepartmentMailboxes[nameof(Department.AOD)] = AtcMailbox)));
+            {
+                foreach (var department in WithAMailbox)
+                {
+                    division.DepartmentMailboxes[department.ToString()] = Mailbox(department);
+                }
+            })));
 
         return ValueTask.CompletedTask;
     }
@@ -116,12 +135,13 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
         var queued = await QueuedAsync(scope, subject, token);
 
         // The shared inbox of the department, and the one person who is staff of it. The events
-        // coordinator is staff of somewhere else and hears nothing.
+        // coordinator is staff of somewhere else and hears nothing — which is the whole assertion,
+        // so it is made against the exact set: nobody else is ever staff of the ATC department in
+        // this class.
         Assert.Equal(
-            ["ac@example.org", AtcMailbox],
+            ["ac@example.org", Mailbox(Department.AOD)],
             queued.Select(row => row.Address).OrderBy(address => address, StringComparer.Ordinal).ToArray());
 
-        Assert.DoesNotContain("ec@example.org", queued.Select(row => row.Address));
         Assert.All(queued, row => Assert.Equal(NotificationStatus.Pending, row.Status));
     }
 
@@ -132,18 +152,19 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
 
         await SeedUserAsync(SenderVid, token);
         // Staff of the department, and has never signed in since the hub started keeping addresses.
-        await SeedUserAsync(AtcAssistantVid, token, position: "IT-AOAC", email: null);
+        // The flight operations department is this test's own: nobody else is staff of it.
+        await SeedUserAsync(FlightOpsAssistantVid, token, position: "IT-FOAC", email: null);
 
         var subject = $"Nobody to write to {Guid.NewGuid():N}";
-        await SubmitAsync(SenderVid, Department.AOD, subject, "Is this reaching anyone?", token);
+        await SubmitAsync(SenderVid, Department.FOD, subject, "Is this reaching anyone?", token);
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var queued = await QueuedAsync(scope, subject, token);
 
         // The mailbox of the department still gets it, which is the whole reason a department has
         // one; the member with no address is skipped rather than queued to nowhere.
-        Assert.Contains(AtcMailbox, queued.Select(row => row.Address));
-        Assert.DoesNotContain(queued, row => row.Vid == AtcAssistantVid);
+        Assert.Equal([Mailbox(Department.FOD)], queued.Select(row => row.Address).ToArray());
+        Assert.DoesNotContain(queued, row => row.Vid == FlightOpsAssistantVid);
     }
 
     [Fact]
@@ -152,10 +173,10 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
         var token = TestContext.Current.CancellationToken;
 
         await SeedUserAsync(SenderVid, token);
-        await SeedUserAsync(AtcCoordinatorVid, token, position: "IT-AOC", email: "ac@example.org");
+        await SeedUserAsync(MembershipCoordinatorVid, token, position: "IT-MC", email: "mc@example.org");
 
         using var coordinator = CreateClient();
-        await SignInAsync(coordinator, AtcCoordinatorVid, token);
+        await SignInAsync(coordinator, MembershipCoordinatorVid, token);
 
         using var saved = await SendAsync(
             coordinator,
@@ -167,15 +188,16 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
         Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
 
         var subject = $"Not for me {Guid.NewGuid():N}";
-        await SubmitAsync(SenderVid, Department.AOD, subject, "You said no thanks.", token);
+        await SubmitAsync(SenderVid, Department.MD, subject, "You said no thanks.", token);
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var queued = await QueuedAsync(scope, subject, token);
 
         // Nothing was written for them at all: the queue is what is going out, and a row that will
-        // never be sent is a row somebody has to explain later.
-        Assert.DoesNotContain(queued, row => row.Vid == AtcCoordinatorVid);
-        Assert.Equal([AtcMailbox], queued.Select(row => row.Address));
+        // never be sent is a row somebody has to explain later. The shared inbox is untouched by a
+        // preference, because nobody owns it.
+        Assert.DoesNotContain(queued, row => row.Vid == MembershipCoordinatorVid);
+        Assert.Equal([Mailbox(Department.MD)], queued.Select(row => row.Address).ToArray());
     }
 
     // ---- the queue of the department -----------------------------------------------------------
@@ -288,11 +310,11 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
         var token = TestContext.Current.CancellationToken;
 
         await SeedUserAsync(SenderVid, token);
-        await SeedUserAsync(AtcCoordinatorVid, token, position: "IT-AOC", email: "ac@example.org", locale: "it");
-        await SeedUserAsync(AtcAssistantVid, token, position: "IT-AOAC", email: "aac@example.org", locale: "en");
+        await SeedUserAsync(TrainingCoordinatorVid, token, position: "IT-TC", email: "tc@example.org", locale: "it");
+        await SeedUserAsync(TrainingAssistantVid, token, position: "IT-TAC", email: "tac@example.org", locale: "en");
 
         var subject = $"Two languages {Guid.NewGuid():N}";
-        await SubmitAsync(SenderVid, Department.AOD, subject, "One message, two readers.", token);
+        await SubmitAsync(SenderVid, Department.TD, subject, "One message, two readers.", token);
 
         var sender = new RecordingMailSender();
         await RunDispatchAsync(sender, token);
@@ -300,8 +322,8 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
         // The queue is the installation's, not this test's, so the mails are picked by the subject
         // this test made unique rather than by "the only one that went to that address".
         var mine = sender.Sent.Where(mail => mail.Subject.Contains(subject, StringComparison.Ordinal)).ToArray();
-        var italian = mine.Single(mail => mail.To == "ac@example.org");
-        var english = mine.Single(mail => mail.To == "aac@example.org");
+        var italian = mine.Single(mail => mail.To == "tc@example.org");
+        var english = mine.Single(mail => mail.To == "tac@example.org");
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var catalog = scope.ServiceProvider.GetRequiredService<LocaleCatalog>();
@@ -320,7 +342,7 @@ public sealed class ContactsAndNotificationsTests(MariaDbFixture mariaDb) : IAsy
         Assert.DoesNotContain("{{", english.Text, StringComparison.Ordinal);
 
         // The shared inbox belongs to nobody, so it reads the language of the division.
-        var mailbox = mine.Single(mail => mail.To == AtcMailbox);
+        var mailbox = mine.Single(mail => mail.To == Mailbox(Department.TD));
         var defaultLocale = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value.DefaultLocale;
         Assert.StartsWith(OpeningOf(catalog, defaultLocale), mailbox.Text, StringComparison.Ordinal);
     }
