@@ -193,6 +193,20 @@ export async function stubThePublishedPage(page: Page, slug: string, body: unkno
 }
 
 /**
+ * What a live data block is answered with. Registered on top of `stubThePublishedPage`, because
+ * the catch-all under `/api` answers anything else with a 500 on purpose — a screen that starts
+ * calling something new has to say so.
+ *
+ * The answer is handed in rather than invented here for the same reason the body is: what these
+ * tests measure is the shape a browser gives a known answer.
+ */
+export async function stubTheBlockData(page: Page, type: string, answer: unknown): Promise<void> {
+  await page.route(`**/api/blocks/data/${type}**`, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) }),
+  );
+}
+
+/**
  * The same stubbing, for a signed in member of the staff: `/api/me` answers with a coordinator and
  * `/api/links` with one page. Anything else under `/api` still fails the test rather than being
  * quietly answered, so a screen that started calling something new says so.

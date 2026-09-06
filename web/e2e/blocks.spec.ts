@@ -1,6 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 
-import { stubThePublishedPage } from './fixtures';
+import { stubTheBlockData, stubThePublishedPage } from './fixtures';
 
 /**
  * What the blocks look like once a browser has laid them out.
@@ -45,6 +45,15 @@ const body = {
           props: { mediaId: 9, alt: en('A runway at dawn'), width: 'full', rounded: true },
         },
         {
+          id: 'b_stats',
+          type: 'stats',
+          version: 1,
+          props: {
+            columns: 3,
+            metrics: [{ metric: 'knownMembers' }, { metric: 'staffMembers' }, { metric: 'publishedNews' }],
+          },
+        },
+        {
           id: 'b_table',
           type: 'table',
           version: 1,
@@ -70,6 +79,16 @@ const body = {
 
 test.beforeEach(async ({ page }) => {
   await stubThePublishedPage(page, SLUG, body);
+
+  // A live data block asks the server for its answer, so a page carrying one is the first thing in
+  // this suite that makes a call of its own while it is being laid out.
+  await stubTheBlockData(page, 'stats', {
+    metrics: [
+      { metric: 'knownMembers', value: 1284 },
+      { metric: 'staffMembers', value: 37 },
+      { metric: 'publishedNews', value: 96 },
+    ],
+  });
 
   page.on('pageerror', (error) => {
     throw new Error(`The page threw: ${error.message}`);
@@ -140,4 +159,26 @@ test('a picture is given a box, and the reading column is not the whole screen',
   // And a section of the default width does not run edge to edge on a wide screen: a line of text
   // the width of 1280 pixels is a line nobody finishes (docs/UI-GUIDELINES.md).
   expect(picture.width).toBeLessThan(1100);
+});
+
+test('three figures stand side by side on a desktop and stack on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/${SLUG}`);
+
+  // The figures themselves, not their captions: what is measured is the tile a number sits in.
+  const figures = ['1,284', '37', '96'].map((value) => page.getByText(value, { exact: true }));
+  const boxes = await Promise.all(figures.map((figure) => boxOf(figure)));
+
+  // Same line, three different places along it. Either half alone passes on a single column.
+  expect(boxes[1]!.y).toBeCloseTo(boxes[0]!.y, 0);
+  expect(boxes[2]!.y).toBeCloseTo(boxes[0]!.y, 0);
+  expect(boxes[1]!.x).toBeGreaterThan(boxes[0]!.x);
+  expect(boxes[2]!.x).toBeGreaterThan(boxes[1]!.x);
+
+  await page.setViewportSize({ width: 375, height: 900 });
+  const narrow = await Promise.all(figures.map((figure) => boxOf(figure)));
+
+  // Two across on a phone rather than three: a row of three numbers at 375 pixels is three numbers
+  // nobody can read. The third one drops to the line below, which is what says the grid gave way.
+  expect(narrow[2]!.y).toBeGreaterThan(narrow[0]!.y);
 });
