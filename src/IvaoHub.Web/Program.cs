@@ -259,6 +259,7 @@ app.MapLinksEndpoints();
 app.MapMediaEndpoints();
 app.MapMediaFileEndpoint();
 app.MapContentEndpoints();
+app.MapCategoriesEndpoints();
 app.MapBlockDataEndpoint();
 app.MapSearchEndpoint();
 

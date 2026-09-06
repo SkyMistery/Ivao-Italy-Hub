@@ -7,10 +7,11 @@ import {
   type DataTableProps,
 } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { Paperclip, Search } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { mediaFileUrl } from '../api/mediaUrl';
 import { resolveLocalized } from '../i18n/localized';
 import { DepartmentBadge, EmptyState, StatusBadge } from '../ui';
 import type { ColumnSpec } from './columns';
@@ -253,6 +254,32 @@ function Cell<TRow>({
 
     case 'number':
       return <span className="tabular-nums">{typeof value === 'number' ? value : ''}</span>;
+
+    case 'media':
+      // Decorative on purpose: the row's own title is in the cell next to it, so a screen reader
+      // that announced the picture too would read the same thing twice (design M1 §1.2).
+      return typeof value === 'number' ? (
+        <img
+          src={mediaFileUrl(value)}
+          alt=""
+          loading="lazy"
+          className="bg-body size-10 rounded object-cover"
+        />
+      ) : null;
+
+    case 'file':
+      // A link and not a picture: what this column points at is as often a PDF as an image, and the
+      // row does not carry its type. An empty cell is a document that is read in the browser rather
+      // than downloaded, which is a real state and not a missing one.
+      return typeof value === 'number' ? (
+        <a
+          href={mediaFileUrl(value)}
+          className="text-muted-foreground inline-flex items-center gap-1 text-sm underline underline-offset-2"
+        >
+          <Paperclip aria-hidden className="size-4" />
+          {t('list.file')}
+        </a>
+      ) : null;
 
     case 'text':
       return <>{typeof value === 'string' ? value : ''}</>;

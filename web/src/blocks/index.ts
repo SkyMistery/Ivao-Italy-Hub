@@ -1,5 +1,5 @@
 export { BlockView, ContentRenderer } from './ContentRenderer';
-export { blockDataKey, blockDataQuery, encodeProps } from './data';
+export { blockDataKey, blockDataQuery, categoryLabel, encodeProps, type ContentListData } from './data';
 export {
   BACKGROUNDS,
   LAYOUTS,

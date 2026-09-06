@@ -19,17 +19,22 @@ export interface FieldMeta {
   /** Carried by the form and submitted, never shown. `rowVersion` is the reason this exists. */
   hidden?: boolean;
   /**
-   * A closed set of values, drawn as a select rather than a free input, with the values themselves
-   * as the labels. Two different needs, one annotation:
+   * A closed set of values, drawn as a select rather than a free input. Three needs, one
+   * annotation:
    * <br />— a **number**, because a `z.enum` would make the value a *string*, and every string
    * inside a block's properties is extracted as the text of the page for the search index: the
    * level of a heading is not text (design M0 §5.3);
    * <br />— a **string** whose set is only known at runtime, so it cannot be a `z.enum` at all. The
    * permission catalogue is the first: what it holds depends on which modules are installed, and
    * its members are identifiers rather than prose — `Links.Edit` is shown as `Links.Edit` in every
-   * language, exactly as a VID or a department code is.
+   * language, exactly as a VID or a department code is;
+   * <br />— a **string whose label is not the value**, written as `{ value, label }`. The category
+   * of a news item is the first: the value is the stable key stored on the row, the label is the
+   * translated word a coordinator wrote in `cms_categories`, and neither an i18n key nor the value
+   * itself could stand in for it (design M1 §3.4). The caller has already resolved the label into
+   * the language on screen — the generator never translates a value it was handed.
    */
-  choices?: readonly number[] | readonly string[];
+  choices?: readonly number[] | readonly string[] | readonly ChoiceOption[];
   /**
    * A file of the media library, held as its identifier. The field opens `MediaPicker` and shows
    * what was chosen; it is never a number to type, because a free numeric field produces pages
@@ -71,8 +76,14 @@ interface FieldCommon {
   defaultValue: unknown;
 }
 
+/** One entry of a select whose label is not its value. */
+export interface ChoiceOption {
+  value: string;
+  label: string;
+}
+
 export type FieldNode =
-  | ({ kind: 'text'; choices: string[] | null } & FieldCommon)
+  | ({ kind: 'text'; choices: ChoiceOption[] | null } & FieldCommon)
   | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
@@ -328,9 +339,23 @@ export function readFields(schema: z.ZodType, prefix = ''): FieldNode[] {
   return Object.entries(shape).map(([name, field]) => readField(field, prefix ? `${prefix}.${name}` : name));
 }
 
-/** The values of a `choices` annotation, when they are the kind this field can hold. */
-function stringChoices(choices: FieldMeta['choices']): string[] | null {
-  return choices?.every((choice) => typeof choice === 'string') ? [...choices] : null;
+/**
+ * The values of a `choices` annotation, when they are the kind this field can hold. A bare string
+ * is its own label, which is the case the permission catalogue needs; a `{ value, label }` pair
+ * carries a name the value could not, which is the case a category needs.
+ */
+function stringChoices(choices: FieldMeta['choices']): ChoiceOption[] | null {
+  if (choices === undefined) {
+    return null;
+  }
+
+  if (choices.every((choice) => typeof choice === 'string')) {
+    return choices.map((choice) => ({ value: choice, label: choice }));
+  }
+
+  return choices.every((choice) => typeof choice === 'object' && choice !== null)
+    ? choices.map((choice) => ({ ...choice }))
+    : null;
 }
 
 function numberChoices(choices: FieldMeta['choices']): number[] | null {

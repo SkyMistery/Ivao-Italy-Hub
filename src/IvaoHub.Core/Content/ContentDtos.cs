@@ -18,6 +18,11 @@ public sealed record ContentListDto(
     PublishStatus Status,
     bool IsTemplate,
     Localized<string> Title,
+    string? Category,
+    long? CoverMediaId,
+    bool Pinned,
+    int Sort,
+    long? FileMediaId,
     DateTime? PublishedAt,
     DateTime UpdatedAt);
 
@@ -39,6 +44,11 @@ public sealed record ContentDetailDto(
     Localized<JsonNode>? Seo,
     JsonNode Body,
     int SchemaVersion,
+    string? Category,
+    long? CoverMediaId,
+    bool Pinned,
+    int Sort,
+    long? FileMediaId,
     long? PublishedVersionId,
     DateTime? PublishedAt,
     DateTime CreatedAt,
@@ -66,21 +76,35 @@ public sealed record ContentWriteDto(
     Localized<JsonNode>? Seo,
     JsonNode Body,
     int SchemaVersion,
+    string? Category,
+    long? CoverMediaId,
+    bool Pinned,
+    int Sort,
+    long? FileMediaId,
     DateTime RowVersion);
 
 /// <summary>
 /// What the public site is given: the published version and nothing about the draft behind it.
 /// There is no row version, no audit trail and no status, because a visitor has nothing to do with
 /// any of them.
+/// <para>The three that belong to a <c>kind</c> travel because the page around the body needs them:
+/// a news item shows its cover and its category above the blocks, and a document with a file is a
+/// card with a download rather than something to read (design M1 section 3.3). They are read from
+/// the row and not from the version, like the summary next to them: they are what the row <i>is</i>,
+/// not what somebody wrote in it.</para>
 /// </summary>
 public sealed record PublicContentDto(
     ContentKind Kind,
     string Slug,
+    Department OwnerDepartment,
     Localized<string> Title,
     Localized<string>? Summary,
     Localized<JsonNode>? Seo,
     JsonNode Body,
     int SchemaVersion,
+    string? Category,
+    long? CoverMediaId,
+    long? FileMediaId,
     int Version,
     DateTime PublishedAt);
 

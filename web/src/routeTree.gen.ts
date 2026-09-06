@@ -17,20 +17,33 @@ import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicSlugRouteImport } from './routes/_public/$slug'
 import { Route as PublicForbiddenRouteImport } from './routes/_public/forbidden'
 import { Route as PublicLoginErrorRouteImport } from './routes/_public/login-error'
+import { Route as PublicDocumentsIndexRouteImport } from './routes/_public/documents.index'
+import { Route as PublicDocumentsSlugRouteImport } from './routes/_public/documents.$slug'
+import { Route as PublicNewsIndexRouteImport } from './routes/_public/news.index'
+import { Route as PublicNewsSlugRouteImport } from './routes/_public/news.$slug'
 import { Route as StaffStaffIndexRouteImport } from './routes/_staff/staff.index'
+import { Route as StaffStaffDeptCategoriesRouteImport } from './routes/_staff/staff.$dept.categories'
 import { Route as StaffStaffDeptContentRouteImport } from './routes/_staff/staff.$dept.content'
+import { Route as StaffStaffDeptDocumentsRouteImport } from './routes/_staff/staff.$dept.documents'
 import { Route as StaffStaffDeptLinksRouteImport } from './routes/_staff/staff.$dept.links'
 import { Route as StaffStaffDeptMediaRouteImport } from './routes/_staff/staff.$dept.media'
+import { Route as StaffStaffDeptNewsRouteImport } from './routes/_staff/staff.$dept.news'
 import { Route as StaffStaffAdminAuditRouteImport } from './routes/_staff/staff.admin.audit'
 import { Route as StaffStaffAdminModulesRouteImport } from './routes/_staff/staff.admin.modules'
 import { Route as StaffStaffAdminPermissionsRouteImport } from './routes/_staff/staff.admin.permissions'
 import { Route as StaffStaffAdminUiKitRouteImport } from './routes/_staff/staff.admin.ui-kit'
+import { Route as StaffStaffDeptCategoriesIndexRouteImport } from './routes/_staff/staff.$dept.categories.index'
+import { Route as StaffStaffDeptCategoriesIdRouteImport } from './routes/_staff/staff.$dept.categories.$id'
 import { Route as StaffStaffDeptContentIndexRouteImport } from './routes/_staff/staff.$dept.content.index'
 import { Route as StaffStaffDeptContentIdRouteImport } from './routes/_staff/staff.$dept.content.$id'
+import { Route as StaffStaffDeptDocumentsIndexRouteImport } from './routes/_staff/staff.$dept.documents.index'
+import { Route as StaffStaffDeptDocumentsIdRouteImport } from './routes/_staff/staff.$dept.documents.$id'
 import { Route as StaffStaffDeptLinksIndexRouteImport } from './routes/_staff/staff.$dept.links.index'
 import { Route as StaffStaffDeptLinksIdRouteImport } from './routes/_staff/staff.$dept.links.$id'
 import { Route as StaffStaffDeptMediaIndexRouteImport } from './routes/_staff/staff.$dept.media.index'
 import { Route as StaffStaffDeptMediaIdRouteImport } from './routes/_staff/staff.$dept.media.$id'
+import { Route as StaffStaffDeptNewsIndexRouteImport } from './routes/_staff/staff.$dept.news.index'
+import { Route as StaffStaffDeptNewsIdRouteImport } from './routes/_staff/staff.$dept.news.$id'
 import { Route as StaffStaffAdminPermissionsIndexRouteImport } from './routes/_staff/staff.admin.permissions.index'
 import { Route as StaffStaffAdminPermissionsIdRouteImport } from './routes/_staff/staff.admin.permissions.$id'
 
@@ -71,14 +84,45 @@ const PublicLoginErrorRoute = PublicLoginErrorRouteImport.update({
   path: '/login-error',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicDocumentsIndexRoute = PublicDocumentsIndexRouteImport.update({
+  id: '/documents/',
+  path: '/documents/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicDocumentsSlugRoute = PublicDocumentsSlugRouteImport.update({
+  id: '/documents/$slug',
+  path: '/documents/$slug',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicNewsIndexRoute = PublicNewsIndexRouteImport.update({
+  id: '/news/',
+  path: '/news/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicNewsSlugRoute = PublicNewsSlugRouteImport.update({
+  id: '/news/$slug',
+  path: '/news/$slug',
+  getParentRoute: () => PublicRoute,
+} as any)
 const StaffStaffIndexRoute = StaffStaffIndexRouteImport.update({
   id: '/staff/',
   path: '/staff/',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffStaffDeptCategoriesRoute =
+  StaffStaffDeptCategoriesRouteImport.update({
+    id: '/staff/$dept/categories',
+    path: '/staff/$dept/categories',
+    getParentRoute: () => StaffRoute,
+  } as any)
 const StaffStaffDeptContentRoute = StaffStaffDeptContentRouteImport.update({
   id: '/staff/$dept/content',
   path: '/staff/$dept/content',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffStaffDeptDocumentsRoute = StaffStaffDeptDocumentsRouteImport.update({
+  id: '/staff/$dept/documents',
+  path: '/staff/$dept/documents',
   getParentRoute: () => StaffRoute,
 } as any)
 const StaffStaffDeptLinksRoute = StaffStaffDeptLinksRouteImport.update({
@@ -89,6 +133,11 @@ const StaffStaffDeptLinksRoute = StaffStaffDeptLinksRouteImport.update({
 const StaffStaffDeptMediaRoute = StaffStaffDeptMediaRouteImport.update({
   id: '/staff/$dept/media',
   path: '/staff/$dept/media',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffStaffDeptNewsRoute = StaffStaffDeptNewsRouteImport.update({
+  id: '/staff/$dept/news',
+  path: '/staff/$dept/news',
   getParentRoute: () => StaffRoute,
 } as any)
 const StaffStaffAdminAuditRoute = StaffStaffAdminAuditRouteImport.update({
@@ -112,6 +161,18 @@ const StaffStaffAdminUiKitRoute = StaffStaffAdminUiKitRouteImport.update({
   path: '/staff/admin/ui-kit',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffStaffDeptCategoriesIndexRoute =
+  StaffStaffDeptCategoriesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => StaffStaffDeptCategoriesRoute,
+  } as any)
+const StaffStaffDeptCategoriesIdRoute =
+  StaffStaffDeptCategoriesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => StaffStaffDeptCategoriesRoute,
+  } as any)
 const StaffStaffDeptContentIndexRoute =
   StaffStaffDeptContentIndexRouteImport.update({
     id: '/',
@@ -123,6 +184,18 @@ const StaffStaffDeptContentIdRoute = StaffStaffDeptContentIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => StaffStaffDeptContentRoute,
 } as any)
+const StaffStaffDeptDocumentsIndexRoute =
+  StaffStaffDeptDocumentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => StaffStaffDeptDocumentsRoute,
+  } as any)
+const StaffStaffDeptDocumentsIdRoute =
+  StaffStaffDeptDocumentsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => StaffStaffDeptDocumentsRoute,
+  } as any)
 const StaffStaffDeptLinksIndexRoute =
   StaffStaffDeptLinksIndexRouteImport.update({
     id: '/',
@@ -145,6 +218,16 @@ const StaffStaffDeptMediaIdRoute = StaffStaffDeptMediaIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => StaffStaffDeptMediaRoute,
 } as any)
+const StaffStaffDeptNewsIndexRoute = StaffStaffDeptNewsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StaffStaffDeptNewsRoute,
+} as any)
+const StaffStaffDeptNewsIdRoute = StaffStaffDeptNewsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => StaffStaffDeptNewsRoute,
+} as any)
 const StaffStaffAdminPermissionsIndexRoute =
   StaffStaffAdminPermissionsIndexRouteImport.update({
     id: '/',
@@ -164,21 +247,34 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof PublicSlugRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
+  '/documents/$slug': typeof PublicDocumentsSlugRoute
+  '/news/$slug': typeof PublicNewsSlugRoute
+  '/documents/': typeof PublicDocumentsIndexRoute
+  '/news/': typeof PublicNewsIndexRoute
   '/staff/': typeof StaffStaffIndexRoute
+  '/staff/$dept/categories': typeof StaffStaffDeptCategoriesRouteWithChildren
   '/staff/$dept/content': typeof StaffStaffDeptContentRouteWithChildren
+  '/staff/$dept/documents': typeof StaffStaffDeptDocumentsRouteWithChildren
   '/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
   '/staff/$dept/media': typeof StaffStaffDeptMediaRouteWithChildren
+  '/staff/$dept/news': typeof StaffStaffDeptNewsRouteWithChildren
   '/staff/admin/audit': typeof StaffStaffAdminAuditRoute
   '/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/staff/admin/permissions': typeof StaffStaffAdminPermissionsRouteWithChildren
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
   '/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
+  '/staff/$dept/documents/$id': typeof StaffStaffDeptDocumentsIdRoute
   '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
   '/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
+  '/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
+  '/staff/$dept/categories/': typeof StaffStaffDeptCategoriesIndexRoute
   '/staff/$dept/content/': typeof StaffStaffDeptContentIndexRoute
+  '/staff/$dept/documents/': typeof StaffStaffDeptDocumentsIndexRoute
   '/staff/$dept/links/': typeof StaffStaffDeptLinksIndexRoute
   '/staff/$dept/media/': typeof StaffStaffDeptMediaIndexRoute
+  '/staff/$dept/news/': typeof StaffStaffDeptNewsIndexRoute
   '/staff/admin/permissions/': typeof StaffStaffAdminPermissionsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -187,17 +283,27 @@ export interface FileRoutesByTo {
   '/$slug': typeof PublicSlugRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
+  '/documents/$slug': typeof PublicDocumentsSlugRoute
+  '/news/$slug': typeof PublicNewsSlugRoute
+  '/documents': typeof PublicDocumentsIndexRoute
+  '/news': typeof PublicNewsIndexRoute
   '/staff': typeof StaffStaffIndexRoute
   '/staff/admin/audit': typeof StaffStaffAdminAuditRoute
   '/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
   '/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
+  '/staff/$dept/documents/$id': typeof StaffStaffDeptDocumentsIdRoute
   '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
   '/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
+  '/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
+  '/staff/$dept/categories': typeof StaffStaffDeptCategoriesIndexRoute
   '/staff/$dept/content': typeof StaffStaffDeptContentIndexRoute
+  '/staff/$dept/documents': typeof StaffStaffDeptDocumentsIndexRoute
   '/staff/$dept/links': typeof StaffStaffDeptLinksIndexRoute
   '/staff/$dept/media': typeof StaffStaffDeptMediaIndexRoute
+  '/staff/$dept/news': typeof StaffStaffDeptNewsIndexRoute
   '/staff/admin/permissions': typeof StaffStaffAdminPermissionsIndexRoute
 }
 export interface FileRoutesById {
@@ -210,21 +316,34 @@ export interface FileRoutesById {
   '/_public/forbidden': typeof PublicForbiddenRoute
   '/_public/login-error': typeof PublicLoginErrorRoute
   '/_public/': typeof PublicIndexRoute
+  '/_public/documents/$slug': typeof PublicDocumentsSlugRoute
+  '/_public/news/$slug': typeof PublicNewsSlugRoute
+  '/_public/documents/': typeof PublicDocumentsIndexRoute
+  '/_public/news/': typeof PublicNewsIndexRoute
   '/_staff/staff/': typeof StaffStaffIndexRoute
+  '/_staff/staff/$dept/categories': typeof StaffStaffDeptCategoriesRouteWithChildren
   '/_staff/staff/$dept/content': typeof StaffStaffDeptContentRouteWithChildren
+  '/_staff/staff/$dept/documents': typeof StaffStaffDeptDocumentsRouteWithChildren
   '/_staff/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
   '/_staff/staff/$dept/media': typeof StaffStaffDeptMediaRouteWithChildren
+  '/_staff/staff/$dept/news': typeof StaffStaffDeptNewsRouteWithChildren
   '/_staff/staff/admin/audit': typeof StaffStaffAdminAuditRoute
   '/_staff/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/_staff/staff/admin/permissions': typeof StaffStaffAdminPermissionsRouteWithChildren
   '/_staff/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
+  '/_staff/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
   '/_staff/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
+  '/_staff/staff/$dept/documents/$id': typeof StaffStaffDeptDocumentsIdRoute
   '/_staff/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
   '/_staff/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
+  '/_staff/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
   '/_staff/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
+  '/_staff/staff/$dept/categories/': typeof StaffStaffDeptCategoriesIndexRoute
   '/_staff/staff/$dept/content/': typeof StaffStaffDeptContentIndexRoute
+  '/_staff/staff/$dept/documents/': typeof StaffStaffDeptDocumentsIndexRoute
   '/_staff/staff/$dept/links/': typeof StaffStaffDeptLinksIndexRoute
   '/_staff/staff/$dept/media/': typeof StaffStaffDeptMediaIndexRoute
+  '/_staff/staff/$dept/news/': typeof StaffStaffDeptNewsIndexRoute
   '/_staff/staff/admin/permissions/': typeof StaffStaffAdminPermissionsIndexRoute
 }
 export interface FileRouteTypes {
@@ -235,21 +354,34 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/forbidden'
     | '/login-error'
+    | '/documents/$slug'
+    | '/news/$slug'
+    | '/documents/'
+    | '/news/'
     | '/staff/'
+    | '/staff/$dept/categories'
     | '/staff/$dept/content'
+    | '/staff/$dept/documents'
     | '/staff/$dept/links'
     | '/staff/$dept/media'
+    | '/staff/$dept/news'
     | '/staff/admin/audit'
     | '/staff/admin/modules'
     | '/staff/admin/permissions'
     | '/staff/admin/ui-kit'
+    | '/staff/$dept/categories/$id'
     | '/staff/$dept/content/$id'
+    | '/staff/$dept/documents/$id'
     | '/staff/$dept/links/$id'
     | '/staff/$dept/media/$id'
+    | '/staff/$dept/news/$id'
     | '/staff/admin/permissions/$id'
+    | '/staff/$dept/categories/'
     | '/staff/$dept/content/'
+    | '/staff/$dept/documents/'
     | '/staff/$dept/links/'
     | '/staff/$dept/media/'
+    | '/staff/$dept/news/'
     | '/staff/admin/permissions/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -258,17 +390,27 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/forbidden'
     | '/login-error'
+    | '/documents/$slug'
+    | '/news/$slug'
+    | '/documents'
+    | '/news'
     | '/staff'
     | '/staff/admin/audit'
     | '/staff/admin/modules'
     | '/staff/admin/ui-kit'
+    | '/staff/$dept/categories/$id'
     | '/staff/$dept/content/$id'
+    | '/staff/$dept/documents/$id'
     | '/staff/$dept/links/$id'
     | '/staff/$dept/media/$id'
+    | '/staff/$dept/news/$id'
     | '/staff/admin/permissions/$id'
+    | '/staff/$dept/categories'
     | '/staff/$dept/content'
+    | '/staff/$dept/documents'
     | '/staff/$dept/links'
     | '/staff/$dept/media'
+    | '/staff/$dept/news'
     | '/staff/admin/permissions'
   id:
     | '__root__'
@@ -280,21 +422,34 @@ export interface FileRouteTypes {
     | '/_public/forbidden'
     | '/_public/login-error'
     | '/_public/'
+    | '/_public/documents/$slug'
+    | '/_public/news/$slug'
+    | '/_public/documents/'
+    | '/_public/news/'
     | '/_staff/staff/'
+    | '/_staff/staff/$dept/categories'
     | '/_staff/staff/$dept/content'
+    | '/_staff/staff/$dept/documents'
     | '/_staff/staff/$dept/links'
     | '/_staff/staff/$dept/media'
+    | '/_staff/staff/$dept/news'
     | '/_staff/staff/admin/audit'
     | '/_staff/staff/admin/modules'
     | '/_staff/staff/admin/permissions'
     | '/_staff/staff/admin/ui-kit'
+    | '/_staff/staff/$dept/categories/$id'
     | '/_staff/staff/$dept/content/$id'
+    | '/_staff/staff/$dept/documents/$id'
     | '/_staff/staff/$dept/links/$id'
     | '/_staff/staff/$dept/media/$id'
+    | '/_staff/staff/$dept/news/$id'
     | '/_staff/staff/admin/permissions/$id'
+    | '/_staff/staff/$dept/categories/'
     | '/_staff/staff/$dept/content/'
+    | '/_staff/staff/$dept/documents/'
     | '/_staff/staff/$dept/links/'
     | '/_staff/staff/$dept/media/'
+    | '/_staff/staff/$dept/news/'
     | '/_staff/staff/admin/permissions/'
   fileRoutesById: FileRoutesById
 }
@@ -362,6 +517,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLoginErrorRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/documents/': {
+      id: '/_public/documents/'
+      path: '/documents'
+      fullPath: '/documents/'
+      preLoaderRoute: typeof PublicDocumentsIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/documents/$slug': {
+      id: '/_public/documents/$slug'
+      path: '/documents/$slug'
+      fullPath: '/documents/$slug'
+      preLoaderRoute: typeof PublicDocumentsSlugRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/news/': {
+      id: '/_public/news/'
+      path: '/news'
+      fullPath: '/news/'
+      preLoaderRoute: typeof PublicNewsIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/news/$slug': {
+      id: '/_public/news/$slug'
+      path: '/news/$slug'
+      fullPath: '/news/$slug'
+      preLoaderRoute: typeof PublicNewsSlugRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_staff/staff/': {
       id: '/_staff/staff/'
       path: '/staff'
@@ -369,11 +552,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffStaffIndexRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/_staff/staff/$dept/categories': {
+      id: '/_staff/staff/$dept/categories'
+      path: '/staff/$dept/categories'
+      fullPath: '/staff/$dept/categories'
+      preLoaderRoute: typeof StaffStaffDeptCategoriesRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/_staff/staff/$dept/content': {
       id: '/_staff/staff/$dept/content'
       path: '/staff/$dept/content'
       fullPath: '/staff/$dept/content'
       preLoaderRoute: typeof StaffStaffDeptContentRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/$dept/documents': {
+      id: '/_staff/staff/$dept/documents'
+      path: '/staff/$dept/documents'
+      fullPath: '/staff/$dept/documents'
+      preLoaderRoute: typeof StaffStaffDeptDocumentsRouteImport
       parentRoute: typeof StaffRoute
     }
     '/_staff/staff/$dept/links': {
@@ -388,6 +585,13 @@ declare module '@tanstack/react-router' {
       path: '/staff/$dept/media'
       fullPath: '/staff/$dept/media'
       preLoaderRoute: typeof StaffStaffDeptMediaRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/$dept/news': {
+      id: '/_staff/staff/$dept/news'
+      path: '/staff/$dept/news'
+      fullPath: '/staff/$dept/news'
+      preLoaderRoute: typeof StaffStaffDeptNewsRouteImport
       parentRoute: typeof StaffRoute
     }
     '/_staff/staff/admin/audit': {
@@ -418,6 +622,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffStaffAdminUiKitRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/_staff/staff/$dept/categories/': {
+      id: '/_staff/staff/$dept/categories/'
+      path: '/'
+      fullPath: '/staff/$dept/categories/'
+      preLoaderRoute: typeof StaffStaffDeptCategoriesIndexRouteImport
+      parentRoute: typeof StaffStaffDeptCategoriesRoute
+    }
+    '/_staff/staff/$dept/categories/$id': {
+      id: '/_staff/staff/$dept/categories/$id'
+      path: '/$id'
+      fullPath: '/staff/$dept/categories/$id'
+      preLoaderRoute: typeof StaffStaffDeptCategoriesIdRouteImport
+      parentRoute: typeof StaffStaffDeptCategoriesRoute
+    }
     '/_staff/staff/$dept/content/': {
       id: '/_staff/staff/$dept/content/'
       path: '/'
@@ -431,6 +649,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/staff/$dept/content/$id'
       preLoaderRoute: typeof StaffStaffDeptContentIdRouteImport
       parentRoute: typeof StaffStaffDeptContentRoute
+    }
+    '/_staff/staff/$dept/documents/': {
+      id: '/_staff/staff/$dept/documents/'
+      path: '/'
+      fullPath: '/staff/$dept/documents/'
+      preLoaderRoute: typeof StaffStaffDeptDocumentsIndexRouteImport
+      parentRoute: typeof StaffStaffDeptDocumentsRoute
+    }
+    '/_staff/staff/$dept/documents/$id': {
+      id: '/_staff/staff/$dept/documents/$id'
+      path: '/$id'
+      fullPath: '/staff/$dept/documents/$id'
+      preLoaderRoute: typeof StaffStaffDeptDocumentsIdRouteImport
+      parentRoute: typeof StaffStaffDeptDocumentsRoute
     }
     '/_staff/staff/$dept/links/': {
       id: '/_staff/staff/$dept/links/'
@@ -459,6 +691,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/staff/$dept/media/$id'
       preLoaderRoute: typeof StaffStaffDeptMediaIdRouteImport
       parentRoute: typeof StaffStaffDeptMediaRoute
+    }
+    '/_staff/staff/$dept/news/': {
+      id: '/_staff/staff/$dept/news/'
+      path: '/'
+      fullPath: '/staff/$dept/news/'
+      preLoaderRoute: typeof StaffStaffDeptNewsIndexRouteImport
+      parentRoute: typeof StaffStaffDeptNewsRoute
+    }
+    '/_staff/staff/$dept/news/$id': {
+      id: '/_staff/staff/$dept/news/$id'
+      path: '/$id'
+      fullPath: '/staff/$dept/news/$id'
+      preLoaderRoute: typeof StaffStaffDeptNewsIdRouteImport
+      parentRoute: typeof StaffStaffDeptNewsRoute
     }
     '/_staff/staff/admin/permissions/': {
       id: '/_staff/staff/admin/permissions/'
@@ -493,6 +739,10 @@ interface PublicRouteChildren {
   PublicForbiddenRoute: typeof PublicForbiddenRoute
   PublicLoginErrorRoute: typeof PublicLoginErrorRoute
   PublicIndexRoute: typeof PublicIndexRoute
+  PublicDocumentsSlugRoute: typeof PublicDocumentsSlugRoute
+  PublicNewsSlugRoute: typeof PublicNewsSlugRoute
+  PublicDocumentsIndexRoute: typeof PublicDocumentsIndexRoute
+  PublicNewsIndexRoute: typeof PublicNewsIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
@@ -500,10 +750,30 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicForbiddenRoute: PublicForbiddenRoute,
   PublicLoginErrorRoute: PublicLoginErrorRoute,
   PublicIndexRoute: PublicIndexRoute,
+  PublicDocumentsSlugRoute: PublicDocumentsSlugRoute,
+  PublicNewsSlugRoute: PublicNewsSlugRoute,
+  PublicDocumentsIndexRoute: PublicDocumentsIndexRoute,
+  PublicNewsIndexRoute: PublicNewsIndexRoute,
 }
 
 const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
+
+interface StaffStaffDeptCategoriesRouteChildren {
+  StaffStaffDeptCategoriesIdRoute: typeof StaffStaffDeptCategoriesIdRoute
+  StaffStaffDeptCategoriesIndexRoute: typeof StaffStaffDeptCategoriesIndexRoute
+}
+
+const StaffStaffDeptCategoriesRouteChildren: StaffStaffDeptCategoriesRouteChildren =
+  {
+    StaffStaffDeptCategoriesIdRoute: StaffStaffDeptCategoriesIdRoute,
+    StaffStaffDeptCategoriesIndexRoute: StaffStaffDeptCategoriesIndexRoute,
+  }
+
+const StaffStaffDeptCategoriesRouteWithChildren =
+  StaffStaffDeptCategoriesRoute._addFileChildren(
+    StaffStaffDeptCategoriesRouteChildren,
+  )
 
 interface StaffStaffDeptContentRouteChildren {
   StaffStaffDeptContentIdRoute: typeof StaffStaffDeptContentIdRoute
@@ -518,6 +788,22 @@ const StaffStaffDeptContentRouteChildren: StaffStaffDeptContentRouteChildren = {
 const StaffStaffDeptContentRouteWithChildren =
   StaffStaffDeptContentRoute._addFileChildren(
     StaffStaffDeptContentRouteChildren,
+  )
+
+interface StaffStaffDeptDocumentsRouteChildren {
+  StaffStaffDeptDocumentsIdRoute: typeof StaffStaffDeptDocumentsIdRoute
+  StaffStaffDeptDocumentsIndexRoute: typeof StaffStaffDeptDocumentsIndexRoute
+}
+
+const StaffStaffDeptDocumentsRouteChildren: StaffStaffDeptDocumentsRouteChildren =
+  {
+    StaffStaffDeptDocumentsIdRoute: StaffStaffDeptDocumentsIdRoute,
+    StaffStaffDeptDocumentsIndexRoute: StaffStaffDeptDocumentsIndexRoute,
+  }
+
+const StaffStaffDeptDocumentsRouteWithChildren =
+  StaffStaffDeptDocumentsRoute._addFileChildren(
+    StaffStaffDeptDocumentsRouteChildren,
   )
 
 interface StaffStaffDeptLinksRouteChildren {
@@ -546,6 +832,19 @@ const StaffStaffDeptMediaRouteChildren: StaffStaffDeptMediaRouteChildren = {
 const StaffStaffDeptMediaRouteWithChildren =
   StaffStaffDeptMediaRoute._addFileChildren(StaffStaffDeptMediaRouteChildren)
 
+interface StaffStaffDeptNewsRouteChildren {
+  StaffStaffDeptNewsIdRoute: typeof StaffStaffDeptNewsIdRoute
+  StaffStaffDeptNewsIndexRoute: typeof StaffStaffDeptNewsIndexRoute
+}
+
+const StaffStaffDeptNewsRouteChildren: StaffStaffDeptNewsRouteChildren = {
+  StaffStaffDeptNewsIdRoute: StaffStaffDeptNewsIdRoute,
+  StaffStaffDeptNewsIndexRoute: StaffStaffDeptNewsIndexRoute,
+}
+
+const StaffStaffDeptNewsRouteWithChildren =
+  StaffStaffDeptNewsRoute._addFileChildren(StaffStaffDeptNewsRouteChildren)
+
 interface StaffStaffAdminPermissionsRouteChildren {
   StaffStaffAdminPermissionsIdRoute: typeof StaffStaffAdminPermissionsIdRoute
   StaffStaffAdminPermissionsIndexRoute: typeof StaffStaffAdminPermissionsIndexRoute
@@ -564,9 +863,12 @@ const StaffStaffAdminPermissionsRouteWithChildren =
 
 interface StaffRouteChildren {
   StaffStaffIndexRoute: typeof StaffStaffIndexRoute
+  StaffStaffDeptCategoriesRoute: typeof StaffStaffDeptCategoriesRouteWithChildren
   StaffStaffDeptContentRoute: typeof StaffStaffDeptContentRouteWithChildren
+  StaffStaffDeptDocumentsRoute: typeof StaffStaffDeptDocumentsRouteWithChildren
   StaffStaffDeptLinksRoute: typeof StaffStaffDeptLinksRouteWithChildren
   StaffStaffDeptMediaRoute: typeof StaffStaffDeptMediaRouteWithChildren
+  StaffStaffDeptNewsRoute: typeof StaffStaffDeptNewsRouteWithChildren
   StaffStaffAdminAuditRoute: typeof StaffStaffAdminAuditRoute
   StaffStaffAdminModulesRoute: typeof StaffStaffAdminModulesRoute
   StaffStaffAdminPermissionsRoute: typeof StaffStaffAdminPermissionsRouteWithChildren
@@ -575,9 +877,12 @@ interface StaffRouteChildren {
 
 const StaffRouteChildren: StaffRouteChildren = {
   StaffStaffIndexRoute: StaffStaffIndexRoute,
+  StaffStaffDeptCategoriesRoute: StaffStaffDeptCategoriesRouteWithChildren,
   StaffStaffDeptContentRoute: StaffStaffDeptContentRouteWithChildren,
+  StaffStaffDeptDocumentsRoute: StaffStaffDeptDocumentsRouteWithChildren,
   StaffStaffDeptLinksRoute: StaffStaffDeptLinksRouteWithChildren,
   StaffStaffDeptMediaRoute: StaffStaffDeptMediaRouteWithChildren,
+  StaffStaffDeptNewsRoute: StaffStaffDeptNewsRouteWithChildren,
   StaffStaffAdminAuditRoute: StaffStaffAdminAuditRoute,
   StaffStaffAdminModulesRoute: StaffStaffAdminModulesRoute,
   StaffStaffAdminPermissionsRoute: StaffStaffAdminPermissionsRouteWithChildren,

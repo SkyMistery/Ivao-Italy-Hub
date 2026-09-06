@@ -1,10 +1,46 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.4 — 6 settembre 2026
+**Versione documento:** 1.6 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.6** (6 set 2026, **deciso da Carmine**): due righe del changelog 1.5 cambiano, e in
+tutte e due la direzione è la stessa — **una cosa sola si dice in un modo solo**.
+**§3.2, la colonna «file» dei documenti**: **c'è**. Non è una miniatura ma un **link** che apre il
+file, e così non ha bisogno di sapere se dietro c'è un PDF o un'immagine: `col.file` accanto a
+`col.media`, due celle per due cose diverse. Una riga senza file resta vuota, che è uno stato vero —
+un documento che si legge nel browser — e non un dato che manca.
+**§3.3, `/documents/{dept}`**: **non esiste come indirizzo**. Un segmento non può essere un
+dipartimento e una slug insieme, e la versione che decideva sbirciando se il segmento nominasse un
+dipartimento prenotava nove slug e nascondeva qualunque documento chiamato `ed`. I documenti di un
+dipartimento sono **`/documents?department=ED`** — lo stesso filtro che `/news` ha già, nella stessa
+grammatica. Scartato anche `/documents/dept/{codice}`: toglieva otto slug su nove ma lasciava a una
+delle due schermate pubbliche un secondo modo di dire ciò che l'altra dice con un search param, che
+è esattamente la cosa che `CLAUDE.md` §2 vieta. Il conto delle rotte pubbliche di §3.3 passa da
+cinque a **quattro**, e non si perde niente: l'elenco filtrato è un indirizzo che si manda a
+qualcuno com'era prima.
+
+**Changelog 1.5** (6 set 2026): **G5 ha costruito news, documenti e categorie**, e la fase è stata
+corta come §3 prometteva: nessuna entità nuova con un corpo a blocchi, nessun secondo editor,
+nessun secondo renderer. Cinque righe di questo documento cambiano, tutte perché scriverle ha
+trovato un dettaglio che il documento non poteva sapere.
+**§3.2, il back-office**: le liste sono **tre** e non due — `/staff/{dept}/content` diventa la lista
+delle **pagine**, con `kind` fisso come le altre due. Un `kind` scelto in un select avrebbe
+significato una pagina che diventa documento con i campi di una pagina ancora a schermo: il `kind`
+lo fissa la lista da cui si è entrati, come già il dipartimento.
+⚠️ Le due righe che riguardavano la colonna «file» e `/documents/{dept}` sono **superate dal
+changelog 1.6**, che le corregge entrambe.
+**§3.4, il vocabolario sul pubblico**: le categorie con la loro etichetta tradotta viaggiano
+**dentro la risposta del provider di lista** di G4 (`categories: [{key, label}]`), non da un
+indirizzo proprio. Chi può leggere la lista può leggere i nomi dei suoi scaffali, e così il filtro
+di `/news` e il raggruppamento di `documentList` hanno l'etichetta invece della chiave — che è
+esattamente ciò che §3.4 chiedeva dicendo «la lista la mostra com'è» per una categoria cancellata.
+**§10.1, i permessi delle categorie**: nessuno. Le categorie stanno nell'area `Content`, e §10.1
+non le elencava proprio perché non ne servono: nominare gli scaffali di un dipartimento è parte
+dello scrivere i suoi contenuti, e una quarta area sarebbe un permesso da distribuire a parte per
+una cosa che nessuno gestisce a parte.
 
 **Changelog 1.4** (6 set 2026): **G4 ha costruito i sei blocchi Data**, e scriverli ha corretto tre
 righe di §1.2 — tutte e tre nel senso «il documento dava un nome a una cosa che il codice chiama
@@ -380,8 +416,7 @@ segnale e va scritto.
 |---|---|
 | `/news` | Elenco delle news pubblicate visibili, pinned in testa, filtro per categoria e dipartimento |
 | `/news/{slug}` | Una news: titolo, copertina, data, dipartimento, corpo a blocchi |
-| `/documents` | Tutti i documenti pubblici, filtrabili per dipartimento e categoria |
-| `/documents/{dept}` | I documenti di un dipartimento |
+| `/documents` | Tutti i documenti pubblici, filtrabili per dipartimento e categoria (`?department=`, `?category=`) |
 | `/documents/{slug}` | Un documento: se ha `FileMediaId` è una scheda con il download, altrimenti si legge nel browser |
 
 ⚠️ **`/documents` e non `/docs`.** Piano §8.2 scriveva `/docs`, `ContentEntry.Url` scrive

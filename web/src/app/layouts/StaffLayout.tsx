@@ -1,6 +1,18 @@
 import { Sidebar, type SidebarProps } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
-import { Boxes, FileText, Images, KeyRound, Link2, ScrollText, ShieldCheck, Sparkles } from 'lucide-react';
+import {
+  Boxes,
+  FileArchive,
+  FileText,
+  Images,
+  KeyRound,
+  Link2,
+  Newspaper,
+  ScrollText,
+  ShieldCheck,
+  Sparkles,
+  Tags,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { type Bootstrap, holdsPermissionAnywhere, reachableDepartments } from '../../shared/api/bootstrap';
@@ -12,7 +24,8 @@ import { RouterAnchor } from './RouterAnchor';
 /**
  * The back office. One group per department the member may work in — their own, or all of them
  * when the role reaches everywhere — and under each, the resources of that department: `content`,
- * `links` and `media`, plus whatever the modules put in `navigation.staff`, which the server has already
+ * `news`, `documents`, `categories`, `links` and `media`, plus whatever the modules put in
+ * `navigation.staff`, which the server has already
  * narrowed to the entries this person may actually follow (design M0 §7.2).
  *
  * The administration group only appears for whoever holds `Admin.Access`, and each entry inside it
@@ -48,6 +61,24 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
         description: t('content.description'),
         Icon: FileText,
         href: `/staff/${deptParam.format(department)}/content`,
+      },
+      {
+        title: t('news.title'),
+        description: t('news.description'),
+        Icon: Newspaper,
+        href: `/staff/${deptParam.format(department)}/news`,
+      },
+      {
+        title: t('documents.title'),
+        description: t('documents.description'),
+        Icon: FileArchive,
+        href: `/staff/${deptParam.format(department)}/documents`,
+      },
+      {
+        title: t('categories.title'),
+        description: t('categories.description'),
+        Icon: Tags,
+        href: `/staff/${deptParam.format(department)}/categories`,
       },
       {
         title: t('links.title'),

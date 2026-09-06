@@ -41,6 +41,25 @@ internal sealed class ContentVersionConfiguration : IEntityTypeConfiguration<Con
     }
 }
 
+internal sealed class ContentCategoryConfiguration : IEntityTypeConfiguration<ContentCategory>
+{
+    public void Configure(EntityTypeBuilder<ContentCategory> builder)
+    {
+        builder.ToTable("cms_categories");
+        builder.HasKey(category => category.Id);
+        builder.Property(category => category.Key)
+            .HasMaxLength(CategoryWriteDtoValidator.MaxKeyLength)
+            .IsRequired();
+        builder.HasRowVersion(category => category.RowVersion);
+
+        // One word per department and per kind: two departments may both file under "guides" and
+        // mean two different shelves, one department may not have the same shelf twice.
+        builder.HasIndex(category => new { category.Kind, category.OwnerDepartment, category.Key })
+            .IsUnique();
+        builder.HasIndex(category => new { category.Kind, category.IsActive });
+    }
+}
+
 internal sealed class LinkConfiguration : IEntityTypeConfiguration<Link>
 {
     public void Configure(EntityTypeBuilder<Link> builder)

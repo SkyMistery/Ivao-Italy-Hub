@@ -85,3 +85,22 @@ public sealed class PermissionAreaAttribute(string area) : Attribute
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class AuditedAttribute : Attribute;
+
+/// <summary>
+/// A row some of whose instances every department may <b>read</b>, whoever owns them. A template
+/// is the first and so far the only one: it belongs to the department that made it and is edited
+/// by that department alone, but a coordinator of any other has to be able to see it, or "new from
+/// a template" does not exist for eight departments out of nine (design M1 section 9.4).
+/// <para>Writing is untouched. The rule below only ever applies to a permission that reads, so a
+/// row being shared never widens who may change it.</para>
+/// <para>⚠️ There are two sides to this and they have to say the same thing: the list narrows in
+/// SQL, through <c>CrudOptions.SharedForReading</c>, and the single authorization handler decides
+/// in memory, through this property. So the entity declares the rule <b>once</b>, as an expression,
+/// and compiles it for the second side rather than writing it twice — the same discipline the
+/// envelope and the walker are held to.</para>
+/// </summary>
+public interface ISharedForReading
+{
+    /// <summary>Whether this particular row is one any department may read.</summary>
+    bool IsSharedForReading { get; }
+}

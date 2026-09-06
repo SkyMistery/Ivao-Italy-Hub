@@ -55,6 +55,14 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
     seo: trimLocalizedObject(values.seo),
     body,
     schemaVersion: body.schemaVersion,
+    // The five that belong to one kind each. A kind whose form does not draw them sends what the
+    // column already holds for a row that has none: no shelf, no picture, unpinned, first, no file.
+    // They are columns of `cms_contents` and not a table, which is the whole point of design M1 §3.
+    category: values.category === undefined || values.category === '' ? null : values.category,
+    coverMediaId: values.coverMediaId ?? null,
+    pinned: values.pinned ?? false,
+    sort: values.sort ?? 0,
+    fileMediaId: values.fileMediaId ?? null,
     rowVersion: values.rowVersion,
   };
 }
@@ -76,6 +84,9 @@ export function emptyContent(
     title: emptyLocalized(locales),
     summary: emptyLocalized(locales),
     seo: emptySeo(locales),
+    category: '',
+    pinned: false,
+    sort: 0,
     rowVersion: '',
   };
 }
@@ -94,6 +105,13 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     title: spread(content.title),
     summary: spread(content.summary),
     seo: spreadSeo(content.seo, locales),
+    // An absent shelf is the empty string and not `undefined`: a select that starts at `undefined`
+    // is an uncontrolled field that React complains about the moment somebody chooses one.
+    category: content.category ?? '',
+    ...(content.coverMediaId === null ? {} : { coverMediaId: content.coverMediaId }),
+    pinned: content.pinned,
+    sort: content.sort,
+    ...(content.fileMediaId === null ? {} : { fileMediaId: content.fileMediaId }),
     rowVersion: content.rowVersion,
   };
 }

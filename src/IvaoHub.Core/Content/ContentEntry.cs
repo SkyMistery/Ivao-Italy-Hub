@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
@@ -19,8 +20,25 @@ public enum ContentKind
 /// </summary>
 [Audited]
 [PermissionArea("Content")]
-public sealed class ContentEntry : IOwnedByDepartment, IVisible, IPublishable, IAuditable, IProjectable
+public sealed class ContentEntry
+    : IOwnedByDepartment, IVisible, IPublishable, IAuditable, IProjectable, ISharedForReading
 {
+    /// <summary>
+    /// Which content rows every department may read: the templates, and only those. A template
+    /// belongs to the department that made it and is edited by that department alone, but a
+    /// coordinator of another one has to be able to see it — without this, "new from a template"
+    /// does not exist for eight departments out of nine, and a page born from a template its editor
+    /// cannot read loses the template's own restrictions in the editor (design M1 section 9.4,
+    /// note 2026-09-05-template-di-sistema-e-dipartimenti).
+    /// <para>Declared once, as an expression, because it is asked in two languages: the CRUD engine
+    /// puts it in the <c>WHERE</c> of the list, and the single authorization handler asks the row
+    /// itself. The second reading is this same expression compiled, never a copy of it.</para>
+    /// </summary>
+    public static readonly Expression<Func<ContentEntry, bool>> SharedForReading =
+        content => content.IsTemplate;
+
+    private static readonly Func<ContentEntry, bool> SharedForReadingInMemory = SharedForReading.Compile();
+
     public long Id { get; set; }
 
     public ContentKind Kind { get; set; }
@@ -86,6 +104,8 @@ public sealed class ContentEntry : IOwnedByDepartment, IVisible, IPublishable, I
         ContentKind.Document => $"/documents/{Slug}",
         _ => $"/{Slug}",
     };
+
+    bool ISharedForReading.IsSharedForReading => SharedForReadingInMemory(this);
 
     string IProjectable.SourceModule => ProjectionSource.Core;
 

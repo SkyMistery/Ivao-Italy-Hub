@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { registry } from '../../app/registry';
 import { ContentRenderer, columnsOf, readBody, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
-import { SchemaForm, writtenValues } from '../../shared/forms';
+import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
 import type { MediaLibraryQuery } from '../../shared/ui';
 import { ConfirmDialog, SectionHeader } from '../../shared/ui';
 
@@ -29,7 +29,7 @@ import {
 } from './body';
 import { emptyContent, toFormValues } from './mutations';
 import { PublishProblems } from './publishProblems';
-import { contentQuery, type ContentDetailDto } from './queries';
+import { contentQuery, type ContentDetailDto, type ContentKind } from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
 import { SectionTree, type Selection } from './SectionTree';
 import { NO_RULES, ruleFor, templateRules } from './templateRules';
@@ -46,6 +46,8 @@ import { NO_RULES, ruleFor, templateRules } from './templateRules';
  */
 export function ContentEditor({
   content,
+  kind,
+  categories,
   department,
   locales,
   division,
@@ -57,6 +59,10 @@ export function ContentEditor({
   busy,
 }: {
   content: ContentDetailDto | null;
+  /** Which kind this row is. Fixed by the list it was opened from, never a field on the form. */
+  kind: ContentKind;
+  /** The shelves of this department, already resolved into the language on screen. */
+  categories: readonly ChoiceOption[];
   department: Department;
   locales: readonly string[];
   /** The two facts the `seo` field needs: which language is the fallback, and where the division is. */
@@ -102,8 +108,8 @@ export function ContentEditor({
         // Remounted whenever the stored row moves on, so the version the form carries is the one
         // the server last returned; keeping a stale one would answer 409 on the next save.
         key={content?.rowVersion ?? 'new'}
-        schema={contentMetadataSchema}
-        defaults={content === null ? emptyContent(department, locales) : toFormValues(content, locales)}
+        schema={contentMetadataSchema(kind, categories)}
+        defaults={content === null ? emptyContent(department, locales, kind) : toFormValues(content, locales)}
         locales={locales}
         labels="content"
         division={division}
