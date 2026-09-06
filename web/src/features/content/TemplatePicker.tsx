@@ -9,7 +9,7 @@ import { ProblemAlert } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 
 import { useCreateFromTemplate } from './mutations';
-import { templatesQuery } from './queries';
+import { templatesQuery, type ContentKind } from './queries';
 
 /**
  * "New from template". The copy is made by the server — new identifiers for every section and
@@ -21,9 +21,12 @@ import { templatesQuery } from './queries';
  */
 export function TemplatePicker({
   department,
+  kind,
   onCreated,
 }: {
   department: Department;
+  /** Which list this picker sits on: a news list offers the templates of a news item, and no other. */
+  kind: ContentKind;
   onCreated: (id: number) => void;
 }) {
   const { t } = useTranslation();
@@ -32,7 +35,7 @@ export function TemplatePicker({
   const [templateId, setTemplateId] = useState<string>('');
   const [slug, setSlug] = useState('');
 
-  const templates = useQuery(templatesQuery());
+  const templates = useQuery(templatesQuery(kind));
   const create = useCreateFromTemplate();
 
   const items = (templates.data?.items ?? []).map((template) => ({

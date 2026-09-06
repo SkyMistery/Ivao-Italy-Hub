@@ -352,12 +352,13 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
     {
         ArgumentNullException.ThrowIfNull(context);
 
+        var kind = Kind;
+
         if (!BlockProps.TryDepartment(props, "department", out var department))
         {
             return DataBlockScope.Nothing("items");
         }
 
-        var kind = Kind;
 
         // Published and visible are both already in the query filter; a template is never a page
         // and never appears in a list of them.
@@ -401,7 +402,57 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
             items.Add(item);
         }
 
-        return new JsonObject { ["items"] = items };
+        return new JsonObject
+        {
+            ["items"] = items,
+            ["categories"] = await VocabularyAsync(kind, department, cancellationToken),
+        };
+    }
+
+    /// <summary>
+    /// The words this kind is filed under, so that a list can show a shelf by its translated name
+    /// and a public page can offer them as a filter (design M1 section 3.4).
+    /// <para>It travels with the rows rather than from an address of its own, because there is no
+    /// second question here: whoever may read this list may read the names of its shelves. A row
+    /// whose category has since been deleted keeps its key and simply finds no name here, which is
+    /// what "the list shows it as it is" means.</para>
+    /// <para>Not narrowed by the page's visibility, unlike the rows: a category has no visibility
+    /// of its own — it is a word, not content — and <see cref="ContentCategory"/> deliberately does
+    /// not implement <c>IVisible</c>.</para>
+    /// </summary>
+    private async Task<JsonArray> VocabularyAsync(
+        ContentKind kind,
+        Department? department,
+        CancellationToken cancellationToken)
+    {
+        var query = database.ContentCategories
+            .AsNoTracking()
+            .Where(category => category.Kind == kind && category.IsActive);
+
+        if (department is { } owner)
+        {
+            query = query.Where(category => category.OwnerDepartment == owner);
+        }
+
+        var rows = await query
+            .OrderBy(category => category.Sort)
+            .ThenBy(category => category.Key)
+            .ToListAsync(cancellationToken);
+
+        var vocabulary = new JsonArray();
+
+        // A block that names no department gathers the words of all of them, and two departments
+        // may well have filed under the same key: one entry per key, the first in order winning.
+        foreach (var category in rows.DistinctBy(category => category.Key, StringComparer.Ordinal))
+        {
+            vocabulary.Add(new JsonObject
+            {
+                ["key"] = category.Key,
+                ["label"] = BlockProps.Translated(category.Label),
+            });
+        }
+
+        return vocabulary;
     }
 }
 

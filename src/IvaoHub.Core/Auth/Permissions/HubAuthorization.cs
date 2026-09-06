@@ -85,7 +85,10 @@ public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options, Pe
 /// here and nowhere else: a module that wanted its own rule would be writing a second answer to a
 /// question that already has one (plan section 16.2).
 /// </summary>
-public sealed class DepartmentAuthorizationHandler(ICurrentUser currentUser, IOptions<DivisionOptions> division)
+public sealed class DepartmentAuthorizationHandler(
+    ICurrentUser currentUser,
+    IOptions<DivisionOptions> division,
+    PermissionCatalog catalogue)
     : AuthorizationHandler<PermissionRequirement>
 {
     protected override Task HandleRequirementAsync(
@@ -113,6 +116,14 @@ public sealed class DepartmentAuthorizationHandler(ICurrentUser currentUser, IOp
             return currentUser.HasAny(permission);
         }
 
+        // A row the resource shares for reading is readable by whoever holds the read permission
+        // anywhere, whichever department owns it (design M1 section 9.4). Only reading: the check
+        // below is what a write still has to pass, and it is untouched.
+        if (resource is ISharedForReading { IsSharedForReading: true } && IsRead(permission))
+        {
+            return currentUser.HasAny(permission);
+        }
+
         if (!currentUser.Has(permission, owned.OwnerDepartment))
         {
             return false;
@@ -130,4 +141,12 @@ public sealed class DepartmentAuthorizationHandler(ICurrentUser currentUser, IOp
 
         return true;
     }
+
+    /// <summary>
+    /// Whether a permission is the one that reads. It is the <c>View</c> of its own area, and the
+    /// catalogue is asked rather than the name inspected here: "the view permission of an area" is
+    /// already decided in one place, the same one "Edit implies View" is decided in.
+    /// </summary>
+    private bool IsRead(string permission) =>
+        string.Equals(catalogue.ViewOf(permission), permission, StringComparison.Ordinal);
 }

@@ -31,6 +31,7 @@ import type { BlockComponentProps } from '../shared/modules';
 import { MarkdownContent } from '../shared/ui';
 
 import { embedSource } from './allowlist';
+import { categoryLabel, type ContentListData } from './data';
 import { CALLOUT_TONES } from './schemas';
 
 /**
@@ -1034,21 +1035,6 @@ export function CalendarBlock({ data }: BlockComponentProps) {
 
 // ---- newsList and documentList (data) --------------------------------------------------------
 
-/** What both `ContentListProvider`s answer with; each kind adds two keys of its own. */
-interface ContentListData {
-  items?: {
-    id?: number;
-    title?: LocalizedString;
-    summary?: LocalizedString | null;
-    url?: string;
-    category?: string | null;
-    publishedAt?: string | null;
-    coverMediaId?: number | null;
-    fileMediaId?: number | null;
-    pinned?: boolean;
-  }[];
-}
-
 export function NewsListBlock({ props, data }: BlockComponentProps) {
   const { t } = useTranslation();
   const read = useLocalized();
@@ -1066,6 +1052,7 @@ export function NewsListBlock({ props, data }: BlockComponentProps) {
       {items.map((item) => {
         const summary = read(item.summary);
         const when = moment(item.publishedAt, { time: false });
+        const shelf = categoryLabel(data as ContentListData | null | undefined, item.category, read);
         const title = <H4>{read(item.title)}</H4>;
 
         const inside = (
@@ -1084,6 +1071,7 @@ export function NewsListBlock({ props, data }: BlockComponentProps) {
                   <Badge variant="flat" color="gray" text={t('blocks.newsList.pinned')} />
                 ) : null}
                 {when === '' ? null : <time className="tabular-nums">{when}</time>}
+                {shelf === '' ? null : <span>{shelf}</span>}
               </span>
               {title}
               {summary === '' ? null : <p className="text-muted-foreground">{summary}</p>}
@@ -1128,7 +1116,9 @@ export function DocumentListBlock({ props, data }: BlockComponentProps) {
     <div className="flex flex-col gap-6">
       {groups.map((group) => (
         <section key={group.category} className="flex flex-col gap-2">
-          {grouped && group.category !== '' ? <H4>{group.category}</H4> : null}
+          {grouped && group.category !== '' ? (
+            <H4>{categoryLabel(data as ContentListData | null | undefined, group.category, read)}</H4>
+          ) : null}
           <ul className="flex flex-col divide-y">
             {group.rows.map((item) => {
               const summary = read(item.summary);

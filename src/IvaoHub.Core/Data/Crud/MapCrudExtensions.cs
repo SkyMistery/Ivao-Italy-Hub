@@ -48,7 +48,7 @@ public static class MapCrudExtensions
         configure(options);
         Verify(options);
 
-        var group = app.MapGroup(pattern).WithTags(options.PermissionArea);
+        var group = app.MapGroup(pattern).WithTags(options.EffectiveName);
 
         // The handlers are declared as Delegate so that the route builder binds them as route
         // handlers, with their return value written to the response, rather than as bare request
@@ -58,12 +58,12 @@ public static class MapCrudExtensions
         Delegate read = (HttpContext http, string id) => GetAsync(http, id, options);
 
         group.MapGet("/", list)
-            .WithName($"{options.PermissionArea}List")
+            .WithName($"{options.EffectiveName}List")
             .Produces<PagedResult<TListDto>>()
             .RequireAuthorization(options.EffectiveReadPolicy);
 
         group.MapGet("/{id}", read)
-            .WithName($"{options.PermissionArea}Get")
+            .WithName($"{options.EffectiveName}Get")
             .Produces<TDetailDto>()
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(options.EffectiveReadPolicy);
@@ -82,14 +82,14 @@ public static class MapCrudExtensions
         if (options.MapCreate)
         {
             group.MapPost("/", create)
-                .WithName($"{options.PermissionArea}Create")
+                .WithName($"{options.EffectiveName}Create")
                 .Produces<TDetailDto>(StatusCodes.Status201Created)
                 .ProducesValidationProblem()
                 .RequireAuthorization(options.EffectiveWritePolicy);
         }
 
         group.MapPut("/{id}", update)
-            .WithName($"{options.PermissionArea}Update")
+            .WithName($"{options.EffectiveName}Update")
             .Produces<TDetailDto>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status409Conflict)
@@ -98,7 +98,7 @@ public static class MapCrudExtensions
         if (options.AllowDelete)
         {
             group.MapDelete("/{id}", remove)
-                .WithName($"{options.PermissionArea}Delete")
+                .WithName($"{options.EffectiveName}Delete")
                 .Produces(StatusCodes.Status204NoContent)
                 .Produces(StatusCodes.Status404NotFound)
                 .RequireAuthorization(options.EffectiveWritePolicy);
@@ -174,7 +174,7 @@ public static class MapCrudExtensions
 
         var query = Source(scope.Database, options);
 
-        if (!TryNarrowToDepartments(scope.CurrentUser, ref query, out var forbidden))
+        if (!TryNarrowToDepartments(scope.CurrentUser, options.SharedForReading, ref query, out var forbidden))
         {
             return forbidden!;
         }
@@ -350,12 +350,14 @@ public static class MapCrudExtensions
         options.Source is null ? CrudSource.BackOffice<TEntity>(database) : options.Source(database);
 
     /// <summary>
-    /// Departmental mode: the list only ever holds rows of the departments the user belongs to.
-    /// Whoever reaches every department sees the lot; a member who somehow holds the permission but
-    /// belongs to no department sees nothing, and is told so rather than shown an empty list.
+    /// Departmental mode: the list only ever holds rows of the departments the user belongs to,
+    /// plus whatever rows the resource declares shared for reading. Whoever reaches every
+    /// department sees the lot; a member who somehow holds the permission but belongs to no
+    /// department sees nothing, and is told so rather than shown an empty list.
     /// </summary>
     private static bool TryNarrowToDepartments<TEntity>(
         ICurrentUser currentUser,
+        Expression<Func<TEntity, bool>>? shared,
         ref IQueryable<TEntity> query,
         out IResult? forbidden)
         where TEntity : class
@@ -376,12 +378,23 @@ public static class MapCrudExtensions
         var departments = currentUser.Departments.ToList();
         var entity = Expression.Parameter(typeof(TEntity), "entity");
         var owner = Expression.Property(entity, nameof(IOwnedByDepartment.OwnerDepartment));
-        var contains = Expression.Call(
+
+        Expression readable = Expression.Call(
             Expression.Constant(departments),
             typeof(List<Department>).GetMethod(nameof(List<Department>.Contains), [typeof(Department)])!,
             owner);
 
-        query = query.Where(Expression.Lambda<Func<TEntity, bool>>(contains, entity));
+        // "Mine, or one of the ones this resource shares." The engine is not told what makes a row
+        // shared, only that some are: a template is a template to `ContentEntry` and to nobody else
+        // (design M1 section 9.4).
+        if (shared is not null)
+        {
+            readable = Expression.OrElse(
+                readable,
+                new ParameterSwap(shared.Parameters[0], entity).Visit(shared.Body)!);
+        }
+
+        query = query.Where(Expression.Lambda<Func<TEntity, bool>>(readable, entity));
         return true;
     }
 

@@ -237,11 +237,18 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
               render={({ field }) => (
                 <Select
                   {...(typeof field.value === 'string' && field.value !== '' ? { value: field.value } : {})}
-                  onValueChange={(chosen) => field.onChange(chosen)}
-                  // The values are the labels, and deliberately: a set only known at runtime — the
-                  // permission catalogue, which depends on the modules installed — cannot have an
-                  // i18n key per member, and its members are identifiers rather than prose.
-                  items={choices.map((choice) => ({ value: choice, label: choice }))}
+                  // Back to "nothing chosen", the same gesture an optional enum has: without it the
+                  // first category somebody picks could never be taken off again.
+                  onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? '' : chosen)}
+                  // The labels are the caller's, already in the language on screen. For a set only
+                  // known at runtime — the permission catalogue, which depends on the modules
+                  // installed — the label *is* the value, and that is what `choices` hands over.
+                  items={[
+                    ...(node.optional
+                      ? [{ value: NO_CHOICE, label: t(`${labels}.options.${node.path}.none`) }]
+                      : []),
+                    ...choices,
+                  ]}
                 />
               )}
             />

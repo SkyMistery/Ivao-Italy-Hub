@@ -7,36 +7,31 @@ import { contentListQuery } from '../../features/content/queries';
 import { listSearchSchema } from '../../shared/list';
 
 /**
- * Recipe 2 (design M0 §7.3), the pages of one department: paging, sorting and searching are the
- * typed search parameters of the route, and there is no table markup here — the columns are
- * declared in `features/content/kinds.ts` and drawn by `DataList`.
+ * The news of one department, the first of the two kinds design M1 §3 set out to prove cost
+ * nothing: a `kind` of `cms_contents` and not a table of its own.
  *
- * The `kind` is fixed to `Page`, and its two siblings — `/staff/<dept>/news` and
- * `/staff/<dept>/documents` — are this same screen with the other two kinds (design M1 §3.2).
- *
- * Templates are not in the list. The server keeps them out unless a caller asks, and the one caller
- * that does is the picker inside the screen (`CrudOptions.DefaultFilters`).
+ * It is `/staff/<dept>/content` with a different `kind` and a different set of columns, and that is
+ * the whole difference: one entity, one editor, one renderer, one publication (design M1 §3.2).
  *
  * The department and its guard are on the layout above.
  */
-const CONFIG = CONTENT_KINDS.Page;
+const CONFIG = CONTENT_KINDS.News;
 
-export const Route = createFileRoute('/_staff/staff/$dept/content/')({
+export const Route = createFileRoute('/_staff/staff/$dept/news/')({
   validateSearch: listSearchSchema,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps, params }) =>
     context.queryClient.ensureQueryData(contentListQuery(params.dept, deps, CONFIG.kind)),
-  component: PagesPage,
+  component: NewsListPage,
 });
 
-function PagesPage() {
+function NewsListPage() {
   const { bootstrap } = Route.useRouteContext();
   const { dept } = Route.useParams();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
 
-  const open = (id: string) =>
-    void navigate({ to: '/staff/$dept/content/$id', params: { dept, id } });
+  const open = (id: string) => void navigate({ to: '/staff/$dept/news/$id', params: { dept, id } });
 
   return (
     <ContentListScreen
@@ -48,14 +43,14 @@ function PagesPage() {
       onCreatedFromTemplate={(id) => open(String(id))}
       createButton={
         <Button asChild>
-          <Link to="/staff/$dept/content/$id" params={{ dept, id: 'new' }}>
+          <Link to="/staff/$dept/news/$id" params={{ dept, id: 'new' }}>
             <CreateLabel titles={CONFIG.titles} />
           </Link>
         </Button>
       }
       rowAction={(row) => (
         <Button asChild variant="ghost" size="sm">
-          <Link to="/staff/$dept/content/$id" params={{ dept, id: String(row.id) }}>
+          <Link to="/staff/$dept/news/$id" params={{ dept, id: String(row.id) }}>
             <EditLabel />
           </Link>
         </Button>

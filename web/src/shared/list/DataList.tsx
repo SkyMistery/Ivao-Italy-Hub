@@ -11,6 +11,7 @@ import { Search } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { mediaFileUrl } from '../api/mediaUrl';
 import { resolveLocalized } from '../i18n/localized';
 import { DepartmentBadge, EmptyState, StatusBadge } from '../ui';
 import type { ColumnSpec } from './columns';
@@ -253,6 +254,18 @@ function Cell<TRow>({
 
     case 'number':
       return <span className="tabular-nums">{typeof value === 'number' ? value : ''}</span>;
+
+    case 'media':
+      // Decorative on purpose: the row's own title is in the cell next to it, so a screen reader
+      // that announced the picture too would read the same thing twice (design M1 §1.2).
+      return typeof value === 'number' ? (
+        <img
+          src={mediaFileUrl(value)}
+          alt=""
+          loading="lazy"
+          className="bg-body size-10 rounded object-cover"
+        />
+      ) : null;
 
     case 'text':
       return <>{typeof value === 'string' ? value : ''}</>;

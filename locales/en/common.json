@@ -279,7 +279,12 @@
       "seo": "Search engines and sharing",
       "seo.title": "Title",
       "seo.description": "Description",
-      "seo.ogImageMediaId": "Sharing picture"
+      "seo.ogImageMediaId": "Sharing picture",
+      "category": "Category",
+      "coverMediaId": "Cover picture",
+      "pinned": "Pinned to the top",
+      "sort": "Order",
+      "fileMediaId": "File"
     },
     "options": {
       "kind": {
@@ -296,6 +301,9 @@
         "Members": "Members",
         "Staff": "Staff",
         "Department": "This department"
+      },
+      "category": {
+        "none": "No category"
       }
     },
     "section": {
@@ -975,5 +983,67 @@
     "ED": "Events",
     "PRD": "Public Relations",
     "WD": "Web"
+  },
+  "news": {
+    "title": "News",
+    "description": "What this department announces on the division site.",
+    "create": "New news item",
+    "edit": "Edit news item",
+    "public": {
+      "title": "News",
+      "description": "What the division has announced, most recent first.",
+      "filters": {
+        "category": "Category",
+        "allCategories": "Every category",
+        "department": "Department",
+        "allDepartments": "Every department"
+      }
+    }
+  },
+  "documents": {
+    "title": "Documents",
+    "description": "What this department publishes to be kept rather than read once.",
+    "create": "New document",
+    "edit": "Edit document",
+    "public": {
+      "title": "Documents",
+      "description": "Rules, guides and forms, filed by the department that keeps them.",
+      "download": "Download",
+      "fileHint": "This document is a file.",
+      "filters": {
+        "category": "Category",
+        "allCategories": "Every category",
+        "department": "Department",
+        "allDepartments": "Every department"
+      }
+    }
+  },
+  "categories": {
+    "title": "Categories",
+    "description": "The shelves this department files its news and documents under.",
+    "create": "New category",
+    "edit": "Edit category",
+    "delete": {
+      "title": "Delete this category?",
+      "description": "The news and documents filed under it keep the key they were filed with, and stay where they are."
+    },
+    "fields": {
+      "key": "Key",
+      "label": "Name",
+      "kind": "Applies to",
+      "sort": "Order",
+      "isActive": "In use",
+      "ownerDepartment": "Department",
+      "updatedAt": "Last change"
+    },
+    "hints": {
+      "key": "The stable name a news item or a document is filed under. It is never shown to a visitor, and changing it leaves whatever was already filed under the old one where it is."
+    },
+    "options": {
+      "kind": {
+        "News": "News",
+        "Document": "Documents"
+      }
+    }
   }
 }

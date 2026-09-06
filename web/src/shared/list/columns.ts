@@ -15,7 +15,8 @@ export type ColumnSpec<TRow> =
   | { kind: 'boolean'; field: BooleanKey<TRow>; sortable: boolean }
   | { kind: 'date'; field: TextKey<TRow>; sortable: boolean }
   | { kind: 'department'; field: TextKey<TRow>; sortable: boolean }
-  | { kind: 'badge'; field: TextKey<TRow>; sortable: boolean; labels: string };
+  | { kind: 'badge'; field: TextKey<TRow>; sortable: boolean; labels: string }
+  | { kind: 'media'; field: NumberKey<TRow>; sortable: boolean };
 
 type KeysOfType<TRow, TValue> = {
   [K in keyof TRow & string]: TRow[K] extends TValue ? K : never;
@@ -57,6 +58,15 @@ export const col = {
   /** The owner department, as its badge. */
   department<TRow>(field: TextKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
     return { kind: 'department', field, sortable: options.sortable ?? false };
+  },
+
+  /**
+   * A file of the library, held as its identifier and drawn as a thumbnail. A column showing the
+   * number itself would be a column nobody can read: what somebody scanning a list of news wants
+   * to know about a cover is whether there is one and which picture it is.
+   */
+  media<TRow>(field: NumberKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
+    return { kind: 'media', field, sortable: options.sortable ?? false };
   },
 
   /**

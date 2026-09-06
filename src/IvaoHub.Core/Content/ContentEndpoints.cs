@@ -44,7 +44,7 @@ public static class ContentEndpoints
             Pattern,
             options =>
             {
-                options.PermissionArea = ContentArea;
+                options.PermissionArea = CorePermissions.ContentArea;
 
                 options.DefaultOrder = content => content.Slug;
 
@@ -60,6 +60,7 @@ public static class ContentEndpoints
                 options.Filterable.Add(nameof(ContentEntry.Status));
                 options.Filterable.Add(nameof(ContentEntry.IsTemplate));
                 options.Filterable.Add(nameof(ContentEntry.TemplateId));
+                options.Filterable.Add(nameof(ContentEntry.Category));
 
                 // A template is a tool, not a page: it stays out of the list of what a department
                 // publishes, and `filter[isTemplate]=true` is how the template picker asks for it.
@@ -76,6 +77,11 @@ public static class ContentEndpoints
 
                 options.SearchFields.Add(content => content.Title);
                 options.SearchFields.Add(content => content.Slug);
+
+                // A template is a tool of a department and read by every department, so that "new
+                // from a template" exists outside the one that made it (design M1 section 9.4). The
+                // expression is the entity's own, and the handler asks the row the same question.
+                options.SharedForReading = ContentEntry.SharedForReading;
 
                 // The one extension point of the engine, and the reason it exists: editing a
                 // template needs a permission of its own (design M0 section 5.7).
@@ -143,13 +149,11 @@ public static class ContentEndpoints
                 return Results.Ok(resolved);
             })
             .WithName("BlockData")
-            .WithTags(ContentArea)
+            .WithTags(CorePermissions.ContentArea)
             .Produces<JsonNode>()
             .Produces(StatusCodes.Status404NotFound)
             .AllowAnonymous();
     }
-
-    private const string ContentArea = "Content";
 
     /// <summary>
     /// <c>filter[usesMedia]=42</c>: the contents that show a file. Named here because the client
@@ -199,6 +203,13 @@ public static class ContentEndpoints
             template.Seo,
             body,
             template.SchemaVersion,
+            // A template carries structure, never the editorial facts of one row: a page born from
+            // one starts with no category, no cover, unpinned, first in order and no file.
+            Category: null,
+            CoverMediaId: null,
+            Pinned: false,
+            Sort: 0,
+            FileMediaId: null,
             RowVersion: default);
 
         var validation = await validator.ValidateAsync(payload, http.RequestAborted);
@@ -293,11 +304,15 @@ public static class ContentEndpoints
         return TypedResults.Ok(new PublicContentDto(
             content.Kind,
             content.Slug,
+            content.OwnerDepartment,
             version.Title,
             content.Summary,
             content.Seo,
             JsonNode.Parse(version.BodyJson) ?? new JsonObject(),
             version.SchemaVersion,
+            content.Category,
+            content.CoverMediaId,
+            content.FileMediaId,
             version.Version,
             version.PublishedAt));
     }

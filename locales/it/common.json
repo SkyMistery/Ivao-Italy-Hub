@@ -279,7 +279,12 @@
       "seo": "Motori di ricerca e condivisione",
       "seo.title": "Titolo",
       "seo.description": "Descrizione",
-      "seo.ogImageMediaId": "Immagine di condivisione"
+      "seo.ogImageMediaId": "Immagine di condivisione",
+      "category": "Categoria",
+      "coverMediaId": "Immagine di copertina",
+      "pinned": "In cima all'elenco",
+      "sort": "Ordine",
+      "fileMediaId": "File"
     },
     "options": {
       "kind": {
@@ -296,6 +301,9 @@
         "Members": "Membri",
         "Staff": "Staff",
         "Department": "Questo dipartimento"
+      },
+      "category": {
+        "none": "Nessuna categoria"
       }
     },
     "section": {
@@ -975,5 +983,67 @@
     "ED": "Eventi",
     "PRD": "Relazioni pubbliche",
     "WD": "Web"
+  },
+  "news": {
+    "title": "News",
+    "description": "Quello che questo dipartimento annuncia sul sito della divisione.",
+    "create": "Nuova news",
+    "edit": "Modifica news",
+    "public": {
+      "title": "News",
+      "description": "Quello che la divisione ha annunciato, dalla più recente.",
+      "filters": {
+        "category": "Categoria",
+        "allCategories": "Tutte le categorie",
+        "department": "Dipartimento",
+        "allDepartments": "Tutti i dipartimenti"
+      }
+    }
+  },
+  "documents": {
+    "title": "Documenti",
+    "description": "Quello che questo dipartimento pubblica per essere conservato, non letto una volta sola.",
+    "create": "Nuovo documento",
+    "edit": "Modifica documento",
+    "public": {
+      "title": "Documenti",
+      "description": "Regolamenti, guide e moduli, ordinati per il dipartimento che li tiene.",
+      "download": "Scarica",
+      "fileHint": "Questo documento è un file.",
+      "filters": {
+        "category": "Categoria",
+        "allCategories": "Tutte le categorie",
+        "department": "Dipartimento",
+        "allDepartments": "Tutti i dipartimenti"
+      }
+    }
+  },
+  "categories": {
+    "title": "Categorie",
+    "description": "Gli scaffali su cui questo dipartimento sistema news e documenti.",
+    "create": "Nuova categoria",
+    "edit": "Modifica categoria",
+    "delete": {
+      "title": "Eliminare questa categoria?",
+      "description": "Le news e i documenti sistemati qui tengono la chiave con cui sono stati archiviati, e restano dove sono."
+    },
+    "fields": {
+      "key": "Chiave",
+      "label": "Nome",
+      "kind": "Vale per",
+      "sort": "Ordine",
+      "isActive": "In uso",
+      "ownerDepartment": "Dipartimento",
+      "updatedAt": "Ultima modifica"
+    },
+    "hints": {
+      "key": "Il nome stabile con cui una news o un documento viene archiviato. Non lo vede mai un visitatore, e cambiarlo lascia dov'è quello che era già archiviato con il vecchio."
+    },
+    "options": {
+      "kind": {
+        "News": "News",
+        "Document": "Documenti"
+      }
+    }
   }
 }

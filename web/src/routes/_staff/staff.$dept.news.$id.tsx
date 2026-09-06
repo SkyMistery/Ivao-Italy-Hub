@@ -6,18 +6,18 @@ import { contentQuery, type ContentDetailDto } from '../../features/content/quer
 import { deptParam } from '../../shared/api/department';
 
 /**
- * One page, in the editor. The screen is shared with news and documents; what this file owns is the
- * address, which is the one thing that cannot be configuration (design M1 §3.2).
+ * One news item, in the editor. The screen is the one pages use; what this file owns is the address, which is
+ * the one thing that cannot be configuration.
  */
-const CONFIG = CONTENT_KINDS.Page;
+const CONFIG = CONTENT_KINDS.News;
 
-export const Route = createFileRoute('/_staff/staff/$dept/content/$id')({
+export const Route = createFileRoute('/_staff/staff/$dept/news/$id')({
   loader: async ({ context, params }): Promise<ContentDetailDto | null> =>
     params.id === 'new' ? null : context.queryClient.ensureQueryData(contentQuery(Number(params.id))),
-  component: ContentForm,
+  component: NewsForm,
 });
 
-function ContentForm() {
+function NewsForm() {
   const { bootstrap } = Route.useRouteContext();
   const { dept, id } = Route.useParams();
   const navigate = useNavigate();
@@ -29,11 +29,11 @@ function ContentForm() {
       department={dept}
       id={id}
       content={Route.useLoaderData()}
-      breadcrumbTo={`/staff/${deptParam.format(dept)}/content`}
+      breadcrumbTo={`/staff/${deptParam.format(dept)}/news`}
       onCreated={async (created) => {
-        await navigate({ to: '/staff/$dept/content/$id', params: { dept, id: String(created) } });
+        await navigate({ to: '/staff/$dept/news/$id', params: { dept, id: String(created) } });
       }}
-      onFinished={() => void navigate({ to: '/staff/$dept/content', params: { dept } })}
+      onFinished={() => void navigate({ to: '/staff/$dept/news', params: { dept } })}
     />
   );
 }

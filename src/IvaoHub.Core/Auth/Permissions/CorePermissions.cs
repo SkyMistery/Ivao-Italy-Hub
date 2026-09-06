@@ -16,6 +16,9 @@ public sealed record PermissionDescriptor(string Name, bool IsGlobal);
 /// </summary>
 public static class CorePermissions
 {
+    /// <summary>The area the CRUD engine derives <c>Content.View</c> and <c>Content.Edit</c> from.</summary>
+    public const string ContentArea = "Content";
+
     public const string ContentView = "Content.View";
     public const string ContentEdit = "Content.Edit";
     public const string ContentPublish = "Content.Publish";

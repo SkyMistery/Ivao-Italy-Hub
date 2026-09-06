@@ -334,6 +334,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CategoriesList"];
+        put?: never;
+        post: operations["CategoriesCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CategoriesGet"];
+        put: operations["CategoriesUpdate"];
+        post?: never;
+        delete: operations["CategoriesDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/grants": {
         parameters: {
             query?: never;
@@ -603,6 +635,58 @@ export interface components {
             titleKey: string;
             sizes: string[];
         };
+        /** @description The same, as the form loads it, with the version to write back. */
+        CategoryDetailDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["ContentKind"];
+            ownerDepartment: components["schemas"]["Department"];
+            key: string;
+            label: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A word of the vocabulary as the back office list shows it. */
+        CategoryListDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["ContentKind"];
+            ownerDepartment: components["schemas"]["Department"];
+            key: string;
+            label: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description What a client may set. The key is here and is writable, which is worth saying out loud: a key
+         *     that could never be corrected would mean a typo lives for ever, and renaming one is a decision
+         *     somebody takes knowing the rows already filed under the old one keep it.
+         */
+        CategoryWriteDto: {
+            kind: components["schemas"]["ContentKind"];
+            ownerDepartment: components["schemas"]["Department"];
+            key: string;
+            label: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /**
          * @description A content row in full, as the editor loads it. JsonNode ContentDetailDto.Body travels as the JSON it is:
          *     the backend never learned what a block means and it is not going to start here.
@@ -624,6 +708,14 @@ export interface components {
             body: components["schemas"]["JsonNode"];
             /** Format: int32 */
             schemaVersion: number;
+            category: null | string;
+            /** Format: int64 */
+            coverMediaId: null | number;
+            pinned: boolean;
+            /** Format: int32 */
+            sort: number;
+            /** Format: int64 */
+            fileMediaId: null | number;
             /** Format: int64 */
             publishedVersionId: null | number;
             /** Format: date-time */
@@ -663,6 +755,14 @@ export interface components {
             status: components["schemas"]["PublishStatus"];
             isTemplate: boolean;
             title: components["schemas"]["LocalizedOfstring"];
+            category: null | string;
+            /** Format: int64 */
+            coverMediaId: null | number;
+            pinned: boolean;
+            /** Format: int32 */
+            sort: number;
+            /** Format: int64 */
+            fileMediaId: null | number;
             /** Format: date-time */
             publishedAt: null | string;
             /** Format: date-time */
@@ -693,6 +793,14 @@ export interface components {
             body: components["schemas"]["JsonNode"];
             /** Format: int32 */
             schemaVersion: number;
+            category: null | string;
+            /** Format: int64 */
+            coverMediaId: null | number;
+            pinned: boolean;
+            /** Format: int32 */
+            sort: number;
+            /** Format: int64 */
+            fileMediaId: null | number;
             /** Format: date-time */
             rowVersion: string;
         };
@@ -987,6 +1095,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfCategoryListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["CategoryListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfContentListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ContentListDto"][];
@@ -1102,16 +1233,27 @@ export interface components {
          * @description What the public site is given: the published version and nothing about the draft behind it.
          *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
          *     any of them.
+         *     The three that belong to a kind travel because the page around the body needs them:
+         *     a news item shows its cover and its category above the blocks, and a document with a file is a
+         *     card with a download rather than something to read (design M1 section 3.3). They are read from
+         *     the row and not from the version, like the summary next to them: they are what the row is,
+         *     not what somebody wrote in it.
          */
         PublicContentDto: {
             kind: components["schemas"]["ContentKind"];
             slug: string;
+            ownerDepartment: components["schemas"]["Department"];
             title: components["schemas"]["LocalizedOfstring"];
             summary: null | components["schemas"]["LocalizedOfstring"];
             seo: null | components["schemas"]["LocalizedOfJsonNode"];
             body: components["schemas"]["JsonNode"];
             /** Format: int32 */
             schemaVersion: number;
+            category: null | string;
+            /** Format: int64 */
+            coverMediaId: null | number;
+            /** Format: int64 */
+            fileMediaId: null | number;
             /** Format: int32 */
             version: number;
             /** Format: date-time */
@@ -1823,6 +1965,163 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PublicContentDto"];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriesList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfCategoryListDto"];
+                };
+            };
+        };
+    };
+    CategoriesCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CategoryWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CategoriesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriesUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CategoryWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {

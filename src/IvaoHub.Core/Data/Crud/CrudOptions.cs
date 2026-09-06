@@ -24,6 +24,18 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     /// </summary>
     public string PermissionArea { get; set; } = string.Empty;
 
+    /// <summary>
+    /// What this resource is called in the contract: the operation names the generated client picks
+    /// up, and the tag its calls are grouped under. It defaults to <see cref="PermissionArea"/>,
+    /// which is right until two resources share one area — the category vocabulary is the first,
+    /// because naming the shelves of a department is part of writing its content and not a
+    /// permission anybody hands out separately (design M1 section 10.1).
+    /// <para>Without it both resources would answer to <c>ContentList</c> and the client generator
+    /// would keep whichever it read last, which is a resource quietly disappearing from the client
+    /// rather than an error.</para>
+    /// </summary>
+    public string? Name { get; set; }
+
     /// <summary>Overrides <c>{PermissionArea}.View</c>, for a resource with no department.</summary>
     public string? ReadPolicy { get; set; }
 
@@ -119,12 +131,26 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     public Func<DbContext, IQueryable<TEntity>>? Source { get; set; }
 
     /// <summary>
+    /// Which rows of this resource every department may read, whoever owns them. The engine puts it
+    /// in <c>OR</c> with the department filter of the list, and only there: reading is the only
+    /// thing it widens.
+    /// <para>Templates are the reason it exists (design M1 section 9.4). The engine still does not
+    /// know what a template is — what it is told is that this resource has some rows it shares —
+    /// and the same expression is what <see cref="Division.ISharedForReading"/> answers with in
+    /// memory, so the two sides cannot drift.</para>
+    /// </summary>
+    public Expression<Func<TEntity, bool>>? SharedForReading { get; set; }
+
+    /// <summary>
     /// One extra policy a write on this particular row needs, on top of the write policy. The only
     /// extension point of the engine: it exists so that "editing a template needs
     /// <c>Content.ManageTemplates</c>" is configuration and not a special case in the endpoint
     /// (design M0 section 5.7). Returning null means no extra policy.
     /// </summary>
     public Func<TEntity, string?>? ExtraWritePolicy { get; set; }
+
+    internal string EffectiveName =>
+        string.IsNullOrWhiteSpace(Name) ? PermissionArea : Name;
 
     internal string EffectiveReadPolicy =>
         ReadPolicy ?? $"{PermissionArea}.View";

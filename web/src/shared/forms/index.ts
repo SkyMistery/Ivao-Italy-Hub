@@ -10,6 +10,7 @@ export {
   blankValues,
   writtenValues,
   NO_CHOICE,
+  type ChoiceOption,
   type FieldMeta,
   type FieldNode,
 } from './schema';
