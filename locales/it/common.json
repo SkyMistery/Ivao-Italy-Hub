@@ -714,6 +714,176 @@
           "lg": "Ampio"
         }
       }
+    },
+    "stats": {
+      "label": "Numeri",
+      "empty": "Nessun numero scelto.",
+      "fields": {
+        "metrics": "Numeri",
+        "metrics.metric": "Numero",
+        "columns": "Colonne"
+      },
+      "options": {
+        "metrics.metric": {
+          "knownMembers": "Membri che il portale conosce",
+          "staffMembers": "Staff",
+          "publishedNews": "News pubblicate",
+          "publishedDocuments": "Documenti pubblicati",
+          "upcomingEntries": "Voci di calendario in arrivo"
+        },
+        "columns": {
+          "2": "Due",
+          "3": "Tre",
+          "4": "Quattro"
+        }
+      },
+      "captions": {
+        "knownMembers": "membri",
+        "staffMembers": "staff",
+        "publishedNews": "news",
+        "publishedDocuments": "documenti",
+        "upcomingEntries": "in arrivo"
+      }
+    },
+    "networkStats": {
+      "label": "In diretta sulla rete",
+      "unavailable": "La rete non è raggiungibile in questo momento.",
+      "updatedAt": "Rilevato alle {{at}}",
+      "fields": {
+        "figures": "Numeri",
+        "figures.figure": "Numero",
+        "showPositions": "Mostra chi è in frequenza"
+      },
+      "options": {
+        "figures.figure": {
+          "divisionAtc": "Controllori qui",
+          "divisionPilots": "Piloti qui",
+          "networkAtc": "Controllori su tutta la rete",
+          "networkPilots": "Piloti su tutta la rete"
+        }
+      },
+      "captions": {
+        "divisionAtc": "controllori qui",
+        "divisionPilots": "piloti qui",
+        "networkAtc": "controllori online",
+        "networkPilots": "piloti online"
+      }
+    },
+    "calendar": {
+      "label": "Calendario",
+      "empty": "Non c’è niente in arrivo.",
+      "utc": "{{at}} UTC",
+      "local": "({{at}} ora locale)",
+      "fields": {
+        "kinds": "Tipi",
+        "kinds.kind": "Tipo",
+        "department": "Dipartimento",
+        "range": "Quanto in avanti",
+        "limit": "Quante al massimo"
+      },
+      "options": {
+        "department": {
+          "none": "Tutti i dipartimenti",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        },
+        "range": {
+          "upcoming": "Tutto quello che arriva",
+          "week": "I prossimi sette giorni",
+          "month": "Il prossimo mese"
+        }
+      }
+    },
+    "newsList": {
+      "label": "News",
+      "empty": "Nessuna news da mostrare.",
+      "pinned": "In evidenza",
+      "fields": {
+        "category": "Categoria",
+        "department": "Dipartimento",
+        "limit": "Quante al massimo",
+        "layout": "Disposte come",
+        "pinnedFirst": "Prima quelle in evidenza"
+      },
+      "options": {
+        "department": {
+          "none": "Tutti i dipartimenti",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        },
+        "layout": {
+          "list": "Un elenco",
+          "cards": "Schede"
+        }
+      }
+    },
+    "documentList": {
+      "label": "Documenti",
+      "empty": "Nessun documento da mostrare.",
+      "download": "Scarica",
+      "fields": {
+        "category": "Categoria",
+        "department": "Dipartimento",
+        "limit": "Quanti al massimo",
+        "groupByCategory": "Raggruppa per categoria"
+      },
+      "options": {
+        "department": {
+          "none": "Tutti i dipartimenti",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        }
+      }
+    },
+    "staffList": {
+      "label": "Staff",
+      "empty": "Non c’è ancora nessuno da mostrare.",
+      "profileUrl": "https://www.ivao.aero/Member.aspx?Id={{vid}}",
+      "rosterNote": "Qui compaiono solo i membri che hanno fatto almeno un accesso a questo portale.",
+      "fields": {
+        "department": "Dipartimento",
+        "includeFirStaff": "Includi i team dei FIR",
+        "layout": "Disposti come"
+      },
+      "options": {
+        "department": {
+          "none": "Tutti i dipartimenti",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        },
+        "layout": {
+          "list": "Un elenco",
+          "cards": "Schede"
+        }
+      }
     }
   },
   "widgets": {
@@ -794,5 +964,16 @@
       "isSuperadmin": "Da super amministratore",
       "ip": "Indirizzo"
     }
+  },
+  "departments": {
+    "HQ": "Direzione della divisione",
+    "SOD": "Operazioni speciali",
+    "FOD": "Operazioni di volo",
+    "AOD": "Operazioni ATC",
+    "TD": "Formazione",
+    "MD": "Membership",
+    "ED": "Eventi",
+    "PRD": "Relazioni pubbliche",
+    "WD": "Web"
   }
 }

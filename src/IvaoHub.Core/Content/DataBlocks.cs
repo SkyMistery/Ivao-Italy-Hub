@@ -84,6 +84,99 @@ public sealed class DataBlockProviders
 }
 
 /// <summary>
+/// Reading the properties an editor wrote, for a provider that has to. The backend still does not
+/// know what a block means: it is handed a name and gives back what is under it, in the one shape
+/// the schema on the other side promised (plan section 16.5).
+/// <para>Written once because seven providers ask the same four questions, and a copy of "is this
+/// a number" per provider is a copy that answers differently the day one of them is fixed
+/// (CLAUDE.md section 2).</para>
+/// </summary>
+public static class BlockProps
+{
+    /// <summary>A property that holds prose or a name. Null when it is missing or blank.</summary>
+    public static string? Text(JsonNode? props, string name) =>
+        props?[name] is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrWhiteSpace(text)
+            ? text
+            : null;
+
+    public static int? Number(JsonNode? props, string name) =>
+        props?[name] is JsonValue value && value.TryGetValue<int>(out var number) ? number : null;
+
+    public static bool Flag(JsonNode? props, string name, bool fallback = false) =>
+        props?[name] is JsonValue value && value.TryGetValue<bool>(out var flag) ? flag : fallback;
+
+    /// <summary>
+    /// A property naming a department. Three answers and not two: nothing was asked, a department
+    /// was asked, or something that is not a department was asked — and the third has to narrow to
+    /// nothing rather than widen to everything, or a typo quietly puts every department on a page.
+    /// </summary>
+    public static bool TryDepartment(JsonNode? props, string name, out Department? department)
+    {
+        department = null;
+
+        if (Text(props, name) is not { } raw)
+        {
+            return true;
+        }
+
+        if (!Enum.TryParse<Department>(raw, ignoreCase: true, out var parsed))
+        {
+            return false;
+        }
+
+        department = parsed;
+        return true;
+    }
+
+    /// <summary>
+    /// The entries of a repeatable property. They are objects even when they hold one value —
+    /// a metric, a figure, a kind — because the form generator draws lists of objects and a list
+    /// of bare values would be a kind of field it has not got (design M1 section 1.2, note of
+    /// 6 September 2026 on <c>table</c> and <c>gallery</c>).
+    /// </summary>
+    public static IEnumerable<string> Entries(JsonNode? props, string name, string key)
+    {
+        if (props?[name] is not JsonArray array)
+        {
+            yield break;
+        }
+
+        foreach (var entry in array)
+        {
+            if (Text(entry, key) is { } value)
+            {
+                yield return value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A translated value on its way to a browser. It travels whole: only the browser knows which
+    /// language it is showing, and a server that picked one would be picking it for a capture that
+    /// outlives the choice.
+    /// </summary>
+    public static JsonObject? Translated(Localization.Localized<string>? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        var written = new JsonObject();
+        foreach (var (locale, text) in value)
+        {
+            written[locale] = text;
+        }
+
+        return written;
+    }
+
+    /// <summary>An instant as the contract writes one: ISO 8601 in UTC, never a local time.</summary>
+    public static string Instant(DateTime value) =>
+        DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+/// <summary>
 /// The links of the division as a block: the same rows the back office edits, read through the
 /// visibility filter so a page never shows a link its reader is not meant to see.
 /// </summary>
@@ -104,9 +197,8 @@ public sealed class LinkListProvider(HubDbContext database) : IDataBlockProvider
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var category = Text(props, "category");
-        var department = Text(props, "department");
-        var limit = Math.Clamp(Number(props, "limit") ?? DefaultLimit, 1, MaxItems);
+        var category = BlockProps.Text(props, "category");
+        var limit = Math.Clamp(BlockProps.Number(props, "limit") ?? DefaultLimit, 1, MaxItems);
 
         // No IgnoreQueryFilters: the global filter is what decides who sees which link, and this
         // is a reader like any other (design M0 section 3.5).
@@ -117,15 +209,15 @@ public sealed class LinkListProvider(HubDbContext database) : IDataBlockProvider
             query = query.Where(link => link.Category == category);
         }
 
-        if (department is not null)
+        // A department nobody recognises narrows to nothing rather than to everything: a property
+        // with a typo in it must not quietly widen what a page shows.
+        if (!BlockProps.TryDepartment(props, "department", out var department))
         {
-            // A department nobody recognises narrows to nothing rather than to everything: a
-            // property with a typo in it must not quietly widen what a page shows.
-            if (!Enum.TryParse<Department>(department, ignoreCase: true, out var owner))
-            {
-                return new JsonObject { ["items"] = new JsonArray() };
-            }
+            return new JsonObject { ["items"] = new JsonArray() };
+        }
 
+        if (department is { } owner)
+        {
             query = query.Where(link => link.OwnerDepartment == owner);
         }
 
@@ -151,31 +243,12 @@ public sealed class LinkListProvider(HubDbContext database) : IDataBlockProvider
         {
             items.Add(new JsonObject
             {
-                ["title"] = Translated(link.Title),
+                ["title"] = BlockProps.Translated(link.Title),
                 ["url"] = link.Url,
-                ["description"] = link.Description is null ? null : Translated(link.Description),
+                ["description"] = BlockProps.Translated(link.Description),
             });
         }
 
         return new JsonObject { ["items"] = items };
     }
-
-    private static JsonObject Translated(Localization.Localized<string> value)
-    {
-        var written = new JsonObject();
-        foreach (var (locale, text) in value)
-        {
-            written[locale] = text;
-        }
-
-        return written;
-    }
-
-    private static string? Text(JsonNode? props, string name) =>
-        props?[name] is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrWhiteSpace(text)
-            ? text
-            : null;
-
-    private static int? Number(JsonNode? props, string name) =>
-        props?[name] is JsonValue value && value.TryGetValue<int>(out var number) ? number : null;
 }

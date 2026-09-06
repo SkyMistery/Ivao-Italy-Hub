@@ -34,4 +34,14 @@ public interface IIvaoApiClient
 
     /// <summary>The profile behind a member's access token, as raw JSON.</summary>
     Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Who is connected right now, counted for the whole network and for the airspace of the
+    /// division. Cached for a minute, because a page full of this block must not turn into a call
+    /// per reader, and never thrown from: <see cref="IvaoNetworkStatus.Unknown"/> is what a caller
+    /// gets when the network cannot be reached, and a minute old figure beats a page that stops.
+    /// </summary>
+    Task<IvaoNetworkStatus> GetNetworkStatusAsync(
+        IvaoAirspace airspace,
+        CancellationToken cancellationToken = default);
 }

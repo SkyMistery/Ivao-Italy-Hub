@@ -93,7 +93,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G1 | Media library — **fatta** | G0 | upload, servizio dei file dietro il query filter, `MediaPicker`, back-office generato |
 | G2 | Le cinque estensioni di `SchemaForm` — **fatta** | G1 | media, icona, data, oggetto tradotto, riordino; debiti n.3 e n.4 chiusi |
 | G3 | I 16 blocchi Content / Layout / Interactive / Structure — **fatta** | G2 | 21 blocchi nella ui-kit, convenzioni in `UI-GUIDELINES.md` (chiude piano §16.C) |
-| G4 | I 6 blocchi Data e i loro provider | G3 | 27 blocchi; `networkStats` mai congelato; provider dietro il query filter |
+| G4 | I 6 blocchi Data e i loro provider — **fatta** | G3 | 27 blocchi; `networkStats` mai congelato; provider dietro il query filter |
 | G5 | News, documenti, categorie | G4 | due `kind`, due configurazioni di lista, cinque rotte pubbliche, `cms_categories` |
 | G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
 | G7 | Contatti, servizio notifiche, namespace `mail` | G2 | un messaggio genera una mail in Mailpit passando dalla coda |

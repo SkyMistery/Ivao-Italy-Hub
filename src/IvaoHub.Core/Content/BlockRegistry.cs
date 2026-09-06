@@ -123,6 +123,13 @@ public static class CoreBlocks
     public const string Spacer = "spacer";
     public const string Divider = "divider";
 
+    public const string Stats = "stats";
+    public const string NetworkStats = "networkStats";
+    public const string Calendar = "calendar";
+    public const string NewsList = "newsList";
+    public const string DocumentList = "documentList";
+    public const string StaffList = "staffList";
+
     public static readonly IReadOnlyList<IBlockDescriptor> All =
     [
         new BlockDescriptor(Heading, Version: 1, BlockKind.Content),
@@ -147,5 +154,19 @@ public static class CoreBlocks
         new BlockDescriptor(ButtonGroup, Version: 1, BlockKind.Content),
         new BlockDescriptor(Spacer, Version: 1, BlockKind.Content),
         new BlockDescriptor(Divider, Version: 1, BlockKind.Content),
+
+        // The data blocks of the core. Each one has an IDataBlockProvider registered for its type,
+        // and `EveryDataBlockTypeHasAProvider` is what keeps this list and that container agreeing.
+        new BlockDescriptor(Stats, Version: 1, BlockKind.Data),
+
+        // The one block of the set that is meaningless captured: a picture of who is online, kept
+        // from the day a page was published, is an expired figure passed off as the present one
+        // (plan section 9.3). The rule is here, in the type, and nowhere else.
+        new BlockDescriptor(NetworkStats, Version: 1, BlockKind.Data, AlwaysLive: true),
+
+        new BlockDescriptor(Calendar, Version: 1, BlockKind.Data),
+        new BlockDescriptor(NewsList, Version: 1, BlockKind.Data),
+        new BlockDescriptor(DocumentList, Version: 1, BlockKind.Data),
+        new BlockDescriptor(StaffList, Version: 1, BlockKind.Data),
     ];
 }

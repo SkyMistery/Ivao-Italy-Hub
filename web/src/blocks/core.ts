@@ -1,6 +1,9 @@
 import {
   Building2,
+  CalendarDays,
+  ChartColumn,
   ChevronsUpDown,
+  FileText,
   Frame,
   Heading,
   Image,
@@ -12,13 +15,16 @@ import {
   Minus,
   MousePointerClick,
   MoveVertical,
+  Newspaper,
   PanelTop,
   PanelsTopLeft,
   Pilcrow,
   Pointer,
   Quote,
+  Radio,
   Shapes,
   Table,
+  Users,
   Video,
 } from 'lucide-react';
 
@@ -27,10 +33,12 @@ import type { BlockRegistration } from '../shared/modules';
 import {
   AccordionBlock,
   ButtonGroupBlock,
+  CalendarBlock,
   CalloutBlock,
   CardGridBlock,
   CtaBlock,
   DividerBlock,
+  DocumentListBlock,
   EmbedBlock,
   GalleryBlock,
   HeadingBlock,
@@ -39,7 +47,11 @@ import {
   ImageBlock,
   LinkListBlock,
   LogoGridBlock,
+  NetworkStatsBlock,
+  NewsListBlock,
   SpacerBlock,
+  StaffListBlock,
+  StatsBlock,
   TableBlock,
   TabsBlock,
   TestimonialBlock,
@@ -50,10 +62,12 @@ import {
 import {
   accordionSchema,
   buttonGroupSchema,
+  calendarSchema,
   calloutSchema,
   cardGridSchema,
   ctaSchema,
   dividerSchema,
+  documentListSchema,
   embedSchema,
   gallerySchema,
   headingSchema,
@@ -62,7 +76,11 @@ import {
   imageSchema,
   linkListSchema,
   logoGridSchema,
+  networkStatsSchema,
+  newsListSchema,
   spacerSchema,
+  staffListSchema,
+  statsSchema,
   tableSchema,
   tabsSchema,
   testimonialSchema,
@@ -107,6 +125,12 @@ export const CORE_BLOCK_TYPES = {
   buttonGroup: 'buttonGroup',
   spacer: 'spacer',
   divider: 'divider',
+  stats: 'stats',
+  networkStats: 'networkStats',
+  calendar: 'calendar',
+  newsList: 'newsList',
+  documentList: 'documentList',
+  staffList: 'staffList',
 } as const;
 
 /** Two languages of prose, written once and read by the examples below. */
@@ -462,5 +486,153 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     example: { variant: 'line', spacing: 'md' },
     editorLabelKey: 'blocks.divider.label',
     icon: Minus,
+  },
+
+  // --- Data --------------------------------------------------------------------------------------
+  //
+  // Six blocks that draw what the hub knows rather than what an editor typed. Each one has an
+  // `IDataBlockProvider` registered for the same type on the server — the fifth thing a block costs
+  // (design M1 §1.3) — and an `exampleData`, because the gallery is a page about the components and
+  // must not show whatever this installation happens to hold today, or nothing at all on a fresh one.
+
+  {
+    type: CORE_BLOCK_TYPES.stats,
+    version: 1,
+    kind: 'Data',
+    schema: statsSchema,
+    component: StatsBlock,
+    example: {
+      columns: 3,
+      metrics: [{ metric: 'knownMembers' }, { metric: 'staffMembers' }, { metric: 'publishedNews' }],
+    },
+    exampleData: {
+      metrics: [
+        { metric: 'knownMembers', value: 1284 },
+        { metric: 'staffMembers', value: 37 },
+        { metric: 'publishedNews', value: 96 },
+      ],
+    },
+    editorLabelKey: 'blocks.stats.label',
+    icon: ChartColumn,
+  },
+  {
+    type: CORE_BLOCK_TYPES.networkStats,
+    version: 1,
+    kind: 'Data',
+    // The one block of the set that is never captured. The editor does not offer the choice and
+    // publication does not freeze it: a picture of who is online, kept from the day a page was
+    // published, is an expired figure passed off as the present one (design M1 §1.5).
+    alwaysLive: true,
+    schema: networkStatsSchema,
+    component: NetworkStatsBlock,
+    example: {
+      figures: [{ figure: 'divisionAtc' }, { figure: 'divisionPilots' }],
+      showPositions: true,
+    },
+    exampleData: {
+      updatedAt: '2026-09-06T18:00:00.000Z',
+      figures: [
+        { figure: 'divisionAtc', value: 3 },
+        { figure: 'divisionPilots', value: 22 },
+      ],
+      positions: [
+        { callsign: 'LIRR_CTR', station: 'LIRR', frequency: '129.075' },
+        { callsign: 'LIMC_APP', station: 'LIMC', frequency: '126.550' },
+      ],
+    },
+    editorLabelKey: 'blocks.networkStats.label',
+    icon: Radio,
+  },
+  {
+    type: CORE_BLOCK_TYPES.calendar,
+    version: 1,
+    kind: 'Data',
+    schema: calendarSchema,
+    component: CalendarBlock,
+    example: { kinds: [], range: 'month', limit: 5 },
+    exampleData: {
+      items: [
+        {
+          id: 1,
+          kind: 'meeting',
+          title: { en: 'Staff meeting', it: 'Riunione dello staff' },
+          description: { en: 'On the division voice server.', it: 'Sul server vocale della divisione.' },
+          startsAt: '2026-09-20T19:00:00.000Z',
+          endsAt: '2026-09-20T20:30:00.000Z',
+          allDay: false,
+          department: 'HQ',
+          url: null,
+        },
+      ],
+    },
+    editorLabelKey: 'blocks.calendar.label',
+    icon: CalendarDays,
+  },
+  {
+    type: CORE_BLOCK_TYPES.newsList,
+    version: 1,
+    kind: 'Data',
+    schema: newsListSchema,
+    component: NewsListBlock,
+    example: { category: '', limit: 3, layout: 'cards', pinnedFirst: true },
+    exampleData: {
+      items: [
+        {
+          id: 1,
+          title: { en: 'A season of events', it: 'Una stagione di eventi' },
+          summary: sample.lead,
+          url: '/news/a-season-of-events',
+          category: null,
+          publishedAt: '2026-09-01T08:00:00.000Z',
+          coverMediaId: null,
+          pinned: true,
+        },
+      ],
+    },
+    editorLabelKey: 'blocks.newsList.label',
+    icon: Newspaper,
+  },
+  {
+    type: CORE_BLOCK_TYPES.documentList,
+    version: 1,
+    kind: 'Data',
+    schema: documentListSchema,
+    component: DocumentListBlock,
+    example: { category: '', limit: 10, groupByCategory: true },
+    exampleData: {
+      items: [
+        {
+          id: 1,
+          title: { en: 'Local procedures', it: 'Procedure locali' },
+          summary: null,
+          url: '/documents/local-procedures',
+          category: null,
+          publishedAt: '2026-08-12T08:00:00.000Z',
+          fileMediaId: null,
+          sort: 0,
+        },
+      ],
+    },
+    editorLabelKey: 'blocks.documentList.label',
+    icon: FileText,
+  },
+  {
+    type: CORE_BLOCK_TYPES.staffList,
+    version: 1,
+    kind: 'Data',
+    schema: staffListSchema,
+    component: StaffListBlock,
+    example: { includeFirStaff: true, layout: 'cards' },
+    exampleData: {
+      groups: [
+        {
+          department: 'ED',
+          fir: null,
+          members: [{ vid: 100001, name: 'A member of the staff', position: 'XX-EC', level: 'Coordinator' }],
+        },
+      ],
+    },
+    editorLabelKey: 'blocks.staffList.label',
+    icon: Users,
   },
 ];

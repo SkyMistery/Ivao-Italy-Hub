@@ -8,3 +8,8 @@ without credentials at all.
 They are written by hand and deliberately small: three FIRs and three airports are enough to prove
 that the synchronisation upserts rather than duplicates, and that a FIR position such as `LIRR-CH`
 starts being recognised once the snapshot exists. They are **not** a copy of a real IVAO response.
+
+`whazzup.json` is the third one, and it answers "who is connected right now". It is written against
+the other two on purpose: four controllers of which three work a station the snapshot knows, and
+four flights of which two touch an airport it knows. That is what makes it a test of the rule and
+not of the file — change an ICAO here and the figures the block draws change with it.

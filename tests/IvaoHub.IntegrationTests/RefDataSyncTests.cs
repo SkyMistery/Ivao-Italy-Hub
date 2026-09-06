@@ -262,6 +262,12 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         public Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
             Task.FromResult<JsonElement?>(null);
+
+        /// <summary>Nothing to say: this one is about the reference data falling over.</summary>
+        public Task<IvaoNetworkStatus> GetNetworkStatusAsync(
+            IvaoAirspace airspace,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(IvaoNetworkStatus.Unknown);
     }
 
     [Fact]

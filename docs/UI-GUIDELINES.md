@@ -158,6 +158,18 @@ answers for it (`IDataBlockProvider`), and the page decides *when* the question 
 means the browser asks as it draws, `frozen` means publication asked once and stored the answer, so
 the page keeps saying what it said that day until somebody publishes it again.
 
+It costs two more things than a content block, and both are small. An **`exampleData`** in its
+registration, because the gallery is a page about the components: a data block that called the
+server there would show whatever this installation happens to hold today, or nothing at all on a
+fresh one. And a **provider registered for its type** on the server, which reads through the same
+visibility filter as everything else — a provider that filtered by hand is how a staff row ends up
+on a public page.
+
+Some data is meaningless once captured — who is on frequency right now. Such a block declares
+**`alwaysLive`** on both halves of its registration, and that one flag is the whole rule: the editor
+does not offer the choice and publication does not freeze it. Do not write the exception anywhere
+else. `networkStats` is the only one in the core, and it is what the flag was added for.
+
 Two rules with something that fails behind them. Every block of the registry has a section in
 `/staff/admin/ui-kit`, and its `example` has to satisfy its own schema — the test next to the
 gallery is both halves. And every key a block asks for at run time (`blocks.<type>.label`,

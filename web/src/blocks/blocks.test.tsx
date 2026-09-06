@@ -8,13 +8,17 @@ import {
   ButtonGroupBlock,
   CardGridBlock,
   DividerBlock,
+  DocumentListBlock,
   EmbedBlock,
   GalleryBlock,
   HeroBlock,
   IconGridBlock,
   ImageBlock,
   LogoGridBlock,
+  NetworkStatsBlock,
   SpacerBlock,
+  StaffListBlock,
+  StatsBlock,
   TableBlock,
   TabsBlock,
   TestimonialBlock,
@@ -271,5 +275,98 @@ describe('interactive and structure', () => {
 
     const divider = draw(<DividerBlock props={{ variant: 'dots', spacing: 'md' }} />);
     expect(divider.container.textContent).toBe('');
+  });
+});
+
+/**
+ * The six of G4. What a schema cannot say about a data block is that its component and its provider
+ * agree on the shape of the answer, and there is no schema for an answer — the envelope is opaque to
+ * the server on purpose (plan §16.5). What stands in for one is the `exampleData` the registry
+ * declares: it is the shape written next to the block, the gallery mounts exactly that, and the
+ * first test below is the one that fails if the two halves drift apart.
+ */
+describe('data', () => {
+  test('every data block draws the example answer the registry declares', () => {
+    const data = coreBlocks.filter((block) => block.kind === 'Data');
+
+    // Not a tautology and not a small number: `registry.test.ts` already refuses a data block with
+    // no `exampleData`, so this is seven blocks mounting seven answers.
+    expect(data).toHaveLength(7);
+
+    for (const block of data) {
+      const Component = block.component;
+      const drawn = draw(<Component props={block.example} data={block.exampleData} />);
+
+      // Drawn, and not drawn as "the answer is on its way": a component that reads the answer
+      // under the wrong key falls through to the pending state and would pass a smoke test.
+      expect(drawn.container.textContent, `${block.type} drew nothing`).not.toBe('');
+      drawn.unmount();
+    }
+  });
+
+  test('a figure that has not arrived is not a figure of zero', () => {
+    // `undefined` is "on its way" and an empty answer is "there are none". A block that showed a
+    // nought for the first would be stating something false for as long as the call takes.
+    draw(<StatsBlock props={{ columns: 3, metrics: [{ metric: 'knownMembers' }] }} />);
+    expect(screen.queryByText('0')).toBeNull();
+  });
+
+  test('a network that cannot be reached says so instead of counting nobody', () => {
+    draw(
+      <NetworkStatsBlock
+        props={{ figures: [{ figure: 'divisionAtc' }], showPositions: false }}
+        data={{ updatedAt: null, figures: [{ figure: 'divisionAtc', value: 0 }], positions: [] }}
+      />,
+    );
+
+    // Four zeroes would be a lie told quietly: nobody online and nobody asked look the same.
+    expect(screen.queryByText('0')).toBeNull();
+    expect(screen.getByText('The network cannot be reached right now.')).toBeInTheDocument();
+  });
+
+  test('a document with a file offers the file, and one without is read in the browser', () => {
+    draw(
+      <DocumentListBlock
+        props={{ category: '', limit: 10, groupByCategory: false }}
+        data={{
+          items: [
+            { id: 1, title: en('With a file'), url: '/documents/one', fileMediaId: 7 },
+            { id: 2, title: en('Without one'), url: '/documents/two', fileMediaId: null },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'With a file' })).toHaveAttribute('href', '/documents/one');
+    expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute('href', '/media/7/file');
+    expect(screen.getAllByRole('link', { name: 'Download' })).toHaveLength(1);
+  });
+
+  test('the staff list says who is missing from it', () => {
+    draw(
+      <StaffListBlock
+        props={{ includeFirStaff: true, layout: 'list' }}
+        data={{
+          groups: [
+            {
+              department: 'ED',
+              fir: null,
+              members: [{ vid: 100001, name: 'A member', position: 'XX-EC', level: 'Coordinator' }],
+            },
+          ],
+        }}
+      />,
+    );
+
+    // The roster is whoever has signed in at least once, and a page that pretended otherwise would
+    // be quietly wrong about the people it leaves out (design M1 §6.1).
+    expect(
+      screen.getByText('Only members who have signed in to this hub at least once appear here.'),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole('link', { name: 'A member' })).toHaveAttribute(
+      'href',
+      'https://www.ivao.aero/Member.aspx?Id=100001',
+    );
   });
 });

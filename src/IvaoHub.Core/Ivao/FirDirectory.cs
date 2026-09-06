@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 namespace IvaoHub.Core.Ivao;
 
 /// <summary>
-/// The FIRs of the division, from the snapshot. It is what tells a staff position such as
+/// The airspace of the division, from the snapshot. It is what tells a staff position such as
 /// <c>LIRR-CH</c> apart from a position of somewhere else, so it is asked on every login and cached
 /// rather than read from the database each time.
 /// </summary>
@@ -14,6 +14,13 @@ public interface IFirDirectory
     /// <summary>The FIR identifiers, upper case. Empty until the snapshot has been taken.</summary>
     Task<IReadOnlySet<string>> GetFirIdsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The same snapshot read as an airspace — the FIRs and the airports together — which is what
+    /// says whether a connection on the network is one of this division's. Cached as one value so
+    /// that the answer built from it can be cached against it (see <see cref="IvaoAirspace"/>).
+    /// </summary>
+    Task<IvaoAirspace> GetAirspaceAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Called by the synchronisation when the snapshot changes.</summary>
     void Invalidate();
 }
@@ -21,6 +28,7 @@ public interface IFirDirectory
 public sealed class FirDirectory(HubDbContext database, IMemoryCache cache) : IFirDirectory
 {
     private const string CacheKey = "ivao:fir-ids";
+    private const string AirspaceCacheKey = "ivao:airspace";
 
     /// <summary>
     /// Long, because the set only moves when the daily synchronisation runs, and that one clears
@@ -45,5 +53,27 @@ public sealed class FirDirectory(HubDbContext database, IMemoryCache cache) : IF
         return set;
     }
 
-    public void Invalidate() => cache.Remove(CacheKey);
+    public async Task<IvaoAirspace> GetAirspaceAsync(CancellationToken cancellationToken = default)
+    {
+        if (cache.TryGetValue(AirspaceCacheKey, out IvaoAirspace? cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        var centers = await GetFirIdsAsync(cancellationToken);
+        var airports = await database.IvaoAirports
+            .AsNoTracking()
+            .Select(airport => airport.Icao)
+            .ToListAsync(cancellationToken);
+
+        var airspace = new IvaoAirspace(centers, airports.ToHashSet(StringComparer.OrdinalIgnoreCase));
+        cache.Set(AirspaceCacheKey, airspace, Lifetime);
+        return airspace;
+    }
+
+    public void Invalidate()
+    {
+        cache.Remove(CacheKey);
+        cache.Remove(AirspaceCacheKey);
+    }
 }

@@ -1,5 +1,6 @@
 import {
   Alert,
+  Badge,
   BlockQuote,
   Button,
   CardContent,
@@ -16,10 +17,12 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@ivao/atmosphere-react';
+import { useQuery } from '@tanstack/react-query';
 import { CircleCheck, Info, OctagonAlert, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { bootstrapQuery } from '../features/me/queries';
 import type { LocalizedString } from '../shared/api/bootstrap';
 import { mediaFileUrl } from '../shared/api/mediaUrl';
 import { ICONS } from '../shared/icons';
@@ -206,6 +209,59 @@ export function CtaBlock({ props }: BlockComponentProps) {
   );
 }
 
+// ---- what every data block shares --------------------------------------------------------------
+
+/**
+ * The two states a data block is in before it has anything to draw. Written once because seven
+ * blocks have them, and because the distinction is easy to lose: `undefined` is "the answer is on
+ * its way" and an empty answer is "there are none", and the two must never look the same.
+ */
+function NoRows({ pending, empty }: { pending: boolean; empty: string }) {
+  const { t } = useTranslation();
+
+  return <p className="text-muted-foreground text-sm">{pending ? t('common.loading') : empty}</p>;
+}
+
+/** A figure, drawn large, under what it counts. The tile of `stats` and of `networkStats`. */
+function Figure({ value, caption }: { value: number; caption: string }) {
+  const { i18n } = useTranslation();
+
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <span className="text-3xl font-semibold tabular-nums">
+        {new Intl.NumberFormat(i18n.language).format(value)}
+      </span>
+      <span className="text-muted-foreground text-sm">{caption}</span>
+    </div>
+  );
+}
+
+/**
+ * An instant as a reader reads one. UTC unless a zone is named, because UTC is what the network
+ * runs on and what the hub stores; a local time is shown next to it and never instead of it
+ * (plan §9.5). An empty string means "there was no usable instant", so a caller can leave it out.
+ */
+function useMoment(): (value: unknown, options?: { timeZone?: string; time?: boolean }) => string {
+  const { i18n } = useTranslation();
+
+  return (value, options = {}) => {
+    if (typeof value !== 'string' || value === '') {
+      return '';
+    }
+
+    const moment = new Date(value);
+    if (Number.isNaN(moment.getTime())) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat(i18n.language, {
+      dateStyle: 'medium',
+      ...(options.time === false ? {} : { timeStyle: 'short' }),
+      timeZone: options.timeZone ?? 'UTC',
+    }).format(moment);
+  };
+}
+
 // ---- linkList (data) -------------------------------------------------------------------------
 
 /** What `LinkListProvider` answers with. Read defensively: it is JSON off the wire. */
@@ -218,14 +274,8 @@ export function LinkListBlock({ data }: BlockComponentProps) {
   const read = useLocalized();
   const items = (data as LinkListData | null | undefined)?.items;
 
-  if (items === undefined) {
-    // Undefined is "the answer is on its way"; an empty array is "there are none", and the two
-    // must not look the same.
-    return <p className="text-muted-foreground text-sm">{t('common.loading')}</p>;
-  }
-
-  if (items.length === 0) {
-    return <p className="text-muted-foreground text-sm">{t('blocks.linkList.empty')}</p>;
+  if (items === undefined || items.length === 0) {
+    return <NoRows pending={items === undefined} empty={t('blocks.linkList.empty')} />;
   }
 
   return (
@@ -815,6 +865,348 @@ export function DividerBlock({ props }: BlockComponentProps) {
   return (
     <div className={space}>
       <Separator />
+    </div>
+  );
+}
+
+// ---- stats (data) ----------------------------------------------------------------------------
+
+/** What `StatsProvider` answers with: the metrics that were asked for, in the order they were. */
+interface StatsData {
+  metrics?: { metric?: string; value?: number }[];
+}
+
+export function StatsBlock({ props, data }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const metrics = (data as StatsData | null | undefined)?.metrics;
+
+  if (metrics === undefined || metrics.length === 0) {
+    return <NoRows pending={metrics === undefined} empty={t('blocks.stats.empty')} />;
+  }
+
+  return (
+    <div className={`grid grid-cols-2 gap-6 ${gridOf(count(props, 'columns', 3))}`}>
+      {metrics.map((metric) => (
+        <Figure
+          key={metric.metric}
+          value={metric.value ?? 0}
+          // The caption is the hub's, not the editor's: the set of metrics is closed, so what each
+          // one is called is a translation and never a field somebody has to fill in twice.
+          caption={t(`blocks.stats.captions.${metric.metric}`)}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ---- networkStats (data) ---------------------------------------------------------------------
+
+/**
+ * What `NetworkStatsProvider` answers with. `updatedAt` of null is the one that matters: it says
+ * the network could not be reached at all, which is a different thing from nobody being connected
+ * — and drawing four zeroes for it would be the block telling a lie quietly.
+ */
+interface NetworkStatsData {
+  updatedAt?: string | null;
+  figures?: { figure?: string; value?: number }[];
+  positions?: { callsign?: string; station?: string; frequency?: string | null }[];
+}
+
+export function NetworkStatsBlock({ data }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+  const answer = data as NetworkStatsData | null | undefined;
+
+  if (answer === undefined || answer === null) {
+    return <NoRows pending={answer === undefined} empty={t('blocks.networkStats.unavailable')} />;
+  }
+
+  if (answer.updatedAt === null || answer.updatedAt === undefined) {
+    return <p className="text-muted-foreground text-sm">{t('blocks.networkStats.unavailable')}</p>;
+  }
+
+  const figures = answer.figures ?? [];
+  const positions = answer.positions ?? [];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className={`grid grid-cols-2 gap-6 ${gridOf(Math.min(Math.max(figures.length, 1), 4))}`}>
+        {figures.map((figure) => (
+          <Figure
+            key={figure.figure}
+            value={figure.value ?? 0}
+            caption={t(`blocks.networkStats.captions.${figure.figure}`)}
+          />
+        ))}
+      </div>
+
+      {positions.length === 0 ? null : (
+        <ul className="flex flex-wrap gap-2">
+          {positions.map((position) => (
+            <li
+              key={position.callsign}
+              className="border-border flex items-baseline gap-2 rounded-md border px-3 py-1 text-sm"
+            >
+              <span className="font-semibold">{position.callsign}</span>
+              {position.frequency == null ? null : (
+                <span className="text-muted-foreground tabular-nums">{position.frequency}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="text-muted-foreground text-xs">
+        {t('blocks.networkStats.updatedAt', { at: moment(answer.updatedAt) })}
+      </p>
+    </div>
+  );
+}
+
+// ---- calendar (data) -------------------------------------------------------------------------
+
+/** What `CalendarBlockProvider` answers with. */
+interface CalendarData {
+  items?: {
+    id?: number;
+    kind?: string;
+    title?: LocalizedString;
+    description?: LocalizedString | null;
+    startsAt?: string;
+    endsAt?: string | null;
+    allDay?: boolean;
+    url?: string | null;
+  }[];
+}
+
+/**
+ * ⚠️ The agenda, and only the agenda. `CalendarView` — month, week, filters — is born in G6, when
+ * two screens mount it, which is the criterion the closed list of components is kept by
+ * (docs/UI-GUIDELINES.md §3). This component is provisional by design and disappears there: what
+ * survives is the provider, which is the half that is not a drawing.
+ */
+export function CalendarBlock({ data }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const moment = useMoment();
+  const { data: bootstrap } = useQuery(bootstrapQuery);
+  const items = (data as CalendarData | null | undefined)?.items;
+
+  if (items === undefined || items.length === 0) {
+    return <NoRows pending={items === undefined} empty={t('blocks.calendar.empty')} />;
+  }
+
+  // UTC is what the network runs on and what the hub stores; the division's own time is shown next
+  // to it and never instead of it (plan §9.5). The zone comes from `/api/me`, never a constant.
+  const zone = bootstrap?.division.timezone;
+
+  return (
+    <ul className="flex flex-col divide-y">
+      {items.map((item) => {
+        const allDay = item.allDay === true;
+        const when = moment(item.startsAt, { time: !allDay });
+        const local = zone === undefined || allDay ? '' : moment(item.startsAt, { timeZone: zone });
+        const summary = read(item.description);
+        const title = read(item.title);
+
+        return (
+          <li key={item.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
+            <div className="text-muted-foreground flex flex-wrap items-baseline gap-2 text-sm">
+              <time className="tabular-nums">{t('blocks.calendar.utc', { at: when })}</time>
+              {local === '' ? null : (
+                <span className="tabular-nums">{t('blocks.calendar.local', { at: local })}</span>
+              )}
+            </div>
+            <H4>
+              {item.url == null || item.url === '' ? (
+                title
+              ) : (
+                <OutsideLink href={item.url}>{title}</OutsideLink>
+              )}
+            </H4>
+            {summary === '' ? null : <p className="text-muted-foreground text-sm">{summary}</p>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// ---- newsList and documentList (data) --------------------------------------------------------
+
+/** What both `ContentListProvider`s answer with; each kind adds two keys of its own. */
+interface ContentListData {
+  items?: {
+    id?: number;
+    title?: LocalizedString;
+    summary?: LocalizedString | null;
+    url?: string;
+    category?: string | null;
+    publishedAt?: string | null;
+    coverMediaId?: number | null;
+    fileMediaId?: number | null;
+    pinned?: boolean;
+  }[];
+}
+
+export function NewsListBlock({ props, data }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const moment = useMoment();
+  const items = (data as ContentListData | null | undefined)?.items;
+
+  if (items === undefined || items.length === 0) {
+    return <NoRows pending={items === undefined} empty={t('blocks.newsList.empty')} />;
+  }
+
+  const cards = choice(props, 'layout', ['list', 'cards'] as const, 'cards') === 'cards';
+
+  return (
+    <div className={cards ? `grid grid-cols-1 gap-6 ${gridOf(3)}` : 'flex flex-col divide-y'}>
+      {items.map((item) => {
+        const summary = read(item.summary);
+        const when = moment(item.publishedAt, { time: false });
+        const title = <H4>{read(item.title)}</H4>;
+
+        const inside = (
+          <>
+            {cards && item.coverMediaId != null ? (
+              <img
+                src={mediaFileUrl(item.coverMediaId)}
+                alt=""
+                className="h-40 w-full object-cover"
+                loading="lazy"
+              />
+            ) : null}
+            <div className={cards ? 'flex flex-col gap-2 p-5' : 'flex flex-col gap-1 py-3'}>
+              <span className="text-muted-foreground flex items-center gap-2 text-sm">
+                {item.pinned === true ? (
+                  <Badge variant="flat" color="gray" text={t('blocks.newsList.pinned')} />
+                ) : null}
+                {when === '' ? null : <time className="tabular-nums">{when}</time>}
+              </span>
+              {title}
+              {summary === '' ? null : <p className="text-muted-foreground">{summary}</p>}
+            </div>
+          </>
+        );
+
+        return (
+          <article key={item.id} className={cards ? 'h-full' : ''}>
+            <a href={item.url ?? '#'} className="block h-full">
+              {cards ? (
+                <CardRoot className="flex h-full flex-col overflow-hidden">{inside}</CardRoot>
+              ) : (
+                inside
+              )}
+            </a>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+export function DocumentListBlock({ props, data }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const items = (data as ContentListData | null | undefined)?.items;
+
+  if (items === undefined || items.length === 0) {
+    return <NoRows pending={items === undefined} empty={t('blocks.documentList.empty')} />;
+  }
+
+  // The provider hands them back already sorted by category; grouping is a drawing and stays here.
+  const grouped = flag(props, 'groupByCategory', true);
+  const categories = grouped ? [...new Set(items.map((item) => item.category ?? ''))] : [''];
+  const groups = categories.map((category) => ({
+    category,
+    rows: grouped ? items.filter((item) => (item.category ?? '') === category) : items,
+  }));
+
+  return (
+    <div className="flex flex-col gap-6">
+      {groups.map((group) => (
+        <section key={group.category} className="flex flex-col gap-2">
+          {grouped && group.category !== '' ? <H4>{group.category}</H4> : null}
+          <ul className="flex flex-col divide-y">
+            {group.rows.map((item) => {
+              const summary = read(item.summary);
+
+              return (
+                <li key={item.id} className="flex items-start justify-between gap-4 py-3">
+                  <span className="flex flex-col">
+                    <a href={item.url ?? '#'} className="text-primary underline underline-offset-2">
+                      {read(item.title)}
+                    </a>
+                    {summary === '' ? null : <span className="text-muted-foreground text-sm">{summary}</span>}
+                  </span>
+                  {/* A document with a file is a card with a download; one without is read in the
+                      browser like any other page (design M1 §3). */}
+                  {item.fileMediaId == null ? null : (
+                    <a
+                      href={mediaFileUrl(item.fileMediaId)}
+                      className="text-muted-foreground shrink-0 text-sm underline underline-offset-2"
+                    >
+                      {t('blocks.documentList.download')}
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+// ---- staffList (data) ------------------------------------------------------------------------
+
+/** What `StaffListProvider` answers with: departments first, then the FIR teams. */
+interface StaffListData {
+  groups?: {
+    department?: string | null;
+    fir?: string | null;
+    members?: { vid?: number; name?: string; position?: string; level?: string | null }[];
+  }[];
+}
+
+export function StaffListBlock({ props, data }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const groups = (data as StaffListData | null | undefined)?.groups;
+
+  if (groups === undefined || groups.length === 0) {
+    return <NoRows pending={groups === undefined} empty={t('blocks.staffList.empty')} />;
+  }
+
+  const cards = choice(props, 'layout', ['list', 'cards'] as const, 'cards') === 'cards';
+
+  return (
+    <div className="flex flex-col gap-6">
+      {groups.map((group) => (
+        <section key={`${group.department ?? ''}-${group.fir ?? ''}`} className="flex flex-col gap-3">
+          <H4>{group.fir ?? t(`departments.${group.department}`)}</H4>
+          <ul className={cards ? `grid grid-cols-1 gap-4 ${gridOf(3)}` : 'flex flex-col divide-y'}>
+            {(group.members ?? []).map((member) => (
+              <li key={`${member.vid}-${member.position}`} className={cards ? '' : 'py-2'}>
+                <div className={cards ? 'border-border flex flex-col gap-1 rounded-lg border p-4' : ''}>
+                  {/* Name, position, and a way to the official profile. Nothing else: there is no
+                      public member profile in this hub and there will not be one (plan §9.7). */}
+                  <OutsideLink
+                    href={t('blocks.staffList.profileUrl', { vid: member.vid })}
+                    className="font-semibold underline-offset-2 hover:underline"
+                  >
+                    {member.name}
+                  </OutsideLink>
+                  <span className="text-muted-foreground text-sm">{member.position}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+      <p className="text-muted-foreground text-xs">{t('blocks.staffList.rosterNote')}</p>
     </div>
   );
 }
