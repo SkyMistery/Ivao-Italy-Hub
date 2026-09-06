@@ -117,6 +117,11 @@ che nascondevano stanno in fondo a §13. **M1 non le eredita.**
 
 ### Come si apre M1
 
+> Scritta il **5 settembre 2026**, quando M1 si apriva, e lasciata com'era: la regola in cima vale
+> ogni volta, il resto è il quadro di quel giorno. **Dove si è arrivati oggi lo dicono l'intestazione
+> di questo documento e §17**, non questa sezione — che al 6 set 2026 dice ancora «la prossima
+> sessione apre G1», e G1 e G2 sono chiuse.
+
 ⚠️ **`gh pr list` prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in parallelo in
 worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha mergiato per
 prima, e F5 si è ritrovata dodici commit indietro con tre conflitti. Nessun lavoro è andato perso,
@@ -774,6 +779,9 @@ quello che ha *trovato*:
 | `2026-09-04-frozen-e-visibilita.md` | Una cattura `frozen` non può essere più visibile della pagina che la contiene: la pubblicazione passa al provider un `DataBlockContext`, e `VisibilityCeiling` dice cosa ci sta dentro. **Decisa da Carmine** il 4 set 2026; design §5.5 corretta. |
 | `2026-09-04-rotte-di-dettaglio.md` | Una lista e il suo dettaglio sono **tre** route: layout con la guardia e l'`Outlet`, `index` con i search params, dettaglio fratello. Scritte in due, il dettaglio non si disegnava mai e nessun form del back-office era raggiungibile. **Decisa da Carmine** il 4 set 2026; design §7.3 corretta. |
 | `2026-09-04-smoke-in-un-browser.md` | Lo smoke in un browser diventa **bloccante** in CI e non aspetta M1: un `TooltipProvider` mancante ha ucciso ogni schermata dietro un layout con 353 test .NET e 74 Vitest verdi, perché provavano i pezzi e nessuno provava la composizione. Contiene anche il perché l'albero dei provider è diventato un componente. **Decisa da Carmine** il 4 set 2026; design §8 corretta. |
+| `2026-09-05-ambiente-e2e.md` | L'ambiente `E2E` e `POST /e2e/signin`: perché il banco ha un bypass di autenticazione, e com'è recintato — vive in un ambiente solo, e il flag fuori da lì **ferma l'applicazione**. Scritta in G0 di M1. |
+| `2026-09-05-template-di-sistema-e-dipartimenti.md` | Un template appartiene a un dipartimento, ma **lo legge tutto lo staff**: senza, per otto dipartimenti su nove «Nuovo da template» non esiste, e una pagina nata da un template che il suo editore non può leggere perde i vincoli nell'editor. **Decisa da Carmine** il 5 set 2026; si implementa nel primo task di G5. |
+| `2026-09-05-dashboard-di-dipartimento.md` | Ogni dipartimento nasce con la propria dashboard. Misura il bivio — una riga di `cms_contents` contro una disposizione di widget — e **raccomanda** la prima. ⚠️ **Ancora da confermare**, prima di G8: è l'unica nota aperta. |
 | `2026-09-04-m0-review.md` | La revisione §16.E su tutto il codice di M0: le undici domande verificate riga per riga, le tre eccezioni (schermate senza una risorsa paginata dietro), le tre stringhe visibili trovate e corrette, e un rilievo rimandato a M1 (`LocalizedExtensions`, helper di test che vive in `src/`). Scritta in F9. |
 
 Ogni decisione presa in corso d'opera finisce qui, con anche le alternative scartate e il perché:
@@ -1323,26 +1331,31 @@ differenze rispetto al template) è §9.1; il n.3 (`seo`) è §9.2, che ne decid
 domande della ricerca) è §7. Il n.6 (`firStaffScope`) resta aperto e passa a M2. Gli altri restano
 com'erano, ed è una scelta scritta.
 
+**Dove sono adesso** (6 set 2026, dopo G0, G1 e G2): **n.1 chiuso** in G0 (§14), **n.3 e n.4 chiusi**
+in G2 (§16). Restano aperti il n.2 (G11), il n.5, il n.7, il n.8, il n.9 e il n.10 (G10); il n.6 è di
+M2. Le voci qui sotto portano il segno di chi le ha chiuse: **questa lista e §7 devono dire la stessa
+cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
+
 1. ~~**Playwright, `pnpm e2e`.**~~ **Chiuso il 4 set 2026, a forza** (§11): esiste `pnpm e2e`, e al
    5 set 2026 sono **dieci** test su Chromium contro il bundle di produzione, **bloccanti in CI** —
    quattro in `smoke.spec.ts` e sei in `back-office.spec.ts`, cresciuti a ogni difetto trovato
    guardando (§11, §12, §13), e gli ultimi due misurano **geometria** perché il testo era già
-   corretto. Quello che **resta
-   scoperto** è la metà che il design §8 immaginava e che questa suite non fa: il giro con l'**API
-   vera** e una `/{slug}` pubblicata da un seed. Oggi `/api/me` arriva da `e2e/fixtures.ts` e ogni
-   altra chiamata `/api` fallisce apposta. Quindi «lo staff apre l'editor, aggiunge un blocco,
-   pubblica» **non è ancora stato eseguito in un browser**, ed è questo il debito che M1 eredita:
-   un servizio MariaDB in CI, l'API avviata e attesa su `/health`, e la SPA servita davanti.
+   corretto. ~~Quello che **resta
+   scoperto** è la metà che il design §8 immaginava~~ — **chiuso il 5 set 2026 da G0** (§14): il giro
+   con l'**API vera**, contro MariaDB vera e l'applicazione pubblicata, sono tre test bloccanti in
+   CI (`pnpm e2e:full`). Gli smoke restano quelli che non hanno un'API apposta, e al 6 set 2026 sono
+   **tredici**.
 2. **Un cambio di template non si propaga, e l'editor non lo mostra.** Il design §7.7 lo mette
    esplicitamente in M1 («Differenze rispetto al template»). La regola resta quella di M0 — un
    template non riscrive mai una pagina da solo — ma l'editor deve **dire** che una sezione nuova
    esiste.
-3. **`seo` non ha un campo nell'editor.** È un `Localized<JsonNode>` di cui il design non dice la
-   forma, e M1 è l'unica milestone che ha una ragione per deciderla. Servirà un tipo nuovo al
-   generatore di form — «oggetto tradotto» — che è un'estensione, non un form scritto a mano.
-4. **`expiresAt` di un grant è una casella di testo.** Il generatore non ha un tipo «data»; il
-   giorno che serve davvero, si estende `shared/forms/schema.ts` (che lancia apposta invece di
-   saltare un campo che non sa disegnare).
+3. ~~**`seo` non ha un campo nell'editor.**~~ **Chiuso in G2** (§16): è un `localizedObject` con la
+   forma che il design M1 §9.2 decide — `{ title, description, ogImageMediaId }` per lingua — e
+   viaggia nei valori del form. Il tipo nuovo del generatore era davvero un'estensione, come questa
+   riga prevedeva, e `ogImageMediaId` è il primo campo media vero dell'hub.
+4. ~~**`expiresAt` di un grant è una casella di testo.**~~ **Chiuso in G2** (§16): `.meta({ date:
+   true })` è un input nativo, e quello che arriva al server è un istante ISO in UTC invece di un
+   testo senza fuso.
 5. **Il primo permesso di modulo vero, e il primo `DbContext` di modulo.** `AtcModule` non dichiara
    permessi e non ha un contesto: entrambi i rami sono scritti, testati con un modulo finto, e non
    ancora esercitati da un modulo reale. Il primo vero è M2 (Events), ma se un modulo di M1 li tocca

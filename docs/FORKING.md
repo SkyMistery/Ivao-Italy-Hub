@@ -10,6 +10,10 @@ editing sources.
 > the administration screens. What is not here yet is the public site around those pages —
 > navigation, news, documents, the search screen and the calendar are M1. Fork it now if you want to
 > follow along or build a module; wait for M1 if you want to replace a division website today.
+>
+> M1 is under way on `main` and is not released: as of 6 September 2026 the media library and the
+> form generator's five new kinds of field are there, the rest is not. Everything below describes
+> the tag, and holds for `main` too.
 
 ## Forking it, start to finish
 
