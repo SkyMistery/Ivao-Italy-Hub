@@ -22,8 +22,13 @@ list of i18n keys, and `useProblemDetails` is the one place that resolves them.
 
 `lucide-react` ships with Atmosphere, so the set is already there.
 
-If an icon is genuinely missing, add it to `web/src/shared/icons/<Name>.tsx` — a 24×24 SVG,
-`stroke-width` 2, `currentColor` — and export it from `shared/icons/index.ts`.
+`web/src/shared/icons/index.ts` holds `ICONS`, the allow list an editor picks from — see
+"Icons a block or an entity can choose" below. Reach for any `lucide` icon you like in a screen you
+are writing; the allow list is only about what an *editor* may choose.
+
+If an icon is genuinely missing from `lucide`, draw it in `web/src/shared/icons/<Name>.tsx` — a
+24×24 SVG, `stroke-width` 2, `currentColor` — and add it to `ICONS` if editors should be able to
+choose it too.
 
 Never inline an `<svg>` in a screen. ESLint refuses one anywhere outside `shared/icons/` and
 `blocks/`, where a block may draw its own decoration.
