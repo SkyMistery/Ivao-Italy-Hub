@@ -32,6 +32,14 @@
   "$comment.modules": "Optional modules only. The department modules and the editorial core are always on.",
   "modules": { "specialops": false },
 
+  "$comment.departmentMailboxes": [
+    "Optional. The shared inbox of a department, by department code: where the hub sends the",
+    "notifications addressed to a department as a whole, on top of the people who are staff of it.",
+    "A department with no entry is reached on its people alone; leave the key out entirely if your",
+    "division has no such addresses."
+  ],
+  "departmentMailboxes": {},
+
   "$comment.superAdmins": "Bootstrap only: read once, when no super administrator exists yet. After that the database is the truth.",
   "superAdmins": [],
 

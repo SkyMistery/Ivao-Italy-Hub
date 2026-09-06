@@ -1,9 +1,33 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.40 — 6 settembre 2026 (i 21 blocchi esistono e §16.C si chiude: le convenzioni dei blocchi sono scritte, con il set davanti)
+**Versione documento:** 0.41 — 6 settembre 2026 (il servizio notifiche esiste, e con esso l'unico indirizzo che l'hub conserva)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0, G1, G2 e G3 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G7 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.41** (6 set 2026): **G7 di M1 ha costruito i contatti e il servizio notifiche**, e
+due decisioni di Carmine cambiano una riga ciascuna di questo piano.
+
+- **§11.4 (GDPR), «dati IVAO minimi (niente email se non serve al modulo)»: adesso serve.** Il
+  servizio notifiche è il modulo che ne ha bisogno, quindi l'indirizzo del profilo IVAO — lo scope
+  `email` era già chiesto al login e il dato veniva buttato — si conserva in `hub_users.email` **per
+  la coda e per nient'altro**. Nessun DTO lo espone, e un test di architettura
+  (`NoDtoCarriesAnEmailAddress`) è ciò che lo rende un fatto invece di un'intenzione. La regola non
+  cambia: resta «il minimo indispensabile», con un'eccezione che ha un motivo scritto
+  (`decisions/2026-09-06-indirizzo-di-un-destinatario.md`).
+- **§4.1, `division.json` guadagna `departmentMailboxes`** (facoltativa): la casella condivisa di un
+  dipartimento, dove una notifica raggiunge un ufficio invece di una persona. È comportamento della
+  divisione, non contenuto: nessuna tabella, nessuna schermata, e chi forka mette le proprie.
+- **§16, la spina dorsale guadagna il terzo della famiglia: `ISubmittedByMembers`.**
+  `ISharedForReading` allarga la lettura, `CrudOptions.ReadOnlyRows` restringe la scrittura, e questa
+  allarga **la sola creazione**: un messaggio di contatto è una riga che qualcuno scrive nello spazio
+  di un dipartimento a cui non appartiene, e la guardia dell'interceptor lo rifiuterebbe. Vale solo
+  per `EntityState.Added` e solo per i tipi che la dichiarano; muovere quella riga dopo resta una
+  scrittura ordinaria. M2 (iscrizione a un evento) e M4 (richiesta di esame) sono la stessa forma
+  (`decisions/2026-09-06-una-riga-scritta-da-fuori.md`).
+
+Il resto della fase non ha aperto perimetro: la coda, il job Quartz con i tentativi, le preferenze
+per VID e il namespace `mail` nei file di lingua erano tutti già scritti in `03-design-m1.md` §5.
 
 **Changelog 0.40** (6 set 2026): **G3 di M1 ha aggiunto i sedici blocchi Content, Layout, Interactive
 e Structure** — il registry ne conta 21 — e con il set davanti si chiude **§16.C**, che dal 2 set 2026
@@ -609,12 +633,14 @@ Sì, si può fare — ma va deciso ora, perché costa poco all'inizio e tantissi
      "timezone": "Europe/Rome",
      "icaoPrefixes": ["LI"],
      "modules": { "specialops": true },
+     "departmentMailboxes": { "WD": "web@example.org" },
      "superAdmins": [704798],
      "firStaffScope": "all"
    }
    ```
    - `modules`: **solo i moduli opzionali** aggiunti in futuro (§9.6). I quattro moduli di dipartimento — `events`, `flightops`, `training`, `atc` — e il nucleo editoriale sono **sempre presenti** (decisione del 1° set 2026: obbligatori per IT e per chi forka; si spengono solo a caldo con `maintenance`, §4.2). Primo modulo opzionale: `specialops` (§9.2, riga 5), acceso per IT.
    - `superAdmins`: elenco di VID che **bypassano ogni policy** (vedi §6.3). Per IT è Carmine (704798); una divisione che forka mette i propri. ⚠️ È solo il **bootstrap**: viene letto una sola volta, quando la tabella `hub_users` non contiene ancora nessun superadmin; da lì in poi la verità sta nel DB e il file è ignorato (§6.3 spiega perché). Il test di forkabilità gira con la lista vuota.
+   - `departmentMailboxes` (dal 6 set 2026, **facoltativa**): la casella condivisa di un dipartimento, dove il servizio notifiche scrive quando la notifica riguarda un ufficio e non una persona. Parziale per natura: un dipartimento senza voce viene raggiunto sulle sue persone, e una divisione che non ha caselle non scrive la chiave.
    - `firStaffScope`: `"all"` (default, come vIPI oggi: CH/ACH/CHAx editano i documenti di tutte le FIR) oppure `"own"` (ogni team FIR accede solo ai contenuti della propria FIR). È una scelta della divisione, non del codice.
    Cosa **non** c'è, e perché:
    - **FIR/centri**: si leggono da IVAO, `GET https://api.ivao.aero/v2/centers?countryId={countryId}` (token `client_credentials`), con cache giornaliera e snapshot in tabella `ivao_centers` così l'hub funziona anche se l'API è giù.
@@ -801,7 +827,7 @@ Un `IvaoApiClient` con `client_credentials` (scope in `ApiScopes`, separati da q
 
 ### 6.4 Sicurezza trasversale
 
-CSRF: cookie `SameSite=Lax` + header custom `X-Requested-With` richiesto sulle mutazioni + antiforgery token per i form. CSP restrittiva (self + `static.ivao.aero` per il logo). Rate limiting su `/auth/*` e sulle API pubbliche. HSTS. Segreti solo via env. GDPR: pagina privacy, export/cancellazione dati utente su richiesta, retention log 90 giorni, dati IVAO minimi (niente email se non serve al modulo).
+CSRF: cookie `SameSite=Lax` + header custom `X-Requested-With` richiesto sulle mutazioni + antiforgery token per i form. CSP restrittiva (self + `static.ivao.aero` per il logo). Rate limiting su `/auth/*` e sulle API pubbliche. HSTS. Segreti solo via env. GDPR: pagina privacy, export/cancellazione dati utente su richiesta, retention log 90 giorni, dati IVAO minimi (niente email se non serve al modulo — dal 6 set 2026 serve al servizio notifiche, e `hub_users.email` esiste per quello soltanto: nessun DTO la espone, e un test di architettura lo verifica).
 
 ---
 

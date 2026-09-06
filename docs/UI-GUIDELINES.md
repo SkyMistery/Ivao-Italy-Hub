@@ -74,7 +74,13 @@ When Atmosphere nearly does what is needed, wrap it rather than replace it — `
 Atmosphere's `DataTable` in server side mode, with the paging drawn by us because Atmosphere's own
 writes "Rows per page" in English. A component that does something genuinely new is a decision.
 
-`ContactForm` and `LiveStatusStrip` are the rest of M1 and are added by the phases that need them;
+`ContactForm` is on the list since G7: writing to a department is mounted from more than one place —
+the contact page, and any section of a department's own page that grows one — and what it adds to a
+generated form is the two things a schema has no opinion about, which departments can be written to
+with their names in the language on screen, and what a sent message looks like. It contains no
+field: the form itself is `SchemaForm` reading `shared/ui/contact.ts`.
+
+`LiveStatusStrip` is the rest of M1 and is added by the phase that needs it;
 `RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist yet and are not
 to be started early.
 

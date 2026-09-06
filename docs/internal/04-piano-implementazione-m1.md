@@ -114,7 +114,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G4 | I 6 blocchi Data e i loro provider — **fatta** | G3 | 27 blocchi; `networkStats` mai congelato; provider dietro il query filter |
 | G5 | News, documenti, categorie — **fatta** | G4 | due `kind`, due configurazioni di lista, cinque rotte pubbliche, `cms_categories` |
 | G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` — **fatta** | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
-| G7 | Contatti, servizio notifiche, namespace `mail` | G2 | un messaggio genera una mail in Mailpit passando dalla coda |
+| G7 | Contatti, servizio notifiche, namespace `mail` — **fatta** | G2 | un messaggio genera una mail in Mailpit passando dalla coda |
 | G8 | Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate; ogni dipartimento apre `/staff/{dept}` e trova la propria dashboard |
 | G9 | Live status e staff directory | G4 | `LiveStatusStrip`, sezione staff di `/about`, nessun profilo pubblico |
 | G10 | Ricerca: schermata, rilevanza, evidenziazione | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
@@ -622,7 +622,7 @@ il giorno dopo la pubblicazione. Quello è ciò che una *schermata* chiede.
 
 ---
 
-### G7 — Contatti, servizio notifiche, namespace `mail`
+### G7 — Contatti, servizio notifiche, namespace `mail` — **fatta il 6 settembre 2026**
 
 **Obiettivo**: il servizio notifiche del nucleo nasce con **un solo** mittente di intenti, nella forma
 che M2 e M3 useranno senza toccarla. Design §5.
@@ -634,14 +634,25 @@ perché al secondo tipo di notifica la colonna costerebbe una migrazione e la ta
 è passato a **v1.1** e §10.2 ora dice **sei** tabelle: la sesta non è perimetro nuovo, è la stessa
 tabella contata una volta.
 
+⚠️ **Come è andata** (6 set 2026, design M1 v1.8): due decisioni di Carmine e una correzione.
+`ISubmittedByMembers` è nata perché la guardia dell'interceptor rifiutava il mittente — che per
+definizione non fa parte del dipartimento a cui scrive — e allarga **la sola creazione**;
+`hub_users.Email` esiste perché senza indirizzo non c'è coda, e accanto alle persone ci sono le
+caselle di dipartimento (`division.json → departmentMailboxes`); i permessi si chiamano
+`Contacts.View` e **`Contacts.Edit`**, non `.Manage`, perché la guardia e `MapCrud` chiedono `.Edit`.
+Le due note stanno in `decisions/2026-09-06-*.md`.
+
 Task:
 1. Tabella `cms_contact_messages` (design §5.1): `OwnerDepartment` **è** il dipartimento destinatario,
    così la coda del back-office e la policy di scrittura escono gratis dall'handler che esiste già.
+   ⚠️ Senza `FromVid` e senza `HandledBy`: sono `CreatedBy` e `UpdatedBy`, che l'interceptor scrive.
 2. Form dei contatti **solo per autenticati** (`HubPolicies.SignedIn`, piano §9.1): niente mittente da
    verificare, niente captcha, niente spam; il VID è quello della sessione e non un campo. Componente
    custom **`ContactForm`**, già previsto in `UI-GUIDELINES.md` §3.
 3. Back-office `/staff/{dept}/contacts`: lista generata, dettaglio in sola lettura, cambio di stato
-   (`new | read | answered | closed`).
+   (`New | Read | Answered | Closed`). ⚠️ «In sola lettura» è un **tipo**: il payload di scrittura
+   porta solo lo stato, così non è una schermata a essere gentile ma il contratto a non avere il
+   campo.
 4. `INotificationService.QueueAsync(NotificationIntent)` + tabella `hub_notifications` con stato e
    tentativi + job Quartz che svuota la coda con retry. **Non è un bus di eventi**: qui l'asincronia è
    corretta, perché una mail che non parte non deve far fallire il salvataggio.
@@ -657,7 +668,7 @@ Task:
 8. `ForkabilityXxDivision` cresce fino a coprire le mail: sono il posto nuovo dove una stringa italiana
    può nascondersi (design §11.2).
 
-**Accettazione**: `ContactMessageQueuesOneIntentForTheTargetDepartment`, `NotificationUsesRecipientLocale`,
+**Accettazione** (tutti verdi il 6 set 2026): `ContactMessageQueuesOneIntentForTheTargetDepartment`, `NotificationUsesRecipientLocale`,
 `NotificationRetriesThenGivesUp`, `NotificationSkippedWhenThePreferenceIsOff`, `ContactFormRefusesAnonymous`,
 `NoSmtpOutsideTheNotificationService` (test di architettura: il client SMTP compare in un file solo),
 `ForkabilityXxDivision` esteso alle mail; a mano, un messaggio dal form arriva in Mailpit nella lingua
