@@ -265,6 +265,7 @@ app.MapMediaEndpoints();
 app.MapMediaFileEndpoint();
 app.MapContentEndpoints();
 app.MapCategoriesEndpoints();
+app.MapMenuEndpoints();
 app.MapCalendarEndpoints();
 app.MapContactsEndpoints();
 app.MapNotificationPreferenceEndpoints();

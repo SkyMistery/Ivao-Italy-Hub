@@ -171,9 +171,10 @@ internal static class HubPipeline
         await scope.ServiceProvider.GetRequiredService<SuperadminService>()
             .BootstrapAsync(app.Lifetime.ApplicationStopping);
 
-        // The system templates, each applied once and never again: a release may add one without
-        // undoing what the staff has done to the ones already there (design M0 section 5.6).
-        await scope.ServiceProvider.GetRequiredService<ContentTemplateSeeder>()
+        // The system templates and the pages built from them, each applied once and never again:
+        // a release may add one without undoing what the staff has done to the ones already there
+        // (design M0 section 5.6, design M1 section 8.2).
+        await scope.ServiceProvider.GetRequiredService<ContentSeeder>()
             .SeedAsync(app.Lifetime.ApplicationStopping);
 
         // The first start of an installation has no airspace yet, and a hub that does not know its

@@ -1,0 +1,13 @@
+{
+  "slug": "dashboard",
+  "kind": "Dashboard",
+  "template": "dashboard",
+  "visibility": "Department",
+  "perDepartment": true,
+  "title": {
+    "$t": "seed.pages.dashboard.title"
+  },
+  "summary": {
+    "$t": "seed.pages.dashboard.summary"
+  }
+}

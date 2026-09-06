@@ -53,6 +53,123 @@
           "section": "Storico",
           "text": "Cosa è cambiato in questo regolamento, e quando."
         }
+      },
+      "dashboard": {
+        "title": "Dashboard di dipartimento",
+        "summary": "La pagina su cui un dipartimento apre il proprio back office.",
+        "welcome": {
+          "section": "Benvenuti",
+          "heading": "Il tuo dipartimento",
+          "text": "Questa pagina si può cambiare. Quello che c'è adesso è un punto di partenza: aggiungi i blocchi con cui il dipartimento lavora davvero e togli quelli che non servono."
+        },
+        "tools": {
+          "section": "Strumenti"
+        },
+        "notes": {
+          "section": "Note"
+        }
+      }
+    },
+    "pages": {
+      "home": {
+        "hero": {
+          "section": "Apertura",
+          "title": "Benvenuti nella divisione",
+          "text": "Questa è la pagina d'ingresso del sito della divisione. Sostituisci queste parole con quello che deve leggere chi arriva la prima volta.",
+          "primary": "Comincia da qui"
+        },
+        "body": {
+          "section": "Corpo",
+          "heading": "Che cosa si trova qui",
+          "text": "Racconta in uno o due paragrafi di che cosa si occupa questa divisione, a chi si rivolge e dove conviene andare per prima cosa. Ogni parola di questa pagina si modifica dal back office: non ce n'è una scritta nel codice."
+        },
+        "links": {
+          "section": "Link",
+          "heading": "In giro per la divisione"
+        },
+        "title": "Home",
+        "summary": "La pagina d'ingresso del sito della divisione.",
+        "news": {
+          "section": "Notizie",
+          "heading": "Ultime notizie"
+        }
+      },
+      "start": {
+        "hero": {
+          "section": "Apertura",
+          "title": "Come si comincia",
+          "text": "Che cosa deve fare per prima cosa chi si iscrive oggi, nell'ordine in cui va fatto."
+        },
+        "body": {
+          "section": "Corpo",
+          "heading": "I primi passi",
+          "text": "Elenca che cosa un nuovo membro deve installare, configurare e leggere prima del primo volo o della prima sessione. Tienila corta: questa è la pagina che si segue, non quella che si studia."
+        },
+        "links": {
+          "section": "Link",
+          "heading": "Link utili"
+        },
+        "title": "Come si comincia",
+        "summary": "Che cosa fare per prima cosa, per chi si iscrive oggi."
+      },
+      "pilots": {
+        "hero": {
+          "section": "Apertura",
+          "title": "Piloti",
+          "text": "Tutto quello che l'area operazioni di volo della divisione offre, in un posto solo."
+        },
+        "body": {
+          "section": "Corpo",
+          "heading": "Volare qui",
+          "text": "Descrivi che cosa può fare un pilota qui: i tour, gli eventi, le procedure che vale la pena conoscere e le persone a cui chiedere. Sostituisci questo paragrafo con il testo vero."
+        },
+        "links": {
+          "section": "Link",
+          "heading": "Per i piloti"
+        },
+        "title": "Piloti",
+        "summary": "Che cosa offre la divisione a chi vola."
+      },
+      "atc": {
+        "hero": {
+          "section": "Apertura",
+          "title": "Controllo del traffico aereo",
+          "text": "Come si controlla qui: che cosa sapere, che cosa prenotare e con chi ci si addestra."
+        },
+        "body": {
+          "section": "Corpo",
+          "heading": "Controllare qui",
+          "text": "Descrivi le posizioni che si possono aprire, come si prenota una sessione e com'è fatto il percorso di addestramento. Sostituisci questo paragrafo con il testo vero."
+        },
+        "links": {
+          "section": "Link",
+          "heading": "Per i controllori"
+        },
+        "title": "Controllo del traffico aereo",
+        "summary": "Che cosa offre la divisione a chi controlla."
+      },
+      "about": {
+        "title": "Chi siamo",
+        "summary": "Chi manda avanti la divisione, e come raggiungerlo.",
+        "intro": {
+          "section": "Introduzione",
+          "heading": "Chi siamo",
+          "text": "Racconta chi è questa divisione, da quando esiste e a che cosa serve. Due o tre paragrafi bastano: il resto della risposta sono le persone qui sotto."
+        },
+        "team": {
+          "section": "Squadra",
+          "heading": "Lo staff"
+        },
+        "contact": {
+          "section": "Contatti",
+          "title": "Come scriverci",
+          "text": "Scrivi al dipartimento che ti serve e qualcuno risponderà. C'è un modulo apposta, e arriva alle persone giuste senza che l'indirizzo di nessuno sia pubblicato.",
+          "cta": "Scrivici"
+        }
+      },
+      "dashboard": {
+        "title": "Dashboard di dipartimento",
+        "summary": "Quello che questo dipartimento vede aprendo il back office."
       }
     }
   }

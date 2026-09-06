@@ -60,6 +60,23 @@ internal sealed class ContentCategoryConfiguration : IEntityTypeConfiguration<Co
     }
 }
 
+internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
+{
+    public void Configure(EntityTypeBuilder<MenuItem> builder)
+    {
+        builder.ToTable("cms_menu_items");
+        builder.HasKey(item => item.Id);
+        builder.Property(item => item.Path)
+            .HasMaxLength(MenuItemWriteDtoValidator.MaxPathLength)
+            .IsRequired();
+        builder.HasRowVersion(item => item.RowVersion);
+
+        // How the menu is read: one scope at a time, top level entries first, in their own order.
+        builder.HasIndex(item => new { item.Scope, item.ParentId, item.Sort });
+        builder.HasIndex(item => item.IsActive);
+    }
+}
+
 internal sealed class LinkConfiguration : IEntityTypeConfiguration<Link>
 {
     public void Configure(EntityTypeBuilder<Link> builder)

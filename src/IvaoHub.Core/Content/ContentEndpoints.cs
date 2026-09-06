@@ -190,7 +190,7 @@ public static class ContentEndpoints
         }
 
         var body = JsonNode.Parse(template.BodyJson) ?? new JsonObject();
-        Reidentify(walker, body);
+        TemplateCopy.Reidentify(walker, body);
 
         var payload = new ContentWriteDto(
             template.Kind,
@@ -316,31 +316,6 @@ public static class ContentEndpoints
             version.Version,
             version.PublishedAt));
     }
-
-    /// <summary>
-    /// A deep copy is only a copy if nothing in it still answers to the old name: every section and
-    /// block gets a fresh identifier, any capture from the template is dropped, and the keys only a
-    /// template may carry are left behind — a page holding them would be able to lift its own
-    /// restrictions, which is exactly what the envelope validator refuses (design M0 section 5.2).
-    /// </summary>
-    private static void Reidentify(BlockDocumentWalker walker, JsonNode body)
-    {
-        foreach (var section in walker.EnumerateSections(body))
-        {
-            section.Node["id"] = NewId("s");
-            section.Node.Remove("required");
-            section.Node.Remove("locked");
-            section.Node.Remove("allowedBlocks");
-        }
-
-        foreach (var block in walker.EnumerateBlocks(body))
-        {
-            block.Node["id"] = NewId("b");
-            block.Node["frozen"] = null;
-        }
-    }
-
-    private static string NewId(string prefix) => $"{prefix}_{Guid.NewGuid():N}"[..10];
 
     /// <summary>
     /// The properties of a live block travel base64 encoded in the query string: they are an opaque

@@ -1,0 +1,115 @@
+{
+  "slug": "start",
+  "kind": "Page",
+  "template": "section-page",
+  "visibility": "Public",
+  "title": {
+    "$t": "seed.pages.start.title"
+  },
+  "summary": {
+    "$t": "seed.pages.start.summary"
+  },
+  "menu": {
+    "scope": "Public",
+    "sort": 20
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_hero",
+        "key": "hero",
+        "title": {
+          "$t": "seed.pages.start.hero.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "lg",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_start_hero",
+            "type": "hero",
+            "version": 1,
+            "props": {
+              "title": {
+                "$t": "seed.pages.start.hero.title"
+              },
+              "text": {
+                "$t": "seed.pages.start.hero.text"
+              },
+              "align": "left",
+              "tone": "muted"
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_body",
+        "key": "body",
+        "title": {
+          "$t": "seed.pages.start.body.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_start_body_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.start.body.heading"
+              }
+            }
+          },
+          {
+            "id": "b_start_body_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.start.body.text"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_links",
+        "key": "links",
+        "title": {
+          "$t": "seed.pages.start.links.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_start_links_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.start.links.heading"
+              }
+            }
+          },
+          {
+            "id": "b_start_links_list",
+            "type": "linkList",
+            "version": 1,
+            "props": {
+              "limit": 6
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

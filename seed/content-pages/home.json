@@ -1,0 +1,155 @@
+{
+  "slug": "home",
+  "kind": "Page",
+  "template": "section-page",
+  "visibility": "Public",
+  "title": {
+    "$t": "seed.pages.home.title"
+  },
+  "summary": {
+    "$t": "seed.pages.home.summary"
+  },
+  "menu": {
+    "scope": "Public",
+    "sort": 10
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_hero",
+        "key": "hero",
+        "title": {
+          "$t": "seed.pages.home.hero.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "lg",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_home_hero",
+            "type": "hero",
+            "version": 1,
+            "props": {
+              "title": {
+                "$t": "seed.pages.home.hero.title"
+              },
+              "text": {
+                "$t": "seed.pages.home.hero.text"
+              },
+              "align": "left",
+              "tone": "muted",
+              "primary": {
+                "label": {
+                  "$t": "seed.pages.home.hero.primary"
+                },
+                "href": "/start"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_body",
+        "key": "body",
+        "title": {
+          "$t": "seed.pages.home.body.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_home_body_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.home.body.heading"
+              }
+            }
+          },
+          {
+            "id": "b_home_body_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.home.body.text"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_links",
+        "key": "links",
+        "title": {
+          "$t": "seed.pages.home.links.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_home_links_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.home.links.heading"
+              }
+            }
+          },
+          {
+            "id": "b_home_links_list",
+            "type": "linkList",
+            "version": 1,
+            "props": {
+              "limit": 6
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_news",
+        "key": "news",
+        "title": {
+          "$t": "seed.pages.home.news.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_home_news_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.home.news.heading"
+              }
+            }
+          },
+          {
+            "id": "b_home_news_list",
+            "type": "newsList",
+            "version": 1,
+            "props": {
+              "limit": 3,
+              "layout": "cards",
+              "pinnedFirst": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

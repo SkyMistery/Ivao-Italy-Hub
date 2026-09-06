@@ -1,0 +1,126 @@
+{
+  "slug": "about",
+  "kind": "Page",
+  "template": "about",
+  "visibility": "Public",
+  "title": {
+    "$t": "seed.pages.about.title"
+  },
+  "summary": {
+    "$t": "seed.pages.about.summary"
+  },
+  "menu": {
+    "scope": "Public",
+    "sort": 50
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_intro",
+        "key": "intro",
+        "title": {
+          "$t": "seed.pages.about.intro.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "lg",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_about_intro_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 1,
+              "text": {
+                "$t": "seed.pages.about.intro.heading"
+              }
+            }
+          },
+          {
+            "id": "b_about_intro_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.about.intro.text"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_team",
+        "key": "team",
+        "title": {
+          "$t": "seed.pages.about.team.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_about_team_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.about.team.heading"
+              }
+            }
+          },
+          {
+            "id": "b_about_team_staff",
+            "type": "staffList",
+            "version": 1,
+            "props": {
+              "includeFirStaff": true,
+              "layout": "cards"
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_contact",
+        "key": "contact",
+        "title": {
+          "$t": "seed.pages.about.contact.section"
+        },
+        "layout": "stacked",
+        "background": "muted",
+        "padding": "md",
+        "width": "narrow",
+        "blocks": [
+          {
+            "id": "b_about_contact_callout",
+            "type": "callout",
+            "version": 1,
+            "props": {
+              "tone": "info",
+              "title": {
+                "$t": "seed.pages.about.contact.title"
+              },
+              "text": {
+                "$t": "seed.pages.about.contact.text"
+              }
+            }
+          },
+          {
+            "id": "b_about_contact_cta",
+            "type": "cta",
+            "version": 1,
+            "props": {
+              "label": {
+                "$t": "seed.pages.about.contact.cta"
+              },
+              "href": "/contact"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

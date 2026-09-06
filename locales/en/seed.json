@@ -53,6 +53,123 @@
           "section": "Changelog",
           "text": "What changed in this policy, and when."
         }
+      },
+      "dashboard": {
+        "title": "Department dashboard",
+        "summary": "The home a department opens its own back office on.",
+        "welcome": {
+          "section": "Welcome",
+          "heading": "Your department",
+          "text": "This page is yours to change. What sits here is a starting point: add the blocks your department actually works with, and take out the ones it does not."
+        },
+        "tools": {
+          "section": "Tools"
+        },
+        "notes": {
+          "section": "Notes"
+        }
+      }
+    },
+    "pages": {
+      "home": {
+        "hero": {
+          "section": "Opening",
+          "title": "Welcome to the division",
+          "text": "This is the front page of the division site. Replace these words with what a first time visitor should read.",
+          "primary": "Start here"
+        },
+        "body": {
+          "section": "Body",
+          "heading": "What you will find here",
+          "text": "Say in a paragraph or two what this division does, who it is for and where somebody should go first. Every word of this page is edited from the back office: none of it is in the code."
+        },
+        "links": {
+          "section": "Links",
+          "heading": "Around the division"
+        },
+        "title": "Home",
+        "summary": "The front page of the division site.",
+        "news": {
+          "section": "News",
+          "heading": "Latest news"
+        }
+      },
+      "start": {
+        "hero": {
+          "section": "Opening",
+          "title": "Getting started",
+          "text": "What somebody joining today has to do first, in the order they have to do it."
+        },
+        "body": {
+          "section": "Body",
+          "heading": "The first steps",
+          "text": "List what a new member has to install, set up and read before their first flight or their first session. Keep it short: this is the page people follow, not the one they study."
+        },
+        "links": {
+          "section": "Links",
+          "heading": "Useful links"
+        },
+        "title": "Getting started",
+        "summary": "What to do first, for somebody joining today."
+      },
+      "pilots": {
+        "hero": {
+          "section": "Opening",
+          "title": "Pilots",
+          "text": "Everything the flight operations side of the division offers, in one place."
+        },
+        "body": {
+          "section": "Body",
+          "heading": "Flying here",
+          "text": "Describe what a pilot can do here: the tours, the events, the procedures worth knowing and the people to ask. Replace this paragraph with the real thing."
+        },
+        "links": {
+          "section": "Links",
+          "heading": "For pilots"
+        },
+        "title": "Pilots",
+        "summary": "What the division offers to whoever flies."
+      },
+      "atc": {
+        "hero": {
+          "section": "Opening",
+          "title": "Air traffic control",
+          "text": "How to control here: what to know, what to book and who to train with."
+        },
+        "body": {
+          "section": "Body",
+          "heading": "Controlling here",
+          "text": "Describe the positions somebody may open, how a session is booked and what the training path looks like. Replace this paragraph with the real thing."
+        },
+        "links": {
+          "section": "Links",
+          "heading": "For controllers"
+        },
+        "title": "Air traffic control",
+        "summary": "What the division offers to whoever controls."
+      },
+      "about": {
+        "title": "About",
+        "summary": "Who runs the division, and how to reach them.",
+        "intro": {
+          "section": "Introduction",
+          "heading": "About the division",
+          "text": "Say who this division is, when it started and what it is for. Two or three paragraphs are plenty: the people below are the rest of the answer."
+        },
+        "team": {
+          "section": "Team",
+          "heading": "The staff"
+        },
+        "contact": {
+          "section": "Contact",
+          "title": "Getting in touch",
+          "text": "Write to the department you need and somebody will answer. There is a form for it, and it reaches the right people without anybody's address being published.",
+          "cta": "Write to us"
+        }
+      },
+      "dashboard": {
+        "title": "Department dashboard",
+        "summary": "What this department sees when it opens the back office."
       }
     }
   }

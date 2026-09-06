@@ -130,10 +130,41 @@ public static class HubClaims
             identity.AddClaim(new Claim(AllDepartments, "1"));
         }
 
-        foreach (var department in materialised
+        var materialisedPermissions = permissions.ToArray();
+
+        // The departments this person belongs to, for the purpose of what they may *see*: the ones
+        // their staff positions name, and the ones a grant reached them on.
+        //
+        // ⚠️ The second half is not decoration. A grant used to give the permission and nothing
+        // else: the global query filter and the department filter of every list both read these
+        // claims, so somebody granted Content.Edit on the AOD could open a row whose identifier
+        // they already knew and got an empty list and no Department row of that department at all
+        // (note 2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento). The test of F8 asked
+        // for the detail and never for the list, which is why nobody had noticed.
+        //
+        // It is read off the source of the effective permission rather than off "any permission
+        // with a department", because expanding a deny turns one permission held everywhere into
+        // one explicit entry per surviving department — and those name departments nobody was ever
+        // authorised on.
+        //
+        // ⚠️ What it widens, said out loud: a claim here is not a permission, it is "this person is
+        // inside that department for the purpose of seeing". Whoever holds any grant on a
+        // department therefore starts seeing every Visibility.Department row of it, including areas
+        // they were given nothing on. That is the right reading of "authorised to reach that
+        // department" and it is what makes a department dashboard visible to the people helping
+        // out — but whoever hands a grant out has to know it.
+        var reached = materialised
             .Select(position => position.Department)
             .OfType<Division.Department>()
-            .Distinct())
+            .Concat(materialisedPermissions
+                .Where(permission => permission.Source.StartsWith(
+                    EffectivePermissionsCalculator.GrantSourcePrefix,
+                    StringComparison.Ordinal))
+                .Select(permission => permission.Department)
+                .OfType<Division.Department>())
+            .Distinct();
+
+        foreach (var department in reached)
         {
             identity.AddClaim(new Claim(Department, department.ToString()));
         }
@@ -148,7 +179,7 @@ public static class HubClaims
             identity.AddClaim(new Claim(Position, raw));
         }
 
-        foreach (var permission in permissions)
+        foreach (var permission in materialisedPermissions)
         {
             identity.AddClaim(new Claim(Permission, FormatPermission(permission)));
         }
