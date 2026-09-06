@@ -2591,7 +2591,7 @@ sezione «La decisione»). Le tre risposte:
 scrive i claim `dept` **solo dalle posizioni staff**, quindi un grant su un altro dipartimento dà il
 permesso ma lascia la lista vuota e le righe `Department` nascoste. Il test di F8 prova il dettaglio
 e mai la lista, ed è per questo che non se n'era accorto nessuno.
-`decisions/2026-09-06-il-grant-di-un-livello.md` ha la misura, la correzione e le due domande
+`decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md` ha la misura, la correzione e le due domande
 rimaste.
 
 - **In G8**: `BuildIdentity` scrive un `dept` anche per i dipartimenti nominati da un grant attivo,
@@ -2599,12 +2599,21 @@ rimaste.
   ⚠️ Allarga la **visibilità**, non solo il permesso: chi ha un grant qualunque su un dipartimento
   ne vede tutte le righe `Department`, anche di aree che non gli sono state date. È la lettura
   giusta di «autorizzato ad accedere», e la schermata dei grant deve dirlo.
-- **Non in G8, e serve una risposta**: Carmine vuole che un accesso a un altro dipartimento porti
-  con sé un **livello**, e che un livello possa valere cose diverse in dipartimenti diversi. La nota
-  propone `GrantKind.Level` (l'enum ha un valore solo da M0) espanso con `RolePermissionMatrix`, e
-  la **matrice componibile dai moduli** come lo è il catalogo dei permessi. Raccomandato: una fase
-  sua dopo M1, perché oggi esiste un modulo solo e progettare quella matrice adesso vuol dire
-  progettarla su zero clienti veri.
+- **Non in G8, e non è una fase**: autorizzare qualcuno su **un pezzo** di un altro dipartimento —
+  «i CH gestiscono i training ma nient'altro nel TD», «il FOD inserisce le rotte di un evento ma non
+  le postazioni». ⚠️ La prima stesura della nota proponeva un grant che porta un **livello**: è
+  **scartata**, perché serviva l'opposto di un pacchetto. Il meccanismo esiste già — un grant è un
+  permesso più un dipartimento — e quello che serve sono **due regole di design**, che vincolano M2
+  e M4 e non M1:
+  1. **la granularità sta nel catalogo del modulo**: una capacità delegabile ha un nome suo
+     (`Training.AssignTrainer` accanto a `Training.Edit`), e ci si accorge al design del modulo, non
+     il giorno in cui qualcuno chiede il grant;
+  2. **una capacità delegabile è una riga sua, con la sua area**, perché
+     `EnsureWriteIsAllowed` chiede `<Area>.Edit` **per tipo di entità**: permessi per *campo* non
+     esistono e non si inventano. Rotte e postazioni di un evento sono due entità, non due colonne —
+     e se quelle righe siano dell'evento (con un grant) o del FOD (senza) lo decide il design di M2.
+  3. E per i CH c'è una terza via che non costa grant: `IHasFir` più `firStaffScope`, cioè «i
+     training della propria FIR» come regola invece di nove grant da revocare a mano. Domanda di M4.
 
 ### Il banco e2e, in due righe
 

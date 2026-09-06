@@ -1,9 +1,32 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.42 — 6 settembre 2026 (la dashboard di dipartimento è a blocchi, e un grant non fa ancora raggiungere il dipartimento)
+**Versione documento:** 0.43 — 6 settembre 2026 (si autorizza qualcuno su **un pezzo** di un altro dipartimento, non su un livello)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G7 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.43** (6 set 2026, **correzione di Carmine il giorno stesso**): la proposta scritta in
+0.42 — un grant che conferisce un **livello** — è **scartata**, ed è utile dire perché.
+
+Serviva l'opposto. Gli esempi sono «i CH gestiscono i training del TD ma nient'altro» e «il FOD
+inserisce le rotte di un evento ma non le postazioni da aprire»: si autorizza qualcuno su **una
+capacità precisa**, e un livello è un pacchetto che non si può stringere.
+
+E la buona notizia è che il meccanismo c'è già: un grant è **un permesso più un dipartimento**, che è
+il caso d'uso che §6.3 scrive da sempre. Quello che serve non è codice nuovo ma **due regole di
+design**, entrambe scritte in `decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md`:
+
+- **La granularità sta nel catalogo del modulo.** Una capacità che ha senso delegare a un altro
+  dipartimento **ha un nome suo** (`Training.AssignTrainer` accanto a `Training.Edit`). Ci si accorge
+  al design del modulo, non il giorno del grant.
+- **E una capacità delegabile è una riga sua, con la sua area.** Lo impone la spina dorsale: la
+  guardia dell'interceptor chiede `<Area>.Edit` **per tipo di entità**, quindi permessi per *campo*
+  non esistono e non vanno inventati. «Il FOD scrive le rotte ma non le postazioni» significa due
+  entità, non due colonne — e da lì la scelta, che è di M2, se quelle righe appartengano all'evento
+  (e serva un grant) o al FOD (e non serva).
+
+Resta valida di 0.42 solo la parte del **difetto**: un grant non fa ancora raggiungere il
+dipartimento, e la correzione entra in G8. Nessuna fase nuova: `GrantKind.Level` non si costruisce.
 
 **Changelog 0.42** (6 set 2026, **decisioni di Carmine**): due, e la seconda è un difetto trovato
 rispondendo alla prima.
@@ -21,12 +44,8 @@ rispondendo alla prima.
   grant su un altro dipartimento apre la riga se ne conosce l'id, ma **la lista gli esce vuota** e le
   righe `Visibility.Department` restano nascoste. Il test di F8 provava il dettaglio e mai la lista.
   La correzione entra in **G8**, perché è ciò che rende vera la visibilità decisa per la dashboard.
-  La richiesta più larga di Carmine — che l'accesso a un altro dipartimento porti un **livello**, e
-  che un livello valga cose diverse in dipartimenti diversi — è progettata in
-  `decisions/2026-09-06-il-grant-di-un-livello.md`: `GrantKind.Level` espanso con
-  `RolePermissionMatrix`, e la matrice **componibile dai moduli** come lo è già il catalogo dei
-  permessi. Aspetta una risposta; la raccomandazione è una fase sua dopo M1, perché oggi esiste un
-  modulo solo su cui progettarla.
+  ⚠️ La seconda parte di questa voce — un grant che porta un **livello** — è stata **scartata lo
+  stesso giorno**: vedi il changelog 0.43 qui sopra. Serviva l'opposto di un pacchetto.
 
 **Changelog 0.41** (6 set 2026): **G7 di M1 ha costruito i contatti e il servizio notifiche**, e
 due decisioni di Carmine cambiano una riga ciascuna di questo piano.

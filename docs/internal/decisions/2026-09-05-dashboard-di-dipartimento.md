@@ -88,8 +88,7 @@ lo piazza dove vuole. I widget restano quello che sono: le tile della dashboard 
 **Chi la vede: il proprio dipartimento, più i dipartimenti a cui il VID è stato autorizzato.**
 ⚠️ La seconda metà **oggi non funziona**, e non per colpa della dashboard: `HubClaims.BuildIdentity`
 scrive i claim `dept` solo dalle posizioni staff, quindi un grant dà il permesso su un altro
-dipartimento ma non la sua lista né le sue righe `Department`. La correzione e il resto della
-richiesta di Carmine — che l'accesso porti con sé un **livello**, e che un livello valga cose diverse
-in dipartimenti diversi — stanno in `2026-09-06-il-grant-di-un-livello.md`.
+dipartimento ma non la sua lista né le sue righe `Department`. La correzione, e le due regole con cui
+si autorizza qualcuno su **un pezzo** di un altro dipartimento, stanno in `2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md`.
 
 **Quando: dentro G8**, come raccomandato.

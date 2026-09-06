@@ -710,12 +710,14 @@ Task:
    la rotta `/staff/$dept` che oggi non esiste. Nessun permesso nuovo: leggerla è `Content.View` sul
    proprio dipartimento, modificarla `Content.Edit`.
    ⚠️ **Più una correzione senza la quale la visibilità decisa non è vera**
-   (`decisions/2026-09-06-il-grant-di-un-livello.md`): la dashboard la vede il proprio dipartimento
+   (`decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md`): la dashboard la vede il proprio dipartimento
    **più quelli a cui il VID è autorizzato**, e oggi un grant non fa raggiungere il dipartimento —
    `HubClaims.BuildIdentity` scrive i claim `dept` solo dalle posizioni staff, quindi la lista esce
    vuota e le righe `Department` restano nascoste. Due righe lì, e i test sulla **lista** che il test
-   dei grant di F8 non ha mai fatto. La seconda metà della nota (un grant che porta un livello) **non
-   è di questa fase**.
+   dei grant di F8 non ha mai fatto. Il resto della nota — autorizzare qualcuno su **un pezzo** di un
+   altro dipartimento — **non è di questa fase**: non è un meccanismo ma due regole che vincolano i
+   design di M2 e M4 (una capacità delegabile ha un nome suo nel catalogo del modulo, ed è una riga
+   sua con la sua area).
 7. SEO minima (design §8.4): `<title>` e meta description dalla riga `Seo`, `og:` per pagine e news,
    `sitemap.xml` generata dalle righe pubblicate, `robots.txt`. ⚠️ Entrambi i file vanno in
    `SpaFallbackExclusions`, o la SPA se li mangia. Nessun prerender, nessun prefisso lingua negli URL.

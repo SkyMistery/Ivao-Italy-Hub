@@ -1,10 +1,21 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.9 — 6 settembre 2026
+**Versione documento:** 1.10 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.10** (6 set 2026, **correzione di Carmine**): la voce di §14 aggiunta poche ore prima
+diceva che la seconda metà del problema dei grant era «un grant che porta un livello». **No**: gli
+esempi sono «i CH gestiscono i training ma nient'altro nel TD» e «il FOD inserisce le rotte di un
+evento ma non le postazioni», cioè si autorizza su **una capacità**, non su un pacchetto. Il
+meccanismo esiste già — un grant è un permesso più un dipartimento — e ciò che serve sono due regole
+di design, scritte in `decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md`: la
+granularità sta nel **catalogo del modulo**, e una capacità delegabile è **una riga sua con la sua
+area**, perché la guardia dell'interceptor chiede `<Area>.Edit` per tipo di entità e permessi per
+campo non esistono. Resta in G8 solo la correzione della **portata** (un grant non fa raggiungere il
+dipartimento). Nessuna fase nuova.
 
 **Changelog 1.9** (6 set 2026, **tre risposte di Carmine**): la **dashboard di dipartimento** esce
 da §14 e diventa il task 6 di G8. È **a blocchi** — una riga di `cms_contents` per dipartimento,
@@ -17,7 +28,7 @@ raggiungere il dipartimento** su cui è dato — i claim `dept` vengono solo dal
 quindi la lista esce vuota e le righe `Department` restano nascoste. La correzione sta in G8; la
 seconda metà della richiesta di Carmine — un grant che porta un **livello**, con una
 `RolePermissionMatrix` componibile dai moduli perché quel livello valga cose diverse in dipartimenti
-diversi — è progettata in `decisions/2026-09-06-il-grant-di-un-livello.md` e aspetta una risposta.
+diversi — è progettata in `decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md` e aspetta una risposta.
 
 **Changelog 1.8** (6 set 2026, **due decisioni di Carmine**): **G7 ha costruito i contatti e il
 servizio notifiche**, e ha trovato due cose che questo documento non poteva sapere.
@@ -883,13 +894,13 @@ non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
   di §9.4: senza lettura condivisa dei template, otto dipartimenti su nove non potrebbero leggere il
   proprio template di partenza.
 - ⚠️ **Come si autorizza un VID su un altro dipartimento** (nuovo, 6 set 2026,
-  `decisions/2026-09-06-il-grant-di-un-livello.md`): un grant dà oggi il permesso ma **non** la
+  `decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md`): un grant dà oggi il permesso ma **non** la
   lista né le righe `Department` di quel dipartimento, perché i claim `dept` vengono solo dalle
   posizioni staff. La correzione (due righe in `HubClaims.BuildIdentity` più i test che mancano) è
-  ciò che rende vera la visibilità della dashboard e entra in **G8**. La seconda metà — un grant che
-  porta un **livello**, e una `RolePermissionMatrix` componibile dai moduli perché quel livello valga
-  cose diverse in dipartimenti diversi — è un meccanismo nuovo, e la raccomandazione è una fase sua
-  dopo M1, quando esisterà più di un modulo su cui progettarla.
+  ciò che rende vera la visibilità della dashboard e entra in **G8**. Autorizzare qualcuno su **un pezzo**
+  di un altro dipartimento non vuole invece nessun meccanismo nuovo: vuole che la capacità abbia un
+  **nome suo** nel catalogo del modulo e sia **una riga sua** con la sua area, perché la guardia
+  dell'interceptor ragiona per tipo di entità e non per campo. Vincola i design di M2 e M4, non M1.
 - ⚠️ **Risposte A9 di Ivao.It** (piano §15.2c) e **dominio di staging** (§15.3): ora bloccano M2, non M1.
 - ⚠️ **Cosa significa `firStaffScope`** (debito n.6 di HANDOFF §10). In M0 le posizioni FIR non danno
   nessun permesso, che è la lettura più restrittiva e quella che si può solo allargare. M1 non ne ha
