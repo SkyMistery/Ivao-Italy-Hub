@@ -57,12 +57,17 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindConfig> = {
   Document: {
     kind: 'Document',
     titles: 'documents',
-    // Category and order, the two facts that decide where a document lands on a shelf.
+    // Category, order and file: the three facts that decide where a document lands on a shelf and
+    // whether it is read or downloaded (design M1 §3.2).
     //
-    // ⚠️ Design M1 §3.2 asks for a third, the file. It is a field of the form and not a column:
-    // a document's file is as often a PDF as a picture, a list row does not carry its type, and a
-    // thumbnail cell handed a PDF draws a broken image — which reads as a failed upload. Carrying
-    // the content type in the list row for one column would be storing a fact twice.
-    columns: [...identity, col.text('category', { sortable: true }), col.number('sort'), ...state],
+    // The file is a **link** and not a thumbnail, unlike the cover of a news item: a document's file
+    // is as often a PDF as a picture, and a list row does not carry the type of what it points at.
+    columns: [
+      ...identity,
+      col.text('category', { sortable: true }),
+      col.number('sort'),
+      col.file('fileMediaId'),
+      ...state,
+    ],
   },
 };

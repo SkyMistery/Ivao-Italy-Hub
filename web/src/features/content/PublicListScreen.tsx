@@ -20,6 +20,11 @@ import { useLocalized } from '../../shared/i18n/useLocalized';
  * The filters are the search parameters of the route, handed to the block as its properties. The
  * shelves they offer come from the same answer the block is drawing, so choosing one costs no
  * round trip of its own.
+ *
+ * ⚠️ Both lists filter the same way, in the search parameters, and neither has a second grammar for
+ * it. `/documents/{dept}` as a path was tried and taken out: it reserved nine slugs, it shadowed any
+ * document called `ed`, and it gave one of the two screens a way of saying something the other one
+ * says differently (design changelog 1.6).
  */
 
 /** As many as a data block will ever answer with (`DataBlockScope.MaxItems`). */
@@ -36,7 +41,6 @@ export function PublicListScreen({
   filters,
   onFilter,
   layout,
-  fixedDepartment,
 }: {
   /** Which data block draws this list: `newsList` or `documentList`. */
   type: string;
@@ -46,21 +50,14 @@ export function PublicListScreen({
   onFilter: (patch: PublicListFilters) => void;
   /** What the block is told to look like. News read as cards, documents as shelves. */
   layout: Record<string, unknown>;
-  /**
-   * Set when the address already says the department — `/documents/ed` — in which case the filter
-   * is not offered: a control that cannot change what the address says is a control that lies.
-   */
-  fixedDepartment?: Department | undefined;
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
 
-  const department = fixedDepartment ?? filters.department;
-
   // Built once and handed to both the block and the query below, so the two share a cache key and
   // the screen costs exactly one request (`encodeProps` hashes the JSON, so the order matters).
   const props: Record<string, unknown> = {
-    ...(department === undefined ? {} : { department }),
+    ...(filters.department === undefined ? {} : { department: filters.department }),
     ...(filters.category === undefined ? {} : { category: filters.category }),
     limit: PAGE_SIZE,
     ...layout,
@@ -89,16 +86,14 @@ export function PublicListScreen({
           }))}
         />
 
-        {fixedDepartment === undefined ? (
-          <Filter
-            id="department"
-            label={t(`${titles}.public.filters.department`)}
-            none={t(`${titles}.public.filters.allDepartments`)}
-            value={filters.department}
-            onChange={(chosen) => onFilter({ ...filters, department: chosen as Department | undefined })}
-            items={DEPARTMENTS.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
-          />
-        ) : null}
+        <Filter
+          id="department"
+          label={t(`${titles}.public.filters.department`)}
+          none={t(`${titles}.public.filters.allDepartments`)}
+          value={filters.department}
+          onChange={(chosen) => onFilter({ ...filters, department: chosen as Department | undefined })}
+          items={DEPARTMENTS.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
+        />
       </div>
 
       <BlockView

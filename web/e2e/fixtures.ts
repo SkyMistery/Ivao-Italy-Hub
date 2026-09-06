@@ -151,6 +151,53 @@ export const oneMediaDetail = {
 export const noContent = { items: [], page: 1, pageSize: 25, total: 0 };
 
 /**
+ * One page of documents: one with a file attached and one without. Two rows and not one, because
+ * what the file column has to get right is the difference between them — a column that drew
+ * something for every row would look correct on a list where every row has a file.
+ */
+export const twoDocuments = {
+  items: [
+    {
+      id: 21,
+      kind: 'Document',
+      slug: 'joining-procedure',
+      ownerDepartment: 'ED',
+      visibility: 'Public',
+      status: 'Published',
+      isTemplate: false,
+      title: { en: 'Joining procedure', it: 'Procedura di adesione' },
+      category: 'guides',
+      coverMediaId: null,
+      pinned: false,
+      sort: 0,
+      fileMediaId: 9,
+      publishedAt: '2026-09-04T12:00:00Z',
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+    {
+      id: 22,
+      kind: 'Document',
+      slug: 'read-in-the-browser',
+      ownerDepartment: 'ED',
+      visibility: 'Public',
+      status: 'Published',
+      isTemplate: false,
+      title: { en: 'Read in the browser', it: 'Si legge nel browser' },
+      category: 'guides',
+      coverMediaId: null,
+      pinned: false,
+      sort: 1,
+      fileMediaId: null,
+      publishedAt: '2026-09-04T12:00:00Z',
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 25,
+  total: 2,
+};
+
+/**
  * A real picture, 8 by 8 and red, so that a test can measure the box a browser gives it. A stub
  * answering a broken image would draw the alternative text instead, and the two look nothing alike
  * on screen but exactly alike to an assertion about text.
@@ -236,9 +283,17 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneMedia) }),
   );
 
-  await page.route('**/api/content**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(noContent) }),
-  );
+  // The content list, answered by `kind`: the documents screen is the one that has rows, because
+  // it is the one whose columns this suite is about.
+  await page.route('**/api/content**', (route) => {
+    const documents = route.request().url().includes('filter%5Bkind%5D=Document');
+
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(documents ? twoDocuments : noContent),
+    });
+  });
 
   // The vocabulary a department files its news and documents under. Empty: a division decides its
   // own shelves and a fresh one has none, which is the state the screens have to survive.

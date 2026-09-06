@@ -220,6 +220,24 @@ test('new news reaches the editor, and it is the editor of a news item', async (
   await expect(page.getByLabel(englishCommon.content.fields.pinned)).toBeVisible();
 });
 
+test('the documents list says which rows have a file, and which do not', async ({ page }) => {
+  await page.goto('/staff/ed/documents');
+
+  const withFile = page.getByRole('row', { name: /Joining procedure/ });
+  const withoutFile = page.getByRole('row', { name: /Read in the browser/ });
+
+  // A link to the file itself, in the row of the document that has one. Not a thumbnail: a
+  // document's file is as often a PDF as a picture, and the row does not carry its type.
+  await expect(withFile.getByRole('link', { name: englishCommon.list.file })).toHaveAttribute(
+    'href',
+    '/media/9/file',
+  );
+
+  // And nothing at all in the row of the one that is read in the browser. Both halves matter: a
+  // column that drew something for every row would look right on a list where every row has a file.
+  await expect(withoutFile.getByRole('link', { name: englishCommon.list.file })).toHaveCount(0);
+});
+
 test('new category reaches its form', async ({ page }) => {
   await page.goto('/staff/ed/categories');
   await page.getByRole('link', { name: englishCommon.categories.create }).first().click();

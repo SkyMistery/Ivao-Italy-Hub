@@ -99,7 +99,8 @@
       "title": "Nothing here yet",
       "description": "Everything this department creates will show up in this list.",
       "noMatch": "No row matches that search."
-    }
+    },
+    "file": "Open the file"
   },
   "notFound": {
     "title": "This page does not exist",

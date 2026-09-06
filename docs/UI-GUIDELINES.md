@@ -84,7 +84,10 @@ A list is a set of column descriptions in `features/<x>/list.ts` (`col.localized
 `col.date('updatedAt', { sortable: true })`) handed to `DataList`. `sortable` says what the server
 declared in `CrudOptions.Sortable`; a column that claims more gets a 400. `col.media` draws a file
 of the library as a thumbnail rather than as the number it is stored as; its alternative text is
-empty on purpose, because the row's own title is in the cell beside it.
+empty on purpose, because the row's own title is in the cell beside it. `col.file` is the same
+identifier drawn as a **link**, for an attachment whose type the row does not carry: a thumbnail
+handed a PDF draws a broken image, which reads as a failed upload. An empty cell there means the row
+has no file, which is a state and not a gap.
 
 Two lists that differ only in what they are about are **one screen twice**, not two screens. The
 news, the documents and the pages of a department are the same list with a fixed `kind` and a

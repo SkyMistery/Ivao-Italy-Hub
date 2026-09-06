@@ -18,7 +18,7 @@ import { Route as PublicSlugRouteImport } from './routes/_public/$slug'
 import { Route as PublicForbiddenRouteImport } from './routes/_public/forbidden'
 import { Route as PublicLoginErrorRouteImport } from './routes/_public/login-error'
 import { Route as PublicDocumentsIndexRouteImport } from './routes/_public/documents.index'
-import { Route as PublicDocumentsKeyRouteImport } from './routes/_public/documents.$key'
+import { Route as PublicDocumentsSlugRouteImport } from './routes/_public/documents.$slug'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public/news.index'
 import { Route as PublicNewsSlugRouteImport } from './routes/_public/news.$slug'
 import { Route as StaffStaffIndexRouteImport } from './routes/_staff/staff.index'
@@ -89,9 +89,9 @@ const PublicDocumentsIndexRoute = PublicDocumentsIndexRouteImport.update({
   path: '/documents/',
   getParentRoute: () => PublicRoute,
 } as any)
-const PublicDocumentsKeyRoute = PublicDocumentsKeyRouteImport.update({
-  id: '/documents/$key',
-  path: '/documents/$key',
+const PublicDocumentsSlugRoute = PublicDocumentsSlugRouteImport.update({
+  id: '/documents/$slug',
+  path: '/documents/$slug',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicNewsIndexRoute = PublicNewsIndexRouteImport.update({
@@ -247,7 +247,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof PublicSlugRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
-  '/documents/$key': typeof PublicDocumentsKeyRoute
+  '/documents/$slug': typeof PublicDocumentsSlugRoute
   '/news/$slug': typeof PublicNewsSlugRoute
   '/documents/': typeof PublicDocumentsIndexRoute
   '/news/': typeof PublicNewsIndexRoute
@@ -283,7 +283,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof PublicSlugRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
-  '/documents/$key': typeof PublicDocumentsKeyRoute
+  '/documents/$slug': typeof PublicDocumentsSlugRoute
   '/news/$slug': typeof PublicNewsSlugRoute
   '/documents': typeof PublicDocumentsIndexRoute
   '/news': typeof PublicNewsIndexRoute
@@ -316,7 +316,7 @@ export interface FileRoutesById {
   '/_public/forbidden': typeof PublicForbiddenRoute
   '/_public/login-error': typeof PublicLoginErrorRoute
   '/_public/': typeof PublicIndexRoute
-  '/_public/documents/$key': typeof PublicDocumentsKeyRoute
+  '/_public/documents/$slug': typeof PublicDocumentsSlugRoute
   '/_public/news/$slug': typeof PublicNewsSlugRoute
   '/_public/documents/': typeof PublicDocumentsIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
@@ -354,7 +354,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/forbidden'
     | '/login-error'
-    | '/documents/$key'
+    | '/documents/$slug'
     | '/news/$slug'
     | '/documents/'
     | '/news/'
@@ -390,7 +390,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/forbidden'
     | '/login-error'
-    | '/documents/$key'
+    | '/documents/$slug'
     | '/news/$slug'
     | '/documents'
     | '/news'
@@ -422,7 +422,7 @@ export interface FileRouteTypes {
     | '/_public/forbidden'
     | '/_public/login-error'
     | '/_public/'
-    | '/_public/documents/$key'
+    | '/_public/documents/$slug'
     | '/_public/news/$slug'
     | '/_public/documents/'
     | '/_public/news/'
@@ -524,11 +524,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicDocumentsIndexRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_public/documents/$key': {
-      id: '/_public/documents/$key'
-      path: '/documents/$key'
-      fullPath: '/documents/$key'
-      preLoaderRoute: typeof PublicDocumentsKeyRouteImport
+    '/_public/documents/$slug': {
+      id: '/_public/documents/$slug'
+      path: '/documents/$slug'
+      fullPath: '/documents/$slug'
+      preLoaderRoute: typeof PublicDocumentsSlugRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/news/': {
@@ -739,7 +739,7 @@ interface PublicRouteChildren {
   PublicForbiddenRoute: typeof PublicForbiddenRoute
   PublicLoginErrorRoute: typeof PublicLoginErrorRoute
   PublicIndexRoute: typeof PublicIndexRoute
-  PublicDocumentsKeyRoute: typeof PublicDocumentsKeyRoute
+  PublicDocumentsSlugRoute: typeof PublicDocumentsSlugRoute
   PublicNewsSlugRoute: typeof PublicNewsSlugRoute
   PublicDocumentsIndexRoute: typeof PublicDocumentsIndexRoute
   PublicNewsIndexRoute: typeof PublicNewsIndexRoute
@@ -750,7 +750,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicForbiddenRoute: PublicForbiddenRoute,
   PublicLoginErrorRoute: PublicLoginErrorRoute,
   PublicIndexRoute: PublicIndexRoute,
-  PublicDocumentsKeyRoute: PublicDocumentsKeyRoute,
+  PublicDocumentsSlugRoute: PublicDocumentsSlugRoute,
   PublicNewsSlugRoute: PublicNewsSlugRoute,
   PublicDocumentsIndexRoute: PublicDocumentsIndexRoute,
   PublicNewsIndexRoute: PublicNewsIndexRoute,

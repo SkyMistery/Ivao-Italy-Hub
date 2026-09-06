@@ -9,11 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 1.8 — 6 settembre 2026 (**G5 è chiusa**: news e documenti sono due `kind` e non due
+**Versione:** 1.9 — 6 settembre 2026 (**G5 è chiusa**: news e documenti sono due `kind` e non due
 tabelle, `cms_categories` esiste, i template li legge tutto lo staff. La fase è stata **corta**,
 come §9.3 del piano prometteva: zero entità nuove con un corpo a blocchi, zero editor nuovi, zero
-renderer nuovi. Sei deviazioni dalla lettera del design sono scritte dentro la fase, e due estensioni
-generiche sono nate per non aggirare un meccanismo. La prossima è G6 — oppure G7, che non dipende da
+renderer nuovi. Cinque deviazioni dalla lettera del design sono scritte dentro la fase, e due estensioni
+generiche sono nate per non aggirare un meccanismo. **Due delle sei iniziali le ha corrette Carmine
+lo stesso giorno** — la colonna «file» c'è, come link e non come miniatura; e `/documents/{dept}`
+non esiste come indirizzo, i documenti di un dipartimento sono un filtro come su `/news` (design
+changelog 1.6). La prossima è G6 — oppure G7, che non dipende da
 nulla di quanto resta.)
 
 **1.7** — **G4 è chiusa**: i sei blocchi Data e i loro provider esistono, il registry ne conta 27.
@@ -507,12 +510,18 @@ disegnare. Nessun renderer separato: il pubblico legge news e documenti con lo s
 `ContentRenderer`, e le liste pubbliche **sono i blocchi Data di G4**. L'unica tabella nuova è
 `cms_categories`, che il design contava già fra le sei di §10.2.
 
-**Sei deviazioni dalla lettera del design**, tutte scritte nel changelog 1.5 del design M1: le liste
-del back-office sono tre e non due (`/staff/{dept}/content` è quella delle **pagine**, con `kind`
-fisso); la colonna «file» dei documenti è un campo del form; `/documents/{qualcosa}` è un solo
-segmento e vince il dipartimento; il vocabolario viaggia dentro la risposta del provider di lista;
-le categorie non hanno permessi propri (area `Content`); e le tre liste sono **una schermata sola**
-montata tre volte (`ContentListScreen`, `ContentFormScreen`, `kinds.ts`).
+**Cinque deviazioni dalla lettera del design**, scritte nei changelog 1.5 e 1.6 del design M1: le
+liste del back-office sono tre e non due (`/staff/{dept}/content` è quella delle **pagine**, con
+`kind` fisso); le rotte pubbliche dei documenti sono due e non tre, perché
+**`/documents/{dept}` non esiste** — un segmento non può essere un dipartimento e una slug insieme,
+e i documenti di un dipartimento sono `?department=`, lo stesso filtro che `/news` ha già; il
+vocabolario viaggia dentro la risposta del provider di lista; le categorie non hanno permessi propri
+(area `Content`); e le tre liste sono **una schermata sola** montata tre volte (`ContentListScreen`,
+`ContentFormScreen`, `kinds.ts`).
+
+La colonna «file» dei documenti **c'è** ed è un `col.file`: un link che apre il file, non una
+miniatura. Così non ha bisogno di sapere che tipo sia ciò a cui punta — che è la ragione per cui la
+prima versione l'aveva tolta — e una riga senza file resta vuota, che è uno stato vero.
 
 **Due estensioni generiche, nate per non aggirare un meccanismo** (regola (b)):
 
@@ -527,9 +536,10 @@ montata tre volte (`ContentListScreen`, `ContentFormScreen`, `kinds.ts`).
    coordinatore ha scritto in un'altra tabella: né un `z.enum` (l'insieme non è noto a compile time)
    né una chiave i18n (l'etichetta è un dato) potevano portarla. **Non è un sesto tipo di campo.**
 
-E una riga in più al vocabolario delle colonne, `col.media` — una miniatura invece del numero con
-cui una copertina è salvata. È una riga in `columns.ts` e un `case` in `DataList`, che è esattamente
-ciò che quel file dice di fare quando serve una cella nuova.
+E **due** righe in più al vocabolario delle colonne: `col.media`, una miniatura invece del numero
+con cui una copertina è salvata, e `col.file`, un link per un allegato di cui la riga non conosce il
+tipo. Ognuna è una riga in `columns.ts` e un `case` in `DataList`, che è esattamente ciò che quel
+file dice di fare quando serve una cella nuova.
 
 **Due cose viste facendo la fase, entrambe corrette qui.**
 

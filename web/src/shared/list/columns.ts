@@ -16,7 +16,8 @@ export type ColumnSpec<TRow> =
   | { kind: 'date'; field: TextKey<TRow>; sortable: boolean }
   | { kind: 'department'; field: TextKey<TRow>; sortable: boolean }
   | { kind: 'badge'; field: TextKey<TRow>; sortable: boolean; labels: string }
-  | { kind: 'media'; field: NumberKey<TRow>; sortable: boolean };
+  | { kind: 'media'; field: NumberKey<TRow>; sortable: boolean }
+  | { kind: 'file'; field: NumberKey<TRow>; sortable: boolean };
 
 type KeysOfType<TRow, TValue> = {
   [K in keyof TRow & string]: TRow[K] extends TValue ? K : never;
@@ -67,6 +68,17 @@ export const col = {
    */
   media<TRow>(field: NumberKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
     return { kind: 'media', field, sortable: options.sortable ?? false };
+  },
+
+  /**
+   * A file of the library that is not necessarily a picture, drawn as a link that opens it. It is
+   * the honest column for an attachment: a list row does not carry the type of what it points at,
+   * and a thumbnail handed a PDF draws a broken image — which reads as a failed upload. What
+   * somebody scanning a list of documents needs to know is whether there is a file and how to
+   * reach it, and that is what a link says.
+   */
+  file<TRow>(field: NumberKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
+    return { kind: 'file', field, sortable: options.sortable ?? false };
   },
 
   /**

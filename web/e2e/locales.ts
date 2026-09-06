@@ -15,6 +15,7 @@ interface CommonStrings {
   readonly theme: { readonly toggle: string };
   readonly auth: { readonly login: string };
   readonly common: { readonly edit: string };
+  readonly list: { readonly file: string };
   readonly links: {
     readonly title: string;
     readonly create: string;

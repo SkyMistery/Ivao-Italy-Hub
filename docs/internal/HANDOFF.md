@@ -2205,7 +2205,13 @@ configurazione più cinque colonne che c'erano già.
   vuoto**. ⚠️ **Nessuna FK** verso `cms_contents`: una categoria cancellata lascia la riga con la sua
   chiave, ed è la regola dei moduli applicata a un vocabolario che può cambiare sotto righe già
   pubblicate.
-- **Il pubblico**: `/news`, `/news/{slug}`, `/documents`, `/documents/{dipartimento-o-slug}`.
+- **Il pubblico**: `/news`, `/news/{slug}`, `/documents`, `/documents/{slug}`. ⚠️ **`/documents/{dept}`
+  non esiste**: un segmento non può essere un dipartimento e una slug insieme, e i documenti di un
+  dipartimento sono `?department=ED`, lo stesso filtro che `/news` ha già. La prima versione decideva
+  sbirciando se il segmento nominasse un dipartimento, il che prenotava nove slug e nascondeva
+  qualunque documento chiamato `ed`; scartata anche la via di mezzo `/documents/dept/{codice}`, che
+  toglieva otto slug su nove ma lasciava a una delle due schermate un secondo modo di dire ciò che
+  l'altra dice con un search param (deciso da Carmine, design changelog 1.6).
   ⚠️ **Le liste pubbliche sono i blocchi Data di G4**, montati con `BlockView`: `newsList` e
   `documentList` sanno già chiedere, sanno già che cosa un dipartimento può mostrare e sanno già
   disegnare una card. Un secondo lettore delle stesse righe sarebbe stato un secondo posto dove le
@@ -2245,16 +2251,19 @@ sta anche «Edit implica View»).
    né una chiave i18n (l'etichetta è un dato) potevano portarla. Non è un sesto tipo di campo, ed è
    scritta in `docs/UI-GUIDELINES.md` per chi forka.
 
-E una riga in più al vocabolario delle colonne, **`col.media`**: una miniatura invece del numero con
-cui una copertina è salvata. Un `case` in `DataList` e una riga in `columns.ts`, che è ciò che quel
-file dice di fare quando serve una cella nuova.
+E **due** righe in più al vocabolario delle colonne: **`col.media`**, una miniatura invece del numero
+con cui una copertina è salvata, e **`col.file`**, un link per un allegato di cui la riga non conosce
+il tipo — è così che la lista dei documenti mostra il file senza dover sapere se dietro c'è un PDF o
+un'immagine, e una riga senza file resta vuota, che è uno stato vero. Ognuna è un `case` in
+`DataList` e una riga in `columns.ts`, che è ciò che quel file dice di fare quando serve una cella
+nuova.
 
 ### I test, e le due volte che non erano test
 
 Sette di accettazione (`NewsDocumentsAndCategoriesTests`), quattro sull'handler
-(`SharedForReadingTests`), uno di architettura (`NoSecondContentEntity`), sei in un browser — tre
-con una misura su `/news` (`public-lists.spec.ts`) e tre che aprono le schermate nuove del
-back-office. Al 6 set 2026 la suite è **264 unit .NET, 122 di integrazione, 199 Vitest, 23 smoke
+(`SharedForReadingTests`), uno di architettura (`NoSecondContentEntity`), nove in un browser — cinque
+su `/news` e `/documents` (`public-lists.spec.ts`), di cui due sono misure, e quattro sul
+back-office. Al 6 set 2026 la suite è **264 unit .NET, 122 di integrazione, 199 Vitest, 26 smoke
 Playwright e 3 del giro contro l'API vera**. Tutti i test nuovi sono stati verificati rompendo la
 correzione — e **due volte la verifica ha trovato un test che non lo era**:
 
@@ -2296,15 +2305,15 @@ correzione — e **due volte la verifica ha trovato un test che non lo era**:
 
 ### Debiti nuovi che G5 lascia
 
-1. **Un documento con slug uguale a un codice di dipartimento non è raggiungibile.**
-   `/documents/{qualcosa}` è un segmento solo e vince il dipartimento (design §3.3 lo chiedeva in due
-   modi che non stanno insieme). Nove parole su tutte le slug possibili sono prenotate; l'editor è il
-   posto in cui sceglierne un'altra. Se un giorno desse davvero fastidio, la risposta è un prefisso
-   (`/documents/dept/{codice}`) e non un caso speciale.
-2. **Il vocabolario viaggia con ogni lista.** `newsList` e `documentList` fanno una query in più per
+1. **Il vocabolario viaggia con ogni lista.** `newsList` e `documentList` fanno una query in più per
    le categorie del proprio `kind`, anche quando il blocco sta dentro una pagina e nessuno userà le
    etichette. Sono poche righe indicizzate; se un giorno pesasse, la risposta è una props e non una
    seconda strada.
+
+⚠️ Il debito che stava qui — «un documento con slug uguale a un codice di dipartimento non è
+raggiungibile» — **non esiste più**: Carmine ha deciso lo stesso giorno di togliere
+`/documents/{dept}` come indirizzo, e adesso quel segmento è una slug e nient'altro. C'è un test in
+un browser che apre `/documents/ed` e pretende di vedere un documento.
 
 ---
 

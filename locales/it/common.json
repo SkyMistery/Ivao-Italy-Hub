@@ -99,7 +99,8 @@
       "title": "Non c'è ancora niente",
       "description": "Tutto quello che questo dipartimento crea comparirà in questo elenco.",
       "noMatch": "Nessuna riga corrisponde alla ricerca."
-    }
+    },
+    "file": "Apri il file"
   },
   "notFound": {
     "title": "Questa pagina non esiste",

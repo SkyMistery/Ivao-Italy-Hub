@@ -7,7 +7,7 @@ import {
   type DataTableProps,
 } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { Paperclip, Search } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -265,6 +265,20 @@ function Cell<TRow>({
           loading="lazy"
           className="bg-body size-10 rounded object-cover"
         />
+      ) : null;
+
+    case 'file':
+      // A link and not a picture: what this column points at is as often a PDF as an image, and the
+      // row does not carry its type. An empty cell is a document that is read in the browser rather
+      // than downloaded, which is a real state and not a missing one.
+      return typeof value === 'number' ? (
+        <a
+          href={mediaFileUrl(value)}
+          className="text-muted-foreground inline-flex items-center gap-1 text-sm underline underline-offset-2"
+        >
+          <Paperclip aria-hidden className="size-4" />
+          {t('list.file')}
+        </a>
       ) : null;
 
     case 'text':

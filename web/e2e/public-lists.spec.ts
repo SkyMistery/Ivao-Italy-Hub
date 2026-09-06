@@ -57,9 +57,37 @@ const news = {
   ],
 };
 
+/** Two documents on one shelf, one of them a file. */
+const documents = {
+  items: [
+    {
+      id: 21,
+      title: en('Joining procedure'),
+      summary: en('How a member joins the division.'),
+      url: '/documents/joining-procedure',
+      category: 'guides',
+      publishedAt: '2026-09-04T12:00:00Z',
+      fileMediaId: 9,
+      sort: 0,
+    },
+    {
+      id: 22,
+      title: en('Read in the browser'),
+      summary: null,
+      url: '/documents/read-in-the-browser',
+      category: 'guides',
+      publishedAt: '2026-09-04T12:00:00Z',
+      fileMediaId: null,
+      sort: 1,
+    },
+  ],
+  categories: [{ key: 'guides', label: en('Guides') }],
+};
+
 test.beforeEach(async ({ page }) => {
   await stubTheApi(page);
   await stubTheBlockData(page, 'newsList', news);
+  await stubTheBlockData(page, 'documentList', documents);
 
   page.on('pageerror', (error) => {
     throw new Error(`The page threw: ${error.message}`);
@@ -119,6 +147,55 @@ test('the filters sit above the list rather than on top of it', async ({ page })
 
   await filter.click();
   await expect(page.getByRole('option', { name: 'Operations' })).toBeVisible();
+});
+
+test('the documents of one department are a filter and not an address of their own', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/documents');
+
+  // ⚠️ Both public lists filter the same way, in the search parameters. `/documents/{dept}` as a
+  // path was tried and taken out: one segment cannot be both a department and a slug, and deciding
+  // by peeking at a closed set reserved nine slugs and shadowed any document called `ed`
+  // (design changelog 1.6).
+  const filter = page.getByLabel('Department', { exact: true });
+
+  await filter.click();
+  await page.getByRole('option', { name: 'Events' }).click();
+
+  await expect(page).toHaveURL(/department=ED/);
+
+  // And the shelf a document sits on is drawn by its name, not by the key stored on the row.
+  await expect(page.getByRole('heading', { name: 'Guides' })).toBeVisible();
+});
+
+test('a document whose slug is a department code is still reachable', async ({ page }) => {
+  // The corner the first version of this route lost: `ed` is a department code *and* a perfectly
+  // ordinary slug, and the address bar cannot tell. Now it is only ever a slug.
+  await page.route('**/api/content/public/Document/ed', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        kind: 'Document',
+        slug: 'ed',
+        ownerDepartment: 'ED',
+        title: en('A document called ed'),
+        summary: null,
+        seo: null,
+        body: { schemaVersion: 1, sections: [] },
+        schemaVersion: 1,
+        category: null,
+        coverMediaId: null,
+        fileMediaId: null,
+        version: 1,
+        publishedAt: '2026-09-04T12:00:00Z',
+      }),
+    }),
+  );
+
+  await page.goto('/documents/ed');
+
+  await expect(page.getByRole('heading', { name: 'A document called ed', level: 1 })).toBeVisible();
 });
 
 test('choosing a shelf puts it in the address, and clearing it takes it out', async ({ page }) => {
