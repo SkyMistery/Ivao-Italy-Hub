@@ -239,6 +239,58 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task EnvelopeValidationRejectsABackgroundTheServerDoesNotKnow()
+    {
+        // The pair that has to agree by hand: `BACKGROUNDS` in `web/src/blocks/envelope.ts` and
+        // `BlockDocumentWalker.Backgrounds`. They are values inside an opaque document, so the
+        // OpenAPI contract cannot carry them, and this — posting one the server has not got — is
+        // what keeps the two halves honest (implementation plan M1, G3 task 4).
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, EventsCoordinatorVid, token);
+
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "background": "gradient", "blocks": [] } ]
+        }
+        """);
+
+        using var refused = await SendAsync(
+            client,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.ED, $"bg-{Guid.NewGuid():N}"[..20], body: body),
+            token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+        var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+        Assert.Equal(
+            "errors.body.backgroundUnknown",
+            errors.GetProperty("body.sections[0].background")[0].GetString());
+
+        // And the fourth one, which is the one G3 added, goes through with the picture it carries.
+        var withPicture = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "background": "image", "mediaId": 7, "blocks": [] } ]
+        }
+        """);
+
+        using var accepted = await SendAsync(
+            client,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.ED, $"bg-{Guid.NewGuid():N}"[..20], body: withPicture),
+            token);
+
+        Assert.Equal(HttpStatusCode.Created, accepted.StatusCode);
+    }
+
+    [Fact]
     public async Task PublishRejectsMissingLocales()
     {
         var token = TestContext.Current.CancellationToken;

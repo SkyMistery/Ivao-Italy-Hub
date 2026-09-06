@@ -304,7 +304,8 @@
         "layout": "Disposizione",
         "background": "Sfondo",
         "padding": "Spaziatura",
-        "width": "Larghezza"
+        "width": "Larghezza",
+        "mediaId": "Immagine dietro"
       },
       "options": {
         "layout": {
@@ -317,7 +318,8 @@
         "background": {
           "none": "Nessuno",
           "muted": "Tenue",
-          "accent": "Accento"
+          "accent": "Accento",
+          "image": "Immagine"
         },
         "padding": {
           "none": "Nessuna",
@@ -441,7 +443,278 @@
         }
       }
     },
-    "willBeCaptured": "Ora dal vivo, catturato quando pubblichi"
+    "willBeCaptured": "Ora dal vivo, catturato quando pubblichi",
+    "hero": {
+      "label": "Testata",
+      "fields": {
+        "eyebrow": "Sopratitolo",
+        "title": "Titolo",
+        "text": "Testo",
+        "mediaId": "Immagine",
+        "align": "Allineamento",
+        "tone": "Sfondo",
+        "primary": "Pulsante principale",
+        "primary.label": "Etichetta",
+        "primary.href": "Indirizzo",
+        "secondary": "Secondo pulsante",
+        "secondary.label": "Etichetta",
+        "secondary.href": "Indirizzo"
+      },
+      "options": {
+        "align": {
+          "left": "A sinistra",
+          "center": "Centrato"
+        },
+        "tone": {
+          "plain": "Neutro",
+          "muted": "Tenue",
+          "accent": "Accento"
+        }
+      }
+    },
+    "image": {
+      "label": "Immagine",
+      "fields": {
+        "mediaId": "File",
+        "alt": "Testo alternativo",
+        "caption": "Didascalia",
+        "width": "Dimensione",
+        "rounded": "Angoli arrotondati"
+      },
+      "hints": {
+        "alt": "Cosa dice l'immagine, per chi non la vede. Lascialo vuoto se e' decorativa."
+      },
+      "options": {
+        "width": {
+          "third": "Un terzo della colonna",
+          "half": "Meta' della colonna",
+          "full": "Tutta la colonna"
+        }
+      }
+    },
+    "video": {
+      "label": "Video",
+      "notAllowed": "Questo indirizzo non e' su un sito da cui l'hub sa riprodurre un video.",
+      "fields": {
+        "url": "Indirizzo",
+        "mediaId": "Oppure un file della libreria",
+        "caption": "Didascalia",
+        "aspect": "Formato"
+      },
+      "hints": {
+        "url": "L'indirizzo della pagina su cui sta il video."
+      },
+      "options": {
+        "aspect": {
+          "16x9": "Panoramico",
+          "4x3": "Classico",
+          "1x1": "Quadrato"
+        }
+      }
+    },
+    "embed": {
+      "label": "Pagina incorporata",
+      "notAllowed": "Questo indirizzo non e' su un sito che l'hub sa incorporare.",
+      "fields": {
+        "url": "Indirizzo",
+        "title": "Nome del riquadro",
+        "height": "Altezza in pixel"
+      },
+      "hints": {
+        "title": "Viene letto al posto del riquadro, per questo non e' facoltativo."
+      }
+    },
+    "timeline": {
+      "label": "Passi",
+      "fields": {
+        "variant": "Disegnato come",
+        "items": "Passi",
+        "items.title": "Titolo",
+        "items.text": "Testo",
+        "items.date": "Data",
+        "items.icon": "Icona"
+      },
+      "options": {
+        "variant": {
+          "steps": "Una fila di passi",
+          "timeline": "Una linea del tempo"
+        }
+      }
+    },
+    "table": {
+      "label": "Tabella",
+      "fields": {
+        "caption": "Didascalia",
+        "columns": "Colonne",
+        "columns.label": "Intestazione",
+        "columns.align": "Allineamento",
+        "rows": "Righe",
+        "rows.cells": "Celle",
+        "rows.cells.text": "Testo"
+      },
+      "options": {
+        "columns.align": {
+          "left": "A sinistra",
+          "center": "Centrato",
+          "right": "A destra"
+        }
+      }
+    },
+    "cardGrid": {
+      "label": "Schede",
+      "fields": {
+        "columns": "Colonne",
+        "cards": "Schede",
+        "cards.title": "Titolo",
+        "cards.text": "Testo",
+        "cards.mediaId": "Immagine",
+        "cards.href": "Indirizzo",
+        "cards.icon": "Icona"
+      },
+      "options": {
+        "columns": {
+          "2": "Due",
+          "3": "Tre",
+          "4": "Quattro"
+        }
+      }
+    },
+    "iconGrid": {
+      "label": "Icone",
+      "fields": {
+        "columns": "Colonne",
+        "items": "Voci",
+        "items.icon": "Icona",
+        "items.title": "Titolo",
+        "items.text": "Testo"
+      },
+      "options": {
+        "columns": {
+          "2": "Due",
+          "3": "Tre",
+          "4": "Quattro"
+        }
+      }
+    },
+    "gallery": {
+      "label": "Galleria",
+      "fields": {
+        "images": "Immagini",
+        "images.mediaId": "File",
+        "columns": "Colonne",
+        "lightbox": "Al clic apre il file"
+      },
+      "options": {
+        "columns": {
+          "2": "Due",
+          "3": "Tre",
+          "4": "Quattro"
+        }
+      }
+    },
+    "logoGrid": {
+      "label": "Loghi",
+      "fields": {
+        "columns": "Colonne",
+        "items": "Loghi",
+        "items.mediaId": "File",
+        "items.name": "Nome",
+        "items.href": "Indirizzo"
+      },
+      "hints": {
+        "items.name": "Viene letto al posto del logo da chi non lo vede."
+      },
+      "options": {
+        "columns": {
+          "2": "Due",
+          "3": "Tre",
+          "4": "Quattro"
+        }
+      }
+    },
+    "tabs": {
+      "label": "Schede",
+      "fields": {
+        "tabs": "Schede",
+        "tabs.label": "Etichetta",
+        "tabs.body": "Testo"
+      },
+      "hints": {
+        "tabs.body": "Testo con formattazione. Una scheda contiene testo, mai altri blocchi."
+      }
+    },
+    "accordion": {
+      "label": "Domande e risposte",
+      "fields": {
+        "allowMultiple": "Piu' di una aperta insieme",
+        "items": "Voci",
+        "items.question": "Domanda",
+        "items.answer": "Risposta"
+      }
+    },
+    "testimonial": {
+      "label": "Citazione",
+      "fields": {
+        "quote": "Citazione",
+        "author": "Chi l'ha detta",
+        "role": "Cosa fa",
+        "mediaId": "Ritratto"
+      }
+    },
+    "buttonGroup": {
+      "label": "Pulsanti",
+      "fields": {
+        "align": "Allineamento",
+        "buttons": "Pulsanti",
+        "buttons.label": "Etichetta",
+        "buttons.href": "Indirizzo",
+        "buttons.variant": "Peso"
+      },
+      "options": {
+        "align": {
+          "left": "A sinistra",
+          "center": "Centrato",
+          "right": "A destra"
+        },
+        "buttons.variant": {
+          "primary": "Principale",
+          "secondary": "Secondario",
+          "ghost": "Discreto"
+        }
+      }
+    },
+    "spacer": {
+      "label": "Spazio",
+      "fields": {
+        "size": "Quanto"
+      },
+      "options": {
+        "size": {
+          "sm": "Poco",
+          "md": "Normale",
+          "lg": "Molto",
+          "xl": "Moltissimo"
+        }
+      }
+    },
+    "divider": {
+      "label": "Separatore",
+      "fields": {
+        "variant": "Disegnato come",
+        "spacing": "Spazio intorno"
+      },
+      "options": {
+        "variant": {
+          "line": "Una linea",
+          "dots": "Tre punti"
+        },
+        "spacing": {
+          "sm": "Stretto",
+          "md": "Normale",
+          "lg": "Ampio"
+        }
+      }
+    }
   },
   "widgets": {
     "welcome": {

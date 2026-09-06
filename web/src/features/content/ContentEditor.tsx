@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { registry } from '../../app/registry';
 import { ContentRenderer, columnsOf, readBody, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
-import { SchemaForm } from '../../shared/forms';
+import { SchemaForm, writtenValues } from '../../shared/forms';
 import type { MediaLibraryQuery } from '../../shared/ui';
 import { ConfirmDialog, SectionHeader } from '../../shared/ui';
 
@@ -183,7 +183,10 @@ export function ContentEditor({
                   body,
                   sectionId,
                   type,
-                  defaultProps(registration.schema, locales),
+                  // The blank properties, minus the optional ones nobody has written into: a block
+                  // added and never opened must not carry an empty translated value, which
+                  // publication would read as a page translated into one language only.
+                  writtenValues(registration.schema, defaultProps(registration.schema, locales)),
                   // A data block starts live: capturing is a decision somebody makes, and one that
                   // only means anything once the page is published.
                   registration.kind === 'Data' ? 'live' : null,
@@ -219,10 +222,13 @@ export function ContentEditor({
                 section={section}
                 rule={ruleFor(rules, section.key)}
                 locales={locales}
+                division={division}
+                mediaLibrary={mediaLibrary}
                 onApply={(values) => {
                   const withSettings = updateSection(body, section.id, {
                     title: values.title,
                     background: values.background,
+                    mediaId: values.mediaId ?? null,
                     padding: values.padding,
                     width: values.width,
                   });
@@ -238,6 +244,8 @@ export function ContentEditor({
                 block={block.block}
                 section={block.section}
                 locales={locales}
+                division={division}
+                mediaLibrary={mediaLibrary}
                 onApplyProps={(props) => change(updateBlock(body, block.block.id, { props }))}
                 onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
               />

@@ -89,9 +89,14 @@ public sealed class BlockRegistry
 }
 
 /// <summary>
-/// The blocks of the core: the minimum that proves the mechanism rather than a library of them
-/// (design M0 section 5.4). Four content blocks and one data block, which is what it takes to show
-/// live and frozen side by side. Modules bring their own.
+/// The blocks of the core. M0 declared the five that prove the mechanism; M1 adds the set a public
+/// site is actually written with (design M1 section 1.2). Modules bring their own.
+/// <para>Every name here also exists in <c>web/src/blocks/core.ts</c>, and the two halves say
+/// different things about the same block: this one is the type and its kind, which is all the server
+/// is allowed to know, and the other is the schema, the component and the icon, which live only in
+/// TypeScript (plan section 16.5). What keeps them from drifting is
+/// <c>web/src/features/admin/registryDiff.ts</c>, drawn at the top of the ui-kit, and the fact that
+/// a body holding a type this list has not got is refused on save.</para>
 /// </summary>
 public static class CoreBlocks
 {
@@ -101,6 +106,23 @@ public static class CoreBlocks
     public const string Cta = "cta";
     public const string LinkList = "linkList";
 
+    public const string Hero = "hero";
+    public const string Image = "image";
+    public const string Video = "video";
+    public const string Embed = "embed";
+    public const string Timeline = "timeline";
+    public const string Table = "table";
+    public const string CardGrid = "cardGrid";
+    public const string IconGrid = "iconGrid";
+    public const string Gallery = "gallery";
+    public const string LogoGrid = "logoGrid";
+    public const string Tabs = "tabs";
+    public const string Accordion = "accordion";
+    public const string Testimonial = "testimonial";
+    public const string ButtonGroup = "buttonGroup";
+    public const string Spacer = "spacer";
+    public const string Divider = "divider";
+
     public static readonly IReadOnlyList<IBlockDescriptor> All =
     [
         new BlockDescriptor(Heading, Version: 1, BlockKind.Content),
@@ -108,5 +130,22 @@ public static class CoreBlocks
         new BlockDescriptor(Callout, Version: 1, BlockKind.Content),
         new BlockDescriptor(Cta, Version: 1, BlockKind.Content),
         new BlockDescriptor(LinkList, Version: 1, BlockKind.Data, ProviderKey: LinkList),
+
+        new BlockDescriptor(Hero, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Image, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Video, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Embed, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Timeline, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Table, Version: 1, BlockKind.Content),
+        new BlockDescriptor(CardGrid, Version: 1, BlockKind.Content),
+        new BlockDescriptor(IconGrid, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Gallery, Version: 1, BlockKind.Content),
+        new BlockDescriptor(LogoGrid, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Tabs, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Accordion, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Testimonial, Version: 1, BlockKind.Content),
+        new BlockDescriptor(ButtonGroup, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Spacer, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Divider, Version: 1, BlockKind.Content),
     ];
 }

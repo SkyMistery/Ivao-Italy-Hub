@@ -165,26 +165,87 @@ gallery is both halves. And every key a block asks for at run time (`blocks.<typ
 language: `pnpm i18n:check` cannot see keys built at run time, so `blocks/registry.test.ts` reads
 the language files and checks them, which is the test rule 1 tells you to write.
 
-The conventions for what a block should look like — spacing, when to use a callout rather than a
-heading — are M1. What is fixed now is the shape.
+### The conventions every block follows
+
+These were decided with the whole set on the table rather than one block at a time, which is the only
+way they could have been decided at all.
+
+**Spacing belongs to the section, never to the block.** A block draws itself and does not touch the
+margin around it. The section has `padding` (`none`, `sm`, `md`, `lg`) and the blocks inside a column
+are separated by one constant gap. The reason is not tidiness: if two blocks each brought a margin of
+their own, the distance between them would depend on *which two they are*, and nobody would know
+where to change it. `spacer` exists for the declared exception — air between two blocks that belong
+together and two that do not — and not to make up for margins that disagree.
+
+**The background belongs to the section too, and there are four**: `none`, `muted`, `accent`, and
+`image`, which carries a `mediaId` of the library. A block has no ground of its own, with three
+exceptions whose identity *is* their ground — `hero`, `callout`, `testimonial` — and even those use
+the semantic tokens of the theme and never a colour written by hand. Two `muted` sections one after
+the other simply merge, and that is fine: alternating is the editor's choice, not a rule.
+
+A picture behind a section is for a quiet section. The text over it keeps the page's own foreground
+colour — there is no veil, because a veil is a colour that is not a token — so a wall of prose over a
+photograph is not something this hub can make read well, and should not be attempted.
+
+**The width belongs to the section**, and there are four: `narrow`, `default` (the reading column),
+`wide`, `full`. `full` is for `hero`, `gallery` and `image`; a section of text as wide as the screen
+is a line nobody finishes.
+
+**A locked section shows its fields, not its structure.** No "add block", no "move", no "delete":
+what an editor sees is the list of blocks the template put there, each with its property form, and a
+line at the top saying which template fixes it and who may change that (`Content.ManageTemplates`).
+A disabled button with no explanation produces support tickets; a sentence saying "this section is
+fixed by the *Policy* template" does not.
+
+**An unknown block is shown to the staff only.** If the server declares a type this browser has no
+component for, or the other way round, a coordinator gets a dashed box naming the `type`, and a
+visitor gets nothing at all. A page does not break because a browser is one release behind.
+
+**Every block declares its own `lucide` icon**, and the type insists on it: it is what the editor
+shows in the "add a block" list and in the tree.
+
+**Nothing that is not prose is a free string.** Every string inside a block's properties is
+concatenated into the text of the page for the search index, so an alignment, a column count or an
+icon name is a `z.enum` with values nobody would search for, or a number with `choices`. A column
+count is a number; the shape of a video is `16x9` and not `16:9`, because a colon is what i18next
+reads as a namespace separator.
+
+**A block never contains blocks.** `tabs` and `accordion` carry markdown per entry — the same
+sanitized `MarkdownContent` as `text` — and the only nesting in the model is the one sections have
+(depth three, enforced by the server). A block that contained blocks would be a second tree, with a
+second validator, a second editor and a second way of getting the depth wrong. The 10 % of cases
+markdown does not cover is a section with a column layout.
+
+**A frame is only ever pointed at a host on the allow list.** `video` and `embed` read
+`web/src/blocks/allowlist.ts`, which turns the address of a *page* — the one in the browser bar — into
+the address of a player, built from the identifier it recognised. Nothing typed is ever echoed into
+the `src`. Growing the list is adding an entry; pointing an `<iframe>` at whatever an editor typed is
+not something this hub does.
 
 ### How a block names a file
 
 A file in the media library is referred to by its identifier, and the property that holds it is
-called **`mediaId`**, or **`mediaIds`** when a block shows several — a gallery, a grid of logos.
+called **`mediaId`** — one file, one key, wherever it sits. A block that shows several holds a list
+of small objects each with its own `mediaId` (`images: [{ mediaId }]`), rather than a list of bare
+numbers: the form generator draws lists of objects, and the key stays the one the server looks for.
+The section's own background picture is a `mediaId` too, for the same reason.
 
-The names are a convention rather than a type because the server cannot read a block schema: it
-stores `body_json` as an opaque document. What it does know how to do is ask a JSON column whether
-it mentions an identifier, anywhere at any depth, under one of those two keys — and that is what
-stands between deleting a file and breaking a page that has already been published. A block that
-invented a third name would have its file deleted out from under it.
+The name is a convention rather than a type because the server cannot read a block schema: it stores
+`body_json` as an opaque document. What it does know how to do is ask a JSON column whether it
+mentions an identifier, **anywhere at any depth**, under that key — and that is what stands between
+deleting a file and breaking a page that has already been published. A block that invented a second
+name would have its file deleted out from under it. (`mediaIds`, a bare array, is still understood by
+the same query and is what an older body may carry.)
 
 Never draw such a property as a number field. `MediaPicker` is what fills it in, and the reason is
 plain: a free numeric field produces pages pointing at files that were deleted years ago.
 
-The alternative text is written **once**, next to the file, and a block that leaves its own `alt`
-empty inherits it. Writing it at every use is how a picture ends up described three different ways
-and undescribed the fourth time.
+The alternative text is a property of the **block**, and empty means the picture is decoration: it
+renders as `alt=""`, which is what makes a screen reader skip it. It is *not* inherited from the
+library — the public renderer is handed a published body and nothing else, and a server that filled
+it in would have to read inside `props`, which is the one thing it must not do. The library keeps an
+`alt` of its own for the library's own screens. Why it is this way rather than inherited:
+`docs/internal/decisions/2026-09-06-alt-delle-immagini.md`.
 
 ## Icons a block or an entity can choose
 

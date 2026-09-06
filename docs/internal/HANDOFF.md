@@ -3,11 +3,13 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 5 settembre 2026 — **M0 è chiusa, e di M1 sono fatte tre fasi**: design
+**Ultimo aggiornamento:** 6 settembre 2026 — **M0 è chiusa, e di M1 sono fatte quattro fasi**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** — il giro contro l'API vera in
-un browser, che chiude il debito n.1 di §10 (**§14**) — **G1**, la media library (**§15**), e **G2**,
-le cinque estensioni del generatore di form (**§16**). Il prossimo lavoro è **G3**, i sedici blocchi
-Content/Layout/Interactive/Structure — si apre con il prompt di `04-` §C, `<N>` = 3. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+un browser, che chiude il debito n.1 di §10 (**§14**) — **G1**, la media library (**§15**), **G2**,
+le cinque estensioni del generatore di form (**§16**), e **G3**, i sedici blocchi Content, Layout,
+Interactive e Structure (**§17**), che porta il registry a **21** e chiude **§16.C del piano**: le
+convenzioni dei blocchi sono scritte, con il set davanti. Il prossimo lavoro è **G4**, i sei blocchi
+Data e i loro provider — si apre con il prompt di `04-` §C, `<N>` = 4. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
 mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
 sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
 §16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
@@ -18,13 +20,13 @@ piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di 
 `v0.1.0-m0` di tutto M1: quanto esattamente lo dice
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
-**Piano:** v0.39. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.2 (`03-design-m1.md`). **Piano di implementazione M1:** v1.5
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0, G1 e G2 sono chiuse** (§14, §15, §16), la
-prossima è **G3**.
-**Test:** 366 .NET verdi (258 unit + 108 integrazione) + **97 Vitest** + **13 smoke Playwright** +
+**Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
+**Design M1:** v1.3 (`03-design-m1.md`). **Piano di implementazione M1:** v1.6
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0, G1, G2 e G3 sono chiuse** (§14, §15, §16,
+§17), la prossima è **G4**.
+**Test:** 368 .NET verdi (259 unit + 109 integrazione) + **176 Vitest** + **16 smoke Playwright** +
 **3 del giro pieno** (`pnpm e2e:full`, G0 di M1).
-Nessuno skippato, **rieseguiti tutti e quattro il 5 set 2026** contro la MariaDB vera prima di
+Nessuno skippato, **rieseguiti tutti e quattro il 6 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
 ⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
@@ -1913,36 +1915,148 @@ quindi uno schermo che mostrasse UTC due volte non passa più.
 
 ---
 
-## 17. Da dove riparte la prossima sessione (5 set 2026)
+## 17. G3 di M1: i sedici blocchi (6 set 2026)
 
-### Si apre G3
+Il grosso del volume di M1, e **zero meccanismo nuovo** — che era l'obiettivo dichiarato della fase e
+adesso è un fatto misurato: zero endpoint scritti a mano, zero componenti custom nuovi, zero
+meccanismi nuovi. Il registry conta **21 blocchi**, e con il set davanti si è chiuso **§16.C** del
+piano, che aspettava dal 2 settembre.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 3: i **sedici blocchi** Content, Layout, Interactive e
-Structure. È il grosso del volume di M1 e **zero meccanismo nuovo**: ogni blocco costa cinque cose e
-non una di più (design §1.3), e se ne serve una sesta è un segnale, non un task.
+### Che cosa c'è adesso
 
-Quattro cose che G1 e G2 lasciano pronte e che **non vanno rifatte**:
+I sedici: `hero`, `image`, `video`, `embed`, `timeline`, `table` — `cardGrid`, `iconGrid`, `gallery`,
+`logoGrid`, `tabs`, `accordion` — `testimonial`, `buttonGroup`, `spacer`, `divider`.
 
-- **`.meta({ media: true })` monta `MediaPicker`**: otto blocchi su ventidue nominano una media, e
-  nessuno di loro deve disegnare un campo. La libreria gliela passa la schermata (`mediaLibrary`).
-- **`.meta({ icon: true })` legge `web/src/shared/icons/`** — non `blocks/icons.ts`, che non esiste:
-  il generatore importa quella cartella e `blocks/` importa il generatore. Un'icona che manca è una
-  riga lì.
-- **Le chiavi dei figli si scrivono piatte** (`"cards"` accanto a `"cards.name"`): i blocchi pieni di
-  `cards[]` e `items[]` sono i primi a incontrarlo.
-- **Il generatore lancia** su ciò che non sa disegnare. Se un blocco chiede un sesto tipo di campo,
-  la risposta è estendere il generatore o fermarsi — mai un form scritto a mano.
+Ognuno è costato **cinque cose e non una di più** (design §1.3): uno schema in `blocks/schemas.ts`,
+un componente in `blocks/blocks.tsx`, una riga in `blocks/core.ts`, le chiavi i18n in tutte e due le
+lingue, e — per i Data, qui nessuno — un provider. **Nessuno ha aggiunto una sezione alla ui-kit**:
+la galleria monta ciò che il registry dichiara, ed è la proprietà per cui esiste.
 
-⚠️ E i due disallineamenti che il piano segna dentro G3 restano da chiudere lì: `BACKGROUNDS` ha tre
-valori e il design ne vuole quattro (`image` + `mediaId`), `WIDTHS` ne ha quattro e il design ne
-nomina tre.
+Accanto a loro:
+
+- **`web/src/blocks/allowlist.ts`**, l'unico punto in cui `video` ed `embed` decidono cosa è lecito
+  incorniciare. Non filtra un indirizzo: legge l'indirizzo della **pagina** (quello nella barra del
+  browser) e **ricostruisce** quello del player dall'identificatore che ha riconosciuto. Niente di
+  ciò che è stato scritto finisce dentro il `src`, e il test lo prova con `evil-youtube.com`.
+- **Lo sfondo `image` della sezione**, con il suo `mediaId`, e `BlockDocumentWalker` che ha imparato
+  gli sfondi: erano l'unico insieme chiuso dell'envelope che il server non controllava.
+- **`docs/UI-GUIDELINES.md`, «The conventions every block follows»**: la spaziatura e lo sfondo sono
+  della sezione e mai del blocco, quattro sfondi, quattro larghezze, la resa di una sezione `locked`,
+  il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che
+  non sia prosa dentro `props`, nessun blocco che contiene blocchi.
+
+### Le due lacune del generatore che i blocchi hanno trovato per primi
+
+Nessuna delle due è una comodità, ed entrambe sono state chiuse **estendendo** il generatore.
+
+1. **Una voce nuova di lista nasceva come `{}`.** Undici blocchi su sedici hanno una lista di
+   oggetti; `append({})` produce campi che React non controlla, e un campo tradotto così dimentica
+   ciò che viene scritto dentro. Ora `blankEntry` costruisce la voce dai campi che lo schema
+   dichiara. Verificato rompendolo: il test fallisce senza la correzione.
+2. **⚠️ Una props tradotta opzionale, lasciata vuota, avrebbe impedito di pubblicare la pagina.**
+   Viaggiava come `{ en: "", it: "" }`, e `ContentPublishService` — che il corpo lo legge senza sapere
+   che cosa sia un blocco — la leggeva come una traduzione fatta a metà. Un `caption` che nessuno ha
+   scritto avrebbe rifiutato la pagina, con un errore che punta a un campo che il redattore non ha
+   mai toccato. Ora `writtenValues` salva solo ciò che è stato scritto.
+   **La regola sul server non è stata toccata**, ed è la parte da non disfare: un campo
+   **obbligatorio** vuoto viene ancora rifiutato, e una lingua scritta e l'altra no è ancora un buco.
+   Si è tolta la causa, non il controllo.
+
+### Quattro deviazioni dalla lettera del design, tutte scritte
+
+1. **`table` e `gallery` non hanno liste nude**: `rows[] { cells[] { text L } }` e
+   `images[] { mediaId }`. Il generatore disegna liste di **oggetti**, e una lista di valori nudi
+   sarebbe stata una sesta estensione per una forma che nessun altro chiede. Effetto collaterale
+   buono: la chiave resta `mediaId`, che è quella che `JsonQuery.UsingMedia` cerca a ogni profondità.
+2. **L'`alt` non eredita dalla libreria**: vuoto = decorativa. Nota
+   `decisions/2026-09-06-alt-delle-immagini.md`, decisa da Carmine prima di scrivere gli schemi.
+3. **Larghezze quattro** (`narrow` resta: toglierlo non sarebbe additivo su corpi già pubblicati),
+   **sfondi quattro**. La chiave della sezione si chiama `mediaId` e non `backgroundMediaId`, di
+   nuovo per il punto 1.
+4. **`aspect` di `video` vale `16x9 | 4x3 | 1x1`.** I due punti sono il separatore di namespace di
+   i18next: `options.aspect.16:9` non si risolve, e il campo avrebbe mostrato la chiave al posto
+   dell'etichetta.
+
+### Tre cose viste misurando, che valgono più del codice che le ha prodotte
+
+- **Il wrapper `overflow-x-auto` del blocco `table` era una copia.** L'e2e che misura la pagina
+  passava **identico** togliendolo, perché la tabella di Atmosphere si avvolge già in
+  `relative w-full overflow-auto`. Tolto (`CLAUDE.md` §2). Il test resta, perché la proprietà — la
+  pagina non scorre di lato — va difesa comunque; ma nella spec c'è scritto che misura la pagina e
+  non il nostro codice, il che è la differenza fra una rete e un test che si crede una rete.
+- **`has()` dentro `blocks/registry.test.ts` era più severo di i18next.** Camminava sui punti, e le
+  chiavi dei figli si scrivono piatte (`"cards.title"` accanto a `"cards"`); i sedici blocchi lo
+  hanno fatto fallire su dieci gruppi. i18next risolve entrambe le forme (`deepFind` ricompone i
+  segmenti), ed è stato **letto nel sorgente** prima di allargare il test. Un controllo più severo
+  del runtime fallisce su chiavi che funzionano.
+- **`aspect: '16:9'` non è stato scoperto da un test**, ma dalla domanda «questa stringa finisce in
+  una chiave i18n?». Vale la pena farsela ogni volta che un `z.enum` nasce.
+
+### I test
+
+176 Vitest (erano 145), 259 unit C#, 109 di integrazione, 16 smoke Playwright. **Rieseguiti tutti il
+6 set 2026** contro la MariaDB vera prima di scrivere questa riga. Le due reti nuove che contano:
+
+- `web/e2e/blocks.spec.ts` **misura** che a 1280 px le tre card stanno sulla stessa riga in tre punti
+  diversi, e che a 375 px stanno una sotto l'altra. Verificata rompendola (una colonna sola: fallisce).
+- `EnvelopeValidationRejectsABackgroundTheServerDoesNotKnow` posta uno sfondo che il server non
+  conosce, ed è ciò che tiene allineate a mano `BACKGROUNDS` e `BlockDocumentWalker.Backgrounds`.
+  Verificata rompendola (tolto `CheckBackground`: fallisce).
+
+### Che cosa la fase non ha fatto, ed è giusto così
+
+- **Nessun blocco Data e nessun provider**: è G4, e con esso il registry passa a 27.
+- **Nessuna pagina pubblica costruita con i blocchi nuovi**: è G8. I sedici esistono e si vedono
+  nella ui-kit; comporre `/`, `/start`, `/pilots` con loro è un'altra fase.
+- **Nessun lightbox vero**: `gallery.lightbox` apre il file in una scheda. Un dialogo nostro sarebbe
+  un componente custom nuovo, e quell'elenco è chiuso (design M1 §12).
+
+### Debiti nuovi che G3 lascia
+
+1. **L'esempio di `image`, `gallery` e `logoGrid` nella ui-kit punta ai file 1, 2 e 3**, che su
+   un'installazione nuova non esistono: la galleria mostra un'immagine rotta finché la libreria è
+   vuota. Non c'è un file finto nel repository e inventare un indirizzo sarebbe peggio; si guarderà
+   in G12, quando la divisione avrà caricato qualcosa.
+2. **L'esempio di `embed` punta a Vimeo**, quindi aprire `/staff/admin/ui-kit` carica un riquadro da
+   fuori. Per `video` è stato evitato passando a un file della libreria; per `embed` non c'è modo,
+   perché è esattamente ciò che il blocco fa.
+3. **`writtenValues` è applicato dove le props si scrivono** (l'editor che applica, il blocco appena
+   aggiunto). Un terzo punto che scrivesse props senza passare di lì rimetterebbe il problema: se
+   G11 aggiunge il drag-and-drop o un «duplica» che ricostruisce le props, va passato di lì.
+
+---
+
+## 18. Da dove riparte la prossima sessione (6 set 2026)
+
+### Si apre G4
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 4: i **sei blocchi Data** e i loro provider — `stats`,
+`networkStats` (**`alwaysLive`**), `calendar`, `newsList`, `documentList`, `staffList`. Alla fine il
+registry conta **27** blocchi e il test della ui-kit va portato da 21 a 27 (la riga è scritta lì
+apposta).
+
+Quattro cose che G3 lascia pronte e che **non vanno rifatte**:
+
+- **Un blocco costa cinque cose**, e per un Data la quinta è il provider più l'`IBlockDescriptor` nel
+  nucleo — `CoreBlocks.All` è dove si aggiunge, accanto ai ventuno.
+- **`exampleData`**: la galleria mostra quello e non chiama il server. `registry.test.ts` fallisce se
+  un blocco Data non ce l'ha.
+- **`writtenValues` e `blankEntry`** esistono: le props dei Data (una lista di metriche, un filtro per
+  dipartimento) passano dalle stesse regole.
+- **Ogni stringa dentro `props` finisce nella ricerca**: le metriche di `stats` sono un insieme
+  chiuso, e vanno modellate come tali.
+
+⚠️ Le due avvertenze che il piano scrive dentro G4 valgono per intero: `IvaoApiClient` guadagna **lì**
+la lettura dello stato della rete (non in G9), e il componente del blocco `calendar` è **solo** la
+vista agenda finché G6 non fa nascere `CalendarView`.
 
 ### Deciso e già collocato, da non ridiscutere
 
 - **I template sono di dipartimento e li legge tutto lo staff** (piano §9.3, design M1 §9.4). Si
   implementa nel **primo task di G5**; senza, §9.1 del design non ha il dato da mostrare.
-- **`mediaId` e `mediaIds` sono i due nomi con cui un blocco nomina un file** (§15): scritto in
-  `docs/UI-GUIDELINES.md`, e G3 ci si attiene.
+- **`mediaId` è il nome con cui un blocco nomina un file**, a qualunque profondità (§15, §17):
+  scritto in `docs/UI-GUIDELINES.md`. Un blocco che ne mostra molti tiene una lista di oggetti con
+  dentro `mediaId`, non un `mediaIds[]` — che resta capito dalla stessa query, per i corpi vecchi.
 - **Le icone sono una griglia e non un select** (§16), perché il `Select` di Atmosphere prende una
   stringa per opzione. Non si riapre: è stato misurato.
 

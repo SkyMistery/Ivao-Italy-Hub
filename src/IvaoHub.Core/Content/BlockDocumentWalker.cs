@@ -62,6 +62,17 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// </summary>
     public static readonly IReadOnlyList<string> RenderModes = ["live", "frozen"];
 
+    /// <summary>
+    /// What sits behind a section. A closed set like the layouts, and checked for the same reason:
+    /// the renderer reads a background it does not know as no background at all, so a value nobody
+    /// refused would be a section that quietly loses its ground on the published page.
+    /// <para>The other half is <c>BACKGROUNDS</c> in <c>web/src/blocks/envelope.ts</c>. The two
+    /// agree by hand — they are values inside an opaque document, which the OpenAPI contract cannot
+    /// carry — and the integration test that posts a background the server does not know is what
+    /// keeps them agreeing.</para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> Backgrounds = ["none", "muted", "accent", "image"];
+
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 
     private readonly HashSet<string> _locales = new(locales, StringComparer.OrdinalIgnoreCase);
@@ -175,6 +186,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             CheckIdentifier(section, identifiers, errors);
             CheckTemplateOnlyKeys(section, isTemplate, errors);
             CheckLayout(section, errors);
+            CheckBackground(section, errors);
         }
 
         foreach (var (section, block) in EnumerateBlocksBySection(root))
@@ -329,6 +341,21 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             && !Layouts.Contains(layout, StringComparer.Ordinal))
         {
             errors.Add(new BlockDocumentError("errors.body.layoutUnknown", $"{section.Path}.layout"));
+        }
+    }
+
+    /// <summary>
+    /// A background nobody refused would be drawn as no background at all: the renderer looks the
+    /// value up in a table, and a miss is an empty class name. The section would lose its ground on
+    /// the published page and nothing would have said so.
+    /// </summary>
+    private static void CheckBackground(BlockDocumentNode section, List<BlockDocumentError> errors)
+    {
+        if (section.Node["background"] is JsonValue value
+            && value.TryGetValue<string>(out var background)
+            && !Backgrounds.Contains(background, StringComparer.Ordinal))
+        {
+            errors.Add(new BlockDocumentError("errors.body.backgroundUnknown", $"{section.Path}.background"));
         }
     }
 

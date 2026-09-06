@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import { columnsOf, type BlockEnvelope, type SectionEnvelope } from '../../blocks';
-import { SchemaForm } from '../../shared/forms';
+import { SchemaForm, writtenValues } from '../../shared/forms';
 import { emptyLocalized } from '../../shared/i18n/localized';
+import type { MediaLibraryQuery } from '../../shared/ui';
 
 import { defaultProps } from './body';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
@@ -24,16 +25,24 @@ export function SectionProperties({
   section,
   rule,
   locales,
+  division,
+  mediaLibrary,
   onApply,
 }: {
   section: SectionEnvelope;
   rule: SectionRule;
   locales: readonly string[];
+  division: { defaultLocale: string; timezone: string };
+  /** The library the picture behind a section is chosen from — this department's. */
+  mediaLibrary: MediaLibraryQuery;
   onApply: (values: SectionFormValues) => void;
 }) {
   const { t } = useTranslation();
 
   if (rule.locked) {
+    // A locked section shows its fields and not its structure (docs/UI-GUIDELINES.md): what is
+    // missing here is the *settings* of a section the template fixed, and the line above says
+    // which template fixed it.
     return <p className="text-muted-foreground text-sm">{t('content.editor.lockedSection')}</p>;
   }
 
@@ -41,6 +50,7 @@ export function SectionProperties({
     title: { ...emptyLocalized(locales), ...(section.title ?? {}) },
     layout: section.layout,
     background: section.background,
+    ...(typeof section.mediaId === 'number' ? { mediaId: section.mediaId } : {}),
     padding: section.padding,
     width: section.width,
   };
@@ -51,6 +61,8 @@ export function SectionProperties({
       defaults={defaults}
       locales={locales}
       labels="content.section"
+      division={division}
+      mediaLibrary={mediaLibrary}
       onSubmit={(values) => {
         onApply(values);
         return Promise.resolve();
@@ -64,12 +76,21 @@ export function BlockProperties({
   block,
   section,
   locales,
+  division,
+  mediaLibrary,
   onApplyProps,
   onEnvelope,
 }: {
   block: BlockEnvelope;
   section: SectionEnvelope;
   locales: readonly string[];
+  /** What an instant needs to say where the division is, and a media field to name its language. */
+  division: { defaultLocale: string; timezone: string };
+  /**
+   * The library a `.meta({ media: true })` property chooses from. Eight of the blocks name a file,
+   * so from G3 on this is not an occasional prop: without it those forms throw, and say why.
+   */
+  mediaLibrary: MediaLibraryQuery;
   onApplyProps: (props: Record<string, unknown>) => void;
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
 }) {
@@ -118,8 +139,14 @@ export function BlockProperties({
         defaults={withDefaults(registration.schema, block.props, locales)}
         locales={locales}
         labels={`blocks.${block.type}`}
+        division={division}
+        mediaLibrary={mediaLibrary}
         onSubmit={(values) => {
-          onApplyProps(values);
+          // What is stored is what was written. An optional translated property left empty in every
+          // language would otherwise travel as `{ en: "", it: "" }`, and publication — which reads
+          // the body without knowing what a block means — would read that as a translation hole and
+          // refuse the page (`writtenValues`).
+          onApplyProps(writtenValues(registration.schema, values));
           return Promise.resolve();
         }}
         submitLabel={t('content.editor.applyBlock')}

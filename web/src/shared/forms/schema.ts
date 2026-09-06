@@ -107,6 +107,157 @@ export function localizedObject<TShape extends z.ZodRawShape>(shape: TShape) {
   return z.record(z.string(), z.object(shape)).meta({ localizedObject: true });
 }
 
+/**
+ * What a field holds when nobody has written into it yet.
+ *
+ * It lives here, next to the reader of the schema, because three things ask the same question: a
+ * new block, a new entry of a repeatable list, and a form that must not hand React an input with
+ * no value. Three answers would be three descriptions of the same defaults, and the one that would
+ * go stale is whichever is furthest from the schema.
+ */
+export function blankValue(node: FieldNode, locales: readonly string[]): unknown {
+  if (node.defaultValue !== undefined) {
+    // What the schema says beats what the kind implies: a `limit` that declares 10 starts at 10.
+    return node.defaultValue;
+  }
+
+  switch (node.kind) {
+    case 'localized':
+      return Object.fromEntries(locales.map((locale) => [locale, '']));
+    case 'text':
+      return '';
+    case 'number':
+      return node.choices?.[0] ?? 0;
+    case 'boolean':
+      return false;
+    case 'enum':
+      // An optional choice starts at "nothing chosen", which is absent from the payload rather
+      // than an empty string the server would have to interpret.
+      return node.optional ? undefined : (node.options[0] ?? '');
+    case 'list':
+      return [];
+    case 'object':
+      return blankEntry(node.children, node.path, locales);
+    // A file, an icon and an instant start at nothing chosen. Each of them draws that state — no
+    // picture, no icon, an empty date — so there is nothing to invent here.
+    case 'media':
+    case 'icon':
+    case 'instant':
+    case 'localizedObject':
+      return undefined;
+  }
+}
+
+/**
+ * A fresh entry of an object or of a repeatable list. The children carry the whole path from the
+ * top of the schema, because that is what their label is looked up by; the key inside the object
+ * is only the last segment of it.
+ */
+export function blankEntry(
+  children: FieldNode[],
+  path: string,
+  locales: readonly string[],
+): Record<string, unknown> {
+  return Object.fromEntries(
+    children.map((child) => [child.path.slice(path.length + 1), blankValue(child, locales)]),
+  );
+}
+
+/** Every field of a schema at its blank value: what a new row, or a new block, starts holding. */
+export function blankValues(
+  schema: z.ZodType<Record<string, unknown>>,
+  locales: readonly string[],
+): Record<string, unknown> {
+  return Object.fromEntries(readFields(schema).map((field) => [field.path, blankValue(field, locales)]));
+}
+
+/**
+ * Whether a value is one nobody has written into. A translated value counts as unwritten only when
+ * *every* language of it is empty: one language written and another not is a hole, and saying so is
+ * publication's job, not this one's.
+ */
+function unwritten(node: FieldNode, value: unknown): boolean {
+  if (value === undefined || value === null || value === '') {
+    return true;
+  }
+
+  switch (node.kind) {
+    case 'localized':
+      return Object.values(value as Record<string, unknown>).every(
+        (written) => typeof written !== 'string' || written.trim() === '',
+      );
+    case 'list':
+      return Array.isArray(value) && value.length === 0;
+    case 'object':
+      return node.children.every((child) =>
+        unwritten(child, (value as Record<string, unknown>)[child.path.slice(node.path.length + 1)]),
+      );
+    default:
+      return false;
+  }
+}
+
+/**
+ * The values worth storing: the same object, without the optional fields nobody filled in.
+ *
+ * ⚠️ This is not tidiness. Publication refuses a page holding a translated value that is written in
+ * one language and not another, and it reads the body without knowing what any block *means* — so
+ * an optional `caption` left empty in both languages, carried along as `{ en: "", it: "" }`, would
+ * be read as a translation hole and would stop the page from being published. Dropping the key is
+ * what makes "optional" mean optional; the rule on the server stays exactly as strict as it was.
+ *
+ * A required field is never dropped, empty or not: an empty one is a mistake the editor should see
+ * named, and it is publication that names it.
+ */
+export function writtenValues<TValues extends Record<string, unknown>>(
+  schema: z.ZodType<TValues>,
+  values: TValues,
+): TValues {
+  const kept: Record<string, unknown> = { ...values };
+
+  for (const field of readFields(schema)) {
+    const value = kept[field.path];
+
+    if (field.optional && unwritten(field, value)) {
+      delete kept[field.path];
+      continue;
+    }
+
+    // A list keeps its entries, and each entry is pruned by the same rule: the optional text of a
+    // card nobody wrote is exactly the same problem one level down.
+    if (field.kind === 'list' && Array.isArray(value)) {
+      kept[field.path] = value.map((entry) => pruneEntry(field.children, field.path, entry));
+    } else if (field.kind === 'object' && value !== null && typeof value === 'object') {
+      kept[field.path] = pruneEntry(field.children, field.path, value);
+    }
+  }
+
+  return kept as TValues;
+}
+
+function pruneEntry(children: FieldNode[], path: string, entry: unknown): unknown {
+  if (entry === null || typeof entry !== 'object') {
+    return entry;
+  }
+
+  const kept: Record<string, unknown> = { ...(entry as Record<string, unknown>) };
+
+  for (const child of children) {
+    const key = child.path.slice(path.length + 1);
+    const value = kept[key];
+
+    if (child.optional && unwritten(child, value)) {
+      delete kept[key];
+    } else if (child.kind === 'list' && Array.isArray(value)) {
+      kept[key] = value.map((nested) => pruneEntry(child.children, child.path, nested));
+    } else if (child.kind === 'object' && value !== null && typeof value === 'object') {
+      kept[key] = pruneEntry(child.children, child.path, value);
+    }
+  }
+
+  return kept;
+}
+
 /** The shape zod exposes. Narrow on purpose: only what the walk below actually looks at. */
 interface ZodInternals {
   type: string;

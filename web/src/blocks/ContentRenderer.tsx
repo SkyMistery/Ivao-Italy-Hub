@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
+import { mediaFileUrl } from '../shared/api/mediaUrl';
 import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
@@ -22,10 +23,17 @@ import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from '
  * a block an editor can move, translate and delete.
  */
 
+/**
+ * What sits behind a section. `image` brings no colour of its own: the picture is set as the
+ * background of the frame, and the text over it keeps reading against the page's own foreground —
+ * which is why the editor is told, in `docs/UI-GUIDELINES.md`, that a picture behind a section is
+ * for a quiet one and not for a wall of prose.
+ */
 const BACKGROUND = {
   none: '',
   muted: 'bg-muted',
   accent: 'bg-accent',
+  image: 'bg-muted bg-cover bg-center',
 } as const;
 
 const PADDING = {
@@ -80,8 +88,15 @@ export function ContentRenderer({
 function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
   const frame = [BACKGROUND[section.background], PADDING[section.padding]].filter(Boolean).join(' ');
 
+  // The one place a style is written rather than a class: which picture it is only exists at
+  // runtime, and Tailwind reads the source rather than the page.
+  const picture =
+    section.background === 'image' && typeof section.mediaId === 'number'
+      ? { backgroundImage: `url(${mediaFileUrl(section.mediaId)})` }
+      : undefined;
+
   return (
-    <section className={frame}>
+    <section className={frame} {...(picture === undefined ? {} : { style: picture })}>
       <div className={`${WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 

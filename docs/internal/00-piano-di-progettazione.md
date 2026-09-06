@@ -1,9 +1,34 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.39 — 5 settembre 2026 (il motore CRUD impara tre cose nuove, tutte configurazione: una risorsa senza create JSON, che cosa significa cancellare, e un filtro che è una domanda)
+**Versione documento:** 0.40 — 6 settembre 2026 (i 21 blocchi esistono e §16.C si chiude: le convenzioni dei blocchi sono scritte, con il set davanti)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0 e G1 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0, G1, G2 e G3 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.40** (6 set 2026): **G3 di M1 ha aggiunto i sedici blocchi Content, Layout, Interactive
+e Structure** — il registry ne conta 21 — e con il set davanti si chiude **§16.C**, che dal 2 set 2026
+aspettava esattamente questo. Le convenzioni stanno in `docs/UI-GUIDELINES.md`: la spaziatura e lo
+sfondo sono della **sezione** e mai del blocco, gli sfondi sono quattro (`image` porta un `mediaId`),
+le larghezze quattro, una sezione `locked` mostra i campi e non la struttura, un blocco sconosciuto
+lo vede solo lo staff, ogni blocco dichiara la propria icona, nessun blocco contiene blocchi, e i
+riquadri (`video`, `embed`) puntano solo a host di una **allowlist** che ricostruisce l'indirizzo del
+player invece di rimandare indietro quello scritto.
+
+Tre cose che la fase ha deciso scrivendo, tutte e tre già dentro le regole:
+
+- **`BlockDocumentWalker` impara gli sfondi.** Erano l'unico insieme chiuso dell'envelope che il
+  server non controllava; un valore che nessuno rifiuta il renderer lo legge come «nessuno sfondo».
+  È la stessa coppia di `Layouts` e `RenderModes` — TypeScript da una parte, C# dall'altra, un test
+  di integrazione che posta un valore sconosciuto a tenerle d'accordo.
+- **L'`alt` di un'immagine non si eredita dalla libreria** (nota
+  `decisions/2026-09-06-alt-delle-immagini.md`): vuoto significa decorativa. L'eredità richiederebbe
+  o che il server legga dentro `props` — vietato da §16.5 — o un endpoint pubblico dei metadati, che
+  sarebbe il secondo endpoint scritto a mano di M1 per una riga di design.
+- **Il generatore di form salva solo ciò che è stato scritto** (`writtenValues`) e fa nascere una voce
+  di lista con i campi già controllati (`blankEntry`). Nessuna delle due è una comodità: una props
+  tradotta opzionale lasciata vuota viaggerebbe come `{ en: "", it: "" }` e la pubblicazione — che il
+  corpo lo legge senza sapere cosa sia un blocco — la leggerebbe come una traduzione a metà,
+  rifiutando la pagina. La regola sul server **non** si è indebolita.
 
 **Changelog 0.39** (5 set 2026): la media library (G1 di M1) è stata costruita **senza scrivere un
 caso speciale**, e per riuscirci `MapCrud` ha imparato tre cose. Sono estensioni, non eccezioni —
@@ -1124,7 +1149,7 @@ Criterio di Carmine: **quanto meno codice possibile; un pezzo usato in due punti
 
 **C. Convenzioni UI — da trattare nel design di M0, prima della prima schermata** (concordato il 2 set 2026)
 
-Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti.
+Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti. ✅ **Chiuso il 6 settembre 2026 con G3 di M1**: i 21 blocchi esistono e le convenzioni sono scritte in `docs/UI-GUIDELINES.md`, sezione «The conventions every block follows» — la spaziatura e lo sfondo sono della sezione e mai del blocco, quattro sfondi (`none`, `muted`, `accent`, `image` con `mediaId`), quattro larghezze, la resa di una sezione `locked`, il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che non sia prosa dentro `props`, nessun blocco che contiene blocchi, e l'allowlist degli host per i riquadri.
 
 **D. Buchi chiusi**
 

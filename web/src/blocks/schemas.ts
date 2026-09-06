@@ -49,3 +49,211 @@ export const linkListSchema = z.object({
   // The default lives on the field, so a new block starts at ten and nothing else has to know it.
   limit: z.number().int().default(10),
 });
+
+// --- the sixteen of G3 -------------------------------------------------------------------------
+//
+// Two rules shape every schema below, and both come from design M1 §1.5.
+//
+// A property that is not prose is a `z.enum` or a number with `choices`, never free text: every
+// string inside `props` is concatenated into the text of the page for the search index, so an
+// alignment or a column count must not be something a member finds by searching for it.
+//
+// A property that names a file is `.meta({ media: true })` and nothing else: a number to type is a
+// page pointing at a file somebody deleted years ago.
+
+/** Where a block sets its content, when it is the kind of block that can be centred. */
+export const ALIGNMENTS = ['left', 'center'] as const;
+
+/** The three grounds a block that owns its background may stand on (docs/UI-GUIDELINES.md). */
+export const TONES = ['plain', 'muted', 'accent'] as const;
+
+/** How many columns a grid has. Numbers, so the count never reads as text of the page. */
+export const GRID_COLUMNS = [2, 3, 4];
+
+/** How much of its column a picture takes. */
+export const IMAGE_WIDTHS = ['third', 'half', 'full'] as const;
+
+/** The shape a video is drawn in. */
+export const ASPECTS = ['16x9', '4x3', '1x1'] as const;
+
+/** A row of steps, or a column of moments. Same properties, two drawings. */
+export const TIMELINE_VARIANTS = ['steps', 'timeline'] as const;
+
+/** How a cell is set. Kept apart from `ALIGNMENTS` because a table cell also right-aligns. */
+export const CELL_ALIGNMENTS = ['left', 'center', 'right'] as const;
+
+/** Which button of a group is the one being asked for. */
+export const BUTTON_VARIANTS = ['primary', 'secondary', 'ghost'] as const;
+
+/** How much air a spacer adds where a section's own padding is not the answer. */
+export const SPACER_SIZES = ['sm', 'md', 'lg', 'xl'] as const;
+
+/** What a divider is drawn with. */
+export const DIVIDER_VARIANTS = ['line', 'dots'] as const;
+
+/** How much room a divider takes above and below itself. */
+export const DIVIDER_SPACINGS = ['sm', 'md', 'lg'] as const;
+
+/**
+ * A button an editor writes: somewhere to go, and what to call it. Written once because two blocks
+ * carry one — the pair of a `hero`, the entries of a `buttonGroup` — and a second description of
+ * the same pair is a second place for it to drift.
+ */
+const linkFields = { label: localized(), href: z.string() };
+
+export const heroSchema = z.object({
+  eyebrow: localized().optional(),
+  title: localized(),
+  text: localized().optional().meta({ multiline: true }),
+  mediaId: z.number().int().optional().meta({ media: true }),
+  align: z.enum(ALIGNMENTS).default('left'),
+  // A hero is one of the three blocks whose identity *is* its ground (docs/UI-GUIDELINES.md), so
+  // it carries a tone of its own where an ordinary block leaves that to its section.
+  tone: z.enum(TONES).default('muted'),
+  primary: z.object(linkFields).optional(),
+  secondary: z.object(linkFields).optional(),
+});
+
+export const imageSchema = z.object({
+  mediaId: z.number().int().meta({ media: true }),
+  // Empty is a decorative picture, and that is what it renders as. It is not inherited from the
+  // library: the public renderer is handed a published body and nothing else, and a server that
+  // filled it in would have to read inside `props`, which is the one thing it must not do
+  // (plan §16.5; decision of 6 September 2026).
+  alt: localized().optional(),
+  caption: localized().optional(),
+  width: z.enum(IMAGE_WIDTHS).default('full'),
+  rounded: z.boolean().default(true),
+});
+
+export const videoSchema = z.object({
+  // Either an address on a host the hub knows how to frame, or a file of the library. Both are
+  // optional because either one is enough; the block says so when it has neither.
+  url: z.string().optional(),
+  mediaId: z.number().int().optional().meta({ media: true }),
+  caption: localized().optional(),
+  aspect: z.enum(ASPECTS).default('16x9'),
+});
+
+export const embedSchema = z.object({
+  url: z.string(),
+  // Not decoration: it is the name of the frame, and without it somebody reading with a keyboard
+  // finds a box with nothing to say what is inside (design M1 §1.2).
+  title: localized(),
+  height: z.number().int().default(480),
+});
+
+export const timelineSchema = z.object({
+  variant: z.enum(TIMELINE_VARIANTS).default('steps'),
+  items: z.array(
+    z.object({
+      title: localized(),
+      text: localized().optional().meta({ multiline: true }),
+      // A real day, held as an ISO instant, drawn by the field G2 built. Steps have none, and an
+      // entry without one simply shows no date.
+      date: z.string().optional().meta({ date: true }),
+      icon: z.string().optional().meta({ icon: true }),
+    }),
+  ),
+});
+
+/**
+ * ⚠️ The rows are a list of objects holding a list of objects, and not the `rows[][]` of design
+ * §1.2. The generator draws a list of *objects*; a list of bare values is a kind of field it has
+ * not got, and inventing one for this single schema would be a sixth extension to the form
+ * generator for a shape nothing else asks for. The wrapper costs one key in the JSON and nothing
+ * in the editor, which is the cheaper of the two.
+ */
+export const tableSchema = z.object({
+  caption: localized().optional(),
+  columns: z.array(z.object({ label: localized(), align: z.enum(CELL_ALIGNMENTS).default('left') })),
+  rows: z.array(z.object({ cells: z.array(z.object({ text: localized() })) })),
+});
+
+export const cardGridSchema = z.object({
+  columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
+  cards: z.array(
+    z.object({
+      title: localized(),
+      text: localized().optional().meta({ multiline: true }),
+      mediaId: z.number().int().optional().meta({ media: true }),
+      href: z.string().optional(),
+      icon: z.string().optional().meta({ icon: true }),
+    }),
+  ),
+});
+
+export const iconGridSchema = z.object({
+  columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
+  items: z.array(
+    z.object({
+      icon: z.string().meta({ icon: true }),
+      title: localized(),
+      text: localized().optional().meta({ multiline: true }),
+    }),
+  ),
+});
+
+export const gallerySchema = z.object({
+  // One object per picture, for the same reason the table's rows are: a list of bare numbers is
+  // not something the generator draws, and a media is never a number anyway.
+  images: z.array(z.object({ mediaId: z.number().int().meta({ media: true }) })),
+  columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
+  // The picture becomes a link to the file itself, opened in a tab of its own. Not a dialog of our
+  // own making: that would be a custom component, and the closed list is closed (design M1 §12).
+  lightbox: z.boolean().default(true),
+});
+
+export const logoGridSchema = z.object({
+  columns: z.number().int().default(4).meta({ choices: GRID_COLUMNS }),
+  items: z.array(
+    z.object({
+      mediaId: z.number().int().meta({ media: true }),
+      // The name of a partner is a name, not a sentence: it reads the same in every language, and
+      // it is what a reader who cannot see the logo is told.
+      name: z.string(),
+      href: z.string().optional(),
+    }),
+  ),
+});
+
+/**
+ * ⚠️ `tabs` and `accordion` carry markdown per entry and never blocks (design M1 §1.5). A block
+ * containing blocks would be a second tree, with a second validator, a second editor and a second
+ * way of getting the depth wrong. What is inside is the same sanitized `MarkdownContent` as `text`.
+ */
+export const tabsSchema = z.object({
+  tabs: z.array(z.object({ label: localized(), body: localized().meta({ multiline: true }) })),
+});
+
+export const accordionSchema = z.object({
+  allowMultiple: z.boolean().default(false),
+  items: z.array(z.object({ question: localized(), answer: localized().meta({ multiline: true }) })),
+});
+
+export const testimonialSchema = z.object({
+  quote: localized().meta({ multiline: true }),
+  // A person's name, written once: the same string in every language.
+  author: z.string(),
+  role: localized().optional(),
+  mediaId: z.number().int().optional().meta({ media: true }),
+});
+
+export const buttonGroupSchema = z.object({
+  align: z.enum(CELL_ALIGNMENTS).default('left'),
+  buttons: z.array(z.object({ ...linkFields, variant: z.enum(BUTTON_VARIANTS).default('primary') })),
+});
+
+/**
+ * Air, where a section's own padding is not the answer — between two blocks that belong together
+ * and two that do not. It exists for the declared exception and not to make up for inconsistent
+ * margins: a block never carries a margin of its own (docs/UI-GUIDELINES.md).
+ */
+export const spacerSchema = z.object({
+  size: z.enum(SPACER_SIZES).default('md'),
+});
+
+export const dividerSchema = z.object({
+  variant: z.enum(DIVIDER_VARIANTS).default('line'),
+  spacing: z.enum(DIVIDER_SPACINGS).default('md'),
+});

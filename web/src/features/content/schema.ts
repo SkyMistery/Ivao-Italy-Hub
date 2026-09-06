@@ -51,6 +51,10 @@ export const sectionSettingsSchema = z.object({
   title: localized(),
   layout: z.enum(LAYOUTS),
   background: z.enum(BACKGROUNDS),
+  // Only read when the background is `image`, and chosen from the library like every other file.
+  // Left here rather than hidden behind the choice: the generator draws a schema, and a field that
+  // appears and disappears with the value of another one would be the first rule of its kind.
+  mediaId: z.number().int().optional().meta({ media: true }),
   padding: z.enum(PADDINGS),
   width: z.enum(WIDTHS),
 });

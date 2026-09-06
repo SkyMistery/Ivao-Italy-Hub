@@ -20,7 +20,7 @@ import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
-import { NO_CHOICE, readFields, type FieldNode } from './schema';
+import { NO_CHOICE, blankEntry, readFields, type FieldNode } from './schema';
 import { useProblemDetails } from './useProblemDetails';
 
 /**
@@ -412,7 +412,15 @@ function RepeatableList({
       ))}
 
       <div>
-        <Button type="button" variant="secondary" size="sm" onClick={() => append({})}>
+        {/* A new entry starts at what its own fields say they hold when empty, and never at `{}`:
+            a translated field with no value is an input React cannot control, and the coordinator
+            would be typing into a box that forgets what they wrote. */}
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => append(blankEntry(node.children, node.path, env.locales))}
+        >
           <Plus aria-hidden className="mr-2 size-4" />
           {t('form.addEntry')}
         </Button>
