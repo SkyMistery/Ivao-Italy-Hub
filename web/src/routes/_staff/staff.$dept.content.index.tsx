@@ -35,8 +35,7 @@ function PagesPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
 
-  const open = (id: string) =>
-    void navigate({ to: '/staff/$dept/content/$id', params: { dept, id } });
+  const open = (id: string) => void navigate({ to: '/staff/$dept/content/$id', params: { dept, id } });
 
   return (
     <ContentListScreen

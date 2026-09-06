@@ -719,6 +719,16 @@ quello che ha *trovato*:
   Un blocco che mostra molti file tiene una **lista di oggetti** con dentro `mediaId`
   (`images[] { mediaId }`), perché il generatore disegna liste di oggetti; `mediaIds[]`, un array
   nudo, resta capito dalla stessa query e non lo scrive più nessuno.
+- **Una risorsa dice come si chiama nel contratto**, `CrudOptions.Name`, quando non basta l'area
+  dei permessi. Due risorse nella stessa area — `/api/content` e `/api/categories` — rispondevano
+  entrambe a `ContentList`, e il generatore del client teneva l'ultima letta: una risorsa che
+  sparisce dal client senza che niente lo dica.
+- **Le righe che ogni dipartimento può *leggere* si dichiarano una volta sola.** L'entità porta
+  un'espressione (`ContentEntry.SharedForReading`); il motore CRUD la mette in `OR` con il filtro di
+  dipartimento della lista, e l'unico authorization handler chiede alla riga la **stessa espressione
+  compilata** (`ISharedForReading`). Vale **solo** per il permesso di lettura, cioè il `.View`
+  dell'area secondo `PermissionCatalog.ViewOf`: condividere una riga in lettura non è mai una
+  licenza per modificarla. Oggi lo dichiara solo `ContentEntry`, per i template.
 - **Le proiezioni si leggono una volta per salvataggio, non una per riga.** `ProjectionWriter`
   separa `Load`/`LoadAsync` da `Apply` apposta: sono dentro la transazione della scrittura, e ogni
   round trip in più è un lock tenuto aperto più a lungo. `ProjectionBatchingTests` lo fissa
@@ -790,7 +800,7 @@ quello che ha *trovato*:
 | `2026-09-04-rotte-di-dettaglio.md` | Una lista e il suo dettaglio sono **tre** route: layout con la guardia e l'`Outlet`, `index` con i search params, dettaglio fratello. Scritte in due, il dettaglio non si disegnava mai e nessun form del back-office era raggiungibile. **Decisa da Carmine** il 4 set 2026; design §7.3 corretta. |
 | `2026-09-04-smoke-in-un-browser.md` | Lo smoke in un browser diventa **bloccante** in CI e non aspetta M1: un `TooltipProvider` mancante ha ucciso ogni schermata dietro un layout con 353 test .NET e 74 Vitest verdi, perché provavano i pezzi e nessuno provava la composizione. Contiene anche il perché l'albero dei provider è diventato un componente. **Decisa da Carmine** il 4 set 2026; design §8 corretta. |
 | `2026-09-05-ambiente-e2e.md` | L'ambiente `E2E` e `POST /e2e/signin`: perché il banco ha un bypass di autenticazione, e com'è recintato — vive in un ambiente solo, e il flag fuori da lì **ferma l'applicazione**. Scritta in G0 di M1. |
-| `2026-09-05-template-di-sistema-e-dipartimenti.md` | Un template appartiene a un dipartimento, ma **lo legge tutto lo staff**: senza, per otto dipartimenti su nove «Nuovo da template» non esiste, e una pagina nata da un template che il suo editore non può leggere perde i vincoli nell'editor. **Decisa da Carmine** il 5 set 2026; si implementa nel primo task di G5. |
+| `2026-09-05-template-di-sistema-e-dipartimenti.md` | Un template appartiene a un dipartimento, ma **lo legge tutto lo staff**: senza, per otto dipartimenti su nove «Nuovo da template» non esiste, e una pagina nata da un template che il suo editore non può leggere perde i vincoli nell'editor. **Decisa da Carmine** il 5 set 2026; **costruita in G5** (§19), con `ContentEntry.SharedForReading` letta in SQL dal motore CRUD e in memoria dall'unico handler. |
 | `2026-09-05-dashboard-di-dipartimento.md` | Ogni dipartimento nasce con la propria dashboard. Misura il bivio — una riga di `cms_contents` contro una disposizione di widget — e **raccomanda** la prima. ⚠️ **Ancora da confermare**, prima di G8: è l'unica nota aperta. |
 | `2026-09-04-m0-review.md` | La revisione §16.E su tutto il codice di M0: le undici domande verificate riga per riga, le tre eccezioni (schermate senza una risorsa paginata dietro), le tre stringhe visibili trovate e corrette, e un rilievo rimandato a M1 (`LocalizedExtensions`, helper di test che vive in `src/`). Scritta in F9. |
 
@@ -1348,9 +1358,10 @@ differenze rispetto al template) è §9.1; il n.3 (`seo`) è §9.2, che ne decid
 domande della ricerca) è §7. Il n.6 (`firStaffScope`) resta aperto e passa a M2. Gli altri restano
 com'erano, ed è una scelta scritta.
 
-**Dove sono adesso** (6 set 2026, dopo G0, G1 e G2): **n.1 chiuso** in G0 (§14), **n.3 e n.4 chiusi**
+**Dove sono adesso** (6 set 2026, dopo G0-G5): **n.1 chiuso** in G0 (§14), **n.3 e n.4 chiusi**
 in G2 (§16). Restano aperti il n.2 (G11), il n.5, il n.7, il n.8, il n.9 e il n.10 (G10); il n.6 è di
-M2. Le voci qui sotto portano il segno di chi le ha chiuse: **questa lista e §7 devono dire la stessa
+M2. G5 ne ha aggiunti due suoi, piccoli e scritti in §19: la slug di un documento che coincide con
+un codice di dipartimento, e il vocabolario che viaggia con ogni lista. Le voci qui sotto portano il segno di chi le ha chiuse: **questa lista e §7 devono dire la stessa
 cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
 
 1. ~~**Playwright, `pnpm e2e`.**~~ **Chiuso il 4 set 2026, a forza** (§11): esiste `pnpm e2e`, e al
@@ -2158,38 +2169,179 @@ nello stato «in arrivo» e passerebbe uno smoke.
    nessuno lo noterà finché non succede, ed è scritto qui perché quando succederà si sappia dov'è.
 
 ---
-## 19. Da dove riparte la prossima sessione (6 set 2026)
+## 19. G5 di M1: due `kind`, non due tabelle (6 settembre 2026)
 
-### Si apre G5
+La fase che §9.3 del piano aveva messo lì apposta per essere smentita, e non lo è stata. **News e
+documenti non hanno una tabella, un editor, un renderer, una pubblicazione né una proiezione di
+loro**: sono due valori di `ContentEntry.Kind`, e quello che è servito per farli esistere è
+configurazione più cinque colonne che c'erano già.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 5: **news, documenti, categorie**. È la fase che
-dimostra che due `kind` non sono due tabelle, ed è dichiarata **corta**: se non lo è, §9.3 del piano
-non ha retto e va scritto nel rapporto di chiusura.
+### Il conto, prima di tutto
 
-⚠️ Il **primo task** non è la tabella delle categorie, è la **lettura condivisa dei template**
-(design M1 §9.4, nota `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`). Senza, un
-coordinatore che non sia del dipartimento Web non vede alcun template e «Nuovo da template» non
-compare: news e documenti nascerebbero solo dalla pagina vuota. Due estensioni **generiche**, e il
-punto delicato è che i due lati — il predicato SQL in `CrudOptions` e il controllo in memoria
-dell'unico authorization handler — devono dire la stessa cosa, con una sola fonte sull'entità e un
-test che li confronta.
+| | |
+|---|---|
+| Entità nuove con un corpo a blocchi | **zero** (`NoSecondContentEntity` lo tiene fermo) |
+| Editor nuovi | **zero** — `ContentEditor` prende `kind` e le categorie, lo schema fa il resto |
+| Renderer nuovi | **zero** — il pubblico legge con lo stesso `ContentRenderer` |
+| Colonne nuove su `cms_contents` | **zero** — le cinque di news e documenti ci sono da M0 |
+| Tabelle nuove | **una**, `cms_categories`, già contata fra le sei di design §10.2 |
+| Endpoint scritti a mano | **zero** (M1 resta a uno, l'upload) |
+| Componenti custom | **zero** (M1 resta a uno, `MediaPicker`) |
+| Meccanismi nuovi | **zero**; due estensioni generiche, sotto |
 
-Quattro cose che G4 lascia pronte e che **non vanno rifatte**:
+### Che cosa c'è adesso
 
-- **`BlockProps`** legge le props per tutti i provider: un provider nuovo non riscrive «questo è un
-  numero?».
-- **`DataBlockScope.WithinPage`** è il soffitto di visibilità, e vale per qualunque entità
-  `IVisible, IOwnedByDepartment`: un provider nuovo lo chiama e basta.
-- **`ContentListProvider`** è già la lista di un `kind` qualunque: `newsList` e `documentList` sono
-  due sottoclassi di tre righe. Se G5 avesse bisogno di un terzo lettore di `cms_contents`, è un
-  segnale.
-- **`exampleData`** è obbligatorio per un blocco Data (`registry.test.ts` fallisce senza), e la
-  galleria mostra quello invece di chiamare il server.
+- **`/staff/{dept}/news`, `/staff/{dept}/documents` e `/staff/{dept}/content`** sono **una schermata
+  montata tre volte**: `ContentListScreen` più `ContentFormScreen`, guidate da
+  `features/content/kinds.ts`, che è un oggetto di configurazione per `kind` — un `kind` fisso, un
+  elenco di colonne, e il namespace da cui la schermata prende le proprie parole. ⚠️ Le **etichette
+  dei campi** restano tutte in `content`: «Titolo» e «Indirizzo» vogliono dire la stessa cosa
+  qualunque riga si stia modificando, e tre copie sarebbero tre posti da tenere allineati.
+- **Il `kind` non è più un campo del form.** Lo fissa la lista da cui si è entrati, esattamente come
+  il dipartimento. Un select avrebbe voluto dire una pagina che diventa documento con i campi di una
+  pagina ancora a schermo.
+- **`cms_categories`**: chiave stabile, etichetta tradotta, ordine, `IsActive`, per dipartimento e
+  per `kind`. `MapCrud` come tutto il resto, back-office in `/staff/{dept}/categories`, **seed
+  vuoto**. ⚠️ **Nessuna FK** verso `cms_contents`: una categoria cancellata lascia la riga con la sua
+  chiave, ed è la regola dei moduli applicata a un vocabolario che può cambiare sotto righe già
+  pubblicate.
+- **Il pubblico**: `/news`, `/news/{slug}`, `/documents`, `/documents/{dipartimento-o-slug}`.
+  ⚠️ **Le liste pubbliche sono i blocchi Data di G4**, montati con `BlockView`: `newsList` e
+  `documentList` sanno già chiedere, sanno già che cosa un dipartimento può mostrare e sanno già
+  disegnare una card. Un secondo lettore delle stesse righe sarebbe stato un secondo posto dove le
+  due versioni divergono — e avrebbe voluto un endpoint suo, che M1 ha un budget di uno e l'ha già
+  speso sull'upload.
+- **Le categorie arrivano al pubblico dentro la risposta del provider**, `categories: [{key, label}]`.
+  Chi può leggere la lista può leggere i nomi dei suoi scaffali; così il filtro di `/news` e il
+  raggruppamento di `documentList` mostrano la parola invece della chiave, e una categoria cancellata
+  si vede come la chiave nuda — che è alla lettera ciò che il design chiedeva.
+
+### La lettura condivisa dei template, e la forma che ha preso
+
+Il primo task, e l'unico che tocca la spina dorsale. Un template appartiene a un dipartimento e lo
+**legge** tutto lo staff (design M1 §9.4).
+
+**Una sola fonte**, `ContentEntry.SharedForReading`, che è una `Expression`. Il motore CRUD la mette
+in `OR` con il filtro di dipartimento della lista; l'unico authorization handler chiede alla riga
+(`ISharedForReading`), e la riga risponde con **quella stessa espressione compilata**. Non due
+scritture della stessa regola: una, letta in due lingue.
+
+La scrittura non si è mossa di un millimetro: la regola dell'handler vale **solo quando il permesso
+è quello di lettura**, cioè quando è il `.View` della sua area — e a dirlo è
+`PermissionCatalog.ViewOf`, che è già il posto che sa che cosa vuol dire «il View di un'area» (ci
+sta anche «Edit implica View»).
+
+### Due estensioni generiche, e perché non erano aggiramenti
+
+1. **`CrudOptions.Name`.** Due risorse nella stessa area di permessi collidevano sul nome
+   dell'operazione: `/api/categories` e `/api/content` rispondevano entrambe a `ContentList`, e il
+   generatore del client teneva l'ultima letta — una risorsa che sparisce dal client **in silenzio**,
+   non un errore. Il nome nel contratto e l'area dei permessi sono due cose diverse che finora
+   coincidevano; adesso una risorsa può dire come si chiama.
+2. **`.meta({ choices })` con etichette a runtime.** `{ value, label }` accanto ai valori nudi che
+   già accettava, più la voce «nessuna scelta» che un `z.enum` opzionale aveva e un `text` con
+   `choices` no. La categoria di una news è una **chiave stabile** mostrata con la **parola** che un
+   coordinatore ha scritto in un'altra tabella: né un `z.enum` (l'insieme non è noto a compile time)
+   né una chiave i18n (l'etichetta è un dato) potevano portarla. Non è un sesto tipo di campo, ed è
+   scritta in `docs/UI-GUIDELINES.md` per chi forka.
+
+E una riga in più al vocabolario delle colonne, **`col.media`**: una miniatura invece del numero con
+cui una copertina è salvata. Un `case` in `DataList` e una riga in `columns.ts`, che è ciò che quel
+file dice di fare quando serve una cella nuova.
+
+### I test, e le due volte che non erano test
+
+Sette di accettazione (`NewsDocumentsAndCategoriesTests`), quattro sull'handler
+(`SharedForReadingTests`), uno di architettura (`NoSecondContentEntity`), sei in un browser — tre
+con una misura su `/news` (`public-lists.spec.ts`) e tre che aprono le schermate nuove del
+back-office. Al 6 set 2026 la suite è **264 unit .NET, 122 di integrazione, 199 Vitest, 23 smoke
+Playwright e 3 del giro contro l'API vera**. Tutti i test nuovi sono stati verificati rompendo la
+correzione — e **due volte la verifica ha trovato un test che non lo era**:
+
+1. **Un end-to-end respinto due volte non prova chi lo ha respinto.**
+   `TemplatesAreWritableOnlyByTheirDepartment` restava verde con la regola «solo in lettura»
+   cancellata, perché la scrittura di un template altrui è rifiutata **sia** dall'handler **sia**
+   dall'interceptor. La rete vera è un test di unità sull'handler da solo; l'end-to-end resta perché
+   la proprietà vale la pena di essere provata sul giro intero.
+2. **Un test di accoppiamento con righe scelte a mano prova le righe, non l'accoppiamento.** La
+   prima versione di `TheSqlAndTheInMemoryHalvesAgree` aveva quattro righe, tutte alla visibilità di
+   default, e restava verde mentre una seconda metà scritta a mano dissentiva su **ogni template
+   vero** — che è `Visibility.Staff`. Adesso è il prodotto cartesiano delle proprietà che l'una o
+   l'altra metà potrebbe guardare.
+
+### Due cose viste facendo la fase
+
+- ⚠️ **Una `Label` puntava a nulla.** Il filtro pubblico aveva `htmlFor` senza un `id` sul `Select`.
+  Il `Select` di Atmosphere **inoltra `id` al trigger** — misurato nel bundle, non assunto: è il
+  **quinto** contratto di quella libreria che andava guardato, dopo `DarkModeToggle`, `Select` (le
+  rest props sdoppiate), `SidebarContainer` e `Tabs`. Senza, il controllo non ha nome per chi legge
+  con uno screen reader, e il test non riusciva a trovarlo: è così che si è visto.
+- ⚠️ **I VID dei test di integrazione sono un intervallo per classe, e la collisione è muta.**
+  Questa classe aveva preso 630001-630003, che `SearchEndpointTests` già usa, e dare una posizione
+  del dipartimento Web a 630003 ha trasformato il *coordinatore Flight Ops* di quella suite in uno
+  che raggiunge ogni dipartimento: una riga in più in un conteggio, tre classi più in là, e niente a
+  che vedere con il codice sotto test. Il database è **uno solo per l'intera collection**: prima di
+  scegliere dei VID si guarda `grep -n "const int.*Vid" tests/IvaoHub.IntegrationTests/*.cs`. Questa
+  classe sta ora su 650xxx.
+
+### Che cosa la fase non ha fatto, ed è giusto così
+
+- **La copia di un template in un altro dipartimento**: il design la esclude esplicitamente finché
+  qualcuno non vuole davvero divergere (§9.4). È la stessa copia profonda che esiste già.
+- **Le voci di menu verso `/news` e `/documents`**: il menu è editoriale e nasce in G8. Le rotte
+  esistono e si aprono per indirizzo.
+- **La paginazione delle liste pubbliche**: un blocco Data risponde con al massimo cinquanta righe
+  (`DataBlockScope.MaxItems`), che è il tetto che vale anche dentro una pagina. Quando la divisione
+  avrà più di cinquanta news pubblicate lo si guarderà con il dato davanti, non prima.
+
+### Debiti nuovi che G5 lascia
+
+1. **Un documento con slug uguale a un codice di dipartimento non è raggiungibile.**
+   `/documents/{qualcosa}` è un segmento solo e vince il dipartimento (design §3.3 lo chiedeva in due
+   modi che non stanno insieme). Nove parole su tutte le slug possibili sono prenotate; l'editor è il
+   posto in cui sceglierne un'altra. Se un giorno desse davvero fastidio, la risposta è un prefisso
+   (`/documents/dept/{codice}`) e non un caso speciale.
+2. **Il vocabolario viaggia con ogni lista.** `newsList` e `documentList` fanno una query in più per
+   le categorie del proprio `kind`, anche quando il blocco sta dentro una pagina e nessuno userà le
+   etichette. Sono poche righe indicizzate; se un giorno pesasse, la risposta è una props e non una
+   seconda strada.
+
+---
+
+## 20. Da dove riparte la prossima sessione (6 settembre 2026)
+
+### Si apre G6, oppure G7
+
+`04-piano-implementazione-m1.md` §C. Due fasi sono pronte e **non dipendono l'una dall'altra**:
+
+- **G6 — il calendario**: voci interne con `MapCrud` in `/staff/{dept}/calendar`, `/calendar`
+  pubblico, e il componente custom `CalendarView` (il secondo dei quattro decisi, dopo `MediaPicker`).
+  Il modello esiste tutto da M0 e **non si tocca**. ⚠️ Le voci con `SourceModule != "core"` sono
+  proiezioni e vanno mostrate in sola lettura.
+- **G7 — contatti, servizio notifiche, namespace `mail`**: dipende solo da G2, quindi può partire
+  quando si vuole. È la fase che fa nascere il servizio notifiche con un solo mittente di intenti.
+
+G8 vuole G5 (fatta), G3 e G4 (fatte), quindi è sbloccata — ma prima serve la risposta su cui
+Carmine deve decidere, qui sotto.
+
+Cinque cose che G5 lascia pronte e che **non vanno rifatte**:
+
+- **`ContentListScreen` e `ContentFormScreen`** sono la lista e il form di un `kind` qualunque, e
+  `features/content/kinds.ts` è ciò che li distingue. Una schermata nuova su `cms_contents` è una
+  riga in quel file più tre route, non una schermata.
+- **`CrudOptions.SharedForReading`** è generico: qualunque risorsa può dichiarare che alcune sue
+  righe si leggono da ogni dipartimento. Il motore non sa che cosa sia un template.
+- **`CrudOptions.Name`** serve a chiunque metta una seconda risorsa nella stessa area di permessi.
+  Senza, i nomi delle operazioni collidono e il client generato ne perde una in silenzio.
+- **`.meta({ choices })` accetta `{ value, label }`**: un insieme chiuso che il server conosce e il
+  cui nome è un dato, non una chiave i18n. Le categorie sono il primo cliente.
+- **Il vocabolario delle categorie** è già dentro la risposta di `newsList` e `documentList`: una
+  schermata pubblica che vuole filtrare per categoria non chiede niente a nessun altro.
 
 ### Deciso e già collocato, da non ridiscutere
 
-- **I template sono di dipartimento e li legge tutto lo staff** (piano §9.3, design M1 §9.4): primo
-  task di G5, vedi sopra.
+- **I template sono di dipartimento e li legge tutto lo staff** (piano §9.3, design M1 §9.4):
+  **costruito in G5** (§19), con una sola espressione sull'entità letta in SQL e in memoria.
 - **`mediaId` è il nome con cui un blocco nomina un file**, a qualunque profondità (§15, §17).
 - **Le icone sono una griglia e non un select** (§16), perché il `Select` di Atmosphere prende una
   stringa per opzione. È stato misurato.
@@ -2208,7 +2360,7 @@ Tre domande, con la raccomandazione già scritta nella nota:
 2. la vede **solo il proprio dipartimento** o qualunque staff? — raccomandato il proprio;
 3. entra in **M1/G8** o slitta a M2? — raccomandato G8, se blocchi.
 
-Nulla di tutto questo blocca G5, G6 o G7.
+Nulla di tutto questo blocca G6 o G7. **Blocca G8**, che è la fase successiva a quelle due.
 
 ### Il banco e2e, in due righe
 

@@ -185,3 +185,45 @@ test('the gallery draws every kind of field the generator learned, and they are 
   await expect(page.getByRole('button', { name: 'Move down' })).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'Move up' }).first()).toBeDisabled();
 });
+
+/**
+ * The three screens G5 added, opened in a browser.
+ *
+ * They are the same list and the same form as the pages, mounted with a different `kind` — which is
+ * exactly the kind of claim that is true in a unit test and false in a browser. §11 and §12 of
+ * HANDOFF are both stories about composition being green everywhere except where it runs, and three
+ * screens nobody had opened would have been the same bet again.
+ */
+test('the news, the documents and the vocabulary each open on their own address', async ({ page }) => {
+  for (const [path, heading] of [
+    ['/staff/ed/news', englishCommon.news.title],
+    ['/staff/ed/documents', englishCommon.documents.title],
+    ['/staff/ed/categories', englishCommon.categories.title],
+  ] as const) {
+    await page.goto(path);
+
+    await expect(page.getByText('Something went wrong!')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+  }
+});
+
+test('new news reaches the editor, and it is the editor of a news item', async ({ page }) => {
+  await page.goto('/staff/ed/news');
+  await page.getByRole('link', { name: englishCommon.news.create }).first().click();
+
+  await expect(page).toHaveURL(/\/staff\/ed\/news\/new/);
+
+  // The metadata form is there — the half that was missing the day no form in the hub was
+  // reachable — and it carries the field only a news item has, which is what says the `kind`
+  // reached the schema rather than the screen simply being the page editor under another address.
+  await expect(page.getByLabel(englishCommon.content.fields.slug)).toBeVisible();
+  await expect(page.getByLabel(englishCommon.content.fields.pinned)).toBeVisible();
+});
+
+test('new category reaches its form', async ({ page }) => {
+  await page.goto('/staff/ed/categories');
+  await page.getByRole('link', { name: englishCommon.categories.create }).first().click();
+
+  await expect(page).toHaveURL(/\/staff\/ed\/categories\/new/);
+  await expect(page.getByLabel(englishCommon.categories.fields.key)).toBeVisible();
+});

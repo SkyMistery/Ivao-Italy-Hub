@@ -1,10 +1,37 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.4 — 6 settembre 2026
+**Versione documento:** 1.5 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.5** (6 set 2026): **G5 ha costruito news, documenti e categorie**, e la fase è stata
+corta come §3 prometteva: nessuna entità nuova con un corpo a blocchi, nessun secondo editor,
+nessun secondo renderer. Cinque righe di questo documento cambiano, tutte perché scriverle ha
+trovato un dettaglio che il documento non poteva sapere.
+**§3.2, il back-office**: le liste sono **tre** e non due — `/staff/{dept}/content` diventa la lista
+delle **pagine**, con `kind` fisso come le altre due. Un `kind` scelto in un select avrebbe
+significato una pagina che diventa documento con i campi di una pagina ancora a schermo: il `kind`
+lo fissa la lista da cui si è entrati, come già il dipartimento.
+**§3.2, la colonna «file» dei documenti**: è un **campo del form**, non una colonna. Il file di un
+documento è tanto spesso un PDF quanto un'immagine, la riga di lista non ne porta il tipo, e una
+cella con dentro un PDF disegna un'immagine rotta — che si legge come un caricamento fallito.
+Portare il content type nella riga per una colonna sola sarebbe scrivere due volte lo stesso fatto.
+**§3.3, `/documents/{dept}` e `/documents/{slug}`**: un solo segmento non può essere due cose. A
+decidere è se il segmento nomina un dipartimento, che è un insieme chiuso del contratto, e **vince
+il dipartimento**. Conseguenza scritta e non scoperta: un documento con slug `ed` non è
+raggiungibile — nove parole su tutte le slug possibili sono prenotate, e sono i codici dei
+dipartimenti.
+**§3.4, il vocabolario sul pubblico**: le categorie con la loro etichetta tradotta viaggiano
+**dentro la risposta del provider di lista** di G4 (`categories: [{key, label}]`), non da un
+indirizzo proprio. Chi può leggere la lista può leggere i nomi dei suoi scaffali, e così il filtro
+di `/news` e il raggruppamento di `documentList` hanno l'etichetta invece della chiave — che è
+esattamente ciò che §3.4 chiedeva dicendo «la lista la mostra com'è» per una categoria cancellata.
+**§10.1, i permessi delle categorie**: nessuno. Le categorie stanno nell'area `Content`, e §10.1
+non le elencava proprio perché non ne servono: nominare gli scaffali di un dipartimento è parte
+dello scrivere i suoi contenuti, e una quarta area sarebbe un permesso da distribuire a parte per
+una cosa che nessuno gestisce a parte.
 
 **Changelog 1.4** (6 set 2026): **G4 ha costruito i sei blocchi Data**, e scriverli ha corretto tre
 righe di §1.2 — tutte e tre nel senso «il documento dava un nome a una cosa che il codice chiama

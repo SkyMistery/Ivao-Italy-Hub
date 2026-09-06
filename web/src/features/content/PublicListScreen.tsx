@@ -95,15 +95,16 @@ export function PublicListScreen({
             label={t(`${titles}.public.filters.department`)}
             none={t(`${titles}.public.filters.allDepartments`)}
             value={filters.department}
-            onChange={(chosen) =>
-              onFilter({ ...filters, department: chosen as Department | undefined })
-            }
+            onChange={(chosen) => onFilter({ ...filters, department: chosen as Department | undefined })}
             items={DEPARTMENTS.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
           />
         ) : null}
       </div>
 
-      <BlockView block={{ id: LIST_BLOCK_ID, type, version: 1, props, renderMode: 'live', frozen: null, column: null }} staff={false} />
+      <BlockView
+        block={{ id: LIST_BLOCK_ID, type, version: 1, props, renderMode: 'live', frozen: null, column: null }}
+        staff={false}
+      />
     </div>
   );
 }
@@ -138,6 +139,11 @@ function Filter({
     <div className="flex min-w-48 flex-col gap-1">
       <Label htmlFor={id}>{label}</Label>
       <Select
+        // Measured, not assumed: Atmosphere's `Select` forwards `id` to the trigger, which is what
+        // makes the label above actually name it. Without it the label points at nothing and the
+        // control is a button a screen reader reads as "Every category" and nothing else — the
+        // fifth contract of that library worth checking in a browser rather than reading.
+        id={id}
         {...(value === undefined ? {} : { value })}
         onValueChange={(chosen) => onChange(chosen === NO_CHOICE ? undefined : chosen)}
         placeholder={none}

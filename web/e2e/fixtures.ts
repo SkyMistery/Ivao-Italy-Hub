@@ -240,6 +240,12 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(noContent) }),
   );
 
+  // The vocabulary a department files its news and documents under. Empty: a division decides its
+  // own shelves and a fresh one has none, which is the state the screens have to survive.
+  await page.route('**/api/categories**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(noContent) }),
+  );
+
   // Not under /api, so the guard below never sees it: the file route is served by Kestrel.
   await page.route('**/media/9/**', (route) =>
     route.fulfill({ status: 200, contentType: 'image/png', body: RED_8X8_PNG }),
@@ -251,7 +257,8 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
       url.includes('/api/me') ||
       url.includes('/api/links') ||
       url.includes('/api/media') ||
-      url.includes('/api/content')
+      url.includes('/api/content') ||
+      url.includes('/api/categories')
     ) {
       return route.fallback();
     }

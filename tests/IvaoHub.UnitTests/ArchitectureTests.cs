@@ -133,6 +133,38 @@ public sealed class ArchitectureTests
         Assert.Empty(offenders);
     }
 
+    /// <summary>
+    /// One entity holds a body of blocks, and it is <c>ContentEntry</c>. A page, a news item and a
+    /// document are three <c>kind</c>s of it (plan section 9.3), and the moment a second entity
+    /// grows a block document the whole editorial half of this hub has two of everything: two
+    /// editors, two renderers, two publications, two projections.
+    /// <para>This is the closing question of G5 asked as a test rather than in a report: design M1
+    /// section 3 says that if news and documents cost a table, section 9.3 has not held. A module
+    /// that one day needs rich text of its own reuses the same document inside a
+    /// <c>cms_contents</c> row, which is what design M1 section 1 means by "the same
+    /// BlockDocument"; if that ever stops being possible, this test is where the decision has to
+    /// be taken rather than discovered.</para>
+    /// </summary>
+    [Fact]
+    public void NoSecondContentEntity()
+    {
+        // Read from the model rather than from the sources: what makes an entity a second content
+        // is a column of the database holding a document, and a property nothing maps is not one.
+        var withABody = Core.GetTypes()
+            .Concat(Atc.GetTypes())
+            .Where(type => type is { IsClass: true, IsAbstract: false })
+            .Where(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Any(property => property.Name is "BodyJson" or "Body"
+                    && property.PropertyType == typeof(string)))
+            .Select(type => type.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        // `ContentVersion` is the same document frozen at a moment, not a second kind of content:
+        // it is what publication wrote, it has no editor and it is never edited.
+        Assert.Equal(["ContentEntry", "ContentVersion"], withABody);
+    }
+
     private static IEnumerable<string> ProjectsMatching(string prefix) =>
         Directory.EnumerateDirectories(RepositoryRoot("src"))
             .Select(directory => Path.GetFileName(directory)!)

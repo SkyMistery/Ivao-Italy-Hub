@@ -82,7 +82,15 @@ A back office screen does not contain a table or a form.
 
 A list is a set of column descriptions in `features/<x>/list.ts` (`col.localized('title')`,
 `col.date('updatedAt', { sortable: true })`) handed to `DataList`. `sortable` says what the server
-declared in `CrudOptions.Sortable`; a column that claims more gets a 400.
+declared in `CrudOptions.Sortable`; a column that claims more gets a 400. `col.media` draws a file
+of the library as a thumbnail rather than as the number it is stored as; its alternative text is
+empty on purpose, because the row's own title is in the cell beside it.
+
+Two lists that differ only in what they are about are **one screen twice**, not two screens. The
+news, the documents and the pages of a department are the same list with a fixed `kind` and a
+different set of columns, so what tells them apart is a configuration object and the route file that
+owns the address (`features/content/kinds.ts`). If telling two lists apart ever needs a second
+screen, that is worth saying out loud in the pull request.
 
 A form is a zod schema in `features/<x>/schema.ts` mirroring the write DTO, handed to `SchemaForm`.
 The schema carries types and what is required, and nothing else: every real rule belongs to the
@@ -106,6 +114,11 @@ What the schema may say about how a field is drawn:
   permission catalogue, whose members depend on which modules are installed — and whose members are
   identifiers rather than prose: `Links.Edit` reads `Links.Edit` in every language, exactly as a VID
   or a department code does;
+- `.meta({ choices: [{ value: 'guides', label: 'Guides' }] })` is the same select when the label is
+  **not** the value: the category of a news item is stored as a stable key and shown as the word a
+  coordinator wrote in another table. The caller resolves the label into the language on screen
+  before handing it over — the generator never translates a value it was given — and an **optional**
+  one gets the same "nothing chosen" entry an optional `z.enum` does;
 - `.default(10)` is read as well, so what a new row or a new block starts with lives next to the
   field rather than in a second place that can drift;
 - an **optional** `z.enum` also gets a "nothing chosen" entry, labelled

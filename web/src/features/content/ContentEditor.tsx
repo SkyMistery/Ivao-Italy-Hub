@@ -109,9 +109,7 @@ export function ContentEditor({
         // the server last returned; keeping a stale one would answer 409 on the next save.
         key={content?.rowVersion ?? 'new'}
         schema={contentMetadataSchema(kind, categories)}
-        defaults={
-          content === null ? emptyContent(department, locales, kind) : toFormValues(content, locales)
-        }
+        defaults={content === null ? emptyContent(department, locales, kind) : toFormValues(content, locales)}
         locales={locales}
         labels="content"
         division={division}

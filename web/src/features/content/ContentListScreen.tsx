@@ -55,11 +55,7 @@ export function ContentListScreen({
       <div className="flex flex-col gap-6">
         {/* Every staff member may read every template, whoever owns it, so this offers something
             outside the web team as well (design M1 §9.4). */}
-        <TemplatePicker
-          department={department}
-          kind={config.kind}
-          onCreated={onCreatedFromTemplate}
-        />
+        <TemplatePicker department={department} kind={config.kind} onCreated={onCreatedFromTemplate} />
 
         <DataList
           columns={config.columns}

@@ -26,9 +26,13 @@ namespace IvaoHub.IntegrationTests;
 [Collection(MariaDbCollection.Name)]
 public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
-    private const int SuperadminVid = 630001;
-    private const int EventsCoordinatorVid = 630002;
-    private const int WebCoordinatorVid = 630003;
+    // ⚠️ A range of its own. The suite shares one database across the whole collection, so two
+    // classes on the same VID are one row: this class first took 630001-630003, which
+    // `SearchEndpointTests` already owns, and giving 630003 a web team position turned that suite's
+    // flight operations coordinator into somebody who reaches every department — one extra row in a
+    // count, three classes away, and nothing to do with the code under test.
+    private const int EventsCoordinatorVid = 650001;
+    private const int WebCoordinatorVid = 650002;
 
     private HubWebApplicationFactory _factory = null!;
 

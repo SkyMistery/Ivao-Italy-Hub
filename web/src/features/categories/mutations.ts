@@ -3,12 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 
-import {
-  categoryDetailKey,
-  categoryKey,
-  type CategoryDetailDto,
-  type CategoryWriteDto,
-} from './queries';
+import { categoryDetailKey, categoryKey, type CategoryDetailDto, type CategoryWriteDto } from './queries';
 import type { CategoryFormValues } from './schema';
 
 /**
@@ -31,10 +26,7 @@ export function toWriteDto(values: CategoryFormValues): CategoryWriteDto {
 }
 
 /** The form as a new shelf starts it: in the department of the route, active, last in order. */
-export function emptyCategory(
-  department: Department,
-  locales: readonly string[],
-): CategoryFormValues {
+export function emptyCategory(department: Department, locales: readonly string[]): CategoryFormValues {
   return {
     ownerDepartment: department,
     kind: 'News',
@@ -47,10 +39,7 @@ export function emptyCategory(
 }
 
 /** The form as an existing shelf fills it, with every language of the division present as a tab. */
-export function toFormValues(
-  category: CategoryDetailDto,
-  locales: readonly string[],
-): CategoryFormValues {
+export function toFormValues(category: CategoryDetailDto, locales: readonly string[]): CategoryFormValues {
   return {
     ownerDepartment: category.ownerDepartment,
     // A page has no shelves, so the form offers the two kinds that do; a row that somehow says

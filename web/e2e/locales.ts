@@ -26,6 +26,13 @@ interface CommonStrings {
     readonly fields: { readonly category: string };
   };
   readonly notFound: { readonly title: string };
+  readonly news: { readonly title: string; readonly create: string };
+  readonly documents: { readonly title: string };
+  readonly categories: {
+    readonly title: string;
+    readonly create: string;
+    readonly fields: { readonly key: string };
+  };
   readonly content: {
     readonly title: string;
     readonly create: string;
@@ -34,6 +41,7 @@ interface CommonStrings {
       readonly template: string;
       readonly slug: string;
       readonly visibility: string;
+      readonly pinned: string;
     };
     readonly options: { readonly visibility: { readonly Public: string } };
     readonly editor: {
