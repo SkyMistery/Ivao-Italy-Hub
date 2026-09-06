@@ -8,7 +8,7 @@ import { createTestI18n, renderWithProviders } from '../../test/harness';
 import type { MediaLibraryQuery, PickableMedia } from '../ui';
 
 import { SchemaForm } from './SchemaForm';
-import { localizedObject } from './schema';
+import { localized, localizedObject } from './schema';
 
 /**
  * The five things the generator learned in G2, one test each (implementation plan M1, G2).
@@ -268,6 +268,33 @@ test('an entry of a list moves up and down, from the keyboard', async () => {
   expect(onSubmit).toHaveBeenCalledWith(
     expect.objectContaining({ cards: [{ name: 'second' }, { name: 'first' }] }),
   );
+});
+
+test('a new entry of a list arrives with fields somebody can type into', async () => {
+  // ⚠️ G3 is where this started mattering: eleven of the sixteen blocks carry a list of objects,
+  // and an entry appended as `{}` gives React inputs with no value — a translated field then
+  // forgets what was typed into it, and the entry submits as undefined.
+  const translated = z.object({ cards: z.array(z.object({ title: localized() })) });
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(
+    translated,
+    { cards: [] },
+    { labels: { fields: { cards: 'Cards', 'cards.title': 'Title' } }, onSubmit },
+  );
+
+  await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+  // The English tab of the new entry. It has a value — the empty string — which is what makes it a
+  // field React controls; appended as `{}` it would be undefined, and what is typed into it would
+  // not survive the next render.
+  const english = screen.getAllByRole('textbox')[0]!;
+  expect(english).toHaveValue('');
+
+  await userEvent.type(english, 'A card');
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ cards: [{ title: { en: 'A card', it: '' } }] });
 });
 
 test('the ends of a list have nowhere to go, and say so', () => {

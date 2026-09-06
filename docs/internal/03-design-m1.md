@@ -1,10 +1,26 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.2 — 5 settembre 2026
+**Versione documento:** 1.3 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.3** (6 set 2026): **G3 ha costruito i sedici blocchi**, e scriverli ha corretto quattro
+righe di questo capitolo — tutte e quattro nel senso «il documento diceva una cosa che il codice non
+poteva fare», non nel senso di un perimetro che cambia.
+**§1.2, `image`**: l'`alt` vuoto **non** eredita quello della libreria; vuoto significa immagine
+decorativa. Il renderer pubblico riceve solo il corpo pubblicato, e un server che riempisse l'alt
+dovrebbe leggere dentro `props` — la cosa che il piano §16.5 vieta. Nota:
+`decisions/2026-09-06-alt-delle-immagini.md`.
+**§1.2, `table` e `gallery`**: le righe sono `rows[] { cells[] { text L } }` e le immagini
+`images[] { mediaId }`, non `rows[][]` e `mediaIds[]`. Il generatore disegna liste di **oggetti**; una
+lista di valori nudi sarebbe stata una sesta estensione per una forma che nessun altro chiede.
+**§1.4**: gli sfondi sono quattro (con `image` + `mediaId`) come già scritto, e le larghezze sono
+**quattro** e non tre — `narrow` esiste da M0 dentro corpi già pubblicati, e toglierlo non sarebbe
+additivo.
+**§1.5, `aspect` di `video`**: i valori sono `16x9 | 4x3 | 1x1` e non `16:9`, perché i due punti sono
+il separatore di namespace di i18next e una chiave di opzione con dentro `16:9` non si risolve.
 
 **Changelog 1.2** (5 set 2026): due cose decise dopo G0, entrambe nate dal **fare** il giro invece
 che dal leggerlo. **§9.4, i template**: sono strumenti di dipartimento, ma ogni staff li **legge**
@@ -137,11 +153,11 @@ forma essenziale: la forma esatta è lo schema zod, e vive **solo** in TypeScrip
 | type | kind | props (essenziale) | Note |
 |---|---|---|---|
 | `hero` | Content | `eyebrow L?`, `title L`, `text L?`, `mediaId?`, `align`, `tone`, `primary {label L, href}?`, `secondary?` | Rende il componente custom `Hero` che esiste già dall'elenco chiuso. È il blocco della home e di ogni pagina di sezione |
-| `image` | Content | `mediaId`, `alt L?`, `caption L?`, `width`, `rounded` | `alt` vuoto **eredita** quello della media library: l'alt si scrive una volta accanto al file, non a ogni uso |
+| `image` | Content | `mediaId`, `alt L?`, `caption L?`, `width`, `rounded` | `alt` vuoto = immagine **decorativa** (`alt=""`), non ereditato dalla libreria: il renderer pubblico ha solo il corpo (nota del 6 set 2026) |
 | `video` | Content | `url` \| `mediaId`, `caption L?`, `aspect` | Host in allowlist, la stessa di `embed`, in **un** punto |
 | `embed` | Content | `url`, `title L`, `height` | `title` è l'attributo dell'iframe: senza, un lettore da tastiera trova un riquadro senza nome |
 | `timeline` | Content | `variant (steps\|timeline)`, `items[] {title L, text L?, date?, icon?}` | È il blocco di `/start` (piano §8.2: «Timeline + Card + CTA») |
-| `table` | Content | `caption L?`, `columns[] {label L, align}`, `rows[][]` di celle `L` | Vedi §1.5: le celle sono `Localized`, non markdown |
+| `table` | Content | `caption L?`, `columns[] {label L, align}`, `rows[] {cells[] {text L}}` | Vedi §1.5: le celle sono `Localized`, non markdown. Oggetti e non liste nude: il generatore disegna liste di oggetti |
 
 **Gruppo Layout e contenitori** (`accordion` sta fra gli *Interactive* nel raggruppamento HQ; qui sta con gli altri contenitori, perché il vincolo che conta su di lui è quello di §1.5)
 
@@ -149,7 +165,7 @@ forma essenziale: la forma esatta è lo schema zod, e vive **solo** in TypeScrip
 |---|---|---|---|
 | `cardGrid` | Content | `columns (2\|3\|4)`, `cards[] {title L, text L?, mediaId?, href?, icon?}` | Le card della home e di `/pilots` |
 | `iconGrid` | Content | `columns`, `items[] {icon, title L, text L?}` | `icon` è un nome `lucide` scelto da una **allowlist** (§1.5), non testo libero |
-| `gallery` | Content | `mediaIds[]`, `columns`, `lightbox` | |
+| `gallery` | Content | `images[] {mediaId}`, `columns`, `lightbox` | La chiave resta `mediaId` a ogni profondità: è quella che `JsonQuery.UsingMedia` cerca. `lightbox` apre il file, non un dialogo nostro |
 | `logoGrid` | Content | `columns`, `items[] {mediaId, name, href?}` | Partner, e in M3 il registro Virtual Airlines lo riuserà con i propri dati |
 | `tabs` | Content | `tabs[] {label L, body L markdown}` | ⚠️ **non contiene blocchi**: vedi §1.5 |
 | `accordion` | Content | `allowMultiple`, `items[] {question L, answer L markdown}` | Copre la FAQ di piano §9.1 senza un secondo sistema |
@@ -222,7 +238,7 @@ una sezione `locked` nell'editor**. Con il set davanti si decidono così, e fini
   Un blocco non ha sfondo proprio, salvo quelli la cui identità *è* lo sfondo (`hero`, `callout`,
   `testimonial`), che usano comunque i token semantici del tema Atmosphere e mai un colore scritto a
   mano. Due sezioni `muted` consecutive si fondono e va bene: alternare è una scelta del redattore.
-- **La larghezza è della sezione**: `default` (la colonna di testo), `wide`, `full`. `full` esiste per
+- **La larghezza è della sezione**: `narrow`, `default` (la colonna di testo), `wide`, `full` — quattro, perché `narrow` esiste da M0 dentro corpi già pubblicati e toglierlo non sarebbe additivo. `full` esiste per
   `hero`, `gallery` e `image`; una sezione di testo larga tutto lo schermo non si legge.
 - **Una sezione `locked` nell'editor mostra i campi, non la struttura.** Niente «aggiungi blocco»,
   niente «sposta», niente «elimina»: si vede l'elenco dei blocchi che il template ha messo, ognuno con
@@ -275,6 +291,13 @@ scritto a mano: il generatore **lancia** su un tipo che non sa disegnare, appost
 | **Data e ora** | `.meta({ date: true })` / `datetime`; input nativo, valore ISO in UTC, mostrato in UTC + fuso della divisione | voci di calendario, `expiresAt` di un grant (debito n.4 di HANDOFF §10, che si chiude qui di rimbalzo) |
 | **Oggetto tradotto** | un `kind: 'localizedObject'` per `Localized<JsonNode>` | il campo `seo` (debito n.3), la cui forma si decide in §9.2 |
 | **Riordino dentro una lista** | su/giù accanto ad aggiungi/rimuovi, sulla lista che già esiste | ogni blocco con `items[]` |
+
+⚠️ **G3 ha aggiunto due funzioni a quel file, e non sono un sesto tipo di campo** (6 set 2026): che
+cosa vale un campo quando è vuoto (`blankValue` / `blankEntry` / `blankValues`, che assorbono il
+`defaultOf` che stava in `features/content/body.ts`) e che cosa vale la pena salvare quando lo è
+ancora (`writtenValues`). La seconda non è comodità: una props tradotta **opzionale** lasciata vuota
+viaggiava come `{ en: "", it: "" }` e la pubblicazione la leggeva come traduzione a metà, rifiutando
+la pagina. Chi somma alla chiusura (§12) le conti come estensioni al generatore, non come tipi.
 
 Cinque estensioni, un file. È la prova che il generatore era la scelta giusta: 22 blocchi e nessun form
 scritto a mano.
@@ -678,7 +701,13 @@ con una fase per sessione e i prompt di apertura, come `02-` per M0. È l'ordine
 estensioni al generatore di form, quattro componenti custom (`CalendarView`, `ContactForm`,
 `LiveStatusStrip`, `MediaPicker`) e **un solo endpoint scritto a mano** (l'upload multipart). Tutto il
 resto — 22 blocchi, sei schermate di back-office, otto rotte pubbliche — dovrebbe essere
-configurazione. Se alla fine gli endpoint a mano sono cinque e i componenti custom dodici, il messaggio
+configurazione.
+
+*Il conto, man mano (§A.11 del piano di implementazione, così che G12 sommi invece di ricostruire):*
+*G0 nulla; G1 l'endpoint di upload — l'unico previsto — più `MediaPicker` e tre estensioni a*
+*`MapCrud`; G2 le cinque estensioni al generatore; **G3 zero endpoint, zero componenti custom, zero***
+***meccanismi nuovi**, e due funzioni in più nel generatore (§1.6) più gli sfondi imparati da*
+*`BlockDocumentWalker`. A metà M1 la previsione regge: un endpoint a mano, un componente custom.* Se alla fine gli endpoint a mano sono cinque e i componenti custom dodici, il messaggio
 non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
 
 ---

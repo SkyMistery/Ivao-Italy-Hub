@@ -5,11 +5,11 @@ import { z } from 'zod';
  * version, props, renderMode, frozen — and nothing in it says what a block *means*: `props` stays
  * opaque here too, and is checked by the schema the block itself registers (design M0 §5.2).
  *
- * The backend validates the same shape with `BlockDocumentWalker`. The two lists below are the
- * place where they have to agree by hand: they are values inside an opaque document, so the
- * OpenAPI contract cannot carry them. `BlockDocumentWalker.Layouts` and `RenderModes` are the
- * other half, and the integration test that posts a layout the server does not know is what keeps
- * the pair honest.
+ * The backend validates the same shape with `BlockDocumentWalker`. The lists below are the place
+ * where they have to agree by hand: they are values inside an opaque document, so the OpenAPI
+ * contract cannot carry them. `BlockDocumentWalker.Layouts`, `RenderModes` and `Backgrounds` are
+ * the other half, and the integration test that posts a value the server does not know is what
+ * keeps the pair honest.
  */
 
 /** How a section arranges its blocks. */
@@ -20,8 +20,20 @@ export type Layout = (typeof LAYOUTS)[number];
 export const RENDER_MODES = ['live', 'frozen'] as const;
 export type RenderMode = (typeof RENDER_MODES)[number];
 
-export const BACKGROUNDS = ['none', 'muted', 'accent'] as const;
+/**
+ * What sits behind a section. Four, since G3: `image` is the one that carries something with it —
+ * `mediaId`, a file of the library — and it is what the design asked for from the start
+ * (design M1 §1.4). A background belongs to the section and never to a block, so that the ground
+ * under two blocks does not depend on which two they are.
+ */
+export const BACKGROUNDS = ['none', 'muted', 'accent', 'image'] as const;
 export const PADDINGS = ['none', 'sm', 'md', 'lg'] as const;
+
+/**
+ * How wide a section is. Four, and not the three of design §1.4: `narrow` was already written by
+ * M0 and is carried by bodies that are already published, so removing it would not be an additive
+ * change (implementation plan §D, G3 task 4). The design has been corrected to say four.
+ */
 export const WIDTHS = ['narrow', 'default', 'wide', 'full'] as const;
 
 /** How many columns a layout has; a block may only claim one of them. */
@@ -57,6 +69,8 @@ export interface SectionEnvelope {
   title?: Record<string, string> | null | undefined;
   layout: Layout;
   background: (typeof BACKGROUNDS)[number];
+  /** The picture behind the section, when its background is `image`. Ignored otherwise. */
+  mediaId?: number | null | undefined;
   padding: (typeof PADDINGS)[number];
   width: (typeof WIDTHS)[number];
   collapsed?: boolean | null | undefined;
@@ -78,6 +92,7 @@ export const sectionSchema: z.ZodType<SectionEnvelope> = z.lazy(() =>
     title: z.record(z.string(), z.string()).nullish(),
     layout: z.enum(LAYOUTS).default('stacked'),
     background: z.enum(BACKGROUNDS).default('none'),
+    mediaId: z.number().int().nullish(),
     padding: z.enum(PADDINGS).default('md'),
     width: z.enum(WIDTHS).default('default'),
     collapsed: z.boolean().nullish(),

@@ -161,6 +161,38 @@ const RED_8X8_PNG = Buffer.from(
 );
 
 /**
+ * A published page, for a visitor who is nobody. The body is handed in, because what these tests
+ * are about is what a body of blocks *looks like* once a browser has laid it out — which is the one
+ * thing neither a unit test nor a screenshot-free assertion can see (implementation plan M1 §A.9).
+ */
+export async function stubThePublishedPage(page: Page, slug: string, body: unknown): Promise<void> {
+  await stubTheApi(page);
+
+  await page.route(`**/api/content/public/Page/${slug}`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        kind: 'Page',
+        slug,
+        title: { en: 'A page of blocks', it: 'Una pagina di blocchi' },
+        summary: null,
+        seo: null,
+        body,
+        schemaVersion: 1,
+        version: 1,
+        publishedAt: '2026-09-06T10:00:00Z',
+      }),
+    }),
+  );
+
+  // The pictures a block asks for. Served the way Kestrel serves them, at `/media/{id}/{name}`.
+  await page.route('**/media/*/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: RED_8X8_PNG }),
+  );
+}
+
+/**
  * The same stubbing, for a signed in member of the staff: `/api/me` answers with a coordinator and
  * `/api/links` with one page. Anything else under `/api` still fails the test rather than being
  * quietly answered, so a screen that started calling something new says so.

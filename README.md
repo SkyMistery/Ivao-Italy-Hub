@@ -43,11 +43,13 @@ snapshots, and every piece of editorial content from the database.
 > What is not there yet is the public site around the pages: navigation, news, documents, the
 > calendar and the search screen are M1.
 >
-> **`main` has moved past the tag.** M1 is under way there, and three of its phases are done: the
+> **`main` has moved past the tag.** M1 is under way there, and four of its phases are done: the
 > round against the real API runs in a browser in CI, there is a media library — files on disk,
-> served behind the visibility filter — and the form generator draws the five kinds of field the
-> block set will need. None of it is released; the tag is still the thing to fork from if you want
-> something that stands still.
+> served behind the visibility filter — the form generator draws the five kinds of field the block
+> set needs, and the block set itself is in: twenty-one of them, from a hero to a table to an
+> accordion, every one shown by `/staff/admin/ui-kit`, with the conventions they follow written in
+> [the UI guidelines](docs/UI-GUIDELINES.md). None of it is released; the tag is still the thing to
+> fork from if you want something that stands still.
 >
 > The claim M0 makes is a narrow one and worth stating plainly: everything above was built out of
 > six mechanisms, each written once — one way to translate a field, one interceptor, one

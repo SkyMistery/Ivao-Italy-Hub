@@ -31,6 +31,14 @@ test('every block of the registry has a section in the gallery', () => {
   expect(UI_KIT_BLOCKS.map((section) => section.name)).toEqual(registry.blocks.map((block) => block.type));
 });
 
+test('the gallery shows the whole set of blocks the milestone declares', () => {
+  // A number written out, because the two lines above are both derived from the registry and would
+  // agree just as happily about nineteen blocks. M0 registered five; G3 adds the sixteen Content,
+  // Layout, Interactive and Structure ones (design M1 §1.2). G4 brings the six Data blocks and this
+  // becomes 27 — which is the point: losing one has to be something CI says out loud.
+  expect(registry.blocks).toHaveLength(21);
+});
+
 test('a block registers example props that its own schema accepts', () => {
   // The other half of "every block is in the gallery": what is shown there has to be a block that
   // actually works, and example props its own schema refuses are a block nobody has ever mounted.

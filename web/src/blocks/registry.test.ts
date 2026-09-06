@@ -17,17 +17,37 @@ import { coreBlocks } from './registry';
 
 const CATALOGUES = { en: englishCommon, it: italianCommon } as Record<string, unknown>;
 
+/**
+ * Whether the language file answers a key, resolved the way i18next resolves one.
+ *
+ * ⚠️ Not simply a walk down the dots. A key may sit in the file whole — `"seo.title"` is a key of
+ * `content.fields`, next to `"seo"` itself — because the two cannot both be nested: a field that is
+ * an object has a label of its own *and* a label per child, and one of them would have to overwrite
+ * the other. i18next handles that (`deepFind` joins the remaining segments back together and keeps
+ * looking when what it found is a string), and so does this: a check stricter than the runtime
+ * would fail on keys that work.
+ */
 function has(catalogue: unknown, key: string): boolean {
-  let current: unknown = catalogue;
-
-  for (const segment of key.split('.')) {
-    if (current === null || typeof current !== 'object') {
-      return false;
-    }
-    current = (current as Record<string, unknown>)[segment];
+  if (catalogue === null || typeof catalogue !== 'object') {
+    return false;
   }
 
-  return typeof current === 'string';
+  const table = catalogue as Record<string, unknown>;
+
+  if (typeof table[key] === 'string') {
+    return true;
+  }
+
+  const segments = key.split('.');
+
+  return segments.some((_, index) => {
+    if (index === segments.length - 1) {
+      return false;
+    }
+
+    const head = segments.slice(0, index + 1).join('.');
+    return head in table && has(table[head], segments.slice(index + 1).join('.'));
+  });
 }
 
 /** Every key a block needs: its name, a label per field, and a label per choice of a select. */

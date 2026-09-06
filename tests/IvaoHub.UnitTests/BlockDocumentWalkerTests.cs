@@ -163,6 +163,29 @@ public sealed class BlockDocumentWalkerTests
             error => error is { Key: "errors.body.renderModeUnknown", Path: "sections[0].blocks[0].renderMode" });
     }
 
+    [Fact]
+    public void RefusesABackgroundItDoesNotKnow()
+    {
+        // The fourth background arrived in G3 (`image`, with a picture of the library behind it),
+        // and the check arrived with it: a value nobody refuses is drawn by the renderer as no
+        // background at all, so the section would quietly lose its ground on the published page.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [
+            { "id": "s1", "background": "gradient", "blocks": [] },
+            { "id": "s2", "background": "image", "mediaId": 7, "blocks": [] }
+          ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["text"]);
+
+        Assert.Equal(
+            [new BlockDocumentError("errors.body.backgroundUnknown", "sections[0].background")],
+            result.Errors);
+    }
+
     [Theory]
     [InlineData("stacked", 1)]
     [InlineData("1/2+1/2", 2)]

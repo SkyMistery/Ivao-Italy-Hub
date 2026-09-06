@@ -9,9 +9,12 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 1.5 — 5 settembre 2026 (**G2 è chiusa**: il generatore disegna i cinque tipi che i
-blocchi chiederanno, e due deviazioni dalla lettera di questa pagina sono scritte dentro la fase. La
-prossima è G3.)
+**Versione:** 1.6 — 6 settembre 2026 (**G3 è chiusa**: i sedici blocchi esistono, la ui-kit ne monta
+21, e §16.C del piano si chiude. Quattro deviazioni dalla lettera del design sono scritte dentro la
+fase. La prossima è G4.)
+
+**1.5** — **G2 è chiusa**: il generatore disegna i cinque tipi che i
+blocchi chiederanno, e due deviazioni dalla lettera di questa pagina sono scritte dentro la fase.
 
 **1.4** — **G1 è chiusa**: la media library esiste, e tre estensioni
 generiche di `MapCrud` sono nate per non aggirarlo.
@@ -89,7 +92,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G0 | Rete e2e con l'API vera in CI — **fatta** | — | `pnpm e2e:full`: crea da template → blocchi → pubblica → anonimo vede il pubblicato, in un browser, contro MariaDB vera |
 | G1 | Media library — **fatta** | G0 | upload, servizio dei file dietro il query filter, `MediaPicker`, back-office generato |
 | G2 | Le cinque estensioni di `SchemaForm` — **fatta** | G1 | media, icona, data, oggetto tradotto, riordino; debiti n.3 e n.4 chiusi |
-| G3 | I 16 blocchi Content / Layout / Interactive / Structure | G2 | 21 blocchi nella ui-kit, convenzioni in `UI-GUIDELINES.md` (chiude piano §16.C) |
+| G3 | I 16 blocchi Content / Layout / Interactive / Structure — **fatta** | G2 | 21 blocchi nella ui-kit, convenzioni in `UI-GUIDELINES.md` (chiude piano §16.C) |
 | G4 | I 6 blocchi Data e i loro provider | G3 | 27 blocchi; `networkStats` mai congelato; provider dietro il query filter |
 | G5 | News, documenti, categorie | G4 | due `kind`, due configurazioni di lista, cinque rotte pubbliche, `cms_categories` |
 | G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
@@ -346,9 +349,11 @@ Task:
    sezione e mai il blocco, quattro sfondi, tre larghezze, resa di una sezione `locked`, blocco
    sconosciuto visibile solo allo staff, ogni blocco dichiara la propria icona. **Questo chiude piano
    §16.C**, e la cosa va nel changelog del piano 00.
-4. ⚠️ **Due disallineamenti fra §1.4 e il codice di M0, da chiudere qui.** `web/src/blocks/envelope.ts`
-   oggi ha `BACKGROUNDS = none | muted | accent` (tre; il design ne vuole **quattro**, con `image` +
-   `mediaId`) e `WIDTHS = narrow | default | wide | full` (quattro; il design ne nomina **tre**).
+4. ⚠️ **Due disallineamenti fra §1.4 e il codice di M0, da chiudere qui.** ✅ *Chiusi il 6 set 2026
+   come raccomandato qui sotto: gli sfondi sono quattro, le larghezze restano quattro, e il design è
+   passato a v1.3.* `web/src/blocks/envelope.ts`
+   aveva `BACKGROUNDS = none | muted | accent` (tre; il design ne vuole **quattro**, con `image` +
+   `mediaId`) e `WIDTHS = narrow | default | wide | full` (quattro; il design ne nominava **tre**).
    Raccomandazione: **aggiungere `image`** — envelope zod **e** `BlockDocumentWalker`, che sono la
    coppia che deve restare d'accordo a mano, più il test di integrazione che posta un valore che il
    server non conosce — e **tenere `narrow`**, perché toglierlo non sarebbe additivo su corpi già
@@ -364,6 +369,47 @@ un e2e che compone una pagina con `cardGrid` a tre colonne e **misura** che a 12
 davvero tre; `pnpm i18n:check` verde con le chiavi di tutti e sedici.
 
 **Non fare**: provider, blocchi Data, il sito pubblico.
+
+#### Com'è andata (6 settembre 2026)
+
+Tutti i criteri sono verdi: 176 test Vitest, 259 unit C#, 109 di integrazione, 16 e2e. Il conto della
+fase: **zero** endpoint scritti a mano, **zero** componenti custom nuovi, **zero** meccanismi nuovi.
+
+**Quattro deviazioni dalla lettera del design**, tutte scritte anche nel design (v1.3) e nessuna che
+allarghi il perimetro.
+
+1. **`table` e `gallery` non hanno liste nude.** Le righe sono `rows[] { cells[] { text L } }` e le
+   immagini `images[] { mediaId }`. Il generatore disegna liste di **oggetti**; una lista di valori
+   nudi sarebbe stata la sesta estensione a `SchemaForm` per una forma che nessun altro blocco chiede.
+   Costo: una chiave in più nel JSON. Beneficio: la chiave resta `mediaId`, che è quella che
+   `JsonQuery.UsingMedia` cerca a ogni profondità — una `mediaIds[]` dentro un oggetto non lo sarebbe
+   stata.
+2. **`alt` non eredita dalla libreria** — nota `decisions/2026-09-06-alt-delle-immagini.md`, decisa da
+   Carmine prima di scrivere gli schemi. Vuoto significa immagine decorativa.
+3. **Le larghezze restano quattro** (`narrow` incluso), come questa fase raccomandava, e gli sfondi
+   diventano quattro con `image` + `mediaId`. La chiave sulla sezione si chiama `mediaId` e non
+   `backgroundMediaId` proprio per la ragione del punto 1.
+4. **`aspect` di `video` vale `16x9 | 4x3 | 1x1`.** I due punti sono il separatore di namespace di
+   i18next: una chiave `options.aspect.16:9` non si risolve, e il campo avrebbe mostrato la chiave.
+
+**Due lacune del generatore che i blocchi sono i primi a toccare**, chiuse estendendolo (regola (b)):
+
+- `blankEntry`: una voce nuova di lista nasceva come `{}`, cioè con campi che React non controlla — e
+  undici blocchi su sedici hanno una lista di oggetti. Verificato rompendolo.
+- `writtenValues`: una props tradotta **opzionale** lasciata vuota viaggiava come `{ en: "", it: "" }`
+  e la pubblicazione la leggeva come traduzione a metà, **rifiutando la pagina**. Ora le props si
+  salvano senza i campi opzionali che nessuno ha scritto. ⚠️ La regola sul server non è stata
+  toccata: un campo obbligatorio vuoto viene ancora rifiutato, ed è giusto così.
+
+**Una cosa tolta dopo averla misurata**: il blocco `table` aveva un contenitore `overflow-x-auto`
+nostro. L'e2e che misura la pagina passava identico togliendolo — perché la tabella di Atmosphere si
+avvolge già in `relative w-full overflow-auto`. Era una copia locale di un meccanismo esistente
+(`CLAUDE.md` §2), ed è stata rimossa; il test resta, perché la proprietà (la pagina non scorre di
+lato) va difesa comunque.
+
+**`BlockDocumentWalker` ha imparato gli sfondi**, che erano l'unico insieme chiuso dell'envelope che
+il server non controllava. Coppia da tenere allineata a mano come `Layouts` e `RenderModes`, con il
+test di integrazione che posta un valore sconosciuto.
 
 ---
 

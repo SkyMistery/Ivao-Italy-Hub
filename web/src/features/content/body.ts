@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 
 import { newId, type BlockEnvelope, type Body, type Layout, type SectionEnvelope } from '../../blocks';
-import { readFields, type FieldNode } from '../../shared/forms';
+import { blankValues } from '../../shared/forms';
 import { emptyLocalized } from '../../shared/i18n/localized';
 
 /**
@@ -215,46 +215,14 @@ function move<T>(items: T[], matches: (item: T) => boolean, delta: -1 | 1): T[] 
 /**
  * The properties a block starts with, read off its own schema. Writing them by hand next to each
  * block would be the same description twice, and the one that would go stale is this one.
+ *
+ * What "empty" means for each kind of field is `blankValues`, in the form generator: a new block
+ * and a new entry of a repeatable list are the same question, and G3 is where the second one
+ * started being asked.
  */
 export function defaultProps(
   schema: z.ZodType<Record<string, unknown>>,
   locales: readonly string[],
 ): Record<string, unknown> {
-  const value: Record<string, unknown> = {};
-
-  for (const field of readFields(schema)) {
-    value[field.path] = defaultOf(field, locales);
-  }
-
-  return value;
-}
-
-function defaultOf(field: FieldNode, locales: readonly string[]): unknown {
-  if (field.defaultValue !== undefined) {
-    // What the schema says beats what the kind implies: a `limit` that declares 10 starts at 10.
-    return field.defaultValue;
-  }
-
-  switch (field.kind) {
-    case 'localized':
-      return emptyLocalized(locales);
-    case 'text':
-      return '';
-    case 'number':
-      return field.choices?.[0] ?? 0;
-    case 'boolean':
-      return false;
-    case 'enum':
-      // An optional choice starts at "nothing chosen", which is absent from the payload rather
-      // than an empty string the server would have to interpret.
-      return field.optional ? undefined : (field.options[0] ?? '');
-    case 'list':
-      return [];
-    case 'object':
-      // A child's `path` is the whole way down from the top of the schema, which is what a label is
-      // looked up by; the key inside the object is only its last segment.
-      return Object.fromEntries(
-        field.children.map((child) => [child.path.slice(field.path.length + 1), defaultOf(child, locales)]),
-      );
-  }
+  return blankValues(schema, locales);
 }

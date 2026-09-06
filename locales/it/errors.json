@@ -50,6 +50,7 @@
       "templateOnlyKey": "Solo un template puo' fissare questo. Cambialo sul template.",
       "layoutUnknown": "Questa sezione chiede una disposizione che non esiste.",
       "renderModeUnknown": "Questo blocco chiede di essere reso in un modo che non esiste.",
+      "backgroundUnknown": "Questa sezione chiede uno sfondo che non esiste.",
       "columnOutOfRange": "Questo blocco e' in una colonna che la sua sezione non ha."
     },
     "content": {

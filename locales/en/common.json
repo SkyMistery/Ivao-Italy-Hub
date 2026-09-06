@@ -304,7 +304,8 @@
         "layout": "Layout",
         "background": "Background",
         "padding": "Spacing",
-        "width": "Width"
+        "width": "Width",
+        "mediaId": "Picture behind it"
       },
       "options": {
         "layout": {
@@ -317,7 +318,8 @@
         "background": {
           "none": "None",
           "muted": "Muted",
-          "accent": "Accent"
+          "accent": "Accent",
+          "image": "Picture"
         },
         "padding": {
           "none": "None",
@@ -441,7 +443,278 @@
         }
       }
     },
-    "willBeCaptured": "Live now, captured when you publish"
+    "willBeCaptured": "Live now, captured when you publish",
+    "hero": {
+      "label": "Hero",
+      "fields": {
+        "eyebrow": "Overline",
+        "title": "Title",
+        "text": "Text",
+        "mediaId": "Picture",
+        "align": "Alignment",
+        "tone": "Ground",
+        "primary": "Main button",
+        "primary.label": "Label",
+        "primary.href": "Address",
+        "secondary": "Second button",
+        "secondary.label": "Label",
+        "secondary.href": "Address"
+      },
+      "options": {
+        "align": {
+          "left": "Left",
+          "center": "Centred"
+        },
+        "tone": {
+          "plain": "Plain",
+          "muted": "Muted",
+          "accent": "Accent"
+        }
+      }
+    },
+    "image": {
+      "label": "Picture",
+      "fields": {
+        "mediaId": "File",
+        "alt": "Alternative text",
+        "caption": "Caption",
+        "width": "Size",
+        "rounded": "Rounded corners"
+      },
+      "hints": {
+        "alt": "What the picture says, for somebody who cannot see it. Leave it empty when the picture is decoration."
+      },
+      "options": {
+        "width": {
+          "third": "A third of the column",
+          "half": "Half the column",
+          "full": "The whole column"
+        }
+      }
+    },
+    "video": {
+      "label": "Video",
+      "notAllowed": "This address is not on a site the hub can play a video from.",
+      "fields": {
+        "url": "Address",
+        "mediaId": "Or a file of the library",
+        "caption": "Caption",
+        "aspect": "Shape"
+      },
+      "hints": {
+        "url": "The address of the page the video is on."
+      },
+      "options": {
+        "aspect": {
+          "16x9": "Widescreen",
+          "4x3": "Classic",
+          "1x1": "Square"
+        }
+      }
+    },
+    "embed": {
+      "label": "Embedded page",
+      "notAllowed": "This address is not on a site the hub can embed.",
+      "fields": {
+        "url": "Address",
+        "title": "Name of the frame",
+        "height": "Height in pixels"
+      },
+      "hints": {
+        "title": "Read out in place of the frame, which is why it is not optional."
+      }
+    },
+    "timeline": {
+      "label": "Steps",
+      "fields": {
+        "variant": "Drawn as",
+        "items": "Steps",
+        "items.title": "Title",
+        "items.text": "Text",
+        "items.date": "Date",
+        "items.icon": "Icon"
+      },
+      "options": {
+        "variant": {
+          "steps": "A row of steps",
+          "timeline": "A timeline"
+        }
+      }
+    },
+    "table": {
+      "label": "Table",
+      "fields": {
+        "caption": "Caption",
+        "columns": "Columns",
+        "columns.label": "Heading",
+        "columns.align": "Alignment",
+        "rows": "Rows",
+        "rows.cells": "Cells",
+        "rows.cells.text": "Text"
+      },
+      "options": {
+        "columns.align": {
+          "left": "Left",
+          "center": "Centred",
+          "right": "Right"
+        }
+      }
+    },
+    "cardGrid": {
+      "label": "Cards",
+      "fields": {
+        "columns": "Columns",
+        "cards": "Cards",
+        "cards.title": "Title",
+        "cards.text": "Text",
+        "cards.mediaId": "Picture",
+        "cards.href": "Address",
+        "cards.icon": "Icon"
+      },
+      "options": {
+        "columns": {
+          "2": "Two",
+          "3": "Three",
+          "4": "Four"
+        }
+      }
+    },
+    "iconGrid": {
+      "label": "Icons",
+      "fields": {
+        "columns": "Columns",
+        "items": "Entries",
+        "items.icon": "Icon",
+        "items.title": "Title",
+        "items.text": "Text"
+      },
+      "options": {
+        "columns": {
+          "2": "Two",
+          "3": "Three",
+          "4": "Four"
+        }
+      }
+    },
+    "gallery": {
+      "label": "Gallery",
+      "fields": {
+        "images": "Pictures",
+        "images.mediaId": "File",
+        "columns": "Columns",
+        "lightbox": "Open the file when clicked"
+      },
+      "options": {
+        "columns": {
+          "2": "Two",
+          "3": "Three",
+          "4": "Four"
+        }
+      }
+    },
+    "logoGrid": {
+      "label": "Logos",
+      "fields": {
+        "columns": "Columns",
+        "items": "Logos",
+        "items.mediaId": "File",
+        "items.name": "Name",
+        "items.href": "Address"
+      },
+      "hints": {
+        "items.name": "Read in place of the logo by somebody who cannot see it."
+      },
+      "options": {
+        "columns": {
+          "2": "Two",
+          "3": "Three",
+          "4": "Four"
+        }
+      }
+    },
+    "tabs": {
+      "label": "Tabs",
+      "fields": {
+        "tabs": "Tabs",
+        "tabs.label": "Label",
+        "tabs.body": "Text"
+      },
+      "hints": {
+        "tabs.body": "Text with formatting. A tab holds text, never other blocks."
+      }
+    },
+    "accordion": {
+      "label": "Questions and answers",
+      "fields": {
+        "allowMultiple": "Several open at once",
+        "items": "Entries",
+        "items.question": "Question",
+        "items.answer": "Answer"
+      }
+    },
+    "testimonial": {
+      "label": "Quotation",
+      "fields": {
+        "quote": "Quotation",
+        "author": "Who said it",
+        "role": "What they do",
+        "mediaId": "Portrait"
+      }
+    },
+    "buttonGroup": {
+      "label": "Buttons",
+      "fields": {
+        "align": "Alignment",
+        "buttons": "Buttons",
+        "buttons.label": "Label",
+        "buttons.href": "Address",
+        "buttons.variant": "Weight"
+      },
+      "options": {
+        "align": {
+          "left": "Left",
+          "center": "Centred",
+          "right": "Right"
+        },
+        "buttons.variant": {
+          "primary": "Main",
+          "secondary": "Second",
+          "ghost": "Quiet"
+        }
+      }
+    },
+    "spacer": {
+      "label": "Space",
+      "fields": {
+        "size": "How much"
+      },
+      "options": {
+        "size": {
+          "sm": "A little",
+          "md": "Normal",
+          "lg": "A lot",
+          "xl": "A great deal"
+        }
+      }
+    },
+    "divider": {
+      "label": "Divider",
+      "fields": {
+        "variant": "Drawn as",
+        "spacing": "Space around it"
+      },
+      "options": {
+        "variant": {
+          "line": "A line",
+          "dots": "Three dots"
+        },
+        "spacing": {
+          "sm": "Tight",
+          "md": "Normal",
+          "lg": "Generous"
+        }
+      }
+    }
   },
   "widgets": {
     "welcome": {
