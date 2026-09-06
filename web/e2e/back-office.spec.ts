@@ -238,6 +238,33 @@ test('the documents list says which rows have a file, and which do not', async (
   await expect(withoutFile.getByRole('link', { name: englishCommon.list.file })).toHaveCount(0);
 });
 
+test('the calendar shows a projected entry and does not offer to edit it', async ({ page }) => {
+  await page.goto('/staff/ed/calendar');
+
+  await expect(page.getByRole('heading', { name: englishCommon.calendar.title, level: 1 })).toBeVisible();
+
+  const written = page.getByRole('row', { name: /Staff meeting/ });
+  const projected = page.getByRole('row', { name: /Night flight/ });
+
+  // Both are in the list: seeing what a module put in the calendar is the point of there being one.
+  await expect(written).toBeVisible();
+  await expect(projected).toBeVisible();
+
+  // The one the staff wrote is theirs to change; the mirror says where it comes from instead of
+  // offering a button that answers 403 (design M1 §4).
+  await expect(written.getByRole('link', { name: englishCommon.common.edit })).toBeVisible();
+  await expect(projected.getByRole('link', { name: englishCommon.common.edit })).toHaveCount(0);
+  await expect(projected.getByText(englishCommon.calendar.projected).first()).toBeVisible();
+});
+
+test('new entry reaches the calendar form', async ({ page }) => {
+  await page.goto('/staff/ed/calendar');
+  await page.getByRole('link', { name: englishCommon.calendar.create }).first().click();
+
+  await expect(page).toHaveURL(/\/staff\/ed\/calendar\/new/);
+  await expect(page.getByLabel(englishCommon.calendar.fields.kind, { exact: true })).toBeVisible();
+});
+
 test('new category reaches its form', async ({ page }) => {
   await page.goto('/staff/ed/categories');
   await page.getByRole('link', { name: englishCommon.categories.create }).first().click();

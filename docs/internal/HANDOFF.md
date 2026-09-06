@@ -723,6 +723,12 @@ quello che ha *trovato*:
   dei permessi. Due risorse nella stessa area — `/api/content` e `/api/categories` — rispondevano
   entrambe a `ContentList`, e il generatore del client teneva l'ultima letta: una risorsa che
   sparisce dal client senza che niente lo dica.
+- **Le righe che nessuno scrive si dichiarano sulla risorsa**, `CrudOptions.ReadOnlyRows`. Non è un
+  permesso e non c'è permesso che le sblocchi — **nemmeno un superadmin** — perché sono righe che
+  qualcos'altro scrive: una modifica a mano tornerebbe indietro al primo salvataggio di ciò che
+  rispecchiano. Oggi lo dichiara solo `CalendarEntry`, per le voci proiettate da un modulo, e
+  l'entità è il posto che decide quali sono, così il badge che la lista disegna e il 403 che il
+  motore dà non possono dire cose diverse.
 - **Le righe che ogni dipartimento può *leggere* si dichiarano una volta sola.** L'entità porta
   un'espressione (`ContentEntry.SharedForReading`); il motore CRUD la mette in `OR` con il filtro di
   dipartimento della lista, e l'unico authorization handler chiede alla riga la **stessa espressione
@@ -2317,35 +2323,119 @@ un browser che apre `/documents/ed` e pretende di vedere un documento.
 
 ---
 
-## 20. Da dove riparte la prossima sessione (6 settembre 2026)
+## 20. G6 di M1: il calendario guadagna la sua UI (6 settembre 2026)
 
-### Si apre G6, oppure G7
+Il modello c'era tutto da M0 e non è stato toccato: `cms_calendar_entries`, `CalendarEntry` con
+`IOwnedByDepartment`, `IVisible`, `IAuditable` e `[PermissionArea("Calendar")]`, i permessi già in
+catalogo. Mancava la UI, e mancava una cosa sola di sostanza — che **una voce proiettata da un modulo
+non si modifica**.
 
-`04-piano-implementazione-m1.md` §C. Due fasi sono pronte e **non dipendono l'una dall'altra**:
+### Il conto
 
-- **G6 — il calendario**: voci interne con `MapCrud` in `/staff/{dept}/calendar`, `/calendar`
-  pubblico, e il componente custom `CalendarView` (il secondo dei quattro decisi, dopo `MediaPicker`).
-  Il modello esiste tutto da M0 e **non si tocca**. ⚠️ Le voci con `SourceModule != "core"` sono
-  proiezioni e vanno mostrate in sola lettura.
-- **G7 — contatti, servizio notifiche, namespace `mail`**: dipende solo da G2, quindi può partire
-  quando si vuole. È la fase che fa nascere il servizio notifiche con un solo mittente di intenti.
+| | |
+|---|---|
+| Tabelle nuove | **zero**; nessuna migrazione |
+| Permessi nuovi | **zero**; `Calendar.View` e `Calendar.Edit` erano già in catalogo da M0 |
+| Endpoint scritti a mano | **zero** (M1 resta a uno, l'upload) |
+| Componenti custom | **uno**, `CalendarView` — il secondo dei quattro previsti, dopo `MediaPicker` |
+| Meccanismi nuovi | **zero**; due estensioni generiche, sotto |
 
-G8 vuole G5 (fatta), G3 e G4 (fatte), quindi è sbloccata — ma prima serve la risposta su cui
-Carmine deve decidere, qui sotto.
+### Che cosa c'è adesso
 
-Cinque cose che G5 lascia pronte e che **non vanno rifatte**:
+- **`/staff/{dept}/calendar`**: `MapCrud` come ogni altra risorsa, con la ricetta a tre route.
+- ⚠️ **Una voce con `SourceModule != "core"` è una proiezione e nessuno la scrive.** Non è un
+  permesso e non c'è permesso che la sblocchi: la riga rispecchia qualcosa che appartiene a un
+  modulo, e una modifica tornerebbe indietro al primo salvataggio di quella cosa. Il motore la
+  rifiuta **anche a un superadmin**, ed è proprio la differenza fra questa regola e una policy.
+- **`/calendar` pubblico**: mese, settimana e agenda, filtri per vista, dipartimento e tipo, tutto
+  nell'indirizzo così che quello che uno sta guardando si possa mandare a qualcun altro.
+- **`CalendarView`** è il componente custom, e si guadagna l'elenco chiuso con il criterio scritto
+  lì: **due schermate lo montano**, `/calendar` e il blocco `calendar` dentro una pagina. Il
+  componente provvisorio che G4 aveva scritto apposta per sparire è sparito.
+- **Il blocco `calendar` guadagna `view`**, additivo e con `.default('agenda')`, esattamente come il
+  design §1.2 aveva previsto: in G4 la vista era una sola e un select con una voce è un comando che
+  non fa niente.
+- Ogni ora è **in UTC e nel fuso della divisione**, mai una al posto dell'altra, e il fuso arriva da
+  `/api/me` e mai da una costante (piano §9.5).
+
+### Due estensioni generiche, e perché non erano aggiramenti
+
+1. **`CrudOptions.ReadOnlyRows`** — un predicato che dice quali righe di una risorsa nessuno scrive.
+   ⚠️ Il piano diceva di impedire la scrittura con `ExtraWritePolicy`, e **non si può**: quello
+   restituisce il *nome di un permesso*, e non esiste un permesso che voglia dire «nessuno», perché
+   un superadmin li ha tutti. Il punto che il piano stava facendo — «non un handler nuovo» — è
+   rispettato in pieno: la regola sta dentro il motore, dove sta già quella del dipartimento.
+   È il gemello di `SharedForReading` di G5: una dice quali righe tutti **leggono**, l'altra quali
+   righe nessuno **scrive**.
+2. **Una finestra esplicita per il provider del calendario**, `from` e `to` accanto a `range`.
+   Una griglia che mostra settembre mostra settembre, non «i prossimi trentun giorni». ⚠️ Le due
+   props **non stanno nello schema zod del blocco**, ed è deliberato: lo schema è ciò che un
+   redattore *salva*, e un corpo che inchiodasse una pagina a un mese sarebbe scaduto il giorno dopo
+   la pubblicazione. Quello è ciò che si **chiede**, e a chiederlo è una schermata.
+
+### Una cosa che il modello ha detto solo quando gliel'hanno chiesta
+
+⚠️ **`(source_module, source_id)` è unico**, e nessuno aveva mai creato una voce scritta dallo staff:
+la prima passa, la seconda va a sbattere sull'indice perché sono entrambe `("core", "")`. La risposta
+è un identificativo opaco generato alla creazione — `staff:{guid}` — come il nome su disco di un
+file della libreria: nessuno lo legge tranne l'indice. Nessuna migrazione, nessun indice toccato.
+C'è un test che crea **due** voci nello stesso dipartimento, e senza la correzione la seconda dà 500.
+
+### Che cosa la fase non ha fatto, ed è giusto così
+
+- **`RowVersion` sul calendario**: la tabella non ha un token di concorrenza e il modello di M0 non
+  si tocca in questa fase. Due membri che modificano la stessa voce insieme finiscono con il secondo
+  salvataggio che vince. È scritto nello schema del form e nel DTO invece di essere lasciato
+  scoprire; se un giorno serve, è una colonna additiva e una decisione.
+- **Le notifiche del calendario e il feed iCal**: restano dove il piano li ha messi, M6 (§15.9).
+- **Le voci `department` sul pubblico**: non compaiono, e a tenerle fuori è il query filter, non una
+  riga in questa fase.
+
+### I test
+
+Quattro di accettazione (`CalendarEndToEndTests`), sette Vitest su `CalendarView` e sulle due
+funzioni che decidono i giorni e la finestra, tre in un browser con una misura sulla griglia, due
+sulla schermata dello staff. Al 6 set 2026 la suite è **264 unit .NET, 126 di integrazione, 206
+Vitest, 31 smoke Playwright e 3 del giro contro l'API vera**.
+
+Tutti verificati rompendo la correzione, e **una rottura ha trovato un difetto vero**: la finestra
+che la schermata chiedeva era calcolata dal giorno di ancoraggio invece che dai quadrati che la
+griglia disegna, quindi una griglia del mese aperta il 28 chiedeva l'ultima settimana e disegnava
+vuote le prime tre. Adesso **una sola funzione** decide i quadrati e la finestra (`calendarDays` e
+`calendarWindow`), e il test le confronta su tre giorni diversi del mese.
+
+⚠️ La fixture del fuso è **Asia/Tokyo** nei Vitest e **Europe/Rome** negli e2e, mai UTC: con
+`timezone: "UTC"` le due righe di ogni data coincidono e una schermata che mostra UTC due volte
+passa inosservata. È il terzo dei tre falsi allarmi di §13, e questa è la rete che lo prenderebbe.
+
+---
+
+## 21. Da dove riparte la prossima sessione (6 settembre 2026)
+
+### Si apre G7, e poi G8
+
+`04-piano-implementazione-m1.md` §C.
+
+- **G7 — contatti, servizio notifiche, namespace `mail`**: dipende solo da G2 ed è la prossima per
+  ordine. Il servizio notifiche nasce con **un solo** mittente di intenti, nella forma che M2 e M3
+  useranno senza toccarla; le preferenze sono una tabella (`hub_notification_preferences`) e non una
+  colonna su `hub_users`. In sviluppo l'SMTP è Mailpit, già in `docker-compose.yml`.
+- **G8 — menu editoriale, pagine di sistema, dashboard, sito pubblico, SEO** è sbloccata da G5 e G6
+  ma **vuole prima una risposta di Carmine** (qui sotto). È la seconda fase grossa per costruzione e
+  il piano dice che può prendere due sessioni.
+
+Cinque cose che G5 e G6 lasciano pronte e che **non vanno rifatte**:
 
 - **`ContentListScreen` e `ContentFormScreen`** sono la lista e il form di un `kind` qualunque, e
-  `features/content/kinds.ts` è ciò che li distingue. Una schermata nuova su `cms_contents` è una
-  riga in quel file più tre route, non una schermata.
-- **`CrudOptions.SharedForReading`** è generico: qualunque risorsa può dichiarare che alcune sue
-  righe si leggono da ogni dipartimento. Il motore non sa che cosa sia un template.
+  `features/content/kinds.ts` è ciò che li distingue.
+- **`CrudOptions.SharedForReading`** (righe che tutti leggono) e **`CrudOptions.ReadOnlyRows`**
+  (righe che nessuno scrive) sono generiche: il motore non sa che cosa sia un template né che cosa
+  sia una proiezione.
 - **`CrudOptions.Name`** serve a chiunque metta una seconda risorsa nella stessa area di permessi.
-  Senza, i nomi delle operazioni collidono e il client generato ne perde una in silenzio.
-- **`.meta({ choices })` accetta `{ value, label }`**: un insieme chiuso che il server conosce e il
-  cui nome è un dato, non una chiave i18n. Le categorie sono il primo cliente.
-- **Il vocabolario delle categorie** è già dentro la risposta di `newsList` e `documentList`: una
-  schermata pubblica che vuole filtrare per categoria non chiede niente a nessun altro.
+- **`CalendarView`** disegna agenda, settimana e mese e non decide niente altro: quali voci e per
+  quale finestra è affare di chi lo monta.
+- **Il provider del calendario accetta una finestra esplicita** (`from`/`to`), e `calendarWindow`
+  la calcola dai quadrati che `calendarDays` disegna — le due non vanno separate.
 
 ### Deciso e già collocato, da non ridiscutere
 
