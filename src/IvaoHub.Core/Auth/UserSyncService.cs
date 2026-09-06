@@ -26,6 +26,7 @@ public sealed record IvaoUserProfile(
     int? RatingAtc,
     int? RatingPilot,
     string? DiscordId,
+    string? Email,
     string? LanguageId,
     bool? IvaoIsStaff,
     bool? IvaoIsSupervisor,
@@ -92,6 +93,11 @@ public sealed class UserSyncService(
         user.RatingAtc = profile.RatingAtc;
         user.RatingPilot = profile.RatingPilot;
         user.DiscordId = profile.DiscordId;
+
+        // Read for the notification service and for nothing else. Kept up to date at every sign
+        // in, and left alone when IVAO sends nothing rather than blanked: an address the hub had
+        // is better than no address, and a member who wants none clears it by other means.
+        user.Email = profile.Email ?? user.Email;
         user.IvaoIsStaff = profile.IvaoIsStaff;
         user.IvaoIsSupervisor = profile.IvaoIsSupervisor;
 

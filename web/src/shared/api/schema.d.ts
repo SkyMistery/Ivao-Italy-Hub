@@ -55,6 +55,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeNotificationPreferences"];
+        put: operations["MeSetNotificationPreference"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blocks/data/{type}": {
         parameters: {
             query?: never;
@@ -393,6 +409,38 @@ export interface paths {
         put: operations["CalendarUpdate"];
         post?: never;
         delete: operations["CalendarDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContactsList"];
+        put?: never;
+        post: operations["ContactsSubmit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contacts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContactsGet"];
+        put: operations["ContactsUpdate"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -796,6 +844,80 @@ export interface components {
             rowVersion: string;
         };
         /**
+         * @description A message in full. Everything but the status is read only on the screen and read only on the
+         *     server: what the sender wrote is not the department's to edit, which is why the write payload
+         *     below carries the status and nothing else.
+         */
+        ContactDetailDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            subject: string;
+            body: string;
+            status: components["schemas"]["ContactStatus"];
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description A message as the queue of a department shows it. The body is not here: a list is for choosing
+         *     which one to open.
+         */
+        ContactListDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            subject: string;
+            status: components["schemas"]["ContactStatus"];
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description Where a message has got to. The queue of a department is these four words.
+         * @enum {unknown}
+         */
+        ContactStatus: "New" | "Read" | "Answered" | "Closed";
+        /**
+         * @description What the department may change: where the message has got to, and nothing else. A payload that
+         *     could carry the subject or the body would be a payload that could rewrite somebody's message,
+         *     and no permission is meant to allow that.
+         *     DateTime ContactStatusWriteDto.RowVersion is the version the screen was loaded with; a stale one is how the
+         *     server finds out that somebody else moved the message first, and answers 409.
+         */
+        ContactStatusWriteDto: {
+            status: components["schemas"]["ContactStatus"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a member sends. There is no sender field: the VID is the one of the session, so there is
+         *     nothing to verify and nothing to forge (design M1 section 5.1).
+         */
+        ContactSubmitDto: {
+            department: components["schemas"]["Department"];
+            subject: string;
+            body: string;
+        };
+        /**
+         * @description What the sender gets back: the identifier of their message and nothing else. They cannot read
+         *     it again — the queue belongs to the department — so there is nothing more to hand over.
+         */
+        ContactSubmittedDto: {
+            /** Format: int64 */
+            id: number;
+        };
+        /**
          * @description A content row in full, as the editor loads it. JsonNode ContentDetailDto.Body travels as the JSON it is:
          *     the backend never learned what a block means and it is not going to start here.
          */
@@ -1176,6 +1298,11 @@ export interface components {
             key: string;
             path: string;
         };
+        /** @description One kind of notification, and whether this member wants it. */
+        NotificationPreferenceDto: {
+            type: string;
+            enabled: boolean;
+        };
         /**
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
@@ -1229,6 +1356,29 @@ export interface components {
         PagedResultOfCategoryListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["CategoryListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfContactListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["ContactListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -1446,6 +1596,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocaleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    MeNotificationPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferenceDto"][];
+                };
+            };
+        };
+    };
+    MeSetNotificationPreference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationPreferenceDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferenceDto"];
                 };
             };
             /** @description Bad Request */
@@ -2413,6 +2616,136 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContactsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfContactListDto"];
+                };
+            };
+        };
+    };
+    ContactsSubmit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactSubmitDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactSubmittedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ContactsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContactsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ContactStatusWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

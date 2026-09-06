@@ -1,9 +1,17 @@
+using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
+using IvaoHub.Core.Localization;
+using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
 using Xunit;
 
@@ -31,6 +39,9 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
     private static readonly string[] Forbidden = ["IT-", "LIRR", "Italia", "Italy", "it.ivao.aero"];
 
     private const string XxDatabase = "ivaohub_xx";
+
+    /// <summary>The one member of the fork this test signs in as.</summary>
+    private const int XxStaffVid = 680001;
 
     private string _root = null!;
     private string? _previousRoot;
@@ -129,6 +140,118 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
         foreach (var file in Directory.EnumerateFiles(Path.Combine(_root, "locales", "en"), "*.json"))
         {
             AssertNothingItalian(File.ReadAllText(file), Path.GetFileName(file));
+        }
+    }
+
+    [Fact]
+    public async Task TheMailsOfAForkNameNobodyElsesDivision()
+    {
+        // Mails are the newest place a sentence of this division can hide, and the words are only
+        // half of it: what lands in somebody's inbox is the template of `locales/en/mail.json` with
+        // values filled in, and a value is where a domain, a department name or a link would come
+        // from. So the mail is not rendered from invented data here — a member of XX writes to a
+        // department of XX and the queue is emptied, exactly as it would be on the fork's own
+        // server (design M1 §11.2).
+        var token = TestContext.Current.CancellationToken;
+
+        await SeedStaffAsync(token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, XxStaffVid, token);
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            new Uri(ContactsEndpoints.Pattern, UriKind.Relative))
+        {
+            Content = JsonContent.Create(new
+            {
+                department = nameof(Department.WD),
+                subject = "A question about the site",
+                body = "Where do I find the charts?",
+            }),
+        };
+
+        request.Headers.Add("X-Requested-With", "hub");
+        using var submitted = await client.SendAsync(request, token);
+        Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+
+        var sender = new CollectingMailSender();
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var job = new NotificationDispatchJob(
+                scope.ServiceProvider.GetRequiredService<HubDbContext>(),
+                sender,
+                scope.ServiceProvider.GetRequiredService<LocaleCatalog>(),
+                Options.Create(new SmtpOptions { Host = "localhost", From = "hub@example.org" }),
+                scope.ServiceProvider.GetRequiredService<IClock>(),
+                NullLogger<NotificationDispatchJob>.Instance);
+
+            await job.RunAsync(token);
+        }
+
+        Assert.NotEmpty(sender.Sent);
+
+        foreach (var mail in sender.Sent)
+        {
+            AssertNothingItalian(mail.To, "the address of a mail");
+            AssertNothingItalian(mail.Subject, "the subject of a mail");
+            AssertNothingItalian(mail.Text, "the body of a mail");
+
+            // The link back into the site is built from the division's own domain, which is where
+            // "it.ivao.aero" would appear if anything still knew this hub had been Italian.
+            Assert.Contains("example.org", mail.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain("{{", mail.Text, StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>A member of the fork's web team, with an address the queue can write to.</summary>
+    private async Task SeedStaffAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var clock = scope.ServiceProvider.GetRequiredService<IClock>();
+
+        database.Users.Add(new HubUser
+        {
+            Vid = XxStaffVid,
+            FirstName = "Example",
+            LastName = "Webmaster",
+            Email = "webmaster@example.org",
+            IsStaff = true,
+            SecurityStamp = SuperadminService.NewStamp(),
+            CreatedAt = clock.UtcNow,
+            UpdatedAt = clock.UtcNow,
+        });
+
+        // "XX-WM" and not "IT-WM": the position prefix is the division's own code, which is the
+        // whole point of StaffRoleMap taking one.
+        var position = StaffRoleMap.Parse("XX-WM", "XX", new HashSet<string>());
+
+        database.UserStaffPositions.Add(new UserStaffPosition
+        {
+            Vid = XxStaffVid,
+            Position = "XX-WM",
+            Department = position?.Department,
+            Level = position?.Level,
+            Fir = position?.Fir,
+            SyncedAt = clock.UtcNow,
+        });
+
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>A mail server that keeps what it was handed, so a test can read it.</summary>
+    private sealed class CollectingMailSender : IMailSender
+    {
+        private readonly List<OutgoingMail> _sent = [];
+
+        public IReadOnlyList<OutgoingMail> Sent => _sent;
+
+        public Task SendAsync(OutgoingMail mail, CancellationToken cancellationToken = default)
+        {
+            _sent.Add(mail);
+            return Task.CompletedTask;
         }
     }
 

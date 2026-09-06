@@ -3,21 +3,22 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 6 settembre 2026 — **M0 è chiusa, e di M1 sono fatte cinque fasi**: design
-(`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** — il giro contro l'API vera in
-un browser, che chiude il debito n.1 di §10 (**§14**) — **G1**, la media library (**§15**), **G2**,
-le cinque estensioni del generatore di form (**§16**), **G3**, i sedici blocchi Content, Layout,
-Interactive e Structure (**§17**), che ha chiuso **§16.C del piano** — le convenzioni dei blocchi
-sono scritte, con il set davanti — e **G4**, i sei blocchi Data con i loro provider (**§18**), che
-porta il registry a **27** e chiude il set che il design M1 §1 prevedeva. Il prossimo lavoro è
-**G5**, news, documenti e categorie — si apre con il prompt di `04-` §C, `<N>` = 5, e il suo **primo
-task** è la lettura condivisa dei template. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
-mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
-sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
-§16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
-nuovo**: #29 ha rimesso il tag al posto giusto e scritto cosa aveva insegnato il giro visivo, #30 ha
-chiuso le due cose che quel giro aveva visto e lasciato aperte (§13), #31 ha aggiunto una regola al
-piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di M0 da finire.**
+**Ultimo aggiornamento:** 6 settembre 2026 — **M0 è chiusa, e di M1 sono fatte otto fasi**: design
+(`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
+browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
+form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
+chiuso **§16.C del piano**, **G4** i sei blocchi Data con i loro provider (**§18**), che porta il
+registry a **27**, **G5** news, documenti e categorie come due `kind` di una tabella sola (**§19**),
+**G6** il calendario con la sua UI (**§20**) e **G7** i contatti con il servizio notifiche
+(**§21**), che aggiunge alla spina dorsale il terzo della famiglia, `ISubmittedByMembers`, e l'unico
+indirizzo che l'hub conserva. Il prossimo lavoro è **G8** — menu editoriale, pagine di sistema,
+dashboard di dipartimento, sito pubblico e SEO — che si apre con il prompt di `04-` §C, `<N>` = 8;
+la dashboard di dipartimento aspetta ancora tre risposte di Carmine (§22). M0 resta chiusa e non
+c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
+tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
+la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
+che è esattamente ciò che §16.15 del piano chiedeva.
+
 **Repository:** https://github.com/SkyMistery/Ivao-Italy-Hub (pubblico). `main` è avanti al tag
 `v0.1.0-m0` di tutto M1: quanto esattamente lo dice
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
@@ -2410,32 +2411,150 @@ passa inosservata. È il terzo dei tre falsi allarmi di §13, e questa è la ret
 
 ---
 
-## 21. Da dove riparte la prossima sessione (6 settembre 2026)
+## 21. G7 di M1: i contatti, e l'unica cosa che manda mail (6 settembre 2026)
 
-### Si apre G7, e poi G8
+La fase ha costruito quello che il design §5 chiedeva, e ha trovato **due cose che nessun documento
+poteva sapere**. Tutte e due sono note di decisione chiuse da Carmine prima di scrivere codice, e
+tutte e due riguardano la spina dorsale: `decisions/2026-09-06-indirizzo-di-un-destinatario.md` e
+`decisions/2026-09-06-una-riga-scritta-da-fuori.md`.
 
-`04-piano-implementazione-m1.md` §C.
+### Il conto
 
-- **G7 — contatti, servizio notifiche, namespace `mail`**: dipende solo da G2 ed è la prossima per
-  ordine. Il servizio notifiche nasce con **un solo** mittente di intenti, nella forma che M2 e M3
-  useranno senza toccarla; le preferenze sono una tabella (`hub_notification_preferences`) e non una
-  colonna su `hub_users`. In sviluppo l'SMTP è Mailpit, già in `docker-compose.yml`.
-- **G8 — menu editoriale, pagine di sistema, dashboard, sito pubblico, SEO** è sbloccata da G5 e G6
-  ma **vuole prima una risposta di Carmine** (qui sotto). È la seconda fase grossa per costruzione e
-  il piano dice che può prendere due sessioni.
+| | |
+|---|---|
+| Tabelle nuove | **tre**: `cms_contact_messages`, `hub_notifications`, `hub_notification_preferences`; una migrazione, additiva, più la colonna `hub_users.email` |
+| Permessi nuovi | **due**: `Contacts.View`, `Contacts.Edit`; nessun handler |
+| Endpoint scritti a mano | **tre** — M1 passa da uno a quattro, ed è il primo scostamento dalla previsione di design §12 (sotto il perché) |
+| Componenti custom | **uno**, `ContactForm` — il terzo dei quattro previsti, dopo `MediaPicker` e `CalendarView` |
+| Meccanismi nuovi | **uno**, `ISubmittedByMembers`, deciso con una nota |
+| Dipendenze nuove | **una**, MailKit 4.17.0 — già nel piano §3 dal primo giorno, mai pinnata prima |
 
-Cinque cose che G5 e G6 lasciano pronte e che **non vanno rifatte**:
+⚠️ **I tre endpoint a mano, uno per uno**, perché §E dice che il secondo è «un evento da riportare»:
+
+1. **`POST /api/contacts`** — la stessa forma che G1 ha scelto per l'upload (`MapCreate = false` più
+   un `POST` sul gruppo, mai un secondo indirizzo per creare la stessa cosa). Nessuna delle tre cose
+   che fa è una create del motore CRUD: la policy è `SignedIn` e non il permesso di scrittura
+   dell'area, il mittente è la sessione, e dopo il salvataggio parte un intento.
+2. **`GET /api/me/notifications`** e 3. **`PUT /api/me/notifications`** — sono la famiglia di
+   `/api/me/locale`, non risorse del back-office: un'impostazione di chi la chiede, senza
+   dipartimento a cui applicarla e senza lista da paginare. Il motore in modalità globale avrebbe
+   una policy sola, cioè chiunque sui dati di chiunque.
+
+Chi tirerà le somme in G12 confronti questa riga con la previsione (6 tabelle / 3 aree di permessi /
+5 estensioni al generatore / 4 componenti custom / **1** endpoint a mano): tabelle e componenti sono
+in linea, gli endpoint a mano no, e il motivo è che M1 non aveva previsto le **impostazioni di un
+membro** come categoria — ne esisteva già una, la lingua, scritta in M0.
+
+### Che cosa c'è adesso
+
+- **`cms_contact_messages`**, `OwnerDepartment` = il dipartimento destinatario, così la coda, il
+  filtro di dipartimento e il controllo riga per riga escono tutti da ciò che esiste.
+  ⚠️ **Niente `FromVid`, niente `HandledBy`**: il mittente è `CreatedBy` e chi ha mosso lo stato è
+  `UpdatedBy`, che li scrive l'interceptor. Il design li elencava; sono l'audit scritto a mano.
+- ⚠️ **`ISubmittedByMembers`**, il terzo della famiglia dopo `ISharedForReading` (allarga la lettura)
+  e `ReadOnlyRows` (restringe la scrittura): allarga **la sola creazione**, e solo per i tipi che la
+  dichiarano. Serviva perché `EnsureWriteIsAllowed` chiede `<Area>.Edit` sul dipartimento della riga
+  a chiunque sia autenticato — cioè rifiuta esattamente il mittente di un messaggio, che per
+  definizione non fa parte del dipartimento a cui scrive. Togliere quelle tre righe fa fallire
+  **nove** test su undici: è stato misurato.
+- ⚠️ **Il payload del back-office porta solo lo stato.** «Dettaglio in sola lettura» non è una
+  schermata gentile, è un tipo con un campo: non esiste permesso — nemmeno un superadmin — che possa
+  riscrivere il messaggio di qualcun altro, perché non c'è niente da applicare. Il test manda
+  `subject` e `body` nel JSON e verifica che la riga non cambi.
+- **La coda**: `INotificationService.QueueAsync(NotificationIntent)`, una riga di `hub_notifications`
+  per destinatario (un retry è per indirizzo), e un job Quartz al minuto che la svuota con tre
+  tentativi e poi si arrende. Non è un bus di eventi: nessuno si iscrive, e l'unica cosa che legge
+  quella tabella è il job.
+- ⚠️ **Un destinatario è una persona o una casella.** `Member(vid)` risolve indirizzo, lingua e
+  preferenza quando l'intento entra in coda; `Mailbox(address)` è un indirizzo che non appartiene a
+  nessuno — `division.json` → `departmentMailboxes`, facoltativa — e legge nella lingua della
+  divisione, perché una casella non ne ha una.
+- ⚠️ **`hub_users.email` esiste, e prima non esisteva apposta.** `IvaoUserProfileReader` scartava
+  `email` con un commento che lo diceva; lo scope era già chiesto al login. Adesso si legge, si tiene
+  per la coda **e per nient'altro**, e a dirlo è un test di architettura, `NoDtoCarriesAnEmailAddress`,
+  che guarda ogni DTO e ogni `Bootstrap*`. La staff directory di G9 nasce già dentro quella rete.
+- **I template sono file di lingua**: `locales/{it,en}/mail.json`, namespace `mail`, risolto da
+  `LocaleCatalog` nella lingua **del destinatario** — quella salvata sulla riga della coda, decisa
+  quando l'intento è entrato, non quando la mail parte.
+- **SMTP sta in un file solo**, `MailSender.cs`, e `NoSmtpOutsideTheNotificationService` lo fissa
+  cercando `MailKit`, `MimeKit` e `SmtpClient` su tutto `src/`.
+- **Senza server di posta non si rompe niente**: la coda si riempie, il job scrive `skipped` in
+  `hub_jobs_log`, e le righe partono al primo giro dopo che qualcuno configura un server.
+- **Le schermate**: `/contact` sotto `_member` (il form è per chi ha fatto l'accesso: niente captcha,
+  niente mittente da verificare), `/staff/{dept}/contacts` con la lista generata e il dettaglio, una
+  voce di sidebar, e **un interruttore** su `/me` — uno, perché i tipi di notifica sono uno.
+
+### Due nomi che il codice ha corretto ai documenti
+
+1. **`Contacts.Manage` → `Contacts.Edit`.** Con `.Manage` la riga non sarebbe scrivibile da nessuno:
+   la guardia dell'interceptor chiede `<Area>.Edit`, `MapCrud` deriva lo stesso nome, e
+   `CorePermissions` dichiara la regola per esteso. Design M1 §10.1 è corretto in v1.8.
+2. **`OutgoingMail.Text` e non `Body`.** `NoSecondContentEntity` cerca entità con un `Body` di tipo
+   stringa, perché è così che si vedrebbe una seconda entità con un documento a blocchi. La prosa di
+   una mail non è un documento: il record si chiama `Text`, e la famiglia `Contact*` è nominata nel
+   test come l'unica eccezione, così resta una decisione e non una coincidenza di ortografia.
+
+### I test, e due rotture che hanno insegnato qualcosa
+
+Undici di accettazione (`ContactsAndNotificationsTests`), due unit sui template (`mail.json` esiste
+in ogni lingua; un segnaposto che i dati non hanno resta **visibile**), uno di architettura per
+l'SMTP, uno per gli indirizzi nei DTO, e `ForkabilityXxDivision` esteso alle mail. Al 6 set 2026 la
+suite è **269 unit .NET, 138 di integrazione, 206 Vitest**.
+
+Ogni correzione è stata rotta apposta per guardare il test fallire, e due rotture hanno insegnato
+qualcosa:
+
+- ⚠️ **Una rottura che non compila non è una rottura.** `if (false)` ha dato `CS0162` (qui gli avvisi
+  sono errori), la build è fallita e i test sono girati sui binari di prima — **tutti verdi**. Se
+  quella riga fosse stata l'unica prova, il meccanismo sarebbe stato dichiarato coperto senza
+  esserlo. Rompere significa cambiare il *comportamento*, non spegnere il codice.
+- ⚠️ **La prima versione di `TheMailsOfAForkNameNobodyElsesDivision` non provava niente in più.**
+  Renderizzava i template con dati inventati, cioè ricontrollava il file che il test accanto già
+  legge. Adesso un membro di XX **scrive davvero** a un dipartimento di XX e la coda viene svuotata:
+  mettere `it.ivao.aero` a mano nell'URL della mail fa fallire quel test **e nessun altro**.
+
+### La prova a mano che il piano chiedeva
+
+Fatta, e non è un dettaglio: è l'unico pezzo che i test non toccano, perché `SmtpMailSender` parla
+davvero con un server. Il banco e2e pubblicato, avviato con `Smtp__Host=localhost Smtp__Port=1025`,
+un messaggio dal form, e **la mail è arrivata in Mailpit in inglese** mentre la divisione di quel
+banco ha l'italiano come default — cioè nella lingua del destinatario, che è esattamente il criterio.
+L'unico ritocco necessario è stato dare un indirizzo all'utente del banco: il login e2e non ne
+inventa uno, apposta.
+
+---
+
+## 22. Da dove riparte la prossima sessione (6 settembre 2026)
+
+### Si apre G8
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 8.
+
+- **G8 — menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO** è
+  sbloccata da G3, G4, G5 e G6, e non dipende da G7. È la seconda fase grossa per costruzione e il
+  piano dice che può prendere due sessioni, sullo stesso branch: prima il menu e le pagine seminate,
+  poi le rotte pubbliche e la SEO.
+- ⚠️ **La dashboard di dipartimento è decisa** (6 set 2026, qui sotto): blocchi, visibile al proprio
+  dipartimento più quelli autorizzati, dentro G8. Quello che resta aperto è come si autorizza un VID
+  su un altro dipartimento, e G8 ne tocca solo la prima metà.
+- Dopo G8, **G9 e G10** si aprono in qualsiasi ordine.
+
+Sei cose che G5, G6 e G7 lasciano pronte e che **non vanno rifatte**:
 
 - **`ContentListScreen` e `ContentFormScreen`** sono la lista e il form di un `kind` qualunque, e
   `features/content/kinds.ts` è ciò che li distingue.
-- **`CrudOptions.SharedForReading`** (righe che tutti leggono) e **`CrudOptions.ReadOnlyRows`**
-  (righe che nessuno scrive) sono generiche: il motore non sa che cosa sia un template né che cosa
-  sia una proiezione.
+- **`CrudOptions.SharedForReading`** (righe che tutti leggono), **`CrudOptions.ReadOnlyRows`** (righe
+  che nessuno scrive) e **`ISubmittedByMembers`** (righe che chiunque può creare) sono i tre modi
+  generici di dire una cosa sola: il motore non sa che cosa sia un template, una proiezione o un
+  messaggio.
 - **`CrudOptions.Name`** serve a chiunque metta una seconda risorsa nella stessa area di permessi.
 - **`CalendarView`** disegna agenda, settimana e mese e non decide niente altro: quali voci e per
   quale finestra è affare di chi lo monta.
-- **Il provider del calendario accetta una finestra esplicita** (`from`/`to`), e `calendarWindow`
-  la calcola dai quadrati che `calendarDays` disegna — le due non vanno separate.
+- **Il servizio notifiche esiste ed è finito.** Un modulo che deve avvisare qualcuno pubblica un
+  intento e non sa niente di SMTP, code o tentativi; una notifica nuova è **una riga** in
+  `NotificationTypes` e una coppia di chiavi in `mail.json`, in ogni lingua.
+- **Le impostazioni di un membro sono la famiglia `/api/me/…`**, non il motore CRUD: `locale` da M0,
+  `notifications` da G7. La terza si scrive come le prime due.
 
 ### Deciso e già collocato, da non ridiscutere
 
@@ -2449,17 +2568,52 @@ Cinque cose che G5 e G6 lasciano pronte e che **non vanno rifatte**:
   non deve diventarlo.
 - **Le liste di valori nudi non si aggiungono al generatore di form**: una lista di oggetti con una
   chiave dentro costa una chiave nel JSON e niente nell'editor, ed è il precedente di G3 e G4.
+- **L'indirizzo di un membro è di sola andata** (§21): si legge dal profilo IVAO, vive in
+  `hub_users.email` per la coda delle notifiche, e nessun DTO lo espone. La staff directory di G9
+  non lo tocca — `NoDtoCarriesAnEmailAddress` fallirebbe.
 
-### Aperto, e serve una risposta di Carmine prima di G8
+### Deciso il 6 settembre 2026, e G8 lo costruisce
 
-La **dashboard di dipartimento** (design M1 §14, `decisions/2026-09-05-dashboard-di-dipartimento.md`).
-Tre domande, con la raccomandazione già scritta nella nota:
+La **dashboard di dipartimento** non è più aperta (`decisions/2026-09-05-dashboard-di-dipartimento.md`,
+sezione «La decisione»). Le tre risposte:
 
-1. **blocchi** (una riga di `cms_contents` per dipartimento) o **widget**? — raccomandati i blocchi;
-2. la vede **solo il proprio dipartimento** o qualunque staff? — raccomandato il proprio;
-3. entra in **M1/G8** o slitta a M2? — raccomandato G8, se blocchi.
+1. **Blocchi.** Una riga di `cms_contents` per dipartimento, `kind = Dashboard`, `slug` = il codice
+   del dipartimento, nata da un template di sistema e modificata nell'editor che esiste già. Il
+   motivo, con le parole di Carmine: *ogni dipartimento ha le sue esigenze; la base e i tool glieli
+   dà lui, la gestione è loro*. Si rinuncia alle tile che **compiono azioni** — i blocchi mostrano —
+   e la strada per i moduli di M2/M3 è registrare un **blocco Data**, non una tile.
+2. **La vede il proprio dipartimento, più i dipartimenti a cui il VID è autorizzato.**
+3. **Dentro G8**, come task 6.
 
-Nulla di tutto questo blocca G6 o G7. **Blocca G8**, che è la fase successiva a quelle due.
+### Aperto, e G8 ne tocca solo la prima metà
+
+⚠️ **La risposta 2 oggi non è vera**, e non per colpa della dashboard: `HubClaims.BuildIdentity`
+scrive i claim `dept` **solo dalle posizioni staff**, quindi un grant su un altro dipartimento dà il
+permesso ma lascia la lista vuota e le righe `Department` nascoste. Il test di F8 prova il dettaglio
+e mai la lista, ed è per questo che non se n'era accorto nessuno.
+`decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md` ha la misura, la correzione e le due domande
+rimaste.
+
+- **In G8**: `BuildIdentity` scrive un `dept` anche per i dipartimenti nominati da un grant attivo,
+  con i test della lista che oggi mancano. Due righe, ed è ciò che rende vera la risposta 2.
+  ⚠️ Allarga la **visibilità**, non solo il permesso: chi ha un grant qualunque su un dipartimento
+  ne vede tutte le righe `Department`, anche di aree che non gli sono state date. È la lettura
+  giusta di «autorizzato ad accedere», e la schermata dei grant deve dirlo.
+- **Non in G8, e non è una fase**: autorizzare qualcuno su **un pezzo** di un altro dipartimento —
+  «i CH gestiscono i training ma nient'altro nel TD», «il FOD inserisce le rotte di un evento ma non
+  le postazioni». ⚠️ La prima stesura della nota proponeva un grant che porta un **livello**: è
+  **scartata**, perché serviva l'opposto di un pacchetto. Il meccanismo esiste già — un grant è un
+  permesso più un dipartimento — e quello che serve sono **due regole di design**, che vincolano M2
+  e M4 e non M1:
+  1. **la granularità sta nel catalogo del modulo**: una capacità delegabile ha un nome suo
+     (`Training.AssignTrainer` accanto a `Training.Edit`), e ci si accorge al design del modulo, non
+     il giorno in cui qualcuno chiede il grant;
+  2. **una capacità delegabile è una riga sua, con la sua area**, perché
+     `EnsureWriteIsAllowed` chiede `<Area>.Edit` **per tipo di entità**: permessi per *campo* non
+     esistono e non si inventano. Rotte e postazioni di un evento sono due entità, non due colonne —
+     e se quelle righe siano dell'evento (con un grant) o del FOD (senza) lo decide il design di M2.
+  3. E per i CH c'è una terza via che non costa grant: `IHasFir` più `firStaffScope`, cioè «i
+     training della propria FIR» come regola invece di nove grant da revocare a mano. Domanda di M4.
 
 ### Il banco e2e, in due righe
 

@@ -1,10 +1,57 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.7 — 6 settembre 2026
+**Versione documento:** 1.10 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.10** (6 set 2026, **correzione di Carmine**): la voce di §14 aggiunta poche ore prima
+diceva che la seconda metà del problema dei grant era «un grant che porta un livello». **No**: gli
+esempi sono «i CH gestiscono i training ma nient'altro nel TD» e «il FOD inserisce le rotte di un
+evento ma non le postazioni», cioè si autorizza su **una capacità**, non su un pacchetto. Il
+meccanismo esiste già — un grant è un permesso più un dipartimento — e ciò che serve sono due regole
+di design, scritte in `decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md`: la
+granularità sta nel **catalogo del modulo**, e una capacità delegabile è **una riga sua con la sua
+area**, perché la guardia dell'interceptor chiede `<Area>.Edit` per tipo di entità e permessi per
+campo non esistono. Resta in G8 solo la correzione della **portata** (un grant non fa raggiungere il
+dipartimento). Nessuna fase nuova.
+
+**Changelog 1.9** (6 set 2026, **tre risposte di Carmine**): la **dashboard di dipartimento** esce
+da §14 e diventa il task 6 di G8. È **a blocchi** — una riga di `cms_contents` per dipartimento,
+nata da un template di sistema e modificata nell'editor che esiste — perché la divisione del lavoro
+che serve è «la base e i tool li dà chi costruisce l'hub, la gestione è del dipartimento», e con i
+widget quella seconda metà vorrebbe un secondo editor di disposizione. La vede **il proprio
+dipartimento più quelli a cui il VID è autorizzato**, e si costruisce **dentro G8**.
+⚠️ E con essa entra in §14 una voce nuova che la riguarda da vicino: **un grant oggi non fa
+raggiungere il dipartimento** su cui è dato — i claim `dept` vengono solo dalle posizioni staff,
+quindi la lista esce vuota e le righe `Department` restano nascoste. La correzione sta in G8; la
+seconda metà della richiesta di Carmine — un grant che porta un **livello**, con una
+`RolePermissionMatrix` componibile dai moduli perché quel livello valga cose diverse in dipartimenti
+diversi — è progettata in `decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md` e aspetta una risposta.
+
+**Changelog 1.8** (6 set 2026, **due decisioni di Carmine**): **G7 ha costruito i contatti e il
+servizio notifiche**, e ha trovato due cose che questo documento non poteva sapere.
+**§5.2, il destinatario di un intento** (nota `decisions/2026-09-06-indirizzo-di-un-destinatario.md`):
+l'hub non conservava **nessun** indirizzo — `IvaoUserProfileReader` scartava `email` apposta — e
+senza indirizzo una coda di mail non è una coda. Deciso: si legge dal profilo IVAO (lo scope è già
+chiesto al login) e si tiene in `hub_users.Email` **per il servizio notifiche e per nient'altro**,
+con `NoDtoCarriesAnEmailAddress` a dirlo. E accanto alle persone ci sono le **caselle di
+dipartimento**: `division.json → departmentMailboxes`, facoltativa, perché una divisione ha
+indirizzi che raggiungono un intero dipartimento e servono. Un destinatario è quindi **una persona o
+una casella**: la prima ha una lingua e una preferenza, la seconda nessuna delle due.
+**§5.1, chi può scrivere una riga in un dipartimento non suo** (nota
+`decisions/2026-09-06-una-riga-scritta-da-fuori.md`): la guardia dell'interceptor rifiuta chiunque
+scriva `IOwnedByDepartment` senza tenere `<Area>.Edit` su quel dipartimento — cioè rifiuta
+esattamente il mittente di un messaggio di contatto. Deciso: **`ISubmittedByMembers`**, terzo della
+famiglia dopo `ISharedForReading` e `ReadOnlyRows`, che allarga **solo la creazione** e solo per i
+tipi che la dichiarano. M2 (iscrizione a un evento) e M4 (richiesta di esame) sono la stessa forma.
+**§10.1, i nomi dei permessi**: `Contacts.Manage` diventa **`Contacts.Edit`**. Con `.Manage` la riga
+non sarebbe scrivibile da nessuno: la guardia chiede `<Area>.Edit`, `MapCrud` deriva `.Edit`, e
+`CorePermissions` dichiara la regola per esteso.
+**§5.1, due colonne che non esistono**: né `FromVid` né `HandledBy`. Il mittente è `CreatedBy` e chi
+ha mosso lo stato è `UpdatedBy`, che l'interceptor scrive già: una seconda copia è la copia che
+diverge.
 
 **Changelog 1.7** (6 set 2026): **G6 ha costruito il calendario**, e una riga di §4 cambia.
 **§4, le voci proiettate**: la scrittura non la impedisce un `ExtraWritePolicy` — ⚠️ **non può**,
@@ -479,10 +526,18 @@ già in catalogo, e la scrittura delle voci di modulo affidata all'interceptor. 
 
 ### 5.1 Contatti
 
-- Tabella `cms_contact_messages`: `Id`, `TargetDepartment`, `FromVid`, `Subject`, `Body`, `Status`
-  (`new | read | answered | closed`), `HandledBy?`, `HandledAt?`, audit. `IOwnedByDepartment` —
-  `OwnerDepartment` **è** il dipartimento destinatario, così la coda del back-office e la policy di
-  scrittura escono gratis dall'handler che esiste già.
+- Tabella `cms_contact_messages`: `Id`, `OwnerDepartment`, `Subject`, `Body`, `Status`
+  (`New | Read | Answered | Closed`), audit. `IOwnedByDepartment` — `OwnerDepartment` **è** il
+  dipartimento destinatario, così la coda del back-office e la policy di scrittura escono gratis
+  dall'handler che esiste già.
+- ⚠️ **Né `FromVid` né `HandledBy`** (v1.8): il mittente è `CreatedBy`, chi ha mosso lo stato è
+  `UpdatedBy`, e li scrive l'interceptor. Una colonna accanto sarebbe l'audit scritto a mano.
+- ⚠️ **`ISubmittedByMembers`** (v1.8, nota del 6 set 2026): la guardia dell'interceptor rifiuterebbe
+  il mittente, che per definizione non fa parte del dipartimento a cui scrive. L'entità dichiara che
+  accetta invii, e questo allarga **la sola creazione**; muovere lo stato dopo resta una scrittura
+  ordinaria che chiede `Contacts.Edit` su quel dipartimento.
+- Il payload di scrittura del back-office porta **solo lo stato**: non c'è permesso che permetta di
+  riscrivere il messaggio di qualcun altro, e il modo di dirlo è un tipo con un campo.
 - **Il form è visibile solo agli autenticati** (piano §9.1): niente mittente da verificare, niente
   captcha, niente spam. Il VID è quello della sessione e non un campo.
 - Back-office: `/staff/{dept}/contacts`, lista generata, dettaglio in sola lettura più cambio di stato.
@@ -497,6 +552,14 @@ toccarla.
 
 - `INotificationService.QueueAsync(NotificationIntent)`; l'intento porta destinatari, chiave del
   template, dati, e la lingua **del destinatario** (non quella di chi ha scatenato l'invio).
+- ⚠️ **Un destinatario è una persona o una casella** (v1.8, nota del 6 set 2026).
+  `NotificationRecipient.Member(vid)` risolve indirizzo e lingua da `hub_users` al momento della
+  messa in coda; `NotificationRecipient.Mailbox(address)` è un indirizzo che non appartiene a
+  nessuno — la casella condivisa di un dipartimento, da `division.json → departmentMailboxes` — e
+  legge nella lingua di default della divisione, perché una casella non ne ha una.
+- ⚠️ **`hub_users.Email` esiste da G7** e serve a questo e a nient'altro: letta dal profilo IVAO a
+  ogni login, non compare in nessun DTO (`NoDtoCarriesAnEmailAddress`), e un membro che non ce l'ha
+  viene saltato invece di far fallire la coda.
 - Tabella `hub_notifications` con stato e tentativi; un job Quartz svuota la coda con retry. Non è un
   bus di eventi (piano §16.4 lo esclude per le proiezioni): qui l'asincronia è corretta, perché una mail
   che non parte non deve far fallire il salvataggio.
@@ -672,7 +735,7 @@ Nota: `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`. Lavoro in **
 | Permesso | Scope | Perché |
 |---|---|---|
 | `Media.View`, `Media.Edit` | dipartimento | La libreria è per dipartimento come tutto il resto |
-| `Contacts.View`, `Contacts.Manage` | dipartimento | La coda dei messaggi del proprio dipartimento |
+| `Contacts.View`, `Contacts.Edit` | dipartimento | La coda dei messaggi del proprio dipartimento. ⚠️ `.Edit` e non `.Manage` (v1.8): la guardia dell'interceptor chiede `<Area>.Edit` e `MapCrud` deriva lo stesso nome |
 | `Menu.View`, `Menu.Edit` | dipartimento (Web) | Il menu appartiene al dipartimento Web |
 
 Nessun handler nuovo. Ogni riga qui sopra è un nome nel catalogo e una riga nella matrice
@@ -821,16 +884,23 @@ non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
 
 ## 14. Ancora aperto (non blocca M1)
 
-- ⚠️ **La forma della dashboard di dipartimento.** Chiesta il 5 set 2026 e assente da ogni documento
-  fino a quel giorno: ogni dipartimento nasce con la propria dashboard, poi la modifica. La nota
-  `decisions/2026-09-05-dashboard-di-dipartimento.md` misura il bivio — **blocchi** (una riga di
-  `cms_contents` per dipartimento, `kind = Dashboard`, `visibility = Department`, seminata da un
-  template e modificata nell'editor che esiste) contro **widget** (le tile di `/me`, che però per
-  essere disposte per dipartimento vorrebbero un secondo editor) — e raccomanda i blocchi. Con quella
-  forma il lavoro è un delta piccolo dentro **G8**, che il seed delle pagine di sistema lo costruisce
-  comunque; con l'altra è un meccanismo nuovo e la sua casa è M2. Da confermare prima di G8.
-  È anche il primo cliente vero di §9.4: senza lettura condivisa dei template, otto dipartimenti su
-  nove non potrebbero leggere il proprio template di partenza.
+- ~~**La forma della dashboard di dipartimento**~~ **decisa il 6 set 2026: blocchi**, visibile al
+  proprio dipartimento più quelli a cui il VID è autorizzato, e si costruisce **dentro G8**
+  (`decisions/2026-09-05-dashboard-di-dipartimento.md`, §«La decisione»). Una riga di `cms_contents`
+  per dipartimento, `kind = Dashboard`, `slug` = il codice del dipartimento, `visibility = Department`,
+  seminata da un template di sistema e modificata nell'editor che esiste. Il motivo è la divisione
+  del lavoro: la base e i tool li dà chi costruisce l'hub, la gestione è del dipartimento — che con i
+  widget non sarebbe possibile senza un secondo editor di disposizione. È anche il primo cliente vero
+  di §9.4: senza lettura condivisa dei template, otto dipartimenti su nove non potrebbero leggere il
+  proprio template di partenza.
+- ⚠️ **Come si autorizza un VID su un altro dipartimento** (nuovo, 6 set 2026,
+  `decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md`): un grant dà oggi il permesso ma **non** la
+  lista né le righe `Department` di quel dipartimento, perché i claim `dept` vengono solo dalle
+  posizioni staff. La correzione (due righe in `HubClaims.BuildIdentity` più i test che mancano) è
+  ciò che rende vera la visibilità della dashboard e entra in **G8**. Autorizzare qualcuno su **un pezzo**
+  di un altro dipartimento non vuole invece nessun meccanismo nuovo: vuole che la capacità abbia un
+  **nome suo** nel catalogo del modulo e sia **una riga sua** con la sua area, perché la guardia
+  dell'interceptor ragiona per tipo di entità e non per campo. Vincola i design di M2 e M4, non M1.
 - ⚠️ **Risposte A9 di Ivao.It** (piano §15.2c) e **dominio di staging** (§15.3): ora bloccano M2, non M1.
 - ⚠️ **Cosa significa `firStaffScope`** (debito n.6 di HANDOFF §10). In M0 le posizioni FIR non danno
   nessun permesso, che è la lettura più restrittiva e quella che si può solo allargare. M1 non ne ha

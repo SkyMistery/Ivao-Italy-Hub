@@ -101,6 +101,7 @@ public sealed class UserSyncTests(MariaDbFixture database) : IAsyncLifetime
         RatingAtc: null,
         RatingPilot: null,
         DiscordId: null,
+        Email: null,
         LanguageId: languageId,
         IvaoIsStaff: false,
         IvaoIsSupervisor: false,

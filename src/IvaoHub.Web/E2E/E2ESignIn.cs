@@ -95,6 +95,9 @@ internal static class E2ESignIn
                     RatingAtc: null,
                     RatingPilot: null,
                     DiscordId: null,
+                    // The bench has no mailbox: nothing it does sends a mail, and an invented
+                    // address would be one the queue would actually try to write to.
+                    Email: null,
                     LanguageId: settings.DefaultLocale,
                     IvaoIsStaff: options.Positions.Count > 0,
                     IvaoIsSupervisor: false,

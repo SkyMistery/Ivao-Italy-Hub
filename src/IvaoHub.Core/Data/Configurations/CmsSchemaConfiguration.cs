@@ -146,3 +146,20 @@ internal sealed class AwardSignalConfiguration : IEntityTypeConfiguration<AwardS
         builder.HasIndex(signal => new { signal.Vid, signal.Status });
     }
 }
+
+internal sealed class ContactMessageConfiguration : IEntityTypeConfiguration<ContactMessage>
+{
+    public void Configure(EntityTypeBuilder<ContactMessage> builder)
+    {
+        builder.ToTable("cms_contact_messages");
+        builder.HasKey(message => message.Id);
+        builder.Property(message => message.Subject)
+            .HasMaxLength(ContactSubmitDtoValidator.MaxSubjectLength)
+            .IsRequired();
+        builder.Property(message => message.Body).HasColumnType("text").IsRequired();
+        builder.HasRowVersion(message => message.RowVersion);
+
+        // The queue of one department, newest first, is the only way this table is ever read.
+        builder.HasIndex(message => new { message.OwnerDepartment, message.Status, message.CreatedAt });
+    }
+}

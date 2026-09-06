@@ -12,6 +12,7 @@ import {
   CALENDAR_VIEWS,
   CalendarView,
   ConfirmDialog,
+  ContactForm,
   EmptyState,
   Hero,
   MarkdownContent,
@@ -330,4 +331,12 @@ export function DataListSample({ bootstrap }: { bootstrap: Bootstrap }) {
       )}
     />
   );
+}
+
+/**
+ * The contact form, wired to nothing. A gallery that actually sent a message would put a row in the
+ * queue of a department every time somebody scrolled past it.
+ */
+export function ContactFormSample() {
+  return <ContactForm onSubmit={() => Promise.resolve()} />;
 }

@@ -8,6 +8,7 @@ import {
   Images,
   KeyRound,
   Link2,
+  Mail,
   Newspaper,
   ScrollText,
   ShieldCheck,
@@ -86,6 +87,12 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
         description: t('categories.description'),
         Icon: Tags,
         href: `/staff/${deptParam.format(department)}/categories`,
+      },
+      {
+        title: t('contacts.title'),
+        description: t('contacts.description'),
+        Icon: Mail,
+        href: `/staff/${deptParam.format(department)}/contacts`,
       },
       {
         title: t('links.title'),

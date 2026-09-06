@@ -1108,5 +1108,46 @@
         "allKinds": "Every kind"
       }
     }
+  },
+  "contacts": {
+    "title": "Contact messages",
+    "description": "What members have written to this department.",
+    "open": "Open",
+    "send": "Send",
+    "from": "From VID {{vid}}, {{at}}",
+    "public": {
+      "title": "Write to us",
+      "description": "Pick the department your message is about. You are signed in, so we know who you are and can answer."
+    },
+    "sent": {
+      "title": "Your message is on its way",
+      "description": "The department has it. An answer comes back the way that department usually answers."
+    },
+    "fields": {
+      "department": "Department",
+      "subject": "Subject",
+      "body": "Message",
+      "status": "Status",
+      "createdBy": "From",
+      "createdAt": "Sent",
+      "updatedAt": "Last change"
+    },
+    "options": {
+      "status": {
+        "New": "New",
+        "Read": "Read",
+        "Answered": "Answered",
+        "Closed": "Closed"
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "types": {
+      "contact.received": {
+        "title": "Messages to my department",
+        "description": "An email when a member writes to a department you are staff of."
+      }
+    }
   }
 }

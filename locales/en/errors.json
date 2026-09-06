@@ -68,6 +68,9 @@
     "superadmin": {
       "neverLoggedIn": "That VID has never signed in, so the hub knows nothing about them yet.",
       "lastOne": "The last super administrator cannot be removed."
+    },
+    "notifications": {
+      "unknownType": "That is not a kind of notification this hub sends."
     }
   }
 }

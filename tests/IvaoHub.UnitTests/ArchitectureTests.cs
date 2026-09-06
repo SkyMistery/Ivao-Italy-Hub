@@ -156,6 +156,12 @@ public sealed class ArchitectureTests
             .Where(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Any(property => property.Name is "BodyJson" or "Body"
                     && property.PropertyType == typeof(string)))
+            // A message somebody typed is prose, not a document: no blocks, no editor, no renderer,
+            // no publication. `Body` is caught here in the first place because an entity could name
+            // a block document that way, and the contact family is named so that it stays a
+            // decision rather than a coincidence of spelling. It is the only family excused: the
+            // mail that carries one of these calls its own prose `Text`, for this very reason.
+            .Where(type => !type.Name.StartsWith("Contact", StringComparison.Ordinal))
             .Select(type => type.Name)
             .Order(StringComparer.Ordinal)
             .ToArray();
@@ -163,6 +169,53 @@ public sealed class ArchitectureTests
         // `ContentVersion` is the same document frozen at a moment, not a second kind of content:
         // it is what publication wrote, it has no editor and it is never edited.
         Assert.Equal(["ContentEntry", "ContentVersion"], withABody);
+    }
+
+    /// <summary>
+    /// SMTP lives in one file. A module never sends a mail: it publishes an intent, the notification
+    /// service queues it and the dispatch job hands it to the one sender (plan section 9.7).
+    /// <para>The check is on the client and not on the word "mail": what matters is who is allowed
+    /// to open a connection to a mail server, and that is <c>SmtpMailSender</c> — the day a module
+    /// writes its own, this is what says so, in the phase that wrote it rather than in the incident
+    /// that follows it.</para>
+    /// </summary>
+    [Fact]
+    public void NoSmtpOutsideTheNotificationService()
+    {
+        var offenders = SourceFiles()
+            .Where(file =>
+            {
+                var text = File.ReadAllText(file);
+                return text.Contains("MailKit", StringComparison.Ordinal)
+                    || text.Contains("MimeKit", StringComparison.Ordinal)
+                    || text.Contains("SmtpClient", StringComparison.Ordinal);
+            })
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Equal(["MailSender.cs"], offenders);
+    }
+
+    /// <summary>
+    /// The address of a member leaves the database only as a mail. It is read from the IVAO profile
+    /// for the notification service and for nothing else (decision note of 6 September 2026), so no
+    /// payload of the API may carry it — not the bootstrap, not a list, not the staff directory that
+    /// G9 is about to build on the same table.
+    /// </summary>
+    [Fact]
+    public void NoDtoCarriesAnEmailAddress()
+    {
+        var offenders = Core.GetTypes()
+            .Concat(Atc.GetTypes())
+            .Where(type => type is { IsClass: true, IsAbstract: false })
+            .Where(type => type.Name.EndsWith("Dto", StringComparison.Ordinal)
+                || type.Name.StartsWith("Bootstrap", StringComparison.Ordinal))
+            .Where(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Any(property => property.Name.Contains("mail", StringComparison.OrdinalIgnoreCase)))
+            .Select(type => type.Name)
+            .ToArray();
+
+        Assert.Empty(offenders);
     }
 
     private static IEnumerable<string> ProjectsMatching(string prefix) =>

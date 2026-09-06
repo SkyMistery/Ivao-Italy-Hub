@@ -111,6 +111,24 @@ describe the installation, not the division.
 Production also sends HSTS and redirects plain http to https. Set `Https:Redirect` to `false` if the
 proxy in front already refuses http itself.
 
+The hub also sends mail — the queue of notifications, which in M1 is the contact form of a
+department. It needs an `Smtp` block, in `secrets/*.json` or in `Smtp__*` environment variables;
+with none, nothing is lost and nothing is sent: the queue fills, and the job that empties it records
+that no server is configured. In development it is Mailpit, which `docker-compose.yml` already
+starts and whose inbox is at <http://localhost:8025>.
+
+```json
+{
+  "Smtp": {
+    "Host": "localhost",
+    "Port": 1025,
+    "From": "hub@example.org",
+    "FromName": "IVAO Example",
+    "UseStartTls": false
+  }
+}
+```
+
 ```json
 {
   "AllowedHosts": "it.ivao.aero;www.it.ivao.aero",

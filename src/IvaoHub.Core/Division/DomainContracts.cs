@@ -104,3 +104,21 @@ public interface ISharedForReading
     /// <summary>Whether this particular row is one any department may read.</summary>
     bool IsSharedForReading { get; }
 }
+
+/// <summary>
+/// A row any signed in member may <b>bring into existence</b> inside the space of a department
+/// they have nothing to do with. A contact message is the first: somebody writes to a department
+/// precisely because they are not part of it (design M1 section 5.1, decision note of 6 September
+/// 2026).
+/// <para>The write guard of the interceptor asks for <c>{Area}.Edit</c> on the owning department
+/// before letting any write of an <see cref="IOwnedByDepartment"/> row through, which is exactly
+/// right for every row somebody edits and exactly wrong for a row somebody sends. This is the
+/// entity's way of saying so, and it is deliberately the narrowest thing that works: it applies to
+/// <b>creation only</b>. Changing such a row afterwards — moving a message from new to answered —
+/// is an ordinary write and asks for the permission like everything else.</para>
+/// <para>It is the third of the same family and it is written in the same style: <see
+/// cref="ISharedForReading"/> widens reading, <c>CrudOptions.ReadOnlyRows</c> narrows writing, this
+/// widens creating. The engine is never told what a contact message is; it is told that this
+/// resource accepts submissions.</para>
+/// </summary>
+public interface ISubmittedByMembers;

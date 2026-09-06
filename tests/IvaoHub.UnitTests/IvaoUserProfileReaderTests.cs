@@ -70,13 +70,26 @@ public sealed class IvaoUserProfileReaderTests
     }
 
     [Fact]
-    public void KeepsNoEmailAddress()
+    public void ReadsTheEmailAddressForTheNotificationService()
     {
-        // The hub stores the minimum IVAO data it needs (plan section 6.4). The payload carries an
-        // email address; nothing here reads it, and there is nowhere to put it.
-        Assert.DoesNotContain(
-            typeof(IvaoUserProfile).GetProperties(),
-            property => property.Name.Contains("mail", StringComparison.OrdinalIgnoreCase));
+        // Until 6 September 2026 this test said the opposite, and it was right: the hub keeps the
+        // minimum IVAO data it needs (plan section 11.4), which is "no email unless a module needs
+        // one". The notification service is the module that needs one, and the rule it is held to
+        // instead is `NoDtoCarriesAnEmailAddress`: read here, written to hub_users, and read back by
+        // the queue alone (decision note of 6 September 2026).
+        var profile = Read("""{ "id": 12345, "email": "member@example.org" }""");
+
+        Assert.Equal("member@example.org", profile.Email);
+    }
+
+    [Fact]
+    public void ReadsNoAddressWhenThePayloadCarriesNone()
+    {
+        // A member whose payload has no address is a member with no address, not an empty string:
+        // the queue skips them, and an empty string would be an address it tried to write to.
+        var profile = Read("""{ "id": 12345 }""");
+
+        Assert.Null(profile.Email);
     }
 
     [Fact]

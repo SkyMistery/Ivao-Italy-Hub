@@ -68,6 +68,9 @@
     "superadmin": {
       "neverLoggedIn": "Quel VID non ha mai fatto login, quindi l’hub non sa ancora nulla di lui.",
       "lastOne": "L’ultimo super amministratore non si può togliere."
+    },
+    "notifications": {
+      "unknownType": "Questo non è un tipo di notifica che l'hub manda."
     }
   }
 }

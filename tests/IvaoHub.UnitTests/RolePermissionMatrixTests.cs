@@ -26,6 +26,8 @@ public sealed class RolePermissionMatrixTests
             CorePermissions.MediaEdit,
             CorePermissions.CalendarView,
             CorePermissions.CalendarEdit,
+            CorePermissions.ContactsView,
+            CorePermissions.ContactsEdit,
         ];
 
         Assert.Equal(expected.Order(), RolePermissionMatrix.OnOwnDepartment(StaffLevel.Coordinator).Order());
@@ -48,6 +50,9 @@ public sealed class RolePermissionMatrixTests
         Assert.Contains(CorePermissions.LinksEdit, permissions);
         Assert.Contains(CorePermissions.MediaEdit, permissions);
         Assert.Contains(CorePermissions.CalendarEdit, permissions);
+        // The queue of the department is read and answered by its advisors too: it is the inbox of
+        // the department, not a lever of its coordinator.
+        Assert.Contains(CorePermissions.ContactsEdit, permissions);
         Assert.DoesNotContain(CorePermissions.ContentPublish, permissions);
         Assert.DoesNotContain(CorePermissions.ContentManageTemplates, permissions);
     }
