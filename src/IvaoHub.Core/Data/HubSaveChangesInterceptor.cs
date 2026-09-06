@@ -292,6 +292,14 @@ public sealed class HubSaveChangesInterceptor(
             return;
         }
 
+        // A row somebody sends to a department, rather than edits inside it. Creating one is open
+        // to any member by design; everything after that — reading the queue, moving the status,
+        // deleting — is an ordinary write and falls through to the permission below.
+        if (entry is { State: EntityState.Added, Entity: ISubmittedByMembers })
+        {
+            return;
+        }
+
         var permission = ResolvePermissionArea(context, entry.Metadata.ClrType) + ".Edit";
         Require(permission, owned.OwnerDepartment);
 

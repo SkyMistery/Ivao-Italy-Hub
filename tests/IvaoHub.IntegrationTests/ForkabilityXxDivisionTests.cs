@@ -1,6 +1,9 @@
 using System.Text.Json;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
+using IvaoHub.Core.Localization;
+using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -129,6 +132,37 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
         foreach (var file in Directory.EnumerateFiles(Path.Combine(_root, "locales", "en"), "*.json"))
         {
             AssertNothingItalian(File.ReadAllText(file), Path.GetFileName(file));
+        }
+    }
+
+    [Fact]
+    public void TheMailsOfAForkNameNobodyElsesDivision()
+    {
+        // Mails are the newest place a sentence of this division can hide, and the one place the
+        // check above cannot reach on its own: the words are in `locales/en/mail.json`, but what
+        // arrives in somebody's inbox is that template with values filled in — so it is rendered
+        // here, as the fork would send it (design M1 §11.2).
+        using var scope = _factory.Services.CreateScope();
+        var catalog = scope.ServiceProvider.GetRequiredService<LocaleCatalog>();
+
+        foreach (var type in NotificationTypes.All)
+        {
+            var mail = MailTemplate.Render(
+                catalog,
+                "en",
+                type,
+                "member@example.org",
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["department"] = nameof(Department.WD),
+                    ["subject"] = "A question",
+                    ["body"] = "The body of it",
+                    ["vid"] = "700000",
+                    ["url"] = "https://example.org/staff/wd/contacts",
+                });
+
+            AssertNothingItalian(mail.Subject, $"{type} subject");
+            AssertNothingItalian(mail.Text, $"{type} body");
         }
     }
 

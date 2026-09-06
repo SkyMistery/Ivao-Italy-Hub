@@ -28,6 +28,8 @@ public static class RolePermissionMatrix
             CorePermissions.MediaEdit,
             CorePermissions.CalendarView,
             CorePermissions.CalendarEdit,
+            CorePermissions.ContactsView,
+            CorePermissions.ContactsEdit,
         ],
         [StaffLevel.Assistant] =
         [
@@ -41,6 +43,8 @@ public static class RolePermissionMatrix
             CorePermissions.MediaEdit,
             CorePermissions.CalendarView,
             CorePermissions.CalendarEdit,
+            CorePermissions.ContactsView,
+            CorePermissions.ContactsEdit,
         ],
         [StaffLevel.Advisor] =
         [
@@ -52,6 +56,8 @@ public static class RolePermissionMatrix
             CorePermissions.MediaEdit,
             CorePermissions.CalendarView,
             CorePermissions.CalendarEdit,
+            CorePermissions.ContactsView,
+            CorePermissions.ContactsEdit,
         ],
         [StaffLevel.Member] = [],
     };

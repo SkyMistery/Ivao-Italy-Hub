@@ -5,6 +5,8 @@ export { LocaleSwitcher } from './LocaleSwitcher';
 export { MarkdownContent } from './MarkdownContent';
 export { ConfirmDialog } from './ConfirmDialog';
 export { CalendarView } from './CalendarView';
+export { ContactForm } from './ContactForm';
+export { contactSchema, type ContactFormValues } from './contact';
 export {
   CALENDAR_VIEWS,
   calendarDays,

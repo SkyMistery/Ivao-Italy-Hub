@@ -1108,5 +1108,46 @@
         "allKinds": "Tutti i tipi"
       }
     }
+  },
+  "contacts": {
+    "title": "Messaggi",
+    "description": "Quello che i membri hanno scritto a questo dipartimento.",
+    "open": "Apri",
+    "send": "Invia",
+    "from": "Dal VID {{vid}}, {{at}}",
+    "public": {
+      "title": "Scrivici",
+      "description": "Scegli il dipartimento di cui parla il tuo messaggio. Hai fatto l'accesso, quindi sappiamo chi sei e possiamo risponderti."
+    },
+    "sent": {
+      "title": "Il tuo messaggio è partito",
+      "description": "Il dipartimento ce l'ha. La risposta arriva nel modo in cui quel dipartimento risponde di solito."
+    },
+    "fields": {
+      "department": "Dipartimento",
+      "subject": "Oggetto",
+      "body": "Messaggio",
+      "status": "Stato",
+      "createdBy": "Da",
+      "createdAt": "Inviato",
+      "updatedAt": "Ultima modifica"
+    },
+    "options": {
+      "status": {
+        "New": "Nuovo",
+        "Read": "Letto",
+        "Answered": "Risposto",
+        "Closed": "Chiuso"
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "types": {
+      "contact.received": {
+        "title": "Messaggi al mio dipartimento",
+        "description": "Una mail quando un membro scrive a un dipartimento di cui fai parte."
+      }
+    }
   }
 }

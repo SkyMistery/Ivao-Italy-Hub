@@ -31,6 +31,7 @@
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
+    <PackageVersion Include="MailKit" Version="4.17.0" />
     <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.20.0" />
     <PackageVersion Include="Riok.Mapperly" Version="4.3.1" />
   </ItemGroup>

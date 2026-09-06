@@ -10,8 +10,11 @@ namespace IvaoHub.Core.Auth;
 /// removes an identity or a role, which is why nothing here is inferred from the profile as a whole:
 /// only the named fields are taken, and the rest of the payload is dropped.</para>
 /// <para>The field names were measured against the real payload on 3 September 2026, not guessed.
-/// The payload also carries an email address, which is deliberately not read: the hub keeps the
-/// minimum IVAO data it needs (plan section 6.4).</para>
+/// The email address was deliberately dropped until 6 September 2026, when the notification service
+/// gave it a purpose: it is read here, written to <c>hub_users.Email</c>, and read back by nothing
+/// but the queue. The rule of plan section 11.4 is unchanged — the minimum IVAO data the hub needs,
+/// and "no email unless a module needs one" — this is the module needing one (decision note of
+/// 6 September 2026).</para>
 /// </summary>
 public static class IvaoUserProfileReader
 {
@@ -51,6 +54,7 @@ public static class IvaoUserProfileReader
             // family_name, nickname, publicNickname and profile. The column stays, empty, for
             // whenever the hub links Discord itself the way the division's own bot does.
             DiscordId: null,
+            Email: Text(userInfo, "email"),
             LanguageId: Text(userInfo, "languageId"),
             IvaoIsStaff: Boolean(userInfo, "isStaff"),
             IvaoIsSupervisor: Boolean(userInfo, "isSupervisor"),

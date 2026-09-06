@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MemberRouteImport } from './routes/_member'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as StaffRouteImport } from './routes/_staff'
+import { Route as MemberContactRouteImport } from './routes/_member/contact'
 import { Route as MemberMeRouteImport } from './routes/_member/me'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicSlugRouteImport } from './routes/_public/$slug'
@@ -25,6 +26,7 @@ import { Route as PublicNewsSlugRouteImport } from './routes/_public/news.$slug'
 import { Route as StaffStaffIndexRouteImport } from './routes/_staff/staff.index'
 import { Route as StaffStaffDeptCalendarRouteImport } from './routes/_staff/staff.$dept.calendar'
 import { Route as StaffStaffDeptCategoriesRouteImport } from './routes/_staff/staff.$dept.categories'
+import { Route as StaffStaffDeptContactsRouteImport } from './routes/_staff/staff.$dept.contacts'
 import { Route as StaffStaffDeptContentRouteImport } from './routes/_staff/staff.$dept.content'
 import { Route as StaffStaffDeptDocumentsRouteImport } from './routes/_staff/staff.$dept.documents'
 import { Route as StaffStaffDeptLinksRouteImport } from './routes/_staff/staff.$dept.links'
@@ -38,6 +40,8 @@ import { Route as StaffStaffDeptCalendarIndexRouteImport } from './routes/_staff
 import { Route as StaffStaffDeptCalendarIdRouteImport } from './routes/_staff/staff.$dept.calendar.$id'
 import { Route as StaffStaffDeptCategoriesIndexRouteImport } from './routes/_staff/staff.$dept.categories.index'
 import { Route as StaffStaffDeptCategoriesIdRouteImport } from './routes/_staff/staff.$dept.categories.$id'
+import { Route as StaffStaffDeptContactsIndexRouteImport } from './routes/_staff/staff.$dept.contacts.index'
+import { Route as StaffStaffDeptContactsIdRouteImport } from './routes/_staff/staff.$dept.contacts.$id'
 import { Route as StaffStaffDeptContentIndexRouteImport } from './routes/_staff/staff.$dept.content.index'
 import { Route as StaffStaffDeptContentIdRouteImport } from './routes/_staff/staff.$dept.content.$id'
 import { Route as StaffStaffDeptDocumentsIndexRouteImport } from './routes/_staff/staff.$dept.documents.index'
@@ -62,6 +66,11 @@ const PublicRoute = PublicRouteImport.update({
 const StaffRoute = StaffRouteImport.update({
   id: '/_staff',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MemberContactRoute = MemberContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => MemberRoute,
 } as any)
 const MemberMeRoute = MemberMeRouteImport.update({
   id: '/me',
@@ -129,6 +138,11 @@ const StaffStaffDeptCategoriesRoute =
     path: '/staff/$dept/categories',
     getParentRoute: () => StaffRoute,
   } as any)
+const StaffStaffDeptContactsRoute = StaffStaffDeptContactsRouteImport.update({
+  id: '/staff/$dept/contacts',
+  path: '/staff/$dept/contacts',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffStaffDeptContentRoute = StaffStaffDeptContentRouteImport.update({
   id: '/staff/$dept/content',
   path: '/staff/$dept/content',
@@ -198,6 +212,18 @@ const StaffStaffDeptCategoriesIdRoute =
     id: '/$id',
     path: '/$id',
     getParentRoute: () => StaffStaffDeptCategoriesRoute,
+  } as any)
+const StaffStaffDeptContactsIndexRoute =
+  StaffStaffDeptContactsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => StaffStaffDeptContactsRoute,
+  } as any)
+const StaffStaffDeptContactsIdRoute =
+  StaffStaffDeptContactsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => StaffStaffDeptContactsRoute,
   } as any)
 const StaffStaffDeptContentIndexRoute =
   StaffStaffDeptContentIndexRouteImport.update({
@@ -269,6 +295,7 @@ const StaffStaffAdminPermissionsIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/contact': typeof MemberContactRoute
   '/me': typeof MemberMeRoute
   '/$slug': typeof PublicSlugRoute
   '/calendar': typeof PublicCalendarRoute
@@ -281,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/staff/': typeof StaffStaffIndexRoute
   '/staff/$dept/calendar': typeof StaffStaffDeptCalendarRouteWithChildren
   '/staff/$dept/categories': typeof StaffStaffDeptCategoriesRouteWithChildren
+  '/staff/$dept/contacts': typeof StaffStaffDeptContactsRouteWithChildren
   '/staff/$dept/content': typeof StaffStaffDeptContentRouteWithChildren
   '/staff/$dept/documents': typeof StaffStaffDeptDocumentsRouteWithChildren
   '/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
@@ -292,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
   '/staff/$dept/calendar/$id': typeof StaffStaffDeptCalendarIdRoute
   '/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
+  '/staff/$dept/contacts/$id': typeof StaffStaffDeptContactsIdRoute
   '/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
   '/staff/$dept/documents/$id': typeof StaffStaffDeptDocumentsIdRoute
   '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
@@ -300,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/staff/$dept/calendar/': typeof StaffStaffDeptCalendarIndexRoute
   '/staff/$dept/categories/': typeof StaffStaffDeptCategoriesIndexRoute
+  '/staff/$dept/contacts/': typeof StaffStaffDeptContactsIndexRoute
   '/staff/$dept/content/': typeof StaffStaffDeptContentIndexRoute
   '/staff/$dept/documents/': typeof StaffStaffDeptDocumentsIndexRoute
   '/staff/$dept/links/': typeof StaffStaffDeptLinksIndexRoute
@@ -309,6 +339,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
+  '/contact': typeof MemberContactRoute
   '/me': typeof MemberMeRoute
   '/$slug': typeof PublicSlugRoute
   '/calendar': typeof PublicCalendarRoute
@@ -324,6 +355,7 @@ export interface FileRoutesByTo {
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
   '/staff/$dept/calendar/$id': typeof StaffStaffDeptCalendarIdRoute
   '/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
+  '/staff/$dept/contacts/$id': typeof StaffStaffDeptContactsIdRoute
   '/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
   '/staff/$dept/documents/$id': typeof StaffStaffDeptDocumentsIdRoute
   '/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
@@ -332,6 +364,7 @@ export interface FileRoutesByTo {
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/staff/$dept/calendar': typeof StaffStaffDeptCalendarIndexRoute
   '/staff/$dept/categories': typeof StaffStaffDeptCategoriesIndexRoute
+  '/staff/$dept/contacts': typeof StaffStaffDeptContactsIndexRoute
   '/staff/$dept/content': typeof StaffStaffDeptContentIndexRoute
   '/staff/$dept/documents': typeof StaffStaffDeptDocumentsIndexRoute
   '/staff/$dept/links': typeof StaffStaffDeptLinksIndexRoute
@@ -344,6 +377,7 @@ export interface FileRoutesById {
   '/_member': typeof MemberRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_staff': typeof StaffRouteWithChildren
+  '/_member/contact': typeof MemberContactRoute
   '/_member/me': typeof MemberMeRoute
   '/_public/$slug': typeof PublicSlugRoute
   '/_public/calendar': typeof PublicCalendarRoute
@@ -357,6 +391,7 @@ export interface FileRoutesById {
   '/_staff/staff/': typeof StaffStaffIndexRoute
   '/_staff/staff/$dept/calendar': typeof StaffStaffDeptCalendarRouteWithChildren
   '/_staff/staff/$dept/categories': typeof StaffStaffDeptCategoriesRouteWithChildren
+  '/_staff/staff/$dept/contacts': typeof StaffStaffDeptContactsRouteWithChildren
   '/_staff/staff/$dept/content': typeof StaffStaffDeptContentRouteWithChildren
   '/_staff/staff/$dept/documents': typeof StaffStaffDeptDocumentsRouteWithChildren
   '/_staff/staff/$dept/links': typeof StaffStaffDeptLinksRouteWithChildren
@@ -368,6 +403,7 @@ export interface FileRoutesById {
   '/_staff/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
   '/_staff/staff/$dept/calendar/$id': typeof StaffStaffDeptCalendarIdRoute
   '/_staff/staff/$dept/categories/$id': typeof StaffStaffDeptCategoriesIdRoute
+  '/_staff/staff/$dept/contacts/$id': typeof StaffStaffDeptContactsIdRoute
   '/_staff/staff/$dept/content/$id': typeof StaffStaffDeptContentIdRoute
   '/_staff/staff/$dept/documents/$id': typeof StaffStaffDeptDocumentsIdRoute
   '/_staff/staff/$dept/links/$id': typeof StaffStaffDeptLinksIdRoute
@@ -376,6 +412,7 @@ export interface FileRoutesById {
   '/_staff/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/_staff/staff/$dept/calendar/': typeof StaffStaffDeptCalendarIndexRoute
   '/_staff/staff/$dept/categories/': typeof StaffStaffDeptCategoriesIndexRoute
+  '/_staff/staff/$dept/contacts/': typeof StaffStaffDeptContactsIndexRoute
   '/_staff/staff/$dept/content/': typeof StaffStaffDeptContentIndexRoute
   '/_staff/staff/$dept/documents/': typeof StaffStaffDeptDocumentsIndexRoute
   '/_staff/staff/$dept/links/': typeof StaffStaffDeptLinksIndexRoute
@@ -387,6 +424,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/contact'
     | '/me'
     | '/$slug'
     | '/calendar'
@@ -399,6 +437,7 @@ export interface FileRouteTypes {
     | '/staff/'
     | '/staff/$dept/calendar'
     | '/staff/$dept/categories'
+    | '/staff/$dept/contacts'
     | '/staff/$dept/content'
     | '/staff/$dept/documents'
     | '/staff/$dept/links'
@@ -410,6 +449,7 @@ export interface FileRouteTypes {
     | '/staff/admin/ui-kit'
     | '/staff/$dept/calendar/$id'
     | '/staff/$dept/categories/$id'
+    | '/staff/$dept/contacts/$id'
     | '/staff/$dept/content/$id'
     | '/staff/$dept/documents/$id'
     | '/staff/$dept/links/$id'
@@ -418,6 +458,7 @@ export interface FileRouteTypes {
     | '/staff/admin/permissions/$id'
     | '/staff/$dept/calendar/'
     | '/staff/$dept/categories/'
+    | '/staff/$dept/contacts/'
     | '/staff/$dept/content/'
     | '/staff/$dept/documents/'
     | '/staff/$dept/links/'
@@ -427,6 +468,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/contact'
     | '/me'
     | '/$slug'
     | '/calendar'
@@ -442,6 +484,7 @@ export interface FileRouteTypes {
     | '/staff/admin/ui-kit'
     | '/staff/$dept/calendar/$id'
     | '/staff/$dept/categories/$id'
+    | '/staff/$dept/contacts/$id'
     | '/staff/$dept/content/$id'
     | '/staff/$dept/documents/$id'
     | '/staff/$dept/links/$id'
@@ -450,6 +493,7 @@ export interface FileRouteTypes {
     | '/staff/admin/permissions/$id'
     | '/staff/$dept/calendar'
     | '/staff/$dept/categories'
+    | '/staff/$dept/contacts'
     | '/staff/$dept/content'
     | '/staff/$dept/documents'
     | '/staff/$dept/links'
@@ -461,6 +505,7 @@ export interface FileRouteTypes {
     | '/_member'
     | '/_public'
     | '/_staff'
+    | '/_member/contact'
     | '/_member/me'
     | '/_public/$slug'
     | '/_public/calendar'
@@ -474,6 +519,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/'
     | '/_staff/staff/$dept/calendar'
     | '/_staff/staff/$dept/categories'
+    | '/_staff/staff/$dept/contacts'
     | '/_staff/staff/$dept/content'
     | '/_staff/staff/$dept/documents'
     | '/_staff/staff/$dept/links'
@@ -485,6 +531,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/admin/ui-kit'
     | '/_staff/staff/$dept/calendar/$id'
     | '/_staff/staff/$dept/categories/$id'
+    | '/_staff/staff/$dept/contacts/$id'
     | '/_staff/staff/$dept/content/$id'
     | '/_staff/staff/$dept/documents/$id'
     | '/_staff/staff/$dept/links/$id'
@@ -493,6 +540,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/admin/permissions/$id'
     | '/_staff/staff/$dept/calendar/'
     | '/_staff/staff/$dept/categories/'
+    | '/_staff/staff/$dept/contacts/'
     | '/_staff/staff/$dept/content/'
     | '/_staff/staff/$dept/documents/'
     | '/_staff/staff/$dept/links/'
@@ -529,6 +577,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_member/contact': {
+      id: '/_member/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof MemberContactRouteImport
+      parentRoute: typeof MemberRoute
     }
     '/_member/me': {
       id: '/_member/me'
@@ -619,6 +674,13 @@ declare module '@tanstack/react-router' {
       path: '/staff/$dept/categories'
       fullPath: '/staff/$dept/categories'
       preLoaderRoute: typeof StaffStaffDeptCategoriesRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/$dept/contacts': {
+      id: '/_staff/staff/$dept/contacts'
+      path: '/staff/$dept/contacts'
+      fullPath: '/staff/$dept/contacts'
+      preLoaderRoute: typeof StaffStaffDeptContactsRouteImport
       parentRoute: typeof StaffRoute
     }
     '/_staff/staff/$dept/content': {
@@ -712,6 +774,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffStaffDeptCategoriesIdRouteImport
       parentRoute: typeof StaffStaffDeptCategoriesRoute
     }
+    '/_staff/staff/$dept/contacts/': {
+      id: '/_staff/staff/$dept/contacts/'
+      path: '/'
+      fullPath: '/staff/$dept/contacts/'
+      preLoaderRoute: typeof StaffStaffDeptContactsIndexRouteImport
+      parentRoute: typeof StaffStaffDeptContactsRoute
+    }
+    '/_staff/staff/$dept/contacts/$id': {
+      id: '/_staff/staff/$dept/contacts/$id'
+      path: '/$id'
+      fullPath: '/staff/$dept/contacts/$id'
+      preLoaderRoute: typeof StaffStaffDeptContactsIdRouteImport
+      parentRoute: typeof StaffStaffDeptContactsRoute
+    }
     '/_staff/staff/$dept/content/': {
       id: '/_staff/staff/$dept/content/'
       path: '/'
@@ -800,10 +876,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface MemberRouteChildren {
+  MemberContactRoute: typeof MemberContactRoute
   MemberMeRoute: typeof MemberMeRoute
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
+  MemberContactRoute: MemberContactRoute,
   MemberMeRoute: MemberMeRoute,
 }
 
@@ -867,6 +945,22 @@ const StaffStaffDeptCategoriesRouteChildren: StaffStaffDeptCategoriesRouteChildr
 const StaffStaffDeptCategoriesRouteWithChildren =
   StaffStaffDeptCategoriesRoute._addFileChildren(
     StaffStaffDeptCategoriesRouteChildren,
+  )
+
+interface StaffStaffDeptContactsRouteChildren {
+  StaffStaffDeptContactsIdRoute: typeof StaffStaffDeptContactsIdRoute
+  StaffStaffDeptContactsIndexRoute: typeof StaffStaffDeptContactsIndexRoute
+}
+
+const StaffStaffDeptContactsRouteChildren: StaffStaffDeptContactsRouteChildren =
+  {
+    StaffStaffDeptContactsIdRoute: StaffStaffDeptContactsIdRoute,
+    StaffStaffDeptContactsIndexRoute: StaffStaffDeptContactsIndexRoute,
+  }
+
+const StaffStaffDeptContactsRouteWithChildren =
+  StaffStaffDeptContactsRoute._addFileChildren(
+    StaffStaffDeptContactsRouteChildren,
   )
 
 interface StaffStaffDeptContentRouteChildren {
@@ -959,6 +1053,7 @@ interface StaffRouteChildren {
   StaffStaffIndexRoute: typeof StaffStaffIndexRoute
   StaffStaffDeptCalendarRoute: typeof StaffStaffDeptCalendarRouteWithChildren
   StaffStaffDeptCategoriesRoute: typeof StaffStaffDeptCategoriesRouteWithChildren
+  StaffStaffDeptContactsRoute: typeof StaffStaffDeptContactsRouteWithChildren
   StaffStaffDeptContentRoute: typeof StaffStaffDeptContentRouteWithChildren
   StaffStaffDeptDocumentsRoute: typeof StaffStaffDeptDocumentsRouteWithChildren
   StaffStaffDeptLinksRoute: typeof StaffStaffDeptLinksRouteWithChildren
@@ -974,6 +1069,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffStaffIndexRoute: StaffStaffIndexRoute,
   StaffStaffDeptCalendarRoute: StaffStaffDeptCalendarRouteWithChildren,
   StaffStaffDeptCategoriesRoute: StaffStaffDeptCategoriesRouteWithChildren,
+  StaffStaffDeptContactsRoute: StaffStaffDeptContactsRouteWithChildren,
   StaffStaffDeptContentRoute: StaffStaffDeptContentRouteWithChildren,
   StaffStaffDeptDocumentsRoute: StaffStaffDeptDocumentsRouteWithChildren,
   StaffStaffDeptLinksRoute: StaffStaffDeptLinksRouteWithChildren,

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 
+import { NotificationPreferences } from './NotificationPreferences';
 import { bootstrapQuery } from './queries';
 
 /**
@@ -35,6 +36,8 @@ export function MePage() {
           {t('widgets.unknown', { keys: missing.join(', ') })}
         </div>
       ) : null}
+
+      <NotificationPreferences />
 
       <div className="flex flex-col gap-8">
         {declared.map((widget) => {

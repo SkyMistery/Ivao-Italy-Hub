@@ -7,6 +7,7 @@ using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
 using IvaoHub.Web.E2E;
@@ -116,6 +117,10 @@ builder.Services.AddIvaoAuthentication();
 // nothing at this point: the time zone of the schedule and the choice between the real client and
 // the fixtures are both resolved when the objects are built.
 builder.Services.AddIvaoIntegration();
+
+// The one notification service, and the job that empties its queue. Nothing else in the hub ever
+// talks to a mail server: a module publishes an intent (plan section 9.7).
+builder.Services.AddHubNotifications();
 
 // The login is the one place an outsider can make the server do work before proving anything.
 builder.Services.AddRateLimiter(options =>
@@ -261,6 +266,8 @@ app.MapMediaFileEndpoint();
 app.MapContentEndpoints();
 app.MapCategoriesEndpoints();
 app.MapCalendarEndpoints();
+app.MapContactsEndpoints();
+app.MapNotificationPreferenceEndpoints();
 app.MapBlockDataEndpoint();
 app.MapSearchEndpoint();
 

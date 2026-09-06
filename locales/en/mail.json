@@ -1,0 +1,10 @@
+{
+  "mail": {
+    "contact": {
+      "received": {
+        "subject": "[{{department}}] {{subject}}",
+        "body": "A member has written to the {{department}} department.\n\nFrom: VID {{vid}}\nSubject: {{subject}}\n\n{{body}}\n\n---\nRead the message and change its status here: {{url}}\nYou are receiving this because you are staff of {{department}}. You can turn these off on your profile page."
+      }
+    }
+  }
+}

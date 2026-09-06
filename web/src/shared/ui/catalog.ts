@@ -24,6 +24,7 @@ export const UI_KIT_COMPONENTS = [
   'ConfirmDialog',
   'MediaPicker',
   'CalendarView',
+  'ContactForm',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

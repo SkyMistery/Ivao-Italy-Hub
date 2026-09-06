@@ -94,6 +94,26 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
             failures.Add($"division.json: 'timezone' ({options.Timezone}) is not a time zone this machine knows.");
         }
 
+        foreach (var (department, mailbox) in options.DepartmentMailboxes)
+        {
+            // A key that is not a department is an address nothing will ever read, and a value
+            // that is not an address is a notification that fails once a minute for three minutes.
+            // Both are cheap to catch here and expensive to find later.
+            if (!Enum.TryParse<Department>(department, ignoreCase: false, out _))
+            {
+                failures.Add(
+                    $"division.json: 'departmentMailboxes' has an entry for '{department}', which "
+                    + "is not a department. Use the codes of the division, for example \"WD\".");
+            }
+
+            if (!MailAddress().IsMatch(mailbox))
+            {
+                failures.Add(
+                    $"division.json: 'departmentMailboxes.{department}' ({mailbox}) is not an "
+                    + "email address.");
+            }
+        }
+
         // Reported, not remembered. This object is a singleton and validation can run more than
         // once, so a property holding the result of the last call is a field that means nothing to
         // whoever reads it and is unsafe for whoever reads it from another thread.
@@ -129,4 +149,11 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
 
     [GeneratedRegex("^[A-Z]{1,4}$")]
     private static partial Regex IcaoPrefix();
+
+    /// <summary>
+    /// Enough of an address to catch a typed mistake, and no more: the only authority on whether
+    /// an address exists is the mail server that refuses it.
+    /// </summary>
+    [GeneratedRegex(@"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")]
+    private static partial Regex MailAddress();
 }

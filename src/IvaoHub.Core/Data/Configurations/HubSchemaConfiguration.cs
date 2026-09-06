@@ -1,4 +1,5 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ internal sealed class HubUserConfiguration : IEntityTypeConfiguration<HubUser>
         builder.Property(user => user.Country).HasMaxLength(3);
         builder.Property(user => user.DiscordId).HasMaxLength(32);
         builder.Property(user => user.Locale).HasMaxLength(8);
+        builder.Property(user => user.Email).HasMaxLength(256);
         builder.Property(user => user.SecurityStamp).HasMaxLength(64).IsRequired();
         builder.HasRowVersion(user => user.RowVersion);
         builder.HasIndex(user => user.IsStaff);
@@ -120,5 +122,32 @@ internal sealed class JobLogEntryConfiguration : IEntityTypeConfiguration<JobLog
         builder.Property(entry => entry.Status).HasMaxLength(16).IsRequired();
         builder.Property(entry => entry.Message).HasColumnType("text");
         builder.HasIndex(entry => new { entry.Job, entry.StartedAt });
+    }
+}
+
+internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notification>
+{
+    public void Configure(EntityTypeBuilder<Notification> builder)
+    {
+        builder.ToTable("hub_notifications");
+        builder.HasKey(notification => notification.Id);
+        builder.Property(notification => notification.Type).HasMaxLength(64).IsRequired();
+        builder.Property(notification => notification.Address).HasMaxLength(256).IsRequired();
+        builder.Property(notification => notification.Locale).HasMaxLength(8).IsRequired();
+        builder.Property(notification => notification.DataJson).HasColumnType("json").IsRequired();
+        builder.Property(notification => notification.LastError).HasMaxLength(512);
+
+        // The only question the job asks: what is still waiting, oldest first.
+        builder.HasIndex(notification => new { notification.Status, notification.Id });
+    }
+}
+
+internal sealed class NotificationPreferenceConfiguration : IEntityTypeConfiguration<NotificationPreference>
+{
+    public void Configure(EntityTypeBuilder<NotificationPreference> builder)
+    {
+        builder.ToTable("hub_notification_preferences");
+        builder.HasKey(preference => new { preference.Vid, preference.Type });
+        builder.Property(preference => preference.Type).HasMaxLength(64);
     }
 }

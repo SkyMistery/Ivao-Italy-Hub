@@ -47,6 +47,16 @@ public sealed record DivisionOptions
     public Dictionary<string, bool> Modules { get; init; } = [];
 
     /// <summary>
+    /// The shared inbox of each department, by department code, for the notifications the hub
+    /// sends. Optional and usually partial: a department with no entry is reached on its people
+    /// alone, and a division with no shared inboxes at all leaves the key out (decision note of
+    /// 6 September 2026).
+    /// <para>It is configuration and not content: an address the code sends to is exactly what
+    /// this file is for, and a fork writes its own without a screen or a table.</para>
+    /// </summary>
+    public Dictionary<string, string> DepartmentMailboxes { get; init; } = [];
+
+    /// <summary>
     /// Bootstrap only: read once, when no super administrator exists yet. After that
     /// <c>hub_users.is_superadmin</c> is the truth and this list is ignored (plan section 4.1).
     /// </summary>

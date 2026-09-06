@@ -28,6 +28,15 @@ public sealed class HubUser
 
     public string? DiscordId { get; set; }
 
+    /// <summary>
+    /// Where the hub writes to this member, taken from their IVAO profile at every sign in.
+    /// <para>It exists for the notification service and for nothing else (decision note of
+    /// 6 September 2026): no DTO carries it, no screen shows it, and the staff directory of G9 is
+    /// explicitly not allowed to. Null for anybody who has not signed in since it was added, which
+    /// the queue treats as "cannot be reached" rather than as an error.</para>
+    /// </summary>
+    public string? Email { get; set; }
+
     /// <summary>Preferred language; the SPA falls back to the cookie and then to the browser.</summary>
     public string? Locale { get; set; }
 

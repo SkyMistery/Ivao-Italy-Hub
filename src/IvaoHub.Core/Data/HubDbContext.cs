@@ -5,6 +5,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -54,6 +55,8 @@ public class HubDbContext : DbContext
     public DbSet<DivisionSetting> DivisionSettings => Set<DivisionSetting>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
     public DbSet<JobLogEntry> JobsLog => Set<JobLogEntry>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
     public DbSet<IvaoCenter> IvaoCenters => Set<IvaoCenter>();
     public DbSet<IvaoAirport> IvaoAirports => Set<IvaoAirport>();
@@ -65,6 +68,7 @@ public class HubDbContext : DbContext
     public DbSet<MediaAsset> Media => Set<MediaAsset>();
     public DbSet<SearchIndexEntry> SearchIndex => Set<SearchIndexEntry>();
     public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();
+    public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<AwardSignal> AwardSignals => Set<AwardSignal>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -86,6 +90,8 @@ public class HubDbContext : DbContext
         configurationBuilder.Properties<PublishStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<StaffLevel>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ContentKind>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<ContactStatus>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<NotificationStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<GrantKind>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<GrantEffect>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<AwardSignalStatus>().HaveConversion<string>().HaveMaxLength(16);

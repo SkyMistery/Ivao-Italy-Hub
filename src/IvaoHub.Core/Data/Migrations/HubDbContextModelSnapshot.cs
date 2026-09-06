@@ -49,6 +49,11 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasColumnType("varchar(3)")
                         .HasColumnName("division_code");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)")
+                        .HasColumnName("email");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -437,6 +442,70 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasDatabaseName("ix_cms_calendar_entries_source_module_source_id");
 
                     b.ToTable("cms_calendar_entries", (string)null);
+                });
+
+            modelBuilder.Entity("IvaoHub.Core.Content.ContactMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("subject");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cms_contact_messages");
+
+                    b.HasIndex("OwnerDepartment", "Status", "CreatedAt")
+                        .HasDatabaseName("ix_cms_contact_messages_owner_department_status_created_at");
+
+                    b.ToTable("cms_contact_messages", (string)null);
                 });
 
             modelBuilder.Entity("IvaoHub.Core.Content.ContentCategory", b =>
@@ -1091,6 +1160,95 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasDatabaseName("ix_ref_ivao_centers_country_id");
 
                     b.ToTable("ref_ivao_centers", (string)null);
+                });
+
+            modelBuilder.Entity("IvaoHub.Core.Notifications.Notification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)")
+                        .HasColumnName("address");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int")
+                        .HasColumnName("attempts");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DataJson")
+                        .IsRequired()
+                        .HasColumnType("json")
+                        .HasColumnName("data_json");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(512)
+                        .HasColumnType("varchar(512)")
+                        .HasColumnName("last_error");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("locale");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("sent_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("type");
+
+                    b.Property<int>("Vid")
+                        .HasColumnType("int")
+                        .HasColumnName("vid");
+
+                    b.HasKey("Id")
+                        .HasName("pk_hub_notifications");
+
+                    b.HasIndex("Status", "Id")
+                        .HasDatabaseName("ix_hub_notifications_status_id");
+
+                    b.ToTable("hub_notifications", (string)null);
+                });
+
+            modelBuilder.Entity("IvaoHub.Core.Notifications.NotificationPreference", b =>
+                {
+                    b.Property<int>("Vid")
+                        .HasColumnType("int")
+                        .HasColumnName("vid");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("type");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("enabled");
+
+                    b.HasKey("Vid", "Type")
+                        .HasName("pk_hub_notification_preferences");
+
+                    b.ToTable("hub_notification_preferences", (string)null);
                 });
 
             modelBuilder.Entity("IvaoHub.Core.Services.AuditLogEntry", b =>

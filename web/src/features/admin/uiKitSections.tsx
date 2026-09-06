@@ -12,6 +12,7 @@ import {
 
 import {
   ConfirmDialogSample,
+  ContactFormSample,
   DataListSample,
   CalendarViewSample,
   EmptyStateSample,
@@ -102,6 +103,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
     name: 'CalendarView' satisfies UiKitComponent,
     render: (bootstrap) => <CalendarViewSample bootstrap={bootstrap} />,
   },
+  { name: 'ContactForm' satisfies UiKitComponent, render: () => <ContactFormSample /> },
 ];
 
 /**
