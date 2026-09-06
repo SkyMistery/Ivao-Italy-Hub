@@ -1013,10 +1013,16 @@ export function CalendarBlock({ data }: BlockComponentProps) {
           <li key={item.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
             <div className="text-muted-foreground flex flex-wrap items-baseline gap-2 text-sm">
               <time className="tabular-nums">{t('blocks.calendar.utc', { at: when })}</time>
-              {local === '' ? null : <span className="tabular-nums">{t('blocks.calendar.local', { at: local })}</span>}
+              {local === '' ? null : (
+                <span className="tabular-nums">{t('blocks.calendar.local', { at: local })}</span>
+              )}
             </div>
             <H4>
-              {item.url == null || item.url === '' ? title : <OutsideLink href={item.url}>{title}</OutsideLink>}
+              {item.url == null || item.url === '' ? (
+                title
+              ) : (
+                <OutsideLink href={item.url}>{title}</OutsideLink>
+              )}
             </H4>
             {summary === '' ? null : <p className="text-muted-foreground text-sm">{summary}</p>}
           </li>
@@ -1074,7 +1080,9 @@ export function NewsListBlock({ props, data }: BlockComponentProps) {
             ) : null}
             <div className={cards ? 'flex flex-col gap-2 p-5' : 'flex flex-col gap-1 py-3'}>
               <span className="text-muted-foreground flex items-center gap-2 text-sm">
-                {item.pinned === true ? <Badge variant="flat" color="gray" text={t('blocks.newsList.pinned')} /> : null}
+                {item.pinned === true ? (
+                  <Badge variant="flat" color="gray" text={t('blocks.newsList.pinned')} />
+                ) : null}
                 {when === '' ? null : <time className="tabular-nums">{when}</time>}
               </span>
               {title}
@@ -1086,7 +1094,11 @@ export function NewsListBlock({ props, data }: BlockComponentProps) {
         return (
           <article key={item.id} className={cards ? 'h-full' : ''}>
             <a href={item.url ?? '#'} className="block h-full">
-              {cards ? <CardRoot className="flex h-full flex-col overflow-hidden">{inside}</CardRoot> : inside}
+              {cards ? (
+                <CardRoot className="flex h-full flex-col overflow-hidden">{inside}</CardRoot>
+              ) : (
+                inside
+              )}
             </a>
           </article>
         );
@@ -1127,9 +1139,7 @@ export function DocumentListBlock({ props, data }: BlockComponentProps) {
                     <a href={item.url ?? '#'} className="text-primary underline underline-offset-2">
                       {read(item.title)}
                     </a>
-                    {summary === '' ? null : (
-                      <span className="text-muted-foreground text-sm">{summary}</span>
-                    )}
+                    {summary === '' ? null : <span className="text-muted-foreground text-sm">{summary}</span>}
                   </span>
                   {/* A document with a file is a card with a download; one without is read in the
                       browser like any other page (design M1 §3). */}
