@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { DEPARTMENTS } from '../shared/api/department';
 import { localized } from '../shared/forms';
+import { CALENDAR_VIEWS } from '../shared/ui';
 
 /**
  * What each block of the core holds, as zod. This is the only description of a block's properties
@@ -313,6 +314,10 @@ export const calendarSchema = z.object({
   kinds: z.array(z.object({ kind: z.string() })),
   department: z.enum(DEPARTMENTS).optional(),
   range: z.enum(CALENDAR_RANGES).default('upcoming'),
+  // Born in G6 with `CalendarView`, exactly as design M1 §1.2 said it would: in G4 the block was
+  // the agenda and only the agenda, and a select with one option is a control that does nothing.
+  // Additive, with a default, so bodies written before it keep reading as the agenda.
+  view: z.enum(CALENDAR_VIEWS).default('agenda'),
   limit: z.number().int().default(5),
 });
 

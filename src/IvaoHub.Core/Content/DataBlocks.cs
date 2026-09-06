@@ -172,6 +172,27 @@ public static class BlockProps
     }
 
     /// <summary>An instant as the contract writes one: ISO 8601 in UTC, never a local time.</summary>
+    /// <summary>
+    /// An instant a caller sent, read back as UTC. Null when it is missing or unreadable, which a
+    /// caller has to treat as "not asked for" rather than as an error: a screen from a newer release
+    /// must not turn into a failure on an older server.
+    /// </summary>
+    public static DateTime? ReadInstant(JsonNode? props, string name)
+    {
+        if (props?[name] is not JsonValue value || !value.TryGetValue<string>(out var text))
+        {
+            return null;
+        }
+
+        return DateTime.TryParse(
+            text,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+            out var instant)
+            ? instant
+            : null;
+    }
+
     public static string Instant(DateTime value) =>
         DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O", System.Globalization.CultureInfo.InvariantCulture);
 }

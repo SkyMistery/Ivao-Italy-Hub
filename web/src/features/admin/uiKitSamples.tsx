@@ -9,6 +9,8 @@ import type { Bootstrap } from '../../shared/api/bootstrap';
 import { ProblemAlert, SchemaForm, localized, localizedObject } from '../../shared/forms';
 import { DataList, col, listSearchSchema, type ColumnSpec, type Page } from '../../shared/list';
 import {
+  CALENDAR_VIEWS,
+  CalendarView,
   ConfirmDialog,
   EmptyState,
   Hero,
@@ -19,6 +21,8 @@ import {
   StatTile,
   type MediaLibraryQuery,
   type PickableMedia,
+  type CalendarItem,
+  type CalendarViewMode,
 } from '../../shared/ui';
 
 /**
@@ -241,6 +245,68 @@ export function MediaPickerSample({ bootstrap }: { bootstrap: Bootstrap }) {
       locale={i18n.language}
       defaultLocale={bootstrap.division.defaultLocale}
     />
+  );
+}
+
+/**
+ * Three entries around today, so the grid has something in it whichever day the gallery is opened.
+ * Invented here rather than fetched: the gallery is a page about the components.
+ */
+const sampleCalendar: CalendarItem[] = [
+  {
+    id: 1,
+    kind: 'meeting',
+    title: { en: 'Staff meeting', it: 'Riunione dello staff' },
+    startsAt: new Date(Date.now() + 36e5).toISOString(),
+    allDay: false,
+  },
+  {
+    id: 2,
+    kind: 'deadline',
+    title: { en: 'Applications close', it: 'Chiusura delle candidature' },
+    startsAt: new Date(Date.now() + 3 * 864e5).toISOString(),
+    allDay: true,
+  },
+  {
+    id: 3,
+    kind: 'event',
+    title: { en: 'Night flight', it: 'Volo notturno' },
+    startsAt: new Date(Date.now() + 6 * 864e5).toISOString(),
+    allDay: false,
+  },
+];
+
+export function CalendarViewSample({ bootstrap }: { bootstrap: Bootstrap }) {
+  const { t } = useTranslation();
+  const [view, setView] = useState<CalendarViewMode>('month');
+  const [anchor, setAnchor] = useState(() => new Date());
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2">
+        {CALENDAR_VIEWS.map((mode) => (
+          <Button
+            key={mode}
+            size="sm"
+            variant={mode === view ? 'primary' : 'ghost'}
+            onClick={() => setView(mode)}
+          >
+            {t(`calendar.public.views.${mode}`)}
+          </Button>
+        ))}
+      </div>
+
+      <CalendarView
+        items={sampleCalendar}
+        view={view}
+        anchor={anchor}
+        onAnchorChange={setAnchor}
+        // The zone of the division, exactly as the real screens hand it over: the gallery is where
+        // a fork sees that every time comes with UTC beside it.
+        timezone={bootstrap.division.timezone}
+        empty={t('calendar.public.empty')}
+      />
+    </div>
   );
 }
 

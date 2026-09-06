@@ -36,6 +36,9 @@ public static class CorePermissions
     public const string MediaView = "Media.View";
     public const string MediaEdit = "Media.Edit";
 
+    /// <summary>The area the CRUD engine derives <c>Calendar.View</c> and <c>Calendar.Edit</c> from.</summary>
+    public const string CalendarArea = "Calendar";
+
     public const string CalendarView = "Calendar.View";
     public const string CalendarEdit = "Calendar.Edit";
 

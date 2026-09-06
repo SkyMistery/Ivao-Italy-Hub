@@ -260,6 +260,7 @@ app.MapMediaEndpoints();
 app.MapMediaFileEndpoint();
 app.MapContentEndpoints();
 app.MapCategoriesEndpoints();
+app.MapCalendarEndpoints();
 app.MapBlockDataEndpoint();
 app.MapSearchEndpoint();
 

@@ -2,6 +2,7 @@ import { Sidebar, type SidebarProps } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
 import {
   Boxes,
+  CalendarDays,
   FileArchive,
   FileText,
   Images,
@@ -24,7 +25,7 @@ import { RouterAnchor } from './RouterAnchor';
 /**
  * The back office. One group per department the member may work in — their own, or all of them
  * when the role reaches everywhere — and under each, the resources of that department: `content`,
- * `news`, `documents`, `categories`, `links` and `media`, plus whatever the modules put in
+ * `news`, `documents`, `calendar`, `categories`, `links` and `media`, plus whatever the modules put in
  * `navigation.staff`, which the server has already
  * narrowed to the entries this person may actually follow (design M0 §7.2).
  *
@@ -73,6 +74,12 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
         description: t('documents.description'),
         Icon: FileArchive,
         href: `/staff/${deptParam.format(department)}/documents`,
+      },
+      {
+        title: t('calendar.title'),
+        description: t('calendar.description'),
+        Icon: CalendarDays,
+        href: `/staff/${deptParam.format(department)}/calendar`,
       },
       {
         title: t('categories.title'),

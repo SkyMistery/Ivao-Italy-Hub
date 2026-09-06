@@ -781,14 +781,13 @@
     "calendar": {
       "label": "Calendar",
       "empty": "Nothing coming up.",
-      "utc": "{{at}} UTC",
-      "local": "({{at}} local time)",
       "fields": {
         "kinds": "Kinds",
         "kinds.kind": "Kind",
         "department": "Department",
         "range": "How far ahead",
-        "limit": "How many at most"
+        "limit": "How many at most",
+        "view": "View"
       },
       "options": {
         "department": {
@@ -807,6 +806,11 @@
           "upcoming": "Everything coming up",
           "week": "The next seven days",
           "month": "The next month"
+        },
+        "view": {
+          "agenda": "A list of what is next",
+          "week": "A week",
+          "month": "A month"
         }
       }
     },
@@ -1044,6 +1048,64 @@
       "kind": {
         "News": "News",
         "Document": "Documents"
+      }
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "description": "What this department has coming up, and what its modules put there.",
+    "create": "New entry",
+    "edit": "Edit entry",
+    "projected": "From a module",
+    "projectedExplained": "This entry mirrors a row the {{module}} module owns, so it cannot be edited here: a change would be undone the next time that module saves. Change it where it comes from.",
+    "utc": "{{at}} UTC",
+    "local": "{{at}} local",
+    "previous": "Previous",
+    "next": "Next",
+    "delete": {
+      "title": "Delete this entry?",
+      "description": "It disappears from the calendar straight away, and this cannot be undone."
+    },
+    "fields": {
+      "kind": "Kind",
+      "title": "Title",
+      "description": "Description",
+      "startsAtUtc": "Starts",
+      "endsAtUtc": "Ends",
+      "allDay": "All day",
+      "url": "Address",
+      "visibility": "Visible to",
+      "ownerDepartment": "Department",
+      "isProjection": "From a module",
+      "updatedAt": "Last change"
+    },
+    "hints": {
+      "kind": "A word this department files the entry under, for example meeting or deadline. The kinds a module brings — events, training, tours — arrive with their own rows.",
+      "url": "Where the entry leads, if anywhere. A meeting link, a page of the site."
+    },
+    "options": {
+      "visibility": {
+        "Public": "Everybody",
+        "Members": "Members",
+        "Staff": "Staff",
+        "Department": "This department"
+      }
+    },
+    "public": {
+      "title": "Calendar",
+      "description": "Everything the division has coming up, in UTC and in its own time.",
+      "empty": "Nothing in this stretch of the calendar.",
+      "views": {
+        "agenda": "Agenda",
+        "week": "Week",
+        "month": "Month"
+      },
+      "filters": {
+        "view": "View",
+        "department": "Department",
+        "allDepartments": "Every department",
+        "kind": "Kind",
+        "allKinds": "Every kind"
       }
     }
   }

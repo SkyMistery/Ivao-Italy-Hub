@@ -4,6 +4,14 @@ export { DepartmentBadge, VisibilityBadge, StatusBadge, type Visibility } from '
 export { LocaleSwitcher } from './LocaleSwitcher';
 export { MarkdownContent } from './MarkdownContent';
 export { ConfirmDialog } from './ConfirmDialog';
+export { CalendarView } from './CalendarView';
+export {
+  CALENDAR_VIEWS,
+  calendarDays,
+  calendarWindow,
+  type CalendarItem,
+  type CalendarViewMode,
+} from './calendar';
 export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';
 export { NotFound, Forbidden } from './status-pages';
 export { UI_KIT_COMPONENTS, type UiKitComponent } from './catalog';
