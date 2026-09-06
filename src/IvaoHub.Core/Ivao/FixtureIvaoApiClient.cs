@@ -79,6 +79,26 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     public Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
         Task.FromResult<JsonElement?>(null);
 
+    /// <summary>
+    /// The connections of an evening that always looks the same, read through the very same rule
+    /// the real client uses: what "in the area" means is <see cref="IvaoWhazzup"/>'s to say, here
+    /// as in production. No cache, because the file does not move.
+    /// </summary>
+    public Task<IvaoNetworkStatus> GetNetworkStatusAsync(
+        IvaoAirspace airspace,
+        CancellationToken cancellationToken = default)
+    {
+        var path = Path.Combine(_paths.Root, Directory, "whazzup.json");
+        if (!File.Exists(path))
+        {
+            _logger.LogWarning("No IVAO fixture at {Path}; answering with nothing.", path);
+            return Task.FromResult(IvaoNetworkStatus.Unknown);
+        }
+
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        return Task.FromResult(IvaoWhazzup.Read(document.RootElement, airspace));
+    }
+
     private JsonElement[] Read(string fileName)
     {
         var path = Path.Combine(_paths.Root, Directory, fileName);

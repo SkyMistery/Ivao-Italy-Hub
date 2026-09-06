@@ -714,6 +714,176 @@
           "lg": "Generous"
         }
       }
+    },
+    "stats": {
+      "label": "Figures",
+      "empty": "No figure chosen.",
+      "fields": {
+        "metrics": "Figures",
+        "metrics.metric": "Figure",
+        "columns": "Columns"
+      },
+      "options": {
+        "metrics.metric": {
+          "knownMembers": "Members the hub knows",
+          "staffMembers": "Staff",
+          "publishedNews": "Published news",
+          "publishedDocuments": "Published documents",
+          "upcomingEntries": "Upcoming calendar entries"
+        },
+        "columns": {
+          "2": "Two",
+          "3": "Three",
+          "4": "Four"
+        }
+      },
+      "captions": {
+        "knownMembers": "members",
+        "staffMembers": "staff",
+        "publishedNews": "news",
+        "publishedDocuments": "documents",
+        "upcomingEntries": "coming up"
+      }
+    },
+    "networkStats": {
+      "label": "Live on the network",
+      "unavailable": "The network cannot be reached right now.",
+      "updatedAt": "Counted at {{at}}",
+      "fields": {
+        "figures": "Figures",
+        "figures.figure": "Figure",
+        "showPositions": "Show who is on frequency"
+      },
+      "options": {
+        "figures.figure": {
+          "divisionAtc": "Controllers here",
+          "divisionPilots": "Pilots here",
+          "networkAtc": "Controllers on the whole network",
+          "networkPilots": "Pilots on the whole network"
+        }
+      },
+      "captions": {
+        "divisionAtc": "controllers here",
+        "divisionPilots": "pilots here",
+        "networkAtc": "controllers online",
+        "networkPilots": "pilots online"
+      }
+    },
+    "calendar": {
+      "label": "Calendar",
+      "empty": "Nothing coming up.",
+      "utc": "{{at}} UTC",
+      "local": "({{at}} local time)",
+      "fields": {
+        "kinds": "Kinds",
+        "kinds.kind": "Kind",
+        "department": "Department",
+        "range": "How far ahead",
+        "limit": "How many at most"
+      },
+      "options": {
+        "department": {
+          "none": "Every department",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        },
+        "range": {
+          "upcoming": "Everything coming up",
+          "week": "The next seven days",
+          "month": "The next month"
+        }
+      }
+    },
+    "newsList": {
+      "label": "News",
+      "empty": "No news to show.",
+      "pinned": "Pinned",
+      "fields": {
+        "category": "Category",
+        "department": "Department",
+        "limit": "How many at most",
+        "layout": "Set out as",
+        "pinnedFirst": "Pinned news first"
+      },
+      "options": {
+        "department": {
+          "none": "Every department",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        },
+        "layout": {
+          "list": "A list",
+          "cards": "Cards"
+        }
+      }
+    },
+    "documentList": {
+      "label": "Documents",
+      "empty": "No document to show.",
+      "download": "Download",
+      "fields": {
+        "category": "Category",
+        "department": "Department",
+        "limit": "How many at most",
+        "groupByCategory": "Group by category"
+      },
+      "options": {
+        "department": {
+          "none": "Every department",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        }
+      }
+    },
+    "staffList": {
+      "label": "Staff",
+      "empty": "Nobody to show yet.",
+      "profileUrl": "https://www.ivao.aero/Member.aspx?Id={{vid}}",
+      "rosterNote": "Only members who have signed in to this hub at least once appear here.",
+      "fields": {
+        "department": "Department",
+        "includeFirStaff": "Include the FIR teams",
+        "layout": "Set out as"
+      },
+      "options": {
+        "department": {
+          "none": "Every department",
+          "HQ": "HQ",
+          "SOD": "SOD",
+          "FOD": "FOD",
+          "AOD": "AOD",
+          "TD": "TD",
+          "MD": "MD",
+          "ED": "ED",
+          "PRD": "PRD",
+          "WD": "WD"
+        },
+        "layout": {
+          "list": "A list",
+          "cards": "Cards"
+        }
+      }
     }
   },
   "widgets": {
@@ -794,5 +964,16 @@
       "isSuperadmin": "As super administrator",
       "ip": "Address"
     }
+  },
+  "departments": {
+    "HQ": "Division headquarters",
+    "SOD": "Special Operations",
+    "FOD": "Flight Operations",
+    "AOD": "ATC Operations",
+    "TD": "Training",
+    "MD": "Membership",
+    "ED": "Events",
+    "PRD": "Public Relations",
+    "WD": "Web"
   }
 }

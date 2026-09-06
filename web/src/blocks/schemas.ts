@@ -257,3 +257,82 @@ export const dividerSchema = z.object({
   variant: z.enum(DIVIDER_VARIANTS).default('line'),
   spacing: z.enum(DIVIDER_SPACINGS).default('md'),
 });
+
+// --- the six data blocks of G4 -----------------------------------------------------------------
+//
+// A data block draws what the hub knows rather than what an editor typed, so its properties are
+// not its content: they are the question. What comes back is `data`, from the provider registered
+// for the same type on the server (design M1 §1.2, group Data).
+//
+// Two shapes below are lists of objects holding a single value — `metrics[] { metric }`,
+// `figures[] { figure }`, `kinds[] { kind }` — and that is deliberate. The generator draws lists of
+// *objects*; a list of bare values is a kind of field it has not got, and inventing one for three
+// schemas would be a sixth extension for a shape nothing else asks for. It is the same trade G3
+// made for `table.rows` and `gallery.images`, and it costs one key in the JSON.
+
+/**
+ * The figures of the division a `stats` block may show. A closed set, and this is it: a module
+ * that wants a number of its own registers a block of its own (design M1 §1.2, correction 2).
+ *
+ * ⚠️ Compound words on purpose. Every string inside `props` is concatenated into the text of the
+ * page for the search index (design M1 §1.5), and a metric spelled `news` would be a page that
+ * answers a search for news.
+ */
+export const STATS_METRICS = [
+  'knownMembers',
+  'staffMembers',
+  'publishedNews',
+  'publishedDocuments',
+  'upcomingEntries',
+] as const;
+
+/** What `networkStats` can count: connections here, and connections anywhere. */
+export const NETWORK_FIGURES = ['divisionAtc', 'divisionPilots', 'networkAtc', 'networkPilots'] as const;
+
+/** How far ahead a calendar block looks. */
+export const CALENDAR_RANGES = ['upcoming', 'week', 'month'] as const;
+
+/** How a list of rows is set out. */
+export const LIST_LAYOUTS = ['list', 'cards'] as const;
+
+export const statsSchema = z.object({
+  metrics: z.array(z.object({ metric: z.enum(STATS_METRICS) })),
+  columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
+});
+
+export const networkStatsSchema = z.object({
+  figures: z.array(z.object({ figure: z.enum(NETWORK_FIGURES) })),
+  // Who is on frequency right now, under the figures. Off by default: a page that wants the two
+  // numbers and not the list is the common one.
+  showPositions: z.boolean().default(false),
+});
+
+export const calendarSchema = z.object({
+  // Free strings, because the staff writes them: `meeting`, `deadline`, whatever a department
+  // uses. Naming none asks for every kind.
+  kinds: z.array(z.object({ kind: z.string() })),
+  department: z.enum(DEPARTMENTS).optional(),
+  range: z.enum(CALENDAR_RANGES).default('upcoming'),
+  limit: z.number().int().default(5),
+});
+
+export const newsListSchema = z.object({
+  category: z.string(),
+  department: z.enum(DEPARTMENTS).optional(),
+  limit: z.number().int().default(3),
+  layout: z.enum(LIST_LAYOUTS).default('cards'),
+  pinnedFirst: z.boolean().default(true),
+});
+
+export const documentListSchema = z.object({
+  category: z.string(),
+  department: z.enum(DEPARTMENTS).optional(),
+  limit: z.number().int().default(10),
+  groupByCategory: z.boolean().default(true),
+});
+
+export const staffListSchema = z.object({
+  department: z.enum(DEPARTMENTS).optional(),
+  includeFirStaff: z.boolean().default(true),
+  layout: z.enum(LIST_LAYOUTS).default('cards'),
+});

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace IvaoHub.Core.Ivao;
@@ -14,6 +15,7 @@ namespace IvaoHub.Core.Ivao;
 public sealed class IvaoApiClient(
     HttpClient http,
     IvaoApiTokenProvider tokens,
+    IMemoryCache cache,
     ILogger<IvaoApiClient> logger) : IIvaoApiClient
 {
     public async Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(
@@ -111,6 +113,29 @@ public sealed class IvaoApiClient(
         return document.RootElement.Clone();
     }
 
+    public async Task<IvaoNetworkStatus> GetNetworkStatusAsync(
+        IvaoAirspace airspace,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(airspace);
+
+        var key = $"ivao-api:network-status:{airspace.CacheKey}";
+        if (cache.TryGetValue(key, out IvaoNetworkStatus? cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        // No token: the picture of who is connected is the public one, and an installation that
+        // has not been given client credentials must still be able to draw it.
+        var payload = await ReadWithoutTokenAsync(IvaoWhazzup.Path, cancellationToken);
+        var status = payload is { } root ? IvaoWhazzup.Read(root, airspace) : IvaoNetworkStatus.Unknown;
+
+        // A failure is cached too, and for the same minute. Without that, a network that is down
+        // turns every reader of the page into another call to a network that is down.
+        cache.Set(key, status, IvaoWhazzup.Freshness);
+        return status;
+    }
+
     /// <summary>A GET with the application's token, or null when anything at all goes wrong.</summary>
     private async Task<JsonElement?> ReadAsync(string path, CancellationToken cancellationToken)
     {
@@ -136,6 +161,40 @@ public sealed class IvaoApiClient(
             cancellationToken: cancellationToken);
 
         return document.RootElement.Clone();
+    }
+
+    /// <summary>
+    /// A GET of something that belongs to nobody, so it carries no token — and one that a page is
+    /// waiting on, so nothing it can do gets as far as the reader. The reference calls above are
+    /// made by a job that can afford to fail; this one is made while somebody is looking at a
+    /// page, and a network that is unreachable must read as "no figures", never as an error page.
+    /// </summary>
+    private async Task<JsonElement?> ReadWithoutTokenAsync(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var response = await http.GetAsync(new Uri(path, UriKind.Relative), cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("IVAO answered {Path} with status {Status}.", path, (int)response.StatusCode);
+                return null;
+            }
+
+            using var document = await JsonDocument.ParseAsync(
+                await response.Content.ReadAsStreamAsync(cancellationToken),
+                cancellationToken: cancellationToken);
+
+            return document.RootElement.Clone();
+        }
+        catch (Exception exception) when (exception is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            // Not the cancellation of the request itself: that one is the reader going away, and
+            // it is theirs to make.
+            cancellationToken.ThrowIfCancellationRequested();
+
+            logger.LogWarning(exception, "IVAO could not be reached at {Path}.", path);
+            return null;
+        }
     }
 
     /// <summary>

@@ -25,6 +25,12 @@ public static class ContentServiceCollectionExtensions
         // Scoped, because a provider reads the database as the caller: the visibility filter is
         // what decides which rows a block shows, and it needs the request's own current user.
         services.AddScoped<IDataBlockProvider, LinkListProvider>();
+        services.AddScoped<IDataBlockProvider, StatsProvider>();
+        services.AddScoped<IDataBlockProvider, NetworkStatsProvider>();
+        services.AddScoped<IDataBlockProvider, CalendarBlockProvider>();
+        services.AddScoped<IDataBlockProvider, NewsListProvider>();
+        services.AddScoped<IDataBlockProvider, DocumentListProvider>();
+        services.AddScoped<IDataBlockProvider, StaffListProvider>();
         services.TryAddScoped<DataBlockProviders>();
 
         // Where the uploaded files live. A singleton because it holds one path and no state; the

@@ -1,0 +1,38 @@
+{
+  "updatedAt": "2026-09-06T18:00:00.000Z",
+  "connections": {
+    "total": 1240,
+    "supervisor": 4,
+    "atc": 210,
+    "observer": 36,
+    "pilot": 990
+  },
+  "clients": {
+    "atcs": [
+      {
+        "callsign": "LIRR_CTR",
+        "atcSession": { "frequency": 129.075, "position": "CTR" }
+      },
+      {
+        "callsign": "LIMC_APP",
+        "atcSession": { "frequency": 126.55, "position": "APP" }
+      },
+      {
+        "callsign": "LIRF_TWR",
+        "atcSession": { "frequency": 118.7, "position": "TWR" }
+      },
+      {
+        "callsign": "EDDF_TWR",
+        "atcSession": { "frequency": 119.9, "position": "TWR" }
+      }
+    ],
+    "pilots": [
+      { "callsign": "IVA101", "flightPlan": { "departureId": "LIRF", "arrivalId": "LIMC" } },
+      { "callsign": "IVA202", "flightPlan": { "departureId": "EDDF", "arrivalId": "LIMC" } },
+      { "callsign": "IVA303", "flightPlan": { "departureId": "EDDF", "arrivalId": "EGLL" } },
+      { "callsign": "IVA404", "flightPlan": null }
+    ],
+    "observers": [{ "callsign": "LIRR_OBS" }],
+    "followMe": []
+  }
+}
