@@ -656,6 +656,14 @@ public static class MapCrudExtensions
         CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options)
         where TEntity : class
     {
+        // A row somebody else writes is refused before any permission is looked at, because there is
+        // no permission that would make editing it work: it would be overwritten at the next save
+        // of whatever it mirrors. A superadmin is refused too, for exactly that reason.
+        if (options.ReadOnlyRows?.Invoke(entity) == true)
+        {
+            return true;
+        }
+
         if (await Denies(scope, entity, options.EffectiveWritePolicy))
         {
             return true;

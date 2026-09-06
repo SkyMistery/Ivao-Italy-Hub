@@ -39,12 +39,25 @@ It is exactly:
 
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
-`StatusBadge`, `ConfirmDialog`, `MediaPicker`.
+`StatusBadge`, `ConfirmDialog`, `MediaPicker`, `CalendarView`.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
 picks and nothing else — uploading belongs to the library screen, and a picker that also uploaded
 would be a second way for a file to enter the hub.
+
+`CalendarView` draws the one calendar of the division as an agenda, a week or a month, and it is on
+the list for the same reason: two screens mount it, the public calendar and the `calendar` block
+inside a page. Atmosphere has a `Calendar`, and it is a date *picker* — it answers "which day do you
+mean", not "what is happening". The component draws and decides nothing else: which entries, and for
+which stretch of time, is the caller's business, which is what lets it be a month grid on one screen
+and five lines inside a section on another.
+
+⚠️ Its days are **UTC days**. The hub stores UTC and the network runs on it, and a grid whose day
+boundaries moved with the reader's browser would put one entry in two different squares for two
+people looking at the same page. Every time on it is shown in UTC **and** in the division's own
+zone, never one instead of the other, and the zone is handed in from `/api/me` rather than being a
+constant anywhere.
 
 The list lives in `web/src/shared/ui/catalog.ts`. Everything else is Atmosphere.
 
@@ -61,9 +74,9 @@ When Atmosphere nearly does what is needed, wrap it rather than replace it — `
 Atmosphere's `DataTable` in server side mode, with the paging drawn by us because Atmosphere's own
 writes "Rows per page" in English. A component that does something genuinely new is a decision.
 
-`CalendarView`, `ContactForm` and `LiveStatusStrip` are the rest of M1 and are added by the phases
-that need them; `RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist
-yet and are not to be started early.
+`ContactForm` and `LiveStatusStrip` are the rest of M1 and are added by the phases that need them;
+`RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist yet and are not
+to be started early.
 
 ## 4. Colours are tokens, and dark mode is not optional
 

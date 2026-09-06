@@ -142,6 +142,20 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     public Expression<Func<TEntity, bool>>? SharedForReading { get; set; }
 
     /// <summary>
+    /// Which rows of this resource nobody may write, whatever they hold. It is not a permission and
+    /// there is no policy that lifts it: these rows are written by something else, and a hand made
+    /// change to one would be undone the next time that something else saves.
+    /// <para>The calendar is the first: an entry projected from a module's own row is a mirror, and
+    /// editing a mirror is watching the change come back (design M1 section 4). The engine still
+    /// does not know what a projection is — what it is told is that this resource has rows it does
+    /// not own — and the entity is the one place that decides which ones, so the badge the list
+    /// draws and the refusal the engine gives cannot disagree.</para>
+    /// <para>They are not hidden: the staff has to see them, and being told why they are read only
+    /// is the whole difference between a disabled button and a ticket.</para>
+    /// </summary>
+    public Func<TEntity, bool>? ReadOnlyRows { get; set; }
+
+    /// <summary>
     /// One extra policy a write on this particular row needs, on top of the write policy. The only
     /// extension point of the engine: it exists so that "editing a template needs
     /// <c>Content.ManageTemplates</c>" is configuration and not a special case in the endpoint

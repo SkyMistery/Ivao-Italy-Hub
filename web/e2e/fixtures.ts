@@ -147,6 +147,45 @@ export const oneMediaDetail = {
   rowVersion: '2026-09-05T09:00:00Z',
 };
 
+/**
+ * Two calendar entries: one the staff wrote and one a module projected. Two and not one, because
+ * what this screen has to get right is the difference — a projection is shown and cannot be edited,
+ * and a fixture where every row is the same kind would look correct either way.
+ */
+export const twoCalendarEntries = {
+  items: [
+    {
+      id: 31,
+      ownerDepartment: 'ED',
+      visibility: 'Public',
+      kind: 'meeting',
+      title: { en: 'Staff meeting', it: 'Riunione dello staff' },
+      startsAtUtc: '2026-09-15T14:00:00Z',
+      endsAtUtc: null,
+      allDay: false,
+      url: '',
+      isProjection: false,
+      updatedAt: '2026-09-06T09:00:00Z',
+    },
+    {
+      id: 32,
+      ownerDepartment: 'ED',
+      visibility: 'Public',
+      kind: 'event',
+      title: { en: 'Night flight', it: 'Volo notturno' },
+      startsAtUtc: '2026-09-20T19:00:00Z',
+      endsAtUtc: null,
+      allDay: false,
+      url: '/events/night-flight',
+      isProjection: true,
+      updatedAt: '2026-09-06T09:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 25,
+  total: 2,
+};
+
 /** An empty page, for the "which contents use this file" filter of the content list. */
 export const noContent = { items: [], page: 1, pageSize: 25, total: 0 };
 
@@ -297,6 +336,14 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
 
   // The vocabulary a department files its news and documents under. Empty: a division decides its
   // own shelves and a fresh one has none, which is the state the screens have to survive.
+  await page.route('**/api/calendar**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(twoCalendarEntries),
+    }),
+  );
+
   await page.route('**/api/categories**', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(noContent) }),
   );
@@ -313,7 +360,8 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
       url.includes('/api/links') ||
       url.includes('/api/media') ||
       url.includes('/api/content') ||
-      url.includes('/api/categories')
+      url.includes('/api/categories') ||
+      url.includes('/api/calendar')
     ) {
       return route.fallback();
     }

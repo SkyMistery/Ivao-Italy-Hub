@@ -27,8 +27,9 @@ import type { LocalizedString } from '../shared/api/bootstrap';
 import { mediaFileUrl } from '../shared/api/mediaUrl';
 import { ICONS } from '../shared/icons';
 import { useLocalized } from '../shared/i18n/useLocalized';
+import { useMoment } from '../shared/i18n/useMoment';
 import type { BlockComponentProps } from '../shared/modules';
-import { MarkdownContent } from '../shared/ui';
+import { CALENDAR_VIEWS, CalendarView, MarkdownContent, type CalendarItem } from '../shared/ui';
 
 import { embedSource } from './allowlist';
 import { categoryLabel, type ContentListData } from './data';
@@ -235,32 +236,6 @@ function Figure({ value, caption }: { value: number; caption: string }) {
       <span className="text-muted-foreground text-sm">{caption}</span>
     </div>
   );
-}
-
-/**
- * An instant as a reader reads one. UTC unless a zone is named, because UTC is what the network
- * runs on and what the hub stores; a local time is shown next to it and never instead of it
- * (plan §9.5). An empty string means "there was no usable instant", so a caller can leave it out.
- */
-function useMoment(): (value: unknown, options?: { timeZone?: string; time?: boolean }) => string {
-  const { i18n } = useTranslation();
-
-  return (value, options = {}) => {
-    if (typeof value !== 'string' || value === '') {
-      return '';
-    }
-
-    const moment = new Date(value);
-    if (Number.isNaN(moment.getTime())) {
-      return '';
-    }
-
-    return new Intl.DateTimeFormat(i18n.language, {
-      dateStyle: 'medium',
-      ...(options.time === false ? {} : { timeStyle: 'short' }),
-      timeZone: options.timeZone ?? 'UTC',
-    }).format(moment);
-  };
 }
 
 // ---- linkList (data) -------------------------------------------------------------------------
@@ -968,68 +943,37 @@ export function NetworkStatsBlock({ data }: BlockComponentProps) {
 
 /** What `CalendarBlockProvider` answers with. */
 interface CalendarData {
-  items?: {
-    id?: number;
-    kind?: string;
-    title?: LocalizedString;
-    description?: LocalizedString | null;
-    startsAt?: string;
-    endsAt?: string | null;
-    allDay?: boolean;
-    url?: string | null;
-  }[];
+  items?: CalendarItem[];
 }
 
 /**
- * ⚠️ The agenda, and only the agenda. `CalendarView` — month, week, filters — is born in G6, when
- * two screens mount it, which is the criterion the closed list of components is kept by
- * (docs/UI-GUIDELINES.md §3). This component is provisional by design and disappears there: what
- * survives is the provider, which is the half that is not a drawing.
+ * The calendar inside a page, which is the same `CalendarView` the public `/calendar` mounts — the
+ * two screens that earn it its place in the closed list of components (docs/UI-GUIDELINES.md §3).
+ *
+ * `view` arrives in G6 with the component, as design M1 §1.2 said it would: in G4 the block was the
+ * agenda and only the agenda, and a select with one option would have been a control that does
+ * nothing. A section inside a page does not navigate months — there is no `onAnchorChange` — because
+ * a page is read on a day nobody knew when it was written.
  */
-export function CalendarBlock({ data }: BlockComponentProps) {
+export function CalendarBlock({ props, data }: BlockComponentProps) {
   const { t } = useTranslation();
-  const read = useLocalized();
-  const moment = useMoment();
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const items = (data as CalendarData | null | undefined)?.items;
 
-  if (items === undefined || items.length === 0) {
-    return <NoRows pending={items === undefined} empty={t('blocks.calendar.empty')} />;
+  if (items === undefined) {
+    return <NoRows pending empty={t('blocks.calendar.empty')} />;
   }
 
-  // UTC is what the network runs on and what the hub stores; the division's own time is shown next
-  // to it and never instead of it (plan §9.5). The zone comes from `/api/me`, never a constant.
-  const zone = bootstrap?.division.timezone;
-
   return (
-    <ul className="flex flex-col divide-y">
-      {items.map((item) => {
-        const allDay = item.allDay === true;
-        const when = moment(item.startsAt, { time: !allDay });
-        const local = zone === undefined || allDay ? '' : moment(item.startsAt, { timeZone: zone });
-        const summary = read(item.description);
-        const title = read(item.title);
-
-        return (
-          <li key={item.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
-            <div className="text-muted-foreground flex flex-wrap items-baseline gap-2 text-sm">
-              <time className="tabular-nums">{t('blocks.calendar.utc', { at: when })}</time>
-              {local === '' ? null : (
-                <span className="tabular-nums">{t('blocks.calendar.local', { at: local })}</span>
-              )}
-            </div>
-            <H4>
-              {item.url == null || item.url === '' ? (
-                title
-              ) : (
-                <OutsideLink href={item.url}>{title}</OutsideLink>
-              )}
-            </H4>
-            {summary === '' ? null : <p className="text-muted-foreground text-sm">{summary}</p>}
-          </li>
-        );
-      })}
-    </ul>
+    <CalendarView
+      items={items}
+      view={choice(props, 'view', CALENDAR_VIEWS, 'agenda')}
+      // UTC is what the network runs on and what the hub stores; the division's own time is shown
+      // next to it and never instead of it (plan §9.5). The zone comes from `/api/me`, never a
+      // constant — a hub that assumed one would be a hub only one division can fork.
+      timezone={bootstrap?.division.timezone ?? 'UTC'}
+      empty={t('blocks.calendar.empty')}
+    />
   );
 }
 

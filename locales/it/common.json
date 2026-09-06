@@ -781,14 +781,13 @@
     "calendar": {
       "label": "Calendario",
       "empty": "Non c’è niente in arrivo.",
-      "utc": "{{at}} UTC",
-      "local": "({{at}} ora locale)",
       "fields": {
         "kinds": "Tipi",
         "kinds.kind": "Tipo",
         "department": "Dipartimento",
         "range": "Quanto in avanti",
-        "limit": "Quante al massimo"
+        "limit": "Quante al massimo",
+        "view": "Vista"
       },
       "options": {
         "department": {
@@ -807,6 +806,11 @@
           "upcoming": "Tutto quello che arriva",
           "week": "I prossimi sette giorni",
           "month": "Il prossimo mese"
+        },
+        "view": {
+          "agenda": "Un elenco di quello che viene",
+          "week": "Una settimana",
+          "month": "Un mese"
         }
       }
     },
@@ -1044,6 +1048,64 @@
       "kind": {
         "News": "News",
         "Document": "Documenti"
+      }
+    }
+  },
+  "calendar": {
+    "title": "Calendario",
+    "description": "Quello che questo dipartimento ha in programma, e quello che i suoi moduli ci mettono.",
+    "create": "Nuova voce",
+    "edit": "Modifica voce",
+    "projected": "Da un modulo",
+    "projectedExplained": "Questa voce rispecchia una riga che appartiene al modulo {{module}}, quindi non si modifica da qui: la modifica tornerebbe indietro al primo salvataggio di quel modulo. Si cambia dove nasce.",
+    "utc": "{{at}} UTC",
+    "local": "{{at}} locali",
+    "previous": "Precedente",
+    "next": "Successivo",
+    "delete": {
+      "title": "Eliminare questa voce?",
+      "description": "Sparisce subito dal calendario, e l'operazione non si può annullare."
+    },
+    "fields": {
+      "kind": "Tipo",
+      "title": "Titolo",
+      "description": "Descrizione",
+      "startsAtUtc": "Inizio",
+      "endsAtUtc": "Fine",
+      "allDay": "Tutto il giorno",
+      "url": "Indirizzo",
+      "visibility": "Visibile a",
+      "ownerDepartment": "Dipartimento",
+      "isProjection": "Da un modulo",
+      "updatedAt": "Ultima modifica"
+    },
+    "hints": {
+      "kind": "Una parola con cui questo dipartimento archivia la voce, per esempio riunione o scadenza. I tipi che porta un modulo — eventi, training, tour — arrivano con le loro righe.",
+      "url": "Dove porta la voce, se porta da qualche parte. Un link a una riunione, una pagina del sito."
+    },
+    "options": {
+      "visibility": {
+        "Public": "Tutti",
+        "Members": "Membri",
+        "Staff": "Staff",
+        "Department": "Questo dipartimento"
+      }
+    },
+    "public": {
+      "title": "Calendario",
+      "description": "Tutto quello che la divisione ha in programma, in UTC e nella sua ora.",
+      "empty": "Niente in questo tratto di calendario.",
+      "views": {
+        "agenda": "Agenda",
+        "week": "Settimana",
+        "month": "Mese"
+      },
+      "filters": {
+        "view": "Vista",
+        "department": "Dipartimento",
+        "allDepartments": "Tutti i dipartimenti",
+        "kind": "Tipo",
+        "allKinds": "Tutti i tipi"
       }
     }
   }

@@ -366,6 +366,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarList"];
+        put?: never;
+        post: operations["CalendarCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calendar/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarGet"];
+        put: operations["CalendarUpdate"];
+        post?: never;
+        delete: operations["CalendarDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/grants": {
         parameters: {
             query?: never;
@@ -634,6 +666,82 @@ export interface components {
             department: null | string;
             titleKey: string;
             sizes: string[];
+        };
+        /**
+         * @description The same entry as the form loads it, with the audit trail.
+         *     string CalendarDetailDto.SourceModule travels so that a read only screen can name the module
+         *     the row belongs to instead of only refusing: "this entry comes from Events" is an explanation,
+         *     a disabled save button is a ticket.
+         */
+        CalendarDetailDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            kind: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            description: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: null | string;
+            allDay: boolean;
+            url: string;
+            isProjection: boolean;
+            sourceModule: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+        };
+        /**
+         * @description One calendar entry as a list shows it.
+         *     bool CalendarListDto.IsProjection travels because the screen has to draw it and must not work it
+         *     out for itself: the engine refuses a write on the same answer, and a list that decided
+         *     separately what a projection is would be a badge that disagrees with a 403.
+         */
+        CalendarListDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            kind: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: null | string;
+            allDay: boolean;
+            url: string;
+            isProjection: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description What a client may set.
+         *     Three things are absent on purpose. sourceModule and sourceId say who owns
+         *     the row, and a payload that could set them would be a payload that can claim a row belongs to a
+         *     module. The audit columns are the interceptor's.⚠️ There is no rowVersion either, and that is a fact of the table rather than an
+         *     omission here: cms_calendar_entries has no concurrency token, so two members editing one
+         *     entry at the same time end with the second save winning. The model of M0 is not touched in this
+         *     phase; if the calendar ever needs the check, it is an additive column and a decision.
+         */
+        CalendarWriteDto: {
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
+            kind: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            description: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: null | string;
+            allDay: boolean;
+            url: null | string;
         };
         /** @description The same, as the form loads it, with the version to write back. */
         CategoryDetailDto: {
@@ -1075,6 +1183,29 @@ export interface components {
         PagedResultOfAuditListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["AuditListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfCalendarListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["CalendarListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -2106,6 +2237,163 @@ export interface operations {
         };
     };
     CategoriesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfCalendarListDto"];
+                };
+            };
+        };
+    };
+    CalendarCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CalendarWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CalendarGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CalendarWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarDelete: {
         parameters: {
             query?: never;
             header?: never;

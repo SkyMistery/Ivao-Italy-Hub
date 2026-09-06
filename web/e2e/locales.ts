@@ -16,6 +16,12 @@ interface CommonStrings {
   readonly auth: { readonly login: string };
   readonly common: { readonly edit: string };
   readonly list: { readonly file: string };
+  readonly calendar: {
+    readonly title: string;
+    readonly create: string;
+    readonly projected: string;
+    readonly fields: { readonly kind: string };
+  };
   readonly links: {
     readonly title: string;
     readonly create: string;

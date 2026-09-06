@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 
@@ -49,4 +50,16 @@ public sealed class CalendarEntry : IOwnedByDepartment, IVisible, IAuditable
     public DateTime UpdatedAt { get; set; }
 
     public int UpdatedBy { get; set; }
+
+    /// <summary>
+    /// Whether this row is a projection of something a module owns, rather than an entry the staff
+    /// wrote. Derived from <see cref="SourceModule"/> rather than stored, and derived <b>here</b>
+    /// rather than wherever somebody needs the answer: the CRUD engine refuses writes on it and the
+    /// list draws a badge for it, and those two must not each carry their own idea of what a
+    /// projection is.
+    /// <para>Editing one by hand would mean watching it come back at the next save of the entity it
+    /// mirrors, which is why it is refused rather than merely discouraged (design M1 section 4).</para>
+    /// </summary>
+    [NotMapped]
+    public bool IsProjection => SourceModule != ProjectionSource.Core;
 }

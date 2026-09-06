@@ -270,12 +270,14 @@ public sealed class CalendarBlockProvider(HubDbContext database, IClock clock) :
         }
 
         var now = clock.UtcNow;
+        var (from, to) = Window(now, props);
+
         var query = database.CalendarEntries
             .AsNoTracking()
-            .Where(entry => entry.StartsAtUtc >= now)
+            .Where(entry => entry.StartsAtUtc >= from)
             .WithinPage(context);
 
-        if (Until(now, BlockProps.Text(props, "range")) is { } until)
+        if (to is { } until)
         {
             query = query.Where(entry => entry.StartsAtUtc < until);
         }
@@ -319,12 +321,39 @@ public sealed class CalendarBlockProvider(HubDbContext database, IClock clock) :
         return new JsonObject { ["items"] = items };
     }
 
-    private static DateTime? Until(DateTime now, string? range) => range switch
+    /// <summary>
+    /// Which stretch of time to answer for.
+    /// <para>A block written by an editor says it the relative way — <c>range</c>: what is coming
+    /// up, the next seven days, the next thirty-one — because a page is read on a day nobody knew
+    /// when it was written. A <b>screen</b> says it the absolute way, <c>from</c> and <c>to</c>,
+    /// because a month grid showing September is showing September and not "the next thirty-one
+    /// days"; the public calendar of design M1 section 4 is the first caller that needs it.</para>
+    /// <para>⚠️ They are deliberately not in the block's zod schema, which is what an editor fills
+    /// in: a body that pinned a page to one month would go stale the day after it was published.
+    /// The schema is what may be <i>saved</i>; this is what may be <i>asked</i>.</para>
+    /// <para>An explicit window wins over a range, and is clamped so that a caller cannot turn a
+    /// block into a way of reading the whole table: a block is not an export.</para>
+    /// </summary>
+    private static (DateTime From, DateTime? To) Window(DateTime now, JsonNode? props)
     {
-        Week => now.AddDays(7),
-        Month => now.AddDays(31),
-        _ => null,
-    };
+        if (BlockProps.ReadInstant(props, "from") is { } from)
+        {
+            var asked = BlockProps.ReadInstant(props, "to") ?? from.AddDays(MaxWindowDays);
+            var capped = asked > from.AddDays(MaxWindowDays) ? from.AddDays(MaxWindowDays) : asked;
+
+            return (from, capped);
+        }
+
+        return (now, BlockProps.Text(props, "range") switch
+        {
+            Week => now.AddDays(7),
+            Month => now.AddDays(31),
+            _ => null,
+        });
+    }
+
+    /// <summary>The widest window a caller may ask for: a season, not a decade.</summary>
+    private const int MaxWindowDays = 92;
 }
 
 /// <summary>

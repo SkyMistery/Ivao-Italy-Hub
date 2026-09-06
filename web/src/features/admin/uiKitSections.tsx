@@ -13,6 +13,7 @@ import {
 import {
   ConfirmDialogSample,
   DataListSample,
+  CalendarViewSample,
   EmptyStateSample,
   HeroSample,
   LocaleFieldsSample,
@@ -96,6 +97,10 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   {
     name: 'MediaPicker' satisfies UiKitComponent,
     render: (bootstrap) => <MediaPickerSample bootstrap={bootstrap} />,
+  },
+  {
+    name: 'CalendarView' satisfies UiKitComponent,
+    render: (bootstrap) => <CalendarViewSample bootstrap={bootstrap} />,
   },
 ];
 

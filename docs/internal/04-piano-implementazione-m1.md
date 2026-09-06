@@ -9,7 +9,13 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 1.9 — 6 settembre 2026 (**G5 è chiusa**: news e documenti sono due `kind` e non due
+**Versione:** 2.0 — 6 settembre 2026 (**G6 è chiusa**: il calendario ha la sua UI, `CalendarView` è il
+secondo componente custom dei quattro, e una voce proiettata da un modulo non la scrive nessuno.
+Zero tabelle, zero permessi, zero endpoint; due estensioni generiche al motore CRUD e al provider.
+Una deviazione dalla lettera di questa pagina è scritta dentro la fase, ed è che `ExtraWritePolicy`
+**non poteva** fare il lavoro che le era stato assegnato. La prossima è G7.)
+
+**1.9** — **G5 è chiusa**: news e documenti sono due `kind` e non due
 tabelle, `cms_categories` esiste, i template li legge tutto lo staff. La fase è stata **corta**,
 come §9.3 del piano prometteva: zero entità nuove con un corpo a blocchi, zero editor nuovi, zero
 renderer nuovi. Cinque deviazioni dalla lettera del design sono scritte dentro la fase, e due estensioni
@@ -107,7 +113,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G3 | I 16 blocchi Content / Layout / Interactive / Structure — **fatta** | G2 | 21 blocchi nella ui-kit, convenzioni in `UI-GUIDELINES.md` (chiude piano §16.C) |
 | G4 | I 6 blocchi Data e i loro provider — **fatta** | G3 | 27 blocchi; `networkStats` mai congelato; provider dietro il query filter |
 | G5 | News, documenti, categorie — **fatta** | G4 | due `kind`, due configurazioni di lista, cinque rotte pubbliche, `cms_categories` |
-| G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
+| G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` — **fatta** | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
 | G7 | Contatti, servizio notifiche, namespace `mail` | G2 | un messaggio genera una mail in Mailpit passando dalla coda |
 | G8 | Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate; ogni dipartimento apre `/staff/{dept}` e trova la propria dashboard |
 | G9 | Live status e staff directory | G4 | `LiveStatusStrip`, sezione staff di `/about`, nessun profilo pubblico |
@@ -559,7 +565,7 @@ file dice di fare quando serve una cella nuova.
 
 ---
 
-### G6 — Calendario: voci interne, `/calendar`, `CalendarView`
+### G6 — Calendario: voci interne, `/calendar`, `CalendarView` — **fatta il 6 settembre 2026**
 
 **Obiettivo**: il calendario unico guadagna la UI che gli manca. Design §4. Il modello esiste tutto da
 M0 e **non si tocca**.
@@ -582,6 +588,37 @@ Task:
 `CalendarPublicHidesDepartmentEntries`, `CalendarShowsUtcAndDivisionTimezone` — Vitest con un fuso
 **diverso** da UTC nella fixture: in M0 la fixture aveva `timezone: "UTC"` e le due righe coincidevano,
 che è uno dei tre falsi allarmi di HANDOFF §13; e2e con una misura sulla griglia del mese.
+
+**Fatti tutti**, più tre che la fase ha chiesto scrivendola: `TwoEntriesOfOneDepartmentCanBothExist`,
+`AWindowAnswersForTheDaysAGridDraws`, e due smoke sulla schermata dello staff. Il Vitest del fuso usa
+**Asia/Tokyo** (nove ore di scarto), l'e2e **Europe/Rome** (due): due fusi diversi da UTC e diversi
+fra loro, così nessuna delle due reti può passare per coincidenza.
+
+**Una deviazione dalla lettera di questa pagina**, e vale la pena scriverla per esteso perché il
+task 2 chiedeva una cosa che non si può fare. ⚠️ **`ExtraWritePolicy` non può impedire una
+scrittura**: restituisce il *nome di un permesso*, e non esiste un permesso che significhi «nessuno»
+— un superadmin li ha tutti, ed è esattamente chi non deve poter modificare una proiezione, perché
+la sua modifica tornerebbe indietro come quella di chiunque altro. Il punto che il task stava
+facendo, **«non un handler nuovo»**, è rispettato in pieno: la regola sta nel motore, dove sta già
+quella del dipartimento, come `CrudOptions.ReadOnlyRows`. È il gemello di `SharedForReading` di G5.
+
+**La seconda estensione**: il provider del calendario accetta una **finestra esplicita** (`from`,
+`to`) accanto al `range` relativo. Una griglia che mostra settembre mostra settembre, non «i
+prossimi trentun giorni», e `range` non sa dirlo. ⚠️ Le due props **non stanno nello schema zod del
+blocco**: lo schema è ciò che un redattore *salva*, e un corpo inchiodato a un mese sarebbe scaduto
+il giorno dopo la pubblicazione. Quello è ciò che una *schermata* chiede.
+
+**Due cose viste facendo la fase.**
+
+- ⚠️ **Il modello aveva un vincolo che nessuno aveva mai incontrato**: `(source_module, source_id)`
+  è unico, e nessuno aveva mai creato una voce scritta dallo staff — la prima passa, la seconda va a
+  sbattere perché sono entrambe `("core", "")`. La risposta è un identificativo opaco generato alla
+  creazione, come il nome su disco di un file della libreria; nessuna migrazione, nessun indice
+  toccato. C'è un test che crea due voci nello stesso dipartimento.
+- ⚠️ **La finestra e i quadrati erano due conti separati**, e una griglia del mese aperta il 28
+  chiedeva l'ultima settimana disegnando vuote le prime tre. Trovato scrivendo il test, non
+  guardando: adesso `calendarWindow` legge i giorni che `calendarDays` disegna, e il test le
+  confronta su tre giorni diversi del mese.
 
 ---
 

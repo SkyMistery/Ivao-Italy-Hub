@@ -1,10 +1,19 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.6 — 6 settembre 2026
+**Versione documento:** 1.7 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.7** (6 set 2026): **G6 ha costruito il calendario**, e una riga di §4 cambia.
+**§4, le voci proiettate**: la scrittura non la impedisce un `ExtraWritePolicy` — ⚠️ **non può**,
+perché quello restituisce il nome di un permesso e non esiste un permesso che voglia dire «nessuno»:
+un superadmin li ha tutti, ed è proprio chi non deve poter modificare una proiezione, dato che la
+sua modifica tornerebbe indietro come quella di chiunque. La regola è `CrudOptions.ReadOnlyRows`,
+dentro il motore CRUD dove sta già quella del dipartimento — il punto che §4 stava facendo, «non un
+handler nuovo», è rispettato in pieno, ed è il gemello di `SharedForReading` che G5 ha aggiunto.
+Il resto di §4 regge parola per parola, `CalendarView` compreso.
 
 **Changelog 1.6** (6 set 2026, **deciso da Carmine**): due righe del changelog 1.5 cambiano, e in
 tutte e due la direzione è la stessa — **una cosa sola si dice in un modo solo**.

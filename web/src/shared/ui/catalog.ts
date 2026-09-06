@@ -23,6 +23,7 @@ export const UI_KIT_COMPONENTS = [
   'StatusBadge',
   'ConfirmDialog',
   'MediaPicker',
+  'CalendarView',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];
