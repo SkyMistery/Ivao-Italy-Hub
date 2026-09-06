@@ -1,10 +1,23 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.8 — 6 settembre 2026
+**Versione documento:** 1.9 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.9** (6 set 2026, **tre risposte di Carmine**): la **dashboard di dipartimento** esce
+da §14 e diventa il task 6 di G8. È **a blocchi** — una riga di `cms_contents` per dipartimento,
+nata da un template di sistema e modificata nell'editor che esiste — perché la divisione del lavoro
+che serve è «la base e i tool li dà chi costruisce l'hub, la gestione è del dipartimento», e con i
+widget quella seconda metà vorrebbe un secondo editor di disposizione. La vede **il proprio
+dipartimento più quelli a cui il VID è autorizzato**, e si costruisce **dentro G8**.
+⚠️ E con essa entra in §14 una voce nuova che la riguarda da vicino: **un grant oggi non fa
+raggiungere il dipartimento** su cui è dato — i claim `dept` vengono solo dalle posizioni staff,
+quindi la lista esce vuota e le righe `Department` restano nascoste. La correzione sta in G8; la
+seconda metà della richiesta di Carmine — un grant che porta un **livello**, con una
+`RolePermissionMatrix` componibile dai moduli perché quel livello valga cose diverse in dipartimenti
+diversi — è progettata in `decisions/2026-09-06-il-grant-di-un-livello.md` e aspetta una risposta.
 
 **Changelog 1.8** (6 set 2026, **due decisioni di Carmine**): **G7 ha costruito i contatti e il
 servizio notifiche**, e ha trovato due cose che questo documento non poteva sapere.
@@ -860,16 +873,23 @@ non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
 
 ## 14. Ancora aperto (non blocca M1)
 
-- ⚠️ **La forma della dashboard di dipartimento.** Chiesta il 5 set 2026 e assente da ogni documento
-  fino a quel giorno: ogni dipartimento nasce con la propria dashboard, poi la modifica. La nota
-  `decisions/2026-09-05-dashboard-di-dipartimento.md` misura il bivio — **blocchi** (una riga di
-  `cms_contents` per dipartimento, `kind = Dashboard`, `visibility = Department`, seminata da un
-  template e modificata nell'editor che esiste) contro **widget** (le tile di `/me`, che però per
-  essere disposte per dipartimento vorrebbero un secondo editor) — e raccomanda i blocchi. Con quella
-  forma il lavoro è un delta piccolo dentro **G8**, che il seed delle pagine di sistema lo costruisce
-  comunque; con l'altra è un meccanismo nuovo e la sua casa è M2. Da confermare prima di G8.
-  È anche il primo cliente vero di §9.4: senza lettura condivisa dei template, otto dipartimenti su
-  nove non potrebbero leggere il proprio template di partenza.
+- ~~**La forma della dashboard di dipartimento**~~ **decisa il 6 set 2026: blocchi**, visibile al
+  proprio dipartimento più quelli a cui il VID è autorizzato, e si costruisce **dentro G8**
+  (`decisions/2026-09-05-dashboard-di-dipartimento.md`, §«La decisione»). Una riga di `cms_contents`
+  per dipartimento, `kind = Dashboard`, `slug` = il codice del dipartimento, `visibility = Department`,
+  seminata da un template di sistema e modificata nell'editor che esiste. Il motivo è la divisione
+  del lavoro: la base e i tool li dà chi costruisce l'hub, la gestione è del dipartimento — che con i
+  widget non sarebbe possibile senza un secondo editor di disposizione. È anche il primo cliente vero
+  di §9.4: senza lettura condivisa dei template, otto dipartimenti su nove non potrebbero leggere il
+  proprio template di partenza.
+- ⚠️ **Come si autorizza un VID su un altro dipartimento** (nuovo, 6 set 2026,
+  `decisions/2026-09-06-il-grant-di-un-livello.md`): un grant dà oggi il permesso ma **non** la
+  lista né le righe `Department` di quel dipartimento, perché i claim `dept` vengono solo dalle
+  posizioni staff. La correzione (due righe in `HubClaims.BuildIdentity` più i test che mancano) è
+  ciò che rende vera la visibilità della dashboard e entra in **G8**. La seconda metà — un grant che
+  porta un **livello**, e una `RolePermissionMatrix` componibile dai moduli perché quel livello valga
+  cose diverse in dipartimenti diversi — è un meccanismo nuovo, e la raccomandazione è una fase sua
+  dopo M1, quando esisterà più di un modulo su cui progettarla.
 - ⚠️ **Risposte A9 di Ivao.It** (piano §15.2c) e **dominio di staging** (§15.3): ora bloccano M2, non M1.
 - ⚠️ **Cosa significa `firStaffScope`** (debito n.6 di HANDOFF §10). In M0 le posizioni FIR non danno
   nessun permesso, che è la lettura più restrittiva e quella che si può solo allargare. M1 non ne ha

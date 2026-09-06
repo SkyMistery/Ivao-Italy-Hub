@@ -703,16 +703,19 @@ Task:
    `/atc` è una pagina di sistema come le altre, più le card e i deep link verso vIPI che il modulo
    `atc` registra: il modulo resta a bassa complessità e **non** guadagna tabelle (piano §9.2).
 6. **La dashboard di dipartimento** (design §14, nota
-   `decisions/2026-09-05-dashboard-di-dipartimento.md`). ⚠️ **Da confermare con Carmine prima di
-   aprire la fase**: la nota raccomanda una riga di `cms_contents` per dipartimento — `kind`
-   `Dashboard`, `slug` = codice del dipartimento, `visibility = Department`, nata da un template di
-   sistema, modificata nell'editor che già esiste e pubblicata come qualsiasi altra riga — contro
-   l'alternativa a widget, che vorrebbe un secondo editor di disposizione e allora non è M1. Con la
-   forma raccomandata il lavoro è: un valore in fondo a `ContentKind`, `Url` che per quel `kind` è
-   `/staff/{dept}` e non un indirizzo pubblico, un file in `seed/content-pages/` applicato **una
-   volta per dipartimento** con la chiave `page.dashboard:<dept>` in `hub_division_settings`, e la
-   rotta `/staff/$dept` che oggi non esiste. Nessun permesso nuovo: leggerla è `Content.View` sul
+   `decisions/2026-09-05-dashboard-di-dipartimento.md`). ✅ **Decisa il 6 set 2026: blocchi**, e il
+   lavoro è quello che la nota descriveva — un valore in fondo a `ContentKind`, `Url` che per quel
+   `kind` è `/staff/{dept}` e non un indirizzo pubblico, un file in `seed/content-pages/` applicato
+   **una volta per dipartimento** con la chiave `page.dashboard:<dept>` in `hub_division_settings`, e
+   la rotta `/staff/$dept` che oggi non esiste. Nessun permesso nuovo: leggerla è `Content.View` sul
    proprio dipartimento, modificarla `Content.Edit`.
+   ⚠️ **Più una correzione senza la quale la visibilità decisa non è vera**
+   (`decisions/2026-09-06-il-grant-di-un-livello.md`): la dashboard la vede il proprio dipartimento
+   **più quelli a cui il VID è autorizzato**, e oggi un grant non fa raggiungere il dipartimento —
+   `HubClaims.BuildIdentity` scrive i claim `dept` solo dalle posizioni staff, quindi la lista esce
+   vuota e le righe `Department` restano nascoste. Due righe lì, e i test sulla **lista** che il test
+   dei grant di F8 non ha mai fatto. La seconda metà della nota (un grant che porta un livello) **non
+   è di questa fase**.
 7. SEO minima (design §8.4): `<title>` e meta description dalla riga `Seo`, `og:` per pagine e news,
    `sitemap.xml` generata dalle righe pubblicate, `robots.txt`. ⚠️ Entrambi i file vanno in
    `SpaFallbackExclusions`, o la SPA se li mangia. Nessun prerender, nessun prefisso lingua negli URL.

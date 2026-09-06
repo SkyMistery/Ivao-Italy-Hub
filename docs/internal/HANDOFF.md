@@ -2534,8 +2534,9 @@ inventa uno, apposta.
   sbloccata da G3, G4, G5 e G6, e non dipende da G7. È la seconda fase grossa per costruzione e il
   piano dice che può prendere due sessioni, sullo stesso branch: prima il menu e le pagine seminate,
   poi le rotte pubbliche e la SEO.
-- ⚠️ **Vuole ancora una risposta di Carmine sulla dashboard di dipartimento** (qui sotto). Il resto
-  della fase non la aspetta.
+- ⚠️ **La dashboard di dipartimento è decisa** (6 set 2026, qui sotto): blocchi, visibile al proprio
+  dipartimento più quelli autorizzati, dentro G8. Quello che resta aperto è come si autorizza un VID
+  su un altro dipartimento, e G8 ne tocca solo la prima metà.
 - Dopo G8, **G9 e G10** si aprono in qualsiasi ordine.
 
 Sei cose che G5, G6 e G7 lasciano pronte e che **non vanno rifatte**:
@@ -2571,17 +2572,39 @@ Sei cose che G5, G6 e G7 lasciano pronte e che **non vanno rifatte**:
   `hub_users.email` per la coda delle notifiche, e nessun DTO lo espone. La staff directory di G9
   non lo tocca — `NoDtoCarriesAnEmailAddress` fallirebbe.
 
-### Aperto, e serve una risposta di Carmine dentro G8
+### Deciso il 6 settembre 2026, e G8 lo costruisce
 
-La **dashboard di dipartimento** (design M1 §14, `decisions/2026-09-05-dashboard-di-dipartimento.md`).
-Tre domande, con la raccomandazione già scritta nella nota:
+La **dashboard di dipartimento** non è più aperta (`decisions/2026-09-05-dashboard-di-dipartimento.md`,
+sezione «La decisione»). Le tre risposte:
 
-1. **blocchi** (una riga di `cms_contents` per dipartimento) o **widget**? — raccomandati i blocchi;
-2. la vede **solo il proprio dipartimento** o qualunque staff? — raccomandato il proprio;
-3. entra in **M1/G8** o slitta a M2? — raccomandato G8, se blocchi.
+1. **Blocchi.** Una riga di `cms_contents` per dipartimento, `kind = Dashboard`, `slug` = il codice
+   del dipartimento, nata da un template di sistema e modificata nell'editor che esiste già. Il
+   motivo, con le parole di Carmine: *ogni dipartimento ha le sue esigenze; la base e i tool glieli
+   dà lui, la gestione è loro*. Si rinuncia alle tile che **compiono azioni** — i blocchi mostrano —
+   e la strada per i moduli di M2/M3 è registrare un **blocco Data**, non una tile.
+2. **La vede il proprio dipartimento, più i dipartimenti a cui il VID è autorizzato.**
+3. **Dentro G8**, come task 6.
 
-Le sono state poste il 6 set 2026 aprendo la sessione di G8, e la sessione è diventata G7: restano
-aperte. **Bloccano il task 6 di G8**, non gli altri sei.
+### Aperto, e G8 ne tocca solo la prima metà
+
+⚠️ **La risposta 2 oggi non è vera**, e non per colpa della dashboard: `HubClaims.BuildIdentity`
+scrive i claim `dept` **solo dalle posizioni staff**, quindi un grant su un altro dipartimento dà il
+permesso ma lascia la lista vuota e le righe `Department` nascoste. Il test di F8 prova il dettaglio
+e mai la lista, ed è per questo che non se n'era accorto nessuno.
+`decisions/2026-09-06-il-grant-di-un-livello.md` ha la misura, la correzione e le due domande
+rimaste.
+
+- **In G8**: `BuildIdentity` scrive un `dept` anche per i dipartimenti nominati da un grant attivo,
+  con i test della lista che oggi mancano. Due righe, ed è ciò che rende vera la risposta 2.
+  ⚠️ Allarga la **visibilità**, non solo il permesso: chi ha un grant qualunque su un dipartimento
+  ne vede tutte le righe `Department`, anche di aree che non gli sono state date. È la lettura
+  giusta di «autorizzato ad accedere», e la schermata dei grant deve dirlo.
+- **Non in G8, e serve una risposta**: Carmine vuole che un accesso a un altro dipartimento porti
+  con sé un **livello**, e che un livello possa valere cose diverse in dipartimenti diversi. La nota
+  propone `GrantKind.Level` (l'enum ha un valore solo da M0) espanso con `RolePermissionMatrix`, e
+  la **matrice componibile dai moduli** come lo è il catalogo dei permessi. Raccomandato: una fase
+  sua dopo M1, perché oggi esiste un modulo solo e progettare quella matrice adesso vuol dire
+  progettarla su zero clienti veri.
 
 ### Il banco e2e, in due righe
 

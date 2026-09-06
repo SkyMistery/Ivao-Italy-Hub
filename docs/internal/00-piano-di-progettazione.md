@@ -1,9 +1,32 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.41 — 6 settembre 2026 (il servizio notifiche esiste, e con esso l'unico indirizzo che l'hub conserva)
+**Versione documento:** 0.42 — 6 settembre 2026 (la dashboard di dipartimento è a blocchi, e un grant non fa ancora raggiungere il dipartimento)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G7 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.42** (6 set 2026, **decisioni di Carmine**): due, e la seconda è un difetto trovato
+rispondendo alla prima.
+
+- **La dashboard di dipartimento è a blocchi**, non a widget: una riga di `cms_contents` per
+  dipartimento (`kind = Dashboard`), seminata da un template di sistema e modificata nell'editor che
+  esiste già. Il criterio non è tecnico ma di libertà: **la base e i tool li dà chi costruisce
+  l'hub, la gestione è del dipartimento**, e con i widget la seconda metà vorrebbe un secondo editor
+  di disposizione. I widget restano ciò che sono, le tile della dashboard **personale** `/me`; un
+  modulo che vorrà mettere qualcosa sulla dashboard di un dipartimento registrerà un **blocco Data**.
+  Si costruisce dentro **M1/G8** (`decisions/2026-09-05-dashboard-di-dipartimento.md`).
+- ⚠️ **§6.3, un grant non fa raggiungere il dipartimento su cui è dato.** Verificato leggendo il
+  codice: `HubClaims.BuildIdentity` scrive i claim `dept` **solo dalle posizioni staff**, e su quei
+  claim si reggono il global query filter e il filtro di dipartimento di ogni lista. Chi riceve un
+  grant su un altro dipartimento apre la riga se ne conosce l'id, ma **la lista gli esce vuota** e le
+  righe `Visibility.Department` restano nascoste. Il test di F8 provava il dettaglio e mai la lista.
+  La correzione entra in **G8**, perché è ciò che rende vera la visibilità decisa per la dashboard.
+  La richiesta più larga di Carmine — che l'accesso a un altro dipartimento porti un **livello**, e
+  che un livello valga cose diverse in dipartimenti diversi — è progettata in
+  `decisions/2026-09-06-il-grant-di-un-livello.md`: `GrantKind.Level` espanso con
+  `RolePermissionMatrix`, e la matrice **componibile dai moduli** come lo è già il catalogo dei
+  permessi. Aspetta una risposta; la raccomandazione è una fase sua dopo M1, perché oggi esiste un
+  modulo solo su cui progettarla.
 
 **Changelog 0.41** (6 set 2026): **G7 di M1 ha costruito i contatti e il servizio notifiche**, e
 due decisioni di Carmine cambiano una riga ciascuna di questo piano.

@@ -1,7 +1,7 @@
 # La dashboard di dipartimento
 
 **Data:** 5 settembre 2026 — chiesta da Carmine aprendo M1
-**Stato:** **decisa nel principio, da confermare nella forma** (§«La domanda che resta»)
+**Stato:** **decisa** (Carmine, 6 settembre 2026) — §«La decisione»
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: funzione nuova, non prevista dai documenti. Ci si
 ferma, si scrive, si decide, poi si codifica.
 
@@ -69,8 +69,27 @@ G4 non avrebbe blocchi da mostrare.
 Se invece si sceglie la strada dei widget, **non è una fase di M1**: è un meccanismo nuovo, va
 progettato, e la sua casa naturale è M2, quando i moduli cominciano a registrare tile.
 
-## La domanda che resta
+## La decisione (6 settembre 2026)
 
-1. **Blocchi o widget?** (raccomandato: blocchi)
-2. La dashboard la vede **solo il proprio dipartimento** (raccomandato) o qualunque staff?
-3. Entra in **M1/G8** (raccomandato, se blocchi) o slitta a M2?
+**Blocchi**, e il motivo che Carmine ha dato è più preciso della raccomandazione scritta sopra:
+*«ogni dipartimento ha le sue esigenze; io gli fornisco la base con i tool che servirebbero a quel
+dipartimento nella dashboard, e loro se la gestiscono»*. È esattamente la divisione del lavoro che i
+blocchi rendono possibile e i widget no: la **base** è un template di sistema seminato una volta per
+dipartimento, i **tool** sono i blocchi Data di G4 (`calendar`, `newsList`, `documentList`, `stats`,
+`networkStats`, `staffList`) più i ventuno editoriali, e la **gestione** è l'editor che quel
+dipartimento usa già per le sue pagine — senza deploy e senza sviluppatore.
+
+Quello a cui si rinuncia, scritto perché non si scopra dopo: una tile che **compie un'azione** (un
+bottone che segna qualcosa come letto, un form dentro la dashboard). I blocchi mostrano; agire resta
+affare di una schermata. Quando M2 e M3 vorranno mettere qualcosa di loro su una dashboard, la strada
+è un **blocco Data** registrato dal modulo — che è un widget con un editor intorno — e il dipartimento
+lo piazza dove vuole. I widget restano quello che sono: le tile della dashboard **personale** `/me`.
+
+**Chi la vede: il proprio dipartimento, più i dipartimenti a cui il VID è stato autorizzato.**
+⚠️ La seconda metà **oggi non funziona**, e non per colpa della dashboard: `HubClaims.BuildIdentity`
+scrive i claim `dept` solo dalle posizioni staff, quindi un grant dà il permesso su un altro
+dipartimento ma non la sua lista né le sue righe `Department`. La correzione e il resto della
+richiesta di Carmine — che l'accesso porti con sé un **livello**, e che un livello valga cose diverse
+in dipartimenti diversi — stanno in `2026-09-06-il-grant-di-un-livello.md`.
+
+**Quando: dentro G8**, come raccomandato.
