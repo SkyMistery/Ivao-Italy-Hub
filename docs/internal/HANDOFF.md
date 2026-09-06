@@ -709,10 +709,14 @@ quello che ha *trovato*:
   file della libreria, e apre solo ciò che ha la forma che ha generato.
 - **Che tipo sia un file lo dicono i suoi byte, mai l'intestazione che li accompagnava.**
   `MediaFormats.Detect` decide sia se un caricamento entra sia con che cosa viene servito.
-- **`mediaId` e `mediaIds` sono i due nomi con cui un blocco nomina un file**, e sono una
+- **`mediaId` è il nome con cui un blocco nomina un file**, a qualunque profondità, ed è una
   convenzione dichiarata in `docs/UI-GUIDELINES.md` perché il server non può leggere lo schema di un
   blocco. `JsonQuery` è l'unico posto che chiede a un `body_json` se nomina un id; un blocco che
-  inventasse un terzo nome si vedrebbe cancellare il file sotto i piedi.
+  inventasse un altro nome si vedrebbe cancellare il file sotto i piedi — ed è per questo che lo
+  sfondo di una sezione porta `mediaId` e non `backgroundMediaId` (§17).
+  Un blocco che mostra molti file tiene una **lista di oggetti** con dentro `mediaId`
+  (`images[] { mediaId }`), perché il generatore disegna liste di oggetti; `mediaIds[]`, un array
+  nudo, resta capito dalla stessa query e non lo scrive più nessuno.
 - **Le proiezioni si leggono una volta per salvataggio, non una per riga.** `ProjectionWriter`
   separa `Load`/`LoadAsync` da `Apply` apposta: sono dentro la transazione della scrittura, e ogni
   round trip in più è un lock tenuto aperto più a lungo. `ProjectionBatchingTests` lo fissa
@@ -1297,6 +1301,11 @@ design**, e questa sezione resta come il racconto di che cosa M0 ha lasciato ape
 
 ### Il primo lavoro di M1 è il set dei blocchi, e il catalogo esiste già
 
+> ✅ **Fatto il 6 settembre 2026, in G3** (§17): i sedici Content/Layout/Interactive/Structure
+> esistono, il registry ne conta 21, e le convenzioni sono scritte. Restano i sei **Data** (G4).
+> Quanto segue è la risposta com'era stata scritta il 5 settembre; si legge ancora perché il
+> ragionamento — che cosa è un blocco, che cosa non deve diventarlo — non è cambiato.
+
 Domanda arrivata il 5 set 2026, e vale la pena che la risposta non si ricostruisca da capo: **i
 blocchi di un vero page builder — tabelle, card con link, gallery, accordion, tabs, hero, stats —
 non mancano, sono rimandati**, e il piano li ha già catalogati.
@@ -1312,15 +1321,16 @@ non mancano, sono rimandati**, e il piano li ha già catalogati.
   l'envelope lo valida: F7 controlla che il `column` di un blocco stia dentro le colonne che il
   layout della sua sezione ha. Aggiungerlo come blocco sarebbe un secondo modo di fare la stessa
   cosa (CLAUDE.md §2). È l'errore più facile da fare copiando la palette di HQ voce per voce.
-- **L'elenco chiuso della ui-kit e il registry dei blocchi sono due cose diverse.** I quindici
-  componenti sono pezzi React riusati fra schermate; i blocchi sono un registry a parte, e un blocco
-  `Table` non aggiunge di per sé un componente all'elenco. La ui-kit **monta tutto ciò che il
-  registry dichiara**, quindi un blocco nuovo compare lì da solo: nessuno deve ricordarsi di
+- **L'elenco chiuso della ui-kit e il registry dei blocchi sono due cose diverse.** I sedici
+  componenti (quindici più `MediaPicker`, nato in G1) sono pezzi React riusati fra schermate; i
+  blocchi sono un registry a parte, e un blocco `Table` non aggiunge di per sé un componente
+  all'elenco — G3 ne ha aggiunti sedici senza toccare quella lista. La ui-kit **monta tutto ciò che
+  il registry dichiara**, quindi un blocco nuovo compare lì da solo: nessuno deve ricordarsi di
   aggiungerlo.
 - **Le icone sono già decise e non vanno ridiscusse**: `lucide-react` (piano §16.C, design §7.1,
   `UI-GUIDELINES.md` §2), e **ogni blocco ne dichiara una** — il tipo lo impone
-  (`shared/modules.ts:59`). `web/src/shared/icons/` non esiste ancora perché in nove fasi nessuna
-  icona è mai mancata dal set; nascerà la prima volta che serve.
+  (`shared/modules.ts:59`). `web/src/shared/icons/` **esiste da G2** e tiene l'allowlist da cui un
+  redattore sceglie; nessuna icona è ancora mancata dal set, quindi non ce n'è una disegnata a mano.
 
 Aggiungere un blocco non è spuntare una lista: è uno schema zod, un componente, una registrazione,
 le chiavi i18n di etichetta e campi, e per quelli **Data** un provider lato server. Piano §16.C dice

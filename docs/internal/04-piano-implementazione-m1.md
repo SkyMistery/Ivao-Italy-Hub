@@ -349,9 +349,11 @@ Task:
    sezione e mai il blocco, quattro sfondi, tre larghezze, resa di una sezione `locked`, blocco
    sconosciuto visibile solo allo staff, ogni blocco dichiara la propria icona. **Questo chiude piano
    §16.C**, e la cosa va nel changelog del piano 00.
-4. ⚠️ **Due disallineamenti fra §1.4 e il codice di M0, da chiudere qui.** `web/src/blocks/envelope.ts`
-   oggi ha `BACKGROUNDS = none | muted | accent` (tre; il design ne vuole **quattro**, con `image` +
-   `mediaId`) e `WIDTHS = narrow | default | wide | full` (quattro; il design ne nomina **tre**).
+4. ⚠️ **Due disallineamenti fra §1.4 e il codice di M0, da chiudere qui.** ✅ *Chiusi il 6 set 2026
+   come raccomandato qui sotto: gli sfondi sono quattro, le larghezze restano quattro, e il design è
+   passato a v1.3.* `web/src/blocks/envelope.ts`
+   aveva `BACKGROUNDS = none | muted | accent` (tre; il design ne vuole **quattro**, con `image` +
+   `mediaId`) e `WIDTHS = narrow | default | wide | full` (quattro; il design ne nominava **tre**).
    Raccomandazione: **aggiungere `image`** — envelope zod **e** `BlockDocumentWalker`, che sono la
    coppia che deve restare d'accordo a mano, più il test di integrazione che posta un valore che il
    server non conosce — e **tenere `narrow`**, perché toglierlo non sarebbe additivo su corpi già

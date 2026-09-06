@@ -292,6 +292,13 @@ scritto a mano: il generatore **lancia** su un tipo che non sa disegnare, appost
 | **Oggetto tradotto** | un `kind: 'localizedObject'` per `Localized<JsonNode>` | il campo `seo` (debito n.3), la cui forma si decide in §9.2 |
 | **Riordino dentro una lista** | su/giù accanto ad aggiungi/rimuovi, sulla lista che già esiste | ogni blocco con `items[]` |
 
+⚠️ **G3 ha aggiunto due funzioni a quel file, e non sono un sesto tipo di campo** (6 set 2026): che
+cosa vale un campo quando è vuoto (`blankValue` / `blankEntry` / `blankValues`, che assorbono il
+`defaultOf` che stava in `features/content/body.ts`) e che cosa vale la pena salvare quando lo è
+ancora (`writtenValues`). La seconda non è comodità: una props tradotta **opzionale** lasciata vuota
+viaggiava come `{ en: "", it: "" }` e la pubblicazione la leggeva come traduzione a metà, rifiutando
+la pagina. Chi somma alla chiusura (§12) le conti come estensioni al generatore, non come tipi.
+
 Cinque estensioni, un file. È la prova che il generatore era la scelta giusta: 22 blocchi e nessun form
 scritto a mano.
 
@@ -694,7 +701,13 @@ con una fase per sessione e i prompt di apertura, come `02-` per M0. È l'ordine
 estensioni al generatore di form, quattro componenti custom (`CalendarView`, `ContactForm`,
 `LiveStatusStrip`, `MediaPicker`) e **un solo endpoint scritto a mano** (l'upload multipart). Tutto il
 resto — 22 blocchi, sei schermate di back-office, otto rotte pubbliche — dovrebbe essere
-configurazione. Se alla fine gli endpoint a mano sono cinque e i componenti custom dodici, il messaggio
+configurazione.
+
+*Il conto, man mano (§A.11 del piano di implementazione, così che G12 sommi invece di ricostruire):*
+*G0 nulla; G1 l'endpoint di upload — l'unico previsto — più `MediaPicker` e tre estensioni a*
+*`MapCrud`; G2 le cinque estensioni al generatore; **G3 zero endpoint, zero componenti custom, zero***
+***meccanismi nuovi**, e due funzioni in più nel generatore (§1.6) più gli sfondi imparati da*
+*`BlockDocumentWalker`. A metà M1 la previsione regge: un endpoint a mano, un componente custom.* Se alla fine gli endpoint a mano sono cinque e i componenti custom dodici, il messaggio
 non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
 
 ---

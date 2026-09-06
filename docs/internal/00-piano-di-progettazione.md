@@ -30,6 +30,13 @@ Tre cose che la fase ha deciso scrivendo, tutte e tre già dentro le regole:
   corpo lo legge senza sapere cosa sia un blocco — la leggerebbe come una traduzione a metà,
   rifiutando la pagina. La regola sul server **non** si è indebolita.
 
+E una precisazione alla convenzione del changelog 0.39: il nome con cui un blocco nomina un file è
+**`mediaId`**, a qualunque profondità — un blocco che ne mostra molti tiene una lista di **oggetti**
+con dentro `mediaId`, perché il generatore disegna liste di oggetti. `mediaIds[]` resta capito dalla
+stessa query per i corpi già scritti, e non lo scrive più nessuno. È anche il motivo per cui lo
+sfondo `image` di una sezione porta `mediaId` e non `backgroundMediaId`: con l'altro nome,
+`JsonQuery.UsingMedia` non avrebbe visto che quella pagina usa quel file.
+
 **Changelog 0.39** (5 set 2026): la media library (G1 di M1) è stata costruita **senza scrivere un
 caso speciale**, e per riuscirci `MapCrud` ha imparato tre cose. Sono estensioni, non eccezioni —
 regola (b) di §16.E — e stanno in §16.6 perché quello è il posto dove si legge che cos'è il motore.
