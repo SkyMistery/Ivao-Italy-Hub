@@ -3,13 +3,15 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 6 settembre 2026 — **M0 è chiusa, e di M1 sono fatte quattro fasi**: design
+**Ultimo aggiornamento:** 6 settembre 2026 — **M0 è chiusa, e di M1 sono fatte cinque fasi**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** — il giro contro l'API vera in
 un browser, che chiude il debito n.1 di §10 (**§14**) — **G1**, la media library (**§15**), **G2**,
-le cinque estensioni del generatore di form (**§16**), e **G3**, i sedici blocchi Content, Layout,
-Interactive e Structure (**§17**), che porta il registry a **21** e chiude **§16.C del piano**: le
-convenzioni dei blocchi sono scritte, con il set davanti. Il prossimo lavoro è **G4**, i sei blocchi
-Data e i loro provider — si apre con il prompt di `04-` §C, `<N>` = 4. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
+le cinque estensioni del generatore di form (**§16**), **G3**, i sedici blocchi Content, Layout,
+Interactive e Structure (**§17**), che ha chiuso **§16.C del piano** — le convenzioni dei blocchi
+sono scritte, con il set davanti — e **G4**, i sei blocchi Data con i loro provider (**§18**), che
+porta il registry a **27** e chiude il set che il design M1 §1 prevedeva. Il prossimo lavoro è
+**G5**, news, documenti e categorie — si apre con il prompt di `04-` §C, `<N>` = 5, e il suo **primo
+task** è la lettura condivisa dei template. F9 aveva verificato invece di costruire (la checklist §16.E letta su tutto il codice, la demo a
 mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con la spina dorsale generica
 sono dimostrate end-to-end su `links` e su una pagina nata da un template, che è esattamente ciò che
 §16.15 del piano chiedeva. Dopo il tag sono arrivate tre PR e **nessuna di esse ha aperto perimetro
@@ -22,9 +24,9 @@ piano (§3, ultima voce), #32 ha scritto come si apre M1. **Non resta niente di 
 sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
 **Design M1:** v1.3 (`03-design-m1.md`). **Piano di implementazione M1:** v1.6
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0, G1, G2 e G3 sono chiuse** (§14, §15, §16,
-§17), la prossima è **G4**.
-**Test:** 368 .NET verdi (259 unit + 109 integrazione) + **176 Vitest** + **16 smoke Playwright** +
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0, G1, G2, G3 e G4 sono chiuse** (§14, §15, §16,
+§17, §18), la prossima è **G5**.
+**Test:** 374 .NET verdi (259 unit + 115 integrazione) + **199 Vitest** + **17 smoke Playwright** +
 **3 del giro pieno** (`pnpm e2e:full`, G0 di M1).
 Nessuno skippato, **rieseguiti tutti e quattro il 6 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
@@ -123,8 +125,8 @@ che nascondevano stanno in fondo a §13. **M1 non le eredita.**
 
 > Scritta il **5 settembre 2026**, quando M1 si apriva, e lasciata com'era: la regola in cima vale
 > ogni volta, il resto è il quadro di quel giorno. **Dove si è arrivati oggi lo dicono l'intestazione
-> di questo documento e §17**, non questa sezione — che al 6 set 2026 dice ancora «la prossima
-> sessione apre G1», e G1 e G2 sono chiuse.
+> di questo documento e §19**, non questa sezione — che al 6 set 2026 dice ancora «la prossima
+> sessione apre G1», e da G1 a G4 sono chiuse.
 
 ⚠️ **`gh pr list` prima di cominciare.** Il 3 set 2026 due sessioni hanno lavorato in parallelo in
 worktree diversi senza vedersi: una ha aperto la PR di F5, l'altra ha rivisto F4 e ha mergiato per
@@ -1301,8 +1303,9 @@ design**, e questa sezione resta come il racconto di che cosa M0 ha lasciato ape
 
 ### Il primo lavoro di M1 è il set dei blocchi, e il catalogo esiste già
 
-> ✅ **Fatto il 6 settembre 2026, in G3** (§17): i sedici Content/Layout/Interactive/Structure
-> esistono, il registry ne conta 21, e le convenzioni sono scritte. Restano i sei **Data** (G4).
+> ✅ **Fatto il 6 settembre 2026, in G3 e G4** (§17, §18): i sedici Content/Layout/Interactive/
+> Structure e i sei Data esistono, il registry ne conta **27**, e le convenzioni sono scritte. Del
+> catalogo restano fuori solo i due Data di un modulo — `eventList` (M2) e `virtualAirlines` (M3).
 > Quanto segue è la risposta com'era stata scritta il 5 settembre; si legge ancora perché il
 > ragionamento — che cosa è un blocco, che cosa non deve diventarlo — non è cambiato.
 
@@ -2036,39 +2039,165 @@ Nessuna delle due è una comodità, ed entrambe sono state chiuse **estendendo**
 
 ---
 
-## 18. Da dove riparte la prossima sessione (6 set 2026)
+## 18. G4 di M1: i sei blocchi Data e i loro provider (6 set 2026)
 
-### Si apre G4
+Il registry conta **27 blocchi**, che è il set intero che il design M1 §1 prevedeva per il nucleo
+(`eventList` arriva con Events in M2, `virtualAirlines` con Flight Ops in M3). **Zero endpoint
+scritti a mano, zero componenti custom nuovi**; l'unico meccanismo nuovo è quello che il piano
+assegnava esplicitamente a questa fase, la lettura dello stato della rete.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 4: i **sei blocchi Data** e i loro provider — `stats`,
-`networkStats` (**`alwaysLive`**), `calendar`, `newsList`, `documentList`, `staffList`. Alla fine il
-registry conta **27** blocchi e il test della ui-kit va portato da 21 a 27 (la riga è scritta lì
-apposta).
+### Che cosa c'è adesso
 
-Quattro cose che G3 lascia pronte e che **non vanno rifatte**:
+I sei: `stats`, `networkStats` (**`alwaysLive`**), `calendar`, `newsList`, `documentList`,
+`staffList`. Ognuno è costato le cinque cose di design §1.3, e per un Data la quinta sono due:
+un `IDataBlockProvider` registrato per il `type` e un `IBlockDescriptor` in `CoreBlocks.All`.
 
-- **Un blocco costa cinque cose**, e per un Data la quinta è il provider più l'`IBlockDescriptor` nel
-  nucleo — `CoreBlocks.All` è dove si aggiunge, accanto ai ventuno.
-- **`exampleData`**: la galleria mostra quello e non chiama il server. `registry.test.ts` fallisce se
-  un blocco Data non ce l'ha.
-- **`writtenValues` e `blankEntry`** esistono: le props dei Data (una lista di metriche, un filtro per
-  dipartimento) passano dalle stesse regole.
-- **Ogni stringa dentro `props` finisce nella ricerca**: le metriche di `stats` sono un insieme
-  chiuso, e vanno modellate come tali.
+- **`stats`** risponde su un **insieme chiuso** di cinque metriche del nucleo — `knownMembers`,
+  `staffMembers`, `publishedNews`, `publishedDocuments`, `upcomingEntries`. Non è nato un registro
+  delle metriche: un modulo che vuole la propria cifra registra il proprio blocco (design §1.2,
+  correzione 2). Una metrica che nessuno dichiara viene **lasciata fuori** dalla risposta, non
+  rifiutata: un corpo scritto da una release più nuova non deve diventare una pagina di errore su
+  una più vecchia.
+- **`networkStats`** è l'unico `alwaysLive` del set, e la regola sta **nel tipo**: l'editor non
+  mostra il toggle e `ContentPublishService` non congela, senza un `if` da nessuna parte.
+- **`calendar`, `newsList`, `documentList`** leggono tabelle che esistono da M0 e **non aspettano**
+  G5 né G6, che era il punto di metterli qui.
+- **`staffList`** raggruppa per dipartimento e poi per FIR, ordina per livello della posizione e
+  mostra nome, posizione e un link al profilo ufficiale. Niente altro: **non esiste un profilo
+  membro pubblico** e non nascerà (piano §9.7). Il blocco dice in una riga che compare solo chi ha
+  fatto almeno un accesso, invece di fingere completezza.
 
-⚠️ Le due avvertenze che il piano scrive dentro G4 valgono per intero: `IvaoApiClient` guadagna **lì**
-la lettura dello stato della rete (non in G9), e il componente del blocco `calendar` è **solo** la
-vista agenda finché G6 non fa nascere `CalendarView`.
+Accanto a loro:
+
+- **`Core/Ivao/IvaoWhazzup.cs`**, la lettura dello stato della rete: endpoint pubblico (nessun
+  token, così un'installazione senza credenziali applicative disegna comunque il blocco), cache di
+  **60 s** — anche di un fallimento, o una rete giù diventa una chiamata per lettore — e **non lancia
+  mai**. Sta in `Core/Ivao/`, il solo posto dove il nome IVAO può comparire (piano §4.2).
+- **`IvaoAirspace`**, che è la risposta alla domanda «in area»: un controllore è dei nostri quando la
+  **stazione** del suo nominativo (quello che sta prima del primo `_`) è un centro o un aeroporto
+  dello snapshot; un pilota quando il piano di volo parte o arriva da un aeroporto dello snapshot.
+  È una **regola sopra i dati di riferimento**, non una lista nel codice: una divisione che forka ha
+  la propria risposta senza configurare niente. `IFirDirectory` ha imparato a restituire l'aerospazio
+  intero con la stessa cache che aveva già per i FIR.
+- **`BlockProps`**, i lettori di props che `LinkListProvider` si teneva privati, adesso condivisi da
+  tutti e sette (`CLAUDE.md` §2).
+- **`DataBlockScope.WithinPage`**, il soffitto di visibilità alla pubblicazione, **un metodo invece
+  di uno per tabella**: il predicato è costruito con `Expression.Property` come fa già
+  `VisibilityQueryFilter`, perché una lambda su una proprietà d'interfaccia è una lambda che il
+  provider del database deve indovinare.
+
+### Tre deviazioni dalla lettera del design, tutte scritte
+
+1. **Le liste di valori nudi non esistono, nemmeno qui.** `metrics[]`, `figures[]` e `kinds[]` sono
+   liste di **oggetti** (`{ metric }`, `{ figure }`, `{ kind }`), esattamente come `table.rows` e
+   `gallery.images` in G3: il generatore disegna liste di oggetti, e inventare un tipo di campo per
+   tre schemi sarebbe stata la sesta estensione per una forma che nessun altro chiede.
+2. **`networkStats.showFirs` si chiama `showPositions`**, e la risposta porta `positions` e non
+   `firs`. Motivo: la stazione di un nominativo è tanto spesso un **aeroporto** quanto un FIR
+   (`LIRF_TWR`), e chiamarla FIR sarebbe stato un nome che mente. Le posizioni sono un elenco piatto
+   ordinato per nominativo, non un raggruppamento.
+3. **`calendar` non ha la props `view`.** Il componente di G4 è **solo la vista agenda** — lo dice il
+   piano — e un select con una sola voce è un comando che non fa niente. Quando G6 fa nascere
+   `CalendarView`, `view` si aggiunge con `.default('agenda')`: è additivo, e i corpi già pubblicati
+   non se ne accorgono.
+
+⚠️ Le metriche e le figure sono scritte come **parole composte** (`publishedNews`, non `news`) per
+la regola di design §1.5: ogni stringa dentro `props` finisce nel testo della pagina per la ricerca,
+e una metrica chiamata «news» sarebbe una pagina che risponde a chi cerca news.
+
+### Due cose decise scrivendo, che vale la pena sapere
+
+- **L'URL del profilo IVAO sta in un file di lingua**, `blocks.staffList.profileUrl`, non nel codice.
+  È il precedente del footer (`locales/*/common.json` nomina già `ivao.aero` per termini, privacy e
+  regole), ed è l'unico modo per cui `Core/Content` e `web/src/blocks/` non nominano IVAO: la domanda
+  «questo nomina IVAO?» ha una risposta anche quando il dato *è* un indirizzo di IVAO.
+- **`departments.<CODE>` è nato in `common.json`**: il blocco `staffList` è la prima schermata
+  pubblica che deve dire «Eventi» invece di «ED». Sono nove chiavi in due lingue, non codice.
+
+### I test
+
+199 Vitest (erano 176), 259 unit C#, **115 di integrazione** (erano 109), 17 smoke Playwright, 3 del
+giro pieno. Rieseguiti tutti il 6 set 2026 contro la MariaDB vera. I criteri di accettazione della
+fase stanno in `tests/IvaoHub.IntegrationTests/DataBlockEndToEndTests.cs` e sono **tutti e sei
+verificati rompendoli** (§A.10 del piano di implementazione):
+
+| Test | Rotto così | Esito |
+|---|---|---|
+| `EveryDataBlockTypeHasAProvider` | tolta una registrazione dal container | rosso |
+| `NetworkStatsIsNeverFrozenOnPublish` | tolto `AlwaysLive: true` dal descrittore | rosso |
+| `PublishFreezesNewsListButNotNetworkStats` | idem | rosso |
+| `DataBlockRespectsVisibility` | `IgnoreQueryFilters()` sul provider dei contenuti | rosso |
+| `StatsMetricsAreAClosedSet` | tolto il filtro sull'insieme chiuso | rosso |
+| `NetworkStatsCountsOnlyWhatTheSnapshotCallsOurs` | `Covers` che risponde sempre sì | rosso |
+
+Più, lato browser: `web/e2e/blocks.spec.ts` **misura** che tre numeri di `stats` stanno sulla stessa
+riga in tre punti diversi a 1280 px e vanno a capo a 375 px (verificato togliendo la terza colonna:
+fallisce), e `blocks.test.tsx` monta ognuno dei sette blocchi Data con il proprio `exampleData` e
+pretende che disegni qualcosa — un componente che legge la risposta sotto la chiave sbagliata cade
+nello stato «in arrivo» e passerebbe uno smoke.
+
+### Che cosa la fase non ha fatto, ed è giusto così
+
+- **Nessuna schermata di news, documenti o calendario**: sono G5 e G6. I blocchi leggono le tabelle,
+  che è tutto quello che serviva per non aspettarle.
+- **Nessun `CalendarView`**: nasce in G6, quando due schermate lo montano, che è il criterio
+  dell'elenco chiuso. Il componente agenda di G4 sparisce lì.
+- **Nessuna striscia `LiveStatusStrip`**: è G9, che aggiunge la striscia e non il dato.
+- **`stats` non ha una metrica di eventi o di tour**: le porteranno i moduli, con i loro blocchi.
+
+### Debiti nuovi che G4 lascia
+
+1. **Le figure di `networkStats` in `/staff/admin/ui-kit` sono un `exampleData`**, quindi la galleria
+   non prova mai la chiamata vera. Il giro contro la rete vera lo fa solo il test di integrazione con
+   le fixture; la prima volta che qualcuno guarderà il blocco contro l'API vera è G9.
+2. **Il fuso della divisione nel blocco `calendar` arriva da `/api/me`** con `useQuery(bootstrapQuery)`.
+   È una lettura dalla cache (la shell l'ha già caricata), ma è la prima volta che un blocco legge il
+   bootstrap: se in G6 `CalendarView` fa lo stesso, la lettura va fatta una volta sola e passata.
+3. **`staffList` ordina i cognomi con `CurrentCultureIgnoreCase`**, cioè con la cultura del processo.
+   Su una divisione con un alfabeto diverso l'ordine sarà quello del server e non quello del lettore;
+   nessuno lo noterà finché non succede, ed è scritto qui perché quando succederà si sappia dov'è.
+
+---
+## 19. Da dove riparte la prossima sessione (6 set 2026)
+
+### Si apre G5
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 5: **news, documenti, categorie**. È la fase che
+dimostra che due `kind` non sono due tabelle, ed è dichiarata **corta**: se non lo è, §9.3 del piano
+non ha retto e va scritto nel rapporto di chiusura.
+
+⚠️ Il **primo task** non è la tabella delle categorie, è la **lettura condivisa dei template**
+(design M1 §9.4, nota `decisions/2026-09-05-template-di-sistema-e-dipartimenti.md`). Senza, un
+coordinatore che non sia del dipartimento Web non vede alcun template e «Nuovo da template» non
+compare: news e documenti nascerebbero solo dalla pagina vuota. Due estensioni **generiche**, e il
+punto delicato è che i due lati — il predicato SQL in `CrudOptions` e il controllo in memoria
+dell'unico authorization handler — devono dire la stessa cosa, con una sola fonte sull'entità e un
+test che li confronta.
+
+Quattro cose che G4 lascia pronte e che **non vanno rifatte**:
+
+- **`BlockProps`** legge le props per tutti i provider: un provider nuovo non riscrive «questo è un
+  numero?».
+- **`DataBlockScope.WithinPage`** è il soffitto di visibilità, e vale per qualunque entità
+  `IVisible, IOwnedByDepartment`: un provider nuovo lo chiama e basta.
+- **`ContentListProvider`** è già la lista di un `kind` qualunque: `newsList` e `documentList` sono
+  due sottoclassi di tre righe. Se G5 avesse bisogno di un terzo lettore di `cms_contents`, è un
+  segnale.
+- **`exampleData`** è obbligatorio per un blocco Data (`registry.test.ts` fallisce senza), e la
+  galleria mostra quello invece di chiamare il server.
 
 ### Deciso e già collocato, da non ridiscutere
 
-- **I template sono di dipartimento e li legge tutto lo staff** (piano §9.3, design M1 §9.4). Si
-  implementa nel **primo task di G5**; senza, §9.1 del design non ha il dato da mostrare.
-- **`mediaId` è il nome con cui un blocco nomina un file**, a qualunque profondità (§15, §17):
-  scritto in `docs/UI-GUIDELINES.md`. Un blocco che ne mostra molti tiene una lista di oggetti con
-  dentro `mediaId`, non un `mediaIds[]` — che resta capito dalla stessa query, per i corpi vecchi.
+- **I template sono di dipartimento e li legge tutto lo staff** (piano §9.3, design M1 §9.4): primo
+  task di G5, vedi sopra.
+- **`mediaId` è il nome con cui un blocco nomina un file**, a qualunque profondità (§15, §17).
 - **Le icone sono una griglia e non un select** (§16), perché il `Select` di Atmosphere prende una
-  stringa per opzione. Non si riapre: è stato misurato.
+  stringa per opzione. È stato misurato.
+- **La regola «in area» dello stato della rete** è quella di §18: stazione del nominativo contro
+  centri e aeroporti dello snapshot, partenza o arrivo contro gli aeroporti. Non è configurazione e
+  non deve diventarlo.
+- **Le liste di valori nudi non si aggiungono al generatore di form**: una lista di oggetti con una
+  chiave dentro costa una chiave nel JSON e niente nell'editor, ed è il precedente di G3 e G4.
 
 ### Aperto, e serve una risposta di Carmine prima di G8
 
@@ -2079,7 +2208,7 @@ Tre domande, con la raccomandazione già scritta nella nota:
 2. la vede **solo il proprio dipartimento** o qualunque staff? — raccomandato il proprio;
 3. entra in **M1/G8** o slitta a M2? — raccomandato G8, se blocchi.
 
-Nulla di tutto questo blocca G3–G4.
+Nulla di tutto questo blocca G5, G6 o G7.
 
 ### Il banco e2e, in due righe
 
@@ -2089,6 +2218,11 @@ pubblicazione mentre si lavora sulle spec. Scrive in un database suo, **`ivaohub
 quello di sviluppo, e non lo ripulisce: ogni giro crea la propria pagina. Il resto in
 `web/e2e/full/README.md`.
 
+⚠️ **`dotnet test` su questa macchina dice «Zero tests ran»** e chiude con exit 5, per entrambi i
+progetti e anche su `main`: è il ponte fra il runner e xUnit v3, non i test. Si eseguono lanciando
+direttamente `tests/IvaoHub.UnitTests/bin/Debug/net10.0/IvaoHub.UnitTests.exe` e l'omologo di
+integrazione (`-class <nome completo>` per filtrare). In CI `dotnet test --solution` funziona.
+
 ### Igiene
 
 Niente da ripulire: i branch delle fasi vengono cancellati alla fusione, e `git branch -a` mostra
@@ -2096,7 +2230,7 @@ soltanto `main`.
 
 ⚠️ **`git checkout -- <file>` su lavoro non committato lo cancella**, e in G2 è costato mezz'ora
 (§16). Prima di rompere qualcosa apposta per provare un test si committa, e si ripristina dalle
-proprie copie.
+proprie copie — in G4 è stato fatto così sei volte di seguito, e ripristinare è costato un comando.
 
 ⚠️ **Docker Desktop di questa macchina è caduto due volte durante G1**, e non per colpa del
 progetto: al riavvio il backend non riesce a rimuovere due socket rimasti da un crash precedente

@@ -1,10 +1,29 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.3 — 6 settembre 2026
+**Versione documento:** 1.4 — 6 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.4** (6 set 2026): **G4 ha costruito i sei blocchi Data**, e scriverli ha corretto tre
+righe di §1.2 — tutte e tre nel senso «il documento dava un nome a una cosa che il codice chiama
+diversamente», nessuna nel senso di un perimetro che cambia.
+**§1.2, `stats` e `networkStats`**: le liste chiuse sono liste di **oggetti** — `metrics[] {metric}`,
+`figures[] {figure}`, `kinds[] {kind}` — come già `table.rows` e `gallery.images` (changelog 1.3).
+Il generatore disegna liste di oggetti; una lista di valori nudi sarebbe stata la sesta estensione
+per una forma che nessun altro chiede.
+**§1.2, `networkStats`**: la props si chiama **`showPositions`** e non `showFirs`, e la risposta
+porta `positions`. La stazione di un nominativo è tanto spesso un aeroporto quanto un FIR
+(`LIRF_TWR`): chiamarla FIR sarebbe stato un nome che mente.
+**§1.2, `calendar`**: la props **`view` non esiste ancora**. In G4 il componente è la sola vista
+agenda — lo dice il piano di implementazione — e un select con una sola voce è un comando che non fa
+niente. Nasce in G6 con `CalendarView`, con `.default('agenda')`, ed è additivo.
+**§6.2**: che cosa vuol dire «in area» è deciso e sta in `Core/Ivao/IvaoWhazzup.cs`: la **stazione**
+del nominativo (quello che precede il primo `_`) contro i centri e gli aeroporti dello snapshot, e
+la partenza o l'arrivo del piano di volo contro gli aeroporti. È una regola sopra i dati di
+riferimento e non una lista nel codice, così una divisione che forka ha la propria risposta senza
+configurare niente.
 
 **Changelog 1.3** (6 set 2026): **G3 ha costruito i sedici blocchi**, e scriverli ha corretto quattro
 righe di questo capitolo — tutte e quattro nel senso «il documento diceva una cosa che il codice non
@@ -183,9 +202,9 @@ forma essenziale: la forma esatta è lo schema zod, e vive **solo** in TypeScrip
 
 | type | kind | props (essenziale) | `alwaysLive` | Provider risponde |
 |---|---|---|---|---|
-| `stats` | Data | `metrics[]` (insieme chiuso), `columns` | no | Numeri della divisione: membri noti, staff, news pubblicate, documenti pubblicati, voci di calendario in arrivo |
-| `networkStats` | Data | `figures[]`, `showFirs` | **sì** | ATC e piloti online in area, dalle API IVAO. Uno stato della rete congelato è un dato scaduto spacciato per attuale (piano §9.3) |
-| `calendar` | Data | `kinds[]`, `department?`, `range`, `view`, `limit` | no | Voci di `cms_calendar_entries` dietro il query filter |
+| `stats` | Data | `metrics[] {metric}` (insieme chiuso), `columns` | no | Numeri della divisione: membri noti, staff, news pubblicate, documenti pubblicati, voci di calendario in arrivo |
+| `networkStats` | Data | `figures[] {figure}`, `showPositions` | **sì** | ATC e piloti online in area, dalle API IVAO. Uno stato della rete congelato è un dato scaduto spacciato per attuale (piano §9.3) |
+| `calendar` | Data | `kinds[] {kind}`, `department?`, `range`, `limit` (`view` da G6) | no | Voci di `cms_calendar_entries` dietro il query filter |
 | `newsList` | Data | `category?`, `department?`, `limit`, `layout`, `pinnedFirst` | no | Righe `kind = news` pubblicate |
 | `documentList` | Data | `category?`, `department?`, `limit`, `groupByCategory` | no | Righe `kind = document` pubblicate |
 | `staffList` | Data | `department?`, `includeFirStaff`, `layout` | no | `hub_users` con posizioni, cioè chi ha fatto login almeno una volta (piano §16.13) |
