@@ -54,7 +54,9 @@
       "columnOutOfRange": "This block is in a column its section does not have."
     },
     "content": {
-      "templateNotPublishable": "A template is not published: make a page from it and publish that."
+      "templateNotPublishable": "A template is not published: make a page from it and publish that.",
+      "mediaMissing": "This picture is no longer in the media library. Choose another one.",
+      "mediaNotVisible": "This picture is not visible to the readers of this page. Make it public in the media library, or choose another one."
     },
     "maintenance": {
       "title": "This part of the site is closed for changes right now"

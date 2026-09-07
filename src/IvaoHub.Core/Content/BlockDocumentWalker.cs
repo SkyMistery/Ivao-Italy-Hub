@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Data;
 
 namespace IvaoHub.Core.Content;
 
@@ -23,6 +24,13 @@ public sealed record BlockDocumentError(string Key, string Path);
 /// reading in the other language would be shown a hole.
 /// </summary>
 public sealed record BlockDocumentMissingLocale(string Path, IReadOnlyList<string> Locales);
+
+/// <summary>
+/// A file of the library that a body shows, and the path that names it. Publication checks each
+/// one against the visibility of the page, because a picture the reader may not be served is a
+/// hole in the page exactly like a missing translation is.
+/// </summary>
+public sealed record BlockDocumentMedia(string Path, long Id);
 
 /// <summary>The outcome of validating an envelope.</summary>
 public sealed record BlockDocumentValidation(IReadOnlyList<BlockDocumentError> Errors)
@@ -226,6 +234,25 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
         }
 
         return missing;
+    }
+
+    /// <summary>
+    /// Every file of the library the body shows, wherever it is named: in the properties of a
+    /// block, inside a list of them, or on a section that has a picture for its background.
+    /// <para>The two property names are <see cref="JsonQuery.MediaKey"/> and
+    /// <see cref="JsonQuery.MediaListKey"/>, taken from the one place that already knows them —
+    /// the query that asks "which pages show this file". The two ask the same question of the same
+    /// document, one in SQL and one in memory, and a second copy of the names is how they would
+    /// start disagreeing (design M1 section 2, plan section 16.5).</para>
+    /// <para>Like <see cref="MissingLocales"/>, this is asked when somebody is about to show the
+    /// page to the public and never on a write: a draft may well point at a picture that is not
+    /// ready.</para>
+    /// </summary>
+    public IReadOnlyList<BlockDocumentMedia> MediaReferences(JsonNode? body)
+    {
+        var found = new List<BlockDocumentMedia>();
+        CollectMedia(body, string.Empty, found);
+        return found;
     }
 
     /// <summary>
@@ -435,6 +462,66 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
                 break;
         }
     }
+
+    /// <summary>
+    /// Walks the whole document rather than the blocks, because a background picture belongs to a
+    /// section and not to any block. Nothing here knows what a hero or a gallery is: a property
+    /// with that name and a number in it is a file, at whatever depth it turns up.
+    /// </summary>
+    private static void CollectMedia(JsonNode? node, string path, List<BlockDocumentMedia> found)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                foreach (var pair in obj)
+                {
+                    var childPath = path.Length == 0 ? pair.Key : $"{path}.{pair.Key}";
+
+                    if (string.Equals(pair.Key, JsonQuery.MediaKey, StringComparison.Ordinal))
+                    {
+                        if (Identifier(pair.Value) is { } single)
+                        {
+                            found.Add(new BlockDocumentMedia(childPath, single));
+                        }
+
+                        continue;
+                    }
+
+                    if (string.Equals(pair.Key, JsonQuery.MediaListKey, StringComparison.Ordinal)
+                        && pair.Value is JsonArray list)
+                    {
+                        for (var index = 0; index < list.Count; index++)
+                        {
+                            if (Identifier(list[index]) is { } item)
+                            {
+                                found.Add(new BlockDocumentMedia($"{childPath}[{index}]", item));
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    CollectMedia(pair.Value, childPath, found);
+                }
+
+                break;
+
+            case JsonArray array:
+                for (var index = 0; index < array.Count; index++)
+                {
+                    CollectMedia(array[index], $"{path}[{index}]", found);
+                }
+
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    /// <summary>The number under one of the two names, or nothing when it is null or not a number.</summary>
+    private static long? Identifier(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<long>(out var id) ? id : null;
 
     private static void CheckTemplateOnlyKeys(BlockDocumentNode section, bool isTemplate, List<BlockDocumentError> errors)
     {

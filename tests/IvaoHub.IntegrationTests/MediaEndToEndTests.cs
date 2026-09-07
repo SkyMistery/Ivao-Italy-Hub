@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
@@ -222,6 +223,88 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PublishRefusesAPageShowingAPictureItsReadersMayNotSee()
+    {
+        // ⚠️ The defect the demo of M1 found, and the whole round it comes from. A file arrives in
+        // the library visible to the staff -- it becomes public because somebody says so, never by
+        // arriving -- so an image uploaded and dropped straight into a page was staff-only, the
+        // page went out with it, and a visitor got a broken picture. Nothing had refused and
+        // nothing had warned: the address of a file a reader may not see answers 404 by design,
+        // which is right, and the page had no business being published carrying it.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", token);
+
+        using var client = await SignedInAsync(WebCoordinatorVid, token);
+
+        var picture = await UploadedAsync(client, Department.WD, Png(10, 10), "hero.png", token);
+        var slug = $"hidden-{Guid.NewGuid():N}"[..24];
+        var id = await CreatePublicPageAsync(client, slug, Body(picture, 0), token);
+
+        using var refused = await PublishAsync(client, id, token);
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+        // Read once: a refusal is one body, and the second read of an answer already read is empty.
+        var problem = await refused.Content.ReadFromJsonAsync<JsonElement>(token);
+        var errors = problem.GetProperty("errors");
+
+        // Named where the editor can act on it, exactly like a translation that is not written:
+        // the path of the property, so the screen can say which block to open.
+        Assert.Equal(
+            "errors.content.mediaNotVisible",
+            errors.GetProperty("body.sections[0].blocks[0].props.mediaId")[0].GetString());
+
+        // A picture that is not there at all is the same kind of hole, and the gallery of the same
+        // body carries one: identifier 999999 belongs to nobody. The path counts through the list,
+        // because "one of the pictures in this gallery" is not something an editor can act on.
+        Assert.Equal(
+            "errors.content.mediaMissing",
+            errors.GetProperty("body.sections[0].blocks[1].props.mediaIds[1]")[0].GetString());
+
+        // The row stayed a draft: a refusal that half published would be worse than the defect.
+        using var stillDraft = await client.GetAsync(
+            new Uri($"{ContentEndpoints.Pattern}/{id}", UriKind.Relative),
+            token);
+        var draft = await stillDraft.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.Equal(nameof(PublishStatus.Draft), draft.GetProperty("status").GetString());
+
+        // And the same, for the picture a row names in a column rather than in its body: the file
+        // a document is. It is the shape the demo actually reported -- "a published document with
+        // a picture does not show the picture" -- and it is the same rule, which is why it is the
+        // same check and the same message.
+        var attachment = await UploadedAsync(client, Department.WD, Png(12, 12), "sheet.png", token);
+        var document = await CreatePublicPageAsync(
+            client,
+            $"doc-{Guid.NewGuid():N}"[..24],
+            EmptyBody,
+            token,
+            ContentKind.Document,
+            attachment);
+
+        using var refusedDocument = await PublishAsync(client, document, token);
+        Assert.Equal(HttpStatusCode.BadRequest, refusedDocument.StatusCode);
+
+        var documentProblem = await refusedDocument.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.Equal(
+            "errors.content.mediaNotVisible",
+            documentProblem.GetProperty("errors").GetProperty("fileMediaId")[0].GetString());
+
+        // Say so in the library, and a page showing that picture publishes.
+        await MakePublicAsync(client, picture, token);
+        var repaired = await CreatePublicPageAsync(client, $"ok-{Guid.NewGuid():N}"[..24], BodyShowing(picture), token);
+
+        using var published = await PublishAsync(client, repaired, token);
+        Assert.Equal(HttpStatusCode.OK, published.StatusCode);
+
+        // And now the reader really is served the file, which is the thing the demo was looking at.
+        using var anonymous = _factory.CreateApiClient();
+        using var served = await anonymous.GetAsync(
+            new Uri(await UrlAsync(client, picture, token), UriKind.Relative),
+            token);
+
+        Assert.Equal(HttpStatusCode.OK, served.StatusCode);
+    }
+
+    [Fact]
     public async Task MediaUsageQueryFindsPagesByMediaId()
     {
         var token = TestContext.Current.CancellationToken;
@@ -378,6 +461,86 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Directory.Exists(_mediaRoot)
             ? Directory.GetFiles(_mediaRoot, "*", SearchOption.AllDirectories)
             : [];
+
+    /// <summary>A public page or document, written over the wire the way the back office writes one.</summary>
+    private static async Task<long> CreatePublicPageAsync(
+        HttpClient client,
+        string slug,
+        string body,
+        CancellationToken cancellationToken,
+        ContentKind kind = ContentKind.Page,
+        long? fileMediaId = null)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            new Uri(ContentEndpoints.Pattern, UriKind.Relative))
+        {
+            Content = JsonContent.Create(new
+            {
+                kind = kind.ToString(),
+                slug,
+                ownerDepartment = nameof(Department.WD),
+                visibility = nameof(Visibility.Public),
+                isTemplate = false,
+                title = new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["it"] = "Pagina con un'immagine",
+                    ["en"] = "A page with a picture",
+                },
+                summary = (Dictionary<string, string>?)null,
+                seo = (Dictionary<string, object>?)null,
+                body = JsonNode.Parse(body),
+                schemaVersion = 1,
+                fileMediaId,
+                rowVersion = "0001-01-01T00:00:00",
+            }),
+        };
+
+        request.Headers.Add("X-Requested-With", "hub");
+
+        using var response = await client.SendAsync(request, cancellationToken);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        return (await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken)).GetProperty("id").GetInt64();
+    }
+
+    private static async Task<HttpResponseMessage> PublishAsync(
+        HttpClient client,
+        long id,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            new Uri($"{ContentEndpoints.Pattern}/{id}/publish", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new { changelog = (string?)null }),
+        };
+
+        request.Headers.Add("X-Requested-With", "hub");
+        return await client.SendAsync(request, cancellationToken);
+    }
+
+    /// <summary>A document whose content is the file it carries has nothing in its body.</summary>
+    private const string EmptyBody = """
+        { "schemaVersion": 1, "sections": [] }
+        """;
+
+    /// <summary>A body showing one picture and nothing else, for the half of the test that works.</summary>
+    private static string BodyShowing(long single) =>
+        $$"""
+        {
+          "schemaVersion": 1,
+          "sections": [
+            {
+              "id": "s_one",
+              "layout": "stacked",
+              "blocks": [
+                { "id": "b_one", "type": "hero", "version": 1, "props": { "mediaId": {{single}} } }
+              ]
+            }
+          ]
+        }
+        """;
 
     /// <summary>A page body that shows one media on its own and another inside a gallery.</summary>
     private static string Body(long single, long inAList) =>

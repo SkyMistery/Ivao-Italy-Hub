@@ -273,10 +273,15 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             errors.GetProperty("body.sections[0].background")[0].GetString());
 
         // And the fourth one, which is the one G3 added, goes through with the picture it carries.
+        //
+        // ⚠️ The identifier is one no upload will ever reach, and that is deliberate: every test of
+        // this assembly writes into the same database, so a small number here is a number a file
+        // uploaded by another test class eventually gets — and then "this media is used nowhere"
+        // over there finds this page. It cost one red run to learn.
         var withPicture = JsonNode.Parse("""
         {
           "schemaVersion": 1,
-          "sections": [ { "id": "s1", "background": "image", "mediaId": 7, "blocks": [] } ]
+          "sections": [ { "id": "s1", "background": "image", "mediaId": 999999997, "blocks": [] } ]
         }
         """);
 

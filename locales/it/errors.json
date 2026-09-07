@@ -54,7 +54,9 @@
       "columnOutOfRange": "Questo blocco e' in una colonna che la sua sezione non ha."
     },
     "content": {
-      "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella."
+      "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella.",
+      "mediaMissing": "Questa immagine non è più nella libreria. Scegline un'altra.",
+      "mediaNotVisible": "Questa immagine non è visibile a chi legge questa pagina. Rendila pubblica nella libreria oppure scegline un'altra."
     },
     "maintenance": {
       "title": "Questa parte del sito al momento non accetta modifiche"
