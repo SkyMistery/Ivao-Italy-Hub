@@ -130,6 +130,41 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
             Assert.Equal(["en"], template.Title.Select(entry => entry.Key));
             AssertNothingItalian(template.BodyJson, $"template {template.Slug}");
         }
+
+        // The pages the fork is born with, which are the newest place a sentence of this division
+        // could hide: filler prose that said "welcome to the Italian division" would ship to every
+        // fork and read as if it had been written for them (design M1 section 8.2).
+        var pages = await database.Contents
+            .IgnoreQueryFilters()
+            .Where(content => !content.IsTemplate)
+            .ToListAsync(token);
+
+        Assert.NotEmpty(pages);
+
+        foreach (var page in pages)
+        {
+            Assert.Equal(["en"], page.Title.Select(entry => entry.Key));
+            AssertNothingItalian(page.BodyJson, $"page {page.Slug}");
+        }
+
+        // And one per department, in a division whose departments are the same nine: a fork opens
+        // its back office on a dashboard of its own without anybody seeding one by hand.
+        Assert.Equal(
+            Enum.GetValues<Department>().Length,
+            pages.Count(page => page.Kind == ContentKind.Dashboard));
+
+        // The menu that leads to those pages. It is a table, so it is the one part of the
+        // navigation that could carry a division's own words — and here they are read.
+        var menu = await database.MenuItems.IgnoreQueryFilters().ToListAsync(token);
+
+        Assert.NotEmpty(menu);
+
+        foreach (var entry in menu)
+        {
+            Assert.Equal(["en"], entry.Label.Select(label => label.Key));
+            AssertNothingItalian(entry.Path, $"menu entry {entry.Path}");
+            AssertNothingItalian(entry.Label.Get("en") ?? string.Empty, $"menu entry {entry.Path}");
+        }
     }
 
     [Fact]

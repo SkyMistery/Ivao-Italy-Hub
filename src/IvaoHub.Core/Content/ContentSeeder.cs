@@ -268,7 +268,11 @@ public sealed class ContentSeeder(
                 Scope = menu.Scope,
                 Sort = menu.Sort,
                 Label = page.Title,
-                Path = page.Url,
+                // Where the entry leads, which is the page's own address unless the seed says
+                // otherwise. The front page is the one that says otherwise: it is reachable both as
+                // `/home` and as `/`, and the menu points at the shorter one because that is the
+                // address people are given and the one the sitemap calls the site.
+                Path = menu.Path ?? page.Url,
                 Visibility = page.Visibility,
                 IsActive = true,
                 OwnerDepartment = MenuItem.Owner,
@@ -392,6 +396,9 @@ public sealed class ContentSeeder(
         JsonNode? Summary,
         JsonNode? Body);
 
-    /// <summary>Where a seeded page sits in the menu of the site, when it sits in one at all.</summary>
-    private sealed record ContentPageMenuSeed(MenuScope Scope, int Sort);
+    /// <summary>
+    /// Where a seeded page sits in the menu of the site, when it sits in one at all.
+    /// <paramref name="Path"/> is the address the entry leads to when it is not the page's own.
+    /// </summary>
+    private sealed record ContentPageMenuSeed(MenuScope Scope, int Sort, string? Path);
 }

@@ -60,7 +60,11 @@ public static class SeoEndpoints
             .ToListAsync(http.RequestAborted);
 
         var origin = $"https://{division.Value.Domain}";
-        var xml = new StringBuilder();
+
+        // ⚠️ A writer over a `StringBuilder` declares `encoding="utf-16"` whatever the settings say,
+        // because that is what a .NET string is. The declaration is the one thing a crawler reads
+        // before anything else, so the buffer says out loud what it will be sent as.
+        using var xml = new Utf8StringWriter();
 
         using (var writer = XmlWriter.Create(
             xml,
@@ -70,7 +74,7 @@ public static class SeoEndpoints
             writer.WriteStartElement("urlset", "http://www.sitemaps.org/schemas/sitemap/0.9");
 
             // The front page, which is an address of the application rather than a slug of its own.
-            WriteUrl(writer, origin, null);
+            WriteUrl(writer, origin + "/", null);
 
             foreach (var row in rows)
             {
@@ -91,6 +95,13 @@ public static class SeoEndpoints
         }
 
         return Results.Text(xml.ToString(), "application/xml", Encoding.UTF8);
+    }
+
+    /// <summary>A string buffer that says it holds UTF-8, so the declaration written into it agrees
+    /// with the bytes the response is actually sent as.</summary>
+    private sealed class Utf8StringWriter : StringWriter
+    {
+        public override Encoding Encoding => Encoding.UTF8;
     }
 
     private static void WriteUrl(XmlWriter writer, string location, DateTime? lastModified)
