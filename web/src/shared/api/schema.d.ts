@@ -334,6 +334,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/{id}/publish-problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentPublishProblems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/content/public/{kind}/{slug}": {
         parameters: {
             query?: never;
@@ -1037,6 +1053,23 @@ export interface components {
             publishedAt: null | string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /**
+         * @description What stands between a row and the public, asked before anybody presses publish.
+         *     The shape is the refusal's own — one i18n key per path, and the languages that are
+         *     missing beside it — because the editor draws both with the same component. What differs is only
+         *     the moment it is asked for: this one answers 200 with two empty maps when there is nothing in
+         *     the way, where the refusal is a 400 nobody asked for.
+         */
+        ContentPublishProblemsDto: {
+            /** @description One or more i18n keys per field, keyed by the path the editor knows. */
+            errors: {
+                [key: string]: string[];
+            };
+            /** @description For the fields whose problem is a missing translation, which languages are missing. */
+            localized: {
+                [key: string]: string[];
+            };
         };
         /** @description What publication is told, beyond which row it is about. */
         ContentPublishRequest: {
@@ -2433,6 +2466,35 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentPublishProblems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentPublishProblemsDto"];
                 };
             };
             /** @description Not Found */

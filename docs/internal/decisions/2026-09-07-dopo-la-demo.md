@@ -103,8 +103,12 @@ da nessuna parte» ha trovato quella pagina.
    **toast** (scelta di Carmine): salvare, pubblicare ed eliminare rispondono, e una pubblicazione
    rifiutata pure — la ragione resta in `PublishProblems`, che sta sopra il form e può essere fuori
    schermo, mentre il toast dice almeno che il clic è stato risposto.
-3. **«Cosa manca per pubblicare»**, visibile *prima* di provare. `PublishProblems` esiste ma parla
-   **dopo** un rifiuto: serve la lista viva.
+3. ~~**«Cosa manca per pubblicare»**, visibile *prima* di provare~~ ✅ **fatta**: un `GET` che fa la
+   prova a vuoto, `/api/content/{id}/publish-problems`, che esegue gli stessi controlli senza
+   scrivere niente. ⚠️ È il **quarto** verbo a mano appeso al gruppo `MapCrud`, e la scelta è di
+   Carmine: l'alternativa era il client che ricalcola le regole di pubblicazione — le stesse regole
+   scritte due volte, e la seconda copia è quella che invecchia. Una lista sola, in tono `warning`,
+   che si svuota quando l'ultima cosa è sistemata.
 4. Editor più intuitivo in generale — da ragionarci alla fine di tutto il resto.
 
 **Grafica** (punto 3)

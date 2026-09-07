@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { holdsPermission, type Bootstrap, type Department } from '../../shared/api/bootstrap';
@@ -11,7 +11,7 @@ import { mediaPickerQuery } from '../media/queries';
 import { ContentEditor } from './ContentEditor';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
-import type { ContentDetailDto } from './queries';
+import { publishProblemsKey, publishProblemsQuery, type ContentDetailDto } from './queries';
 import type { ContentFormValues } from './schema';
 import { MANAGE_TEMPLATES } from './templateRules';
 
@@ -60,6 +60,8 @@ export function ContentFormScreen({
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
 
+  const queryClient = useQueryClient();
+
   const create = useCreateContent();
   const update = useUpdateContent(Number(id));
   const remove = useDeleteContent();
@@ -71,6 +73,18 @@ export function ContentFormScreen({
     ...categoriesOfKindQuery(department, config.kind),
     enabled: config.kind !== 'Page',
   });
+
+  // What still stands between this row and the public, answered by the server running the very same
+  // checks publication runs. There is nothing to ask about a row that does not exist yet.
+  const problems = useQuery({ ...publishProblemsQuery(Number(id)), enabled: !isNew });
+
+  // Asked again after anything that could have changed the answer. Not awaited: the screen has
+  // already been told what happened, and a list that arrives a moment later is a list arriving.
+  const askAgain = () => {
+    if (!isNew) {
+      void queryClient.invalidateQueries({ queryKey: publishProblemsKey(Number(id)) });
+    }
+  };
 
   const categories: ChoiceOption[] = (vocabulary.data?.items ?? []).map((category) => ({
     value: category.key,
@@ -106,7 +120,7 @@ export function ContentFormScreen({
         // be made from the template of another (design M1 §9.4).
         canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}
         busy={create.isPending || update.isPending || publish.isPending || remove.isPending}
-        publishError={publish.error}
+        publishProblems={problems.data}
         onSave={async (values: ContentFormValues, body) => {
           if (isNew) {
             const created = await create.mutateAsync({ values, body });
@@ -117,6 +131,7 @@ export function ContentFormScreen({
 
           const saved = await update.mutateAsync({ values, body });
           notice({ tone: 'success', title: t('content.editor.saved') });
+          askAgain();
           return saved;
         }}
         onPublish={
@@ -124,11 +139,19 @@ export function ContentFormScreen({
             ? null
             : () =>
                 publish.mutate(null, {
-                  onSuccess: () => notice({ tone: 'success', title: t('content.editor.published') }),
+                  onSuccess: () => {
+                    notice({ tone: 'success', title: t('content.editor.published') });
+                    askAgain();
+                  },
                   // The reason stays in `PublishProblems`, which names the block and the language.
                   // This only says that the click was answered, and answered no: the list of
                   // reasons is above the form and may well be off the screen.
-                  onError: () => notice({ tone: 'error', title: t('content.editor.publishRefused') }),
+                  onError: () => {
+                    notice({ tone: 'error', title: t('content.editor.publishRefused') });
+                    // The reason is the list above the form, and it is the same list: ask for it
+                    // again rather than reading the refusal, so there is one answer and not two.
+                    askAgain();
+                  },
                 })
         }
         onDelete={

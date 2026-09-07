@@ -31,6 +31,13 @@ due le ha chieste l'uso, non i blocchi. Segue il titolo finché il campo contien
 è stato proposto, e smette per sempre appena qualcuno ci scrive: un indirizzo sopravvive alla pagina,
 e uno che si riscrive sotto le dita di chi lo sta scrivendo sarebbe peggio di uno da scrivere a mano.
 
+**«Cosa manca per pubblicare» è una domanda al server, non un calcolo del client.** Le regole della
+pubblicazione stanno in un posto solo; il client che se le ricalcolasse sarebbe la seconda copia, e
+la seconda copia è quella che invecchia (§16.E, regola (b)). Quindi
+`GET /api/content/{id}/publish-problems` fa gli stessi controlli senza scrivere niente, e la
+schermata li disegna. ⚠️ È il **quarto** verbo a mano appeso a un gruppo `MapCrud` — §16 chiede che
+ognuno sia giustificato, e questa è la giustificazione. Non è un CRUD a mano: quelli restano **zero**.
+
 **L'avviso a quattro stati è il quinto componente dell'elenco chiuso** (§8.3), chiesto da Carmine e
 scritto **con la riga nel piano**, che è la condizione che il piano di implementazione poneva.
 `Notice` più `useNotice()`: lo stesso avviso come riquadro e come conferma in un angolo, una tabella

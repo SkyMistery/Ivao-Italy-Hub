@@ -113,6 +113,21 @@ public sealed record PublicContentDto(
 public sealed record ContentPublishRequest(string? Changelog);
 
 /// <summary>
+/// What stands between a row and the public, asked before anybody presses publish.
+/// <para>The shape is the refusal's own — one i18n key per path, and the languages that are
+/// missing beside it — because the editor draws both with the same component. What differs is only
+/// the moment it is asked for: this one answers 200 with two empty maps when there is nothing in
+/// the way, where the refusal is a 400 nobody asked for.</para>
+/// </summary>
+/// <param name="Errors">One or more i18n keys per field, keyed by the path the editor knows.</param>
+/// <param name="Localized">
+/// For the fields whose problem is a missing translation, which languages are missing.
+/// </param>
+public sealed record ContentPublishProblemsDto(
+    IReadOnlyDictionary<string, string[]> Errors,
+    IReadOnlyDictionary<string, string[]> Localized);
+
+/// <summary>
 /// Entity to payload and back, generated. The body is the one field that needs saying out loud:
 /// the column holds text and the contract holds JSON, so the two conversions live here and the
 /// mapper uses them wherever the pair turns up.

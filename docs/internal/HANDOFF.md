@@ -3178,9 +3178,9 @@ ragione scritta lì.
 
 ### Si continua G13 dalle richieste: **i quattro difetti sono chiusi**
 
-Ramo **`m1/g13-fixes`**, otto commit, niente di non committato. Il piano di implementazione è a
+Ramo **`m1/g13-fixes`**, nove commit, niente di non committato. Il piano di implementazione è a
 v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
-locale: **458 .NET** (300 unit + 158 integrazione), **262 Vitest**, **42 smoke Playwright**, lint,
+locale: **459 .NET** (300 unit + 159 integrazione), **262 Vitest**, **42 smoke Playwright**, lint,
 typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la correzione delle
 cancellazioni, e va fatto prima di chiudere la fase.
 
@@ -3194,11 +3194,10 @@ cancellazioni, e va fatto prima di chiudere la fase.
    **quinto** componente dell'elenco chiuso, e la riga in piano §8.3 c'è insieme a
    `docs/UI-GUIDELINES.md` §3, `catalog.ts` e la sezione della ui-kit. La conferma è un **toast**,
    scelta di Carmine, e `ProblemAlert` resta dov'è — unirli tocca ogni schermata del back-office.
-3. **«Cosa manca per pubblicare»**, viva e prima del rifiuto (richiesta 7). ⚠️ Adesso ha una voce in
-   più da mostrare: le immagini che i lettori della pagina non potrebbero vedere. È lo stesso elenco
-   che il rifiuto della pubblicazione già sa produrre — e ora c'è anche dove metterlo, `Notice` in
-   tono `warning`.
-4. Poi il calendario (10), i **tipi di evento di divisione** (11 — ⚠️ **da proporre prima di
+3. ~~**«Cosa manca per pubblicare»**~~ — fatto: un `GET` che fa la prova a vuoto, e una lista sola
+   in tono `warning` che si svuota da sola. ⚠️ **Quarto verbo a mano** appeso a `MapCrud`, deciso
+   con Carmine perché l'alternativa era riscrivere le regole nel client.
+4. Ora il calendario (10), i **tipi di evento di divisione** (11 — ⚠️ **da proporre prima di
    scriverlo**: vuole un vocabolario di divisione e un permesso di scope diverso da `Calendar.Edit`),
    la striscia (12), la ricerca in sidebar (13) e il giro sull'editor (14).
 

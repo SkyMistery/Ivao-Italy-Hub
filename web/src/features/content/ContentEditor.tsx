@@ -32,7 +32,12 @@ import {
 import { emptyContent, toFormValues } from './mutations';
 import { PreviewFrame } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
-import { contentQuery, type ContentDetailDto, type ContentKind } from './queries';
+import {
+  contentQuery,
+  type ContentDetailDto,
+  type ContentKind,
+  type ContentPublishProblemsDto,
+} from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
 import { SectionTree, type Selection } from './SectionTree';
 import { applyDifference, templateDiff } from './templateDiff';
@@ -61,7 +66,7 @@ export function ContentEditor({
   onSave,
   onPublish,
   onDelete,
-  publishError,
+  publishProblems,
   busy,
 }: {
   content: ContentDetailDto | null;
@@ -85,7 +90,11 @@ export function ContentEditor({
   /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
   onPublish: (() => void) | null;
   onDelete: (() => void) | null;
-  publishError: unknown;
+  /**
+   * What the server says stands between this row and the public, asked before anybody presses
+   * publish rather than after being refused (`publishProblemsQuery`).
+   */
+  publishProblems: ContentPublishProblemsDto | undefined;
   busy: boolean;
 }) {
   const { t } = useTranslation();
@@ -119,7 +128,7 @@ export function ContentEditor({
 
   return (
     <div className="flex flex-col gap-8">
-      <PublishProblems body={body} error={publishError} />
+      <PublishProblems body={body} problems={publishProblems} />
 
       <SchemaForm
         // Remounted whenever the stored row moves on, so the version the form carries is the one

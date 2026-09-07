@@ -16,6 +16,7 @@ export type ContentWriteDto = components['schemas']['ContentWriteDto'];
 export type PublicContentDto = components['schemas']['PublicContentDto'];
 export type ContentKind = components['schemas']['ContentKind'];
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
+export type ContentPublishProblemsDto = components['schemas']['ContentPublishProblemsDto'];
 
 export const contentKey = ['content'] as const;
 
@@ -25,6 +26,10 @@ export function contentListKey(department: Department, search: ListSearch, kind:
 
 export function contentDetailKey(id: number) {
   return [...contentKey, 'detail', id] as const;
+}
+
+export function publishProblemsKey(id: number) {
+  return [...contentKey, 'publish-problems', id] as const;
 }
 
 export function templatesKey(kind: ContentKind | null) {
@@ -81,6 +86,25 @@ export function contentQuery(id: number) {
     queryKey: contentDetailKey(id),
     queryFn: async (): Promise<ContentDetailDto> =>
       unwrap(await api.GET('/api/content/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+/**
+ * What stands between this row and the public, asked before anybody presses publish.
+ *
+ * The answer comes from the server because the rules are the server's: the same checks publication
+ * runs, run without publishing (`ContentPublishService.ProblemsAsync`). A client working them out
+ * for itself would be the rules of publication written a second time, and the second copy is the
+ * one that goes stale.
+ *
+ * It is asked about the **stored** row, which is the honest thing: publishing acts on what was
+ * saved, not on what is on screen, and the editor already refuses to publish with unsaved changes.
+ */
+export function publishProblemsQuery(id: number) {
+  return queryOptions({
+    queryKey: publishProblemsKey(id),
+    queryFn: async (): Promise<ContentPublishProblemsDto> =>
+      unwrap(await api.GET('/api/content/{id}/publish-problems', { params: { path: { id } } })),
   });
 }
 

@@ -15,7 +15,8 @@ router, e una query invalidata non rifà un `beforeLoad` — e una pagina non si
 un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCeiling` dei blocchi
 Data. La sigla di un dipartimento è il suo segno. Fatte anche le richieste 5, 6 e 9: lo `slug` proposto dal titolo — la **settima** estensione del
 generatore di form — e l'avviso a quattro stati, che è il **quinto componente custom** e porta con
-sé la conferma che l'editor deve a chi clicca. Restano 7, 10-14, e il tag.)
+sé la conferma che l'editor deve a chi clicca. Fatta anche la 7, e con lei il **quarto** verbo a mano appeso a `MapCrud`. Restano 10-14, e il
+tag.)
 
 **2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
@@ -1071,7 +1072,13 @@ seguire il tag, se Carmine preferisce; i difetti no.
    pubblicare ed eliminare rispondono con un toast, e una pubblicazione rifiutata lo dice anche lei
    — la ragione resta in `PublishProblems`, che nomina il blocco e la lingua, ma quella lista sta
    sopra il form e può essere fuori schermo.
-7. «Cosa manca per pubblicare», viva e prima del rifiuto.
+7. ~~«Cosa manca per pubblicare», viva e prima del rifiuto~~ — **fatto**, con
+   `ContentEndToEndTests.PublishProblemsSayTheSameThingBeforeAnybodyPresses`. Il servizio si è
+   diviso in due: `ProblemsAsync` fa i controlli, `PublishAsync` li fa e poi scrive. ⚠️ **Quarto
+   verbo a mano appeso al gruppo `MapCrud`** (`GET /api/content/{id}/publish-problems`), deciso con
+   Carmine: l'alternativa era il client che ricalcola le regole di pubblicazione, cioè le stesse
+   regole scritte due volte. Non c'è più una lista dopo il rifiuto e una prima: è **una**, in tono
+   `warning`, e si svuota da sola quando l'ultima cosa è sistemata e salvata.
 8. ~~Le **sigle** dei dipartimenti al posto delle nove icone identiche~~ — **fatto** (`6584438`),
    con `web/src/app/layouts/staffDestinations.test.tsx`, e guardata in un browser. ⚠️ Il segno non
    entra nell'elenco chiuso di §8.3: non prende props, si monta solo in uno slot di icona, e nasce

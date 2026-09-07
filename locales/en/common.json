@@ -492,7 +492,8 @@
       },
       "saved": "Draft saved.",
       "published": "Published. The site is showing this version now.",
-      "deleted": "Deleted."
+      "deleted": "Deleted.",
+      "publishMissing": "What is missing before this can be published"
     },
     "slugPlaceholder": "my-new-page",
     "hints": {

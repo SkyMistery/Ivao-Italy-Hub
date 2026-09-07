@@ -492,7 +492,8 @@
       },
       "saved": "Bozza salvata.",
       "published": "Pubblicata. Il sito mostra questa versione da adesso.",
-      "deleted": "Eliminata."
+      "deleted": "Eliminata.",
+      "publishMissing": "Che cosa manca per poterla pubblicare"
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

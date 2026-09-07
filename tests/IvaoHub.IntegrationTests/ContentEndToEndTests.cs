@@ -340,6 +340,81 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task PublishProblemsSayTheSameThingBeforeAnybodyPresses()
+    {
+        // Asked for by Carmine after the demo: "what is missing to publish", visible *before*
+        // trying. The point of the test is that it is the **same** answer and not a second opinion
+        // — a client working the rules out for itself would be the rules written twice, and this
+        // endpoint exists precisely so that they are not.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, EventsCoordinatorVid, token);
+
+        var slug = $"missing-{Guid.NewGuid():N}"[..20];
+        using var created = await SendAsync(
+            client,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.ED, slug, body: Body(italianOnly: true), english: null),
+            token);
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var row = await created.Content.ReadFromJsonAsync<JsonElement>(token);
+        var id = row.GetProperty("id").GetInt64();
+        var rowVersion = row.GetProperty("rowVersion").GetString();
+
+        // Nothing has been published and nothing has been refused: this is just the question.
+        var problems = await client.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}/{id}/publish-problems",
+            token);
+
+        var errors = problems.GetProperty("errors");
+        Assert.Equal("errors.localized.missing", errors.GetProperty("title")[0].GetString());
+        Assert.Equal(
+            "errors.localized.missing",
+            errors.GetProperty("body.sections[0].blocks[0].props.text")[0].GetString());
+
+        // And which language, which is the half that lets the editor say "English is missing".
+        Assert.Equal(["en"], Strings(problems.GetProperty("localized").GetProperty("title")));
+
+        // The refusal says exactly the same, which is the property this endpoint is for.
+        using var refused = await SendAsync(
+            client,
+            HttpMethod.Post,
+            $"{ContentEndpoints.Pattern}/{id}/publish",
+            new { changelog = (string?)null },
+            token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        var refusal = await refused.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.Equal(
+            errors.GetProperty("title")[0].GetString(),
+            refusal.GetProperty("errors").GetProperty("title")[0].GetString());
+
+        // Write the missing language and the list empties itself: two empty maps and a 200, which
+        // is how the editor knows the button will work rather than guessing.
+        using var completed = await SendAsync(
+            client,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{id}",
+            Payload(Department.ED, slug, body: Body(), rowVersion: rowVersion),
+            token);
+
+        Assert.Equal(HttpStatusCode.OK, completed.StatusCode);
+
+        var nothingLeft = await client.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}/{id}/publish-problems",
+            token);
+
+        Assert.Empty(nothingLeft.GetProperty("errors").EnumerateObject());
+        Assert.Empty(nothingLeft.GetProperty("localized").EnumerateObject());
+
+        await PublishAsync(client, id, token);
+    }
+
+    [Fact]
     public async Task PublicReadsOnlyPublishedVersion()
     {
         var token = TestContext.Current.CancellationToken;

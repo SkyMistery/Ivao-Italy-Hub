@@ -50,12 +50,16 @@ public sealed class ContentPublishService(
         CrudSource.BackOffice<ContentEntry>(database).FirstOrDefaultAsync(row => row.Id == id, cancellationToken);
 
     /// <summary>
-    /// Publishes the row, or says what stopped it. A template is never published: it is a tool of
-    /// the staff, it has no address of its own and nobody reads it.
+    /// What stands between this row and the public, without touching it: the same checks
+    /// <see cref="PublishAsync"/> runs, and <c>null</c> when there is nothing in the way.
+    /// <para>It exists so that the editor can say what is missing <b>before</b> somebody presses
+    /// publish and is told no. The alternative was the client working it out for itself, which
+    /// would be the rules of publication written a second time — and the second copy is the one
+    /// that goes stale (plan §16.E, rule (b)). So the answer comes from the one place that
+    /// decides, and the screen only draws it.</para>
     /// </summary>
-    public async Task<ContentPublishFailure?> PublishAsync(
+    public async Task<ContentPublishFailure?> ProblemsAsync(
         ContentEntry content,
-        string? changelog,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -72,15 +76,27 @@ public sealed class ContentPublishService(
 
         var body = JsonNode.Parse(content.BodyJson) ?? new JsonObject();
 
-        if (Incomplete(content, body) is { } failure)
+        return Incomplete(content, body)
+            ?? await PicturesTheReaderCannotSeeAsync(content, body, cancellationToken);
+    }
+
+    /// <summary>
+    /// Publishes the row, or says what stopped it. A template is never published: it is a tool of
+    /// the staff, it has no address of its own and nobody reads it.
+    /// </summary>
+    public async Task<ContentPublishFailure?> PublishAsync(
+        ContentEntry content,
+        string? changelog,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        if (await ProblemsAsync(content, cancellationToken) is { } failure)
         {
             return failure;
         }
 
-        if (await PicturesTheReaderCannotSeeAsync(content, body, cancellationToken) is { } hidden)
-        {
-            return hidden;
-        }
+        var body = JsonNode.Parse(content.BodyJson) ?? new JsonObject();
 
         await FreezeAsync(body, DataBlockContext.Publishing(content.Visibility, content.OwnerDepartment), cancellationToken);
 

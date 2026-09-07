@@ -107,6 +107,16 @@ public static class ContentEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(CorePermissions.ContentPublish);
 
+        // ⚠️ A hand written verb hanging off the CRUD group, and the fourth of M1 — the plan asks
+        // for each of them to be justified. This one exists because the alternative was the client
+        // working out what publication would refuse, which is the rules of publication written a
+        // second time (plan §16.E, rule (b)). It runs the very same checks and writes nothing.
+        group.MapGet("/{id:long}/publish-problems", PublishProblemsAsync)
+            .WithName("ContentPublishProblems")
+            .Produces<ContentPublishProblemsDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.ContentPublish);
+
         group.MapGet("/public/{kind}/{slug}", ReadPublicAsync)
             .WithName("ContentPublicRead")
             .Produces<PublicContentDto>()
@@ -271,6 +281,45 @@ public static class ContentEndpoints
 
         return Results.Ok(new ContentMapper().ToDetail(content));
     }
+
+    /// <summary>
+    /// The same answer publication would give, without publishing. Behind the same permission and
+    /// the same per row check as publishing itself: what is missing from a page is only somebody's
+    /// business if they could have published it.
+    /// </summary>
+    private static async Task<IResult> PublishProblemsAsync(
+        long id,
+        ContentPublishService publish,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var content = await publish.FindAsync(id, http.RequestAborted);
+        if (content is null)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey));
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, content, CorePermissions.ContentPublish)).Succeeded)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        var problems = await publish.ProblemsAsync(content, http.RequestAborted);
+
+        return Results.Ok(new ContentPublishProblemsDto(
+            problems?.Errors ?? EmptyProblems,
+            problems?.MissingLocales ?? EmptyProblems));
+    }
+
+    /// <summary>Nothing in the way, said once rather than allocated per request.</summary>
+    private static readonly IReadOnlyDictionary<string, string[]> EmptyProblems =
+        new Dictionary<string, string[]>(StringComparer.Ordinal);
 
     /// <summary>
     /// What a visitor reads. Two things keep a draft out of it: the query filter, which is on here
