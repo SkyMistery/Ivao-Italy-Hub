@@ -25,6 +25,7 @@ export const UI_KIT_COMPONENTS = [
   'MediaPicker',
   'CalendarView',
   'ContactForm',
+  'LiveStatusStrip',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

@@ -15,6 +15,7 @@ import {
   ContactForm,
   EmptyState,
   Hero,
+  LiveStatusStrip,
   MarkdownContent,
   MediaPicker,
   PageShell,
@@ -329,6 +330,26 @@ export function DataListSample({ bootstrap }: { bootstrap: Bootstrap }) {
           {t('common.edit')}
         </Button>
       )}
+    />
+  );
+}
+
+/**
+ * The live strip, drawn from an answer written here rather than from the network. Same reason the
+ * data blocks are mounted with their `exampleData`: a gallery that asked the API would show whatever
+ * is connected right now — which on a quiet night, or on an installation with no IVAO credentials,
+ * is nothing at all, and an empty section teaches nobody what the component looks like.
+ */
+export function LiveStatusStripSample() {
+  return (
+    <LiveStatusStrip
+      status={{
+        updatedAt: '2026-09-07T09:00:00Z',
+        figures: [
+          { figure: 'divisionAtc', value: 4 },
+          { figure: 'divisionPilots', value: 37 },
+        ],
+      }}
     />
   );
 }

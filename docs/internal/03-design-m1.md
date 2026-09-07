@@ -1,10 +1,27 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.11 — 7 settembre 2026
+**Versione documento:** 1.12 — 7 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.12** (7 set 2026): **G9 ha costruito il live status**, e ha trovato che **la staff
+directory era già in piedi**: il provider è di G4, la pagina `/about` che lo monta l'ha seminata G8,
+e l'ordinamento per anzianità, l'assenza di dati di contatto e la riga onesta c'erano tutti. La fase
+ha quindi aggiunto una cosa sola e ha scritto i test delle tre promesse.
+**§6.1, chi non ha mai fatto login**: la garanzia è **più forte** di come questo documento la
+descriveva. Non è il provider a lasciarlo fuori — `hub_user_staff_positions.vid` è una chiave esterna
+verso `hub_users`, quindi una posizione di chi non ha mai aperto l'hub **non è scrivibile**. La
+directory non può mostrarlo perché non può esistere, ed è la differenza fra una regola e una query.
+**§6.2, la striscia**: nessun endpoint suo. `LiveStatusStrip` interroga il blocco `networkStats` di
+G4 — anonimo, sempre vivo, già la risposta a quella domanda — e lo ripete al minuto, lo stesso minuto
+che il server tiene in cache. ⚠️ E va nello slot **`banner` di `Shell`**, fra header e contenuto:
+dentro la colonna di lettura è larga 1120 px in una finestra da 1280 e non è una banda. È misurato, e
+c'è un test che fallisce se qualcuno la rimette dentro.
+⚠️ **Quando la rete non risponde la striscia non disegna niente.** `updatedAt` nullo vuol dire «non
+ho potuto chiedere», che non è «non c'è nessuno»: quattro zeri in cima a ogni pagina pubblica
+sarebbero il sito che risponde a una domanda che non ha fatto.
 
 **Changelog 1.11** (7 set 2026): **G8 ha costruito il sito pubblico**, e quattro righe di questo
 documento cambiano — tutte e quattro perché scrivere il codice ha trovato un dettaglio che il

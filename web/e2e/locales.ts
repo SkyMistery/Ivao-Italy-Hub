@@ -15,6 +15,8 @@ interface CommonStrings {
   readonly auth: { readonly login: string };
   readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
   readonly forbidden: { readonly title: string };
+  readonly departments: { readonly WD: string };
+  readonly liveStatus: { readonly title: string; readonly updatedAt: string };
   readonly menu: {
     readonly title: string;
     readonly create: string;
@@ -65,6 +67,12 @@ interface CommonStrings {
     };
   };
   readonly blocks: {
+    readonly networkStats: {
+      // Spelled out rather than an index signature: a caption read from a record is
+      // `string | undefined`, and a spec asserting on `undefined` is a spec asserting on nothing.
+      readonly captions: { readonly divisionAtc: string; readonly divisionPilots: string };
+    };
+    readonly staffList: { readonly rosterNote: string };
     readonly heading: {
       readonly label: string;
       readonly fields: { readonly text: string; readonly level: string };
@@ -96,7 +104,9 @@ interface SeedStrings {
         }
       >
     >;
-    readonly pages: Readonly<Record<string, { readonly title: string }>>;
+    readonly pages: Readonly<
+      Record<string, { readonly title: string; readonly intro?: { readonly heading: string } }>
+    >;
   };
 }
 

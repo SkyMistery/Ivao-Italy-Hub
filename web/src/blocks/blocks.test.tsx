@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 
+import englishCommon from '../../../locales/en/common.json';
 import { renderWithProviders } from '../test/harness';
 
 import {
@@ -342,7 +343,10 @@ describe('data', () => {
     expect(screen.getAllByRole('link', { name: 'Download' })).toHaveLength(1);
   });
 
-  test('the staff list says who is missing from it', () => {
+  // `StaffDirectorySaysWhoIsMissing`, which is the acceptance criterion of G9 (implementation plan
+  // §D, G9): it was already true when G4 wrote the block, and the phase that owns the criterion
+  // names it rather than writing a second test of the same sentence.
+  test('StaffDirectorySaysWhoIsMissing: the staff list says who is missing from it', () => {
     draw(
       <StaffListBlock
         props={{ includeFirStaff: true, layout: 'list' }}
@@ -360,9 +364,10 @@ describe('data', () => {
 
     // The roster is whoever has signed in at least once, and a page that pretended otherwise would
     // be quietly wrong about the people it leaves out (design M1 §6.1).
-    expect(
-      screen.getByText('Only members who have signed in to this hub at least once appear here.'),
-    ).toBeInTheDocument();
+    //
+    // Read from the language file rather than retyped: the sentence used to be a copy here, and a
+    // copy is what passes while the screen shows a raw key.
+    expect(screen.getByText(englishCommon.blocks.staffList.rosterNote)).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: 'A member' })).toHaveAttribute(
       'href',

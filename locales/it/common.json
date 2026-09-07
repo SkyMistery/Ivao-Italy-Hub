@@ -18,6 +18,10 @@
   "home": {
     "empty": "Su questa pagina non è ancora stato pubblicato niente. La scrive dal back office chi manda avanti il sito."
   },
+  "liveStatus": {
+    "title": "In rete adesso",
+    "updatedAt": "contati alle {{at}}"
+  },
   "auth": {
     "login": "Accedi con IVAO",
     "logout": "Esci",

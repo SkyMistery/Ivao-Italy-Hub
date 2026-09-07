@@ -185,11 +185,27 @@ function FooterEntry({ path, label }: { path: string; label: string }) {
   );
 }
 
-/** The frame the three layouts put their content in. */
-export function Shell({ bootstrap, children }: { bootstrap: Bootstrap; children: ReactNode }) {
+/**
+ * The frame the three layouts put their content in.
+ *
+ * `banner` is drawn between the header and the content, edge to edge: it is where something that
+ * belongs to the whole window rather than to the reading column goes, and today that is the live
+ * strip of the public site. It is a slot and not a component of its own because the frame decides
+ * *where*, and the layout decides *what* — the back office has no banner and asks for none.
+ */
+export function Shell({
+  bootstrap,
+  banner,
+  children,
+}: {
+  bootstrap: Bootstrap;
+  banner?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="bg-body text-foreground flex min-h-screen flex-col">
       <AppHeader bootstrap={bootstrap} />
+      {banner}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <AppFooter bootstrap={bootstrap} />
     </div>
