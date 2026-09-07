@@ -73,6 +73,17 @@ test.describe('the public search', () => {
     await expect(page.getByText(englishCommon.search.termsTooShort)).toBeVisible();
   });
 
+  test('the header carries the way in', async ({ page }) => {
+    // A screen nobody can reach is half a screen. It is in the frame and not in the menu, because
+    // the menu is what the staff writes and this is a tool of the site itself.
+    await page.goto('/');
+
+    await page.getByRole('link', { name: englishCommon.search.open }).click();
+
+    await expect(page).toHaveURL(/\/search/);
+    await expect(page.getByRole('heading', { name: englishCommon.search.title })).toBeVisible();
+  });
+
   test('an empty box asks nothing and says so', async ({ page }) => {
     // No stub for the search here on purpose: the catch-all of the fixtures answers 500, so if the
     // screen asked anyway this test would fail rather than pass quietly.

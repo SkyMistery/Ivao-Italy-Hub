@@ -20,6 +20,7 @@ interface CommonStrings {
   readonly search: {
     readonly title: string;
     readonly label: string;
+    readonly open: string;
     readonly empty: string;
     readonly termsTooShort: string;
   };

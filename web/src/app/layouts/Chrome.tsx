@@ -8,6 +8,7 @@ import {
   Subtle,
 } from '@ivao/atmosphere-react';
 import { Link } from '@tanstack/react-router';
+import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -72,6 +73,15 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
         <NavigationMenu sections={sections} asLink={RouterAnchor} />
 
         <div className="ml-auto flex items-center gap-2">
+          {/* A tool of the frame and not a page of the site, which is why it sits here with the
+              language and the theme rather than in the menu: the menu is what the staff writes, and
+              a search box is not something anybody should have to remember to add. */}
+          <Button asChild variant="ghost" size="sm" aria-label={t('search.open')} title={t('search.open')}>
+            <Link to="/search" search={{ q: '', page: 1 }}>
+              <Search aria-hidden className="size-4" />
+            </Link>
+          </Button>
+
           <LocaleSwitcher locales={bootstrap.division.locales} signedIn={user !== null} />
           {/* `title` is the tooltip, `aria-label` is the accessible name: passing only the second
               leaves the tooltip on Atmosphere's own English, and a tooltip is not something a
