@@ -31,11 +31,11 @@ public enum MenuScope
 public sealed class MenuItem : IOwnedByDepartment, IVisible, IAuditable
 {
     /// <summary>
-    /// The department the menu belongs to. The site is the web team's, the same way the system
-    /// templates are (<see cref="ContentSeeder.Owner"/>), and it is a constant rather than
-    /// a column somebody can move: a menu owned by two departments is a menu with two orders.
+    /// The department the menu belongs to: the one that owns the site, the same one the system
+    /// templates and the seeded pages belong to (<see cref="SiteOwnership"/>). It is a constant and
+    /// not a column somebody can move — a menu owned by two departments is a menu with two orders.
     /// </summary>
-    public const Department Owner = Department.WD;
+    public const Department Owner = SiteOwnership.Department;
 
     public long Id { get; set; }
 

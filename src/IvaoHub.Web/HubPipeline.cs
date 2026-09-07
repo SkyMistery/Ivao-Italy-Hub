@@ -102,6 +102,10 @@ internal static class HubPipeline
         "/media",
         "/openapi",
         "/scalar",
+        // The two files a crawler asks for. Without these the fallback would answer both with
+        // index.html, and a search engine would read a page of JavaScript where it asked for XML.
+        SeoEndpoints.SitemapPattern,
+        SeoEndpoints.RobotsPattern,
     ];
 
     /// <summary>

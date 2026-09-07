@@ -76,7 +76,8 @@ internal static class MeEndpoints
                     options.Locales,
                     options.DefaultLocale,
                     options.Timezone,
-                    options.FirStaffScope.ToString().ToLowerInvariant()),
+                    options.FirStaffScope.ToString().ToLowerInvariant(),
+                    SiteOwnership.Department.ToString()),
                 Modules: moduleStates,
                 Navigation: new BootstrapNavigation(
                     Public: await MenuAsync(database, MenuScope.Public, modules.PublicNavigation, user, cancellationToken),
@@ -200,13 +201,20 @@ internal sealed record BootstrapUser(
 /// <summary>A department of null means the permission is held on every department.</summary>
 internal sealed record BootstrapPermission(string Name, string? Department);
 
+/// <summary>
+/// <paramref name="SiteDepartment"/> is the department the site itself belongs to: its menu, its
+/// system templates and the pages the installation was born with. The client needs it in order to
+/// know where the menu screen lives, and it arrives here rather than being written into the client,
+/// which is the whole rule of this endpoint (CLAUDE.md §2).
+/// </summary>
 internal sealed record BootstrapDivision(
     string Code,
     IReadOnlyDictionary<string, string> Name,
     IReadOnlyList<string> Locales,
     string DefaultLocale,
     string Timezone,
-    string FirStaffScope);
+    string FirStaffScope,
+    string SiteDepartment);
 
 /// <summary>
 /// One module of this build. <paramref name="Enabled"/> is false for an optional module the

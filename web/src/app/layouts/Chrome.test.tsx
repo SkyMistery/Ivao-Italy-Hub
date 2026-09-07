@@ -52,9 +52,19 @@ const bootstrap: Bootstrap = {
     defaultLocale: 'en',
     timezone: 'UTC',
     firStaffScope: 'all',
+    siteDepartment: 'WD',
   },
   modules: [],
-  navigation: { public: [{ key: 'nav.home', path: '/' }], staff: [] },
+  // Both kinds of entry, because the header has to draw both: a module's, which carries a
+  // translation key, and an editorial row, which carries the words themselves (design M1 §8.1).
+  navigation: {
+    public: [
+      { key: 'nav.home', path: '/', label: null, children: [] },
+      { key: null, path: '/about', label: { en: 'About us' }, children: [] },
+    ],
+    footer: [{ key: null, path: '/legal', label: { en: 'Legal' }, children: [] }],
+    staff: [],
+  },
   registries: { blocks: [], widgets: [], permissions: [] },
   version: '0.0.0-test',
 };

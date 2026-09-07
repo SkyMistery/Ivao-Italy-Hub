@@ -16,8 +16,7 @@
     "modules": "Moduli"
   },
   "home": {
-    "heading": "L'hub è attivo",
-    "lead": "Il sito pubblico arriva con i contenuti editoriali; per ora questa pagina mostra solo che la divisione, le sue lingue e la tua sessione vengono lette dai posti giusti."
+    "empty": "Su questa pagina non è ancora stato pubblicato niente. La scrive dal back office chi manda avanti il sito."
   },
   "auth": {
     "login": "Accedi con IVAO",
@@ -143,6 +142,50 @@
         "Department": "Questo dipartimento"
       }
     }
+  },
+  "menu": {
+    "title": "Menu",
+    "description": "La navigazione del sito della divisione: che cosa elenca, e in che ordine.",
+    "create": "Nuova voce",
+    "edit": "Modifica voce",
+    "delete": {
+      "title": "Eliminare questa voce?",
+      "description": "Sparisce dal sito subito. La pagina a cui punta non viene toccata."
+    },
+    "fields": {
+      "label": "Etichetta",
+      "path": "Indirizzo",
+      "scope": "Menu",
+      "parentId": "Sotto",
+      "sort": "Ordine",
+      "visibility": "Visibile a",
+      "isActive": "Mostrata",
+      "updatedAt": "Ultima modifica"
+    },
+    "hints": {
+      "path": "Una pagina di questo sito comincia con una barra, per esempio /start. Qualunque altro indirizzo va scritto per intero.",
+      "parentId": "Lascia vuoto per una voce di primo livello. Un menu scende di un livello e non oltre."
+    },
+    "options": {
+      "scope": {
+        "Public": "In cima alla pagina",
+        "Footer": "In fondo alla pagina"
+      },
+      "visibility": {
+        "Public": "Tutti",
+        "Members": "Membri",
+        "Staff": "Staff",
+        "Department": "Questo dipartimento"
+      }
+    }
+  },
+  "dashboard": {
+    "title": "{{department}}",
+    "short": "Dashboard",
+    "description": "La pagina d'ingresso di questo dipartimento, che il dipartimento sistema come vuole.",
+    "create": "Nuova dashboard",
+    "edit": "Modifica questa dashboard",
+    "missing": "Questo dipartimento non ha ancora una dashboard. Ne nasce una al prossimo avvio dell'applicazione, dal template di sistema."
   },
   "media": {
     "title": "Libreria media",

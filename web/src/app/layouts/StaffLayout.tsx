@@ -7,8 +7,10 @@ import {
   FileText,
   Images,
   KeyRound,
+  LayoutDashboard,
   Link2,
   Mail,
+  Menu as MenuIcon,
   Newspaper,
   ScrollText,
   ShieldCheck,
@@ -17,8 +19,14 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { type Bootstrap, holdsPermissionAnywhere, reachableDepartments } from '../../shared/api/bootstrap';
+import {
+  type Bootstrap,
+  holdsPermissionAnywhere,
+  menuDepartment,
+  reachableDepartments,
+} from '../../shared/api/bootstrap';
 import { deptParam } from '../../shared/api/department';
+import { navLabel } from '../../shared/i18n/localized';
 
 import { AppFooter, AppHeader } from './Chrome';
 import { RouterAnchor } from './RouterAnchor';
@@ -49,15 +57,23 @@ const MODULES_MANAGE = 'Modules.Manage';
 const AUDIT_VIEW = 'Audit.View';
 
 export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
 
   const departments = reachableDepartments(bootstrap);
+  const siteOwner = menuDepartment(bootstrap);
 
   const items: SidebarProps['items'] = departments.map((department) => ({
     title: department,
     Icon: ShieldCheck,
     items: [
+      {
+        // The home of the department, and the first entry because it is where `/staff` lands.
+        title: t('dashboard.short'),
+        description: t('dashboard.description'),
+        Icon: LayoutDashboard,
+        href: `/staff/${deptParam.format(department)}`,
+      },
       {
         title: t('content.title'),
         description: t('content.description'),
@@ -106,6 +122,18 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
         Icon: Images,
         href: `/staff/${deptParam.format(department)}/media`,
       },
+      // The menu of the site belongs to one department, so the entry exists under that one and
+      // nowhere else. Which department it is comes from the bootstrap and never from here.
+      ...(department === siteOwner
+        ? [
+            {
+              title: t('menu.title'),
+              description: t('menu.description'),
+              Icon: MenuIcon,
+              href: `/staff/${deptParam.format(department)}/menu`,
+            },
+          ]
+        : []),
     ],
   }));
 
@@ -113,7 +141,12 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
   // person may not follow, so there is nothing to filter here.
   const moduleEntries: SidebarEntry[] = bootstrap.navigation.staff
     .filter((entry) => entry.path !== '/staff')
-    .map((entry) => ({ title: t(entry.key), description: '', Icon: Boxes, href: entry.path }));
+    .map((entry) => ({
+      title: navLabel(entry, t, i18n.language, bootstrap.division.defaultLocale),
+      description: '',
+      Icon: Boxes,
+      href: entry.path,
+    }));
 
   if (moduleEntries.length > 0) {
     items.push({ title: t('nav.modules'), Icon: Boxes, items: moduleEntries });

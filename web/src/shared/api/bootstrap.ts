@@ -58,6 +58,16 @@ export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boo
  * read off the shape of the permission list, for the same reason the server does not read it that
  * way (design M0 §3.3).
  */
+/**
+ * The department the site itself belongs to: its menu, its templates and the pages the installation
+ * was born with. It comes from the bootstrap and is never written here — a client that knew which
+ * department that is would be a client that knows which division it is running for.
+ */
+export function menuDepartment(bootstrap: Bootstrap): Department | null {
+  const code = bootstrap.division.siteDepartment;
+  return isDepartment(code) ? code : null;
+}
+
 export function reachableDepartments(bootstrap: Bootstrap): Department[] {
   const user = bootstrap.user;
   if (!user) {

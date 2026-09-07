@@ -52,8 +52,11 @@ public sealed class ContentSeeder(
     /// </summary>
     public const string DashboardSettingPrefix = "page.dashboard:";
 
-    /// <summary>Templates and the site's own pages belong to the web team: they are tools of the site.</summary>
-    public const Department Owner = Department.WD;
+    /// <summary>
+    /// Templates and the site's own pages belong to whoever owns the site: they are tools of the
+    /// site rather than of a department (<see cref="SiteOwnership"/>).
+    /// </summary>
+    public const Department Owner = SiteOwnership.Department;
 
     /// <summary>The marker that makes a string in a seed file a translation key.</summary>
     private const string TranslationMarker = "$t";

@@ -16,8 +16,7 @@
     "modules": "Modules"
   },
   "home": {
-    "heading": "The hub is up",
-    "lead": "The public site arrives with the editorial content; for now this page only shows that the division, its languages and your session are being read from the right places."
+    "empty": "Nothing has been published on this page yet. Whoever runs the site writes it from the back office."
   },
   "auth": {
     "login": "Sign in with IVAO",
@@ -143,6 +142,50 @@
         "Department": "This department"
       }
     }
+  },
+  "menu": {
+    "title": "Menu",
+    "description": "The navigation of the division site: what it lists, and in what order.",
+    "create": "New entry",
+    "edit": "Edit entry",
+    "delete": {
+      "title": "Delete this entry?",
+      "description": "It leaves the site straight away. The page it points at is untouched."
+    },
+    "fields": {
+      "label": "Label",
+      "path": "Address",
+      "scope": "Menu",
+      "parentId": "Under",
+      "sort": "Order",
+      "visibility": "Visible to",
+      "isActive": "Shown",
+      "updatedAt": "Last change"
+    },
+    "hints": {
+      "path": "A page of this site starts with a slash, for instance /start. Anywhere else needs its full address.",
+      "parentId": "Leave empty for a top level entry. A menu goes one level deep and no further."
+    },
+    "options": {
+      "scope": {
+        "Public": "Top of the page",
+        "Footer": "Foot of the page"
+      },
+      "visibility": {
+        "Public": "Everybody",
+        "Members": "Members",
+        "Staff": "Staff",
+        "Department": "This department"
+      }
+    }
+  },
+  "dashboard": {
+    "title": "{{department}}",
+    "short": "Dashboard",
+    "description": "The home of this department, and its own to arrange.",
+    "create": "New dashboard",
+    "edit": "Edit this dashboard",
+    "missing": "This department has no dashboard yet. One is created on the next start of the application, from the system template."
   },
   "media": {
     "title": "Media library",

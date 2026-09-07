@@ -1,10 +1,14 @@
 import { Button, H1, Lead } from '@ivao/atmosphere-react';
+import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { ContentRenderer, readBody } from '../../blocks';
 import { mediaFileUrl } from '../../shared/api/mediaUrl';
+import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { PageMetadata } from '../../shared/seo/PageMetadata';
+import { bootstrapQuery } from '../me/queries';
 
 import type { PublicContentDto } from './queries';
 
@@ -21,6 +25,7 @@ import type { PublicContentDto } from './queries';
 export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
+  const { data: bootstrap } = useQuery(bootstrapQuery);
 
   const summary = read(content.summary);
   const published = new Intl.DateTimeFormat(i18n.language, {
@@ -30,6 +35,20 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
+      {/* A news item is the thing people actually paste into a chat, so its cover is what stands in
+          when the editor named no picture of its own. */}
+      <PageMetadata
+        title={content.title}
+        description={content.summary}
+        seo={content.seo}
+        imageMediaId={content.coverMediaId}
+        divisionName={resolveLocalized(
+          bootstrap?.division.name,
+          i18n.language,
+          bootstrap?.division.defaultLocale ?? i18n.language,
+        )}
+      />
+
       <header className="flex flex-col gap-3">
         <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-sm">
           <time dateTime={content.publishedAt} className="tabular-nums">
