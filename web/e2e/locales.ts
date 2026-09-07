@@ -71,6 +71,13 @@ interface CommonStrings {
       readonly publish: string;
       readonly applyBlock: string;
       readonly addBlock: string;
+      readonly preview: string;
+      readonly previewWidths: { readonly phone: string; readonly desktop: string };
+      readonly template: {
+        readonly differences: string;
+        readonly added: string;
+        readonly apply: { readonly added: string; readonly removed: string };
+      };
     };
   };
   readonly blocks: {

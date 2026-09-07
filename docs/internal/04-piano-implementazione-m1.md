@@ -9,7 +9,15 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.3 — 7 settembre 2026 (**G10 è chiusa**, e con essa il **debito n.10 di M0**: la
+**Versione:** 2.4 — 7 settembre 2026 (**G11 è chiusa**: l'editor dice quando il template si è mosso,
+applica **una** differenza alla volta, si trascina con dnd-kit senza perdere le frecce che sono
+l'unica strada da tastiera, e ha un'anteprima a tre larghezze che il banco **misura**. Il terzo stato
+di design §9.1 è stato corretto invece che improvvisato: «i vincoli sono cambiati» non è calcolabile,
+«la pagina non soddisfa più il vincolo di adesso» sì. Zero tabelle, zero permessi, zero endpoint a
+mano, zero migrazioni; una dipendenza nuova, dnd-kit, che il design chiedeva per nome. La prossima è
+G12, l'ultima.)
+
+**2.3** — 7 settembre 2026 (**G10 è chiusa**, e con essa il **debito n.10 di M0**: la
 ricerca ha una schermata pubblica, una palette ⌘K per lo staff, e le tre domande lasciate aperte
 hanno una risposta ciascuna. Una colonna nuova sull'indice, zero tabelle, zero permessi, zero
 endpoint a mano, zero componenti custom. Due contratti di libreria misurati invece che supposti — EF
@@ -864,7 +872,7 @@ dell'evidenziazione, compresi accenti e maiuscole; e2e della palette ⌘K.
 
 ---
 
-### G11 — Editor: differenze dal template, dnd-kit, anteprima
+### G11 — Editor: differenze dal template, dnd-kit, anteprima — **fatta il 7 settembre 2026**
 
 **Obiettivo**: le rifiniture, **dopo** che l'editor è stato usato davvero in G8. Design §9.
 
@@ -885,10 +893,22 @@ Task:
 5. **Anteprima multi-device**: tre larghezze, la stessa pagina. Non è un emulatore, è un `max-width`. Il
    badge dell'anteprima di F7 resta com'è e resta visibile solo allo staff.
 
-**Accettazione**: `TemplateDiffDetectsAddedRemovedAndChanged` (Vitest); «allinea» applica **una**
-differenza e lascia le altre; il riordino da tastiera funziona ancora, con il test verificato
-**rompendolo**; e2e: si aggiunge una sezione al template, si apre una pagina che ne è nata, l'editor lo
-dice, e la pagina pubblica non è cambiata.
+**Accettazione** (tutti verdi il 7 set 2026): `templateDiff.test.ts`, dodici casi, il primo dei quali
+è `TemplateDiffDetectsAddedRemovedAndChanged`; «allinea» applica **una** differenza e lascia le altre
+(`applyDifference`, quattro casi); il riordino da tastiera funziona ancora
+(`SectionTree.test.tsx`, che ci arriva tabulando), **verificato rompendolo due volte** — frecce
+trasformate in `span role="button"`, e frecce tolte del tutto; e2e `full/template.spec.ts`: si
+aggiunge una sezione al template, si apre una pagina che ne è nata, l'editor lo dice, e la pagina
+pubblica non è cambiata **né allora né dopo che qualcuno ha accettato la differenza nella bozza**;
+più la misura delle tre larghezze dell'anteprima. Anche i due e2e verificati rompendo il prodotto.
+
+**Che cosa è cambiato rispetto al task 1**: il terzo stato non è «cambiata nei vincoli» ma «non
+soddisfa più il vincolo di adesso», e **non ha un «allinea»**. Il perché sta in design §9.1 e nel
+changelog 1.14 del design: i vincoli di prima non esistono da nessuna parte, ed è voluto.
+
+⚠️ **Resta fuori**: `key`, `required`, `locked` e `allowedBlocks` — i campi su cui poggia tutto
+questo — non si scrivono da nessuna schermata. Un template nasce da un seed o da una `PUT`. Non era
+nel perimetro di G11 e non ci è entrato; è nei debiti di `HANDOFF.md`.
 
 ---
 

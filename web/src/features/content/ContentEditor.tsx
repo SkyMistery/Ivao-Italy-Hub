@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import { ContentRenderer, columnsOf, readBody, type Body } from '../../blocks';
+import { columnsOf, readBody, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
 import type { MediaLibraryQuery } from '../../shared/ui';
@@ -24,14 +24,19 @@ import {
   moveSection,
   removeBlock,
   removeSection,
+  reorderBlocks,
+  reorderSections,
   updateBlock,
   updateSection,
 } from './body';
 import { emptyContent, toFormValues } from './mutations';
+import { PreviewFrame } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import { contentQuery, type ContentDetailDto, type ContentKind } from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
 import { SectionTree, type Selection } from './SectionTree';
+import { applyDifference, templateDiff } from './templateDiff';
+import { LockedByTemplate, TemplateDifferences } from './TemplatePanel';
 import { NO_RULES, ruleFor, templateRules } from './templateRules';
 
 /**
@@ -52,6 +57,7 @@ export function ContentEditor({
   locales,
   division,
   mediaLibrary,
+  canManageTemplates,
   onSave,
   onPublish,
   onDelete,
@@ -69,6 +75,12 @@ export function ContentEditor({
   division: { defaultLocale: string; timezone: string };
   /** The library the picture of `seo` is chosen from — this department's. */
   mediaLibrary: MediaLibraryQuery;
+  /**
+   * Whether this member may change a template of that department. Asked as a question rather than
+   * handed the bootstrap, because the answer is about the template's department and not this page's
+   * — and which department that is, only the loaded template knows.
+   */
+  canManageTemplates: (department: Department) => boolean;
   onSave: (values: ContentFormValues, body: Body) => Promise<unknown>;
   /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
   onPublish: (() => void) | null;
@@ -90,7 +102,12 @@ export function ContentEditor({
     enabled: typeof content?.templateId === 'number',
   });
 
-  const rules = template.data === undefined ? NO_RULES : templateRules(readBody(template.data.body));
+  const templateBody = template.data === undefined ? null : readBody(template.data.body);
+  const rules = templateBody === null ? NO_RULES : templateRules(templateBody);
+
+  // And what it says that this page does not. Nothing here changes anything by itself: the list is
+  // read out, and one line at a time is acted on (design M1 §9.1).
+  const differences = templateDiff(body, templateBody);
 
   const change = (next: Body) => {
     setBody(next);
@@ -161,10 +178,14 @@ export function ContentEditor({
         <p className="text-muted-foreground text-sm">{t('content.editor.saveBeforePublishing')}</p>
       ) : null}
 
+      <TemplateDifferences
+        body={body}
+        differences={differences}
+        onAlign={(difference) => change(applyDifference(body, templateBody, difference))}
+      />
+
       {preview ? (
-        <div className="border-border overflow-hidden rounded-lg border">
-          <ContentRenderer body={body} staff />
-        </div>
+        <PreviewFrame body={body} />
       ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
@@ -203,6 +224,8 @@ export function ContentEditor({
               }}
               onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
               onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
+              onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
+              onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
               onDuplicateBlock={(id) => {
                 const copy = duplicateBlock(body, id);
                 change(copy.body);
@@ -223,27 +246,42 @@ export function ContentEditor({
             <SectionHeader title={t('content.editor.properties')} />
 
             {section !== undefined ? (
-              <SectionProperties
-                key={section.id}
-                section={section}
-                rule={ruleFor(rules, section.key)}
-                locales={locales}
-                division={division}
-                mediaLibrary={mediaLibrary}
-                onApply={(values) => {
-                  const withSettings = updateSection(body, section.id, {
-                    title: values.title,
-                    background: values.background,
-                    mediaId: values.mediaId ?? null,
-                    padding: values.padding,
-                    width: values.width,
-                  });
+              <>
+                {ruleFor(rules, section.key).locked ? (
+                  <LockedByTemplate
+                    template={
+                      template.data === undefined
+                        ? null
+                        : { title: template.data.title, department: template.data.ownerDepartment }
+                    }
+                    canManage={
+                      template.data !== undefined && canManageTemplates(template.data.ownerDepartment)
+                    }
+                  />
+                ) : null}
 
-                  // Narrowing the layout has to pull the blocks back into a column that still
-                  // exists, or the server refuses the save and the editor cannot say why.
-                  change(clampColumns(withSettings, section.id, values.layout, columnsOf(values.layout)));
-                }}
-              />
+                <SectionProperties
+                  key={section.id}
+                  section={section}
+                  rule={ruleFor(rules, section.key)}
+                  locales={locales}
+                  division={division}
+                  mediaLibrary={mediaLibrary}
+                  onApply={(values) => {
+                    const withSettings = updateSection(body, section.id, {
+                      title: values.title,
+                      background: values.background,
+                      mediaId: values.mediaId ?? null,
+                      padding: values.padding,
+                      width: values.width,
+                    });
+
+                    // Narrowing the layout has to pull the blocks back into a column that still
+                    // exists, or the server refuses the save and the editor cannot say why.
+                    change(clampColumns(withSettings, section.id, values.layout, columnsOf(values.layout)));
+                  }}
+                />
+              </>
             ) : block !== undefined ? (
               <BlockProperties
                 key={block.block.id}

@@ -447,7 +447,34 @@
       },
       "renderModeHint": "Un blocco catturato smette di cambiare finche' qualcuno non ripubblica la pagina.",
       "column": "Colonna",
-      "columnNumber": "Colonna {{number}}"
+      "columnNumber": "Colonna {{number}}",
+      "reorder": "Trascina per riordinare",
+      "previewWidth": "Larghezza dell’anteprima",
+      "previewWidths": {
+        "phone": "Telefono",
+        "tablet": "Tablet",
+        "desktop": "Scrivania"
+      },
+      "template": {
+        "differences": "Il template di questa pagina è cambiato",
+        "publicUnchanged": "Per chi legge non è cambiato nulla: un template non riscrive mai una pagina da sé, e il pubblico continua a vedere la versione pubblicata finché qualcuno non ripubblica questa.",
+        "added": "«{{section}}» è stata aggiunta al template e non c’è in questa pagina.",
+        "removed": "«{{section}}» non è più nel template.",
+        "changed": "«{{section}}» non corrisponde più a quello che chiede il template.",
+        "reasons": {
+          "blocks": "Contiene blocchi che il template non permette qui.",
+          "structure": "Il template fissa questa sezione, e questa copia non è più la stessa."
+        },
+        "yoursToDecide": "Decidi tu",
+        "apply": {
+          "added": "Aggiungila",
+          "removed": "Toglila"
+        },
+        "lockedBy": "Questa sezione è fissata dal template «{{template}}».",
+        "lockedByUnknown": "Questa sezione è fissata dal template da cui nasce questa pagina.",
+        "lockedYouMay": "Puoi cambiarlo sui template di {{department}}.",
+        "lockedWhoMay": "Può cambiarlo solo chi ha {{permission}} su {{department}}."
+      }
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

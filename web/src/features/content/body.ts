@@ -108,6 +108,31 @@ export function moveSection(body: Body, id: string, delta: -1 | 1): Body {
   return { ...body, sections: move(body.sections, (section) => section.id === id, delta) };
 }
 
+/**
+ * A section dropped onto another one (design M1 §9.3). Only within the same list: a drop that
+ * crosses from one parent into another moves nothing, which is what makes the arrows and the drag
+ * two ways of doing the *same* thing rather than two different powers.
+ */
+export function reorderSections(body: Body, activeId: string, overId: string): Body {
+  const walk = (sections: SectionEnvelope[]): SectionEnvelope[] => {
+    const moved = reorder(sections, activeId, overId);
+    return moved ?? sections.map((section) => ({ ...section, sections: walk(section.sections) }));
+  };
+
+  return { ...body, sections: walk(body.sections) };
+}
+
+/** The same, for the blocks of one section. */
+export function reorderBlocks(body: Body, activeId: string, overId: string): Body {
+  return {
+    ...body,
+    sections: mapSections(body.sections, (section) => {
+      const moved = reorder(section.blocks, activeId, overId);
+      return moved === null ? section : { ...section, blocks: moved };
+    }),
+  };
+}
+
 export function addBlock(
   body: Body,
   sectionId: string,
@@ -197,6 +222,23 @@ export function clampColumns(body: Body, sectionId: string, layout: Layout, colu
         : section,
     ),
   };
+}
+
+/**
+ * One list, with `activeId` taken out and put back where `overId` was. Null when the two are not in
+ * the same list, so that a caller can keep looking further down the tree.
+ */
+function reorder<T extends { id: string }>(items: T[], activeId: string, overId: string): T[] | null {
+  const from = items.findIndex((item) => item.id === activeId);
+  const to = items.findIndex((item) => item.id === overId);
+
+  if (from < 0 || to < 0) {
+    return null;
+  }
+
+  const moved = [...items];
+  moved.splice(to, 0, ...moved.splice(from, 1));
+  return moved;
 }
 
 function move<T>(items: T[], matches: (item: T) => boolean, delta: -1 | 1): T[] {
