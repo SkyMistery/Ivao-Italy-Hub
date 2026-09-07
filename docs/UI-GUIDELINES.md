@@ -250,7 +250,8 @@ photograph is not something this hub can make read well, and should not be attem
 `wide`, `full`. `full` is for `hero`, `gallery` and `image`; a section of text as wide as the screen
 is a line nobody finishes.
 
-**A locked section shows its fields, not its structure.** No "add block", no "move", no "delete":
+**A locked section shows its fields, not its structure.** No "add block", no "move", no "drag", no
+"delete":
 what an editor sees is the list of blocks the template put there, each with its property form, and a
 line at the top saying which template fixes it and who may change that (`Content.ManageTemplates`).
 A disabled button with no explanation produces support tickets; a sentence saying "this section is

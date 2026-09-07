@@ -1,10 +1,35 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.13 — 7 settembre 2026
+**Versione documento:** 1.14 — 7 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.14** (7 set 2026): **G11 ha rifinito l'editor**, e ha corretto §9.1 su un punto che il
+design chiedeva e il modello dei dati non può dare.
+**§9.1, il terzo stato**: «sezione **cambiata** nei vincoli» non è calcolabile. Confrontare i vincoli
+di prima con quelli di adesso vorrebbe dire sapere quali fossero, e non lo sa nessuno: le restrizioni
+non viaggiano nella copia, apposta, perché una pagina che le portasse potrebbe togliersele. Quello
+che si può chiedere onestamente è **se la pagina soddisfa ancora il vincolo com'è oggi**, e il terzo
+stato è quello: un blocco di un tipo che `allowedBlocks` non permette più, o una sezione `locked` la
+cui copia non è più quella del template. ⚠️ E per questo terzo stato **non c'è nessun «allinea»**:
+allinearlo vorrebbe dire cancellare i blocchi che qualcuno ha scritto, che è esattamente il pulsante
+premuto per sbaglio contro cui §9.1 mette in guardia. Lo dice, e lascia decidere.
+**§9.1, «arriva col padre»**: una sezione annidata la cui sezione padre manca a sua volta non si
+riporta due volte — si offre il padre, e il figlio arriva con lui. Lo stesso al contrario per «tolta».
+**§9.1, nessun template è diverso da un template vuoto**: una pagina nata da nessun template, una il
+cui template non è ancora arrivato, e una il cui template chi guarda non può aprire (§9.4) finiscono
+tutte allo stesso posto — e confrontarsi con il nulla vorrebbe dire proporre di cancellare ogni
+sezione della pagina. È un test, ed è stato scritto perché la prima versione lo faceva davvero.
+**§9.3, dnd-kit sta sopra le frecce e non al loro posto**: il trascinamento è un puntatore e basta, le
+frecce sono tutto quello che di questo pannello funziona da tastiera. C'è un test che ci arriva
+tabulando — non con un `focus()` — e fallisce se qualcuno le «sistema».
+**§9.3, l'anteprima** è una `region` con un nome, perché la misura è l'unica cosa che la distingue da
+tre pulsanti che disegnano la stessa larghezza: il banco la misura, non la guarda.
+⚠️ **Un template non si scrive ancora da nessuna schermata.** `key`, `required`, `locked` e
+`allowedBlocks` sono i campi su cui §9.1 poggia e il form delle sezioni non li ha: oggi un template
+nasce da un seed o da una `PUT`. Fuori dal perimetro di G11, e scritto nei debiti di `HANDOFF.md`.
 
 **Changelog 1.13** (7 set 2026): **G10 ha costruito la ricerca**, e il **debito n.10 di M0 è chiuso**:
 le tre domande hanno una risposta scritta, provata e verificata rompendola.
@@ -758,10 +783,28 @@ vedere la versione pubblicata. Quello che manca è che l'editor lo **dica**.
 
 - L'editor legge il template per `key` di sezione (già fa così: le restrizioni non viaggiano nella
   copia) e mostra tre stati: sezione **nuova** nel template e assente qui (con «aggiungi»), sezione
-  presente qui e **tolta** dal template (con «rimuovi», mai automatica), sezione **cambiata** nei
-  vincoli (`locked`, `allowedBlocks`).
+  presente qui e **tolta** dal template (con «rimuovi», mai automatica), sezione che **non soddisfa
+  più il vincolo** com'è oggi.
+- ⚠️ Il terzo stato **non** è «i vincoli sono cambiati», che nessuno può sapere: quali fossero prima
+  non è scritto da nessuna parte, ed è una regola apposta — una pagina che portasse le proprie
+  restrizioni potrebbe togliersele. La domanda a cui si può rispondere è «questa pagina soddisfa
+  ancora quello che il template dice adesso», e le due risposte concrete sono: un blocco di un tipo
+  che `allowedBlocks` non permette più, e una sezione `locked` la cui copia non è più quella del
+  template (che può succedere solo se il template si è mosso, visto che una sezione bloccata
+  nell'editor non si ristruttura).
 - L'azione «allinea» applica **una** differenza alla volta, mai tutte insieme: un pulsante che
   riscrive una pagina in un colpo è un pulsante che qualcuno preme per sbaglio.
+- ⚠️ E per il terzo stato non c'è nessun «allinea»: applicarlo vorrebbe dire cancellare blocchi che
+  qualcuno ha scritto. L'editor dice che cosa non torna e lascia decidere — nemmeno un pulsante
+  disabilitato, che è la stessa trappola con la faccia gentile.
+- Una sezione annidata il cui padre manca anche lui si riporta **una volta sola**, sul padre:
+  aggiungere il padre porta dentro il figlio. Lo stesso al contrario per «tolta».
+- **Nessun template è diverso da un template vuoto**: una pagina nata da nessuno, una il cui template
+  non è ancora arrivato e una il cui template chi guarda non può aprire (§9.4) non hanno differenze
+  da mostrare. Confrontarsi con il nulla vorrebbe dire proporre di cancellare tutta la pagina.
+- Una sezione `locked` porta in testa alle sue proprietà la riga che dice **da quale template** viene
+  il vincolo e chi può cambiarlo (`Content.ManageTemplates`, sul dipartimento del template). Un
+  controllo che rifiuta senza dire perché produce un ticket.
 
 ### 9.2 La forma di `seo` (debito n.3)
 
@@ -773,8 +816,13 @@ JSON.
 ### 9.3 Il resto
 
 - **dnd-kit** sulla lista di sezioni e blocchi, sopra il su/giù che già esiste. Il su/giù resta:
-  è quello che funziona da tastiera.
+  è quello che funziona da tastiera. Si trascina per una **maniglia** e non per tutta la riga, che è
+  fatta di pulsanti; e una sezione `locked` non ha né maniglia né frecce. ⚠️ C'è un test che ci
+  arriva **tabulando** e preme Invio: `focus()` proverebbe un'altra cosa, e le frecce restano solo
+  finché qualcosa fallisce quando spariscono.
 - **Anteprima multi-device**: tre larghezze, la stessa pagina. Non è un emulatore, è un `max-width`.
+  Il riquadro è una `region` con un nome perché la **misura** è l'unica cosa che lo distingue da tre
+  pulsanti che disegnano la stessa larghezza, e il banco la misura.
 - **Il badge dell'anteprima** che F7 ha introdotto resta com'è, e resta visibile solo allo staff.
 
 ### 9.4 Di chi sono i template, e chi li legge (deciso il 5 set 2026)

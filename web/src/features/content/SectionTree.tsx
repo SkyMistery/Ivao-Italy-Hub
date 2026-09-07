@@ -1,9 +1,19 @@
 import { Button } from '@ivao/atmosphere-react';
-import { ArrowDown, ArrowUp, Copy, Lock, Plus, Trash2 } from 'lucide-react';
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { ArrowDown, ArrowUp, Copy, GripVertical, Lock, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import type { Body, SectionEnvelope } from '../../blocks';
+import type { BlockEnvelope, Body, SectionEnvelope } from '../../blocks';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 
 import { ruleFor, type SectionRule } from './templateRules';
@@ -11,16 +21,25 @@ import { ruleFor, type SectionRule } from './templateRules';
 /**
  * The left panel of the editor: what the page is made of, and what may be done to it (design M0
  * §7.7). It is a list and not a canvas — a drag and drop page builder was decided against
- * (CLAUDE.md §7) — so a section moves with two arrows and a block with two more.
+ * (CLAUDE.md §7) — so a section moves by being dragged within its list, or with two arrows, and a
+ * block with the same two.
+ *
+ * ⚠️ The arrows are not a leftover of the version before dnd-kit and are not to be tidied away:
+ * dragging is a pointer, and the arrows are the whole of this panel that works from a keyboard
+ * (design M1 §9.3). Whoever removes them removes reordering for anybody who cannot use a mouse.
  *
  * What a locked section allows is decided here in one place: its blocks may have their properties
- * edited and nothing else. That is the template still speaking, through `templateRules`.
+ * edited and nothing else — no arrows, no handle, no palette. That is the template still speaking,
+ * through `templateRules`.
  */
 
 export interface Selection {
   readonly kind: 'section' | 'block';
   readonly id: string;
 }
+
+/** Which list a dragged row belongs to, carried by the row rather than read off its identifier. */
+type RowKind = 'section' | 'block';
 
 export function SectionTree({
   body,
@@ -31,6 +50,8 @@ export function SectionTree({
   onAddBlock,
   onMoveSection,
   onMoveBlock,
+  onReorderSections,
+  onReorderBlocks,
   onDuplicateBlock,
   onRemoveSection,
   onRemoveBlock,
@@ -43,42 +64,69 @@ export function SectionTree({
   onAddBlock: (sectionId: string, type: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
+  /** A section dropped onto another one of the same list. */
+  onReorderSections: (activeId: string, overId: string) => void;
+  onReorderBlocks: (activeId: string, overId: string) => void;
   onDuplicateBlock: (id: string) => void;
   onRemoveSection: (id: string) => void;
   onRemoveBlock: (id: string) => void;
 }) {
   const { t } = useTranslation();
 
-  return (
-    <div className="flex flex-col gap-4">
-      {body.sections.length === 0 ? (
-        <p className="text-muted-foreground text-sm">{t('content.editor.noSections')}</p>
-      ) : (
-        body.sections.map((section) => (
-          <SectionNode
-            key={section.id}
-            section={section}
-            rule={ruleFor(rules, section.key)}
-            rules={rules}
-            selection={selection}
-            onSelect={onSelect}
-            onAddBlock={onAddBlock}
-            onMoveSection={onMoveSection}
-            onMoveBlock={onMoveBlock}
-            onDuplicateBlock={onDuplicateBlock}
-            onRemoveSection={onRemoveSection}
-            onRemoveBlock={onRemoveBlock}
-          />
-        ))
-      )}
+  // A drag has to start further than a click, or selecting a section by clicking its name becomes
+  // a lottery between a selection and a one pixel drag.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-      <div>
-        <Button type="button" variant="secondary" size="sm" onClick={onAddSection}>
-          <Plus aria-hidden className="mr-2 size-4" />
-          {t('content.editor.addSection')}
-        </Button>
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (over === null || active.id === over.id) {
+      return;
+    }
+
+    const kind = active.data.current?.['kind'] as RowKind | undefined;
+    const move = kind === 'block' ? onReorderBlocks : onReorderSections;
+
+    // Crossing from one list into another is refused by the body helpers rather than here: a drop
+    // onto a row of another section simply moves nothing.
+    move(String(active.id), String(over.id));
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <div className="flex flex-col gap-4">
+        {body.sections.length === 0 ? (
+          <p className="text-muted-foreground text-sm">{t('content.editor.noSections')}</p>
+        ) : (
+          <SortableContext
+            items={body.sections.map((section) => section.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {body.sections.map((section) => (
+              <SectionNode
+                key={section.id}
+                section={section}
+                rule={ruleFor(rules, section.key)}
+                rules={rules}
+                selection={selection}
+                onSelect={onSelect}
+                onAddBlock={onAddBlock}
+                onMoveSection={onMoveSection}
+                onMoveBlock={onMoveBlock}
+                onDuplicateBlock={onDuplicateBlock}
+                onRemoveSection={onRemoveSection}
+                onRemoveBlock={onRemoveBlock}
+              />
+            ))}
+          </SortableContext>
+        )}
+
+        <div>
+          <Button type="button" variant="secondary" size="sm" onClick={onAddSection}>
+            <Plus aria-hidden className="mr-2 size-4" />
+            {t('content.editor.addSection')}
+          </Button>
+        </div>
       </div>
-    </div>
+    </DndContext>
   );
 }
 
@@ -111,13 +159,22 @@ function SectionNode({
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, style } = useRow(section.id, 'section');
 
   const name = read(section.title) || section.key || t('content.editor.untitledSection');
   const selected = selection?.kind === 'section' && selection.id === section.id;
 
   return (
-    <div className={`border-border flex flex-col gap-2 rounded-md border p-3 ${depth > 0 ? 'ml-4' : ''}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`border-border flex flex-col gap-2 rounded-md border p-3 ${depth > 0 ? 'ml-4' : ''}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
+        {rule.locked ? null : (
+          <DragHandle setRef={setActivatorNodeRef} attributes={attributes} listeners={listeners} />
+        )}
+
         <button
           type="button"
           onClick={() => onSelect({ kind: 'section', id: section.id })}
@@ -146,71 +203,154 @@ function SectionNode({
         )}
       </div>
 
-      <ul className="flex flex-col gap-1">
-        {section.blocks.map((block) => {
-          const registration = registry.blocks.find((candidate) => candidate.type === block.type);
-          const Icon = registration?.icon;
-          const chosen = selection?.kind === 'block' && selection.id === block.id;
-
-          return (
-            <li key={block.id} className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onSelect({ kind: 'block', id: block.id })}
-                className={`flex flex-1 items-center gap-2 text-left text-sm ${chosen ? 'text-primary' : ''}`}
-              >
-                {Icon === undefined ? null : <Icon aria-hidden className="size-4" />}
-                {registration === undefined
-                  ? t('blocks.unknownShort', { type: block.type })
-                  : t(registration.editorLabelKey)}
-              </button>
-
-              {/* A locked section still lets its blocks be edited; what it forbids is changing
-                  which blocks are there, and in what order. */}
-              {rule.locked ? null : (
-                <>
-                  <IconButton label={t('content.editor.moveUp')} onClick={() => onMoveBlock(block.id, -1)}>
-                    <ArrowUp aria-hidden className="size-4" />
-                  </IconButton>
-                  <IconButton label={t('content.editor.moveDown')} onClick={() => onMoveBlock(block.id, 1)}>
-                    <ArrowDown aria-hidden className="size-4" />
-                  </IconButton>
-                  <IconButton
-                    label={t('content.editor.duplicate')}
-                    onClick={() => onDuplicateBlock(block.id)}
-                  >
-                    <Copy aria-hidden className="size-4" />
-                  </IconButton>
-                  <IconButton label={t('content.editor.removeBlock')} onClick={() => onRemoveBlock(block.id)}>
-                    <Trash2 aria-hidden className="size-4" />
-                  </IconButton>
-                </>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <SortableContext items={section.blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
+        <ul className="flex flex-col gap-1">
+          {section.blocks.map((block) => (
+            <BlockNode
+              key={block.id}
+              block={block}
+              locked={rule.locked}
+              selected={selection?.kind === 'block' && selection.id === block.id}
+              onSelect={onSelect}
+              onMoveBlock={onMoveBlock}
+              onDuplicateBlock={onDuplicateBlock}
+              onRemoveBlock={onRemoveBlock}
+            />
+          ))}
+        </ul>
+      </SortableContext>
 
       {rule.locked ? null : <AddBlock sectionId={section.id} rule={rule} onAddBlock={onAddBlock} />}
 
-      {section.sections.map((nested) => (
-        <SectionNode
-          key={nested.id}
-          section={nested}
-          rule={ruleFor(rules, nested.key)}
-          rules={rules}
-          selection={selection}
-          depth={depth + 1}
-          onSelect={onSelect}
-          onAddBlock={onAddBlock}
-          onMoveSection={onMoveSection}
-          onMoveBlock={onMoveBlock}
-          onDuplicateBlock={onDuplicateBlock}
-          onRemoveSection={onRemoveSection}
-          onRemoveBlock={onRemoveBlock}
-        />
-      ))}
+      <SortableContext
+        items={section.sections.map((nested) => nested.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        {section.sections.map((nested) => (
+          <SectionNode
+            key={nested.id}
+            section={nested}
+            rule={ruleFor(rules, nested.key)}
+            rules={rules}
+            selection={selection}
+            depth={depth + 1}
+            onSelect={onSelect}
+            onAddBlock={onAddBlock}
+            onMoveSection={onMoveSection}
+            onMoveBlock={onMoveBlock}
+            onDuplicateBlock={onDuplicateBlock}
+            onRemoveSection={onRemoveSection}
+            onRemoveBlock={onRemoveBlock}
+          />
+        ))}
+      </SortableContext>
     </div>
+  );
+}
+
+function BlockNode({
+  block,
+  locked,
+  selected,
+  onSelect,
+  onMoveBlock,
+  onDuplicateBlock,
+  onRemoveBlock,
+}: {
+  block: BlockEnvelope;
+  locked: boolean;
+  selected: boolean;
+  onSelect: (selection: Selection) => void;
+  onMoveBlock: (id: string, delta: -1 | 1) => void;
+  onDuplicateBlock: (id: string) => void;
+  onRemoveBlock: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, style } = useRow(block.id, 'block');
+
+  const registration = registry.blocks.find((candidate) => candidate.type === block.type);
+  const Icon = registration?.icon;
+
+  return (
+    <li ref={setNodeRef} style={style} className="flex flex-wrap items-center gap-2">
+      {/* A locked section still lets its blocks be edited; what it forbids is changing which blocks
+          are there, and in what order. */}
+      {locked ? null : (
+        <DragHandle setRef={setActivatorNodeRef} attributes={attributes} listeners={listeners} />
+      )}
+
+      <button
+        type="button"
+        onClick={() => onSelect({ kind: 'block', id: block.id })}
+        className={`flex flex-1 items-center gap-2 text-left text-sm ${selected ? 'text-primary' : ''}`}
+      >
+        {Icon === undefined ? null : <Icon aria-hidden className="size-4" />}
+        {registration === undefined
+          ? t('blocks.unknownShort', { type: block.type })
+          : t(registration.editorLabelKey)}
+      </button>
+
+      {locked ? null : (
+        <>
+          <IconButton label={t('content.editor.moveUp')} onClick={() => onMoveBlock(block.id, -1)}>
+            <ArrowUp aria-hidden className="size-4" />
+          </IconButton>
+          <IconButton label={t('content.editor.moveDown')} onClick={() => onMoveBlock(block.id, 1)}>
+            <ArrowDown aria-hidden className="size-4" />
+          </IconButton>
+          <IconButton label={t('content.editor.duplicate')} onClick={() => onDuplicateBlock(block.id)}>
+            <Copy aria-hidden className="size-4" />
+          </IconButton>
+          <IconButton label={t('content.editor.removeBlock')} onClick={() => onRemoveBlock(block.id)}>
+            <Trash2 aria-hidden className="size-4" />
+          </IconButton>
+        </>
+      )}
+    </li>
+  );
+}
+
+function useRow(id: string, kind: RowKind) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id, data: { kind } });
+
+  return {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    isDragging,
+    style: { transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.6 : 1 },
+  };
+}
+
+/**
+ * What is dragged. A handle rather than the whole row, because the row is made of buttons: making
+ * it all draggable turns every click on "remove" into a race between a press and a drag.
+ */
+function DragHandle({
+  setRef,
+  attributes,
+  listeners,
+}: {
+  setRef: (element: HTMLElement | null) => void;
+  attributes: ReturnType<typeof useRow>['attributes'];
+  listeners: ReturnType<typeof useRow>['listeners'];
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <button
+      type="button"
+      ref={setRef}
+      aria-label={t('content.editor.reorder')}
+      title={t('content.editor.reorder')}
+      className="text-muted-foreground cursor-grab touch-none"
+      {...attributes}
+      {...listeners}
+    >
+      <GripVertical aria-hidden className="size-4" />
+    </button>
   );
 }
 

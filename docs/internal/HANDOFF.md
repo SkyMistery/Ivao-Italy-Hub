@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte undici fasi**: design
+**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte dodici fasi**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -17,8 +17,10 @@ grant fa finalmente raggiungere il dipartimento su cui è dato, e **G9** il live
 la fase più corta di M1, perché ha aperto e ha trovato la staff directory già in piedi, costruita da
 G4 e da G8 senza che nessuna delle due la chiamasse così, e **G10** la ricerca (**§24**), che chiude
 il **debito n.10** di §10: le tre domande lasciate aperte da M0 — rilevanza, evidenziazione, parole
-corte — hanno una risposta scritta e provata. Il prossimo lavoro è **G11**, le rifiniture
-dell'editor (§25). M0 resta chiusa e non
+corte — hanno una risposta scritta e provata, e **G11** le rifiniture dell'editor (**§25**), che
+chiude il **debito n.2**: l'editor dice quando il template si è mosso, applica una differenza alla
+volta, e si trascina con dnd-kit senza perdere le frecce, che sono l'unica strada da tastiera. Il
+prossimo lavoro è **G12**, l'ultima fase di M1 (§26). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -29,11 +31,11 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.13 (`03-design-m1.md`). **Piano di implementazione M1:** v2.3
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G10 sono chiuse** (§14–§24), la prossima
-è **G11**.
-**Test:** 456 .NET verdi (300 unit + 156 integrazione) + **220 Vitest** + **42 smoke Playwright** +
-**8 del giro pieno** (`pnpm e2e:full`).
+**Design M1:** v1.14 (`03-design-m1.md`). **Piano di implementazione M1:** v2.4
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G11 sono chiuse** (§14–§25), la prossima
+è **G12**, l'ultima.
+**Test:** 456 .NET verdi (300 unit + 156 integrazione) + **241 Vitest** + **42 smoke Playwright** +
+**10 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
@@ -1370,8 +1372,8 @@ differenze rispetto al template) è §9.1; il n.3 (`seo`) è §9.2, che ne decid
 domande della ricerca) è §7. Il n.6 (`firStaffScope`) resta aperto e passa a M2. Gli altri restano
 com'erano, ed è una scelta scritta.
 
-**Dove sono adesso** (7 set 2026, dopo G0-G10): **n.1 chiuso** in G0 (§14), **n.3 e n.4 chiusi**
-in G2 (§16), **n.10 chiuso** in G10 (§24). Restano aperti il **n.2**, che è il lavoro di G11, più il
+**Dove sono adesso** (7 set 2026, dopo G0-G11): **n.1 chiuso** in G0 (§14), **n.3 e n.4 chiusi**
+in G2 (§16), **n.10 chiuso** in G10 (§24), **n.2 chiuso** in G11 (§25). Restano aperti il
 n.5, il n.7, il n.8 e il n.9; il n.6 è di M2. G5 ne ha aggiunti due suoi, piccoli e scritti in §19: la slug di un documento che coincide con
 un codice di dipartimento, e il vocabolario che viaggia con ogni lista. Le voci qui sotto portano il segno di chi le ha chiuse: **questa lista e §7 devono dire la stessa
 cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
@@ -1385,10 +1387,12 @@ cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
    con l'**API vera**, contro MariaDB vera e l'applicazione pubblicata, sono tre test bloccanti in
    CI (`pnpm e2e:full`). Gli smoke restano quelli che non hanno un'API apposta, e al 6 set 2026 sono
    **tredici**.
-2. **Un cambio di template non si propaga, e l'editor non lo mostra.** Il design §7.7 lo mette
-   esplicitamente in M1 («Differenze rispetto al template»). La regola resta quella di M0 — un
-   template non riscrive mai una pagina da solo — ma l'editor deve **dire** che una sezione nuova
-   esiste.
+2. ~~**Un cambio di template non si propaga, e l'editor non lo mostra.**~~ **Chiuso in G11** (§25):
+   la regola non si è mossa — un template non riscrive mai una pagina da solo — e adesso l'editor
+   **dice** che cosa è cambiato, una differenza alla volta. Il terzo dei tre stati che design §9.1
+   chiedeva è stato **corretto** invece che improvvisato: «i vincoli sono cambiati» non è
+   calcolabile, perché quelli di prima non sono scritti da nessuna parte; «la pagina non soddisfa
+   più il vincolo di adesso» sì, ed è quello che l'editor riporta.
 3. ~~**`seo` non ha un campo nell'editor.**~~ **Chiuso in G2** (§16): è un `localizedObject` con la
    forma che il design M1 §9.2 decide — `{ title, description, ogImageMediaId }` per lingua — e
    viaggia nei valori del form. Il tipo nuovo del generatore era davvero un'estensione, come questa
@@ -2829,21 +2833,116 @@ Al 7 set 2026 la suite è **300 unit .NET, 156 di integrazione, 220 Vitest, 42 s
 
 ---
 
-## 25. Da dove riparte la prossima sessione (7 settembre 2026)
+## 25. G11 di M1: l'editor dice quando il template si è mosso (7 settembre 2026)
 
-### Si apre G11
+Le rifiniture, dopo che l'editor è stato usato davvero. La regola non si è mossa di un millimetro —
+**un template non riscrive mai una pagina da sé** — e quello che mancava era che l'editor lo
+**dicesse**: una sezione aggiunta a un template era invisibile a chiunque lavorasse sulle pagine
+nate da quello.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 11.
+### Il conto
 
-- **G11 — l'editor: differenze dal template, dnd-kit, anteprima.** Le rifiniture, **dopo** che
-  l'editor è stato usato davvero: G8 ne ha fatto nascere quattordici righe (cinque pagine e nove
-  dashboard), tutte con un `TemplateId`, che è il dato di cui la diff ha bisogno. È anche l'unica
-  fase di M1 che aggiunge una dipendenza, `dnd-kit`, e quella era già decisa dal design §9.3.
-- Poi **G12**: ricopiare `/about` e `/start` a mano dall'editor, il giro visivo, il rapporto di
-  chiusura con i numeri e il tag `v0.2.0-m1`.
+| | |
+|---|---|
+| Tabelle nuove | **zero**; nessuna migrazione, nessuna colonna |
+| Permessi nuovi | **zero**: `Content.ManageTemplates` esiste da M0, qui si legge e si nomina |
+| Endpoint scritti a mano | **zero**: la diff è tutta nel client, sui due corpi che già scarica |
+| Componenti custom | **zero fuori dall'editor**. `TemplateDifferences`, `LockedByTemplate` e `PreviewFrame` vivono in `features/content/` e non sono pezzi condivisi |
+| Meccanismi nuovi | **zero**. `templateDiff` sta accanto a `templateRules`, e `reorderSections`/`reorderBlocks` sono due funzioni in `body.ts` come le dieci che c'erano |
+| Dipendenze nuove | **una**, `@dnd-kit/core` + `sortable` + `utilities`, chiesta per nome dal design §9.3 |
 
-⚠️ **Il debito n.10 è chiuso** (§24). Di §10 restano aperti il n.2 — che è il lavoro di G11 — più il
-n.5, il n.7, il n.8 e il n.9; il n.6 è di M2.
+### Il terzo stato non si poteva calcolare, e il design è stato corretto
+
+Design §9.1 chiedeva tre stati, e il terzo era «sezione **cambiata** nei vincoli». Non è
+calcolabile: confrontare i vincoli di prima con quelli di adesso vuol dire sapere quali fossero, e
+**non lo sa nessuno** — le restrizioni non viaggiano nella copia, apposta, perché una pagina che le
+portasse potrebbe togliersele (`TemplateCopy.Reidentify`).
+
+Quello che si può chiedere onestamente è **se la pagina soddisfa ancora il vincolo com'è oggi**, e le
+due risposte concrete sono un blocco di un tipo che `allowedBlocks` non permette più, e una sezione
+`locked` la cui copia non è più quella del template — che può succedere solo se il template si è
+mosso, visto che una sezione bloccata nell'editor non si ristruttura.
+
+⚠️ E per quel terzo stato **non c'è nessun «allinea»**: applicarlo vorrebbe dire cancellare blocchi
+che qualcuno ha scritto, che è esattamente il pulsante premuto per sbaglio contro cui §9.1 mette in
+guardia. L'editor dice che cosa non torna e lascia decidere. Nemmeno un pulsante disabilitato, che è
+la stessa trappola con la faccia gentile — e c'è un test che conta i pulsanti.
+
+### Che cosa c'è adesso
+
+- **`features/content/templateDiff.ts`**: una funzione pura, `templateDiff(page, template)`, che
+  torna `added` / `removed` / `changed`, e `applyDifference`, che ne applica **una**. Il tipo
+  `AlignableDifference` esclude `changed` a livello di tipi: «non si allinea» non è una convenzione,
+  è un errore di compilazione.
+- Una sezione annidata il cui padre manca anche lui si riporta **una volta sola**, sul padre.
+- **Nessun template non è un template vuoto**: senza template non ci sono differenze. La prima
+  versione invece proponeva di cancellare ogni sezione della pagina, e il test l'ha preso al primo
+  giro — succede a chi ha un template che non è ancora arrivato, o che non può aprire (§9.4).
+- **La riga della sezione `locked`** dice quale template la fissa e chi può cambiarlo: il permesso
+  per nome e il dipartimento su cui è tenuto, oppure «puoi farlo tu» a chi ce l'ha. Il commento in
+  `BlockProperties` che prometteva «la riga qui sopra» adesso non mente più.
+- **dnd-kit sta sopra le frecce, non al loro posto.** Si trascina per una maniglia — non per la riga,
+  che è fatta di pulsanti — e una sezione `locked` non ha né maniglia né frecce.
+- **`PreviewFrame`**: tre larghezze, `max-width` sul renderer del sito. Non è un emulatore.
+
+### I test
+
+- `templateDiff.test.ts`, dodici casi, di cui il primo è
+  `TemplateDiffDetectsAddedRemovedAndChanged` e quattro sono su «una differenza alla volta».
+- `SectionTree.test.tsx`, quattro casi, il cuore dei quali arriva ai pulsanti **tabulando** e preme
+  Invio. Deliberatamente non `focus()`: la domanda è se una persona che si muove con la tastiera ci
+  **arriva**. Verificato rompendolo due volte — frecce trasformate in `span role="button"` (i due
+  test da tastiera rossi, quelli che contano verdi: la prova che è l'asserzione giusta a lavorare) e
+  frecce tolte del tutto (tre rossi).
+- `TemplatePanel.test.tsx`, cinque casi, fra cui quello che conta i pulsanti; verificato mettendo un
+  terzo pulsante disabilitato, che lo fa fallire.
+- `e2e/full/template.spec.ts`: si crea un template, ne nasce una pagina, si pubblica, un visitatore
+  la legge; poi il template guadagna una sezione, l'editor lo dice, e la pagina pubblica non è
+  cambiata — **né allora, né dopo che la differenza è stata accettata nella bozza e salvata**. Più la
+  misura delle tre larghezze. Verificati rompendo il prodotto: `templateDiff` che torna sempre vuoto,
+  e le tre larghezze rese uguali.
+
+### Due cose imparate contro il banco vero
+
+- **`X-Requested-With: hub` non è un dettaglio del client.** Una chiamata di preparazione scritta a
+  mano nelle spec è **403** senza quell'intestazione, ed è il prodotto che funziona: un form di un
+  altro sito può mandare il cookie, non può mettere un'intestazione.
+- **`POST /api/content/{id}/publish` senza corpo è 404**, non 400: l'endpoint dichiara un corpo, e
+  senza non ci si arriva nemmeno. Un 404 nudo che sembra «riga che non esiste» e invece è
+  «richiesta che non è arrivata».
+
+### Debiti nuovi che G11 lascia
+
+- ⚠️ **Un template non si scrive da nessuna schermata.** `key`, `required`, `locked` e
+  `allowedBlocks` sono i quattro campi su cui poggia tutto §9.1, e il form delle sezioni non ne ha
+  nessuno: oggi un template nasce da un seed o da una `PUT`. Non era nel perimetro di G11 e non ci è
+  entrato. Va deciso **prima** di dire a un coordinatore che «ogni dipartimento si fa i suoi
+  template» (§9.4). E `key` va restato **template-only**, per la stessa ragione degli altri tre.
+- **La diff confronta il corpo in bozza**, non l'ultima versione pubblicata. È giusto — si lavora
+  sulla bozza — ma vuol dire che due persone sulla stessa pagina vedono differenze diverse finché non
+  salvano. Con un editor per riga alla volta non si vede; se M2 aggiunge la modifica concorrente,
+  torna.
+
+---
+
+## 26. Da dove riparte la prossima sessione (7 settembre 2026)
+
+### Si apre G12, l'ultima
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 12.
+
+- **G12 — migrazione a mano, giro visivo, chiusura di M1.** Ricopiare `/about` e `/start` a mano
+  dall'editor — che è il vero collaudo di tutto quello che M1 ha costruito, fatto da chi lo userà —
+  il giro visivo, il rapporto di chiusura con i numeri **contro la previsione di design §12** (6
+  tabelle / 3 aree di permessi / 5 estensioni del generatore / 4 componenti custom / 1 endpoint
+  scritto a mano) e il tag `v0.2.0-m1`.
+- Il primo posto dove guardare per il conto è la riga «Il conto» di ogni sezione da §14 a §25: sono
+  già le stesse cinque voci, fase per fase.
+
+⚠️ **Il debito n.10 è chiuso** (§24) e **il n.2 pure** (§25): l'editor mostra le differenze dal
+template. Di §10 restano aperti il n.5, il n.7, il n.8 e il n.9; il n.6 è di M2. Il debito nuovo che
+G11 lascia — **nessuna schermata scrive un template** — è il più vicino a diventare un problema
+vero, perché §9.4 promette a ogni dipartimento i propri template.
 
 Undici cose che G5, G6, G7, G8, G9 e G10 lasciano pronte e che **non vanno rifatte**:
 

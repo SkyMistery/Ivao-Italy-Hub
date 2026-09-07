@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import type { Bootstrap, Department } from '../../shared/api/bootstrap';
+import { holdsPermission, type Bootstrap, type Department } from '../../shared/api/bootstrap';
 import type { ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageShell } from '../../shared/ui';
@@ -13,6 +13,7 @@ import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
 import type { ContentDetailDto } from './queries';
 import type { ContentFormValues } from './schema';
+import { MANAGE_TEMPLATES } from './templateRules';
 
 /**
  * One row of content in the editor, whichever kind it is. `new` is a row that does not exist yet:
@@ -96,6 +97,9 @@ export function ContentFormScreen({
         }}
         // The library of this department: a row picks its pictures out of its own files.
         mediaLibrary={mediaPickerQuery(department)}
+        // Asked of the template's department and not of this page's: a page of one department can
+        // be made from the template of another (design M1 §9.4).
+        canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}
         busy={create.isPending || update.isPending || publish.isPending || remove.isPending}
         publishError={publish.error}
         onSave={async (values: ContentFormValues, body) => {

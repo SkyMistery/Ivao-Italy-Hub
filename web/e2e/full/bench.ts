@@ -1,4 +1,4 @@
-import { expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
+import { expect, type APIResponse, type BrowserContext, type Locator, type Page } from '@playwright/test';
 
 /**
  * The moves the round is made of, written once. Everything here is about *driving* the application
@@ -131,4 +131,140 @@ export function metadata(page: Page): Locator {
 /** The properties of whatever is selected, which is the last one. */
 export function properties(page: Page): Locator {
   return page.locator('form').last();
+}
+
+/**
+ * A row of content made, read or changed through the API rather than through the screens.
+ *
+ * Setting a scene through the screens is the right thing when the screens are what is being tested;
+ * it is the wrong thing when they are only the way in. The one spec that uses these is about what
+ * the editor *says* once a template has moved on, and driving four forms to get there would be four
+ * more ways for it to fail for a reason that is not the one it asks about.
+ */
+export interface ContentRow {
+  readonly id: number;
+  readonly rowVersion: string;
+  readonly slug: string;
+  readonly kind: string;
+  readonly ownerDepartment: string;
+  readonly visibility: string;
+  readonly isTemplate: boolean;
+  readonly title: Record<string, string>;
+  readonly summary: Record<string, string> | null;
+  readonly seo: unknown;
+  readonly body: { schemaVersion: number; sections: unknown[] };
+  readonly schemaVersion: number;
+  readonly category: string | null;
+  readonly coverMediaId: number | null;
+  readonly pinned: boolean;
+  readonly sort: number;
+  readonly fileMediaId: number | null;
+}
+
+/** What a write looks like: the row as it came back, minus what only the server decides. */
+function writeOf(row: ContentRow): Record<string, unknown> {
+  return {
+    kind: row.kind,
+    slug: row.slug,
+    ownerDepartment: row.ownerDepartment,
+    visibility: row.visibility,
+    isTemplate: row.isTemplate,
+    title: row.title,
+    summary: row.summary,
+    seo: row.seo,
+    body: row.body,
+    schemaVersion: row.schemaVersion,
+    category: row.category,
+    coverMediaId: row.coverMediaId,
+    pinned: row.pinned,
+    sort: row.sort,
+    fileMediaId: row.fileMediaId,
+    rowVersion: row.rowVersion,
+  };
+}
+
+/**
+ * What the server demands on anything that changes state (`HubPipeline`): a cross site form can
+ * post with the cookie attached, but it cannot set a header. The typed client sends it on every
+ * call, so a helper here that forgot it is answered 403 — which is the product working, and is how
+ * this line came to be written.
+ */
+const asTheClientDoes = { 'X-Requested-With': 'hub' };
+
+/** The body of a call that must have worked, with the server's own words when it did not. */
+async function answered(call: Promise<APIResponse>): Promise<ContentRow> {
+  const response = await call;
+  expect(response.status(), await response.text()).toBeLessThan(300);
+  return (await response.json()) as ContentRow;
+}
+
+export function createContent(
+  context: BrowserContext,
+  row: Partial<ContentRow> & Pick<ContentRow, 'slug' | 'title' | 'body'>,
+): Promise<ContentRow> {
+  return answered(
+    context.request.post('/api/content', {
+      headers: asTheClientDoes,
+      data: {
+        kind: 'Page',
+        ownerDepartment: department.toUpperCase(),
+        visibility: 'Staff',
+        isTemplate: false,
+        summary: null,
+        seo: null,
+        schemaVersion: 1,
+        category: null,
+        coverMediaId: null,
+        pinned: false,
+        sort: 0,
+        fileMediaId: null,
+        // The one a new row carries. An empty string is answered 400, which is how M1 found that
+        // every create in the back office had been failing since M0 (handoff section 13).
+        rowVersion: '0001-01-01T00:00:00',
+        ...row,
+      },
+    }),
+  );
+}
+
+export function readContent(context: BrowserContext, id: number): Promise<ContentRow> {
+  return answered(context.request.get(`/api/content/${id}`));
+}
+
+/** The row back as it is, with whatever this caller changed on top. */
+export function writeContent(
+  context: BrowserContext,
+  row: ContentRow,
+  changes: Partial<ContentRow>,
+): Promise<ContentRow> {
+  return answered(
+    context.request.put(`/api/content/${row.id}`, {
+      headers: asTheClientDoes,
+      data: { ...writeOf(row), ...changes },
+    }),
+  );
+}
+
+export function pageFromTemplate(
+  context: BrowserContext,
+  templateId: number,
+  slug: string,
+): Promise<ContentRow> {
+  return answered(
+    context.request.post(`/api/content/from-template/${templateId}`, {
+      headers: asTheClientDoes,
+      data: { ownerDepartment: department.toUpperCase(), slug },
+    }),
+  );
+}
+
+export function publishContent(context: BrowserContext, id: number): Promise<ContentRow> {
+  // The changelog goes in even though it is null: the endpoint takes a body, and a POST with no
+  // body at all is not routed to it — it comes back a bare 404, which reads like a missing row.
+  return answered(
+    context.request.post(`/api/content/${id}/publish`, {
+      headers: asTheClientDoes,
+      data: { changelog: null },
+    }),
+  );
 }

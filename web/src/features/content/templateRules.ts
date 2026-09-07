@@ -23,6 +23,13 @@ export interface SectionRule {
 
 export const NO_RULES: ReadonlyMap<string, SectionRule> = new Map();
 
+/**
+ * The permission that may change any of this, held on the template's own department. It lives here
+ * because two screens need the same name: the one that checks it, and the one that tells a
+ * coordinator why a section will not move (design M1 §9.1).
+ */
+export const MANAGE_TEMPLATES = 'Content.ManageTemplates';
+
 export function templateRules(template: Body | null | undefined): ReadonlyMap<string, SectionRule> {
   if (!template) {
     return NO_RULES;
