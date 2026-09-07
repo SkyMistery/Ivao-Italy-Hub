@@ -41,7 +41,7 @@
         "width": "default",
         "required": false,
         "locked": false,
-        "allowedBlocks": ["heading", "text", "callout", "cta"],
+        "allowedBlocks": ["heading", "text", "callout", "cta", "staffList"],
         "blocks": []
       },
       {
@@ -64,6 +64,12 @@
               "title": { "$t": "seed.templates.about.contact.title" },
               "text": { "$t": "seed.templates.about.contact.text" }
             }
+          },
+          {
+            "id": "b_contact_cta",
+            "type": "cta",
+            "version": 1,
+            "props": { "label": { "$t": "seed.templates.about.contact.cta" }, "href": "/contact" }
           }
         ]
       }
