@@ -1,9 +1,35 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.45 — 7 settembre 2026 (**M1 è chiusa**: il conto contro la previsione, e la metrica «endpoint scritti a mano» corretta in §16)
+**Versione documento:** 0.46 — 7 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, e la sigla di un dipartimento è il suo segno)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.46** (7 set 2026, **G13**, dopo che Carmine ha eseguito la demo): due difetti trovati
+usando, e una decisione di segno.
+
+**Il soffitto di visibilità vale anche per le immagini**, ed è lo stesso `VisibilityCeiling` del
+changelog 0.29 — non un secondo controllo. Un file arriva nella libreria visibile allo staff
+(diventa pubblico perché qualcuno lo dice, non per essere arrivato), quindi un'immagine caricata e
+messa in una pagina era staff-only, la pagina usciva lo stesso e il visitatore vedeva un'immagine
+rotta: l'indirizzo di un file che non può vedere risponde 404, ed è giusto. Ora la pubblicazione
+**rifiuta** — non ripara, perché pubblicare una pagina non deve rendere pubblico un file di
+nascosto — e lo dice con il percorso della proprietà, come per una traduzione mancante. Vale per
+i tre modi di nominare un file: il corpo, la copertina di una news e il file di un documento.
+`BlockDocumentWalker` sa dire quali file mostra un documento, con i nomi delle proprietà presi da
+`JsonQuery`, l'unico posto che già li conosceva.
+
+**Il logout non ridisegnava la pagina** perché il bootstrap non è solo una query: la radice lo carica
+una volta e lo passa come **contesto** del router, ed è quella copia che l'header, la sidebar e le
+guardie leggono. Invalidare una query non rifà un `beforeLoad`. Un solo posto lo dice adesso —
+`sessionChanged` — e lo usa anche la risposta al 401.
+
+**Niente icone per i dipartimenti: la sigla è il segno** (deciso da Carmine). Erano nove scudi
+identici. Ragione: un fork non-IVAO riscrive comunque l'enum `Department`, quindi una mappa
+«dipartimento → icona» vivrebbe nel perimetro IVAO e gli costerebbe lavoro, e la sigla è già
+l'identificatore che lo staff usa. ⚠️ Il segno **non** entra nell'elenco chiuso di §8.3: non prende
+props, si monta solo nello slot di un'icona, e nasce dai dati. Il quinto componente dell'elenco
+resta quello che Carmine ha chiesto — l'avviso a quattro stati — e va scritto lì quando si fa.
 
 **Changelog 0.45** (7 set 2026): **M1 è chiusa.** Il conto contro la previsione di design M1 §12 —
 6 tabelle / 3 aree di permessi / 5 estensioni del generatore / 4 componenti custom / 1 endpoint a

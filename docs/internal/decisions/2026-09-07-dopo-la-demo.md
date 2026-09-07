@@ -1,7 +1,7 @@
 # Che cosa ha trovato Carmine eseguendo la demo di M1
 
 **Data:** 7 settembre 2026 — dopo il merge della PR #56, eseguendo `tools/demo-m1.md`
-**Stato:** quattro difetti (due corretti, due aperti), dodici richieste, quattro decisioni prese
+**Stato:** **quattro difetti corretti**, dodici richieste (una fatta), quattro decisioni prese
 **Dove si lavora:** ramo `m1/g13-fixes`; il tag `v0.2.0-m1` **aspetta** che questa lista sia chiusa
 
 Carmine si è fermato al punto 7 della demo: **i punti 8 e 9 non sono ancora stati eseguiti**, e sono
@@ -40,19 +40,54 @@ invalidarla non rifaceva niente. **Una correzione ne ha scoperta un'altra.**
 Corrette tutte e sei le mutazioni di cancellazione: l'invalidazione non si aspetta più.
 Test: `web/src/features/menu/mutations.test.tsx`.
 
-### D1 — Il logout non aggiorna la pagina — **aperto**
+### D1 — Il logout non aggiorna la pagina — **corretto** (`686ee82`)
 
-Si esce e si continua a vedere la versione da loggato finché non si ricarica a mano.
+L'ipotesi era giusta, ed è stata **misurata prima di correggere**: un test che monta la forma
+dell'applicazione — una radice che carica il bootstrap con `ensureQueryData`, una schermata che
+legge `useRouteContext` — fallisce esattamente come la demo.
 
-⚠️ **Ipotesi non ancora verificata**: il bootstrap (`/api/me`) è caricato una volta sola nella route
-radice con `ensureQueryData`. Se il logout non fa ripartire quel caricamento, la SPA continua a
-leggere il payload di prima — cioè **la stessa famiglia** di D2 e della correzione del loader. Da
-misurare, non da assumere.
+Il punto è che **il bootstrap non è solo una query**: la radice lo carica una volta e lo passa come
+**contesto** del router, ed è quella copia che leggono l'header, la sidebar e ogni guardia.
+Invalidare una query non rifà un `beforeLoad`, quindi la shell continuava a disegnare il nome di chi
+era appena uscito. Stessa famiglia di D2 e del loader, come previsto.
 
-### D3 — Un documento pubblicato con un'immagine non mostra l'immagine — **aperto**
+Un solo posto lo dice adesso, `sessionChanged`: **rimuove** la risposta in cache — non la invalida,
+perché `ensureQueryData` restituisce ciò che trova e la radice riceverebbe di nuovo il payload
+vecchio — e chiama `router.invalidate()`, che rifà anche le guardie. Lo usa anche la risposta al
+401, che voleva le stesse due righe.
 
-Nessuna ipotesi. Può essere l'indirizzo del file, la visibilità della riga media, o il renderer
-pubblico. Va indagato dal filo: guardare che cosa l'API manda e che cosa il browser chiede.
+⚠️ **Il logout va prima a casa.** Una schermata del back-office sta dietro una guardia che manda chi
+non ha sessione a `/auth/login`: ridisegnare dove si è avrebbe risposto a un clic su «esci» con il
+login di IVAO, che ha ancora la sua sessione e lo avrebbe fatto rientrare.
+
+Test: `web/src/features/me/logout.test.tsx`, verificato rompendolo due volte — con il corpo vecchio,
+e con la navigazione ma senza l'invalidazione.
+
+### D3 — Un documento pubblicato con un'immagine non mostra l'immagine — **corretto** (`0e28db1`)
+
+Guardato dal filo, come la nota chiedeva, ed è **la visibilità della riga media**. Un file arriva
+nella libreria come `Staff` — «diventa pubblico perché qualcuno lo dice, mai per essere arrivato», ed
+è la regola giusta — quindi un'immagine caricata e messa subito in una pagina è staff-only. La
+pagina usciva lo stesso e il visitatore riceveva **404** sull'indirizzo del file: anche questo per
+disegno, perché l'indirizzo di un file che non si può vedere non deve confermare che esiste.
+
+Quello che mancava è che **la pagina non aveva titolo per essere pubblicata portandolo**. La regola
+esisteva già: `VisibilityCeiling`, lo stesso soffitto sotto cui si cattura un blocco Data `frozen`.
+Ora risponde anche per le immagini, al solo momento in cui può — la pubblicazione — e lo dice con il
+percorso della proprietà, come per una traduzione mancante.
+
+**Rifiuta invece di riparare**: pubblicare una pagina non deve rendere pubblico un file di nascosto.
+
+Tre modi di nominare un file, un controllo solo: il corpo, la copertina di una news e il file di un
+documento — che è la forma in cui Carmine l'ha incontrato. `BlockDocumentWalker` sa dire quali file
+mostra un documento, con i nomi delle proprietà presi da `JsonQuery`, l'unico posto che già li
+conosceva.
+
+Test: `MediaEndToEndTests.PublishRefusesAPageShowingAPictureItsReadersMayNotSee`, verificato
+rompendolo. ⚠️ Ha fatto uscire anche un accoppiamento fra classi di test: `ContentEndToEndTests`
+scriveva un corpo che nominava la media `7`, e tutta l'assemblea scrive nello stesso database, quindi
+il file caricato in più da questo test ha spostato gli identificatori finché «questa media non è usata
+da nessuna parte» ha trovato quella pagina.
 
 ---
 
@@ -78,7 +113,12 @@ pubblico. Va indagato dal filo: guardare che cosa l'API manda e che cosa il brow
 6. **Calendario**: le voci distinte da una **chip colorata**.
 7. **`LiveStatusStrip`**: «troppo piatta, non fa risaltare le informazioni». Lavoro di gerarchia
    visiva, non di decorazione.
-8. **Icone dei dipartimenti** — deciso, vedi sotto.
+8. **Icone dei dipartimenti** — deciso, vedi sotto. ✅ **Fatta** (`6584438`): la sigla è il segno,
+   disegnata nello slot dell'icona che la sidebar già incornicia, quindi di un'altra famiglia
+   rispetto alle icone delle risorse — la trappola che questa nota si era segnata. Misurata in un
+   browser: una sigla di tre lettere sta in 20,4 px dentro i 20 che il padding lascia. ⚠️ **Non**
+   entra nell'elenco chiuso di §8.3: non prende props, si monta solo in uno slot di icona, e nasce
+   dai dati. Se Carmine la vede diversamente è una riga da aggiungere.
 
 **Calendario** (punto 4)
 
@@ -141,10 +181,10 @@ Non il riquadro degli errori del form: **un componente usabile ovunque**. Quinto
 
 ## Lo stato in due righe
 
-Ramo `m1/g13-fixes`, due commit, niente di non committato. Verde in locale, tutto rieseguito dopo le
-due correzioni: **457 test .NET** (300 unit + 157 integrazione, uno in più di M1 ed è quello nuovo),
-**254 Vitest** (28 file), lint, typecheck, format e i18n puliti.
+Ramo `m1/g13-fixes`, cinque commit, niente di non committato. **I quattro difetti sono chiusi.**
+Verde in locale, tutto rieseguito: **458 test .NET** (300 unit + 158 integrazione), **256 Vitest**
+(30 file), **42 smoke Playwright**, lint, typecheck, format e i18n puliti.
 
-⚠️ Non rieseguiti: `pnpm e2e` e `pnpm e2e:full`. Vanno fatti girare prima di chiudere G13, perché la
-correzione delle cancellazioni tocca sei schermate e il banco pieno è l'unico posto che le prova
-davvero.
+⚠️ Non rieseguito: `pnpm e2e:full`, il giro con l'API vera. Va fatto girare prima di chiudere G13,
+perché la correzione delle cancellazioni tocca sei schermate e il banco pieno è l'unico posto che le
+prova davvero.

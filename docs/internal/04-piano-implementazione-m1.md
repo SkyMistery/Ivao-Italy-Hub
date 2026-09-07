@@ -9,7 +9,13 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.7 — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
+**Versione:** 2.8 — 7 settembre 2026 (**i quattro difetti di G13 sono chiusi**, e la prima delle
+richieste con loro: il logout ridisegna la pagina — il bootstrap non è una query ma il contesto del
+router, e una query invalidata non rifà un `beforeLoad` — e una pagina non si pubblica più portando
+un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCeiling` dei blocchi
+Data. La sigla di un dipartimento è il suo segno. Restano le richieste da 5 in poi, e il tag.)
+
+**2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
 dodici richieste**. Due difetti sono già corretti — ogni data dell'hub era mostrata due ore indietro,
 e cancellare una riga lasciava la pagina aperta — e il secondo era una **regressione della correzione
@@ -1038,18 +1044,28 @@ seguire il tag, se Carmine preferisce; i difetti no.
    `InstantsAreUtcOnTheWireTests`.
 2. ~~Cancellare lascia la pagina aperta~~ — **fatto** (`fc33848`), sei mutazioni, con
    `features/menu/mutations.test.tsx`. Era una regressione della correzione del loader.
-3. **Il logout non aggiorna la pagina**: si continua a vedere la versione da loggato finché non si
-   ricarica. Ipotesi da verificare: il bootstrap è caricato una volta in radice e nessuno lo
-   ricarica — la stessa famiglia del n.2.
-4. **Un documento pubblicato con un'immagine non mostra l'immagine.** Nessuna ipotesi: si guarda dal
-   filo, che cosa manda l'API e che cosa chiede il browser.
+3. ~~Il logout non aggiorna la pagina~~ — **fatto** (`686ee82`), con
+   `web/src/features/me/logout.test.tsx`. L'ipotesi era giusta ed è stata misurata prima di
+   correggere: il bootstrap è il **contesto del router**, non una query che qualcuno osserva, e
+   invalidarla non rifà un `beforeLoad`. `sessionChanged` lo rimuove e chiama `router.invalidate()`;
+   lo usa anche la risposta al 401. Uscire porta prima a casa, o la guardia del back-office
+   risponderebbe al clic con il login di IVAO.
+4. ~~Un documento pubblicato con un'immagine non mostra l'immagine~~ — **fatto** (`0e28db1`), con
+   `MediaEndToEndTests.PublishRefusesAPageShowingAPictureItsReadersMayNotSee`. Era la visibilità
+   della riga media: un file nasce `Staff`, la pagina usciva lo stesso e il lettore riceveva 404.
+   La pubblicazione ora **rifiuta** sotto `VisibilityCeiling` — il corpo, la copertina di una news e
+   il file di un documento — e non ripara, perché pubblicare non deve rendere pubblico un file di
+   nascosto.
 
 **Le richieste**, nell'ordine che toglie più attrito a chi userà l'hub:
 
 5. Lo `slug` proposto dal titolo e correggibile.
 6. La conferma che l'editor ha fatto quello che è stato cliccato.
 7. «Cosa manca per pubblicare», viva e prima del rifiuto.
-8. Le **sigle** dei dipartimenti al posto delle nove icone identiche (deciso).
+8. ~~Le **sigle** dei dipartimenti al posto delle nove icone identiche~~ — **fatto** (`6584438`),
+   con `web/src/app/layouts/staffDestinations.test.tsx`, e guardata in un browser. ⚠️ Il segno non
+   entra nell'elenco chiuso di §8.3: non prende props, si monta solo in uno slot di icona, e nasce
+   dai dati.
 9. L'**avviso a quattro stati** condiviso. ⚠️ È il **quinto componente custom**: va aggiunto
    all'elenco chiuso di §8.3 con una riga, non di straforo.
 10. Il calendario: chip colorata per tipo, orario UTC con il locale fra parentesi, e **quattro

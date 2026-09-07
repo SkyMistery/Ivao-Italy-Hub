@@ -27,8 +27,8 @@ e **G12** (**§27**), la fase che verifica invece di costruire: due pagine ricop
 dall'editor, il giro visivo, la demo, la revisione §16.E e il conto contro la previsione. Ha trovato
 più difetti di qualunque altra fase, fra cui **ogni form del back-office si poteva salvare una volta
 sola per caricamento di pagina**. ⚠️ Poi Carmine ha **eseguito la demo** e ha trovato altri quattro
-difetti e dodici richieste (**§28**): due difetti sono corretti, due sono aperti, e **il tag
-`v0.2.0-m1` aspetta** che G13 sia chiusa (§29). M0 resta chiusa e non
+difetti e dodici richieste (**§28**): **tutti e quattro i difetti sono corretti**, restano le
+richieste, e **il tag `v0.2.0-m1` aspetta** che G13 sia chiusa (§29). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -39,11 +39,11 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.45. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.7
+**Piano:** v0.46. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.8
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
-aperta** (§28) e il tag viene dopo di lei.
-**Test:** 456 .NET verdi (300 unit + 156 integrazione) + **243 Vitest** + **42 smoke Playwright** +
-**11 del giro pieno** (`pnpm e2e:full`).
+aperta** (§28), i suoi quattro difetti sono chiusi, e il tag viene dopo di lei.
+**Test:** 458 .NET verdi (300 unit + 158 integrazione) + **256 Vitest** + **42 smoke Playwright** +
+**11 del giro pieno** (`pnpm e2e:full`, non rieseguito dopo G13).
 Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
@@ -3124,11 +3124,31 @@ cui riga è appena sparita. Il refetch va in 404, riprova, `onSuccess` non si ri
 `mutate` non partono. Prima che le schermate leggessero la query invece del loader, quella query non
 aveva osservatori: **una correzione ne ha scoperta un'altra**, e vale la pena aspettarselo di nuovo.
 
-### Aperti
+### Chiusi il 7 settembre, misurando prima di correggere
 
-- **Il logout non aggiorna la pagina.** Ipotesi non verificata: il bootstrap è caricato una volta
-  sola in radice con `ensureQueryData` e nessuno lo ricarica — la stessa famiglia dei due qui sopra.
-- **Un documento pubblicato con un'immagine non mostra l'immagine.** Nessuna ipotesi.
+**Il logout non aggiornava la pagina** (`686ee82`), e l'ipotesi era giusta: **il bootstrap non è
+solo una query**. La radice lo carica una volta con `ensureQueryData` e lo passa come **contesto del
+router**, ed è quella copia che leggono l'header, la sidebar e ogni guardia — invalidare una query
+non rifà un `beforeLoad`. Un posto solo lo dice adesso, `sessionChanged`: **rimuove** la risposta in
+cache (invalidarla non basta, `ensureQueryData` restituisce ciò che trova) e chiama
+`router.invalidate()`. Lo usa anche la risposta al 401. ⚠️ Uscire porta prima **a casa**: una
+schermata del back-office sta dietro una guardia che manda a `/auth/login`, e ridisegnare dove si è
+avrebbe risposto a un clic su «esci» con il login di IVAO, che ha ancora la sua sessione.
+
+**Un documento pubblicato con un'immagine non la mostrava** (`0e28db1`): guardato dal filo, è **la
+visibilità della riga media**. Un file nasce `Staff` — diventa pubblico perché qualcuno lo dice — e
+la pagina usciva lo stesso, così il lettore riceveva 404, anche questo per disegno. Quello che
+mancava è che la pagina non aveva titolo per uscire portandola. La pubblicazione ora **rifiuta**
+sotto `VisibilityCeiling`, lo stesso soffitto di un blocco Data `frozen`, per i **tre** modi di
+nominare un file: il corpo, la copertina di una news e il file di un documento — che è la forma in
+cui Carmine l'ha incontrato. Rifiuta e non ripara: pubblicare non deve rendere pubblico un file di
+nascosto.
+
+⚠️ Quel test ha fatto uscire un accoppiamento fra classi di test che era lì da prima: tutta
+l'assemblea di integrazione scrive nello **stesso** database, `ContentEndToEndTests` nominava la
+media `7` in un corpo, e il file caricato in più ha spostato gli identificatori finché «questa media
+non è usata da nessuna parte» ha trovato quella pagina. Un numero che nessun upload raggiunge, e la
+ragione scritta lì.
 
 ### Le decisioni prese in quella conversazione
 
@@ -3156,18 +3176,28 @@ aveva osservatori: **una correzione ne ha scoperta un'altra**, e vale la pena as
 
 ## 29. Da dove riparte la prossima sessione (7 settembre 2026)
 
-### Si continua G13, e il tag aspetta
+### Si continua G13 dalle richieste: **i quattro difetti sono chiusi**
 
-Ramo **`m1/g13-fixes`**, due commit, niente di non committato. Il piano di implementazione è a v2.7 e
-la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`.
+Ramo **`m1/g13-fixes`**, cinque commit, niente di non committato. Il piano di implementazione è a
+v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
+locale il 7 set 2026: **458 .NET** (300 unit + 158 integrazione), **256 Vitest**, **42 smoke
+Playwright**, lint, typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la
+correzione delle cancellazioni, e va fatto prima di chiudere la fase.
 
-**Il prossimo passo**, in ordine:
+**Il prossimo passo**, nell'ordine del piano di implementazione §G13:
 
-1. **Il logout che non aggiorna la pagina** — con l'ipotesi del bootstrap da verificare per prima.
-2. **L'immagine del documento che non si vede** — si guarda dal filo.
-3. **Le sigle dei dipartimenti** al posto delle nove icone identiche (deciso, e piccolo).
-4. Poi le richieste, a partire da quelle dell'editor: `slug` proposto, conferma dell'azione, «cosa
-   manca per pubblicare».
+1. Lo **`slug` proposto dal titolo** e correggibile (richiesta 5).
+2. La **conferma che l'editor ha fatto quello che è stato cliccato** (richiesta 6). Probabilmente
+   vuole prima l'**avviso a quattro stati** (richiesta 9), che è il **quinto** componente
+   dell'elenco chiuso di §8.3: il piano di implementazione dice che si aggiunge **con una riga**,
+   non di straforo — quindi piano §8.3, `UI_KIT_COMPONENTS`, una sezione nella ui-kit e il test che
+   le confronta.
+3. **«Cosa manca per pubblicare»**, viva e prima del rifiuto (richiesta 7). ⚠️ Adesso ha una voce in
+   più da mostrare: le immagini che i lettori della pagina non potrebbero vedere. È lo stesso elenco
+   che il rifiuto della pubblicazione già sa produrre.
+4. Poi il calendario (10), i **tipi di evento di divisione** (11 — ⚠️ **da proporre prima di
+   scriverlo**: vuole un vocabolario di divisione e un permesso di scope diverso da `Calendar.Edit`),
+   la striscia (12), la ricerca in sidebar (13) e il giro sull'editor (14).
 
 **Poi, e solo poi:**
 
