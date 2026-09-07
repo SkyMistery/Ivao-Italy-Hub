@@ -64,6 +64,7 @@ public class HubDbContext : DbContext
     public DbSet<ContentEntry> Contents => Set<ContentEntry>();
     public DbSet<ContentVersion> ContentVersions => Set<ContentVersion>();
     public DbSet<ContentCategory> ContentCategories => Set<ContentCategory>();
+    public DbSet<MenuItem> MenuItems => Set<MenuItem>();
     public DbSet<Link> Links => Set<Link>();
     public DbSet<MediaAsset> Media => Set<MediaAsset>();
     public DbSet<SearchIndexEntry> SearchIndex => Set<SearchIndexEntry>();
@@ -90,6 +91,7 @@ public class HubDbContext : DbContext
         configurationBuilder.Properties<PublishStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<StaffLevel>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ContentKind>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<MenuScope>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ContactStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<NotificationStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<GrantKind>().HaveConversion<string>().HaveMaxLength(16);

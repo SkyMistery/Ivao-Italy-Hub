@@ -5,7 +5,7 @@ namespace IvaoHub.Core.Content;
 
 /// <summary>
 /// What editorial content needs in the container: the block registry, the providers that answer for
-/// data blocks, publication and the seeder of the system templates.
+/// data blocks, publication and the seeder of the system templates and pages.
 /// <para>The registry is composed from every <see cref="IBlockDescriptor"/> registered, which is how
 /// a module adds a block without the core ever learning its name.</para>
 /// </summary>
@@ -43,7 +43,7 @@ public static class ContentServiceCollectionExtensions
         services.TryAddSingleton<MediaStorage>();
 
         services.TryAddScoped<ContentPublishService>();
-        services.TryAddScoped<ContentTemplateSeeder>();
+        services.TryAddScoped<ContentSeeder>();
 
         return services;
     }

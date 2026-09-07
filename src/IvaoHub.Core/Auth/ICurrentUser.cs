@@ -28,7 +28,11 @@ public interface ICurrentUser
 
     string Locale { get; }
 
-    /// <summary>Departments of the recognised staff positions.</summary>
+    /// <summary>
+    /// The departments this person is inside, for the purpose of what they may see: the ones their
+    /// recognised staff positions name, and the ones an active grant reached them on. It is what
+    /// the global query filter and the department filter of every list compare a row against.
+    /// </summary>
     IReadOnlySet<Department> Departments { get; }
 
     /// <summary>The director, the web team and a super administrator reach every department.</summary>

@@ -48,6 +48,12 @@ public static class CorePermissions
     public const string ContactsView = "Contacts.View";
     public const string ContactsEdit = "Contacts.Edit";
 
+    /// <summary>The area the CRUD engine derives <c>Menu.View</c> and <c>Menu.Edit</c> from.</summary>
+    public const string MenuArea = "Menu";
+
+    public const string MenuView = "Menu.View";
+    public const string MenuEdit = "Menu.Edit";
+
     public const string PermissionsManage = "Permissions.Manage";
     public const string ModulesManage = "Modules.Manage";
     public const string AuditView = "Audit.View";
@@ -73,6 +79,8 @@ public static class CorePermissions
         new(CalendarEdit, IsGlobal: false),
         new(ContactsView, IsGlobal: false),
         new(ContactsEdit, IsGlobal: false),
+        new(MenuView, IsGlobal: false),
+        new(MenuEdit, IsGlobal: false),
         new(PermissionsManage, IsGlobal: true),
         new(ModulesManage, IsGlobal: true),
         new(AuditView, IsGlobal: true),

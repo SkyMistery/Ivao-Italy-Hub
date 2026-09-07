@@ -1,0 +1,115 @@
+{
+  "slug": "pilots",
+  "kind": "Page",
+  "template": "section-page",
+  "visibility": "Public",
+  "title": {
+    "$t": "seed.pages.pilots.title"
+  },
+  "summary": {
+    "$t": "seed.pages.pilots.summary"
+  },
+  "menu": {
+    "scope": "Public",
+    "sort": 30
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_hero",
+        "key": "hero",
+        "title": {
+          "$t": "seed.pages.pilots.hero.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "lg",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_pilots_hero",
+            "type": "hero",
+            "version": 1,
+            "props": {
+              "title": {
+                "$t": "seed.pages.pilots.hero.title"
+              },
+              "text": {
+                "$t": "seed.pages.pilots.hero.text"
+              },
+              "align": "left",
+              "tone": "muted"
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_body",
+        "key": "body",
+        "title": {
+          "$t": "seed.pages.pilots.body.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_pilots_body_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.pilots.body.heading"
+              }
+            }
+          },
+          {
+            "id": "b_pilots_body_text",
+            "type": "text",
+            "version": 1,
+            "props": {
+              "markdown": {
+                "$t": "seed.pages.pilots.body.text"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "s_links",
+        "key": "links",
+        "title": {
+          "$t": "seed.pages.pilots.links.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "md",
+        "width": "default",
+        "blocks": [
+          {
+            "id": "b_pilots_links_heading",
+            "type": "heading",
+            "version": 1,
+            "props": {
+              "level": 2,
+              "text": {
+                "$t": "seed.pages.pilots.links.heading"
+              }
+            }
+          },
+          {
+            "id": "b_pilots_links_list",
+            "type": "linkList",
+            "version": 1,
+            "props": {
+              "limit": 6
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

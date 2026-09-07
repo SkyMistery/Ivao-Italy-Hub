@@ -54,6 +54,14 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindConfig> = {
       ...state,
     ],
   },
+  // The home of a department, which is a content row like the other three and is edited in the same
+  // editor. It has no list screen and needs none: a department has exactly one, and it is reached
+  // from the department's own page rather than from a list of one row (design M1 §14).
+  Dashboard: {
+    kind: 'Dashboard',
+    titles: 'dashboard',
+    columns: [...identity, ...state],
+  },
   Document: {
     kind: 'Document',
     titles: 'documents',

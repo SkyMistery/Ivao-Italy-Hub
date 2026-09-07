@@ -265,10 +265,12 @@ app.MapMediaEndpoints();
 app.MapMediaFileEndpoint();
 app.MapContentEndpoints();
 app.MapCategoriesEndpoints();
+app.MapMenuEndpoints();
 app.MapCalendarEndpoints();
 app.MapContactsEndpoints();
 app.MapNotificationPreferenceEndpoints();
 app.MapBlockDataEndpoint();
+app.MapSeoEndpoints();
 app.MapSearchEndpoint();
 
 // The administration of the hub itself: who holds which permission, who administers the system,

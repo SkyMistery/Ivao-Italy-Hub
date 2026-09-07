@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { emptyBody, type Body } from '../../blocks';
 import type { Department, LocalizedString } from '../../shared/api/bootstrap';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
+import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 import { emptyLocalized } from '../../shared/i18n/localized';
 
 import {
@@ -87,7 +88,7 @@ export function emptyContent(
     category: '',
     pinned: false,
     sort: 0,
-    rowVersion: '',
+    rowVersion: NEW_ROW_VERSION,
   };
 }
 

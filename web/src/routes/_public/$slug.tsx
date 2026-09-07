@@ -1,8 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 import { ContentRenderer, readBody } from '../../blocks';
 import { publicContentQuery } from '../../features/content/queries';
+import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { PageMetadata } from '../../shared/seo/PageMetadata';
 import { NotFound } from '../../shared/ui';
 
 /**
@@ -24,11 +27,24 @@ export const Route = createFileRoute('/_public/$slug')({
 });
 
 function PublicContentPage() {
+  const { i18n } = useTranslation();
   const read = useLocalized();
   const content = Route.useLoaderData();
+  const { bootstrap } = Route.useRouteContext();
 
   return (
     <article className="flex flex-col">
+      <PageMetadata
+        title={content.title}
+        description={content.summary}
+        seo={content.seo}
+        divisionName={resolveLocalized(
+          bootstrap.division.name,
+          i18n.language,
+          bootstrap.division.defaultLocale,
+        )}
+      />
+
       {/* The title of the row is what a browser tab and a search result use; what the page itself
           shows is whatever heading block the editor put at the top of it. */}
       <h1 className="sr-only">{read(content.title)}</h1>

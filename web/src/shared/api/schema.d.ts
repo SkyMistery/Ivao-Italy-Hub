@@ -382,6 +382,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/menu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MenuList"];
+        put?: never;
+        post: operations["MenuCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/menu/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MenuGet"];
+        put: operations["MenuUpdate"];
+        post?: never;
+        delete: operations["MenuDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar": {
         parameters: {
             query?: never;
@@ -636,6 +668,12 @@ export interface components {
             kind: components["schemas"]["BlockKind"];
             alwaysLive: boolean;
         };
+        /**
+         * @description SiteDepartment is the department the site itself belongs to: its menu, its
+         *     system templates and the pages the installation was born with. The client needs it in order to
+         *     know where the menu screen lives, and it arrives here rather than being written into the client,
+         *     which is the whole rule of this endpoint (CLAUDE.md §2).
+         */
         BootstrapDivision: {
             code: string;
             name: {
@@ -645,6 +683,7 @@ export interface components {
             defaultLocale: string;
             timezone: string;
             firStaffScope: string;
+            siteDepartment: string;
         };
         /**
          * @description One module of this build. Enabled is false for an optional module the
@@ -659,6 +698,7 @@ export interface components {
         };
         BootstrapNavigation: {
             public: components["schemas"]["NavItem"][];
+            footer: components["schemas"]["NavItem"][];
             staff: components["schemas"]["NavItem"][];
         };
         /** @description A department of null means the permission is held on every department. */
@@ -970,7 +1010,7 @@ export interface components {
          * @description What an editorial row is. One table for all three (plan section 9.3).
          * @enum {unknown}
          */
-        ContentKind: "Page" | "News" | "Document";
+        ContentKind: "Page" | "News" | "Document" | "Dashboard";
         /**
          * @description A content row as a list shows it. The body is deliberately absent: a list of pages does not
          *     need a megabyte of blocks per row to draw a table.
@@ -1289,14 +1329,89 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /** @description The same, as the form loads it, with the version to write back. */
+        MenuItemDetailDto: {
+            /** Format: int64 */
+            id: number;
+            scope: components["schemas"]["MenuScope"];
+            /** Format: int64 */
+            parentId: null | number;
+            /** Format: int32 */
+            sort: number;
+            label: components["schemas"]["LocalizedOfstring"];
+            path: string;
+            visibility: components["schemas"]["Visibility"];
+            isActive: boolean;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description One entry of the site menu, as the back office list shows it. */
+        MenuItemListDto: {
+            /** Format: int64 */
+            id: number;
+            scope: components["schemas"]["MenuScope"];
+            /** Format: int64 */
+            parentId: null | number;
+            /** Format: int32 */
+            sort: number;
+            label: components["schemas"]["LocalizedOfstring"];
+            path: string;
+            visibility: components["schemas"]["Visibility"];
+            isActive: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description What a client may set. ⚠️ There is no `OwnerDepartment` here, and its absence is the rule:
+         *     the menu belongs to the web team, so the department is a constant of the entity rather than a
+         *     field a payload can move. Nothing has to refuse the move because there is nothing to send.
+         */
+        MenuItemWriteDto: {
+            scope: components["schemas"]["MenuScope"];
+            /** Format: int64 */
+            parentId: null | number;
+            /** Format: int32 */
+            sort: number;
+            label: components["schemas"]["LocalizedOfstring"];
+            path: string;
+            visibility: components["schemas"]["Visibility"];
+            isActive: boolean;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description Which menu of the site an entry belongs to.
+         * @enum {unknown}
+         */
+        MenuScope: "Public" | "Footer";
         /** @description What an administrator sets on a module. One switch, and that is the whole screen. */
         ModuleMaintenanceRequest: {
             maintenance: boolean;
         };
-        /** @description Key is a translation key such as `nav.home`. */
+        /**
+         * @description One entry of a menu. Exactly one of the two names is set: Key is a
+         *     translation key such as `nav.staff`, which is what a module registers because it cannot
+         *     know the language of the browser; Label is the text itself in every language
+         *     of the division, which is what an editorial row carries because the person who wrote it typed
+         *     words and not a key.
+         */
         NavItem: {
-            key: string;
+            /** @description Translation key of a module's entry, null for an editorial one. */
+            key: null | string;
+            /** @description Where the entry leads: a path of this site, or an address of somewhere else. */
             path: string;
+            label: null | components["schemas"]["LocalizedOfstring"];
+            /** @description Sub entries, one level deep and never more. */
+            children: components["schemas"]["NavItem"][];
         };
         /** @description One kind of notification, and whether this member wants it. */
         NotificationPreferenceDto: {
@@ -1471,6 +1586,29 @@ export interface components {
         PagedResultOfMediaListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["MediaListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfMenuItemListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["MenuItemListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -2440,6 +2578,163 @@ export interface operations {
         };
     };
     CategoriesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfMenuItemListDto"];
+                };
+            };
+        };
+    };
+    MenuCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MenuItemWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MenuItemDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    MenuGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MenuItemDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MenuItemWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MenuItemDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuDelete: {
         parameters: {
             query?: never;
             header?: never;

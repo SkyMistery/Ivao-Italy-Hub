@@ -56,12 +56,18 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         Assert.True(module.GetProperty("enabled").GetBoolean());
         Assert.False(module.GetProperty("maintenance").GetBoolean());
 
-        // Its menu entry is composed with the core's, as a translation key and not as a phrase.
+        // Its menu entry is composed with the editorial ones, as a translation key and not as a
+        // phrase: a module cannot know which language the browser is drawing.
+        //
+        // ⚠️ The core no longer puts a home entry there. Since M1 G8 the public menu is a table the
+        // staff edits, so the entry that leads to the front page is a row seeded with the page
+        // itself — which is why the first entry has no key at all, and why what is asserted about
+        // the module's is that it survived the composition rather than what position it took.
         var publicNavigation = body.GetProperty("navigation").GetProperty("public").EnumerateArray()
             .Select(entry => (entry.GetProperty("key").GetString(), entry.GetProperty("path").GetString()))
             .ToArray();
 
-        Assert.Equal(("nav.home", "/"), publicNavigation[0]);
+        Assert.Equal((null, "/"), publicNavigation[0]);
         Assert.Contains(("nav.atc", "/atc"), publicNavigation);
 
         // And its endpoints are mapped, under its own prefix and nowhere else.

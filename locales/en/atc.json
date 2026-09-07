@@ -5,6 +5,17 @@
   },
   "atc": {
     "title": "ATC operations",
-    "lead": "What this department publishes arrives with the module itself. For now this page is here to show that a module brings its own route, its own menu entry and its own words, and that the core knows none of them."
+    "lead": "What this department publishes lives on the page above, written in the editor like every other page of the site. What follows is the module's own: where to go for the things that are not part of the hub yet.",
+    "services": {
+      "title": "Tools",
+      "vsop": {
+        "title": "Controller tools",
+        "text": "Booking, positions and the rest of what runs beside the hub."
+      },
+      "legacy": {
+        "title": "Services",
+        "text": "The pages this division still serves from the previous application."
+      }
+    }
   }
 }

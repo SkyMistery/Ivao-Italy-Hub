@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { stubTheApi } from './fixtures';
-import { englishCommon } from './locales';
+import { englishAtc, englishCommon } from './locales';
 
 /**
  * The application comes up in a browser.
@@ -30,7 +30,10 @@ test('the home page renders inside its shell', async ({ page }) => {
   // "the heading is missing" and "the application crashed" are very different bug reports.
   await expect(page.getByText('Something went wrong!')).toHaveCount(0);
 
-  await expect(page.getByRole('heading', { name: englishCommon.home.heading })).toBeVisible();
+  // Since M1 G8 the front page is a published row, so what is asserted is the block the fixture
+  // published and not a sentence of the application's own: the day this page draws words the code
+  // put there, this fails.
+  await expect(page.getByRole('heading', { name: 'Welcome to the division', level: 1 })).toBeVisible();
 
   // The frame around it: the division name from the bootstrap, and the footer built from the
   // language files. Their presence is what says the layout mounted rather than just the route.
@@ -38,6 +41,56 @@ test('the home page renders inside its shell', async ({ page }) => {
   await expect(
     page.getByText(englishCommon.footer.version.replace('{{version}}', '0.0.0-e2e')),
   ).toBeVisible();
+});
+
+test('the menu is what the bootstrap says, one level deep, and the footer carries its own', async ({
+  page,
+}) => {
+  await page.goto('/');
+
+  // Both kinds of entry, drawn side by side: an editorial row shows its words, a module's shows
+  // what its key translates to. Neither is written in the client (design M1 §8.1).
+  // Named, because the header holds two: the bar with the division's own name, and the menu. The
+  // first one on the page is the bar, which is how this assertion first went looking in the wrong
+  // half of the header.
+  const navigation = page.getByRole('navigation', { name: 'Main' });
+  await expect(navigation.getByText('Home', { exact: true })).toBeVisible();
+  await expect(navigation.getByText(englishAtc.nav.atc, { exact: true })).toBeVisible();
+
+  // A parent with children is a drop down, and it holds itself first so its own address stays
+  // reachable: a heading that leads nowhere is what the alternative would be.
+  await navigation.getByText('About', { exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Team', exact: true })).toBeVisible();
+
+  // The footer draws the entries of its own scope, which the top menu must not show.
+  await expect(page.getByRole('link', { name: 'Legal', exact: true })).toBeVisible();
+  await expect(navigation.getByText('Legal', { exact: true })).toHaveCount(0);
+});
+
+test('the reading column of the home is a column and not a strip', async ({ page }) => {
+  // Geometry, because the text was right and in the wrong place twice in this repository already
+  // (handoff §13): a page drawn by the renderer has to be a readable column, not the full width of
+  // a desktop window and not a 255 pixel strip.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/');
+
+  const heading = page.getByRole('heading', { name: 'Welcome to the division', level: 1 });
+  await expect(heading).toBeVisible();
+
+  const column = await heading.boundingBox();
+  const frame = await page.locator('main').boundingBox();
+  expect(column, 'the heading has no box, so nothing was laid out').not.toBeNull();
+  expect(frame, 'the shell has no box, so the page was drawn outside it').not.toBeNull();
+
+  // Wide enough to be a column and not the 255 pixel strip of handoff §13.
+  expect(column!.width).toBeGreaterThan(500);
+
+  // And narrower than the frame it sits in, by enough to see. This is the assertion that actually
+  // distinguishes the two states, and it was written by measuring both rather than by guessing: a
+  // section at `width: default` is 992 wide inside a 1152 frame, one at `full` is 1088 — so a bound
+  // of "under 1100" would have passed for both, which is what the first version of this test did.
+  expect(frame!.width - column!.width).toBeGreaterThan(100);
+  expect(column!.x).toBeGreaterThan(frame!.x);
 });
 
 test('the header carries the controls every layout shares', async ({ page }) => {

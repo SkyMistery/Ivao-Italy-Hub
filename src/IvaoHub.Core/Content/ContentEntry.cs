@@ -11,6 +11,16 @@ public enum ContentKind
     Page,
     News,
     Document,
+
+    /// <summary>
+    /// The home of a department inside the back office: one row per department, seeded from a
+    /// system template and edited in the editor every department already uses (design M1 section
+    /// 14, note 2026-09-05-dashboard-di-dipartimento).
+    /// <para>Last in the enum because the values are stored as their names and a new one has to be
+    /// additive. It is not a public address: <see cref="ContentEntry.Url"/> sends it to
+    /// <c>/staff/{department}</c>, and the public route only ever serves <see cref="Page"/>.</para>
+    /// </summary>
+    Dashboard,
 }
 
 /// <summary>
@@ -97,11 +107,18 @@ public sealed class ContentEntry
 
     public DateTime RowVersion { get; set; }
 
-    /// <summary>Where the public site shows this row. One place decides, so the index agrees with it.</summary>
+    /// <summary>
+    /// Where this row is read. One place decides, so the search index agrees with it.
+    /// <para>A dashboard is the one kind whose address is not on the public site: it is the home of
+    /// a department in the back office, and it is its <b>department</b> and not its slug that says
+    /// which one — the slug is the department's own code, so the two agree, and this expression is
+    /// the one that would still be right if they ever did not.</para>
+    /// </summary>
     public string Url => Kind switch
     {
         ContentKind.News => $"/news/{Slug}",
         ContentKind.Document => $"/documents/{Slug}",
+        ContentKind.Dashboard => $"/staff/{OwnerDepartment.ToString().ToLowerInvariant()}",
         _ => $"/{Slug}",
     };
 

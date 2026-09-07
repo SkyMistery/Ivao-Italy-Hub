@@ -1,4 +1,12 @@
-import { Button, DarkModeToggle, Navbar, NavigationMenu, Separator, Subtle } from '@ivao/atmosphere-react';
+import {
+  Button,
+  DarkModeToggle,
+  Navbar,
+  NavigationMenu,
+  type NavigationMenuProps,
+  Separator,
+  Subtle,
+} from '@ivao/atmosphere-react';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useLogout } from '../../features/me/queries';
 import type { Bootstrap } from '../../shared/api/bootstrap';
 import { loginHref } from '../../shared/api/client';
-import { resolveLocalized } from '../../shared/i18n/localized';
+import { navLabel, resolveLocalized } from '../../shared/i18n/localized';
 import { LocaleSwitcher } from '../../shared/ui';
 
 import { RouterAnchor } from './RouterAnchor';
@@ -34,10 +42,27 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
   const user = bootstrap.user;
   const title = resolveLocalized(bootstrap.division.name, i18n.language, bootstrap.division.defaultLocale);
 
-  const sections = bootstrap.navigation.public.map((item) => ({
-    title: t(item.key),
-    href: item.path,
-  }));
+  // The menu is a table now, and this is where that becomes visible: an entry taken out of
+  // `cms_menu_items` leaves the site on the next request, with nothing recompiled (design M1 §8.1).
+  const sections: NavigationMenuProps['sections'] = bootstrap.navigation.public.map((item) => {
+    const label = navLabel(item, t, i18n.language, bootstrap.division.defaultLocale);
+
+    if (item.children.length === 0) {
+      return { title: label, href: item.path };
+    }
+
+    // Atmosphere draws a section with `links` as a drop down, and a drop down has no address of
+    // its own — so the entry itself becomes the first of its own children rather than a heading
+    // that leads nowhere. Depth stops here: the server never sends a third level.
+    return {
+      title: label,
+      links: [item, ...item.children].map((entry) => ({
+        title: navLabel(entry, t, i18n.language, bootstrap.division.defaultLocale),
+        href: entry.path,
+        description: '',
+      })),
+    };
+  });
 
   return (
     <header className="border-border border-b">
@@ -91,6 +116,24 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
   return (
     <footer className="border-border mt-12 border-t">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6">
+        {/* Two rows of links, and they are two different things. The first is what the staff put in
+            the footer menu — pages of this site, edited in the back office like the top menu. The
+            second is the legal links of headquarters, which are the same for every division and
+            live in `locales/` because they are words and not rows. */}
+        {bootstrap.navigation.footer.length > 0 && (
+          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {bootstrap.navigation.footer
+              .flatMap((item) => [item, ...item.children])
+              .map((item) => (
+                <FooterEntry
+                  key={item.path}
+                  path={item.path}
+                  label={navLabel(item, t, i18n.language, bootstrap.division.defaultLocale)}
+                />
+              ))}
+          </nav>
+        )}
+
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {links.map((link) => (
             <a
@@ -119,6 +162,26 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
         <Subtle>{t('footer.version', { version: bootstrap.version })}</Subtle>
       </div>
     </footer>
+  );
+}
+
+/**
+ * One entry of the footer menu. A path of this site is followed by the router, which keeps the
+ * single page application single; anything else is an ordinary link out, and the editor is allowed
+ * to write one — `MenuItemWriteDtoValidator` accepts a path or an absolute web address and nothing
+ * in between.
+ */
+function FooterEntry({ path, label }: { path: string; label: string }) {
+  const className = 'text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline';
+
+  return path.startsWith('/') ? (
+    <RouterAnchor href={path} className={className}>
+      {label}
+    </RouterAnchor>
+  ) : (
+    <a href={path} target="_blank" rel="noreferrer noopener" className={className}>
+      {label}
+    </a>
   );
 }
 

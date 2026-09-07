@@ -9,7 +9,17 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.0 — 6 settembre 2026 (**G6 è chiusa**: il calendario ha la sua UI, `CalendarView` è il
+**Versione:** 2.1 — 7 settembre 2026 (**G8 è chiusa**: il sito pubblico esiste e non lo disegna il
+codice. Il menu è una tabella — si toglie una voce dal back office e sparisce dal sito, provato in un
+browser contro l'API vera — le cinque pagine di sistema sono seminate da template con Lorem tradotto,
+ogni dipartimento nasce con la propria dashboard a blocchi, e un grant fa finalmente raggiungere il
+dipartimento su cui è dato. Una tabella, due permessi, due endpoint scritti a mano (`sitemap.xml` e
+`robots.txt`), un componente che non disegna niente. Quattro deviazioni dalla lettera di questa
+pagina sono scritte dentro la fase, e la fase ne ha trovato **tre di difetti**: uno più vecchio di
+M1 — nessun form poteva creare una riga contro l'API vera — e due di igiene dei test. La prossima è
+G9 o G10, in qualsiasi ordine.)
+
+**2.0** — 6 settembre 2026 (**G6 è chiusa**: il calendario ha la sua UI, `CalendarView` è il
 secondo componente custom dei quattro, e una voce proiettata da un modulo non la scrive nessuno.
 Zero tabelle, zero permessi, zero endpoint; due estensioni generiche al motore CRUD e al provider.
 Una deviazione dalla lettera di questa pagina è scritta dentro la fase, ed è che `ExtraWritePolicy`
@@ -115,7 +125,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G5 | News, documenti, categorie — **fatta** | G4 | due `kind`, due configurazioni di lista, cinque rotte pubbliche, `cms_categories` |
 | G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` — **fatta** | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
 | G7 | Contatti, servizio notifiche, namespace `mail` — **fatta** | G2 | un messaggio genera una mail in Mailpit passando dalla coda |
-| G8 | Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate; ogni dipartimento apre `/staff/{dept}` e trova la propria dashboard |
+| G8 | Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO — **fatta** | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate; ogni dipartimento apre `/staff/{dept}` e trova la propria dashboard |
 | G9 | Live status e staff directory | G4 | `LiveStatusStrip`, sezione staff di `/about`, nessun profilo pubblico |
 | G10 | Ricerca: schermata, rilevanza, evidenziazione | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
 | G11 | Editor: differenze dal template, dnd-kit, anteprima | G8 | tre stati della diff, «allinea» una differenza alla volta, su/giù da tastiera intatto |
@@ -676,7 +686,30 @@ del destinatario.
 
 ---
 
-### G8 — Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO
+### G8 — Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO — **fatta il 7 settembre 2026**
+
+⚠️ **Come è andata** (7 set 2026, design M1 v1.11): quattro deviazioni dalla lettera di questa
+pagina, tutte scritte nel design, e **tre difetti trovati facendo**.
+
+Le deviazioni. **Chi possiede il sito è una costante sola** (`SiteOwnership`) e arriva alla SPA da
+`/api/me`: la fase diceva «gestione in `/staff/wd/menu`», e un file di route con `wd` nel nome
+sarebbe stato un codice di dipartimento scritto dentro il client. L'indirizzo è quello, la guardia
+lo confronta con ciò che il bootstrap dichiara. **`NavItem` porta anche i figli**, e la navigazione
+del bootstrap guadagna lo scope `footer`: la tabella ha due scope da progetto e senza il secondo
+metà di essa non sarebbe disegnabile. **La voce fissa `nav.home` non esiste più** — la home è una
+riga di menu seminata con la pagina, o il menu non è dati. **Il template della dashboard non porta
+blocchi filtrati per dipartimento**: il template è uno e le righe sono nove, quindi un `department`
+scritto lì mentirebbe per otto; il filtro lo mette il dipartimento nell'editor, che è la divisione
+del lavoro che la nota di decisione descrive.
+
+I difetti. ⚠️ **Nessun form del back office poteva creare una riga contro l'API vera**: mandavano
+`rowVersion: ""`, che non è una data. Vale per link, categorie, pagine e menu, viene da M0, ed è
+sopravvissuto perché il giro di G0 crea da template e gli smoke stubbano l'API — G8 è la prima fase
+che ha spedito un form vuoto al banco. E due di igiene dei test, entrambi in questa fase e entrambi
+visibili solo eseguendo la suite intera: un intervallo di VID che apparteneva già a
+`CalendarEndToEndTests` (il cui 660002 è un superadmin, quindi due rifiuti smettevano di essere
+rifiuti) e una riga di menu che un test lasciava in tabella, nascondendo la voce del modulo `atc` a
+ogni classe successiva.
 
 **Obiettivo**: il sito pubblico esiste e **non lo disegna il codice**. Design §8. È la fase che risponde
 alla domanda di M1, ed è grossa: può prendere due sessioni (menu + pagine seedate, poi rotte pubbliche
@@ -722,7 +755,7 @@ Task:
    `sitemap.xml` generata dalle righe pubblicate, `robots.txt`. ⚠️ Entrambi i file vanno in
    `SpaFallbackExclusions`, o la SPA se li mangia. Nessun prerender, nessun prefisso lingua negli URL.
 
-**Accettazione**: `MenuComposesEditorialAndModuleItems`, `MenuIsOwnedByTheWebDepartment` (un
+**Accettazione** (tutti verdi il 7 set 2026): `MenuComposesEditorialAndModuleItems`, `MenuIsOwnedByTheWebDepartment` (un
 coordinatore di un altro dipartimento → 403), `SystemPagesSeedAppliesOnceAndKeepsStaffEdits`,
 `EveryDepartmentIsBornWithADashboard` e `ADashboardIsNotPublic` (una riga `Department` non esce mai
 dalla rotta pubblica, che serve solo `kind = Page`),

@@ -29,7 +29,7 @@ export function contentMetadataSchema(kind: ContentKind, categories: readonly Ch
     // Fixed by the list this row was opened from, exactly as the department is: `/staff/x/news`
     // edits news. A select here would let a page become a document with the fields of a page still
     // on screen, which is a form that lies about what it is editing.
-    kind: z.enum(['Page', 'News', 'Document']).meta({ hidden: true }),
+    kind: z.enum(['Page', 'News', 'Document', 'Dashboard']).meta({ hidden: true }),
     slug: z.string(),
     ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),

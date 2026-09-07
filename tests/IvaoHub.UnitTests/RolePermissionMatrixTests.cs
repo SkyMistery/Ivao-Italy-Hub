@@ -28,6 +28,12 @@ public sealed class RolePermissionMatrixTests
             CorePermissions.CalendarEdit,
             CorePermissions.ContactsView,
             CorePermissions.ContactsEdit,
+            // The site menu is departmental like everything else, and every row of it belongs to
+            // the web team: a coordinator of another department therefore holds Menu.Edit on a
+            // department that owns no menu row, which is the whole of its authorisation and the
+            // reason design M1 section 8.1 needs no rule of its own (MenuItem.Owner).
+            CorePermissions.MenuView,
+            CorePermissions.MenuEdit,
         ];
 
         Assert.Equal(expected.Order(), RolePermissionMatrix.OnOwnDepartment(StaffLevel.Coordinator).Order());

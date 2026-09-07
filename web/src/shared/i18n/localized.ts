@@ -37,3 +37,20 @@ export function filledLocales(value: LocalizedString | null | undefined): string
 export function emptyLocalized(locales: readonly string[]): Record<string, string> {
   return Object.fromEntries(locales.map((locale) => [locale, '']));
 }
+
+/**
+ * What a menu entry is called. Two kinds of entry arrive from `/api/me` and they stay two kinds:
+ * a module's carries a translation key, because a module cannot know which language this browser
+ * is showing; an editorial row carries the words themselves in every language, because the person
+ * who typed them was never going to invent a key (design M1 §8.1).
+ *
+ * One function rather than the same ternary in the header, the footer and the sidebar.
+ */
+export function navLabel(
+  item: { key: string | null; label: LocalizedString | null },
+  translate: (key: string) => string,
+  locale: string,
+  defaultLocale: string,
+): string {
+  return item.label ? resolveLocalized(item.label, locale, defaultLocale) : translate(item.key ?? '');
+}

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { Department, LocalizedString } from '../../shared/api/bootstrap';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
+import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 
 import { linkKey, linksKey, type LinkDetailDto, type LinkWriteDto } from './queries';
 import type { LinkFormValues } from './schema';
@@ -49,7 +50,7 @@ export function emptyLink(department: Department, locales: readonly string[]): L
     isActive: true,
     // No version yet: the server reads an empty one as "the row as it is now", which for a create
     // is the only thing it can mean.
-    rowVersion: '',
+    rowVersion: NEW_ROW_VERSION,
   };
 }
 

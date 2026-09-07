@@ -3,17 +3,18 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 6 settembre 2026 — **M0 è chiusa, e di M1 sono fatte otto fasi**: design
+**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte nove fasi**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
 chiuso **§16.C del piano**, **G4** i sei blocchi Data con i loro provider (**§18**), che porta il
 registry a **27**, **G5** news, documenti e categorie come due `kind` di una tabella sola (**§19**),
-**G6** il calendario con la sua UI (**§20**) e **G7** i contatti con il servizio notifiche
+**G6** il calendario con la sua UI (**§20**), **G7** i contatti con il servizio notifiche
 (**§21**), che aggiunge alla spina dorsale il terzo della famiglia, `ISubmittedByMembers`, e l'unico
-indirizzo che l'hub conserva. Il prossimo lavoro è **G8** — menu editoriale, pagine di sistema,
-dashboard di dipartimento, sito pubblico e SEO — che si apre con il prompt di `04-` §C, `<N>` = 8;
-la dashboard di dipartimento aspetta ancora tre risposte di Carmine (§22). M0 resta chiusa e non
+indirizzo che l'hub conserva, e **G8** il sito pubblico (**§22**): il menu è una tabella, le cinque
+pagine di sistema sono seminate, ogni dipartimento nasce con la propria dashboard a blocchi, e un
+grant fa finalmente raggiungere il dipartimento su cui è dato. Il prossimo lavoro è **G9** oppure
+**G10**, in qualsiasi ordine (§23). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -24,12 +25,12 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.3 (`03-design-m1.md`). **Piano di implementazione M1:** v1.6
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **G0, G1, G2, G3 e G4 sono chiuse** (§14, §15, §16,
-§17, §18), la prossima è **G5**.
-**Test:** 374 .NET verdi (259 unit + 115 integrazione) + **199 Vitest** + **17 smoke Playwright** +
-**3 del giro pieno** (`pnpm e2e:full`, G0 di M1).
-Nessuno skippato, **rieseguiti tutti e quattro il 6 set 2026** contro la MariaDB vera prima di
+**Design M1:** v1.11 (`03-design-m1.md`). **Piano di implementazione M1:** v2.1
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G8 sono chiuse** (§14–§22), le prossime
+sono **G9 e G10**, in qualsiasi ordine.
+**Test:** 444 .NET verdi (294 unit + 150 integrazione) + **207 Vitest** + **33 smoke Playwright** +
+**7 del giro pieno** (`pnpm e2e:full`).
+Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
 ⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
@@ -2524,25 +2525,165 @@ inventa uno, apposta.
 
 ---
 
-## 22. Da dove riparte la prossima sessione (6 settembre 2026)
+## 22. G8 di M1: il sito pubblico esiste, e non lo disegna il codice (7 settembre 2026)
 
-### Si apre G8
+La fase che risponde alla domanda di M1. Il menu è una tabella, le cinque pagine di sistema sono
+righe seminate da template, ogni dipartimento apre il proprio spazio su una dashboard a blocchi, e
+un grant fa finalmente raggiungere il dipartimento su cui è dato.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 8.
+### Il conto
 
-- **G8 — menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO** è
-  sbloccata da G3, G4, G5 e G6, e non dipende da G7. È la seconda fase grossa per costruzione e il
-  piano dice che può prendere due sessioni, sullo stesso branch: prima il menu e le pagine seminate,
-  poi le rotte pubbliche e la SEO.
-- ⚠️ **La dashboard di dipartimento è decisa** (6 set 2026, qui sotto): blocchi, visibile al proprio
-  dipartimento più quelli autorizzati, dentro G8. Quello che resta aperto è come si autorizza un VID
-  su un altro dipartimento, e G8 ne tocca solo la prima metà.
-- Dopo G8, **G9 e G10** si aprono in qualsiasi ordine.
+| | |
+|---|---|
+| Tabelle nuove | **una**: `cms_menu_items`; una migrazione, additiva, più un valore in fondo a `ContentKind` |
+| Permessi nuovi | **due**: `Menu.View`, `Menu.Edit`; nessun handler |
+| Endpoint scritti a mano | **due**: `sitemap.xml` e `robots.txt` — M1 passa da quattro a sei |
+| Componenti custom | **zero** dell'elenco chiuso. `PageMetadata` è un componente e non disegna niente: rende `<title>` e i `<meta>`, che React 19 solleva nel `head` |
+| Meccanismi nuovi | **zero**. Un seeder che ne assorbe un altro, un contratto che guadagna due campi, una costante |
+| Dipendenze nuove | **nessuna** |
 
-Sei cose che G5, G6 e G7 lasciano pronte e che **non vanno rifatte**:
+⚠️ **I due endpoint a mano, e perché sono due e non zero**: `sitemap.xml` e `robots.txt` non sono
+risorse del back office e non c'è motore che le possa produrre — sono due file che un crawler
+chiede, uno dei quali è una query e l'altro cinque righe di testo. Chi tira le somme in G12 li conti
+come tali: la previsione di design §12 diceva **uno** in tutta M1, e siamo a sei (tre di G7, due di
+G8, uno di M0).
 
+### Che cosa c'è adesso
+
+- **`cms_menu_items`**, esposta da `MapCrud` e da nient'altro. ⚠️ **Il payload non porta il
+  dipartimento**: ogni riga appartiene a chi possiede il sito, dichiarato una volta sull'entità, e
+  questa è tutta l'autorizzazione della risorsa — il filtro di dipartimento della lista e l'unico
+  authorization handler rispondono senza che ci sia una riga scritta per loro. Un coordinatore di un
+  altro dipartimento tiene `Menu.Edit` sul proprio, dove non esiste nessuna riga di menu.
+- ⚠️ **Chi possiede il sito è una costante sola**, `SiteOwnership.Department`: menu, template di
+  sistema e pagine seminate. La SPA **non la ripete** — arriva in `/api/me` come
+  `division.siteDepartment` — perché un `staff.wd.menu.tsx` sarebbe un codice di dipartimento
+  scritto dentro un client che non ha diritto di conoscerne uno (CLAUDE.md §2 e §3).
+- **`/api/me` compone editoriale ∪ moduli**, ordinato. `NavItem` porta `Key` **oppure** `Label`, mai
+  una stringa che a volte è una chiave, più i propri figli; la navigazione guadagna lo scope
+  `footer`. ⚠️ **La voce fissa `nav.home` non c'è più**: la home è una riga seminata, o il menu non
+  sarebbe dati. Una voce editoriale che nomina l'indirizzo di un modulo **vince**, così `/atc` non
+  compare due volte il giorno che qualcuno lo mette in menu a mano.
+- **`ContentSeeder` ha assorbito `ContentTemplateSeeder`**: la stessa chiave in
+  `hub_division_settings`, la stessa risoluzione dei `$t`, lo stesso envelope opaco, applicati a due
+  cartelle. Un seed di pagina **nasce da un template** (è ciò che permette a G11 di dire che il
+  template è cambiato), può portare un corpo proprio, e quando non lo porta è una **copia** di
+  quello del template — riidentificata dalla stessa `TemplateCopy` che usa «nuovo da template».
+- **Le pagine seminate sono pubblicate dal seeder.** Non è un dettaglio: il query filter ferma una
+  bozza per il visitatore *e* per il dipartimento, quindi una dashboard non pubblicata non la
+  vedrebbe nemmeno chi la possiede.
+- **Nove dashboard**, `kind = Dashboard`, slug il codice del dipartimento, `Visibility.Department`,
+  nate dal template `dashboard`. ⚠️ Il template **non** porta blocchi filtrati per dipartimento: è
+  uno e le righe sono nove. La base e i tool li dà il template, il filtro lo mette il dipartimento
+  nell'editor.
+- ⚠️ **Un grant adesso porta il dipartimento**, non solo il permesso: `HubClaims.BuildIdentity`
+  scrive un claim `dept` per ogni dipartimento nominato da un permesso la cui sorgente è un grant —
+  e **non** per «qualunque permesso con un dipartimento», perché l'espansione di un deny fabbrica
+  dipartimenti espliciti a partire da un permesso globale. Allarga la **visibilità**: chi riceve un
+  grant qualunque su un dipartimento ne vede tutte le righe `Department`, dashboard compresa.
+- **Le schermate**: `/staff/{dept}/menu` (il trio di route, guardato al dipartimento che possiede il
+  sito), `/staff/{dept}` che disegna la dashboard pubblicata con il renderer di sempre,
+  `/staff/{dept}/dashboard/{id}` per modificarla — una rotta sua e non `/content/{id}`, perché
+  quella schermata porta `kind = Page` nel payload e salvare lì trasformerebbe la dashboard in una
+  pagina. `/staff` apre sulla dashboard e non più sulla prima lista della sidebar.
+- **Il pubblico**: la home disegna la riga `home` pubblicata, `/start`, `/pilots` e `/about` cadono
+  già dalla rotta `$slug` che esiste, e `/atc` è la pagina di sistema più le card che il modulo
+  registra sotto. `sitemap.xml` e `robots.txt` li serve il server, esclusi dal fallback della SPA;
+  `<title>`, la description e gli `og:` li rende la pagina che li conosce.
+
+### Tre difetti trovati facendo, e nessuno era nel codice di questa fase
+
+1. ⚠️ **Nessun form del back office poteva creare una riga contro l'API vera.** Mandavano
+   `rowVersion: ""`, che non è una data: il server rifiutava il payload prima di qualunque
+   validatore, con un 400 che nessuno aveva mai visto. Vale per link, categorie, pagine e menu, e
+   viene da M0. È sopravvissuto perché il giro di G0 crea **da template**, che è un altro endpoint,
+   e gli smoke del back office **stubbano l'API**: G8 è la prima fase che ha spedito un form vuoto
+   al banco. Un solo valore adesso, `shared/api/rowVersion.ts`. È la lezione di §11 in una forma
+   nuova: quello che nessuno monta, nessuno prova.
+2. **Un intervallo di VID già occupato.** 660001-660004 appartiene a `CalendarEndToEndTests`, il cui
+   660002 è un **superadmin**: «un coordinatore di un altro dipartimento» era qualcuno che può
+   tutto, e due rifiuti smettevano di essere rifiuti. In isolamento passava tutto; solo la suite
+   intera lo mostrava.
+3. **Un test che sporcava la tabella.** Quello che prova che una voce editoriale nasconde quella di
+   un modulo lasciava la riga in tabella, e da lì in poi `/atc` non aveva più la voce del modulo per
+   nessuna classe successiva. Una riga che un test scrive per cambiare una risposta è una riga che
+   quel test si riprende.
+
+### I test, e le rotture che li hanno verificati
+
+Dodici di accettazione (`SiteMenuAndDashboardTests`), `ForkabilityXxDivision` esteso alle pagine
+seminate e al menu, quattro nel banco e2e (`e2e/full/menu.spec.ts`) e tre smoke nuovi, uno dei quali
+è una **misura**. Al 7 set 2026 la suite è **294 unit .NET, 150 di integrazione, 207 Vitest, 33
+smoke, 7 sul banco**.
+
+Ogni correzione è stata rotta apposta per guardare il test fallire: i dipartimenti dei grant tolti da
+`BuildIdentity`, il proprietario di una riga di menu spostato, il seed applicato due volte, e la
+composizione del menu in `/api/me` — quest'ultima con il banco ripubblicato, che è l'unico modo di
+provare «senza ricompilare» dicendolo davvero.
+
+⚠️ **E una misura che non misurava.** La prima versione dell'asserzione sulla colonna di lettura
+della home diceva «larga fra 500 e 1100 pixel», ed è **passata con il layout rotto apposta**: una
+sezione `default` è larga 992 dentro una cornice da 1152, una `full` è larga 1088, e la soglia le
+accettava entrambe. Adesso confronta la colonna con la cornice che la contiene — 100 pixel di
+margine per lato — ed è stata scritta **misurando i due stati**, non indovinandoli. È la stessa
+lezione di §13 con il difetto spostato di un passo: non basta misurare, bisogna misurare qualcosa
+che distingua.
+
+### Che cosa la fase non ha fatto, ed è giusto così
+
+- **Il Lorem non è contenuto vero.** Ricopiare `/about` e `/start` dal sito Blazor è G12, ed è lì
+  apposta: è il collaudo dell'editor, non lavoro di riempimento.
+- **Nessun prerender.** `<title>` e `og:` li rende il browser, quindi un crawler che non esegue
+  JavaScript legge quelli di `index.html`. È la decisione del piano §16.11, e la metà che un
+  crawler vede sempre è `sitemap.xml`, che la serve il server.
+- **Le differenze rispetto al template** restano G11: il seed scrive `TemplateId`, che è il dato di
+  cui quella fase ha bisogno, e nient'altro.
+
+### Debiti nuovi che G8 lascia
+
+- **Due `<h1>` su una pagina pubblica.** Il titolo della riga è reso `sr-only` per le pagine il cui
+  corpo non ha un'intestazione, e una pagina che ce l'ha ne ha due. Non è rotto — è ridondante per
+  chi legge con uno screen reader — e la correzione (il renderer che si accorge di un `heading` di
+  livello 1 nel corpo) tocca un meccanismo di M0: si guarda nel giro visivo di G12.
+- **Le opzioni tradotte di `visibility` sono scritte quattro volte** (`content`, `links`, `menu`, e
+  la chiave `visibility` di primo livello). È la convenzione che le tre schermate precedenti hanno
+  già seguito, e cambiarla è un lavoro suo: si dichiara qui perché la quarta copia l'ha aggiunta
+  questa fase.
+- **Il `path` di una voce di menu non è validato contro le rotte che esistono.** Un refuso porta a
+  una pagina non trovata, che è esattamente ciò che succede scrivendo un indirizzo sbagliato in una
+  pagina; farlo verificare vorrebbe dire insegnare al server l'albero delle rotte della SPA.
+
+---
+
+## 23. Da dove riparte la prossima sessione (7 settembre 2026)
+
+### Si apre G9 oppure G10
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 9 o 10. Sono le due fasi che G8 sblocca e si aprono in
+qualsiasi ordine; niente altro dipende da nessuna delle due.
+
+- **G9 — live status e staff directory**: le due cose che leggono da fuori. `staffList` e il suo
+  provider esistono da G4 e la pagina `/about` che li monta esiste da G8, seminata: quello che manca
+  è la sezione staff vera, `LiveStatusStrip` (il terzo dei quattro componenti custom previsti) e la
+  riga onesta su chi non ha mai fatto login.
+- **G10 — ricerca**: `GET /api/search` esiste da F8; G10 gli dà una schermata e le tre risposte che
+  M0 aveva lasciato aperte. ⚠️ Dipende da G8 e adesso ha da cercare: cinque pagine pubblicate, nove
+  dashboard e un menu.
+- Poi **G11** (le rifiniture dell'editor, che ora ha pagine vere su cui essere provato) e **G12**.
+
+Otto cose che G5, G6, G7 e G8 lasciano pronte e che **non vanno rifatte**:
+
+- **La navigazione arriva da `/api/me` e non si scrive nel client**, `NavItem` compreso: una voce ha
+  una chiave **oppure** un'etichetta tradotta, mai una stringa che a volte è una chiave. Chi aggiunge
+  una voce di modulo aggiunge un `NavItemDescriptor`; chi ne aggiunge una editoriale scrive una riga.
+- **Chi possiede il sito è `SiteOwnership`**, e il client lo legge da `division.siteDepartment`.
+  Nessun file, nessuna route e nessuna schermata nomina un dipartimento.
+- **Un seed di pagina è dati**: `seed/content-pages/*.json`, una chiave in `hub_division_settings`,
+  applicato una volta. Una pagina nuova in una release successiva è un file, non del codice.
+- **`shared/api/rowVersion.ts`** è quello che un form manda quando la riga non esiste ancora. Un
+  `empty*` nuovo lo usa; una stringa vuota è un 400.
 - **`ContentListScreen` e `ContentFormScreen`** sono la lista e il form di un `kind` qualunque, e
-  `features/content/kinds.ts` è ciò che li distingue.
+  `features/content/kinds.ts` è ciò che li distingue — quattro `kind` adesso.
 - **`CrudOptions.SharedForReading`** (righe che tutti leggono), **`CrudOptions.ReadOnlyRows`** (righe
   che nessuno scrive) e **`ISubmittedByMembers`** (righe che chiunque può creare) sono i tre modi
   generici di dire una cosa sola: il motore non sa che cosa sia un template, una proiezione o un
@@ -2572,7 +2713,7 @@ Sei cose che G5, G6 e G7 lasciano pronte e che **non vanno rifatte**:
   `hub_users.email` per la coda delle notifiche, e nessun DTO lo espone. La staff directory di G9
   non lo tocca — `NoDtoCarriesAnEmailAddress` fallirebbe.
 
-### Deciso il 6 settembre 2026, e G8 lo costruisce
+### Deciso il 6 settembre 2026, e costruito in G8
 
 La **dashboard di dipartimento** non è più aperta (`decisions/2026-09-05-dashboard-di-dipartimento.md`,
 sezione «La decisione»). Le tre risposte:
@@ -2585,21 +2726,22 @@ sezione «La decisione»). Le tre risposte:
 2. **La vede il proprio dipartimento, più i dipartimenti a cui il VID è autorizzato.**
 3. **Dentro G8**, come task 6.
 
-### Aperto, e G8 ne tocca solo la prima metà
+### La portata di un grant: chiusa in G8
 
-⚠️ **La risposta 2 oggi non è vera**, e non per colpa della dashboard: `HubClaims.BuildIdentity`
-scrive i claim `dept` **solo dalle posizioni staff**, quindi un grant su un altro dipartimento dà il
-permesso ma lascia la lista vuota e le righe `Department` nascoste. Il test di F8 prova il dettaglio
-e mai la lista, ed è per questo che non se n'era accorto nessuno.
-`decisions/2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento.md` ha la misura, la correzione e le due domande
-rimaste.
+✅ **Fatto** (§22): `HubClaims.BuildIdentity` scrive un claim `dept` anche per ogni dipartimento
+nominato da un permesso la cui sorgente è un grant attivo, e i test sulla **lista** che mancavano ci
+sono. Un grant dà adesso il permesso, la lista e le righe `Visibility.Department` di quel
+dipartimento — che è ciò che rende vera la visibilità decisa per la dashboard.
 
-- **In G8**: `BuildIdentity` scrive un `dept` anche per i dipartimenti nominati da un grant attivo,
-  con i test della lista che oggi mancano. Due righe, ed è ciò che rende vera la risposta 2.
-  ⚠️ Allarga la **visibilità**, non solo il permesso: chi ha un grant qualunque su un dipartimento
-  ne vede tutte le righe `Department`, anche di aree che non gli sono state date. È la lettura
-  giusta di «autorizzato ad accedere», e la schermata dei grant deve dirlo.
-- **Non in G8, e non è una fase**: autorizzare qualcuno su **un pezzo** di un altro dipartimento —
+⚠️ **Va detto a chi concede un grant, e la schermata dei grant non lo dice ancora**: un claim `dept`
+non è un permesso, è «questa persona fa parte di quel dipartimento ai fini di ciò che *vede*». Chi
+riceve un grant qualunque sull'AOD comincia a vedere tutte le righe `Department` dell'AOD, comprese
+quelle di aree su cui non ha ricevuto niente. Una riga di spiegazione su `/staff/admin/permissions`
+è il debito che resta, ed è di chi tocca quella schermata.
+
+### Aperto, e non è di M1
+
+- **Autorizzare qualcuno su un pezzo di un altro dipartimento** —
   «i CH gestiscono i training ma nient'altro nel TD», «il FOD inserisce le rotte di un evento ma non
   le postazioni». ⚠️ La prima stesura della nota proponeva un grant che porta un **livello**: è
   **scartata**, perché serviva l'opposto di un pacchetto. Il meccanismo esiste già — un grant è un
@@ -2632,6 +2774,18 @@ integrazione (`-class <nome completo>` per filtrare). In CI `dotnet test --solut
 
 Niente da ripulire: i branch delle fasi vengono cancellati alla fusione, e `git branch -a` mostra
 soltanto `main`.
+
+⚠️ **Gli intervalli di VID dei test di integrazione sono occupati, e la suite condivide un database
+solo**: due classi sullo stesso VID sono **una riga**, e la posizione che una classe gli dà lo segue
+nell'altra. Al 7 set 2026: 610xxx `MapCrudLinks`, 620xxx `Content` e `Media`, 630xxx `Search`,
+640xxx `DataBlock`, 650xxx `NewsDocumentsAndCategories`, 660xxx `Calendar`, 670xxx `Contacts`,
+680001 `ForkabilityXx`, 690xxx `SiteMenuAndDashboard`. Chi apre una classe nuova parte da 700001.
+G8 ci è cascata: 660002 è un superadmin di `CalendarEndToEndTests`, e due rifiuti smettevano di
+essere rifiuti — in isolamento tutto passava, solo la suite intera lo mostrava (§22).
+
+⚠️ **E una riga che un test scrive per cambiare una risposta è una riga che quel test si riprende.**
+Sempre in G8: una voce di menu lasciata in tabella nascondeva la voce del modulo `atc` a ogni classe
+che guardasse `/api/me` dopo. Un `finally` che la toglie costa tre righe.
 
 ⚠️ **`git checkout -- <file>` su lavoro non committato lo cancella**, e in G2 è costato mezz'ora
 (§16). Prima di rompere qualcosa apposta per provare un test si committa, e si ripristina dalle
