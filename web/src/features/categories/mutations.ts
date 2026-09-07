@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
+import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 
 import { categoryDetailKey, categoryKey, type CategoryDetailDto, type CategoryWriteDto } from './queries';
 import type { CategoryFormValues } from './schema';
@@ -34,7 +35,7 @@ export function emptyCategory(department: Department, locales: readonly string[]
     label: Object.fromEntries(locales.map((locale) => [locale, ''])),
     sort: 0,
     isActive: true,
-    rowVersion: '',
+    rowVersion: NEW_ROW_VERSION,
   };
 }
 

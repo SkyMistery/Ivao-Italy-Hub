@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
+import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 
 import { menuDetailKey, menuKey, type MenuItemDetailDto, type MenuItemWriteDto } from './queries';
 import type { MenuItemFormValues } from './schema';
@@ -37,7 +38,7 @@ export function emptyMenuItem(locales: readonly string[]): MenuItemFormValues {
     sort: 0,
     visibility: 'Public',
     isActive: true,
-    rowVersion: '',
+    rowVersion: NEW_ROW_VERSION,
   };
 }
 

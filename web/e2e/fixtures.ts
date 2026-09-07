@@ -21,11 +21,82 @@ export const anonymousBootstrap = {
     // screen showing UTC twice would pass unnoticed (HANDOFF §13, third false alarm).
     timezone: 'Europe/Rome',
     firStaffScope: 'all',
+    // Which department owns the site, and therefore where its menu is edited. The client is told
+    // rather than knowing (design M1 §8.1).
+    siteDepartment: 'WD',
   },
   modules: [],
-  navigation: { public: [{ key: 'nav.home', path: '/' }], staff: [] },
+  // Since M1 G8 the public menu is a table: an editorial entry carries its words in every language,
+  // a module's carries a translation key, and the fixture holds one of each because the header has
+  // to draw both (design M1 §8.1).
+  navigation: {
+    public: [
+      { key: null, path: '/', label: { en: 'Home', it: 'Home' }, children: [] },
+      {
+        key: null,
+        path: '/about',
+        label: { en: 'About', it: 'Chi siamo' },
+        children: [{ key: null, path: '/about/team', label: { en: 'Team', it: 'Squadra' }, children: [] }],
+      },
+      { key: 'nav.atc', path: '/atc', label: null, children: [] },
+    ],
+    footer: [{ key: null, path: '/legal', label: { en: 'Legal', it: 'Note legali' }, children: [] }],
+    staff: [],
+  },
   registries: { blocks: [], widgets: [], permissions: [] },
   version: '0.0.0-e2e',
+};
+
+/**
+ * The page a visitor reads at `/`: a published row, because since M1 G8 the front page is one. The
+ * heading is a block, exactly as the editor would have written it.
+ */
+export const publishedHome = {
+  kind: 'Page',
+  slug: 'home',
+  ownerDepartment: 'WD',
+  title: { en: 'Home', it: 'Home' },
+  summary: { en: 'The front page.', it: 'La pagina d ingresso.' },
+  seo: null,
+  body: {
+    schemaVersion: 1,
+    sections: [
+      {
+        id: 's_hero',
+        key: 'hero',
+        title: { en: 'Opening', it: 'Apertura' },
+        layout: 'stacked',
+        background: 'none',
+        padding: 'lg',
+        width: 'default',
+        blocks: [
+          {
+            id: 'b_heading',
+            type: 'heading',
+            version: 1,
+            props: { level: 1, text: { en: 'Welcome to the division', it: 'Benvenuti nella divisione' } },
+          },
+          {
+            id: 'b_text',
+            type: 'text',
+            version: 1,
+            props: {
+              markdown: {
+                en: 'Everything on this page is a row somebody published.',
+                it: 'Tutto in questa pagina e una riga che qualcuno ha pubblicato.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  schemaVersion: 1,
+  category: null,
+  coverMediaId: null,
+  fileMediaId: null,
+  version: 1,
+  publishedAt: '2026-09-06T10:00:00Z',
 };
 
 /**
@@ -41,9 +112,18 @@ export async function stubTheApi(page: Page): Promise<void> {
     }),
   );
 
+  // The front page is a published row now, so the shell asks for one on its way up.
+  await page.route('**/api/content/public/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(publishedHome),
+    }),
+  );
+
   await page.route('**/api/**', (route) => {
     const url = route.request().url();
-    if (url.includes('/api/me')) {
+    if (url.includes('/api/me') || url.includes('/api/content/public/')) {
       return route.fallback();
     }
 
@@ -87,8 +167,8 @@ export const staffBootstrap = {
     { name: 'Admin.Access', department: null },
   ],
   navigation: {
-    public: [{ key: 'nav.home', path: '/' }],
-    staff: [{ key: 'nav.links', path: '/staff/links' }],
+    ...anonymousBootstrap.navigation,
+    staff: [{ key: 'nav.links', path: '/staff/links', label: null, children: [] }],
   },
 };
 

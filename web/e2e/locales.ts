@@ -10,11 +10,17 @@ import { fileURLToPath } from 'node:url';
  * fetches from `/locales/en/common.json`.
  */
 interface CommonStrings {
-  readonly home: { readonly heading: string };
   readonly footer: { readonly version: string };
   readonly theme: { readonly toggle: string };
   readonly auth: { readonly login: string };
-  readonly common: { readonly edit: string };
+  readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
+  readonly forbidden: { readonly title: string };
+  readonly menu: {
+    readonly title: string;
+    readonly create: string;
+    readonly fields: { readonly label: string; readonly path: string };
+  };
+  readonly dashboard: { readonly edit: string };
   readonly list: { readonly file: string };
   readonly calendar: {
     readonly title: string;
@@ -73,18 +79,43 @@ interface CommonStrings {
   };
 }
 
-/** The titles the system templates are seeded with, which is what the template picker shows. */
+/**
+ * The words the system templates and the seeded pages are written with. They are what the template
+ * picker shows, and — since M1 G8 — what a visitor actually reads on a page nobody has rewritten
+ * yet, so a spec asserting on a seeded page reads them from here rather than retyping them.
+ */
 interface SeedStrings {
   readonly seed: {
     readonly templates: Readonly<
-      Record<string, { readonly title: string; readonly hero: { readonly heading: string } }>
+      Record<
+        string,
+        {
+          readonly title: string;
+          readonly hero?: { readonly heading: string };
+          readonly welcome?: { readonly heading: string };
+        }
+      >
     >;
+    readonly pages: Readonly<Record<string, { readonly title: string }>>;
   };
 }
 
 export const englishCommon = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/common.json', import.meta.url)), 'utf8'),
 ) as CommonStrings;
+
+/**
+ * The words of the ATC module, which live in the module's own namespace and are copied into
+ * `locales/` by `pnpm i18n:sync`. A module's menu entry is a translation key, so a spec that wants
+ * to read that entry has to resolve it the way the browser does.
+ */
+interface AtcStrings {
+  readonly nav: { readonly atc: string };
+}
+
+export const englishAtc = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../locales/en/atc.json', import.meta.url)), 'utf8'),
+) as AtcStrings;
 
 export const englishSeed = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/seed.json', import.meta.url)), 'utf8'),

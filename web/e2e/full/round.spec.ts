@@ -167,7 +167,7 @@ test('a draft nobody published is not there for a visitor', async ({ page, conte
   // actually fails when a draft leaks: the first version of this test asserted the absence of a
   // heading that is not on a public page in either case, and stayed green while the draft was
   // published on purpose to check it.
-  await expect(publicPage.getByText(englishSeed.seed.templates.sectionPage!.hero.heading)).toHaveCount(0);
+  await expect(publicPage.getByText(englishSeed.seed.templates.sectionPage!.hero!.heading)).toHaveCount(0);
 
   await visitor.close();
 });
