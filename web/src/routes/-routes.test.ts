@@ -21,6 +21,9 @@ import { expect, test } from 'vitest';
  * with data already in hand. What the screen *reads* is the query the loader filled.
  */
 
+// ⚠️ The file is named with a leading `-` because it lives under `routes/`: the TanStack Router
+// plugin scans that tree and warns about every file that does not export a `Route`, and the dash is
+// the prefix it is configured to ignore.
 const staff = resolve(process.cwd(), 'src/routes/_staff');
 
 const files = readdirSync(staff).filter((name) => name.endsWith('.tsx'));

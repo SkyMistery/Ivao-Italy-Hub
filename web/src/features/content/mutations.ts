@@ -188,8 +188,15 @@ export function useDeleteContent() {
   return useMutation({
     mutationFn: async (id: number): Promise<void> =>
       unwrapEmpty(await api.DELETE('/api/content/{id}', { params: { path: { id: String(id) } } })),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: contentKey });
+    // ⚠️ Deliberately not awaited, and deliberately not `async`. What has just been deleted is the
+    // row a screen is **looking at**, so invalidating waits for that screen's own query to refetch
+    // — a row that no longer exists. The refetch 404s and retries, `onSuccess` never settles, and
+    // the callbacks a caller passed to `mutate` never run: the screen deletes the row and then sits
+    // there saying nothing. Found in G12, and caused by making the screens read the query rather
+    // than the loader (`decisions/2026-09-07-il-loader-non-e-la-riga.md`), which is what gave that
+    // query an observer in the first place.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: contentKey });
     },
   });
 }
