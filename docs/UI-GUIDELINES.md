@@ -62,6 +62,13 @@ constant anywhere.
 
 The list lives in `web/src/shared/ui/catalog.ts`. Everything else is Atmosphere.
 
+⚠️ **`hidden sm:block` does nothing here — write `max-sm:hidden`.** Atmosphere's stylesheet is
+imported after Tailwind's own utilities and declares `.hidden` again, so the plain class wins over
+the one inside the `sm` media query and the element never comes back on a wide screen. Both rules
+have the same specificity, so the later sheet decides. Anything that should appear only above a
+breakpoint therefore hides itself inside the media query instead. Found in the built bundle, twice
+in one hour, after two elements quietly refused to exist.
+
 A screen of a feature — the section tree of the content editor, the template picker — is not on the
 list and does not belong on it: the list is the pieces that are meant to be reused, and a component
 that only one feature has any use for lives in `features/<x>/` where it can change without anybody

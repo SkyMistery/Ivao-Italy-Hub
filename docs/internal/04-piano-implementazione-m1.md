@@ -15,8 +15,8 @@ router, e una query invalidata non rifà un `beforeLoad` — e una pagina non si
 un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCeiling` dei blocchi
 Data. La sigla di un dipartimento è il suo segno. Fatte anche le richieste 5, 6 e 9: lo `slug` proposto dal titolo — la **settima** estensione del
 generatore di form — e l'avviso a quattro stati, che è il **quinto componente custom** e porta con
-sé la conferma che l'editor deve a chi clicca. Fatta anche la 7, e con lei il **quarto** verbo a mano appeso a `MapCrud`. Restano 10-14, e il
-tag.)
+sé la conferma che l'editor deve a chi clicca. Fatte anche la 7 — con lei il **quarto** verbo a mano appeso a `MapCrud` — e le 10, 12 e 13.
+Restano la **11**, che va proposta prima di scriverla, la **14** e il tag.)
 
 **2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
@@ -1089,13 +1089,22 @@ seguire il tag, se Carmine preferisce; i difetti no.
    voce in `catalog.ts` e alla sezione della ui-kit — che il test accanto alla galleria pretende.
    ⚠️ Deciso da Carmine: **non** sostituisce `ProblemAlert`, perché unirli tocca ogni schermata del
    back-office ed è una decisione a sé. La forma della conferma — toast e non pannello — è sua.
-10. Il calendario: chip colorata per tipo, orario UTC con il locale fra parentesi, e **quattro
-    viste** (settimana, mese, lista settimanale, lista mensile).
+10. ~~Il calendario: chip colorata per tipo, orario UTC con il locale fra parentesi, e **quattro
+    viste**~~ — **fatto**. Le due liste disegnano gli **stessi** giorni della griglia, saltando
+    quelli vuoti, con lo stesso `Entry`: non è un secondo calendario. `agenda` resta ma non è più
+    fra le viste della schermata — è quella che mostra un **blocco** dentro una pagina. ⚠️ La chip
+    è colorata **senza** vocabolario: i cinque tipi che l'entità documenta hanno un colore ciascuno
+    e tutto il resto lo deriva dalla parola, finché la 11 non arriva.
 11. I **tipi di evento decisi centralmente** e uguali per tutti. ⚠️ Non sono le categorie, che sono
     per dipartimento: serve un vocabolario di divisione, con un permesso di scope diverso da
     `Calendar.Edit`. Da proporre prima di scriverlo.
-12. `LiveStatusStrip` con una gerarchia visiva vera.
-13. Una barra di ricerca nella sidebar dello staff.
+12. ~~`LiveStatusStrip` con una gerarchia visiva vera~~ — **fatto**, e senza aggiungere niente: il
+    numero è la cosa più forte della banda, le parole la più debole, un'icona per figura, e il
+    puntino che dice «di questo minuto» respira (solo per chi non ha chiesto meno movimento).
+13. ~~Una barra di ricerca nella sidebar dello staff~~ — **fatto**, con la scorciatoia scritta
+    sopra. ⚠️ In cima alla colonna del contenuto e **non** dentro la sidebar, che è il componente di
+    Atmosphere e non ha slot: avvolgerla in una colonna nostra è ciò che disegnò tutto il
+    back-office in 255 pixel (HANDOFF §13).
 14. Il giro sull'editor «più intuitivo», **alla fine**, quando il resto è a posto.
 
 **Accettazione**: i quattro difetti hanno un test ciascuno, verificato rompendolo; Carmine rifà

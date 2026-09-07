@@ -119,9 +119,11 @@ da nessuna parte» ha trovato quella pagina.
    nella stessa forma, perché il tema ha le scale `semantic-yellow` e `semantic-blue` e manca solo
    la variante. La riga in piano §8.3 c'è, e con lei `docs/UI-GUIDELINES.md` §3, `catalog.ts` e la
    sezione della ui-kit. ⚠️ Deciso da Carmine: **non** sostituisce `ProblemAlert`.
-6. **Calendario**: le voci distinte da una **chip colorata**.
-7. **`LiveStatusStrip`**: «troppo piatta, non fa risaltare le informazioni». Lavoro di gerarchia
-   visiva, non di decorazione.
+6. ~~**Calendario**: le voci distinte da una **chip colorata**~~ ✅ **fatta**. ⚠️ Senza vocabolario:
+   i cinque tipi che l'entità documenta hanno un colore ciascuno, il resto lo deriva dalla parola.
+   Quando arriva la 11 il colore va sulle sue righe e questa mezza pagina di codice sparisce.
+7. ~~**`LiveStatusStrip`**: «troppo piatta»~~ ✅ **fatta**, e senza decorazione: il numero è la cosa
+   più forte, le parole la più debole, un'icona per figura, il puntino che respira.
 8. **Icone dei dipartimenti** — deciso, vedi sotto. ✅ **Fatta** (`6584438`): la sigla è il segno,
    disegnata nello slot dell'icona che la sidebar già incornicia, quindi di un'altra famiglia
    rispetto alle icone delle risorse — la trappola che questa nota si era segnata. Misurata in un
@@ -132,12 +134,14 @@ da nessuna parte» ha trovato quella pagina.
 **Calendario** (punto 4)
 
 9. **I tipi di evento sono blindati e decisi centralmente** — vedi sotto.
-10. Orario **UTC** e, fra parentesi, **locale**.
-11. **Quattro viste**: settimana, mese (come ora), lista settimanale, lista mensile.
+10. ~~Orario **UTC** e, fra parentesi, **locale**~~ ✅ **fatta**.
+11. ~~**Quattro viste**~~ ✅ **fatta**: le liste disegnano gli stessi giorni della griglia saltando
+    quelli vuoti. `agenda` esce dalle viste della schermata e resta quella dei blocchi.
 
 **Staff** (punto 6)
 
-12. Una **barra di ricerca nella sidebar**, accanto al ⌘K.
+12. ~~Una **barra di ricerca**~~ ✅ **fatta**, con la scorciatoia scritta sopra. ⚠️ In cima alla
+    colonna del contenuto: la sidebar è di Atmosphere e non ha slot.
 
 ---
 

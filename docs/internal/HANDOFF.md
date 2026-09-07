@@ -3178,9 +3178,9 @@ ragione scritta lì.
 
 ### Si continua G13 dalle richieste: **i quattro difetti sono chiusi**
 
-Ramo **`m1/g13-fixes`**, nove commit, niente di non committato. Il piano di implementazione è a
+Ramo **`m1/g13-fixes`**, dodici commit, niente di non committato. Il piano di implementazione è a
 v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
-locale: **459 .NET** (300 unit + 159 integrazione), **262 Vitest**, **42 smoke Playwright**, lint,
+locale: **459 .NET** (300 unit + 159 integrazione), **267 Vitest**, **42 smoke Playwright**, lint,
 typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la correzione delle
 cancellazioni, e va fatto prima di chiudere la fase.
 
@@ -3197,9 +3197,18 @@ cancellazioni, e va fatto prima di chiudere la fase.
 3. ~~**«Cosa manca per pubblicare»**~~ — fatto: un `GET` che fa la prova a vuoto, e una lista sola
    in tono `warning` che si svuota da sola. ⚠️ **Quarto verbo a mano** appeso a `MapCrud`, deciso
    con Carmine perché l'alternativa era riscrivere le regole nel client.
-4. Ora il calendario (10), i **tipi di evento di divisione** (11 — ⚠️ **da proporre prima di
-   scriverlo**: vuole un vocabolario di divisione e un permesso di scope diverso da `Calendar.Edit`),
-   la striscia (12), la ricerca in sidebar (13) e il giro sull'editor (14).
+4. ~~Il calendario (10), la striscia (12) e la ricerca visibile (13)~~ — fatti.
+5. Restano **due** richieste:
+   - la **11**, i tipi di evento di divisione: ⚠️ **da proporre a Carmine prima di scriverla** —
+     vuole un vocabolario di divisione (non le categorie, che sono per dipartimento) e un permesso
+     con uno scope diverso da `Calendar.Edit`. Finché non esiste, la chip del calendario si colora
+     da sé: cinque tipi noti con un colore ciascuno, il resto derivato dalla parola.
+   - la **14**, il giro sull'editor «più intuitivo», che la lista stessa mette per ultima.
+
+⚠️ **`hidden sm:block` non funziona in questa applicazione**, ed è costato due elementi invisibili
+nella stessa ora: il foglio di stile di Atmosphere è importato **dopo** le utility di Tailwind e
+ridichiara `.hidden`, quindi la classe semplice batte quella dentro la media query e l'elemento non
+torna più. Si scrive `max-sm:hidden`. È in `docs/UI-GUIDELINES.md` §3 per chi forka.
 
 **Poi, e solo poi:**
 
