@@ -19,6 +19,7 @@ import { Route as PublicSlugRouteImport } from './routes/_public/$slug'
 import { Route as PublicCalendarRouteImport } from './routes/_public/calendar'
 import { Route as PublicForbiddenRouteImport } from './routes/_public/forbidden'
 import { Route as PublicLoginErrorRouteImport } from './routes/_public/login-error'
+import { Route as PublicSearchRouteImport } from './routes/_public/search'
 import { Route as PublicDocumentsIndexRouteImport } from './routes/_public/documents.index'
 import { Route as PublicDocumentsSlugRouteImport } from './routes/_public/documents.$slug'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public/news.index'
@@ -105,6 +106,11 @@ const PublicForbiddenRoute = PublicForbiddenRouteImport.update({
 const PublicLoginErrorRoute = PublicLoginErrorRouteImport.update({
   id: '/login-error',
   path: '/login-error',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicSearchRoute = PublicSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicDocumentsIndexRoute = PublicDocumentsIndexRouteImport.update({
@@ -332,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof PublicCalendarRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
+  '/search': typeof PublicSearchRoute
   '/documents/$slug': typeof PublicDocumentsSlugRoute
   '/news/$slug': typeof PublicNewsSlugRoute
   '/documents/': typeof PublicDocumentsIndexRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof PublicCalendarRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
+  '/search': typeof PublicSearchRoute
   '/documents/$slug': typeof PublicDocumentsSlugRoute
   '/news/$slug': typeof PublicNewsSlugRoute
   '/documents': typeof PublicDocumentsIndexRoute
@@ -423,6 +431,7 @@ export interface FileRoutesById {
   '/_public/calendar': typeof PublicCalendarRoute
   '/_public/forbidden': typeof PublicForbiddenRoute
   '/_public/login-error': typeof PublicLoginErrorRoute
+  '/_public/search': typeof PublicSearchRoute
   '/_public/': typeof PublicIndexRoute
   '/_public/documents/$slug': typeof PublicDocumentsSlugRoute
   '/_public/news/$slug': typeof PublicNewsSlugRoute
@@ -475,6 +484,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/forbidden'
     | '/login-error'
+    | '/search'
     | '/documents/$slug'
     | '/news/$slug'
     | '/documents/'
@@ -524,6 +534,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/forbidden'
     | '/login-error'
+    | '/search'
     | '/documents/$slug'
     | '/news/$slug'
     | '/documents'
@@ -565,6 +576,7 @@ export interface FileRouteTypes {
     | '/_public/calendar'
     | '/_public/forbidden'
     | '/_public/login-error'
+    | '/_public/search'
     | '/_public/'
     | '/_public/documents/$slug'
     | '/_public/news/$slug'
@@ -684,6 +696,13 @@ declare module '@tanstack/react-router' {
       path: '/login-error'
       fullPath: '/login-error'
       preLoaderRoute: typeof PublicLoginErrorRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/search': {
+      id: '/_public/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof PublicSearchRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/documents/': {
@@ -987,6 +1006,7 @@ interface PublicRouteChildren {
   PublicCalendarRoute: typeof PublicCalendarRoute
   PublicForbiddenRoute: typeof PublicForbiddenRoute
   PublicLoginErrorRoute: typeof PublicLoginErrorRoute
+  PublicSearchRoute: typeof PublicSearchRoute
   PublicIndexRoute: typeof PublicIndexRoute
   PublicDocumentsSlugRoute: typeof PublicDocumentsSlugRoute
   PublicNewsSlugRoute: typeof PublicNewsSlugRoute
@@ -999,6 +1019,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicCalendarRoute: PublicCalendarRoute,
   PublicForbiddenRoute: PublicForbiddenRoute,
   PublicLoginErrorRoute: PublicLoginErrorRoute,
+  PublicSearchRoute: PublicSearchRoute,
   PublicIndexRoute: PublicIndexRoute,
   PublicDocumentsSlugRoute: PublicDocumentsSlugRoute,
   PublicNewsSlugRoute: PublicNewsSlugRoute,

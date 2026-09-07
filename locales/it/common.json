@@ -22,6 +22,32 @@
     "title": "In rete adesso",
     "updatedAt": "contati alle {{at}}"
   },
+  "search": {
+    "title": "Cerca",
+    "label": "Che cosa cerchi?",
+    "placeholder": "Una parola o due",
+    "open": "Cerca",
+    "empty": "Scrivi qualcosa per cercare nel sito.",
+    "pending": "Sto cercando…",
+    "nothing": "Non c'è niente su questo sito che corrisponda a «{{query}}».",
+    "count": "{{count}} risultati",
+    "count_one": "Un risultato",
+    "termsTooShort": "Le parole più corte di tre lettere non finiscono nell'indice, quindi questa ricerca non può trovare niente. Prova con una parola più lunga.",
+    "kinds": {
+      "page": "Pagina",
+      "news": "Notizia",
+      "document": "Documento",
+      "dashboard": "Dashboard",
+      "link": "Link"
+    },
+    "palette": {
+      "placeholder": "Cerca, o salta a una schermata",
+      "empty": "Non ho trovato niente.",
+      "results": "Nel sito",
+      "screens": "Schermate",
+      "hint": "Premi Ctrl o Cmd e K"
+    }
+  },
   "auth": {
     "login": "Accedi con IVAO",
     "logout": "Esci",

@@ -1,200 +1,45 @@
 import { Sidebar, type SidebarProps } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
-import {
-  Boxes,
-  CalendarDays,
-  FileArchive,
-  FileText,
-  Images,
-  KeyRound,
-  LayoutDashboard,
-  Link2,
-  Mail,
-  Menu as MenuIcon,
-  Newspaper,
-  ScrollText,
-  ShieldCheck,
-  Sparkles,
-  Tags,
-} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import {
-  type Bootstrap,
-  holdsPermissionAnywhere,
-  menuDepartment,
-  reachableDepartments,
-} from '../../shared/api/bootstrap';
-import { deptParam } from '../../shared/api/department';
-import { navLabel } from '../../shared/i18n/localized';
+import { SearchPalette } from '../../features/search/SearchPalette';
+import type { Bootstrap } from '../../shared/api/bootstrap';
 
 import { AppFooter, AppHeader } from './Chrome';
 import { RouterAnchor } from './RouterAnchor';
+import { staffDestinations } from './staffDestinations';
 
 /**
  * The back office. One group per department the member may work in — their own, or all of them
- * when the role reaches everywhere — and under each, the resources of that department: `content`,
- * `news`, `documents`, `calendar`, `categories`, `links` and `media`, plus whatever the modules put in
- * `navigation.staff`, which the server has already
- * narrowed to the entries this person may actually follow (design M0 §7.2).
+ * when the role reaches everywhere — and under each, the resources of that department, plus
+ * whatever the modules put in `navigation.staff` and the administration screens (design M0 §7.2).
  *
- * The administration group only appears for whoever holds `Admin.Access`, and each entry inside it
- * only for whoever holds the permission its screen is behind. A menu entry that leads to a 403 is a
- * menu entry that teaches people to ignore the menu.
+ * ⚠️ Where those entries come from is `staffDestinations`, and deliberately not this file: the ⌘K
+ * palette offers the same places, and two lists is how a screen ends up reachable from one and not
+ * from the other.
  */
-
-/**
- * One entry of a sidebar group, as Atmosphere types it. Reached through the props of the component
- * itself rather than by importing its type: the same rule the list engine follows, so that nothing
- * here becomes a dependency the package.json does not declare.
- */
-type SidebarEntry = Extract<SidebarProps['items'][number], { items: unknown }>['items'][number];
-
-/** The permission `/staff/admin/*` is behind, and the ones the screens under it are behind. */
-const ADMIN_ACCESS = 'Admin.Access';
-const PERMISSIONS_MANAGE = 'Permissions.Manage';
-const MODULES_MANAGE = 'Modules.Manage';
-const AUDIT_VIEW = 'Audit.View';
-
 export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const location = useLocation();
 
-  const departments = reachableDepartments(bootstrap);
-  const siteOwner = menuDepartment(bootstrap);
-
-  const items: SidebarProps['items'] = departments.map((department) => ({
-    title: department,
-    Icon: ShieldCheck,
-    items: [
-      {
-        // The home of the department, and the first entry because it is where `/staff` lands.
-        title: t('dashboard.short'),
-        description: t('dashboard.description'),
-        Icon: LayoutDashboard,
-        href: `/staff/${deptParam.format(department)}`,
-      },
-      {
-        title: t('content.title'),
-        description: t('content.description'),
-        Icon: FileText,
-        href: `/staff/${deptParam.format(department)}/content`,
-      },
-      {
-        title: t('news.title'),
-        description: t('news.description'),
-        Icon: Newspaper,
-        href: `/staff/${deptParam.format(department)}/news`,
-      },
-      {
-        title: t('documents.title'),
-        description: t('documents.description'),
-        Icon: FileArchive,
-        href: `/staff/${deptParam.format(department)}/documents`,
-      },
-      {
-        title: t('calendar.title'),
-        description: t('calendar.description'),
-        Icon: CalendarDays,
-        href: `/staff/${deptParam.format(department)}/calendar`,
-      },
-      {
-        title: t('categories.title'),
-        description: t('categories.description'),
-        Icon: Tags,
-        href: `/staff/${deptParam.format(department)}/categories`,
-      },
-      {
-        title: t('contacts.title'),
-        description: t('contacts.description'),
-        Icon: Mail,
-        href: `/staff/${deptParam.format(department)}/contacts`,
-      },
-      {
-        title: t('links.title'),
-        description: t('links.description'),
-        Icon: Link2,
-        href: `/staff/${deptParam.format(department)}/links`,
-      },
-      {
-        title: t('media.title'),
-        description: t('media.description'),
-        Icon: Images,
-        href: `/staff/${deptParam.format(department)}/media`,
-      },
-      // The menu of the site belongs to one department, so the entry exists under that one and
-      // nowhere else. Which department it is comes from the bootstrap and never from here.
-      ...(department === siteOwner
-        ? [
-            {
-              title: t('menu.title'),
-              description: t('menu.description'),
-              Icon: MenuIcon,
-              href: `/staff/${deptParam.format(department)}/menu`,
-            },
-          ]
-        : []),
-    ],
+  const items: SidebarProps['items'] = staffDestinations(bootstrap, t).map((group) => ({
+    title: group.title,
+    Icon: group.Icon,
+    items: group.items.map((item) => ({
+      title: item.title,
+      description: item.description,
+      Icon: item.Icon,
+      href: item.href,
+    })),
   }));
-
-  // What the modules add to the back office. The server has already dropped the entries this
-  // person may not follow, so there is nothing to filter here.
-  const moduleEntries: SidebarEntry[] = bootstrap.navigation.staff
-    .filter((entry) => entry.path !== '/staff')
-    .map((entry) => ({
-      title: navLabel(entry, t, i18n.language, bootstrap.division.defaultLocale),
-      description: '',
-      Icon: Boxes,
-      href: entry.path,
-    }));
-
-  if (moduleEntries.length > 0) {
-    items.push({ title: t('nav.modules'), Icon: Boxes, items: moduleEntries });
-  }
-
-  if (holdsPermissionAnywhere(bootstrap, ADMIN_ACCESS)) {
-    const administration: SidebarEntry[] = [];
-
-    if (holdsPermissionAnywhere(bootstrap, PERMISSIONS_MANAGE)) {
-      administration.push({
-        title: t('grants.title'),
-        description: t('grants.description'),
-        Icon: KeyRound,
-        href: '/staff/admin/permissions',
-      });
-    }
-
-    if (holdsPermissionAnywhere(bootstrap, MODULES_MANAGE)) {
-      administration.push({
-        title: t('modules.title'),
-        description: t('modules.description'),
-        Icon: Boxes,
-        href: '/staff/admin/modules',
-      });
-    }
-
-    if (holdsPermissionAnywhere(bootstrap, AUDIT_VIEW)) {
-      administration.push({
-        title: t('audit.title'),
-        description: t('audit.description'),
-        Icon: ScrollText,
-        href: '/staff/admin/audit',
-      });
-    }
-
-    administration.push({
-      title: t('uiKit.title'),
-      description: t('uiKit.description'),
-      Icon: Sparkles,
-      href: '/staff/admin/ui-kit',
-    });
-
-    items.push({ title: t('admin.title'), Icon: ShieldCheck, items: administration });
-  }
 
   return (
     <div className="bg-body text-foreground flex min-h-screen flex-col">
       <AppHeader bootstrap={bootstrap} />
+
+      {/* Everywhere in the back office, because a palette that only opens on one screen is a
+          palette nobody learns (design M1 §7). */}
+      <SearchPalette bootstrap={bootstrap} />
 
       {/* `Sidebar` is the whole thing: it brings its own `SidebarProvider` and its own
           `SidebarContainer`, and `SidebarContainer` is not a two column shell -- it *is* the

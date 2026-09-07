@@ -1685,12 +1685,39 @@ export interface components {
         PublishStatus: "Draft" | "Published";
         /** @description One hit. What it is and where it lives; the page itself is fetched by following it. */
         SearchHitDto: {
+            /** @description `core` for the editorial core, otherwise the module key. */
             sourceModule: string;
+            /** @description Stable identifier of the row behind it, for example `content:42`. */
             sourceId: string;
+            /** @description What the row is, so a result can be grouped and given an icon. */
             kind: string;
+            /** @description Where to follow it. */
             url: string;
+            /** @description Whose row it is. */
             ownerDepartment: components["schemas"]["Department"];
+            /** @description Its title, in the language searched. */
             title: string;
+            /**
+             * @description The few words around the first place the query turns up, as <b>text</b>. Which terms to mark is
+             *     the browser's business: it is the only one that knows the language on screen, and a server that
+             *     returned markup would be deciding how a page looks (design M1 section 7).
+             */
+            snippet: string;
+        };
+        /**
+         * @description What a search answers with: one page of hits, in the envelope every list of the hub uses, plus
+         *     the one thing this particular list sometimes has to <b>say</b>.
+         */
+        SearchResponseDto: {
+            /** @description The page of hits, in the envelope every list of the hub answers with. */
+            results: components["schemas"]["PagedResultOfSearchHitDto"];
+            /**
+             * @description An i18n key, or null when there is nothing to explain. Today it has one value: the query was made
+             *     only of words shorter than the index holds, so the empty answer is about the question and not
+             *     about the site. It is here and not inside `PagedResult` because it is a property of the
+             *     query rather than of the page, and every other list of the hub would have carried a null.
+             */
+            notice: null | string;
         };
         /** @description What was deployed. Anonymous, and never cached, so a report can quote a build. */
         VersionResponse: {
@@ -1851,7 +1878,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PagedResultOfSearchHitDto"];
+                    "application/json": components["schemas"]["SearchResponseDto"];
                 };
             };
         };

@@ -22,6 +22,32 @@
     "title": "On the network now",
     "updatedAt": "counted at {{at}}"
   },
+  "search": {
+    "title": "Search",
+    "label": "What are you looking for?",
+    "placeholder": "A word or two",
+    "open": "Search",
+    "empty": "Type something to search the site.",
+    "pending": "Looking…",
+    "nothing": "Nothing on this site matches “{{query}}”.",
+    "count": "{{count}} results",
+    "count_one": "One result",
+    "termsTooShort": "Words shorter than three letters are not indexed, so this search cannot find anything. Try a longer word.",
+    "kinds": {
+      "page": "Page",
+      "news": "News",
+      "document": "Document",
+      "dashboard": "Dashboard",
+      "link": "Link"
+    },
+    "palette": {
+      "placeholder": "Search, or jump to a screen",
+      "empty": "Nothing found.",
+      "results": "On the site",
+      "screens": "Screens",
+      "hint": "Press Ctrl or Cmd and K"
+    }
+  },
   "auth": {
     "login": "Sign in with IVAO",
     "logout": "Sign out",
