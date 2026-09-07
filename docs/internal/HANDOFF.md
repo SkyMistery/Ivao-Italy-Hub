@@ -42,9 +42,9 @@ sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.46. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.8
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
 aperta** (§28), i suoi quattro difetti sono chiusi, e il tag viene dopo di lei.
-**Test:** 458 .NET verdi (300 unit + 158 integrazione) + **256 Vitest** + **42 smoke Playwright** +
-**11 del giro pieno** (`pnpm e2e:full`, non rieseguito dopo G13).
-Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
+**Test:** 459 .NET verdi (300 unit + 159 integrazione) + **267 Vitest** + **42 smoke Playwright** +
+**12 del giro pieno** (`pnpm e2e:full`).
+Nessuno skippato, **rieseguiti tutti e quattro l'8 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
 ⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
@@ -3180,9 +3180,10 @@ ragione scritta lì.
 
 Ramo **`m1/g13-fixes`**, dodici commit, niente di non committato. Il piano di implementazione è a
 v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
-locale: **459 .NET** (300 unit + 159 integrazione), **267 Vitest**, **42 smoke Playwright**, **12 del giro pieno**
-(`pnpm e2e:full`, rieseguito l'8 set 2026 contro l'API vera), lint, typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la correzione delle
-cancellazioni, e va fatto prima di chiudere la fase.
+locale: **459 .NET** (300 unit + 159 integrazione), **267 Vitest**, **42 smoke Playwright** e **12
+del giro pieno** (`pnpm e2e:full`, rieseguito l'8 set 2026 contro l'API vera, e nei suoi log si vede
+l'editor che chiede `publish-problems`), più lint, typecheck, format e i18n. Non resta niente di
+non eseguito.
 
 ⚠️ **Il numero da riportare alla chiusura sono sette estensioni del generatore di form**, non sei:
 `slugFrom` è la settima, e §12 del design ne prevedeva cinque.

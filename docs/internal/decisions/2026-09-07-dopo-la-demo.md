@@ -198,6 +198,6 @@ Ramo `m1/g13-fixes`, cinque commit, niente di non committato. **I quattro difett
 Verde in locale, tutto rieseguito: **458 test .NET** (300 unit + 158 integrazione), **256 Vitest**
 (30 file), **42 smoke Playwright**, lint, typecheck, format e i18n puliti.
 
-⚠️ Non rieseguito: `pnpm e2e:full`, il giro con l'API vera. Va fatto girare prima di chiudere G13,
-perché la correzione delle cancellazioni tocca sei schermate e il banco pieno è l'unico posto che le
-prova davvero.
+⚠️ Rieseguito l'8 settembre: `pnpm e2e:full`, **12 verdi**, ed è servito — nei suoi log si vede
+l'editor che chiede `publish-problems` all'API vera, cioè la richiesta 7 provata dove nessun test
+unitario poteva provarla.
