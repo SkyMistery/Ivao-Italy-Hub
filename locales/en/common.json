@@ -930,7 +930,9 @@
         "view": {
           "agenda": "A list of what is next",
           "week": "A week",
-          "month": "A month"
+          "month": "A month",
+          "weekList": "A week, as a list",
+          "monthList": "A month, as a list"
         }
       }
     },
@@ -1179,7 +1181,7 @@
     "projected": "From a module",
     "projectedExplained": "This entry mirrors a row the {{module}} module owns, so it cannot be edited here: a change would be undone the next time that module saves. Change it where it comes from.",
     "utc": "{{at}} UTC",
-    "local": "{{at}} local",
+    "local": "({{at}} local)",
     "previous": "Previous",
     "next": "Next",
     "delete": {
@@ -1218,7 +1220,9 @@
       "views": {
         "agenda": "Agenda",
         "week": "Week",
-        "month": "Month"
+        "month": "Month",
+        "weekList": "Week, as a list",
+        "monthList": "Month, as a list"
       },
       "filters": {
         "view": "View",

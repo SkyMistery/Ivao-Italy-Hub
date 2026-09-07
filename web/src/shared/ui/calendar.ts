@@ -21,10 +21,88 @@ export interface CalendarItem {
   url?: string | null;
 }
 
-/** Agenda reads forwards from now; the two grids are drawn around a day somebody chose. */
-export const CALENDAR_VIEWS = ['agenda', 'week', 'month'] as const;
+/**
+ * Agenda reads forwards from now; the other four are drawn around a day somebody chose — a week or
+ * a month, as a grid of squares or as a list of days.
+ *
+ * The two lists were asked for by Carmine after running the demo of M1: a grid answers "what does
+ * this month look like" and a list answers "what is on, in order", and a month with four entries in
+ * it reads as four lines far better than as thirty-five squares of which thirty-one are empty.
+ *
+ * ⚠️ `agenda` is not offered by the public screen. It is what a `calendar` **block** inside a page
+ * shows — "what is coming up", read forwards from now, with nothing to navigate — and the switcher
+ * of the screen lists `CALENDAR_SCREEN_VIEWS` instead.
+ */
+export const CALENDAR_VIEWS = ['agenda', 'week', 'weekList', 'month', 'monthList'] as const;
 
 export type CalendarViewMode = (typeof CALENDAR_VIEWS)[number];
+
+/** The four a visitor chooses between: two stretches of time, two ways of drawing each. */
+export const CALENDAR_SCREEN_VIEWS = ['week', 'weekList', 'month', 'monthList'] as const;
+
+/** How long a view is. The agenda has no anchor, so it has no span either. */
+export function calendarSpan(view: CalendarViewMode): 'week' | 'month' | null {
+  switch (view) {
+    case 'week':
+    case 'weekList':
+      return 'week';
+    case 'month':
+    case 'monthList':
+      return 'month';
+    default:
+      return null;
+  }
+}
+
+/** Squares or lines. The two say the same thing about the same days, and share their navigation. */
+export function isCalendarGrid(view: CalendarViewMode): boolean {
+  return view === 'week' || view === 'month';
+}
+
+/** The colours a chip may take. Atmosphere's own badge palette, minus the grey kept for "none". */
+export type CalendarKindColour = 'blue' | 'green' | 'orange' | 'purple' | 'indigo' | 'pink' | 'gray';
+
+/**
+ * The colour a kind of entry is chipped with, so that a reader tells a training from a tour before
+ * reading either word.
+ *
+ * ⚠️ Not a vocabulary, and deliberately not one yet. The kind of an entry is free text today —
+ * `event`, `training`, `tour`, `meeting`, `deadline`, and whatever a module projects with its rows
+ * — and turning it into a list the division decides is a separate request (11 of the demo), which
+ * wants a permission of its own and has not been proposed yet.
+ *
+ * So: the five the entity's own documentation names get a colour each, chosen rather than drawn
+ * out of a hat, because those are the ones a reader sees every day; anything else is derived from
+ * the word, which gives a stable colour without anybody declaring anything. When the vocabulary
+ * arrives the colour belongs on its rows, and both halves of this go away together.
+ */
+export function calendarKindColour(kind: string): CalendarKindColour {
+  if (kind === '') {
+    return 'gray';
+  }
+
+  const known = KNOWN_KINDS[kind.toLowerCase()];
+  if (known !== undefined) {
+    return known;
+  }
+
+  let hash = 0;
+  for (const character of kind) {
+    hash = (hash * 31 + character.codePointAt(0)!) % 1_000_003;
+  }
+
+  return DERIVED_COLOURS[hash % DERIVED_COLOURS.length]!;
+}
+
+const KNOWN_KINDS: Readonly<Record<string, CalendarKindColour>> = {
+  event: 'blue',
+  training: 'green',
+  tour: 'purple',
+  meeting: 'indigo',
+  deadline: 'orange',
+};
+
+const DERIVED_COLOURS = ['blue', 'green', 'orange', 'purple', 'indigo', 'pink'] as const;
 
 /**
  * The days a grid draws, in UTC.
@@ -43,7 +121,7 @@ export type CalendarViewMode = (typeof CALENDAR_VIEWS)[number];
  * empty days that are not empty. One function decides, and the other reads it.
  */
 export function calendarDays(view: CalendarViewMode, anchor: Date): Date[] {
-  const week = view === 'week';
+  const week = calendarSpan(view) === 'week';
 
   const start = new Date(
     Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), week ? anchor.getUTCDate() : 1),

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/harness';
 
 import { CalendarView } from './CalendarView';
-import { calendarDays, calendarWindow, type CalendarItem } from './calendar';
+import { calendarDays, calendarKindColour, calendarWindow, type CalendarItem } from './calendar';
 
 /**
  * What the calendar says. What it *looks like* — a grid of seven columns rather than a column of
@@ -78,6 +78,51 @@ describe('CalendarView', () => {
     // for its day exists; where the square sits on screen is a measurement and lives in the browser.
     expect(screen.getByText('Staff meeting')).toBeInTheDocument();
     expect(screen.getByText('15')).toBeInTheDocument();
+  });
+
+  it('lists the same days down the page, and leaves out the ones with nothing on them', () => {
+    // The fourth view, asked for by Carmine after the demo: a month with two things in it reads as
+    // two headings rather than as thirty-five squares of which thirty-three are empty.
+    const anchor = new Date('2026-09-15T00:00:00.000Z');
+
+    renderWithProviders(
+      <CalendarView items={items} view="monthList" anchor={anchor} timezone="Asia/Tokyo" empty="Nothing" />,
+    );
+
+    // Both entries are there, each under the heading of its own UTC day.
+    expect(screen.getByText('Staff meeting')).toBeInTheDocument();
+    expect(screen.getByText('Applications close')).toBeInTheDocument();
+
+    const headings = screen.getAllByRole('heading', { level: 3 });
+    expect(headings).toHaveLength(2);
+    expect(headings[0]).toHaveTextContent('15');
+
+    // And the point of a list: the empty days of the month are not printed. The grid draws
+    // thirty-five squares for this month, so a list that printed every day would be the grid again.
+    expect(screen.queryByText(/September 16/)).not.toBeInTheDocument();
+  });
+
+  it('says the local time in brackets, beside the UTC one', () => {
+    renderWithProviders(<CalendarView items={items} view="agenda" timezone="Asia/Tokyo" empty="Nothing" />);
+
+    // Asked for after the demo: UTC is what the network runs on and stays first; the reader's own
+    // zone is the aside, and brackets are what say so without a second label.
+    expect(screen.getByText(/\(.+11:00\sPM local\)/)).toBeInTheDocument();
+  });
+});
+
+describe('the chip of a kind', () => {
+  it('gives the same kind the same colour, every time and everywhere', () => {
+    expect(calendarKindColour('training')).toBe(calendarKindColour('training'));
+    expect(calendarKindColour('')).toBe('gray');
+  });
+
+  it('gives different kinds different colours, at least for the ones the hub itself uses', () => {
+    // Not a promise that no two kinds ever collide — five colours and free text cannot promise that
+    // — but the five the entity's own documentation names must be told apart, and they are.
+    const used = ['event', 'training', 'tour', 'meeting', 'deadline'].map(calendarKindColour);
+
+    expect(new Set(used).size).toBe(used.length);
   });
 });
 

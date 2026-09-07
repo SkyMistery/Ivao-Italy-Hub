@@ -11,7 +11,11 @@ export { LiveStatusStrip, type LiveNetworkStatus } from './LiveStatusStrip';
 export { ContactForm } from './ContactForm';
 export { contactSchema, type ContactFormValues } from './contact';
 export {
+  CALENDAR_SCREEN_VIEWS,
   CALENDAR_VIEWS,
+  calendarKindColour,
+  calendarSpan,
+  isCalendarGrid,
   calendarDays,
   calendarWindow,
   type CalendarItem,

@@ -7,7 +7,7 @@ import type { Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { NO_CHOICE } from '../../shared/forms';
 import {
-  CALENDAR_VIEWS,
+  CALENDAR_SCREEN_VIEWS,
   CalendarView,
   calendarWindow,
   type CalendarItem,
@@ -83,7 +83,7 @@ export function PublicCalendarScreen({
             id="view"
             value={view}
             onValueChange={(chosen) => onFilter({ ...filters, view: chosen as CalendarViewMode })}
-            items={CALENDAR_VIEWS.map((mode) => ({
+            items={CALENDAR_SCREEN_VIEWS.map((mode) => ({
               value: mode,
               label: t(`calendar.public.views.${mode}`),
             }))}
@@ -113,8 +113,9 @@ export function PublicCalendarScreen({
         items={items}
         view={view}
         anchor={anchor}
-        // The agenda reads forwards from now and has nothing to navigate; the grids move a month or
-        // a week at a time, and where they are is in the address so a visitor can send it on.
+        // Where the four views are is in the address, so a visitor can send the view they are
+        // looking at to somebody else. The agenda is not one of the four: it reads forwards from
+        // now and has nothing to navigate, and it is what a block inside a page shows.
         onAnchorChange={
           view === 'agenda'
             ? undefined

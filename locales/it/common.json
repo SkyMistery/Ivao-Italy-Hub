@@ -930,7 +930,9 @@
         "view": {
           "agenda": "Un elenco di quello che viene",
           "week": "Una settimana",
-          "month": "Un mese"
+          "month": "Un mese",
+          "weekList": "Una settimana, come lista",
+          "monthList": "Un mese, come lista"
         }
       }
     },
@@ -1179,7 +1181,7 @@
     "projected": "Da un modulo",
     "projectedExplained": "Questa voce rispecchia una riga che appartiene al modulo {{module}}, quindi non si modifica da qui: la modifica tornerebbe indietro al primo salvataggio di quel modulo. Si cambia dove nasce.",
     "utc": "{{at}} UTC",
-    "local": "{{at}} locali",
+    "local": "({{at}} locali)",
     "previous": "Precedente",
     "next": "Successivo",
     "delete": {
@@ -1218,7 +1220,9 @@
       "views": {
         "agenda": "Agenda",
         "week": "Settimana",
-        "month": "Mese"
+        "month": "Mese",
+        "weekList": "Settimana, come lista",
+        "monthList": "Mese, come lista"
       },
       "filters": {
         "view": "Vista",
