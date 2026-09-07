@@ -3,7 +3,7 @@
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
 **Versione documento:** 0.44 — 7 settembre 2026 (vIPI entra in due tempi: il proxy adesso, il montaggio in-process in M5)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G9 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G10 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
 
 **Changelog 0.44** (7 set 2026, **deciso da Carmine**): **vIPI entra nell'hub in due tempi**, e la
 decisione sta in `decisions/2026-09-07-vipi-dentro-l-hub.md`, scritta dopo aver **misurato i due

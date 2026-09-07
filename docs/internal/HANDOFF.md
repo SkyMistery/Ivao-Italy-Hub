@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte dieci fasi**: design
+**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte undici fasi**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -15,8 +15,10 @@ indirizzo che l'hub conserva, e **G8** il sito pubblico (**§22**): il menu è u
 pagine di sistema sono seminate, ogni dipartimento nasce con la propria dashboard a blocchi, e un
 grant fa finalmente raggiungere il dipartimento su cui è dato, e **G9** il live status (**§23**) —
 la fase più corta di M1, perché ha aperto e ha trovato la staff directory già in piedi, costruita da
-G4 e da G8 senza che nessuna delle due la chiamasse così. Il prossimo lavoro è **G10**, la ricerca
-(§24). M0 resta chiusa e non
+G4 e da G8 senza che nessuna delle due la chiamasse così, e **G10** la ricerca (**§24**), che chiude
+il **debito n.10** di §10: le tre domande lasciate aperte da M0 — rilevanza, evidenziazione, parole
+corte — hanno una risposta scritta e provata. Il prossimo lavoro è **G11**, le rifiniture
+dell'editor (§25). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -27,10 +29,10 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.12 (`03-design-m1.md`). **Piano di implementazione M1:** v2.2
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G9 sono chiuse** (§14–§23), la prossima
-è **G10**.
-**Test:** 453 .NET verdi (300 unit + 153 integrazione) + **209 Vitest** + **36 smoke Playwright** +
+**Design M1:** v1.13 (`03-design-m1.md`). **Piano di implementazione M1:** v2.3
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G10 sono chiuse** (§14–§24), la prossima
+è **G11**.
+**Test:** 456 .NET verdi (300 unit + 156 integrazione) + **220 Vitest** + **42 smoke Playwright** +
 **8 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
@@ -1368,9 +1370,9 @@ differenze rispetto al template) è §9.1; il n.3 (`seo`) è §9.2, che ne decid
 domande della ricerca) è §7. Il n.6 (`firStaffScope`) resta aperto e passa a M2. Gli altri restano
 com'erano, ed è una scelta scritta.
 
-**Dove sono adesso** (6 set 2026, dopo G0-G5): **n.1 chiuso** in G0 (§14), **n.3 e n.4 chiusi**
-in G2 (§16). Restano aperti il n.2 (G11), il n.5, il n.7, il n.8, il n.9 e il n.10 (G10); il n.6 è di
-M2. G5 ne ha aggiunti due suoi, piccoli e scritti in §19: la slug di un documento che coincide con
+**Dove sono adesso** (7 set 2026, dopo G0-G10): **n.1 chiuso** in G0 (§14), **n.3 e n.4 chiusi**
+in G2 (§16), **n.10 chiuso** in G10 (§24). Restano aperti il **n.2**, che è il lavoro di G11, più il
+n.5, il n.7, il n.8 e il n.9; il n.6 è di M2. G5 ne ha aggiunti due suoi, piccoli e scritti in §19: la slug di un documento che coincide con
 un codice di dipartimento, e il vocabolario che viaggia con ogni lista. Le voci qui sotto portano il segno di chi le ha chiuse: **questa lista e §7 devono dire la stessa
 cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
 
@@ -1410,9 +1412,11 @@ cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
 9. **La cache della manutenzione è di cinque secondi e il processo è uno solo.** Con Passenger
    oggi va bene; il giorno che i processi sono due, la risposta è un invalidamento condiviso, non
    una cache più corta.
-10. **La ricerca non ordina per rilevanza in modo esplicito e non evidenzia niente**, e InnoDB
-    ignora le parole più corte di tre lettere. Nessuna delle tre è un bug: sono decisioni che la
-    schermata di ricerca di M1 deve prendere.
+10. ~~**La ricerca non ordina per rilevanza in modo esplicito e non evidenzia niente**, e InnoDB
+    ignora le parole più corte di tre lettere.~~ **Chiuso in G10** (§24): si ordina per punteggio e
+    poi per recenza — che ha voluto una colonna nuova sull'indice — l'evidenziazione la fa il client
+    su uno `snippet` di testo, e le parole troppo corte le **dice**, perché è l'unica delle tre che
+    il codice non può risolvere.
 
 ### Quello che M1 non deve rimettere in discussione
 
@@ -2736,18 +2740,119 @@ dentro la colonna di lettura, e il provider che non torna nessun gruppo.
 
 ---
 
-## 24. Da dove riparte la prossima sessione (7 settembre 2026)
+## 24. G10 di M1: la ricerca, e il debito n.10 chiuso (7 settembre 2026)
 
-### Si apre G10
+`GET /api/search` esisteva da F8. Quello che mancava erano **le tre risposte** che M0 aveva lasciato
+aperte, e una schermata da cui farle.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 10.
+### Il conto
 
-- **G10 — ricerca**: `GET /api/search` esiste da F8; G10 gli dà una schermata e **le tre risposte**
-  che M0 aveva lasciato aperte (rilevanza, evidenziazione, parole corte — debito n.10). Adesso ha
-  anche qualcosa da cercare: cinque pagine pubblicate, nove dashboard, news e documenti.
-- Poi **G11** (le rifiniture dell'editor, che ora ha pagine vere su cui essere provato) e **G12**.
+| | |
+|---|---|
+| Tabelle nuove | **zero**; una colonna su `cms_search_index` (`updated_at`), migrazione additiva con riempimento |
+| Permessi nuovi | **zero**: la ricerca è pubblica e il query filter fa il resto |
+| Endpoint scritti a mano | **zero**: `/api/search` esiste da F8 e ha cambiato forma, non numero |
+| Componenti custom | **zero**. La palette è `Command` di Atmosphere, assemblata dai suoi pezzi |
+| Meccanismi nuovi | **zero**. Una funzione in `shared/search/`, un envelope che ne contiene un altro |
+| Dipendenze nuove | **nessuna** |
 
-Nove cose che G5, G6, G7, G8 e G9 lasciano pronte e che **non vanno rifatte**:
+### Le tre risposte
+
+1. **Rilevanza.** Le righe tornano più pertinenti per prime e, a parità, la più recente per prima.
+   ⚠️ Il punteggio **non** è una colonna selezionata: EF Core non sa filtrare su un membro di una
+   proiezione — `Select(new { entry, score })` seguito da `Where(x => x.Score > 0)` risponde «the
+   LINQ expression could not be translated», misurato contro MariaDB vera. Quello che si scrive una
+   volta è quindi **l'espressione**, usata come ordinamento e, maggiore di zero, come filtro. In SQL
+   il risultato è lo stesso; il sorgente ha una `MATCH` sola, che era la ragione della regola.
+2. **Evidenziazione.** Lo `snippet` esce dal server come **testo**, tagliato intorno alla prima
+   occorrenza sulle sole righe della pagina; a marcare è il browser, l'unico che sa in che lingua sta
+   guardando. `<mark>` e non un colore: è un significato, e uno screen reader deve sentirlo.
+   La piegatura che decide che due parole sono la stessa parola (maiuscole, accenti) è scritta una
+   volta e la usano l'evidenziazione **e** la palette.
+3. **Parole corte.** InnoDB non indicizza sotto le tre lettere e su una MariaDB condivisa quella
+   variabile non è nostra. Quindi la risposta lo **dice**, con una chiave i18n dentro un envelope che
+   **contiene** `PagedResult` invece di reinventarlo. ⚠️ Una parola lunga accanto a due corte non è
+   quel caso — MariaDB ignora le corte e risponde sul resto — e c'è un test che lo fissa.
+
+### Che cosa c'è adesso
+
+- **`cms_search_index.updated_at`**, scritto dal projection writer a ogni scrittura. ⚠️ È la data
+  della **proiezione** e non della sorgente, deliberatamente: una proiezione porta ciò che ogni riga
+  proiettabile può promettere, e «quando sei stata pubblicata» non lo è — un link non ha una data di
+  pubblicazione, una pagina ne ha una, una voce di calendario due. Insegnarlo a `SearchProjection`
+  avrebbe fatto rispondere ogni modulo a una domanda che quasi nessuno può rispondere, per un
+  criterio di parità.
+- **`/search?q=`**, pubblica, con lo stato nell'indirizzo: un risultato che vale la pena mostrare a
+  qualcuno è un link che vale la pena mandargli.
+- **La palette ⌘K**, ovunque nel back office. ⚠️ È `Command` di Atmosphere **assemblata dai suoi
+  pezzi**: `CommandDialog` inoltra le proprie props al *dialogo* e non al comando, quindi
+  `shouldFilter` non lo raggiunge, e ne avvolge già uno. Con il filtro acceso `cmdk` filtra una
+  seconda volta la risposta del server e butta via ogni risultato trovato nel **corpo** di una pagina
+  invece che nel titolo — cioè esattamente quelli per cui esiste lo snippet.
+- **`staffDestinations`**: le schermate che la sidebar disegna e quelle che la palette offre sono
+  **una lista sola**. Due liste è come una schermata finisce raggiungibile da una e non dall'altra.
+- **Il modo di arrivarci**: un bottone nella cornice, accanto alla lingua e al tema. Non nel menu,
+  perché il menu è ciò che scrive lo staff e una casella di ricerca non deve dipendere dal fatto che
+  qualcuno si ricordi di aggiungerla.
+- **`/search` è fra i `Disallow` di `robots.txt`**: è pubblica e risponde, ma ogni query è un altro
+  indirizzo che risponde, quindi un crawler lasciato lì cammina su un insieme senza fine.
+
+### Due contratti di libreria misurati, e un test che non provava niente
+
+- **EF Core** sul filtro di una proiezione (sopra). Provato eseguendo, non deducendo.
+- **`cmdk`** sul filtro dei propri item, letto nel bundle di Atmosphere. C'è un test del banco smoke
+  che monta un risultato la cui parola sta **solo** nello snippet: rimettendo `shouldFilter` a `true`
+  quel test diventa rosso.
+- ⚠️ **E il primo test dello snippet non provava niente**: il testo della fixture era **più corto di
+  uno snippet**, quindi tornava intero comunque e il test passava anche ignorando del tutto la query
+  — verificato rompendo la funzione e vedendolo restare verde. Adesso il testo è lungo, l'estratto
+  comincia con un'ellissi, e la rottura lo fa fallire. È la stessa lezione della misura di G9: non
+  basta scrivere l'asserzione, deve distinguere i due stati.
+
+### I test
+
+Tre di accettazione (`SearchOrdersByRelevanceThenRecency`, `SearchReturnsSnippetPerLocale`,
+`SearchTellsWhenEveryTermIsTooShort`) accanto ai tre di F8 che restano verdi, nove Vitest
+dell'evidenziazione (accenti, maiuscole, termini che si sovrappongono, testo ricostruito identico),
+due sulla palette, e sei smoke fra schermata pubblica e palette.
+
+Al 7 set 2026 la suite è **300 unit .NET, 156 di integrazione, 220 Vitest, 42 smoke, 8 sul banco**.
+
+### Debiti nuovi che G10 lascia
+
+- **La paginazione della ricerca non ha una seconda pagina da cliccare.** L'API pagina e la rotta
+  porta `page` nell'indirizzo; la schermata mostra i primi venti e non offre il ventunesimo. Con il
+  contenuto che una divisione ha oggi non si vede; è una riga di `Pagination` quando si vedrà.
+- **Le righe già indicizzate hanno tutte la stessa data** fino al primo salvataggio successivo: il
+  riempimento della migrazione le timbra tutte al momento del deploy, che è vero («per questo indice
+  sono vecchie uguali») ma rende il criterio di parità inutile fra loro finché non si toccano.
+
+---
+
+## 25. Da dove riparte la prossima sessione (7 settembre 2026)
+
+### Si apre G11
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 11.
+
+- **G11 — l'editor: differenze dal template, dnd-kit, anteprima.** Le rifiniture, **dopo** che
+  l'editor è stato usato davvero: G8 ne ha fatto nascere quattordici righe (cinque pagine e nove
+  dashboard), tutte con un `TemplateId`, che è il dato di cui la diff ha bisogno. È anche l'unica
+  fase di M1 che aggiunge una dipendenza, `dnd-kit`, e quella era già decisa dal design §9.3.
+- Poi **G12**: ricopiare `/about` e `/start` a mano dall'editor, il giro visivo, il rapporto di
+  chiusura con i numeri e il tag `v0.2.0-m1`.
+
+⚠️ **Il debito n.10 è chiuso** (§24). Di §10 restano aperti il n.2 — che è il lavoro di G11 — più il
+n.5, il n.7, il n.8 e il n.9; il n.6 è di M2.
+
+Undici cose che G5, G6, G7, G8, G9 e G10 lasciano pronte e che **non vanno rifatte**:
+
+- **`FullTextSearch` è l'unico posto che scrive una `MATCH`**, e la scrive una volta: chi ordina o
+  filtra per rilevanza passa di lì.
+- **`shared/search/highlight.ts` decide che due parole sono la stessa parola** — maiuscole, accenti —
+  e lo decide per l'evidenziazione e per la palette insieme.
+- **`staffDestinations` è l'elenco delle schermate del back office**, letto dalla sidebar e dalla
+  palette. Una schermata nuova si aggiunge lì e compare in tutte e due.
 
 - **Una striscia, una cornice, uno slot.** Quello che appartiene alla finestra e non alla colonna di
   lettura va nel `banner` di `Shell`; chi ne aggiunge un secondo lo passa dal layout che lo vuole.
