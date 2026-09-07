@@ -9,7 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.6 — 7 settembre 2026 (**G12 è chiusa, e con lei M1**, meno il tag. La fase che
+**Versione:** 2.7 — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
+ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
+dodici richieste**. Due difetti sono già corretti — ogni data dell'hub era mostrata due ore indietro,
+e cancellare una riga lasciava la pagina aperta — e il secondo era una **regressione della correzione
+del loader** della stessa mattina. Il tag `v0.2.0-m1` **aspetta la fine di G13**. Elenco completo e
+decisioni in `decisions/2026-09-07-dopo-la-demo.md`.)
+
+**2.6** — 7 settembre 2026 (**G12 è chiusa, e con lei M1**, meno il tag. La fase che
 verifica invece di costruire ha trovato più difetti di qualunque altra, e nessuno era trovabile
 prima: `/about` e `/start` ricopiate a mano dall'editor hanno fatto uscire che **ogni form del
 back-office si poteva salvare una volta sola per caricamento di pagina** e che **le pagine seminate
@@ -1012,6 +1019,51 @@ sapeva mostrarlo stretto **e** autenticato insieme.
 **La correzione al piano 00** che questa chiusura chiede è una sola, ed è in §16: «endpoint scritti a
 mano» contava la cosa sbagliata. Da M2 i numeri sono due — CRUD scritti a mano (deve restare zero) e
 verbi a mano appesi a un gruppo `MapCrud` (oggi tre, ognuno da giustificare).
+
+---
+
+
+### G13 — I difetti trovati usando, e le rifiniture che Carmine ha chiesto
+
+**Obiettivo**: chiudere quello che è uscito eseguendo la demo. Nota
+`decisions/2026-09-07-dopo-la-demo.md`, che è la fonte di questa fase: contiene i quattro difetti, le
+dodici richieste e le quattro decisioni già prese.
+
+⚠️ **Il tag `v0.2.0-m1` non si mette prima della fine dei difetti.** Le richieste possono anche
+seguire il tag, se Carmine preferisce; i difetti no.
+
+**I difetti** (l'ordine è quello di priorità):
+
+1. ~~Ogni istante mostrato due ore indietro~~ — **fatto** (`6f8217e`), con
+   `InstantsAreUtcOnTheWireTests`.
+2. ~~Cancellare lascia la pagina aperta~~ — **fatto** (`fc33848`), sei mutazioni, con
+   `features/menu/mutations.test.tsx`. Era una regressione della correzione del loader.
+3. **Il logout non aggiorna la pagina**: si continua a vedere la versione da loggato finché non si
+   ricarica. Ipotesi da verificare: il bootstrap è caricato una volta in radice e nessuno lo
+   ricarica — la stessa famiglia del n.2.
+4. **Un documento pubblicato con un'immagine non mostra l'immagine.** Nessuna ipotesi: si guarda dal
+   filo, che cosa manda l'API e che cosa chiede il browser.
+
+**Le richieste**, nell'ordine che toglie più attrito a chi userà l'hub:
+
+5. Lo `slug` proposto dal titolo e correggibile.
+6. La conferma che l'editor ha fatto quello che è stato cliccato.
+7. «Cosa manca per pubblicare», viva e prima del rifiuto.
+8. Le **sigle** dei dipartimenti al posto delle nove icone identiche (deciso).
+9. L'**avviso a quattro stati** condiviso. ⚠️ È il **quinto componente custom**: va aggiunto
+   all'elenco chiuso di §8.3 con una riga, non di straforo.
+10. Il calendario: chip colorata per tipo, orario UTC con il locale fra parentesi, e **quattro
+    viste** (settimana, mese, lista settimanale, lista mensile).
+11. I **tipi di evento decisi centralmente** e uguali per tutti. ⚠️ Non sono le categorie, che sono
+    per dipartimento: serve un vocabolario di divisione, con un permesso di scope diverso da
+    `Calendar.Edit`. Da proporre prima di scriverlo.
+12. `LiveStatusStrip` con una gerarchia visiva vera.
+13. Una barra di ricerca nella sidebar dello staff.
+14. Il giro sull'editor «più intuitivo», **alla fine**, quando il resto è a posto.
+
+**Accettazione**: i quattro difetti hanno un test ciascuno, verificato rompendolo; Carmine rifà
+`tools/demo-m1.md` **dal punto 1** e arriva in fondo — compresi i punti 8 e 9, che non ha ancora
+eseguito.
 
 ---
 

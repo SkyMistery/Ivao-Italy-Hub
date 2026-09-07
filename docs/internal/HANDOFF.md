@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa e M1 pure**, tredici fasi e mezza: design
+**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, M1 è costruita e in collaudo**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -26,7 +26,9 @@ quanti design §12 ne prevedesse, ed è un numero che G12 riporta invece di nasc
 e **G12** (**§27**), la fase che verifica invece di costruire: due pagine ricopiate a mano
 dall'editor, il giro visivo, la demo, la revisione §16.E e il conto contro la previsione. Ha trovato
 più difetti di qualunque altra fase, fra cui **ogni form del back-office si poteva salvare una volta
-sola per caricamento di pagina**. Manca solo il **tag `v0.2.0-m1`** (§28). M0 resta chiusa e non
+sola per caricamento di pagina**. ⚠️ Poi Carmine ha **eseguito la demo** e ha trovato altri quattro
+difetti e dodici richieste (**§28**): due difetti sono corretti, due sono aperti, e **il tag
+`v0.2.0-m1` aspetta** che G13 sia chiusa (§29). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -37,8 +39,9 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.45. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.6
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **sono chiuse tutte** (§14–§27); resta il tag.
+**Piano:** v0.45. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.7
+(`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
+aperta** (§28) e il tag viene dopo di lei.
 **Test:** 456 .NET verdi (300 unit + 156 integrazione) + **243 Vitest** + **42 smoke Playwright** +
 **11 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
@@ -3094,17 +3097,91 @@ per caso.
 
 ---
 
-## 28. Da dove riparte la prossima sessione (7 settembre 2026)
+## 28. G13: che cosa è uscito eseguendo la demo (7 settembre 2026)
 
-### Resta il tag, e poi si apre M2
+M1 era chiusa nei documenti e mancava solo il tag. Poi Carmine ha eseguito `tools/demo-m1.md` fino al
+punto 7 e ha trovato **quattro difetti e dodici richieste**. È il motivo per cui quel documento
+esiste, e la prova che l'accettazione non può darla chi ha scritto il codice.
 
-`04-piano-implementazione-m1.md` §C. Di G12 restano **due cose sole**, ed entrambe sono di Carmine:
+⚠️ **Il tag `v0.2.0-m1` aspetta la fine dei difetti.** Deciso da Carmine.
 
-1. **Eseguire `tools/demo-m1.md` da zero** — clone, docker-compose, run — e spuntare gli otto punti.
-   È l'accettazione della milestone, e nessun altro può darla.
-2. **Il tag `v0.2.0-m1`.** ⚠️ Si spinge **dopo** il merge, e si verifica **sull'artefatto**, non sul
+La fonte di questa sezione è `decisions/2026-09-07-dopo-la-demo.md`, che ha l'elenco completo: qui c'è
+solo quello che serve per riprendere in mano il lavoro.
+
+### Corretti, con un test ciascuno verificato rompendolo
+
+**Ogni data dell'hub era mostrata due ore indietro** (`6f8217e`). L'API mandava
+`2026-09-07T14:22:35.99759`, senza `Z`: un browser legge una stringa così come ora **locale**. I
+valori nel database erano giusti; mancava che il modello dicesse che sono UTC.
+`UtcDateTimeConverter`, un posto solo. Il test guarda **il testo sul filo** e su una **lettura** —
+la risposta alla creazione serializza l'entità ancora nel change tracker e passa anche senza la
+correzione.
+
+**Cancellare lasciava la pagina aperta** (`fc33848`), ed ⚠️ **era una regressione della correzione
+del loader della stessa mattina**. La mutazione aspettava `invalidateQueries`, che aspetta il refetch
+di ogni query attiva sotto quella chiave — compresa quella della schermata che sta cancellando, la
+cui riga è appena sparita. Il refetch va in 404, riprova, `onSuccess` non si risolve e i callback di
+`mutate` non partono. Prima che le schermate leggessero la query invece del loader, quella query non
+aveva osservatori: **una correzione ne ha scoperta un'altra**, e vale la pena aspettarselo di nuovo.
+
+### Aperti
+
+- **Il logout non aggiorna la pagina.** Ipotesi non verificata: il bootstrap è caricato una volta
+  sola in radice con `ensureQueryData` e nessuno lo ricarica — la stessa famiglia dei due qui sopra.
+- **Un documento pubblicato con un'immagine non mostra l'immagine.** Nessuna ipotesi.
+
+### Le decisioni prese in quella conversazione
+
+1. **Il tag dopo i difetti.**
+2. **Niente icone per i dipartimenti: la sigla è il segno.** Oggi sono nove scudi identici. Ragione
+   di Carmine: un fork non-IVAO riscrive comunque l'enum `Department`, quindi l'icona non è il pezzo
+   che gli costa — e la sigla è già l'identificatore che lo staff usa.
+3. **L'avviso a quattro stati** (errore, avviso, successo, informazione) è un componente
+   **condiviso**. ⚠️ Quinto della lista chiusa di piano §8.3: va scritto, non aggiunto di straforo.
+4. **I tipi di evento del calendario sono di divisione**, decisi centralmente e uguali per tutti.
+   ⚠️ Non sono le categorie, che sono per dipartimento: serve un vocabolario di divisione con un
+   permesso di scope diverso da `Calendar.Edit`.
+
+### Due lezioni di metodo, pagate care
+
+- ⚠️ **`grep "error CS"` non dice se una build è riuscita.** Con l'API in esecuzione MSBuild fallisce
+  con `MSB3027`/`MSB3021` — DLL bloccate — senza **nessun** errore `CS`. Due volte ho letto «0
+  errori» ed eseguito un binario vecchio, e una verifica «rotta apposta» è passata a vuoto. Si guarda
+  `Error(s)` nel riepilogo, e **si ferma l'API prima di compilare**.
+- **Tre ipotesi plausibili di fila possono essere tutte sbagliate.** Sul difetto della cancellazione:
+  componente smontato, promessa rifiutata, retry lento — tutte no. Le sonde dentro la mutazione hanno
+  risolto in un giro.
+
+---
+
+## 29. Da dove riparte la prossima sessione (7 settembre 2026)
+
+### Si continua G13, e il tag aspetta
+
+Ramo **`m1/g13-fixes`**, due commit, niente di non committato. Il piano di implementazione è a v2.7 e
+la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`.
+
+**Il prossimo passo**, in ordine:
+
+1. **Il logout che non aggiorna la pagina** — con l'ipotesi del bootstrap da verificare per prima.
+2. **L'immagine del documento che non si vede** — si guarda dal filo.
+3. **Le sigle dei dipartimenti** al posto delle nove icone identiche (deciso, e piccolo).
+4. Poi le richieste, a partire da quelle dell'editor: `slug` proposto, conferma dell'azione, «cosa
+   manca per pubblicare».
+
+**Poi, e solo poi:**
+
+5. **Carmine rifà `tools/demo-m1.md` dal punto 1** e arriva in fondo. ⚠️ **I punti 8 e 9 non sono
+   ancora stati eseguiti**: sono i test, la forkabilità e il pacchetto, cioè l'ultimo pezzo di
+   accettazione.
+6. **Il tag `v0.2.0-m1`.** ⚠️ Si spinge **dopo** il merge, e si verifica **sull'artefatto**, non sul
    commit: in M0 ci vollero cinque tentativi, il server di prova deve fare il fallback SPA, e un grep
    su un bundle minificato non è una verifica — la verifica è comportamentale o non è.
+
+⚠️ **Come si lavora su questa macchina**, imparato oggi: l'API di sviluppo (`dotnet run`) tiene
+bloccate le DLL, quindi **si ferma prima di compilare** o la build fallisce con errori `MSB` che un
+`grep "error CS"` non vede. E il banco di sviluppo gira su `ivaohub`, il database vero dello
+sviluppo: le due pagine ricopiate a mano stanno lì e non nei seed.
 
 - **G12 — migrazione a mano, giro visivo, chiusura di M1.** Ricopiare `/about` e `/start` a mano
   dall'editor — che è il vero collaudo di tutto quello che M1 ha costruito, fatto da chi lo userà —
