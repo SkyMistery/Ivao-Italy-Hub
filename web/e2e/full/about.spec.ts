@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { englishCommon, englishSeed } from '../locales';
 
-import { readInEnglish } from './bench';
+import { readInEnglish, signIn } from './bench';
 
 /**
  * The staff directory, against the real API (design M1 §6.1).
@@ -19,6 +19,14 @@ import { readInEnglish } from './bench';
 test('the seeded about page shows the staff of the division, to a visitor who is nobody', async ({
   browser,
 }) => {
+  // ⚠️ Somebody has to have signed in, because that is what a roster read from logins *is* — and it
+  // is done here rather than left to another spec having run first. The first version of this test
+  // did leave it to that: it passed on a development bench, whose database keeps every earlier run,
+  // and failed in CI on a fresh one. A test that needs state has to make it.
+  const staff = await browser.newContext();
+  await signIn(staff);
+  await staff.close();
+
   const visitor = await browser.newContext();
   await readInEnglish(visitor);
   const page = await visitor.newPage();
