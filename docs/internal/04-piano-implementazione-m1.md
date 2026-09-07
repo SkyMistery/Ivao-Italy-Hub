@@ -9,7 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.1 — 7 settembre 2026 (**G8 è chiusa**: il sito pubblico esiste e non lo disegna il
+**Versione:** 2.2 — 7 settembre 2026 (**G9 è chiusa**, ed è stata **corta** perché la staff directory
+era già in piedi: il provider di G4 e la pagina `/about` che G8 ha seminato la reggevano già tutta.
+La fase ha aggiunto `LiveStatusStrip` — terzo dei quattro componenti custom, in polling e senza un
+endpoint suo — e ha scritto i test delle tre promesse di design §6.1, uno dei quali ha scoperto che
+la garanzia è più forte di come il design la descriveva. Zero tabelle, zero permessi, zero endpoint,
+zero meccanismi nuovi; uno slot in `Shell`. La prossima è G10.)
+
+**2.1** — 7 settembre 2026 (**G8 è chiusa**: il sito pubblico esiste e non lo disegna il
 codice. Il menu è una tabella — si toglie una voce dal back office e sparisce dal sito, provato in un
 browser contro l'API vera — le cinque pagine di sistema sono seminate da template con Lorem tradotto,
 ogni dipartimento nasce con la propria dashboard a blocchi, e un grant fa finalmente raggiungere il
@@ -126,7 +133,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G6 | Calendario: CRUD interne, `/calendar`, `CalendarView` — **fatta** | G4 | proiezioni in sola lettura, UTC + fuso divisione, il blocco monta lo stesso componente |
 | G7 | Contatti, servizio notifiche, namespace `mail` — **fatta** | G2 | un messaggio genera una mail in Mailpit passando dalla coda |
 | G8 | Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO — **fatta** | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate; ogni dipartimento apre `/staff/{dept}` e trova la propria dashboard |
-| G9 | Live status e staff directory | G4 | `LiveStatusStrip`, sezione staff di `/about`, nessun profilo pubblico |
+| G9 | Live status e staff directory — **fatta** | G4 | `LiveStatusStrip`, sezione staff di `/about`, nessun profilo pubblico |
 | G10 | Ricerca: schermata, rilevanza, evidenziazione | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
 | G11 | Editor: differenze dal template, dnd-kit, anteprima | G8 | tre stati della diff, «allinea» una differenza alla volta, su/giù da tastiera intatto |
 | G12 | Migrazione a mano, giro visivo, chiusura di M1 | tutte | `/about` e `/start` ricopiati, giro visivo eseguito, rapporto di chiusura con i numeri, tag `v0.2.0-m1` |
@@ -765,7 +772,21 @@ dalla rotta pubblica, che serve solo `kind = Page`),
 
 ---
 
-### G9 — Live status e staff directory
+### G9 — Live status e staff directory — **fatta il 7 settembre 2026**
+
+⚠️ **Come è andata** (7 set 2026, design M1 v1.12): la fase è stata **corta**, e per una ragione che
+vale la pena scrivere: **tre dei quattro task erano già fatti**. Il provider `staffList` è di G4, la
+pagina `/about` che lo monta l'ha seminata G8, e raggruppamento, ordinamento per anzianità, assenza
+di dati di contatto e riga onesta c'erano tutti. Quello che G9 doveva davvero era la striscia e i
+**test**, che è esattamente ciò che §A.5 intende dicendo che i criteri di accettazione sono test
+anche quando il codice li precede.
+
+Due cose trovate facendo. ⚠️ **La garanzia sul roster è più forte del provider**:
+`hub_user_staff_positions.vid` è una chiave esterna verso `hub_users`, quindi la posizione di chi non
+ha mai fatto login non è scrivibile — la directory non può mostrarlo perché non può esistere. Il test
+l'ha scoperto provando a costruire il caso contrario. ⚠️ E **la striscia dentro la colonna di lettura
+non è una striscia**: 1120 px in una finestra da 1280. `Shell` ha adesso uno slot `banner` fra header
+e contenuto, e una misura in `web/e2e/live-status.spec.ts` fallisce se qualcuno la rimette dentro.
 
 **Obiettivo**: le due cose che leggono da fuori. Design §6.
 
@@ -782,7 +803,7 @@ Task:
    non SignalR — il proxy Plesk non è il posto per un websocket, e una striscia che si aggiorna ogni
    minuto è più che sufficiente.
 
-**Accettazione**: `StaffDirectoryOrdersByStaffLevel`, `StaffDirectoryExposesNoContactData` (il DTO non
+**Accettazione** (tutti verdi il 7 set 2026): `StaffDirectoryOrdersByStaffLevel`, `StaffDirectoryExposesNoContactData` (il DTO non
 contiene email né altro), `StaffDirectorySaysWhoIsMissing` (Vitest sulla riga onesta),
 `LiveStatusDegradesWhenIvaoIsDown` (il client non lancia mai: la striscia mostra l'ultimo dato o niente);
 e2e con una misura sulla striscia.

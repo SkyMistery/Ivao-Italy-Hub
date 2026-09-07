@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte nove fasi**: design
+**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte dieci fasi**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -13,8 +13,10 @@ registry a **27**, **G5** news, documenti e categorie come due `kind` di una tab
 (**§21**), che aggiunge alla spina dorsale il terzo della famiglia, `ISubmittedByMembers`, e l'unico
 indirizzo che l'hub conserva, e **G8** il sito pubblico (**§22**): il menu è una tabella, le cinque
 pagine di sistema sono seminate, ogni dipartimento nasce con la propria dashboard a blocchi, e un
-grant fa finalmente raggiungere il dipartimento su cui è dato. Il prossimo lavoro è **G9** oppure
-**G10**, in qualsiasi ordine (§23). M0 resta chiusa e non
+grant fa finalmente raggiungere il dipartimento su cui è dato, e **G9** il live status (**§23**) —
+la fase più corta di M1, perché ha aperto e ha trovato la staff directory già in piedi, costruita da
+G4 e da G8 senza che nessuna delle due la chiamasse così. Il prossimo lavoro è **G10**, la ricerca
+(§24). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -25,11 +27,11 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.11 (`03-design-m1.md`). **Piano di implementazione M1:** v2.1
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G8 sono chiuse** (§14–§22), le prossime
-sono **G9 e G10**, in qualsiasi ordine.
-**Test:** 444 .NET verdi (294 unit + 150 integrazione) + **207 Vitest** + **33 smoke Playwright** +
-**7 del giro pieno** (`pnpm e2e:full`).
+**Design M1:** v1.12 (`03-design-m1.md`). **Piano di implementazione M1:** v2.2
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G9 sono chiuse** (§14–§23), la prossima
+è **G10**.
+**Test:** 453 .NET verdi (300 unit + 153 integrazione) + **209 Vitest** + **36 smoke Playwright** +
+**8 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
@@ -2655,23 +2657,102 @@ che distingua.
 
 ---
 
-## 23. Da dove riparte la prossima sessione (7 settembre 2026)
+## 23. G9 di M1: la striscia, e una directory che c'era già (7 settembre 2026)
 
-### Si apre G9 oppure G10
+La fase più corta di M1, e non perché il perimetro fosse piccolo: **tre task su quattro erano già
+fatti da altre fasi**, e accorgersene è stata metà del lavoro.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 9 o 10. Sono le due fasi che G8 sblocca e si aprono in
-qualsiasi ordine; niente altro dipende da nessuna delle due.
+### Il conto
 
-- **G9 — live status e staff directory**: le due cose che leggono da fuori. `staffList` e il suo
-  provider esistono da G4 e la pagina `/about` che li monta esiste da G8, seminata: quello che manca
-  è la sezione staff vera, `LiveStatusStrip` (il terzo dei quattro componenti custom previsti) e la
-  riga onesta su chi non ha mai fatto login.
-- **G10 — ricerca**: `GET /api/search` esiste da F8; G10 gli dà una schermata e le tre risposte che
-  M0 aveva lasciato aperte. ⚠️ Dipende da G8 e adesso ha da cercare: cinque pagine pubblicate, nove
-  dashboard e un menu.
+| | |
+|---|---|
+| Tabelle nuove | **zero** |
+| Permessi nuovi | **zero** |
+| Endpoint scritti a mano | **zero** — la striscia interroga il blocco `networkStats` di G4 |
+| Componenti custom | **uno**, `LiveStatusStrip` — il terzo dei quattro previsti |
+| Meccanismi nuovi | **zero**. Uno slot `banner` in `Shell`, che è un prop |
+| Dipendenze nuove | **nessuna** |
+
+### Che cosa c'era già, e chi l'aveva costruito
+
+Vale la pena scriverlo perché è il caso migliore che questo progetto abbia prodotto finora: **una
+fase che apre e trova il suo lavoro quasi fatto da meccanismi generici messi lì prima.**
+
+- Il provider `staffList` è di **G4**: raggruppa per dipartimento e poi per FIR, ordina per anzianità
+  e poi per cognome, espone `vid`, nome, posizione e livello — e nient'altro.
+- La sezione di `/about` che lo monta l'ha seminata **G8**, insieme alla pagina.
+- La riga onesta su chi non compare c'era già nel blocco, in `blocks.staffList.rosterNote`.
+
+Quindi G9 ha aggiunto **una** cosa e ha scritto i **test** delle tre promesse. È esattamente ciò che
+§A.5 del piano intende dicendo che i criteri di accettazione sono test: valgono anche — soprattutto —
+quando il codice li precede, perché è allora che nessuno li ha ancora verificati.
+
+### La striscia
+
+- **Nessun endpoint suo**: `/api/blocks/data/networkStats` è anonimo, sempre vivo ed è già la
+  risposta a quella domanda. Un indirizzo in più sarebbe stato un secondo modo di chiedere una cosa.
+- **Polling al minuto**, lo stesso minuto che il server tiene in cache: un lettore che arriva sul
+  minuto non costa niente. Non un socket — il proxy davanti non è il posto per una connessione per
+  lettore (piano §16, §14).
+- ⚠️ **Quando la rete non risponde non disegna niente.** `updatedAt` nullo vuol dire «non ho potuto
+  chiedere», che non è «non c'è nessuno»: quattro zeri in cima a ogni pagina pubblica sarebbero il
+  sito che risponde a una domanda che non ha fatto.
+- ⚠️ **Sta nello slot `banner` di `Shell`**, fra header e contenuto. Dentro la colonna di lettura è
+  larga **1120 px in una finestra da 1280** — misurato — e non è una banda. Lo slot è un prop, non un
+  meccanismo: la cornice decide *dove*, il layout decide *che cosa*, e il back office non ne chiede.
+
+### Due cose trovate facendo
+
+1. ⚠️ **La garanzia sul roster è più forte di come il design la descriveva.** «Chi non ha mai fatto
+   login non compare» non è il provider che lo esclude: `hub_user_staff_positions.vid` è una **chiave
+   esterna** verso `hub_users`, quindi la posizione di chi non ha mai aperto l'hub non è scrivibile.
+   La directory non può mostrarlo perché non può esistere. Il test l'ha scoperto **provando a
+   costruire il caso contrario** e prendendosi un `DbUpdateException`, e adesso asserisce il rifiuto:
+   è una regola dello schema, non il risultato di una query.
+2. **Una rottura che non compila non è una rottura**, di nuovo (§21). Il primo tentativo di rompere
+   il provider ha aggiunto un `return` anticipato: `CS0162`, codice irraggiungibile, che qui è un
+   errore. Rompere vuol dire cambiare il **comportamento** — la seconda versione ha filtrato via le
+   posizioni riconosciute, ed è quella che ha fatto diventare rosso il test del banco.
+
+### I test
+
+Sei unit (`LiveStatusTests`: quattro modi di essere giù, la cache del fallimento, la lettura senza
+token), tre di integrazione (`StaffDirectoryTests`), due Vitest sulla striscia, uno rinominato al
+criterio che già soddisfaceva (`StaffDirectorySaysWhoIsMissing`), tre smoke di cui **uno è una
+misura**, e uno sul banco che legge `/about` da visitatore anonimo — dove le tre metà costruite da
+tre fasi diverse si incontrano per la prima volta.
+
+Al 7 set 2026 la suite è **300 unit .NET, 153 di integrazione, 209 Vitest, 36 smoke, 8 sul banco**.
+
+Ogni correzione è stata rotta apposta: il client che rilancia invece di degradare, l'ordinamento per
+cognome invece che per anzianità, la striscia che disegna anche senza risposta, la striscia rimessa
+dentro la colonna di lettura, e il provider che non torna nessun gruppo.
+
+### Debiti nuovi che G9 lascia
+
+- **Nessuno.** L'unico appunto è che il banco e2e porta ancora una voce di menu lasciata da un giro
+  fallito di G8: è dato del banco, che per progetto non si ripulisce, e si è fatto notare solo
+  perché un selettore troppo largo l'ha pescata.
+
+---
+
+## 24. Da dove riparte la prossima sessione (7 settembre 2026)
+
+### Si apre G10
+
+`04-piano-implementazione-m1.md` §C, `<N>` = 10.
+
+- **G10 — ricerca**: `GET /api/search` esiste da F8; G10 gli dà una schermata e **le tre risposte**
+  che M0 aveva lasciato aperte (rilevanza, evidenziazione, parole corte — debito n.10). Adesso ha
+  anche qualcosa da cercare: cinque pagine pubblicate, nove dashboard, news e documenti.
 - Poi **G11** (le rifiniture dell'editor, che ora ha pagine vere su cui essere provato) e **G12**.
 
-Otto cose che G5, G6, G7 e G8 lasciano pronte e che **non vanno rifatte**:
+Nove cose che G5, G6, G7, G8 e G9 lasciano pronte e che **non vanno rifatte**:
+
+- **Una striscia, una cornice, uno slot.** Quello che appartiene alla finestra e non alla colonna di
+  lettura va nel `banner` di `Shell`; chi ne aggiunge un secondo lo passa dal layout che lo vuole.
+- **Un componente che mostra dati del server prende un `status` di esempio** per la ui-kit, come un
+  blocco prende `exampleData`. La galleria non chiama l'API.
 
 - **La navigazione arriva da `/api/me` e non si scrive nel client**, `NavItem` compreso: una voce ha
   una chiave **oppure** un'etichetta tradotta, mai una stringa che a volte è una chiave. Chi aggiunge
