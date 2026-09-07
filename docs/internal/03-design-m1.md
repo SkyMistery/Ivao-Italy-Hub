@@ -1,10 +1,43 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.10 — 6 settembre 2026
+**Versione documento:** 1.11 — 7 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.11** (7 set 2026): **G8 ha costruito il sito pubblico**, e quattro righe di questo
+documento cambiano — tutte e quattro perché scrivere il codice ha trovato un dettaglio che il
+documento non poteva sapere, nessuna perché il perimetro si muove.
+**§8.1, chi possiede il sito**: il dipartimento del menu è **una costante sola**, `SiteOwnership`,
+e le pagine di sistema e i template appartengono alla stessa. ⚠️ La SPA non la ripete: arriva in
+`/api/me` come `division.siteDepartment`, perché l'indirizzo della schermata del menu è un fatto che
+il client deve sapere all'avvio e §16.7 del piano dice da dove lo sa. Un `staff.wd.menu.tsx` sarebbe
+stato un codice di dipartimento scritto dentro un client che non ha diritto di conoscerne uno.
+**§8.1, il contratto `NavItem`**: oltre al `Label` che il piano prevedeva, la voce porta anche i
+propri **figli** (profondità uno, come deciso) e la navigazione del bootstrap guadagna lo scope
+**`footer`** accanto a `public` e `staff` — la tabella ha due scope da progetto, e senza il secondo
+metà della tabella non sarebbe disegnabile. ⚠️ La voce fissa `nav.home` **non c'è più**: la home è
+una riga di menu seminata con la pagina, o il menu non sarebbe davvero dati.
+**§8.2, la forma di un seed di pagina**: una pagina seminata **nasce da un template** (`template`,
+obbligatorio: è ciò che permette a §9.1 di dire un giorno che il template è cambiato), può portare
+un corpo proprio — e quando non lo porta è una **copia** di quello del template, riidentificata come
+la copia di «nuovo da template», che è il caso delle nove dashboard — e può dichiarare la **voce di
+menu** che ci porta (`menu`, con `path` quando l'indirizzo non è quello della pagina: la home sta in
+menu come `/` e non come `/home`). Il seeder è uno solo, `ContentSeeder`, perché template e pagine
+condividono la chiave, la risoluzione dei `$t` e l'envelope opaco: quello che cambia sono tre campi.
+**§14, la dashboard di dipartimento**: il template di sistema **non** porta blocchi Data filtrati sul
+dipartimento, e non è una dimenticanza. Un template è uno e le righe sono nove, quindi un
+`department` scritto nel template mentirebbe per otto dipartimenti su nove; l'alternativa — un
+secondo marcatore risolto alla copia — sarebbe stata una riga di JSON leggibile solo da chi conosce
+il seeder. La base e i tool li dà il template, il filtro lo mette il dipartimento nell'editor, che è
+esattamente la divisione del lavoro che la nota di decisione descrive.
+
+⚠️ **E una cosa che non riguarda M1 ma la precede**: fino a G8 **nessun form del back office poteva
+creare una riga contro l'API vera**. Mandavano `rowVersion: ""`, che non è una data, e il server
+rifiutava il payload prima di qualunque validatore. È sopravvissuto a M0 e a cinque fasi di M1
+perché il giro di G0 crea da template — un altro endpoint — e gli smoke stubbano l'API: G8 è la
+prima fase che ha spedito un form vuoto al banco. Un solo valore, `shared/api/rowVersion.ts`.
 
 **Changelog 1.10** (6 set 2026, **correzione di Carmine**): la voce di §14 aggiunta poche ore prima
 diceva che la seconda metà del problema dei grant era «un grant che porta un livello». **No**: gli
