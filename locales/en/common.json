@@ -313,7 +313,12 @@
           "isActive": "Published",
           "updatedAt": "Last change"
         }
-      }
+      },
+      "noticeError": "This page could not be published.",
+      "noticeWarning": "Two sections are not in the template any more.",
+      "noticeSuccess": "Draft saved.",
+      "noticeInfo": "A draft is only visible to the staff.",
+      "noticeToast": "Show it as a toast"
     },
     "registry": {
       "title": "Registries",
@@ -484,7 +489,10 @@
         "lockedByUnknown": "This section is fixed by the template this page was made from.",
         "lockedYouMay": "You may change it on the templates of {{department}}.",
         "lockedWhoMay": "Only somebody holding {{permission}} on {{department}} can change it."
-      }
+      },
+      "saved": "Draft saved.",
+      "published": "Published. The site is showing this version now.",
+      "deleted": "Deleted."
     },
     "slugPlaceholder": "my-new-page",
     "hints": {

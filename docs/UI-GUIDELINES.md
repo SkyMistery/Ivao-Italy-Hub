@@ -39,7 +39,8 @@ It is exactly:
 
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
-`StatusBadge`, `ConfirmDialog`, `MediaPicker`, `CalendarView`, `ContactForm`, `LiveStatusStrip`.
+`StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
+`LiveStatusStrip`.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
@@ -79,6 +80,23 @@ the contact page, and any section of a department's own page that grows one — 
 generated form is the two things a schema has no opinion about, which departments can be written to
 with their names in the language on screen, and what a sent message looks like. It contains no
 field: the form itself is `SchemaForm` reading `shared/ui/contact.ts`.
+
+`Notice` says one thing to the person using the hub, in one of four tones: something went wrong,
+something is worth their attention, something worked, something is worth knowing. It is on the list
+because it is mounted from anywhere, in both of its shapes — a panel that stays on the page, and the
+same sentence said in the corner of the screen and then gone, which is what `useNotice()` pushes into
+Atmosphere's toast queue. A confirmation is not something to close: "saved" has been read by the time
+the eye is back on the page.
+
+⚠️ It is **not** `ProblemAlert` and does not replace it. That one draws what the server refused,
+field by field, out of a `ProblemDetails`; this one is a sentence somebody wrote. The two may be
+worth merging one day; doing it touches every screen of the back office, so it is a decision of its
+own rather than a tidy-up.
+
+Two of its four tones are Atmosphere's own alert variants, used as they are; the other two are
+written in `shared/ui/notices.ts` in the same shape, because the theme ships the `semantic-yellow`
+and `semantic-blue` scales and only the component lacks a variant for them. That file is the one
+table both shapes read, so a tone cannot be green in one of them and grey in the other.
 
 `LiveStatusStrip` is the band under the header of the public site: who is connected to the network,
 refreshed by **polling** and never by a socket — a strip that changes by ones once a minute does not

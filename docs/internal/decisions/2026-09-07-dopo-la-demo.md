@@ -95,21 +95,26 @@ da nessuna parte» ha trovato quella pagina.
 
 **Editor** (punti 2 e 7 della demo)
 
-1. L'indirizzo (`slug`) lo **propone il sistema** dal titolo, l'utente lo aggiusta. Oggi si scrive a
-   mano da zero.
-2. **Conferma esplicita** che l'editor ha fatto quello che è stato cliccato. Oggi un salvataggio
-   riuscito non dice niente, e un'azione andata a vuoto nemmeno — è come si è persa una sezione
-   durante la ricopiatura.
+1. ~~L'indirizzo (`slug`) lo **propone il sistema** dal titolo~~ ✅ **fatta**: `slugFrom`,
+   annotazione del generatore di form e non una funzione della schermata dei contenuti. Segue il
+   titolo finché il campo contiene esattamente quello che è stato proposto; una riga che ha già un
+   indirizzo non lo sposta mai.
+2. ~~**Conferma esplicita** che l'editor ha fatto quello che è stato cliccato~~ ✅ **fatta**, come
+   **toast** (scelta di Carmine): salvare, pubblicare ed eliminare rispondono, e una pubblicazione
+   rifiutata pure — la ragione resta in `PublishProblems`, che sta sopra il form e può essere fuori
+   schermo, mentre il toast dice almeno che il clic è stato risposto.
 3. **«Cosa manca per pubblicare»**, visibile *prima* di provare. `PublishProblems` esiste ma parla
    **dopo** un rifiuto: serve la lista viva.
 4. Editor più intuitivo in generale — da ragionarci alla fine di tutto il resto.
 
 **Grafica** (punto 3)
 
-5. **Un componente di avviso a quattro stati** — rosso errore, giallo avviso, verde successo, blu
-   informazione — **usabile ovunque**, deciso da Carmine. ⚠️ È un **quinto componente custom**:
-   l'elenco è chiuso (piano §8.3) e M1 si è appena chiusa dicendo «quattro, esattamente i quattro
-   previsti». Va scritto nel piano, non aggiunto di straforo.
+5. ~~**Un componente di avviso a quattro stati**~~ ✅ **fatto**: `Notice` (riquadro) e
+   `useNotice()` (la stessa frase in un angolo, poi via), che leggono una tabella sola di quattro
+   toni. Due dei quattro sono le varianti di Atmosphere così come sono; gli altri due sono scritti
+   nella stessa forma, perché il tema ha le scale `semantic-yellow` e `semantic-blue` e manca solo
+   la variante. La riga in piano §8.3 c'è, e con lei `docs/UI-GUIDELINES.md` §3, `catalog.ts` e la
+   sezione della ui-kit. ⚠️ Deciso da Carmine: **non** sostituisce `ProblemAlert`.
 6. **Calendario**: le voci distinte da una **chip colorata**.
 7. **`LiveStatusStrip`**: «troppo piatta, non fa risaltare le informazioni». Lavoro di gerarchia
    visiva, non di decorazione.

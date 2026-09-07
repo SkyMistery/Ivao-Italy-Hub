@@ -18,9 +18,11 @@ import {
   LiveStatusStrip,
   MarkdownContent,
   MediaPicker,
+  Notice,
   PageShell,
   SectionHeader,
   StatTile,
+  useNotice,
   type MediaLibraryQuery,
   type PickableMedia,
   type CalendarItem,
@@ -172,6 +174,32 @@ export function MarkdownSample() {
 export function ProblemAlertSample() {
   const { t } = useTranslation();
   return <ProblemAlert summary={t('uiKit.sample.problem')} />;
+}
+
+export function NoticeSample() {
+  const { t } = useTranslation();
+  const notice = useNotice();
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Notice tone="error" title={t('uiKit.sample.noticeError')} />
+      <Notice tone="warning" title={t('uiKit.sample.noticeWarning')} />
+      <Notice tone="success" title={t('uiKit.sample.noticeSuccess')} />
+      <Notice tone="info" title={t('uiKit.sample.noticeInfo')} />
+
+      {/* The other half of the same component: a confirmation is said in the corner and then gone,
+          and the gallery is the one place both halves can be seen next to each other. */}
+      <div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => notice({ tone: 'success', title: t('uiKit.sample.noticeSuccess') })}
+        >
+          {t('uiKit.sample.noticeToast')}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function ConfirmDialogSample() {

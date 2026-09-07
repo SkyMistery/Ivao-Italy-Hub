@@ -31,6 +31,12 @@ due le ha chieste l'uso, non i blocchi. Segue il titolo finché il campo contien
 è stato proposto, e smette per sempre appena qualcuno ci scrive: un indirizzo sopravvive alla pagina,
 e uno che si riscrive sotto le dita di chi lo sta scrivendo sarebbe peggio di uno da scrivere a mano.
 
+**L'avviso a quattro stati è il quinto componente dell'elenco chiuso** (§8.3), chiesto da Carmine e
+scritto **con la riga nel piano**, che è la condizione che il piano di implementazione poneva.
+`Notice` più `useNotice()`: lo stesso avviso come riquadro e come conferma in un angolo, una tabella
+sola di quattro toni, e la conferma che l'editor deve a chi clicca (richiesta 6) è il suo primo
+cliente. `ProblemAlert` resta dov'è.
+
 **Niente icone per i dipartimenti: la sigla è il segno** (deciso da Carmine). Erano nove scudi
 identici. Ragione: un fork non-IVAO riscrive comunque l'enum `Department`, quindi una mappa
 «dipartimento → icona» vivrebbe nel perimetro IVAO e gli costerebbe lavoro, e la sigla è già
@@ -1035,6 +1041,16 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 Navbar + NavigationMenu (pubblico), Sidebar (riservato/staff), Card (eventi, moduli), DataTable (slot, richieste, utenti), Calendar/DatePicker (eventi, disponibilità trainer), Dialog/Sheet (booking, form rapidi), Badge (rating, stato), Tabs, Toast, Command palette (`⌘K` per staff: cerca utente/evento/pagina), DarkModeToggle, Skeleton per il loading.
 
 Componenti custom (pochi, costruiti con i token): `Hero` (gradiente atmos-800→atmos-600, eyebrow verde, CTA), `StatTile` (numero grande + etichetta, dati vivi), `SectionHeader` (eyebrow + titolo, come nel template HQ), `LiveStatusStrip` (ATC/piloti online), `RatingBadge`, `AirportCard`, `EventTimeline`, `LocaleSwitcher`, `MarkdownContent`, `ContactForm` (visibile solo autenticati). Footer con link legali HQ (Terms of Use, Privacy Policy, IP Policy) e "Staff area".
+
+⚠️ **L'elenco vero e chiuso è `web/src/shared/ui/catalog.ts`**, ed è scritto per chi forka in
+`docs/UI-GUIDELINES.md` §3; questo paragrafo è l'intenzione con cui è nato. Il **quinto** aggiunto
+dopo M0 — e il primo dopo la chiusura di M1, che ne contava quattro e sono i quattro previsti — è
+**`Notice`** (7 set 2026, G13, chiesto da Carmine dopo la demo): un avviso a quattro stati (errore,
+avviso, successo, informazione) usabile ovunque, in due forme che leggono la stessa tabella — un
+riquadro che resta, e la stessa frase detta in un angolo dello schermo e poi via, che `useNotice()`
+mette nella coda di toast di Atmosphere. Non sostituisce `ProblemAlert`, che disegna il rifiuto del
+server campo per campo: unire i due tocca ogni schermata del back-office ed è una decisione a sé,
+che Carmine ha scelto di non prendere adesso.
 
 ---
 

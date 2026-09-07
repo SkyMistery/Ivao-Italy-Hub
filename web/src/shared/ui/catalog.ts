@@ -22,6 +22,9 @@ export const UI_KIT_COMPONENTS = [
   'VisibilityBadge',
   'StatusBadge',
   'ConfirmDialog',
+  // The fifth added since the list was written, and the first since M1 closed with the four it
+  // predicted: Carmine asked for it after the demo, because an editor that saved said nothing.
+  'Notice',
   'MediaPicker',
   'CalendarView',
   'ContactForm',

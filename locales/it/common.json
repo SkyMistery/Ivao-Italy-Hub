@@ -313,7 +313,12 @@
           "isActive": "Pubblicato",
           "updatedAt": "Ultima modifica"
         }
-      }
+      },
+      "noticeError": "Questa pagina non è stata pubblicata.",
+      "noticeWarning": "Due sezioni non sono più nel template.",
+      "noticeSuccess": "Bozza salvata.",
+      "noticeInfo": "Una bozza la vede solo lo staff.",
+      "noticeToast": "Mostralo come toast"
     },
     "registry": {
       "title": "Registri",
@@ -484,7 +489,10 @@
         "lockedByUnknown": "Questa sezione è fissata dal template da cui nasce questa pagina.",
         "lockedYouMay": "Puoi cambiarlo sui template di {{department}}.",
         "lockedWhoMay": "Può cambiarlo solo chi ha {{permission}} su {{department}}."
-      }
+      },
+      "saved": "Bozza salvata.",
+      "published": "Pubblicata. Il sito mostra questa versione da adesso.",
+      "deleted": "Eliminata."
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

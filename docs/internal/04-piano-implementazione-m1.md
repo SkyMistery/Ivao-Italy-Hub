@@ -13,8 +13,9 @@
 richieste con loro: il logout ridisegna la pagina — il bootstrap non è una query ma il contesto del
 router, e una query invalidata non rifà un `beforeLoad` — e una pagina non si pubblica più portando
 un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCeiling` dei blocchi
-Data. La sigla di un dipartimento è il suo segno. Fatta anche la richiesta 5, lo `slug` proposto dal titolo: è la **settima** estensione del
-generatore di form. Restano le richieste da 6 in poi, e il tag.)
+Data. La sigla di un dipartimento è il suo segno. Fatte anche le richieste 5, 6 e 9: lo `slug` proposto dal titolo — la **settima** estensione del
+generatore di form — e l'avviso a quattro stati, che è il **quinto componente custom** e porta con
+sé la conferma che l'editor deve a chi clicca. Restano 7, 10-14, e il tag.)
 
 **2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
@@ -1066,14 +1067,21 @@ seguire il tag, se Carmine preferisce; i difetti no.
    alla chiusura della fase (§12 ne prevedeva cinque, G11a ha fatto la sesta). Segue il titolo
    finché il campo contiene esattamente quello che è stato proposto, e smette per sempre appena
    qualcuno ci scrive — una riga che aveva già un indirizzo non lo sposta mai.
-6. La conferma che l'editor ha fatto quello che è stato cliccato.
+6. ~~La conferma che l'editor ha fatto quello che è stato cliccato~~ — **fatto** (con la 9): salvare,
+   pubblicare ed eliminare rispondono con un toast, e una pubblicazione rifiutata lo dice anche lei
+   — la ragione resta in `PublishProblems`, che nomina il blocco e la lingua, ma quella lista sta
+   sopra il form e può essere fuori schermo.
 7. «Cosa manca per pubblicare», viva e prima del rifiuto.
 8. ~~Le **sigle** dei dipartimenti al posto delle nove icone identiche~~ — **fatto** (`6584438`),
    con `web/src/app/layouts/staffDestinations.test.tsx`, e guardata in un browser. ⚠️ Il segno non
    entra nell'elenco chiuso di §8.3: non prende props, si monta solo in uno slot di icona, e nasce
    dai dati.
-9. L'**avviso a quattro stati** condiviso. ⚠️ È il **quinto componente custom**: va aggiunto
-   all'elenco chiuso di §8.3 con una riga, non di straforo.
+9. ~~L'**avviso a quattro stati** condiviso~~ — **fatto**: `Notice` più `useNotice()`, riquadro e
+   conferma in un angolo che leggono la stessa tabella di quattro toni. È il **quinto componente
+   custom** e la riga in §8.3 del piano c'è, insieme a quella di `docs/UI-GUIDELINES.md` §3, alla
+   voce in `catalog.ts` e alla sezione della ui-kit — che il test accanto alla galleria pretende.
+   ⚠️ Deciso da Carmine: **non** sostituisce `ProblemAlert`, perché unirli tocca ogni schermata del
+   back-office ed è una decisione a sé. La forma della conferma — toast e non pannello — è sua.
 10. Il calendario: chip colorata per tipo, orario UTC con il locale fra parentesi, e **quattro
     viste** (settimana, mese, lista settimanale, lista mensile).
 11. I **tipi di evento decisi centralmente** e uguali per tutti. ⚠️ Non sono le categorie, che sono

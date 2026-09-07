@@ -21,6 +21,7 @@ import {
   LocaleFieldsSample,
   MarkdownSample,
   MediaPickerSample,
+  NoticeSample,
   PageShellSample,
   ProblemAlertSample,
   SchemaFormSample,
@@ -96,6 +97,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
     ),
   },
   { name: 'ConfirmDialog' satisfies UiKitComponent, render: () => <ConfirmDialogSample /> },
+  { name: 'Notice' satisfies UiKitComponent, render: () => <NoticeSample /> },
   {
     name: 'MediaPicker' satisfies UiKitComponent,
     render: (bootstrap) => <MediaPickerSample bootstrap={bootstrap} />,

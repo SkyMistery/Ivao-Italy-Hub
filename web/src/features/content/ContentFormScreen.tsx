@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { holdsPermission, type Bootstrap, type Department } from '../../shared/api/bootstrap';
 import type { ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { PageShell } from '../../shared/ui';
+import { PageShell, useNotice } from '../../shared/ui';
 import { categoriesOfKindQuery } from '../categories/queries';
 import { mediaPickerQuery } from '../media/queries';
 
@@ -51,6 +51,11 @@ export function ContentFormScreen({
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
+
+  // What tells the editor that the click did something. Asked for by Carmine after the demo: a
+  // save that worked said nothing, and neither did an action that went nowhere — which is how a
+  // section was lost while copying a page across by hand.
+  const notice = useNotice();
 
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
@@ -106,13 +111,37 @@ export function ContentFormScreen({
           if (isNew) {
             const created = await create.mutateAsync({ values, body });
             await onCreated(created.id);
+            notice({ tone: 'success', title: t('content.editor.saved') });
             return created;
           }
 
-          return update.mutateAsync({ values, body });
+          const saved = await update.mutateAsync({ values, body });
+          notice({ tone: 'success', title: t('content.editor.saved') });
+          return saved;
         }}
-        onPublish={isNew ? null : () => publish.mutate(null)}
-        onDelete={isNew ? null : () => remove.mutate(Number(id), { onSuccess: onFinished })}
+        onPublish={
+          isNew
+            ? null
+            : () =>
+                publish.mutate(null, {
+                  onSuccess: () => notice({ tone: 'success', title: t('content.editor.published') }),
+                  // The reason stays in `PublishProblems`, which names the block and the language.
+                  // This only says that the click was answered, and answered no: the list of
+                  // reasons is above the form and may well be off the screen.
+                  onError: () => notice({ tone: 'error', title: t('content.editor.publishRefused') }),
+                })
+        }
+        onDelete={
+          isNew
+            ? null
+            : () =>
+                remove.mutate(Number(id), {
+                  onSuccess: () => {
+                    notice({ tone: 'success', title: t('content.editor.deleted') });
+                    onFinished();
+                  },
+                })
+        }
       />
     </PageShell>
   );
