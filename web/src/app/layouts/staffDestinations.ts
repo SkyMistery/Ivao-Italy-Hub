@@ -24,6 +24,7 @@ import {
   reachableDepartments,
 } from '../../shared/api/bootstrap';
 import { deptParam } from '../../shared/api/department';
+import { DEPARTMENT_MARKS } from '../../shared/icons/departmentMark';
 
 /**
  * Everywhere a member of staff may go, grouped the way the back office is: one group per department
@@ -69,7 +70,9 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
 
     return {
       title: department,
-      Icon: ShieldCheck,
+      // The code is the mark: no icon for a department (decided 7 Sep 2026, after the demo). All
+      // nine used to carry the same shield, which told nobody anything.
+      Icon: DEPARTMENT_MARKS[department],
       items: [
         // The home of the department, and the first entry because it is where `/staff` lands.
         {
