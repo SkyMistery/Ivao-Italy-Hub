@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte dodici fasi e mezza**: design
+**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa e M1 pure**, tredici fasi e mezza: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -23,7 +23,10 @@ volta, e si trascina con dnd-kit senza perdere le frecce, che sono l'unica strad
 **G11a** (**§26**), la mezza fase che ha chiuso il debito di G11: i quattro campi di un template si
 scrivono da una schermata, e il generatore di form ha imparato il sesto tipo di campo — uno più di
 quanti design §12 ne prevedesse, ed è un numero che G12 riporta invece di nasconderlo. Il prossimo
-lavoro è **G12**, l'ultima fase di M1 (§27). M0 resta chiusa e non
+e **G12** (**§27**), la fase che verifica invece di costruire: due pagine ricopiate a mano
+dall'editor, il giro visivo, la demo, la revisione §16.E e il conto contro la previsione. Ha trovato
+più difetti di qualunque altra fase, fra cui **ogni form del back-office si poteva salvare una volta
+sola per caricamento di pagina**. Manca solo il **tag `v0.2.0-m1`** (§28). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -33,10 +36,9 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `v0.1.0-m0` di tutto M1: quanto esattamente lo dice
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
-**Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.5
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G11a sono chiuse** (§14–§26), la prossima
-è **G12**, l'ultima.
+**Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
+**Piano:** v0.45. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.6
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **sono chiuse tutte** (§14–§27); resta il tag.
 **Test:** 456 .NET verdi (300 unit + 156 integrazione) + **243 Vitest** + **42 smoke Playwright** +
 **11 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
@@ -3005,15 +3007,104 @@ di estendere il meccanismo, non di aggirarlo.
 
 ---
 
-## 27. Da dove riparte la prossima sessione (7 settembre 2026)
+## 27. G12 di M1: usare quello che si è costruito (7 settembre 2026)
 
-### Si apre G12, l'ultima
+La fase che verifica invece di costruire. Ha prodotto **più difetti di qualunque altra**, e nessuno
+di essi era trovabile prima: metà esistono solo quando il contenuto è vero.
 
-`04-piano-implementazione-m1.md` §C, `<N>` = 12.
+### Il conto
 
-⚠️ **Il numero delle estensioni al generatore è sei, non cinque** (§26). Chi scrive il rapporto di
-chiusura riporta sei e la riga del perché: correggere una previsione a posteriori vuol dire non
-averne fatta una.
+| | |
+|---|---|
+| Tabelle nuove | **zero** |
+| Permessi nuovi | **zero** |
+| Endpoint scritti a mano | **zero** |
+| Componenti custom | **zero** |
+| Meccanismi nuovi | **zero**; una correzione a una ricetta esistente (design M0 §7.3) |
+| Dipendenze nuove | **nessuna** |
+
+### Che cosa ha trovato la ricopiatura a mano
+
+`/about` e `/start` sono state ricopiate dal sito attuale **dall'editor**, in italiano e in inglese, e
+pubblicate. Il piano prevedeva «due o tre attriti»; sono stati sette, e due erano difetti veri.
+
+⚠️ **Il grosso: ogni form del back-office si poteva salvare una volta sola per caricamento di
+pagina.** Le schermate leggevano la riga dal `loader` della rotta, che gira alla navigazione e mai
+più: dopo il primo salvataggio il form teneva il `rowVersion` di quando la pagina si era aperta, e il
+secondo era **409 «somebody else changed this in the meantime»**, con nessun altro in giro. Undici
+rotte. Sotto c'era un secondo difetto: `Route.useLoaderData()` è tipizzato **`never`** in quei file, e
+`never` è assegnabile a tutto, quindi TypeScript non stava controllando niente lì. Nota
+`decisions/2026-09-07-il-loader-non-e-la-riga.md`; il guardiano è `web/src/routes/routes.test.ts`.
+
+⚠️ **Il secondo: le pagine seminate non soddisfacevano i propri template seminati**, da sempre, in
+quattro modi. Il pannello di G11 lo ha detto la prima volta che qualcuno ha aperto `/about` per
+davvero. Il peggiore era la home, che dava una `key` a una sezione tutta sua: l'azione offerta per
+«non è più nel template» è **rimuovi**. Corretti, e adesso `seeds.test.ts` confronta i due alberi con
+lo stesso `templateDiff` dell'editor.
+
+Gli altri cinque attriti, che sono misure e non difetti:
+
+- **ricopiare è tradurre**: due lingue obbligatorie per pubblicare, fonte solo italiana;
+- **un wizard non è una pagina**: il bivio Pilota/ATC di `/start` è diventato due sezioni, e il
+  template ne dava tre dove ne servivano cinque;
+- **il blocco «Link list» è un blocco Data**: i cinque link di `/start` sono righe del modulo Link, e
+  quella tabella era **vuota** — `/start`, `/home`, `/pilots` e `/atc` finivano tutte con un titolo e
+  il nulla sotto;
+- **l'editor non conferma mai un salvataggio**: nessun avviso, nessuna ora. Una sezione intera è
+  andata persa così, e me ne sono accorto interrogando il database;
+- **nessun annulla sull'ultima mossa strutturale**: le frecce stanno a due pixel dal nome della
+  sezione, e una sezione spostata per sbaglio non si recupera.
+
+### Che cosa ha trovato il giro visivo
+
+Misurato invece che guardato (`decisions/2026-09-07-giro-visivo-m1.md`), perché una cattura dello
+schermo aveva già dato un falso allarme — HANDOFF §13, la regola tiene.
+
+- ⚠️ **`--muted-foreground` non passa AA nel tema scuro**: è lo stesso colore nei due temi, fa
+  5,89 : 1 su bianco e **3,14 : 1** sul fondo scuro, sotto i 18,66 px. Token di Atmosphere.
+- ⚠️ **Le props che non sono prosa finiscono nell'indice di ricerca**: `left muted` del blocco `hero`
+  si legge negli snippet. Rompe una regola già scritta in `CLAUDE.md` §4. Il rimedio generico è
+  indicizzare **solo le mappe tradotte**: la prosa è sempre `Localized`, le enumerazioni e gli URL
+  sono stringhe nude, e il server distingue le due cose senza conoscere gli schemi.
+- La sintassi Markdown si legge negli snippet, stesso punto di intervento.
+- **Due `h1` su ogni pagina pubblica**, e **il blocco Titolo nasce a livello 1**.
+- A posto: nessuno scorrimento orizzontale a 419 né a 1280 px, larghezze delle sezioni esatte, zero
+  fallimenti di contrasto su `/start`.
+
+⚠️ **Il back-office a 375 px non è stato guardato**: il pannello del browser non scende sotto 419 e
+il browser con la sessione dello staff non si ridimensiona. È l'unico pezzo di giro visivo che manca.
+
+### I documenti che G12 lascia
+
+- `tools/demo-m1.md` — nove parti, gli otto punti della definizione di fatto spuntati uno a uno.
+  **L'accettazione è che Carmine lo esegua da zero.**
+- `decisions/2026-09-07-m1-review.md` — il conto contro la previsione: **6 / 3 / 6 / 4 / 7** contro
+  6 / 3 / 5 / 4 / 1.
+- `decisions/2026-09-07-m1-checklist.md` — la revisione §16.E su tutto il codice di M1.
+- `decisions/2026-09-07-giro-visivo-m1.md`, `2026-09-07-il-loader-non-e-la-riga.md`.
+- Piano 00 a **v0.45**, con la metrica «endpoint scritti a mano» corretta; `docs/UI-GUIDELINES.md`
+  guadagna le quattro regole dell'editor che M1 ha deciso usandolo.
+
+### Debiti nuovi che G12 lascia
+
+Tutti e sei quelli elencati sopra e non ancora corretti — il grigio nel tema scuro, le props
+nell'indice, il Markdown negli snippet, i due `h1`, il livello 1 di default, la conferma del
+salvataggio e l'annulla. Nessuno impedisce il tag: sono rifiniture, tutte scritte, nessuna scoperta
+per caso.
+
+---
+
+## 28. Da dove riparte la prossima sessione (7 settembre 2026)
+
+### Resta il tag, e poi si apre M2
+
+`04-piano-implementazione-m1.md` §C. Di G12 restano **due cose sole**, ed entrambe sono di Carmine:
+
+1. **Eseguire `tools/demo-m1.md` da zero** — clone, docker-compose, run — e spuntare gli otto punti.
+   È l'accettazione della milestone, e nessun altro può darla.
+2. **Il tag `v0.2.0-m1`.** ⚠️ Si spinge **dopo** il merge, e si verifica **sull'artefatto**, non sul
+   commit: in M0 ci vollero cinque tentativi, il server di prova deve fare il fallback SPA, e un grep
+   su un bundle minificato non è una verifica — la verifica è comportamentale o non è.
 
 - **G12 — migrazione a mano, giro visivo, chiusura di M1.** Ricopiare `/about` e `/start` a mano
   dall'editor — che è il vero collaudo di tutto quello che M1 ha costruito, fatto da chi lo userà —

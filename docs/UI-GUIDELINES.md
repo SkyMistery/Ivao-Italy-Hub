@@ -317,6 +317,33 @@ way round would close a circle between the two.
 Growing the list is adding a line. It is not a decision, because what it draws from — `lucide` — was
 decided once and is not up for discussion.
 
+## The editor of a page, and what it may not do
+
+Four rules M1 settled by using the editor rather than by designing it. They are here because they
+are the ones a contributor is most likely to break by improving something.
+
+**A section is reordered by dragging *and* by two arrows, and the arrows are not decoration.**
+Dragging is a pointer and nothing else — no keyboard, no screen reader, no touch worth the name — so
+the arrows are the whole of that panel for anybody who cannot use a mouse. A row is dragged by a
+**handle**, never by the whole row: the row is made of buttons, and making it all draggable turns
+every click on "remove" into a race.
+
+**A template never rewrites a page.** The editor may say a section was added, removed, or no longer
+fits — and it applies **one** difference at a time, on a click, never all of them. Some differences
+have no action at all: a section whose blocks the template no longer allows is *said*, because
+aligning it would mean deleting what somebody wrote. A disabled button is the same trap with a
+friendlier face.
+
+**A section a page adds for itself carries no `key`.** A key is the handle back to a section of the
+template; a page-only section that claims one is reported as "no longer in the template", and the
+action offered for that is *remove*. A seed that gets this wrong is an editor offering to delete a
+page's own content — which is why `src/features/content/seeds.test.ts` exists.
+
+**The multi-device preview is a `max-width`, not an emulator.** Three widths of the same page,
+rendered by the very same component the public site uses. It must not grow a device frame, a user
+agent or touch emulation: the value of one renderer is that "what will this look like" cannot
+disagree with "what this looks like".
+
 ## Times
 
 Always in UTC, with the time zone of the division next to it — a hub is read by people flying in one
