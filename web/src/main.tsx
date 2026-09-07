@@ -7,22 +7,23 @@ import { HubProviders } from './app/Providers';
 import { createI18n } from './app/i18n';
 import { registry } from './app/registry';
 import { createHubRouter } from './app/router';
-import { bootstrapKey } from './features/me/queries';
+import { sessionChanged } from './features/me/queries';
 import { setUnauthorizedHandler } from './shared/api/client';
 import './styles/index.css';
 
 const queryClient = new QueryClient();
 
-// A 401 means the session is gone: the cached bootstrap is stale and the shell must redraw as
-// anonymous rather than keep showing a name.
-setUnauthorizedHandler(() => {
-  void queryClient.invalidateQueries({ queryKey: bootstrapKey });
-});
-
 // The router carries the query client, and the root route puts the bootstrap next to it: a guard
 // then reads `context.bootstrap` without a fetch of its own (design M0 §7.3). Building it lives in
 // `app/router.ts`, which is also where the routes the modules declare join the tree.
 const router = createHubRouter(queryClient);
+
+// A 401 means the session is gone: the cached bootstrap is stale and the shell must redraw as
+// anonymous rather than keep showing a name. It is the same job the sign out button does, so it is
+// the same call — and it needs the router, which is why it is set up after it and not before.
+setUnauthorizedHandler(() => {
+  void sessionChanged(queryClient, router);
+});
 
 declare module '@tanstack/react-router' {
   interface Register {
