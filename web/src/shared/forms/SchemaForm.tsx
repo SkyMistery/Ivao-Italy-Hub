@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, H4, Input, Label, Select, Subtle, Switch, Textarea } from '@ivao/atmosphere-react';
+import { Button, Checkbox, H4, Input, Label, Select, Subtle, Switch, Textarea } from '@ivao/atmosphere-react';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -328,6 +328,46 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 ]}
               />
             )}
+          />
+        </Row>
+      );
+
+    case 'multi':
+      return (
+        <Row id={name} label={label} hint={hint} error={error}>
+          <Controller
+            control={control}
+            name={name}
+            render={({ field }) => {
+              const chosen: string[] = Array.isArray(field.value) ? (field.value as string[]) : [];
+
+              return (
+                <div className="flex flex-wrap gap-x-6 gap-y-2" role="group" aria-label={label}>
+                  {node.options.map((option) => (
+                    <div key={option.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`${name}.${option.value}`}
+                        checked={chosen.includes(option.value)}
+                        onCheckedChange={(ticked) =>
+                          // Kept in the order the set declares rather than in the order they were
+                          // ticked: what is stored is a set, and a diff of two arrays that hold
+                          // the same values in a different order is a change nobody made.
+                          field.onChange(
+                            ticked === true
+                              ? node.options
+                                  .map((candidate) => candidate.value)
+                                  .filter((value) => value === option.value || chosen.includes(value))
+                              : chosen.filter((value) => value !== option.value),
+                          )
+                        }
+                        onBlur={field.onBlur}
+                      />
+                      <Label htmlFor={`${name}.${option.value}`}>{option.label}</Label>
+                    </div>
+                  ))}
+                </div>
+              );
+            }}
           />
         </Row>
       );

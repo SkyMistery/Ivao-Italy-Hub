@@ -264,6 +264,7 @@ export function ContentEditor({
                   key={section.id}
                   section={section}
                   rule={ruleFor(rules, section.key)}
+                  isTemplate={content?.isTemplate === true}
                   locales={locales}
                   division={division}
                   mediaLibrary={mediaLibrary}
@@ -274,6 +275,24 @@ export function ContentEditor({
                       mediaId: values.mediaId ?? null,
                       padding: values.padding,
                       width: values.width,
+                      // What a template imposes, and only on a template: on a page the form does
+                      // not draw these, and writing them would be a 400 from the envelope
+                      // validator — a page carrying them could lift its own restrictions.
+                      ...(content?.isTemplate === true
+                        ? {
+                            ...(typeof values.key === 'string' && values.key.trim() !== ''
+                              ? { key: values.key.trim() }
+                              : {}),
+                            required: values.required === true,
+                            locked: values.locked === true,
+                            // Nothing ticked means "any block", which is the absence of the key
+                            // and not an empty list: an empty one would allow nothing at all.
+                            allowedBlocks:
+                              values.allowedBlocks === undefined || values.allowedBlocks.length === 0
+                                ? null
+                                : [...values.allowedBlocks],
+                          }
+                        : {}),
                     });
 
                     // Narrowing the layout has to pull the blocks back into a column that still

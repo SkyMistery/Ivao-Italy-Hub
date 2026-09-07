@@ -95,17 +95,65 @@ export type ContentFormValues = z.output<ReturnType<typeof contentMetadataSchema
  *
  * `title` is the name in the editor's tree and is never drawn on the page — what a visitor reads
  * is a `heading` block, which is a block they can move, translate and delete.
+ *
+ * It is a **function** since G11a, for the same reason `contentMetadataSchema` is one: four of
+ * these fields exist only on a template. `key`, `required`, `locked` and `allowedBlocks` are what a
+ * template imposes on the pages made from it (design M1 §9.1), and the server refuses three of them
+ * outright on a row that is not one — a page carrying them could lift its own restrictions.
  */
-export const sectionSettingsSchema = z.object({
-  title: localized(),
-  layout: z.enum(LAYOUTS),
-  background: z.enum(BACKGROUNDS),
-  // Only read when the background is `image`, and chosen from the library like every other file.
-  // Left here rather than hidden behind the choice: the generator draws a schema, and a field that
-  // appears and disappears with the value of another one would be the first rule of its kind.
-  mediaId: z.number().int().optional().meta({ media: true }),
-  padding: z.enum(PADDINGS),
-  width: z.enum(WIDTHS),
-});
+export function sectionSettingsSchema(
+  /**
+   * Null on a page. On a template: the block types of the registry, already labelled in the
+   * language on screen, and whether this section still has no `key` — because a key is written
+   * once and then only shown (decision `2026-09-07-scrivere-un-template.md`).
+   */
+  template: { blocks: readonly ChoiceOption[]; unnamed: boolean } | null,
+) {
+  const common = {
+    title: localized(),
+    layout: z.enum(LAYOUTS),
+    background: z.enum(BACKGROUNDS),
+    // Only read when the background is `image`, and chosen from the library like every other file.
+    // Left here rather than hidden behind the choice: the generator draws a schema, and a field that
+    // appears and disappears with the value of another one would be the first rule of its kind.
+    mediaId: z.number().int().optional().meta({ media: true }),
+    padding: z.enum(PADDINGS),
+    width: z.enum(WIDTHS),
+  };
 
-export type SectionFormValues = z.output<typeof sectionSettingsSchema>;
+  if (template === null) {
+    return z.object(common);
+  }
+
+  const imposed = {
+    required: z.boolean(),
+    locked: z.boolean(),
+    // Empty means "any", which is why it is optional rather than a list starting at nothing: a
+    // section that allowed no block at all would be a section nobody could put anything in.
+    allowedBlocks: z.array(z.string()).optional().meta({ multi: true, choices: template.blocks }),
+  };
+
+  if (!template.unnamed) {
+    return z.object({ ...common, ...imposed });
+  }
+
+  // ⚠️ The handle a copy is matched back by, and the only one it keeps. Changing it on a template
+  // that already has pages breaks that match in silence — the section of every page becomes
+  // "removed from the template" and this one becomes "added", and nobody did anything wrong. So the
+  // form offers it while it is empty and shows it afterwards. The server still takes anything from
+  // a `PUT`: this is the form not letting somebody trip, not a rule of the domain.
+  return z.object({ ...common, key: z.string().optional(), ...imposed });
+}
+
+/**
+ * The values a section form carries, on a page or on a template. The four a template imposes are
+ * optional here for the same reason the kind-specific three of a content row are: the schema above
+ * decides which are drawn, and `SectionProperties` decides what a section that has none of them
+ * writes back.
+ */
+export type SectionFormValues = z.output<ReturnType<typeof sectionSettingsSchema>> & {
+  key?: string;
+  required?: boolean;
+  locked?: boolean;
+  allowedBlocks?: string[];
+};

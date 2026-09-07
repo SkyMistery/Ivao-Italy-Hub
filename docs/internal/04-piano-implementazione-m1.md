@@ -9,7 +9,15 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.4 — 7 settembre 2026 (**G11 è chiusa**: l'editor dice quando il template si è mosso,
+**Versione:** 2.5 — 7 settembre 2026 (**G11a è chiusa**, la mezza fase che G11 si è lasciata dietro:
+i quattro campi su cui poggia tutto §9.1 — `key`, `required`, `locked`, `allowedBlocks` — si scrivono
+da una schermata, e design §9.4 smette di promettere ai coordinatori una cosa che il prodotto non
+manteneva. Il generatore di form ha imparato il **sesto** tipo di campo, `multi`, e §12 ne prevedeva
+cinque: il numero da riportare alla chiusura è sei, e la ragione dello scarto è scritta. La `key` si
+scrive una volta sola. Zero tabelle, zero permessi, zero endpoint, zero migrazioni, zero dipendenze.
+La prossima è G12, l'ultima.)
+
+**2.4** — 7 settembre 2026 (**G11 è chiusa**: l'editor dice quando il template si è mosso,
 applica **una** differenza alla volta, si trascina con dnd-kit senza perdere le frecce che sono
 l'unica strada da tastiera, e ha un'anteprima a tre larghezze che il banco **misura**. Il terzo stato
 di design §9.1 è stato corretto invece che improvvisato: «i vincoli sono cambiati» non è calcolabile,
@@ -909,6 +917,38 @@ changelog 1.14 del design: i vincoli di prima non esistono da nessuna parte, ed 
 ⚠️ **Resta fuori**: `key`, `required`, `locked` e `allowedBlocks` — i campi su cui poggia tutto
 questo — non si scrivono da nessuna schermata. Un template nasce da un seed o da una `PUT`. Non era
 nel perimetro di G11 e non ci è entrato; è nei debiti di `HANDOFF.md`.
+
+---
+
+### G11a — Scrivere un template da una schermata — **fatta il 7 settembre 2026**
+
+**Obiettivo**: chiudere il debito che G11 ha lasciato. Nota di decisione
+`decisions/2026-09-07-scrivere-un-template.md`, decisa da Carmine il 7 set 2026. Design §1.6, §9.1.
+
+**Perché non era in G11**: fuori dal suo perimetro, e la regola è che un task non si allarga da sé.
+Ma senza questa mezza fase §9.1 poggia su quattro campi che nessuno può scrivere, e §9.4 promette a
+ogni dipartimento dei template che nessun coordinatore può fare.
+
+Task:
+
+1. **La sesta estensione del generatore**: `.meta({ multi: true, choices })` su un
+   `z.array(z.string())`, disegnato come una casella per valore. ⚠️ §12 ne prevedeva cinque: il
+   numero cambia e si riporta, non si nasconde. Una lista ripetibile di select per scegliere cinque
+   tipi su ventisette sarebbe stata la forma del generatore imposta al problema.
+2. **`sectionSettingsSchema` diventa una funzione**, come `contentMetadataSchema` è una funzione di
+   `kind`: i quattro campi solo se la riga è un template. ⚠️ Su una pagina il walker ne rifiuta tre
+   a priori, quindi disegnarli sarebbe un 400 a ogni salvataggio.
+3. **La `key` si scrive una volta sola**: offerta finché è vuota, mostrata dopo, con la riga che
+   dice perché. Cambiarla romperebbe in silenzio la corrispondenza con ogni pagina già nata.
+4. **`allowedBlocks` vuoto è l'assenza della chiave**, non una lista vuota: vuoto vuol dire
+   «qualunque blocco», una lista vuota vorrebbe dire «nessuno».
+
+**Accettazione** (tutti verdi il 7 set 2026): due casi nuovi in `extensions.test.tsx` sul sesto tipo
+di campo, compreso che quello che esce è **nell'ordine dell'insieme** e non in quello in cui si è
+spuntato; e2e `full/template.spec.ts`, il giro che prima non si poteva fare affatto — si scrive una
+sezione di template dall'editor, si salva, si riapre e la chiave è una riga invece che un campo, poi
+nasce una pagina da quel template e la sua palette offre **il solo blocco permesso**. Verificato
+rompendo il prodotto due volte: la chiave sempre modificabile, e `allowedBlocks` scritto sempre nullo.
 
 ---
 

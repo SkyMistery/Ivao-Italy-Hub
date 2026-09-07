@@ -53,6 +53,16 @@ export interface FieldMeta {
   datetime?: boolean;
   /** One small object per language. Set by `localizedObject()`, never written by hand. */
   localizedObject?: boolean;
+  /**
+   * An array of values out of `choices`, drawn as one checkbox each rather than as a repeatable
+   * list. It is the difference between "pick several of a closed set" and "write as many of these
+   * as you like": the first has an answer that fits on the screen, and a list of selects for it is
+   * five gestures where there should be one click.
+   *
+   * The sixth extension of the generator, and the first that design M1 section 12 did not predict:
+   * `allowedBlocks` of a template section is a subset of the block registry (design M1 section 9.1).
+   */
+  multi?: boolean;
 }
 
 /**
@@ -87,6 +97,7 @@ export type FieldNode =
   | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
+  | ({ kind: 'multi'; options: ChoiceOption[] } & FieldCommon)
   | ({ kind: 'localized' } & FieldCommon)
   | ({ kind: 'media' } & FieldCommon)
   | ({ kind: 'icon' } & FieldCommon)
@@ -146,6 +157,7 @@ export function blankValue(node: FieldNode, locales: readonly string[]): unknown
       // than an empty string the server would have to interpret.
       return node.optional ? undefined : (node.options[0] ?? '');
     case 'list':
+    case 'multi':
       return [];
     case 'object':
       return blankEntry(node.children, node.path, locales);
@@ -198,6 +210,7 @@ function unwritten(node: FieldNode, value: unknown): boolean {
         (written) => typeof written !== 'string' || written.trim() === '',
       );
     case 'list':
+    case 'multi':
       return Array.isArray(value) && value.length === 0;
     case 'object':
       return node.children.every((child) =>
@@ -412,6 +425,13 @@ function readField(schema: unknown, path: string): FieldNode {
     case 'object':
       return { kind: 'object', ...common, children: readFields(inner as z.ZodType, path) };
     case 'array':
+      // Several out of a closed set is a different field from a list somebody fills in, and the
+      // annotation is what tells them apart. Without it an array of plain strings would reach
+      // `readFields` below, which needs an object and says so.
+      if (meta.multi === true) {
+        return { kind: 'multi', ...common, options: stringChoices(meta.choices) ?? [] };
+      }
+
       // The children keep the path of the list itself, without an index: `aliases.name` is the
       // label of every entry's name, and the index only ever belongs to the form field.
       return { kind: 'list', ...common, children: readFields(def.element as z.ZodType, path) };

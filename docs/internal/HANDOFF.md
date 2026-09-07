@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte dodici fasi**: design
+**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, e di M1 sono fatte dodici fasi e mezza**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -19,8 +19,11 @@ G4 e da G8 senza che nessuna delle due la chiamasse così, e **G10** la ricerca 
 il **debito n.10** di §10: le tre domande lasciate aperte da M0 — rilevanza, evidenziazione, parole
 corte — hanno una risposta scritta e provata, e **G11** le rifiniture dell'editor (**§25**), che
 chiude il **debito n.2**: l'editor dice quando il template si è mosso, applica una differenza alla
-volta, e si trascina con dnd-kit senza perdere le frecce, che sono l'unica strada da tastiera. Il
-prossimo lavoro è **G12**, l'ultima fase di M1 (§26). M0 resta chiusa e non
+volta, e si trascina con dnd-kit senza perdere le frecce, che sono l'unica strada da tastiera, e
+**G11a** (**§26**), la mezza fase che ha chiuso il debito di G11: i quattro campi di un template si
+scrivono da una schermata, e il generatore di form ha imparato il sesto tipo di campo — uno più di
+quanti design §12 ne prevedesse, ed è un numero che G12 riporta invece di nasconderlo. Il prossimo
+lavoro è **G12**, l'ultima fase di M1 (§27). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -31,11 +34,11 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.40. **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Design M1:** v1.14 (`03-design-m1.md`). **Piano di implementazione M1:** v2.4
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G11 sono chiuse** (§14–§25), la prossima
+**Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.5
+(`04-piano-implementazione-m1.md`, fasi G0–G12): **da G0 a G11a sono chiuse** (§14–§26), la prossima
 è **G12**, l'ultima.
-**Test:** 456 .NET verdi (300 unit + 156 integrazione) + **241 Vitest** + **42 smoke Playwright** +
-**10 del giro pieno** (`pnpm e2e:full`).
+**Test:** 456 .NET verdi (300 unit + 156 integrazione) + **243 Vitest** + **42 smoke Playwright** +
+**11 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
 
@@ -2925,11 +2928,92 @@ la stessa trappola con la faccia gentile — e c'è un test che conta i pulsanti
 
 ---
 
-## 26. Da dove riparte la prossima sessione (7 settembre 2026)
+## 26. G11a di M1: scrivere un template da una schermata (7 settembre 2026)
+
+Mezza fase, aperta il giorno stesso in cui G11 l'ha lasciata come debito. §9.1 poggia su quattro
+campi di una sezione — `key`, `required`, `locked`, `allowedBlocks` — e **nessuno dei quattro si
+scriveva da nessuna parte**: un template nasceva da un seed o da una `PUT` a mano. Design §9.4
+prometteva a ogni coordinatore i template del proprio dipartimento, e il permesso ce l'avevano tutti
+senza avere dove usarlo.
+
+Nota di decisione: `decisions/2026-09-07-scrivere-un-template.md`, con i due bivi e le risposte.
+
+### Il conto
+
+| | |
+|---|---|
+| Tabelle nuove | **zero**; nessuna migrazione, nessuna colonna |
+| Permessi nuovi | **zero**: `Content.ManageTemplates` esiste da M0 |
+| Endpoint scritti a mano | **zero**: il server accettava già i quattro campi su un template |
+| Componenti custom | **zero** |
+| Meccanismi nuovi | **zero**, ma **una estensione al generatore**: `multi`, la sesta |
+| Dipendenze nuove | **nessuna** |
+
+### ⚠️ Il numero che G12 deve riportare non è più cinque
+
+Design §12 prevedeva **cinque** estensioni al generatore di form. Sono **sei**: la sesta è `multi` —
+un array di stringhe dentro un insieme chiuso, disegnato come una casella per valore — e l'ha chiesta
+questa mezza fase.
+
+La previsione guardava i **blocchi**, e i blocchi non l'hanno mai chiesta: scrivere un template sì.
+§1.6 e §12 del design portano adesso il numero vero accanto alla previsione, invece di essere stati
+riscritti: una previsione corretta a posteriori non è una previsione. **G12 riporta sei, e la riga
+del perché.**
+
+L'alternativa c'era e si è scartata: `z.array(z.object({ type }))`, cioè la lista ripetibile che
+esiste già, con la conversione ai bordi. Zero estensioni, e per scegliere cinque tipi su ventisette
+cinque «aggiungi» e cinque select. Era la forma del generatore imposta al problema; CLAUDE.md §2 dice
+di estendere il meccanismo, non di aggirarlo.
+
+### Che cosa c'è adesso
+
+- **`sectionSettingsSchema` è una funzione**, come `contentMetadataSchema` è una funzione di `kind`:
+  prende `{ blocks, unnamed }` su un template e `null` su una pagina. ⚠️ Su una pagina quei campi
+  non si disegnano **e non si scrivono**: `CheckTemplateOnlyKeys` ne rifiuta tre a priori, quindi un
+  form che li mandasse sarebbe un 400 a ogni salvataggio.
+- ⚠️ **La `key` si scrive una volta sola**: il form la offre finché è vuota e la mostra dopo.
+  Cambiarla su un template che ha già delle pagine rompe la corrispondenza **in silenzio** — la
+  sezione di ogni pagina diventa «tolta dal template» e questa «nuova», e nessuno ha sbagliato
+  niente. Il server accetta ancora qualunque cosa da una `PUT`: è il form che non fa inciampare, non
+  una regola nuova del dominio.
+- **`allowedBlocks` vuoto è l'assenza della chiave**, non una lista vuota: vuoto vuol dire «qualunque
+  blocco», una lista vuota vorrebbe dire «nessuno», e sarebbe una sezione in cui non si può mettere
+  niente.
+- **Le caselle escono nell'ordine dell'insieme**, non in quello in cui sono state spuntate: quello
+  che si salva è un insieme, e due array con gli stessi valori in ordine diverso sarebbero una
+  modifica che nessuno ha fatto.
+
+### I test
+
+- `extensions.test.tsx` — due casi sul sesto tipo di campo, compreso l'ordine.
+- `e2e/full/template.spec.ts` — **il giro che prima di oggi non si poteva fare affatto**: si scrive
+  una sezione di template dall'editor (chiave e blocchi permessi), si salva, si riapre e la chiave è
+  una riga invece che un campo; poi nasce una pagina da quel template e la sua palette offre **il
+  solo blocco permesso** e nessuno degli altri ventisei. Verificato rompendo il prodotto due volte —
+  la chiave sempre modificabile, e `allowedBlocks` scritto sempre nullo.
+
+### Debiti nuovi che G11a lascia
+
+- **Un template non si crea da nessun pulsante**: si scrive la *struttura* di un template che
+  esiste, ma la riga nasce ancora da un seed o da un `POST` con `isTemplate: true` — `isTemplate` è
+  `hidden` nel form dei metadati apposta, perché una pagina che si promuove a template è un permesso
+  e non una casella. Serve un «nuovo template» accanto a «nuovo da template», ed è una schermata di
+  lista, non un meccanismo. Piccolo, e va guardato in G12 mentre si ricopiano `/about` e `/start`.
+- **Un template non dice quante pagine sono nate da lui.** Adesso che si modificano i vincoli, la
+  domanda «chi tocco se cambio questo?» è ragionevole e non ha risposta sullo schermo. Il dato c'è
+  (`TemplateId`), la schermata no.
+
+---
+
+## 27. Da dove riparte la prossima sessione (7 settembre 2026)
 
 ### Si apre G12, l'ultima
 
 `04-piano-implementazione-m1.md` §C, `<N>` = 12.
+
+⚠️ **Il numero delle estensioni al generatore è sei, non cinque** (§26). Chi scrive il rapporto di
+chiusura riporta sei e la riga del perché: correggere una previsione a posteriori vuol dire non
+averne fatta una.
 
 - **G12 — migrazione a mano, giro visivo, chiusura di M1.** Ricopiare `/about` e `/start` a mano
   dall'editor — che è il vero collaudo di tutto quello che M1 ha costruito, fatto da chi lo userà —
@@ -2940,9 +3024,10 @@ la stessa trappola con la faccia gentile — e c'è un test che conta i pulsanti
   già le stesse cinque voci, fase per fase.
 
 ⚠️ **Il debito n.10 è chiuso** (§24) e **il n.2 pure** (§25): l'editor mostra le differenze dal
-template. Di §10 restano aperti il n.5, il n.7, il n.8 e il n.9; il n.6 è di M2. Il debito nuovo che
-G11 lascia — **nessuna schermata scrive un template** — è il più vicino a diventare un problema
-vero, perché §9.4 promette a ogni dipartimento i propri template.
+template. Di §10 restano aperti il n.5, il n.7, il n.8 e il n.9; il n.6 è di M2. Il debito che G11
+aveva lasciato — **nessuna schermata scrive un template** — **è chiuso da G11a** (§26); quello che
+resta di quella famiglia è più piccolo e sta in §26: un template si *modifica* ma non si *crea* da
+un pulsante, e non dice quante pagine sono nate da lui.
 
 Undici cose che G5, G6, G7, G8, G9 e G10 lasciano pronte e che **non vanno rifatte**:
 

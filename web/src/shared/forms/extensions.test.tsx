@@ -11,12 +11,14 @@ import { SchemaForm } from './SchemaForm';
 import { localized, localizedObject } from './schema';
 
 /**
- * The five things the generator learned in G2, one test each (implementation plan M1, G2).
+ * The five things the generator learned in G2, one test each (implementation plan M1, G2) — and
+ * the sixth, `multi`, which G11a added for `allowedBlocks` (decision note
+ * `2026-09-07-scrivere-un-template.md`).
  *
- * They are all the same argument in five shapes: a coordinator never writes an identifier, never
- * types an icon name, never converts a time zone in their head, never edits JSON, and never has to
- * delete and re-add three cards to put one of them first. Every one of those is a form somebody
- * would otherwise have written by hand.
+ * They are all the same argument in six shapes: a coordinator never writes an identifier, never
+ * types an icon name, never converts a time zone in their head, never edits JSON, never has to
+ * delete and re-add three cards to put one of them first, and never adds five rows of a list to
+ * tick five boxes. Every one of those is a form somebody would otherwise have written by hand.
  */
 
 const LOCALES = ['en', 'it'] as const;
@@ -302,6 +304,55 @@ test('the ends of a list have nowhere to go, and say so', () => {
 
   expect(screen.getAllByRole('button', { name: 'Move up' })[0]).toBeDisabled();
   expect(screen.getAllByRole('button', { name: 'Move down' })[1]).toBeDisabled();
+});
+
+// ---- 6. several out of a closed set is one click each ----------------------------------------
+
+const multiSchema = z.object({
+  allowed: z
+    .array(z.string())
+    .optional()
+    .meta({
+      multi: true,
+      choices: [
+        { value: 'text', label: 'Text' },
+        { value: 'heading', label: 'Heading' },
+        { value: 'gallery', label: 'Gallery' },
+      ],
+    }),
+});
+
+const multiLabels = { fields: { allowed: 'Blocks allowed here' } };
+
+test('a closed set to pick several of is a checkbox each, not a list to fill in', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(multiSchema, { allowed: ['heading'] }, { labels: multiLabels, onSubmit });
+
+  // What is already chosen is shown as chosen, which a list of selects could also do — and then
+  // one click adds a second, where a list would be "add a row, open a select, find the value".
+  expect(screen.getByRole('checkbox', { name: 'Heading' })).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Text' })).not.toBeChecked();
+
+  await user.click(screen.getByRole('checkbox', { name: 'Text' }));
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  // In the order the set declares, not the order they were ticked: what is stored is a set, and
+  // two arrays holding the same values in a different order would read as a change nobody made.
+  expect(onSubmit).toHaveBeenCalledWith({ allowed: ['text', 'heading'] });
+});
+
+test('unticking the last one leaves nothing rather than an empty box nobody meant', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(multiSchema, { allowed: ['heading'] }, { labels: multiLabels, onSubmit });
+
+  await user.click(screen.getByRole('checkbox', { name: 'Heading' }));
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ allowed: [] });
 });
 
 // ---- and the property none of the five may weaken --------------------------------------------
