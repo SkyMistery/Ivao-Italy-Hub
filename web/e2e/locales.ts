@@ -66,11 +66,16 @@ interface CommonStrings {
       readonly pinned: string;
     };
     readonly options: { readonly visibility: { readonly Public: string } };
+    readonly section: {
+      readonly fields: { readonly key: string; readonly allowedBlocks: string };
+    };
     readonly editor: {
       readonly saveDraft: string;
       readonly publish: string;
       readonly applyBlock: string;
+      readonly applySection: string;
       readonly addBlock: string;
+      readonly addSection: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
       readonly template: {

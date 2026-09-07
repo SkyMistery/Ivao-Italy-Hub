@@ -24,6 +24,7 @@ import type { SectionRule } from './templateRules';
 export function SectionProperties({
   section,
   rule,
+  isTemplate,
   locales,
   division,
   mediaLibrary,
@@ -31,6 +32,12 @@ export function SectionProperties({
 }: {
   section: SectionEnvelope;
   rule: SectionRule;
+  /**
+   * Whether the row being edited is a template. Four more fields if it is — what this section
+   * imposes on the pages made from it — and none of them on a page, where the server refuses three
+   * of them outright (design M1 §9.1).
+   */
+  isTemplate: boolean;
   locales: readonly string[];
   division: { defaultLocale: string; timezone: string };
   /** The library the picture behind a section is chosen from — this department's. */
@@ -46,6 +53,15 @@ export function SectionProperties({
     return <p className="text-muted-foreground text-sm">{t('content.editor.lockedSection')}</p>;
   }
 
+  const named = typeof section.key === 'string' && section.key.length > 0;
+
+  // The block types this section may allow, labelled the way the palette labels them: the generator
+  // draws the labels it is handed and never translates a value of its own.
+  const blocks = registry.blocks.map((block) => ({
+    value: block.type,
+    label: t(block.editorLabelKey),
+  }));
+
   const defaults: SectionFormValues = {
     title: { ...emptyLocalized(locales), ...(section.title ?? {}) },
     layout: section.layout,
@@ -53,22 +69,41 @@ export function SectionProperties({
     ...(typeof section.mediaId === 'number' ? { mediaId: section.mediaId } : {}),
     padding: section.padding,
     width: section.width,
+    ...(isTemplate
+      ? {
+          ...(named ? {} : { key: '' }),
+          required: section.required === true,
+          locked: section.locked === true,
+          allowedBlocks: [...(section.allowedBlocks ?? [])],
+        }
+      : {}),
   };
 
   return (
-    <SchemaForm
-      schema={sectionSettingsSchema}
-      defaults={defaults}
-      locales={locales}
-      labels="content.section"
-      division={division}
-      mediaLibrary={mediaLibrary}
-      onSubmit={(values) => {
-        onApply(values);
-        return Promise.resolve();
-      }}
-      submitLabel={t('content.editor.applySection')}
-    />
+    <div className="flex flex-col gap-4">
+      {isTemplate && named ? (
+        // Written once, then shown. Changing it would break the match with every page already made
+        // from this template, silently (decision `2026-09-07-scrivere-un-template.md`).
+        <p className="text-muted-foreground text-sm">{t('content.section.keyIs', { key: section.key })}</p>
+      ) : null}
+
+      <SchemaForm
+        // Remounted when the section changes shape under it — a key written for the first time
+        // takes the field away — so the form is never one field out of date with its own schema.
+        key={`${section.id}:${String(named)}`}
+        schema={sectionSettingsSchema(isTemplate ? { blocks, unnamed: !named } : null)}
+        defaults={defaults}
+        locales={locales}
+        labels="content.section"
+        division={division}
+        mediaLibrary={mediaLibrary}
+        onSubmit={(values) => {
+          onApply(values);
+          return Promise.resolve();
+        }}
+        submitLabel={t('content.editor.applySection')}
+      />
+    </div>
   );
 }
 

@@ -387,7 +387,11 @@
         "background": "Sfondo",
         "padding": "Spaziatura",
         "width": "Larghezza",
-        "mediaId": "Immagine dietro"
+        "mediaId": "Immagine dietro",
+        "key": "Chiave",
+        "required": "Le pagine non possono cancellarla",
+        "locked": "Le pagine non possono cambiarne la struttura",
+        "allowedBlocks": "Blocchi permessi qui"
       },
       "options": {
         "layout": {
@@ -415,7 +419,13 @@
           "wide": "Larga",
           "full": "Tutta la pagina"
         }
-      }
+      },
+      "hints": {
+        "key": "Come una pagina nata da questo template viene ricondotta a questa sezione. Si scrive una volta: cambiarla dopo staccherebbe in silenzio ogni pagina già nata da questo template.",
+        "locked": "Una pagina può comunque modificare le proprietà dei blocchi che ci sono — non può aggiungerne, spostarne o toglierne.",
+        "allowedBlocks": "Nessuna casella spuntata vuol dire qualunque blocco."
+      },
+      "keyIs": "Chiave: {{key}} — si scrive una volta sola, così le pagine nate da questo template continuano a corrispondere a questa sezione."
     },
     "editor": {
       "structure": "Di cosa e' fatta questa pagina",

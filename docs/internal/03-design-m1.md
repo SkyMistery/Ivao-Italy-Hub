@@ -1,10 +1,30 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.14 — 7 settembre 2026
+**Versione documento:** 1.15 — 7 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.15** (7 set 2026): **G11a ha chiuso il debito che G11 aveva lasciato** — `key`,
+`required`, `locked` e `allowedBlocks` si scrivono da una schermata, e §9.4 smette di promettere una
+cosa che il prodotto non manteneva.
+**§1.6, le estensioni del generatore diventano SEI**: `multi`, un array di stringhe dentro un insieme
+chiuso disegnato come una casella per valore. È la sesta e §12 ne prevedeva cinque, e va detto invece
+che nascosto: la previsione era di aprile, il set di blocchi non l'aveva chiesta e la scrittura dei
+template sì. La regola di CLAUDE.md §2 non lascia scelta — se il meccanismo non copre il caso al
+100 % si estende il meccanismo — e una lista ripetibile di select per scegliere cinque tipi su
+ventisette sarebbe stata la forma del generatore imposta al problema invece del contrario.
+**§9.1, la `key` si scrive una volta sola**: il form la offre finché è vuota e poi la mostra.
+⚠️ Cambiarla su un template che ha già delle pagine rompe la corrispondenza **in silenzio** — la
+sezione di ogni pagina diventa «tolta dal template» e questa «nuova», e nessuno ha sbagliato niente.
+Il server continua ad accettare qualunque cosa da una `PUT`: è il form che non fa inciampare, non una
+regola del dominio.
+**§9.1, `allowedBlocks` vuoto vuol dire «qualunque blocco»**, cioè l'assenza della chiave e non una
+lista vuota: una lista vuota sarebbe una sezione in cui non si può mettere niente.
+⚠️ E i quattro campi si disegnano **solo** se la riga è un template. Su una pagina il walker ne
+rifiuta tre a priori (`CheckTemplateOnlyKeys`), quindi un form che li scrivesse sarebbe un 400 a ogni
+salvataggio.
 
 **Changelog 1.14** (7 set 2026): **G11 ha rifinito l'editor**, e ha corretto §9.1 su un punto che il
 design chiedeva e il modello dei dati non può dare.
@@ -501,6 +521,7 @@ scritto a mano: il generatore **lancia** su un tipo che non sa disegnare, appost
 | **Data e ora** | `.meta({ date: true })` / `datetime`; input nativo, valore ISO in UTC, mostrato in UTC + fuso della divisione | voci di calendario, `expiresAt` di un grant (debito n.4 di HANDOFF §10, che si chiude qui di rimbalzo) |
 | **Oggetto tradotto** | un `kind: 'localizedObject'` per `Localized<JsonNode>` | il campo `seo` (debito n.3), la cui forma si decide in §9.2 |
 | **Riordino dentro una lista** | su/giù accanto ad aggiungi/rimuovi, sulla lista che già esiste | ogni blocco con `items[]` |
+| **Diversi da un insieme chiuso** | `.meta({ multi: true, choices })` su un `z.array(z.string())`; una casella per valore, non una lista di select | `allowedBlocks` di una sezione di template (§9.1) — **aggiunta in G11a, non prevista da §12** |
 
 ⚠️ **G3 ha aggiunto due funzioni a quel file, e non sono un sesto tipo di campo** (6 set 2026): che
 cosa vale un campo quando è vuoto (`blankValue` / `blankEntry` / `blankValues`, che assorbono il
@@ -509,8 +530,10 @@ ancora (`writtenValues`). La seconda non è comodità: una props tradotta **opzi
 viaggiava come `{ en: "", it: "" }` e la pubblicazione la leggeva come traduzione a metà, rifiutando
 la pagina. Chi somma alla chiusura (§12) le conti come estensioni al generatore, non come tipi.
 
-Cinque estensioni, un file. È la prova che il generatore era la scelta giusta: 22 blocchi e nessun form
-scritto a mano.
+Cinque estensioni, un file — **sei dal 7 settembre 2026**, quando scrivere un template ha chiesto la
+sola cosa che i blocchi non avevano mai chiesto: sceglierne diversi da un insieme chiuso. È comunque
+la prova che il generatore era la scelta giusta: 22 blocchi, quattro `kind` di contenuto, i template,
+e nessun form scritto a mano.
 
 ---
 
@@ -806,6 +829,18 @@ vedere la versione pubblicata. Quello che manca è che l'editor lo **dica**.
   il vincolo e chi può cambiarlo (`Content.ManageTemplates`, sul dipartimento del template). Un
   controllo che rifiuta senza dire perché produce un ticket.
 
+**Chi scrive quei vincoli** (deciso il 7 set 2026, nota `2026-09-07-scrivere-un-template.md`,
+costruito in G11a). I quattro campi — `key`, `required`, `locked`, `allowedBlocks` — sono nel form
+delle proprietà di una sezione, e **solo quando la riga è un template**: su una pagina il walker ne
+rifiuta tre a priori, quindi disegnarli sarebbe un 400 a ogni salvataggio.
+
+- ⚠️ **`key` si scrive una volta sola**: offerta finché è vuota, mostrata dopo. Cambiarla su un
+  template che ha già delle pagine rompe la corrispondenza in silenzio. Il server accetta ancora
+  qualunque cosa da una `PUT` — è il form che non fa inciampare.
+- **`allowedBlocks` vuoto vuol dire qualunque blocco**: l'assenza della chiave, non una lista vuota.
+- `allowedBlocks` è la sesta estensione del generatore (`multi`, §1.6): un insieme chiuso da cui se
+  ne scelgono diversi è una casella per valore, non una lista di select.
+
 ### 9.2 La forma di `seo` (debito n.3)
 
 `Seo` è `Localized<JsonNode>` e nessuno ha ancora detto cosa contiene. M1 è l'unica milestone che ha
@@ -994,6 +1029,12 @@ non è che M1 è andata male: è che §16 va corretta, e va scritto dove.
     che li useranno (M2, M3) e non si iniziano in M1.
 15. **Cinque estensioni al generatore di form**, mai un form a mano (§1.6): media, icona, data,
     oggetto tradotto, riordino nelle liste. Chiudono anche i debiti n.3 e n.4 di HANDOFF §10.
+    ⚠️ **Misurate: sei.** La sesta è `multi` e l'ha chiesta G11a, per scrivere `allowedBlocks` di una
+    sezione di template. La previsione guardava i blocchi, e i blocchi non l'hanno mai chiesta;
+    scrivere un template sì. La riga resta com'era scritta, con il numero vero accanto: è il modo in
+    cui questa lista serve a qualcosa.
+
+    Il numero da riportare alla chiusura è quindi **6**, e la ragione dello scarto è di una riga.
 16. **La rete e2e con API vera è la prima fase di M1**, non l'ultima (§11.1, §12).
 17. **I template sono di dipartimento e li legge tutto lo staff** (§9.4): la scrittura resta
     `Content.ManageTemplates` sul proprietario, usare quello di un altro crea una pagina nel proprio,

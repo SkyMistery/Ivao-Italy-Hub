@@ -6,6 +6,7 @@ import {
   department,
   metadata,
   pageFromTemplate,
+  properties,
   publishContent,
   readContent,
   readInEnglish,
@@ -30,6 +31,8 @@ import {
  */
 
 const words = englishCommon.content.editor;
+const sectionFields = englishCommon.content.section.fields;
+const blocks = englishCommon.blocks;
 const stamp = Date.now().toString(36);
 
 const first = { en: 'What the template said first', it: 'Quello che il template diceva prima' };
@@ -152,4 +155,53 @@ test('the preview is three widths of the same page, and the narrow one is really
 
   // And it is the same renderer, not a picture of one: the page is still in there.
   await expect(frame.getByRole('heading', { name: first.en })).toBeVisible();
+});
+test('a template written in the editor is obeyed by the pages made from it', async ({ page, context }) => {
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  // An empty template, and everything that makes it a template written from the screens. Until
+  // G11a this could only be done with a seed or a hand written PUT, which is the debt G11 left.
+  const template = await createContent(context, {
+    slug: `bench-authored-${stamp}`,
+    isTemplate: true,
+    title: { en: 'Authored template', it: 'Template scritto a mano' },
+    body: { schemaVersion: 1, sections: [] },
+  });
+
+  await page.goto(`/staff/${department}/content/${template.id}`);
+  await page.getByRole('button', { name: words.addSection }).click();
+
+  // The four fields a template has and a page does not. `key` is the one everything else hangs
+  // from: without it the section imposes nothing on anybody.
+  const form = properties(page);
+  await form.getByLabel(sectionFields.key).fill('intro');
+  await form.getByRole('checkbox', { name: blocks.heading.label }).check();
+  await form.getByRole('button', { name: words.applySection }).click();
+
+  await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+    await metadata(page).getByRole('button', { name: words.saveDraft }).click();
+  });
+
+  // Written once, then shown: the field is gone and the key is a line, because changing it would
+  // silently detach every page already made from this template.
+  await page.reload();
+  await page.getByRole('button', { name: 'intro', exact: true }).click();
+  await expect(properties(page).getByLabel(sectionFields.key)).toHaveCount(0);
+  await expect(page.getByText(`Key: intro`, { exact: false })).toBeVisible();
+
+  // ---------------------------------------------------------------- and a page obeys it
+  const born = await pageFromTemplate(context, template.id, `bench-obeys-${stamp}`);
+  await page.goto(`/staff/${department}/content/${born.id}`);
+
+  // The assertion the four fields exist for: the palette of that section offers the one block the
+  // template allows and none of the twenty-six others. Nothing of this travelled in the copy — the
+  // editor read it off the template, by key.
+  const palette = page.getByText(words.addBlock, { exact: true }).first().locator('..');
+  await expect(palette.getByRole('button', { name: blocks.heading.label, exact: true })).toBeVisible();
+  await expect(palette.getByRole('button', { name: blocks.text.label, exact: true })).toHaveCount(0);
 });

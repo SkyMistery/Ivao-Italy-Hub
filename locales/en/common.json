@@ -387,7 +387,11 @@
         "background": "Background",
         "padding": "Spacing",
         "width": "Width",
-        "mediaId": "Picture behind it"
+        "mediaId": "Picture behind it",
+        "key": "Key",
+        "required": "Pages may not delete it",
+        "locked": "Pages may not change its structure",
+        "allowedBlocks": "Blocks allowed here"
       },
       "options": {
         "layout": {
@@ -415,7 +419,13 @@
           "wide": "Wide",
           "full": "Full width"
         }
-      }
+      },
+      "hints": {
+        "key": "How a page made from this template is matched back to this section. Written once: changing it later would quietly detach every page already made from this template.",
+        "locked": "A page can still edit the properties of the blocks that are here — it cannot add, move or remove any.",
+        "allowedBlocks": "Nothing ticked means any block."
+      },
+      "keyIs": "Key: {{key}} — written once, so that the pages made from this template keep matching this section."
     },
     "editor": {
       "structure": "What this page is made of",
