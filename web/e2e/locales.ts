@@ -15,6 +15,7 @@ interface CommonStrings {
   readonly auth: { readonly login: string };
   readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
   readonly forbidden: { readonly title: string };
+  readonly departments: { readonly WD: string };
   readonly liveStatus: { readonly title: string; readonly updatedAt: string };
   readonly menu: {
     readonly title: string;
@@ -103,7 +104,9 @@ interface SeedStrings {
         }
       >
     >;
-    readonly pages: Readonly<Record<string, { readonly title: string }>>;
+    readonly pages: Readonly<
+      Record<string, { readonly title: string; readonly intro?: { readonly heading: string } }>
+    >;
   };
 }
 
