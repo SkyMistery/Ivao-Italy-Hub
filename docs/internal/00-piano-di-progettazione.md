@@ -1,9 +1,23 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.43 — 6 settembre 2026 (si autorizza qualcuno su **un pezzo** di un altro dipartimento, non su un livello)
+**Versione documento:** 0.44 — 7 settembre 2026 (vIPI entra in due tempi: il proxy adesso, il montaggio in-process in M5)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G7 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G8 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.44** (7 set 2026, **deciso da Carmine**): **vIPI entra nell'hub in due tempi**, e la
+decisione sta in `decisions/2026-09-07-vipi-dentro-l-hub.md`, scritta dopo aver **misurato i due
+repository** invece di ricordarli. Il quadro è migliore di come §9.2 lo lasciava: vIPI è già su
+**MariaDB** sullo stesso server (`itivao_atc`, 48 migrazioni dedicate), è già progettata per essere
+montata (`AddVipiModule`/`MapVipiModule`, identità dell'host per **mappatura di claim** e non per
+codice), e **Blazor Server dietro questo Plesk funziona in produzione da agosto**. L'ostacolo è uno
+solo ed è di versioni: un processo ha **una sola** versione di EF Core, l'hub è su EF 9 + Pomelo 9
+(Pomelo non ha una build per EF Core 10) e il MariaDB di vIPI vive **solo** sul ramo net8/EF 8/Pomelo
+8. La terna che servirebbe — `net10 + EF 9 + Pomelo 9` — è quella che l'hub esercita da nove fasi, e
+farla nascere è lavoro **nel repository di vIPI**. Quindi: **oggi il proxy** (`/services/vsop`
+inoltrato alla vhost `public_atc` che gira già, più una voce in `cms_menu_items`, che da G8 è una
+tabella), **in M5 il montaggio** quando quel ramo esiste ed è provato dalla sua suite. ⚠️ Corretto
+anche un refuso interno: §2.3 e §9.5 dicevano **M4**, §13 e §9.2 dicono **M5**, e vale M5.
 
 **Changelog 0.43** (6 set 2026, **correzione di Carmine il giorno stesso**): la proposta scritta in
 0.42 — un grant che conferisce un **livello** — è **scartata**, ed è utile dire perché.
@@ -606,7 +620,7 @@ Note residue:
 │   ├── /api/**            → controller/minimal API (JSON)                    │
 │   ├── /auth/**           → login/callback/logout OIDC (BFF)                 │
 │   ├── /health, /api/version                                                 │
-│   ├── /services/vsop/**  → (M4) modulo vIPI Blazor Server montato in-process│
+│   ├── /services/vsop/**  → (M5) vIPI: proxy oggi, montato in-process poi     │
 │   └── /**                → wwwroot (React SPA buildata, fallback index.html)│
 │                                                                             │
 │  Hosted services (job schedulati: sync whazzup, mail, cleanup)              │
@@ -939,7 +953,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /start                     Onboarding: pagina a blocchi (Timeline + Card + CTA) che sostituisce welcome.it.ivao.aero — non è un modulo
 /pilots                    Sezione piloti (Flight Ops): guide, documenti del dipartimento, link software, card verso i tour, registro Virtual Airlines (Logo Grid)
 /atc                       Sezione ATC: carriera, rating, posizioni, sector file + card verso vIPI (vSOP, statistiche, Profile Swapper)
-/services/vsop/**          vIPI (vSOP, vPIV, spazi aerei, statistiche) — oggi su atc.it.ivao.aero, in M4 montato qui
+/services/vsop/**          vIPI (vSOP, vPIV, spazi aerei, statistiche) — su atc.it.ivao.aero; qui prima per proxy, in M5 montato in-process
 /events                    Calendario + lista eventi; /events/{slug} dettaglio + booking slot
 /training                  Modulo Training: richieste training/esami, disponibilità trainer, sessioni, esiti, mock exam
 /tours, /tours/{slug}      Modulo Flight Ops: tour, leg, classifica, award; /tours/{slug}/report per il PIREP
@@ -1152,7 +1166,7 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 | **M2 — Eventi** | **Primo pacchetto self-contained e deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026 perché dipende dalle risposte A9 (§15.2c); modulo Events: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import | Spegne `ivao-booking` |
 | **M3 — Tour** | Modulo Flight Ops: tour, leg, PIREP, validatore automatico, classifiche, award con mail, voci nel calendario; design ereditato da `Ivao Italy Toursystem` | I tour IT lasciano `tours.th.ivao.aero` |
 | **M4 — Training** | Modulo Training: richieste, trainer, disponibilità, sessioni, esiti, mock exam, group training, import storico se possibile | Spegne `training.ivao.it` |
-| **M5 — vIPI dentro l'hub** | Allineamento TFM (vIPI su net10 + provider MariaDB), montaggio in-process sotto `/services/vsop`, `atc.it.ivao.aero` → redirect, spegnimento di `quickoverview.ivao.it` (già confluito in vIPI) | Un solo sito ATC+hub |
+| **M5 — vIPI dentro l'hub** | Allineamento TFM (il ramo **net10 + EF 9 + Pomelo 9** di vIPI, lavoro nel suo repository), montaggio in-process sotto `/services/vsop`, `atc.it.ivao.aero` → redirect, spegnimento di `quickoverview.ivao.it` (già confluito in vIPI). ⚠️ Fino ad allora l'indirizzo è servito **per proxy** dalla vhost che esiste: il lettore vede un sito solo da subito (decisione del 7 set 2026) | Un solo sito ATC+hub |
 | **M6 — Ecosistema** | API interne per il bot Discord, iCal, prerender SEO, primi moduli opzionali se richiesti, `FORKING.md` rifinito, prima divisione pilota che forka | Prodotto divisionale |
 
 M5 può scorrere prima o dopo M3/M4 a seconda di quando si scioglie il nodo Pomelo/net10 (§15 punto 2); nulla in M1–M4 dipende da esso. L'ordine Events → Tour → Training è deciso (1° set 2026): il tour ha già design e validatore, Training è il modulo più complesso.
