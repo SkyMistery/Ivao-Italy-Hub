@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@ivao/atmosphere-react';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -39,8 +40,11 @@ function LinkForm() {
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
 
-  // The loader has already fetched it, so there is nothing to wait for and nothing to refetch.
-  const link = Route.useLoaderData();
+  // The row as it stands now. ⚠️ Not `Route.useLoaderData()`: a loader runs on navigation and
+  // never again, so after one save the screen still held the `rowVersion` from when the page
+  // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
+  // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
+  const link = useQuery({ ...linkQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
 
   const create = useCreateLink();
   const update = useUpdateLink(Number(id));

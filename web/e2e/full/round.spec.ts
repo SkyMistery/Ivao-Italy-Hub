@@ -4,9 +4,11 @@ import { englishCommon, englishSeed } from '../locales';
 import {
   addBlock,
   choose,
+  createContent,
   department,
   metadata,
   properties,
+  readContent,
   readInEnglish,
   selectBlock,
   signIn,
@@ -109,11 +111,12 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   await expect(publicPage.getByRole('button', { name: content.editor.publish })).toHaveCount(0);
 
   // ---------------------------------------------------------------- the draft moves on
-  // Back to the page, which is what a coordinator does when they return to change something, and
-  // what this suite has to do for a reason worth knowing: publishing moves the row's version on,
-  // and the editor picks the new one up when React next renders. Editing in the same millisecond
-  // the publish call returns saves against the version from before it and is answered 409 —
-  // correctly. A person cannot type that fast; a test can, and would be reporting its own speed.
+  // Back to the page, which is what a coordinator does when they return to change something.
+  // ⚠️ This reload used to be explained as a race with the publish call, and that explanation was
+  // wrong: until G12 the screen read its row from the route's loader, which runs on navigation and
+  // never again, so **every** second save of a page load was answered 409. The reload was hiding
+  // it. It stays because coming back to a page is what a person does, and the test below is what
+  // actually guards the thing this comment used to claim.
   await page.reload();
   await selectBlock(page, blocks.callout.label);
 
@@ -180,4 +183,37 @@ test('the application serves its own deep addresses, which no static server does
 
   expect(deep.status()).toBe(200);
   expect(deep.headers()['content-type']).toContain('text/html');
+});
+test('a page is saved twice from one page load, with no reload in between', async ({ page, context }) => {
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  const row = await createContent(context, {
+    slug: `bench-twice-${Date.now().toString(36)}`,
+    title: { en: 'Saved once', it: 'Salvata una volta' },
+    body: { schemaVersion: 1, sections: [] },
+  });
+
+  await page.goto(`/staff/${department}/content/${row.id}`);
+  const save = metadata(page).getByRole('button', { name: content.editor.saveDraft });
+
+  // The slug rather than a translated field: one plain input, no language tabs, and still a real
+  // change that the server has to store.
+  for (const slug of [`${row.slug}-a`, `${row.slug}-b`]) {
+    await metadata(page).locator('#slug').fill(slug);
+
+    // `whileWaitingFor` asserts the status, so a 409 fails here and says which call it was. That is
+    // the whole test: until G12 the second save carried the `rowVersion` from when the page opened,
+    // and the server was right to refuse it (decision `2026-09-07-il-loader-non-e-la-riga.md`).
+    await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+      await save.click();
+    });
+  }
+
+  // And the row really moved twice, rather than the screen merely not complaining.
+  expect((await readContent(context, row.id)).slug).toBe(`${row.slug}-b`);
 });
