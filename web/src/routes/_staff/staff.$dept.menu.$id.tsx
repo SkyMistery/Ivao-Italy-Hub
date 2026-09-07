@@ -39,7 +39,11 @@ function MenuItemForm() {
 
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
-  const item = Route.useLoaderData();
+  // The row as it stands now. ⚠️ Not `Route.useLoaderData()`: a loader runs on navigation and
+  // never again, so after one save the screen still held the `rowVersion` from when the page
+  // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
+  // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
+  const item = useQuery({ ...menuItemQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
 
   const defaults = item === null ? emptyMenuItem(locales) : toFormValues(item, locales);
 

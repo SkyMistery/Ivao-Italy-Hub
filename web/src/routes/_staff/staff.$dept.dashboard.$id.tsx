@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 
 import { ContentFormScreen } from '../../features/content/ContentFormScreen';
@@ -38,6 +39,12 @@ function DashboardForm() {
   const { dept, id } = Route.useParams();
   const navigate = useNavigate();
 
+  // The row as it stands now. ⚠️ Not `Route.useLoaderData()`: a loader runs on navigation and
+  // never again, so after one save the screen still held the `rowVersion` from when the page
+  // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
+  // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
+  const row = useQuery({ ...contentQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
+
   const backToDashboard = () => void navigate({ to: '/staff/$dept', params: { dept } });
 
   return (
@@ -46,7 +53,7 @@ function DashboardForm() {
       bootstrap={bootstrap}
       department={dept}
       id={id}
-      content={Route.useLoaderData()}
+      content={row}
       breadcrumbTo={`/staff/${deptParam.format(dept)}`}
       onCreated={async (created) => {
         await navigate({ to: '/staff/$dept/dashboard/$id', params: { dept, id: String(created) } });

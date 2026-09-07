@@ -1,9 +1,37 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.44 — 7 settembre 2026 (vIPI entra in due tempi: il proxy adesso, il montaggio in-process in M5)
+**Versione documento:** 0.45 — 7 settembre 2026 (**M1 è chiusa**: il conto contro la previsione, e la metrica «endpoint scritti a mano» corretta in §16)
 **Autore:** Carmine (IT-DIV), con supporto Claude
-**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12; **G0-G10 sono chiuse**. Le sezioni marcate ⚠️ richiedono ancora una decisione
+**Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.45** (7 set 2026): **M1 è chiusa.** Il conto contro la previsione di design M1 §12 —
+6 tabelle / 3 aree di permessi / 5 estensioni del generatore / 4 componenti custom / 1 endpoint a
+mano — è **6 / 3 / 6 / 4 / 7**: tre esatti, uno spiegato (la sesta estensione del generatore l'ha
+chiesta *scrivere un template*, non i blocchi), e uno che ha insegnato qualcosa.
+
+⚠️ **§16 va letta con una metrica diversa, ed è l'unica correzione che questa chiusura chiede.**
+«Endpoint scritti a mano» contava la cosa sbagliata. Dei sette di M1, **cinque sono dichiarati nel
+testo del design** e semplicemente non erano stati contati (l'upload multipart e il file servito da
+disco di §2, le due preferenze della famiglia `/api/me/…` di §5.2); i due che nessuno aveva previsto
+sono `sitemap.xml` e `robots.txt`, che non sono endpoint dell'applicazione ma due file che il server
+produce. E **nessuno dei sette è un CRUD scritto a mano**: i primi tre pendono da un gruppo
+`MapCrud` con `options.MapCreate = false`, cioè il motore fa lista, dettaglio, modifica e
+cancellazione e la mano scrive solo il verbo che il motore non può fare — la regola (b) di §16.E
+applicata, non aggirata.
+
+Da M2 i numeri da portare nel rapporto di chiusura sono quindi **due**:
+
+- **CRUD scritti a mano: 0** — è questo che deve restare zero, ed è ciò che §16.6 protegge davvero;
+- **verbi a mano appesi a un gruppo `MapCrud`** — oggi tre, e ognuno va giustificato nella PR.
+
+La revisione §16.E su tutto il codice di M1 è in `decisions/2026-09-07-m1-checklist.md`: zero tabelle
+`*_translations`, un solo authorization handler, zero `fetch` a mano, **zero liste e zero form non
+generati** (che M0 non poteva ancora dire: aveva tre eccezioni), quattro componenti custom e sono i
+quattro previsti, zero SMTP fuori dal servizio notifiche, zero riferimenti fra moduli. ⚠️ Due voci
+della checklist vanno riformulate per M2 e la nota dice come: la domanda sulle FK fra contesti non ha
+ancora un caso vero — c'è un solo `DbContext` — e quella sui componenti custom va distinta fra pezzo
+condiviso e pezzo di una schermata, che finora si è fatto a memoria.
 
 **Changelog 0.44** (7 set 2026, **deciso da Carmine**): **vIPI entra nell'hub in due tempi**, e la
 decisione sta in `decisions/2026-09-07-vipi-dentro-l-hub.md`, scritta dopo aver **misurato i due

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@ivao/atmosphere-react';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +38,11 @@ function CalendarEntryForm() {
 
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
-  const entry = Route.useLoaderData();
+  // The row as it stands now. ⚠️ Not `Route.useLoaderData()`: a loader runs on navigation and
+  // never again, so after one save the screen still held the `rowVersion` from when the page
+  // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
+  // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
+  const entry = useQuery({ ...calendarEntryQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
 
   const create = useCreateCalendarEntry();
   const update = useUpdateCalendarEntry(Number(id));

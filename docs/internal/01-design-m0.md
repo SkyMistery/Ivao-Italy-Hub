@@ -5,6 +5,12 @@
 > `02-piano-implementazione-m0.md`. Se questo documento e il piano non coincidono, vince il piano e questo va corretto.
 
 **Versione:** 2.3 — 5 settembre 2026 (§7.5 il generatore disegna un **suggerimento** sotto un campo, da `<ns>.hints.<campo>`: un'etichetta faceva due lavori, e la stessa chiave è l'intestazione di colonna di `DataList`; e `LocaleFields` disfa il `w-[400px]` che `Tabs` si cabla)
+**Versione 2.3** — 7 settembre 2026 (§7.3 la ricetta 2c: il `loader` è la **precarica**, e la
+schermata legge la **query**, non `useLoaderData()` — un loader gira alla navigazione e mai più,
+quindi dopo un salvataggio il form teneva un `rowVersion` vecchio e il secondo salvataggio era 409
+«somebody else changed this», su undici rotte. Trovato in G12 ricopiando una pagina a mano; nota
+`decisions/2026-09-07-il-loader-non-e-la-riga.md`)
+
 **Versione 2.2** — 4 settembre 2026 (§7.3 la ricetta 2 è **tre file**, non uno: layout con la guardia e l'`Outlet`, `index` con i search params, dettaglio fratello — scritta in un file solo, il dettaglio non si disegnava mai e nessun form del back-office era raggiungibile)
 **Versione 2.1** — 4 settembre 2026 (dopo il tag: §8 lo smoke in un browser diventa **bloccante** e non aspetta M1 — un `TooltipProvider` mancante aveva ucciso ogni schermata con tutti i test verdi; nota `decisions/2026-09-04-smoke-in-un-browser.md`)
 **Versione 2.0** — 4 settembre 2026 (F9, chiusura di M0: §8 i tre test del superadmin e dello `security_stamp` prendono il nome vero del metodo, che F2 aveva scritto in forma più esplicita; nessun'altra correzione — la revisione §16.E su tutto il codice non ha trovato nessuna divergenza fra questo documento e ciò che è stato costruito)
@@ -552,6 +558,18 @@ export const Route = createFileRoute('/_staff/staff/$dept/links/')({
 
 // (2c) il dettaglio: web/src/routes/_staff/staff.$dept.links.$id.tsx — eredita dipartimento e guardia,
 //      e NON eredita i search params della lista.
+export const Route = createFileRoute('/_staff/staff/$dept/links/$id')({
+  loader: ({ context, params }) =>                    // il loader è la PRECARICA, non ciò che si legge
+    params.id === 'new' ? null : context.queryClient.ensureQueryData(linkQuery(Number(params.id))),
+  component: LinkForm,
+});
+
+function LinkForm() {
+  const { id } = Route.useParams();
+  // ⚠️ La query, non `Route.useLoaderData()`: vedi il riquadro qui sotto.
+  const link = useQuery({ ...linkQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
+  // …
+}
 // deptParam (shared/api/department.ts) è l'UNICO punto che converte l'URL minuscolo ("ed") ↔ l'enum API ("ED"):
 // lo usano le route, la Sidebar e i filter[ownerDepartment] di MapCrud.
 
@@ -570,6 +588,22 @@ la lista restava sullo schermo. Valeva per tutte e tre le coppie — `links`, `c
 sintomo secondario che l'ha confermato: l'URL del dettaglio portava `?page=1&pageSize=25&dir=asc`, cioè i search
 params della lista, ereditati perché era un figlio. La forma qui sopra è quella corretta; il layout è il posto dove
 la guardia si scrive una volta per entrambe le schermate. Nota `decisions/2026-09-04-rotte-di-dettaglio.md`.
+
+⚠️ **E la 2c leggeva la riga dal posto sbagliato, su undici rotte** (trovato il 7 set 2026, in G12,
+ricopiando `/start` a mano). Le schermate prendevano la riga da `Route.useLoaderData()`. Un `loader`
+gira **alla navigazione e mai più**: non osserva la cache di React Query, quindi il `setQueryData`
+che ogni mutazione fa non lo raggiunge, e nessuno chiama `router.invalidate()`. Dopo il **primo**
+salvataggio il form teneva ancora il `rowVersion` di quando la pagina si era aperta, e il secondo
+salvataggio era **409 «somebody else changed this in the meantime»** — con nessun altro in giro.
+Ogni form del back-office si poteva salvare **una volta sola per caricamento di pagina**; sull'editor
+dei contenuti, che resta sulla pagina, era il difetto quotidiano.
+
+Due cose lo nascondevano: l'e2e del giro ricarica la pagina prima di rimettere mano alla riga (per
+una ragione che il suo commento attribuisce ai tempi della pubblicazione), e **`useLoaderData()` in
+quei file è tipizzato `never`** — assegnabile a qualunque cosa, quindi TypeScript non stava
+controllando niente. La forma corretta è nella 2c qui sopra; il guardiano è
+`web/src/routes/routes.test.ts`. Le rotte **pubbliche** continuano a usare il loader, e va bene: non
+salvano niente. Nota `decisions/2026-09-07-il-loader-non-e-la-riga.md`.
 
 Due precisazioni alla ricetta 2, misurate scrivendola davvero (F6). **`listSearch` non si dichiara nella route**: sta una volta sola in `shared/list/search.ts` come `listSearchSchema`, perché quei cinque parametri sono `CrudListRequest` e non una convenzione — un controllo a compile-time nello stesso file li confronta con `operations['LinksList']['parameters']['query']`, così un parametro che il server rinomina smette di compilare invece di smettere di funzionare in silenzio. E la route porta anche un **`beforeLoad` che rifiuta un dipartimento che il membro non raggiunge**, mandandolo a `/forbidden`: senza, il server narrebbe la lista a zero righe (è ciò che `TryNarrowToDepartments` fa) e un coordinatore che sbaglia a digitare l'indirizzo guarderebbe una tabella vuota chiedendosi dove sono finiti i link.
 

@@ -119,7 +119,6 @@
       },
       {
         "id": "s_news",
-        "key": "news",
         "title": {
           "$t": "seed.pages.home.news.section"
         },

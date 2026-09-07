@@ -32,7 +32,11 @@ function MediaForm() {
   const navigate = useNavigate();
 
   const locales = bootstrap.division.locales;
-  const media = Route.useLoaderData();
+  // The row as it stands now. ⚠️ Not `Route.useLoaderData()`: a loader runs on navigation and
+  // never again, so after one save the screen still held the `rowVersion` from when the page
+  // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
+  // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
+  const media = useQuery(mediaQuery(Number(id))).data;
 
   const update = useUpdateMedia(Number(id));
   const remove = useDeleteMedia();
@@ -41,6 +45,12 @@ function MediaForm() {
   // that has to fetch before it can warn is a dialog people click through.
   const usage = useQuery(mediaUsageQuery(Number(id)));
   const usedBy = usage.data?.items ?? [];
+
+  if (media === undefined) {
+    // The loader has already put it in the cache, so this is the compiler asking rather than a
+    // state a reader reaches.
+    return null;
+  }
 
   const backToLibrary = () => void navigate({ to: '/staff/$dept/media', params: { dept } });
 

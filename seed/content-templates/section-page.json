@@ -18,16 +18,15 @@
         "locked": true,
         "blocks": [
           {
-            "id": "b_hero_heading",
-            "type": "heading",
+            "id": "b_hero",
+            "type": "hero",
             "version": 1,
-            "props": { "level": 1, "text": { "$t": "seed.templates.sectionPage.hero.heading" } }
-          },
-          {
-            "id": "b_hero_text",
-            "type": "text",
-            "version": 1,
-            "props": { "markdown": { "$t": "seed.templates.sectionPage.hero.text" } }
+            "props": {
+              "title": { "$t": "seed.templates.sectionPage.hero.heading" },
+              "text": { "$t": "seed.templates.sectionPage.hero.text" },
+              "align": "left",
+              "tone": "muted"
+            }
           }
         ]
       },

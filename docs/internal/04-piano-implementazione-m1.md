@@ -9,7 +9,18 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.5 — 7 settembre 2026 (**G11a è chiusa**, la mezza fase che G11 si è lasciata dietro:
+**Versione:** 2.6 — 7 settembre 2026 (**G12 è chiusa, e con lei M1**, meno il tag. La fase che
+verifica invece di costruire ha trovato più difetti di qualunque altra, e nessuno era trovabile
+prima: `/about` e `/start` ricopiate a mano dall'editor hanno fatto uscire che **ogni form del
+back-office si poteva salvare una volta sola per caricamento di pagina** e che **le pagine seminate
+non soddisfacevano i propri template**, in quattro modi. Il giro visivo, misurato invece che
+guardato, ha aggiunto il grigio che non passa AA nel tema scuro e le props che finiscono nell'indice
+di ricerca. Il conto contro la previsione di design §12 è **6 / 3 / 6 / 4 / 7** contro 6 / 3 / 5 / 4
+/ 1 — e il settimo numero ha insegnato che la metrica misurava la cosa sbagliata: di CRUD scritti a
+mano ce ne sono **zero**. Restano due cose, entrambe di Carmine: eseguire `tools/demo-m1.md` da zero,
+e il tag `v0.2.0-m1` dopo il merge.)
+
+**2.5** — 7 settembre 2026 (**G11a è chiusa**, la mezza fase che G11 si è lasciata dietro:
 i quattro campi su cui poggia tutto §9.1 — `key`, `required`, `locked`, `allowedBlocks` — si scrivono
 da una schermata, e design §9.4 smette di promettere ai coordinatori una cosa che il prodotto non
 manteneva. Il generatore di form ha imparato il **sesto** tipo di campo, `multi`, e §12 ne prevedeva
@@ -952,7 +963,7 @@ rompendo il prodotto due volte: la chiave sempre modificabile, e `allowedBlocks`
 
 ---
 
-### G12 — Migrazione a mano, giro visivo, chiusura di M1
+### G12 — Migrazione a mano, giro visivo, chiusura di M1 — **fatta il 7 settembre 2026**
 
 **Obiettivo**: usare quello che si è costruito, guardarlo, e chiudere con un numero. Design §0.1, §8.3,
 §11, §12.
@@ -985,6 +996,22 @@ Task:
 passa; gli otto punti della «definizione di fatto» di design §0.1 sono spuntati o hanno una riga che
 dice perché no; i test della spina dorsale di M0 sono **tutti** ancora verdi; `ForkabilityXxDivision`
 passa con il sito pubblico completo; `pnpm i18n:check` è verde con il namespace `mail`.
+
+**Stato al 7 set 2026**: i task 1-5 sono fatti. Verdi: **456 .NET** (300 unit + 156 integrazione),
+**253 Vitest**, **42 smoke**, **12 del giro pieno**, nessuno skippato. `tools/demo-m1.md` è scritto e
+aspetta di essere **eseguito da Carmine**, che è l'accettazione vera; il tag è il task 6 e viene dopo
+il merge.
+
+**Quello che la fase ha trovato**, con le note: due difetti seri — il `loader` che non è la riga
+(`decisions/2026-09-07-il-loader-non-e-la-riga.md`, undici rotte) e le pagine seminate che violavano
+i propri template (corretto, con `seeds.test.ts` a guardia) — più sei rifiniture aperte elencate in
+`decisions/2026-09-07-giro-visivo-m1.md` e in HANDOFF §27. ⚠️ Il **back-office a 375 px** è l'unico
+pezzo di giro visivo che manca, e manca per uno strumento: nessuno dei due browser a disposizione
+sapeva mostrarlo stretto **e** autenticato insieme.
+
+**La correzione al piano 00** che questa chiusura chiede è una sola, ed è in §16: «endpoint scritti a
+mano» contava la cosa sbagliata. Da M2 i numeri sono due — CRUD scritti a mano (deve restare zero) e
+verbi a mano appesi a un gruppo `MapCrud` (oggi tre, ognuno da giustificare).
 
 ---
 
