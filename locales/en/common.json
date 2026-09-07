@@ -488,7 +488,8 @@
     },
     "slugPlaceholder": "my-new-page",
     "hints": {
-      "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used."
+      "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used.",
+      "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved."
     }
   },
   "blocks": {

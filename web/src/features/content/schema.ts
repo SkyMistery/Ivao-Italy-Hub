@@ -30,7 +30,10 @@ export function contentMetadataSchema(kind: ContentKind, categories: readonly Ch
     // edits news. A select here would let a page become a document with the fields of a page still
     // on screen, which is a form that lies about what it is editing.
     kind: z.enum(['Page', 'News', 'Document', 'Dashboard']).meta({ hidden: true }),
-    slug: z.string(),
+    // Proposed from the title while nobody writes it by hand (design M0 §7.5, asked for after the
+    // demo of M1). An existing row never moves: it already carries an address, so the proposal
+    // stands aside from the first render — and an address outlives the page that has it.
+    slug: z.string().meta({ slugFrom: 'title' }),
     ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     // Set once, by the template picker or by nobody. A checkbox here would let a page promote

@@ -11,14 +11,16 @@ import { SchemaForm } from './SchemaForm';
 import { localized, localizedObject } from './schema';
 
 /**
- * The five things the generator learned in G2, one test each (implementation plan M1, G2) — and
- * the sixth, `multi`, which G11a added for `allowedBlocks` (decision note
- * `2026-09-07-scrivere-un-template.md`).
+ * The five things the generator learned in G2, one test each (implementation plan M1, G2), the
+ * sixth, `multi`, which G11a added for `allowedBlocks` (decision note
+ * `2026-09-07-scrivere-un-template.md`), and the seventh, `slugFrom`, which Carmine asked for after
+ * running the demo of M1.
  *
- * They are all the same argument in six shapes: a coordinator never writes an identifier, never
+ * They are all the same argument in seven shapes: a coordinator never writes an identifier, never
  * types an icon name, never converts a time zone in their head, never edits JSON, never has to
- * delete and re-add three cards to put one of them first, and never adds five rows of a list to
- * tick five boxes. Every one of those is a form somebody would otherwise have written by hand.
+ * delete and re-add three cards to put one of them first, never adds five rows of a list to tick
+ * five boxes, and never copies a title into an address by hand. Every one of those is a form
+ * somebody would otherwise have written by hand.
  */
 
 const LOCALES = ['en', 'it'] as const;
@@ -353,6 +355,86 @@ test('unticking the last one leaves nothing rather than an empty box nobody mean
   await user.click(screen.getByRole('button', { name: 'Save' }));
 
   expect(onSubmit).toHaveBeenCalledWith({ allowed: [] });
+});
+
+// ---- 7. an address proposes itself from the title --------------------------------------------
+
+const slugSchema = z.object({ title: localized(), slug: z.string().meta({ slugFrom: 'title' }) });
+const slugLabels = { fields: { title: 'Title', slug: 'Address' } };
+
+/**
+ * The title is drawn by `LocaleFields`, which is a tab per language and one box at a time, and the
+ * box carries no label of its own — the group does. So the title is "the first text box on the
+ * form", which is also the order the schema declares.
+ */
+function titleBox() {
+  return screen.getAllByRole('textbox')[0]!;
+}
+
+function addressBox() {
+  return screen.getByLabelText('Address');
+}
+
+test('a new row proposes its address from the title, accents folded', async () => {
+  const user = userEvent.setup();
+
+  render(slugSchema, { title: { en: '', it: '' }, slug: '' }, { labels: slugLabels, division: DIVISION });
+
+  await user.type(titleBox(), 'Città di partenza!');
+
+  // Lower case, accents folded rather than dropped, one dash per run of anything else, and no dash
+  // hanging off either end. It is the shape `ContentWriteDtoValidator` holds a slug to.
+  expect(addressBox()).toHaveValue('citta-di-partenza');
+});
+
+test('the proposal stops for good the moment somebody writes the address themselves', async () => {
+  const user = userEvent.setup();
+
+  render(slugSchema, { title: { en: '', it: '' }, slug: '' }, { labels: slugLabels, division: DIVISION });
+
+  await user.type(titleBox(), 'First');
+  await user.clear(addressBox());
+  await user.type(addressBox(), 'chosen-by-hand');
+
+  // The title keeps moving and the address does not follow it any more. Without this, an address
+  // would rewrite itself under the person typing it.
+  await user.type(titleBox(), ' and second');
+
+  expect(addressBox()).toHaveValue('chosen-by-hand');
+});
+
+test('a row that already has an address never moves it, however its title is edited', async () => {
+  const user = userEvent.setup();
+
+  render(
+    slugSchema,
+    { title: { en: 'About us', it: 'Chi siamo' }, slug: 'about' },
+    { labels: slugLabels, division: DIVISION },
+  );
+
+  await user.type(titleBox(), ' renamed');
+
+  // ⚠️ The whole reason the rule is "follow what was proposed" and not "follow while empty": an
+  // address outlives the page, and a published one that moved because somebody fixed a typo in its
+  // title would break every link anybody had to it.
+  expect(addressBox()).toHaveValue('about');
+});
+
+test('the proposal reads the default language of the division, and falls back to what is written', async () => {
+  const user = userEvent.setup();
+
+  render(slugSchema, { title: { en: '', it: '' }, slug: '' }, { labels: slugLabels, division: DIVISION });
+
+  // Italian first: nothing is written in the language the address is published in, so a proposal
+  // made from what there is beats no proposal at all.
+  await user.click(screen.getByRole('tab', { name: /Italian/ }));
+  await user.type(titleBox(), 'Chi siamo');
+  expect(addressBox()).toHaveValue('chi-siamo');
+
+  // And the moment the default language has something, that is what the address is made of.
+  await user.click(screen.getByRole('tab', { name: /English/ }));
+  await user.type(titleBox(), 'About us');
+  expect(addressBox()).toHaveValue('about-us');
 });
 
 // ---- and the property none of the five may weaken --------------------------------------------

@@ -54,6 +54,20 @@ export interface FieldMeta {
   /** One small object per language. Set by `localizedObject()`, never written by hand. */
   localizedObject?: boolean;
   /**
+   * The path of the field this one proposes itself from: a title, and the address made out of it.
+   * The proposal follows the source while nobody has written in this field, and stops the moment
+   * somebody does — an address that kept rewriting itself under the person typing it would be
+   * worse than one they had to type in full.
+   *
+   * It is a proposal and never a rule: what an address may look like is the server's to say, and
+   * it says it (`slugify` explains where that line is). A source that is translated is read in the
+   * default language of the division, which is the language of the address the site publishes.
+   *
+   * The seventh extension of the generator, asked for by Carmine after the demo of M1: an address
+   * was typed from scratch beside a title that had just been written.
+   */
+  slugFrom?: string;
+  /**
    * An array of values out of `choices`, drawn as one checkbox each rather than as a repeatable
    * list. It is the difference between "pick several of a closed set" and "write as many of these
    * as you like": the first has an answer that fits on the screen, and a list of selects for it is

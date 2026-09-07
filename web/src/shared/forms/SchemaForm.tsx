@@ -10,8 +10,9 @@ import {
   useFormContext,
   useWatch,
   type FieldErrors,
+  type UseFormReturn,
 } from 'react-hook-form';
-import type { ReactElement } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
 import type { z } from 'zod';
 
 import { ICON_NAMES, iconByName } from '../icons';
@@ -21,6 +22,7 @@ import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
 import { NO_CHOICE, blankEntry, readFields, type FieldNode } from './schema';
+import { slugify } from './slug';
 import { useProblemDetails } from './useProblemDetails';
 
 /**
@@ -90,6 +92,8 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   const fields = readFields(schema);
   const env: FormEnvironment = { locales, labels, mediaLibrary, division };
 
+  useProposedSlugs(form, fields, division?.defaultLocale);
+
   const submit = form.handleSubmit(async (values) => {
     problem.reset();
     try {
@@ -120,6 +124,93 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
       </form>
     </FormProvider>
   );
+}
+
+/**
+ * An address that writes itself from the title, until somebody writes it themselves.
+ *
+ * Asked for by Carmine after the demo of M1: the slug was typed from scratch next to a title that
+ * had just been written, and `ContentWriteDtoValidator` had been saying "the editor proposes one
+ * from the title" since M0 without anybody having built that half.
+ *
+ * The whole subtlety is when to **stop**. Following the title for ever would rewrite the address of
+ * a page under the person editing its title, and an address outlives the page; following it only
+ * while the field is empty would stop after the first letter typed into the title. So the rule is:
+ * follow while the field still holds exactly what was last proposed. An empty field at the start
+ * counts as that, and anything a person types into it ends the following for good — including
+ * clearing it, which is somebody saying "I will write this myself".
+ *
+ * It is deliberately not a `useFieldArray`-style feature of one screen: `slugFrom` is an annotation
+ * of the schema, so the second field that needs it is a line rather than a copy of this.
+ */
+function useProposedSlugs<TValues extends Record<string, unknown>>(
+  // The form of whatever entity is on screen: this reads two of its fields by name and writes one,
+  // which is as much as an annotation can promise about a schema it has never seen.
+  form: UseFormReturn<TValues, unknown, TValues>,
+  fields: FieldNode[],
+  defaultLocale: string | undefined,
+): void {
+  // Written into rather than replaced: neither of these may be a dependency of the effect below,
+  // or deciding to stop following would immediately re-run the thing that was following.
+  const proposed = useRef<Record<string, string>>({});
+  const written = useRef<Set<string>>(new Set());
+  const values = form.watch();
+
+  useEffect(() => {
+    for (const field of fields) {
+      const source = field.meta.slugFrom;
+      if (source === undefined || written.current.has(field.path)) {
+        continue;
+      }
+
+      const current = values[field.path];
+      const last = proposed.current[field.path] ?? '';
+
+      // Somebody has written in it. `undefined` is a field the form has not registered yet, which
+      // is not the same as an empty one and must not stop anything.
+      if (current !== undefined && current !== '' && current !== last) {
+        written.current.add(field.path);
+        continue;
+      }
+
+      const next = slugify(readSource(values[source], defaultLocale));
+      if (next !== last) {
+        proposed.current[field.path] = next;
+        form.setValue(field.path as never, next as never, { shouldDirty: true });
+      }
+    }
+  }, [fields, values, defaultLocale, form]);
+}
+
+/**
+ * The text a proposal reads. A translated source is read in the default language of the division,
+ * which is the language the address is published in; the first language that has anything written
+ * in it stands in while that one is still empty, so a title written in Italian first still proposes
+ * something rather than nothing.
+ */
+function readSource(value: unknown, defaultLocale: string | undefined): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return '';
+  }
+
+  const translations = value as Record<string, unknown>;
+  const preferred = defaultLocale === undefined ? undefined : translations[defaultLocale];
+
+  if (typeof preferred === 'string' && preferred.trim() !== '') {
+    return preferred;
+  }
+
+  for (const written of Object.values(translations)) {
+    if (typeof written === 'string' && written.trim() !== '') {
+      return written;
+    }
+  }
+
+  return '';
 }
 
 /**
