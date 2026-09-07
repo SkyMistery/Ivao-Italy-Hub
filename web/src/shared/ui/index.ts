@@ -5,6 +5,7 @@ export { LocaleSwitcher } from './LocaleSwitcher';
 export { MarkdownContent } from './MarkdownContent';
 export { ConfirmDialog } from './ConfirmDialog';
 export { CalendarView } from './CalendarView';
+export { LiveStatusStrip, type LiveNetworkStatus } from './LiveStatusStrip';
 export { ContactForm } from './ContactForm';
 export { contactSchema, type ContactFormValues } from './contact';
 export {

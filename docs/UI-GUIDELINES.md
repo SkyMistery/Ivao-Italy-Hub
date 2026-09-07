@@ -39,7 +39,7 @@ It is exactly:
 
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
-`StatusBadge`, `ConfirmDialog`, `MediaPicker`, `CalendarView`.
+`StatusBadge`, `ConfirmDialog`, `MediaPicker`, `CalendarView`, `ContactForm`, `LiveStatusStrip`.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
@@ -80,7 +80,19 @@ generated form is the two things a schema has no opinion about, which department
 with their names in the language on screen, and what a sent message looks like. It contains no
 field: the form itself is `SchemaForm` reading `shared/ui/contact.ts`.
 
-`LiveStatusStrip` is the rest of M1 and is added by the phase that needs it;
+`LiveStatusStrip` is the band under the header of the public site: who is connected to the network,
+refreshed by **polling** and never by a socket — a strip that changes by ones once a minute does not
+justify a connection per reader, and the proxy in front of this application is not the place for one.
+It has no endpoint of its own either: it asks the `networkStats` data block, which is anonymous and
+always live and is already the answer to that question.
+
+⚠️ Two things about it are rules and not taste. It goes in the **`banner` slot of `Shell`**, between
+the header and the content, because a strip inside the reading column is not a strip — and there is a
+measurement in `web/e2e/live-status.spec.ts` that fails if somebody moves it back. And when the
+network could not be asked it draws **nothing**: `updatedAt` of null means "no answer", which is not
+the same as nobody being connected, and four zeroes would be the site answering a question it never
+got an answer to.
+
 `RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist yet and are not
 to be started early.
 

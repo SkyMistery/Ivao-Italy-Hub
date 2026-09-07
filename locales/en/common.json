@@ -18,6 +18,10 @@
   "home": {
     "empty": "Nothing has been published on this page yet. Whoever runs the site writes it from the back office."
   },
+  "liveStatus": {
+    "title": "On the network now",
+    "updatedAt": "counted at {{at}}"
+  },
   "auth": {
     "login": "Sign in with IVAO",
     "logout": "Sign out",

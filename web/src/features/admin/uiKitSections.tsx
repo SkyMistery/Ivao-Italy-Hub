@@ -14,6 +14,7 @@ import {
   ConfirmDialogSample,
   ContactFormSample,
   DataListSample,
+  LiveStatusStripSample,
   CalendarViewSample,
   EmptyStateSample,
   HeroSample,
@@ -104,6 +105,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
     render: (bootstrap) => <CalendarViewSample bootstrap={bootstrap} />,
   },
   { name: 'ContactForm' satisfies UiKitComponent, render: () => <ContactFormSample /> },
+  { name: 'LiveStatusStrip' satisfies UiKitComponent, render: () => <LiveStatusStripSample /> },
 ];
 
 /**
