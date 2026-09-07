@@ -131,6 +131,9 @@ internal sealed class SearchIndexEntryConfiguration : IEntityTypeConfiguration<S
         builder.HasIndex(entry => new { entry.Title, entry.Text })
             .HasDatabaseName("ix_cms_search_index_fulltext")
             .IsFullText();
+
+        // What breaks a tie in the results, and what a language filter narrows to first.
+        builder.HasIndex(entry => new { entry.Locale, entry.UpdatedAt });
     }
 }
 

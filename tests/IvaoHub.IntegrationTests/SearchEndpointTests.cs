@@ -96,8 +96,8 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var client = _factory.CreateApiClient();
         var page = await client.GetFromJsonAsync<JsonElement>($"{SearchEndpoints.Pattern}?q=", token);
 
-        Assert.Equal(0, page.GetProperty("total").GetInt32());
-        Assert.Empty(page.GetProperty("items").EnumerateArray());
+        Assert.Equal(0, page.GetProperty("results").GetProperty("total").GetInt32());
+        Assert.Empty(page.GetProperty("results").GetProperty("items").EnumerateArray());
     }
 
     [Fact]
@@ -119,18 +119,164 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var italian = await client.GetFromJsonAsync<JsonElement>(
             $"{SearchEndpoints.Pattern}?q=bilingue&locale=it",
             token);
-        Assert.Equal(1, italian.GetProperty("total").GetInt32());
+        Assert.Equal(1, italian.GetProperty("results").GetProperty("total").GetInt32());
 
         var english = await client.GetFromJsonAsync<JsonElement>(
             $"{SearchEndpoints.Pattern}?q=bilingual&locale=en",
             token);
-        Assert.Equal(1, english.GetProperty("total").GetInt32());
+        Assert.Equal(1, english.GetProperty("results").GetProperty("total").GetInt32());
 
         // And not in the other one: a row of the Italian index does not carry the English words.
         var wrongLanguage = await client.GetFromJsonAsync<JsonElement>(
             $"{SearchEndpoints.Pattern}?q=bilingual&locale=it",
             token);
-        Assert.Equal(0, wrongLanguage.GetProperty("total").GetInt32());
+        Assert.Equal(0, wrongLanguage.GetProperty("results").GetProperty("total").GetInt32());
+    }
+
+    // ---- the three questions M0 left open (design M1 section 7) --------------------------------
+
+    [Fact]
+    public async Task SearchOrdersByRelevanceThenRecency()
+    {
+        // Relevance first, and among equals the most recently changed. Both halves are asserted,
+        // because either one alone passes on data that happens to be in the right order anyway.
+        var token = TestContext.Current.CancellationToken;
+        var needle = $"gothenburg{Guid.NewGuid():N}"[..20];
+
+        // Three rows, seeded in the wrong order on purpose. The first two say the word once each,
+        // so they score the same and only their age separates them; the third says it three times
+        // in the title and the description, so it scores higher whatever its age.
+        await SeedLinkAsync(Department.ED, Visibility.Public, $"{needle} older", token);
+        await Task.Delay(1100, token);
+        await SeedLinkAsync(Department.ED, Visibility.Public, $"{needle} newer", token);
+        await Task.Delay(1100, token);
+        await SeedLinkAsync(
+            Department.ED,
+            Visibility.Public,
+            $"{needle} {needle} {needle} strongest",
+            token);
+
+        using var client = _factory.CreateApiClient();
+        var titles = await TitlesAsync(client, needle, token);
+
+        // The strongest match first, however old it is; then the two equals, newest first.
+        Assert.Equal(3, titles.Count);
+        Assert.Contains("strongest", titles[0], StringComparison.Ordinal);
+        Assert.Contains("newer", titles[1], StringComparison.Ordinal);
+        Assert.Contains("older", titles[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SearchReturnsSnippetPerLocale()
+    {
+        // The extract comes back as **text**, in the language searched, around the first place the
+        // word turns up. Which terms to mark is the browser's business; the server does not return
+        // markup and this asserts that it does not.
+        var token = TestContext.Current.CancellationToken;
+        var needle = $"helsinki{Guid.NewGuid():N}"[..18];
+
+        await SeedLinkAsync(
+            Department.ED,
+            Visibility.Public,
+            italian: $"Titolo italiano",
+            english: $"An English title",
+            // ⚠️ The opening is **long on purpose**, longer than a snippet: with a short text the
+            // whole thing comes back whatever the extract does, and the first version of this test
+            // passed with the search term ignored entirely. The word has to sit far enough in that
+            // only an extract cut around it can contain it.
+            description: (
+                Italian: $"{Filler("Una premessa lunga")} e poi la parola {needle} in mezzo al testo.",
+                English: $"{Filler("A long opening")} and then the word {needle} in the middle of the text."),
+            cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+
+        var italian = await FirstHitAsync(client, needle, "it", token);
+        var english = await FirstHitAsync(client, needle, "en", token);
+
+        var italianSnippet = italian.GetProperty("snippet").GetString()!;
+        var englishSnippet = english.GetProperty("snippet").GetString()!;
+
+        // Cut around the word and not from the top: the opening is longer than a whole snippet, so
+        // an extract that started at the beginning could not contain the word at all.
+        Assert.True(
+            italianSnippet.Length <= SearchSnippet.MaxLength + 4,
+            $"the snippet is {italianSnippet.Length} characters, which is not an extract");
+        Assert.StartsWith("…", italianSnippet, StringComparison.Ordinal);
+
+        // Each row of the index is one language, so each snippet is cut out of that language's text.
+        Assert.Contains(needle, italianSnippet, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("parola", italianSnippet, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("the word", italianSnippet, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains(needle, englishSnippet, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("the word", englishSnippet, StringComparison.OrdinalIgnoreCase);
+
+        // Text and never markup: the client marks the terms, because only the client knows the
+        // language on screen — and a server that returned HTML would be one nobody could escape.
+        Assert.DoesNotContain("<", italianSnippet, StringComparison.Ordinal);
+        Assert.DoesNotContain("&lt;", italianSnippet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SearchTellsWhenEveryTermIsTooShort()
+    {
+        // The one of the three the code cannot fix: InnoDB does not index words shorter than three
+        // letters, and on a shared MariaDB `innodb_ft_min_token_size` is not ours to change. So the
+        // answer says so, with a key the browser turns into a sentence, instead of an empty page
+        // that reads as an opinion about the question.
+        var token = TestContext.Current.CancellationToken;
+
+        using var client = _factory.CreateApiClient();
+
+        var tooShort = await client.GetFromJsonAsync<JsonElement>(
+            $"{SearchEndpoints.Pattern}?q=an%20il&locale=it",
+            token);
+
+        Assert.Equal(SearchEndpoints.TermsTooShort, tooShort.GetProperty("notice").GetString());
+        Assert.Equal(0, tooShort.GetProperty("results").GetProperty("total").GetInt32());
+
+        // ⚠️ And one long word next to two short ones is **not** this case: MariaDB ignores the
+        // short ones and answers on the rest, which is a real answer and must not be explained away.
+        var mixed = await client.GetFromJsonAsync<JsonElement>(
+            $"{SearchEndpoints.Pattern}?q=il%20{Needle}&locale=it",
+            token);
+
+        Assert.True(
+            mixed.GetProperty("notice").ValueKind == JsonValueKind.Null,
+            "a query with one word long enough to be indexed is a real query");
+    }
+
+    // ---- helpers -------------------------------------------------------------------------------
+
+    /// <summary>Enough words to push what follows past the length of a snippet.</summary>
+    private static string Filler(string opening) =>
+        string.Join(' ', Enumerable.Repeat(opening, 12));
+
+    private static async Task<List<string>> TitlesAsync(
+        HttpClient client,
+        string query,
+        CancellationToken cancellationToken)
+    {
+        var page = await client.GetFromJsonAsync<JsonElement>(
+            $"{SearchEndpoints.Pattern}?q={query}&locale=it",
+            cancellationToken);
+
+        return [.. page.GetProperty("results").GetProperty("items").EnumerateArray()
+            .Select(item => item.GetProperty("title").GetString()!)];
+    }
+
+    private static async Task<JsonElement> FirstHitAsync(
+        HttpClient client,
+        string query,
+        string locale,
+        CancellationToken cancellationToken)
+    {
+        var page = await client.GetFromJsonAsync<JsonElement>(
+            $"{SearchEndpoints.Pattern}?q={query}&locale={locale}",
+            cancellationToken);
+
+        return page.GetProperty("results").GetProperty("items").EnumerateArray().First();
     }
 
     private static async Task<int> CountAsync(HttpClient client, string query, CancellationToken cancellationToken)
@@ -139,7 +285,10 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
             $"{SearchEndpoints.Pattern}?q={query}&locale=it",
             cancellationToken);
 
-        return page.GetProperty("total").GetInt32();
+        // ⚠️ One level deeper since G10: a search answers with the page **and** the one thing it
+        // sometimes has to say about the query itself. The envelope inside is the same
+        // `PagedResult` every list of the hub uses.
+        return page.GetProperty("results").GetProperty("total").GetInt32();
     }
 
     private Task SeedLinkAsync(
@@ -154,7 +303,8 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Visibility visibility,
         string italian,
         string english,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        (string Italian, string English)? description = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
@@ -164,6 +314,7 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
             OwnerDepartment = department,
             Visibility = visibility,
             Title = italian.L(english),
+            Description = description is { } text ? text.Italian.L(text.English) : null,
             Url = $"https://example.org/{Guid.NewGuid():N}",
             IsActive = true,
         });

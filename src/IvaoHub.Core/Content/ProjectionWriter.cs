@@ -120,7 +120,7 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
 
             var key = (request.SourceModule, request.SourceId);
 
-            ApplySearch(context, request, [.. state.Search[key]], projection);
+            ApplySearch(context, request, [.. state.Search[key]], projection, clock.UtcNow);
             ApplyCalendar(context, request, state.Calendar.GetValueOrDefault(key));
             ApplyAwardSignals(context, request, [.. state.Awards[key]]);
         }
@@ -155,7 +155,8 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         DbContext context,
         ProjectionRequest request,
         List<SearchIndexEntry> existing,
-        ProjectionContext projection)
+        ProjectionContext projection,
+        DateTime now)
     {
         var search = request.Snapshot?.Search;
 
@@ -185,6 +186,11 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
             row.Visibility = search.Visibility;
             row.Title = Resolve(search.Title, locale, projection.DefaultLocale);
             row.Text = Resolve(search.Text, locale, projection.DefaultLocale);
+
+            // Stamped on every write, because the whole row is rewritten on every save: this is
+            // "when the thing behind it last changed", which is the only notion of recent the
+            // projection can honestly have.
+            row.UpdatedAt = now;
         }
 
         // A language the division dropped leaves its row behind; the projection is the whole truth
