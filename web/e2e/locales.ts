@@ -17,6 +17,13 @@ interface CommonStrings {
   readonly forbidden: { readonly title: string };
   readonly departments: { readonly WD: string };
   readonly liveStatus: { readonly title: string; readonly updatedAt: string };
+  readonly search: {
+    readonly title: string;
+    readonly label: string;
+    readonly open: string;
+    readonly empty: string;
+    readonly termsTooShort: string;
+  };
   readonly menu: {
     readonly title: string;
     readonly create: string;

@@ -9,7 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.2 — 7 settembre 2026 (**G9 è chiusa**, ed è stata **corta** perché la staff directory
+**Versione:** 2.3 — 7 settembre 2026 (**G10 è chiusa**, e con essa il **debito n.10 di M0**: la
+ricerca ha una schermata pubblica, una palette ⌘K per lo staff, e le tre domande lasciate aperte
+hanno una risposta ciascuna. Una colonna nuova sull'indice, zero tabelle, zero permessi, zero
+endpoint a mano, zero componenti custom. Due contratti di libreria misurati invece che supposti — EF
+Core sul filtro di una proiezione, `cmdk` sul filtro dei suoi item — e tutti e due hanno cambiato il
+codice. La prossima è G11.)
+
+**2.2** — 7 settembre 2026 (**G9 è chiusa**, ed è stata **corta** perché la staff directory
 era già in piedi: il provider di G4 e la pagina `/about` che G8 ha seminato la reggevano già tutta.
 La fase ha aggiunto `LiveStatusStrip` — terzo dei quattro componenti custom, in polling e senza un
 endpoint suo — e ha scritto i test delle tre promesse di design §6.1, uno dei quali ha scoperto che
@@ -134,7 +141,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G7 | Contatti, servizio notifiche, namespace `mail` — **fatta** | G2 | un messaggio genera una mail in Mailpit passando dalla coda |
 | G8 | Menu editoriale, pagine di sistema, dashboard di dipartimento, sito pubblico, SEO — **fatta** | G3, G4, G5 | togliere una voce dal menu la toglie dal sito senza ricompilare; `/`, `/start`, `/pilots`, `/atc`, `/about` seedate; ogni dipartimento apre `/staff/{dept}` e trova la propria dashboard |
 | G9 | Live status e staff directory — **fatta** | G4 | `LiveStatusStrip`, sezione staff di `/about`, nessun profilo pubblico |
-| G10 | Ricerca: schermata, rilevanza, evidenziazione | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
+| G10 | Ricerca: schermata, rilevanza, evidenziazione — **fatta** | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
 | G11 | Editor: differenze dal template, dnd-kit, anteprima | G8 | tre stati della diff, «allinea» una differenza alla volta, su/giù da tastiera intatto |
 | G12 | Migrazione a mano, giro visivo, chiusura di M1 | tutte | `/about` e `/start` ricopiati, giro visivo eseguito, rapporto di chiusura con i numeri, tag `v0.2.0-m1` |
 
@@ -810,7 +817,27 @@ e2e con una misura sulla striscia.
 
 ---
 
-### G10 — Ricerca: schermata, rilevanza, evidenziazione
+### G10 — Ricerca: schermata, rilevanza, evidenziazione — **fatta il 7 settembre 2026**
+
+⚠️ **Come è andata** (7 set 2026, design M1 v1.13): tre scoperte, tutte per aver misurato invece che
+supposto, e tutte e tre hanno cambiato il codice.
+
+1. **Il punteggio non si può selezionare come colonna e poi filtrare.** EF Core risponde «the LINQ
+   expression could not be translated» a un `Where` su un membro di una proiezione — provato contro
+   MariaDB vera, non dedotto. Quello che si scrive una volta è allora **l'espressione**, usata come
+   ordinamento e, maggiore di zero, come filtro: il sorgente ha una `MATCH` sola, che era la ragione
+   della regola.
+2. **«Il più recente per primo» voleva una data che non c'era.** `cms_search_index` guadagna
+   `updated_at` — la data della **proiezione**, non della sorgente, perché una proiezione porta ciò
+   che ogni riga proiettabile può promettere e una data di pubblicazione non lo è.
+3. ⚠️ **`CommandDialog` di Atmosphere non lascia spegnere il filtro di `cmdk`**: inoltra le props al
+   dialogo, e avvolge già un comando. Con il filtro acceso la palette butta via i risultati trovati
+   nel **corpo** di una pagina — quelli per cui esiste lo snippet. La palette assembla quindi i tre
+   pezzi che `CommandDialogRoot` mette insieme, con la proprietà in più.
+
+E un test che non provava niente, trovato rompendolo: la prima versione di quello sullo snippet aveva
+un testo **più corto di uno snippet**, quindi tornava intero comunque e passava anche ignorando del
+tutto la query.
 
 **Obiettivo**: `GET /api/search` esiste da F8; qui guadagna una schermata e **le tre risposte** che M0
 aveva lasciato aperte (HANDOFF §10, debito n.10). Design §7.
@@ -831,7 +858,7 @@ Task:
    trova solo il pubblico) e la **palette ⌘K** per lo staff, che cerca nelle stesse righe più le rotte
    del back-office. La palette è `Command` di Atmosphere: **non** è un componente custom nuovo.
 
-**Accettazione**: `SearchOrdersByRelevanceThenRecency`, `SearchReturnsSnippetPerLocale`,
+**Accettazione** (tutti verdi il 7 set 2026): `SearchOrdersByRelevanceThenRecency`, `SearchReturnsSnippetPerLocale`,
 `SearchTellsWhenEveryTermIsTooShort`, `SearchRespectsVisibility` (esiste da F8 e resta verde); Vitest
 dell'evidenziazione, compresi accenti e maiuscole; e2e della palette ⌘K.
 

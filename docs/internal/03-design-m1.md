@@ -1,10 +1,34 @@
 # IVAO Division Hub — Design di M1 (sito pubblico e nucleo editoriale)
 
-**Versione documento:** 1.12 — 7 settembre 2026
+**Versione documento:** 1.13 — 7 settembre 2026
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Fonte di verità:** `00-piano-di-progettazione.md` (§8, §9.1, §9.3–§9.5, §16). Perimetro e firme di M0:
 `01-design-m0.md`. Stato di M0: `HANDOFF.md`, in particolare §10.
 **Stato:** perimetro deciso, quattro bivi di apertura chiusi (§0.4). Le voci ⚠️ di §14 non bloccano M1.
+
+**Changelog 1.13** (7 set 2026): **G10 ha costruito la ricerca**, e il **debito n.10 di M0 è chiuso**:
+le tre domande hanno una risposta scritta, provata e verificata rompendola.
+**§7.1, la rilevanza**: il punteggio si scrive una volta, ma **non** come colonna selezionata — EF
+Core non sa filtrare su un membro di una proiezione (`Select(new { entry, score })` seguito da
+`Where(x => x.Score > 0)` risponde «could not be translated», misurato contro MariaDB vera). Quello
+che si scrive una volta è quindi **l'espressione**, usata come ordinamento e, maggiore di zero, come
+filtro. Il risultato in SQL è lo stesso; il sorgente ha una `MATCH` sola, che era il punto.
+**§7.1, «il più recente per primo»** voleva una data che l'indice non aveva. `cms_search_index`
+guadagna `updated_at`, scritto dal projection writer a ogni scrittura, e **deliberatamente non** una
+data della sorgente: una proiezione porta ciò che ogni riga proiettabile può promettere, e «quando
+sei stata pubblicata» non lo è — un link non ha una data di pubblicazione, una pagina ne ha una, una
+voce di calendario due. Migrazione additiva, con le righe esistenti timbrate al momento della
+migrazione invece che lasciate all'anno 1.
+**§7.2, lo snippet** si taglia sulle sole righe della pagina, in memoria, ed esce come **testo**: chi
+marca è il browser, l'unico che sa in che lingua sta guardando.
+**§7.3, le parole corte**: la risposta guadagna un `notice`, che è una chiave i18n dentro un envelope
+che **contiene** `PagedResult` invece di reinventarlo. ⚠️ Una parola lunga accanto a due corte **non**
+è quel caso: MariaDB ignora le corte e risponde sul resto, che è una risposta vera.
+**§7.4, la palette**: è `Command` di Atmosphere, ma **assemblata dai suoi pezzi**. `CommandDialog`
+inoltra le proprie props al *dialogo* e non al comando, quindi `shouldFilter` non lo raggiunge, e ne
+avvolge già uno. Senza quella proprietà `cmdk` filtra una seconda volta la risposta del server e
+butta via ogni risultato trovato nel **corpo** di una pagina invece che nel titolo — cioè esattamente
+quelli per cui esiste lo snippet. Letto nel suo bundle, non supposto.
 
 **Changelog 1.12** (7 set 2026): **G9 ha costruito il live status**, e ha trovato che **la staff
 directory era già in piedi**: il provider è di G4, la pagina `/about` che lo monta l'ha seminata G8,

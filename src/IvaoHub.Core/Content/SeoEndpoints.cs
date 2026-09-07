@@ -30,7 +30,13 @@ public static class SeoEndpoints
     /// Not a security measure — none of them answer to somebody who is not signed in anyway — but a
     /// crawl budget spent on a login redirect is a crawl budget not spent on the site.
     /// </summary>
-    private static readonly string[] Disallowed = ["/staff", "/me", "/api"];
+    /// <summary>
+    /// ⚠️ <c>/search</c> is on the list since G10, and for a different reason from the other three:
+    /// it is public and it answers, but every query is another address that answers, so a crawler
+    /// let loose on it walks a set with no end and spends the whole budget there. The pages it would
+    /// find that way are in the sitemap already.
+    /// </summary>
+    private static readonly string[] Disallowed = ["/staff", "/me", "/api", "/search"];
 
     public static void MapSeoEndpoints(this IEndpointRouteBuilder app)
     {

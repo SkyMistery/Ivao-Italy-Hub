@@ -37,4 +37,16 @@ public sealed class SearchIndexEntry : IOwnedByDepartment, IVisible
     public string Title { get; set; } = string.Empty;
 
     public string Text { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When this row was last written, which is when the source it mirrors was last saved. It is
+    /// what breaks a tie in the search results: two rows that match a query equally well are shown
+    /// most recently changed first (design M1 section 7).
+    /// <para>⚠️ It is the date of the <b>projection</b> and deliberately not a date of the source.
+    /// A projection carries what every projectable row can promise, and "when were you published"
+    /// is not that: a link has no publication date, a page has one and a calendar entry has two.
+    /// Teaching <c>SearchProjection</c> a date would make every module answer a question most of
+    /// them have no answer to, for a tie break.</para>
+    /// </summary>
+    public DateTime UpdatedAt { get; set; }
 }
