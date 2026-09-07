@@ -13,7 +13,8 @@
 richieste con loro: il logout ridisegna la pagina — il bootstrap non è una query ma il contesto del
 router, e una query invalidata non rifà un `beforeLoad` — e una pagina non si pubblica più portando
 un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCeiling` dei blocchi
-Data. La sigla di un dipartimento è il suo segno. Restano le richieste da 5 in poi, e il tag.)
+Data. La sigla di un dipartimento è il suo segno. Fatta anche la richiesta 5, lo `slug` proposto dal titolo: è la **settima** estensione del
+generatore di form. Restano le richieste da 6 in poi, e il tag.)
 
 **2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
@@ -1059,7 +1060,12 @@ seguire il tag, se Carmine preferisce; i difetti no.
 
 **Le richieste**, nell'ordine che toglie più attrito a chi userà l'hub:
 
-5. Lo `slug` proposto dal titolo e correggibile.
+5. ~~Lo `slug` proposto dal titolo e correggibile~~ — **fatto** (`38c6e1c`), con quattro test in
+   `shared/forms/extensions.test.tsx`. È l'annotazione `slugFrom` del **generatore di form**, non
+   una funzione della schermata dei contenuti: la **settima** estensione, e il numero da riportare
+   alla chiusura della fase (§12 ne prevedeva cinque, G11a ha fatto la sesta). Segue il titolo
+   finché il campo contiene esattamente quello che è stato proposto, e smette per sempre appena
+   qualcuno ci scrive — una riga che aveva già un indirizzo non lo sposta mai.
 6. La conferma che l'editor ha fatto quello che è stato cliccato.
 7. «Cosa manca per pubblicare», viva e prima del rifiuto.
 8. ~~Le **sigle** dei dipartimenti al posto delle nove icone identiche~~ — **fatto** (`6584438`),

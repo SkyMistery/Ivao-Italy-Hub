@@ -3178,15 +3178,18 @@ ragione scritta lì.
 
 ### Si continua G13 dalle richieste: **i quattro difetti sono chiusi**
 
-Ramo **`m1/g13-fixes`**, cinque commit, niente di non committato. Il piano di implementazione è a
+Ramo **`m1/g13-fixes`**, sei commit, niente di non committato. Il piano di implementazione è a
 v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
-locale il 7 set 2026: **458 .NET** (300 unit + 158 integrazione), **256 Vitest**, **42 smoke
-Playwright**, lint, typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la
-correzione delle cancellazioni, e va fatto prima di chiudere la fase.
+locale: **458 .NET** (300 unit + 158 integrazione), **260 Vitest**, **42 smoke Playwright**, lint,
+typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la correzione delle
+cancellazioni, e va fatto prima di chiudere la fase.
+
+⚠️ **Il numero da riportare alla chiusura sono sette estensioni del generatore di form**, non sei:
+`slugFrom` è la settima, e §12 del design ne prevedeva cinque.
 
 **Il prossimo passo**, nell'ordine del piano di implementazione §G13:
 
-1. Lo **`slug` proposto dal titolo** e correggibile (richiesta 5).
+1. ~~Lo **`slug` proposto dal titolo**~~ — fatto (`38c6e1c`).
 2. La **conferma che l'editor ha fatto quello che è stato cliccato** (richiesta 6). Probabilmente
    vuole prima l'**avviso a quattro stati** (richiesta 9), che è il **quinto** componente
    dell'elenco chiuso di §8.3: il piano di implementazione dice che si aggiunge **con una riga**,

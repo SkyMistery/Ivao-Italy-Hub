@@ -24,6 +24,13 @@ una volta e lo passa come **contesto** del router, ed è quella copia che l'head
 guardie leggono. Invalidare una query non rifà un `beforeLoad`. Un solo posto lo dice adesso —
 `sessionChanged` — e lo usa anche la risposta al 401.
 
+**Il generatore di form ha imparato la settima cosa**, regola (b): `slugFrom`, un campo che si
+propone da un altro. §12 del design M1 ne prevedeva cinque, G11a ha fatto la sesta e questa è la
+settima — il numero da riportare alla chiusura di G13 è **sette**, e la ragione dello scarto è che
+due le ha chieste l'uso, non i blocchi. Segue il titolo finché il campo contiene esattamente ciò che
+è stato proposto, e smette per sempre appena qualcuno ci scrive: un indirizzo sopravvive alla pagina,
+e uno che si riscrive sotto le dita di chi lo sta scrivendo sarebbe peggio di uno da scrivere a mano.
+
 **Niente icone per i dipartimenti: la sigla è il segno** (deciso da Carmine). Erano nove scudi
 identici. Ragione: un fork non-IVAO riscrive comunque l'enum `Department`, quindi una mappa
 «dipartimento → icona» vivrebbe nel perimetro IVAO e gli costerebbe lavoro, e la sigla è già
