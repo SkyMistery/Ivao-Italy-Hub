@@ -122,13 +122,15 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
             live in `locales/` because they are words and not rows. */}
         {bootstrap.navigation.footer.length > 0 && (
           <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {bootstrap.navigation.footer.flatMap((item) => [item, ...item.children]).map((item) => (
-              <FooterEntry
-                key={item.path}
-                path={item.path}
-                label={navLabel(item, t, i18n.language, bootstrap.division.defaultLocale)}
-              />
-            ))}
+            {bootstrap.navigation.footer
+              .flatMap((item) => [item, ...item.children])
+              .map((item) => (
+                <FooterEntry
+                  key={item.path}
+                  path={item.path}
+                  label={navLabel(item, t, i18n.language, bootstrap.division.defaultLocale)}
+                />
+              ))}
           </nav>
         )}
 
