@@ -86,7 +86,10 @@ export function LiveStatusStrip({ status: sample }: { status?: LiveNetworkStatus
           {t('liveStatus.title')}
         </span>
 
-        <span aria-hidden className="bg-border hidden h-6 w-px sm:block" />
+        {/* ⚠️ `max-sm:hidden`, never `hidden sm:block`: Atmosphere's stylesheet is imported after
+            Tailwind's utilities and declares `.hidden` again, so the plain class wins over the one
+            in the media query and the rule would never come back on a wide screen. */}
+        <span aria-hidden className="bg-border h-6 w-px max-sm:hidden" />
 
         {/* The words are the block's own: the strip and `networkStats` count the same two things,
             and one set of figures deserves one set of words (CLAUDE.md §2). Written as a number and

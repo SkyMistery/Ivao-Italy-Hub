@@ -11,6 +11,7 @@ import {
 } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -73,56 +74,82 @@ export function SearchPalette({ bootstrap }: { bootstrap: Bootstrap }) {
   };
 
   return (
-    // ⚠️ The three pieces `CommandDialogRoot` puts together — a dialog, its content, and a command —
-    // written out here for one reason: it forwards its own props to the **dialog**, so
-    // `shouldFilter` never reaches the command through it, and it already wraps one, so nesting a
-    // second inside it is a command inside a command. Read in its bundle, not assumed. Same
-    // components, same classes, one prop more.
-    <DialogRoot open={open} onOpenChange={setOpen}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg">
-        {/* Radix wants a dialog to have a name, and a screen reader wants one more than Radix
+    <>
+      {/* The way in for everybody who does not know there is a shortcut. Asked for by Carmine
+          after the demo: ⌘K is invisible, and a back office whose search you have to be told about
+          is a search most of the staff will never use.
+
+          A button dressed as a box, and not an input: what is typed belongs to the palette, and a
+          second box that also searched would be a second search — the thing this whole screen
+          exists not to be (design M1 §7). The shortcut is written on it, so the box teaches it. */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="border-border bg-muted/40 text-muted-foreground hover:bg-muted focus-visible:ring-fuselage-700 flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors focus-visible:ring-1 focus-visible:outline-hidden"
+      >
+        <Search aria-hidden className="size-4 shrink-0" />
+        <span className="truncate">{t('search.palette.placeholder')}</span>
+        {/* ⚠️ `max-sm:hidden` and not `hidden sm:block`, which does nothing in this application:
+            Atmosphere's stylesheet is imported after Tailwind's utilities and declares `.hidden`
+            again, so the plain class wins over the one inside the `sm` media query and the element
+            never comes back. Measured here, in the built bundle, after wondering where this had
+            gone. */}
+        <kbd className="border-border bg-background ml-auto rounded border px-1.5 py-0.5 text-xs max-sm:hidden">
+          {t('search.palette.shortcut')}
+        </kbd>
+      </button>
+
+      {/* ⚠️ The three pieces `CommandDialogRoot` puts together — a dialog, its content, and a
+          command — written out here for one reason: it forwards its own props to the **dialog**,
+          so `shouldFilter` never reaches the command through it, and it already wraps one, so
+          nesting a second inside it is a command inside a command. Read in its bundle, not
+          assumed. Same components, same classes, one prop more. */}
+      <DialogRoot open={open} onOpenChange={setOpen}>
+        <DialogContent className="overflow-hidden p-0 shadow-lg">
+          {/* Radix wants a dialog to have a name, and a screen reader wants one more than Radix
             does. It is not drawn, because the box below says the same thing to everybody else. */}
-        <DialogTitle className="sr-only">{t('search.palette.placeholder')}</DialogTitle>
+          <DialogTitle className="sr-only">{t('search.palette.placeholder')}</DialogTitle>
 
-        <CommandRoot shouldFilter={false} label={t('search.palette.placeholder')}>
-          <CommandInput
-            value={query}
-            onValueChange={setQuery}
-            placeholder={t('search.palette.placeholder')}
-          />
+          <CommandRoot shouldFilter={false} label={t('search.palette.placeholder')}>
+            <CommandInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder={t('search.palette.placeholder')}
+            />
 
-          <CommandList>
-            {hits.length === 0 && screens.length === 0 ? (
-              <CommandEmpty>{t('search.palette.empty')}</CommandEmpty>
-            ) : null}
+            <CommandList>
+              {hits.length === 0 && screens.length === 0 ? (
+                <CommandEmpty>{t('search.palette.empty')}</CommandEmpty>
+              ) : null}
 
-            {screens.length === 0 ? null : (
-              <CommandGroup heading={t('search.palette.screens')}>
-                {screens.map((screen) => (
-                  <CommandItem key={screen.href} value={screen.href} onSelect={() => go(screen.href)}>
-                    {screen.group} — {screen.title}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
+              {screens.length === 0 ? null : (
+                <CommandGroup heading={t('search.palette.screens')}>
+                  {screens.map((screen) => (
+                    <CommandItem key={screen.href} value={screen.href} onSelect={() => go(screen.href)}>
+                      {screen.group} — {screen.title}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
 
-            {hits.length === 0 ? null : (
-              <CommandGroup heading={t('search.palette.results')}>
-                {hits.map((hit) => (
-                  <CommandItem
-                    key={`${hit.sourceModule}:${hit.sourceId}`}
-                    value={hit.url}
-                    onSelect={() => go(hit.url)}
-                  >
-                    {hit.title}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </CommandRoot>
-      </DialogContent>
-    </DialogRoot>
+              {hits.length === 0 ? null : (
+                <CommandGroup heading={t('search.palette.results')}>
+                  {hits.map((hit) => (
+                    <CommandItem
+                      key={`${hit.sourceModule}:${hit.sourceId}`}
+                      value={hit.url}
+                      onSelect={() => go(hit.url)}
+                    >
+                      {hit.title}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </CommandRoot>
+        </DialogContent>
+      </DialogRoot>
+    </>
   );
 }
 

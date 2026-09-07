@@ -37,10 +37,6 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
     <div className="bg-body text-foreground flex min-h-screen flex-col">
       <AppHeader bootstrap={bootstrap} />
 
-      {/* Everywhere in the back office, because a palette that only opens on one screen is a
-          palette nobody learns (design M1 §7). */}
-      <SearchPalette bootstrap={bootstrap} />
-
       {/* `Sidebar` is the whole thing: it brings its own `SidebarProvider` and its own
           `SidebarContainer`, and `SidebarContainer` is not a two column shell -- it *is* the
           `<aside>`, `w-72` wide. Wrapping our own around it put both the real sidebar and this
@@ -53,7 +49,17 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
           asLink={RouterAnchor}
           isActiveCheck={(href) => location.pathname === href || location.pathname.startsWith(`${href}/`)}
         />
-        <main className="min-w-0 flex-1 px-4 py-8">
+        <main className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-8">
+          {/* Everywhere in the back office, because a palette that only opens on one screen is a
+              palette nobody learns (design M1 §7) — and since the demo it brings a visible box
+              with it, because a shortcut nobody is told about is a shortcut nobody uses.
+
+              ⚠️ At the top of the content column and not inside the sidebar, which is Atmosphere's
+              own component and has no slot to put anything in. Wrapping it in a column of our own
+              is exactly what once drew the whole back office inside a 255 pixel aside (HANDOFF
+              §13), and a search box is not worth doing that again. */}
+          <SearchPalette bootstrap={bootstrap} />
+
           <Outlet />
         </main>
       </div>

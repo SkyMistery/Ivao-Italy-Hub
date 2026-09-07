@@ -45,7 +45,8 @@
       "empty": "Non ho trovato niente.",
       "results": "Nel sito",
       "screens": "Schermate",
-      "hint": "Premi Ctrl o Cmd e K"
+      "hint": "Premi Ctrl o Cmd e K",
+      "shortcut": "Ctrl K"
     }
   },
   "auth": {

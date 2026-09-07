@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 
 import englishCommon from '../../../../locales/en/common.json';
@@ -69,6 +70,30 @@ test('control and K opens the palette, and it offers the screens of the back off
   expect(palette).toBeInTheDocument();
 
   // The screens this member may reach — the ones the sidebar draws, read from the same list.
+  expect(await screen.findByText(`ED — ${englishCommon.links.title}`)).toBeInTheDocument();
+});
+
+test('the box opens the same palette, so the shortcut is not the only way in', async () => {
+  // Asked for by Carmine after the demo. ⌘K is invisible: a back office whose search you have to
+  // be told about is a search most of the staff never use. What matters is that the box is a way
+  // **in** and not a second search — one palette, one list of results.
+  api.get.mockResolvedValue({
+    data: { results: { items: [], page: 1, pageSize: 20, total: 0 }, notice: null },
+  });
+
+  const user = userEvent.setup();
+  renderWithProviders(<SearchPalette bootstrap={bootstrap} />);
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+  await user.click(
+    screen.getByRole('button', { name: new RegExp(englishCommon.search.palette.placeholder) }),
+  );
+
+  const palette = await screen.findByRole('dialog');
+  expect(palette).toBeInTheDocument();
+
+  // And it is the same one: the screens of the back office are offered, not an empty box.
   expect(await screen.findByText(`ED — ${englishCommon.links.title}`)).toBeInTheDocument();
 });
 

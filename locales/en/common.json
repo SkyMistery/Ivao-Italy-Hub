@@ -45,7 +45,8 @@
       "empty": "Nothing found.",
       "results": "On the site",
       "screens": "Screens",
-      "hint": "Press Ctrl or Cmd and K"
+      "hint": "Press Ctrl or Cmd and K",
+      "shortcut": "Ctrl K"
     }
   },
   "auth": {
