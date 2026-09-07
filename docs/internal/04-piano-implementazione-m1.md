@@ -1095,9 +1095,12 @@ seguire il tag, se Carmine preferisce; i difetti no.
     fra le viste della schermata — è quella che mostra un **blocco** dentro una pagina. ⚠️ La chip
     è colorata **senza** vocabolario: i cinque tipi che l'entità documenta hanno un colore ciascuno
     e tutto il resto lo deriva dalla parola, finché la 11 non arriva.
-11. I **tipi di evento decisi centralmente** e uguali per tutti. ⚠️ Non sono le categorie, che sono
-    per dipartimento: serve un vocabolario di divisione, con un permesso di scope diverso da
-    `Calendar.Edit`. Da proporre prima di scriverlo.
+11. I **tipi di evento decisi centralmente** e uguali per tutti. ⚠️ **Proposta scritta e in attesa
+    di Carmine**: `decisions/2026-09-08-tipi-di-evento-di-divisione.md`. Tre modi, la
+    raccomandazione è il primo — una tabella servita da `MapCrud` con `SharedForReading` e un
+    permesso globale — e il pezzo da guardare è che sarebbe **la prima riga senza
+    `owner_department`**, quindi la prima che non passa dall'unico authorization handler. Niente è
+    stato scritto.
 12. ~~`LiveStatusStrip` con una gerarchia visiva vera~~ — **fatto**, e senza aggiungere niente: il
     numero è la cosa più forte della banda, le parole la più debole, un'icona per figura, e il
     puntino che dice «di questo minuto» respira (solo per chi non ha chiesto meno movimento).

@@ -3180,8 +3180,8 @@ ragione scritta lì.
 
 Ramo **`m1/g13-fixes`**, dodici commit, niente di non committato. Il piano di implementazione è a
 v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
-locale: **459 .NET** (300 unit + 159 integrazione), **267 Vitest**, **42 smoke Playwright**, lint,
-typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la correzione delle
+locale: **459 .NET** (300 unit + 159 integrazione), **267 Vitest**, **42 smoke Playwright**, **12 del giro pieno**
+(`pnpm e2e:full`, rieseguito l'8 set 2026 contro l'API vera), lint, typecheck, format e i18n. ⚠️ `pnpm e2e:full` **non** è stato rieseguito dopo la correzione delle
 cancellazioni, e va fatto prima di chiudere la fase.
 
 ⚠️ **Il numero da riportare alla chiusura sono sette estensioni del generatore di form**, non sei:
@@ -3199,10 +3199,12 @@ cancellazioni, e va fatto prima di chiudere la fase.
    con Carmine perché l'alternativa era riscrivere le regole nel client.
 4. ~~Il calendario (10), la striscia (12) e la ricerca visibile (13)~~ — fatti.
 5. Restano **due** richieste:
-   - la **11**, i tipi di evento di divisione: ⚠️ **da proporre a Carmine prima di scriverla** —
-     vuole un vocabolario di divisione (non le categorie, che sono per dipartimento) e un permesso
-     con uno scope diverso da `Calendar.Edit`. Finché non esiste, la chip del calendario si colora
-     da sé: cinque tipi noti con un colore ciascuno, il resto derivato dalla parola.
+   - la **11**, i tipi di evento di divisione: ⚠️ **la proposta è scritta e aspetta Carmine** —
+     `decisions/2026-09-08-tipi-di-evento-di-divisione.md`. La raccomandazione è una tabella servita
+     da `MapCrud` con `SharedForReading` e un permesso globale; la cosa da decidere è una sola, e
+     cioè che sarebbe **la prima riga dell'hub senza `owner_department`**, quindi la prima che non
+     passa dall'unico authorization handler. Finché non esiste, la chip del calendario si colora da
+     sé: cinque tipi noti con un colore ciascuno, il resto derivato dalla parola.
    - la **14**, il giro sull'editor «più intuitivo», che la lista stessa mette per ultima.
 
 ⚠️ **`hidden sm:block` non funziona in questa applicazione**, ed è costato due elementi invisibili
