@@ -19,6 +19,13 @@ export type BootstrapModule = components['schemas']['BootstrapModule'];
 export type NavItem = components['schemas']['NavItem'];
 
 /**
+ * One word of the division's calendar vocabulary, as the bootstrap carries it: the key an entry
+ * stores, the word in each language, and the colour of its chip. The list the division decides is
+ * `/api/calendar-kinds`; this is the half everybody who draws a chip needs, visitors included.
+ */
+export type CalendarKind = components['schemas']['BootstrapCalendarKind'];
+
+/**
  * The department codes IVAO itself uses. Not a mechanical suffix: ATC operations is `AOD` but
  * training is `TD`, and headquarters is plain `HQ`.
  */

@@ -1203,7 +1203,7 @@
       "updatedAt": "Last change"
     },
     "hints": {
-      "kind": "A word this department files the entry under, for example meeting or deadline. The kinds a module brings — events, training, tours — arrive with their own rows.",
+      "kind": "One of the words the division uses, the same for every department. An entry a module brings arrives with a word of its own.",
       "url": "Where the entry leads, if anywhere. A meeting link, a page of the site."
     },
     "options": {
@@ -1273,6 +1273,38 @@
         "title": "Messages to my department",
         "description": "An email when a member writes to a department you are staff of."
       }
+    }
+  },
+  "calendarKinds": {
+    "title": "Calendar kinds",
+    "description": "The words the whole division files its calendar under.",
+    "create": "New kind",
+    "edit": "Edit kind",
+    "formHint": "These words are the same for every department: a coordinator picks one, nobody invents one. Retiring a kind leaves the entries already written with it alone.",
+    "fields": {
+      "label": "Name",
+      "key": "Key",
+      "colour": "Colour",
+      "sort": "Order",
+      "isActive": "In use",
+      "updatedAt": "Last change"
+    },
+    "options": {
+      "colour": {
+        "blue": "Blue",
+        "green": "Green",
+        "orange": "Orange",
+        "purple": "Purple",
+        "indigo": "Indigo",
+        "pink": "Pink",
+        "red": "Red",
+        "yellow": "Yellow",
+        "gray": "Grey"
+      }
+    },
+    "delete": {
+      "title": "Delete this kind?",
+      "description": "The entries already filed under it keep the key they were written with, and nothing rewrites them. To stop anybody filing new ones under it, take \"in use\" off instead."
     }
   }
 }

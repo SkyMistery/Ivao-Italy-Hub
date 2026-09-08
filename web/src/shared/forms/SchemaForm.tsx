@@ -327,6 +327,8 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
               name={name}
               render={({ field }) => (
                 <Select
+                  // The label of the row points at this id: see the note on the enum above.
+                  id={name}
                   {...(typeof field.value === 'string' && field.value !== '' ? { value: field.value } : {})}
                   // Back to "nothing chosen", the same gesture an optional enum has: without it the
                   // first category somebody picks could never be taken off again.
@@ -404,6 +406,11 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
             name={name}
             render={({ field }) => (
               <Select
+                // ⚠️ The label of a row points at this id, and without it the select has no
+                // accessible name at all — `getByLabel` finds nothing, and neither does a screen
+                // reader. Every generated select was missing it until G13; the public filters had
+                // it right, which is where the shape was copied from.
+                id={name}
                 {...(typeof field.value === 'string' ? { value: field.value } : {})}
                 // An optional enum needs a way back to "nothing chosen", and a select has no such
                 // gesture: leaving it out would make the first choice permanent.

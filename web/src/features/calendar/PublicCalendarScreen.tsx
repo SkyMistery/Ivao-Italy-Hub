@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { blockDataQuery } from '../../blocks';
-import type { Department } from '../../shared/api/bootstrap';
+import type { CalendarKind, Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { NO_CHOICE } from '../../shared/forms';
+import { useLocalized } from '../../shared/i18n/useLocalized';
 import {
   CALENDAR_SCREEN_VIEWS,
   CalendarView,
@@ -42,12 +43,16 @@ export function PublicCalendarScreen({
   filters,
   onFilter,
   timezone,
+  vocabulary,
 }: {
   filters: PublicCalendarFilters;
   onFilter: (patch: PublicCalendarFilters) => void;
   timezone: string;
+  /** The division's kinds, from `/api/me`: what to call one, and the colour of its chip. */
+  vocabulary: readonly CalendarKind[];
 }) {
   const { t } = useTranslation();
+  const read = useLocalized();
 
   const view = filters.view ?? 'month';
   const anchor = readAnchor(filters.on);
@@ -105,7 +110,12 @@ export function PublicCalendarScreen({
           none={t('calendar.public.filters.allKinds')}
           value={filters.kind}
           onChange={(chosen) => onFilter({ ...filters, kind: chosen })}
-          items={kinds.map((kind) => ({ value: kind, label: kind }))}
+          // The words come from the vocabulary, so a visitor reads "Riunione" rather than
+          // `meeting`; a kind that is not in it — one a module projected — keeps its key.
+          items={kinds.map((kind) => ({
+            value: kind,
+            label: read(vocabulary.find((word) => word.key === kind)?.label) || kind,
+          }))}
         />
       </div>
 
@@ -122,6 +132,7 @@ export function PublicCalendarScreen({
             : (next) => onFilter({ ...filters, on: next.toISOString().slice(0, 10) })
         }
         timezone={timezone}
+        kinds={vocabulary}
         empty={t('calendar.public.empty')}
       />
     </div>

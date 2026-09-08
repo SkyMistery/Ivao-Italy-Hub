@@ -44,6 +44,7 @@ const bootstrap = {
   modules: [],
   navigation: { public: [], footer: [], staff: [] },
   registries: { blocks: [], widgets: [], permissions: [] },
+  calendarKinds: [],
   version: '0.0.0-test',
 } satisfies Bootstrap;
 

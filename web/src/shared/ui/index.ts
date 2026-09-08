@@ -11,6 +11,7 @@ export { LiveStatusStrip, type LiveNetworkStatus } from './LiveStatusStrip';
 export { ContactForm } from './ContactForm';
 export { contactSchema, type ContactFormValues } from './contact';
 export {
+  CALENDAR_KIND_COLOURS,
   CALENDAR_SCREEN_VIEWS,
   CALENDAR_VIEWS,
   calendarKindColour,
@@ -19,6 +20,7 @@ export {
   calendarDays,
   calendarWindow,
   type CalendarItem,
+  type CalendarKindColour,
   type CalendarViewMode,
 } from './calendar';
 export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';

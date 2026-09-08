@@ -44,6 +44,12 @@ export const anonymousBootstrap = {
     staff: [],
   },
   registries: { blocks: [], widgets: [], permissions: [] },
+  // The division's calendar vocabulary, which a visitor gets too: a chip on a public calendar says
+  // the word and takes the colour somebody chose (decided 8 Sep 2026).
+  calendarKinds: [
+    { key: 'meeting', label: { en: 'Meeting', it: 'Riunione' }, colour: 'indigo' },
+    { key: 'deadline', label: { en: 'Deadline', it: 'Scadenza' }, colour: 'orange' },
+  ],
   version: '0.0.0-e2e',
 };
 
@@ -165,11 +171,41 @@ export const staffBootstrap = {
     // The gallery is behind `Admin.Access`, and the gallery is where every kind of field the form
     // generator draws is mounted at once — which is the only screen that can be looked at whole.
     { name: 'Admin.Access', department: null },
+    // Global, and it is the point of it: the vocabulary of the calendar belongs to the division,
+    // so this coordinator holds it not because of their department but in spite of it.
+    { name: 'Calendar.ManageKinds', department: null },
   ],
   navigation: {
     ...anonymousBootstrap.navigation,
     staff: [{ key: 'nav.links', path: '/staff/links', label: null, children: [] }],
   },
+};
+
+/** The vocabulary of the calendar, the shape `MapCrud` answers a list with. */
+export const theVocabulary = {
+  items: [
+    {
+      id: 1,
+      key: 'meeting',
+      label: { en: 'Meeting', it: 'Riunione' },
+      colour: 'indigo',
+      sort: 10,
+      isActive: true,
+      updatedAt: '2026-09-08T12:00:00Z',
+    },
+    {
+      id: 2,
+      key: 'deadline',
+      label: { en: 'Deadline', it: 'Scadenza' },
+      colour: 'orange',
+      sort: 20,
+      isActive: true,
+      updatedAt: '2026-09-08T12:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 20,
+  total: 2,
 };
 
 /** One page of links, the shape `MapCrud` answers a list with. */
@@ -433,6 +469,14 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
       contentType: 'application/json',
       body: JSON.stringify(twoCalendarEntries),
     }),
+  );
+
+  // ⚠️ **After** the entries and not before them, and the order is the whole point: Playwright
+  // matches routes in **reverse** registration order, so `**/api/calendar**` — which also matches
+  // `/api/calendar-kinds` — would answer this one with a page of entries. It did, and the screen
+  // drew two rows of empty cells until this moved down here.
+  await page.route('**/api/calendar-kinds**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(theVocabulary) }),
   );
 
   await page.route('**/api/categories**', (route) =>

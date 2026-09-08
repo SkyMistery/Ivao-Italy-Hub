@@ -60,6 +60,8 @@ export interface StaffDestinationGroup {
 const ADMIN_ACCESS = 'Admin.Access';
 const PERMISSIONS_MANAGE = 'Permissions.Manage';
 const MODULES_MANAGE = 'Modules.Manage';
+/** Global, like the three above it: the calendar vocabulary belongs to the division. */
+const CALENDAR_MANAGE_KINDS = 'Calendar.ManageKinds';
 const AUDIT_VIEW = 'Audit.View';
 
 export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => string): StaffDestinationGroup[] {
@@ -154,6 +156,15 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
         description: t('grants.description'),
         Icon: KeyRound,
         href: '/staff/admin/permissions',
+      });
+    }
+
+    if (holdsPermissionAnywhere(bootstrap, CALENDAR_MANAGE_KINDS)) {
+      administration.push({
+        title: t('calendarKinds.title'),
+        description: t('calendarKinds.description'),
+        Icon: Tags,
+        href: '/staff/admin/calendar-kinds',
       });
     }
 

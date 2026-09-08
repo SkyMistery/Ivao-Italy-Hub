@@ -66,6 +66,7 @@ const bootstrap: Bootstrap = {
     staff: [],
   },
   registries: { blocks: [], widgets: [], permissions: [] },
+  calendarKinds: [],
   version: '0.0.0-test',
 };
 

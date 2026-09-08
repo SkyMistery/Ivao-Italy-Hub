@@ -172,6 +172,13 @@
         "title": "Dashboard di dipartimento",
         "summary": "Quello che questo dipartimento vede aprendo il back office."
       }
+    },
+    "calendarKinds": {
+      "event": "Evento",
+      "training": "Training",
+      "tour": "Tour",
+      "meeting": "Riunione",
+      "deadline": "Scadenza"
     }
   }
 }

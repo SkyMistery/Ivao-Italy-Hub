@@ -101,6 +101,17 @@ internal static class MeEndpoints
                         widget.Sizes))],
                     [.. catalogue.All.Select(permission =>
                         new BootstrapPermissionName(permission.Name, permission.IsGlobal))]),
+                // The one vocabulary the division decides centrally, and the only one so far. It
+                // travels with the bootstrap because a chip on a public calendar needs the word and
+                // the colour, and a visitor may not read `/api/calendar-kinds` — which is behind
+                // `Calendar.View`, like every other back office resource.
+                CalendarKinds: [.. await database.CalendarKinds
+                    .AsNoTracking()
+                    .Where(kind => kind.IsActive)
+                    .OrderBy(kind => kind.Sort)
+                    .ThenBy(kind => kind.Key)
+                    .Select(kind => new BootstrapCalendarKind(kind.Key, kind.Label, kind.Colour))
+                    .ToListAsync(cancellationToken)],
                 Version: build.Version));
         });
     }
@@ -180,7 +191,21 @@ internal sealed record BootstrapResponse(
     IReadOnlyList<BootstrapModule> Modules,
     BootstrapNavigation Navigation,
     BootstrapRegistries Registries,
+    IReadOnlyList<BootstrapCalendarKind> CalendarKinds,
     string Version);
+
+/// <summary>
+/// One word of the division's calendar vocabulary, as everybody who draws a chip needs it: the key
+/// an entry carries, what to call it in each language, and the colour somebody chose for it.
+/// <para>It is here rather than behind its own public endpoint because the client needs it before
+/// it draws anything with a calendar in it, and "everything the SPA needs in order to draw itself"
+/// is the whole job of this endpoint (plan §16.7). The back office reads the full rows — sort
+/// order, retired words, who changed them — from `/api/calendar-kinds`.</para>
+/// </summary>
+internal sealed record BootstrapCalendarKind(
+    string Key,
+    IReadOnlyDictionary<string, string> Label,
+    string Colour);
 
 internal sealed record BootstrapUser(
     int Vid,

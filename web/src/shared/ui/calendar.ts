@@ -1,4 +1,4 @@
-import type { LocalizedString } from '../api/bootstrap';
+import type { CalendarKind, LocalizedString } from '../api/bootstrap';
 
 /**
  * What `CalendarView` is handed, and the three ways of looking at it.
@@ -59,50 +59,47 @@ export function isCalendarGrid(view: CalendarViewMode): boolean {
   return view === 'week' || view === 'month';
 }
 
-/** The colours a chip may take. Atmosphere's own badge palette, minus the grey kept for "none". */
-export type CalendarKindColour = 'blue' | 'green' | 'orange' | 'purple' | 'indigo' | 'pink' | 'gray';
+/** The colours a chip may take. Atmosphere's own badge palette, and the server holds the same set. */
+export type CalendarKindColour =
+  'blue' | 'green' | 'orange' | 'purple' | 'indigo' | 'pink' | 'red' | 'yellow' | 'gray';
 
 /**
- * The colour a kind of entry is chipped with, so that a reader tells a training from a tour before
- * reading either word.
- *
- * ⚠️ Not a vocabulary, and deliberately not one yet. The kind of an entry is free text today —
- * `event`, `training`, `tour`, `meeting`, `deadline`, and whatever a module projects with its rows
- * — and turning it into a list the division decides is a separate request (11 of the demo), which
- * wants a permission of its own and has not been proposed yet.
- *
- * So: the five the entity's own documentation names get a colour each, chosen rather than drawn
- * out of a hat, because those are the ones a reader sees every day; anything else is derived from
- * the word, which gives a stable colour without anybody declaring anything. When the vocabulary
- * arrives the colour belongs on its rows, and both halves of this go away together.
+ * ⚠️ The other half of `CalendarKindWriteDtoValidator.Colours`. The two agree by hand — a colour is
+ * a value inside a design system, which the OpenAPI contract cannot carry — and the integration
+ * test that posts a colour the server does not know is what keeps them agreeing, exactly as it does
+ * for the backgrounds of a section.
  */
-export function calendarKindColour(kind: string): CalendarKindColour {
-  if (kind === '') {
-    return 'gray';
-  }
+export const CALENDAR_KIND_COLOURS: readonly CalendarKindColour[] = [
+  'blue',
+  'green',
+  'orange',
+  'purple',
+  'indigo',
+  'pink',
+  'red',
+  'yellow',
+  'gray',
+];
 
-  const known = KNOWN_KINDS[kind.toLowerCase()];
-  if (known !== undefined) {
-    return known;
-  }
-
-  let hash = 0;
-  for (const character of kind) {
-    hash = (hash * 31 + character.codePointAt(0)!) % 1_000_003;
-  }
-
-  return DERIVED_COLOURS[hash % DERIVED_COLOURS.length]!;
+/**
+ * The colour and the word of a kind, out of the division's vocabulary.
+ *
+ * ⚠️ Until G13 the colour was **derived from the word**, because the kinds were free text and there
+ * was nothing to look one up in. Now there is a table the division decides
+ * (`decisions/2026-09-08-tipi-di-evento-di-divisione.md`), it travels with the bootstrap, and a
+ * colour somebody chose can group two kinds that belong together — which a hash never could.
+ *
+ * A kind that is not in the vocabulary still draws: an entry projected by a module carries whatever
+ * word that module wrote, and it is not this component's business to refuse it. It is grey and it
+ * says the word it has.
+ */
+export function calendarKindColour(
+  kind: string,
+  vocabulary: readonly CalendarKind[] = [],
+): CalendarKindColour {
+  const known = vocabulary.find((word) => word.key === kind)?.colour;
+  return CALENDAR_KIND_COLOURS.includes(known as CalendarKindColour) ? (known as CalendarKindColour) : 'gray';
 }
-
-const KNOWN_KINDS: Readonly<Record<string, CalendarKindColour>> = {
-  event: 'blue',
-  training: 'green',
-  tour: 'purple',
-  meeting: 'indigo',
-  deadline: 'orange',
-};
-
-const DERIVED_COLOURS = ['blue', 'green', 'orange', 'purple', 'indigo', 'pink'] as const;
 
 /**
  * The days a grid draws, in UTC.

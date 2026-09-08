@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useLocalized } from '../i18n/useLocalized';
 import { useMoment } from '../i18n/useMoment';
 
+import type { CalendarKind } from '../api/bootstrap';
+
 import {
   calendarDays,
   calendarKindColour,
@@ -39,6 +41,7 @@ export function CalendarView({
   onAnchorChange,
   timezone,
   empty,
+  kinds = [],
 }: {
   items: readonly CalendarItem[];
   view: CalendarViewMode;
@@ -47,9 +50,16 @@ export function CalendarView({
   onAnchorChange?: ((next: Date) => void) | undefined;
   timezone: string;
   empty: string;
+  /**
+   * The division's vocabulary, as `/api/me` carries it: what to call a kind in the language on
+   * screen, and the colour of its chip. Handed in rather than fetched, because this component asks
+   * nobody for anything — and an entry whose kind is not in it still draws, in grey, with the word
+   * it has.
+   */
+  kinds?: readonly CalendarKind[];
 }) {
   if (view === 'agenda') {
-    return <Agenda items={items} timezone={timezone} empty={empty} />;
+    return <Agenda items={items} timezone={timezone} empty={empty} kinds={kinds} />;
   }
 
   const around = anchor ?? new Date();
@@ -61,9 +71,9 @@ export function CalendarView({
       {items.length === 0 ? <Nothing empty={empty} /> : null}
 
       {isCalendarGrid(view) ? (
-        <Grid items={items} view={view} anchor={around} timezone={timezone} />
+        <Grid items={items} view={view} anchor={around} timezone={timezone} kinds={kinds} />
       ) : (
-        <Days items={items} view={view} anchor={around} timezone={timezone} />
+        <Days items={items} view={view} anchor={around} timezone={timezone} kinds={kinds} />
       )}
     </div>
   );
@@ -133,10 +143,12 @@ function Nothing({ empty }: { empty: string }) {
 function Entry({
   item,
   timezone,
+  kinds,
   compact = false,
 }: {
   item: CalendarItem;
   timezone: string;
+  kinds: readonly CalendarKind[];
   compact?: boolean;
 }) {
   const { t } = useTranslation();
@@ -161,9 +173,14 @@ function Entry({
         </time>
         {local === '' ? null : <span className="tabular-nums">{t('calendar.local', { at: local })}</span>}
         {item.kind === undefined || item.kind === '' ? null : (
-          // Coloured by the kind, so a reader tells a training from a tour before reading either.
-          // The colour is derived from the word rather than declared: see `calendarKindColour`.
-          <Badge variant="flat" color={calendarKindColour(item.kind)} text={item.kind} />
+          // The word and the colour of the division's vocabulary, so a reader tells a training from
+          // a tour before reading either — and reads it in their own language. A kind nobody
+          // declared keeps the key it has: an entry a module projected is not this chip's business.
+          <Badge
+            variant="flat"
+            color={calendarKindColour(item.kind, kinds)}
+            text={read(kinds.find((word) => word.key === item.kind)?.label) || item.kind}
+          />
         )}
       </div>
 
@@ -185,10 +202,12 @@ function Agenda({
   items,
   timezone,
   empty,
+  kinds,
 }: {
   items: readonly CalendarItem[];
   timezone: string;
   empty: string;
+  kinds: readonly CalendarKind[];
 }) {
   if (items.length === 0) {
     return <Nothing empty={empty} />;
@@ -198,7 +217,7 @@ function Agenda({
     <ul className="flex flex-col divide-y">
       {items.map((item) => (
         <li key={item.id} className="py-3 first:pt-0 last:pb-0">
-          <Entry item={item} timezone={timezone} />
+          <Entry item={item} timezone={timezone} kinds={kinds} />
         </li>
       ))}
     </ul>
@@ -222,11 +241,13 @@ function Grid({
   view,
   anchor,
   timezone,
+  kinds,
 }: {
   items: readonly CalendarItem[];
   view: CalendarViewMode;
   anchor: Date;
   timezone: string;
+  kinds: readonly CalendarKind[];
 }) {
   const squares = calendarDays(view, anchor);
   const byDay = entriesByDay(items);
@@ -251,7 +272,7 @@ function Grid({
             <span className="text-xs tabular-nums">{day.getUTCDate()}</span>
 
             {entries.map((item) => (
-              <Entry key={item.id} item={item} timezone={timezone} compact />
+              <Entry key={item.id} item={item} timezone={timezone} kinds={kinds} compact />
             ))}
           </div>
         );
@@ -277,11 +298,13 @@ function Days({
   view,
   anchor,
   timezone,
+  kinds,
 }: {
   items: readonly CalendarItem[];
   view: CalendarViewMode;
   anchor: Date;
   timezone: string;
+  kinds: readonly CalendarKind[];
 }) {
   const { i18n } = useTranslation();
 
@@ -310,7 +333,7 @@ function Days({
           <ul className="flex flex-col divide-y">
             {entries.map((item) => (
               <li key={item.id} className="py-3 first:pt-0 last:pb-0">
-                <Entry item={item} timezone={timezone} />
+                <Entry item={item} timezone={timezone} kinds={kinds} />
               </li>
             ))}
           </ul>

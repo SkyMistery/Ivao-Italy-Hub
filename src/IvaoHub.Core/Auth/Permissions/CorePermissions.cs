@@ -42,6 +42,14 @@ public static class CorePermissions
     public const string CalendarView = "Calendar.View";
     public const string CalendarEdit = "Calendar.Edit";
 
+    /// <summary>
+    /// Who decides the vocabulary of kinds, which belongs to the division and not to a department.
+    /// ⚠️ Global on purpose, and therefore held by the roles that reach everywhere and by nobody
+    /// else: a coordinator writes entries of their own department, and the words those entries are
+    /// filed under are the same for all nine (decided 7 Sep 2026, after the demo of M1).
+    /// </summary>
+    public const string CalendarManageKinds = "Calendar.ManageKinds";
+
     /// <summary>The area the CRUD engine derives <c>Contacts.View</c> and <c>Contacts.Edit</c> from.</summary>
     public const string ContactsArea = "Contacts";
 
@@ -77,6 +85,7 @@ public static class CorePermissions
         new(MediaEdit, IsGlobal: false),
         new(CalendarView, IsGlobal: false),
         new(CalendarEdit, IsGlobal: false),
+        new(CalendarManageKinds, IsGlobal: true),
         new(ContactsView, IsGlobal: false),
         new(ContactsEdit, IsGlobal: false),
         new(MenuView, IsGlobal: false),

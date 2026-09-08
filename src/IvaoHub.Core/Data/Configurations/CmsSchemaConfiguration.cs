@@ -153,6 +153,25 @@ internal sealed class CalendarEntryConfiguration : IEntityTypeConfiguration<Cale
     }
 }
 
+internal sealed class CalendarKindConfiguration : IEntityTypeConfiguration<CalendarKind>
+{
+    public void Configure(EntityTypeBuilder<CalendarKind> builder)
+    {
+        builder.ToTable("cms_calendar_kinds");
+        builder.HasKey(kind => kind.Id);
+        builder.Property(kind => kind.Key)
+            .HasMaxLength(CalendarKindWriteDtoValidator.MaxKeyLength)
+            .IsRequired();
+        builder.Property(kind => kind.Colour).HasMaxLength(16).IsRequired();
+        builder.HasRowVersion(kind => kind.RowVersion);
+
+        // One word for the whole division, which is the entire point of the table: a unique index
+        // on the key alone, where a category has one per department and per kind.
+        builder.HasIndex(kind => kind.Key).IsUnique();
+        builder.HasIndex(kind => kind.IsActive);
+    }
+}
+
 internal sealed class AwardSignalConfiguration : IEntityTypeConfiguration<AwardSignal>
 {
     public void Configure(EntityTypeBuilder<AwardSignal> builder)

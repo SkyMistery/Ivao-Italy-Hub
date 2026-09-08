@@ -148,6 +148,35 @@ test('the preview of a file is a picture with a real size, inside the column it 
   expect(preview!.x + preview!.width).toBeLessThanOrEqual(main!.x + main!.width);
 });
 
+test('the calendar vocabulary is a screen of the administration, with no department in it', async ({
+  page,
+}) => {
+  // The second resource of the hub with no department at all — the permissions were the first —
+  // and the first one a coordinator may read but not write. What a browser adds to the unit tests
+  // is that the screen exists at the address the sidebar sends people to, and draws its rows.
+  await page.goto('/staff/admin/calendar-kinds');
+
+  await expect(page.getByText('Something went wrong!')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: englishCommon.calendarKinds.title })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Meeting', exact: true })).toBeVisible();
+
+  // And it is offered where every back office screen is offered, rather than only by typing the
+  // address. The palette reads `staffDestinations`, which the sidebar draws from too — asserting on
+  // the sidebar itself would be asserting that Atmosphere's group happens to be open.
+  await page.goto('/staff/ed/links');
+
+  // ⚠️ Waited for: a key pressed before React has attached its listener is a key nobody hears, and
+  // the wait that follows looks exactly like a broken shortcut (`search.spec.ts` says the same).
+  await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
+  await page.keyboard.press('Control+k');
+
+  const palette = page.getByRole('dialog');
+  await expect(palette).toBeVisible();
+  await expect(
+    palette.getByText(`${englishCommon.admin.title} — ${englishCommon.calendarKinds.title}`),
+  ).toBeVisible();
+});
+
 test('the gallery draws every kind of field the generator learned, and they are usable sizes', async ({
   page,
 }) => {

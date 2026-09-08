@@ -69,6 +69,7 @@ public class HubDbContext : DbContext
     public DbSet<MediaAsset> Media => Set<MediaAsset>();
     public DbSet<SearchIndexEntry> SearchIndex => Set<SearchIndexEntry>();
     public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();
+    public DbSet<CalendarKind> CalendarKinds => Set<CalendarKind>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<AwardSignal> AwardSignals => Set<AwardSignal>();
 

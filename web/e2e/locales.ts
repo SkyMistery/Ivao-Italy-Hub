@@ -37,6 +37,8 @@ interface CommonStrings {
     readonly projected: string;
     readonly fields: { readonly kind: string };
   };
+  readonly calendarKinds: { readonly title: string };
+  readonly admin: { readonly title: string };
   readonly links: {
     readonly title: string;
     readonly create: string;

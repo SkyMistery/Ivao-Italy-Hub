@@ -102,6 +102,26 @@ describe('CalendarView', () => {
     expect(screen.queryByText(/September 16/)).not.toBeInTheDocument();
   });
 
+  it('chips an entry with the word of the vocabulary, in the language on screen', () => {
+    renderWithProviders(
+      <CalendarView
+        items={items}
+        view="agenda"
+        timezone="Asia/Tokyo"
+        empty="Nothing"
+        kinds={[{ key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo' }]}
+      />,
+    );
+
+    // The word the division chose, not the key the row stores: `meeting` is what a database holds
+    // and "Meeting" is what a reader reads (decided 8 Sep 2026).
+    expect(screen.getByText('Meeting')).toBeInTheDocument();
+
+    // And an entry whose kind nobody declared keeps its key rather than disappearing: a module
+    // projects entries with words of its own, and the chip is not the place to refuse them.
+    expect(screen.getByText('deadline')).toBeInTheDocument();
+  });
+
   it('says the local time in brackets, beside the UTC one', () => {
     renderWithProviders(<CalendarView items={items} view="agenda" timezone="Asia/Tokyo" empty="Nothing" />);
 
@@ -112,17 +132,25 @@ describe('CalendarView', () => {
 });
 
 describe('the chip of a kind', () => {
-  it('gives the same kind the same colour, every time and everywhere', () => {
-    expect(calendarKindColour('training')).toBe(calendarKindColour('training'));
-    expect(calendarKindColour('')).toBe('gray');
+  const vocabulary = [
+    { key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo' },
+    { key: 'deadline', label: { en: 'Deadline' }, colour: 'orange' },
+  ];
+
+  it('takes the colour the division chose for that word', () => {
+    // ⚠️ It used to be derived from the word, because the kinds were free text and there was
+    // nothing to look one up in. Now there is a table the division decides, and a colour somebody
+    // chose can group two kinds that belong together — which a hash never could.
+    expect(calendarKindColour('meeting', vocabulary)).toBe('indigo');
+    expect(calendarKindColour('deadline', vocabulary)).toBe('orange');
   });
 
-  it('gives different kinds different colours, at least for the ones the hub itself uses', () => {
-    // Not a promise that no two kinds ever collide — five colours and free text cannot promise that
-    // — but the five the entity's own documentation names must be told apart, and they are.
-    const used = ['event', 'training', 'tour', 'meeting', 'deadline'].map(calendarKindColour);
-
-    expect(new Set(used).size).toBe(used.length);
+  it('draws a word nobody declared rather than refusing it, in grey', () => {
+    // An entry projected by a module carries whatever word that module wrote, and it is not this
+    // component's business to refuse it: it says the word it has, without a colour of its own.
+    expect(calendarKindColour('whatever-a-module-wrote', vocabulary)).toBe('gray');
+    expect(calendarKindColour('meeting')).toBe('gray');
+    expect(calendarKindColour('')).toBe('gray');
   });
 });
 

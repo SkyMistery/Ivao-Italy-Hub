@@ -73,6 +73,11 @@
     },
     "notifications": {
       "unknownType": "That is not a kind of notification this hub sends."
+    },
+    "calendar": {
+      "endsBeforeStart": "This entry ends before it starts.",
+      "kindUnknown": "This is not one of the kinds the division uses. Pick one from the list.",
+      "colourUnknown": "This is not one of the colours a chip can take."
     }
   }
 }

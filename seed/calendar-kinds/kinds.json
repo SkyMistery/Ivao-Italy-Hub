@@ -1,0 +1,9 @@
+{
+  "kinds": [
+    { "key": "event", "label": { "$t": "seed.calendarKinds.event" }, "colour": "blue", "sort": 10 },
+    { "key": "training", "label": { "$t": "seed.calendarKinds.training" }, "colour": "green", "sort": 20 },
+    { "key": "tour", "label": { "$t": "seed.calendarKinds.tour" }, "colour": "purple", "sort": 30 },
+    { "key": "meeting", "label": { "$t": "seed.calendarKinds.meeting" }, "colour": "indigo", "sort": 40 },
+    { "key": "deadline", "label": { "$t": "seed.calendarKinds.deadline" }, "colour": "orange", "sort": 50 }
+  ]
+}

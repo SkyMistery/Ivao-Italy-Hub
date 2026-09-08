@@ -1203,7 +1203,7 @@
       "updatedAt": "Ultima modifica"
     },
     "hints": {
-      "kind": "Una parola con cui questo dipartimento archivia la voce, per esempio riunione o scadenza. I tipi che porta un modulo — eventi, training, tour — arrivano con le loro righe.",
+      "kind": "Una delle parole che usa la divisione, le stesse per ogni dipartimento. Una voce che arriva da un modulo porta con sé la propria.",
       "url": "Dove porta la voce, se porta da qualche parte. Un link a una riunione, una pagina del sito."
     },
     "options": {
@@ -1273,6 +1273,38 @@
         "title": "Messaggi al mio dipartimento",
         "description": "Una mail quando un membro scrive a un dipartimento di cui fai parte."
       }
+    }
+  },
+  "calendarKinds": {
+    "title": "Tipi di calendario",
+    "description": "Le parole sotto cui tutta la divisione archivia il proprio calendario.",
+    "create": "Nuovo tipo",
+    "edit": "Modifica tipo",
+    "formHint": "Queste parole sono le stesse per ogni dipartimento: un coordinatore ne sceglie una, nessuno se la inventa. Ritirare un tipo lascia intatte le voci già scritte con quello.",
+    "fields": {
+      "label": "Nome",
+      "key": "Chiave",
+      "colour": "Colore",
+      "sort": "Ordine",
+      "isActive": "In uso",
+      "updatedAt": "Ultima modifica"
+    },
+    "options": {
+      "colour": {
+        "blue": "Blu",
+        "green": "Verde",
+        "orange": "Arancione",
+        "purple": "Viola",
+        "indigo": "Indaco",
+        "pink": "Rosa",
+        "red": "Rosso",
+        "yellow": "Giallo",
+        "gray": "Grigio"
+      }
+    },
+    "delete": {
+      "title": "Eliminare questo tipo?",
+      "description": "Le voci già archiviate sotto questo tipo mantengono la chiave con cui sono state scritte, e nessuno le riscrive. Per impedire che se ne archivino di nuove, togli invece «in uso»."
     }
   }
 }

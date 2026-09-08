@@ -58,6 +58,8 @@ import { Route as StaffStaffDeptMenuIndexRouteImport } from './routes/_staff/sta
 import { Route as StaffStaffDeptMenuIdRouteImport } from './routes/_staff/staff.$dept.menu.$id'
 import { Route as StaffStaffDeptNewsIndexRouteImport } from './routes/_staff/staff.$dept.news.index'
 import { Route as StaffStaffDeptNewsIdRouteImport } from './routes/_staff/staff.$dept.news.$id'
+import { Route as StaffStaffAdminCalendarKindsIndexRouteImport } from './routes/_staff/staff.admin.calendar-kinds.index'
+import { Route as StaffStaffAdminCalendarKindsIdRouteImport } from './routes/_staff/staff.admin.calendar-kinds.$id'
 import { Route as StaffStaffAdminPermissionsIndexRouteImport } from './routes/_staff/staff.admin.permissions.index'
 import { Route as StaffStaffAdminPermissionsIdRouteImport } from './routes/_staff/staff.admin.permissions.$id'
 
@@ -317,6 +319,18 @@ const StaffStaffDeptNewsIdRoute = StaffStaffDeptNewsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => StaffStaffDeptNewsRoute,
 } as any)
+const StaffStaffAdminCalendarKindsIndexRoute =
+  StaffStaffAdminCalendarKindsIndexRouteImport.update({
+    id: '/staff/admin/calendar-kinds/',
+    path: '/staff/admin/calendar-kinds/',
+    getParentRoute: () => StaffRoute,
+  } as any)
+const StaffStaffAdminCalendarKindsIdRoute =
+  StaffStaffAdminCalendarKindsIdRouteImport.update({
+    id: '/staff/admin/calendar-kinds/$id',
+    path: '/staff/admin/calendar-kinds/$id',
+    getParentRoute: () => StaffRoute,
+  } as any)
 const StaffStaffAdminPermissionsIndexRoute =
   StaffStaffAdminPermissionsIndexRouteImport.update({
     id: '/',
@@ -368,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
   '/staff/$dept/menu/$id': typeof StaffStaffDeptMenuIdRoute
   '/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
+  '/staff/admin/calendar-kinds/$id': typeof StaffStaffAdminCalendarKindsIdRoute
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/staff/$dept/calendar/': typeof StaffStaffDeptCalendarIndexRoute
   '/staff/$dept/categories/': typeof StaffStaffDeptCategoriesIndexRoute
@@ -378,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/staff/$dept/media/': typeof StaffStaffDeptMediaIndexRoute
   '/staff/$dept/menu/': typeof StaffStaffDeptMenuIndexRoute
   '/staff/$dept/news/': typeof StaffStaffDeptNewsIndexRoute
+  '/staff/admin/calendar-kinds/': typeof StaffStaffAdminCalendarKindsIndexRoute
   '/staff/admin/permissions/': typeof StaffStaffAdminPermissionsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -408,6 +424,7 @@ export interface FileRoutesByTo {
   '/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
   '/staff/$dept/menu/$id': typeof StaffStaffDeptMenuIdRoute
   '/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
+  '/staff/admin/calendar-kinds/$id': typeof StaffStaffAdminCalendarKindsIdRoute
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/staff/$dept/calendar': typeof StaffStaffDeptCalendarIndexRoute
   '/staff/$dept/categories': typeof StaffStaffDeptCategoriesIndexRoute
@@ -418,6 +435,7 @@ export interface FileRoutesByTo {
   '/staff/$dept/media': typeof StaffStaffDeptMediaIndexRoute
   '/staff/$dept/menu': typeof StaffStaffDeptMenuIndexRoute
   '/staff/$dept/news': typeof StaffStaffDeptNewsIndexRoute
+  '/staff/admin/calendar-kinds': typeof StaffStaffAdminCalendarKindsIndexRoute
   '/staff/admin/permissions': typeof StaffStaffAdminPermissionsIndexRoute
 }
 export interface FileRoutesById {
@@ -462,6 +480,7 @@ export interface FileRoutesById {
   '/_staff/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
   '/_staff/staff/$dept/menu/$id': typeof StaffStaffDeptMenuIdRoute
   '/_staff/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
+  '/_staff/staff/admin/calendar-kinds/$id': typeof StaffStaffAdminCalendarKindsIdRoute
   '/_staff/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/_staff/staff/$dept/calendar/': typeof StaffStaffDeptCalendarIndexRoute
   '/_staff/staff/$dept/categories/': typeof StaffStaffDeptCategoriesIndexRoute
@@ -472,6 +491,7 @@ export interface FileRoutesById {
   '/_staff/staff/$dept/media/': typeof StaffStaffDeptMediaIndexRoute
   '/_staff/staff/$dept/menu/': typeof StaffStaffDeptMenuIndexRoute
   '/_staff/staff/$dept/news/': typeof StaffStaffDeptNewsIndexRoute
+  '/_staff/staff/admin/calendar-kinds/': typeof StaffStaffAdminCalendarKindsIndexRoute
   '/_staff/staff/admin/permissions/': typeof StaffStaffAdminPermissionsIndexRoute
 }
 export interface FileRouteTypes {
@@ -514,6 +534,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media/$id'
     | '/staff/$dept/menu/$id'
     | '/staff/$dept/news/$id'
+    | '/staff/admin/calendar-kinds/$id'
     | '/staff/admin/permissions/$id'
     | '/staff/$dept/calendar/'
     | '/staff/$dept/categories/'
@@ -524,6 +545,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media/'
     | '/staff/$dept/menu/'
     | '/staff/$dept/news/'
+    | '/staff/admin/calendar-kinds/'
     | '/staff/admin/permissions/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -554,6 +576,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media/$id'
     | '/staff/$dept/menu/$id'
     | '/staff/$dept/news/$id'
+    | '/staff/admin/calendar-kinds/$id'
     | '/staff/admin/permissions/$id'
     | '/staff/$dept/calendar'
     | '/staff/$dept/categories'
@@ -564,6 +587,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media'
     | '/staff/$dept/menu'
     | '/staff/$dept/news'
+    | '/staff/admin/calendar-kinds'
     | '/staff/admin/permissions'
   id:
     | '__root__'
@@ -607,6 +631,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/$dept/media/$id'
     | '/_staff/staff/$dept/menu/$id'
     | '/_staff/staff/$dept/news/$id'
+    | '/_staff/staff/admin/calendar-kinds/$id'
     | '/_staff/staff/admin/permissions/$id'
     | '/_staff/staff/$dept/calendar/'
     | '/_staff/staff/$dept/categories/'
@@ -617,6 +642,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/$dept/media/'
     | '/_staff/staff/$dept/menu/'
     | '/_staff/staff/$dept/news/'
+    | '/_staff/staff/admin/calendar-kinds/'
     | '/_staff/staff/admin/permissions/'
   fileRoutesById: FileRoutesById
 }
@@ -971,6 +997,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffStaffDeptNewsIdRouteImport
       parentRoute: typeof StaffStaffDeptNewsRoute
     }
+    '/_staff/staff/admin/calendar-kinds/': {
+      id: '/_staff/staff/admin/calendar-kinds/'
+      path: '/staff/admin/calendar-kinds'
+      fullPath: '/staff/admin/calendar-kinds/'
+      preLoaderRoute: typeof StaffStaffAdminCalendarKindsIndexRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/admin/calendar-kinds/$id': {
+      id: '/_staff/staff/admin/calendar-kinds/$id'
+      path: '/staff/admin/calendar-kinds/$id'
+      fullPath: '/staff/admin/calendar-kinds/$id'
+      preLoaderRoute: typeof StaffStaffAdminCalendarKindsIdRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/_staff/staff/admin/permissions/': {
       id: '/_staff/staff/admin/permissions/'
       path: '/'
@@ -1194,6 +1234,8 @@ interface StaffRouteChildren {
   StaffStaffAdminUiKitRoute: typeof StaffStaffAdminUiKitRoute
   StaffStaffDeptIndexRoute: typeof StaffStaffDeptIndexRoute
   StaffStaffDeptDashboardIdRoute: typeof StaffStaffDeptDashboardIdRoute
+  StaffStaffAdminCalendarKindsIdRoute: typeof StaffStaffAdminCalendarKindsIdRoute
+  StaffStaffAdminCalendarKindsIndexRoute: typeof StaffStaffAdminCalendarKindsIndexRoute
 }
 
 const StaffRouteChildren: StaffRouteChildren = {
@@ -1213,6 +1255,9 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffStaffAdminUiKitRoute: StaffStaffAdminUiKitRoute,
   StaffStaffDeptIndexRoute: StaffStaffDeptIndexRoute,
   StaffStaffDeptDashboardIdRoute: StaffStaffDeptDashboardIdRoute,
+  StaffStaffAdminCalendarKindsIdRoute: StaffStaffAdminCalendarKindsIdRoute,
+  StaffStaffAdminCalendarKindsIndexRoute:
+    StaffStaffAdminCalendarKindsIndexRoute,
 }
 
 const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
