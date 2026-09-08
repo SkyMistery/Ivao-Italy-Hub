@@ -233,6 +233,21 @@ test('the address of a menu entry offers the addresses that exist, and stays ope
   // Choosing one writes the address, not the title.
   await page.getByText('/calendar').click();
   await expect(address).toHaveValue('/calendar');
+
+  // The links of the library are a group too, and one of another department: whoever edits the menu
+  // owns the site and reaches every department, so the list is the whole closed set and not a
+  // department's corner of it.
+  await address.click();
+  await expect(page.getByText(englishCommon.menu.linksGroup)).toBeVisible();
+  await expect(page.getByText('https://example.org/discord')).toBeVisible();
+
+  // ⚠️ And it is closed. An address nobody wrote down is a way of searching this list, never a
+  // value: it is gone the moment the field is left. The server refuses the same thing, on the
+  // field, so this is the near half of one rule and not a rule of its own.
+  await address.fill('https://somewhere.invented.example');
+  await expect(page.getByText(englishCommon.form.suggest.emptyClosed)).toBeVisible();
+  await page.getByLabel(englishCommon.menu.fields.sort, { exact: true }).click();
+  await expect(address).toHaveValue('/calendar');
 });
 
 test('the gallery draws every kind of field the generator learned, and they are usable sizes', async ({

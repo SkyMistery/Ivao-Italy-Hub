@@ -78,6 +78,13 @@
       "endsBeforeStart": "This entry ends before it starts.",
       "kindUnknown": "This is not one of the kinds the division uses. Pick one from the list.",
       "colourUnknown": "This is not one of the colours a chip can take."
+    },
+    "menu": {
+      "pathNotAllowed": "A menu entry leads to a page of this site, to one of its screens, or to a link of the library. Anywhere else is added to the links first, so that every outside address lives in one place.",
+      "parentInvalid": "That entry cannot be the parent of this one: a menu goes one level deep, and both have to be in the same menu."
+    },
+    "path": {
+      "invalid": "An address of this site starts with a slash. Anywhere else needs its full address, http or https."
     }
   }
 }

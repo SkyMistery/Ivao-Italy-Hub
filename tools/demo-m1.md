@@ -59,8 +59,24 @@ Now the menu, which is the part that usually is code:
 ⚠️ The menu is a table **owned by the web department**, not a screen every department has. Try
 `/staff/ed/menu`: it is not there.
 
-- [ ] **Point 1** — the public site exists and the code does not draw it.
-      Asserted by `e2e/full/menu.spec.ts`.
+**New in G13, and it is the strictest rule this product has taken on a field.** In the table,
+**Order** and **Visible to** are written in the cell — no form, and a refusal puts the old value
+back. And opening one entry, the **Address** is a **closed** list:
+
+- the pages of the site, grouped by the department that wrote them, **drafts included** (a draft says
+  so): write the entry now, switch it on when the page goes out;
+- the screens of the application, which are routes and not rows;
+- the links of the library, **the ones in use**.
+
+Type something that is not one of them and it is gone the moment you leave the field, and the server
+refuses it too — the field is a convenience, the rule is the server's. **The point is not the menu**:
+it is that every address leaving this site lives in one table, so moving the forum is one row of
+`/staff/wd/links` and the menu follows.
+
+- [ ] **Point 1** — the public site exists and the code does not draw it, and a menu entry cannot
+      point anywhere the site does not own.
+      Asserted by `e2e/full/menu.spec.ts`, `e2e/back-office.spec.ts` and
+      `SiteMenuAndDashboardTests.AMenuEntryOnlyLeadsWhereTheSiteOwnsSomething`.
 
 ---
 
@@ -248,11 +264,15 @@ pnpm e2e                                    # Chromium against the production bu
 pnpm e2e:full                               # the published application, real API, real database
 ```
 
-Expect **462 .NET tests** (300 unit, 162 integration against a real MariaDB 11.4.10), **270
-Vitest**, **43 Playwright smokes** and **12 of the full round**. None is skipped.
+Expect **463 .NET tests** (300 unit, 163 integration against a real MariaDB 11.4.10), **274
+Vitest**, **45 Playwright smokes** and **12 of the full round**. None is skipped.
 
-⚠️ Run the .NET tests in **Release**. On Windows, Debug has been seen to report "Zero tests ran" with
-exit code 5 while the binaries pass everything by hand.
+⚠️ `dotnet test --solution` has been seen on Windows to report "Zero tests ran" with exit code 5
+**in both configurations** — Release does not avoid it — while the very same binaries pass
+everything when run directly:
+`tests/IvaoHub.UnitTests/bin/<config>/net10.0/IvaoHub.UnitTests.exe` and the integration one beside
+it, which take `-class <FullName>` to run one class. If the run says zero, run the binaries before
+believing anything is broken.
 
 ⚠️ **Stop the API before building.** With `dotnet run` up, MSBuild fails with `MSB3027`/`MSB3021`
 — locked DLLs — and emits **no `CS` error at all**, so `grep "error CS"` reports a clean build that

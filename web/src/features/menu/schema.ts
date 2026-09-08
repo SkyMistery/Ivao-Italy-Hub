@@ -27,7 +27,20 @@ export function menuItemSchema(parents: readonly ChoiceOption[] = [], addresses:
     // nothing is a 404 nobody notices until a visitor finds it. `slugFrom` proposes one from the
     // label for the entry whose page does not exist yet, which is the other half of how a menu is
     // written. Neither is a rule: the value stays free text, or the menu could not link the forum.
-    path: z.string().meta({ slugFrom: 'label', slugPrefix: '/', suggestions: addresses }),
+    // ⚠️ **Closed**, since 8 September 2026: a menu entry leads to a page of this site, to a screen
+    // of the application, or to a link of the library, and to nothing else. The point is not the
+    // menu — it is that every address leaving the site lives in one table, so that changing where
+    // the forum lives is one row rather than a hunt. `MenuItemWriteDtoValidator` refuses the rest,
+    // which is what makes it a rule rather than a habit of this screen.
+    //
+    // `slugFrom` stays for the entry whose page is written next: a draft counts, so the proposal
+    // still meets a row that exists by the time anybody saves.
+    path: z.string().meta({
+      slugFrom: 'label',
+      slugPrefix: '/',
+      suggestions: addresses,
+      suggestionsOnly: true,
+    }),
     sort: z.number().int(),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     isActive: z.boolean(),

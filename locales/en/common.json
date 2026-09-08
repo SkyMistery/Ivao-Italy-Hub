@@ -120,7 +120,8 @@
     "moveUp": "Move up",
     "moveDown": "Move down",
     "suggest": {
-      "empty": "Nothing on the site matches. What you write is used as it is."
+      "empty": "Nothing on the site matches. What you write is used as it is.",
+      "emptyClosed": "Nothing here matches. A menu entry leads to a page of this site, to one of its screens, or to a link of the library."
     }
   },
   "list": {
@@ -200,7 +201,7 @@
       "updatedAt": "Last change"
     },
     "hints": {
-      "path": "A page of this site starts with a slash, for instance /start. Anywhere else needs its full address.",
+      "path": "A page of this site, one of its screens, or a link of the library. An address that is not one of these is added to the links first, so that every outside address lives in one place.",
       "parentId": "Leave empty for a top level entry. A menu goes one level deep and no further."
     },
     "options": {
@@ -216,13 +217,16 @@
       }
     },
     "screens": {
+      "/": "Front page",
       "/calendar": "Calendar",
       "/news": "News",
       "/documents": "Documents",
       "/search": "Search",
       "/contact": "Contact"
     },
-    "screensGroup": "Screens of the site"
+    "screensGroup": "Screens of the site",
+    "linksGroup": "Links of the library",
+    "draftSuffix": "{{title}} (draft)"
   },
   "dashboard": {
     "title": "{{department}}",

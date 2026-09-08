@@ -67,8 +67,24 @@ Poi il menu, che di solito è la parte che è codice:
 ⚠️ Il menu è una tabella **del dipartimento web**, non una schermata che ha ogni dipartimento. Prova
 `/staff/ed/menu`: non c'è.
 
-- [ ] **Punto 1** — il sito pubblico esiste e non lo disegna il codice.
-      Asserito da `e2e/full/menu.spec.ts`.
+**Nuovo in G13, ed è la regola più stretta che questo prodotto abbia preso su un campo.** Nella
+tabella, **Order** e **Visible to** si scrivono nella cella — niente form, e se il server rifiuta la
+cella torna com'era. E aprendo una voce, l'**Address** è un elenco **chiuso**:
+
+- le pagine del sito, divise per dipartimento che le ha scritte, **anche le bozze** (una bozza lo
+  dice): scrivi la voce adesso, l'accendi quando la pagina esce;
+- le schermate dell'applicazione, che sono rotte e non righe;
+- i link della libreria, **quelli in uso**.
+
+Scrivi qualcosa che non è uno di questi e sparisce appena lasci il campo, e anche il server lo
+rifiuta — il campo è una comodità, la regola è del server. **Il punto non è il menu**: è che ogni
+indirizzo che esce da questo sito vive in una tabella sola, quindi spostare il forum è una riga di
+`/staff/wd/links` e il menu la segue.
+
+- [ ] **Punto 1** — il sito pubblico esiste e non lo disegna il codice, e una voce di menu non può
+      puntare da nessuna parte che il sito non possieda.
+      Asserito da `e2e/full/menu.spec.ts`, `e2e/back-office.spec.ts` e
+      `SiteMenuAndDashboardTests.AMenuEntryOnlyLeadsWhereTheSiteOwnsSomething`.
 
 ---
 
@@ -270,11 +286,15 @@ cd web && pnpm e2e
 cd web && pnpm e2e:full
 ```
 
-Aspettati **462 test .NET** (300 unit, 162 di integrazione contro una MariaDB 11.4.10 vera), **270
-Vitest**, **43 smoke Playwright** e **12 del giro pieno**. Nessuno skippato.
+Aspettati **463 test .NET** (300 unit, 163 di integrazione contro una MariaDB 11.4.10 vera), **274
+Vitest**, **45 smoke Playwright** e **12 del giro pieno**. Nessuno skippato.
 
-⚠️ I test .NET vanno eseguiti in **Release**. Su Windows, in Debug, si è visto «Zero tests ran» con
-uscita 5 mentre gli stessi binari passano tutto eseguiti a mano.
+⚠️ **Correzione:** `dotnet test --solution` su questa macchina dice «Zero tests ran» con uscita 5
+**in tutte e due le configurazioni** — Release non lo evita, come questa scheda diceva prima — mentre
+gli stessi binari passano tutto eseguiti a mano:
+`tests/IvaoHub.UnitTests/bin/<config>/net10.0/IvaoHub.UnitTests.exe` e quello di integrazione
+accanto, che accettano `-class <NomeCompleto>` per eseguire una classe sola. Se dice zero, esegui i binari
+prima di credere che qualcosa sia rotto.
 
 ⚠️ **Ferma l'API prima di compilare.** Con `dotnet run` in esecuzione MSBuild fallisce con
 `MSB3027`/`MSB3021` — DLL bloccate — e **senza nessun errore `CS`: un `grep "error CS"` non se ne

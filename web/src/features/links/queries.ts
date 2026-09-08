@@ -43,6 +43,27 @@ export function linksListQuery(department: Department, search: ListSearch) {
   });
 }
 
+/**
+ * Every link that is in use, whichever department wrote it, so that a screen can offer the outside
+ * addresses this site already knows about instead of asking somebody to paste one.
+ *
+ * ⚠️ It is what makes the menu's closed set possible (decided 8 Sep 2026): an address that leaves
+ * this site lives in `cms_links` and nowhere else, so the menu offers these and the server refuses
+ * anything that is not one of them. A retired link is not offered — and not accepted either.
+ */
+export function activeLinksQuery() {
+  return queryOptions({
+    queryKey: [...linksKey, 'active'] as const,
+    queryFn: async (): Promise<LinkPage> =>
+      unwrap(
+        await api.GET('/api/links', {
+          params: { query: { page: 1, pageSize: 100 } },
+          querySerializer: listQuerySerializer({ isActive: 'true' }),
+        }),
+      ),
+  });
+}
+
 export function linkQuery(id: number) {
   return queryOptions({
     queryKey: linkKey(id),

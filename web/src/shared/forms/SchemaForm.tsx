@@ -255,12 +255,15 @@ function Suggest({
   id,
   value,
   suggestions,
+  only,
   empty,
   onChange,
 }: {
   id: string;
   value: string;
   suggestions: readonly Suggestion[];
+  /** True when the list is the whole of what the field accepts, and not only what it offers. */
+  only: boolean;
   empty: string;
   onChange: (next: string) => void;
 }) {
@@ -313,6 +316,14 @@ function Suggest({
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setOpen(false);
+            }
+          }}
+          onBlur={() => {
+            // A closed field keeps only what was offered. What is typed is a way of searching the
+            // list, so leaving the box with something nobody offered puts back what was there —
+            // and the server refuses that value anyway, which is what makes this a rule.
+            if (only && !suggestions.some((suggestion) => suggestion.value === value)) {
+              onChange(opened);
             }
           }}
         />
@@ -516,7 +527,8 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 id={name}
                 value={typeof field.value === 'string' ? field.value : ''}
                 suggestions={node.suggestions}
-                empty={t('form.suggest.empty')}
+                only={node.only}
+                empty={t(node.only ? 'form.suggest.emptyClosed' : 'form.suggest.empty')}
                 onChange={field.onChange}
               />
             )}

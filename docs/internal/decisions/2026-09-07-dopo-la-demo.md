@@ -150,7 +150,8 @@ da nessuna parte» ha trovato quella pagina.
 
 ## Che cosa ha trovato la **seconda** esecuzione (8 settembre 2026)
 
-Carmine ha rifatto la scheda dal punto 1 con l'app in esecuzione. Due cose dalla parte 1:
+Carmine ha rifatto la scheda dal punto 1 con l'app in esecuzione. Quattro cose dalla parte 1, e la
+quarta è nata pensando alla terza:
 
 1. ~~**L'indirizzo lo propone il sistema anche altrove.** «Tutto ciò che nel sito è editabile e ha un
    link deve avere il meccanismo introdotto per documenti e news»~~ ✅ **fatta** (`3973eb0`): il
@@ -171,6 +172,22 @@ Carmine ha rifatto la scheda dal punto 1 con l'app in esecuzione. Due cose dalla
    ⚠️ Misurato in un browser: la tendina si apriva al fuoco e si chiudeva sullo stesso clic, perché
    Radix congeda un popover su un evento di puntatore fuori dal suo contenuto — e la casella è fuori
    dal suo contenuto. I test unitari passavano lo stesso.
+
+4. ~~**Bloccare quel campo ai soli elementi suggeriti**, e aggiungere fra i suggeriti tutti i link
+   di `/staff/wd/links`: «in questo modo i link delle voci in menu sono blindati e possono essere o
+   nel sito stesso o elencati nella pagina links, così non c'è possibilità di avere link a cose
+   distribuiti per il sito»~~ ✅ **fatta**, e rovescia la 3: quello che si scrive **non** è più il
+   valore, è un modo di cercare nell'elenco. Nota
+   `2026-09-08-dove-puo-portare-una-voce-di-menu.md`.
+
+   Carmine ha scelto l'insieme: pagine **anche bozze** (scrivere la voce prima di pubblicare la
+   pagina è come si costruisce un menu davvero) + schermate + link **in uso**, di **tutti** i
+   dipartimenti — che è gratis, perché chi può modificare il menu raggiunge già ogni dipartimento.
+
+   ⚠️ La regola vera sta **sul server**: il campo chiuso nel client è una comodità, e una comodità
+   non è una regola. Costa una costante scritta a mano in due posti — le schermate del router — e i
+   test che la tengono ferma. E ha fatto uscire che il banco di prova costruiva le voci di menu con
+   indirizzi inventati: sei chiamate da correggere, in test che parlano d'altro.
 
 Il resto della parte 1 è andato.
 
@@ -223,9 +240,10 @@ Non il riquadro degli errori del form: **un componente usabile ovunque**. Quinto
 
 ## Lo stato in due righe
 
-Ramo `m1/g13-fixes`, cinque commit, niente di non committato. **I quattro difetti sono chiusi.**
-Verde in locale, tutto rieseguito: **458 test .NET** (300 unit + 158 integrazione), **256 Vitest**
-(30 file), **42 smoke Playwright**, lint, typecheck, format e i18n puliti.
+Ramo `m1/g13-fixes`, PR #57. **I quattro difetti sono chiusi, e le dodici richieste con loro**, più
+le quattro della seconda esecuzione. Verde in locale, tutto rieseguito l'8 settembre: **463 test
+.NET** (300 unit + 163 integrazione), **274 Vitest** (32 file), **45 smoke Playwright** e **12 del
+giro completo**, lint, typecheck e i18n puliti.
 
 ⚠️ Rieseguito l'8 settembre: `pnpm e2e:full`, **12 verdi**, ed è servito — nei suoi log si vede
 l'editor che chiede `publish-problems` all'API vera, cioè la richiesta 7 provata dove nessun test

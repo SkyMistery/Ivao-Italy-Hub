@@ -10,7 +10,8 @@ import {
   useDeleteMenuItem,
   useUpdateMenuItem,
 } from '../../features/menu/mutations';
-import { publishedPagesQuery } from '../../features/content/queries';
+import { menuDestinationPagesQuery } from '../../features/content/queries';
+import { activeLinksQuery } from '../../features/links/queries';
 import { menuItemQuery, menuParentsQuery, type MenuItemDetailDto } from '../../features/menu/queries';
 import { menuItemSchema, type MenuItemFormValues } from '../../features/menu/schema';
 import { deptParam } from '../../shared/api/department';
@@ -36,8 +37,12 @@ export const Route = createFileRoute('/_staff/staff/$dept/menu/$id')({
  * a table and they belong here, next to the screen that offers them. A fork that adds a screen adds
  * a line; a fork that removes one removes a line, and the menu of that installation stops offering
  * an address it does not have.
+ *
+ * ⚠️ The other half is `MenuItemWriteDtoValidator.Screens`, and the two agree **by hand** — a
+ * route of this client is not something the contract can carry. An integration test posts a screen
+ * the server does not know, exactly as one does for the backgrounds of a section.
  */
-const SITE_SCREENS = ['/calendar', '/news', '/documents', '/search', '/contact'] as const;
+const SITE_SCREENS = ['/', '/calendar', '/news', '/documents', '/search', '/contact'] as const;
 
 function MenuItemForm() {
   const { t } = useTranslation();
@@ -70,16 +75,22 @@ function MenuItemForm() {
     .filter((row) => row.parentId === null && String(row.id) !== id)
     .map((row) => ({ value: String(row.id), label: read(row.label) || row.path }));
 
-  // The addresses that already exist, offered while somebody types: the published pages grouped by
-  // the department that wrote them, and the screens the application itself carries. Asked for while
-  // running the demo of M1 — a menu entry pointing at nothing is a 404 nobody notices until a
-  // visitor finds it, and the answer is to offer what exists rather than to refuse what does not.
-  const pages = useQuery(publishedPagesQuery());
+  // Where a menu entry may lead, and it is the **whole** of it: the field takes one of these and
+  // nothing else, here and at the server. Asked for while running the demo of M1 — first "propose
+  // the address", then "lock it", so that every address leaving the site lives in `cms_links` and
+  // moving the forum is one row rather than a hunt through the site.
+  const pages = useQuery(menuDestinationPagesQuery());
+  const links = useQuery(activeLinksQuery());
 
   const addresses: Suggestion[] = [
+    // The pages, grouped by the department that wrote them. A draft says so: the entry can be
+    // written now and switched on when the page goes out.
     ...(pages.data?.items ?? []).map((page) => ({
       value: `/${page.slug}`,
-      label: read(page.title) || page.slug,
+      label:
+        page.status === 'Draft'
+          ? t('menu.draftSuffix', { title: read(page.title) || page.slug })
+          : read(page.title) || page.slug,
       group: t(`departments.${page.ownerDepartment}`),
     })),
     // The screens of the application, which are not rows and never will be: a division that wants
@@ -88,6 +99,14 @@ function MenuItemForm() {
       value: path,
       label: t(`menu.screens.${path}`),
       group: t('menu.screensGroup'),
+    })),
+    // ⚠️ And the addresses that leave the site, which live in one table and only there: a menu
+    // entry may lead to a link of the library and to nothing else outside (decided 8 Sep 2026).
+    // Whoever owns them — the menu belongs to the site, not to one department.
+    ...(links.data?.items ?? []).map((link) => ({
+      value: link.url,
+      label: read(link.title) || link.url,
+      group: t('menu.linksGroup'),
     })),
   ];
 

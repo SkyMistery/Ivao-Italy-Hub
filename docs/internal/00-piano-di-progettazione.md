@@ -1,9 +1,32 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.47 — 8 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, e i tipi di evento sono un vocabolario di divisione)
+**Versione documento:** 0.48 — 8 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, e una voce di menu porta solo dove il sito possiede qualcosa)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.48** (8 set 2026, **G13**, seconda esecuzione della demo): due decisioni, e la seconda
+è la più stretta che questo prodotto abbia preso su un campo.
+
+**Una riga si modifica dalla lista** (deciso da Carmine, nota
+`decisions/2026-09-08-modificare-da-una-lista.md`, opzione 2): la lista generica disegna un controllo
+in una cella per **tre soli tipi** — numero, booleano, enumerazione — e mai per un testo tradotto o un
+file, che hanno bisogno del form. Nessun verbo nuovo: la cella rilegge la riga e la riscrive, quindi
+il `rowVersion` risponde 409 a chi ha salvato nel frattempo esattamente come dal form. La schermata
+deve darle un modo di salvare, o il controllo non compare: due condizioni, o su una lista senza
+salvataggio si vedrebbe un campo che non fa niente.
+
+**Una voce di menu porta solo dove il sito possiede qualcosa** (deciso da Carmine, nota
+`decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`): una pagina di `cms_contents` — **anche
+bozza** —, una schermata dell'applicazione, o un link **in uso** di `cms_links`. Nient'altro, e il
+campo nel form non è più libero: quello che si scrive cerca nell'elenco, non è un valore.
+
+⚠️ Il motivo non è il menu, ed è la ragione per cui questa è una regola e non un suggerimento: **ogni
+indirizzo che esce dal sito vive in una tabella sola.** Un menu che accetta qualunque URL è un sito
+con indirizzi sparsi dentro; con questa regola, spostare il forum è una riga di `cms_links` e il menu
+la segue. La regola sta **sul server** come tutte le altre (§16.6): il campo chiuso nel client è una
+comodità, e una comodità non è una regola. Costa una costante scritta a mano in due posti — le
+schermate del router, che il contratto non può portare — e i test che la tengono ferma.
 
 **Changelog 0.47** (7–8 set 2026, **G13**, dopo che Carmine ha eseguito la demo): due difetti trovati
 usando, e tre decisioni — il segno di un dipartimento, l'avviso a quattro stati, e il vocabolario dei

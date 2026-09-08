@@ -77,6 +77,19 @@ export interface FieldMeta {
    * demo of M1, part 1).
    */
   suggestions?: readonly Suggestion[];
+  /**
+   * With `suggestions`, whether the list is the **whole** of what the field accepts.
+   *
+   * ⚠️ It is the difference between offering and deciding, and the menu is the case that wanted the
+   * second (decided by Carmine on 8 September 2026): a menu entry leads to a page of this site, to
+   * a screen of the application, or to a link of the library — so that **every address leaving the
+   * site lives in one table**, and changing where the forum lives is one row rather than a hunt.
+   *
+   * The field still filters as somebody types: what closing it changes is that a word nobody
+   * offered is put back rather than kept. The server refuses it too, which is what makes it a rule
+   * rather than a habit of one screen.
+   */
+  suggestionsOnly?: boolean;
   slugFrom?: string;
   /**
    * What the proposal starts with, for a field that is a **path** rather than a slug: the menu
@@ -133,7 +146,7 @@ export interface Suggestion extends ChoiceOption {
 
 export type FieldNode =
   | ({ kind: 'text'; choices: ChoiceOption[] | null } & FieldCommon)
-  | ({ kind: 'suggest'; suggestions: Suggestion[] } & FieldCommon)
+  | ({ kind: 'suggest'; suggestions: Suggestion[]; only: boolean } & FieldCommon)
   | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
@@ -462,7 +475,12 @@ function readField(schema: unknown, path: string): FieldNode {
       // ever written on a field.
       return meta.suggestions === undefined
         ? { kind: 'text', ...common, choices: stringChoices(meta.choices) }
-        : { kind: 'suggest', ...common, suggestions: [...meta.suggestions] };
+        : {
+            kind: 'suggest',
+            ...common,
+            suggestions: [...meta.suggestions],
+            only: meta.suggestionsOnly === true,
+          };
     case 'number':
     case 'int':
       return { kind: 'number', ...common, choices: numberChoices(meta.choices) };

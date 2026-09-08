@@ -150,6 +150,15 @@ identifier drawn as a **link**, for an attachment whose type the row does not ca
 handed a PDF draws a broken image, which reads as a failed upload. An empty cell there means the row
 has no file, which is a state and not a gap.
 
+A column can be written in place: `col.number('sort', { editable: true })` draws a field in the cell
+and `col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff'] })` a select — a badge cannot
+know its own set, so it is given one. Only those two and a boolean: a translated text or a file needs
+the form, and a cell that opens half of one is the second way of writing a row that this whole
+mechanism exists to avoid. The control appears only if the screen also handed `DataList` an `onEdit`,
+or a list with no way of saving would draw a field that does nothing. A number saves when the field
+is left, a select when the choice is made, and a refusal puts the old value back and says why in a
+`Notice`.
+
 Two lists that differ only in what they are about are **one screen twice**, not two screens. The
 news, the documents and the pages of a department are the same list with a fixed `kind` and a
 different set of columns, so what tells them apart is a configuration object and the route file that
@@ -205,7 +214,28 @@ What the schema may say about how a field is drawn:
   the generator again. `seo` is the first, and it is how a translated JSON column becomes fields a
   coordinator can fill in rather than JSON they have to write;
 - a **list** of objects can be reordered with the up and down buttons beside add and remove. They
-  are what a keyboard reaches, and they stay when dragging arrives.
+  are what a keyboard reaches, and they stay when dragging arrives;
+- `.meta({ slugFrom: 'title' })` proposes a field from another one while the other is being typed,
+  and stops for ever the moment somebody writes in it. `slugPrefix: '/'` puts the leading slash of a
+  menu path in front. An address outlives the page it was made for, so a row that already has one
+  never has it moved;
+- `.meta({ suggestions: [{ value: '/about', label: 'About us', group: 'Web' }] })` is a box that
+  offers what exists while somebody types, grouped by whatever the caller says the group is. It is
+  **not** a select: what is typed is the value, and the list is a way of not typing it. Add
+  `suggestionsOnly: true` and it becomes the opposite — what is typed is a way of *searching* the
+  list, and anything the list did not offer is gone when the field is left.
+
+⚠️ `suggestionsOnly` is the only field kind that **decides** rather than offers, so it comes with an
+obligation: **the server has to refuse the same set.** The closed field is a convenience, and a
+convenience is not a rule (a `PUT` from anywhere else would walk straight past it). The one use of it
+is the address of a menu entry, and the pair to read is
+`MenuItemWriteDtoValidator.LeadsSomewhereThisSiteOwnsAsync` next to `menuItemSchema`.
+
+⚠️ And where that set contains **routes of this client**, the two halves agree **by hand**: a route
+is not something the OpenAPI contract can carry. `MenuItemWriteDtoValidator.Screens` and
+`SITE_SCREENS` in `web/src/routes/_staff/staff.$dept.menu.$id.tsx` are one list written twice. A fork
+that adds or removes a screen edits both, and an integration test posting a screen keeps them honest
+— the same arrangement the backgrounds of a section already use.
 
 If the generator does not cover a case, extend the generator. Writing the form by hand is what this
 whole mechanism exists to avoid, and the reviewer's checklist asks about it.

@@ -152,7 +152,7 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         using var web = _factory.CreateApiClient();
         await _factory.SignInAsync(web, WebCoordinatorVid, token);
 
-        using var created = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry(Slug("owned")), token);
+        using var created = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry(), token);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
 
         var row = await created.Content.ReadFromJsonAsync<JsonElement>(token);
@@ -163,7 +163,7 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         using var events = _factory.CreateApiClient();
         await _factory.SignInAsync(events, EventsCoordinatorVid, token);
 
-        using var refused = await SendAsync(events, HttpMethod.Post, MenuEndpoints.Pattern, Entry(Slug("stolen")), token);
+        using var refused = await SendAsync(events, HttpMethod.Post, MenuEndpoints.Pattern, Entry(), token);
         Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
 
         var id = row.GetProperty("id").GetInt64();
@@ -171,7 +171,7 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
             events,
             HttpMethod.Put,
             $"{MenuEndpoints.Pattern}/{id}",
-            Entry(Slug("stolen"), rowVersion: row.GetProperty("rowVersion").GetString()),
+            Entry(rowVersion: row.GetProperty("rowVersion").GetString()),
             token);
         Assert.Equal(HttpStatusCode.Forbidden, refusedEdit.StatusCode);
 
@@ -192,14 +192,14 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         using var web = _factory.CreateApiClient();
         await _factory.SignInAsync(web, WebCoordinatorVid, token);
 
-        using var parent = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry(Slug("parent")), token);
+        using var parent = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry(), token);
         var parentId = (await parent.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
 
         using var child = await SendAsync(
             web,
             HttpMethod.Post,
             MenuEndpoints.Pattern,
-            Entry(Slug("child"), parentId: parentId),
+            Entry(parentId: parentId),
             token);
         Assert.Equal(HttpStatusCode.Created, child.StatusCode);
 
@@ -209,13 +209,63 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
             web,
             HttpMethod.Post,
             MenuEndpoints.Pattern,
-            Entry(Slug("grandchild"), parentId: childId),
+            Entry(parentId: childId),
             token);
 
         Assert.Equal(HttpStatusCode.BadRequest, grandchild.StatusCode);
 
         var problem = await grandchild.Content.ReadFromJsonAsync<JsonElement>(token);
         Assert.True(problem.GetProperty("errors").TryGetProperty("parentId", out _));
+    }
+
+    [Fact]
+    public async Task AMenuEntryOnlyLeadsWhereTheSiteOwnsSomething()
+    {
+        // ⚠️ The closed set, decided by Carmine on 8 September 2026 running the demo: a menu entry
+        // leads to a page of this site, a screen of the application, or a link of the library, and
+        // to nothing else. The point is not the menu — it is that every address that leaves the site
+        // lives in `cms_links`, so moving the forum is one row and the menu follows.
+        //
+        // The client offers exactly these three groups and refuses to hold anything else, but the
+        // client is a convenience: what makes it a rule is here.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, position: "IT-WM", cancellationToken: token);
+
+        using var web = _factory.CreateApiClient();
+        await _factory.SignInAsync(web, WebCoordinatorVid, token);
+
+        // A screen of the application: no table knows about it, the validator does.
+        using var screen = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry("/news"), token);
+        Assert.Equal(HttpStatusCode.Created, screen.StatusCode);
+
+        // A page that is still a draft, on purpose: writing the entry before publishing the page is
+        // how a menu is actually built, and the entry can wait, switched off, until the page is out.
+        var draft = Slug("still-a-draft");
+        await SeedContentAsync(draft, Visibility.Public, PublishStatus.Draft, token);
+
+        using var page = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry($"/{draft}"), token);
+        Assert.Equal(HttpStatusCode.Created, page.StatusCode);
+
+        // A link of the library, and one of **another** department: the site's menu may point at it,
+        // which is why the question is asked past the query filter.
+        var elsewhere = $"https://example.test/{Guid.NewGuid():N}";
+        await SeedLinkAsync(elsewhere, Department.ED, isActive: true, cancellationToken: token);
+
+        using var link = await SendAsync(web, HttpMethod.Post, MenuEndpoints.Pattern, Entry(elsewhere), token);
+        Assert.Equal(HttpStatusCode.Created, link.StatusCode);
+
+        // And the three refusals. A link that has been retired is no longer an address of this site.
+        var retired = $"https://example.test/{Guid.NewGuid():N}";
+        await SeedLinkAsync(retired, Department.WD, isActive: false, cancellationToken: token);
+
+        await RefusedAsync(web, Entry(retired), token);
+
+        // An address nobody wrote down anywhere, which is the case this rule exists for.
+        await RefusedAsync(web, Entry("https://somewhere.else.test/forum"), token);
+
+        // And a path of this site that is not a page: a slug that does not exist is a menu entry
+        // leading to the not found screen, which used to be accepted in silence.
+        await RefusedAsync(web, Entry($"/{Slug("never-written")}"), token);
     }
 
     // ---- the pages an installation is born with (design M1 section 8.2) -------------------------
@@ -481,8 +531,16 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
     /// <summary>A slug of this run, so a class that does not clean up after itself can be run twice.</summary>
     private static string Slug(string what) => $"g8-{what}-{Guid.NewGuid():N}"[..24];
 
+    /// <summary>
+    /// A payload for a new entry, pointing by default at a <b>screen of the application</b>.
+    /// <para>⚠️ It used to point at an invented slug, and since 8 September 2026 that is refused:
+    /// a menu entry may only lead where the site owns something
+    /// (<see cref="MenuItemWriteDtoValidator.Screens"/> and the two tables). These tests ask about
+    /// ownership and depth, so where the entry leads is not their question — but it still has to be
+    /// somewhere real.</para>
+    /// </summary>
     private static object Entry(
-        string slug,
+        string path = "/calendar",
         long? parentId = null,
         string? rowVersion = null) => new
         {
@@ -490,7 +548,7 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
             parentId,
             sort = 500,
             label = new Dictionary<string, string> { ["it"] = "Voce", ["en"] = "Entry" },
-            path = $"/{slug}",
+            path,
             visibility = nameof(Visibility.Public),
             isActive = true,
             rowVersion = rowVersion ?? "0001-01-01T00:00:00",
@@ -537,6 +595,44 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
             database.MenuItems.Remove(item);
             await database.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    /// <summary>Posts an entry that must be refused, and says on which field and with which key.</summary>
+    private static async Task RefusedAsync(HttpClient client, object entry, CancellationToken cancellationToken)
+    {
+        using var response = await SendAsync(client, HttpMethod.Post, MenuEndpoints.Pattern, entry, cancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+        Assert.Equal(
+            "errors.menu.pathNotAllowed",
+            problem.GetProperty("errors").GetProperty("path")[0].GetString());
+    }
+
+    private async Task SeedLinkAsync(
+        string url,
+        Department owner,
+        bool isActive,
+        CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        database.Links.Add(new Link
+        {
+            OwnerDepartment = owner,
+            Visibility = Visibility.Public,
+            Title = new Localized<string>(
+            [
+                new KeyValuePair<string, string>("it", "Collegamento"),
+                new KeyValuePair<string, string>("en", "Link"),
+            ]),
+            Url = url,
+            IsActive = isActive,
+        });
+
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     private async Task SeedContentAsync(

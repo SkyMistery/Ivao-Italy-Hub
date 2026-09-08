@@ -78,6 +78,13 @@
       "endsBeforeStart": "Questa voce finisce prima di cominciare.",
       "kindUnknown": "Questo non è uno dei tipi che la divisione usa. Scegline uno dall'elenco.",
       "colourUnknown": "Questo non è uno dei colori che una chip può avere."
+    },
+    "menu": {
+      "pathNotAllowed": "Una voce di menu porta a una pagina di questo sito, a una sua schermata, oppure a un link della libreria. Qualunque altro indirizzo si aggiunge prima ai link, così ogni indirizzo esterno vive in un posto solo.",
+      "parentInvalid": "Quella voce non può essere sopra a questa: un menu scende di un livello, e le due devono stare nello stesso menu."
+    },
+    "path": {
+      "invalid": "Un indirizzo di questo sito comincia con una barra. Qualunque altro va scritto per intero, http o https."
     }
   }
 }

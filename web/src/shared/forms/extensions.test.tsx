@@ -510,6 +510,30 @@ test('the list narrows to what is being typed, on the address as well as on the 
   expect(screen.queryByText('Chi siamo')).not.toBeInTheDocument();
 });
 
+test('a closed list keeps only what it offered, and says so', async () => {
+  const user = userEvent.setup();
+
+  const closed = z.object({
+    path: z.string().meta({
+      suggestions: [{ value: '/about', label: 'Chi siamo', group: 'Web' }],
+      suggestionsOnly: true,
+    }),
+  });
+
+  render(closed, { path: '/about' }, { labels: suggestLabels, division: DIVISION });
+
+  const field = screen.getByLabelText('Address');
+
+  // ⚠️ The difference between offering and deciding. A menu entry leads to a page of this site, to
+  // one of its screens or to a link of the library, so that every address leaving the site lives in
+  // one table — and what is typed here is a way of searching that list, not a value.
+  await user.clear(field);
+  await user.type(field, 'https://somewhere.example');
+  await user.tab();
+
+  expect(field).toHaveValue('/about');
+});
+
 // ---- and the property none of the five may weaken --------------------------------------------
 
 test('the generator still refuses a type it cannot draw', () => {

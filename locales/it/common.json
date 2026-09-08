@@ -120,7 +120,8 @@
     "moveUp": "Sposta su",
     "moveDown": "Sposta giù",
     "suggest": {
-      "empty": "Nel sito non c’è niente che corrisponda. Vale quello che scrivi."
+      "empty": "Nel sito non c’è niente che corrisponda. Vale quello che scrivi.",
+      "emptyClosed": "Qui non corrisponde niente. Una voce di menu porta a una pagina di questo sito, a una sua schermata, o a un link della libreria."
     }
   },
   "list": {
@@ -200,7 +201,7 @@
       "updatedAt": "Ultima modifica"
     },
     "hints": {
-      "path": "Una pagina di questo sito comincia con una barra, per esempio /start. Qualunque altro indirizzo va scritto per intero.",
+      "path": "Una pagina di questo sito, una sua schermata, o un link della libreria. Un indirizzo che non è uno di questi si aggiunge prima ai link, così ogni indirizzo esterno vive in un posto solo.",
       "parentId": "Lascia vuoto per una voce di primo livello. Un menu scende di un livello e non oltre."
     },
     "options": {
@@ -216,13 +217,16 @@
       }
     },
     "screens": {
+      "/": "Pagina iniziale",
       "/calendar": "Calendario",
       "/news": "News",
       "/documents": "Documenti",
       "/search": "Ricerca",
       "/contact": "Contatti"
     },
-    "screensGroup": "Schermate del sito"
+    "screensGroup": "Schermate del sito",
+    "linksGroup": "Link della libreria",
+    "draftSuffix": "{{title}} (bozza)"
   },
   "dashboard": {
     "title": "{{department}}",

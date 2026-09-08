@@ -82,24 +82,28 @@ export function templatesQuery(kind: ContentKind | null = null) {
 }
 
 /**
- * Every published page of the site, whichever department wrote it, so that a screen can offer the
- * addresses that exist instead of asking somebody to remember them. A hundred rows: a division site
- * with more pages than that in its menu has a different problem.
+ * Every page of the site, whichever department wrote it, so that a screen can offer the addresses
+ * that exist instead of asking somebody to remember them. A hundred rows: a division site with more
+ * pages than that in its menu has a different problem.
  *
- * ⚠️ Read with the department narrowing of the engine, like every other list: a member of staff is
- * offered the pages they may read, and an address they may not see is one they can still type. The
- * menu is a signpost and the signpost is not checked against what it points at (design M1 §8.1).
+ * **Drafts are in it on purpose.** Writing the menu entry before publishing the page is how a menu
+ * is actually built, and the entry can wait — switched off — until the page is public. The server
+ * accepts the same set, and refuses everything outside it (`MenuItemWriteDtoValidator`).
+ *
+ * ⚠️ Read with the department narrowing of the engine, like every other list — which here narrows
+ * to nothing: the menu belongs to the department that owns the site, so whoever may edit it is a
+ * web coordinator or a director, and those reach every department (`ReachesEveryDepartment`). The
+ * groups this list is drawn in are therefore real, and a page of another department is offered.
  */
-export function publishedPagesQuery() {
+export function menuDestinationPagesQuery() {
   return queryOptions({
-    queryKey: [...contentKey, 'published-pages'] as const,
+    queryKey: [...contentKey, 'menu-destinations'] as const,
     queryFn: async (): Promise<ContentPage> =>
       unwrap(
         await api.GET('/api/content', {
           params: { query: { page: 1, pageSize: 100 } },
           querySerializer: listQuerySerializer({
             kind: 'Page',
-            status: 'Published',
             isTemplate: 'false',
           }),
         }),

@@ -9,7 +9,15 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.8 — 7 settembre 2026 (**i quattro difetti di G13 sono chiusi**, e la prima delle
+**Versione:** 2.9 — 8 settembre 2026 (la seconda esecuzione della demo ha aggiunto **quattro**
+richieste, non tre, e la quarta è la più stretta: l'indirizzo di una voce di menu è un **insieme
+chiuso** — pagine, anche bozze, schermate del router, link in uso — imposto dal server e non solo
+offerto dal form. Il motivo non è il menu: è che ogni indirizzo che esce dal sito vive in una tabella
+sola. Nota `decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`. Conto: **463 test .NET**
+(300 unitari, 163 di integrazione), **274 Vitest**, **45 smoke Playwright** e **12 del giro completo**.
+Resta il tag.)
+
+**2.8** — 7 settembre 2026 (**i quattro difetti di G13 sono chiusi**, e la prima delle
 richieste con loro: il logout ridisegna la pagina — il bootstrap non è una query ma il contesto del
 router, e una query invalidata non rifà un `beforeLoad` — e una pagina non si pubblica più portando
 un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCeiling` dei blocchi
