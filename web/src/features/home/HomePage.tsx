@@ -2,7 +2,7 @@ import { Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, readBody } from '../../blocks';
+import { ContentRenderer, readBody, startsWithPageTitle } from '../../blocks';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
@@ -35,6 +35,8 @@ export function HomePage() {
     return home.isPending ? null : <Lead>{t('home.empty')}</Lead>;
   }
 
+  const body = readBody(home.data.body);
+
   return (
     <article className="flex flex-col">
       <PageMetadata
@@ -49,9 +51,14 @@ export function HomePage() {
       />
 
       {/* The title of the row is what a browser tab and a search result use; what the page itself
-          shows is whatever heading block the editor put at the top of it. */}
-      <h1 className="sr-only">{read(home.data.title)}</h1>
-      <ContentRenderer body={readBody(home.data.body)} />
+          shows is whatever heading block the editor put at the top of it.
+
+          ⚠️ And when that block is already a title, this one is not drawn: the page had **two**
+          `h1` otherwise, one of them invisible (`decisions/2026-09-07-giro-visivo-m1.md`, finding
+          4). Same two lines as `_public/$slug.tsx`, because it is the same page seen through a
+          different address. */}
+      {startsWithPageTitle(body) ? null : <h1 className="sr-only">{read(home.data.title)}</h1>}
+      <ContentRenderer body={body} />
     </article>
   );
 }

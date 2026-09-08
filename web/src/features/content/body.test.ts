@@ -104,9 +104,11 @@ test('a new block starts with the properties its own schema describes', () => {
 });
 
 test('defaults are read off the schema, not written next to the block', () => {
-  // A number with a closed set of values starts at the first of them, not at zero: zero is not a
-  // heading level, and a select cannot show it.
-  expect(defaultProps(headingSchema, LOCALES)).toEqual({ level: 1, text: { it: '', en: '' } });
+  // ⚠️ A heading starts at **2**, because the schema says so. Before G13 it had no default, so it
+  // took the first of its choices and every heading anybody added was an `h1` — `/start` had four
+  // by the time somebody measured the page (`decisions/2026-09-07-giro-visivo-m1.md`). The page's
+  // own title is the `h1`; what a writer adds under it is a level below.
+  expect(defaultProps(headingSchema, LOCALES)).toEqual({ level: 2, text: { it: '', en: '' } });
 });
 
 test('a choice that is optional starts at nothing chosen, and leaves the payload', () => {

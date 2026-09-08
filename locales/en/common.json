@@ -494,7 +494,8 @@
       "saved": "Draft saved.",
       "published": "Published. The site is showing this version now.",
       "deleted": "Deleted.",
-      "publishMissing": "What is missing before this can be published"
+      "publishMissing": "What is missing before this can be published",
+      "undo": "Undo"
     },
     "slugPlaceholder": "my-new-page",
     "hints": {

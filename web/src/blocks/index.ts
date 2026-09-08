@@ -23,4 +23,5 @@ export {
   type SectionEnvelope,
 } from './envelope';
 export { CORE_BLOCK_TYPES } from './core';
+export { startsWithPageTitle } from './envelope';
 export { coreBlocks } from './registry';

@@ -23,7 +23,12 @@ export const headingSchema = z.object({
   // A number with choices rather than a `z.enum`: every string inside `props` is extracted as the
   // text of the page for the search index, and "2" is not text (design M0 §5.3). The generator
   // still draws a select, so nobody can type a level that does not exist.
-  level: z.number().int().meta({ choices: HEADING_LEVELS }),
+  //
+  // ⚠️ It starts at **2**, and the default is the whole of the fix. Without one the generator takes
+  // the first choice, so every heading anybody added was an `h1`: `/start` had four of them by the
+  // time somebody measured it (`decisions/2026-09-07-giro-visivo-m1.md`, finding 1). A page has one
+  // `h1` — its own title — and everything a writer adds under it is a level below.
+  level: z.number().int().default(2).meta({ choices: HEADING_LEVELS }),
   text: localized(),
 });
 

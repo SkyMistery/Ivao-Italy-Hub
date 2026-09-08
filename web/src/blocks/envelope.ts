@@ -130,6 +130,30 @@ export function readBody(value: unknown): Body {
   return parsed.success ? parsed.data : emptyBody();
 }
 
+/**
+ * The blocks that draw the title of the page they are at the top of: a hero, and a heading somebody
+ * set to level one.
+ *
+ * ⚠️ It exists because every public page had **two** `h1` — the title of the row, drawn `sr-only` by
+ * the route, and the block at the top of the body
+ * (`decisions/2026-09-07-giro-visivo-m1.md`, finding 4). One of them had to go, and the one to keep
+ * is the visible one: the tab and the search result read the row's title from the metadata, which
+ * does not need an element in the document.
+ *
+ * The list lives here, beside the other closed sets of the envelope, and not in the route: which
+ * block draws a title is a fact about blocks.
+ */
+export function startsWithPageTitle(body: Body): boolean {
+  const first = body.sections[0]?.blocks[0];
+  if (first === undefined) {
+    return false;
+  }
+
+  return (
+    first.type === 'hero' || (first.type === 'heading' && (first.props as { level?: unknown }).level === 1)
+  );
+}
+
 /** Every block of a body, outer sections first, the way the server enumerates them. */
 export function allBlocks(body: Body): BlockEnvelope[] {
   return allSections(body).flatMap((section) => section.blocks);

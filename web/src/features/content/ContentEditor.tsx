@@ -1,6 +1,6 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, Pencil, Send } from 'lucide-react';
+import { Eye, Pencil, Send, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -40,6 +40,7 @@ import {
 } from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
 import { SectionTree, type Selection } from './SectionTree';
+import { useBodyHistory } from './useBodyHistory';
 import { applyDifference, templateDiff } from './templateDiff';
 import { LockedByTemplate, TemplateDifferences } from './TemplatePanel';
 import { NO_RULES, ruleFor, templateRules } from './templateRules';
@@ -99,7 +100,11 @@ export function ContentEditor({
 }) {
   const { t } = useTranslation();
 
-  const [body, setBody] = useState<Body>(() => readBody(content?.body));
+  // The body, and the way back from the last thing that happened to it. A section moved by mistake
+  // was one of the frictions the hand copy of `/about` recorded (HANDOFF §27).
+  const history = useBodyHistory(readBody(content?.body));
+  const body = history.body;
+
   const [selection, setSelection] = useState<Selection | null>(null);
   const [preview, setPreview] = useState(false);
   const [unsaved, setUnsaved] = useState(false);
@@ -119,7 +124,7 @@ export function ContentEditor({
   const differences = templateDiff(body, templateBody);
 
   const change = (next: Body) => {
-    setBody(next);
+    history.change(next);
     setUnsaved(true);
   };
 
@@ -154,6 +159,22 @@ export function ContentEditor({
                 <Eye aria-hidden className="mr-2 size-4" />
               )}
               {preview ? t('content.editor.backToEditing') : t('content.editor.preview')}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={!history.canUndo}
+              onClick={() => {
+                history.undo();
+                setUnsaved(true);
+                // What was selected may not exist in the body that comes back, and a panel with
+                // nothing behind it is worse than an empty one saying so.
+                setSelection(null);
+              }}
+            >
+              <Undo2 aria-hidden className="mr-2 size-4" />
+              {t('content.editor.undo')}
             </Button>
 
             {onPublish === null ? null : (
@@ -251,7 +272,13 @@ export function ContentEditor({
             />
           </div>
 
-          <div className="flex flex-col gap-4">
+          {/* ⚠️ Sticky, from `lg` up. The tree on the left is as long as the page is, and the panel
+              on the right used to scroll away with it: to change the block you were looking at you
+              had to scroll back up, which is the friction of an editor rather than a defect of one.
+              `self-start` is what makes a sticky child of a grid work at all — a stretched cell has
+              nothing to stick inside — and the panel scrolls on its own when it is taller than the
+              window. */}
+          <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto">
             <SectionHeader title={t('content.editor.properties')} />
 
             {section !== undefined ? (
