@@ -27,8 +27,11 @@ e **G12** (**§27**), la fase che verifica invece di costruire: due pagine ricop
 dall'editor, il giro visivo, la demo, la revisione §16.E e il conto contro la previsione. Ha trovato
 più difetti di qualunque altra fase, fra cui **ogni form del back-office si poteva salvare una volta
 sola per caricamento di pagina**. ⚠️ Poi Carmine ha **eseguito la demo** e ha trovato altri quattro
-difetti e dodici richieste (**§28**): **tutti e quattro i difetti sono corretti**, restano le
-richieste, e **il tag `v0.2.0-m1` aspetta** che G13 sia chiusa (§29). M0 resta chiusa e non
+difetti e dodici richieste (**§28**): **tutti e quattro i difetti sono corretti e tutte e dodici le
+richieste fatte**; una seconda esecuzione ne ha aggiunte quattro, fatte anche quelle — l'ultima è che
+l'indirizzo di una voce di menu è un **insieme chiuso**, perché ogni indirizzo che esce dal sito deve
+vivere in una tabella sola. **Il tag `v0.2.0-m1` aspetta** che Carmine riesegua la scheda da capo e
+mergi la PR #57 (§29). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -39,10 +42,11 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.47. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.8
+**Piano:** v0.48. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.9
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
-aperta** (§28), i suoi quattro difetti sono chiusi, e il tag viene dopo di lei.
-**Test:** 462 .NET verdi (300 unit + 162 integrazione) + **270 Vitest** + **43 smoke Playwright** +
+aperta** (§28) ma non ha più lavoro suo — quattro difetti e sedici richieste, tutti chiusi — e il tag
+viene dopo che Carmine ha rieseguito la scheda.
+**Test:** 463 .NET verdi (300 unit + 163 integrazione) + **274 Vitest** + **45 smoke Playwright** +
 **12 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro l'8 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
