@@ -457,6 +457,59 @@ test('a field that is a path proposes one, slash and all', async () => {
   expect(screen.getByLabelText('Address')).toHaveValue('/about-us');
 });
 
+// ---- 8. a field that offers without demanding -------------------------------------------------
+
+const suggestSchema = z.object({
+  path: z.string().meta({
+    suggestions: [
+      { value: '/about', label: 'Chi siamo', group: 'Web' },
+      { value: '/tours', label: 'I tour', group: 'Flight Ops' },
+    ],
+  }),
+});
+
+const suggestLabels = { fields: { path: 'Address' } };
+
+test('a suggested field offers what exists, grouped, and takes what is typed anyway', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels, onSubmit });
+
+  await user.click(screen.getByLabelText('Address'));
+
+  // Grouped, because thirty addresses in one list is a wall: the heading is the department that
+  // wrote the page.
+  expect(await screen.findByText('Web')).toBeInTheDocument();
+  expect(screen.getByText('Flight Ops')).toBeInTheDocument();
+
+  // Choosing one writes the address and not the title: what a menu stores is where it leads.
+  await user.click(screen.getByText('Chi siamo'));
+  expect(screen.getByLabelText('Address')).toHaveValue('/about');
+
+  // ⚠️ And it is not a select: an address of somewhere else is typed in full and kept, or a menu
+  // could not link the forum.
+  await user.clear(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'https://forum.example.org');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ path: 'https://forum.example.org' });
+});
+
+test('the list narrows to what is being typed, on the address as well as on the title', async () => {
+  const user = userEvent.setup();
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels, division: DIVISION });
+
+  await user.click(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'tour');
+
+  // Matched on the address, which is what somebody types when they half remember it. `cmdk` filters
+  // on its own idea of the text, which is why the filtering here is ours.
+  expect(await screen.findByText('I tour')).toBeInTheDocument();
+  expect(screen.queryByText('Chi siamo')).not.toBeInTheDocument();
+});
+
 // ---- and the property none of the five may weaken --------------------------------------------
 
 test('the generator still refuses a type it cannot draw', () => {

@@ -66,6 +66,17 @@ export interface FieldMeta {
    * The seventh extension of the generator, asked for by Carmine after the demo of M1: an address
    * was typed from scratch beside a title that had just been written.
    */
+  /**
+   * What a field offers while somebody types, **without** closing the set: the address of a menu
+   * entry is the case it was built for — the pages of the site, grouped by the department that
+   * wrote them, and an address of somewhere else typed in full.
+   *
+   * ⚠️ It is not `choices`. A select refuses everything it does not list, and a menu that could
+   * only point at a page of this site would be a menu that cannot link the forum. The value stays
+   * free text: the suggestions are a way of not typing, never a rule (asked for while running the
+   * demo of M1, part 1).
+   */
+  suggestions?: readonly Suggestion[];
   slugFrom?: string;
   /**
    * What the proposal starts with, for a field that is a **path** rather than a slug: the menu
@@ -112,8 +123,17 @@ export interface ChoiceOption {
   label: string;
 }
 
+/**
+ * One thing a field offers without demanding it. `group` is a heading in the list — "the pages of
+ * Events", "the pages of Training" — and is what tells thirty suggestions apart from a wall.
+ */
+export interface Suggestion extends ChoiceOption {
+  group?: string;
+}
+
 export type FieldNode =
   | ({ kind: 'text'; choices: ChoiceOption[] | null } & FieldCommon)
+  | ({ kind: 'suggest'; suggestions: Suggestion[] } & FieldCommon)
   | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
@@ -166,7 +186,10 @@ export function blankValue(node: FieldNode, locales: readonly string[]): unknown
   switch (node.kind) {
     case 'localized':
       return Object.fromEntries(locales.map((locale) => [locale, '']));
+    // A field that suggests starts empty like any other text: what it offers is a way of not
+    // typing, not a value somebody chose.
     case 'text':
+    case 'suggest':
       return '';
     case 'number':
       return node.choices?.[0] ?? 0;
@@ -434,7 +457,12 @@ function readField(schema: unknown, path: string): FieldNode {
 
   switch (def.type) {
     case 'string':
-      return { kind: 'text', ...common, choices: stringChoices(meta.choices) };
+      // Suggestions before choices: a field that offers without demanding is a different field
+      // from one that refuses everything it does not list, and only one of the two annotations is
+      // ever written on a field.
+      return meta.suggestions === undefined
+        ? { kind: 'text', ...common, choices: stringChoices(meta.choices) }
+        : { kind: 'suggest', ...common, suggestions: [...meta.suggestions] };
     case 'number':
     case 'int':
       return { kind: 'number', ...common, choices: numberChoices(meta.choices) };

@@ -33,6 +33,7 @@ interface CommonStrings {
       readonly sort: string;
       readonly visibility: string;
     };
+    readonly screensGroup: string;
   };
   readonly dashboard: { readonly edit: string };
   readonly list: { readonly file: string };

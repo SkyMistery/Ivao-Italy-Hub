@@ -118,7 +118,10 @@
     "removeEntry": "Rimuovi",
     "submitHint": "Premi Invio per salvare.",
     "moveUp": "Sposta su",
-    "moveDown": "Sposta giù"
+    "moveDown": "Sposta giù",
+    "suggest": {
+      "empty": "Nel sito non c’è niente che corrisponda. Vale quello che scrivi."
+    }
   },
   "list": {
     "search": "Cerca",
@@ -211,7 +214,15 @@
         "Staff": "Staff",
         "Department": "Questo dipartimento"
       }
-    }
+    },
+    "screens": {
+      "/calendar": "Calendario",
+      "/news": "News",
+      "/documents": "Documenti",
+      "/search": "Ricerca",
+      "/contact": "Contatti"
+    },
+    "screensGroup": "Schermate del sito"
   },
   "dashboard": {
     "title": "{{department}}",

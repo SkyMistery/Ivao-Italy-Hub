@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { localized, type ChoiceOption } from '../../shared/forms';
+import { localized, type ChoiceOption, type Suggestion } from '../../shared/forms';
 
 /**
  * The form of a menu entry, as a zod schema mirroring `MenuItemWriteDto`. Types and what is
@@ -13,7 +13,7 @@ import { localized, type ChoiceOption } from '../../shared/forms';
  *
  * It is a function because the entries a row may hang under are rows, not a set the code knows.
  */
-export function menuItemSchema(parents: readonly ChoiceOption[] = []) {
+export function menuItemSchema(parents: readonly ChoiceOption[] = [], addresses: readonly Suggestion[] = []) {
   return z.object({
     scope: z.enum(['Public', 'Footer']),
     // The identifier of the parent, carried as text because a select whose labels are not its
@@ -21,10 +21,13 @@ export function menuItemSchema(parents: readonly ChoiceOption[] = []) {
     // Empty means "top level", which is what most entries are.
     parentId: z.string().optional().meta({ choices: parents }),
     label: localized(),
-    // Proposed from the label, with the slash a path needs: an entry called "Chi siamo" offers
-    // `/chi-siamo` and stops the moment somebody writes their own (asked for while running the
-    // demo of M1, part 1). An entry that already has a path never moves it.
-    path: z.string().meta({ slugFrom: 'label', slugPrefix: '/' }),
+    // ⚠️ Two annotations, and they answer two different halves of the same question. `suggestions`
+    // offers the addresses that **exist** — the published pages, grouped by the department that
+    // wrote them, and the screens the application itself has — because a menu entry that points at
+    // nothing is a 404 nobody notices until a visitor finds it. `slugFrom` proposes one from the
+    // label for the entry whose page does not exist yet, which is the other half of how a menu is
+    // written. Neither is a rule: the value stays free text, or the menu could not link the forum.
+    path: z.string().meta({ slugFrom: 'label', slugPrefix: '/', suggestions: addresses }),
     sort: z.number().int(),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     isActive: z.boolean(),

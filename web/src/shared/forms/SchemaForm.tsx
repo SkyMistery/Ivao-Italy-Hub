@@ -1,5 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Checkbox, H4, Input, Label, Select, Subtle, Switch, Textarea } from '@ivao/atmosphere-react';
+import {
+  Button,
+  Checkbox,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+  CommandRoot,
+  H4,
+  Input,
+  Label,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverRoot,
+  Select,
+  Subtle,
+  Switch,
+  Textarea,
+} from '@ivao/atmosphere-react';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,16 +30,17 @@ import {
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
-import { useEffect, useRef, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import type { z } from 'zod';
 
 import { ICON_NAMES, iconByName } from '../icons';
+import { fold } from '../search/highlight';
 import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
 
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
-import { NO_CHOICE, blankEntry, readFields, type FieldNode } from './schema';
+import { NO_CHOICE, blankEntry, readFields, type FieldNode, type Suggestion } from './schema';
 import { slugify } from './slug';
 import { useProblemDetails } from './useProblemDetails';
 
@@ -218,6 +237,134 @@ function readSource(value: unknown, defaultLocale: string | undefined): string {
 }
 
 /**
+ * A field that **offers** without demanding: the address of a menu entry is the case it was built
+ * for — the pages of the site, grouped by the department that wrote them, and an address of
+ * somewhere else typed in full.
+ *
+ * ⚠️ It is not a select, and the difference is the whole point (asked for while running the demo of
+ * M1, part 1). A select refuses everything it does not list, and a menu that could only point at a
+ * page of this site could not link the forum. What is typed **is** the value; the list is a way of
+ * not typing it.
+ *
+ * The list filters itself against what is in the box, folded the way the search folds — so "citta"
+ * finds "Città" here too — and it is `shouldFilter={false}` because that filtering is ours: `cmdk`
+ * would match on its own idea of the text and throw away a page whose address matches while its
+ * title does not.
+ */
+function Suggest({
+  id,
+  value,
+  suggestions,
+  empty,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  suggestions: readonly Suggestion[];
+  empty: string;
+  onChange: (next: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLInputElement>(null);
+
+  // ⚠️ What narrows the list is what somebody has typed **since it opened**, not what the field
+  // happened to hold. Opening the address of an entry that already has one would otherwise answer
+  // "nothing matches": the value is a whole address, and it matches nothing but itself.
+  const [opened, setOpened] = useState(value);
+  const typed = value === opened ? '' : fold(value.trim());
+  const matching = suggestions.filter(
+    (suggestion) =>
+      typed === '' || fold(suggestion.value).includes(typed) || fold(suggestion.label).includes(typed),
+  );
+
+  // Kept in the order the caller gave them, grouped by the heading each carries: a `Map` because
+  // insertion order is the order the groups are drawn in, and the caller decided it.
+  const groups = new Map<string, Suggestion[]>();
+  for (const suggestion of matching) {
+    const heading = suggestion.group ?? '';
+    groups.set(heading, [...(groups.get(heading) ?? []), suggestion]);
+  }
+
+  return (
+    <PopoverRoot
+      open={open}
+      onOpenChange={(next) => {
+        if (next) {
+          setOpened(value);
+        }
+
+        setOpen(next);
+      }}
+    >
+      <PopoverAnchor asChild>
+        <Input
+          ref={box}
+          id={id}
+          value={value}
+          autoComplete="off"
+          onChange={(event) => {
+            onChange(event.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            setOpened(value);
+            setOpen(true);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setOpen(false);
+            }
+          }}
+        />
+      </PopoverAnchor>
+
+      <PopoverContent
+        align="start"
+        className="w-(--radix-popover-trigger-width) p-0"
+        // The box keeps the focus: this list is read while typing, and a popover that stole it
+        // would end the typing it exists to help.
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        // ⚠️ And a click **in the box** does not count as clicking away. Without this the list
+        // opened on focus and closed on the very same click, so it never appeared to a mouse —
+        // while a test in jsdom passed, because jsdom does not deliver the pointer event Radix
+        // dismisses on. Measured in a browser.
+        onInteractOutside={(event) => {
+          if (box.current?.contains(event.target as Node) === true) {
+            event.preventDefault();
+          }
+        }}
+      >
+        <CommandRoot shouldFilter={false}>
+          <CommandList>
+            {matching.length === 0 ? <CommandEmpty>{empty}</CommandEmpty> : null}
+
+            {[...groups].map(([heading, items]) => (
+              <CommandGroup key={heading} {...(heading === '' ? {} : { heading })}>
+                {items.map((suggestion) => (
+                  <CommandItem
+                    key={suggestion.value}
+                    value={suggestion.value}
+                    onSelect={() => {
+                      onChange(suggestion.value);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="flex flex-col">
+                      <span>{suggestion.label}</span>
+                      <span className="text-muted-foreground text-xs">{suggestion.value}</span>
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
+          </CommandList>
+        </CommandRoot>
+      </PopoverContent>
+    </PopoverRoot>
+  );
+}
+
+/**
  * `node.path` is where the field is in the schema, and therefore what its label is looked up by;
  * `name` is where its value is in the form, which for an entry of a repeatable list carries an
  * index. They are the same everywhere except inside a list, and keeping them apart is what stops
@@ -357,6 +504,25 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
         </Row>
       );
     }
+
+    case 'suggest':
+      return (
+        <Row id={name} label={label} hint={hint} error={error}>
+          <Controller
+            control={control}
+            name={name}
+            render={({ field }) => (
+              <Suggest
+                id={name}
+                value={typeof field.value === 'string' ? field.value : ''}
+                suggestions={node.suggestions}
+                empty={t('form.suggest.empty')}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        </Row>
+      );
 
     case 'number':
       return (

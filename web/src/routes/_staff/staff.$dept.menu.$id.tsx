@@ -10,10 +10,11 @@ import {
   useDeleteMenuItem,
   useUpdateMenuItem,
 } from '../../features/menu/mutations';
+import { publishedPagesQuery } from '../../features/content/queries';
 import { menuItemQuery, menuParentsQuery, type MenuItemDetailDto } from '../../features/menu/queries';
 import { menuItemSchema, type MenuItemFormValues } from '../../features/menu/schema';
 import { deptParam } from '../../shared/api/department';
-import { SchemaForm, type ChoiceOption } from '../../shared/forms';
+import { SchemaForm, type ChoiceOption, type Suggestion } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { ConfirmDialog, PageShell } from '../../shared/ui';
 
@@ -29,6 +30,14 @@ export const Route = createFileRoute('/_staff/staff/$dept/menu/$id')({
     params.id === 'new' ? null : context.queryClient.ensureQueryData(menuItemQuery(Number(params.id))),
   component: MenuItemForm,
 });
+
+/**
+ * The addresses of this application that are not rows: they are routes, so they cannot be read from
+ * a table and they belong here, next to the screen that offers them. A fork that adds a screen adds
+ * a line; a fork that removes one removes a line, and the menu of that installation stops offering
+ * an address it does not have.
+ */
+const SITE_SCREENS = ['/calendar', '/news', '/documents', '/search', '/contact'] as const;
 
 function MenuItemForm() {
   const { t } = useTranslation();
@@ -60,6 +69,27 @@ function MenuItemForm() {
     // Depth is one: only a top level entry may be a parent, and an entry is never its own.
     .filter((row) => row.parentId === null && String(row.id) !== id)
     .map((row) => ({ value: String(row.id), label: read(row.label) || row.path }));
+
+  // The addresses that already exist, offered while somebody types: the published pages grouped by
+  // the department that wrote them, and the screens the application itself carries. Asked for while
+  // running the demo of M1 — a menu entry pointing at nothing is a 404 nobody notices until a
+  // visitor finds it, and the answer is to offer what exists rather than to refuse what does not.
+  const pages = useQuery(publishedPagesQuery());
+
+  const addresses: Suggestion[] = [
+    ...(pages.data?.items ?? []).map((page) => ({
+      value: `/${page.slug}`,
+      label: read(page.title) || page.slug,
+      group: t(`departments.${page.ownerDepartment}`),
+    })),
+    // The screens of the application, which are not rows and never will be: a division that wants
+    // its calendar in the menu is pointing at a route and not at a page somebody wrote.
+    ...SITE_SCREENS.map((path) => ({
+      value: path,
+      label: t(`menu.screens.${path}`),
+      group: t('menu.screensGroup'),
+    })),
+  ];
 
   const create = useCreateMenuItem();
   const update = useUpdateMenuItem(Number(id));
@@ -98,7 +128,7 @@ function MenuItemForm() {
       }
     >
       <SchemaForm
-        schema={menuItemSchema(parents)}
+        schema={menuItemSchema(parents, addresses)}
         defaults={defaults}
         locales={locales}
         labels="menu"

@@ -213,6 +213,28 @@ test('the order and the audience of a menu entry are changed from the table', as
   await expect(audience).toBeVisible();
 });
 
+test('the address of a menu entry offers the addresses that exist, and stays open to be read', async ({
+  page,
+}) => {
+  // ⚠️ The half jsdom cannot see, and it is the half that was broken: the list opened on focus and
+  // closed on the very same click, because Radix dismisses a popover on a pointer event outside its
+  // content — and the box is outside its content. A unit test passed throughout.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/menu/3');
+
+  const address = page.getByLabel(englishCommon.menu.fields.path, { exact: true });
+  await address.click();
+
+  // Grouped, and the screens of the application are a group of their own: they are routes and not
+  // rows, so no department wrote them.
+  await expect(page.getByText(englishCommon.menu.screensGroup)).toBeVisible();
+  await expect(page.getByText('/calendar')).toBeVisible();
+
+  // Choosing one writes the address, not the title.
+  await page.getByText('/calendar').click();
+  await expect(address).toHaveValue('/calendar');
+});
+
 test('the gallery draws every kind of field the generator learned, and they are usable sizes', async ({
   page,
 }) => {

@@ -118,7 +118,10 @@
     "removeEntry": "Remove",
     "submitHint": "Press Enter to save.",
     "moveUp": "Move up",
-    "moveDown": "Move down"
+    "moveDown": "Move down",
+    "suggest": {
+      "empty": "Nothing on the site matches. What you write is used as it is."
+    }
   },
   "list": {
     "search": "Search",
@@ -211,7 +214,15 @@
         "Staff": "Staff",
         "Department": "This department"
       }
-    }
+    },
+    "screens": {
+      "/calendar": "Calendar",
+      "/news": "News",
+      "/documents": "Documents",
+      "/search": "Search",
+      "/contact": "Contact"
+    },
+    "screensGroup": "Screens of the site"
   },
   "dashboard": {
     "title": "{{department}}",

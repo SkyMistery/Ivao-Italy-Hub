@@ -81,6 +81,32 @@ export function templatesQuery(kind: ContentKind | null = null) {
   });
 }
 
+/**
+ * Every published page of the site, whichever department wrote it, so that a screen can offer the
+ * addresses that exist instead of asking somebody to remember them. A hundred rows: a division site
+ * with more pages than that in its menu has a different problem.
+ *
+ * ⚠️ Read with the department narrowing of the engine, like every other list: a member of staff is
+ * offered the pages they may read, and an address they may not see is one they can still type. The
+ * menu is a signpost and the signpost is not checked against what it points at (design M1 §8.1).
+ */
+export function publishedPagesQuery() {
+  return queryOptions({
+    queryKey: [...contentKey, 'published-pages'] as const,
+    queryFn: async (): Promise<ContentPage> =>
+      unwrap(
+        await api.GET('/api/content', {
+          params: { query: { page: 1, pageSize: 100 } },
+          querySerializer: listQuerySerializer({
+            kind: 'Page',
+            status: 'Published',
+            isTemplate: 'false',
+          }),
+        }),
+      ),
+  });
+}
+
 export function contentQuery(id: number) {
   return queryOptions({
     queryKey: contentDetailKey(id),
