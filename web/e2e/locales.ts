@@ -34,7 +34,9 @@ interface CommonStrings {
       readonly visibility: string;
     };
     readonly screensGroup: string;
+    readonly linksGroup: string;
   };
+  readonly form: { readonly suggest: { readonly emptyClosed: string } };
   readonly dashboard: { readonly edit: string };
   readonly list: { readonly file: string };
   readonly calendar: {
