@@ -287,7 +287,7 @@ cd web && pnpm e2e:full
 ```
 
 Aspettati **470 test .NET** (306 unit, 164 di integrazione contro una MariaDB 11.4.10 vera), **274
-Vitest**, **45 smoke Playwright** e **12 del giro pieno**. Nessuno skippato.
+Vitest**, **47 smoke Playwright** e **12 del giro pieno**. Nessuno skippato.
 
 ⚠️ **Correzione:** `dotnet test --solution` su questa macchina dice «Zero tests ran» con uscita 5
 **in tutte e due le configurazioni** — Release non lo evita, come questa scheda diceva prima — mentre

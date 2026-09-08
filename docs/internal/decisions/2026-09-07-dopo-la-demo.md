@@ -242,7 +242,7 @@ Non il riquadro degli errori del form: **un componente usabile ovunque**. Quinto
 
 Ramo `m1/g13-fixes`, PR #57. **I quattro difetti sono chiusi, e le dodici richieste con loro**, più
 le quattro della seconda esecuzione. Verde in locale, tutto rieseguito l'8 settembre: **470 test
-.NET** (306 unit + 164 integrazione), **274 Vitest** (32 file), **45 smoke Playwright** e **12 del
+.NET** (306 unit + 164 integrazione), **274 Vitest** (32 file), **47 smoke Playwright** e **12 del
 giro completo**, lint, typecheck e i18n puliti.
 
 ⚠️ Rieseguito l'8 settembre: `pnpm e2e:full`, **12 verdi**, ed è servito — nei suoi log si vede

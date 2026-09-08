@@ -137,6 +137,22 @@ is no light-only screen and no dark-only screen.
 
 `DarkModeToggle` sits in the header of every layout; `ThemeProvider` in `main.tsx` is what decides.
 
+**One token is overridden, and it is the only one.** Atmosphere flips every foreground for the dark
+theme except `--muted-foreground`, which stays fuselage-500 in both — a grey that reads well on white
+and comes out at 3.14 : 1 on the dark ground, where WCAG AA asks 4.5 : 1 for text at 12 and 14px. The
+bottom of `src/styles/index.css` puts it at fuselage-400 for the dark theme only, which is the
+distance the light theme already keeps from its own ground.
+
+Two things to know before touching it. It has to sit **after** the Atmosphere imports, because that
+stylesheet is loaded after Tailwind's utilities and where a rule goes decides whether it wins. And
+`e2e/contrast.spec.ts` measures every visible piece of secondary text on nine screens in the dark
+theme and fails if the line goes away — the colours are read back out of a canvas, because some of
+them arrive as `oklab()` and a regular expression over one of those returns something close to black.
+
+If you fork this and change the palette, that is the test that tells you whether your greys are
+readable. Adding a second override is a decision, not a tweak: the point of the closed set is that
+"Atmosphere as it is" stays true enough to be worth saying.
+
 ## Screens are configuration, not markup
 
 A back office screen does not contain a table or a form.

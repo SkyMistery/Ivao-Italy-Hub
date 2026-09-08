@@ -265,7 +265,7 @@ pnpm e2e:full                               # the published application, real AP
 ```
 
 Expect **470 .NET tests** (306 unit, 164 integration against a real MariaDB 11.4.10), **274
-Vitest**, **45 Playwright smokes** and **12 of the full round**. None is skipped.
+Vitest**, **47 Playwright smokes** and **12 of the full round**. None is skipped.
 
 ⚠️ `dotnet test --solution` has been seen on Windows to report "Zero tests ran" with exit code 5
 **in both configurations** — Release does not avoid it — while the very same binaries pass

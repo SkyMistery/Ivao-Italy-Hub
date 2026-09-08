@@ -9,7 +9,15 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.10 — 9 settembre 2026 (**nell'indice di ricerca finisce solo prosa**: l'estrattore
+**Versione:** 2.11 — 9 settembre 2026 (**il tema scuro ha il suo grigio**: `--muted-foreground` è
+l'unico colore che Atmosphere non ribalta, e a 12–14 px stava a 3,14 : 1 contro il 4,5 : 1 di AA. Una
+riga in fondo a `web/src/styles/index.css`, `e2e/contrast.spec.ts` che la difende misurando nove
+schermate, e la prima deroga a «Atmosphere così com'è» — scritta, motivata e sola. **Con questo il
+giro visivo di M1 è chiuso**: nessuno dei suoi quattro punti resta aperto. Conto: **470 test .NET**
+(306 unitari, 164 di integrazione), **274 Vitest**, **47 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.10** — 9 settembre 2026 (**nell'indice di ricerca finisce solo prosa**: l'estrattore
 tiene i valori dentro una mappa tradotta e lascia fuori enumerazioni, identificatori e URL, e toglie
 il Markdown da quello che tiene. Chiude i punti 2 e 3 del giro visivo, cioè gli ultimi due difetti di
 M1 che non fossero una decisione aperta. Aggiornato anche il rapporto di chiusura, perché G13 ha

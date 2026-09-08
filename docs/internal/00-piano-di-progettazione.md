@@ -1,9 +1,27 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.49 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, e nell'indice di ricerca finisce solo prosa)
+**Versione documento:** 0.50 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, e il tema scuro ha il suo grigio)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.50** (9 set 2026): **il tema scuro ha il suo grigio**, e con esso la prima deroga a
+«Atmosphere così com'è» (§4, §16.C). Nota `decisions/2026-09-09-il-grigio-dei-testi-secondari.md`.
+
+Atmosphere ribalta ogni colore di testo per il tema scuro tranne `--muted-foreground`, che resta
+fuselage-500 in tutti e due: un grigio scuro su bianco fa 5,89 : 1 e su `#12131b` fa **3,14 : 1**,
+sotto il 4,5 : 1 che AA chiede a 12 e 14 px. **Una riga** in fondo a `web/src/styles/index.css` lo
+porta a fuselage-400 nel solo tema scuro — 5,66 : 1 — e il tema chiaro non si muove.
+
+⚠️ Perché una deroga e non una passata sulle nostre schermate: **quel token lo usano anche i
+componenti di Atmosphere**, 24 volte nel loro bundle. Riscrivere le nostre 72 occorrenze ne
+lascerebbe 24 illeggibili che non raggiungiamo. La deroga è **una** e va tenuta tale: si scrive qui,
+sta in un posto solo, e un test la difende.
+
+⚠️ Il punto delicato è **dove** sta la riga: il foglio di Atmosphere si carica dopo le utility di
+Tailwind, quindi in fondo a `index.css` e non prima — misurato in un browser, come già era servito
+per `hidden sm:block`. `e2e/contrast.spec.ts` misura ogni testo secondario visibile di nove schermate
+in tema scuro e fallisce se la riga sparisce o smette di vincere.
 
 **Changelog 0.49** (9 set 2026): **nell'indice di ricerca finisce solo prosa**, e la regola diventa
 strutturale invece che scritta.
