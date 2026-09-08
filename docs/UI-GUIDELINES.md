@@ -324,11 +324,27 @@ visitor gets nothing at all. A page does not break because a browser is one rele
 **Every block declares its own `lucide` icon**, and the type insists on it: it is what the editor
 shows in the "add a block" list and in the tree.
 
-**Nothing that is not prose is a free string.** Every string inside a block's properties is
-concatenated into the text of the page for the search index, so an alignment, a column count or an
-icon name is a `z.enum` with values nobody would search for, or a number with `choices`. A column
-count is a number; the shape of a video is `16x9` and not `16:9`, because a colon is what i18next
-reads as a namespace separator.
+**The prose of a block is what is translated, and only that reaches the search index.** The
+extractor walks the properties and keeps a string only if the walk passed through a `Localized` map
+on its way to it; an alignment, a column count, an icon name, a URL — bare strings, all of them — are
+left out. It needs to know nothing about any block's schema, which is the constraint the backend is
+held to, and it is why "nothing that is not prose is a free string" is now a property of the
+mechanism rather than a rule somebody has to remember. It used to be only the rule, and the rule was
+broken by a block in the first set: a snippet read "… four simple steps. `left muted` First of
+all…".
+
+⚠️ The corollary, and it bites: **a searchable string that is not translated is not indexed.** A
+partner's name in `logoWall` and the author of a `testimonial` are written once because they read the
+same in every language, and they are the two that pay for it. If a block of yours carries prose that
+does not vary by language and has to be findable, make it `localized()` anyway.
+
+An alignment or a tone is still a `z.enum` and a column count still a number — not because the index
+would otherwise eat them, but because a select is the right control for a closed set. The shape of a
+video is `16x9` and not `16:9`, because a colon is what i18next reads as a namespace separator.
+
+**And prose loses its Markdown on the way in.** A snippet is read by a person, so the asterisks come
+off, a link keeps its text and loses its address, and a heading or a bullet loses its marker.
+Underscores stay: `snake_case` is a word.
 
 **A block never contains blocks.** `tabs` and `accordion` carry markdown per entry — the same
 sanitized `MarkdownContent` as `text` — and the only nesting in the model is the one sections have

@@ -9,12 +9,19 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.9 — 8 settembre 2026 (la seconda esecuzione della demo ha aggiunto **quattro**
+**Versione:** 2.10 — 9 settembre 2026 (**nell'indice di ricerca finisce solo prosa**: l'estrattore
+tiene i valori dentro una mappa tradotta e lascia fuori enumerazioni, identificatori e URL, e toglie
+il Markdown da quello che tiene. Chiude i punti 2 e 3 del giro visivo, cioè gli ultimi due difetti di
+M1 che non fossero una decisione aperta. Aggiornato anche il rapporto di chiusura, perché G13 ha
+mosso quattro dei suoi cinque numeri. Conto: **470 test .NET** (306 unitari, 164 di integrazione),
+**274 Vitest**, **45 smoke Playwright** e **12 del giro completo**.)
+
+**2.9** — 8 settembre 2026 (la seconda esecuzione della demo ha aggiunto **quattro**
 richieste, non tre, e la quarta è la più stretta: l'indirizzo di una voce di menu è un **insieme
 chiuso** — pagine, anche bozze, schermate del router, link in uso — imposto dal server e non solo
 offerto dal form. Il motivo non è il menu: è che ogni indirizzo che esce dal sito vive in una tabella
-sola. Nota `decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`. Conto: **463 test .NET**
-(300 unitari, 163 di integrazione), **274 Vitest**, **45 smoke Playwright** e **12 del giro completo**.
+sola. Nota `decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`. Conto: **470 test .NET**
+(306 unitari, 164 di integrazione), **274 Vitest**, **45 smoke Playwright** e **12 del giro completo**.
 Resta il tag.)
 
 **2.8** — 7 settembre 2026 (**i quattro difetti di G13 sono chiusi**, e la prima delle

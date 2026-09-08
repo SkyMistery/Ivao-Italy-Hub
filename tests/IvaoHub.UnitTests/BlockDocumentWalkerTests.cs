@@ -57,14 +57,109 @@ public sealed class BlockDocumentWalkerTests
         var italian = Walker.ExtractText(JsonNode.Parse(Body), "it");
         var english = Walker.ExtractText(JsonNode.Parse(Body), "en");
 
-        // Plain strings inside props belong to every language: an href is not translated.
-        Assert.Equal("Benvenuti Inizia /start Testo annidato", italian);
-        Assert.Equal("Welcome Start /start Nested text", english);
+        // ⚠️ `/start` is not in either of them, and that is the rule and not an oversight: what is
+        // indexed is the prose inside a translated map, so a bare string — an href here, an
+        // enumeration elsewhere — never reaches the index.
+        Assert.Equal("Benvenuti Inizia Testo annidato", italian);
+        Assert.Equal("Welcome Start Nested text", english);
 
         // A row of the search index must not carry the other language, or every search would match
         // in every language.
         Assert.DoesNotContain("Welcome", italian, StringComparison.Ordinal);
         Assert.DoesNotContain("Benvenuti", english, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OnlyTheProseOfABlockIsIndexed()
+    {
+        // ⚠️ The defect this rule exists for, in the shape it was found in: the snippet of `/start`
+        // read "… quattro semplici passi. left muted Prima di tutto…" — `align` and `tone` of the
+        // `hero` block, two enumerations stored as strings, sitting in the middle of a sentence.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "blocks": [ { "id": "b", "type": "hero", "version": 1,
+            "props": {
+              "title": { "it": "Quattro semplici passi", "en": "Four simple steps" },
+              "align": "left",
+              "tone": "muted",
+              "mediaId": 7,
+              "href": "https://example.org/somewhere"
+            } } ] } ]
+        }
+        """);
+
+        var text = Walker.ExtractText(body, "it");
+
+        Assert.Equal("Quattro semplici passi", text);
+        Assert.DoesNotContain("left", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("muted", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("example.org", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheMarkdownComesBackOutOfTheProse()
+    {
+        // A reader of a snippet was shown the asterisks, and somebody searching for a word could
+        // miss it for one stuck to its front. The renderer owns Markdown; this only undoes what an
+        // editor can write.
+        var body = JsonNode.Parse("""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "blocks": [ { "id": "b", "type": "text", "version": 1,
+            "props": { "markdown": { "it": "## Chi siamo\n\n**IVAO Italia** è la _community_ dei [piloti](/pilots), con `codice` e:\n\n- un primo punto\n- un secondo" } } } ] } ]
+        }
+        """);
+
+        var text = Walker.ExtractText(body, "it");
+
+        Assert.Equal(
+            "Chi siamo IVAO Italia è la _community_ dei piloti, con codice e: un primo punto un secondo",
+            text);
+    }
+
+    [Theory]
+    // A hyphen inside a sentence is a hyphen, and only the start of a line carries a marker.
+    [InlineData("Un titolo mezzo-lungo", "Un titolo mezzo-lungo")]
+    // `snake_case` is a word: underscores are deliberately left alone.
+    [InlineData("La colonna owner_department", "La colonna owner_department")]
+    // A picture keeps what a reader would have been told, and loses the address.
+    [InlineData("![Il logo](/media/7.png) sopra", "Il logo sopra")]
+    [InlineData("1. primo\n2. secondo", "primo secondo")]
+    public void ProseUndoesOnlyWhatAnEditorCanWrite(string markdown, string expected) =>
+        Assert.Equal(expected, OneParagraph(markdown));
+
+    /// <summary>
+    /// One block holding one translated paragraph, extracted. Asked through the public way in and
+    /// not of the helper behind it: what the index holds is the thing under test.
+    /// </summary>
+    private static string OneParagraph(string markdown)
+    {
+        var body = new JsonObject
+        {
+            ["schemaVersion"] = 1,
+            ["sections"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["id"] = "s",
+                    ["blocks"] = new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            ["id"] = "b",
+                            ["type"] = "text",
+                            ["props"] = new JsonObject
+                            {
+                                ["markdown"] = new JsonObject { ["it"] = markdown, ["en"] = markdown },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        return Walker.ExtractText(body, "it");
     }
 
     [Fact]
@@ -74,11 +169,15 @@ public sealed class BlockDocumentWalkerTests
         {
           "schemaVersion": 1,
           "sections": [ { "id": "s", "blocks": [ { "id": "b", "type": "text",
-            "props": { "byFir": { "it": "Roma", "lirr": "Roma FIR" } } } ] } ]
+            "props": { "byFir": {
+              "it": { "it": "Roma", "en": "Rome" },
+              "lirr": { "it": "Roma FIR", "en": "Rome FIR" } } } } ] } ]
         }
         """);
 
-        // "lirr" is not a language, so the object is walked as a normal one and both values count.
+        // "lirr" is not a language, so the object is walked as a normal one and both values count —
+        // which is why each of them is itself a translated map here: a bare string would not be
+        // indexed at all, and this test is about the detection and not about the rule above it.
         var text = Walker.ExtractText(props, "it");
         Assert.Contains("Roma FIR", text, StringComparison.Ordinal);
     }

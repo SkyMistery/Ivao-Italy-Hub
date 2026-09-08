@@ -1,9 +1,26 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.48 — 8 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, e una voce di menu porta solo dove il sito possiede qualcosa)
+**Versione documento:** 0.49 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, e nell'indice di ricerca finisce solo prosa)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.49** (9 set 2026): **nell'indice di ricerca finisce solo prosa**, e la regola diventa
+strutturale invece che scritta.
+
+§16.C e `CLAUDE.md` §4 vietavano già «nessuna stringa che non sia prosa dentro `props`». Il divieto
+non ha funzionato: `hero` non l'ha seguito, e nessuno poteva accorgersene finché uno snippet non ha
+contenuto prosa vera — «… quattro semplici passi. `left muted` Prima di tutto…», che sono `align` e
+`tone`. Adesso l'estrattore indicizza **solo i valori dentro una mappa tradotta**: la prosa in un
+blocco è `Localized`, un'enumerazione è una stringa nuda e un URL pure. Il server continua a **non
+conoscere nessuno schema** (design M0 §5.3), che era il vincolo. Nello stesso punto la prosa perde il
+Markdown, perché uno snippet non deve leggersi con gli asterischi.
+
+⚠️ Due conseguenze da tenere. La prima: «la prosa in un blocco è sempre `Localized`» **non era vera**
+— `logoWall.items[].name` e `testimonial.author` sono nomi propri, scritti una volta perché uguali in
+ogni lingua, e da oggi non si cercano più; renderli tradotti è una migrazione di props, cioè una
+decisione a sé. La seconda: **non esiste una reindicizzazione**, e non si costruisce per questo — le
+righe già scritte si aggiornano quando qualcuno le salva.
 
 **Changelog 0.48** (8 set 2026, **G13**, seconda esecuzione della demo): due decisioni, e la seconda
 è la più stretta che questo prodotto abbia preso su un campo.

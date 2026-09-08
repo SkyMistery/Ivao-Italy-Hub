@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa, M1 è costruita e in collaudo**: design
+**Ultimo aggiornamento:** 9 settembre 2026 — **M0 è chiusa, M1 è costruita e in collaudo**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -42,11 +42,11 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.48. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.9
+**Piano:** v0.49. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.10
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
 aperta** (§28) ma non ha più lavoro suo — quattro difetti e sedici richieste, tutti chiusi — e il tag
 viene dopo che Carmine ha rieseguito la scheda.
-**Test:** 463 .NET verdi (300 unit + 163 integrazione) + **274 Vitest** + **45 smoke Playwright** +
+**Test:** 470 .NET verdi (306 unit + 164 integrazione) + **274 Vitest** + **45 smoke Playwright** +
 **12 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro l'8 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.

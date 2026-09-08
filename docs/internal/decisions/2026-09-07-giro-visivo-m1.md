@@ -52,7 +52,7 @@ piccolo — schede dello staff, note sotto i campi, piè di pagina, descrizioni 
 È un token di **Atmosphere**, non nostro: o lo si sovrascrive nel tema della divisione, o si smette
 di usare il grigio per il testo piccolo. Entrambe sono decisioni, e la seconda è molta UI.
 
-### 2. ⚠️ Le props che non sono prosa finiscono nell'indice di ricerca
+### 2. Le props che non sono prosa finiscono nell'indice di ricerca — ✅ **chiuso il 9 settembre 2026**
 
 Nell'indice di `/start`, in mezzo al testo: **«… quattro semplici passi. `left muted` Prima di tutto…»**
 — sono `align` e `tone` del blocco `hero`, due enumerazioni salvate come stringhe.
@@ -67,10 +67,33 @@ tradotte**. La prosa in un blocco è sempre `Localized`; le enumerazioni sono st
 pure — che nell'indice non ci vogliono comunque. Il server distingue le due cose **senza conoscere
 gli schemi**, che è esattamente il vincolo di design M0 §5.3. Tocca l'estrattore, quindi è una nota.
 
-### 3. La sintassi Markdown finisce nell'indice e nello snippet
+**Fatto così**, in `BlockDocumentWalker.ExtractText`: la camminata porta con sé un flag
+`insideTranslation`, e una stringa entra nell'indice **solo** se il cammino è passato da una mappa
+tradotta. Niente elenchi di proprietà, niente schemi in C#.
+
+⚠️ **Quello che è costato, e non era scritto nella riga «la prosa è sempre `Localized`»:** non lo è.
+Due props sono prosa cercabile e **non** tradotte, di proposito — `logoWall.items[].name` (il nome di
+un partner) e `testimonial.author` (il nome di una persona), che si scrivono una volta perché sono la
+stessa parola in ogni lingua. Da oggi **non finiscono più nell'indice**. Renderle tradotte cambierebbe
+la forma di props che le pagine già contengono, cioè una migrazione dei blocchi: è una decisione a sé,
+e finché non si prende quei due nomi non si cercano. Nessuna pagina seminata usa quei due blocchi.
+
+⚠️ **E le righe già indicizzate restano com'erano.** L'indice lo riscrive l'interceptor quando la
+riga si salva, e non esiste un comando di reindicizzazione — costruirne uno sarebbe un meccanismo
+nuovo. Su un database fresco non si pone; su uno di sviluppo già seminato basta ripubblicare le
+pagine, o ributtarlo via.
+
+### 3. La sintassi Markdown finisce nell'indice e nello snippet — ✅ **chiuso il 9 settembre 2026**
 
 Sempre in `/start`: «`**IVAO Italia**` è la community…». Chi cerca trova lo stesso, ma legge gli
 asterischi. Meno grave del n.2 e con lo stesso punto di intervento.
+
+**Fatto insieme al n.2**, nello stesso posto: `BlockDocumentWalker.Prose` disfa **solo quello che un
+redattore può scrivere** — un link tiene il testo e perde l'indirizzo, un titolo, una citazione o un
+punto elenco perdono il segno, e i caratteri di enfasi e di codice se ne vanno. Gli underscore
+restano: `snake_case` è una parola, e un corsivo scritto così è raro abbastanza da non valere la
+rottura. Qualunque cosa più furba sarebbe un parser Markdown dentro la ricerca, e quello che conta ce
+l'ha già il renderer.
 
 ### 4. Ogni pagina pubblica ha due `h1` — ✅ **chiuso l'8 settembre 2026 (G13)**
 
