@@ -27,7 +27,12 @@ interface CommonStrings {
   readonly menu: {
     readonly title: string;
     readonly create: string;
-    readonly fields: { readonly label: string; readonly path: string };
+    readonly fields: {
+      readonly label: string;
+      readonly path: string;
+      readonly sort: string;
+      readonly visibility: string;
+    };
   };
   readonly dashboard: { readonly edit: string };
   readonly list: { readonly file: string };

@@ -16,8 +16,11 @@ export const menuColumns: readonly ColumnSpec<MenuItemListDto>[] = [
   // The visibility of a menu entry, read from the words the content screens already use: an entry
   // is shown to the same four audiences a page is, and four labels written twice are four labels
   // that drift.
-  col.badge('visibility', 'content'),
-  col.number('sort', { sortable: true }),
+  // ⚠️ The two Carmine asked for while running the demo: an entry's audience and its order are
+  // changed from the table, without opening it. The engine draws the control; the screen says how
+  // to save (note `2026-09-08-modificare-da-una-lista.md`).
+  col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff', 'Department'] }),
+  col.number('sort', { sortable: true, editable: true }),
   col.boolean('isActive'),
   col.date('updatedAt', { sortable: true }),
 ];

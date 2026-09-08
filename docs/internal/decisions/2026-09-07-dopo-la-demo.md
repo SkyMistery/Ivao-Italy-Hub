@@ -156,10 +156,10 @@ Carmine ha rifatto la scheda dal punto 1 con l'app in esecuzione. Due cose dalla
    link deve avere il meccanismo introdotto per documenti e news»~~ ✅ **fatta** (`3973eb0`): il
    `path` di una voce di menu — con la barra davanti, che è la parola in più che il generatore ha
    imparato — la `key` di una categoria e la `key` di un tipo di calendario.
-2. **`Order` e `Visible to` modificabili dalla tabella** in `/staff/wd/menu`. ⚠️ **Proposta scritta,
-   aspetta Carmine**: `2026-09-08-modificare-da-una-lista.md`. Non è una schermata: `DataList` è
-   della spina dorsale, e la lista non ha con che scrivere — riceve una proiezione, e il motore
-   scrive con il DTO completo. Tre strade, la raccomandazione è quella che non allarga l'API.
+2. ~~**`Order` e `Visible to` modificabili dalla tabella** in `/staff/wd/menu`~~ ✅ **fatta**, sulla
+   seconda delle tre opzioni della nota, decisa da Carmine: la cella rilegge la riga e la riscrive,
+   nessun verbo nuovo sull'API. Nota `2026-09-08-modificare-da-una-lista.md`, con in fondo il conto —
+   fra cui che **la `Select` di Atmosphere butta via `aria-label`**.
 
 Il resto della parte 1 è andato.
 

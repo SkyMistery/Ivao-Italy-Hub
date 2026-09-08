@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { stubTheApiAsStaff } from './fixtures';
+import { siteStaffBootstrap, stubTheApiAsStaff } from './fixtures';
 import { englishCommon } from './locales';
 
 /**
@@ -175,6 +175,42 @@ test('the calendar vocabulary is a screen of the administration, with no departm
   await expect(
     palette.getByText(`${englishCommon.admin.title} — ${englishCommon.calendarKinds.title}`),
   ).toBeVisible();
+});
+
+test('the order and the audience of a menu entry are changed from the table', async ({ page }) => {
+  // Asked for by Carmine while running part 1 of the demo. What a browser adds to the unit tests is
+  // the whole of it: the cell has to be a control, the save has to leave, and the value has to stay
+  // — three things that are true in jsdom and mean nothing until a browser lays the table out.
+  //
+  // ⚠️ Signed in as staff of the department that **owns the site**: the menu is not a screen every
+  // department has, and the ordinary fixture — a coordinator of events — is rightly answered "this
+  // is not for you" there.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/menu');
+
+  const order = page.getByRole('spinbutton', { name: englishCommon.menu.fields.sort });
+  await expect(order).toHaveValue('20');
+
+  const written = page.waitForRequest(
+    (request) => request.url().includes('/api/menu/3') && request.method() === 'PUT',
+  );
+
+  await order.fill('5');
+  // The save is on leaving the field and not on every keystroke: twenty rows would be twenty
+  // requests otherwise.
+  await order.blur();
+
+  const request = await written;
+  expect(JSON.parse(request.postData() ?? '{}')).toMatchObject({ sort: 5, path: '/pilots' });
+
+  // ⚠️ The whole row went back, not just the field: the list is handed a projection and the engine
+  // writes with the full payload, so the cell reads the row before it writes it
+  // (`decisions/2026-09-08-modificare-da-una-lista.md`).
+  await expect(order).toHaveValue('5');
+
+  // And the audience is a select in its cell, with the four the content screens use.
+  const audience = page.getByRole('combobox', { name: englishCommon.menu.fields.visibility });
+  await expect(audience).toBeVisible();
 });
 
 test('the gallery draws every kind of field the generator learned, and they are usable sizes', async ({

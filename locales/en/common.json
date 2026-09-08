@@ -130,7 +130,10 @@
       "description": "Everything this department creates will show up in this list.",
       "noMatch": "No row matches that search."
     },
-    "file": "Open the file"
+    "file": "Open the file",
+    "edit": {
+      "refused": "That change was not saved. The row may have been changed by somebody else in the meantime."
+    }
   },
   "notFound": {
     "title": "This page does not exist",

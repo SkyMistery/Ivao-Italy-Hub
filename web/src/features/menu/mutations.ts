@@ -3,7 +3,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 
-import { menuDetailKey, menuKey, type MenuItemDetailDto, type MenuItemWriteDto } from './queries';
+import {
+  menuDetailKey,
+  menuItemQuery,
+  menuKey,
+  type MenuItemDetailDto,
+  type MenuItemWriteDto,
+} from './queries';
 import type { MenuItemFormValues } from './schema';
 
 /**
@@ -107,4 +113,37 @@ export function useDeleteMenuItem() {
       void queryClient.invalidateQueries({ queryKey: menuKey });
     },
   });
+}
+
+/**
+ * Changing one field of one entry from the list, without opening it.
+ *
+ * ⚠️ It reads the row and writes it back, which is the decision of
+ * `decisions/2026-09-08-modificare-da-una-lista.md`: the list is handed a projection and the engine
+ * writes with the whole payload, so a cell has to fetch the row it is editing before it can save
+ * one field of it. Two round trips, no new verb on the API — and `rowVersion` still answers 409 to
+ * somebody who saved in between, exactly as it does from the form.
+ *
+ * It lives here and not in `DataList` because only this feature knows what a menu entry is: the
+ * list engine draws a control and hands back a field and a value.
+ */
+export function useInlineEditMenuItem(locales: readonly string[]) {
+  const queryClient = useQueryClient();
+
+  return async (id: number, field: string, value: unknown): Promise<void> => {
+    const current = await queryClient.fetchQuery(menuItemQuery(id));
+    const values = { ...toFormValues(current, locales), [field]: value };
+
+    const saved = unwrap(
+      await api.PUT('/api/menu/{id}', {
+        params: { path: { id: String(id) } },
+        body: toWriteDto(values),
+      }),
+    );
+
+    queryClient.setQueryData(menuDetailKey(id), saved);
+    // Not awaited: the row on screen is already right, and waiting for every list under that key to
+    // refetch is what made a delete say nothing at all (`2026-09-07-dopo-la-demo.md`, defect D2).
+    void queryClient.invalidateQueries({ queryKey: menuKey });
+  };
 }

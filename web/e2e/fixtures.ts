@@ -181,6 +181,47 @@ export const staffBootstrap = {
   },
 };
 
+/**
+ * The same coordinator, of the department that owns the site.
+ *
+ * ⚠️ It exists because the menu is **not** a screen every department has: it belongs to the web
+ * team, which is the whole point of the resource (design M1 §8.1), so the ordinary staff fixture —
+ * a coordinator of events, on purpose — is answered "this is not for you" there. A test of the menu
+ * that used it would be testing the guard.
+ */
+export const siteStaffBootstrap = {
+  ...staffBootstrap,
+  user: { ...staffBootstrap.user, departments: ['WD'] },
+  permissions: [
+    ...staffBootstrap.permissions.filter((permission) => permission.department !== 'ED'),
+    { name: 'Menu.View', department: 'WD' },
+    { name: 'Menu.Edit', department: 'WD' },
+  ],
+  navigation: {
+    ...staffBootstrap.navigation,
+    staff: [{ key: 'nav.menu', path: '/staff/wd/menu', label: null, children: [] }],
+  },
+};
+
+/** One entry of the site menu, as the list answers and as the detail answers. */
+export const oneMenuItem = {
+  id: 3,
+  scope: 'Public',
+  parentId: null,
+  label: { en: 'Pilots', it: 'Piloti' },
+  path: '/pilots',
+  sort: 20,
+  visibility: 'Public',
+  isActive: true,
+  createdAt: '2026-09-01T10:00:00Z',
+  createdBy: 111111,
+  updatedAt: '2026-09-06T09:00:00Z',
+  updatedBy: 111111,
+  rowVersion: '2026-09-06T09:00:00',
+};
+
+export const oneMenuPage = { items: [oneMenuItem], page: 1, pageSize: 20, total: 1 };
+
 /** The vocabulary of the calendar, the shape `MapCrud` answers a list with. */
 export const theVocabulary = {
   items: [
@@ -424,12 +465,12 @@ export async function stubTheSearch(page: Page, answer: unknown): Promise<void> 
  * `/api/links` with one page. Anything else under `/api` still fails the test rather than being
  * quietly answered, so a screen that started calling something new says so.
  */
-export async function stubTheApiAsStaff(page: Page): Promise<void> {
+export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBootstrap): Promise<void> {
   await page.route('**/api/me', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(staffBootstrap),
+      body: JSON.stringify(bootstrap),
     }),
   );
 
@@ -475,6 +516,31 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
   // matches routes in **reverse** registration order, so `**/api/calendar**` — which also matches
   // `/api/calendar-kinds` — would answer this one with a page of entries. It did, and the screen
   // drew two rows of empty cells until this moved down here.
+  await page.route('**/api/menu**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneMenuPage) }),
+  );
+
+  // After the list, so that it wins for a single row: the detail a cell reads before it writes, and
+  // the write itself, which answers with the row as it now stands.
+  await page.route('**/api/menu/*', async (route) => {
+    const request = route.request();
+
+    if (request.method() === 'PUT') {
+      const sent = JSON.parse(request.postData() ?? '{}') as Record<string, unknown>;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...oneMenuItem, ...sent }),
+      });
+    }
+
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(oneMenuItem),
+    });
+  });
+
   await page.route('**/api/calendar-kinds**', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(theVocabulary) }),
   );
@@ -496,7 +562,8 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
       url.includes('/api/media') ||
       url.includes('/api/content') ||
       url.includes('/api/categories') ||
-      url.includes('/api/calendar')
+      url.includes('/api/calendar') ||
+      url.includes('/api/menu')
     ) {
       return route.fallback();
     }

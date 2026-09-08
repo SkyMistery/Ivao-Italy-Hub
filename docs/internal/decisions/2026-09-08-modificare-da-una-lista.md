@@ -1,7 +1,8 @@
 # Modificare una riga dalla lista, senza aprire il form
 
 **Data:** 8 settembre 2026 — G13, chiesto da Carmine eseguendo la parte 1 della demo
-**Stato:** ⚠️ **proposta, da decidere.** Niente è stato scritto.
+**Stato:** **decisa da Carmine l'8 settembre 2026 — opzione 2**, e costruita lo stesso giorno.
+In fondo c'è che cosa è costata.
 **Perché esiste:** regola (c) di piano §16.E. La lista generica è **un meccanismo della spina
 dorsale** — la usano tutte le schermate del back-office — e insegnarle a scrivere la cambia per
 tutte insieme.
@@ -60,3 +61,30 @@ Quello che porta con sé, qualunque delle due:
 
 Niente si rompe: si modifica una voce del menu aprendola, che è come si fa oggi per ogni altra
 risorsa. La richiesta resta scritta qui, con il conto già fatto.
+
+---
+
+## Che cosa è costata
+
+Il conto è quello previsto, e le due cose in più sono di accessibilità.
+
+- `ColumnSpec` ha imparato `editable`: un booleano su una colonna numerica, **l'elenco dei valori**
+  su una colonna a badge — una cella che offre una scelta deve sapere quali sono, e un booleano non
+  può portarle.
+- `DataList` disegna il controllo **solo se** la colonna lo chiede **e** la schermata gli ha dato un
+  modo di salvare: due condizioni, o su una schermata senza salvataggio si vedrebbe un campo che non
+  fa niente.
+- `useInlineEditMenuItem` è il modo di salvare, e sta nella feature: legge la riga, sostituisce il
+  campo, la riscrive. Nessun verbo nuovo, e il `rowVersion` risponde 409 a chi ha salvato nel
+  frattempo esattamente come dal form.
+- Si salva **alla perdita del fuoco** per un numero e **alla scelta** per un elenco; se il server
+  rifiuta, la cella torna al valore di prima e la ragione la dice un `Notice` in tono errore.
+
+⚠️ **La `Select` di Atmosphere butta via `aria-label`.** Misurato nel DOM dopo che un test non
+trovava il controllo per nome: adesso entrambe le celle hanno una `<label>` vera, invisibile, legata
+per `id`. Vale anche fuori di qui — un `aria-label` su quel componente non arriva a destinazione.
+
+⚠️ **Il menu non è una schermata di ogni dipartimento**, quindi il banco di prova ha una seconda
+identità: `siteStaffBootstrap`, staff del dipartimento che possiede il sito. La fixture ordinaria è
+un coordinatore Events di proposito, e su `/staff/wd/menu` si sente rispondere «questa non è per te»
+— che è giusto, ed è esattamente ciò che un test del menu non deve provare.

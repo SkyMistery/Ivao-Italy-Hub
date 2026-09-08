@@ -130,7 +130,10 @@
       "description": "Tutto quello che questo dipartimento crea comparirà in questo elenco.",
       "noMatch": "Nessuna riga corrisponde alla ricerca."
     },
-    "file": "Apri il file"
+    "file": "Apri il file",
+    "edit": {
+      "refused": "Quella modifica non è stata salvata. Può darsi che qualcun altro abbia cambiato la riga nel frattempo."
+    }
   },
   "notFound": {
     "title": "Questa pagina non esiste",
