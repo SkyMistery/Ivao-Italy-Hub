@@ -62,6 +62,11 @@ constant anywhere.
 
 The list lives in `web/src/shared/ui/catalog.ts`. Everything else is Atmosphere.
 
+⚠️ **Atmosphere's `Select` throws `aria-label` away.** A select given only that attribute has no
+accessible name at all: label it with a real `<label htmlFor>` — visually hidden where there is no
+room for one — and give the select the matching `id`, which it does forward. Measured in the DOM
+after a test could not find a control by its name.
+
 ⚠️ **`hidden sm:block` does nothing here — write `max-sm:hidden`.** Atmosphere's stylesheet is
 imported after Tailwind's own utilities and declares `.hidden` again, so the plain class wins over
 the one inside the `sm` media query and the element never comes back on a wide screen. Both rules
