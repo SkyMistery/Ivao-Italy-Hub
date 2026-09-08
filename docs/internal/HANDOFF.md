@@ -39,10 +39,10 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.46. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.8
+**Piano:** v0.47. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.8
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
 aperta** (§28), i suoi quattro difetti sono chiusi, e il tag viene dopo di lei.
-**Test:** 459 .NET verdi (300 unit + 159 integrazione) + **267 Vitest** + **42 smoke Playwright** +
+**Test:** 462 .NET verdi (300 unit + 162 integrazione) + **268 Vitest** + **43 smoke Playwright** +
 **12 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro l'8 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
@@ -3178,9 +3178,9 @@ ragione scritta lì.
 
 ### Si continua G13 dalle richieste: **i quattro difetti sono chiusi**
 
-Ramo **`m1/g13-fixes`**, dodici commit, niente di non committato. Il piano di implementazione è a
+Ramo **`m1/g13-fixes`**, quattordici commit, **spinto**. Il piano di implementazione è a
 v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
-locale: **459 .NET** (300 unit + 159 integrazione), **267 Vitest**, **42 smoke Playwright** e **12
+locale: **462 .NET** (300 unit + 162 integrazione), **268 Vitest**, **43 smoke Playwright** e **12
 del giro pieno** (`pnpm e2e:full`, rieseguito l'8 set 2026 contro l'API vera, e nei suoi log si vede
 l'editor che chiede `publish-problems`), più lint, typecheck, format e i18n. Non resta niente di
 non eseguito.
@@ -3199,14 +3199,16 @@ non eseguito.
    in tono `warning` che si svuota da sola. ⚠️ **Quarto verbo a mano** appeso a `MapCrud`, deciso
    con Carmine perché l'alternativa era riscrivere le regole nel client.
 4. ~~Il calendario (10), la striscia (12) e la ricerca visibile (13)~~ — fatti.
-5. Restano **due** richieste:
-   - la **11**, i tipi di evento di divisione: ⚠️ **la proposta è scritta e aspetta Carmine** —
-     `decisions/2026-09-08-tipi-di-evento-di-divisione.md`. La raccomandazione è una tabella servita
-     da `MapCrud` con `SharedForReading` e un permesso globale; la cosa da decidere è una sola, e
-     cioè che sarebbe **la prima riga dell'hub senza `owner_department`**, quindi la prima che non
-     passa dall'unico authorization handler. Finché non esiste, la chip del calendario si colora da
-     sé: cinque tipi noti con un colore ciascuno, il resto derivato dalla parola.
-   - la **14**, il giro sull'editor «più intuitivo», che la lista stessa mette per ultima.
+5. ~~La **11**, i tipi di evento di divisione~~ — decisa da Carmine sulla prima opzione della nota e
+   **fatta** (`8b6458c`): `cms_calendar_kinds`, modalità globale del motore CRUD, `Calendar.View`
+   per leggere e il nuovo **globale** `Calendar.ManageKinds` per scrivere, schermata sotto
+   `/staff/admin/calendar-kinds`, cinque parole seminate con etichette i18n.
+   ⚠️ Da qui in avanti **il `kind` di una voce non è testo libero**: il validatore chiede al
+   vocabolario, ed è l'unico validatore dell'hub che interroga il database. Una voce che un modulo
+   proietta non passa da quel DTO e resta libera, ed è voluto. Il vocabolario viaggia in `/api/me`,
+   perché la chip di un calendario pubblico deve dire la parola e il colore.
+6. Resta **una** richiesta: la **14**, il giro sull'editor «più intuitivo», che la lista stessa mette
+   per ultima. Poi la demo rifatta da Carmine dal punto 1, e il tag.
 
 ⚠️ **`hidden sm:block` non funziona in questa applicazione**, ed è costato due elementi invisibili
 nella stessa ora: il foglio di stile di Atmosphere è importato **dopo** le utility di Tailwind e

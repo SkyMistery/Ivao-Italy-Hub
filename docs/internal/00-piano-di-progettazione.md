@@ -1,12 +1,13 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.46 — 7 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, e la sigla di un dipartimento è il suo segno)
+**Versione documento:** 0.47 — 8 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, e i tipi di evento sono un vocabolario di divisione)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
 
-**Changelog 0.46** (7 set 2026, **G13**, dopo che Carmine ha eseguito la demo): due difetti trovati
-usando, e una decisione di segno.
+**Changelog 0.47** (7–8 set 2026, **G13**, dopo che Carmine ha eseguito la demo): due difetti trovati
+usando, e tre decisioni — il segno di un dipartimento, l'avviso a quattro stati, e il vocabolario dei
+tipi di evento.
 
 **Il soffitto di visibilità vale anche per le immagini**, ed è lo stesso `VisibilityCeiling` del
 changelog 0.29 — non un secondo controllo. Un file arriva nella libreria visibile allo staff
@@ -30,6 +31,19 @@ settima — il numero da riportare alla chiusura di G13 è **sette**, e la ragio
 due le ha chieste l'uso, non i blocchi. Segue il titolo finché il campo contiene esattamente ciò che
 è stato proposto, e smette per sempre appena qualcuno ci scrive: un indirizzo sopravvive alla pagina,
 e uno che si riscrive sotto le dita di chi lo sta scrivendo sarebbe peggio di uno da scrivere a mano.
+
+**I tipi di evento del calendario sono un vocabolario di divisione** (deciso da Carmine l'8 set
+2026, nota `decisions/2026-09-08-tipi-di-evento-di-divisione.md`): `cms_calendar_kinds`, servita dal
+motore CRUD in **modalità globale** — quella che i grant usano da M0 — letta con `Calendar.View` e
+scritta con `Calendar.ManageKinds`, che è **globale** e quindi appartiene per costruzione ai ruoli
+che raggiungono ogni dipartimento. Non sono le categorie, che restano per dipartimento.
+
+⚠️ Due conseguenze da non perdere. Il `kind` di una voce **non è più testo libero**: il validatore
+chiede al vocabolario, ed è l'unico validatore dell'hub che interroga il database — una voce che un
+modulo proietta non passa da quel DTO e resta libera. E il vocabolario viaggia in **`/api/me`**,
+perché una chip su un calendario pubblico deve dire la parola e il colore e un visitatore non può
+leggere `/api/calendar-kinds`. Il colore è una colonna: un colore scelto accomuna due tipi che vanno
+insieme, un hash no.
 
 **«Cosa manca per pubblicare» è una domanda al server, non un calcolo del client.** Le regole della
 pubblicazione stanno in un posto solo; il client che se le ricalcolasse sarebbe la seconda copia, e

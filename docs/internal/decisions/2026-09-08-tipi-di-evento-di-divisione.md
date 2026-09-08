@@ -1,7 +1,9 @@
 # I tipi di evento sono di divisione: dove metterli
 
 **Data:** 8 settembre 2026 — G13, richiesta 11 della demo
-**Stato:** ⚠️ **proposta, da decidere con Carmine.** Niente è stato scritto.
+**Stato:** **decisa da Carmine l'8 settembre 2026 — opzione 1**, e costruita lo stesso giorno
+(`8b6458c`). Questa nota resta com'era scritta, con in fondo che cosa è costata davvero e la
+**correzione di un errore che conteneva**.
 **Perché esiste:** regola (c) di piano §16.E — serve un meccanismo che non c'è (un vocabolario **di
 divisione**), e il piano di implementazione di M1 dice per questa richiesta «da proporre prima di
 scriverlo».
@@ -66,3 +68,36 @@ Quello che porta con sé, se la decisione è questa:
 Niente si rompe. Il calendario resta a testo libero, la chip resta colorata per parola, e la
 richiesta 11 resta aperta con questa nota accanto. È l'unica delle dodici che tocca la spina
 dorsale, ed è l'unica che il piano di implementazione dice di proporre prima di scrivere.
+
+---
+
+## Che cosa è costata, e l'errore che questa nota conteneva
+
+⚠️ **«Sarebbe la prima riga senza `owner_department`» era sbagliato**, ed era il punto su cui la
+nota chiedeva a Carmine di decidere. I **grant** ci sono arrivati in M0: `GrantEndpoints` dice a
+chiare lettere di essere «la prima risorsa dell'hub senza nessun dipartimento», e per servirla il
+motore CRUD ha già la modalità globale — `ReadPolicy` e `WritePolicy` al posto di un'area di
+permessi. Quindi **la spina dorsale non è stata toccata**: non c'è nessuna opzione nuova di
+`MapCrud`, e il pezzo che la nota segnava come «da guardare con attenzione» non esisteva.
+
+Il resto del conto è quello previsto: una tabella (`cms_calendar_kinds`), una migrazione additiva,
+un permesso globale (`Calendar.ManageKinds`) che i ruoli che raggiungono ogni dipartimento hanno per
+il fatto stesso di essere globale — nessuna riga nella matrice — una schermata generata sotto
+`/staff/admin`, e il `kind` del form del calendario che diventa una select.
+
+Due cose in più, non previste e giuste:
+
+- **Il `kind` di una voce non è più testo libero.** Il validatore chiede al vocabolario, ed è
+  l'unico validatore dell'hub che fa una domanda al database. Una voce proiettata da un modulo non
+  passa da quel DTO e non viene toccata.
+- **Il vocabolario viaggia in `/api/me`.** Una chip su un calendario pubblico deve dire la parola e
+  il colore, e un visitatore non può leggere `/api/calendar-kinds`, che sta dietro `Calendar.View`.
+
+E due difetti trovati per strada, corretti nello stesso commit: una `Select` generata non aveva
+`id`, quindi l'etichetta della sua riga puntava al nulla e il campo non aveva **nessun** nome
+accessibile — valeva per ogni campo `choices` di ogni form; e Playwright fa il match delle rotte in
+ordine **inverso** di registrazione, per cui lo stub di `**/api/calendar**` rispondeva anche a
+`/api/calendar-kinds`.
+
+**Il colore adesso è una colonna**, e la mezza pagina che lo derivava dalla parola è sparita: un
+colore scelto da qualcuno può accomunare due tipi che vanno insieme, un hash no.

@@ -16,7 +16,9 @@ un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCe
 Data. La sigla di un dipartimento è il suo segno. Fatte anche le richieste 5, 6 e 9: lo `slug` proposto dal titolo — la **settima** estensione del
 generatore di form — e l'avviso a quattro stati, che è il **quinto componente custom** e porta con
 sé la conferma che l'editor deve a chi clicca. Fatte anche la 7 — con lei il **quarto** verbo a mano appeso a `MapCrud` — e le 10, 12 e 13.
-Restano la **11**, che va proposta prima di scriverla, la **14** e il tag.)
+Fatta anche la **11**, decisa da Carmine sulla prima delle tre opzioni della nota: i tipi di evento
+sono una tabella di divisione, il `kind` di una voce non è più testo libero e il vocabolario viaggia
+in `/api/me`. Restano la **14** e il tag.)
 
 **2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
@@ -1095,12 +1097,17 @@ seguire il tag, se Carmine preferisce; i difetti no.
     fra le viste della schermata — è quella che mostra un **blocco** dentro una pagina. ⚠️ La chip
     è colorata **senza** vocabolario: i cinque tipi che l'entità documenta hanno un colore ciascuno
     e tutto il resto lo deriva dalla parola, finché la 11 non arriva.
-11. I **tipi di evento decisi centralmente** e uguali per tutti. ⚠️ **Proposta scritta e in attesa
-    di Carmine**: `decisions/2026-09-08-tipi-di-evento-di-divisione.md`. Tre modi, la
-    raccomandazione è il primo — una tabella servita da `MapCrud` con `SharedForReading` e un
-    permesso globale — e il pezzo da guardare è che sarebbe **la prima riga senza
-    `owner_department`**, quindi la prima che non passa dall'unico authorization handler. Niente è
-    stato scritto.
+11. ~~I **tipi di evento decisi centralmente** e uguali per tutti~~ — **fatto** (`8b6458c`), sulla
+    prima delle tre opzioni della nota, decisa da Carmine: `cms_calendar_kinds`, servita da
+    `MapCrud` in modalità globale, letta con `Calendar.View` e scritta con il nuovo
+    `Calendar.ManageKinds`, che è **globale** e quindi appartiene ai ruoli che raggiungono ogni
+    dipartimento senza una riga in più nella matrice. Tre test di integrazione
+    (`CalendarKindsTests`), verificati rompendo il controllo.
+    ⚠️ **La nota conteneva un errore**, corretto in fondo a lei: questa **non** è la prima riga senza
+    `owner_department` — i grant lo sono da M0 — quindi la spina dorsale non è stata toccata e non
+    c'è nessuna opzione nuova di `MapCrud`. In più, il `kind` di una voce **non è più testo libero**
+    e il vocabolario viaggia in `/api/me`, perché una chip su una pagina pubblica deve dire la
+    parola e il colore.
 12. ~~`LiveStatusStrip` con una gerarchia visiva vera~~ — **fatto**, e senza aggiungere niente: il
     numero è la cosa più forte della banda, le parole la più debole, un'icona per figura, e il
     puntino che dice «di questo minuto» respira (solo per chi non ha chiesto meno movimento).
