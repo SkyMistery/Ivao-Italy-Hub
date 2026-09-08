@@ -18,7 +18,10 @@ generatore di form — e l'avviso a quattro stati, che è il **quinto componente
 sé la conferma che l'editor deve a chi clicca. Fatte anche la 7 — con lei il **quarto** verbo a mano appeso a `MapCrud` — e le 10, 12 e 13.
 Fatta anche la **11**, decisa da Carmine sulla prima delle tre opzioni della nota: i tipi di evento
 sono una tabella di divisione, il `kind` di una voce non è più testo libero e il vocabolario viaggia
-in `/api/me`. **G13 è completa**: quattro difetti e dodici richieste su dodici. Resta il tag.)
+in `/api/me`. **G13 è completa**: quattro difetti e dodici richieste su dodici. La seconda esecuzione della demo
+ne ha aggiunte tre, tutte fatte: l'indirizzo proposto anche fuori dai contenuti, `Order` e
+`Visible to` modificabili dalla tabella, e l'indirizzo di una voce di menu che **suggerisce le
+pagine che esistono** — l'**ottava** estensione del generatore di form. Resta il tag.)
 
 **2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e

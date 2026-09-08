@@ -161,6 +161,17 @@ Carmine ha rifatto la scheda dal punto 1 con l'app in esecuzione. Due cose dalla
    nessun verbo nuovo sull'API. Nota `2026-09-08-modificare-da-una-lista.md`, con in fondo il conto —
    fra cui che **la `Select` di Atmosphere butta via `aria-label`**.
 
+3. ~~**L'indirizzo di una voce di menu suggerisce le pagine che esistono**, divise per dipartimento,
+   con la possibilità di cercarle scrivendo o di mettere un link esterno~~ ✅ **fatta** (`0442e40`):
+   è l'**ottava** estensione del generatore di form, `suggestions`. Non è `choices` — una select
+   rifiuta ciò che non elenca, e un menu che potesse puntare solo a una pagina di questo sito non
+   potrebbe linkare il forum. Quello che si scrive **è** il valore; l'elenco è un modo di non
+   scriverlo. Le pagine pubblicate arrivano raggruppate per dipartimento, e le schermate
+   dell'applicazione — che sono rotte e non righe — sono un gruppo a parte.
+   ⚠️ Misurato in un browser: la tendina si apriva al fuoco e si chiudeva sullo stesso clic, perché
+   Radix congeda un popover su un evento di puntatore fuori dal suo contenuto — e la casella è fuori
+   dal suo contenuto. I test unitari passavano lo stesso.
+
 Il resto della parte 1 è andato.
 
 ## Le quattro decisioni prese

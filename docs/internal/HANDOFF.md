@@ -3185,8 +3185,10 @@ del giro pieno** (`pnpm e2e:full`, rieseguito l'8 set 2026 contro l'API vera, e 
 l'editor che chiede `publish-problems`), più lint, typecheck, format e i18n. Non resta niente di
 non eseguito.
 
-⚠️ **Il numero da riportare alla chiusura sono sette estensioni del generatore di form**, non sei:
-`slugFrom` è la settima, e §12 del design ne prevedeva cinque.
+⚠️ **Il numero da riportare alla chiusura sono otto estensioni del generatore di form**, non sei:
+`slugFrom` è la settima e `suggestions` l'ottava, e §12 del design ne prevedeva cinque. Le ultime
+due le ha chieste l'uso, non i blocchi — che è la ragione dello scarto, e vale la pena scriverla
+così nel rapporto.
 
 **Il prossimo passo**, nell'ordine del piano di implementazione §G13:
 
