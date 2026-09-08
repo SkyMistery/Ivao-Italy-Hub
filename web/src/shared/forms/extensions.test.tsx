@@ -437,6 +437,26 @@ test('the proposal reads the default language of the division, and falls back to
   expect(addressBox()).toHaveValue('about-us');
 });
 
+test('a field that is a path proposes one, slash and all', async () => {
+  const user = userEvent.setup();
+
+  const pathSchema = z.object({
+    label: localized(),
+    path: z.string().meta({ slugFrom: 'label', slugPrefix: '/' }),
+  });
+
+  render(
+    pathSchema,
+    { label: { en: '', it: '' }, path: '' },
+    { labels: { fields: { label: 'Label', path: 'Address' } }, division: DIVISION },
+  );
+
+  // The menu writes `/chi-siamo` where a page writes `chi-siamo` (asked for while running the demo
+  // of M1, part 1). Same annotation, one word more.
+  await user.type(screen.getAllByRole('textbox')[0]!, 'About us');
+  expect(screen.getByLabelText('Address')).toHaveValue('/about-us');
+});
+
 // ---- and the property none of the five may weaken --------------------------------------------
 
 test('the generator still refuses a type it cannot draw', () => {

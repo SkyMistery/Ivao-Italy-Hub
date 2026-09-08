@@ -16,8 +16,9 @@ import { CALENDAR_KIND_COLOURS } from '../../../shared/ui';
  */
 export const calendarKindSchema = z.object({
   // The key an entry stores. Writable, like a category's: a key that could never be corrected
-  // would mean a typo lives for ever.
-  key: z.string(),
+  // would mean a typo lives for ever — and proposed from the label, because it ends up in the
+  // address of a filtered calendar and nobody should have to type it twice.
+  key: z.string().meta({ slugFrom: 'label' }),
   label: localized(),
   colour: z.enum(CALENDAR_KIND_COLOURS),
   sort: z.number().int(),

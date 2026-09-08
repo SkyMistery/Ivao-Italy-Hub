@@ -21,7 +21,10 @@ export function menuItemSchema(parents: readonly ChoiceOption[] = []) {
     // Empty means "top level", which is what most entries are.
     parentId: z.string().optional().meta({ choices: parents }),
     label: localized(),
-    path: z.string(),
+    // Proposed from the label, with the slash a path needs: an entry called "Chi siamo" offers
+    // `/chi-siamo` and stops the moment somebody writes their own (asked for while running the
+    // demo of M1, part 1). An entry that already has a path never moves it.
+    path: z.string().meta({ slugFrom: 'label', slugPrefix: '/' }),
     sort: z.number().int(),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     isActive: z.boolean(),

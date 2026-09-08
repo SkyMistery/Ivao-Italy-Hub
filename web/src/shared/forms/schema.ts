@@ -68,6 +68,12 @@ export interface FieldMeta {
    */
   slugFrom?: string;
   /**
+   * What the proposal starts with, for a field that is a **path** rather than a slug: the menu
+   * writes `/chi-siamo` where a page writes `chi-siamo`. It is a separate annotation and not a
+   * shape of `slugFrom`, so that reading a schema stays reading one word per idea.
+   */
+  slugPrefix?: string;
+  /**
    * An array of values out of `choices`, drawn as one checkbox each rather than as a repeatable
    * list. It is the difference between "pick several of a closed set" and "write as many of these
    * as you like": the first has an answer that fits on the screen, and a list of selects for it is
