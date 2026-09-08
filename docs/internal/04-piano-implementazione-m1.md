@@ -18,7 +18,7 @@ generatore di form — e l'avviso a quattro stati, che è il **quinto componente
 sé la conferma che l'editor deve a chi clicca. Fatte anche la 7 — con lei il **quarto** verbo a mano appeso a `MapCrud` — e le 10, 12 e 13.
 Fatta anche la **11**, decisa da Carmine sulla prima delle tre opzioni della nota: i tipi di evento
 sono una tabella di divisione, il `kind` di una voce non è più testo libero e il vocabolario viaggia
-in `/api/me`. Restano la **14** e il tag.)
+in `/api/me`. **G13 è completa**: quattro difetti e dodici richieste su dodici. Resta il tag.)
 
 **2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
 ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
@@ -1115,7 +1115,13 @@ seguire il tag, se Carmine preferisce; i difetti no.
     sopra. ⚠️ In cima alla colonna del contenuto e **non** dentro la sidebar, che è il componente di
     Atmosphere e non ha slot: avvolgerla in una colonna nostra è ciò che disegnò tutto il
     back-office in 255 pixel (HANDOFF §13).
-14. Il giro sull'editor «più intuitivo», **alla fine**, quando il resto è a posto.
+14. ~~Il giro sull'editor «più intuitivo»~~ — **fatto** (`9bf76ea`), e sono le quattro cose che la
+    ricopiatura a mano e il giro visivo avevano **scritto**, non un rifacimento: l'**annulla**
+    sull'ultima mossa strutturale (venti passi, un pulsante, niente ⌘Z perché dentro un campo di
+    testo significa un'altra cosa), il blocco Titolo che **nasce a livello 2**, **un solo `h1`** per
+    pagina pubblica, e il pannello delle proprietà che **resta fermo** mentre l'albero scorre.
+    ⚠️ Misurato in un browser, non supposto: dopo la correzione la home ha un `h1` suo, e l'altro è
+    il nome della divisione dentro la `Navbar` di Atmosphere — loro, non nostro.
 
 **Accettazione**: i quattro difetti hanno un test ciascuno, verificato rompendolo; Carmine rifà
 `tools/demo-m1.md` **dal punto 1** e arriva in fondo — compresi i punti 8 e 9, che non ha ancora

@@ -24,7 +24,9 @@ testo contro il suo sfondo effettivo.
 
 ## Corretti sul posto
 
-1. **I titoli delle sezioni nuove di `/start` erano `h1`.** Il blocco Titolo nasce a **livello 1**:
+1. **I titoli delle sezioni nuove di `/start` erano `h1`.** ✅ **Chiuso l'8 settembre 2026 (G13)**:
+   il blocco Titolo dichiara `.default(2)`, quindi nasce a livello 2 e nessuno deve più pensarci.
+   Il blocco Titolo nasceva a **livello 1**:
    chi aggiunge un titolo si ritrova un `h1` se non ci pensa, e la pagina ne aveva quattro. Portati a
    livello 2 e ripubblicata; adesso la gerarchia è un `h1` più quattro `h2`.
    ⚠️ Il difetto vero non è la pagina, è il **default**: su una pagina fatta di blocchi il livello
@@ -70,7 +72,16 @@ gli schemi**, che è esattamente il vincolo di design M0 §5.3. Tocca l'estratto
 Sempre in `/start`: «`**IVAO Italia**` è la community…». Chi cerca trova lo stesso, ma legge gli
 asterischi. Meno grave del n.2 e con lo stesso punto di intervento.
 
-### 4. Ogni pagina pubblica ha due `h1`
+### 4. Ogni pagina pubblica ha due `h1` — ✅ **chiuso l'8 settembre 2026 (G13)**
+
+Vale la seconda delle due opzioni scritte qui sotto: il titolo `sr-only` **non si disegna** quando il
+corpo comincia già con un titolo (`startsWithPageTitle`, in `blocks/`, perché quale blocco disegna un
+titolo è un fatto dei blocchi). Il titolo della riga continua ad arrivare alla scheda del browser e
+al risultato di ricerca da `PageMetadata`, che non ha bisogno di un elemento nel documento.
+⚠️ Misurato dopo: la home ha **un** `h1` suo, e l'altro rimasto è il nome della divisione dentro la
+`Navbar` di Atmosphere — del design system, non nostro.
+
+
 
 Uno è il titolo della riga, disegnato `sr-only` dalla rotta pubblica; l'altro è il blocco in cima —
 `hero` o `heading` di livello 1. Su `/about` sono «About» e «Welcome to the Italian Division of

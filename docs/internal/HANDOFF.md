@@ -42,7 +42,7 @@ sbagliato dal merge dopo, ed è già successo due volte.
 **Piano:** v0.47. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.8
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
 aperta** (§28), i suoi quattro difetti sono chiusi, e il tag viene dopo di lei.
-**Test:** 462 .NET verdi (300 unit + 162 integrazione) + **268 Vitest** + **43 smoke Playwright** +
+**Test:** 462 .NET verdi (300 unit + 162 integrazione) + **270 Vitest** + **43 smoke Playwright** +
 **12 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro l'8 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
@@ -3178,9 +3178,9 @@ ragione scritta lì.
 
 ### Si continua G13 dalle richieste: **i quattro difetti sono chiusi**
 
-Ramo **`m1/g13-fixes`**, quattordici commit, **spinto**. Il piano di implementazione è a
+Ramo **`m1/g13-fixes`**, sedici commit, spinto, con la **PR #57 aperta e la CI verde**. Il piano di implementazione è a
 v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
-locale: **462 .NET** (300 unit + 162 integrazione), **268 Vitest**, **43 smoke Playwright** e **12
+locale: **462 .NET** (300 unit + 162 integrazione), **270 Vitest**, **43 smoke Playwright** e **12
 del giro pieno** (`pnpm e2e:full`, rieseguito l'8 set 2026 contro l'API vera, e nei suoi log si vede
 l'editor che chiede `publish-problems`), più lint, typecheck, format e i18n. Non resta niente di
 non eseguito.
@@ -3207,8 +3207,15 @@ non eseguito.
    vocabolario, ed è l'unico validatore dell'hub che interroga il database. Una voce che un modulo
    proietta non passa da quel DTO e resta libera, ed è voluto. Il vocabolario viaggia in `/api/me`,
    perché la chip di un calendario pubblico deve dire la parola e il colore.
-6. Resta **una** richiesta: la **14**, il giro sull'editor «più intuitivo», che la lista stessa mette
-   per ultima. Poi la demo rifatta da Carmine dal punto 1, e il tag.
+6. ~~La **14**, il giro sull'editor~~ — **fatta** (`9bf76ea`), e sono le quattro cose che la
+   ricopiatura a mano e il giro visivo avevano già scritto: l'**annulla** sull'ultima mossa
+   strutturale, il blocco Titolo che **nasce a livello 2**, **un solo `h1`** per pagina pubblica, e
+   il pannello delle proprietà che **resta fermo** mentre l'albero scorre.
+
+**G13 è completa**: quattro difetti e dodici richieste su dodici. Restano due cose, e sono di
+Carmine: **rifare `tools/demo-m1.md` dal punto 1** — i punti 8 e 9 non erano mai stati eseguiti
+prima del 7 settembre — e il **tag `v0.2.0-m1`** dopo il merge della PR #57, verificato
+**sull'artefatto** e non sul commit.
 
 ⚠️ **`hidden sm:block` non funziona in questa applicazione**, ed è costato due elementi invisibili
 nella stessa ora: il foglio di stile di Atmosphere è importato **dopo** le utility di Tailwind e

@@ -1,7 +1,8 @@
 # Che cosa ha trovato Carmine eseguendo la demo di M1
 
 **Data:** 7 settembre 2026 — dopo il merge della PR #56, eseguendo `tools/demo-m1.md`
-**Stato:** **quattro difetti corretti**, dodici richieste (una fatta), quattro decisioni prese
+**Stato:** **quattro difetti corretti, dodici richieste su dodici fatte**, quattro decisioni prese
+più una — i tipi di evento — decisa e costruita l'8 settembre
 **Dove si lavora:** ramo `m1/g13-fixes`; il tag `v0.2.0-m1` **aspetta** che questa lista sia chiusa
 
 Carmine si è fermato al punto 7 della demo: **i punti 8 e 9 non sono ancora stati eseguiti**, e sono
@@ -109,7 +110,9 @@ da nessuna parte» ha trovato quella pagina.
    Carmine: l'alternativa era il client che ricalcola le regole di pubblicazione — le stesse regole
    scritte due volte, e la seconda copia è quella che invecchia. Una lista sola, in tono `warning`,
    che si svuota quando l'ultima cosa è sistemata.
-4. Editor più intuitivo in generale — da ragionarci alla fine di tutto il resto.
+4. ~~Editor più intuitivo in generale~~ ✅ **fatta**, e sono le quattro cose già scritte altrove:
+   annulla sull'ultima mossa strutturale, il blocco Titolo che nasce a livello 2, un solo `h1` per
+   pagina, e il pannello delle proprietà che resta fermo mentre l'albero scorre.
 
 **Grafica** (punto 3)
 
