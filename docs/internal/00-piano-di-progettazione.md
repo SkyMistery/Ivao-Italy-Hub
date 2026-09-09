@@ -1,9 +1,26 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.53 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, il tema scuro ha il suo grigio, i template hanno una schermata, un campo suggerito può chiedere al server, e l'ora si scrive come in aviazione)
+**Versione documento:** 0.54 — 9 settembre 2026 (G13 chiusa lato codice; **M2 si divide in due**: il modulo Events va avanti, il deploy su Plesk aspetta)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.54** (9 set 2026): **M2 si divide in due**, e la ragione non è tecnica.
+
+Il piano metteva nella stessa milestone il **primo deploy su staging Plesk** e il **modulo Events**.
+Il deploy era già in attesa delle risposte A9 di Ivao.It (§15.2c); adesso si aggiunge che **chi
+materialmente carica su Plesk non è disponibile** (detto da Carmine il 9 set 2026). Due attese
+diverse sullo stesso pezzo, e nessuna delle due dipende da noi.
+
+Quindi M2 procede **dal modulo**: design, tabelle `evt_`, schermate, permessi. Il deploy resta nella
+milestone e ne è la seconda metà, da fare appena si sciolgono i due nodi — non si sposta a M3, perché
+il pacchetto va provato su Plesk prima che ci siano tre moduli sopra.
+
+⚠️ Quello che si perde ad aspettare va scritto, o si finge che sia gratis: fino al primo deploy vero
+**non sappiamo se il pacchetto self-contained gira su quella macchina** — la CI lo costruisce e i
+test girano su una MariaDB 11.4.10 vera, ma Passenger, il document root, i privilegi dell'utente DB e
+il `sql_mode` di quel server non li ha ancora visti nessuno. È il rischio n.1 di §11.3 e resta
+aperto, più a lungo di quanto il piano prevedesse.
 
 **Changelog 0.53** (9 set 2026, terza esecuzione della demo): tre difetti, e due di essi sono
 decisioni.
@@ -1388,7 +1405,7 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 |---|---|---|
 | **M0 — Fondamenta** ✅ **chiusa** (4 set 2026, `v0.1.0-m0`) | Repo, soluzione .NET, SPA Vite+Atmosphere, docker-compose, CI, `division.json`, i18n IT/EN, login OIDC BFF con credenziali di test, `users` + ruoli, layout pubblico/riservato, dashboard vuota; **la spina dorsale generica di §16** (`Localized<T>`, interfacce trasversali + interceptor + authorization handler, grammatica permessi, `IProjectable`, motore lista+form, endpoint di bootstrap) **dimostrata end-to-end** su `links` e su un primo `cms_contents` creato da template (§16.15) | Skeleton navigabile, login funzionante, meccanismi generici provati. Design: `01-design-m0.md`; fasi: `02-piano-implementazione-m0.md`. Il **deploy su staging Plesk** è spostato a M1 (deciso 2 set 2026: attende le risposte A9). Demo da eseguire a mano: `tools/demo-m0.md`; revisione finale: `decisions/2026-09-04-m0-review.md` |
 | **M1 — Sito pubblico** | Nucleo editoriale: pagine a blocchi (**set completo dei blocchi del nucleo**, 22 nuovi), news, documenti per dipartimento con vocabolario delle categorie, calendario unico con UI (con sole voci interne per ora), media library, contatti + servizio notifiche, staff directory, live status; **menu editoriale**; pagine di sistema seedate (`/start`, `/pilots`, `/atc`, `/about`, home); back-office per dipartimento; schermata di ricerca; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO minima; migrazione contenuti dal Blazor **a mano dall'editor**. Il **giro e2e contro l'API vera** è la prima fase. Design: `03-design-m1.md`; fasi: `04-piano-implementazione-m1.md` (G0–G12) | Sostituisce `it.ivao.aero` |
-| **M2 — Eventi** | **Primo pacchetto self-contained e deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026 perché dipende dalle risposte A9 (§15.2c); modulo Events: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import | Spegne `ivao-booking` |
+| **M2 — Eventi** | **Due metà, e si fanno in quest'ordine** (deciso il 9 set 2026). **(a) Il modulo Events**, che parte subito: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import. **(b) Il primo pacchetto self-contained e il deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026: aspetta le risposte A9 (§15.2c) **e** la persona che carica su Plesk, che al 9 set non è disponibile | Spegne `ivao-booking` |
 | **M3 — Tour** | Modulo Flight Ops: tour, leg, PIREP, validatore automatico, classifiche, award con mail, voci nel calendario; design ereditato da `Ivao Italy Toursystem` | I tour IT lasciano `tours.th.ivao.aero` |
 | **M4 — Training** | Modulo Training: richieste, trainer, disponibilità, sessioni, esiti, mock exam, group training, import storico se possibile | Spegne `training.ivao.it` |
 | **M5 — vIPI dentro l'hub** | Allineamento TFM (il ramo **net10 + EF 9 + Pomelo 9** di vIPI, lavoro nel suo repository), montaggio in-process sotto `/services/vsop`, `atc.it.ivao.aero` → redirect, spegnimento di `quickoverview.ivao.it` (già confluito in vIPI). ⚠️ Fino ad allora l'indirizzo è servito **per proxy** dalla vhost che esiste: il lettore vede un sito solo da subito (decisione del 7 set 2026) | Un solo sito ATC+hub |
@@ -1424,7 +1441,8 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 2. **vIPI nell'hub — quando e come**: il montaggio in-process è la destinazione (§9 riga 7b), il nodo è il TFM. Da verificare in vIPI: può il ramo `net10.0` di `Vipi.Infrastructure` usare EF Core 9 + Pomelo 9 invece di EF Core 10 (le 65+ migrazioni sono generate con EF 10 ma applicate anche da EF 8 — con EF 9 dovrebbero passare)? Se sì, si sblocca insieme l'EOL di net8 e il montaggio. Decidere anche il dominio finale della parte ATC (`it.ivao.aero/services/vsop` con redirect da `atc.it.ivao.aero`, o viceversa proxy).
 2b. ~~Tour system e test system~~ **Deciso**: il tour system è il modulo `flightops` nel monorepo dell'hub (repo separato chiuso, design confluisce). Il test system è sospeso; se tornerà, sarà app separata (auth estratta in libreria solo allora).
 2d. **Storico tour**: importare i leg validati da `tours.th.ivao.aero` per le classifiche, o partire da zero come per gli eventi?
-2c. **Hosting dell'hub** (blocca **M2**, non più M1: deciso il 5 set 2026): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
+2c. **Hosting dell'hub** (blocca **la seconda metà di M2**, il deploy, non il modulo Events: diviso
+    il 9 set 2026 — e da quel giorno il deploy aspetta anche la persona che carica su Plesk): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
 3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente.
 4. ~~Editor contenuti~~ **Deciso**: pagine a blocchi con editor a lista (§9.3); il blocco `text` usa markdown con anteprima. Prerender SEO: **no per ora** (§16.11).
 5. ~~Licenza del repository pubblico~~ **Decisa il 3 set 2026**: **Apache-2.0**, copyright «2026 Carmine Granato». Nota in `docs/internal/decisions/2026-09-03-licenza.md`.
