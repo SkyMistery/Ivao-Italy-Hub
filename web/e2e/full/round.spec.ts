@@ -10,6 +10,7 @@ import {
   properties,
   readContent,
   readInEnglish,
+  saveDraft,
   selectBlock,
   signIn,
   whileWaitingFor,
@@ -89,7 +90,7 @@ test('from a template to a page a visitor can read, and a draft that stays priva
 
   // ---------------------------------------------------------------- save, then publish
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await metadata(page).getByRole('button', { name: content.editor.saveDraft }).click();
+    await saveDraft(page, content.editor.saveDraft).click();
   });
 
   const publish = page.getByRole('button', { name: content.editor.publish });
@@ -123,7 +124,7 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   await writeInBothLanguages(properties(page), blocks.callout.fields.title, 'title', edited);
   await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await metadata(page).getByRole('button', { name: content.editor.saveDraft }).click();
+    await saveDraft(page, content.editor.saveDraft).click();
   });
 
   // And the visitor's page does not, because publishing is a separate act. This is the assertion
@@ -151,7 +152,7 @@ test('a draft nobody published is not there for a visitor', async ({ page, conte
 
   await choose(page, content.fields.visibility, content.options.visibility.Public, metadata(page));
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await metadata(page).getByRole('button', { name: content.editor.saveDraft }).click();
+    await saveDraft(page, content.editor.saveDraft).click();
   });
 
   // Public visibility and never published: the two are different questions and only one of them
@@ -199,7 +200,7 @@ test('a page is saved twice from one page load, with no reload in between', asyn
   });
 
   await page.goto(`/staff/${department}/content/${row.id}`);
-  const save = metadata(page).getByRole('button', { name: content.editor.saveDraft });
+  const save = saveDraft(page, content.editor.saveDraft);
 
   // The slug rather than a translated field: one plain input, no language tabs, and still a real
   // change that the server has to store.

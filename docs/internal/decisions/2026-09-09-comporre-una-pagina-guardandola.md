@@ -119,6 +119,40 @@ vera.
   che lo spazio intorno sceglie la sezione. Uno del giro completo, contro il renderer **vero**, che
   apre i campi del blocco cliccato. Verificati rompendo il pezzo che provano.
 
+### Il seguito, lo stesso giorno: il muro dei metadati
+
+Provata, la (A) non convinceva ancora, e la ragione si misura: **l'editor si apriva su 1182 px di
+metadati in una finestra da 950**. Il modulo era più alto dello schermo, e sotto la piega finivano
+sia la pagina sia i pulsanti — perché la barra («Save draft», Anteprima, Annulla, Pubblica, Elimina)
+era il *submit* di quel form e le sue azioni secondarie. In anteprima la pagina cominciava a
+**1588 px** dall'alto.
+
+Il dettaglio, campo per campo: Address 82, Visible to 58, Title 150, Summary 216, **Search engines
+and sharing 536**. Metà del modulo era la SEO, cioè il campo che si tocca meno — il suo stesso aiuto
+dice che lasciandolo vuoto si usano titolo e sommario.
+
+Scelta da Carmine fra tre, la **A1**: *la pagina è una selezione*.
+
+- I metadati sono **le proprietà della pagina**, nello stesso pannello di una sezione e di un blocco.
+  L'outline ha una riga «Pagina» in cima, e il pannello un «‹ Pagina» per tornarci — che serve in
+  anteprima, dove l'outline non c'è. Lo stato «niente selezionato» **non esiste più**: si edita la
+  pagina, una sezione o un blocco.
+- **La barra è una barra**: in cima, appiccicata, sempre raggiungibile.
+- ⚠️ E il pezzo delicato: `Save draft` sta **fuori** dal form e lo invia con `form="…"`, che è come
+  l'HTML permette da sempre a un pulsante di vivere altrove. Perché funzioni il form deve restare
+  **nel documento**: quando è selezionato un blocco è `hidden`, non smontato. Il test lo dice
+  esplicitamente e asserisce sulla **visibilità** e non sul conteggio, perché un conteggio passerebbe
+  per la ragione sbagliata il giorno che qualcuno lo smonta.
+- `SchemaForm` ha imparato due cose piccole: `id` e `actionsElsewhere`. Non sono un tipo di campo
+  nuovo — il conto delle estensioni resta **nove**.
+
+**Il risultato, misurato**: la pagina comincia a **466 px** invece di 1588, dentro la finestra invece
+che due terzi di schermo più giù.
+
+⚠️ Resta la SEO: 536 px dentro un pannello stretto sono anche più alti. Un gruppo richiudibile
+sarebbe la **decima** estensione del generatore, e non l'ho infilata qui: una modifica alla volta si
+giudica, due no.
+
 ### Che cosa **non** c'è ancora, e va detto
 
 - **Non si trascina dentro l'anteprima.** Si sceglie e si modifica; per spostare c'è l'outline, che è

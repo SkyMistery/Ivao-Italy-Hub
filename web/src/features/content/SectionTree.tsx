@@ -59,7 +59,8 @@ export function SectionTree({
   body: Body;
   rules: ReadonlyMap<string, SectionRule>;
   selection: Selection | null;
-  onSelect: (selection: Selection) => void;
+  /** `null` is the page itself, whose properties are the row's own: address, title, audience, SEO. */
+  onSelect: (selection: Selection | null) => void;
   onAddSection: () => void;
   onAddBlock: (sectionId: string, type: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
@@ -93,6 +94,20 @@ export function SectionTree({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <div className="flex flex-col gap-4">
+        {/* ⚠️ The page is the first thing in the tree, and picking it opens its own properties in
+            the same panel a section and a block use. Before 9 September 2026 those lived in a form
+            above the editor that measured 1182 pixels — taller than the window — so both the page
+            and the buttons that save it were below the fold. One panel, three kinds of thing. */}
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          className={`rounded-md border px-3 py-2 text-left text-sm font-medium ${
+            selection === null ? 'border-primary bg-accent' : 'border-border'
+          }`}
+        >
+          {t('content.editor.page')}
+        </button>
+
         {body.sections.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t('content.editor.noSections')}</p>
         ) : (

@@ -455,7 +455,6 @@
     "editor": {
       "structure": "Di cosa e' fatta questa pagina",
       "properties": "Proprieta'",
-      "nothingSelected": "Scegli una sezione o un blocco per modificarlo.",
       "noSections": "Questa pagina non ha ancora sezioni.",
       "untitledSection": "Sezione senza nome",
       "addSection": "Aggiungi una sezione",
@@ -514,7 +513,8 @@
       "published": "Pubblicata. Il sito mostra questa versione da adesso.",
       "deleted": "Eliminata.",
       "publishMissing": "Che cosa manca per poterla pubblicare",
-      "undo": "Annulla"
+      "undo": "Annulla",
+      "page": "Pagina"
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

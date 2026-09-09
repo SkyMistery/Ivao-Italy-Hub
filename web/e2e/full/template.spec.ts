@@ -4,16 +4,16 @@ import { englishCommon } from '../locales';
 import {
   createContent,
   department,
-  metadata,
   pageFromTemplate,
   properties,
   publishContent,
   readContent,
   readInEnglish,
+  saveDraft,
   signIn,
+  type ContentRow,
   whileWaitingFor,
   writeContent,
-  type ContentRow,
 } from './bench';
 
 /**
@@ -110,7 +110,7 @@ test('a template that moves on is said in the editor, and changes nothing a visi
   await expect(page.getByText(words.template.differences)).toHaveCount(0);
 
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await metadata(page).getByRole('button', { name: words.saveDraft }).click();
+    await saveDraft(page, words.saveDraft).click();
   });
 
   // The assertion the whole rule rests on: a draft that has accepted the change is still a draft.
@@ -184,7 +184,7 @@ test('a template written in the editor is obeyed by the pages made from it', asy
   await form.getByRole('button', { name: words.applySection }).click();
 
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await metadata(page).getByRole('button', { name: words.saveDraft }).click();
+    await saveDraft(page, words.saveDraft).click();
   });
 
   // Written once, then shown: the field is gone and the key is a line, because changing it would
@@ -234,8 +234,11 @@ test('the preview is where a page is composed: a block picked there opens its ow
   const heading = frame.getByRole('heading', { name: first.en });
   await expect(heading).toBeVisible();
 
-  // Nothing is chosen yet, and the panel says so rather than showing an empty form.
-  await expect(page.getByText(words.nothingSelected)).toBeVisible();
+  // ⚠️ The page itself is what the panel opens on, and that is the second half of the same
+  // decision: the metadata used to be a form above the editor, 1182 pixels tall in a window of 950,
+  // so the page being composed started below the fold. Now they are the page's own properties, in
+  // the panel a section and a block already use.
+  await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toBeVisible();
 
   await heading.click();
 
@@ -244,5 +247,16 @@ test('the preview is where a page is composed: a block picked there opens its ow
   // the text of a heading is translated, so what the generator draws is the language tabs.
   await expect(page.getByRole('group', { name: englishCommon.blocks.heading.fields.text })).toBeVisible();
   await expect(heading).toBeVisible();
-  await expect(page.getByText(words.nothingSelected)).toHaveCount(0);
+
+  // And the page's own fields have made way for the block's: one panel, one thing at a time.
+  //
+  // ⚠️ Hidden and **not** removed, which is the subtle half: `Save draft` lives in the toolbar and
+  // submits by `form=`, and a button cannot submit a form that has left the document. So the page's
+  // form is always there and merely out of sight — asserted on visibility, because a count would
+  // pass for the wrong reason the day somebody unmounts it.
+  await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).not.toBeVisible();
+
+  // The way back, which is the panel's own header — there is no outline to return to in here.
+  await page.getByRole('button', { name: words.page, exact: true }).click();
+  await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toBeVisible();
 });

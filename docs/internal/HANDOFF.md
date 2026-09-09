@@ -42,7 +42,7 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.55. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.15
+**Piano:** v0.55. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.16
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
 aperta** (§28) ma non ha più lavoro suo — quattro difetti e sedici richieste, tutti chiusi, e con essi i
 **sei difetti di rifinitura** che il rapporto di chiusura di M1 elencava come «da dire prima del

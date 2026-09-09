@@ -123,9 +123,21 @@ export async function selectBlock(page: Page, label: string): Promise<void> {
     .click();
 }
 
-/** The metadata of the page, which is the first form on the editor screen. */
+/**
+ * The metadata of the page, which is the first form on the editor screen.
+ *
+ * ⚠️ Since 9 September 2026 it lives in the **panel on the right**, as the properties of the page —
+ * a section and a block are edited in the same place — and its `Save draft` is in the toolbar at the
+ * top, outside the form, submitting it by `form=`. So `saveDraft(page)` and not
+ * `metadata(page).getByRole('button', …)`, which used to be the same thing and is not any more.
+ */
 export function metadata(page: Page): Locator {
   return page.locator('form').first();
+}
+
+/** The button that saves the row, wherever it is drawn. */
+export function saveDraft(page: Page, label: string): Locator {
+  return page.getByRole('button', { name: label, exact: true });
 }
 
 /** The properties of whatever is selected, which is the last one. */

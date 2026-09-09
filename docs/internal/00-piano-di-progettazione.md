@@ -11,7 +11,11 @@ stato scartato in una riga (§2.3-ter); Carmine ha chiesto di riaprirla, la nota
 ha scelto la **(A)**: l'anteprima diventa la superficie di composizione.
 
 Si clicca un blocco nella pagina disegnata e si aprono i suoi campi, con la pagina che resta sotto
-gli occhi. **Il modello dei dati non cambia di una riga**: niente coordinate, niente dimensioni sui
+gli occhi. E con essa **la pagina stessa è diventata una selezione**: i metadati non sono più un
+modulo sopra l'editor — misurava 1182 px in una finestra da 950, con la pagina e i pulsanti sotto la
+piega — ma le proprietà della pagina, nello stesso pannello. La barra è in cima e appiccicata, e
+`Save draft` invia il form da fuori con `form="…"`. La pagina che si compone comincia a 466 px invece
+di 1588. **Il modello dei dati non cambia di una riga**: niente coordinate, niente dimensioni sui
 blocchi, i template continuano a significare quello che significavano, il responsive e la stampa
 restano gratis.
 

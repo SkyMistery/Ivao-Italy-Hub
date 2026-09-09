@@ -1,6 +1,6 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, Pencil, Send, Undo2 } from 'lucide-react';
+import { ChevronLeft, Eye, Pencil, Send, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -55,6 +55,12 @@ import { NO_RULES, ruleFor, templateRules } from './templateRules';
  * and is refused while there are unsaved changes: publishing what is on screen rather than what is
  * stored would be a page that says something nobody saved.
  */
+/**
+ * The metadata form's own `id`, so that `Save draft` can live in the toolbar at the top while the
+ * form itself lives in the panel on the right (`SchemaForm`'s `id` and `actionsElsewhere`).
+ */
+const METADATA_FORM = 'content-metadata';
+
 export function ContentEditor({
   content,
   kind,
@@ -149,8 +155,51 @@ export function ContentEditor({
   // child of a grid work at all — a stretched cell has nothing to stick inside — and it scrolls on
   // its own when it is taller than the window.
   const properties = (
-    <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto">
-      <SectionHeader title={t('content.editor.properties')} />
+    <div className="flex flex-col gap-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+      <SectionHeader
+        title={t('content.editor.properties')}
+        {...(selection === null
+          ? {}
+          : {
+              // The way back to the page, and the only one needed: the outline has a row for it too,
+              // but in the preview there is no outline — and the panel is where you already are.
+              actions: (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setSelection(null)}>
+                  <ChevronLeft aria-hidden className="mr-1 size-4" />
+                  {t('content.editor.page')}
+                </Button>
+              ),
+            })}
+      />
+
+      {/* ⚠️ Always mounted and merely hidden, never unmounted: it is **one** form and it owns the
+          values, the validation and the mapping of what the server refuses back onto the fields.
+          Its submit button lives in the toolbar at the top (`form="content-metadata"`), and a
+          button cannot submit a form that is not in the document. */}
+      <div {...(selection === null ? {} : { hidden: true })}>
+        <SchemaForm
+          // Remounted whenever the stored row moves on, so the version the form carries is the one
+          // the server last returned; keeping a stale one would answer 409 on the next save.
+          key={content?.rowVersion ?? 'new'}
+          id={METADATA_FORM}
+          actionsElsewhere
+          schema={contentMetadataSchema(kind, categories)}
+          defaults={
+            content === null
+              ? emptyContent(department, locales, kind, startsAsTemplate)
+              : toFormValues(content, locales)
+          }
+          locales={locales}
+          labels="content"
+          division={division}
+          mediaLibrary={mediaLibrary}
+          onSubmit={async (values) => {
+            await onSave(values, body);
+            setUnsaved(false);
+          }}
+          submitLabel={t('content.editor.saveDraft')}
+        />
+      </div>
 
       {section !== undefined ? (
         <>
@@ -217,9 +266,7 @@ export function ContentEditor({
           onApplyProps={(props) => change(updateBlock(body, block.block.id, { props }))}
           onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
         />
-      ) : (
-        <p className="text-muted-foreground text-sm">{t('content.editor.nothingSelected')}</p>
-      )}
+      ) : null}
     </div>
   );
 
@@ -236,80 +283,70 @@ export function ContentEditor({
 
   return (
     <div className="flex flex-col gap-8">
+      {/* ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
+          measured 1182 pixels in a window of 950, so the page being composed and the buttons that
+          save it were both below the fold. Measured, not guessed (road A1 of
+          `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
+
+          `Save draft` submits by `form=`, which is how HTML has always let a button live outside the
+          form it belongs to: the form is in the panel on the right, where the page's own properties
+          are edited. */}
+      <div className="bg-body sticky top-0 z-10 flex flex-wrap items-center gap-3 py-3">
+        <Button type="submit" form={METADATA_FORM} disabled={busy}>
+          {t('content.editor.saveDraft')}
+        </Button>
+
+        <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
+          {preview ? (
+            <Pencil aria-hidden className="mr-2 size-4" />
+          ) : (
+            <Eye aria-hidden className="mr-2 size-4" />
+          )}
+          {preview ? t('content.editor.backToEditing') : t('content.editor.preview')}
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={!history.canUndo}
+          onClick={() => {
+            history.undo();
+            setUnsaved(true);
+            // What was selected may not exist in the body that comes back, and the page's own
+            // properties are always there to fall back on.
+            setSelection(null);
+          }}
+        >
+          <Undo2 aria-hidden className="mr-2 size-4" />
+          {t('content.editor.undo')}
+        </Button>
+
+        {onPublish === null ? null : (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={unsaved || busy}
+            onClick={onPublish}
+            title={unsaved ? t('content.editor.saveBeforePublishing') : undefined}
+          >
+            <Send aria-hidden className="mr-2 size-4" />
+            {t('content.editor.publish')}
+          </Button>
+        )}
+
+        {onDelete === null ? null : (
+          <ConfirmDialog
+            triggerText={t('common.delete')}
+            title={t('content.delete.title')}
+            description={t('content.delete.description')}
+            confirmText={t('common.delete')}
+            disabled={busy}
+            onConfirm={onDelete}
+          />
+        )}
+      </div>
+
       <PublishProblems body={body} problems={publishProblems} />
-
-      <SchemaForm
-        // Remounted whenever the stored row moves on, so the version the form carries is the one
-        // the server last returned; keeping a stale one would answer 409 on the next save.
-        key={content?.rowVersion ?? 'new'}
-        schema={contentMetadataSchema(kind, categories)}
-        defaults={
-          content === null
-            ? emptyContent(department, locales, kind, startsAsTemplate)
-            : toFormValues(content, locales)
-        }
-        locales={locales}
-        labels="content"
-        division={division}
-        mediaLibrary={mediaLibrary}
-        onSubmit={async (values) => {
-          await onSave(values, body);
-          setUnsaved(false);
-        }}
-        submitLabel={t('content.editor.saveDraft')}
-        secondaryAction={
-          <>
-            <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
-              {preview ? (
-                <Pencil aria-hidden className="mr-2 size-4" />
-              ) : (
-                <Eye aria-hidden className="mr-2 size-4" />
-              )}
-              {preview ? t('content.editor.backToEditing') : t('content.editor.preview')}
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={!history.canUndo}
-              onClick={() => {
-                history.undo();
-                setUnsaved(true);
-                // What was selected may not exist in the body that comes back, and a panel with
-                // nothing behind it is worse than an empty one saying so.
-                setSelection(null);
-              }}
-            >
-              <Undo2 aria-hidden className="mr-2 size-4" />
-              {t('content.editor.undo')}
-            </Button>
-
-            {onPublish === null ? null : (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={unsaved || busy}
-                onClick={onPublish}
-                title={unsaved ? t('content.editor.saveBeforePublishing') : undefined}
-              >
-                <Send aria-hidden className="mr-2 size-4" />
-                {t('content.editor.publish')}
-              </Button>
-            )}
-
-            {onDelete === null ? null : (
-              <ConfirmDialog
-                triggerText={t('common.delete')}
-                title={t('content.delete.title')}
-                description={t('content.delete.description')}
-                confirmText={t('common.delete')}
-                disabled={busy}
-                onConfirm={onDelete}
-              />
-            )}
-          </>
-        }
-      />
 
       {unsaved ? (
         <p className="text-muted-foreground text-sm">{t('content.editor.saveBeforePublishing')}</p>

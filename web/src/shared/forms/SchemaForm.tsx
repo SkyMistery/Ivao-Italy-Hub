@@ -83,6 +83,8 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   onSubmit,
   submitLabel,
   secondaryAction,
+  id,
+  actionsElsewhere = false,
   mediaLibrary,
   division,
   onSuggestSearch,
@@ -97,6 +99,18 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   onSubmit: (values: TValues) => Promise<unknown>;
   submitLabel: string;
   secondaryAction?: React.ReactNode;
+  /**
+   * The `id` of the `<form>`, so that a button anywhere else on the screen can submit it with
+   * `form="…"`. HTML has done this since forever and it is the only way to move a submit button out
+   * of a form without inventing a second channel for it.
+   */
+  id?: string;
+  /**
+   * Draws no row of buttons at all: the caller has put them somewhere else and submits with `id`
+   * above. The content editor does that — its toolbar belongs at the top of the screen, not at the
+   * bottom of a form that is taller than the window (decided 9 Sep 2026).
+   */
+  actionsElsewhere?: boolean;
   /**
    * The page of the media library a `.meta({ media: true })` field chooses from. The generator
    * cannot build it: which department's library to show is a fact of the screen, not of the schema.
@@ -141,7 +155,12 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={(event) => void submit(event)} className="flex flex-col gap-6" noValidate>
+      <form
+        {...(id === undefined ? {} : { id })}
+        onSubmit={(event) => void submit(event)}
+        className="flex flex-col gap-6"
+        noValidate
+      >
         <ProblemAlert summary={problem.summary} />
 
         <div className="flex flex-col gap-5">
@@ -150,13 +169,19 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" isLoading={form.formState.isSubmitting}>
-            {submitLabel}
-          </Button>
-          {secondaryAction}
+        {actionsElsewhere ? (
+          // The hint stays: it is what tells somebody reading with a screen reader that Enter saves,
+          // and that is true whichever corner of the screen the button is drawn in.
           <span className="sr-only">{t('form.submitHint')}</span>
-        </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" isLoading={form.formState.isSubmitting}>
+              {submitLabel}
+            </Button>
+            {secondaryAction}
+            <span className="sr-only">{t('form.submitHint')}</span>
+          </div>
+        )}
       </form>
     </FormProvider>
   );
