@@ -35,6 +35,8 @@ export function ContentFormScreen({
   id,
   content,
   breadcrumbTo,
+  note,
+  startsAsTemplate = false,
   onCreated,
   onFinished,
 }: {
@@ -46,6 +48,14 @@ export function ContentFormScreen({
   content: ContentDetailDto | null;
   /** Where the breadcrumb goes back to; the route knows the address, this screen does not. */
   breadcrumbTo: string;
+  /**
+   * One line under the title, when the screen has something to say about this row. The templates
+   * screen uses it to say how many rows were made from this one, which is the sentence that stops a
+   * careless edit — a template with eleven pages behind it is not one to reorganise casually.
+   */
+  note?: string;
+  /** Passed through: a row created here is a template. See `ContentEditor.startsAsTemplate`. */
+  startsAsTemplate?: boolean;
   onCreated: (id: number) => Promise<void>;
   onFinished: () => void;
 }) {
@@ -98,6 +108,7 @@ export function ContentFormScreen({
   return (
     <PageShell
       title={title}
+      {...(note === undefined ? {} : { description: note })}
       breadcrumb={[
         { label: department },
         { label: t(`${config.titles}.title`), to: breadcrumbTo },
@@ -107,6 +118,7 @@ export function ContentFormScreen({
       <ContentEditor
         content={content}
         kind={config.kind}
+        startsAsTemplate={startsAsTemplate}
         categories={categories}
         department={department}
         locales={locales}

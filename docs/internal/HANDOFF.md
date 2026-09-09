@@ -42,11 +42,12 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.50. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.11
+**Piano:** v0.51. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.12
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
-aperta** (§28) ma non ha più lavoro suo — quattro difetti e sedici richieste, tutti chiusi — e il tag
-viene dopo che Carmine ha rieseguito la scheda.
-**Test:** 470 .NET verdi (306 unit + 164 integrazione) + **274 Vitest** + **47 smoke Playwright** +
+aperta** (§28) ma non ha più lavoro suo — quattro difetti e sedici richieste, tutti chiusi, e con essi i
+**sei difetti di rifinitura** che il rapporto di chiusura di M1 elencava come «da dire prima del
+tag» — il tag viene dopo che Carmine ha rieseguito la scheda.
+**Test:** 471 .NET verdi (306 unit + 165 integrazione) + **274 Vitest** + **50 smoke Playwright** +
 **12 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato, **rieseguiti tutti e quattro l'8 set 2026** contro la MariaDB vera prima di
 scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.

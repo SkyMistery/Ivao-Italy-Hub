@@ -196,11 +196,70 @@ export const siteStaffBootstrap = {
     ...staffBootstrap.permissions.filter((permission) => permission.department !== 'ED'),
     { name: 'Menu.View', department: 'WD' },
     { name: 'Menu.Edit', department: 'WD' },
+    // ⚠️ Held here and **not** by the ordinary staff fixture, which is what makes the pair useful:
+    // every staff member may read a template, and only this one may open the screen that changes
+    // them. The events coordinator is the other half of that test.
+    { name: 'Content.ManageTemplates', department: 'WD' },
   ],
   navigation: {
     ...staffBootstrap.navigation,
     staff: [{ key: 'nav.menu', path: '/staff/wd/menu', label: null, children: [] }],
   },
+};
+
+/** One page of templates, as the department's templates screen asks for them. */
+export const twoTemplates = {
+  items: [
+    {
+      id: 5,
+      kind: 'Page',
+      slug: 'section-page',
+      ownerDepartment: 'WD',
+      visibility: 'Staff',
+      status: 'Draft',
+      isTemplate: true,
+      title: { en: 'Section page', it: 'Pagina di sezione' },
+      category: null,
+      coverMediaId: null,
+      pinned: false,
+      sort: 0,
+      fileMediaId: null,
+      publishedAt: null,
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+    {
+      id: 6,
+      kind: 'Document',
+      slug: 'policy',
+      ownerDepartment: 'WD',
+      visibility: 'Staff',
+      status: 'Draft',
+      isTemplate: true,
+      title: { en: 'Policy', it: 'Regolamento' },
+      category: null,
+      coverMediaId: null,
+      pinned: false,
+      sort: 0,
+      fileMediaId: null,
+      publishedAt: null,
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 25,
+  total: 2,
+};
+
+/** The first of them in full, as the editor loads it. */
+export const oneTemplate = {
+  ...twoTemplates.items[0],
+  summary: null,
+  seo: null,
+  templateId: null,
+  body: { schemaVersion: 1, sections: [] },
+  schemaVersion: 1,
+  createdAt: '2026-09-04T12:00:00Z',
+  rowVersion: '2026-09-04T12:00:00',
 };
 
 /** One entry of the site menu, as the list answers and as the detail answers. */
@@ -490,17 +549,38 @@ export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBo
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneMedia) }),
   );
 
-  // The content list, answered by `kind`: the documents screen is the one that has rows, because
-  // it is the one whose columns this suite is about.
+  // The content list, answered by what it was asked for: the documents screen is the one that has
+  // rows, because it is the one whose columns this suite is about — and since the templates screen
+  // exists, two more questions arrive at the same address.
   await page.route('**/api/content**', (route) => {
-    const documents = route.request().url().includes('filter%5Bkind%5D=Document');
+    const url = route.request().url();
 
-    return route.fulfill({
+    const answer = url.includes('filter%5BisTemplate%5D=true')
+      ? twoTemplates
+      : // "How many rows were made from this template?" — a page of one, read for its `total`.
+        url.includes('filter%5BtemplateId%5D=')
+        ? { ...noContent, total: 4 }
+        : url.includes('filter%5Bkind%5D=Document')
+          ? twoDocuments
+          : noContent;
+
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) });
+  });
+
+  // ⚠️ **After** the list, so that it wins for a single row: Playwright matches in reverse
+  // registration order, and without this the editor of a template would be handed a page of rows
+  // where it expects one. The publish problems of a row are a segment deeper and get their own.
+  await page.route('**/api/content/*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneTemplate) }),
+  );
+
+  await page.route('**/api/content/*/publish-problems', (route) =>
+    route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(documents ? twoDocuments : noContent),
-    });
-  });
+      body: JSON.stringify({ errors: {}, localized: {} }),
+    }),
+  );
 
   // The vocabulary a department files its news and documents under. Empty: a division decides its
   // own shelves and a fresh one has none, which is the state the screens have to survive.

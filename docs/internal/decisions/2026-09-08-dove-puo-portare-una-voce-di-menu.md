@@ -95,3 +95,31 @@ giusto, ed è lo stesso della parola di calendario fuori vocabolario.
 - ⚠️ E la scoperta che il banco di prova costruiva le voci con indirizzi inventati: sei chiamate in
   `SiteMenuAndDashboardTests` che ora puntano a una schermata, perché quei test parlano di proprietà
   e di profondità e non di dove porta la voce.
+
+---
+
+## Un difetto che questa decisione ha creato, trovato il 9 settembre 2026
+
+⚠️ **L'elenco delle pagine è una richiesta sola di cento righe.** Finché il campo *suggeriva*, cento
+era una comodità e chi non trovava la sua pagina la scriveva a mano. Adesso che il campo **decide**,
+una pagina oltre la centesima è un indirizzo che **non si può scegliere**: esiste, il server la
+accetterebbe, e il form non la offre. Peggio, la casella dice «qui non corrisponde niente», che in
+quel caso non è vero.
+
+Trovato eseguendo il giro completo: il banco ha 120 pagine accumulate fra un'esecuzione e l'altra,
+117 delle quali stanno prima di `start` in ordine di slug — e `/start`, che è una pagina seminata,
+non era nell'elenco. Il test è stato spostato su una **schermata**, che è una costante e non dipende
+da quante pagine ci sono, ma il difetto resta.
+
+Le strade, e nessuna è gratis:
+
+1. **Il campo cerca sul server**: quello che si scrive diventa la `q` di una richiesta, invece di
+   filtrare in memoria un elenco già scaricato. È la strada giusta e la sola che regge a mille
+   pagine — ed è una **nona estensione del generatore di form**, cioè una decisione (§16.E, regola
+   (c)): oggi `suggestions` è un elenco, diventerebbe un elenco *che si aggiorna*.
+2. **Alzare il tetto**: non si può, cento è già il massimo che il motore lista accetta.
+3. **Cambiare l'ordine** (le più recenti prima invece che per slug): sposta il problema senza
+   risolverlo, e dà l'impressione di averlo risolto. Scartata.
+
+Da decidere con Carmine prima di scrivere codice. Nel frattempo il difetto è qui, con il suo numero:
+**cento pagine per dipartimento**, oltre le quali il menu non può puntare.

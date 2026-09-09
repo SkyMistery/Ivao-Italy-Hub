@@ -9,7 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.11 — 9 settembre 2026 (**il tema scuro ha il suo grigio**: `--muted-foreground` è
+**Versione:** 2.12 — 9 settembre 2026 (**i template hanno una schermata**: lista, pulsante che ne
+crea uno, e quante righe sono nate da lui. Ultimo dei sei difetti di rifinitura del rapporto di
+chiusura, quindi **sono chiusi tutti**. Zero tabelle, zero permessi, zero endpoint, zero migrazioni:
+la lista generica con il filtro rovesciato e lo stesso editor dei contenuti. Conto: **471 test .NET**
+(306 unitari, 165 di integrazione), **274 Vitest**, **50 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.11** — 9 settembre 2026 (**il tema scuro ha il suo grigio**: `--muted-foreground` è
 l'unico colore che Atmosphere non ribalta, e a 12–14 px stava a 3,14 : 1 contro il 4,5 : 1 di AA. Una
 riga in fondo a `web/src/styles/index.css`, `e2e/contrast.spec.ts` che la difende misurando nove
 schermate, e la prima deroga a «Atmosphere così com'è» — scritta, motivata e sola. **Con questo il

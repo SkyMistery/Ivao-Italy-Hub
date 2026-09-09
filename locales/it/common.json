@@ -388,7 +388,8 @@
       "kind": {
         "Page": "Pagina",
         "News": "Notizia",
-        "Document": "Documento"
+        "Document": "Documento",
+        "Dashboard": "Home di dipartimento"
       },
       "status": {
         "Draft": "Bozza",
@@ -520,6 +521,16 @@
       "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina.",
       "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più."
     }
+  },
+  "templates": {
+    "title": "Template",
+    "short": "Template",
+    "description": "Le forme da cui in questo dipartimento nascono una pagina, una news o un documento. Modificarne uno non cambia le righe già nate da lui: tengono quello che hanno ricevuto finché qualcuno non ripubblica.",
+    "create": "Nuovo template",
+    "edit": "Modifica template",
+    "madeFromIt_one": "Da questo template è nata {{count}} riga.",
+    "madeFromIt_other": "Da questo template sono nate {{count}} righe.",
+    "madeFromIt_zero": "Da questo template non è ancora nato niente."
   },
   "blocks": {
     "captured": "Catturato alla pubblicazione",

@@ -374,3 +374,47 @@ test('new category reaches its form', async ({ page }) => {
   await expect(page).toHaveURL(/\/staff\/ed\/categories\/new/);
   await expect(page.getByLabel(englishCommon.categories.fields.key)).toBeVisible();
 });
+
+test('the templates of a department have a screen, a button, and a count behind them', async ({ page }) => {
+  // ⚠️ The gap this closes, and it was there since G11a: a coordinator was told templates were
+  // theirs to manage and there was nowhere to manage them. They were kept out of the content list
+  // on purpose, offered by the picker only to make a page from, and the one way to open one was to
+  // type its address.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/templates');
+
+  await expect(page.getByRole('heading', { name: englishCommon.templates.title })).toBeVisible();
+
+  // The one column no other content list has: which kind this template makes. Scoped to the table,
+  // because "Documents" is also a screen in the sidebar and "document" is a word in the description.
+  const rows = page.getByRole('table');
+  await expect(rows.getByText('Section page')).toBeVisible();
+  await expect(rows.getByText(englishCommon.content.options.kind.Document, { exact: true })).toBeVisible();
+
+  // Opening one says how many rows were made from it — the sentence that stops a careless edit.
+  await page.getByRole('link', { name: englishCommon.common.edit }).first().click();
+  await expect(page).toHaveURL(/\/staff\/wd\/templates\/5/);
+  await expect(page.getByText('4 rows were made from this template.')).toBeVisible();
+});
+
+test('a new template is made from a button, and carries the kind that was chosen', async ({ page }) => {
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/templates');
+
+  // The kind is chosen before the editor opens, because it decides which fields the form draws and
+  // a form redrawing itself under the hands of whoever is filling it in would be worse.
+  await page.getByRole('link', { name: englishCommon.templates.create }).first().click();
+
+  await expect(page).toHaveURL(/\/staff\/wd\/templates\/new\?kind=Page/);
+  await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toBeVisible();
+});
+
+test('the templates screen is not for a coordinator who may not change one', async ({ page }) => {
+  // Every staff member *reads* templates — that is what makes "new from a template" work across
+  // departments — and only `Content.ManageTemplates` opens the screen that changes them. The
+  // ordinary fixture is an events coordinator, who holds neither that nor the department.
+  await stubTheApiAsStaff(page);
+  await page.goto('/staff/ed/templates');
+
+  await expect(page).toHaveURL(/\/forbidden/);
+});

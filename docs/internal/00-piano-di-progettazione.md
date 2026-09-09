@@ -1,9 +1,43 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.50 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, e il tema scuro ha il suo grigio)
+**Versione documento:** 0.51 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, il tema scuro ha il suo grigio, e i template hanno una schermata)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.51** (9 set 2026): **i template di un dipartimento hanno una schermata**, che è
+l'ultimo dei sei difetti di rifinitura elencati dal rapporto di chiusura di M1.
+
+⚠️ **E un difetto nuovo, che la decisione dell'8 settembre ha creato e che va deciso**: l'indirizzo
+di una voce di menu offre **cento pagine**, una richiesta sola, e adesso che il campo *decide* invece
+di *suggerire*, la pagina numero centouno è un indirizzo che non si può scegliere — mentre la casella
+dice «qui non corrisponde niente», che non è vero. Trovato dal giro completo, che su un banco con 120
+pagine non trovava più `/start`. La strada giusta è **il campo che cerca sul server** — la nona
+estensione del generatore di form, quindi una decisione — e sta scritta in
+`decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`.
+
+§9.4 del design M1 e §2 di `CLAUDE.md` dicevano già di chi sono i template — Director, Assistant
+Director, WM, AWM e, sul proprio dipartimento, coordinator e assistant coordinator, con
+`Content.ManageTemplates` — e nel back-office non c'era **niente**: tenuti fuori dalla lista dei
+contenuti di proposito, offerti dal picker solo per farne una pagina, e l'unico modo di aprirne uno
+era scriverne l'indirizzo. Adesso `/staff/<dip>/templates` è la lista generica con il filtro
+rovesciato, l'editor è **lo stesso** dei contenuti (un template è una riga di `cms_contents`, e un
+secondo editor sarebbe esattamente ciò che §9.3 esiste per impedire), e un pulsante ne crea uno.
+
+Tre cose decise mentre si faceva, e scritte qui perché sono scelte e non dettagli:
+
+- **il `kind` si sceglie prima**, accanto al pulsante, perché decide quali campi il form disegna e un
+  form che si ridisegna sotto le mani di chi lo compila è peggio;
+- **quante righe sono nate da un template si legge sulla sua schermata e non come colonna della
+  lista**: una colonna sarebbe una richiesta per riga, e `DataList` disegna una query sola. È anche
+  dove serve — davanti a chi sta per modificarlo;
+- **niente endpoint nuovo**: il conto è la stessa lista filtrata per `templateId`, letta per il suo
+  `total`. Gli endpoint a mano restano otto.
+
+⚠️ La regola vera resta del server, come sempre: `ExtraWritePolicy` chiede `Content.ManageTemplates`
+sull'entità **dopo** che il payload le è stato applicato, quindi «creare un template» è già rifiutato
+a chi non può cambiarne uno. Nessuno lo aveva mai provato perché nessun client lo aveva mai chiesto —
+i template si seminavano soltanto — e adesso un test di integrazione lo prova.
 
 **Changelog 0.50** (9 set 2026): **il tema scuro ha il suo grigio**, e con esso la prima deroga a
 «Atmosphere così com'è» (§4, §16.C). Nota `decisions/2026-09-09-il-grigio-dei-testi-secondari.md`.

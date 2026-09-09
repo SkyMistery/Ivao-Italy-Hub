@@ -28,6 +28,14 @@ export function contentDetailKey(id: number) {
   return [...contentKey, 'detail', id] as const;
 }
 
+export function templateListKey(department: Department, search: ListSearch) {
+  return [...contentKey, 'template-list', department, search] as const;
+}
+
+export function madeFromTemplateKey(templateId: number) {
+  return [...contentKey, 'made-from', templateId] as const;
+}
+
 export function publishProblemsKey(id: number) {
   return [...contentKey, 'publish-problems', id] as const;
 }
@@ -59,6 +67,50 @@ export function contentListQuery(
             ownerDepartment: department,
             ...(kind === null ? {} : { kind }),
           }),
+        }),
+      ),
+  });
+}
+
+/**
+ * The templates **of one department**, as its own screen lists them: every kind together, because a
+ * department has a handful and splitting them into three lists would be three screens for nine rows.
+ *
+ * It is the same list endpoint as everything else with the default filter turned round — the server
+ * keeps templates out unless a caller asks — so paging, sorting and searching are the ordinary ones
+ * and there is nothing new behind this.
+ */
+export function templateListQuery(department: Department, search: ListSearch) {
+  return queryOptions({
+    queryKey: templateListKey(department, search),
+    queryFn: async (): Promise<ContentPage> =>
+      unwrap(
+        await api.GET('/api/content', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ ownerDepartment: department, isTemplate: 'true' }),
+        }),
+      ),
+  });
+}
+
+/**
+ * How many rows were made from one template, asked the cheapest way there is: the list, filtered by
+ * `templateId`, for a page of one. What is read is `total`, and the single row comes along because
+ * a page of zero is not a thing a list endpoint offers.
+ *
+ * ⚠️ It is asked on the template's own screen and **not** as a column of the list, and that is a
+ * decision rather than an omission: a column would be one request per row, and `DataList` draws one
+ * query. Where the number actually matters is in front of somebody about to change a template —
+ * "eleven pages were made from this" is the sentence that stops a careless edit.
+ */
+export function madeFromTemplateQuery(templateId: number) {
+  return queryOptions({
+    queryKey: madeFromTemplateKey(templateId),
+    queryFn: async (): Promise<ContentPage> =>
+      unwrap(
+        await api.GET('/api/content', {
+          params: { query: { page: 1, pageSize: 1 } },
+          querySerializer: listQuerySerializer({ templateId: String(templateId) }),
         }),
       ),
   });

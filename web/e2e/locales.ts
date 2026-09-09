@@ -35,6 +35,7 @@ interface CommonStrings {
     };
     readonly screensGroup: string;
     readonly linksGroup: string;
+    readonly screens: Readonly<Record<string, string>>;
   };
   readonly form: { readonly suggest: { readonly emptyClosed: string } };
   readonly dashboard: { readonly edit: string };
@@ -75,7 +76,10 @@ interface CommonStrings {
       readonly visibility: string;
       readonly pinned: string;
     };
-    readonly options: { readonly visibility: { readonly Public: string } };
+    readonly options: {
+      readonly visibility: { readonly Public: string };
+      readonly kind: { readonly Page: string; readonly Document: string };
+    };
     readonly section: {
       readonly fields: { readonly key: string; readonly allowedBlocks: string };
     };
@@ -95,6 +99,7 @@ interface CommonStrings {
       };
     };
   };
+  readonly templates: { readonly title: string; readonly create: string };
   readonly blocks: {
     readonly networkStats: {
       // Spelled out rather than an index signature: a caption read from a record is

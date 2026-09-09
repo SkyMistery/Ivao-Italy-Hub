@@ -210,14 +210,20 @@ il nulla, che era una delle tre domande lasciate aperte da M0.
    template** la fissa e chi può cambiarlo.
 3. **L'anteprima**, a tre larghezze. È un `max-width` sullo stesso identico renderer del sito
    pubblico — non un emulatore.
-4. **Le differenze dal template.** Apri un template (`filter[isTemplate]=true` nella lista dei
-   contenuti), aggiungici una sezione, poi riapri una pagina nata da quel template: l'editor dice che
+4. **Le differenze dal template.** Apri un template — `/staff/wd/templates`, **nuovo in G13**:
+   prima non avevano nessuna schermata e l'unico modo di aprirne uno era scrivere un filtro a mano.
+   Aggiungici una sezione, poi riapri una pagina nata da quel template: l'editor dice che
    una sezione è stata aggiunta e si offre di aggiungerla — **una differenza alla volta**, mai tutte
    insieme. ⚠️ E la pagina che legge un visitatore non è cambiata, e non cambia nemmeno dopo che hai
    accettato la differenza nella bozza. Solo la pubblicazione muove quello che vede il pubblico.
 5. **Scrivere un template.** Su una riga template una sezione ha quattro campi in più — `key`, se le
    pagine possono cancellarla, se possono ristrutturarla, e quali blocchi ammette. Spunta un tipo di
    blocco, salva, fai una pagina da quel template: la sua palette offre quel blocco e nessun altro.
+   ⚠️ **Nuovo in G13**: un template si crea **da un pulsante** su quella schermata — scegli per che
+   cosa vale, e l'editor si apre su una riga che è già un template. Aprendone uno esistente ti dice
+   **quante righe sono nate da lui**, che è la frase che ferma una modifica distratta. La schermata è
+   dietro `Content.ManageTemplates`: ogni membro dello staff *legge* i template, così «nuovo da
+   template» funziona fra dipartimenti, e la vede solo chi può cambiarli.
 
 **Le altre novità di G13 che si vedono qui:**
 
@@ -286,8 +292,8 @@ cd web && pnpm e2e
 cd web && pnpm e2e:full
 ```
 
-Aspettati **470 test .NET** (306 unit, 164 di integrazione contro una MariaDB 11.4.10 vera), **274
-Vitest**, **47 smoke Playwright** e **12 del giro pieno**. Nessuno skippato.
+Aspettati **471 test .NET** (306 unit, 165 di integrazione contro una MariaDB 11.4.10 vera), **274
+Vitest**, **50 smoke Playwright** e **12 del giro pieno**. Nessuno skippato.
 
 ⚠️ **Correzione:** `dotnet test --solution` su questa macchina dice «Zero tests ran» con uscita 5
 **in tutte e due le configurazioni** — Release non lo evita, come questa scheda diceva prima — mentre

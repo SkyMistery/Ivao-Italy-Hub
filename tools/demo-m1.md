@@ -203,14 +203,20 @@ This is the part M1 exists for. On any page of `/staff/wd/content`:
    fixes it and who may change that.
 3. **The preview**, at three widths. It is a `max-width` on the very same renderer the public site
    uses — not an emulator.
-4. **The differences from the template.** Open a template (`filter[isTemplate]=true` in the content
-   list), add a section to it, then reopen a page made from it: the editor says a section was added,
+4. **The differences from the template.** Open a template — `/staff/wd/templates`, **new in G13**:
+   until then they had no screen at all, and the only way in was to type a filter — add a section to
+   it, then reopen a page made from it: the editor says a section was added,
    and offers to add it — **one difference at a time**, never all at once. ⚠️ And the page a visitor
    reads has not changed, and does not change even after you accept the difference into the draft.
    Only publishing moves what the public sees.
 5. **Writing a template.** On a template row, a section carries four more fields — `key`, whether
    pages may delete it, whether they may restructure it, and which blocks it allows. Tick one block
    type, save, make a page from that template: its palette offers that block and no other.
+   ⚠️ **New in G13**: a template is **made from a button** on that screen — choose which kind it is
+   for, and the editor opens on a row that is already a template. Opening an existing one says **how
+   many rows were made from it**, which is the sentence that stops a careless edit. The screen is
+   behind `Content.ManageTemplates`: every staff member *reads* templates, so that "new from a
+   template" works across departments, and only whoever may change them sees the screen.
 
 **The other things G13 added, all visible here:**
 
@@ -264,8 +270,8 @@ pnpm e2e                                    # Chromium against the production bu
 pnpm e2e:full                               # the published application, real API, real database
 ```
 
-Expect **470 .NET tests** (306 unit, 164 integration against a real MariaDB 11.4.10), **274
-Vitest**, **47 Playwright smokes** and **12 of the full round**. None is skipped.
+Expect **471 .NET tests** (306 unit, 165 integration against a real MariaDB 11.4.10), **274
+Vitest**, **50 Playwright smokes** and **12 of the full round**. None is skipped.
 
 ⚠️ `dotnet test --solution` has been seen on Windows to report "Zero tests ran" with exit code 5
 **in both configurations** — Release does not avoid it — while the very same binaries pass

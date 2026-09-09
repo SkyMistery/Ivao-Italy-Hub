@@ -79,3 +79,16 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindConfig> = {
     ],
   },
 };
+
+/**
+ * The templates of a department, all kinds together. It is not a `ContentKindConfig`, because a
+ * template is not a fifth kind: it is the same four seen from the other side of `is_template`, and
+ * the column that says which one it is exists here and on no other list — everywhere else the kind
+ * is fixed by the screen and printing it would be printing the title of the page in every row.
+ */
+export const TEMPLATE_COLUMNS: readonly ColumnSpec<ContentListDto>[] = [
+  col.localized('title'),
+  col.text('slug', { sortable: true }),
+  col.badge('kind', 'content', { sortable: true }),
+  col.date('updatedAt', { sortable: true }),
+];

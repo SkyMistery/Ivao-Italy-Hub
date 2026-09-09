@@ -35,6 +35,7 @@ import { Route as StaffStaffDeptLinksRouteImport } from './routes/_staff/staff.$
 import { Route as StaffStaffDeptMediaRouteImport } from './routes/_staff/staff.$dept.media'
 import { Route as StaffStaffDeptMenuRouteImport } from './routes/_staff/staff.$dept.menu'
 import { Route as StaffStaffDeptNewsRouteImport } from './routes/_staff/staff.$dept.news'
+import { Route as StaffStaffDeptTemplatesRouteImport } from './routes/_staff/staff.$dept.templates'
 import { Route as StaffStaffAdminAuditRouteImport } from './routes/_staff/staff.admin.audit'
 import { Route as StaffStaffAdminModulesRouteImport } from './routes/_staff/staff.admin.modules'
 import { Route as StaffStaffAdminPermissionsRouteImport } from './routes/_staff/staff.admin.permissions'
@@ -58,6 +59,8 @@ import { Route as StaffStaffDeptMenuIndexRouteImport } from './routes/_staff/sta
 import { Route as StaffStaffDeptMenuIdRouteImport } from './routes/_staff/staff.$dept.menu.$id'
 import { Route as StaffStaffDeptNewsIndexRouteImport } from './routes/_staff/staff.$dept.news.index'
 import { Route as StaffStaffDeptNewsIdRouteImport } from './routes/_staff/staff.$dept.news.$id'
+import { Route as StaffStaffDeptTemplatesIndexRouteImport } from './routes/_staff/staff.$dept.templates.index'
+import { Route as StaffStaffDeptTemplatesIdRouteImport } from './routes/_staff/staff.$dept.templates.$id'
 import { Route as StaffStaffAdminCalendarKindsIndexRouteImport } from './routes/_staff/staff.admin.calendar-kinds.index'
 import { Route as StaffStaffAdminCalendarKindsIdRouteImport } from './routes/_staff/staff.admin.calendar-kinds.$id'
 import { Route as StaffStaffAdminPermissionsIndexRouteImport } from './routes/_staff/staff.admin.permissions.index'
@@ -191,6 +194,11 @@ const StaffStaffDeptNewsRoute = StaffStaffDeptNewsRouteImport.update({
   path: '/staff/$dept/news',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffStaffDeptTemplatesRoute = StaffStaffDeptTemplatesRouteImport.update({
+  id: '/staff/$dept/templates',
+  path: '/staff/$dept/templates',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffStaffAdminAuditRoute = StaffStaffAdminAuditRouteImport.update({
   id: '/staff/admin/audit',
   path: '/staff/admin/audit',
@@ -319,6 +327,18 @@ const StaffStaffDeptNewsIdRoute = StaffStaffDeptNewsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => StaffStaffDeptNewsRoute,
 } as any)
+const StaffStaffDeptTemplatesIndexRoute =
+  StaffStaffDeptTemplatesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => StaffStaffDeptTemplatesRoute,
+  } as any)
+const StaffStaffDeptTemplatesIdRoute =
+  StaffStaffDeptTemplatesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => StaffStaffDeptTemplatesRoute,
+  } as any)
 const StaffStaffAdminCalendarKindsIndexRoute =
   StaffStaffAdminCalendarKindsIndexRouteImport.update({
     id: '/staff/admin/calendar-kinds/',
@@ -367,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/staff/$dept/media': typeof StaffStaffDeptMediaRouteWithChildren
   '/staff/$dept/menu': typeof StaffStaffDeptMenuRouteWithChildren
   '/staff/$dept/news': typeof StaffStaffDeptNewsRouteWithChildren
+  '/staff/$dept/templates': typeof StaffStaffDeptTemplatesRouteWithChildren
   '/staff/admin/audit': typeof StaffStaffAdminAuditRoute
   '/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/staff/admin/permissions': typeof StaffStaffAdminPermissionsRouteWithChildren
@@ -382,6 +403,7 @@ export interface FileRoutesByFullPath {
   '/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
   '/staff/$dept/menu/$id': typeof StaffStaffDeptMenuIdRoute
   '/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
+  '/staff/$dept/templates/$id': typeof StaffStaffDeptTemplatesIdRoute
   '/staff/admin/calendar-kinds/$id': typeof StaffStaffAdminCalendarKindsIdRoute
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/staff/$dept/calendar/': typeof StaffStaffDeptCalendarIndexRoute
@@ -393,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/staff/$dept/media/': typeof StaffStaffDeptMediaIndexRoute
   '/staff/$dept/menu/': typeof StaffStaffDeptMenuIndexRoute
   '/staff/$dept/news/': typeof StaffStaffDeptNewsIndexRoute
+  '/staff/$dept/templates/': typeof StaffStaffDeptTemplatesIndexRoute
   '/staff/admin/calendar-kinds/': typeof StaffStaffAdminCalendarKindsIndexRoute
   '/staff/admin/permissions/': typeof StaffStaffAdminPermissionsIndexRoute
 }
@@ -424,6 +447,7 @@ export interface FileRoutesByTo {
   '/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
   '/staff/$dept/menu/$id': typeof StaffStaffDeptMenuIdRoute
   '/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
+  '/staff/$dept/templates/$id': typeof StaffStaffDeptTemplatesIdRoute
   '/staff/admin/calendar-kinds/$id': typeof StaffStaffAdminCalendarKindsIdRoute
   '/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/staff/$dept/calendar': typeof StaffStaffDeptCalendarIndexRoute
@@ -435,6 +459,7 @@ export interface FileRoutesByTo {
   '/staff/$dept/media': typeof StaffStaffDeptMediaIndexRoute
   '/staff/$dept/menu': typeof StaffStaffDeptMenuIndexRoute
   '/staff/$dept/news': typeof StaffStaffDeptNewsIndexRoute
+  '/staff/$dept/templates': typeof StaffStaffDeptTemplatesIndexRoute
   '/staff/admin/calendar-kinds': typeof StaffStaffAdminCalendarKindsIndexRoute
   '/staff/admin/permissions': typeof StaffStaffAdminPermissionsIndexRoute
 }
@@ -465,6 +490,7 @@ export interface FileRoutesById {
   '/_staff/staff/$dept/media': typeof StaffStaffDeptMediaRouteWithChildren
   '/_staff/staff/$dept/menu': typeof StaffStaffDeptMenuRouteWithChildren
   '/_staff/staff/$dept/news': typeof StaffStaffDeptNewsRouteWithChildren
+  '/_staff/staff/$dept/templates': typeof StaffStaffDeptTemplatesRouteWithChildren
   '/_staff/staff/admin/audit': typeof StaffStaffAdminAuditRoute
   '/_staff/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/_staff/staff/admin/permissions': typeof StaffStaffAdminPermissionsRouteWithChildren
@@ -480,6 +506,7 @@ export interface FileRoutesById {
   '/_staff/staff/$dept/media/$id': typeof StaffStaffDeptMediaIdRoute
   '/_staff/staff/$dept/menu/$id': typeof StaffStaffDeptMenuIdRoute
   '/_staff/staff/$dept/news/$id': typeof StaffStaffDeptNewsIdRoute
+  '/_staff/staff/$dept/templates/$id': typeof StaffStaffDeptTemplatesIdRoute
   '/_staff/staff/admin/calendar-kinds/$id': typeof StaffStaffAdminCalendarKindsIdRoute
   '/_staff/staff/admin/permissions/$id': typeof StaffStaffAdminPermissionsIdRoute
   '/_staff/staff/$dept/calendar/': typeof StaffStaffDeptCalendarIndexRoute
@@ -491,6 +518,7 @@ export interface FileRoutesById {
   '/_staff/staff/$dept/media/': typeof StaffStaffDeptMediaIndexRoute
   '/_staff/staff/$dept/menu/': typeof StaffStaffDeptMenuIndexRoute
   '/_staff/staff/$dept/news/': typeof StaffStaffDeptNewsIndexRoute
+  '/_staff/staff/$dept/templates/': typeof StaffStaffDeptTemplatesIndexRoute
   '/_staff/staff/admin/calendar-kinds/': typeof StaffStaffAdminCalendarKindsIndexRoute
   '/_staff/staff/admin/permissions/': typeof StaffStaffAdminPermissionsIndexRoute
 }
@@ -519,6 +547,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media'
     | '/staff/$dept/menu'
     | '/staff/$dept/news'
+    | '/staff/$dept/templates'
     | '/staff/admin/audit'
     | '/staff/admin/modules'
     | '/staff/admin/permissions'
@@ -534,6 +563,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media/$id'
     | '/staff/$dept/menu/$id'
     | '/staff/$dept/news/$id'
+    | '/staff/$dept/templates/$id'
     | '/staff/admin/calendar-kinds/$id'
     | '/staff/admin/permissions/$id'
     | '/staff/$dept/calendar/'
@@ -545,6 +575,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media/'
     | '/staff/$dept/menu/'
     | '/staff/$dept/news/'
+    | '/staff/$dept/templates/'
     | '/staff/admin/calendar-kinds/'
     | '/staff/admin/permissions/'
   fileRoutesByTo: FileRoutesByTo
@@ -576,6 +607,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media/$id'
     | '/staff/$dept/menu/$id'
     | '/staff/$dept/news/$id'
+    | '/staff/$dept/templates/$id'
     | '/staff/admin/calendar-kinds/$id'
     | '/staff/admin/permissions/$id'
     | '/staff/$dept/calendar'
@@ -587,6 +619,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/media'
     | '/staff/$dept/menu'
     | '/staff/$dept/news'
+    | '/staff/$dept/templates'
     | '/staff/admin/calendar-kinds'
     | '/staff/admin/permissions'
   id:
@@ -616,6 +649,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/$dept/media'
     | '/_staff/staff/$dept/menu'
     | '/_staff/staff/$dept/news'
+    | '/_staff/staff/$dept/templates'
     | '/_staff/staff/admin/audit'
     | '/_staff/staff/admin/modules'
     | '/_staff/staff/admin/permissions'
@@ -631,6 +665,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/$dept/media/$id'
     | '/_staff/staff/$dept/menu/$id'
     | '/_staff/staff/$dept/news/$id'
+    | '/_staff/staff/$dept/templates/$id'
     | '/_staff/staff/admin/calendar-kinds/$id'
     | '/_staff/staff/admin/permissions/$id'
     | '/_staff/staff/$dept/calendar/'
@@ -642,6 +677,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/$dept/media/'
     | '/_staff/staff/$dept/menu/'
     | '/_staff/staff/$dept/news/'
+    | '/_staff/staff/$dept/templates/'
     | '/_staff/staff/admin/calendar-kinds/'
     | '/_staff/staff/admin/permissions/'
   fileRoutesById: FileRoutesById
@@ -836,6 +872,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffStaffDeptNewsRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/_staff/staff/$dept/templates': {
+      id: '/_staff/staff/$dept/templates'
+      path: '/staff/$dept/templates'
+      fullPath: '/staff/$dept/templates'
+      preLoaderRoute: typeof StaffStaffDeptTemplatesRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/_staff/staff/admin/audit': {
       id: '/_staff/staff/admin/audit'
       path: '/staff/admin/audit'
@@ -996,6 +1039,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/staff/$dept/news/$id'
       preLoaderRoute: typeof StaffStaffDeptNewsIdRouteImport
       parentRoute: typeof StaffStaffDeptNewsRoute
+    }
+    '/_staff/staff/$dept/templates/': {
+      id: '/_staff/staff/$dept/templates/'
+      path: '/'
+      fullPath: '/staff/$dept/templates/'
+      preLoaderRoute: typeof StaffStaffDeptTemplatesIndexRouteImport
+      parentRoute: typeof StaffStaffDeptTemplatesRoute
+    }
+    '/_staff/staff/$dept/templates/$id': {
+      id: '/_staff/staff/$dept/templates/$id'
+      path: '/$id'
+      fullPath: '/staff/$dept/templates/$id'
+      preLoaderRoute: typeof StaffStaffDeptTemplatesIdRouteImport
+      parentRoute: typeof StaffStaffDeptTemplatesRoute
     }
     '/_staff/staff/admin/calendar-kinds/': {
       id: '/_staff/staff/admin/calendar-kinds/'
@@ -1201,6 +1258,22 @@ const StaffStaffDeptNewsRouteChildren: StaffStaffDeptNewsRouteChildren = {
 const StaffStaffDeptNewsRouteWithChildren =
   StaffStaffDeptNewsRoute._addFileChildren(StaffStaffDeptNewsRouteChildren)
 
+interface StaffStaffDeptTemplatesRouteChildren {
+  StaffStaffDeptTemplatesIdRoute: typeof StaffStaffDeptTemplatesIdRoute
+  StaffStaffDeptTemplatesIndexRoute: typeof StaffStaffDeptTemplatesIndexRoute
+}
+
+const StaffStaffDeptTemplatesRouteChildren: StaffStaffDeptTemplatesRouteChildren =
+  {
+    StaffStaffDeptTemplatesIdRoute: StaffStaffDeptTemplatesIdRoute,
+    StaffStaffDeptTemplatesIndexRoute: StaffStaffDeptTemplatesIndexRoute,
+  }
+
+const StaffStaffDeptTemplatesRouteWithChildren =
+  StaffStaffDeptTemplatesRoute._addFileChildren(
+    StaffStaffDeptTemplatesRouteChildren,
+  )
+
 interface StaffStaffAdminPermissionsRouteChildren {
   StaffStaffAdminPermissionsIdRoute: typeof StaffStaffAdminPermissionsIdRoute
   StaffStaffAdminPermissionsIndexRoute: typeof StaffStaffAdminPermissionsIndexRoute
@@ -1228,6 +1301,7 @@ interface StaffRouteChildren {
   StaffStaffDeptMediaRoute: typeof StaffStaffDeptMediaRouteWithChildren
   StaffStaffDeptMenuRoute: typeof StaffStaffDeptMenuRouteWithChildren
   StaffStaffDeptNewsRoute: typeof StaffStaffDeptNewsRouteWithChildren
+  StaffStaffDeptTemplatesRoute: typeof StaffStaffDeptTemplatesRouteWithChildren
   StaffStaffAdminAuditRoute: typeof StaffStaffAdminAuditRoute
   StaffStaffAdminModulesRoute: typeof StaffStaffAdminModulesRoute
   StaffStaffAdminPermissionsRoute: typeof StaffStaffAdminPermissionsRouteWithChildren
@@ -1249,6 +1323,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffStaffDeptMediaRoute: StaffStaffDeptMediaRouteWithChildren,
   StaffStaffDeptMenuRoute: StaffStaffDeptMenuRouteWithChildren,
   StaffStaffDeptNewsRoute: StaffStaffDeptNewsRouteWithChildren,
+  StaffStaffDeptTemplatesRoute: StaffStaffDeptTemplatesRouteWithChildren,
   StaffStaffAdminAuditRoute: StaffStaffAdminAuditRoute,
   StaffStaffAdminModulesRoute: StaffStaffAdminModulesRoute,
   StaffStaffAdminPermissionsRoute: StaffStaffAdminPermissionsRouteWithChildren,

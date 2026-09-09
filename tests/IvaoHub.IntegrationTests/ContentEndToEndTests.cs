@@ -199,6 +199,76 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task MakingATemplateIsTheSamePermissionAsChangingOne()
+    {
+        // ⚠️ The half that had no caller until 9 September 2026, and therefore no test: until the
+        // templates screen existed, a template could only be *seeded*, so nothing ever posted one.
+        // The screen is behind the permission — but the screen is a door, and this is the lock.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebAdvisorVid, position: "IT-WMA1", cancellationToken: token);
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
+
+        using var advisor = _factory.CreateApiClient();
+        await _factory.SignInAsync(advisor, WebAdvisorVid, token);
+
+        // An advisor of the web team holds `Content.Edit` on WD and may write an ordinary page
+        // there — asserted next door. The very same payload with `isTemplate` turned on is refused,
+        // which is the extra write policy reading the entity **after** the payload was applied to
+        // it: what is being asked is "would this row be a template?", not "was it one?".
+        using var refused = await SendAsync(
+            advisor,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.WD, $"advisor-template-{Guid.NewGuid():N}"[..30], isTemplate: true),
+            token);
+
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+
+        using var superadmin = _factory.CreateApiClient();
+        await _factory.SignInAsync(superadmin, SuperadminVid, token);
+
+        var slug = $"made-template-{Guid.NewGuid():N}"[..28];
+        using var created = await SendAsync(
+            superadmin,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.WD, slug, isTemplate: true),
+            token);
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var template = await created.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.True(template.GetProperty("isTemplate").GetBoolean());
+
+        // And it is a template in the sense that matters: the picker finds it, the ordinary list
+        // does not, and a page can be made from it. Nothing here seeded it.
+        var templates = await superadmin.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}?filter[isTemplate]=true&filter[ownerDepartment]=WD&pageSize=100",
+            token);
+
+        Assert.Contains(
+            templates.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("slug").GetString() == slug);
+
+        var page = await FromTemplateAsync(
+            superadmin,
+            template.GetProperty("id").GetInt64(),
+            Department.WD,
+            $"from-made-{Guid.NewGuid():N}"[..24],
+            token);
+
+        Assert.False(page.GetProperty("isTemplate").GetBoolean());
+
+        // ⚠️ And the count the templates screen shows is this, and no endpoint of its own: the same
+        // list, filtered by the template, read for its total.
+        var madeFromIt = await superadmin.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}?filter[templateId]={template.GetProperty("id").GetInt64()}&pageSize=1",
+            token);
+
+        Assert.Equal(1, madeFromIt.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
     public async Task EnvelopeValidationRejectsUnknownBlockAndDepth()
     {
         var token = TestContext.Current.CancellationToken;

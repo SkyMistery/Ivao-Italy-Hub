@@ -388,7 +388,8 @@
       "kind": {
         "Page": "Page",
         "News": "News",
-        "Document": "Document"
+        "Document": "Document",
+        "Dashboard": "Department home"
       },
       "status": {
         "Draft": "Draft",
@@ -520,6 +521,16 @@
       "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used.",
       "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved."
     }
+  },
+  "templates": {
+    "title": "Templates",
+    "short": "Templates",
+    "description": "The shapes a page, a news item or a document is made from in this department. Changing one does not change the rows already made from it: they keep what they were given until somebody republishes.",
+    "create": "New template",
+    "edit": "Edit template",
+    "madeFromIt_one": "{{count}} row was made from this template.",
+    "madeFromIt_other": "{{count}} rows were made from this template.",
+    "madeFromIt_zero": "Nothing has been made from this template yet."
   },
   "blocks": {
     "captured": "Captured at publication",

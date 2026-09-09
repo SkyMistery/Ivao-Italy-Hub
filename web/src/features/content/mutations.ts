@@ -68,11 +68,19 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
   };
 }
 
-/** The form as a new page starts it: empty, in the department of the route. */
+/**
+ * The form as a new row starts it: empty, in the department of the route.
+ *
+ * `isTemplate` is an argument and not a field, for the same reason it is hidden on the form: a page
+ * may not promote itself into a template. What decides it is **which screen you are on** — the
+ * templates screen of a department makes templates, every other screen makes rows — and that screen
+ * is behind `Content.ManageTemplates`.
+ */
 export function emptyContent(
   department: Department,
   locales: readonly string[],
   kind: ContentKind = 'Page',
+  isTemplate = false,
 ): ContentFormValues {
   return {
     kind,
@@ -81,7 +89,7 @@ export function emptyContent(
     // A page is drafted where only the staff can see it; making it public is a choice, and one
     // that only takes effect when somebody publishes.
     visibility: 'Staff',
-    isTemplate: false,
+    isTemplate,
     title: emptyLocalized(locales),
     summary: emptyLocalized(locales),
     seo: emptySeo(locales),

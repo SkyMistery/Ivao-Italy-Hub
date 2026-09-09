@@ -58,6 +58,7 @@ import { NO_RULES, ruleFor, templateRules } from './templateRules';
 export function ContentEditor({
   content,
   kind,
+  startsAsTemplate = false,
   categories,
   department,
   locales,
@@ -73,6 +74,13 @@ export function ContentEditor({
   content: ContentDetailDto | null;
   /** Which kind this row is. Fixed by the list it was opened from, never a field on the form. */
   kind: ContentKind;
+  /**
+   * Whether a row that does not exist yet is going to be a template. An existing one says so itself;
+   * this is only how the templates screen tells the editor what it is about to make, so that the
+   * section properties offer `key`, `required`, `locked` and `allowedBlocks` from the first save
+   * rather than after a reload.
+   */
+  startsAsTemplate?: boolean;
   /** The shelves of this department, already resolved into the language on screen. */
   categories: readonly ChoiceOption[];
   department: Department;
@@ -140,7 +148,11 @@ export function ContentEditor({
         // the server last returned; keeping a stale one would answer 409 on the next save.
         key={content?.rowVersion ?? 'new'}
         schema={contentMetadataSchema(kind, categories)}
-        defaults={content === null ? emptyContent(department, locales, kind) : toFormValues(content, locales)}
+        defaults={
+          content === null
+            ? emptyContent(department, locales, kind, startsAsTemplate)
+            : toFormValues(content, locales)
+        }
         locales={locales}
         labels="content"
         division={division}
@@ -300,7 +312,7 @@ export function ContentEditor({
                   key={section.id}
                   section={section}
                   rule={ruleFor(rules, section.key)}
-                  isTemplate={content?.isTemplate === true}
+                  isTemplate={content?.isTemplate ?? startsAsTemplate}
                   locales={locales}
                   division={division}
                   mediaLibrary={mediaLibrary}
@@ -314,7 +326,7 @@ export function ContentEditor({
                       // What a template imposes, and only on a template: on a page the form does
                       // not draw these, and writing them would be a 400 from the envelope
                       // validator — a page carrying them could lift its own restrictions.
-                      ...(content?.isTemplate === true
+                      ...((content?.isTemplate ?? startsAsTemplate)
                         ? {
                             ...(typeof values.key === 'string' && values.key.trim() !== ''
                               ? { key: values.key.trim() }

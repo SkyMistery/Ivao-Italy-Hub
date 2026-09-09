@@ -6,6 +6,7 @@ import {
   Images,
   KeyRound,
   LayoutDashboard,
+  LayoutTemplate,
   Link2,
   Mail,
   Menu as MenuIcon,
@@ -19,6 +20,7 @@ import type { ComponentType } from 'react';
 
 import {
   type Bootstrap,
+  holdsPermission,
   holdsPermissionAnywhere,
   menuDepartment,
   reachableDepartments,
@@ -62,6 +64,8 @@ const PERMISSIONS_MANAGE = 'Permissions.Manage';
 const MODULES_MANAGE = 'Modules.Manage';
 /** Global, like the three above it: the calendar vocabulary belongs to the division. */
 const CALENDAR_MANAGE_KINDS = 'Calendar.ManageKinds';
+/** Departmental, unlike the four above: templates belong to the department that wrote them. */
+const CONTENT_MANAGE_TEMPLATES = 'Content.ManageTemplates';
 const AUDIT_VIEW = 'Audit.View';
 
 export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => string): StaffDestinationGroup[] {
@@ -114,6 +118,21 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
           Icon: Mail,
           href: at('/contacts'),
         },
+        // Templates are of this department and only whoever may change them is offered them: every
+        // staff member *reads* them — that is what makes "new from a template" work across
+        // departments — but the screen that changes them is behind the permission, so putting the
+        // entry in front of somebody who would be turned away would be a menu teaching people to
+        // ignore the menu.
+        ...(holdsPermission(bootstrap, CONTENT_MANAGE_TEMPLATES, department)
+          ? [
+              {
+                title: t('templates.title'),
+                description: t('templates.description'),
+                Icon: LayoutTemplate,
+                href: at('/templates'),
+              },
+            ]
+          : []),
         { title: t('links.title'), description: t('links.description'), Icon: Link2, href: at('/links') },
         { title: t('media.title'), description: t('media.description'), Icon: Images, href: at('/media') },
         // The menu of the site belongs to one department, so the entry exists under that one and
