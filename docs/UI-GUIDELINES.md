@@ -137,21 +137,33 @@ is no light-only screen and no dark-only screen.
 
 `DarkModeToggle` sits in the header of every layout; `ThemeProvider` in `main.tsx` is what decides.
 
-**One token is overridden, and it is the only one.** Atmosphere flips every foreground for the dark
-theme except `--muted-foreground`, which stays fuselage-500 in both — a grey that reads well on white
-and comes out at 3.14 : 1 on the dark ground, where WCAG AA asks 4.5 : 1 for text at 12 and 14px. The
-bottom of `src/styles/index.css` puts it at fuselage-400 for the dark theme only, which is the
-distance the light theme already keeps from its own ground.
+**Two things are overridden in Atmosphere, and they are the only two.** Both live at the bottom of
+`src/styles/index.css`, both are measured, and both have a test that fails if the line goes away.
 
-Two things to know before touching it. It has to sit **after** the Atmosphere imports, because that
-stylesheet is loaded after Tailwind's utilities and where a rule goes decides whether it wins. And
-`e2e/contrast.spec.ts` measures every visible piece of secondary text on nine screens in the dark
-theme and fails if the line goes away — the colours are read back out of a canvas, because some of
-them arrive as `oklab()` and a regular expression over one of those returns something close to black.
+The first is a **colour**. Atmosphere flips every foreground for the dark theme except
+`--muted-foreground`, which stays fuselage-500 in both — a grey that reads well on white and comes
+out at 3.14 : 1 on the dark ground, where WCAG AA asks 4.5 : 1 for text at 12 and 14px. It becomes
+fuselage-400 for the dark theme only, which is the distance the light theme already keeps from its
+own ground.
+
+The second is a **height**, and it is a plain defect rather than a matter of taste: their `Select`
+gives its popup the height of its **trigger**, so the list is one row tall whatever it holds —
+measured at 46px of viewport for rows of 30. Every option is in the document and reachable from a
+keyboard; what a reader sees is a control offering one thing out of four, with no sign there is a
+second. The rule gives the popup the height of its own list, capped by what Radix says is available
+on screen, so a long list still scrolls. `e2e/select.spec.ts` asserts the geometry, which is the only
+thing that would have caught it.
+
+Both have to sit **after** the Atmosphere imports, because that stylesheet is loaded after
+Tailwind's utilities and where a rule goes decides whether it wins — neither needs `!important`, and
+that was verified in a browser rather than assumed. `e2e/contrast.spec.ts` measures every visible
+piece of secondary text on nine screens in the dark theme and fails if the colour goes back; the
+colours are read out of a canvas, because some arrive as `oklab()` and a regular expression over one
+of those returns something close to black.
 
 If you fork this and change the palette, that is the test that tells you whether your greys are
-readable. Adding a second override is a decision, not a tweak: the point of the closed set is that
-"Atmosphere as it is" stays true enough to be worth saying.
+readable. **Adding a third override is a decision, not a tweak**: the point of keeping the list short
+is that "Atmosphere as it is" stays true enough to be worth saying.
 
 ## Screens are configuration, not markup
 
@@ -447,6 +459,17 @@ agent or touch emulation: the value of one renderer is that "what will this look
 disagree with "what this looks like".
 
 ## Times
+
+**Aviation, not the locale's habit.** Twenty four hours everywhere, `Z` for zulu and `LT` for the
+reader's own zone — `14:00Z (16:00 LT)`. A briefing at 14:00 is written 14:00, and "2:00 PM" is a
+form nobody on the network uses. It is one line in `useMoment`, which is the only place in the client
+that formats an instant, and that is why it is one line.
+
+**The date goes only where nothing else has said the day.** A square of a calendar grid and the
+heading of a day list have already said it; repeating it is noise on the line a reader actually
+reads. The agenda keeps it, because it is a flat list running forward and has neither. An entry that
+is a whole day keeps its date wherever it is drawn — and takes **no** `Z`, because a day is not an
+instant.
 
 Always in UTC, with the time zone of the division next to it — a hub is read by people flying in one
 and organising in the other. `DataList` does that for a `col.date`; anywhere else, use

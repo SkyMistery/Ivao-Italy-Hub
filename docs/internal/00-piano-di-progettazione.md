@@ -1,9 +1,31 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.52 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, il tema scuro ha il suo grigio, i template hanno una schermata, e un campo suggerito può chiedere al server)
+**Versione documento:** 0.53 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, il tema scuro ha il suo grigio, i template hanno una schermata, un campo suggerito può chiedere al server, e l'ora si scrive come in aviazione)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.53** (9 set 2026, terza esecuzione della demo): tre difetti, e due di essi sono
+decisioni.
+
+**L'ora si scrive come in aviazione**, dappertutto: **24 ore**, `Z` per lo zulu, `LT` per l'ora
+locale, e la **data solo dove non c'è già** — nella griglia lo dice il quadrato, nella lista
+l'intestazione del giorno, e resta nell'agenda, che è una lista che corre in avanti e non ha né
+l'uno né l'altra. Una riga legge `14:00Z (16:00 LT)`. È una riga sola di codice perché `useMoment` è
+l'unico posto che formatta un istante — che è la ragione per cui esiste.
+
+⚠️ **La seconda deroga ad «Atmosphere così com'è»** (§4, §16.C), e va contata: la loro `Select` dà al
+popup l'altezza del **trigger**, quindi la lista è alta una riga qualunque cosa contenga — misurato,
+46 px per righe da 30. Non è gusto come il grigio: è un controllo che mostra una voce di quattro e
+non dà al lettore modo di sapere che ce ne sono altre. Una regola in `index.css` restituisce al
+popup l'altezza della sua lista, limitata da quella disponibile sullo schermo. **Le deroghe sono
+due, e vanno tenute due.**
+
+⚠️ E un difetto che nessun test poteva vedere, perché vive nella cucitura dello sviluppo: in dev la
+SPA e il backend sono **due server su due porte**, e `/media/{id}/{name}` non era fra i percorsi
+inoltrati — quindi ogni immagine era un `<img>` che puntava a `index.html`. Ora l'elenco dei percorsi
+del backend è un file solo (`web/backendPaths.ts`), il proxy nasce da lì, e un test lo difende. Con
+lui erano rotti anche `/sitemap.xml` e `/robots.txt`.
 
 **Changelog 0.52** (9 set 2026): **un campo suggerito può chiedere al server** — la **nona**
 estensione del generatore di form, e chiude il difetto che il changelog 0.51 apriva.

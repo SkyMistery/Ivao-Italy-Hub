@@ -145,23 +145,35 @@ function Entry({
   timezone,
   kinds,
   compact = false,
+  withDate = false,
 }: {
   item: CalendarItem;
   timezone: string;
   kinds: readonly CalendarKind[];
   compact?: boolean;
+  /**
+   * Whether to write the day beside the time. Only the agenda does: it is a flat list running
+   * forward, so nothing else on the screen says which day an entry is on. A square of the grid and
+   * a heading of the day list have already said it, and repeating it there is noise on the line a
+   * reader actually reads (asked for by Carmine running the demo).
+   */
+  withDate?: boolean;
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
   const moment = useMoment();
 
   const allDay = item.allDay === true;
-  const utc = moment(item.startsAt, { time: !allDay });
+
+  // An all-day entry has nothing but its day, so it keeps the date wherever it is drawn: a line
+  // that said only "Z" would be saying nothing at all.
+  const withDay = withDate || allDay;
+  const utc = moment(item.startsAt, { time: !allDay, date: withDay });
 
   // An all-day entry has no time to convert, so showing a second line for it would be inventing a
   // difference; a timed one always shows both, even when the two read the same, because a reader
   // has to be able to tell which is which.
-  const local = allDay ? '' : moment(item.startsAt, { timeZone: timezone });
+  const local = allDay ? '' : moment(item.startsAt, { timeZone: timezone, date: withDay });
   const title = read(item.title);
   const summary = read(item.description);
 
@@ -169,7 +181,10 @@ function Entry({
     <div className="flex flex-col gap-1">
       <div className="text-muted-foreground flex flex-wrap items-baseline gap-2 text-xs">
         <time className="tabular-nums" dateTime={item.startsAt ?? undefined}>
-          {t('calendar.utc', { at: utc })}
+          {/* ⚠️ `Z` only on an instant. An all-day entry is a **day**, and a day is not a time in
+              UTC: "Sep 20, 2026Z" is a letter glued to something that has no clock in it. Caught by
+              the test that asked for the date to go away everywhere else. */}
+          {allDay ? utc : t('calendar.utc', { at: utc })}
         </time>
         {local === '' ? null : <span className="tabular-nums">{t('calendar.local', { at: local })}</span>}
         {item.kind === undefined || item.kind === '' ? null : (
@@ -217,7 +232,7 @@ function Agenda({
     <ul className="flex flex-col divide-y">
       {items.map((item) => (
         <li key={item.id} className="py-3 first:pt-0 last:pb-0">
-          <Entry item={item} timezone={timezone} kinds={kinds} />
+          <Entry item={item} timezone={timezone} kinds={kinds} withDate />
         </li>
       ))}
     </ul>

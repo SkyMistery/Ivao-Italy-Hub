@@ -1211,8 +1211,8 @@
     "edit": "Edit entry",
     "projected": "From a module",
     "projectedExplained": "This entry mirrors a row the {{module}} module owns, so it cannot be edited here: a change would be undone the next time that module saves. Change it where it comes from.",
-    "utc": "{{at}} UTC",
-    "local": "({{at}} local)",
+    "utc": "{{at}}Z",
+    "local": "({{at}} LT)",
     "previous": "Previous",
     "next": "Next",
     "delete": {

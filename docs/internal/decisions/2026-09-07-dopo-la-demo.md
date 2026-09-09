@@ -191,6 +191,47 @@ quarta è nata pensando alla terza:
 
 Il resto della parte 1 è andato.
 
+## Che cosa ha trovato la **terza** esecuzione (9 settembre 2026)
+
+Quattro punti, di cui uno («la 3») era solo una conferma. Gli altri tre erano difetti veri, e il
+peggiore non si vedeva da nessun test.
+
+1. ~~**Le immagini non si caricano**, né nell'anteprima né nei documenti~~ ✅ **fatta**, ed è la più
+   grave delle tre. Non era il codice: `/media/{id}/{name}` — l'indirizzo di un upload, che
+   sopravvive alla riga e quindi è un **percorso del sito** e non una chiamata sotto `/api` — non era
+   fra i percorsi che Vite inoltra all'API in sviluppo. Quindi il browser chiedeva la foto a Vite, e
+   Vite rispondeva con `index.html`: un 200, della cosa sbagliata, e ogni `<img>` rotta.
+
+   ⚠️ **Nessun test poteva vederlo**: quelli unitari stubbano l'API, gli smoke girano sul bundle
+   costruito, e il giro completo gira sul pacchetto pubblicato dove **un** server serve
+   l'applicazione e i file insieme. La cucitura esiste solo nei due porti dello sviluppo — cioè
+   esattamente dove si fa la demo. Adesso l'elenco dei percorsi del backend sta in un file solo
+   (`web/backendPaths.ts`), il proxy si costruisce da quello, e un test lo tiene fermo. Ne sono
+   usciti altri due che erano rotti allo stesso modo e nessuno aveva guardato: `/sitemap.xml` e
+   `/robots.txt`.
+
+2. ~~**Una tendina mostra una sola opzione** e per le altre bisogna scorrere~~ ✅ **fatta**. Misurato
+   nel browser: la `Select` di Atmosphere dà al suo popup l'altezza del **trigger**
+   (`h-radix-select-trigger` sul viewport di Radix), quindi la lista è alta una riga qualunque cosa
+   contenga — 46 px di viewport per righe da 30. Le opzioni c'erano tutte, un test unitario le
+   trovava per nome, la tastiera le raggiungeva: quello che un lettore vedeva era un elenco con
+   dentro una voce sola e nessun motivo di sospettarne una seconda.
+
+   ⚠️ È la **seconda** deroga ad «Atmosphere così com'è», e a differenza della prima non è una
+   questione di gusto: è un controllo che mente su quello che offre. `e2e/select.spec.ts` asserisce
+   una **geometria**, che è l'unica cosa che l'avrebbe presa.
+
+3. **La 3 va bene**, chiusa senza modifiche.
+
+4. ~~**Il formato delle date del calendario**~~ ✅ **fatta**, quattro cose in una: la data sparisce
+   dalla riga di una voce **tranne nell'agenda** (nella griglia lo dice il quadrato, nella lista lo
+   dice l'intestazione del giorno); `UTC` diventa **`Z`**; `locali` diventa **`LT`**; e l'orario è a
+   **24 ore** ovunque, che è una riga sola in `useMoment` perché è l'unico posto che formatta un
+   istante. Una riga adesso legge `14:00Z (16:00 LT)`.
+
+   ⚠️ E il test che chiedeva la data ne ha trovato uno mio nello stesso cambio: una voce «tutto il
+   giorno» usciva `Sep 20, 2026Z` — la `Z` incollata a una data, che non è un istante.
+
 ## Le quattro decisioni prese
 
 ### Il tag aspetta
@@ -242,7 +283,7 @@ Non il riquadro degli errori del form: **un componente usabile ovunque**. Quinto
 
 Ramo `m1/g13-fixes`, PR #57. **I quattro difetti sono chiusi, e le dodici richieste con loro**, più
 le quattro della seconda esecuzione. Verde in locale, tutto rieseguito l'8 settembre: **471 test
-.NET** (306 unit + 165 integrazione), **276 Vitest** (32 file), **51 smoke Playwright** e **12 del
+.NET** (306 unit + 165 integrazione), **279 Vitest** (33 file), **52 smoke Playwright** e **12 del
 giro completo**, lint, typecheck e i18n puliti.
 
 ⚠️ Rieseguito l'8 settembre: `pnpm e2e:full`, **12 verdi**, ed è servito — nei suoi log si vede

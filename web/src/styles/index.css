@@ -30,3 +30,23 @@
 .dark {
   --muted-foreground: var(--ivao-color-fuselage-400);
 }
+
+/*
+ * The second — and, so far, the last — thing this hub overrides in Atmosphere, and unlike the grey
+ * above it is not a matter of taste: their `Select` gives its popup the height of its **trigger**
+ * (`h-radix-select-trigger` on the Radix viewport), so the list is one row tall whatever it holds.
+ * Measured in a browser on the language switcher: 46px of viewport for two rows of 30px, so one is
+ * visible and the other needs a scroll — and a reader has no way of knowing there is another. It is
+ * the same on every select of the back office: "Visible to" has four.
+ *
+ * The height becomes the list's own, capped by what Radix says is available on screen, so a long
+ * list still scrolls and a short one is simply shown.
+ *
+ * ⚠️ No `!important` needed, and that is deliberate: this rule is unlayered and Tailwind's utilities
+ * are in a layer, so it wins on the cascade rather than by force. Verified in the browser, the way
+ * `hidden sm:block` had to be. Asserted by `e2e/select.spec.ts`.
+ */
+[data-radix-select-viewport] {
+  height: auto;
+  max-height: var(--radix-select-content-available-height, 20rem);
+}

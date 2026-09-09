@@ -1211,8 +1211,8 @@
     "edit": "Modifica voce",
     "projected": "Da un modulo",
     "projectedExplained": "Questa voce rispecchia una riga che appartiene al modulo {{module}}, quindi non si modifica da qui: la modifica tornerebbe indietro al primo salvataggio di quel modulo. Si cambia dove nasce.",
-    "utc": "{{at}} UTC",
-    "local": "({{at}} locali)",
+    "utc": "{{at}}Z",
+    "local": "({{at}} LT)",
     "previous": "Precedente",
     "next": "Successivo",
     "delete": {

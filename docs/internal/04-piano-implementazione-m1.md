@@ -9,7 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.13 — 9 settembre 2026 (**un campo suggerito può chiedere al server**, nona
+**Versione:** 2.14 — 9 settembre 2026 (**la terza esecuzione della demo**: le immagini non si
+caricavano in sviluppo — `/media` non era inoltrato all'API e ogni foto era `index.html` —, una
+tendina mostrava una voce sola perché Atmosphere le dà l'altezza del trigger, e l'ora del calendario
+adesso si scrive come in aviazione: 24 ore, `Z`, `LT`, e la data solo dove non c'è già. Conto:
+**471 test .NET** (invariati, niente C#), **279 Vitest**, **52 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.13** — 9 settembre 2026 (**un campo suggerito può chiedere al server**, nona
 estensione del generatore di form: chiude il difetto che l'indirizzo chiuso del menu aveva creato —
 cento righe per richiesta, e una pagina oltre la centesima che non si poteva scegliere. Zero
 endpoint, zero tabelle, zero permessi. Conto: **471 test .NET** (306 unitari, 165 di integrazione,
