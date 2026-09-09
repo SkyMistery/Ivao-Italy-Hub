@@ -56,6 +56,12 @@ interface FormEnvironment {
   mediaLibrary?: MediaLibraryQuery | undefined;
   /** The two facts about the division a media field and an instant need. */
   division?: { defaultLocale: string; timezone: string } | undefined;
+  /**
+   * Called while somebody types in a suggested field, with the field's path and the text, after a
+   * pause. It is how a **closed** list stops being capped: the screen asks the server again instead
+   * of filtering in memory a page of rows it already downloaded.
+   */
+  onSuggestSearch?: ((field: string, typed: string) => void) | undefined;
 }
 
 /**
@@ -79,6 +85,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   secondaryAction,
   mediaLibrary,
   division,
+  onSuggestSearch,
 }: {
   schema: z.ZodType<TValues, TValues>;
   defaults: TValues;
@@ -101,6 +108,16 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
    * form with neither is never asked for them.
    */
   division?: { defaultLocale: string; timezone: string };
+  /**
+   * What somebody is typing in a suggested field, reported after a pause, with the field's path.
+   *
+   * ⚠️ The reason it exists, and it is a defect this closed a fortnight after opening it: the
+   * screen hands over a page of suggestions, and a page is **a hundred rows** — the ceiling of the
+   * list engine. While the field only *suggested*, whoever did not find their page typed it. Since
+   * the field **decides**, a page past the hundredth is an address that exists, that the server
+   * would accept, and that cannot be chosen. So the screen has to be able to ask again.
+   */
+  onSuggestSearch?: (field: string, typed: string) => void;
 }) {
   const { t } = useTranslation();
   const form = useForm({
@@ -109,7 +126,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   });
   const problem = useProblemDetails(form);
   const fields = readFields(schema);
-  const env: FormEnvironment = { locales, labels, mediaLibrary, division };
+  const env: FormEnvironment = { locales, labels, mediaLibrary, division, onSuggestSearch };
 
   useProposedSlugs(form, fields, division?.defaultLocale);
 
@@ -258,6 +275,7 @@ function Suggest({
   only,
   empty,
   onChange,
+  onSearch,
 }: {
   id: string;
   value: string;
@@ -266,6 +284,8 @@ function Suggest({
   only: boolean;
   empty: string;
   onChange: (next: string) => void;
+  /** Told what is being typed, after a pause, so the screen can go and ask for more. */
+  onSearch?: ((typed: string) => void) | undefined;
 }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLInputElement>(null);
@@ -279,6 +299,20 @@ function Suggest({
     (suggestion) =>
       typed === '' || fold(suggestion.value).includes(typed) || fold(suggestion.label).includes(typed),
   );
+
+  // ⚠️ And the same text goes **to the caller**, after a pause, so that a list which is only ever a
+  // page of rows can be a different page. Three hundred milliseconds, like the search box of a list
+  // — the same pause, because it is the same gesture. Only while the box is open: choosing an entry
+  // writes a whole address into the field, and asking the server about it would be a request for
+  // something already chosen.
+  useEffect(() => {
+    if (onSearch === undefined || !open) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => onSearch(typed), 300);
+    return () => clearTimeout(timer);
+  }, [typed, open, onSearch]);
 
   // Kept in the order the caller gave them, grouped by the heading each carries: a `Map` because
   // insertion order is the order the groups are drawn in, and the caller decided it.
@@ -530,6 +564,9 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 only={node.only}
                 empty={t(node.only ? 'form.suggest.emptyClosed' : 'form.suggest.empty')}
                 onChange={field.onChange}
+                {...(env.onSuggestSearch === undefined
+                  ? {}
+                  : { onSearch: (typed: string) => env.onSuggestSearch?.(node.path, typed) })}
               />
             )}
           />

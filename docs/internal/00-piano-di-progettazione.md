@@ -1,9 +1,22 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.51 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, il tema scuro ha il suo grigio, e i template hanno una schermata)
+**Versione documento:** 0.52 — 9 settembre 2026 (G13: il soffitto di visibilità vale anche per le immagini, la sigla di un dipartimento è il suo segno, i tipi di evento sono un vocabolario di divisione, una voce di menu porta solo dove il sito possiede qualcosa, nell'indice di ricerca finisce solo prosa, il tema scuro ha il suo grigio, i template hanno una schermata, e un campo suggerito può chiedere al server)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.52** (9 set 2026): **un campo suggerito può chiedere al server** — la **nona**
+estensione del generatore di form, e chiude il difetto che il changelog 0.51 apriva.
+
+`onSuggestSearch` è una funzione che il form chiama con il nome del campo e quello che ci si sta
+scrivendo, dopo trecento millisecondi di pausa. Il generatore non sa che cosa farne: la schermata la
+riceve e rifà la sua domanda con `q`. Nel menu quel testo diventa la ricerca delle pagine e dei link,
+che il server già sa fare su titolo e slug — quindi **zero endpoint nuovi**, e il tetto di cento
+righe smette di essere un tetto perché non è più l'elenco intero a dover stare in una pagina.
+
+⚠️ È opt-in: un form che non passa la funzione filtra in memoria come prima, ed è quello che vuole
+un elenco corto. Un test lo tiene fermo, perché il rischio di un'estensione così è che tutte le
+schermate comincino a fare richieste senza che nessuno lo abbia chiesto.
 
 **Changelog 0.51** (9 set 2026): **i template di un dipartimento hanno una schermata**, che è
 l'ultimo dei sei difetti di rifinitura elencati dal rapporto di chiusura di M1.

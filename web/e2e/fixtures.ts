@@ -207,6 +207,37 @@ export const siteStaffBootstrap = {
   },
 };
 
+/**
+ * A page nobody would find without asking the server: the hundred and first row, which no single
+ * request returns because the list engine caps a page at a hundred. The address of a menu entry is
+ * a **closed** set, so a row the form never offers is a row the menu can never point at — which is
+ * why the field searches instead of filtering what it already holds.
+ */
+export const thePageBeyondTheHundredth = {
+  items: [
+    {
+      id: 909,
+      kind: 'Page',
+      slug: 'oltre-la-centesima',
+      ownerDepartment: 'WD',
+      visibility: 'Public',
+      status: 'Published',
+      isTemplate: false,
+      title: { en: 'Beyond the hundredth', it: 'Oltre la centesima' },
+      category: null,
+      coverMediaId: null,
+      pinned: false,
+      sort: 0,
+      fileMediaId: null,
+      publishedAt: '2026-09-04T12:00:00Z',
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 100,
+  total: 1,
+};
+
 /** One page of templates, as the department's templates screen asks for them. */
 export const twoTemplates = {
   items: [
@@ -560,9 +591,14 @@ export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBo
       : // "How many rows were made from this template?" — a page of one, read for its `total`.
         url.includes('filter%5BtemplateId%5D=')
         ? { ...noContent, total: 4 }
-        : url.includes('filter%5Bkind%5D=Document')
-          ? twoDocuments
-          : noContent;
+        : // ⚠️ A search, and the only way to reach the row it answers with: the unfiltered call
+          // below returns nothing, exactly as a real first page of a hundred returns everything
+          // except what is past it.
+          url.includes('q=oltre')
+          ? thePageBeyondTheHundredth
+          : url.includes('filter%5Bkind%5D=Document')
+            ? twoDocuments
+            : noContent;
 
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) });
   });

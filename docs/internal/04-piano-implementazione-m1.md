@@ -9,7 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.12 — 9 settembre 2026 (**i template hanno una schermata**: lista, pulsante che ne
+**Versione:** 2.13 — 9 settembre 2026 (**un campo suggerito può chiedere al server**, nona
+estensione del generatore di form: chiude il difetto che l'indirizzo chiuso del menu aveva creato —
+cento righe per richiesta, e una pagina oltre la centesima che non si poteva scegliere. Zero
+endpoint, zero tabelle, zero permessi. Conto: **471 test .NET** (306 unitari, 165 di integrazione,
+invariati — niente C# è cambiato), **276 Vitest**, **51 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.12** — 9 settembre 2026 (**i template hanno una schermata**: lista, pulsante che ne
 crea uno, e quante righe sono nate da lui. Ultimo dei sei difetti di rifinitura del rapporto di
 chiusura, quindi **sono chiusi tutti**. Zero tabelle, zero permessi, zero endpoint, zero migrazioni:
 la lista generica con il filtro rovesciato e lo stesso editor dei contenuti. Conto: **471 test .NET**

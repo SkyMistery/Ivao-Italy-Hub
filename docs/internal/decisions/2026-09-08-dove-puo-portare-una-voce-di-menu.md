@@ -98,7 +98,7 @@ giusto, ed è lo stesso della parola di calendario fuori vocabolario.
 
 ---
 
-## Un difetto che questa decisione ha creato, trovato il 9 settembre 2026
+## Un difetto che questa decisione ha creato — trovato e chiuso il 9 settembre 2026
 
 ⚠️ **L'elenco delle pagine è una richiesta sola di cento righe.** Finché il campo *suggeriva*, cento
 era una comodità e chi non trovava la sua pagina la scriveva a mano. Adesso che il campo **decide**,
@@ -121,5 +121,24 @@ Le strade, e nessuna è gratis:
 3. **Cambiare l'ordine** (le più recenti prima invece che per slug): sposta il problema senza
    risolverlo, e dà l'impressione di averlo risolto. Scartata.
 
-Da decidere con Carmine prima di scrivere codice. Nel frattempo il difetto è qui, con il suo numero:
-**cento pagine per dipartimento**, oltre le quali il menu non può puntare.
+**Deciso da Carmine il 9 settembre 2026: la prima**, e fatta lo stesso giorno.
+
+### Che cosa è costata
+
+- **La nona estensione del generatore di form**, ed è la più piccola delle nove: `onSuggestSearch`,
+  una funzione che il form chiama con il nome del campo e quello che ci si sta scrivendo, **dopo una
+  pausa di trecento millisecondi** — la stessa che aspetta la casella di ricerca di una lista, perché
+  è lo stesso gesto. Il generatore non sa che cosa farne: chi la riceve è la schermata.
+- `menuDestinationPagesQuery(q)` e `activeLinksQuery(q)` passano quel testo come `q` della lista. Il
+  server cerca già su titolo e slug per i contenuti, su titolo e indirizzo per i link — cioè
+  esattamente le due righe che la voce mostra. Zero endpoint nuovi.
+- `keepPreviousData` sulle due query: senza, fra un tasto e la risposta l'elenco resta vuoto per un
+  istante, e un elenco vuoto in quella casella si legge «qui non corrisponde niente» — l'unica cosa
+  che non deve dire mentre sta chiedendo.
+- ⚠️ La richiesta parte **solo mentre la tendina è aperta**. Scegliere una voce scrive un indirizzo
+  intero nel campo, e chiedere al server di quello sarebbe una domanda su una cosa già scelta.
+- I test: due di Vitest — che il campo riporta quello che si scrive, e che un form **senza** la
+  funzione si comporta come prima, perché una schermata deve poter non chiedere niente — e uno di
+  Playwright dove il banco risponde con una riga **solo** se la richiesta porta la ricerca, cioè una
+  pagina che nessun'altra chiamata restituisce. Verificati tutti e tre rompendo il pezzo che provano:
+  il richiamo, la pausa, e il collegamento fra il testo e la query.

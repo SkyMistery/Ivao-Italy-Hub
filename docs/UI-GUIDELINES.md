@@ -239,13 +239,23 @@ What the schema may say about how a field is drawn:
   offers what exists while somebody types, grouped by whatever the caller says the group is. It is
   **not** a select: what is typed is the value, and the list is a way of not typing it. Add
   `suggestionsOnly: true` and it becomes the opposite — what is typed is a way of *searching* the
-  list, and anything the list did not offer is gone when the field is left.
+  list, and anything the list did not offer is gone when the field is left. What is typed reaches the
+  screen through `onSuggestSearch`, so the list can be a question to the server rather than a page of
+  rows already downloaded.
 
-⚠️ `suggestionsOnly` is the only field kind that **decides** rather than offers, so it comes with an
-obligation: **the server has to refuse the same set.** The closed field is a convenience, and a
-convenience is not a rule (a `PUT` from anywhere else would walk straight past it). The one use of it
-is the address of a menu entry, and the pair to read is
+⚠️ `suggestionsOnly` is the only field kind that **decides** rather than offers, so it comes with two
+obligations. The first: **the server has to refuse the same set.** The closed field is a convenience,
+and a convenience is not a rule (a `PUT` from anywhere else would walk straight past it). The one use
+of it is the address of a menu entry, and the pair to read is
 `MenuItemWriteDtoValidator.LeadsSomewhereThisSiteOwnsAsync` next to `menuItemSchema`.
+
+⚠️ The second: **the list must be able to grow past one request.** A list endpoint answers at most a
+hundred rows, and while a field only suggests that is an inconvenience — whoever does not find their
+row types it. A closed field turns it into a row nobody can point at. So hand `SchemaForm` an
+`onSuggestSearch` — it is called with the field's path and what is being typed, three hundred
+milliseconds after the typing stops — and let the screen ask the server again with `q` (use
+`keepPreviousData`, or the list blinks empty and an empty list here reads as "nothing matches").
+Filtering in memory is right for a short, fixed list and wrong for anything a database grows.
 
 ⚠️ And where that set contains **routes of this client**, the two halves agree **by hand**: a route
 is not something the OpenAPI contract can carry. `MenuItemWriteDtoValidator.Screens` and

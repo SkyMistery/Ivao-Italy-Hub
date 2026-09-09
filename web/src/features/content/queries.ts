@@ -32,6 +32,10 @@ export function templateListKey(department: Department, search: ListSearch) {
   return [...contentKey, 'template-list', department, search] as const;
 }
 
+export function menuDestinationsKey(q: string) {
+  return [...contentKey, 'menu-destinations', q] as const;
+}
+
 export function madeFromTemplateKey(templateId: number) {
   return [...contentKey, 'made-from', templateId] as const;
 }
@@ -146,14 +150,19 @@ export function templatesQuery(kind: ContentKind | null = null) {
  * to nothing: the menu belongs to the department that owns the site, so whoever may edit it is a
  * web coordinator or a director, and those reach every department (`ReachesEveryDepartment`). The
  * groups this list is drawn in are therefore real, and a page of another department is offered.
+ *
+ * ⚠️ **And it takes what is being typed**, since 9 September 2026. A page of this list is a hundred
+ * rows, which is the ceiling of the engine — so while the field only suggested, a site with more
+ * pages than that was an inconvenience, and since the field decides it was a page nobody could point
+ * at. The server searches the title and the slug, which is what the entry shows.
  */
-export function menuDestinationPagesQuery() {
+export function menuDestinationPagesQuery(q = '') {
   return queryOptions({
-    queryKey: [...contentKey, 'menu-destinations'] as const,
+    queryKey: menuDestinationsKey(q),
     queryFn: async (): Promise<ContentPage> =>
       unwrap(
         await api.GET('/api/content', {
-          params: { query: { page: 1, pageSize: 100 } },
+          params: { query: { page: 1, pageSize: 100, ...(q === '' ? {} : { q }) } },
           querySerializer: listQuerySerializer({
             kind: 'Page',
             isTemplate: 'false',

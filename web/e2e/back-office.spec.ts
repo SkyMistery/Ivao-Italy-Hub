@@ -418,3 +418,27 @@ test('the templates screen is not for a coordinator who may not change one', asy
 
   await expect(page).toHaveURL(/\/forbidden/);
 });
+
+test('the address of a menu entry asks the server, so a page past the hundredth can still be chosen', async ({
+  page,
+}) => {
+  // ⚠️ The defect the closed set created, and the reason this is a browser test: the suggestions
+  // are one page of a hundred rows — the ceiling of the list engine — and while the field only
+  // *suggested*, whoever did not find their page typed it. Since the field **decides**, a row past
+  // the hundredth is an address that exists, that the server would accept, and that nobody could
+  // point at. The stub answers it only when the request carries the search.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/menu/3');
+
+  const address = page.getByLabel(englishCommon.menu.fields.path, { exact: true });
+  await address.click();
+
+  // Not there before anybody asks, which is what makes the rest of this test mean something.
+  await expect(page.getByText('/oltre-la-centesima')).toHaveCount(0);
+
+  await address.fill('oltre');
+
+  await expect(page.getByText('/oltre-la-centesima')).toBeVisible();
+  await page.getByText('/oltre-la-centesima').click();
+  await expect(address).toHaveValue('/oltre-la-centesima');
+});

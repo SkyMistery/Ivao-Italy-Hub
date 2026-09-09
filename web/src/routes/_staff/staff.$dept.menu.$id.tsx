@@ -1,6 +1,7 @@
 import { Button } from '@ivao/atmosphere-react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -75,12 +76,22 @@ function MenuItemForm() {
     .filter((row) => row.parentId === null && String(row.id) !== id)
     .map((row) => ({ value: String(row.id), label: read(row.label) || row.path }));
 
+  // ⚠️ What is being typed in the address, reported by the generator after a pause. Both lists are
+  // a page of a hundred rows — the ceiling of the list engine — and a **closed** field that cannot
+  // offer the hundred and first cannot point at it either: the address exists, the server would
+  // accept it, and the form says "nothing matches here". So what is typed becomes a question to the
+  // server rather than a filter over rows already in hand (decided 9 Sep 2026).
+  const [typed, setTyped] = useState('');
+
   // Where a menu entry may lead, and it is the **whole** of it: the field takes one of these and
   // nothing else, here and at the server. Asked for while running the demo of M1 — first "propose
   // the address", then "lock it", so that every address leaving the site lives in `cms_links` and
   // moving the forum is one row rather than a hunt through the site.
-  const pages = useQuery(menuDestinationPagesQuery());
-  const links = useQuery(activeLinksQuery());
+  //
+  // `keepPreviousData` so the list does not blink empty between one keystroke and the answer: an
+  // empty popover reads as "nothing matches", which is the one thing it must not say while asking.
+  const pages = useQuery({ ...menuDestinationPagesQuery(typed), placeholderData: keepPreviousData });
+  const links = useQuery({ ...activeLinksQuery(typed), placeholderData: keepPreviousData });
 
   const addresses: Suggestion[] = [
     // The pages, grouped by the department that wrote them. A draft says so: the entry can be
@@ -152,6 +163,12 @@ function MenuItemForm() {
         locales={locales}
         labels="menu"
         onSubmit={submit}
+        // The address is the only suggested field here, and the only one that needs asking again.
+        onSuggestSearch={(field, text) => {
+          if (field === 'path') {
+            setTyped(text);
+          }
+        }}
         submitLabel={t('common.save')}
         secondaryAction={
           <Button asChild variant="ghost">

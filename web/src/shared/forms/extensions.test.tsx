@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 import { z } from 'zod';
@@ -48,6 +48,7 @@ function render<TValues extends Record<string, unknown>>(
     onSubmit?: (values: TValues) => Promise<unknown>;
     mediaLibrary?: MediaLibraryQuery;
     division?: { defaultLocale: string; timezone: string };
+    onSuggestSearch?: (field: string, typed: string) => void;
   } = {},
 ) {
   return renderWithProviders(
@@ -60,6 +61,7 @@ function render<TValues extends Record<string, unknown>>(
       onSubmit={extras.onSubmit ?? (() => Promise.resolve())}
       {...(extras.mediaLibrary === undefined ? {} : { mediaLibrary: extras.mediaLibrary })}
       {...(extras.division === undefined ? {} : { division: extras.division })}
+      {...(extras.onSuggestSearch === undefined ? {} : { onSuggestSearch: extras.onSuggestSearch })}
     />,
     { i18n: createTestI18n({ test: extras.labels ?? {} }) },
   );
@@ -532,6 +534,40 @@ test('a closed list keeps only what it offered, and says so', async () => {
   await user.tab();
 
   expect(field).toHaveValue('/about');
+});
+
+test('a suggested field says what is being typed in it, once the typing stops', async () => {
+  const user = userEvent.setup();
+  const asked = vi.fn();
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels, onSuggestSearch: asked });
+
+  await user.click(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'tour');
+
+  await waitFor(() => {
+    expect(asked).toHaveBeenCalledWith('path', 'tour');
+  });
+
+  // ⚠️ And **once**: four letters are one question, not four. The half typed words never reach the
+  // caller, which is the whole difference between a debounce and a callback — the same three
+  // hundred milliseconds the search box of a list waits, because it is the same gesture.
+  expect(asked).not.toHaveBeenCalledWith('path', 'tou');
+  expect(asked).not.toHaveBeenCalledWith('path', 'to');
+});
+
+test('nothing is asked for a field nobody is typing in', async () => {
+  // The callback is optional and a form without one has to behave exactly as it did: the whole
+  // point of the extension is that a screen opts in, not that every form starts making requests.
+  const user = userEvent.setup();
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels });
+
+  await user.click(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'tour');
+
+  // Still filtered in memory, which is what a form with a short list wants.
+  expect(await screen.findByText('I tour')).toBeInTheDocument();
 });
 
 // ---- and the property none of the five may weaken --------------------------------------------
