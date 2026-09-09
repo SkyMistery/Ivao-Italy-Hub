@@ -1,9 +1,29 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.54 — 9 settembre 2026 (G13 chiusa lato codice; **M2 si divide in due**: il modulo Events va avanti, il deploy su Plesk aspetta)
+**Versione documento:** 0.55 — 9 settembre 2026 (**una pagina si compone guardandola**: l'anteprima è diventata la superficie di composizione; M2 si divide in due)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.55** (9 set 2026): **una pagina si compone guardandola.** Il canvas drag & drop era
+stato scartato in una riga (§2.3-ter); Carmine ha chiesto di riaprirla, la nota
+`decisions/2026-09-09-comporre-una-pagina-guardandola.md` ha messo le due strade a confronto, e lui
+ha scelto la **(A)**: l'anteprima diventa la superficie di composizione.
+
+Si clicca un blocco nella pagina disegnata e si aprono i suoi campi, con la pagina che resta sotto
+gli occhi. **Il modello dei dati non cambia di una riga**: niente coordinate, niente dimensioni sui
+blocchi, i template continuano a significare quello che significavano, il responsive e la stampa
+restano gratis.
+
+⚠️ E c'è un patto che vale la pena scrivere in §16, perché è il prezzo di avere **un renderer solo**
+per il pubblico e per l'editor: l'interattività è un contesto che vale `null` e che **il percorso
+pubblico non monta**. Non un flag da spegnere: una cosa che nella pagina di un visitatore non esiste.
+Il primo test del pezzo asserisce esattamente quello, ed è quello che non si allenta.
+
+⚠️ Due obiezioni del piano contro la tela sono cadute e la nota le registra: comporre da telefono non
+è un requisito (si compone da PC o tablet), e `locked` conserva il suo significato anche su una tela.
+Resta in piedi il costo vero, che da fuori non si vede — **un blocco oggi non ha una dimensione** — e
+la (B) resta aperta se la (A) non basta.
 
 **Changelog 0.54** (9 set 2026): **M2 si divide in due**, e la ragione non è tecnica.
 

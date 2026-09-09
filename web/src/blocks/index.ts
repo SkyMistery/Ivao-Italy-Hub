@@ -1,4 +1,5 @@
 export { BlockView, ContentRenderer } from './ContentRenderer';
+export { PickingContext, usePicking, type Picking } from './picking';
 export { blockDataKey, blockDataQuery, categoryLabel, encodeProps, type ContentListData } from './data';
 export {
   BACKGROUNDS,

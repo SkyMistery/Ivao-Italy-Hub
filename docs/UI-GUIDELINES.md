@@ -355,6 +355,19 @@ line at the top saying which template fixes it and who may change that (`Content
 A disabled button with no explanation produces support tickets; a sentence saying "this section is
 fixed by the *Policy* template" does not.
 
+**The renderer has an editing mode, and it does not exist for a visitor.** Since 9 September 2026 a
+page is composed **on the page**: in the editor's preview you click a block and its fields open
+beside it. The same component draws both, so the interactivity is a context (`blocks/picking.ts`)
+that is `null` everywhere and that the public path never provides — not a flag that is switched off,
+a thing that is not there. A block you write needs to do nothing about it; what you must not do is
+make the renderer read a global, an environment variable or a route to decide, because then a
+visitor's page and the editor's stop being the same page.
+
+⚠️ A block is wrapped, not replaced: the click is caught in the **capture** phase and stopped there,
+so a link or a button inside a block selects the block instead of firing. That is why a call to
+action in the preview does not carry the editor away with unsaved changes — and why a section is
+picked by its own space rather than by its children.
+
 **An unknown block is shown to the staff only.** If the server declares a type this browser has no
 component for, or the other way round, a coordinator gets a dashed box naming the `type`, and a
 visitor gets nothing at all. A page does not break because a browser is one release behind.

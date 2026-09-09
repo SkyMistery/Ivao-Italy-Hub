@@ -1,7 +1,9 @@
 # Comporre una pagina guardandola: anteprima modificabile o tela libera
 
 **Data:** 9 settembre 2026 — chiesto da Carmine dopo la terza esecuzione della demo
-**Stato:** ⚠️ **da decidere.** Nessuna riga di codice prima.
+**Stato:** **decisa da Carmine il 9 settembre 2026 — la (A)**, «è quella più economica, vediamo come
+funziona, poi se proprio non è come la pensavo io allora ci andiamo giù pesante con la B». Costruita
+lo stesso giorno; in fondo c'è che cosa è costata.
 **Perché esiste:** regola (c) di piano §16.E. Il canvas drag & drop era stato scartato nel censimento
 del sito template di HQ (§2.3-ter) con **una riga** di motivazione — «il pezzo più costoso, e
 mantenuto da HQ» — e Carmine ha chiesto di riaprirla. Una decisione presa in una riga si riapre
@@ -33,8 +35,9 @@ come si aggiunge, non un motivo per non aggiungere.
 ## Le due strade
 
 **(A) L'anteprima diventa modificabile.** Si clicca un blocco nella pagina disegnata e si apre il suo
-pannello proprietà; lo si trascina fra due sezioni; lo spazio che occupa si vede perché *è* la
-pagina. L'outline resta come seconda vista.
+pannello proprietà; lo spazio che occupa si vede perché *è* la pagina. L'outline resta come seconda
+vista, ed è lì che si sposta. (Trascinare **dentro** l'anteprima sarebbe un secondo passo: vedi in
+fondo che cosa la prima fetta ha lasciato fuori.)
 
 **(B) La tela libera.** I blocchi si posizionano in due dimensioni dentro la sezione, con misure
 proprie.
@@ -86,3 +89,39 @@ dell'editor.
 
 I template servono esattamente a quello che Carmine dice: **avere qualcosa di prefatto in cui mettere
 solo le informazioni**. Nessuna delle due strade li tocca, e da oggi hanno anche una schermata.
+
+---
+
+## Che cosa è costata la (A)
+
+Meno di quanto la nota prevedesse, e la ragione è quella scritta sopra: l'anteprima era già la pagina
+vera.
+
+- **`blocks/picking.ts`**, un contesto di due campi: che cosa è selezionato, e che fare di un clic.
+  Vale `null` dappertutto, e **il percorso pubblico non monta nessun provider** — quindi nella pagina
+  di un visitatore non c'è un gestore da togliere, un attributo da ripulire o una classe da
+  sovrascrivere. È la promessa che tiene in piedi «un renderer solo», e il primo test è quello.
+- **`ContentRenderer`** legge il contesto in due punti: una sezione si sceglie dal proprio spazio, un
+  blocco dal proprio riquadro.
+  ⚠️ Il blocco intercetta il clic in fase di **cattura**, con `preventDefault` e `stopPropagation`.
+  Un blocco non è un rettangolo inerte: contiene link, pulsanti, un form di contatto. Catturare vuol
+  dire che il clic arriva al blocco e non a ciò che c'è dentro — così una call to action si seleziona
+  invece di portare fuori dall'editor chi sta componendo, con le modifiche non salvate — e fermarlo
+  lì è ciò che lascia la sezione selezionabile dal proprio spazio. La sezione usa la fase di
+  risalita, perché chi cattura per primo è quello **esterno** e altrimenti vincerebbe sempre lei.
+- **L'anteprima ha smesso di essere un posto dove si va e si torna.** In anteprima ora c'è lo stesso
+  pannello proprietà accanto, e il pannello è **scritto una volta sola** e disegnato nelle due vie di
+  composizione: due copie sarebbero due pannelli che possono non essere d'accordo su cosa offre un
+  blocco, che è lo stesso argomento che tiene un renderer solo.
+- **Il pannello non dice più «a sinistra»**: adesso a sinistra c'è la pagina.
+- I test: tre di Vitest — il primo dice che **la pagina del visitatore non ha niente da cliccare**, e
+  quello non si allenta mai; gli altri due che un clic sceglie il blocco invece di seguire il link, e
+  che lo spazio intorno sceglie la sezione. Uno del giro completo, contro il renderer **vero**, che
+  apre i campi del blocco cliccato. Verificati rompendo il pezzo che provano.
+
+### Che cosa **non** c'è ancora, e va detto
+
+- **Non si trascina dentro l'anteprima.** Si sceglie e si modifica; per spostare c'è l'outline, che è
+  rimasto intero. Era fuori dalla prima fetta di proposito: mezzo trascinamento è peggio di nessuno.
+- Scegliere nell'outline **non fa scorrere** l'anteprima fino a lì. Non serve finché le due viste si
+  alternano; servirebbe il giorno che stessero accanto.

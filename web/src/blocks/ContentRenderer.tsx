@@ -8,6 +8,7 @@ import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
 import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from './envelope';
+import { usePicking, type Picking } from './picking';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -21,6 +22,10 @@ import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from '
  * A section's `title` is not drawn. It is the name the editor puts in the tree, which is why the
  * seeded templates spell it "Hero" and "Body": what a visitor reads is a `heading` block, which is
  * a block an editor can move, translate and delete.
+ *
+ * Since 9 September 2026 the same component is also **what the editor composes in** — see
+ * `picking.ts`. That is one context read in two places; with no provider, which is the public path,
+ * every line below behaves exactly as it did.
  */
 
 /**
@@ -86,7 +91,17 @@ export function ContentRenderer({
 }
 
 function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
-  const frame = [BACKGROUND[section.background], PADDING[section.padding]].filter(Boolean).join(' ');
+  const picking = usePicking();
+  const frame = [
+    BACKGROUND[section.background],
+    PADDING[section.padding],
+    // A section is picked by its own space — the air around its blocks — because clicking a block
+    // picks the block. `outline` and not `border`: a border would move everything by two pixels and
+    // the point of composing here is that what you see is what a reader gets.
+    picking === null ? '' : ring(picking, section.id),
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   // The one place a style is written rather than a class: which picture it is only exists at
   // runtime, and Tailwind reads the source rather than the page.
@@ -96,7 +111,19 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
       : undefined;
 
   return (
-    <section className={frame} {...(picture === undefined ? {} : { style: picture })}>
+    <section
+      className={frame}
+      {...(picture === undefined ? {} : { style: picture })}
+      {...(picking === null
+        ? {}
+        : {
+            'data-pickable': 'section',
+            // The bubble phase, while a block takes the capture phase and stops there: outer
+            // handlers capture first, so a section that captured would always win and a block could
+            // never be picked.
+            onClick: () => picking.onPick('section', section.id),
+          })}
+    >
       <div className={`${WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 
@@ -140,18 +167,49 @@ function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: bo
 }
 
 export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boolean }) {
+  const picking = usePicking();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
-  if (registration === undefined) {
-    return staff ? <UnknownBlock type={block.type} /> : null;
+  const drawn =
+    registration === undefined ? (
+      staff ? (
+        <UnknownBlock type={block.type} />
+      ) : null
+    ) : registration.kind === 'Data' ? (
+      <DataBlockView block={block} registration={registration} staff={staff} />
+    ) : (
+      <registration.component props={block.props} />
+    );
+
+  if (picking === null || drawn === null) {
+    return drawn;
   }
 
-  if (registration.kind === 'Data') {
-    return <DataBlockView block={block} registration={registration} staff={staff} />;
-  }
+  return (
+    <div
+      data-pickable="block"
+      className={`rounded-sm ${ring(picking, block.id)}`}
+      // ⚠️ The **capture** phase, and both `preventDefault` and `stopPropagation`. A block is not
+      // an inert rectangle: it holds links, buttons, a contact form. Capturing means a click lands
+      // on the block rather than on what is inside it — so a call to action selects itself instead
+      // of carrying whoever is composing out of the editor with unsaved changes — and stopping it
+      // there is what leaves the section pickable by its own space.
+      onClickCapture={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        picking.onPick('block', block.id);
+      }}
+    >
+      {drawn}
+    </div>
+  );
+}
 
-  const Component = registration.component;
-  return <Component props={block.props} />;
+/** What says "this one". Two pixels away from the thing, so nothing on the page moves. */
+function ring(picking: Picking, id: string): string {
+  return picking.selected === id
+    ? 'outline-primary outline-2 outline-offset-2'
+    : 'hover:outline-border hover:outline-2 hover:outline-offset-2';
 }
 
 /**

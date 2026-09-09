@@ -205,3 +205,44 @@ test('a template written in the editor is obeyed by the pages made from it', asy
   await expect(palette.getByRole('button', { name: blocks.heading.label, exact: true })).toBeVisible();
   await expect(palette.getByRole('button', { name: blocks.text.label, exact: true })).toHaveCount(0);
 });
+
+test('the preview is where a page is composed: a block picked there opens its own fields', async ({
+  page,
+  context,
+}) => {
+  // ⚠️ Road (A) of `decisions/2026-09-09-comporre-una-pagina-guardandola.md`, asked for by Carmine:
+  // "an idea of how the document is coming out and of the space things take, **without going back
+  // and forth to the preview**". So the preview stopped being a place you go to and come back from:
+  // the panel is beside it, and clicking the page is clicking the outline.
+  //
+  // It is a round of the full suite because the point is the **real** renderer: the preview is the
+  // very same component a visitor gets, and what is being asserted is that it became clickable
+  // there and nowhere else.
+  await readInEnglish(context);
+  await signIn(context);
+
+  const born = await createContent(context, {
+    slug: `bench-picking-${stamp}`,
+    title: { en: 'Bench picking', it: 'Composizione del banco' },
+    body: { schemaVersion: 1, sections: [section('opening', 'Opening', first)] },
+  });
+
+  await page.goto(`/staff/${department}/content/${born.id}`);
+  await page.getByRole('button', { name: words.preview, exact: true }).click();
+
+  const frame = page.getByRole('region', { name: words.preview });
+  const heading = frame.getByRole('heading', { name: first.en });
+  await expect(heading).toBeVisible();
+
+  // Nothing is chosen yet, and the panel says so rather than showing an empty form.
+  await expect(page.getByText(words.nothingSelected)).toBeVisible();
+
+  await heading.click();
+
+  // The fields of that block, beside the page it belongs to — and the page is still on screen,
+  // which is the whole of the request: no going back and forth. A **group** and not a labelled box:
+  // the text of a heading is translated, so what the generator draws is the language tabs.
+  await expect(page.getByRole('group', { name: englishCommon.blocks.heading.fields.text })).toBeVisible();
+  await expect(heading).toBeVisible();
+  await expect(page.getByText(words.nothingSelected)).toHaveCount(0);
+});

@@ -86,6 +86,7 @@ interface CommonStrings {
     readonly editor: {
       readonly saveDraft: string;
       readonly publish: string;
+      readonly nothingSelected: string;
       readonly applyBlock: string;
       readonly applySection: string;
       readonly addBlock: string;

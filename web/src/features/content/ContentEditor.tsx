@@ -1,11 +1,11 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { Eye, Pencil, Send, Undo2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import { columnsOf, readBody, type Body } from '../../blocks';
+import { columnsOf, readBody, PickingContext, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
 import type { MediaLibraryQuery } from '../../shared/ui';
@@ -139,6 +139,101 @@ export function ContentEditor({
   const section = selection?.kind === 'section' ? findSection(body, selection.id) : undefined;
   const block = selection?.kind === 'block' ? findBlock(body, selection.id) : undefined;
 
+  // ⚠️ Written once and drawn in both ways of composing: beside the outline, and beside the page
+  // itself. Two copies of this would be two panels that can disagree about what a block offers,
+  // which is the same argument that keeps one renderer for the public and for the preview.
+  //
+  // ⚠️ Sticky, from `lg` up. Whatever is on the left is as long as the page is, and this used to
+  // scroll away with it: to change the block you were looking at you had to scroll back up, which
+  // is the friction of an editor rather than a defect of one. `self-start` is what makes a sticky
+  // child of a grid work at all — a stretched cell has nothing to stick inside — and it scrolls on
+  // its own when it is taller than the window.
+  const properties = (
+    <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto">
+      <SectionHeader title={t('content.editor.properties')} />
+
+      {section !== undefined ? (
+        <>
+          {ruleFor(rules, section.key).locked ? (
+            <LockedByTemplate
+              template={
+                template.data === undefined
+                  ? null
+                  : { title: template.data.title, department: template.data.ownerDepartment }
+              }
+              canManage={template.data !== undefined && canManageTemplates(template.data.ownerDepartment)}
+            />
+          ) : null}
+
+          <SectionProperties
+            key={section.id}
+            section={section}
+            rule={ruleFor(rules, section.key)}
+            isTemplate={content?.isTemplate ?? startsAsTemplate}
+            locales={locales}
+            division={division}
+            mediaLibrary={mediaLibrary}
+            onApply={(values) => {
+              const withSettings = updateSection(body, section.id, {
+                title: values.title,
+                background: values.background,
+                mediaId: values.mediaId ?? null,
+                padding: values.padding,
+                width: values.width,
+                // What a template imposes, and only on a template: on a page the form does
+                // not draw these, and writing them would be a 400 from the envelope
+                // validator — a page carrying them could lift its own restrictions.
+                ...((content?.isTemplate ?? startsAsTemplate)
+                  ? {
+                      ...(typeof values.key === 'string' && values.key.trim() !== ''
+                        ? { key: values.key.trim() }
+                        : {}),
+                      required: values.required === true,
+                      locked: values.locked === true,
+                      // Nothing ticked means "any block", which is the absence of the key
+                      // and not an empty list: an empty one would allow nothing at all.
+                      allowedBlocks:
+                        values.allowedBlocks === undefined || values.allowedBlocks.length === 0
+                          ? null
+                          : [...values.allowedBlocks],
+                    }
+                  : {}),
+              });
+
+              // Narrowing the layout has to pull the blocks back into a column that still
+              // exists, or the server refuses the save and the editor cannot say why.
+              change(clampColumns(withSettings, section.id, values.layout, columnsOf(values.layout)));
+            }}
+          />
+        </>
+      ) : block !== undefined ? (
+        <BlockProperties
+          key={block.block.id}
+          block={block.block}
+          section={block.section}
+          locales={locales}
+          division={division}
+          mediaLibrary={mediaLibrary}
+          onApplyProps={(props) => change(updateBlock(body, block.block.id, { props }))}
+          onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
+        />
+      ) : (
+        <p className="text-muted-foreground text-sm">{t('content.editor.nothingSelected')}</p>
+      )}
+    </div>
+  );
+
+  // What the page needs to be composed in: what is selected, and what to do about a click. The
+  // renderer reads it from a context that is `null` everywhere else, so a visitor's page has no
+  // handler to remove (`blocks/picking.ts`).
+  const picking = useMemo(
+    () => ({
+      selected: selection?.id ?? null,
+      onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
+    }),
+    [selection],
+  );
+
   return (
     <div className="flex flex-col gap-8">
       <PublishProblems body={body} problems={publishProblems} />
@@ -227,7 +322,17 @@ export function ContentEditor({
       />
 
       {preview ? (
-        <PreviewFrame body={body} />
+        // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
+        // ways of composing — the page itself — and it keeps the same panel beside it, so a block
+        // clicked here and the same block clicked in the outline lead to exactly the same fields
+        // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[2fr_1fr]">
+          <PickingContext.Provider value={picking}>
+            <PreviewFrame body={body} />
+          </PickingContext.Provider>
+
+          {properties}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
@@ -284,86 +389,7 @@ export function ContentEditor({
             />
           </div>
 
-          {/* ⚠️ Sticky, from `lg` up. The tree on the left is as long as the page is, and the panel
-              on the right used to scroll away with it: to change the block you were looking at you
-              had to scroll back up, which is the friction of an editor rather than a defect of one.
-              `self-start` is what makes a sticky child of a grid work at all — a stretched cell has
-              nothing to stick inside — and the panel scrolls on its own when it is taller than the
-              window. */}
-          <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto">
-            <SectionHeader title={t('content.editor.properties')} />
-
-            {section !== undefined ? (
-              <>
-                {ruleFor(rules, section.key).locked ? (
-                  <LockedByTemplate
-                    template={
-                      template.data === undefined
-                        ? null
-                        : { title: template.data.title, department: template.data.ownerDepartment }
-                    }
-                    canManage={
-                      template.data !== undefined && canManageTemplates(template.data.ownerDepartment)
-                    }
-                  />
-                ) : null}
-
-                <SectionProperties
-                  key={section.id}
-                  section={section}
-                  rule={ruleFor(rules, section.key)}
-                  isTemplate={content?.isTemplate ?? startsAsTemplate}
-                  locales={locales}
-                  division={division}
-                  mediaLibrary={mediaLibrary}
-                  onApply={(values) => {
-                    const withSettings = updateSection(body, section.id, {
-                      title: values.title,
-                      background: values.background,
-                      mediaId: values.mediaId ?? null,
-                      padding: values.padding,
-                      width: values.width,
-                      // What a template imposes, and only on a template: on a page the form does
-                      // not draw these, and writing them would be a 400 from the envelope
-                      // validator — a page carrying them could lift its own restrictions.
-                      ...((content?.isTemplate ?? startsAsTemplate)
-                        ? {
-                            ...(typeof values.key === 'string' && values.key.trim() !== ''
-                              ? { key: values.key.trim() }
-                              : {}),
-                            required: values.required === true,
-                            locked: values.locked === true,
-                            // Nothing ticked means "any block", which is the absence of the key
-                            // and not an empty list: an empty one would allow nothing at all.
-                            allowedBlocks:
-                              values.allowedBlocks === undefined || values.allowedBlocks.length === 0
-                                ? null
-                                : [...values.allowedBlocks],
-                          }
-                        : {}),
-                    });
-
-                    // Narrowing the layout has to pull the blocks back into a column that still
-                    // exists, or the server refuses the save and the editor cannot say why.
-                    change(clampColumns(withSettings, section.id, values.layout, columnsOf(values.layout)));
-                  }}
-                />
-              </>
-            ) : block !== undefined ? (
-              <BlockProperties
-                key={block.block.id}
-                block={block.block}
-                section={block.section}
-                locales={locales}
-                division={division}
-                mediaLibrary={mediaLibrary}
-                onApplyProps={(props) => change(updateBlock(body, block.block.id, { props }))}
-                onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
-              />
-            ) : (
-              <p className="text-muted-foreground text-sm">{t('content.editor.nothingSelected')}</p>
-            )}
-          </div>
+          {properties}
         </div>
       )}
     </div>

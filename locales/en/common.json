@@ -455,7 +455,7 @@
     "editor": {
       "structure": "What this page is made of",
       "properties": "Properties",
-      "nothingSelected": "Pick a section or a block on the left to edit it.",
+      "nothingSelected": "Pick a section or a block to edit it.",
       "noSections": "This page has no sections yet.",
       "untitledSection": "Section without a name",
       "addSection": "Add a section",
