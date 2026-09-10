@@ -75,8 +75,13 @@ function Frame({
   const Icon = isSidebarOpen ? PanelLeftClose : PanelLeftOpen;
 
   return (
+    // ⚠️ No height of its own, and that is the fix rather than an omission (Carmine, 10 September
+    // 2026: the panel stopped short of the footer and left a white patch under it). `h-full` is
+    // `height: 100%`, and against a row whose own height is `auto` that resolves to the height of
+    // the content — which **defeats** the `items-stretch` of the row it sits in. Taking it away is
+    // what lets the panel be as tall as whatever is beside it, down to the footer.
     <aside
-      className={`border-fuselage-200 bg-fuselage-50 dark:border-fuselage-700 dark:bg-fuselage-900 relative flex h-full flex-col border-r ${
+      className={`border-fuselage-200 bg-fuselage-50 dark:border-fuselage-700 dark:bg-fuselage-900 relative flex flex-col border-r ${
         isSidebarOpen ? 'w-72' : 'box-content w-17'
       }`}
     >

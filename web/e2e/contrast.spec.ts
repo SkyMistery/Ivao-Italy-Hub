@@ -20,6 +20,14 @@ import { siteStaffBootstrap, stubTheApi, stubTheApiAsStaff } from './fixtures';
 
 type Measured = { text: string; size: number; needs: number; measured: number };
 
+/**
+ * Where the secondary text of a screen is. Two selectors and not one since 10 September 2026: the
+ * footer stopped taking its colours from the theme when it was given a ground of its own -- a token
+ * meant for dark-on-light says nothing on a blue band -- so it says what it is with an attribute
+ * instead, and this check follows it there rather than losing sight of it.
+ */
+const SECONDARY_TEXT = '.text-muted-foreground, [data-secondary]';
+
 async function secondaryTextOf(page: Page): Promise<Measured[]> {
   // ⚠️ Asserted and not assumed: without the class this would measure the light theme and pass
   // while proving nothing, which is the failure mode of every test that checks a colour.
@@ -28,7 +36,7 @@ async function secondaryTextOf(page: Page): Promise<Measured[]> {
   // And waited for, for the same reason: `goto` returns when the document loaded, and React draws
   // after that. Measuring an empty screen is a test that says nothing and says it in green — the
   // footer alone carries four of these, so on any screen of this application there is something.
-  await page.locator('.text-muted-foreground').first().waitFor({ state: 'visible' });
+  await page.locator(SECONDARY_TEXT).first().waitFor({ state: 'visible' });
 
   const rows = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
@@ -89,7 +97,7 @@ async function secondaryTextOf(page: Page): Promise<Measured[]> {
       return ground;
     };
 
-    return [...document.querySelectorAll('.text-muted-foreground')]
+    return [...document.querySelectorAll('.text-muted-foreground, [data-secondary]')]
       .filter((element) => (element.textContent ?? '').trim() !== '' && element.getClientRects().length > 0)
       .map((element) => {
         const style = getComputedStyle(element);

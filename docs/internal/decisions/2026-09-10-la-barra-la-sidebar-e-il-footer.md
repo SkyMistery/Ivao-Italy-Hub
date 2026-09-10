@@ -1,4 +1,4 @@
-# Quattro richieste di layout, e le tre rifiniture della sera
+# Quattro richieste di layout, e le sei rifiniture della sera
 
 **Data:** 10 settembre 2026 — Carmine, con davanti il footer del sito della divisione UK & Ireland:
 
@@ -12,7 +12,7 @@
 
 **Stato:** **tutte e quattro fatte.** La 1 e la 2 subito, perché erano (a); la 3 e la 4 dopo una
 decisione di Carmine, perché ognuna chiedeva qualcosa che §16.E non lascia decidere da soli — un
-componente nell'elenco chiuso e una colonna di database. In fondo ci sono le **tre rifiniture** che
+componente nell'elenco chiuso e una colonna di database. In fondo ci sono le **sei rifiniture** che
 lui ha chiesto la sera stessa, guardando il risultato.
 
 ---
@@ -201,3 +201,24 @@ Carmine ha aperto la pagina e ha chiesto tre cose piccole. Tutte **(a)**, tutte 
    ⚠️ Un e2e sceglieva la lingua per nome (`/italian|italiano/i`) e ora la sceglie per sigla.
 3. **Il pulsante della barra laterale piu discreto.** Piu piccolo, senza riempimento, e prende colore
    solo sotto il puntatore: e un comando della cornice, non un posto dove andare.
+
+### E poi altre tre, sempre guardando
+
+4. **Il pulsante non aveva bisogno di una riga sua.** La fascia che occupava era vuota, e Carmine ci
+   ha disegnato un cerchio sopra. Ad aperto ora galleggia nell angolo accanto alla prima
+   intestazione; a fargli spazio e il padding che **ogni** intestazione porta a destra, cosi i
+   chevron restano in colonna e si cede solo l angolo. A chiuso torna nel flusso: una striscia da 68
+   px non ha angoli da cedere e il pulsante finirebbe sulla prima icona.
+5. **La barra laterale arriva al footer.** ⚠️ La causa era `h-full`, cioe `height: 100%`: contro una
+   riga di altezza `auto` si risolve nell altezza del contenuto e **annulla** lo `items-stretch`
+   della riga. Toglierlo e la correzione, non una dimenticanza.
+6. **Il footer ha il colore dell header.** E qui c e la cosa da sapere: dentro una fascia che porta il
+   proprio sfondo i token del tema non valgono piu — `text-muted-foreground` e `Subtle` sono scuri
+   su chiaro, e su quel blu sarebbero illeggibili in tema chiaro e invisibili in tema scuro. Quindi i
+   colori del footer sono scritti a mano.
+   ⚠️ **E questo ha rotto un test, giustamente.** `e2e/contrast.spec.ts` misura il testo secondario
+   cercando `.text-muted-foreground`, e il suo commento diceva «il footer da solo ne porta quattro,
+   quindi su qualunque schermata c e qualcosa»: tolti quelli, sulla home pubblica non restava niente
+   da misurare e la guardia e scattata. La correzione **non** e stata indebolire il test ma seguirlo:
+   i testi secondari del footer si dichiarano con `data-secondary`, il selettore ne tiene conto, e
+   ora il controllo misura anche il bianco al 70 % sul blu — che passa AA.

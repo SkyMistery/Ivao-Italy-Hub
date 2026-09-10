@@ -6,7 +6,6 @@ import {
   NavigationMenu,
   type NavigationMenuProps,
   Separator,
-  Subtle,
 } from '@ivao/atmosphere-react';
 import { Link } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
@@ -213,13 +212,20 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
   const legal: LegalLink[] = Array.isArray(raw) ? (raw as LegalLink[]) : [];
 
   return (
-    <footer className="border-border mt-12 border-t">
+    // ⚠️ The same ground as the bar at the top (Carmine, 10 September 2026), which is why the
+    // colours inside are written out rather than taken from the theme: `text-muted-foreground` and
+    // `Subtle` are dark on light, and on this blue they would be hard to read in the light theme and
+    // invisible in the dark one. A band that carries its own background answers for its own
+    // contrast — the tokens answer for the page, and this is no longer the page.
+    <footer className="bg-atmos-700 dark:bg-fuselage-800 mt-12 text-white">
       <div className="mx-auto w-full max-w-6xl px-4 py-10">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* The division: who this site belongs to, what it is for, and where else to find it. */}
           <div className="flex flex-col gap-4 lg:col-span-1">
-            <p className="text-foreground text-base font-semibold">{division}</p>
-            <p className="text-muted-foreground max-w-xs text-sm">{t('footer.about', { division })}</p>
+            <p className="text-base font-semibold text-white">{division}</p>
+            <p data-secondary className="max-w-xs text-sm text-white/70">
+              {t('footer.about', { division })}
+            </p>
 
             {marks === undefined ? null : (
               <nav aria-label={label(marks)} className="flex flex-wrap items-center gap-2">
@@ -234,7 +240,7 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
             <nav key={column.path || label(column)} className="flex flex-col gap-3">
               {/* The heading of a column may be a link or may lead nowhere, and both are written the
                   same way in the back office: an entry with an address, or one without. */}
-              <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+              <p data-secondary className="text-xs font-semibold tracking-wider text-white/60 uppercase">
                 {column.path ? <FooterEntry path={column.path} label={label(column)} /> : label(column)}
               </p>
 
@@ -259,12 +265,16 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
           </nav>
         )}
 
-        <Separator className="my-8" />
+        <Separator className="my-8 bg-white/20" />
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-1">
-            <Subtle>{t('footer.disclaimer', { division })}</Subtle>
-            <Subtle>{t('footer.version', { version: bootstrap.version })}</Subtle>
+            <p data-secondary className="text-sm text-white/60">
+              {t('footer.disclaimer', { division })}
+            </p>
+            <p data-secondary className="text-sm text-white/60">
+              {t('footer.version', { version: bootstrap.version })}
+            </p>
           </div>
 
           <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -274,7 +284,8 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
                 href={link.href}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline"
+                data-secondary
+                className="text-sm text-white/70 underline-offset-2 hover:text-white hover:underline"
               >
                 {link.label}
               </a>
@@ -289,7 +300,7 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
 /** One account of the division: a mark, with the words it was given as its name. */
 function FooterMark({ path, label, icon }: { path: string; label: string; icon: string | null }) {
   const className =
-    'text-muted-foreground hover:text-foreground hover:bg-muted flex size-9 items-center justify-center rounded-md transition-colors';
+    'flex size-9 items-center justify-center rounded-md text-white/70 transition-colors hover:bg-white/10 hover:text-white';
 
   const glyph = iconGlyph(icon, 'size-4');
 
@@ -323,7 +334,7 @@ function FooterMark({ path, label, icon }: { path: string; label: string; icon: 
  */
 function FooterEntry({ path, label, icon = null }: { path: string; label: string; icon?: string | null }) {
   const className =
-    'text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm underline-offset-2 hover:underline';
+    'inline-flex items-center gap-2 text-sm text-white/70 underline-offset-2 hover:text-white hover:underline';
 
   const inside = (
     <>
