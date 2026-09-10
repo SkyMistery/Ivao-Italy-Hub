@@ -34,8 +34,11 @@ import {
   Trophy,
   Users,
   Wrench,
-  type LucideIcon,
 } from 'lucide-react';
+
+import type { ComponentProps, ComponentType } from 'react';
+
+import { DiscordMark, FacebookMark, InstagramMark, XMark, YoutubeMark } from './brands';
 
 /**
  * The icons an editor may choose from, by name.
@@ -57,7 +60,12 @@ import {
  * The folder is also where an icon `lucide` genuinely lacks would be drawn by hand (design M1
  * §1.4). None has been missing so far, so there is none.
  */
-export const ICONS: Readonly<Record<string, LucideIcon>> = {
+/**
+ * ⚠️ Typed on what every drawer of an icon actually needs — an `<svg>` component — and not on
+ * `LucideIcon`, because five of these are not lucide's: it dropped every brand mark at version 1 and
+ * they are drawn in './brands'. The narrower type would have made the set impossible to complete.
+ */
+export const ICONS: Readonly<Record<string, ComponentType<ComponentProps<'svg'>>>> = {
   award: Award,
   bookOpen: BookOpen,
   calendar: Calendar,
@@ -93,6 +101,14 @@ export const ICONS: Readonly<Record<string, LucideIcon>> = {
   trophy: Trophy,
   users: Users,
   wrench: Wrench,
+
+  // The five `lucide` dropped when it reached version 1, drawn in './brands'. They are here and
+  // not in a list of their own because everything that offers an icon offers the same set.
+  discord: DiscordMark,
+  facebook: FacebookMark,
+  instagram: InstagramMark,
+  x: XMark,
+  youtube: YoutubeMark,
 };
 
 /** The names, in the order the select shows them. */
@@ -103,6 +119,6 @@ export const ICON_NAMES = Object.keys(ICONS);
  * not on the list is a page written by a newer release, and drawing a wrong picture is worse than
  * drawing none.
  */
-export function iconByName(name: string | null | undefined): LucideIcon | null {
+export function iconByName(name: string | null | undefined): ComponentType<ComponentProps<'svg'>> | null {
   return name === null || name === undefined ? null : (ICONS[name] ?? null);
 }

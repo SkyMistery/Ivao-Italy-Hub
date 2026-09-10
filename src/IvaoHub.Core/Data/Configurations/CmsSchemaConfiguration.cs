@@ -69,6 +69,7 @@ internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
         builder.Property(item => item.Path)
             .HasMaxLength(MenuItemWriteDtoValidator.MaxPathLength)
             .IsRequired();
+        builder.Property(item => item.Icon).HasMaxLength(MenuItemWriteDtoValidator.MaxIconLength);
         builder.HasRowVersion(item => item.RowVersion);
 
         // How the menu is read: one scope at a time, top level entries first, in their own order.

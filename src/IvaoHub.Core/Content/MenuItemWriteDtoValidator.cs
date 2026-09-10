@@ -17,6 +17,12 @@ public sealed class MenuItemWriteDtoValidator : AbstractValidator<MenuItemWriteD
     /// <summary>Longest path the column holds; an address of this site or of somewhere else.</summary>
     public const int MaxPathLength = 512;
 
+    /// <summary>
+    /// Longest icon name the column holds. A length and nothing more: which names exist is a list
+    /// that lives only in TypeScript, and checking it here would be a second copy of it.
+    /// </summary>
+    public const int MaxIconLength = 64;
+
     public MenuItemWriteDtoValidator(IOptions<DivisionOptions> division, HubDbContext database)
     {
         ArgumentNullException.ThrowIfNull(division);
@@ -26,12 +32,25 @@ public sealed class MenuItemWriteDtoValidator : AbstractValidator<MenuItemWriteD
         // which ones are missing travels with the failure.
         RuleFor(item => item.Label).Required(division.Value);
 
+        // ⚠️ Everything about the address is skipped for a **heading**: a top level entry of the
+        // footer with nothing in its path. The footer is drawn in columns and the word at the top of
+        // one leads nowhere, so there is no address to check — and saying so here, once, is what
+        // keeps the closed set of destinations (below) exactly as strict as it was for every entry
+        // that does lead somewhere.
+        //
+        // Top level and footer only, and both halves matter: a *child* with no address would be a
+        // line nobody can click, and a heading in the bar at the top would be a menu entry that
+        // does nothing when pressed.
         RuleFor(item => item.Path)
             .NotEmpty().WithMessage("errors.required")
             .MaximumLength(MaxPathLength).WithMessage("errors.text.tooLong")
             .Must(BeAPathOrAWebAddress).WithMessage("errors.path.invalid")
             .MustAsync((path, cancellation) => LeadsSomewhereThisSiteOwnsAsync(database, path, cancellation))
-            .WithMessage("errors.menu.pathNotAllowed");
+            .WithMessage("errors.menu.pathNotAllowed")
+            .Unless(IsAHeading);
+
+        RuleFor(item => item.Icon)
+            .MaximumLength(MaxIconLength).WithMessage("errors.text.tooLong");
 
         RuleFor(item => item.Sort)
             .GreaterThanOrEqualTo(0).WithMessage("errors.number.min");
@@ -54,6 +73,15 @@ public sealed class MenuItemWriteDtoValidator : AbstractValidator<MenuItemWriteD
                         cancellation))
             .WithMessage("errors.menu.parentInvalid");
     }
+
+    /// <summary>
+    /// A column heading of the footer: top level, in the footer menu, leading nowhere. It is the one
+    /// entry allowed to have no address, and the shape of the rule is what makes that safe — a child
+    /// with no address would be an unclickable line, and a headline in the top bar would be an entry
+    /// that does nothing when pressed (decided by Carmine, 10 September 2026).
+    /// </summary>
+    private static bool IsAHeading(MenuItemWriteDto item) =>
+        item.Scope == MenuScope.Footer && item.ParentId is null && string.IsNullOrWhiteSpace(item.Path);
 
     /// <summary>
     /// The addresses of this application that are not rows: they are screens of the single page

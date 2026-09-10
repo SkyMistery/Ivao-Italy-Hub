@@ -474,6 +474,44 @@ way round would close a circle between the two.
 Growing the list is adding a line. It is not a decision, because what it draws from — `lucide` — was
 decided once and is not up for discussion.
 
+The five marks in `brands.tsx` are the exception the paragraph above promised, and the only one so
+far: `lucide` carried brand icons until version 1 and then dropped every one of them, so Discord, X,
+Facebook, Instagram and YouTube are drawn here, on lucide's grid, in `currentColor`. They are
+simplified marks and not the brands' own artwork — a division that wants the logotypes puts them in
+the media library.
+
+⚠️ **Draw an icon through `iconGlyph(name, classes)`, never by calling `iconByName` in a render.** A
+component read out of a map while something renders is one React treats as new on every pass: it
+remounts what it draws, and `react-hooks/static-components` refuses it outright. `iconGlyph` hands
+back an element, built once per set of classes and kept.
+
+## The frame of every page: one bar, and a footer in columns
+
+**The bar at the top is one row.** The menu, the search, the language, the theme, the account and
+the way into the back office all ride in `Navbar`'s own children slot, which Atmosphere draws at the
+far end of the line that carries the logo and the division's name. Two rows was a second band of
+chrome above every page for no gain. Anything put there needs forcing white — it sits on a dark
+blue — and the primary button variant is that same blue, so a call to action there is `secondary`
+or it is invisible.
+
+**The footer is the footer menu, drawn in columns.** A top level entry of `Scope = Footer` is a
+column and its children are its links; nothing in the component decides what is in them. Three
+shapes, and all three are states of the menu table:
+
+- an entry with **no address** is a column heading — "Quick links", "Resources" — and it is the one
+  entry in the whole hub allowed to lead nowhere. Only at the top of the footer: a child with no
+  address is a line nobody can click, and a heading in the bar at the top is an entry that does
+  nothing when pressed;
+- a column whose links **all carry an icon** is the row of the division's accounts, and it is drawn
+  beside the division's own words rather than as one more column of text. This is the one inference
+  in the footer, and it is here rather than in a second field on every menu entry because only one
+  column in a whole site ever asks the question;
+- an entry with **no children** keeps the shape footers had before columns: a plain link in a row of
+  its own. A division that upgrades does not lose what it already wrote.
+
+The sentence under the division's name and the legal links are words, not rows: they live in
+`locales/`, so a fork changes them where it changes every other sentence.
+
 ## The editor of a page, and what it may not do
 
 Five rules M1 settled by using the editor rather than by designing it. They are here because they

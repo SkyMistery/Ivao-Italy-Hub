@@ -84,6 +84,7 @@
     "toggle": "Passa da chiaro a scuro"
   },
   "footer": {
+    "about": "Il sito ufficiale di {{division}}: eventi, training, tour e tutto quello che fa la divisione.",
     "legal": [
       {
         "label": "IVAO",

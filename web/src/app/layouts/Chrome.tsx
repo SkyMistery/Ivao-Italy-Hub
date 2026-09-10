@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useLogout } from '../../features/me/queries';
 import type { Bootstrap } from '../../shared/api/bootstrap';
 import { loginHref } from '../../shared/api/client';
+import { iconGlyph } from '../../shared/icons/glyphs';
 import { navLabel, resolveLocalized } from '../../shared/i18n/localized';
 import { LocaleSwitcher } from '../../shared/ui';
 
@@ -29,6 +30,9 @@ import { RouterAnchor } from './RouterAnchor';
  * from `GET /api/me`; the footer links come from `locales/`, so a fork changes them by translating
  * a file rather than by editing a component.
  */
+
+/** One entry of the footer menu, as the bootstrap carries it. */
+type FooterItem = Bootstrap['navigation']['footer'][number];
 
 /** One legal link of the footer, as the language files carry it. */
 interface LegalLink {
@@ -152,63 +156,142 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
   );
 }
 
+/**
+ * The foot of every page (asked for by Carmine on 10 September 2026, with the footer of the UK &
+ * Ireland division in front of him): the division on the left, then the columns of links, then one
+ * quiet line underneath.
+ *
+ * ⚠️ **The columns are the footer menu, and nothing here decides what is in them.** A top level
+ * entry of `Scope = Footer` is a column and its children are its links, which is a shape
+ * `cms_menu_items` has carried since G8 — what was missing was only that an entry could be a
+ * *heading*, leading nowhere, and that it could carry a mark. Both are one column of the table
+ * each, and both are edited where every other menu entry is edited: the back office of the
+ * department that owns the site (design M1 §8.1).
+ *
+ * ⚠️ And **one rule turns a column into the row of accounts**: a column whose links *all* carry an
+ * icon is drawn under the division's own words as a row of marks, rather than as a fourth column of
+ * text. It is the one piece of this that is inferred rather than declared, and it is inferred
+ * because the alternative was a second field on every menu entry to answer a question only one
+ * column in the whole site ever asks.
+ */
 export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
   const { t, i18n } = useTranslation();
+
+  const division = resolveLocalized(bootstrap.division.name, i18n.language, bootstrap.division.defaultLocale);
+
+  const label = (item: FooterItem) => navLabel(item, t, i18n.language, bootstrap.division.defaultLocale);
+
+  const columns = bootstrap.navigation.footer.filter((item) => item.children.length > 0);
+  const loose = bootstrap.navigation.footer.filter((item) => item.children.length === 0);
+
+  const marks = columns.find((column) => column.children.every((child) => child.icon));
+  const written = columns.filter((column) => column !== marks);
 
   // The links of headquarters are content, not code: `locales/{lng}/common.json` carries them, so a
   // division that forks this hub changes them where it changes every other sentence.
   const raw: unknown = t('footer.legal', { returnObjects: true });
-  const links: LegalLink[] = Array.isArray(raw) ? (raw as LegalLink[]) : [];
+  const legal: LegalLink[] = Array.isArray(raw) ? (raw as LegalLink[]) : [];
 
   return (
     <footer className="border-border mt-12 border-t">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6">
-        {/* Two rows of links, and they are two different things. The first is what the staff put in
-            the footer menu — pages of this site, edited in the back office like the top menu. The
-            second is the legal links of headquarters, which are the same for every division and
-            live in `locales/` because they are words and not rows. */}
-        {bootstrap.navigation.footer.length > 0 && (
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {bootstrap.navigation.footer
-              .flatMap((item) => [item, ...item.children])
-              .map((item) => (
-                <FooterEntry
-                  key={item.path}
-                  path={item.path}
-                  label={navLabel(item, t, i18n.language, bootstrap.division.defaultLocale)}
-                />
-              ))}
+      <div className="mx-auto w-full max-w-6xl px-4 py-10">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {/* The division: who this site belongs to, what it is for, and where else to find it. */}
+          <div className="flex flex-col gap-4 lg:col-span-1">
+            <p className="text-foreground text-base font-semibold">{division}</p>
+            <p className="text-muted-foreground max-w-xs text-sm">{t('footer.about', { division })}</p>
+
+            {marks === undefined ? null : (
+              <nav aria-label={label(marks)} className="flex flex-wrap items-center gap-2">
+                {marks.children.map((child) => (
+                  <FooterMark key={child.path} path={child.path} label={label(child)} icon={child.icon} />
+                ))}
+              </nav>
+            )}
+          </div>
+
+          {written.map((column) => (
+            <nav key={column.path || label(column)} className="flex flex-col gap-3">
+              {/* The heading of a column may be a link or may lead nowhere, and both are written the
+                  same way in the back office: an entry with an address, or one without. */}
+              <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                {column.path ? <FooterEntry path={column.path} label={label(column)} /> : label(column)}
+              </p>
+
+              <ul className="flex flex-col gap-2">
+                {column.children.map((child) => (
+                  <li key={child.path}>
+                    <FooterEntry path={child.path} label={label(child)} icon={child.icon} />
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
+
+        {/* An entry with no children and no column to sit in: the shape the footer had before it had
+            columns, kept so that a division that upgrades does not lose the links it already wrote. */}
+        {loose.length === 0 ? null : (
+          <nav className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {loose.map((item) => (
+              <FooterEntry key={item.path} path={item.path} label={label(item)} icon={item.icon} />
+            ))}
           </nav>
         )}
 
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
+        <Separator className="my-8" />
 
-        <Separator />
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-1">
+            <Subtle>{t('footer.disclaimer', { division })}</Subtle>
+            <Subtle>{t('footer.version', { version: bootstrap.version })}</Subtle>
+          </div>
 
-        <Subtle>
-          {t('footer.disclaimer', {
-            division: resolveLocalized(
-              bootstrap.division.name,
-              i18n.language,
-              bootstrap.division.defaultLocale,
-            ),
-          })}
-        </Subtle>
-        <Subtle>{t('footer.version', { version: bootstrap.version })}</Subtle>
+          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {legal.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </div>
       </div>
     </footer>
+  );
+}
+
+/** One account of the division: a mark, with the words it was given as its name. */
+function FooterMark({ path, label, icon }: { path: string; label: string; icon: string | null }) {
+  const className =
+    'text-muted-foreground hover:text-foreground hover:bg-muted flex size-9 items-center justify-center rounded-md transition-colors';
+
+  const glyph = iconGlyph(icon, 'size-4');
+
+  // A name that this release has never heard of draws nothing rather than a wrong picture, which is
+  // what `iconGlyph` is for — but the link must survive it, so the words stand in for the mark.
+  const inside = glyph ?? label;
+
+  return path.startsWith('/') ? (
+    <RouterAnchor href={path} className={className} aria-label={label} title={label}>
+      {inside}
+    </RouterAnchor>
+  ) : (
+    <a
+      href={path}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={className}
+      aria-label={label}
+      title={label}
+    >
+      {inside}
+    </a>
   );
 }
 
@@ -218,16 +301,24 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
  * to write one — `MenuItemWriteDtoValidator` accepts a path or an absolute web address and nothing
  * in between.
  */
-function FooterEntry({ path, label }: { path: string; label: string }) {
-  const className = 'text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline';
+function FooterEntry({ path, label, icon = null }: { path: string; label: string; icon?: string | null }) {
+  const className =
+    'text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm underline-offset-2 hover:underline';
+
+  const inside = (
+    <>
+      {iconGlyph(icon, 'size-4 shrink-0')}
+      {label}
+    </>
+  );
 
   return path.startsWith('/') ? (
     <RouterAnchor href={path} className={className}>
-      {label}
+      {inside}
     </RouterAnchor>
   ) : (
     <a href={path} target="_blank" rel="noreferrer noopener" className={className}>
-      {label}
+      {inside}
     </a>
   );
 }

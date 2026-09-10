@@ -40,7 +40,51 @@ export const anonymousBootstrap = {
       },
       { key: 'nav.atc', path: '/atc', label: null, children: [] },
     ],
-    footer: [{ key: null, path: '/legal', label: { en: 'Legal', it: 'Note legali' }, children: [] }],
+    // The three shapes the footer has to draw, since it became columns on 10 September 2026: a
+    // heading that leads nowhere with its links under it, a column whose links all carry a mark —
+    // which is the row of the division's accounts — and a lone entry with no column at all, which
+    // is what every footer written before this looked like.
+    footer: [
+      {
+        key: null,
+        path: '',
+        label: { en: 'Quick links', it: 'Collegamenti' },
+        icon: null,
+        children: [
+          { key: null, path: '/news', label: { en: 'News', it: 'News' }, icon: null, children: [] },
+          {
+            key: null,
+            path: '/contact',
+            label: { en: 'Contact us', it: 'Contattaci' },
+            icon: null,
+            children: [],
+          },
+        ],
+      },
+      {
+        key: null,
+        path: '',
+        label: { en: 'Follow us', it: 'Seguici' },
+        icon: null,
+        children: [
+          {
+            key: null,
+            path: 'https://discord.example.org',
+            label: { en: 'Discord', it: 'Discord' },
+            icon: 'discord',
+            children: [],
+          },
+          {
+            key: null,
+            path: 'https://youtube.example.org',
+            label: { en: 'YouTube', it: 'YouTube' },
+            icon: 'youtube',
+            children: [],
+          },
+        ],
+      },
+      { key: null, path: '/legal', label: { en: 'Legal', it: 'Note legali' }, icon: null, children: [] },
+    ],
     staff: [],
   },
   registries: { blocks: [], widgets: [], permissions: [] },

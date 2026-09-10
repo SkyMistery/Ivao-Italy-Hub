@@ -84,6 +84,7 @@
     "toggle": "Switch between light and dark"
   },
   "footer": {
+    "about": "The official website of {{division}}: events, training, tours and everything the division does.",
     "legal": [
       {
         "label": "IVAO",

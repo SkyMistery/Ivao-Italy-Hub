@@ -268,6 +268,51 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         await RefusedAsync(web, Entry($"/{Slug("never-written")}"), token);
     }
 
+    /// <summary>
+    /// The one entry allowed to lead nowhere: the heading of a footer column, decided by Carmine on
+    /// 10 September 2026 when he asked for a footer in columns.
+    /// <para>Both halves of the rule are asserted, and the second is the one that matters: an entry
+    /// with no address is accepted at the top of the <b>footer</b> and refused everywhere else. A
+    /// child with none would be a line nobody can click; a heading in the bar at the top would be an
+    /// entry that does nothing when pressed.</para>
+    /// </summary>
+    [Fact]
+    public async Task OnlyATopLevelFooterEntryMayLeadNowhere()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, position: "IT-WM", cancellationToken: token);
+
+        using var web = _factory.CreateApiClient();
+        await _factory.SignInAsync(web, WebCoordinatorVid, token);
+
+        // A heading, and the mark it may carry: the server keeps the name and never resolves it,
+        // because which names exist is a list that lives only in the client.
+        using var heading = await SendAsync(
+            web,
+            HttpMethod.Post,
+            MenuEndpoints.Pattern,
+            Entry(path: string.Empty, scope: MenuScope.Footer, icon: "globe"),
+            token);
+
+        Assert.Equal(HttpStatusCode.Created, heading.StatusCode);
+
+        // Read as JSON rather than as the DTO: the payload spells its enums as words, which is the
+        // contract, and a plain deserialiser here would need a converter of its own to read them.
+        using var created = JsonDocument.Parse(await heading.Content.ReadAsStringAsync(token));
+        var id = created.RootElement.GetProperty("id").GetInt64();
+
+        Assert.Equal("globe", created.RootElement.GetProperty("icon").GetString());
+
+        // A child of it with no address: refused, because nobody could click it.
+        await RefusedForItsPathAsync(
+            web,
+            Entry(path: string.Empty, parentId: id, scope: MenuScope.Footer),
+            token);
+
+        // And a headline in the bar at the top: refused, because pressing it would do nothing.
+        await RefusedForItsPathAsync(web, Entry(path: string.Empty), token);
+    }
+
     // ---- the pages an installation is born with (design M1 section 8.2) -------------------------
 
     [Fact]
@@ -542,13 +587,16 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
     private static object Entry(
         string path = "/calendar",
         long? parentId = null,
-        string? rowVersion = null) => new
+        string? rowVersion = null,
+        MenuScope scope = MenuScope.Public,
+        string? icon = null) => new
         {
-            scope = nameof(MenuScope.Public),
+            scope = scope.ToString(),
             parentId,
             sort = 500,
             label = new Dictionary<string, string> { ["it"] = "Voce", ["en"] = "Entry" },
             path,
+            icon,
             visibility = nameof(Visibility.Public),
             isActive = true,
             rowVersion = rowVersion ?? "0001-01-01T00:00:00",
@@ -608,6 +656,24 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.Equal(
             "errors.menu.pathNotAllowed",
             problem.GetProperty("errors").GetProperty("path")[0].GetString());
+    }
+
+    /// <summary>
+    /// Posts an entry that must be refused **on its address**, without pinning which rule said so.
+    /// An empty path fails the first rule and a wrong one fails the last, and both are the same
+    /// answer to whoever is writing: not there.
+    /// </summary>
+    private static async Task RefusedForItsPathAsync(
+        HttpClient client,
+        object entry,
+        CancellationToken cancellationToken)
+    {
+        using var response = await SendAsync(client, HttpMethod.Post, MenuEndpoints.Pattern, entry, cancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+        Assert.NotEmpty(problem.GetProperty("errors").GetProperty("path").EnumerateArray());
     }
 
     private async Task SeedLinkAsync(

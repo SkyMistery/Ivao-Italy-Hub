@@ -26,7 +26,12 @@ export function toWriteDto(values: MenuItemFormValues): MenuItemWriteDto {
     // Sent as it stands, so the server can name the language that is missing rather than being
     // handed a field that quietly became null.
     label: values.label,
-    path: values.path.trim(),
+    // Trimmed, and empty stays empty: for a top level entry of the footer that is the heading of a
+    // column, which is a thing the server knows how to accept.
+    path: (values.path ?? '').trim(),
+    // Empty means "no mark", and the column is nullable: the one line where the two meet, the same
+    // as the parent above.
+    icon: values.icon ? values.icon : null,
     sort: values.sort,
     visibility: values.visibility,
     isActive: values.isActive,
@@ -41,6 +46,7 @@ export function emptyMenuItem(locales: readonly string[]): MenuItemFormValues {
     parentId: '',
     label: Object.fromEntries(locales.map((locale) => [locale, ''])),
     path: '',
+    icon: '',
     sort: 0,
     visibility: 'Public',
     isActive: true,
@@ -55,6 +61,7 @@ export function toFormValues(item: MenuItemDetailDto, locales: readonly string[]
     parentId: item.parentId === null ? '' : String(item.parentId),
     label: Object.fromEntries(locales.map((locale) => [locale, item.label?.[locale] ?? ''])),
     path: item.path,
+    icon: item.icon ?? '',
     sort: item.sort,
     visibility: item.visibility,
     isActive: item.isActive,

@@ -23,7 +23,7 @@ internal static class MeEndpoints
     /// writes: the public menu is a table now, and the home of the site is a row of it like every
     /// other entry (design M1 section 8.1).
     /// </summary>
-    private static readonly NavItem Staff = new(Key: "nav.staff", Path: "/staff", Label: null, Children: []);
+    private static readonly NavItem Staff = new(Key: "nav.staff", Path: "/staff", Label: null, Icon: null, Children: []);
 
     public static void MapMeEndpoints(this WebApplication app)
     {
@@ -167,6 +167,7 @@ internal static class MeEndpoints
         Key: null,
         Path: row.Path,
         Label: row.Label,
+        Icon: row.Icon,
         Children: [.. children.Select(child => Editorial(child, []))]);
 
     /// <summary>
@@ -177,7 +178,7 @@ internal static class MeEndpoints
     private static IEnumerable<NavItem> Visible(IEnumerable<NavItemDescriptor> entries, ICurrentUser user) =>
         entries
             .Where(entry => entry.Permission is null || user.HasAny(entry.Permission))
-            .Select(entry => new NavItem(entry.Key, entry.Path, Label: null, Children: []));
+            .Select(entry => new NavItem(entry.Key, entry.Path, Label: null, Icon: null, Children: []));
 }
 
 /// <summary>
@@ -263,11 +264,14 @@ internal sealed record BootstrapNavigation(
 /// <param name="Key">Translation key of a module's entry, null for an editorial one.</param>
 /// <param name="Path">Where the entry leads: a path of this site, or an address of somewhere else.</param>
 /// <param name="Label">The text of an editorial entry, null for a module's one.</param>
+/// <param name="Icon">Name of an icon from the client's allow list, or null for an entry drawn as
+/// words. The server carries the name and never resolves it.</param>
 /// <param name="Children">Sub entries, one level deep and never more.</param>
 internal sealed record NavItem(
     string? Key,
     string Path,
     Localized<string>? Label,
+    string? Icon,
     IReadOnlyList<NavItem> Children);
 
 internal sealed record BootstrapRegistries(

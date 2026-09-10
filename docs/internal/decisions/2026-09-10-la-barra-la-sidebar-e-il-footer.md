@@ -95,7 +95,7 @@ pulsante per nome.
 
 ---
 
-## 4 — Il footer: **il grosso c'è già, mancano due colonne**
+## 4 — Il footer: **deciso (strada A) e fatto**
 
 Il footer della foto è: marchio, una frase sulla divisione e le icone social; poi **tre colonne con
 un'intestazione ciascuna** (Quick Links / For Members / Resources); poi una riga in fondo con
@@ -134,6 +134,44 @@ un elenco che qualcuno riordina, e un fork le cambia dove cambia ogni altra fras
 | **A. Intero** (consigliata) | Due colonne additive, il validatore, cinque icone a mano, il layout | Il footer della foto, con i link **e le intestazioni** editabili dal webmaster |
 | **B. Solo le colonne** | Nessun cambio di modello | Le tre colonne, ma un'intestazione deve puntare da qualche parte, e niente social |
 | **C. Colonne dal menu, social da `division.json`** | Una colonna sola (`Path` nullable) | Come A, ma i social li cambia chi tocca la configurazione, non il webmaster — e Carmine ha chiesto il contrario |
+
+### Com'è andata
+
+**A**, scelta da Carmine il 10 settembre 2026. Il conto, per intero:
+
+- **una colonna nuova**, non due: `cms_menu_items.icon`, nullable, `varchar(64)`, migrazione
+  puramente additiva (`AddMenuItemIcon`);
+- ⚠️ **`Path` è rimasto `NOT NULL`, e un'intestazione è la stringa vuota.** Era previsto di renderlo
+  nullable; non si è fatto perché sarebbe stata l'unica modifica *a una colonna che esiste già* in
+  tutta la catena, su una tabella che ogni fork ha, e §11.3 vuole migrazioni additive. Lo stato che
+  `NULL` avrebbe espresso lo esprime già la stringa vuota, e **la regola sta nel validatore**, che è
+  dove si legge: `IsAHeading` — in fondo al **footer**, di **primo livello**, senza indirizzo. Nel
+  menu in cima e per un figlio resta obbligatorio, e le due metà hanno ognuna la propria ragione:
+  un figlio senza indirizzo è una riga che non si può cliccare, un'intestazione nella barra in alto
+  è una voce che premuta non fa niente;
+- **il server non sa che cosa sia un'icona**: tiene il nome e non lo risolve mai, come tiene il corpo
+  di una pagina senza sapere che cosa sia un blocco. L'insieme dei nomi vive solo in TypeScript, e
+  una copia qui sarebbe la seconda lista da tenere allineata. Il validatore controlla **solo la
+  lunghezza**;
+- ⚠️ **`lucide` non ha più i marchi.** Li ha tolti tutti alla versione 1 — verificato nel pacchetto
+  installato, non supposto — quindi i cinque sono disegnati a mano in `shared/icons/brands.tsx`, che
+  è **il caso che le UI guidelines §2 prevedono** e la ragione per cui quella cartella esiste. Sono
+  marchi semplificati sulla griglia di lucide, e la nota lo dice: chi vuole i logotipi ufficiali li
+  mette nella media library;
+- **una regola inferita, una sola, e va detta**: una colonna del footer i cui link portano **tutti**
+  un'icona è la riga degli account, e viene disegnata sotto le parole della divisione invece che come
+  quarta colonna di testo. È l'unico pezzo dedotto invece che dichiarato, e lo è perché l'alternativa
+  era un secondo campo su **ogni** voce di menu per rispondere a una domanda che in tutto il sito se
+  la pone una colonna sola.
+
+**Una cosa tolta perché era diventata doppia:** `SchemaForm` teneva la propria tabella di glifi
+disegnati una volta al caricamento del modulo (perché un componente letto da una mappa dentro un
+render React lo rimonta, e `react-hooks/static-components` lo rifiuta). Il footer ne avrebbe voluta
+una seconda, di un'altra misura. Ora è **una funzione sola**, `iconGlyph(nome, classi)`, con una
+cache per insieme di classi: `CLAUDE.md` §2, applicata invece che aggirata.
+
+**Quello che resta parole e non righe**, come raccomandato: la frase sotto il marchio
+(`footer.about`) e la riga in fondo stanno in `locales/`, accanto a `footer.disclaimer`.
 
 ---
 

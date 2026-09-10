@@ -1470,6 +1470,7 @@ export interface components {
             sort: number;
             label: components["schemas"]["LocalizedOfstring"];
             path: string;
+            icon: null | string;
             visibility: components["schemas"]["Visibility"];
             isActive: boolean;
             ownerDepartment: components["schemas"]["Department"];
@@ -1495,6 +1496,7 @@ export interface components {
             sort: number;
             label: components["schemas"]["LocalizedOfstring"];
             path: string;
+            icon: null | string;
             visibility: components["schemas"]["Visibility"];
             isActive: boolean;
             /** Format: date-time */
@@ -1513,6 +1515,7 @@ export interface components {
             sort: number;
             label: components["schemas"]["LocalizedOfstring"];
             path: string;
+            icon: null | string;
             visibility: components["schemas"]["Visibility"];
             isActive: boolean;
             /** Format: date-time */
@@ -1540,6 +1543,11 @@ export interface components {
             /** @description Where the entry leads: a path of this site, or an address of somewhere else. */
             path: string;
             label: null | components["schemas"]["LocalizedOfstring"];
+            /**
+             * @description Name of an icon from the client's allow list, or null for an entry drawn as
+             *         words. The server carries the name and never resolves it.
+             */
+            icon: null | string;
             /** @description Sub entries, one level deep and never more. */
             children: components["schemas"]["NavItem"][];
         };

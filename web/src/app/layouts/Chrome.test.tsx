@@ -59,10 +59,10 @@ const bootstrap: Bootstrap = {
   // translation key, and an editorial row, which carries the words themselves (design M1 §8.1).
   navigation: {
     public: [
-      { key: 'nav.home', path: '/', label: null, children: [] },
-      { key: null, path: '/about', label: { en: 'About us' }, children: [] },
+      { key: 'nav.home', path: '/', label: null, icon: null, children: [] },
+      { key: null, path: '/about', label: { en: 'About us' }, icon: null, children: [] },
     ],
-    footer: [{ key: null, path: '/legal', label: { en: 'Legal' }, children: [] }],
+    footer: [{ key: null, path: '/legal', label: { en: 'Legal' }, icon: null, children: [] }],
     staff: [],
   },
   registries: { blocks: [], widgets: [], permissions: [] },
@@ -159,6 +159,84 @@ test('a member of staff is offered the back office; a visitor and a plain member
   renderShell(signedIn({ isStaff: true }));
   await screen.findByRole('heading', { name: 'A screen' });
   expect(screen.getByRole('link', { name: englishCommon.nav.staff })).toHaveAttribute('href', '/staff');
+});
+
+/**
+ * The footer, in columns since 10 September 2026.
+ *
+ * The three assertions are the three shapes it has to draw, and each is a state the menu table can
+ * be in: a heading that leads nowhere, a column whose links all carry a mark, and a lone entry with
+ * no column — which is what every footer written before this looked like, and must keep working.
+ */
+const withFooter: Bootstrap = {
+  ...bootstrap,
+  navigation: {
+    ...bootstrap.navigation,
+    footer: [
+      {
+        key: null,
+        path: '',
+        label: { en: 'Quick links' },
+        icon: null,
+        children: [
+          { key: null, path: '/news', label: { en: 'News' }, icon: null, children: [] },
+          { key: null, path: '/contact', label: { en: 'Contact us' }, icon: null, children: [] },
+        ],
+      },
+      {
+        key: null,
+        path: '',
+        label: { en: 'Follow us' },
+        icon: null,
+        children: [
+          {
+            key: null,
+            path: 'https://discord.example.org',
+            label: { en: 'Discord' },
+            icon: 'discord',
+            children: [],
+          },
+        ],
+      },
+      { key: null, path: '/legal', label: { en: 'Legal' }, icon: null, children: [] },
+    ],
+  },
+};
+
+test('a footer column is a heading with its links under it, and the heading need not lead anywhere', async () => {
+  renderShell(withFooter);
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  // The heading is words and not a link, because the entry behind it has no address — which is the
+  // whole of what the new column on the menu table buys.
+  expect(screen.getByText('Quick links')).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Quick links' })).not.toBeInTheDocument();
+
+  expect(screen.getByRole('link', { name: 'News' })).toHaveAttribute('href', '/news');
+  expect(screen.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href', '/contact');
+});
+
+test('a column whose links all carry a mark is the row of accounts, drawn as marks', async () => {
+  renderShell(withFooter);
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  // ⚠️ The words survive as the accessible name even though the eye sees a mark: an icon with no
+  // name is a link that a screen reader announces as its own address.
+  const discord = screen.getByRole('link', { name: 'Discord' });
+  expect(discord).toHaveAttribute('href', 'https://discord.example.org');
+  expect(discord).toHaveTextContent('');
+
+  // And it left the columns: it is beside the division's own words, not a fourth column of text.
+  expect(screen.queryByText('Follow us')).not.toBeInTheDocument();
+});
+
+test('an entry with no column still has its place', async () => {
+  renderShell(withFooter);
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  // The shape every footer had before this one. A division that upgrades must not lose the links it
+  // already wrote just because they were never put in a column.
+  expect(screen.getByRole('link', { name: 'Legal' })).toHaveAttribute('href', '/legal');
 });
 
 test('a superadmin who holds no staff position is offered it too', async () => {

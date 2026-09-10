@@ -30,10 +30,11 @@ import {
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { z } from 'zod';
 
-import { ICON_NAMES, iconByName } from '../icons';
+import { ICON_NAMES } from '../icons';
+import { iconGlyph } from '../icons/glyphs';
 import { fold } from '../search/highlight';
 import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
 
@@ -935,18 +936,6 @@ function IconChoice({
   );
 }
 
-/**
- * The picture of every icon of the allow list, drawn once when this module loads rather than looked
- * up while a form renders. The table is frozen and never changes, so there is nothing to recompute
- * — and a component read out of a map inside a render is one React has to treat as new every pass.
- */
-const ICON_GLYPHS: Readonly<Record<string, ReactElement>> = Object.fromEntries(
-  ICON_NAMES.map((iconName) => {
-    const Icon = iconByName(iconName)!;
-    return [iconName, <Icon aria-hidden className="size-5" />];
-  }),
-);
-
 function IconOption({
   chosen,
   label,
@@ -973,7 +962,7 @@ function IconOption({
       {icon === undefined ? (
         <span className="text-muted-foreground text-xs">&mdash;</span>
       ) : (
-        (ICON_GLYPHS[icon] ?? null)
+        iconGlyph(icon, 'size-5')
       )}
     </button>
   );

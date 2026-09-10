@@ -35,12 +35,22 @@ export function menuItemSchema(parents: readonly ChoiceOption[] = [], addresses:
     //
     // `slugFrom` stays for the entry whose page is written next: a draft counts, so the proposal
     // still meets a row that exists by the time anybody saves.
-    path: z.string().meta({
+    //
+    // ⚠️ And **empty is a state with a meaning** since 10 September 2026: a top level entry of the
+    // *footer* with no address is the heading of a column — "Quick links", "Resources" — which the
+    // footer draws as a word above its links. The server allows it there and nowhere else: a child
+    // with no address would be a line nobody can click, and a heading in the bar at the top would
+    // be an entry that does nothing when pressed (`MenuItemWriteDtoValidator.IsAHeading`).
+    path: z.string().optional().meta({
       slugFrom: 'label',
       slugPrefix: '/',
       suggestions: addresses,
       suggestionsOnly: true,
     }),
+    // The mark beside the words, chosen from the allow list every other icon field offers. It is
+    // what turns the addresses of a division's accounts into a row of marks in the footer instead
+    // of five more lines in a list — and it is optional, because most entries are words.
+    icon: z.string().optional().meta({ icon: true }),
     sort: z.number().int(),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     isActive: z.boolean(),
