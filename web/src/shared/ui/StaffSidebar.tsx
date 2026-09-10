@@ -76,14 +76,21 @@ function Frame({
 
   return (
     <aside
-      className={`border-fuselage-200 bg-fuselage-50 dark:border-fuselage-700 dark:bg-fuselage-900 flex h-full flex-col border-r ${
+      className={`border-fuselage-200 bg-fuselage-50 dark:border-fuselage-700 dark:bg-fuselage-900 relative flex h-full flex-col border-r ${
         isSidebarOpen ? 'w-72' : 'box-content w-17'
       }`}
     >
-      {/* At the top, and one button wide rather than the width of the panel: the whole of the
-          request. `title` as well as `aria-label`, because a button that is only an icon says what
-          it is on hover and nowhere else. */}
-      <div className="flex items-center justify-end px-2 pt-2">
+      {/* ⚠️ Out of the flow while the panel is open (Carmine, 10 September 2026: the band it had to
+          itself was empty space). It sits in the corner *beside* the first heading rather than on a
+          line of its own, and what makes room for it is the padding every heading carries on its
+          right — so the headings stay in one column and only the corner is given up.
+
+          Collapsed, it goes back into the flow: a strip 68 pixels wide has no corner to spare, and
+          the button would land on the first icon.
+
+          `title` as well as `aria-label`, because a button that is only an icon says what it is on
+          hover and nowhere else. */}
+      <div className={isSidebarOpen ? 'absolute top-2 right-2 z-10' : 'flex justify-center pt-2'}>
         <button
           type="button"
           onClick={toggleSidebar}
@@ -99,7 +106,7 @@ function Frame({
         </button>
       </div>
 
-      <div className="flex flex-col items-start gap-4 px-4 py-5">
+      <div className={`flex flex-col items-start gap-4 px-4 ${isSidebarOpen ? 'py-3' : 'py-4'}`}>
         {groups.map((group) => (
           <Group
             key={group.title}
@@ -160,7 +167,10 @@ function Group({
           <GroupIcon />
         </div>
 
-        <div className={`ml-4 flex grow items-center transition-all ${sidebarOpen ? '' : 'hidden'}`}>
+        {/* ⚠️ `pr-7` is what keeps the corner free for the collapse button, which floats over it
+            while the panel is open. Every heading carries it, not only the first: one column of
+            chevrons reads as a column, and one chevron out of line reads as a mistake. */}
+        <div className={`ml-4 flex grow items-center pr-7 transition-all ${sidebarOpen ? '' : 'hidden'}`}>
           <span className="font-head text-fuselage-600 dark:text-fuselage-100 mr-2 text-base leading-tight font-semibold">
             {group.title}
           </span>
