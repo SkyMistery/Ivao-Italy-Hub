@@ -153,6 +153,17 @@ che due terzi di schermo più giù.
 sarebbe la **decima** estensione del generatore, e non l'ho infilata qui: una modifica alla volta si
 giudica, due no.
 
+### Un poscritto del 10 settembre, e ribalta una premessa
+
+Carmine ha aperto il page builder di HQ e mi ha chiesto di guardarlo. Misurato nella loro pagina:
+**nessuna libreria di trascinamento e zero elementi in posizione assoluta**. Il loro «visual drag &
+drop editor» non è una tela: è un albero ordinato Sezione → **Riga** → Blocco, dove il trascinamento
+serve a riordinare e a prendere un blocco dalla tavolozza.
+
+⚠️ Quindi **la (B) non esiste nemmeno da chi l'ha inventata**, e la (A) non era il ripiego economico:
+era la stessa cosa. Che cosa valga la pena prendergli davvero sta in
+`2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`.
+
 ### Che cosa **non** c'è ancora, e va detto
 
 - **Non si trascina dentro l'anteprima.** Si sceglie e si modifica; per spostare c'è l'outline, che è
