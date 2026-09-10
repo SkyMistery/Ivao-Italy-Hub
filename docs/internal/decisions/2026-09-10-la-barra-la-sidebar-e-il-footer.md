@@ -34,7 +34,7 @@ Tre cose viste guardando, non deducendo:
 
 ---
 
-## 3 — La barra laterale dello staff: **è (c), e per una ragione sola**
+## 3 — La barra laterale dello staff: **decisa (strada A) e fatta**
 
 Quello che Carmine chiede è ragionevole e piccolo. Il problema è **dove sta il pulsante**: dentro
 `SidebarContainer` di Atmosphere, e non è configurabile. Letto nel bundle, non supposto:
@@ -69,6 +69,29 @@ il pulsante di chiusura doppio (HANDOFF §13).
 | **A. Barra nostra** (consigliata) | Un componente nell'elenco chiuso, il gruppo riscritto, il rischio del precedente qui sopra | Il pulsante dove Carmine lo vuole, di sole icone, **e tradotto** |
 | **B. Solo CSS** | Poche righe | Nasconde la scritta, ma il pulsante **resta in fondo** — e sono regole nostre appese ai nomi interni di una libreria, che è una copia locale di un meccanismo altrui (`CLAUDE.md` §2) |
 | **C. Niente** | Zero | Resta com'è, «Close sidebar» compreso |
+
+### Com'è andata
+
+**A**, scelta da Carmine il 10 settembre 2026. `web/src/shared/ui/StaffSidebar.tsx`, ventunesimo
+dell'elenco chiuso, con la sua sezione in `/staff/admin/ui-kit` e quattro test.
+
+⚠️ **Quello che non è stato riscritto** è la metà importante: lo stato aperto/chiuso resta
+`SidebarProvider` e `SidebarContext` di Atmosphere, e ogni foglia resta il loro `SidebarItem`. Nostri
+sono solo la cornice e l'intestazione di gruppo, cioè **i due pezzi che la libreria non lascia
+raggiungere**. Il precedente di HANDOFF §13 non si è ripetuto perché questo componente **è**
+l'`aside` e non ci si avvolge attorno — e l'e2e che misura la geometria della colonna è ancora lì,
+verde, con l'unica riga cambiata che è quella che cercava le parole «close sidebar» e ora chiede il
+pulsante per nome.
+
+**Due cose viste facendo:**
+
+- ⚠️ **`useEffect` per aprire il gruppo della pagina corrente non passa il lint**, e il lint ha
+  ragione: `react-hooks/set-state-in-effect`, perché il primo disegno mostrerebbe il pannello
+  sbagliato. Lo stato è diventato «nessuno ha ancora detto» (`null`), e un gruppo è aperto perché la
+  pagina è una delle sue finché qualcuno non clicca. Nessun effetto;
+- il test non può usare `toBeVisible` sulle parole di un gruppo chiuso: le nasconde una classe
+  Tailwind e jsdom non carica fogli di stile, quindi quell'asserzione passerebbe comunque. Si misura
+  la larghezza del pannello e il fatto che l'elenco non sia disegnato.
 
 ---
 

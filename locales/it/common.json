@@ -13,7 +13,11 @@
   "nav": {
     "home": "Home",
     "staff": "Staff",
-    "modules": "Moduli"
+    "modules": "Moduli",
+    "sidebar": {
+      "collapse": "Comprimi il menu",
+      "expand": "Espandi il menu"
+    }
   },
   "home": {
     "empty": "Su questa pagina non è ancora stato pubblicato niente. La scrive dal back office chi manda avanti il sito."

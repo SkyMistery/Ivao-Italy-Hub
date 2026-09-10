@@ -40,7 +40,22 @@ It is exactly:
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
 `StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
-`LiveStatusStrip`.
+`LiveStatusStrip`, `StaffSidebar`.
+
+`StaffSidebar` is the navigation of the back office, and it is the one entry on this list that
+replaces something Atmosphere ships rather than adding something it lacks. The reason is narrow and
+worth knowing before anybody proposes going back: Atmosphere's `Sidebar` draws its own collapse
+button, last in the panel, the full width of it, carrying the string `"Close sidebar"` written into
+the library — so the button cannot be moved, cannot be made an icon, and **cannot be translated**,
+which made rule 1 of this file impossible to keep in the back office of a division that does not
+speak English.
+
+What it does *not* replace is as important: the open and closed state is still Atmosphere's
+`SidebarProvider` and `SidebarContext`, and every leaf is still its `SidebarItem`. Only the frame
+and the group heading are ours, because those are the two pieces the library exports no way to
+reach. And it **is** the `<aside>` — it is not a panel to wrap in a shell of your own. Wrapping the
+one it replaced once drew the whole back office inside a 288 pixel column with two collapse
+buttons, and `e2e/back-office.spec.ts` measures the geometry so that it cannot happen again.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It

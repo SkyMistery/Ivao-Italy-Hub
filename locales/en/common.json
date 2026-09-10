@@ -13,7 +13,11 @@
   "nav": {
     "home": "Home",
     "staff": "Staff",
-    "modules": "Modules"
+    "modules": "Modules",
+    "sidebar": {
+      "collapse": "Collapse the menu",
+      "expand": "Expand the menu"
+    }
   },
   "home": {
     "empty": "Nothing has been published on this page yet. Whoever runs the site writes it from the back office."

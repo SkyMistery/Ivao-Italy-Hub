@@ -1,6 +1,6 @@
 import { Button } from '@ivao/atmosphere-react';
 import { queryOptions } from '@tanstack/react-query';
-import { Plane } from 'lucide-react';
+import { CalendarDays, FileText, KeyRound, Newspaper, Plane, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -21,6 +21,7 @@ import {
   Notice,
   PageShell,
   SectionHeader,
+  StaffSidebar,
   StatTile,
   useNotice,
   type MediaLibraryQuery,
@@ -388,4 +389,54 @@ export function LiveStatusStripSample() {
  */
 export function ContactFormSample() {
   return <ContactForm onSubmit={() => Promise.resolve()} />;
+}
+
+/**
+ * The navigation of the back office, with two groups written here rather than read from the
+ * bootstrap. The gallery is a page about the component, and where a member of staff may actually go
+ * depends on their positions — so a sidebar fed from the real list would show something different
+ * to every reader, and on a fresh installation very little to anybody.
+ *
+ * Boxed with a height, because it is the `<aside>` itself and fills whatever column it is put in.
+ */
+export function StaffSidebarSample() {
+  return (
+    <div className="border-border h-96 overflow-hidden rounded-lg border">
+      <StaffSidebar
+        groups={[
+          {
+            title: 'Events',
+            Icon: CalendarDays,
+            items: [
+              {
+                title: 'Pages',
+                description: 'What this department publishes.',
+                href: '/ui-kit/pages',
+                Icon: FileText,
+              },
+              {
+                title: 'News',
+                description: 'What it announces.',
+                href: '/ui-kit/news',
+                Icon: Newspaper,
+              },
+            ],
+          },
+          {
+            title: 'Administration',
+            Icon: ShieldCheck,
+            items: [
+              {
+                title: 'Permissions',
+                description: 'Who holds what.',
+                href: '/ui-kit/permissions',
+                Icon: KeyRound,
+              },
+            ],
+          },
+        ]}
+        isActiveCheck={(href) => href === '/ui-kit/pages'}
+      />
+    </div>
+  );
 }

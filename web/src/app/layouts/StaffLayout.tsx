@@ -1,9 +1,9 @@
-import { Sidebar, type SidebarProps } from '@ivao/atmosphere-react';
 import { Outlet, useLocation } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { SearchPalette } from '../../features/search/SearchPalette';
 import type { Bootstrap } from '../../shared/api/bootstrap';
+import { StaffSidebar, type StaffSidebarGroup } from '../../shared/ui';
 
 import { AppFooter, AppHeader } from './Chrome';
 import { RouterAnchor } from './RouterAnchor';
@@ -22,7 +22,7 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
   const { t } = useTranslation();
   const location = useLocation();
 
-  const items: SidebarProps['items'] = staffDestinations(bootstrap, t).map((group) => ({
+  const groups: StaffSidebarGroup[] = staffDestinations(bootstrap, t).map((group) => ({
     title: group.title,
     Icon: group.Icon,
     items: group.items.map((item) => ({
@@ -37,15 +37,18 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
     <div className="bg-body text-foreground flex min-h-screen flex-col">
       <AppHeader bootstrap={bootstrap} />
 
-      {/* `Sidebar` is the whole thing: it brings its own `SidebarProvider` and its own
-          `SidebarContainer`, and `SidebarContainer` is not a two column shell -- it *is* the
-          `<aside>`, `w-72` wide. Wrapping our own around it put both the real sidebar and this
+      {/* ⚠️ `StaffSidebar` *is* the `<aside>`, exactly as Atmosphere's own was: it is not a panel to
+          wrap in a shell of ours. Wrapping the one it replaced put both the sidebar and this
           `<main>` inside a 288px aside, so every back office screen was drawn in a narrow column
           with the rest of the window empty, and the collapse button appeared twice. The row is
-          ours to make; the sidebar is not. */}
+          ours to make; the aside is not.
+
+          Why it is ours since 10 September 2026 rather than the library's: the collapse button had
+          to move to the top and lose its label, and neither is reachable from outside. The reasons
+          are in the component. */}
       <div className="flex flex-1 items-stretch">
-        <Sidebar
-          items={items}
+        <StaffSidebar
+          groups={groups}
           asLink={RouterAnchor}
           isActiveCheck={(href) => location.pathname === href || location.pathname.startsWith(`${href}/`)}
         />

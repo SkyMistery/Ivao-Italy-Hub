@@ -29,6 +29,9 @@ export const UI_KIT_COMPONENTS = [
   'CalendarView',
   'ContactForm',
   'LiveStatusStrip',
+  // The twenty-first, and the second Carmine has asked for: Atmosphere's sidebar draws its own
+  // collapse button, at the bottom, full width, with an English word written into the library.
+  'StaffSidebar',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

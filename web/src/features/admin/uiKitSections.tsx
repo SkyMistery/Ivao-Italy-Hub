@@ -26,6 +26,7 @@ import {
   ProblemAlertSample,
   SchemaFormSample,
   SectionHeaderSample,
+  StaffSidebarSample,
   StatTileSample,
 } from './uiKitSamples';
 
@@ -108,6 +109,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   },
   { name: 'ContactForm' satisfies UiKitComponent, render: () => <ContactFormSample /> },
   { name: 'LiveStatusStrip' satisfies UiKitComponent, render: () => <LiveStatusStripSample /> },
+  { name: 'StaffSidebar' satisfies UiKitComponent, render: () => <StaffSidebarSample /> },
 ];
 
 /**

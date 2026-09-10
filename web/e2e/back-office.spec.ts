@@ -83,7 +83,11 @@ test('the content sits beside the sidebar, not underneath it in a narrow column'
   expect(main!.width).toBeGreaterThan(600);
 
   // And exactly one way to collapse it, not two.
-  await expect(page.getByText(/close sidebar/i)).toHaveCount(1);
+  //
+  // ⚠️ Asked for by its accessible name and no longer by the words on it: since 10 September 2026
+  // the button carries no words at all — it is an icon, at the top, and what it is called comes
+  // from the language files rather than from inside Atmosphere (`shared/ui/StaffSidebar.tsx`).
+  await expect(page.getByRole('button', { name: englishCommon.nav.sidebar.collapse })).toHaveCount(1);
 });
 
 test('a translated field is as wide as a plain one', async ({ page }) => {

@@ -12,6 +12,10 @@ import { fileURLToPath } from 'node:url';
 interface CommonStrings {
   readonly footer: { readonly version: string };
   readonly theme: { readonly toggle: string };
+  readonly nav: {
+    readonly staff: string;
+    readonly sidebar: { readonly collapse: string; readonly expand: string };
+  };
   readonly auth: { readonly login: string };
   readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
   readonly forbidden: { readonly title: string };
