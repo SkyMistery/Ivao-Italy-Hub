@@ -188,12 +188,9 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
             </>
           )}
 
-          {/* ⚠️ The division's own mark, last on the line and drawn only if there is one. It is
-              `config/division.json` that says where it comes from, never this file: the hub draws
-              the mark of whatever division it is running for and knows nothing about which one that
-              is (`CLAUDE.md` §3). A fork points `logoUrl` at a file of its own; a division with no
-              mark leaves the key out and the bar simply has one thing fewer on it. */}
-          <DivisionMark bootstrap={bootstrap} className="ml-1 h-8" />
+          {/* No mark at this end of the line any more. It was put here first and then, once the
+              division's mark took the place of IVAO's at the start of the bar, it was the same
+              circle twice on one line — Carmine had it taken away on 10 September 2026. */}
         </div>
       </NavbarContainer>
     </header>

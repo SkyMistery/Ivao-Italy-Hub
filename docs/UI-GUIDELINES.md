@@ -489,7 +489,11 @@ back an element, built once per set of classes and kept.
 
 **The mark of the division comes from configuration, never from this repository.**
 `config/division.json` says where it is served from (`logoUrl`) and the frame draws whatever that
-points at, in two places: the end of the bar and beside the name in the footer. A division that has
+points at, in two places: the start of the bar — in place of IVAO’s own lockup, since a division’s
+mark *is* the IVAO circle with the division’s badge on it — and beside the name in the footer. Once
+per line: a second copy at the end of the bar was the same circle twice, and was taken away. The tab
+icon is a separate key (`faviconUrl`) and a separate file, because a mark drawn white for the blue
+bar vanishes on a light tab bar. A division that has
 no mark leaves the key out and gets a bar and a footer with one thing fewer on them — which is the
 state the tests are written against, because it is the state a fork starts in.
 

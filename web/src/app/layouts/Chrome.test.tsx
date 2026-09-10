@@ -246,9 +246,10 @@ test('the mark takes the place of the generic one, and says nothing to a screen 
 
   const marks = [...document.querySelectorAll('img')];
 
-  // Three: at the start of the bar in place of the generic IVAO circle, at its end, and beside the
-  // name in the foot of the page.
-  expect(marks).toHaveLength(3);
+  // Twice: at the start of the bar in place of the generic IVAO circle, and beside the name in the
+  // foot of the page. Not at the end of the bar as well — that one was the same circle twice on a
+  // single line, and was taken away.
+  expect(marks).toHaveLength(2);
   expect(marks.every((mark) => mark.getAttribute('src') === '/branding/division.svg')).toBe(true);
 
   // ⚠️ And decorative in both: the name of the division is written beside it in both places, so an
