@@ -1,9 +1,34 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.55 — 9 settembre 2026 (**una pagina si compone guardandola**: l'anteprima è diventata la superficie di composizione; M2 si divide in due)
+**Versione documento:** 0.56 — 10 settembre 2026 (**una pagina si compone guardandola**, e una sezione contiene righe; M2 si divide in due)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.56** (10 set 2026): **una sezione contiene righe**, e due comandi si scelgono
+guardando invece che scrivendo. Nota `decisions/2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`, nata
+guardando il page builder di HQ nel browser di Carmine.
+
+⚠️ **La riga non è un modello nuovo: era già nostro e non l'aveva mai acceso nessuno.** `MaxDepth` è
+3 dal M1, il renderer disegna una sezione annidata dentro il contenitore di larghezza del genitore,
+`templateDiff` le confronta per `parentKey` e `clampColumns` ricorre. Mancava solo che `addSection`
+sapesse mettere qualcosa **dentro** — e infatti nessuna delle dieci pagine e dei template seminati
+annida. Avevamo costruito tre livelli, li validavamo, li disegnavamo, e l'editor ne offriva due.
+
+Che cosa compra: la sezione porta la **cornice** — lo sfondo, l'aria, la larghezza — e ogni riga
+dentro porta le **proprie colonne**. Una sola fascia di colore può tenere due colonne e poi tre, che
+prima voleva dire due sezioni e quindi due fasce.
+
+**Sfondo e colonne escono dal form** e diventano pastiglie e diagrammi applicati al clic
+(`SectionFrame`): sono le due cose di una sezione che si giudicano a occhio, e un form che tenesse un
+valore vecchio disferebbe la scelta al primo «Applica». Restano nel pannello e non sopra la sezione
+come fa HQ, perché il nostro renderer è **lo stesso del sito pubblico** e non deve mettere su chrome
+da editor.
+
+⚠️ E il censimento di §2.3-ter va letto con una correzione: **il page builder di HQ non è una tela.**
+Misurato nella loro pagina — nessuna libreria di trascinamento, zero elementi in posizione assoluta.
+È un albero ordinato Sezione → Riga → Blocco dove il trascinamento riordina. La «tela drag & drop»
+che il piano aveva scartato come «il pezzo più costoso» non esiste nemmeno da chi l'aveva ispirata.
 
 **Changelog 0.55** (9 set 2026): **una pagina si compone guardandola.** Il canvas drag & drop era
 stato scartato in una riga (§2.3-ter); Carmine ha chiesto di riaprirla, la nota

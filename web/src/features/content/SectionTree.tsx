@@ -61,7 +61,8 @@ export function SectionTree({
   selection: Selection | null;
   /** `null` is the page itself, whose properties are the row's own: address, title, audience, SEO. */
   onSelect: (selection: Selection | null) => void;
-  onAddSection: () => void;
+  /** With no parent, a section at the top of the page; with one, a **row** inside that section. */
+  onAddSection: (parentId?: string) => void;
   onAddBlock: (sectionId: string, type: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
@@ -124,6 +125,7 @@ export function SectionTree({
                 selection={selection}
                 onSelect={onSelect}
                 onAddBlock={onAddBlock}
+                onAddSection={onAddSection}
                 onMoveSection={onMoveSection}
                 onMoveBlock={onMoveBlock}
                 onDuplicateBlock={onDuplicateBlock}
@@ -135,7 +137,7 @@ export function SectionTree({
         )}
 
         <div>
-          <Button type="button" variant="secondary" size="sm" onClick={onAddSection}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => onAddSection()}>
             <Plus aria-hidden className="mr-2 size-4" />
             {t('content.editor.addSection')}
           </Button>
@@ -153,6 +155,7 @@ function SectionNode({
   depth = 0,
   onSelect,
   onAddBlock,
+  onAddSection,
   onMoveSection,
   onMoveBlock,
   onDuplicateBlock,
@@ -166,6 +169,7 @@ function SectionNode({
   depth?: number;
   onSelect: (selection: Selection) => void;
   onAddBlock: (sectionId: string, type: string) => void;
+  onAddSection: (parentId?: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
   onDuplicateBlock: (id: string) => void;
@@ -176,7 +180,11 @@ function SectionNode({
   const read = useLocalized();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, style } = useRow(section.id, 'section');
 
-  const name = read(section.title) || section.key || t('content.editor.untitledSection');
+  // A nested one is a **row** to whoever is writing: same thing in the model, a word they can use.
+  const name =
+    read(section.title) ||
+    section.key ||
+    t(depth > 0 ? 'content.editor.untitledRow' : 'content.editor.untitledSection');
   const selected = selection?.kind === 'section' && selection.id === section.id;
 
   return (
@@ -237,6 +245,18 @@ function SectionNode({
 
       {rule.locked ? null : <AddBlock sectionId={section.id} rule={rule} onAddBlock={onAddBlock} />}
 
+      {/* ⚠️ Only inside a section of the first level. A row inside a row is allowed by the model —
+          the server refuses at three — but it is noise on a screen: what the depth buys is *one*
+          band of colour holding several column layouts, and a third level buys nothing. */}
+      {rule.locked || depth > 0 ? null : (
+        <div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onAddSection(section.id)}>
+            <Plus aria-hidden className="mr-2 size-4" />
+            {t('content.editor.addRow')}
+          </Button>
+        </div>
+      )}
+
       <SortableContext
         items={section.sections.map((nested) => nested.id)}
         strategy={verticalListSortingStrategy}
@@ -251,6 +271,7 @@ function SectionNode({
             depth={depth + 1}
             onSelect={onSelect}
             onAddBlock={onAddBlock}
+            onAddSection={onAddSection}
             onMoveSection={onMoveSection}
             onMoveBlock={onMoveBlock}
             onDuplicateBlock={onDuplicateBlock}

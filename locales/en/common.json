@@ -514,7 +514,9 @@
       "deleted": "Deleted.",
       "publishMissing": "What is missing before this can be published",
       "undo": "Undo",
-      "page": "Page"
+      "page": "Page",
+      "addRow": "Add row",
+      "untitledRow": "Untitled row"
     },
     "slugPlaceholder": "my-new-page",
     "hints": {

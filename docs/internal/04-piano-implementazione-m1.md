@@ -9,7 +9,12 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.16 — 9 settembre 2026 (**la pagina è una selezione**: i metadati hanno smesso di
+**Versione:** 2.17 — 10 settembre 2026 (**una sezione contiene righe**, e sfondo e colonne si
+scelgono con pastiglie e diagrammi invece che con un form. La riga era già nel modello, nel
+validatore e nel renderer: mancava solo il modo di farne una. Conto: **471 test .NET** (invariati),
+**286 Vitest**, **52 smoke Playwright** e **13 del giro completo**.)
+
+**2.16** — 9 settembre 2026 (**la pagina è una selezione**: i metadati hanno smesso di
 essere un modulo da 1182 px sopra l'editor e sono le proprietà della pagina, nello stesso pannello di
 sezioni e blocchi; la barra è in cima e `Save draft` invia il form da fuori con `form=`. La pagina che
 si compone comincia a 466 px invece di 1588 — misurato. Conto: **471 test .NET** (invariati),

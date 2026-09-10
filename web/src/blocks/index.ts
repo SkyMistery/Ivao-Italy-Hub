@@ -17,6 +17,7 @@ export {
   newId,
   readBody,
   sectionSchema,
+  type Background,
   type BlockEnvelope,
   type Body,
   type Layout,

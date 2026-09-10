@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { LAYOUTS, BACKGROUNDS, PADDINGS, WIDTHS } from '../../blocks';
+import { PADDINGS, WIDTHS } from '../../blocks';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { localized, localizedObject, type ChoiceOption } from '../../shared/forms';
 
@@ -112,10 +112,12 @@ export function sectionSettingsSchema(
    */
   template: { blocks: readonly ChoiceOption[]; unnamed: boolean } | null,
 ) {
+  // ⚠️ `layout` and `background` are **not** here, since 10 September 2026. They are the two things
+  // about a section that are judged by eye rather than written, and they live in `SectionFrame` as
+  // pictures applied at once — one place each, or a form holding a stale background would undo a
+  // swatch the moment somebody pressed Apply.
   const common = {
     title: localized(),
-    layout: z.enum(LAYOUTS),
-    background: z.enum(BACKGROUNDS),
     // Only read when the background is `image`, and chosen from the library like every other file.
     // Left here rather than hidden behind the choice: the generator draws a schema, and a field that
     // appears and disappears with the value of another one would be the first rule of its kind.

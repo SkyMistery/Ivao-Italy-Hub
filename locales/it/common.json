@@ -514,7 +514,9 @@
       "deleted": "Eliminata.",
       "publishMissing": "Che cosa manca per poterla pubblicare",
       "undo": "Annulla",
-      "page": "Pagina"
+      "page": "Pagina",
+      "addRow": "Aggiungi riga",
+      "untitledRow": "Riga senza titolo"
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

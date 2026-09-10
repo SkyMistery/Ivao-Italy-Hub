@@ -222,10 +222,21 @@ export function ContentEditor({
             locales={locales}
             division={division}
             mediaLibrary={mediaLibrary}
+            // The two the strip owns, applied the moment they are clicked. Narrowing the layout has
+            // to pull the blocks back into a column that still exists, or the server refuses the
+            // save and the editor cannot say why.
+            onFrame={(patch) => {
+              const withFrame = updateSection(body, section.id, patch);
+
+              change(
+                patch.layout === undefined
+                  ? withFrame
+                  : clampColumns(withFrame, section.id, patch.layout, columnsOf(patch.layout)),
+              );
+            }}
             onApply={(values) => {
               const withSettings = updateSection(body, section.id, {
                 title: values.title,
-                background: values.background,
                 mediaId: values.mediaId ?? null,
                 padding: values.padding,
                 width: values.width,
@@ -249,9 +260,7 @@ export function ContentEditor({
                   : {}),
               });
 
-              // Narrowing the layout has to pull the blocks back into a column that still
-              // exists, or the server refuses the save and the editor cannot say why.
-              change(clampColumns(withSettings, section.id, values.layout, columnsOf(values.layout)));
+              change(withSettings);
             }}
           />
         </>
@@ -379,8 +388,8 @@ export function ContentEditor({
               rules={rules}
               selection={selection}
               onSelect={setSelection}
-              onAddSection={() => {
-                const added = addSection(body, locales);
+              onAddSection={(parentId) => {
+                const added = addSection(body, locales, parentId);
                 change(added.body);
                 setSelection({ kind: 'section', id: added.id });
               }}

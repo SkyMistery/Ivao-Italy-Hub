@@ -91,6 +91,35 @@ test('a new section is stacked, named in every language, and empty', () => {
   expect(section.title).toEqual({ it: '', en: '' });
 });
 
+test('a row is a section inside a section, and it is born without a frame of its own', () => {
+  // ⚠️ Nesting was in the model, in the validator (`MaxDepth` is 3) and in the renderer since M1,
+  // and there was no way to make one: none of the ten seeded pages nests. This is that way
+  // (nota `2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`).
+  const added = addSection(body(), LOCALES, 's_1');
+
+  // Inside the section it was asked for, and nowhere else.
+  expect(added.body.sections.map((section) => section.id)).toEqual(['s_1', 's_2']);
+  expect(added.body.sections[0]!.sections.map((section) => section.id)).toEqual([added.id]);
+
+  const row = added.body.sections[0]!.sections[0]!;
+
+  // No background and no air of its own: the section around it already draws the frame, and a
+  // second one inside the first is what makes a page look assembled rather than composed.
+  expect(row.background).toBe('none');
+  expect(row.padding).toBe('none');
+
+  // But its own layout, which is the whole point: one band of colour, several column arrangements.
+  expect(row.layout).toBe('stacked');
+  expect(row.blocks).toEqual([]);
+});
+
+test('a section with no parent named still goes to the top, as it always did', () => {
+  const added = addSection(body(), LOCALES);
+
+  expect(added.body.sections.map((section) => section.id)).toEqual(['s_1', 's_2', added.id]);
+  expect(added.body.sections.at(-1)!.padding).toBe('md');
+});
+
 test('a new block starts with the properties its own schema describes', () => {
   const added = addBlock(body(), 's_2', 'callout', defaultProps(calloutSchema, LOCALES), null);
   const block = findBlock(added.body, added.id)!.block;

@@ -2,7 +2,9 @@
 
 **Data:** 10 settembre 2026 — chiesto da Carmine, che ha aperto il loro editor e ha chiesto di
 guardarlo insieme
-**Stato:** ⚠️ **da decidere.** Nessuna riga di codice prima.
+**Stato:** **decise da Carmine il 10 settembre 2026 — la 1 e la 2**, «implementare le prime 2 e
+vedere la resa. Se ancora non mi convince valutiamo la 3». Costruite lo stesso giorno; in fondo c'è
+che cosa sono costate. **La 3 resta aperta.**
 **Come è stato guardato:** nel browser di Carmine, già autenticato, su
 `va.ivao.aero/backend/pagebuilder/editor.php?id=1` (`id=6` non esiste più). **In sola lettura**: nessun
 salvataggio, nessun trascinamento, nessun tocco a «Unpublish» — solo navigazione, lettura del DOM e
@@ -99,3 +101,46 @@ e il fatto che tutto si raggiunge **da tastiera**.
    pannello per le tre cose che si cambiano guardando.
 3. **La 3** per ultima, perché è la più delicata da far funzionare bene e la meno necessaria: un
    blocco aggiunto in fondo e poi trascinato al suo posto costa un gesto in più, non un errore.
+
+---
+
+## Che cosa sono costate la 1 e la 2
+
+### 1. La riga
+
+Come previsto: **una funzione e un pulsante**. `addSection` prende un `parentId` facoltativo e, se
+c'è, mette la sezione **dentro** quella — nata senza cornice propria (`background: none`,
+`padding: none`), perché la sezione intorno la disegna già e un secondo sfondo dentro il primo è ciò
+che fa sembrare una pagina assemblata invece che composta. Nell'outline compare «Aggiungi riga»,
+**solo dentro una sezione di primo livello**: il modello arriva a tre e il server rifiuta oltre, ma
+una riga dentro una riga è rumore su uno schermo e non compra niente.
+
+Una sezione annidata si legge «riga» — la parola che usa chi scrive — e resta una sezione nel
+modello. Tutto il resto **c'era già**: l'outline le disegnava, `templateDiff` le confronta per
+`parentKey`, `mapSections` e `clampColumns` ricorrono, il renderer le mette dentro il contenitore di
+larghezza del genitore.
+
+### 2. I comandi che si scelgono guardando
+
+`SectionFrame`: **quattro pastiglie di sfondo** e **cinque diagrammi di colonne**, applicati al clic,
+sopra il form delle proprietà della sezione.
+
+⚠️ E i due campi **escono dallo schema**. Non è pignoleria: un form che tiene un `background` vecchio
+disferebbe la pastiglia appena qualcuno preme «Applica». Un posto solo per ognuno.
+
+⚠️ Perché nel pannello e non sopra la sezione, come fa HQ: da loro la tela *è* la superficie di
+modifica, da noi il renderer è **lo stesso del sito pubblico** e non deve mettere su chrome da editor
+(`blocks/picking.ts`). Il pannello sta accanto alla pagina, quindi la pastiglia si sceglie
+guardandola comunque.
+
+I diagrammi sono disegnati con le proporzioni vere (`1/3+2/3` è una barra stretta e una larga), e
+ognuno porta il proprio nome come etichetta: un colore e un disegno non dicono niente a chi non li
+vede.
+
+### Che cosa resta
+
+- **La 3** — trascinare dalla tavolozza nella pagina — non fatta, come deciso.
+- ⚠️ Il selettore di file per la «foto dietro» disegna tutto il pannello «No files yet / Upload one in
+  the media library» anche quando lo sfondo non è una foto, e adesso quel pannello sta in una colonna
+  stretta. È lo stesso difetto dei 536 px della SEO visto da un'altra parte: **lo stato vuoto di un
+  campo opzionale occupa più spazio del campo**.

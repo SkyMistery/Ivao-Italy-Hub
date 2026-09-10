@@ -2,12 +2,19 @@ import { Label, Select } from '@ivao/atmosphere-react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import { columnsOf, type BlockEnvelope, type SectionEnvelope } from '../../blocks';
+import {
+  columnsOf,
+  type Background,
+  type BlockEnvelope,
+  type Layout,
+  type SectionEnvelope,
+} from '../../blocks';
 import { SchemaForm, writtenValues } from '../../shared/forms';
 import { emptyLocalized } from '../../shared/i18n/localized';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
 import { defaultProps } from './body';
+import { SectionFrame } from './SectionFrame';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
 import type { SectionRule } from './templateRules';
 
@@ -29,6 +36,7 @@ export function SectionProperties({
   division,
   mediaLibrary,
   onApply,
+  onFrame,
 }: {
   section: SectionEnvelope;
   rule: SectionRule;
@@ -43,6 +51,11 @@ export function SectionProperties({
   /** The library the picture behind a section is chosen from — this department's. */
   mediaLibrary: MediaLibraryQuery;
   onApply: (values: SectionFormValues) => void;
+  /**
+   * The two the strip changes, applied at once and without a button: they are chosen while looking
+   * at the page, not written and read back (`SectionFrame`).
+   */
+  onFrame: (patch: { background?: Background; layout?: Layout }) => void;
 }) {
   const { t } = useTranslation();
 
@@ -64,8 +77,6 @@ export function SectionProperties({
 
   const defaults: SectionFormValues = {
     title: { ...emptyLocalized(locales), ...(section.title ?? {}) },
-    layout: section.layout,
-    background: section.background,
     ...(typeof section.mediaId === 'number' ? { mediaId: section.mediaId } : {}),
     padding: section.padding,
     width: section.width,
@@ -81,6 +92,13 @@ export function SectionProperties({
 
   return (
     <div className="flex flex-col gap-4">
+      <SectionFrame
+        background={section.background}
+        layout={section.layout}
+        onBackground={(background) => onFrame({ background })}
+        onLayout={(layout) => onFrame({ layout })}
+      />
+
       {isTemplate && named ? (
         // Written once, then shown. Changing it would break the match with every page already made
         // from this template, silently (decision `2026-09-07-scrivere-un-template.md`).

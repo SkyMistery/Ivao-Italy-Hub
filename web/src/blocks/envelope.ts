@@ -27,6 +27,7 @@ export type RenderMode = (typeof RENDER_MODES)[number];
  * under two blocks does not depend on which two they are.
  */
 export const BACKGROUNDS = ['none', 'muted', 'accent', 'image'] as const;
+export type Background = (typeof BACKGROUNDS)[number];
 export const PADDINGS = ['none', 'sm', 'md', 'lg'] as const;
 
 /**
