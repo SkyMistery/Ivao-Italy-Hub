@@ -459,6 +459,14 @@
       "untitledSection": "Sezione senza nome",
       "addSection": "Aggiungi una sezione",
       "addBlock": "Aggiungi:",
+      "outline": "Struttura",
+      "onThePage": "Sulla pagina",
+      "components": "Componenti",
+      "componentsHint": "Scegli una sezione, poi un componente da aggiungerle.",
+      "addsTo": "Aggiunge a: {{section}}",
+      "notAllowedHere": "Il template non permette questo blocco nella sezione selezionata.",
+      "expandAll": "Espandi tutto",
+      "collapseAll": "Comprimi tutto",
       "removeSection": "Elimina questa sezione",
       "removeBlock": "Elimina questo blocco",
       "duplicate": "Duplica",
@@ -470,7 +478,6 @@
       "applyBlock": "Applica al blocco",
       "saveDraft": "Salva bozza",
       "preview": "Anteprima",
-      "backToEditing": "Torna alla modifica",
       "publish": "Pubblica",
       "saveBeforePublishing": "Salva la bozza prima di pubblicare: va in pubblico quello che e' salvato, non quello che e' a schermo.",
       "publishRefused": "Questa pagina non si puo' ancora pubblicare",
@@ -538,6 +545,20 @@
     "captured": "Catturato alla pubblicazione",
     "unknown": "Questa pagina usa un blocco di tipo \"{{type}}\" che questo browser non sa disegnare. Probabilmente e' un modulo non installato.",
     "unknownShort": "Blocco sconosciuto ({{type}})",
+    "groups": {
+      "content": "Contenuto",
+      "layout": "Impaginazione",
+      "interactive": "Interattivi",
+      "structure": "Struttura",
+      "data": "Dati"
+    },
+    "subgroups": {
+      "text": "Testo e link",
+      "media": "Media",
+      "tables": "Tabelle e passaggi",
+      "grids": "Griglie",
+      "containers": "Contenitori"
+    },
     "heading": {
       "label": "Titolo",
       "fields": {

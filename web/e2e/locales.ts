@@ -91,6 +91,12 @@ interface CommonStrings {
       readonly applySection: string;
       readonly addBlock: string;
       readonly addSection: string;
+      readonly components: string;
+      readonly outline: string;
+      readonly onThePage: string;
+      readonly componentsHint: string;
+      readonly structure: string;
+      readonly properties: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
       readonly template: {
@@ -102,6 +108,20 @@ interface CommonStrings {
   };
   readonly templates: { readonly title: string; readonly create: string };
   readonly blocks: {
+    readonly groups: {
+      readonly content: string;
+      readonly layout: string;
+      readonly interactive: string;
+      readonly structure: string;
+      readonly data: string;
+    };
+    readonly subgroups: {
+      readonly text: string;
+      readonly media: string;
+      readonly tables: string;
+      readonly grids: string;
+      readonly containers: string;
+    };
     readonly networkStats: {
       // Spelled out rather than an index signature: a caption read from a record is
       // `string | undefined`, and a spec asserting on `undefined` is a spec asserting on nothing.

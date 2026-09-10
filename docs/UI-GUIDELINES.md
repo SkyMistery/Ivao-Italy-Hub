@@ -293,7 +293,22 @@ So a block is three things, in three files under `web/src/blocks/`:
   about the page around it and never takes a language as a prop: `useLocalized()` knows which one is
   on screen;
 - a registration in `core.ts` tying the two together with a type, a version, an icon, the i18n key
-  of its name, and `example` properties the gallery mounts.
+  of its name, the **drawer of the palette it belongs in**, and `example` properties the gallery
+  mounts.
+
+**Where a block appears in the editor is declared on the block, in code.** The bar of components on
+the left of the editor is the registry drawn: `group` — one of `content`, `layout`, `interactive`,
+`structure`, `data` — and optionally `subgroup`, and the drawers come out in the order those two
+lists are written in, not the order the blocks happen to be registered. A module's blocks arrive in
+the same bar through its manifest and declare the same field.
+
+There is no table of palette entries and no screen where anybody arranges them, and that is the
+point: a palette somebody could rearrange would be a second place where the catalogue lives, and the
+two would disagree the first time a block was added. Adding a group or a subgroup means adding it to
+those lists and giving it a name in every language (`blocks.groups.<group>`,
+`blocks.subgroups.<subgroup>`); `blocks/registry.test.ts` refuses a block whose drawer has no name.
+A drawer nothing is in is not drawn, so a fork that registers no data block simply has no Data
+drawer.
 
 Three files rather than one because a module that exports components and constants together loses
 fast refresh, which is a thing you notice every day.
@@ -446,8 +461,21 @@ decided once and is not up for discussion.
 
 ## The editor of a page, and what it may not do
 
-Four rules M1 settled by using the editor rather than by designing it. They are here because they
+Five rules M1 settled by using the editor rather than by designing it. They are here because they
 are the ones a contributor is most likely to break by improving something.
+
+**Three columns, and the middle one is the only one that changes.** Components on the left, the page
+in the middle, the properties of whatever is selected on the right. The middle column opens on the
+page itself — the same renderer the public gets, clicked to select — and one press swaps it for the
+outline, which is the road for anybody without a mouse. The two side columns do not move when it
+does: an editor whose panels jump when you change how you are looking at the page is one you have to
+re-find your place in every time.
+
+**There is one place a block is added from.** The palette is the bar on the left, and adding a block
+puts it in the section that is selected — the section itself, or the one holding the selected block.
+A block the template forbids there is **disabled and still shown**, with the reason on it, rather
+than filtered out: the target changes as you click around the page, and a list that changed shape
+each time would be one nobody could learn.
 
 **A section is reordered by dragging *and* by two arrows, and the arrows are not decoration.**
 Dragging is a pointer and nothing else — no keyboard, no screen reader, no touch worth the name — so

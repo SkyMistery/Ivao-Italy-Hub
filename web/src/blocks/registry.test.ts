@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 import englishCommon from '../../../locales/en/common.json';
 import italianCommon from '../../../locales/it/common.json';
 import { readFields, type FieldNode } from '../shared/forms';
+import { BLOCK_GROUPS } from '../shared/modules';
 
 import { coreBlocks } from './registry';
 
@@ -79,6 +80,32 @@ test('no two blocks answer to the same type', () => {
 test('a data block says what the gallery should show instead of calling the server', () => {
   for (const block of coreBlocks.filter((candidate) => candidate.kind === 'Data')) {
     expect(block.exampleData, `${block.type} has no example data`).toBeDefined();
+  }
+});
+
+/**
+ * The palette is the registry drawn, so a block that declares no drawer -- or one nobody has a word
+ * for -- is a block a coordinator cannot add. TypeScript already refuses a group outside the list;
+ * what it cannot see is the label, which is built at run time from the group's own name.
+ */
+test('every block declares a drawer of the palette, and every drawer is named in every language', () => {
+  for (const block of coreBlocks) {
+    expect(BLOCK_GROUPS, `${block.type} declares no group`).toContain(block.group);
+  }
+
+  const keys = [
+    ...BLOCK_GROUPS.map((group) => `blocks.groups.${group}`),
+    // Only the ones actually in use: a subgroup nobody puts a block in is not drawn, so it does not
+    // owe anybody a translation.
+    ...[...new Set(coreBlocks.map((block) => block.subgroup))]
+      .filter((subgroup) => subgroup !== undefined)
+      .map((subgroup) => `blocks.subgroups.${subgroup}`),
+  ];
+
+  for (const [locale, catalogue] of Object.entries(CATALOGUES)) {
+    for (const key of keys) {
+      expect(has(catalogue, key), `${key} is missing in ${locale}`).toBe(true);
+    }
   }
 });
 

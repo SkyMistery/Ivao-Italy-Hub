@@ -47,7 +47,6 @@ export function SectionTree({
   selection,
   onSelect,
   onAddSection,
-  onAddBlock,
   onMoveSection,
   onMoveBlock,
   onReorderSections,
@@ -63,7 +62,6 @@ export function SectionTree({
   onSelect: (selection: Selection | null) => void;
   /** With no parent, a section at the top of the page; with one, a **row** inside that section. */
   onAddSection: (parentId?: string) => void;
-  onAddBlock: (sectionId: string, type: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
   /** A section dropped onto another one of the same list. */
@@ -124,7 +122,6 @@ export function SectionTree({
                 rules={rules}
                 selection={selection}
                 onSelect={onSelect}
-                onAddBlock={onAddBlock}
                 onAddSection={onAddSection}
                 onMoveSection={onMoveSection}
                 onMoveBlock={onMoveBlock}
@@ -154,7 +151,6 @@ function SectionNode({
   selection,
   depth = 0,
   onSelect,
-  onAddBlock,
   onAddSection,
   onMoveSection,
   onMoveBlock,
@@ -168,7 +164,6 @@ function SectionNode({
   selection: Selection | null;
   depth?: number;
   onSelect: (selection: Selection) => void;
-  onAddBlock: (sectionId: string, type: string) => void;
   onAddSection: (parentId?: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
@@ -243,8 +238,6 @@ function SectionNode({
         </ul>
       </SortableContext>
 
-      {rule.locked ? null : <AddBlock sectionId={section.id} rule={rule} onAddBlock={onAddBlock} />}
-
       {/* ⚠️ Only inside a section of the first level. A row inside a row is allowed by the model —
           the server refuses at three — but it is noise on a screen: what the depth buys is *one*
           band of colour holding several column layouts, and a third level buys nothing. */}
@@ -270,7 +263,6 @@ function SectionNode({
             selection={selection}
             depth={depth + 1}
             onSelect={onSelect}
-            onAddBlock={onAddBlock}
             onAddSection={onAddSection}
             onMoveSection={onMoveSection}
             onMoveBlock={onMoveBlock}
@@ -387,53 +379,6 @@ function DragHandle({
     >
       <GripVertical aria-hidden className="size-4" />
     </button>
-  );
-}
-
-/**
- * Which blocks may be put here. The list is the registry narrowed by whatever the template allows,
- * so a section that says "text and headings" offers exactly those two.
- */
-function AddBlock({
-  sectionId,
-  rule,
-  onAddBlock,
-}: {
-  sectionId: string;
-  rule: SectionRule;
-  onAddBlock: (sectionId: string, type: string) => void;
-}) {
-  const { t } = useTranslation();
-
-  const allowed = registry.blocks.filter(
-    (block) => rule.allowedBlocks === null || rule.allowedBlocks.includes(block.type),
-  );
-
-  if (allowed.length === 0) {
-    return null;
-  }
-
-  // A palette rather than a select: adding a block is an action, and a select that fires one and
-  // then sits there showing what was added reads as a choice that can be un-made.
-  return (
-    <div className="flex flex-wrap items-center gap-1 pt-1">
-      <span className="text-muted-foreground pr-1 text-xs">{t('content.editor.addBlock')}</span>
-      {allowed.map((block) => {
-        const Icon = block.icon;
-        return (
-          <Button
-            key={block.type}
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onAddBlock(sectionId, block.type)}
-          >
-            <Icon aria-hidden className="mr-1 size-4" />
-            {t(block.editorLabelKey)}
-          </Button>
-        );
-      })}
-    </div>
   );
 }
 

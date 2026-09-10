@@ -136,7 +136,7 @@ test('the preview is three widths of the same page, and the narrow one is really
   });
 
   await page.goto(`/staff/${department}/content/${born.id}`);
-  await page.getByRole('button', { name: words.preview, exact: true }).click();
+  // No press to get here any more: the middle column opens on the page itself.
 
   const frame = page.getByRole('region', { name: words.preview });
   await expect(frame).toBeVisible();

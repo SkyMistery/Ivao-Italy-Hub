@@ -459,6 +459,14 @@
       "untitledSection": "Section without a name",
       "addSection": "Add a section",
       "addBlock": "Add:",
+      "outline": "Outline",
+      "onThePage": "On the page",
+      "components": "Components",
+      "componentsHint": "Pick a section, then a component to add to it.",
+      "addsTo": "Adds to: {{section}}",
+      "notAllowedHere": "The template does not allow this block in the selected section.",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
       "removeSection": "Remove this section",
       "removeBlock": "Remove this block",
       "duplicate": "Duplicate",
@@ -470,7 +478,6 @@
       "applyBlock": "Apply to the block",
       "saveDraft": "Save draft",
       "preview": "Preview",
-      "backToEditing": "Back to editing",
       "publish": "Publish",
       "saveBeforePublishing": "Save the draft before publishing: what goes public is what is stored, not what is on screen.",
       "publishRefused": "This page cannot be published yet",
@@ -538,6 +545,20 @@
     "captured": "Captured at publication",
     "unknown": "This page uses a block of type \"{{type}}\" that this browser cannot draw. It is probably a module that is not installed.",
     "unknownShort": "Unknown block ({{type}})",
+    "groups": {
+      "content": "Content",
+      "layout": "Layout",
+      "interactive": "Interactive",
+      "structure": "Structure",
+      "data": "Data"
+    },
+    "subgroups": {
+      "text": "Text and links",
+      "media": "Media",
+      "tables": "Tables and steps",
+      "grids": "Grids",
+      "containers": "Containers"
+    },
     "heading": {
       "label": "Heading",
       "fields": {

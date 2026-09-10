@@ -1,6 +1,6 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Eye, Pencil, Send, Undo2 } from 'lucide-react';
+import { ChevronLeft, Eye, List, Send, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -8,9 +8,11 @@ import { registry } from '../../app/registry';
 import { columnsOf, readBody, PickingContext, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
+import { useLocalized } from '../../shared/i18n/useLocalized';
 import type { MediaLibraryQuery } from '../../shared/ui';
 import { ConfirmDialog, SectionHeader } from '../../shared/ui';
 
+import { BlockPalette } from './BlockPalette';
 import { BlockProperties, SectionProperties } from './BlockProperties';
 import {
   addBlock,
@@ -113,6 +115,7 @@ export function ContentEditor({
   busy: boolean;
 }) {
   const { t } = useTranslation();
+  const read = useLocalized();
 
   // The body, and the way back from the last thing that happened to it. A section moved by mistake
   // was one of the frictions the hand copy of `/about` recorded (HANDOFF §27).
@@ -120,7 +123,11 @@ export function ContentEditor({
   const body = history.body;
 
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [preview, setPreview] = useState(false);
+  // ⚠️ The page, not the outline, is what the middle column shows to begin with (Carmine, 10
+  // September 2026: "the visual editor in the middle"). Composing by clicking the page itself was
+  // decided on 9 September and then reached only by pressing a button, which made the road that was
+  // chosen the one nobody took. The outline is one press away and is still the keyboard road.
+  const [preview, setPreview] = useState(true);
   const [unsaved, setUnsaved] = useState(false);
 
   // What the template still says about this page: which sections are fixed, which are locked, and
@@ -144,6 +151,53 @@ export function ContentEditor({
 
   const section = selection?.kind === 'section' ? findSection(body, selection.id) : undefined;
   const block = selection?.kind === 'block' ? findBlock(body, selection.id) : undefined;
+
+  // Adding a block, written once: the palette on the left and the one inside the outline do the
+  // very same thing, and a block added from either has to start out identical -- same blank
+  // properties, same render mode. Two copies of this would be two ways of being born.
+  const addBlockTo = (sectionId: string, type: string) => {
+    const registration = registry.blocks.find((candidate) => candidate.type === type);
+    if (registration === undefined) {
+      return;
+    }
+
+    const added = addBlock(
+      body,
+      sectionId,
+      type,
+      // The blank properties, minus the optional ones nobody has written into: a block
+      // added and never opened must not carry an empty translated value, which
+      // publication would read as a page translated into one language only.
+      writtenValues(registration.schema, defaultProps(registration.schema, locales)),
+      // A data block starts live: capturing is a decision somebody makes, and one that
+      // only means anything once the page is published.
+      registration.kind === 'Data' ? 'live' : null,
+    );
+
+    change(added.body);
+    setSelection({ kind: 'block', id: added.id });
+  };
+
+  // Which section the palette on the left adds to. A block selected means the section it is in:
+  // clicking a paragraph and then `Image` should put the image where you are looking, not ask you
+  // to go and select the section first.
+  const targetSection = section ?? block?.section;
+
+  const targetRule = ruleFor(rules, targetSection?.key);
+
+  const paletteRule =
+    // A locked section is one whose blocks a page may edit and whose shape it may not, so nothing
+    // can be added to it. Said with the same words as a block the template forbids, because to
+    // whoever is writing it is the same sentence: not here.
+    targetRule.locked ? { ...targetRule, allowedBlocks: [] } : targetRule;
+
+  const paletteTarget =
+    targetSection === undefined
+      ? null
+      : {
+          id: targetSection.id,
+          name: read(targetSection.title) || targetSection.key || t('content.editor.untitledSection'),
+        };
 
   // ⚠️ Written once and drawn in both ways of composing: beside the outline, and beside the page
   // itself. Two copies of this would be two panels that can disagree about what a block offers,
@@ -307,11 +361,11 @@ export function ContentEditor({
 
         <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
           {preview ? (
-            <Pencil aria-hidden className="mr-2 size-4" />
+            <List aria-hidden className="mr-2 size-4" />
           ) : (
             <Eye aria-hidden className="mr-2 size-4" />
           )}
-          {preview ? t('content.editor.backToEditing') : t('content.editor.preview')}
+          {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
         </Button>
 
         <Button
@@ -367,20 +421,35 @@ export function ContentEditor({
         onAlign={(difference) => change(applyDifference(body, templateBody, difference))}
       />
 
-      {preview ? (
-        // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
-        // ways of composing — the page itself — and it keeps the same panel beside it, so a block
-        // clicked here and the same block clicked in the outline lead to exactly the same fields
-        // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[2fr_1fr]">
+      {/* ⚠️ Three columns, asked for by Carmine on 10 September 2026: the components on the left,
+          the page in the middle, the properties of whatever is selected on the right. What used to
+          be a two-column screen that swapped its left half between an outline and a preview is now
+          a fixed frame whose **middle** swaps — so the palette and the properties stay exactly
+          where they were while you go from composing on the page to composing in the outline.
+
+          The outline is not a mode you leave behind: it is the keyboard road (`blocks/picking.ts`),
+          and clicking the page is the pointer one. Both put the same thing in the panel on the
+          right, which is the property that made road (A) work in the first place. */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)_minmax(16rem,20rem)]">
+        <BlockPalette
+          target={paletteTarget}
+          rule={paletteRule}
+          onAdd={(type) => {
+            if (paletteTarget !== null) {
+              addBlockTo(paletteTarget.id, type);
+            }
+          }}
+        />
+
+        {preview ? (
+          // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
+          // ways of composing — the page itself — and it keeps the same panel beside it, so a block
+          // clicked here and the same block clicked in the outline lead to exactly the same fields
+          // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
           <PickingContext.Provider value={picking}>
             <PreviewFrame body={body} />
           </PickingContext.Provider>
-
-          {properties}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        ) : (
           <div className="flex flex-col gap-4">
             <SectionHeader title={t('content.editor.structure')} />
             <SectionTree
@@ -392,28 +461,6 @@ export function ContentEditor({
                 const added = addSection(body, locales, parentId);
                 change(added.body);
                 setSelection({ kind: 'section', id: added.id });
-              }}
-              onAddBlock={(sectionId, type) => {
-                const registration = registry.blocks.find((candidate) => candidate.type === type);
-                if (registration === undefined) {
-                  return;
-                }
-
-                const added = addBlock(
-                  body,
-                  sectionId,
-                  type,
-                  // The blank properties, minus the optional ones nobody has written into: a block
-                  // added and never opened must not carry an empty translated value, which
-                  // publication would read as a page translated into one language only.
-                  writtenValues(registration.schema, defaultProps(registration.schema, locales)),
-                  // A data block starts live: capturing is a decision somebody makes, and one that
-                  // only means anything once the page is published.
-                  registration.kind === 'Data' ? 'live' : null,
-                );
-
-                change(added.body);
-                setSelection({ kind: 'block', id: added.id });
               }}
               onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
               onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
@@ -434,10 +481,10 @@ export function ContentEditor({
               }}
             />
           </div>
+        )}
 
-          {properties}
-        </div>
-      )}
+        {properties}
+      </div>
     </div>
   );
 }
