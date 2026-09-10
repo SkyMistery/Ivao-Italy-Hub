@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 9 settembre 2026 — **M0 è chiusa, M1 è costruita e in collaudo**: design
+**Ultimo aggiornamento:** 10 settembre 2026 — **M0 è chiusa, M1 è costruita e in collaudo**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -42,15 +42,64 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.56. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.17
+**Piano:** v0.57. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.18
 (`04-piano-implementazione-m1.md`, fasi G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è
 aperta** (§28) ma non ha più lavoro suo — quattro difetti e sedici richieste, tutti chiusi, e con essi i
 **sei difetti di rifinitura** che il rapporto di chiusura di M1 elencava come «da dire prima del
 tag» — il tag viene dopo che Carmine ha rieseguito la scheda.
 **Test:** 471 .NET verdi (306 unit + 165 integrazione) + **286 Vitest** + **52 smoke Playwright** +
-**13 del giro pieno** (`pnpm e2e:full`).
-Nessuno skippato, **rieseguiti tutti e quattro l'8 set 2026** contro la MariaDB vera prima di
-scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
+**13 del giro pieno** (`pnpm e2e:full`). Nessuno skippato; i numeri sono misurati, non ricopiati.
+⚠️ I 471 .NET sono dell'8 settembre e da allora **non è cambiata una riga di C#**: dal 9 in poi si è
+lavorato solo sul client. Chi riapre e tocca il backend li rimisuri.
+
+---
+
+## Dove si è arrivati, per chi apre adesso
+
+**G13 non ha più lavoro suo.** Quattro difetti e sedici richieste chiusi, e con essi i sei difetti di
+rifinitura del rapporto di chiusura di M1. Dal 9 settembre in poi si è lavorato **sull'editor**, per
+tre giri di «non mi convince ancora» di Carmine, e tutto è scritto in tre note:
+
+- `decisions/2026-09-09-comporre-una-pagina-guardandola.md` — l'anteprima è diventata la superficie
+  di composizione (strada **A**), e poi **la pagina è una selezione**: i metadati non sono più un
+  modulo da 1182 px sopra l'editor ma le proprietà della pagina, nello stesso pannello di sezioni e
+  blocchi. La barra è in cima e `Save draft` invia il form da fuori con `form=`;
+- `decisions/2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md` — il page builder di HQ guardato **nel
+  browser di Carmine**, in sola lettura. ⚠️ **Non è una tela**: nessuna libreria di trascinamento,
+  zero elementi in posizione assoluta. Da lì due cose prese (**la riga** e **i comandi che si
+  scelgono guardando**) e **una terza aperta**: trascinare dalla tavolozza nella pagina;
+- `decisions/2026-09-09-il-documento-dice-di-se.md` — tre richieste sui documenti: il **piè di
+  pagina** (deciso, non costruito), la **pubblicazione programmata** (parcheggiata, ed è (c)) e la
+  **stampa** (parcheggiata).
+
+### Che cosa resta aperto, e a chi tocca
+
+**A Carmine, e chiude M1:**
+
+1. rieseguire `tools/demo-m1.md` da capo;
+2. mergiare la **PR #57** (verde);
+3. il tag **`v0.2.0-m1`**, che si verifica **sull'artefatto** e non sul commit — in M0 ci vollero
+   cinque tentativi, il server di prova deve fare il fallback SPA, e un grep su un bundle minificato
+   non è una verifica.
+
+**Deciso e non ancora costruito:**
+
+- il **piè di pagina** di un documento (chi ha pubblicato, quando, e l'AIRAC facoltativo). Metà
+  esiste già: `cms_content_versions` scrive `published_by` a ogni pubblicazione.
+
+**Da decidere prima di scrivere codice:**
+
+- la **pubblicazione programmata**, con le sue tre domande;
+- la **stampa** dei soli documenti, con la trappola di `tabs` e `accordion` che nascondono testo;
+- la **terza** cosa del page builder di HQ, se la resa attuale non basta;
+- il **gruppo richiudibile** nel generatore di form — sarebbe la **decima** estensione. Serve perché
+  lo **stato vuoto di un campo opzionale occupa più spazio del campo**: la SEO misura 536 px e il
+  selettore di file disegna «No files yet / Upload one in the media library» anche quando nessuno
+  gliel'ha chiesto.
+
+**M2 è divisa in due** (piano §13): il modulo Events parte quando si vuole; il deploy su Plesk aspetta
+le risposte A9 **e** la persona che carica, che a oggi non c'è. Prima del codice ci va
+`05-design-m2.md`, che si può scrivere adesso perché riguarda il modulo e non il deploy.
 
 ⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
 cosa vista **tre** volte: **i test provano i pezzi, e niente provava la composizione.** Prima la

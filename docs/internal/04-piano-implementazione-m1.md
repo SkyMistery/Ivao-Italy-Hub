@@ -9,7 +9,13 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.17 — 10 settembre 2026 (**una sezione contiene righe**, e sfondo e colonne si
+**Versione:** 2.18 — 10 settembre 2026 (**scritte le tre richieste sui documenti** che vivevano solo
+in chat — piè di pagina deciso, pubblicazione programmata e stampa parcheggiate,
+`decisions/2026-09-09-il-documento-dice-di-se.md` — e `HANDOFF.md` rifatto per chi apre da zero.
+Nessun codice: **G13 non ha più lavoro suo**, restano le tre cose di Carmine (rieseguire la scheda,
+mergiare la PR #57, il tag verificato sull'artefatto).)
+
+**2.17** — 10 settembre 2026 (**una sezione contiene righe**, e sfondo e colonne si
 scelgono con pastiglie e diagrammi invece che con un form. La riga era già nel modello, nel
 validatore e nel renderer: mancava solo il modo di farne una. Conto: **471 test .NET** (invariati),
 **286 Vitest**, **52 smoke Playwright** e **13 del giro completo**.)

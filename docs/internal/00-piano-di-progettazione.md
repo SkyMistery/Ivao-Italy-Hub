@@ -1,9 +1,24 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.56 — 10 settembre 2026 (**una pagina si compone guardandola**, e una sezione contiene righe; M2 si divide in due)
+**Versione documento:** 0.57 — 10 settembre 2026 (**una pagina si compone guardandola**, e una sezione contiene righe; il documento pubblicato dirà di sé; M2 si divide in due)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.57** (10 set 2026): **un documento pubblicato dirà di sé**, e due richieste restano
+sul tavolo. Nota `decisions/2026-09-09-il-documento-dice-di-se.md`, scritta perché nessuna delle tre
+vivesse solo in chat.
+
+**Deciso: il piè di pagina di un documento** sta **alla fine**, sempre lì, e chi edita sceglie solo
+se mostrarlo. Dice chi ha pubblicato, quando, e — facoltativo — il **ciclo AIRAC**. Metà esiste già:
+`cms_content_versions` porta `version`, `changelog`, `published_at` e `published_by` da sempre, e il
+servizio di pubblicazione li scrive a ogni giro. L'AIRAC è **una colonna sulla versione**, non sulla
+riga: è una proprietà di quella pubblicazione. ⚠️ E **non** è il ciclo AIRAC di vIPI, che §9.3
+scartava: qui è un'etichetta facoltativa, non un meccanismo di release. Non costruito.
+
+**Parcheggiate**: la **pubblicazione programmata** — che è (c), con tre domande aperte, e il cui
+esempio (un evento) tocca il design di M2 — e la **stampa dei soli documenti**, che è piccola e ha
+dentro una trappola: `tabs` e `accordion` nascondono testo, e su carta devono essere aperti.
 
 **Changelog 0.56** (10 set 2026): **una sezione contiene righe**, e due comandi si scelgono
 guardando invece che scrivendo. Nota `decisions/2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`, nata
