@@ -65,52 +65,89 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
     };
   });
 
+  // Whether the bar shows the way into the back office. The same question the route guard asks,
+  // and asked here so that nobody has to remember the address: a member of staff who lands on the
+  // public site had to type `/staff` to get back to work.
+  const staff = user !== null && (user.isStaff || user.isSuperadmin);
+
   return (
+    // ⚠️ One row and not two (Carmine, 10 September 2026: the menu can live where the IVAO banner
+    // is, and save the space). The menu, the tools and the account all ride in `Navbar`'s own
+    // children slot, which it draws at the far end of the same line as the logo and the division's
+    // name — so the height of the site's frame is the height of the banner, and nothing else.
     <header className="border-border border-b">
-      <Navbar title={title} />
-
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-2">
-        <NavigationMenu sections={sections} asLink={RouterAnchor} />
-
-        <div className="ml-auto flex items-center gap-2">
-          {/* A tool of the frame and not a page of the site, which is why it sits here with the
-              language and the theme rather than in the menu: the menu is what the staff writes, and
-              a search box is not something anybody should have to remember to add. */}
-          <Button asChild variant="ghost" size="sm" aria-label={t('search.open')} title={t('search.open')}>
-            <Link to="/search" search={{ q: '', page: 1 }}>
-              <Search aria-hidden className="size-4" />
-            </Link>
-          </Button>
-
-          <LocaleSwitcher locales={bootstrap.division.locales} signedIn={user !== null} />
-          {/* `title` is the tooltip, `aria-label` is the accessible name: passing only the second
-              leaves the tooltip on Atmosphere's own English, and a tooltip is not something a
-              screenshot review notices because it only appears on hover.
-
-              `children` is null because the component demands the prop in its types and then
-              overwrites it: it draws a sun or a moon from the current theme. Anything passed here
-              is dead markup, so the honest thing to pass is nothing. */}
-          <DarkModeToggle title={t('theme.toggle')} aria-label={t('theme.toggle')}>
-            {null}
-          </DarkModeToggle>
-
-          {user === null ? (
-            // A full navigation, not a router link: /auth/login is a Kestrel endpoint.
-            <Button asChild>
-              <a href={loginHref(window.location.pathname)}>{t('auth.login')}</a>
-            </Button>
-          ) : (
-            <>
-              <Button asChild variant="ghost">
-                <Link to="/me">{displayName(user.firstName, user.lastName, user.vid)}</Link>
-              </Button>
-              <Button variant="secondary" onClick={() => logout.mutate()} disabled={logout.isPending}>
-                {t('auth.logout')}
-              </Button>
-            </>
-          )}
+      <Navbar title={title}>
+        <div className="text-white [&_a]:text-white [&_button]:text-white">
+          <NavigationMenu sections={sections} asLink={RouterAnchor} />
         </div>
-      </div>
+
+        {/* A tool of the frame and not a page of the site, which is why it sits here with the
+            language and the theme rather than in the menu: the menu is what the staff writes, and
+            a search box is not something anybody should have to remember to add. */}
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="text-white hover:bg-white/10 hover:text-white"
+          aria-label={t('search.open')}
+          title={t('search.open')}
+        >
+          <Link to="/search" search={{ q: '', page: 1 }}>
+            <Search aria-hidden className="size-4" />
+          </Link>
+        </Button>
+
+        <LocaleSwitcher locales={bootstrap.division.locales} signedIn={user !== null} />
+        {/* `title` is the tooltip, `aria-label` is the accessible name: passing only the second
+            leaves the tooltip on Atmosphere's own English, and a tooltip is not something a
+            screenshot review notices because it only appears on hover.
+
+            `children` is null because the component demands the prop in its types and then
+            overwrites it: it draws a sun or a moon from the current theme. Anything passed here
+            is dead markup, so the honest thing to pass is nothing. */}
+        <DarkModeToggle title={t('theme.toggle')} aria-label={t('theme.toggle')}>
+          {null}
+        </DarkModeToggle>
+
+        {staff ? (
+          // Only for somebody the guard would let in. A button that leads to `/forbidden` is a
+          // button that teaches people to distrust the bar it sits in.
+          <Button asChild variant="secondary" size="sm">
+            <Link to="/staff">{t('nav.staff')}</Link>
+          </Button>
+        ) : null}
+
+        {user === null ? (
+          // A full navigation, not a router link: /auth/login is a Kestrel endpoint.
+          //
+          // ⚠️ `secondary` and not the primary variant, now that it sits on the banner: the primary
+          // button is the same blue as the bar behind it, so the one call to action of the public
+          // site was a dark rectangle on a dark rectangle. Measured by looking at it.
+          <Button asChild variant="secondary" size="sm">
+            <a href={loginHref(window.location.pathname)}>{t('auth.login')}</a>
+          </Button>
+        ) : (
+          <>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/10 hover:text-white"
+            >
+              <Link to="/me">{displayName(user.firstName, user.lastName, user.vid)}</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/10 hover:text-white"
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
+            >
+              {t('auth.logout')}
+            </Button>
+          </>
+        )}
+      </Navbar>
     </header>
   );
 }

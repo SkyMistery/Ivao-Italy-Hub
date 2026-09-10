@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { beforeAll, expect, test } from 'vitest';
@@ -70,7 +70,7 @@ const bootstrap: Bootstrap = {
   version: '0.0.0-test',
 };
 
-function renderShell() {
+function renderShell(me: Bootstrap = bootstrap) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   // A real router, in memory: the header links are TanStack `Link`s and a `Link` outside a router
@@ -78,7 +78,7 @@ function renderShell() {
   // should differ from `main.tsx` in the routes it carries, and in nothing else.
   const rootRoute = createRootRoute({
     component: () => (
-      <Shell bootstrap={bootstrap}>
+      <Shell bootstrap={me}>
         <h1>A screen</h1>
       </Shell>
     ),
@@ -119,4 +119,53 @@ test('the theme toggle carries our own words, not the ones Atmosphere ships', as
   // no screenshot review catches, because it appears on hover.
   const toggle = screen.getByRole('button', { name: englishCommon.theme.toggle });
   expect(toggle).toHaveAttribute('title', englishCommon.theme.toggle);
+});
+
+/**
+ * The way back into the back office, asked for by Carmine on 10 September 2026.
+ *
+ * ⚠️ The condition is the **route guard's own**, `isStaff || isSuperadmin`, and these three cases
+ * exist so it stays that way: a link drawn for somebody the guard would send to `/forbidden` is
+ * worse than no link, because it teaches people that the bar lies.
+ */
+const signedIn = (extra: Partial<NonNullable<Bootstrap['user']>>): Bootstrap => ({
+  ...bootstrap,
+  user: {
+    vid: 704798,
+    firstName: 'Test',
+    lastName: 'Member',
+    positions: [],
+    isStaff: false,
+    isSuperadmin: false,
+    hasAllDepartments: false,
+    locale: 'en',
+    departments: [],
+    firs: [],
+    ...extra,
+  },
+});
+
+test('a member of staff is offered the back office; a visitor and a plain member are not', async () => {
+  renderShell();
+  await screen.findByRole('heading', { name: 'A screen' });
+  expect(screen.queryByRole('link', { name: englishCommon.nav.staff })).not.toBeInTheDocument();
+
+  cleanup();
+  renderShell(signedIn({}));
+  await screen.findByRole('heading', { name: 'A screen' });
+  expect(screen.queryByRole('link', { name: englishCommon.nav.staff })).not.toBeInTheDocument();
+
+  cleanup();
+  renderShell(signedIn({ isStaff: true }));
+  await screen.findByRole('heading', { name: 'A screen' });
+  expect(screen.getByRole('link', { name: englishCommon.nav.staff })).toHaveAttribute('href', '/staff');
+});
+
+test('a superadmin who holds no staff position is offered it too', async () => {
+  // The other half of the guard's condition, and the one easy to drop: the superadmin of a fresh
+  // installation has no staff position at all until IVAO says otherwise.
+  renderShell(signedIn({ isSuperadmin: true }));
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  expect(screen.getByRole('link', { name: englishCommon.nav.staff })).toHaveAttribute('href', '/staff');
 });
