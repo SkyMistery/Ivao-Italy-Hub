@@ -1,4 +1,4 @@
-# Quattro richieste di layout: due fatte, due che vogliono una decisione
+# Quattro richieste di layout, e le tre rifiniture della sera
 
 **Data:** 10 settembre 2026 — Carmine, con davanti il footer del sito della divisione UK & Ireland:
 
@@ -10,8 +10,10 @@
 > 4. Il footer deve essere come quello in foto (possibilmente i link editabili dalla sezione del
 >    webmaster).
 
-**Stato:** la **1 e la 2 sono fatte**. La **3 e la 4 aspettano una decisione**, ognuna per una ragione
-precisa e non perché siano grosse.
+**Stato:** **tutte e quattro fatte.** La 1 e la 2 subito, perché erano (a); la 3 e la 4 dopo una
+decisione di Carmine, perché ognuna chiedeva qualcosa che §16.E non lascia decidere da soli — un
+componente nell'elenco chiuso e una colonna di database. In fondo ci sono le **tre rifiniture** che
+lui ha chiesto la sera stessa, guardando il risultato.
 
 ---
 
@@ -181,3 +183,21 @@ Le due schermate dell'intestazione sono prese in un browser vero contro l'API fi
 1440 px. **Con un login vero non è stato guardato**, e la cosa da guardare è il comportamento della
 barra **stretta**: con più voci di menu di quelle della fixture, una riga sola può andare a capo, e
 quanto succede prima dipende da quanti sono i nomi che la divisione scrive nel menu.
+
+---
+
+## Poi, guardandolo: tre rifiniture (10 settembre 2026, sera)
+
+Carmine ha aperto la pagina e ha chiesto tre cose piccole. Tutte **(a)**, tutte fatte.
+
+1. **Le voci del menu centrate.** ⚠️ Non si poteva con `Navbar`: mette i propri `children` in un
+   riquadro in fondo alla riga, e un riquadro che non cresce non puo tenere niente in mezzo. La barra
+   ora e composta da `NavbarContainer` e `IVAOLogo` — che sono comunque di Atmosphere — in tre zone,
+   con quella centrale che cresce. Il prezzo sono otto righe: logo, diagonale e nome.
+2. **La lingua e una sigla.** `EN`, `IT`. Il nome intero non sparisce, si sposta: e `aria-label`,
+   quindi chi legge con uno screen reader sente ancora «English» e non due lettere. Scritto per
+   esteso occupava piu spazio della ricerca, del tema e dell account messi insieme, su ogni pagina
+   del sito, per dire una cosa che il lettore sa gia.
+   ⚠️ Un e2e sceglieva la lingua per nome (`/italian|italiano/i`) e ora la sceglie per sigla.
+3. **Il pulsante della barra laterale piu discreto.** Piu piccolo, senza riempimento, e prende colore
+   solo sotto il puntatore: e un comando della cornice, non un posto dove andare.

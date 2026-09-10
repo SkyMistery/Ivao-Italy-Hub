@@ -120,7 +120,11 @@ test('the language switcher actually switches', async ({ page }) => {
   await expect(heading).toHaveText('IVAO Example');
 
   await page.getByRole('combobox').first().click();
-  await page.getByRole('option', { name: /italian|italiano/i }).click();
+
+  // ⚠️ The code and not the name of the language, since 10 September 2026: the switcher shows
+  // "EN" / "IT" because spelled out it took more room in the bar than the search, the theme and
+  // the account together. The full name is still its accessible label, not its text.
+  await page.getByRole('option', { name: 'IT', exact: true }).click();
 
   // The name of the division is a `Localized<T>` resolved by the client, so it changing is proof
   // that the language really changed and not merely that a select closed.

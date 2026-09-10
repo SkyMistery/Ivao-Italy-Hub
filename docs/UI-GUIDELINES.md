@@ -494,6 +494,16 @@ chrome above every page for no gain. Anything put there needs forcing white — 
 blue — and the primary button variant is that same blue, so a call to action there is `secondary`
 or it is invisible.
 
+Three zones, and the middle one grows: the brand on the left, the **menu centred**, the tools on
+the right. That is why the bar is composed from `NavbarContainer` and `IVAOLogo` rather than from
+`Navbar` — `Navbar` puts its children in a box of their own at the far end of the line, and a box
+that cannot grow cannot hold anything in the middle.
+
+And everything in the right hand zone is **one word wide or less**. The language switcher shows the
+code (`EN`, `IT`) and carries the full name as its accessible label: spelled out it took more room
+than the search, the theme and the account together, on every page of the site, to say something the
+reader already knows.
+
 **The footer is the footer menu, drawn in columns.** A top level entry of `Scope = Footer` is a
 column and its children are its links; nothing in the component decides what is in them. Three
 shapes, and all three are states of the menu table:

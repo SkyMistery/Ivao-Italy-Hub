@@ -83,16 +83,19 @@ function Frame({
       {/* At the top, and one button wide rather than the width of the panel: the whole of the
           request. `title` as well as `aria-label`, because a button that is only an icon says what
           it is on hover and nowhere else. */}
-      <div className="flex items-center justify-end px-3 pt-3">
+      <div className="flex items-center justify-end px-2 pt-2">
         <button
           type="button"
           onClick={toggleSidebar}
           aria-label={label}
           aria-expanded={isSidebarOpen}
           title={label}
-          className="text-fuselage-400 hover:bg-fuselage-100 hover:text-fuselage-600 dark:hover:bg-fuselage-800 dark:hover:text-fuselage-200 flex size-9 items-center justify-center rounded-md transition-colors"
+          // ⚠️ Deliberately faint (Carmine, 10 September 2026: "less invasive"). It is a control of
+          // the frame and not a place to go: it should be findable and never the first thing the
+          // eye lands on, so it is small, unfilled, and only takes a colour under the pointer.
+          className="text-fuselage-300 hover:text-fuselage-600 dark:text-fuselage-600 dark:hover:text-fuselage-300 flex size-6 items-center justify-center rounded transition-colors"
         >
-          <Icon aria-hidden className="size-5" />
+          <Icon aria-hidden className="size-4" />
         </button>
       </div>
 

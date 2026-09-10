@@ -1,7 +1,8 @@
 import {
   Button,
   DarkModeToggle,
-  Navbar,
+  IVAOLogo,
+  NavbarContainer,
   NavigationMenu,
   type NavigationMenuProps,
   Separator,
@@ -80,78 +81,97 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
     // children slot, which it draws at the far end of the same line as the logo and the division's
     // name — so the height of the site's frame is the height of the banner, and nothing else.
     <header className="border-border border-b">
-      <Navbar title={title}>
-        <div className="text-white [&_a]:text-white [&_button]:text-white">
+      {/* ⚠️ `NavbarContainer` and not `Navbar`, and the brand block written out here.
+          `Navbar` puts its children in a box of their own at the far end of the line, which cannot
+          be made to grow — so the menu could only ever be pushed against the tools on the right.
+          Three zones with a middle that grows is the only way to centre it (Carmine, 10 September
+          2026), and the price is these eight lines: the logo, the diagonal and the name, which are
+          Atmosphere's own `IVAOLogo` and its own colours. */}
+      <NavbarContainer className="gap-4">
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="block md:hidden">
+            <IVAOLogo color="white" onlyIcon />
+          </div>
+          <div className="hidden md:block">
+            <IVAOLogo color="white" />
+          </div>
+          <div className="bg-ocean-400 dark:bg-fuselage-400 h-8 w-0.5" />
+          <h1 className="text-lg font-semibold text-white">{title}</h1>
+        </div>
+
+        <div className="flex flex-1 justify-center text-white [&_a]:text-white [&_button]:text-white">
           <NavigationMenu sections={sections} asLink={RouterAnchor} />
         </div>
 
-        {/* A tool of the frame and not a page of the site, which is why it sits here with the
+        <div className="flex shrink-0 items-center gap-1">
+          {/* A tool of the frame and not a page of the site, which is why it sits here with the
             language and the theme rather than in the menu: the menu is what the staff writes, and
             a search box is not something anybody should have to remember to add. */}
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/10 hover:text-white"
-          aria-label={t('search.open')}
-          title={t('search.open')}
-        >
-          <Link to="/search" search={{ q: '', page: 1 }}>
-            <Search aria-hidden className="size-4" />
-          </Link>
-        </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10 hover:text-white"
+            aria-label={t('search.open')}
+            title={t('search.open')}
+          >
+            <Link to="/search" search={{ q: '', page: 1 }}>
+              <Search aria-hidden className="size-4" />
+            </Link>
+          </Button>
 
-        <LocaleSwitcher locales={bootstrap.division.locales} signedIn={user !== null} />
-        {/* `title` is the tooltip, `aria-label` is the accessible name: passing only the second
+          <LocaleSwitcher locales={bootstrap.division.locales} signedIn={user !== null} />
+          {/* `title` is the tooltip, `aria-label` is the accessible name: passing only the second
             leaves the tooltip on Atmosphere's own English, and a tooltip is not something a
             screenshot review notices because it only appears on hover.
 
             `children` is null because the component demands the prop in its types and then
             overwrites it: it draws a sun or a moon from the current theme. Anything passed here
             is dead markup, so the honest thing to pass is nothing. */}
-        <DarkModeToggle title={t('theme.toggle')} aria-label={t('theme.toggle')}>
-          {null}
-        </DarkModeToggle>
+          <DarkModeToggle title={t('theme.toggle')} aria-label={t('theme.toggle')}>
+            {null}
+          </DarkModeToggle>
 
-        {staff ? (
-          // Only for somebody the guard would let in. A button that leads to `/forbidden` is a
-          // button that teaches people to distrust the bar it sits in.
-          <Button asChild variant="secondary" size="sm">
-            <Link to="/staff">{t('nav.staff')}</Link>
-          </Button>
-        ) : null}
+          {staff ? (
+            // Only for somebody the guard would let in. A button that leads to `/forbidden` is a
+            // button that teaches people to distrust the bar it sits in.
+            <Button asChild variant="secondary" size="sm">
+              <Link to="/staff">{t('nav.staff')}</Link>
+            </Button>
+          ) : null}
 
-        {user === null ? (
-          // A full navigation, not a router link: /auth/login is a Kestrel endpoint.
-          //
-          // ⚠️ `secondary` and not the primary variant, now that it sits on the banner: the primary
-          // button is the same blue as the bar behind it, so the one call to action of the public
-          // site was a dark rectangle on a dark rectangle. Measured by looking at it.
-          <Button asChild variant="secondary" size="sm">
-            <a href={loginHref(window.location.pathname)}>{t('auth.login')}</a>
-          </Button>
-        ) : (
-          <>
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/10 hover:text-white"
-            >
-              <Link to="/me">{displayName(user.firstName, user.lastName, user.vid)}</Link>
+          {user === null ? (
+            // A full navigation, not a router link: /auth/login is a Kestrel endpoint.
+            //
+            // ⚠️ `secondary` and not the primary variant, now that it sits on the banner: the primary
+            // button is the same blue as the bar behind it, so the one call to action of the public
+            // site was a dark rectangle on a dark rectangle. Measured by looking at it.
+            <Button asChild variant="secondary" size="sm">
+              <a href={loginHref(window.location.pathname)}>{t('auth.login')}</a>
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/10 hover:text-white"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-            >
-              {t('auth.logout')}
-            </Button>
-          </>
-        )}
-      </Navbar>
+          ) : (
+            <>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10 hover:text-white"
+              >
+                <Link to="/me">{displayName(user.firstName, user.lastName, user.vid)}</Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10 hover:text-white"
+                onClick={() => logout.mutate()}
+                disabled={logout.isPending}
+              >
+                {t('auth.logout')}
+              </Button>
+            </>
+          )}
+        </div>
+      </NavbarContainer>
     </header>
   );
 }
