@@ -217,7 +217,11 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
     // `Subtle` are dark on light, and on this blue they would be hard to read in the light theme and
     // invisible in the dark one. A band that carries its own background answers for its own
     // contrast — the tokens answer for the page, and this is no longer the page.
-    <footer className="bg-atmos-700 dark:bg-fuselage-800 mt-12 text-white">
+    // ⚠️ No `mt-12` any more. That margin was invisible while the footer stood on the page's own
+    // background; the day it was given a ground of its own it became a white strip between the two —
+    // and in the back office a gap between the bottom of the sidebar and the top of the footer,
+    // which is where Carmine saw it. The room the footer needs is its own `py-10`, inside its band.
+    <footer className="bg-atmos-700 dark:bg-fuselage-800 text-white">
       <div className="mx-auto w-full max-w-6xl px-4 py-10">
         {/* ⚠️ Centred rather than pinned to the left edge (Carmine, 10 September 2026), and that is
             why this is a wrapping flex row and not a grid: a grid of four columns holding two leaves
