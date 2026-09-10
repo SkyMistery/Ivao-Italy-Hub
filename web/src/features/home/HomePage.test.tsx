@@ -40,6 +40,7 @@ const bootstrap = {
     defaultLocale: 'en',
     timezone: 'UTC',
     logoUrl: null,
+    faviconUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
   },

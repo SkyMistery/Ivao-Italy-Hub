@@ -27,6 +27,8 @@
   "timezone": "UTC",
   "$comment.logoUrl": "Where the mark of the division is served from, or leave it out for a division that has none. A file of your own under web/public/ is the simplest place; the hub only draws whatever this points at.",
   "logoUrl": null,
+  "$comment.faviconUrl": "The icon of a browser tab, or leave it out for the browser default. A different file from logoUrl on purpose: the mark on the bar is drawn for a dark blue ground, and a tab icon has to read on light and dark tab bars alike.",
+  "faviconUrl": null,
 
   "$comment.icaoPrefixes": "Safety net for filters and validation; FIRs and airports themselves come from the IVAO API.",
   "icaoPrefixes": ["XX"],

@@ -86,14 +86,32 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
           Three zones with a middle that grows is the only way to centre it (Carmine, 10 September
           2026), and the price is these eight lines: the logo, the diagonal and the name, which are
           Atmosphere's own `IVAOLogo` and its own colours. */}
+      {/* The icon of the browser tab, hoisted into the document head by React 19 like the `<title>`
+          of `PageMetadata`. From `config/division.json` like the mark itself, and a separate file
+          because a white mark made for this blue bar would vanish on a light tab bar. Nothing is
+          rendered when the division has none, so the browser keeps its own. */}
+      {bootstrap.division.faviconUrl ? (
+        <link rel="icon" type="image/svg+xml" href={bootstrap.division.faviconUrl} />
+      ) : null}
+
       <NavbarContainer className="gap-4">
         <div className="flex shrink-0 items-center gap-3">
-          <div className="block md:hidden">
-            <IVAOLogo color="white" onlyIcon />
-          </div>
-          <div className="hidden md:block">
-            <IVAOLogo color="white" />
-          </div>
+          {/* ⚠️ The division's own mark where there is one, and IVAO's where there is not
+              (Carmine, 10 September 2026). The mark of a division **is** the IVAO circle with the
+              division's badge on it, so drawing both side by side would be the same circle twice.
+              The word "IVAO" is not lost: the division's name beside it already begins with it. */}
+          {bootstrap.division.logoUrl ? (
+            <DivisionMark bootstrap={bootstrap} className="h-9" />
+          ) : (
+            <>
+              <div className="block md:hidden">
+                <IVAOLogo color="white" onlyIcon />
+              </div>
+              <div className="hidden md:block">
+                <IVAOLogo color="white" />
+              </div>
+            </>
+          )}
           <div className="bg-ocean-400 dark:bg-fuselage-400 h-8 w-0.5" />
           <h1 className="text-lg font-semibold text-white">{title}</h1>
         </div>

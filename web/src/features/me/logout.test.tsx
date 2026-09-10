@@ -50,6 +50,7 @@ function bootstrap(user: Bootstrap['user']): Bootstrap {
       defaultLocale: 'en',
       timezone: 'UTC',
       logoUrl: null,
+      faviconUrl: null,
       firStaffScope: 'all',
       siteDepartment: 'WD',
     },

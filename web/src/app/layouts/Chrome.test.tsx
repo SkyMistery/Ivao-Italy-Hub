@@ -52,6 +52,7 @@ const bootstrap: Bootstrap = {
     defaultLocale: 'en',
     timezone: 'UTC',
     logoUrl: null,
+    faviconUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
   },
@@ -227,18 +228,27 @@ test('a division with no mark of its own is drawn without one', async () => {
   expect(document.querySelectorAll('img')).toHaveLength(0);
 });
 
-test('the mark is drawn twice when the division has one, and says nothing to a screen reader', async () => {
+test('the mark takes the place of the generic one, and says nothing to a screen reader', async () => {
   renderShell({
     ...bootstrap,
-    division: { ...bootstrap.division, logoUrl: '/branding/division.svg' },
+    division: {
+      ...bootstrap.division,
+      logoUrl: '/branding/division.svg',
+      faviconUrl: '/branding/favicon.svg',
+    },
   });
 
   await screen.findByRole('heading', { name: 'A screen' });
 
+  // The tab icon, hoisted into the head by React 19: its own file, because the white mark would
+  // vanish on a light tab bar.
+  expect(document.head.querySelector('link[rel="icon"]')).toHaveAttribute('href', '/branding/favicon.svg');
+
   const marks = [...document.querySelectorAll('img')];
 
-  // Twice: on the bar and in the foot of the page.
-  expect(marks).toHaveLength(2);
+  // Three: at the start of the bar in place of the generic IVAO circle, at its end, and beside the
+  // name in the foot of the page.
+  expect(marks).toHaveLength(3);
   expect(marks.every((mark) => mark.getAttribute('src') === '/branding/division.svg')).toBe(true);
 
   // ⚠️ And decorative in both: the name of the division is written beside it in both places, so an

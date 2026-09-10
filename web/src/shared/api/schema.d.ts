@@ -746,6 +746,7 @@ export interface components {
             defaultLocale: string;
             timezone: string;
             logoUrl: null | string;
+            faviconUrl: null | string;
             firStaffScope: string;
             siteDepartment: string;
         };

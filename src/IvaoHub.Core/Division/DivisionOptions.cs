@@ -48,6 +48,15 @@ public sealed record DivisionOptions
     public string? LogoUrl { get; init; }
 
     /// <summary>
+    /// Where the icon of a browser tab is served from, or null to leave the browser's own.
+    /// <para>A second address and not the same one, because they are two drawings: the mark of the
+    /// bar is white for the blue it sits on, and a tab icon has to read on a light tab bar and a
+    /// dark one alike. Every brand kit ships both, and a division that has only one points both
+    /// keys at it.</para>
+    /// </summary>
+    public string? FaviconUrl { get; init; }
+
+    /// <summary>
     /// The ICAO prefixes of the division, upper case, 1 to 4 letters. A safety net rather than a
     /// source: the FIRs and the airports themselves come from the IVAO API. The synchronisation
     /// uses them to notice that a snapshot has nothing to do with this division, which is what a

@@ -77,6 +77,7 @@ internal static class MeEndpoints
                     options.DefaultLocale,
                     options.Timezone,
                     options.LogoUrl,
+                    options.FaviconUrl,
                     options.FirStaffScope.ToString().ToLowerInvariant(),
                     SiteOwnership.Department.ToString()),
                 Modules: moduleStates,
@@ -241,6 +242,7 @@ internal sealed record BootstrapDivision(
     string DefaultLocale,
     string Timezone,
     string? LogoUrl,
+    string? FaviconUrl,
     string FirStaffScope,
     string SiteDepartment);
 
