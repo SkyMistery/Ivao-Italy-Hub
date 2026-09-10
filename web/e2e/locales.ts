@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
  * fetches from `/locales/en/common.json`.
  */
 interface CommonStrings {
-  readonly footer: { readonly version: string };
+  readonly footer: { readonly rights: string };
   readonly theme: { readonly toggle: string };
   readonly nav: {
     readonly staff: string;

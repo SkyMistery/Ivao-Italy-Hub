@@ -522,6 +522,16 @@ shapes, and all three are states of the menu table:
 The sentence under the division's name and the legal links are words, not rows: they live in
 `locales/`, so a fork changes them where it changes every other sentence.
 
+The columns are **centred**, not pinned to the left edge: a division may write one or four, and a
+row that centres what it has looks deliberate at either count where a four column grid holding two
+leaves empty tracks.
+
+**The line under the rule carries two sentences and no links**: who the site belongs to with the
+release it is running, and what it is part of. It is where the eye stops, so everything else put
+there competes with the only two facts that belong there — the legal links of headquarters are a
+column above. The year in it comes from the browser: a year written into a language file is wrong
+every January, in every language at once.
+
 ## The editor of a page, and what it may not do
 
 Five rules M1 settled by using the editor rather than by designing it. They are here because they

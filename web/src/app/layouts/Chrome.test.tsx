@@ -105,8 +105,16 @@ test('the shell of every layout renders under the providers the application moun
   // its first match after the initial paint.
   expect(await screen.findByRole('heading', { name: 'A screen' })).toBeInTheDocument();
   expect(screen.getAllByText('IVAO Example').length).toBeGreaterThan(0);
+  // The release, which is on the line at the bottom together with the copyright since 10 September
+  // 2026. Still asserted, and for the reason it always was: the version comes from the bootstrap, so
+  // reading it back proves the frame was handed the answer and not merely drawn.
   expect(
-    screen.getByText(englishCommon.footer.version.replace('{{version}}', '0.0.0-test')),
+    screen.getByText(
+      englishCommon.footer.rights
+        .replace('{{year}}', String(new Date().getFullYear()))
+        .replace('{{division}}', 'IVAO Example')
+        .replace('{{version}}', '0.0.0-test'),
+    ),
   ).toBeInTheDocument();
 });
 

@@ -219,12 +219,23 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
     // contrast — the tokens answer for the page, and this is no longer the page.
     <footer className="bg-atmos-700 dark:bg-fuselage-800 mt-12 text-white">
       <div className="mx-auto w-full max-w-6xl px-4 py-10">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+        {/* ⚠️ Centred rather than pinned to the left edge (Carmine, 10 September 2026), and that is
+            why this is a wrapping flex row and not a grid: a grid of four columns holding two leaves
+            two empty tracks on the right and the whole band reads as unfinished. A row that centres
+            what it actually has looks deliberate whether a division writes one column or four. */}
+        <div className="flex flex-wrap justify-center gap-x-16 gap-y-8">
           {/* The division: who this site belongs to, what it is for, and where else to find it. */}
-          <div className="flex flex-col gap-4 lg:col-span-1">
+          <div className="flex max-w-xs flex-col items-center gap-4 text-center">
             <p className="text-base font-semibold text-white">{division}</p>
-            <p data-secondary className="max-w-xs text-sm text-white/70">
+            <p data-secondary className="text-sm text-white/70">
               {t('footer.about', { division })}
+            </p>
+
+            {/* ⚠️ The notice that this is not real aviation. It used to sit on the line at the
+                bottom and was moved here when that line became the copyright: it is a thing worth
+                saying about the division, and the alternative to moving it was dropping it. */}
+            <p data-secondary className="text-sm text-white/60">
+              {t('footer.disclaimer', { division })}
             </p>
 
             {marks === undefined ? null : (
@@ -237,14 +248,14 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
           </div>
 
           {written.map((column) => (
-            <nav key={column.path || label(column)} className="flex flex-col gap-3">
+            <nav key={column.path || label(column)} className="flex flex-col items-center gap-3">
               {/* The heading of a column may be a link or may lead nowhere, and both are written the
                   same way in the back office: an entry with an address, or one without. */}
               <p data-secondary className="text-xs font-semibold tracking-wider text-white/60 uppercase">
                 {column.path ? <FooterEntry path={column.path} label={label(column)} /> : label(column)}
               </p>
 
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col items-center gap-2">
                 {column.children.map((child) => (
                   <li key={child.path}>
                     <FooterEntry path={child.path} label={label(child)} icon={child.icon} />
@@ -253,12 +264,40 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
               </ul>
             </nav>
           ))}
+
+          {/* The links of headquarters, which are the same for every division and live in `locales/`
+              because they are words and not rows. A column like any other since the line at the
+              bottom stopped carrying links — and the heading is a word of the language files, not a
+              menu entry, because nobody in a division edits these. */}
+          {legal.length === 0 ? null : (
+            <nav className="flex flex-col items-center gap-3">
+              <p data-secondary className="text-xs font-semibold tracking-wider text-white/60 uppercase">
+                {t('footer.legalHeading')}
+              </p>
+
+              <ul className="flex flex-col items-center gap-2">
+                {legal.map((link) => (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      data-secondary
+                      className="text-sm text-white/70 underline-offset-2 hover:text-white hover:underline"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
         </div>
 
         {/* An entry with no children and no column to sit in: the shape the footer had before it had
             columns, kept so that a division that upgrades does not lose the links it already wrote. */}
         {loose.length === 0 ? null : (
-          <nav className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <nav className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             {loose.map((item) => (
               <FooterEntry key={item.path} path={item.path} label={label(item)} icon={item.icon} />
             ))}
@@ -267,30 +306,25 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
 
         <Separator className="my-8 bg-white/20" />
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-1">
-            <p data-secondary className="text-sm text-white/60">
-              {t('footer.disclaimer', { division })}
-            </p>
-            <p data-secondary className="text-sm text-white/60">
-              {t('footer.version', { version: bootstrap.version })}
-            </p>
-          </div>
+        {/* ⚠️ Two sentences and nothing else (Carmine, 10 September 2026): who this belongs to and
+            which release it is, and what it is part of. **No links** — the ones that used to sit
+            here are a column above now. A line at the bottom of a page is where the eye stops, and
+            everything put there competes with the two facts that belong there.
 
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {legal.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noreferrer noopener"
-                data-secondary
-                className="text-sm text-white/70 underline-offset-2 hover:text-white hover:underline"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
+            The year is the browser's. A year written into a language file is a year that is wrong
+            every January, in every language at once. */}
+        <div className="flex flex-col gap-2 text-center md:flex-row md:items-center md:justify-between md:text-left">
+          <p data-secondary className="text-sm text-white/60">
+            {t('footer.rights', {
+              year: new Date().getFullYear(),
+              division,
+              version: bootstrap.version,
+            })}
+          </p>
+
+          <p data-secondary className="text-sm text-white/60">
+            {t('footer.partOf')}
+          </p>
         </div>
       </div>
     </footer>

@@ -84,6 +84,9 @@
     "toggle": "Passa da chiaro a scuro"
   },
   "footer": {
+    "rights": "© {{year}} {{division}}. Tutti i diritti riservati. · v{{version}}",
+    "partOf": "Parte della International Virtual Aviation Organisation",
+    "legalHeading": "IVAO",
     "about": "Il sito ufficiale di {{division}}: eventi, training, tour e tutto quello che fa la divisione.",
     "legal": [
       {
@@ -103,8 +106,7 @@
         "href": "https://www.ivao.aero/rules.htm"
       }
     ],
-    "disclaimer": "{{division}} è una divisione di IVAO, una rete di simulazione di volo senza scopo di lucro. Niente di quanto pubblicato qui è destinato all'aviazione reale.",
-    "version": "Versione {{version}}"
+    "disclaimer": "{{division}} è una divisione di IVAO, una rete di simulazione di volo senza scopo di lucro. Niente di quanto pubblicato qui è destinato all'aviazione reale."
   },
   "status": {
     "active": "Attivo",

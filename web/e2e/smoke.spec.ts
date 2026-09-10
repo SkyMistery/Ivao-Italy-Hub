@@ -39,7 +39,12 @@ test('the home page renders inside its shell', async ({ page }) => {
   // language files. Their presence is what says the layout mounted rather than just the route.
   await expect(page.getByText('IVAO Example').first()).toBeVisible();
   await expect(
-    page.getByText(englishCommon.footer.version.replace('{{version}}', '0.0.0-e2e')),
+    page.getByText(
+      englishCommon.footer.rights
+        .replace('{{year}}', String(new Date().getFullYear()))
+        .replace('{{division}}', 'IVAO Example')
+        .replace('{{version}}', '0.0.0-e2e'),
+    ),
   ).toBeVisible();
 });
 
