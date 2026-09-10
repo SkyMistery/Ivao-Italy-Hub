@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generator: Adobe Illustrator 25.2.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<!-- The division mark as a browser tab icon: the same white artwork as division.svg, on a disc of
-     the IVAO blue (#0D2C99, atmos-700, read from the running page). The white mark alone would vanish
-     on a light tab bar; on the disc it reads on either. Referenced from config/division.json as
-     faviconUrl. The paths are untouched; the disc and the viewBox are the only additions. -->
+<!-- The division mark as the icon of a browser tab: the blue version of the symbol, on no ground
+     at all (Carmine, 10 September 2026: "use it without a background there"). The white one lives
+     in division.svg, for the blue bar and footer; a tab bar is usually light, so the tab gets the
+     blue. Referenced from config/division.json as faviconUrl.
+
+     Only the viewBox has been touched, and it is square on purpose: the artwork occupies 483,485 to
+     1605,1512 of a 1991x1993 canvas, and a browser letterboxes a tab icon that is not square. No path
+     has been changed. -->
 <svg version="1.0" id="Ebene_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="455 455 1065 1065" style="enable-background:new 0 0 1991 1993;" xml:space="preserve">
+	 viewBox="463 418 1162 1162" style="enable-background:new 0 0 1991 1993;" xml:space="preserve">
 <style type="text/css">
 	.st0{clip-path:url(#SVGID_2_);fill:#FFFFFF;}
 	.st1{clip-path:url(#SVGID_2_);fill:#00A651;}
 	.st2{clip-path:url(#SVGID_2_);fill:#F5F5F5;}
 	.st3{clip-path:url(#SVGID_2_);fill:#ED1C24;}
-	.st4{fill:#FFFFFF;}
-	.st5{fill-rule:evenodd;clip-rule:evenodd;fill:#FFFFFF;}
+	.st4{fill:#0D2C99;}
+	.st5{fill-rule:evenodd;clip-rule:evenodd;fill:#0D2C99;}
 </style>
-<circle cx="950.8" cy="952.8" r="490" fill="#0D2C99"/>
 <g>
 	<defs>
 		<path id="SVGID_1_" d="M1306.5,1510c-109.9,0-199.5-89.8-199.5-200s89.6-200,199.5-200s199.5,89.8,199.5,200
