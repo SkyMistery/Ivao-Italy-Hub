@@ -71,7 +71,7 @@ export function BlockPalette({
   };
 
   return (
-    <div className="flex flex-col gap-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+    <div className="flex flex-col gap-3 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
       <SectionHeader
         title={t('content.editor.components')}
         actions={

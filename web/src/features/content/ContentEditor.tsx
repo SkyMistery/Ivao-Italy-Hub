@@ -209,7 +209,7 @@ export function ContentEditor({
   // child of a grid work at all — a stretched cell has nothing to stick inside — and it scrolls on
   // its own when it is taller than the window.
   const properties = (
-    <div className="flex flex-col gap-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+    <div className="flex flex-col gap-4 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
       <SectionHeader
         title={t('content.editor.properties')}
         {...(selection === null
@@ -430,7 +430,7 @@ export function ContentEditor({
           The outline is not a mode you leave behind: it is the keyboard road (`blocks/picking.ts`),
           and clicking the page is the pointer one. Both put the same thing in the panel on the
           right, which is the property that made road (A) work in the first place. */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)_minmax(16rem,20rem)]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
         <BlockPalette
           target={paletteTarget}
           rule={paletteRule}

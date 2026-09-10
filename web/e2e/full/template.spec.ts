@@ -10,6 +10,7 @@ import {
   readContent,
   readInEnglish,
   saveDraft,
+  selectSection,
   signIn,
   type ContentRow,
   whileWaitingFor,
@@ -105,7 +106,9 @@ test('a template that moves on is said in the editor, and changes nothing a visi
   // ---------------------------------------------------------------- accepting it, one difference
   await page.getByRole('button', { name: words.template.apply.added }).click();
 
-  // In the outline, where the section now is; and the panel has nothing left to report.
+  // In the outline, where the section now is; and the panel has nothing left to report. The middle
+  // column opens on the page, so the outline is asked for.
+  await page.getByRole('button', { name: words.outline, exact: true }).click();
   await expect(page.getByRole('button', { name: 'Closing', exact: true })).toBeVisible();
   await expect(page.getByText(words.template.differences)).toHaveCount(0);
 
@@ -128,6 +131,11 @@ test('the preview is three widths of the same page, and the narrow one is really
 }) => {
   await readInEnglish(context);
   await signIn(context);
+
+  // ⚠️ The window is pinned, and it has to be now that the editor is three columns: the frame is
+  // the middle one, so how wide it draws is a fact about the window as much as about the preview.
+  // What this test is about is that the three widths differ from one another.
+  await page.setViewportSize({ width: 1600, height: 900 });
 
   const born = await createContent(context, {
     slug: `bench-preview-${stamp}`,
@@ -174,6 +182,8 @@ test('a template written in the editor is obeyed by the pages made from it', asy
   });
 
   await page.goto(`/staff/${department}/content/${template.id}`);
+  // The outline is where a section is added; the middle column opens on the page.
+  await page.getByRole('button', { name: words.outline, exact: true }).click();
   await page.getByRole('button', { name: words.addSection }).click();
 
   // The four fields a template has and a page does not. `key` is the one everything else hangs
@@ -190,6 +200,7 @@ test('a template written in the editor is obeyed by the pages made from it', asy
   // Written once, then shown: the field is gone and the key is a line, because changing it would
   // silently detach every page already made from this template.
   await page.reload();
+  await page.getByRole('button', { name: words.outline, exact: true }).click();
   await page.getByRole('button', { name: 'intro', exact: true }).click();
   await expect(properties(page).getByLabel(sectionFields.key)).toHaveCount(0);
   await expect(page.getByText(`Key: intro`, { exact: false })).toBeVisible();
@@ -198,12 +209,20 @@ test('a template written in the editor is obeyed by the pages made from it', asy
   const born = await pageFromTemplate(context, template.id, `bench-obeys-${stamp}`);
   await page.goto(`/staff/${department}/content/${born.id}`);
 
-  // The assertion the four fields exist for: the palette of that section offers the one block the
-  // template allows and none of the twenty-six others. Nothing of this travelled in the copy — the
-  // editor read it off the template, by key.
-  const palette = page.getByText(words.addBlock, { exact: true }).first().locator('..');
-  await expect(palette.getByRole('button', { name: blocks.heading.label, exact: true })).toBeVisible();
-  await expect(palette.getByRole('button', { name: blocks.text.label, exact: true })).toHaveCount(0);
+  // The assertion the four fields exist for: with that section selected, the bar of components
+  // offers the one block the template allows and refuses the twenty-six others. Nothing of this
+  // travelled in the copy — the editor read it off the template, by key.
+  //
+  // ⚠️ Refused means **disabled and still shown**, not filtered out, since the palette moved to the
+  // left on 10 September 2026: it is beside the page and its target changes as you click around, so
+  // a list that changed shape each time would be one nobody could learn. Asserted on both halves,
+  // because a bar that had quietly disabled everything would pass on the second line alone.
+  await page.getByRole('button', { name: words.outline, exact: true }).click();
+  await selectSection(page, 'intro');
+
+  const palette = page.getByLabel(blocks.subgroups.text);
+  await expect(palette.getByRole('button', { name: blocks.heading.label, exact: true })).toBeEnabled();
+  await expect(palette.getByRole('button', { name: blocks.text.label, exact: true })).toBeDisabled();
 });
 
 test('the preview is where a page is composed: a block picked there opens its own fields', async ({
@@ -228,7 +247,9 @@ test('the preview is where a page is composed: a block picked there opens its ow
   });
 
   await page.goto(`/staff/${department}/content/${born.id}`);
-  await page.getByRole('button', { name: words.preview, exact: true }).click();
+  // Nothing to press: since 10 September 2026 the middle column *is* the page, which is the second
+  // half of the same decision — the road chosen on 9 September was behind a button, so it was the
+  // road nobody took.
 
   const frame = page.getByRole('region', { name: words.preview });
   const heading = frame.getByRole('heading', { name: first.en });

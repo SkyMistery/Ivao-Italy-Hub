@@ -156,6 +156,8 @@ interface SeedStrings {
           readonly title: string;
           readonly hero?: { readonly heading: string };
           readonly welcome?: { readonly heading: string };
+          /** The free section of a template, which is the one a page adds its own blocks to. */
+          readonly body?: { readonly section: string };
         }
       >
     >;

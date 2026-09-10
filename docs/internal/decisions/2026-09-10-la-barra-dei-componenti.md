@@ -65,12 +65,33 @@ restare lì.
 ⚠️ **La conseguenza sui test**: `e2e/full/template.spec.ts` premeva `Preview` per arrivarci. Quel
 clic è stato tolto, non riscritto: non c'è più niente da premere.
 
+## Quello che ha insegnato il giro pieno, e che era un difetto vero
+
+⚠️ **La prima versione è andata in CI rossa**, ed è colpa di chi scrive: i 52 smoke girano offline e li
+avevo fatti girare, i **13 del giro pieno** vogliono database e server e non li avevo fatti girare.
+Cinque rossi. Tre erano selettori vecchi — la tavolozza dentro la sezione, il pulsante `Preview`,
+l'outline che ora si chiede — ma **due no**, e sono la parte che conta:
+
+1. **A 1280 px le tre colonne non ci stavano.** Con la barra dello staff (~290 px) più i due
+   binari laterali, alla pagina restavano meno di 400 px: cioè l'editor visuale sarebbe stato più
+   stretto dell'anteprima *telefono*. Se ne è accorto il test che misura le tre larghezze
+   dell'anteprima, che è esattamente il difetto per cui era stato scritto — e nessuno screenshot a
+   1600 px lo avrebbe mai mostrato. Le tre colonne ora partono da **`xl` (1280)** e non da `lg`, con
+   i binari a larghezza fissa (13rem e 19rem) invece che elastici, così è la colonna centrale a
+   prendersi tutto lo spazio che avanza. Sotto `xl` si impila, com'era già sotto `lg`.
+2. **Un'asserzione diceva la cosa vecchia.** Il test dei quattro campi del template verificava che la
+   tavolozza della sezione **offrisse un blocco solo**. La barra a sinistra non filtra: disabilita.
+   L'asserzione è stata riscritta su **tutte e due le metà** — `Heading` abilitato *e* `Text`
+   disabilitato — perché una barra che avesse disabilitato tutto sarebbe passata con la sola prima.
+
 ## Che cosa non è stato verificato
 
 L'editor **non è stato guardato con un vero login**: sta dietro OAuth IVAO e le credenziali non si
-toccano. Quello che c'è al posto di un giro a mano sono i tre e2e contro l'API finta di
-`e2e/fixtures.ts`, che è come il resto del back-office è verificato, e due schermate prese dallo
-stesso browser. **Il giro vero lo fa Carmine.**
+toccano. Quello che c'è al posto di un giro a mano sono i tre e2e nuovi contro l'API finta di
+`e2e/fixtures.ts`, i **13 del giro pieno contro l'API vera**, che dopo la correzione girano verdi in
+locale, e due schermate prese in un browser. **Il giro vero lo fa Carmine**, e la cosa da guardare è
+il rapporto fra le larghezze: quanto la colonna centrale sia davvero usabile sullo schermo su cui si
+lavora è la sola cosa che né una fixture né un test possono dire.
 
 ## Dove sta il resto
 
