@@ -25,6 +25,8 @@
 
   "$comment.timezone": "IANA time zone, used to show local times next to UTC.",
   "timezone": "UTC",
+  "$comment.logoUrl": "Where the mark of the division is served from, or leave it out for a division that has none. A file of your own under web/public/ is the simplest place; the hub only draws whatever this points at.",
+  "logoUrl": null,
 
   "$comment.icaoPrefixes": "Safety net for filters and validation; FIRs and airports themselves come from the IVAO API.",
   "icaoPrefixes": ["XX"],

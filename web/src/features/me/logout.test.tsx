@@ -49,6 +49,7 @@ function bootstrap(user: Bootstrap['user']): Bootstrap {
       locales: ['en'],
       defaultLocale: 'en',
       timezone: 'UTC',
+      logoUrl: null,
       firStaffScope: 'all',
       siteDepartment: 'WD',
     },

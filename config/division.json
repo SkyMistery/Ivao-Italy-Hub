@@ -6,6 +6,7 @@
   "defaultLocale": "it",
   "locales": ["it", "en"],
   "timezone": "Europe/Rome",
+  "logoUrl": "/branding/division.svg",
   "icaoPrefixes": ["LI"],
   "modules": { "specialops": true },
   "superAdmins": [704798],

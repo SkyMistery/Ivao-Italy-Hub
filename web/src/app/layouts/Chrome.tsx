@@ -169,9 +169,32 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
               </Button>
             </>
           )}
+
+          {/* ⚠️ The division's own mark, last on the line and drawn only if there is one. It is
+              `config/division.json` that says where it comes from, never this file: the hub draws
+              the mark of whatever division it is running for and knows nothing about which one that
+              is (`CLAUDE.md` §3). A fork points `logoUrl` at a file of its own; a division with no
+              mark leaves the key out and the bar simply has one thing fewer on it. */}
+          <DivisionMark bootstrap={bootstrap} className="ml-1 h-8" />
         </div>
       </NavbarContainer>
     </header>
+  );
+}
+
+/**
+ * The mark of the division, or nothing at all.
+ *
+ * ⚠️ It carries **no alternative text**, and that is the considered answer rather than an omission:
+ * the name of the division is written beside it in both places it appears — on the bar and in the
+ * foot of the page — so a reader who cannot see it is told the same thing twice by the same picture.
+ * `alt=""` is what says "decorative" to a screen reader; a filled-in `alt` here would be noise.
+ */
+function DivisionMark({ bootstrap, className }: { bootstrap: Bootstrap; className: string }) {
+  const logo = bootstrap.division.logoUrl;
+
+  return logo === null || logo === undefined || logo.length === 0 ? null : (
+    <img src={logo} alt="" className={className} />
   );
 }
 
@@ -230,7 +253,13 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
         <div className="flex flex-wrap justify-center gap-x-16 gap-y-8">
           {/* The division: who this site belongs to, what it is for, and where else to find it. */}
           <div className="flex max-w-xs flex-col items-center gap-4 text-center">
-            <p className="text-base font-semibold text-white">{division}</p>
+            {/* The mark beside the name, which is the second place Carmine asked for it. Bigger than
+                the one on the bar: here it is the thing that says whose site this is, and there it
+                is a reminder at the end of a line. */}
+            <div className="flex items-center gap-3">
+              <DivisionMark bootstrap={bootstrap} className="h-10" />
+              <p className="text-base font-semibold text-white">{division}</p>
+            </div>
             <p data-secondary className="text-sm text-white/70">
               {t('footer.about', { division })}
             </p>

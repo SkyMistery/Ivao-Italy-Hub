@@ -144,7 +144,7 @@ connection really came from.
 
 | File | In the repository | What it is |
 | --- | --- | --- |
-| `config/division.json` | yes | Behaviour of the division: code, languages, time zone, optional modules. Not a secret. |
+| `config/division.json` | yes | Behaviour of the division: code, languages, time zone, optional modules, and where its own mark is served from. Not a secret. |
 | `config/ivao-oauth.json` | **no** | The OAuth client of the division. Copy the example and fill it in, or use `Ivao__*` environment variables. |
 | `secrets/*.json` | **no** | Connection string, SMTP, `AllowedHosts`, the trusted proxies, and anything else that must not be read from the web. |
 | `hub-keys/` | **no** | Data Protection keys. Persistent: never delete them, or everybody is logged out. |

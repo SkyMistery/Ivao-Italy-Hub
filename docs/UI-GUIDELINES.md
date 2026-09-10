@@ -487,6 +487,16 @@ back an element, built once per set of classes and kept.
 
 ## The frame of every page: one bar, and a footer in columns
 
+**The mark of the division comes from configuration, never from this repository.**
+`config/division.json` says where it is served from (`logoUrl`) and the frame draws whatever that
+points at, in two places: the end of the bar and beside the name in the footer. A division that has
+no mark leaves the key out and gets a bar and a footer with one thing fewer on them — which is the
+state the tests are written against, because it is the state a fork starts in.
+
+It carries **no alternative text**. The name of the division is written beside it in both places, so
+a filled-in `alt` would say the same thing twice to whoever cannot see the picture; `alt=""` is what
+says decorative instead.
+
 **The bar at the top is one row.** The menu, the search, the language, the theme, the account and
 the way into the back office all ride in `Navbar`'s own children slot, which Atmosphere draws at the
 far end of the line that carries the logo and the division's name. Two rows was a second band of

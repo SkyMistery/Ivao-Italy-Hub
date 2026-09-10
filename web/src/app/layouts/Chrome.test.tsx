@@ -51,6 +51,7 @@ const bootstrap: Bootstrap = {
     locales: ['en'],
     defaultLocale: 'en',
     timezone: 'UTC',
+    logoUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
   },
@@ -210,6 +211,43 @@ const withFooter: Bootstrap = {
     ],
   },
 };
+
+/**
+ * The mark of the division, in the two places Carmine asked for it — and, more importantly, absent
+ * from both when a division has none.
+ *
+ * ⚠️ That second half is the one that matters for a fork: the hub draws whatever `logoUrl` points
+ * at and knows nothing about which division it is running for, so a division that leaves the key
+ * out must get a bar and a footer that look finished rather than two broken pictures.
+ */
+test('a division with no mark of its own is drawn without one', async () => {
+  renderShell();
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  expect(document.querySelectorAll('img')).toHaveLength(0);
+});
+
+test('the mark is drawn twice when the division has one, and says nothing to a screen reader', async () => {
+  renderShell({
+    ...bootstrap,
+    division: { ...bootstrap.division, logoUrl: '/branding/division.svg' },
+  });
+
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  const marks = [...document.querySelectorAll('img')];
+
+  // Twice: on the bar and in the foot of the page.
+  expect(marks).toHaveLength(2);
+  expect(marks.every((mark) => mark.getAttribute('src') === '/branding/division.svg')).toBe(true);
+
+  // ⚠️ And decorative in both: the name of the division is written beside it in both places, so an
+  // alternative text would say the same thing twice to whoever cannot see the picture. Asserted,
+  // because "helpfully" filling this in later is exactly the kind of improvement that makes a page
+  // worse for the people it is meant to help.
+  expect(marks.every((mark) => mark.getAttribute('alt') === '')).toBe(true);
+  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+});
 
 test('a footer column is a heading with its links under it, and the heading need not lead anywhere', async () => {
   renderShell(withFooter);

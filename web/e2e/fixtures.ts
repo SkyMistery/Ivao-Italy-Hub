@@ -20,6 +20,10 @@ export const anonymousBootstrap = {
     // fixture whose division sits in UTC makes the two lines identical — which is exactly how a
     // screen showing UTC twice would pass unnoticed (HANDOFF §13, third false alarm).
     timezone: 'Europe/Rome',
+    // ⚠️ A division with no mark of its own, and deliberately: this suite is about the front end
+    // assembling itself for **any** division, and a fixture carrying Italy's logo would be a suite
+    // that only proves the case where there is one. The mark has its own test beside it.
+    logoUrl: null,
     firStaffScope: 'all',
     // Which department owns the site, and therefore where its menu is edited. The client is told
     // rather than knowing (design M1 §8.1).

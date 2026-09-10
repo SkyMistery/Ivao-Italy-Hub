@@ -38,6 +38,7 @@ const bootstrap = {
     locales: ['en'],
     defaultLocale: 'en',
     timezone: 'UTC',
+    logoUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
   },
