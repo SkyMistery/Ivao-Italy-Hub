@@ -89,3 +89,22 @@ alla lettera solo in header e footer, come chiesto.
 Tutto quanto sopra è verificato contro l'API finta degli e2e e il giro completo contro MariaDB vera,
 non con un login IVAO vero. Da guardare a occhio: **la tipografia nuova sulle schermate più dense**
 (le liste del back-office, l'editor), dove il cambio di carattere cambia anche le larghezze.
+
+---
+
+## Poi: dove porta il tasto Staff
+
+Carmine ha chiesto che il tasto **Staff** della barra lo porti nella sua dashboard da staffista, «dove
+ci sono poi tutte le sezioni che mi interessano (che vedremo più avanti)», e di verificare solo che ci
+arrivi.
+
+**Verificato in un browser, cliccando:** il tasto porta a `/staff`, che non è una pagina ma una porta —
+rimanda alla **dashboard del primo dipartimento** raggiungibile (`/staff/ed` per l'utente di prova, **HQ**
+per Carmine, che da superadmin li raggiunge tutti). È la dashboard del *dipartimento*, uguale per tutto
+il suo staff. **Una dashboard personale da staffista non esiste**; l'unica pagina personale è `/me`, che
+sta nell'area membri.
+
+**Decisione di Carmine, 11 settembre 2026: lasciarlo così per ora.** Il tasto punta a `/staff` e non a
+un dipartimento, quindi quando si progetteranno le sezioni personali basterà che `/staff` diventi quella
+pagina: il tasto ci porterà senza essere toccato. Farla adesso sarebbe stata una pagina vuota, e una
+schermata nuova è (c): prima la nota di design.
