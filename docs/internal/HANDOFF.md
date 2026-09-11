@@ -3,10 +3,37 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 12 settembre 2026 — **G14, il documento operativo, è costruita**
-sul branch `m1/g14-operational-document` (cinque commit, il paragrafo «G14» più sotto, PR #59), e
-**due immagini identiche sono un file** sul branch `m1/media-dedupe` sopra di essa (piano 0.66,
-nota del 12 settembre). Prima: **il
+**Ultimo aggiornamento:** 12 settembre 2026, mattina — scritto per chi apre una chat nuova.
+
+> **Per chi apre adesso — due PR aperte, impilate, tutte e due verdi in locale:**
+>
+> 1. **PR #59 `m1/g14-operational-document` → `main`**: G14, il documento operativo (il paragrafo
+>    «G14» più sotto). CI **verde** dopo un fix di isolamento dei test (un secondo coordinatore ATC
+>    nel DB condiviso rompeva `ContactsAndNotificationsTests`; ora il test del job usa Special Ops).
+> 2. **PR #60 `m1/media-dedupe` → `m1/g14-operational-document`**: due immagini identiche sono un
+>    file (il paragrafo subito dopo G14). **Sopra la #59 e non da `main`** perché tutte e due
+>    aggiungono una migrazione EF e due snapshot da `main` avrebbero litigato.
+>
+> **Ordine di merge** (memoria `stacked-pr-base-deletion`): mergiare la #59, ritargettare la #60 su
+> `main` (`gh pr edit 60 --base main`), mergiare la #60, **solo dopo** cancellare i due branch remoti.
+> Cancellare il branch base con la #59 chiuderebbe la #60 per sempre. Carmine mergia da sé; se
+> delega, è questa sequenza.
+>
+> **Sulla macchina di Carmine**: l'API su `:5000` gira con il codice della #60 e le due migrazioni
+> (`AddOperationalDocument`, `AddMediaSha256`) sono applicate al DB di sviluppo; il DB ha un
+> documento di prova `lirf-twr-sop-test` (id 19, AOD, pubblicato con AIRAC 2609) da cancellare
+> quando si vuole. Il tag **`v0.2.0-m1` non è messo**: aspetta la scheda `tools/demo-m1.md`
+> riseguita da Carmine — e la scheda **non nomina ancora il documento operativo** (da aggiungere).
+>
+> **Piccole cose lasciate indietro, tutte scritte nel piano**: l'interruttore «da rivedere» nella
+> lista dei documenti (il filtro `filter[reviewDue]` c'è, la schermata non lo chiede); la stampa
+> verificata dal test e non a occhio su carta; le righe della libreria caricate prima del 12
+> settembre non hanno impronta (mezz'ora di job, se serve); il METAR sull'API IVAO
+> (`/v2/airports/{icao}/metar`) non è stato guardato.
+
+**G14 e la deduplica, il 12 settembre**: G14 è costruita sul branch `m1/g14-operational-document`
+(cinque commit, PR #59), e **due immagini identiche sono un file** sul branch `m1/media-dedupe`
+sopra di essa (piano 0.66, nota del 12 settembre, PR #60). Prima: **il
 10 e l'11 settembre Carmine ha collaudato l'hub a occhio e ha chiesto una lunga serie di
 rifiniture, tutte fatte e tutte sulla PR #57**: l'editor a tre
 colonne con la barra dei componenti, la cornice del sito (barra a una riga, footer a colonne dal menu,
@@ -55,17 +82,19 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** **v0.63** (11 set, notte: sette comodità dell'editor — lingua dell'anteprima, doppio
-clic, tasti, scorrimento, duplica sezione, upload dal selettore, bozza | pubblicato — e la
-deduplica dei file caricati **da decidere**; v0.62 quattro livelli di sezioni, il selettore di file
+**Piano:** **v0.66** (12 set: due immagini identiche sono un file; v0.65 G14 costruita, con le
+quattro cose decise strada facendo; v0.64 G14 aperta e disegnata prima del codice; v0.63, 11 set,
+notte: sette comodità dell'editor — lingua dell'anteprima, doppio
+clic, tasti, scorrimento, duplica sezione, upload dal selettore, bozza | pubblicato; v0.62 quattro livelli di sezioni, il selettore di file
 porta alla libreria, la targhetta dentro la sezione e i due sfondi con un glifo; v0.61 i comandi
 anche sull'oggetto nella pagina, l'outline per colonne;
 v0.60 **G15, l'editor che risponde**, decisa e costruita in giornata prima di G14; v0.59
 le due dashboard personali si progettano per prime in M2; v0.58 i sette sfondi di sezione, §16.C
 riaperto e cambiato). **Design M1:** v1.15
-(`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
-G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è aperta** (§28) e raccoglie le rifiniture del
-collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
+(`03-design-m1.md`). **Piano di implementazione M1:** v2.21 (`04-piano-implementazione-m1.md`, fasi
+G0–G15): **da G0 a G12 sono chiuse** (§14–§27); **G13** (§28) raccoglie le rifiniture del collaudo,
+tutte fatte; **G15** (l'editor che risponde) e **G14** (il documento operativo) sono costruite, la
+prima su `main`, la seconda sulla PR #59 — il tag viene dopo che Carmine ha rieseguito la scheda.
 **Test, misurati il 12 settembre su `m1/media-dedupe` (sopra G14):** **478 .NET** (306 unit +
 172 integrazione, **tutta la suite eseguita in locale**, verde in 80 s) + **371 Vitest** + **56
 smoke Playwright** + **17 del giro pieno** (`pnpm e2e:full`, rieseguito dopo G14: il giro preme ora
@@ -170,6 +199,18 @@ salvata con «Salva bozza» veniva fermata dalla guardia** di G15 («lasciare la
 dopo: la scheda `tools/demo-m1.md` non nomina il documento operativo; l'interruttore «da rivedere»
 nella lista; la stampa vista su carta a occhio. Il METAR c'è sull'API IVAO
 (`/v2/airports/{icao}/metar`), ma la forma della risposta non è stata vista.
+
+**Due immagini identiche sono un file — il 12 settembre 2026**, branch `m1/media-dedupe` sopra G14,
+PR #60 (piano 0.66, `decisions/2026-09-12-due-immagini-identiche.md`; Carmine: «procediamo con le
+immagini identiche»). Era **(c)**: nessuna colonna diceva che cosa c'è dentro un file. Ora
+`cms_media.sha256` (migrazione `AddMediaSha256`), calcolata da `MediaStorage.SaveAsync` nello stesso
+passaggio della copia (`StoredFile(StoredName, Sha256)`); un caricamento che trova **nel suo
+dipartimento** una riga viva con la stessa impronta toglie il file appena scritto e risponde
+**quella riga, `200` invece di `201`**. `useUploadMedia` risponde `{ media, alreadyHere }`: la
+libreria va alla scheda che c'era e lo dice, il selettore dell'editor sceglie e tace. Mai attraverso
+i dipartimenti, mai due righe su un file. ⚠️ **Il PNG finto dei test della libreria porta sedici
+byte casuali** (`MediaEndToEndTests.Png`): un 10×10 identico caricato da due test era diventato una
+riga sola il cui file il primo test aveva già cancellato. Conto: 478 .NET (uno nuovo).
 
 **Da decidere prima di scrivere codice:**
 
