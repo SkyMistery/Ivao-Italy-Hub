@@ -19,7 +19,7 @@ interface CommonStrings {
   readonly auth: { readonly login: string };
   readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
   readonly forbidden: { readonly title: string };
-  readonly departments: { readonly WD: string };
+  readonly departments: { readonly WD: string; readonly ED: string };
   readonly liveStatus: { readonly title: string; readonly updatedAt: string };
   readonly search: {
     readonly title: string;

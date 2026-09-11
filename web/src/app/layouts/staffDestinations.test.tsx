@@ -53,12 +53,15 @@ const bootstrap = {
 test('a department is marked by its own code and not by an icon every one of them shares', () => {
   const groups = staffDestinations(bootstrap, (key) => key);
 
-  const departments = groups.filter((group) => ['WD', 'ED'].includes(group.title));
+  // By the code, which is what the square draws; the heading beside it says the department's name
+  // since 11 September 2026.
+  const departments = groups.filter((group) => ['WD', 'ED'].includes(group.code ?? ''));
   expect(departments).toHaveLength(2);
 
   for (const group of departments) {
     const { unmount } = render(<group.Icon />);
-    expect(screen.getByText(group.title)).toBeInTheDocument();
+    expect(screen.getByText(group.code!)).toBeInTheDocument();
+    expect(group.title).toBe(`departments.${group.code}`);
     unmount();
   }
 });

@@ -54,6 +54,12 @@ export interface StaffDestination {
 /** A heading and what is under it. */
 export interface StaffDestinationGroup {
   readonly title: string;
+  /**
+   * The short code the heading used to be, kept because people type it: somebody looking for the
+   * documents of Events writes "ED doc" into the palette, not the word. Absent for the groups that
+   * are not a department.
+   */
+  readonly code?: string;
   readonly Icon: ComponentType<{ className?: string }>;
   readonly items: readonly StaffDestination[];
 }
@@ -75,7 +81,11 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
     const at = (resource: string) => `/staff/${deptParam.format(department)}${resource}`;
 
     return {
-      title: department,
+      // ⚠️ The name and not the code since 11 September 2026 (Carmine: "ED becomes Events, AOD ATC
+      // Operations"). The code is still on screen, in the square beside it, so nothing is lost and a
+      // newcomer no longer has to know nine acronyms to find their way.
+      title: t(`departments.${department}`),
+      code: department,
       // The code is the mark: no icon for a department (decided 7 Sep 2026, after the demo). All
       // nine used to carry the same shield, which told nobody anything.
       Icon: DEPARTMENT_MARKS[department],

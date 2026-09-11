@@ -37,7 +37,17 @@ import { searchQuery } from './queries';
  * The screens, on the other hand, are a list this browser holds, so those **are** filtered here —
  * by the same box, without a round trip.
  */
-export function SearchPalette({ bootstrap }: { bootstrap: Bootstrap }) {
+export function SearchPalette({
+  bootstrap,
+  compact = false,
+}: {
+  bootstrap: Bootstrap;
+  /**
+   * An icon instead of the box, for the collapsed strip of the sidebar the search lives in since
+   * 11 September 2026. The palette behind it is the same one either way, and so is the shortcut.
+   */
+  compact?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
@@ -62,8 +72,8 @@ export function SearchPalette({ bootstrap }: { bootstrap: Bootstrap }) {
 
   const hits = answer.data?.results.items ?? [];
   const screens = staffDestinations(bootstrap, t)
-    .flatMap((group) => group.items.map((item) => ({ ...item, group: group.title })))
-    .filter((item) => matches(item.title, item.group, query));
+    .flatMap((group) => group.items.map((item) => ({ ...item, group: group.title, code: group.code ?? '' })))
+    .filter((item) => matches(item.title, `${item.code} ${item.group}`, query));
 
   const go = (href: string) => {
     setOpen(false);
@@ -82,22 +92,37 @@ export function SearchPalette({ bootstrap }: { bootstrap: Bootstrap }) {
           A button dressed as a box, and not an input: what is typed belongs to the palette, and a
           second box that also searched would be a second search — the thing this whole screen
           exists not to be (design M1 §7). The shortcut is written on it, so the box teaches it. */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="border-border bg-muted/40 text-muted-foreground hover:bg-muted focus-visible:ring-fuselage-700 flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors focus-visible:ring-1 focus-visible:outline-hidden"
-      >
-        <Search aria-hidden className="size-4 shrink-0" />
-        <span className="truncate">{t('search.palette.placeholder')}</span>
-        {/* ⚠️ `max-sm:hidden` and not `hidden sm:block`, which does nothing in this application:
+      {compact ? (
+        // The collapsed strip has room for a square and no more. Named, because a button that is
+        // only an icon says what it is to a screen reader through its label and to everybody else
+        // through its tooltip.
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={t('search.palette.placeholder')}
+          title={`${t('search.palette.placeholder')} (${t('search.palette.shortcut')})`}
+          className="text-fuselage-400 hover:bg-fuselage-100 hover:text-fuselage-600 dark:hover:bg-fuselage-800 dark:hover:text-fuselage-200 flex size-9 items-center justify-center rounded-md transition-colors"
+        >
+          <Search aria-hidden className="size-4" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="border-border bg-muted/40 text-muted-foreground hover:bg-muted focus-visible:ring-fuselage-700 flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors focus-visible:ring-1 focus-visible:outline-hidden"
+        >
+          <Search aria-hidden className="size-4 shrink-0" />
+          <span className="truncate">{t('search.palette.placeholder')}</span>
+          {/* ⚠️ `max-sm:hidden` and not `hidden sm:block`, which does nothing in this application:
             Atmosphere's stylesheet is imported after Tailwind's utilities and declares `.hidden`
             again, so the plain class wins over the one inside the `sm` media query and the element
             never comes back. Measured here, in the built bundle, after wondering where this had
             gone. */}
-        <kbd className="border-border bg-background ml-auto rounded border px-1.5 py-0.5 text-xs max-sm:hidden">
-          {t('search.palette.shortcut')}
-        </kbd>
-      </button>
+          <kbd className="border-border bg-background ml-auto rounded border px-1.5 py-0.5 text-xs whitespace-nowrap max-sm:hidden">
+            {t('search.palette.shortcut')}
+          </kbd>
+        </button>
+      )}
 
       {/* ⚠️ The three pieces `CommandDialogRoot` puts together — a dialog, its content, and a
           command — written out here for one reason: it forwards its own props to the **dialog**,
@@ -158,11 +183,24 @@ export function SearchPalette({ bootstrap }: { bootstrap: Bootstrap }) {
  * folds, so "citta" finds "Città" here too — and an empty box offers everything, because a palette
  * that opens empty is a palette that has to be searched before it is useful.
  */
+/**
+ * Whether a screen answers what was typed: **every word** of it, in any order, somewhere in the
+ * department and the name of the screen.
+ *
+ * ⚠️ Word by word and not as one phrase since 11 September 2026. When the department's heading
+ * became its name, what is searched became "ED Events Links", and the phrase "ED links" is not in
+ * it — the words are not next to each other any more. A test asked the question, and the answer was
+ * that renaming a heading had quietly broken the way people have always searched. It is also simply
+ * the better rule: "links events" finds the same screen as "events links".
+ */
 function matches(title: string, group: string, query: string): boolean {
-  const typed = fold(query.trim());
-  if (typed === '') {
+  const words = fold(query.trim())
+    .split(/\s+/)
+    .filter((word) => word !== '');
+  if (words.length === 0) {
     return true;
   }
 
-  return fold(`${group} ${title}`).includes(typed);
+  const haystack = fold(`${group} ${title}`);
+  return words.every((word) => haystack.includes(word));
 }

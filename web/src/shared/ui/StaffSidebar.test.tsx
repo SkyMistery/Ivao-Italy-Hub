@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CalendarDays, FileText, KeyRound, Newspaper, ShieldCheck } from 'lucide-react';
+import { CalendarDays, FileText, KeyRound, LayoutDashboard, Newspaper, ShieldCheck } from 'lucide-react';
 import i18next from 'i18next';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 import { beforeAll, expect, test } from 'vitest';
@@ -37,6 +37,9 @@ const groups: StaffSidebarGroup[] = [
     title: 'Events',
     Icon: CalendarDays,
     items: [
+      // The department's own root, as the real dashboard entry is: the address every other address
+      // of the department begins with, which is what the most-specific rule is about.
+      { title: 'Dashboard', description: 'Its home.', href: '/staff/ed', Icon: LayoutDashboard },
       { title: 'Pages', description: 'What it publishes.', href: '/staff/ed/content', Icon: FileText },
       { title: 'News', description: 'What it announces.', href: '/staff/ed/news', Icon: Newspaper },
     ],
@@ -55,13 +58,24 @@ const groups: StaffSidebarGroup[] = [
   },
 ];
 
+/**
+ * The same check `StaffLayout` hands the sidebar: an entry matches when the path is its address or
+ * begins with it. Deliberately the loose one, because making the sidebar pick the right entry out
+ * of several matches is the thing under test.
+ */
+const prefixOf = (here: string) => (href: string) => here === href || here.startsWith(`${href}/`);
+
 function mount(here = '/staff/ed/content') {
   return render(
     <I18nextProvider i18n={i18n}>
-      <StaffSidebar groups={groups} isActiveCheck={(href) => href === here} />
+      <StaffSidebar groups={groups} isActiveCheck={prefixOf(here)} />
     </I18nextProvider>,
   );
 }
+
+/** Whether an entry is drawn as the current one: its square takes the filled, active colours. */
+const isLit = (name: string) =>
+  screen.getByRole('link', { name: new RegExp(name) }).querySelector('.bg-atmos-700') !== null;
 
 test('the collapse button is the first thing in the panel, and it is an icon and nothing else', () => {
   mount();
@@ -121,5 +135,61 @@ test('the group holding the page you are on opens itself, and the others do not'
   // Where you are, said without a click. After a reload the alternative is a panel of shut
   // headings that tells you nothing about which screen you are looking at.
   expect(screen.getByRole('link', { name: /Permissions/ })).toBeVisible();
+  expect(screen.queryByRole('link', { name: /Pages/ })).not.toBeInTheDocument();
+});
+
+test('only the most specific entry is lit: the dashboard is not current on the documents', () => {
+  // ⚠️ The defect Carmine found on 11 September 2026. The dashboard's address is the department's own
+  // root, so every address of the department begins with it, and a prefix check says yes to both
+  // it and the entry you are really on. The sidebar is handed exactly that loose check, and has to
+  // pick the one.
+  mount('/staff/ed/news');
+
+  expect(isLit('News')).toBe(true);
+  expect(isLit('Dashboard')).toBe(false);
+});
+
+test('a detail page still lights the list it belongs to', () => {
+  // The other half of the same rule: most specific among the entries, not exact. A row opened from
+  // the news is still in the news, and the sidebar still says so.
+  mount('/staff/ed/news/42');
+
+  expect(isLit('News')).toBe(true);
+  expect(isLit('Dashboard')).toBe(false);
+});
+
+test('one department at a time: opening a second one shuts the first', async () => {
+  // Carmine, 11 September 2026: nine departments open at once is a panel taller than any screen.
+  const user = userEvent.setup();
+  mount('/staff/ed/content');
+
+  expect(screen.getByRole('link', { name: /Pages/ })).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: /Administration/ }));
+
+  expect(screen.getByRole('link', { name: /Permissions/ })).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /Pages/ })).not.toBeInTheDocument();
+
+  // And clicking the open one shuts it: the only way to have none open, which a panel should allow.
+  await user.click(screen.getByRole('button', { name: /Administration/ }));
+  expect(screen.queryByRole('link', { name: /Permissions/ })).not.toBeInTheDocument();
+});
+
+test('from the collapsed strip, a department opens the panel on that department', async () => {
+  // Carmine, 11 September 2026. Collapsed, a square used to be a switch that changed nothing anybody
+  // could see — the group toggled inside a panel too narrow to show it.
+  const user = userEvent.setup();
+  mount('/staff/ed/content');
+
+  await user.click(screen.getByRole('button', { name: englishCommon.nav.sidebar.collapse }));
+
+  const panel = screen.getByRole('complementary');
+  expect(panel.className).toContain('w-17');
+
+  // Collapsed, the heading is a square whose name is its tooltip.
+  await user.click(screen.getByTitle('Administration'));
+
+  expect(panel.className).toContain('w-72');
+  expect(screen.getByRole('link', { name: /Permissions/ })).toBeInTheDocument();
   expect(screen.queryByRole('link', { name: /Pages/ })).not.toBeInTheDocument();
 });

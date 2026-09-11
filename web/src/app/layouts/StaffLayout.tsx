@@ -51,18 +51,13 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
           groups={groups}
           asLink={RouterAnchor}
           isActiveCheck={(href) => location.pathname === href || location.pathname.startsWith(`${href}/`)}
+          // ⚠️ In the sidebar and no longer above the content (Carmine, 11 September 2026). It could not
+          // go there while the sidebar was Atmosphere's, which had no slot; it can now that the sidebar
+          // is ours, and it sits beside the collapse button. It is still everywhere in the back office,
+          // because a palette that only opens on one screen is a palette nobody learns (design M1 §7).
+          top={(collapsed) => <SearchPalette bootstrap={bootstrap} compact={collapsed} />}
         />
         <main className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-8">
-          {/* Everywhere in the back office, because a palette that only opens on one screen is a
-              palette nobody learns (design M1 §7) — and since the demo it brings a visible box
-              with it, because a shortcut nobody is told about is a shortcut nobody uses.
-
-              ⚠️ At the top of the content column and not inside the sidebar, which is Atmosphere's
-              own component and has no slot to put anything in. Wrapping it in a column of our own
-              is exactly what once drew the whole back office inside a 255 pixel aside (HANDOFF
-              §13), and a search box is not worth doing that again. */}
-          <SearchPalette bootstrap={bootstrap} />
-
           <Outlet />
         </main>
       </div>

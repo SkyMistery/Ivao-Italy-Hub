@@ -119,8 +119,11 @@ test.describe('the palette of the back office', () => {
     await expect(palette).toBeVisible();
 
     // The screens this member may reach, which are the same ones the sidebar draws: one list, read
-    // twice. `ED` is the only department of this fixture.
-    await expect(palette.getByText(`ED — ${englishCommon.links.title}`)).toBeVisible();
+    // twice. `ED` is the only department of this fixture, written by its name since 11 September
+    // 2026, as the sidebar writes it.
+    await expect(
+      palette.getByText(`${englishCommon.departments.ED} — ${englishCommon.links.title}`),
+    ).toBeVisible();
   });
 
   test('a hit matched on its body is offered, and is not filtered out again', async ({ page }) => {
