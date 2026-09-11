@@ -972,6 +972,9 @@ export function CalendarBlock({ props, data }: BlockComponentProps) {
       // next to it and never instead of it (plan §9.5). The zone comes from `/api/me`, never a
       // constant — a hub that assumed one would be a hub only one division can fork.
       timezone={bootstrap?.division.timezone ?? 'UTC'}
+      // The words and the colours of the division's vocabulary, from the same bootstrap: a chip
+      // says what the kind is called in the language on screen, not the key an entry stores.
+      kinds={bootstrap?.calendarKinds ?? []}
       empty={t('blocks.calendar.empty')}
     />
   );

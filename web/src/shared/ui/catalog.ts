@@ -22,10 +22,16 @@ export const UI_KIT_COMPONENTS = [
   'VisibilityBadge',
   'StatusBadge',
   'ConfirmDialog',
+  // The fifth added since the list was written, and the first since M1 closed with the four it
+  // predicted: Carmine asked for it after the demo, because an editor that saved said nothing.
+  'Notice',
   'MediaPicker',
   'CalendarView',
   'ContactForm',
   'LiveStatusStrip',
+  // The twenty-first, and the second Carmine has asked for: Atmosphere's sidebar draws its own
+  // collapse button, at the bottom, full width, with an English word written into the library.
+  'StaffSidebar',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

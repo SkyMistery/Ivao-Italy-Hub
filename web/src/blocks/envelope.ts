@@ -21,12 +21,20 @@ export const RENDER_MODES = ['live', 'frozen'] as const;
 export type RenderMode = (typeof RENDER_MODES)[number];
 
 /**
- * What sits behind a section. Four, since G3: `image` is the one that carries something with it —
- * `mediaId`, a file of the library — and it is what the design asked for from the start
- * (design M1 §1.4). A background belongs to the section and never to a block, so that the ground
- * under two blocks does not depend on which two they are.
+ * What sits behind a section. Four since G3 and seven since 11 September 2026, when Carmine asked
+ * for the palette of va.ivao.aero's page builder: `brand`, `deep` and `dark` are the three dark
+ * grounds, drawn in the dark theme so that what is on them reads by construction (the renderer
+ * explains how). There is still no free colour, and deliberately — that is the one piece of theirs
+ * not taken, because a colour chosen by hand cannot promise that the text on it can be read.
+ *
+ * `image` is the one that carries something with it — `mediaId`, a file of the library. A background
+ * belongs to the section and never to a block, so that the ground under two blocks does not depend
+ * on which two they are.
+ *
+ * ⚠️ The other half is `BlockDocumentWalker.Backgrounds` on the server, and the two agree by hand.
  */
-export const BACKGROUNDS = ['none', 'muted', 'accent', 'image'] as const;
+export const BACKGROUNDS = ['none', 'muted', 'accent', 'brand', 'deep', 'dark', 'image'] as const;
+export type Background = (typeof BACKGROUNDS)[number];
 export const PADDINGS = ['none', 'sm', 'md', 'lg'] as const;
 
 /**
@@ -128,6 +136,30 @@ export function emptyBody(): Body {
 export function readBody(value: unknown): Body {
   const parsed = bodySchema.safeParse(value);
   return parsed.success ? parsed.data : emptyBody();
+}
+
+/**
+ * The blocks that draw the title of the page they are at the top of: a hero, and a heading somebody
+ * set to level one.
+ *
+ * ⚠️ It exists because every public page had **two** `h1` — the title of the row, drawn `sr-only` by
+ * the route, and the block at the top of the body
+ * (`decisions/2026-09-07-giro-visivo-m1.md`, finding 4). One of them had to go, and the one to keep
+ * is the visible one: the tab and the search result read the row's title from the metadata, which
+ * does not need an element in the document.
+ *
+ * The list lives here, beside the other closed sets of the envelope, and not in the route: which
+ * block draws a title is a fact about blocks.
+ */
+export function startsWithPageTitle(body: Body): boolean {
+  const first = body.sections[0]?.blocks[0];
+  if (first === undefined) {
+    return false;
+  }
+
+  return (
+    first.type === 'hero' || (first.type === 'heading' && (first.props as { level?: unknown }).level === 1)
+  );
 }
 
 /** Every block of a body, outer sections first, the way the server enumerates them. */

@@ -247,6 +247,41 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
             "a query with one word long enough to be indexed is a real query");
     }
 
+    [Fact]
+    public async Task APageReachesTheIndexAsProseAndNothingElse()
+    {
+        // ⚠️ Found by reading a real snippet on `/start`, which said "… quattro semplici passi.
+        // left muted Prima di tutto…": `align` and `tone` of the `hero` block, two enumerations
+        // stored as strings, in the middle of a sentence. And beside them the asterisks of the
+        // Markdown, which a reader should never be shown either.
+        //
+        // A page and not a link, because this is the half only a body of blocks has: a link carries
+        // two translated columns and could never have shown it.
+        var token = TestContext.Current.CancellationToken;
+        var needle = $"vercelli{Guid.NewGuid():N}"[..18];
+
+        await SeedPageAsync(needle, token);
+
+        using var client = _factory.CreateApiClient();
+        var hit = await FirstHitAsync(client, needle, "it", token);
+        var snippet = hit.GetProperty("snippet").GetString()!;
+
+        // The prose is there, in both of the blocks that carry any.
+        Assert.Contains(needle, snippet, StringComparison.OrdinalIgnoreCase);
+
+        // And nothing that is not prose. `align`, `tone` and the address of the button are values
+        // of the schema, and the schema is something the backend deliberately does not know: it
+        // leaves them out because they are not inside a translated map, not because it recognised
+        // them.
+        Assert.DoesNotContain("muted", snippet, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("center", snippet, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("example.org", snippet, StringComparison.OrdinalIgnoreCase);
+
+        // Nor the Markdown that carried the emphasis.
+        Assert.DoesNotContain("*", snippet, StringComparison.Ordinal);
+        Assert.DoesNotContain("##", snippet, StringComparison.Ordinal);
+    }
+
     // ---- helpers -------------------------------------------------------------------------------
 
     /// <summary>Enough words to push what follows past the length of a snippet.</summary>
@@ -318,6 +353,54 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Url = $"https://example.org/{Guid.NewGuid():N}",
             IsActive = true,
         });
+
+        // The projection into cms_search_index is written by the save changes interceptor, inside
+        // this very transaction. Nothing here writes an index row by hand.
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// A published page whose body is two real blocks: one with translated prose beside two
+    /// enumerations and an address, one with Markdown in it. Written through the database because
+    /// what is under test is the projection, and the projection is the interceptor's.
+    /// </summary>
+    private async Task SeedPageAsync(string needle, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var page = new ContentEntry
+        {
+            Kind = ContentKind.Page,
+            Slug = $"prose-{Guid.NewGuid():N}"[..24],
+            OwnerDepartment = Department.WD,
+            Visibility = Visibility.Public,
+            Status = PublishStatus.Published,
+            PublishedAt = DateTime.UtcNow,
+            Title = "Una pagina".L("A page"),
+            SchemaVersion = 1,
+            BodyJson = $$"""
+            {
+              "schemaVersion": 1,
+              "sections": [ { "id": "s", "blocks": [
+                { "id": "b1", "type": "hero", "version": 1, "props": {
+                  "title": { "it": "Quattro semplici passi", "en": "Four simple steps" },
+                  "align": "center",
+                  "tone": "muted",
+                  "href": "https://example.org/altrove"
+                } },
+                { "id": "b2", "type": "text", "version": 1, "props": {
+                  "markdown": {
+                    "it": "## Prima di tutto\n\n**IVAO {{needle}}** è la community dei piloti.",
+                    "en": "## First of all\n\n**IVAO {{needle}}** is the community of pilots."
+                  }
+                } }
+              ] } ]
+            }
+            """,
+        };
+
+        database.Contents.Add(page);
 
         // The projection into cms_search_index is written by the save changes interceptor, inside
         // this very transaction. Nothing here writes an index row by hand.

@@ -1,9 +1,348 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.45 — 7 settembre 2026 (**M1 è chiusa**: il conto contro la previsione, e la metrica «endpoint scritti a mano» corretta in §16)
+**Versione documento:** 0.60 — 11 settembre 2026 (**G15, l'editor che risponde**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera, autosalvataggio della bozza, trascinamento dalla barra, anteprima mobile vera — e viene prima di G14)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.60** (11 set 2026): **l'editor che risponde**, fase **G15**, decisa da Carmine con
+davanti il page builder di va.ivao.aero e il nostro editor uno accanto all'altro. Nota
+`decisions/2026-09-11-l-editor-che-risponde.md`; perimetro e ordine in `04-piano-implementazione-m1.md`,
+fase G15. **Viene prima di G14** (il documento operativo), perché è ciò che si sta collaudando adesso.
+
+Cinque cose, quattro delle quali non toccano il server: le **proprietà di un blocco si applicano
+mentre si scrive** (settima estensione del generatore di form, `onChange` su valori validi, via il
+pulsante «Apply»); **annulla e ripeti** con `Ctrl/⌘+Z` e `Shift+Z`, che non agiscono dentro un campo,
+con **coalescenza** per chiave — una frase scritta è un passo, non venti — e cinquanta passi;
+**trascinare un componente dalla barra fra due blocchi**, con dnd-kit che c'è già e un `DropZone`
+portato dal contesto di picking, così il renderer non importa dnd-kit e il pubblico resta inerte; e
+**l'anteprima mobile vera**: misurato, a 390 px una sezione a due colonne ne disegnava ancora due da
+167 px, perché `md:grid-cols-2` guarda la finestra. La nostra anteprima era finta come la loro; con
+le container query di Tailwind 4 sulla radice del renderer non lo è più, senza iframe.
+
+La quinta, l'**autosalvataggio della bozza**, è l'unica che tocca il DB, e ha tre decisioni dentro:
+**dieci secondi** di pausa e all'uscita, mai su una riga nuova, mai se non è cambiato niente; la
+versione della riga **esce dal form** dei metadati, che altrimenti verrebbe rimontato mentre
+qualcuno scrive; e l'audit dell'autosalvataggio è la **(B)**: una riga `autosaved` con i campi
+cambiati e **senza il corpo** (~200 byte invece di due copie del corpo), mentre «Save draft» premuto
+a mano e «Publish» restano auditati per intero. Scelta per il DB condiviso con vIPI (§2.5), e perché
+della bozza di dieci secondi fa nessuno chiederà la storia. Si chiude così anche il punto 3 della
+nota del 10 settembre (`2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`).
+
+**Changelog 0.59** (11 set 2026): **le due dashboard personali hanno una data** — si progettano
+**per prime in M2**, prima di `05-design-m2.md`. Decisione di Carmine, presa mentre collaudava
+l'editor.
+
+Fino a oggi nessuna milestone le nominava. **`/me`** compone i widget che i moduli registrano, ma il
+nucleo ne registra uno solo (`welcome`): il «cosa posso fare oggi» di §8.1 si riempie coi moduli. La
+**dashboard personale da staffista** non esiste: `/staff` è una porta verso la dashboard del primo
+dipartimento raggiungibile, lasciata così l'11 settembre «finché non si progettano le sue sezioni»
+(`decisions/2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md`).
+
+**Perché proprio all'apertura di M2:** Events è il primo modulo che registra widget per `/me` (i
+prossimi eventi a cui sono iscritto, le mie prenotazioni). Se la forma della dashboard si decidesse
+dopo, quei widget nascerebbero in una forma da rifare. La parte staff è una schermata nuova, quindi
+caso (c): **una nota di design** in `decisions/` su tutte e due, poi il piano aggiornato, poi il codice.
+
+Che cosa la nota deve chiudere:
+
+- **`/me`**: quali sezioni, chi ne decide l'ordine (fisso, o scelto dalla persona), e che cosa vede
+  chi non ha ancora niente (nessuna iscrizione, nessun training);
+- **`/staff`**: quali sezioni personali (per esempio ciò che aspetta me — bozze, contatti arrivati,
+  richieste — e i miei dipartimenti), e se sono **widget dello stesso registry**: `WidgetDescriptor`
+  porta già un `Department?` che nessuno usa. ⚠️ Una seconda macchina per comporre schermate l'ha già
+  scartata la dashboard di dipartimento (§9.3), e lo stesso vale qui;
+- **il rapporto con `/staff/{dept}`**: il tasto Staff punta già a `/staff`, quindi quando la pagina
+  esiste ci porta senza essere toccato.
+
+Toccate §8.1, §8.2 e §13.
+
+**Changelog 0.58** (11 set 2026): **una sezione può stare su tre fondi scuri**, e mentre si compone
+si vede com'è divisa. Nota `decisions/2026-09-11-la-sezione-si-vede-com-e-divisa.md`, chiesta da Carmine
+con davanti il page builder di va.ivao.aero.
+
+**Riaperta e cambiata una convenzione di §16.C**, chiusa il 6 settembre: gli sfondi di una sezione
+erano **quattro** (`none`, `muted`, `accent`, `image`) e ora sono **sette** — si aggiungono `brand`,
+`deep` e `dark`, i tre fondi scuri della tavolozza di va.ivao.aero, presi dai token di Atmosphere
+(`atmos-700` è esattamente il loro #0D2C99). Ognuno è disegnato **nel tema scuro**, quindi quello
+che un blocco ci scrive sopra si legge per costruzione; misurato, e il blu del marchio ha avuto
+bisogno di un grigio secondario più chiaro (3,50 : 1 prima, 4,88 dopo). **Il colore libero no**: è
+l'unico pezzo loro non preso, perché un colore scelto a mano non può promettere che il testo si legga
+— la ragione per cui gli sfondi erano un insieme chiuso resta intera.
+
+**Mentre si compone**, ogni colonna di una sezione è tratteggiata e una colonna vuota dice «+ Aggiungi
+qui»: sceglierla manda lì il prossimo componente della barra di sinistra. Prima un componente finiva
+**sempre nella prima colonna**. Il visitatore non vede niente di tutto questo: è lo stesso contesto di
+picking del 9 settembre, che sul sito pubblico non esiste. Il trascinamento dalla barra alla colonna
+resta il punto 3 aperto del 10 settembre.
+
+**Changelog 0.57** (10 set 2026): **un documento pubblicato dirà di sé**, e due richieste restano
+sul tavolo. Nota `decisions/2026-09-09-il-documento-dice-di-se.md`, scritta perché nessuna delle tre
+vivesse solo in chat.
+
+**Deciso: il piè di pagina di un documento** sta **alla fine**, sempre lì, e chi edita sceglie solo
+se mostrarlo. Dice chi ha pubblicato, quando, e — facoltativo — il **ciclo AIRAC**. Metà esiste già:
+`cms_content_versions` porta `version`, `changelog`, `published_at` e `published_by` da sempre, e il
+servizio di pubblicazione li scrive a ogni giro. L'AIRAC è **una colonna sulla versione**, non sulla
+riga: è una proprietà di quella pubblicazione. ⚠️ E **non** è il ciclo AIRAC di vIPI, che §9.3
+scartava: qui è un'etichetta facoltativa, non un meccanismo di release. Non costruito.
+
+**Parcheggiate**: la **pubblicazione programmata** — che è (c), con tre domande aperte, e il cui
+esempio (un evento) tocca il design di M2 — e la **stampa dei soli documenti**, che è piccola e ha
+dentro una trappola: `tabs` e `accordion` nascondono testo, e su carta devono essere aperti.
+
+**Changelog 0.56** (10 set 2026): **una sezione contiene righe**, e due comandi si scelgono
+guardando invece che scrivendo. Nota `decisions/2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`, nata
+guardando il page builder di HQ nel browser di Carmine.
+
+⚠️ **La riga non è un modello nuovo: era già nostro e non l'aveva mai acceso nessuno.** `MaxDepth` è
+3 dal M1, il renderer disegna una sezione annidata dentro il contenitore di larghezza del genitore,
+`templateDiff` le confronta per `parentKey` e `clampColumns` ricorre. Mancava solo che `addSection`
+sapesse mettere qualcosa **dentro** — e infatti nessuna delle dieci pagine e dei template seminati
+annida. Avevamo costruito tre livelli, li validavamo, li disegnavamo, e l'editor ne offriva due.
+
+Che cosa compra: la sezione porta la **cornice** — lo sfondo, l'aria, la larghezza — e ogni riga
+dentro porta le **proprie colonne**. Una sola fascia di colore può tenere due colonne e poi tre, che
+prima voleva dire due sezioni e quindi due fasce.
+
+**Sfondo e colonne escono dal form** e diventano pastiglie e diagrammi applicati al clic
+(`SectionFrame`): sono le due cose di una sezione che si giudicano a occhio, e un form che tenesse un
+valore vecchio disferebbe la scelta al primo «Applica». Restano nel pannello e non sopra la sezione
+come fa HQ, perché il nostro renderer è **lo stesso del sito pubblico** e non deve mettere su chrome
+da editor.
+
+⚠️ E il censimento di §2.3-ter va letto con una correzione: **il page builder di HQ non è una tela.**
+Misurato nella loro pagina — nessuna libreria di trascinamento, zero elementi in posizione assoluta.
+È un albero ordinato Sezione → Riga → Blocco dove il trascinamento riordina. La «tela drag & drop»
+che il piano aveva scartato come «il pezzo più costoso» non esiste nemmeno da chi l'aveva ispirata.
+
+**Changelog 0.55** (9 set 2026): **una pagina si compone guardandola.** Il canvas drag & drop era
+stato scartato in una riga (§2.3-ter); Carmine ha chiesto di riaprirla, la nota
+`decisions/2026-09-09-comporre-una-pagina-guardandola.md` ha messo le due strade a confronto, e lui
+ha scelto la **(A)**: l'anteprima diventa la superficie di composizione.
+
+Si clicca un blocco nella pagina disegnata e si aprono i suoi campi, con la pagina che resta sotto
+gli occhi. E con essa **la pagina stessa è diventata una selezione**: i metadati non sono più un
+modulo sopra l'editor — misurava 1182 px in una finestra da 950, con la pagina e i pulsanti sotto la
+piega — ma le proprietà della pagina, nello stesso pannello. La barra è in cima e appiccicata, e
+`Save draft` invia il form da fuori con `form="…"`. La pagina che si compone comincia a 466 px invece
+di 1588. **Il modello dei dati non cambia di una riga**: niente coordinate, niente dimensioni sui
+blocchi, i template continuano a significare quello che significavano, il responsive e la stampa
+restano gratis.
+
+⚠️ E c'è un patto che vale la pena scrivere in §16, perché è il prezzo di avere **un renderer solo**
+per il pubblico e per l'editor: l'interattività è un contesto che vale `null` e che **il percorso
+pubblico non monta**. Non un flag da spegnere: una cosa che nella pagina di un visitatore non esiste.
+Il primo test del pezzo asserisce esattamente quello, ed è quello che non si allenta.
+
+⚠️ Due obiezioni del piano contro la tela sono cadute e la nota le registra: comporre da telefono non
+è un requisito (si compone da PC o tablet), e `locked` conserva il suo significato anche su una tela.
+Resta in piedi il costo vero, che da fuori non si vede — **un blocco oggi non ha una dimensione** — e
+la (B) resta aperta se la (A) non basta.
+
+**Changelog 0.54** (9 set 2026): **M2 si divide in due**, e la ragione non è tecnica.
+
+Il piano metteva nella stessa milestone il **primo deploy su staging Plesk** e il **modulo Events**.
+Il deploy era già in attesa delle risposte A9 di Ivao.It (§15.2c); adesso si aggiunge che **chi
+materialmente carica su Plesk non è disponibile** (detto da Carmine il 9 set 2026). Due attese
+diverse sullo stesso pezzo, e nessuna delle due dipende da noi.
+
+Quindi M2 procede **dal modulo**: design, tabelle `evt_`, schermate, permessi. Il deploy resta nella
+milestone e ne è la seconda metà, da fare appena si sciolgono i due nodi — non si sposta a M3, perché
+il pacchetto va provato su Plesk prima che ci siano tre moduli sopra.
+
+⚠️ Quello che si perde ad aspettare va scritto, o si finge che sia gratis: fino al primo deploy vero
+**non sappiamo se il pacchetto self-contained gira su quella macchina** — la CI lo costruisce e i
+test girano su una MariaDB 11.4.10 vera, ma Passenger, il document root, i privilegi dell'utente DB e
+il `sql_mode` di quel server non li ha ancora visti nessuno. È il rischio n.1 di §11.3 e resta
+aperto, più a lungo di quanto il piano prevedesse.
+
+**Changelog 0.53** (9 set 2026, terza esecuzione della demo): tre difetti, e due di essi sono
+decisioni.
+
+**L'ora si scrive come in aviazione**, dappertutto: **24 ore**, `Z` per lo zulu, `LT` per l'ora
+locale, e la **data solo dove non c'è già** — nella griglia lo dice il quadrato, nella lista
+l'intestazione del giorno, e resta nell'agenda, che è una lista che corre in avanti e non ha né
+l'uno né l'altra. Una riga legge `14:00Z (16:00 LT)`. È una riga sola di codice perché `useMoment` è
+l'unico posto che formatta un istante — che è la ragione per cui esiste.
+
+⚠️ **La seconda deroga ad «Atmosphere così com'è»** (§4, §16.C), e va contata: la loro `Select` dà al
+popup l'altezza del **trigger**, quindi la lista è alta una riga qualunque cosa contenga — misurato,
+46 px per righe da 30. Non è gusto come il grigio: è un controllo che mostra una voce di quattro e
+non dà al lettore modo di sapere che ce ne sono altre. Una regola in `index.css` restituisce al
+popup l'altezza della sua lista, limitata da quella disponibile sullo schermo. **Le deroghe sono
+due, e vanno tenute due.**
+
+⚠️ E un difetto che nessun test poteva vedere, perché vive nella cucitura dello sviluppo: in dev la
+SPA e il backend sono **due server su due porte**, e `/media/{id}/{name}` non era fra i percorsi
+inoltrati — quindi ogni immagine era un `<img>` che puntava a `index.html`. Ora l'elenco dei percorsi
+del backend è un file solo (`web/backendPaths.ts`), il proxy nasce da lì, e un test lo difende. Con
+lui erano rotti anche `/sitemap.xml` e `/robots.txt`.
+
+**Changelog 0.52** (9 set 2026): **un campo suggerito può chiedere al server** — la **nona**
+estensione del generatore di form, e chiude il difetto che il changelog 0.51 apriva.
+
+`onSuggestSearch` è una funzione che il form chiama con il nome del campo e quello che ci si sta
+scrivendo, dopo trecento millisecondi di pausa. Il generatore non sa che cosa farne: la schermata la
+riceve e rifà la sua domanda con `q`. Nel menu quel testo diventa la ricerca delle pagine e dei link,
+che il server già sa fare su titolo e slug — quindi **zero endpoint nuovi**, e il tetto di cento
+righe smette di essere un tetto perché non è più l'elenco intero a dover stare in una pagina.
+
+⚠️ È opt-in: un form che non passa la funzione filtra in memoria come prima, ed è quello che vuole
+un elenco corto. Un test lo tiene fermo, perché il rischio di un'estensione così è che tutte le
+schermate comincino a fare richieste senza che nessuno lo abbia chiesto.
+
+**Changelog 0.51** (9 set 2026): **i template di un dipartimento hanno una schermata**, che è
+l'ultimo dei sei difetti di rifinitura elencati dal rapporto di chiusura di M1.
+
+⚠️ **E un difetto nuovo, che la decisione dell'8 settembre ha creato e che va deciso**: l'indirizzo
+di una voce di menu offre **cento pagine**, una richiesta sola, e adesso che il campo *decide* invece
+di *suggerire*, la pagina numero centouno è un indirizzo che non si può scegliere — mentre la casella
+dice «qui non corrisponde niente», che non è vero. Trovato dal giro completo, che su un banco con 120
+pagine non trovava più `/start`. La strada giusta è **il campo che cerca sul server** — la nona
+estensione del generatore di form, quindi una decisione — e sta scritta in
+`decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`.
+
+§9.4 del design M1 e §2 di `CLAUDE.md` dicevano già di chi sono i template — Director, Assistant
+Director, WM, AWM e, sul proprio dipartimento, coordinator e assistant coordinator, con
+`Content.ManageTemplates` — e nel back-office non c'era **niente**: tenuti fuori dalla lista dei
+contenuti di proposito, offerti dal picker solo per farne una pagina, e l'unico modo di aprirne uno
+era scriverne l'indirizzo. Adesso `/staff/<dip>/templates` è la lista generica con il filtro
+rovesciato, l'editor è **lo stesso** dei contenuti (un template è una riga di `cms_contents`, e un
+secondo editor sarebbe esattamente ciò che §9.3 esiste per impedire), e un pulsante ne crea uno.
+
+Tre cose decise mentre si faceva, e scritte qui perché sono scelte e non dettagli:
+
+- **il `kind` si sceglie prima**, accanto al pulsante, perché decide quali campi il form disegna e un
+  form che si ridisegna sotto le mani di chi lo compila è peggio;
+- **quante righe sono nate da un template si legge sulla sua schermata e non come colonna della
+  lista**: una colonna sarebbe una richiesta per riga, e `DataList` disegna una query sola. È anche
+  dove serve — davanti a chi sta per modificarlo;
+- **niente endpoint nuovo**: il conto è la stessa lista filtrata per `templateId`, letta per il suo
+  `total`. Gli endpoint a mano restano otto.
+
+⚠️ La regola vera resta del server, come sempre: `ExtraWritePolicy` chiede `Content.ManageTemplates`
+sull'entità **dopo** che il payload le è stato applicato, quindi «creare un template» è già rifiutato
+a chi non può cambiarne uno. Nessuno lo aveva mai provato perché nessun client lo aveva mai chiesto —
+i template si seminavano soltanto — e adesso un test di integrazione lo prova.
+
+**Changelog 0.50** (9 set 2026): **il tema scuro ha il suo grigio**, e con esso la prima deroga a
+«Atmosphere così com'è» (§4, §16.C). Nota `decisions/2026-09-09-il-grigio-dei-testi-secondari.md`.
+
+Atmosphere ribalta ogni colore di testo per il tema scuro tranne `--muted-foreground`, che resta
+fuselage-500 in tutti e due: un grigio scuro su bianco fa 5,89 : 1 e su `#12131b` fa **3,14 : 1**,
+sotto il 4,5 : 1 che AA chiede a 12 e 14 px. **Una riga** in fondo a `web/src/styles/index.css` lo
+porta a fuselage-400 nel solo tema scuro — 5,66 : 1 — e il tema chiaro non si muove.
+
+⚠️ Perché una deroga e non una passata sulle nostre schermate: **quel token lo usano anche i
+componenti di Atmosphere**, 24 volte nel loro bundle. Riscrivere le nostre 72 occorrenze ne
+lascerebbe 24 illeggibili che non raggiungiamo. La deroga è **una** e va tenuta tale: si scrive qui,
+sta in un posto solo, e un test la difende.
+
+⚠️ Il punto delicato è **dove** sta la riga: il foglio di Atmosphere si carica dopo le utility di
+Tailwind, quindi in fondo a `index.css` e non prima — misurato in un browser, come già era servito
+per `hidden sm:block`. `e2e/contrast.spec.ts` misura ogni testo secondario visibile di nove schermate
+in tema scuro e fallisce se la riga sparisce o smette di vincere.
+
+**Changelog 0.49** (9 set 2026): **nell'indice di ricerca finisce solo prosa**, e la regola diventa
+strutturale invece che scritta.
+
+§16.C e `CLAUDE.md` §4 vietavano già «nessuna stringa che non sia prosa dentro `props`». Il divieto
+non ha funzionato: `hero` non l'ha seguito, e nessuno poteva accorgersene finché uno snippet non ha
+contenuto prosa vera — «… quattro semplici passi. `left muted` Prima di tutto…», che sono `align` e
+`tone`. Adesso l'estrattore indicizza **solo i valori dentro una mappa tradotta**: la prosa in un
+blocco è `Localized`, un'enumerazione è una stringa nuda e un URL pure. Il server continua a **non
+conoscere nessuno schema** (design M0 §5.3), che era il vincolo. Nello stesso punto la prosa perde il
+Markdown, perché uno snippet non deve leggersi con gli asterischi.
+
+⚠️ Due conseguenze da tenere. La prima: «la prosa in un blocco è sempre `Localized`» **non era vera**
+— `logoWall.items[].name` e `testimonial.author` sono nomi propri, scritti una volta perché uguali in
+ogni lingua, e da oggi non si cercano più; renderli tradotti è una migrazione di props, cioè una
+decisione a sé. La seconda: **non esiste una reindicizzazione**, e non si costruisce per questo — le
+righe già scritte si aggiornano quando qualcuno le salva.
+
+**Changelog 0.48** (8 set 2026, **G13**, seconda esecuzione della demo): due decisioni, e la seconda
+è la più stretta che questo prodotto abbia preso su un campo.
+
+**Una riga si modifica dalla lista** (deciso da Carmine, nota
+`decisions/2026-09-08-modificare-da-una-lista.md`, opzione 2): la lista generica disegna un controllo
+in una cella per **tre soli tipi** — numero, booleano, enumerazione — e mai per un testo tradotto o un
+file, che hanno bisogno del form. Nessun verbo nuovo: la cella rilegge la riga e la riscrive, quindi
+il `rowVersion` risponde 409 a chi ha salvato nel frattempo esattamente come dal form. La schermata
+deve darle un modo di salvare, o il controllo non compare: due condizioni, o su una lista senza
+salvataggio si vedrebbe un campo che non fa niente.
+
+**Una voce di menu porta solo dove il sito possiede qualcosa** (deciso da Carmine, nota
+`decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`): una pagina di `cms_contents` — **anche
+bozza** —, una schermata dell'applicazione, o un link **in uso** di `cms_links`. Nient'altro, e il
+campo nel form non è più libero: quello che si scrive cerca nell'elenco, non è un valore.
+
+⚠️ Il motivo non è il menu, ed è la ragione per cui questa è una regola e non un suggerimento: **ogni
+indirizzo che esce dal sito vive in una tabella sola.** Un menu che accetta qualunque URL è un sito
+con indirizzi sparsi dentro; con questa regola, spostare il forum è una riga di `cms_links` e il menu
+la segue. La regola sta **sul server** come tutte le altre (§16.6): il campo chiuso nel client è una
+comodità, e una comodità non è una regola. Costa una costante scritta a mano in due posti — le
+schermate del router, che il contratto non può portare — e i test che la tengono ferma.
+
+**Changelog 0.47** (7–8 set 2026, **G13**, dopo che Carmine ha eseguito la demo): due difetti trovati
+usando, e tre decisioni — il segno di un dipartimento, l'avviso a quattro stati, e il vocabolario dei
+tipi di evento.
+
+**Il soffitto di visibilità vale anche per le immagini**, ed è lo stesso `VisibilityCeiling` del
+changelog 0.29 — non un secondo controllo. Un file arriva nella libreria visibile allo staff
+(diventa pubblico perché qualcuno lo dice, non per essere arrivato), quindi un'immagine caricata e
+messa in una pagina era staff-only, la pagina usciva lo stesso e il visitatore vedeva un'immagine
+rotta: l'indirizzo di un file che non può vedere risponde 404, ed è giusto. Ora la pubblicazione
+**rifiuta** — non ripara, perché pubblicare una pagina non deve rendere pubblico un file di
+nascosto — e lo dice con il percorso della proprietà, come per una traduzione mancante. Vale per
+i tre modi di nominare un file: il corpo, la copertina di una news e il file di un documento.
+`BlockDocumentWalker` sa dire quali file mostra un documento, con i nomi delle proprietà presi da
+`JsonQuery`, l'unico posto che già li conosceva.
+
+**Il logout non ridisegnava la pagina** perché il bootstrap non è solo una query: la radice lo carica
+una volta e lo passa come **contesto** del router, ed è quella copia che l'header, la sidebar e le
+guardie leggono. Invalidare una query non rifà un `beforeLoad`. Un solo posto lo dice adesso —
+`sessionChanged` — e lo usa anche la risposta al 401.
+
+**Il generatore di form ha imparato la settima cosa**, regola (b): `slugFrom`, un campo che si
+propone da un altro. §12 del design M1 ne prevedeva cinque, G11a ha fatto la sesta e questa è la
+settima — il numero da riportare alla chiusura di G13 è **sette**, e la ragione dello scarto è che
+due le ha chieste l'uso, non i blocchi. Segue il titolo finché il campo contiene esattamente ciò che
+è stato proposto, e smette per sempre appena qualcuno ci scrive: un indirizzo sopravvive alla pagina,
+e uno che si riscrive sotto le dita di chi lo sta scrivendo sarebbe peggio di uno da scrivere a mano.
+
+**I tipi di evento del calendario sono un vocabolario di divisione** (deciso da Carmine l'8 set
+2026, nota `decisions/2026-09-08-tipi-di-evento-di-divisione.md`): `cms_calendar_kinds`, servita dal
+motore CRUD in **modalità globale** — quella che i grant usano da M0 — letta con `Calendar.View` e
+scritta con `Calendar.ManageKinds`, che è **globale** e quindi appartiene per costruzione ai ruoli
+che raggiungono ogni dipartimento. Non sono le categorie, che restano per dipartimento.
+
+⚠️ Due conseguenze da non perdere. Il `kind` di una voce **non è più testo libero**: il validatore
+chiede al vocabolario, ed è l'unico validatore dell'hub che interroga il database — una voce che un
+modulo proietta non passa da quel DTO e resta libera. E il vocabolario viaggia in **`/api/me`**,
+perché una chip su un calendario pubblico deve dire la parola e il colore e un visitatore non può
+leggere `/api/calendar-kinds`. Il colore è una colonna: un colore scelto accomuna due tipi che vanno
+insieme, un hash no.
+
+**«Cosa manca per pubblicare» è una domanda al server, non un calcolo del client.** Le regole della
+pubblicazione stanno in un posto solo; il client che se le ricalcolasse sarebbe la seconda copia, e
+la seconda copia è quella che invecchia (§16.E, regola (b)). Quindi
+`GET /api/content/{id}/publish-problems` fa gli stessi controlli senza scrivere niente, e la
+schermata li disegna. ⚠️ È il **quarto** verbo a mano appeso a un gruppo `MapCrud` — §16 chiede che
+ognuno sia giustificato, e questa è la giustificazione. Non è un CRUD a mano: quelli restano **zero**.
+
+**L'avviso a quattro stati è il quinto componente dell'elenco chiuso** (§8.3), chiesto da Carmine e
+scritto **con la riga nel piano**, che è la condizione che il piano di implementazione poneva.
+`Notice` più `useNotice()`: lo stesso avviso come riquadro e come conferma in un angolo, una tabella
+sola di quattro toni, e la conferma che l'editor deve a chi clicca (richiesta 6) è il suo primo
+cliente. `ProblemAlert` resta dov'è.
+
+**Niente icone per i dipartimenti: la sigla è il segno** (deciso da Carmine). Erano nove scudi
+identici. Ragione: un fork non-IVAO riscrive comunque l'enum `Department`, quindi una mappa
+«dipartimento → icona» vivrebbe nel perimetro IVAO e gli costerebbe lavoro, e la sigla è già
+l'identificatore che lo staff usa. ⚠️ Il segno **non** entra nell'elenco chiuso di §8.3: non prende
+props, si monta solo nello slot di un'icona, e nasce dai dati. Il quinto componente dell'elenco
+resta quello che Carmine ha chiesto — l'avviso a quattro stati — e va scritto lì quando si fa.
 
 **Changelog 0.45** (7 set 2026): **M1 è chiusa.** Il conto contro la previsione di design M1 §12 —
 6 tabelle / 3 aree di permessi / 5 estensioni del generatore / 4 componenti custom / 1 endpoint a
@@ -970,7 +1309,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 
 - **Atmosphere così com'è**: stessa navbar (logo IVAO + divisore + titolo "Italy"), stessi radius, stesse card. La personalità divisionale sta nei contenuti e nelle foto, non nei colori.
 - **Due mondi, una navigazione**: area pubblica editoriale (chi siamo, come iniziare, eventi, news) e area riservata operativa (dashboard personale, moduli). Il login non è un muro: le pagine pubbliche sono davvero pubbliche (oggi non lo sono), l'accesso sblocca i servizi.
-- **Dashboard personale come home post-login**: "cosa posso fare oggi" — prossimi eventi a cui sono iscritto, richieste training in corso, mie prenotazioni, ATC online in Italia adesso, avvisi staff.
+- **Dashboard personale come home post-login**: "cosa posso fare oggi" — prossimi eventi a cui sono iscritto, richieste training in corso, mie prenotazioni, ATC online in Italia adesso, avvisi staff. La sua forma, insieme a quella della dashboard personale da staffista su `/staff`, la decide la nota di design che **apre M2** (§13, piano 0.59).
 - **Dark mode** di serie (Atmosphere la fornisce), preferenza salvata nel profilo.
 - **Mobile-first per la consultazione**, desktop per la gestione (data-table, back-office).
 
@@ -990,7 +1329,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /news, /news/{slug}
 /about                     Divisione, staff directory (da claim IVAO), partner, contatti
 /me                        Dashboard personale; /me/profile, /me/bookings, /me/training, /me/tours
-/staff                     Back-office: entri e vedi SOLO il tuo dipartimento (§9.0); DIR/ADIR/WM vedono tutti
+/staff                     Back-office: entri e vedi SOLO il tuo dipartimento (§9.0); DIR/ADIR/WM vedono tutti. Oggi porta alla dashboard del primo dipartimento; diventa la dashboard personale da staffista, progettata all'apertura di M2 (§13)
 /staff/{dept}              Dashboard del dipartimento: seminata alla nascita, poi modificata dal dipartimento nell'editor dei contenuti (riga di `cms_contents` con visibilità `department`)
 /staff/{dept}/**           Spazio del dipartimento: le sue pagine, news, documenti, voci di calendario, contatti + le schermate del suo modulo (es. /staff/ev/events, /staff/tr/requests, /staff/fo/tours)
 /staff/admin/**            Solo Director/WM/superadmin: utenti e grant, moduli/maintenance, impostazioni divisione, audit
@@ -1002,6 +1341,16 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 Navbar + NavigationMenu (pubblico), Sidebar (riservato/staff), Card (eventi, moduli), DataTable (slot, richieste, utenti), Calendar/DatePicker (eventi, disponibilità trainer), Dialog/Sheet (booking, form rapidi), Badge (rating, stato), Tabs, Toast, Command palette (`⌘K` per staff: cerca utente/evento/pagina), DarkModeToggle, Skeleton per il loading.
 
 Componenti custom (pochi, costruiti con i token): `Hero` (gradiente atmos-800→atmos-600, eyebrow verde, CTA), `StatTile` (numero grande + etichetta, dati vivi), `SectionHeader` (eyebrow + titolo, come nel template HQ), `LiveStatusStrip` (ATC/piloti online), `RatingBadge`, `AirportCard`, `EventTimeline`, `LocaleSwitcher`, `MarkdownContent`, `ContactForm` (visibile solo autenticati). Footer con link legali HQ (Terms of Use, Privacy Policy, IP Policy) e "Staff area".
+
+⚠️ **L'elenco vero e chiuso è `web/src/shared/ui/catalog.ts`**, ed è scritto per chi forka in
+`docs/UI-GUIDELINES.md` §3; questo paragrafo è l'intenzione con cui è nato. Il **quinto** aggiunto
+dopo M0 — e il primo dopo la chiusura di M1, che ne contava quattro e sono i quattro previsti — è
+**`Notice`** (7 set 2026, G13, chiesto da Carmine dopo la demo): un avviso a quattro stati (errore,
+avviso, successo, informazione) usabile ovunque, in due forme che leggono la stessa tabella — un
+riquadro che resta, e la stessa frase detta in un angolo dello schermo e poi via, che `useNotice()`
+mette nella coda di toast di Atmosphere. Non sostituisce `ProblemAlert`, che disegna il rifiuto del
+server campo per campo: unire i due tocca ogni schermata del back-office ed è una decisione a sé,
+che Carmine ha scelto di non prendere adesso.
 
 ---
 
@@ -1191,7 +1540,7 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 |---|---|---|
 | **M0 — Fondamenta** ✅ **chiusa** (4 set 2026, `v0.1.0-m0`) | Repo, soluzione .NET, SPA Vite+Atmosphere, docker-compose, CI, `division.json`, i18n IT/EN, login OIDC BFF con credenziali di test, `users` + ruoli, layout pubblico/riservato, dashboard vuota; **la spina dorsale generica di §16** (`Localized<T>`, interfacce trasversali + interceptor + authorization handler, grammatica permessi, `IProjectable`, motore lista+form, endpoint di bootstrap) **dimostrata end-to-end** su `links` e su un primo `cms_contents` creato da template (§16.15) | Skeleton navigabile, login funzionante, meccanismi generici provati. Design: `01-design-m0.md`; fasi: `02-piano-implementazione-m0.md`. Il **deploy su staging Plesk** è spostato a M1 (deciso 2 set 2026: attende le risposte A9). Demo da eseguire a mano: `tools/demo-m0.md`; revisione finale: `decisions/2026-09-04-m0-review.md` |
 | **M1 — Sito pubblico** | Nucleo editoriale: pagine a blocchi (**set completo dei blocchi del nucleo**, 22 nuovi), news, documenti per dipartimento con vocabolario delle categorie, calendario unico con UI (con sole voci interne per ora), media library, contatti + servizio notifiche, staff directory, live status; **menu editoriale**; pagine di sistema seedate (`/start`, `/pilots`, `/atc`, `/about`, home); back-office per dipartimento; schermata di ricerca; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO minima; migrazione contenuti dal Blazor **a mano dall'editor**. Il **giro e2e contro l'API vera** è la prima fase. Design: `03-design-m1.md`; fasi: `04-piano-implementazione-m1.md` (G0–G12) | Sostituisce `it.ivao.aero` |
-| **M2 — Eventi** | **Primo pacchetto self-contained e deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026 perché dipende dalle risposte A9 (§15.2c); modulo Events: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import | Spegne `ivao-booking` |
+| **M2 — Eventi** | **Prima di tutto, le due dashboard personali** (deciso l'11 set 2026, piano 0.59): una nota di design su `/me` e sulla dashboard da staffista `/staff`, scritta prima di `05-design-m2.md`, perché Events è il primo modulo che registra widget per `/me` e deve trovarne la forma già decisa. Poi **due metà, e si fanno in quest'ordine** (deciso il 9 set 2026). **(a) Il modulo Events**, che parte subito: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import. **(b) Il primo pacchetto self-contained e il deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026: aspetta le risposte A9 (§15.2c) **e** la persona che carica su Plesk, che al 9 set non è disponibile | Spegne `ivao-booking` |
 | **M3 — Tour** | Modulo Flight Ops: tour, leg, PIREP, validatore automatico, classifiche, award con mail, voci nel calendario; design ereditato da `Ivao Italy Toursystem` | I tour IT lasciano `tours.th.ivao.aero` |
 | **M4 — Training** | Modulo Training: richieste, trainer, disponibilità, sessioni, esiti, mock exam, group training, import storico se possibile | Spegne `training.ivao.it` |
 | **M5 — vIPI dentro l'hub** | Allineamento TFM (il ramo **net10 + EF 9 + Pomelo 9** di vIPI, lavoro nel suo repository), montaggio in-process sotto `/services/vsop`, `atc.it.ivao.aero` → redirect, spegnimento di `quickoverview.ivao.it` (già confluito in vIPI). ⚠️ Fino ad allora l'indirizzo è servito **per proxy** dalla vhost che esiste: il lettore vede un sito solo da subito (decisione del 7 set 2026) | Un solo sito ATC+hub |
@@ -1227,7 +1576,8 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 2. **vIPI nell'hub — quando e come**: il montaggio in-process è la destinazione (§9 riga 7b), il nodo è il TFM. Da verificare in vIPI: può il ramo `net10.0` di `Vipi.Infrastructure` usare EF Core 9 + Pomelo 9 invece di EF Core 10 (le 65+ migrazioni sono generate con EF 10 ma applicate anche da EF 8 — con EF 9 dovrebbero passare)? Se sì, si sblocca insieme l'EOL di net8 e il montaggio. Decidere anche il dominio finale della parte ATC (`it.ivao.aero/services/vsop` con redirect da `atc.it.ivao.aero`, o viceversa proxy).
 2b. ~~Tour system e test system~~ **Deciso**: il tour system è il modulo `flightops` nel monorepo dell'hub (repo separato chiuso, design confluisce). Il test system è sospeso; se tornerà, sarà app separata (auth estratta in libreria solo allora).
 2d. **Storico tour**: importare i leg validati da `tours.th.ivao.aero` per le classifiche, o partire da zero come per gli eventi?
-2c. **Hosting dell'hub** (blocca **M2**, non più M1: deciso il 5 set 2026): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
+2c. **Hosting dell'hub** (blocca **la seconda metà di M2**, il deploy, non il modulo Events: diviso
+    il 9 set 2026 — e da quel giorno il deploy aspetta anche la persona che carica su Plesk): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
 3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente.
 4. ~~Editor contenuti~~ **Deciso**: pagine a blocchi con editor a lista (§9.3); il blocco `text` usa markdown con anteprima. Prerender SEO: **no per ora** (§16.11).
 5. ~~Licenza del repository pubblico~~ **Decisa il 3 set 2026**: **Apache-2.0**, copyright «2026 Carmine Granato». Nota in `docs/internal/decisions/2026-09-03-licenza.md`.
@@ -1266,7 +1616,7 @@ Criterio di Carmine: **quanto meno codice possibile; un pezzo usato in due punti
 
 **C. Convenzioni UI — da trattare nel design di M0, prima della prima schermata** (concordato il 2 set 2026)
 
-Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti. ✅ **Chiuso il 6 settembre 2026 con G3 di M1**: i 21 blocchi esistono e le convenzioni sono scritte in `docs/UI-GUIDELINES.md`, sezione «The conventions every block follows» — la spaziatura e lo sfondo sono della sezione e mai del blocco, quattro sfondi (`none`, `muted`, `accent`, `image` con `mediaId`), quattro larghezze, la resa di una sezione `locked`, il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che non sia prosa dentro `props`, nessun blocco che contiene blocchi, e l'allowlist degli host per i riquadri.
+Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti. ✅ **Chiuso il 6 settembre 2026 con G3 di M1**: i 21 blocchi esistono e le convenzioni sono scritte in `docs/UI-GUIDELINES.md`, sezione «The conventions every block follows» — la spaziatura e lo sfondo sono della sezione e mai del blocco, quattro sfondi (`none`, `muted`, `accent`, `image` con `mediaId`) — **sette dall'11 settembre 2026**, con i tre fondi scuri `brand`, `deep`, `dark` disegnati nel tema scuro e ancora nessun colore libero (changelog 0.58) —, quattro larghezze, la resa di una sezione `locked`, il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che non sia prosa dentro `props`, nessun blocco che contiene blocchi, e l'allowlist degli host per i riquadri.
 
 **D. Buchi chiusi**
 

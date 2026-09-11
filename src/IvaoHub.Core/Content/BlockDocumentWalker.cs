@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using IvaoHub.Core.Data;
 
 namespace IvaoHub.Core.Content;
 
@@ -23,6 +25,13 @@ public sealed record BlockDocumentError(string Key, string Path);
 /// reading in the other language would be shown a hole.
 /// </summary>
 public sealed record BlockDocumentMissingLocale(string Path, IReadOnlyList<string> Locales);
+
+/// <summary>
+/// A file of the library that a body shows, and the path that names it. Publication checks each
+/// one against the visibility of the page, because a picture the reader may not be served is a
+/// hole in the page exactly like a missing translation is.
+/// </summary>
+public sealed record BlockDocumentMedia(string Path, long Id);
 
 /// <summary>The outcome of validating an envelope.</summary>
 public sealed record BlockDocumentValidation(IReadOnlyList<BlockDocumentError> Errors)
@@ -71,7 +80,8 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// carry — and the integration test that posts a background the server does not know is what
     /// keeps them agreeing.</para>
     /// </summary>
-    public static readonly IReadOnlyList<string> Backgrounds = ["none", "muted", "accent", "image"];
+    public static readonly IReadOnlyList<string> Backgrounds =
+        ["none", "muted", "accent", "brand", "deep", "dark", "image"];
 
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 
@@ -124,8 +134,22 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     }
 
     /// <summary>
-    /// All the leaf text of the body in one language: the properties of every block, resolving the
-    /// localized objects found inside them. It is what ends up in the search index.
+    /// The <b>prose</b> of the body in one language, which is what ends up in the search index and,
+    /// cut short, in the snippet a reader is shown.
+    /// <para>⚠️ Prose means <b>the values inside a translated map, and nothing else</b>. It used to
+    /// mean every string found under <c>props</c>, and the snippet of <c>/start</c> read
+    /// "… quattro semplici passi. <c>left muted</c> Prima di tutto…": <c>align</c> and <c>tone</c>
+    /// of the <c>hero</c> block, two enumerations stored as strings. CLAUDE.md section 4 already
+    /// forbade a non-prose string inside <c>props</c>, and forbidding did not work — nobody could
+    /// see it until a snippet contained real prose. This is the rule that makes it structural, and
+    /// it needs <b>no knowledge of any block schema</b> (design M0 section 5.3): prose in a block is
+    /// always <c>Localized</c>, an enumeration is a bare string, and so is a URL, which has no
+    /// business in a search index either.</para>
+    /// <para>⚠️ And it costs something, written here rather than discovered later: a searchable
+    /// string that is deliberately <b>not</b> translated stops being indexed. Two exist — the name
+    /// of a partner in <c>logoWall</c> and the author of a <c>testimonial</c>, both of them a
+    /// person or a company, the same word in every language. Making them translated would change
+    /// the shape of props that pages already hold, which is a decision of its own.</para>
     /// </summary>
     public string ExtractText(JsonNode? body, string locale)
     {
@@ -134,11 +158,53 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
         var text = new StringBuilder();
         foreach (var block in EnumerateBlocks(body))
         {
-            AppendText(block.Node["props"], locale, text);
+            AppendText(block.Node["props"], locale, text, insideTranslation: false);
         }
 
         return text.ToString();
     }
+
+    /// <summary>
+    /// The Markdown taken back out of a piece of prose, because a reader of a snippet should not be
+    /// shown <c>**IVAO Italia** is the community…</c> — and somebody searching for a word should not
+    /// miss it for an asterisk stuck to its front.
+    /// <para>It is deliberately small and undoes only what an editor can write: a link keeps its
+    /// text and loses its address, a heading, a quote or a bullet loses its marker, and the
+    /// characters that carry emphasis and code go. Anything cleverer would be a Markdown parser in
+    /// the search path, and the renderer already owns the one that matters.</para>
+    /// </summary>
+    internal static string Prose(string markdown)
+    {
+        var text = LinkPattern.Replace(markdown, "$1");
+        text = LineMarkerPattern.Replace(text, string.Empty);
+        text = EmphasisPattern.Replace(text, string.Empty);
+
+        return WhitespacePattern.Replace(text, " ").Trim();
+    }
+
+    /// <summary>A ceiling on every pattern here: a body is user written, and a search must not hang.</summary>
+    private static readonly TimeSpan OneSecond = TimeSpan.FromSeconds(1);
+
+    /// <summary><c>[text](/somewhere)</c> and <c>![alt](/picture.png)</c> keep the half a reader reads.</summary>
+    private static readonly Regex LinkPattern =
+        new(@"!?\[([^\]]*)\]\([^)]*\)", RegexOptions.Compiled, OneSecond);
+
+    /// <summary>
+    /// What starts a heading, a quote or a list item, at the start of a line and nowhere else: a
+    /// hyphen in the middle of a sentence is a hyphen.
+    /// </summary>
+    private static readonly Regex LineMarkerPattern = new(
+        @"^[ \t]*(?:#{1,6}|>|[-+*]|\d+\.)[ \t]+",
+        RegexOptions.Compiled | RegexOptions.Multiline,
+        OneSecond);
+
+    /// <summary>
+    /// Emphasis and code. Underscores are left alone: <c>snake_case</c> is a word, and an italic
+    /// written with them is rare enough not to be worth breaking one.
+    /// </summary>
+    private static readonly Regex EmphasisPattern = new(@"[*`~]", RegexOptions.Compiled, OneSecond);
+
+    private static readonly Regex WhitespacePattern = new(@"\s+", RegexOptions.Compiled, OneSecond);
 
     /// <summary>
     /// Checks the envelope and nothing else: version, size, unique identifiers, depth, block types
@@ -229,6 +295,25 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     }
 
     /// <summary>
+    /// Every file of the library the body shows, wherever it is named: in the properties of a
+    /// block, inside a list of them, or on a section that has a picture for its background.
+    /// <para>The two property names are <see cref="JsonQuery.MediaKey"/> and
+    /// <see cref="JsonQuery.MediaListKey"/>, taken from the one place that already knows them —
+    /// the query that asks "which pages show this file". The two ask the same question of the same
+    /// document, one in SQL and one in memory, and a second copy of the names is how they would
+    /// start disagreeing (design M1 section 2, plan section 16.5).</para>
+    /// <para>Like <see cref="MissingLocales"/>, this is asked when somebody is about to show the
+    /// page to the public and never on a write: a draft may well point at a picture that is not
+    /// ready.</para>
+    /// </summary>
+    public IReadOnlyList<BlockDocumentMedia> MediaReferences(JsonNode? body)
+    {
+        var found = new List<BlockDocumentMedia>();
+        CollectMedia(body, string.Empty, found);
+        return found;
+    }
+
+    /// <summary>
     /// True when every key of the object is a language of the division: that, and only that, is
     /// what tells a translated value apart from a property that happens to have short keys.
     /// </summary>
@@ -260,19 +345,30 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
         }
     }
 
-    private void AppendText(JsonNode? node, string locale, StringBuilder text)
+    /// <summary>Walks one value of a block, appending whatever prose it holds.</summary>
+    /// <param name="node">The value being walked.</param>
+    /// <param name="locale">The language being extracted.</param>
+    /// <param name="text">Where the prose is collected.</param>
+    /// <param name="insideTranslation">
+    /// Whether the walk has passed through a translated map on its way here. Only then is a string
+    /// prose; outside one it is an enumeration, an identifier or a URL, and the index is better
+    /// without it.
+    /// </param>
+    private void AppendText(JsonNode? node, string locale, StringBuilder text, bool insideTranslation)
     {
         switch (node)
         {
             case JsonValue value:
-                if (value.TryGetValue<string>(out var raw) && !string.IsNullOrWhiteSpace(raw))
+                if (insideTranslation
+                    && value.TryGetValue<string>(out var raw)
+                    && Prose(raw) is { Length: > 0 } prose)
                 {
                     if (text.Length > 0)
                     {
                         text.Append(' ');
                     }
 
-                    text.Append(raw);
+                    text.Append(prose);
                 }
 
                 break;
@@ -280,7 +376,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             case JsonArray array:
                 foreach (var item in array)
                 {
-                    AppendText(item, locale, text);
+                    AppendText(item, locale, text, insideTranslation);
                 }
 
                 break;
@@ -290,7 +386,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             case JsonObject localized when IsLocalizedObject(localized):
                 if (localized.TryGetPropertyValue(locale, out var translated))
                 {
-                    AppendText(translated, locale, text);
+                    AppendText(translated, locale, text, insideTranslation: true);
                 }
 
                 break;
@@ -298,7 +394,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             case JsonObject obj:
                 foreach (var pair in obj)
                 {
-                    AppendText(pair.Value, locale, text);
+                    AppendText(pair.Value, locale, text, insideTranslation);
                 }
 
                 break;
@@ -435,6 +531,66 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
                 break;
         }
     }
+
+    /// <summary>
+    /// Walks the whole document rather than the blocks, because a background picture belongs to a
+    /// section and not to any block. Nothing here knows what a hero or a gallery is: a property
+    /// with that name and a number in it is a file, at whatever depth it turns up.
+    /// </summary>
+    private static void CollectMedia(JsonNode? node, string path, List<BlockDocumentMedia> found)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                foreach (var pair in obj)
+                {
+                    var childPath = path.Length == 0 ? pair.Key : $"{path}.{pair.Key}";
+
+                    if (string.Equals(pair.Key, JsonQuery.MediaKey, StringComparison.Ordinal))
+                    {
+                        if (Identifier(pair.Value) is { } single)
+                        {
+                            found.Add(new BlockDocumentMedia(childPath, single));
+                        }
+
+                        continue;
+                    }
+
+                    if (string.Equals(pair.Key, JsonQuery.MediaListKey, StringComparison.Ordinal)
+                        && pair.Value is JsonArray list)
+                    {
+                        for (var index = 0; index < list.Count; index++)
+                        {
+                            if (Identifier(list[index]) is { } item)
+                            {
+                                found.Add(new BlockDocumentMedia($"{childPath}[{index}]", item));
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    CollectMedia(pair.Value, childPath, found);
+                }
+
+                break;
+
+            case JsonArray array:
+                for (var index = 0; index < array.Count; index++)
+                {
+                    CollectMedia(array[index], $"{path}[{index}]", found);
+                }
+
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    /// <summary>The number under one of the two names, or nothing when it is null or not a number.</summary>
+    private static long? Identifier(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<long>(out var id) ? id : null;
 
     private static void CheckTemplateOnlyKeys(BlockDocumentNode section, bool isTemplate, List<BlockDocumentError> errors)
     {

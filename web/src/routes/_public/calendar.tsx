@@ -37,6 +37,9 @@ function PublicCalendarPage() {
       onFilter={(patch) => void navigate({ search: patch })}
       // The zone of the division, from `/api/me` and never a constant (plan §9.5).
       timezone={bootstrap.division.timezone}
+      // The division's kinds, from the same place: a chip is a word somebody chose and a colour
+      // somebody chose, and neither is written in the client (decided 8 Sep 2026).
+      vocabulary={bootstrap.calendarKinds}
     />
   );
 }

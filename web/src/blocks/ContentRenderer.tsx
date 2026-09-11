@@ -1,5 +1,6 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
@@ -8,6 +9,7 @@ import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
 import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from './envelope';
+import { usePicking, type Picking } from './picking';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -21,6 +23,10 @@ import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from '
  * A section's `title` is not drawn. It is the name the editor puts in the tree, which is why the
  * seeded templates spell it "Hero" and "Body": what a visitor reads is a `heading` block, which is
  * a block an editor can move, translate and delete.
+ *
+ * Since 9 September 2026 the same component is also **what the editor composes in** — see
+ * `picking.ts`. That is one context read in two places; with no provider, which is the public path,
+ * every line below behaves exactly as it did.
  */
 
 /**
@@ -33,6 +39,19 @@ const BACKGROUND = {
   none: '',
   muted: 'bg-muted',
   accent: 'bg-accent',
+  // ⚠️ The three dark grounds (Carmine, 11 September 2026: the palette of va.ivao.aero's page
+  // builder, less its free colour picker). Each carries the class `dark` as well as its colour, and
+  // that is what makes them safe: Atmosphere defines the dark theme's tokens on `.dark` and Tailwind's
+  // `dark:` variant matches `.dark *`, so a dark section is a piece of the page in the dark theme —
+  // every block inside it reads light on dark **by construction**, whatever colours it asks for.
+  // A free colour could promise none of that, which is why there is none.
+  //
+  // Atmosphere's own tokens, not colours written here: `atmos-700` is exactly va.ivao.aero's #0D2C99.
+  // `on-brand-ground` lightens the secondary grey on this one ground, where the dark theme's own
+  // measured 3.50 : 1 (`styles/index.css`).
+  brand: 'dark on-brand-ground bg-atmos-700 text-foreground',
+  deep: 'dark bg-atmos-800 text-foreground',
+  dark: 'dark bg-fuselage-900 text-foreground',
   image: 'bg-muted bg-cover bg-center',
 } as const;
 
@@ -86,7 +105,17 @@ export function ContentRenderer({
 }
 
 function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
-  const frame = [BACKGROUND[section.background], PADDING[section.padding]].filter(Boolean).join(' ');
+  const picking = usePicking();
+  const frame = [
+    BACKGROUND[section.background],
+    PADDING[section.padding],
+    // A section is picked by its own space — the air around its blocks — because clicking a block
+    // picks the block. `outline` and not `border`: a border would move everything by two pixels and
+    // the point of composing here is that what you see is what a reader gets.
+    picking === null ? '' : ring(picking, section.id),
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   // The one place a style is written rather than a class: which picture it is only exists at
   // runtime, and Tailwind reads the source rather than the page.
@@ -96,7 +125,19 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
       : undefined;
 
   return (
-    <section className={frame} {...(picture === undefined ? {} : { style: picture })}>
+    <section
+      className={frame}
+      {...(picture === undefined ? {} : { style: picture })}
+      {...(picking === null
+        ? {}
+        : {
+            'data-pickable': 'section',
+            // The bubble phase, while a block takes the capture phase and stops there: outer
+            // handlers capture first, so a section that captured would always win and a block could
+            // never be picked.
+            onClick: () => picking.onPick('section', section.id),
+          })}
+    >
       <div className={`${WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 
@@ -111,11 +152,11 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
 function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
   if (section.layout === 'stacked') {
     return (
-      <div className="flex flex-col gap-6">
+      <Column section={section} column={0}>
         {section.blocks.map((block) => (
           <BlockView key={block.id} block={block} staff={staff} />
         ))}
-      </div>
+      </Column>
     );
   }
 
@@ -125,7 +166,7 @@ function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: bo
   return (
     <div className={`grid grid-cols-1 gap-6 ${GRID[section.layout] ?? ''}`}>
       {Array.from({ length: columns }, (_, column) => (
-        <div key={column} className={`flex flex-col gap-6 ${spans[column] ?? ''}`}>
+        <Column key={column} section={section} column={column} className={spans[column] ?? ''}>
           {section.blocks
             // A block with no column belongs to the first one: a section whose layout changed
             // must not lose the blocks that were written before it did.
@@ -133,25 +174,129 @@ function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: bo
             .map((block) => (
               <BlockView key={block.id} block={block} staff={staff} />
             ))}
-        </div>
+        </Column>
       ))}
     </div>
   );
 }
 
+/**
+ * One column of a section. For a visitor it is a plain column and nothing else.
+ *
+ * ⚠️ While a page is being composed it is **drawn**, and that is the whole of the request of
+ * 11 September 2026 (Carmine, with va.ivao.aero's page builder in front of him: "when a section is
+ * added you see clearly how it is divided — the drop here in the empty areas"). Every column gets a
+ * dashed outline, so a section in two columns reads as two columns before anything is in them; an
+ * empty one says where a component would go and takes the click that chooses it. Before this an
+ * empty section drew nothing at all, and a component always landed in the first column.
+ *
+ * `outline` and not `border`, for the reason the selection ring gives: a border would move
+ * everything by a pixel, and what is composed here has to be what a reader gets.
+ */
+function Column({
+  section,
+  column,
+  className = '',
+  children,
+}: {
+  section: SectionEnvelope;
+  column: number;
+  className?: string;
+  children: ReactNode[];
+}) {
+  const picking = usePicking();
+  const { t } = useTranslation();
+
+  if (picking === null) {
+    return <div className={`flex flex-col gap-6 ${className}`}>{children}</div>;
+  }
+
+  const chosen = picking.target?.section === section.id && picking.target.column === column;
+  const open = picking.accepts(section.id);
+
+  return (
+    <div
+      data-pickable="column"
+      // The bubble phase, like the section's: a block takes the capture phase and stops there, so a
+      // click on a block picks the block, and a click on the air of a column picks the column.
+      // Stopped here, or the section would take it next and forget which column it was.
+      onClick={(event) => {
+        if (!open) {
+          return;
+        }
+        event.stopPropagation();
+        picking.onPickColumn(section.id, column);
+      }}
+      className={`flex min-h-16 flex-col gap-6 rounded-md outline-1 outline-offset-4 ${
+        chosen ? 'outline-primary outline-solid' : 'outline-border outline-dashed'
+      } ${className}`}
+    >
+      {children}
+
+      {children.length === 0 && open ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            picking.onPickColumn(section.id, column);
+          }}
+          className={`text-muted-foreground flex min-h-16 flex-1 items-center justify-center rounded-md border border-dashed text-sm transition-colors ${
+            chosen
+              ? 'border-primary text-foreground'
+              : 'border-border hover:border-primary hover:text-foreground'
+          }`}
+        >
+          {t('content.editor.addHere')}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boolean }) {
+  const picking = usePicking();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
-  if (registration === undefined) {
-    return staff ? <UnknownBlock type={block.type} /> : null;
+  const drawn =
+    registration === undefined ? (
+      staff ? (
+        <UnknownBlock type={block.type} />
+      ) : null
+    ) : registration.kind === 'Data' ? (
+      <DataBlockView block={block} registration={registration} staff={staff} />
+    ) : (
+      <registration.component props={block.props} />
+    );
+
+  if (picking === null || drawn === null) {
+    return drawn;
   }
 
-  if (registration.kind === 'Data') {
-    return <DataBlockView block={block} registration={registration} staff={staff} />;
-  }
+  return (
+    <div
+      data-pickable="block"
+      className={`rounded-sm ${ring(picking, block.id)}`}
+      // ⚠️ The **capture** phase, and both `preventDefault` and `stopPropagation`. A block is not
+      // an inert rectangle: it holds links, buttons, a contact form. Capturing means a click lands
+      // on the block rather than on what is inside it — so a call to action selects itself instead
+      // of carrying whoever is composing out of the editor with unsaved changes — and stopping it
+      // there is what leaves the section pickable by its own space.
+      onClickCapture={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        picking.onPick('block', block.id);
+      }}
+    >
+      {drawn}
+    </div>
+  );
+}
 
-  const Component = registration.component;
-  return <Component props={block.props} />;
+/** What says "this one". Two pixels away from the thing, so nothing on the page moves. */
+function ring(picking: Picking, id: string): string {
+  return picking.selected === id
+    ? 'outline-primary outline-2 outline-offset-2'
+    : 'hover:outline-border hover:outline-2 hover:outline-offset-2';
 }
 
 /**

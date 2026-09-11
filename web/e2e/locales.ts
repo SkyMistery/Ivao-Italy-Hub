@@ -10,12 +10,16 @@ import { fileURLToPath } from 'node:url';
  * fetches from `/locales/en/common.json`.
  */
 interface CommonStrings {
-  readonly footer: { readonly version: string };
+  readonly footer: { readonly rights: string };
   readonly theme: { readonly toggle: string };
+  readonly nav: {
+    readonly staff: string;
+    readonly sidebar: { readonly collapse: string; readonly expand: string };
+  };
   readonly auth: { readonly login: string };
   readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
   readonly forbidden: { readonly title: string };
-  readonly departments: { readonly WD: string };
+  readonly departments: { readonly WD: string; readonly ED: string };
   readonly liveStatus: { readonly title: string; readonly updatedAt: string };
   readonly search: {
     readonly title: string;
@@ -27,8 +31,17 @@ interface CommonStrings {
   readonly menu: {
     readonly title: string;
     readonly create: string;
-    readonly fields: { readonly label: string; readonly path: string };
+    readonly fields: {
+      readonly label: string;
+      readonly path: string;
+      readonly sort: string;
+      readonly visibility: string;
+    };
+    readonly screensGroup: string;
+    readonly linksGroup: string;
+    readonly screens: Readonly<Record<string, string>>;
   };
+  readonly form: { readonly suggest: { readonly emptyClosed: string } };
   readonly dashboard: { readonly edit: string };
   readonly list: { readonly file: string };
   readonly calendar: {
@@ -37,6 +50,8 @@ interface CommonStrings {
     readonly projected: string;
     readonly fields: { readonly kind: string };
   };
+  readonly calendarKinds: { readonly title: string };
+  readonly admin: { readonly title: string };
   readonly links: {
     readonly title: string;
     readonly create: string;
@@ -65,17 +80,27 @@ interface CommonStrings {
       readonly visibility: string;
       readonly pinned: string;
     };
-    readonly options: { readonly visibility: { readonly Public: string } };
+    readonly options: {
+      readonly visibility: { readonly Public: string };
+      readonly kind: { readonly Page: string; readonly Document: string };
+    };
     readonly section: {
       readonly fields: { readonly key: string; readonly allowedBlocks: string };
     };
     readonly editor: {
       readonly saveDraft: string;
       readonly publish: string;
+      readonly page: string;
       readonly applyBlock: string;
       readonly applySection: string;
       readonly addBlock: string;
       readonly addSection: string;
+      readonly components: string;
+      readonly outline: string;
+      readonly onThePage: string;
+      readonly componentsHint: string;
+      readonly structure: string;
+      readonly properties: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
       readonly template: {
@@ -85,7 +110,22 @@ interface CommonStrings {
       };
     };
   };
+  readonly templates: { readonly title: string; readonly create: string };
   readonly blocks: {
+    readonly groups: {
+      readonly content: string;
+      readonly layout: string;
+      readonly interactive: string;
+      readonly structure: string;
+      readonly data: string;
+    };
+    readonly subgroups: {
+      readonly text: string;
+      readonly media: string;
+      readonly tables: string;
+      readonly grids: string;
+      readonly containers: string;
+    };
     readonly networkStats: {
       // Spelled out rather than an index signature: a caption read from a record is
       // `string | undefined`, and a spec asserting on `undefined` is a spec asserting on nothing.
@@ -120,6 +160,8 @@ interface SeedStrings {
           readonly title: string;
           readonly hero?: { readonly heading: string };
           readonly welcome?: { readonly heading: string };
+          /** The free section of a template, which is the one a page adds its own blocks to. */
+          readonly body?: { readonly section: string };
         }
       >
     >;

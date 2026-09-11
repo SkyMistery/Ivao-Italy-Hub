@@ -11,11 +11,11 @@
 export type ColumnSpec<TRow> =
   | { kind: 'text'; field: TextKey<TRow>; sortable: boolean }
   | { kind: 'localized'; field: LocalizedKey<TRow>; sortable: boolean }
-  | { kind: 'number'; field: NumberKey<TRow>; sortable: boolean }
+  | { kind: 'number'; field: NumberKey<TRow>; sortable: boolean; editable: boolean }
   | { kind: 'boolean'; field: BooleanKey<TRow>; sortable: boolean }
   | { kind: 'date'; field: TextKey<TRow>; sortable: boolean }
   | { kind: 'department'; field: TextKey<TRow>; sortable: boolean }
-  | { kind: 'badge'; field: TextKey<TRow>; sortable: boolean; labels: string }
+  | { kind: 'badge'; field: TextKey<TRow>; sortable: boolean; labels: string; editable: readonly string[] }
   | { kind: 'media'; field: NumberKey<TRow>; sortable: boolean }
   | { kind: 'file'; field: NumberKey<TRow>; sortable: boolean };
 
@@ -31,6 +31,19 @@ type LocalizedKey<TRow> = KeysOfType<TRow, Record<string, string> | null>;
 /** `sortable` defaults to false: a column the server did not declare sortable answers 400. */
 type Options = { sortable?: boolean };
 
+/**
+ * A column somebody may change without opening the row.
+ *
+ * ⚠️ Only two kinds have it, and that is the decision rather than an omission (note
+ * `2026-09-08-modificare-da-una-lista.md`): a number and a closed set of words are the whole of
+ * what a cell can ask for honestly. A translated value, a file or a free text need the form, and a
+ * cell that opened half of one would be the second way of writing a row that plan §16.6 forbids.
+ *
+ * It does nothing on its own: the list draws a field only when the screen also hands it a way to
+ * save, because saving means reading the row and writing it back, and only the feature knows how.
+ */
+type Editable = { editable?: boolean };
+
 export const col = {
   /** A plain column, as it is written. */
   text<TRow>(field: TextKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
@@ -42,8 +55,13 @@ export const col = {
     return { kind: 'localized', field, sortable: options.sortable ?? false };
   },
 
-  number<TRow>(field: NumberKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
-    return { kind: 'number', field, sortable: options.sortable ?? false };
+  number<TRow>(field: NumberKey<TRow>, options: Options & Editable = {}): ColumnSpec<TRow> {
+    return {
+      kind: 'number',
+      field,
+      sortable: options.sortable ?? false,
+      editable: options.editable ?? false,
+    };
   },
 
   /** Yes or no, drawn as the status badge so a list reads at a glance. */
@@ -85,7 +103,23 @@ export const col = {
    * A closed set of values, drawn as a badge and read from i18n under
    * `<labels>.options.<field>.<value>` — the same place the form generator reads a select from.
    */
-  badge<TRow>(field: TextKey<TRow>, labels: string, options: Options = {}): ColumnSpec<TRow> {
-    return { kind: 'badge', field, labels, sortable: options.sortable ?? false };
+  /**
+   * A word out of a closed set, drawn with the sentence the language files give it.
+   *
+   * `editable` is that set: a cell that offers a choice has to know what the choices are, and a
+   * boolean could not carry them. Left out, the column is read as it always was.
+   */
+  badge<TRow>(
+    field: TextKey<TRow>,
+    labels: string,
+    options: Options & { editable?: readonly string[] } = {},
+  ): ColumnSpec<TRow> {
+    return {
+      kind: 'badge',
+      field,
+      labels,
+      sortable: options.sortable ?? false,
+      editable: options.editable ?? [],
+    };
   },
 };

@@ -18,5 +18,22 @@ export function RouterAnchor({ href, ...rest }: ComponentProps<'a'>) {
 
   // The one cast of the adapter: an anchor's props are all optional strings, a `Link`'s are the
   // exact union the route tree generated. Widening happens here so that nothing else has to.
-  return <Link {...({ ...rest, to: href } as ComponentProps<typeof Link>)} />;
+  //
+  // ⚠️ `exact`, and it is an accessibility fix before it is anything else. TanStack marks a link
+  // `aria-current="page"` when the address *begins* with it, so a department's dashboard — whose
+  // address is the department's own root — was announced as the current page on every screen of
+  // that department, next to the entry that really was; and the home of the site, `/`, on every
+  // page of it. Measured in the DOM on 11 September 2026, while fixing the same fault as it showed
+  // to the eye. "The current page" is one page.
+  //
+  // And `includeSearch: false` with it, or exact matching finds nothing at all: a list puts its
+  // paging and its sorting in the address, and `/staff/ed/documents?page=1` is not, to an exact
+  // comparison that counts the query, the page `/staff/ed/documents` links to.
+  return (
+    <Link
+      {...({ activeOptions: { exact: true, includeSearch: false }, ...rest, to: href } as ComponentProps<
+        typeof Link
+      >)}
+    />
+  );
 }

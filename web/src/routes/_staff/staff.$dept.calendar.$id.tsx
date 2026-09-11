@@ -13,7 +13,8 @@ import {
 import { calendarEntryQuery, type CalendarDetailDto } from '../../features/calendar/queries';
 import { calendarSchema, type CalendarFormValues } from '../../features/calendar/schema';
 import { deptParam } from '../../shared/api/department';
-import { ProblemAlert, SchemaForm } from '../../shared/forms';
+import { ProblemAlert, SchemaForm, type ChoiceOption } from '../../shared/forms';
+import { useLocalized } from '../../shared/i18n/useLocalized';
 import { ConfirmDialog, PageShell } from '../../shared/ui';
 
 /**
@@ -32,6 +33,7 @@ export const Route = createFileRoute('/_staff/staff/$dept/calendar/$id')({
 
 function CalendarEntryForm() {
   const { t } = useTranslation();
+  const read = useLocalized();
   const { bootstrap } = Route.useRouteContext();
   const { dept, id } = Route.useParams();
   const navigate = useNavigate();
@@ -43,6 +45,14 @@ function CalendarEntryForm() {
   // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
   // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
   const entry = useQuery({ ...calendarEntryQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
+
+  // The kinds the division decided, already in the language on screen. They come from `/api/me`
+  // and not from a query of this screen: the vocabulary is one of the things the client needs in
+  // order to draw itself, and a chip on a public page needs it too (decided 8 Sep 2026).
+  const kinds: ChoiceOption[] = bootstrap.calendarKinds.map((kind) => ({
+    value: kind.key,
+    label: read(kind.label) || kind.key,
+  }));
 
   const create = useCreateCalendarEntry();
   const update = useUpdateCalendarEntry(Number(id));
@@ -97,7 +107,7 @@ function CalendarEntryForm() {
         </div>
       ) : (
         <SchemaForm
-          schema={calendarSchema}
+          schema={calendarSchema(kinds)}
           defaults={
             entry === null ? emptyCalendarEntry(dept, locales, new Date()) : toFormValues(entry, locales)
           }

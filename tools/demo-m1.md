@@ -1,5 +1,10 @@
 # Demonstrating M1
 
+> Updated to **G13** (8 September 2026), so it also covers the twelve requests the first run of
+> this sheet produced. A working translation lives in `docs/internal/demo-m1.md`; this one is the
+> official version, and it is in English because whoever forks the hub has to be able to read it
+> (CLAUDE.md section 1). If one of the two changes, the other changes in the same commit.
+
 M0 built a backbone and proved it on one boring entity. M1 is what that backbone was for: a public
 site nobody had to program, an editor a coordinator can use, and five modules' worth of screens that
 are configuration far more than they are code.
@@ -54,8 +59,24 @@ Now the menu, which is the part that usually is code:
 ⚠️ The menu is a table **owned by the web department**, not a screen every department has. Try
 `/staff/ed/menu`: it is not there.
 
-- [ ] **Point 1** — the public site exists and the code does not draw it.
-      Asserted by `e2e/full/menu.spec.ts`.
+**New in G13, and it is the strictest rule this product has taken on a field.** In the table,
+**Order** and **Visible to** are written in the cell — no form, and a refusal puts the old value
+back. And opening one entry, the **Address** is a **closed** list:
+
+- the pages of the site, grouped by the department that wrote them, **drafts included** (a draft says
+  so): write the entry now, switch it on when the page goes out;
+- the screens of the application, which are routes and not rows;
+- the links of the library, **the ones in use**.
+
+Type something that is not one of them and it is gone the moment you leave the field, and the server
+refuses it too — the field is a convenience, the rule is the server's. **The point is not the menu**:
+it is that every address leaving this site lives in one table, so moving the forum is one row of
+`/staff/wd/links` and the menu follows.
+
+- [ ] **Point 1** — the public site exists and the code does not draw it, and a menu entry cannot
+      point anywhere the site does not own.
+      Asserted by `e2e/full/menu.spec.ts`, `e2e/back-office.spec.ts` and
+      `SiteMenuAndDashboardTests.AMenuEntryOnlyLeadsWhereTheSiteOwnsSomething`.
 
 ---
 
@@ -72,6 +93,10 @@ it at `/news` and `/news/{slug}`; write a document with a file and read `/docume
 If either of those needed a new non-nullable column or a second editor, design §9.3 did not hold and
 the closing report has to say so. It did not.
 
+**New in G13, and you meet it here**: the address (`slug`) is **proposed from the title** until you
+write one yourself, and saving now **answers** — a toast in the corner. A row that already has an
+address never moves it.
+
 - [ ] **Point 2** — two kinds, not two tables.
 
 ---
@@ -81,6 +106,10 @@ the closing report has to say so. It did not.
 Open `/staff/admin/ui-kit`. Every block the registry declares is there, drawn from the registration
 itself: nobody adds a section to that page when a block is added. Count them — **27**, of which 7 are
 Data blocks that ask the server for their content.
+
+On the same page, among the components, is what G13 added: **`Notice`**, the four-state alert, in
+both of its shapes — the panel that stays and the confirmation that appears in a corner and then
+goes. It is the **fifth** component of the closed list.
 
 Then read `docs/UI-GUIDELINES.md`. The block conventions are decided and written there: the spacing
 and the ground belong to the **section** and never to a block, four grounds, four widths, no block
@@ -102,6 +131,20 @@ dropped into any page shows the same entries.
 The point is that there is **one** calendar: an entry written by a module and an entry written by
 hand are the same row, because the modules project into it rather than keeping their own.
 
+**New in G13, all of it visible here:**
+
+- **four views** instead of three: a week and a month as a grid, a week and a month **as a list**
+  — the list leaves out the empty days, which is the whole difference;
+- the time is **UTC** and, **in brackets**, the division's own;
+- every entry carries a **coloured chip** for its kind;
+- and the **kinds are a division vocabulary**: `/staff/admin/calendar-kinds`, decided by whoever
+  holds `Calendar.ManageKinds` and the same for every department. ⚠️ Writing an entry, the kind is
+  **picked from a list**: it is not free text any more, and a word that is not in the vocabulary is
+  refused by the server.
+
+Retire a kind (take "in use" off) and look: the entries already written with it stay as they are
+— there is no foreign key, on purpose — but nobody can file a new one under it.
+
 - [ ] **Point 4** — the single calendar has a UI.
 
 ---
@@ -111,6 +154,9 @@ hand are the same row, because the modules project into it rather than keeping t
 - **Media** (`/staff/wd/media`): upload one image. Use it in a `hero`, in a `gallery`, and as the
   cover of a news item. One file, three uses, and the delete dialog tells you where it is used
   *before* you press anything.
+  ⚠️ **New in G13, and you meet it immediately**: a file arrives visible to the **staff**.
+  Publishing a public page that shows it is now **refused**, naming the picture — before, nothing
+  was said and the visitor got a broken image. Make it public in the library and publish again.
 - **Contacts**: `/contact` — a **member** page, because a message carries the VID of whoever wrote
   it. Send one to a department, then read it at `/staff/wd/contacts` and read the mail Mailpit
   caught at <http://localhost:8025>. ⚠️ It came from the core's notification service; no module
@@ -119,6 +165,8 @@ hand are the same row, because the modules project into it rather than keeping t
   a query but a **foreign key**: a position of somebody who never opened the hub cannot be written.
 - **The live status**: the band above every public page. If the network cannot be asked it draws
   **nothing**, because four zeros would be the site answering a question it never asked.
+  ⚠️ **New in G13**: the band has a hierarchy now — the number is the loudest thing on it, the
+  words the quietest, an icon per figure, and the dot that says "of this minute" breathes.
 
 - [ ] **Point 5** — media, contacts, directory and live status work.
 
@@ -133,6 +181,9 @@ Then sign in and press **⌘K / Ctrl-K** anywhere in the back office: the same r
 of the back office. Both lists come from `staffDestinations`, so a screen cannot be reachable from
 one and not the other.
 
+**New in G13**: there is a **visible search box** at the top of the back office column, with the
+shortcut printed on it. It opens the same palette — it is not a second search.
+
 Search for a word of two letters. It **says** the words were too short rather than answering with
 nothing, which was one of the three questions M0 left open.
 
@@ -146,18 +197,35 @@ This is the part M1 exists for. On any page of `/staff/wd/content`:
 
 1. **The outline.** Drag a section by its handle, then move one with the arrows. Both work, and the
    arrows are not decoration: they are the whole of this panel that works from a keyboard.
+   ⚠️ **New in G13**: move one by mistake and there is **Undo**, beside Save. Twenty steps back,
+   and deliberately not ⌘Z — inside a text field ⌘Z means something else.
 2. **A locked section** shows its fields and not its structure, with a line naming **which template**
    fixes it and who may change that.
 3. **The preview**, at three widths. It is a `max-width` on the very same renderer the public site
    uses — not an emulator.
-4. **The differences from the template.** Open a template (`filter[isTemplate]=true` in the content
-   list), add a section to it, then reopen a page made from it: the editor says a section was added,
+4. **The differences from the template.** Open a template — `/staff/wd/templates`, **new in G13**:
+   until then they had no screen at all, and the only way in was to type a filter — add a section to
+   it, then reopen a page made from it: the editor says a section was added,
    and offers to add it — **one difference at a time**, never all at once. ⚠️ And the page a visitor
    reads has not changed, and does not change even after you accept the difference into the draft.
    Only publishing moves what the public sees.
 5. **Writing a template.** On a template row, a section carries four more fields — `key`, whether
    pages may delete it, whether they may restructure it, and which blocks it allows. Tick one block
    type, save, make a page from that template: its palette offers that block and no other.
+   ⚠️ **New in G13**: a template is **made from a button** on that screen — choose which kind it is
+   for, and the editor opens on a row that is already a template. Opening an existing one says **how
+   many rows were made from it**, which is the sentence that stops a careless edit. The screen is
+   behind `Content.ManageTemplates`: every staff member *reads* templates, so that "new from a
+   template" works across departments, and only whoever may change them sees the screen.
+
+**The other things G13 added, all visible here:**
+
+- **what is missing to publish** sits at the top of the editor **before** you press publish, in a
+  warning tone, and empties itself when the last thing is fixed and saved;
+- every action **answers**: saved, published, deleted, and a refused publication too;
+- the **properties panel stays put** while the outline scrolls;
+- a **heading block is born at level 2**, not 1 — the page already has its `h1`;
+- in the sidebar a department is its **code**, not one of nine identical shields.
 
 - [ ] **Point 7a** — a template never rewrites a page by itself, and the editor says so.
       Asserted by `e2e/full/template.spec.ts`.
@@ -202,11 +270,19 @@ pnpm e2e                                    # Chromium against the production bu
 pnpm e2e:full                               # the published application, real API, real database
 ```
 
-Expect **456 .NET tests** (300 unit, 156 integration against a real MariaDB 11.4.10), **253 Vitest**,
-**42 Playwright smokes** and **12 of the full round**. None is skipped.
+Expect **471 .NET tests** (306 unit, 165 integration against a real MariaDB 11.4.10), **279
+Vitest**, **52 Playwright smokes** and **12 of the full round**. None is skipped.
 
-⚠️ Run the .NET tests in **Release**. On Windows, Debug has been seen to report "Zero tests ran" with
-exit code 5 while the binaries pass everything by hand.
+⚠️ `dotnet test --solution` has been seen on Windows to report "Zero tests ran" with exit code 5
+**in both configurations** — Release does not avoid it — while the very same binaries pass
+everything when run directly:
+`tests/IvaoHub.UnitTests/bin/<config>/net10.0/IvaoHub.UnitTests.exe` and the integration one beside
+it, which take `-class <FullName>` to run one class. If the run says zero, run the binaries before
+believing anything is broken.
+
+⚠️ **Stop the API before building.** With `dotnet run` up, MSBuild fails with `MSB3027`/`MSB3021`
+— locked DLLs — and emits **no `CS` error at all**, so `grep "error CS"` reports a clean build that
+never happened. Read `Error(s)` in the summary.
 
 `pnpm i18n:check` is green **with the `mail` namespace**, which did not exist in M0: the notification
 service writes its templates in `locales/{lang}/mail.json` like everything else.

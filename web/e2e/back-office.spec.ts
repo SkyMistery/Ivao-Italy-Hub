@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { stubTheApiAsStaff } from './fixtures';
+import { siteStaffBootstrap, stubTheApiAsStaff } from './fixtures';
 import { englishCommon } from './locales';
 
 /**
@@ -83,7 +83,11 @@ test('the content sits beside the sidebar, not underneath it in a narrow column'
   expect(main!.width).toBeGreaterThan(600);
 
   // And exactly one way to collapse it, not two.
-  await expect(page.getByText(/close sidebar/i)).toHaveCount(1);
+  //
+  // ⚠️ Asked for by its accessible name and no longer by the words on it: since 10 September 2026
+  // the button carries no words at all — it is an icon, at the top, and what it is called comes
+  // from the language files rather than from inside Atmosphere (`shared/ui/StaffSidebar.tsx`).
+  await expect(page.getByRole('button', { name: englishCommon.nav.sidebar.collapse })).toHaveCount(1);
 });
 
 test('a translated field is as wide as a plain one', async ({ page }) => {
@@ -146,6 +150,108 @@ test('the preview of a file is a picture with a real size, inside the column it 
   expect(preview!.height).toBeGreaterThan(20);
   expect(preview!.height).toBeLessThanOrEqual(200);
   expect(preview!.x + preview!.width).toBeLessThanOrEqual(main!.x + main!.width);
+});
+
+test('the calendar vocabulary is a screen of the administration, with no department in it', async ({
+  page,
+}) => {
+  // The second resource of the hub with no department at all — the permissions were the first —
+  // and the first one a coordinator may read but not write. What a browser adds to the unit tests
+  // is that the screen exists at the address the sidebar sends people to, and draws its rows.
+  await page.goto('/staff/admin/calendar-kinds');
+
+  await expect(page.getByText('Something went wrong!')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: englishCommon.calendarKinds.title })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Meeting', exact: true })).toBeVisible();
+
+  // And it is offered where every back office screen is offered, rather than only by typing the
+  // address. The palette reads `staffDestinations`, which the sidebar draws from too — asserting on
+  // the sidebar itself would be asserting that Atmosphere's group happens to be open.
+  await page.goto('/staff/ed/links');
+
+  // ⚠️ Waited for: a key pressed before React has attached its listener is a key nobody hears, and
+  // the wait that follows looks exactly like a broken shortcut (`search.spec.ts` says the same).
+  await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
+  await page.keyboard.press('Control+k');
+
+  const palette = page.getByRole('dialog');
+  await expect(palette).toBeVisible();
+  await expect(
+    palette.getByText(`${englishCommon.admin.title} — ${englishCommon.calendarKinds.title}`),
+  ).toBeVisible();
+});
+
+test('the order and the audience of a menu entry are changed from the table', async ({ page }) => {
+  // Asked for by Carmine while running part 1 of the demo. What a browser adds to the unit tests is
+  // the whole of it: the cell has to be a control, the save has to leave, and the value has to stay
+  // — three things that are true in jsdom and mean nothing until a browser lays the table out.
+  //
+  // ⚠️ Signed in as staff of the department that **owns the site**: the menu is not a screen every
+  // department has, and the ordinary fixture — a coordinator of events — is rightly answered "this
+  // is not for you" there.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/menu');
+
+  const order = page.getByRole('spinbutton', { name: englishCommon.menu.fields.sort });
+  await expect(order).toHaveValue('20');
+
+  const written = page.waitForRequest(
+    (request) => request.url().includes('/api/menu/3') && request.method() === 'PUT',
+  );
+
+  await order.fill('5');
+  // The save is on leaving the field and not on every keystroke: twenty rows would be twenty
+  // requests otherwise.
+  await order.blur();
+
+  const request = await written;
+  expect(JSON.parse(request.postData() ?? '{}')).toMatchObject({ sort: 5, path: '/pilots' });
+
+  // ⚠️ The whole row went back, not just the field: the list is handed a projection and the engine
+  // writes with the full payload, so the cell reads the row before it writes it
+  // (`decisions/2026-09-08-modificare-da-una-lista.md`).
+  await expect(order).toHaveValue('5');
+
+  // And the audience is a select in its cell, with the four the content screens use.
+  const audience = page.getByRole('combobox', { name: englishCommon.menu.fields.visibility });
+  await expect(audience).toBeVisible();
+});
+
+test('the address of a menu entry offers the addresses that exist, and stays open to be read', async ({
+  page,
+}) => {
+  // ⚠️ The half jsdom cannot see, and it is the half that was broken: the list opened on focus and
+  // closed on the very same click, because Radix dismisses a popover on a pointer event outside its
+  // content — and the box is outside its content. A unit test passed throughout.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/menu/3');
+
+  const address = page.getByLabel(englishCommon.menu.fields.path, { exact: true });
+  await address.click();
+
+  // Grouped, and the screens of the application are a group of their own: they are routes and not
+  // rows, so no department wrote them.
+  await expect(page.getByText(englishCommon.menu.screensGroup)).toBeVisible();
+  await expect(page.getByText('/calendar')).toBeVisible();
+
+  // Choosing one writes the address, not the title.
+  await page.getByText('/calendar').click();
+  await expect(address).toHaveValue('/calendar');
+
+  // The links of the library are a group too, and one of another department: whoever edits the menu
+  // owns the site and reaches every department, so the list is the whole closed set and not a
+  // department's corner of it.
+  await address.click();
+  await expect(page.getByText(englishCommon.menu.linksGroup)).toBeVisible();
+  await expect(page.getByText('https://example.org/discord')).toBeVisible();
+
+  // ⚠️ And it is closed. An address nobody wrote down is a way of searching this list, never a
+  // value: it is gone the moment the field is left. The server refuses the same thing, on the
+  // field, so this is the near half of one rule and not a rule of its own.
+  await address.fill('https://somewhere.invented.example');
+  await expect(page.getByText(englishCommon.form.suggest.emptyClosed)).toBeVisible();
+  await page.getByLabel(englishCommon.menu.fields.sort, { exact: true }).click();
+  await expect(address).toHaveValue('/calendar');
 });
 
 test('the gallery draws every kind of field the generator learned, and they are usable sizes', async ({
@@ -271,4 +377,72 @@ test('new category reaches its form', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/staff\/ed\/categories\/new/);
   await expect(page.getByLabel(englishCommon.categories.fields.key)).toBeVisible();
+});
+
+test('the templates of a department have a screen, a button, and a count behind them', async ({ page }) => {
+  // ⚠️ The gap this closes, and it was there since G11a: a coordinator was told templates were
+  // theirs to manage and there was nowhere to manage them. They were kept out of the content list
+  // on purpose, offered by the picker only to make a page from, and the one way to open one was to
+  // type its address.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/templates');
+
+  await expect(page.getByRole('heading', { name: englishCommon.templates.title })).toBeVisible();
+
+  // The one column no other content list has: which kind this template makes. Scoped to the table,
+  // because "Documents" is also a screen in the sidebar and "document" is a word in the description.
+  const rows = page.getByRole('table');
+  await expect(rows.getByText('Section page')).toBeVisible();
+  await expect(rows.getByText(englishCommon.content.options.kind.Document, { exact: true })).toBeVisible();
+
+  // Opening one says how many rows were made from it — the sentence that stops a careless edit.
+  await page.getByRole('link', { name: englishCommon.common.edit }).first().click();
+  await expect(page).toHaveURL(/\/staff\/wd\/templates\/5/);
+  await expect(page.getByText('4 rows were made from this template.')).toBeVisible();
+});
+
+test('a new template is made from a button, and carries the kind that was chosen', async ({ page }) => {
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/templates');
+
+  // The kind is chosen before the editor opens, because it decides which fields the form draws and
+  // a form redrawing itself under the hands of whoever is filling it in would be worse.
+  await page.getByRole('link', { name: englishCommon.templates.create }).first().click();
+
+  await expect(page).toHaveURL(/\/staff\/wd\/templates\/new\?kind=Page/);
+  await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toBeVisible();
+});
+
+test('the templates screen is not for a coordinator who may not change one', async ({ page }) => {
+  // Every staff member *reads* templates — that is what makes "new from a template" work across
+  // departments — and only `Content.ManageTemplates` opens the screen that changes them. The
+  // ordinary fixture is an events coordinator, who holds neither that nor the department.
+  await stubTheApiAsStaff(page);
+  await page.goto('/staff/ed/templates');
+
+  await expect(page).toHaveURL(/\/forbidden/);
+});
+
+test('the address of a menu entry asks the server, so a page past the hundredth can still be chosen', async ({
+  page,
+}) => {
+  // ⚠️ The defect the closed set created, and the reason this is a browser test: the suggestions
+  // are one page of a hundred rows — the ceiling of the list engine — and while the field only
+  // *suggested*, whoever did not find their page typed it. Since the field **decides**, a row past
+  // the hundredth is an address that exists, that the server would accept, and that nobody could
+  // point at. The stub answers it only when the request carries the search.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+  await page.goto('/staff/wd/menu/3');
+
+  const address = page.getByLabel(englishCommon.menu.fields.path, { exact: true });
+  await address.click();
+
+  // Not there before anybody asks, which is what makes the rest of this test mean something.
+  await expect(page.getByText('/oltre-la-centesima')).toHaveCount(0);
+
+  await address.fill('oltre');
+
+  await expect(page.getByText('/oltre-la-centesima')).toBeVisible();
+  await page.getByText('/oltre-la-centesima').click();
+  await expect(address).toHaveValue('/oltre-la-centesima');
 });

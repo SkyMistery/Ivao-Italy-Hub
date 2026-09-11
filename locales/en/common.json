@@ -13,7 +13,11 @@
   "nav": {
     "home": "Home",
     "staff": "Staff",
-    "modules": "Modules"
+    "modules": "Modules",
+    "sidebar": {
+      "collapse": "Collapse the menu",
+      "expand": "Expand the menu"
+    }
   },
   "home": {
     "empty": "Nothing has been published on this page yet. Whoever runs the site writes it from the back office."
@@ -45,7 +49,8 @@
       "empty": "Nothing found.",
       "results": "On the site",
       "screens": "Screens",
-      "hint": "Press Ctrl or Cmd and K"
+      "hint": "Press Ctrl or Cmd and K",
+      "shortcut": "Ctrl K"
     }
   },
   "auth": {
@@ -79,6 +84,10 @@
     "toggle": "Switch between light and dark"
   },
   "footer": {
+    "rights": "© {{year}} {{division}}. All rights reserved. · v{{version}}",
+    "partOf": "Part of the International Virtual Aviation Organisation",
+    "legalHeading": "IVAO",
+    "about": "The official website of {{division}}: events, training, tours and everything the division does.",
     "legal": [
       {
         "label": "IVAO",
@@ -97,8 +106,7 @@
         "href": "https://www.ivao.aero/rules.htm"
       }
     ],
-    "disclaimer": "{{division}} is a division of IVAO, a non-commercial flight simulation network. Nothing published here is intended for real world aviation.",
-    "version": "Version {{version}}"
+    "disclaimer": "{{division}} is a division of IVAO, a non-commercial flight simulation network. Nothing published here is intended for real world aviation."
   },
   "status": {
     "active": "Active",
@@ -117,7 +125,11 @@
     "removeEntry": "Remove",
     "submitHint": "Press Enter to save.",
     "moveUp": "Move up",
-    "moveDown": "Move down"
+    "moveDown": "Move down",
+    "suggest": {
+      "empty": "Nothing on the site matches. What you write is used as it is.",
+      "emptyClosed": "Nothing here matches. A menu entry leads to a page of this site, to one of its screens, or to a link of the library."
+    }
   },
   "list": {
     "search": "Search",
@@ -129,7 +141,10 @@
       "description": "Everything this department creates will show up in this list.",
       "noMatch": "No row matches that search."
     },
-    "file": "Open the file"
+    "file": "Open the file",
+    "edit": {
+      "refused": "That change was not saved. The row may have been changed by somebody else in the meantime."
+    }
   },
   "notFound": {
     "title": "This page does not exist",
@@ -193,7 +208,7 @@
       "updatedAt": "Last change"
     },
     "hints": {
-      "path": "A page of this site starts with a slash, for instance /start. Anywhere else needs its full address.",
+      "path": "A page of this site, one of its screens, or a link of the library. An address that is not one of these is added to the links first, so that every outside address lives in one place.",
       "parentId": "Leave empty for a top level entry. A menu goes one level deep and no further."
     },
     "options": {
@@ -207,7 +222,18 @@
         "Staff": "Staff",
         "Department": "This department"
       }
-    }
+    },
+    "screens": {
+      "/": "Front page",
+      "/calendar": "Calendar",
+      "/news": "News",
+      "/documents": "Documents",
+      "/search": "Search",
+      "/contact": "Contact"
+    },
+    "screensGroup": "Screens of the site",
+    "linksGroup": "Links of the library",
+    "draftSuffix": "{{title}} (draft)"
   },
   "dashboard": {
     "title": "{{department}}",
@@ -313,7 +339,12 @@
           "isActive": "Published",
           "updatedAt": "Last change"
         }
-      }
+      },
+      "noticeError": "This page could not be published.",
+      "noticeWarning": "Two sections are not in the template any more.",
+      "noticeSuccess": "Draft saved.",
+      "noticeInfo": "A draft is only visible to the staff.",
+      "noticeToast": "Show it as a toast"
     },
     "registry": {
       "title": "Registries",
@@ -364,7 +395,8 @@
       "kind": {
         "Page": "Page",
         "News": "News",
-        "Document": "Document"
+        "Document": "Document",
+        "Dashboard": "Department home"
       },
       "status": {
         "Draft": "Draft",
@@ -405,6 +437,9 @@
           "none": "None",
           "muted": "Muted",
           "accent": "Accent",
+          "brand": "Brand blue",
+          "deep": "Deep blue",
+          "dark": "Dark",
           "image": "Picture"
         },
         "padding": {
@@ -430,11 +465,18 @@
     "editor": {
       "structure": "What this page is made of",
       "properties": "Properties",
-      "nothingSelected": "Pick a section or a block on the left to edit it.",
       "noSections": "This page has no sections yet.",
       "untitledSection": "Section without a name",
       "addSection": "Add a section",
       "addBlock": "Add:",
+      "outline": "Outline",
+      "onThePage": "On the page",
+      "components": "Components",
+      "componentsHint": "Pick a section, then a component to add to it.",
+      "addsTo": "Adds to: {{section}}",
+      "notAllowedHere": "The template does not allow this block in the selected section.",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
       "removeSection": "Remove this section",
       "removeBlock": "Remove this block",
       "duplicate": "Duplicate",
@@ -446,7 +488,6 @@
       "applyBlock": "Apply to the block",
       "saveDraft": "Save draft",
       "preview": "Preview",
-      "backToEditing": "Back to editing",
       "publish": "Publish",
       "saveBeforePublishing": "Save the draft before publishing: what goes public is what is stored, not what is on screen.",
       "publishRefused": "This page cannot be published yet",
@@ -484,17 +525,51 @@
         "lockedByUnknown": "This section is fixed by the template this page was made from.",
         "lockedYouMay": "You may change it on the templates of {{department}}.",
         "lockedWhoMay": "Only somebody holding {{permission}} on {{department}} can change it."
-      }
+      },
+      "saved": "Draft saved.",
+      "published": "Published. The site is showing this version now.",
+      "deleted": "Deleted.",
+      "publishMissing": "What is missing before this can be published",
+      "undo": "Undo",
+      "page": "Page",
+      "addRow": "Add row",
+      "untitledRow": "Untitled row",
+      "addHere": "+ Add here"
     },
     "slugPlaceholder": "my-new-page",
     "hints": {
-      "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used."
+      "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used.",
+      "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved."
     }
+  },
+  "templates": {
+    "title": "Templates",
+    "short": "Templates",
+    "description": "The shapes a page, a news item or a document is made from in this department. Changing one does not change the rows already made from it: they keep what they were given until somebody republishes.",
+    "create": "New template",
+    "edit": "Edit template",
+    "madeFromIt_one": "{{count}} row was made from this template.",
+    "madeFromIt_other": "{{count}} rows were made from this template.",
+    "madeFromIt_zero": "Nothing has been made from this template yet."
   },
   "blocks": {
     "captured": "Captured at publication",
     "unknown": "This page uses a block of type \"{{type}}\" that this browser cannot draw. It is probably a module that is not installed.",
     "unknownShort": "Unknown block ({{type}})",
+    "groups": {
+      "content": "Content",
+      "layout": "Layout",
+      "interactive": "Interactive",
+      "structure": "Structure",
+      "data": "Data"
+    },
+    "subgroups": {
+      "text": "Text and links",
+      "media": "Media",
+      "tables": "Tables and steps",
+      "grids": "Grids",
+      "containers": "Containers"
+    },
     "heading": {
       "label": "Heading",
       "fields": {
@@ -920,7 +995,9 @@
         "view": {
           "agenda": "A list of what is next",
           "week": "A week",
-          "month": "A month"
+          "month": "A month",
+          "weekList": "A week, as a list",
+          "monthList": "A month, as a list"
         }
       }
     },
@@ -1168,8 +1245,8 @@
     "edit": "Edit entry",
     "projected": "From a module",
     "projectedExplained": "This entry mirrors a row the {{module}} module owns, so it cannot be edited here: a change would be undone the next time that module saves. Change it where it comes from.",
-    "utc": "{{at}} UTC",
-    "local": "{{at}} local",
+    "utc": "{{at}}Z",
+    "local": "({{at}} LT)",
     "previous": "Previous",
     "next": "Next",
     "delete": {
@@ -1190,7 +1267,7 @@
       "updatedAt": "Last change"
     },
     "hints": {
-      "kind": "A word this department files the entry under, for example meeting or deadline. The kinds a module brings — events, training, tours — arrive with their own rows.",
+      "kind": "One of the words the division uses, the same for every department. An entry a module brings arrives with a word of its own.",
       "url": "Where the entry leads, if anywhere. A meeting link, a page of the site."
     },
     "options": {
@@ -1208,7 +1285,9 @@
       "views": {
         "agenda": "Agenda",
         "week": "Week",
-        "month": "Month"
+        "month": "Month",
+        "weekList": "Week, as a list",
+        "monthList": "Month, as a list"
       },
       "filters": {
         "view": "View",
@@ -1258,6 +1337,38 @@
         "title": "Messages to my department",
         "description": "An email when a member writes to a department you are staff of."
       }
+    }
+  },
+  "calendarKinds": {
+    "title": "Calendar kinds",
+    "description": "The words the whole division files its calendar under.",
+    "create": "New kind",
+    "edit": "Edit kind",
+    "formHint": "These words are the same for every department: a coordinator picks one, nobody invents one. Retiring a kind leaves the entries already written with it alone.",
+    "fields": {
+      "label": "Name",
+      "key": "Key",
+      "colour": "Colour",
+      "sort": "Order",
+      "isActive": "In use",
+      "updatedAt": "Last change"
+    },
+    "options": {
+      "colour": {
+        "blue": "Blue",
+        "green": "Green",
+        "orange": "Orange",
+        "purple": "Purple",
+        "indigo": "Indigo",
+        "pink": "Pink",
+        "red": "Red",
+        "yellow": "Yellow",
+        "gray": "Grey"
+      }
+    },
+    "delete": {
+      "title": "Delete this kind?",
+      "description": "The entries already filed under it keep the key they were written with, and nothing rewrites them. To stop anybody filing new ones under it, take \"in use\" off instead."
     }
   }
 }

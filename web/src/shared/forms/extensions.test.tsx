@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 import { z } from 'zod';
@@ -11,14 +11,16 @@ import { SchemaForm } from './SchemaForm';
 import { localized, localizedObject } from './schema';
 
 /**
- * The five things the generator learned in G2, one test each (implementation plan M1, G2) — and
- * the sixth, `multi`, which G11a added for `allowedBlocks` (decision note
- * `2026-09-07-scrivere-un-template.md`).
+ * The five things the generator learned in G2, one test each (implementation plan M1, G2), the
+ * sixth, `multi`, which G11a added for `allowedBlocks` (decision note
+ * `2026-09-07-scrivere-un-template.md`), and the seventh, `slugFrom`, which Carmine asked for after
+ * running the demo of M1.
  *
- * They are all the same argument in six shapes: a coordinator never writes an identifier, never
+ * They are all the same argument in seven shapes: a coordinator never writes an identifier, never
  * types an icon name, never converts a time zone in their head, never edits JSON, never has to
- * delete and re-add three cards to put one of them first, and never adds five rows of a list to
- * tick five boxes. Every one of those is a form somebody would otherwise have written by hand.
+ * delete and re-add three cards to put one of them first, never adds five rows of a list to tick
+ * five boxes, and never copies a title into an address by hand. Every one of those is a form
+ * somebody would otherwise have written by hand.
  */
 
 const LOCALES = ['en', 'it'] as const;
@@ -46,6 +48,7 @@ function render<TValues extends Record<string, unknown>>(
     onSubmit?: (values: TValues) => Promise<unknown>;
     mediaLibrary?: MediaLibraryQuery;
     division?: { defaultLocale: string; timezone: string };
+    onSuggestSearch?: (field: string, typed: string) => void;
   } = {},
 ) {
   return renderWithProviders(
@@ -58,6 +61,7 @@ function render<TValues extends Record<string, unknown>>(
       onSubmit={extras.onSubmit ?? (() => Promise.resolve())}
       {...(extras.mediaLibrary === undefined ? {} : { mediaLibrary: extras.mediaLibrary })}
       {...(extras.division === undefined ? {} : { division: extras.division })}
+      {...(extras.onSuggestSearch === undefined ? {} : { onSuggestSearch: extras.onSuggestSearch })}
     />,
     { i18n: createTestI18n({ test: extras.labels ?? {} }) },
   );
@@ -353,6 +357,217 @@ test('unticking the last one leaves nothing rather than an empty box nobody mean
   await user.click(screen.getByRole('button', { name: 'Save' }));
 
   expect(onSubmit).toHaveBeenCalledWith({ allowed: [] });
+});
+
+// ---- 7. an address proposes itself from the title --------------------------------------------
+
+const slugSchema = z.object({ title: localized(), slug: z.string().meta({ slugFrom: 'title' }) });
+const slugLabels = { fields: { title: 'Title', slug: 'Address' } };
+
+/**
+ * The title is drawn by `LocaleFields`, which is a tab per language and one box at a time, and the
+ * box carries no label of its own — the group does. So the title is "the first text box on the
+ * form", which is also the order the schema declares.
+ */
+function titleBox() {
+  return screen.getAllByRole('textbox')[0]!;
+}
+
+function addressBox() {
+  return screen.getByLabelText('Address');
+}
+
+test('a new row proposes its address from the title, accents folded', async () => {
+  const user = userEvent.setup();
+
+  render(slugSchema, { title: { en: '', it: '' }, slug: '' }, { labels: slugLabels, division: DIVISION });
+
+  await user.type(titleBox(), 'Città di partenza!');
+
+  // Lower case, accents folded rather than dropped, one dash per run of anything else, and no dash
+  // hanging off either end. It is the shape `ContentWriteDtoValidator` holds a slug to.
+  expect(addressBox()).toHaveValue('citta-di-partenza');
+});
+
+test('the proposal stops for good the moment somebody writes the address themselves', async () => {
+  const user = userEvent.setup();
+
+  render(slugSchema, { title: { en: '', it: '' }, slug: '' }, { labels: slugLabels, division: DIVISION });
+
+  await user.type(titleBox(), 'First');
+  await user.clear(addressBox());
+  await user.type(addressBox(), 'chosen-by-hand');
+
+  // The title keeps moving and the address does not follow it any more. Without this, an address
+  // would rewrite itself under the person typing it.
+  await user.type(titleBox(), ' and second');
+
+  expect(addressBox()).toHaveValue('chosen-by-hand');
+});
+
+test('a row that already has an address never moves it, however its title is edited', async () => {
+  const user = userEvent.setup();
+
+  render(
+    slugSchema,
+    { title: { en: 'About us', it: 'Chi siamo' }, slug: 'about' },
+    { labels: slugLabels, division: DIVISION },
+  );
+
+  await user.type(titleBox(), ' renamed');
+
+  // ⚠️ The whole reason the rule is "follow what was proposed" and not "follow while empty": an
+  // address outlives the page, and a published one that moved because somebody fixed a typo in its
+  // title would break every link anybody had to it.
+  expect(addressBox()).toHaveValue('about');
+});
+
+test('the proposal reads the default language of the division, and falls back to what is written', async () => {
+  const user = userEvent.setup();
+
+  render(slugSchema, { title: { en: '', it: '' }, slug: '' }, { labels: slugLabels, division: DIVISION });
+
+  // Italian first: nothing is written in the language the address is published in, so a proposal
+  // made from what there is beats no proposal at all.
+  await user.click(screen.getByRole('tab', { name: /Italian/ }));
+  await user.type(titleBox(), 'Chi siamo');
+  expect(addressBox()).toHaveValue('chi-siamo');
+
+  // And the moment the default language has something, that is what the address is made of.
+  await user.click(screen.getByRole('tab', { name: /English/ }));
+  await user.type(titleBox(), 'About us');
+  expect(addressBox()).toHaveValue('about-us');
+});
+
+test('a field that is a path proposes one, slash and all', async () => {
+  const user = userEvent.setup();
+
+  const pathSchema = z.object({
+    label: localized(),
+    path: z.string().meta({ slugFrom: 'label', slugPrefix: '/' }),
+  });
+
+  render(
+    pathSchema,
+    { label: { en: '', it: '' }, path: '' },
+    { labels: { fields: { label: 'Label', path: 'Address' } }, division: DIVISION },
+  );
+
+  // The menu writes `/chi-siamo` where a page writes `chi-siamo` (asked for while running the demo
+  // of M1, part 1). Same annotation, one word more.
+  await user.type(screen.getAllByRole('textbox')[0]!, 'About us');
+  expect(screen.getByLabelText('Address')).toHaveValue('/about-us');
+});
+
+// ---- 8. a field that offers without demanding -------------------------------------------------
+
+const suggestSchema = z.object({
+  path: z.string().meta({
+    suggestions: [
+      { value: '/about', label: 'Chi siamo', group: 'Web' },
+      { value: '/tours', label: 'I tour', group: 'Flight Ops' },
+    ],
+  }),
+});
+
+const suggestLabels = { fields: { path: 'Address' } };
+
+test('a suggested field offers what exists, grouped, and takes what is typed anyway', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels, onSubmit });
+
+  await user.click(screen.getByLabelText('Address'));
+
+  // Grouped, because thirty addresses in one list is a wall: the heading is the department that
+  // wrote the page.
+  expect(await screen.findByText('Web')).toBeInTheDocument();
+  expect(screen.getByText('Flight Ops')).toBeInTheDocument();
+
+  // Choosing one writes the address and not the title: what a menu stores is where it leads.
+  await user.click(screen.getByText('Chi siamo'));
+  expect(screen.getByLabelText('Address')).toHaveValue('/about');
+
+  // ⚠️ And it is not a select: an address of somewhere else is typed in full and kept, or a menu
+  // could not link the forum.
+  await user.clear(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'https://forum.example.org');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ path: 'https://forum.example.org' });
+});
+
+test('the list narrows to what is being typed, on the address as well as on the title', async () => {
+  const user = userEvent.setup();
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels, division: DIVISION });
+
+  await user.click(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'tour');
+
+  // Matched on the address, which is what somebody types when they half remember it. `cmdk` filters
+  // on its own idea of the text, which is why the filtering here is ours.
+  expect(await screen.findByText('I tour')).toBeInTheDocument();
+  expect(screen.queryByText('Chi siamo')).not.toBeInTheDocument();
+});
+
+test('a closed list keeps only what it offered, and says so', async () => {
+  const user = userEvent.setup();
+
+  const closed = z.object({
+    path: z.string().meta({
+      suggestions: [{ value: '/about', label: 'Chi siamo', group: 'Web' }],
+      suggestionsOnly: true,
+    }),
+  });
+
+  render(closed, { path: '/about' }, { labels: suggestLabels, division: DIVISION });
+
+  const field = screen.getByLabelText('Address');
+
+  // ⚠️ The difference between offering and deciding. A menu entry leads to a page of this site, to
+  // one of its screens or to a link of the library, so that every address leaving the site lives in
+  // one table — and what is typed here is a way of searching that list, not a value.
+  await user.clear(field);
+  await user.type(field, 'https://somewhere.example');
+  await user.tab();
+
+  expect(field).toHaveValue('/about');
+});
+
+test('a suggested field says what is being typed in it, once the typing stops', async () => {
+  const user = userEvent.setup();
+  const asked = vi.fn();
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels, onSuggestSearch: asked });
+
+  await user.click(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'tour');
+
+  await waitFor(() => {
+    expect(asked).toHaveBeenCalledWith('path', 'tour');
+  });
+
+  // ⚠️ And **once**: four letters are one question, not four. The half typed words never reach the
+  // caller, which is the whole difference between a debounce and a callback — the same three
+  // hundred milliseconds the search box of a list waits, because it is the same gesture.
+  expect(asked).not.toHaveBeenCalledWith('path', 'tou');
+  expect(asked).not.toHaveBeenCalledWith('path', 'to');
+});
+
+test('nothing is asked for a field nobody is typing in', async () => {
+  // The callback is optional and a form without one has to behave exactly as it did: the whole
+  // point of the extension is that a screen opts in, not that every form starts making requests.
+  const user = userEvent.setup();
+
+  render(suggestSchema, { path: '' }, { labels: suggestLabels });
+
+  await user.click(screen.getByLabelText('Address'));
+  await user.type(screen.getByLabelText('Address'), 'tour');
+
+  // Still filtered in memory, which is what a form with a short list wants.
+  expect(await screen.findByText('I tour')).toBeInTheDocument();
 });
 
 // ---- and the property none of the five may weaken --------------------------------------------

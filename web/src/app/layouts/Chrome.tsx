@@ -1,11 +1,11 @@
 import {
   Button,
   DarkModeToggle,
-  Navbar,
+  IVAOLogo,
+  NavbarContainer,
   NavigationMenu,
   type NavigationMenuProps,
   Separator,
-  Subtle,
 } from '@ivao/atmosphere-react';
 import { Link } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useLogout } from '../../features/me/queries';
 import type { Bootstrap } from '../../shared/api/bootstrap';
 import { loginHref } from '../../shared/api/client';
+import { iconGlyph } from '../../shared/icons/glyphs';
 import { navLabel, resolveLocalized } from '../../shared/i18n/localized';
 import { LocaleSwitcher } from '../../shared/ui';
 
@@ -29,6 +30,9 @@ import { RouterAnchor } from './RouterAnchor';
  * from `GET /api/me`; the footer links come from `locales/`, so a fork changes them by translating
  * a file rather than by editing a component.
  */
+
+/** One entry of the footer menu, as the bootstrap carries it. */
+type FooterItem = Bootstrap['navigation']['footer'][number];
 
 /** One legal link of the footer, as the language files carry it. */
 interface LegalLink {
@@ -65,18 +69,80 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
     };
   });
 
+  // Whether the bar shows the way into the back office. The same question the route guard asks,
+  // and asked here so that nobody has to remember the address: a member of staff who lands on the
+  // public site had to type `/staff` to get back to work.
+  const staff = user !== null && (user.isStaff || user.isSuperadmin);
+
   return (
-    <header className="border-border border-b">
-      <Navbar title={title} />
+    // ⚠️ One row and not two (Carmine, 10 September 2026: the menu can live where the IVAO banner
+    // is, and save the space). The menu, the tools and the account all ride in `Navbar`'s own
+    // children slot, which it draws at the far end of the same line as the logo and the division's
+    // name — so the height of the site's frame is the height of the banner, and nothing else.
+    // ⚠️ The typeface of va.ivao.aero (asked for by IVAO's PR department, 11 September 2026): Poppins
+    // for what the bar says, Nunito Sans at its heaviest for the division's name. Atmosphere's own
+    // `font-head` and `font-sans` utilities, which point at exactly those two, so nothing here names a
+    // font. The footer below does the same.
+    <header className="border-border font-head border-b">
+      {/* ⚠️ `NavbarContainer` and not `Navbar`, and the brand block written out here.
+          `Navbar` puts its children in a box of their own at the far end of the line, which cannot
+          be made to grow — so the menu could only ever be pushed against the tools on the right.
+          Three zones with a middle that grows is the only way to centre it (Carmine, 10 September
+          2026), and the price is these eight lines: the logo, the diagonal and the name, which are
+          Atmosphere's own `IVAOLogo` and its own colours. */}
+      {/* The icon of the browser tab, hoisted into the document head by React 19 like the `<title>`
+          of `PageMetadata`. From `config/division.json` like the mark itself, and a separate file
+          because a white mark made for this blue bar would vanish on a light tab bar. Nothing is
+          rendered when the division has none, so the browser keeps its own. */}
+      {bootstrap.division.faviconUrl ? (
+        <link rel="icon" type="image/svg+xml" href={bootstrap.division.faviconUrl} />
+      ) : null}
 
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-2">
-        <NavigationMenu sections={sections} asLink={RouterAnchor} />
+      <NavbarContainer className="gap-4">
+        <div className="flex shrink-0 items-center gap-3">
+          {/* ⚠️ The division's own mark where there is one, and IVAO's where there is not
+              (Carmine, 10 September 2026). The mark of a division **is** the IVAO circle with the
+              division's badge on it, so drawing both side by side would be the same circle twice.
+              The word "IVAO" is not lost: the division's name beside it already begins with it. */}
+          {bootstrap.division.logoUrl ? (
+            <DivisionMark bootstrap={bootstrap} className="h-9" />
+          ) : (
+            <>
+              <div className="block md:hidden">
+                <IVAOLogo color="white" onlyIcon />
+              </div>
+              <div className="hidden md:block">
+                <IVAOLogo color="white" />
+              </div>
+            </>
+          )}
+          <div className="bg-ocean-400 dark:bg-fuselage-400 h-8 w-0.5" />
+          <h1 className="font-sans text-lg font-extrabold text-white">{title}</h1>
+        </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* ⚠️ White for the entries on the bar, and **not** for the ones in a drop down. The first
+            version forced white on every link inside the menu, and a drop down's panel is light: its
+            entries were white on white, invisible — found on 11 September 2026 when Carmine asked
+            whether the menu could have sub-entries, which it had had all along. The panel is told
+            apart by `aria-labelledby`, which Radix puts on it because the content of a menu is
+            labelled by the button that opens it: an accessibility contract, so a sturdier handle
+            than the shape of the markup. */}
+        <div className="flex flex-1 justify-center text-white [&_[aria-labelledby]_a]:text-foreground [&_a]:text-white [&_button]:text-white">
+          <NavigationMenu sections={sections} asLink={RouterAnchor} />
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
           {/* A tool of the frame and not a page of the site, which is why it sits here with the
-              language and the theme rather than in the menu: the menu is what the staff writes, and
-              a search box is not something anybody should have to remember to add. */}
-          <Button asChild variant="ghost" size="sm" aria-label={t('search.open')} title={t('search.open')}>
+            language and the theme rather than in the menu: the menu is what the staff writes, and
+            a search box is not something anybody should have to remember to add. */}
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10 hover:text-white"
+            aria-label={t('search.open')}
+            title={t('search.open')}
+          >
             <Link to="/search" search={{ q: '', page: 1 }}>
               <Search aria-hidden className="size-4" />
             </Link>
@@ -84,94 +150,278 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
 
           <LocaleSwitcher locales={bootstrap.division.locales} signedIn={user !== null} />
           {/* `title` is the tooltip, `aria-label` is the accessible name: passing only the second
-              leaves the tooltip on Atmosphere's own English, and a tooltip is not something a
-              screenshot review notices because it only appears on hover.
+            leaves the tooltip on Atmosphere's own English, and a tooltip is not something a
+            screenshot review notices because it only appears on hover.
 
-              `children` is null because the component demands the prop in its types and then
-              overwrites it: it draws a sun or a moon from the current theme. Anything passed here
-              is dead markup, so the honest thing to pass is nothing. */}
+            `children` is null because the component demands the prop in its types and then
+            overwrites it: it draws a sun or a moon from the current theme. Anything passed here
+            is dead markup, so the honest thing to pass is nothing. */}
           <DarkModeToggle title={t('theme.toggle')} aria-label={t('theme.toggle')}>
             {null}
           </DarkModeToggle>
 
+          {staff ? (
+            // Only for somebody the guard would let in. A button that leads to `/forbidden` is a
+            // button that teaches people to distrust the bar it sits in.
+            <Button asChild variant="secondary" size="sm">
+              <Link to="/staff">{t('nav.staff')}</Link>
+            </Button>
+          ) : null}
+
           {user === null ? (
             // A full navigation, not a router link: /auth/login is a Kestrel endpoint.
-            <Button asChild>
+            //
+            // ⚠️ `secondary` and not the primary variant, now that it sits on the banner: the primary
+            // button is the same blue as the bar behind it, so the one call to action of the public
+            // site was a dark rectangle on a dark rectangle. Measured by looking at it.
+            <Button asChild variant="secondary" size="sm">
               <a href={loginHref(window.location.pathname)}>{t('auth.login')}</a>
             </Button>
           ) : (
             <>
-              <Button asChild variant="ghost">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10 hover:text-white"
+              >
                 <Link to="/me">{displayName(user.firstName, user.lastName, user.vid)}</Link>
               </Button>
-              <Button variant="secondary" onClick={() => logout.mutate()} disabled={logout.isPending}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10 hover:text-white"
+                onClick={() => logout.mutate()}
+                disabled={logout.isPending}
+              >
                 {t('auth.logout')}
               </Button>
             </>
           )}
+
+          {/* No mark at this end of the line any more. It was put here first and then, once the
+              division's mark took the place of IVAO's at the start of the bar, it was the same
+              circle twice on one line — Carmine had it taken away on 10 September 2026. */}
         </div>
-      </div>
+      </NavbarContainer>
     </header>
   );
 }
 
+/**
+ * The mark of the division, or nothing at all.
+ *
+ * ⚠️ It carries **no alternative text**, and that is the considered answer rather than an omission:
+ * the name of the division is written beside it in both places it appears — on the bar and in the
+ * foot of the page — so a reader who cannot see it is told the same thing twice by the same picture.
+ * `alt=""` is what says "decorative" to a screen reader; a filled-in `alt` here would be noise.
+ */
+function DivisionMark({ bootstrap, className }: { bootstrap: Bootstrap; className: string }) {
+  const logo = bootstrap.division.logoUrl;
+
+  return logo === null || logo === undefined || logo.length === 0 ? null : (
+    <img src={logo} alt="" className={className} />
+  );
+}
+
+/**
+ * The foot of every page (asked for by Carmine on 10 September 2026, with the footer of the UK &
+ * Ireland division in front of him): the division on the left, then the columns of links, then one
+ * quiet line underneath.
+ *
+ * ⚠️ **The columns are the footer menu, and nothing here decides what is in them.** A top level
+ * entry of `Scope = Footer` is a column and its children are its links, which is a shape
+ * `cms_menu_items` has carried since G8 — what was missing was only that an entry could be a
+ * *heading*, leading nowhere, and that it could carry a mark. Both are one column of the table
+ * each, and both are edited where every other menu entry is edited: the back office of the
+ * department that owns the site (design M1 §8.1).
+ *
+ * ⚠️ And **one rule turns a column into the row of accounts**: a column whose links *all* carry an
+ * icon is drawn under the division's own words as a row of marks, rather than as a fourth column of
+ * text. It is the one piece of this that is inferred rather than declared, and it is inferred
+ * because the alternative was a second field on every menu entry to answer a question only one
+ * column in the whole site ever asks.
+ */
 export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
   const { t, i18n } = useTranslation();
+
+  const division = resolveLocalized(bootstrap.division.name, i18n.language, bootstrap.division.defaultLocale);
+
+  const label = (item: FooterItem) => navLabel(item, t, i18n.language, bootstrap.division.defaultLocale);
+
+  const columns = bootstrap.navigation.footer.filter((item) => item.children.length > 0);
+  const loose = bootstrap.navigation.footer.filter((item) => item.children.length === 0);
+
+  const marks = columns.find((column) => column.children.every((child) => child.icon));
+  const written = columns.filter((column) => column !== marks);
 
   // The links of headquarters are content, not code: `locales/{lng}/common.json` carries them, so a
   // division that forks this hub changes them where it changes every other sentence.
   const raw: unknown = t('footer.legal', { returnObjects: true });
-  const links: LegalLink[] = Array.isArray(raw) ? (raw as LegalLink[]) : [];
+  const legal: LegalLink[] = Array.isArray(raw) ? (raw as LegalLink[]) : [];
 
   return (
-    <footer className="border-border mt-12 border-t">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6">
-        {/* Two rows of links, and they are two different things. The first is what the staff put in
-            the footer menu — pages of this site, edited in the back office like the top menu. The
-            second is the legal links of headquarters, which are the same for every division and
-            live in `locales/` because they are words and not rows. */}
-        {bootstrap.navigation.footer.length > 0 && (
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {bootstrap.navigation.footer
-              .flatMap((item) => [item, ...item.children])
-              .map((item) => (
-                <FooterEntry
-                  key={item.path}
-                  path={item.path}
-                  label={navLabel(item, t, i18n.language, bootstrap.division.defaultLocale)}
-                />
-              ))}
+    // ⚠️ The same ground as the bar at the top (Carmine, 10 September 2026), which is why the
+    // colours inside are written out rather than taken from the theme: `text-muted-foreground` and
+    // `Subtle` are dark on light, and on this blue they would be hard to read in the light theme and
+    // invisible in the dark one. A band that carries its own background answers for its own
+    // contrast — the tokens answer for the page, and this is no longer the page.
+    // ⚠️ No `mt-12` any more. That margin was invisible while the footer stood on the page's own
+    // background; the day it was given a ground of its own it became a white strip between the two —
+    // and in the back office a gap between the bottom of the sidebar and the top of the footer,
+    // which is where Carmine saw it. The room the footer needs is its own `py-10`, inside its band.
+    <footer className="bg-atmos-700 dark:bg-fuselage-800 font-head text-white">
+      <div className="mx-auto w-full max-w-6xl px-4 py-10">
+        {/* ⚠️ Centred rather than pinned to the left edge (Carmine, 10 September 2026), and that is
+            why this is a wrapping flex row and not a grid: a grid of four columns holding two leaves
+            two empty tracks on the right and the whole band reads as unfinished. A row that centres
+            what it actually has looks deliberate whether a division writes one column or four. */}
+        <div className="flex flex-wrap justify-center gap-x-16 gap-y-8">
+          {/* The division: who this site belongs to, what it is for, and where else to find it. */}
+          <div className="flex max-w-xs flex-col items-center gap-4 text-center">
+            {/* The mark beside the name, which is the second place Carmine asked for it. Bigger than
+                the one on the bar: here it is the thing that says whose site this is, and there it
+                is a reminder at the end of a line. */}
+            <div className="flex items-center gap-3">
+              <DivisionMark bootstrap={bootstrap} className="h-10" />
+              <p className="font-sans text-base font-extrabold text-white">{division}</p>
+            </div>
+            <p data-secondary className="text-sm text-white/70">
+              {t('footer.about', { division })}
+            </p>
+
+            {/* ⚠️ The notice that this is not real aviation. It used to sit on the line at the
+                bottom and was moved here when that line became the copyright: it is a thing worth
+                saying about the division, and the alternative to moving it was dropping it. */}
+            <p data-secondary className="text-sm text-white/60">
+              {t('footer.disclaimer', { division })}
+            </p>
+
+            {marks === undefined ? null : (
+              <nav aria-label={label(marks)} className="flex flex-wrap items-center gap-2">
+                {marks.children.map((child) => (
+                  <FooterMark key={child.path} path={child.path} label={label(child)} icon={child.icon} />
+                ))}
+              </nav>
+            )}
+          </div>
+
+          {written.map((column) => (
+            <nav key={column.path || label(column)} className="flex flex-col items-center gap-3">
+              {/* The heading of a column may be a link or may lead nowhere, and both are written the
+                  same way in the back office: an entry with an address, or one without. */}
+              <p
+                data-secondary
+                className="font-sans text-xs font-extrabold tracking-wider text-white/60 uppercase"
+              >
+                {column.path ? <FooterEntry path={column.path} label={label(column)} /> : label(column)}
+              </p>
+
+              <ul className="flex flex-col items-center gap-2">
+                {column.children.map((child) => (
+                  <li key={child.path}>
+                    <FooterEntry path={child.path} label={label(child)} icon={child.icon} />
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+
+          {/* The links of headquarters, which are the same for every division and live in `locales/`
+              because they are words and not rows. A column like any other since the line at the
+              bottom stopped carrying links — and the heading is a word of the language files, not a
+              menu entry, because nobody in a division edits these. */}
+          {legal.length === 0 ? null : (
+            <nav className="flex flex-col items-center gap-3">
+              <p
+                data-secondary
+                className="font-sans text-xs font-extrabold tracking-wider text-white/60 uppercase"
+              >
+                {t('footer.legalHeading')}
+              </p>
+
+              <ul className="flex flex-col items-center gap-2">
+                {legal.map((link) => (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      data-secondary
+                      className="text-sm text-white/70 underline-offset-2 hover:text-white hover:underline"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+        </div>
+
+        {/* An entry with no children and no column to sit in: the shape the footer had before it had
+            columns, kept so that a division that upgrades does not lose the links it already wrote. */}
+        {loose.length === 0 ? null : (
+          <nav className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            {loose.map((item) => (
+              <FooterEntry key={item.path} path={item.path} label={label(item)} icon={item.icon} />
+            ))}
           </nav>
         )}
 
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
+        <Separator className="my-8 bg-white/20" />
 
-        <Separator />
+        {/* ⚠️ Two sentences and nothing else (Carmine, 10 September 2026): who this belongs to and
+            which release it is, and what it is part of. **No links** — the ones that used to sit
+            here are a column above now. A line at the bottom of a page is where the eye stops, and
+            everything put there competes with the two facts that belong there.
 
-        <Subtle>
-          {t('footer.disclaimer', {
-            division: resolveLocalized(
-              bootstrap.division.name,
-              i18n.language,
-              bootstrap.division.defaultLocale,
-            ),
-          })}
-        </Subtle>
-        <Subtle>{t('footer.version', { version: bootstrap.version })}</Subtle>
+            The year is the browser's. A year written into a language file is a year that is wrong
+            every January, in every language at once. */}
+        <div className="flex flex-col gap-2 text-center md:flex-row md:items-center md:justify-between md:text-left">
+          <p data-secondary className="text-sm text-white/60">
+            {t('footer.rights', {
+              year: new Date().getFullYear(),
+              division,
+              version: bootstrap.version,
+            })}
+          </p>
+
+          <p data-secondary className="text-sm text-white/60">
+            {t('footer.partOf')}
+          </p>
+        </div>
       </div>
     </footer>
+  );
+}
+
+/** One account of the division: a mark, with the words it was given as its name. */
+function FooterMark({ path, label, icon }: { path: string; label: string; icon: string | null }) {
+  const className =
+    'flex size-9 items-center justify-center rounded-md text-white/70 transition-colors hover:bg-white/10 hover:text-white';
+
+  const glyph = iconGlyph(icon, 'size-4');
+
+  // A name that this release has never heard of draws nothing rather than a wrong picture, which is
+  // what `iconGlyph` is for — but the link must survive it, so the words stand in for the mark.
+  const inside = glyph ?? label;
+
+  return path.startsWith('/') ? (
+    <RouterAnchor href={path} className={className} aria-label={label} title={label}>
+      {inside}
+    </RouterAnchor>
+  ) : (
+    <a
+      href={path}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={className}
+      aria-label={label}
+      title={label}
+    >
+      {inside}
+    </a>
   );
 }
 
@@ -181,16 +431,24 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
  * to write one — `MenuItemWriteDtoValidator` accepts a path or an absolute web address and nothing
  * in between.
  */
-function FooterEntry({ path, label }: { path: string; label: string }) {
-  const className = 'text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline';
+function FooterEntry({ path, label, icon = null }: { path: string; label: string; icon?: string | null }) {
+  const className =
+    'inline-flex items-center gap-2 text-sm text-white/70 underline-offset-2 hover:text-white hover:underline';
+
+  const inside = (
+    <>
+      {iconGlyph(icon, 'size-4 shrink-0')}
+      {label}
+    </>
+  );
 
   return path.startsWith('/') ? (
     <RouterAnchor href={path} className={className}>
-      {label}
+      {inside}
     </RouterAnchor>
   ) : (
     <a href={path} target="_blank" rel="noreferrer noopener" className={className}>
-      {label}
+      {inside}
     </a>
   );
 }

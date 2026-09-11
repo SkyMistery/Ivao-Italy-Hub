@@ -21,10 +21,12 @@ import {
   LocaleFieldsSample,
   MarkdownSample,
   MediaPickerSample,
+  NoticeSample,
   PageShellSample,
   ProblemAlertSample,
   SchemaFormSample,
   SectionHeaderSample,
+  StaffSidebarSample,
   StatTileSample,
 } from './uiKitSamples';
 
@@ -96,6 +98,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
     ),
   },
   { name: 'ConfirmDialog' satisfies UiKitComponent, render: () => <ConfirmDialogSample /> },
+  { name: 'Notice' satisfies UiKitComponent, render: () => <NoticeSample /> },
   {
     name: 'MediaPicker' satisfies UiKitComponent,
     render: (bootstrap) => <MediaPickerSample bootstrap={bootstrap} />,
@@ -106,6 +109,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   },
   { name: 'ContactForm' satisfies UiKitComponent, render: () => <ContactFormSample /> },
   { name: 'LiveStatusStrip' satisfies UiKitComponent, render: () => <LiveStatusStripSample /> },
+  { name: 'StaffSidebar' satisfies UiKitComponent, render: () => <StaffSidebarSample /> },
 ];
 
 /**

@@ -20,6 +20,11 @@ export const anonymousBootstrap = {
     // fixture whose division sits in UTC makes the two lines identical — which is exactly how a
     // screen showing UTC twice would pass unnoticed (HANDOFF §13, third false alarm).
     timezone: 'Europe/Rome',
+    // ⚠️ A division with no mark of its own, and deliberately: this suite is about the front end
+    // assembling itself for **any** division, and a fixture carrying Italy's logo would be a suite
+    // that only proves the case where there is one. The mark has its own test beside it.
+    logoUrl: null,
+    faviconUrl: null,
     firStaffScope: 'all',
     // Which department owns the site, and therefore where its menu is edited. The client is told
     // rather than knowing (design M1 §8.1).
@@ -40,10 +45,60 @@ export const anonymousBootstrap = {
       },
       { key: 'nav.atc', path: '/atc', label: null, children: [] },
     ],
-    footer: [{ key: null, path: '/legal', label: { en: 'Legal', it: 'Note legali' }, children: [] }],
+    // The three shapes the footer has to draw, since it became columns on 10 September 2026: a
+    // heading that leads nowhere with its links under it, a column whose links all carry a mark —
+    // which is the row of the division's accounts — and a lone entry with no column at all, which
+    // is what every footer written before this looked like.
+    footer: [
+      {
+        key: null,
+        path: '',
+        label: { en: 'Quick links', it: 'Collegamenti' },
+        icon: null,
+        children: [
+          { key: null, path: '/news', label: { en: 'News', it: 'News' }, icon: null, children: [] },
+          {
+            key: null,
+            path: '/contact',
+            label: { en: 'Contact us', it: 'Contattaci' },
+            icon: null,
+            children: [],
+          },
+        ],
+      },
+      {
+        key: null,
+        path: '',
+        label: { en: 'Follow us', it: 'Seguici' },
+        icon: null,
+        children: [
+          {
+            key: null,
+            path: 'https://discord.example.org',
+            label: { en: 'Discord', it: 'Discord' },
+            icon: 'discord',
+            children: [],
+          },
+          {
+            key: null,
+            path: 'https://youtube.example.org',
+            label: { en: 'YouTube', it: 'YouTube' },
+            icon: 'youtube',
+            children: [],
+          },
+        ],
+      },
+      { key: null, path: '/legal', label: { en: 'Legal', it: 'Note legali' }, icon: null, children: [] },
+    ],
     staff: [],
   },
   registries: { blocks: [], widgets: [], permissions: [] },
+  // The division's calendar vocabulary, which a visitor gets too: a chip on a public calendar says
+  // the word and takes the colour somebody chose (decided 8 Sep 2026).
+  calendarKinds: [
+    { key: 'meeting', label: { en: 'Meeting', it: 'Riunione' }, colour: 'indigo' },
+    { key: 'deadline', label: { en: 'Deadline', it: 'Scadenza' }, colour: 'orange' },
+  ],
   version: '0.0.0-e2e',
 };
 
@@ -165,11 +220,172 @@ export const staffBootstrap = {
     // The gallery is behind `Admin.Access`, and the gallery is where every kind of field the form
     // generator draws is mounted at once — which is the only screen that can be looked at whole.
     { name: 'Admin.Access', department: null },
+    // Global, and it is the point of it: the vocabulary of the calendar belongs to the division,
+    // so this coordinator holds it not because of their department but in spite of it.
+    { name: 'Calendar.ManageKinds', department: null },
   ],
   navigation: {
     ...anonymousBootstrap.navigation,
     staff: [{ key: 'nav.links', path: '/staff/links', label: null, children: [] }],
   },
+};
+
+/**
+ * The same coordinator, of the department that owns the site.
+ *
+ * ⚠️ It exists because the menu is **not** a screen every department has: it belongs to the web
+ * team, which is the whole point of the resource (design M1 §8.1), so the ordinary staff fixture —
+ * a coordinator of events, on purpose — is answered "this is not for you" there. A test of the menu
+ * that used it would be testing the guard.
+ */
+export const siteStaffBootstrap = {
+  ...staffBootstrap,
+  user: { ...staffBootstrap.user, departments: ['WD'] },
+  permissions: [
+    ...staffBootstrap.permissions.filter((permission) => permission.department !== 'ED'),
+    { name: 'Menu.View', department: 'WD' },
+    { name: 'Menu.Edit', department: 'WD' },
+    // ⚠️ Held here and **not** by the ordinary staff fixture, which is what makes the pair useful:
+    // every staff member may read a template, and only this one may open the screen that changes
+    // them. The events coordinator is the other half of that test.
+    { name: 'Content.ManageTemplates', department: 'WD' },
+  ],
+  navigation: {
+    ...staffBootstrap.navigation,
+    staff: [{ key: 'nav.menu', path: '/staff/wd/menu', label: null, children: [] }],
+  },
+};
+
+/**
+ * A page nobody would find without asking the server: the hundred and first row, which no single
+ * request returns because the list engine caps a page at a hundred. The address of a menu entry is
+ * a **closed** set, so a row the form never offers is a row the menu can never point at — which is
+ * why the field searches instead of filtering what it already holds.
+ */
+export const thePageBeyondTheHundredth = {
+  items: [
+    {
+      id: 909,
+      kind: 'Page',
+      slug: 'oltre-la-centesima',
+      ownerDepartment: 'WD',
+      visibility: 'Public',
+      status: 'Published',
+      isTemplate: false,
+      title: { en: 'Beyond the hundredth', it: 'Oltre la centesima' },
+      category: null,
+      coverMediaId: null,
+      pinned: false,
+      sort: 0,
+      fileMediaId: null,
+      publishedAt: '2026-09-04T12:00:00Z',
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 100,
+  total: 1,
+};
+
+/** One page of templates, as the department's templates screen asks for them. */
+export const twoTemplates = {
+  items: [
+    {
+      id: 5,
+      kind: 'Page',
+      slug: 'section-page',
+      ownerDepartment: 'WD',
+      visibility: 'Staff',
+      status: 'Draft',
+      isTemplate: true,
+      title: { en: 'Section page', it: 'Pagina di sezione' },
+      category: null,
+      coverMediaId: null,
+      pinned: false,
+      sort: 0,
+      fileMediaId: null,
+      publishedAt: null,
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+    {
+      id: 6,
+      kind: 'Document',
+      slug: 'policy',
+      ownerDepartment: 'WD',
+      visibility: 'Staff',
+      status: 'Draft',
+      isTemplate: true,
+      title: { en: 'Policy', it: 'Regolamento' },
+      category: null,
+      coverMediaId: null,
+      pinned: false,
+      sort: 0,
+      fileMediaId: null,
+      publishedAt: null,
+      updatedAt: '2026-09-04T12:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 25,
+  total: 2,
+};
+
+/** The first of them in full, as the editor loads it. */
+export const oneTemplate = {
+  ...twoTemplates.items[0],
+  summary: null,
+  seo: null,
+  templateId: null,
+  body: { schemaVersion: 1, sections: [] },
+  schemaVersion: 1,
+  createdAt: '2026-09-04T12:00:00Z',
+  rowVersion: '2026-09-04T12:00:00',
+};
+
+/** One entry of the site menu, as the list answers and as the detail answers. */
+export const oneMenuItem = {
+  id: 3,
+  scope: 'Public',
+  parentId: null,
+  label: { en: 'Pilots', it: 'Piloti' },
+  path: '/pilots',
+  sort: 20,
+  visibility: 'Public',
+  isActive: true,
+  createdAt: '2026-09-01T10:00:00Z',
+  createdBy: 111111,
+  updatedAt: '2026-09-06T09:00:00Z',
+  updatedBy: 111111,
+  rowVersion: '2026-09-06T09:00:00',
+};
+
+export const oneMenuPage = { items: [oneMenuItem], page: 1, pageSize: 20, total: 1 };
+
+/** The vocabulary of the calendar, the shape `MapCrud` answers a list with. */
+export const theVocabulary = {
+  items: [
+    {
+      id: 1,
+      key: 'meeting',
+      label: { en: 'Meeting', it: 'Riunione' },
+      colour: 'indigo',
+      sort: 10,
+      isActive: true,
+      updatedAt: '2026-09-08T12:00:00Z',
+    },
+    {
+      id: 2,
+      key: 'deadline',
+      label: { en: 'Deadline', it: 'Scadenza' },
+      colour: 'orange',
+      sort: 20,
+      isActive: true,
+      updatedAt: '2026-09-08T12:00:00Z',
+    },
+  ],
+  page: 1,
+  pageSize: 20,
+  total: 2,
 };
 
 /** One page of links, the shape `MapCrud` answers a list with. */
@@ -388,12 +604,12 @@ export async function stubTheSearch(page: Page, answer: unknown): Promise<void> 
  * `/api/links` with one page. Anything else under `/api` still fails the test rather than being
  * quietly answered, so a screen that started calling something new says so.
  */
-export async function stubTheApiAsStaff(page: Page): Promise<void> {
+export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBootstrap): Promise<void> {
   await page.route('**/api/me', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(staffBootstrap),
+      body: JSON.stringify(bootstrap),
     }),
   );
 
@@ -413,17 +629,43 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneMedia) }),
   );
 
-  // The content list, answered by `kind`: the documents screen is the one that has rows, because
-  // it is the one whose columns this suite is about.
+  // The content list, answered by what it was asked for: the documents screen is the one that has
+  // rows, because it is the one whose columns this suite is about — and since the templates screen
+  // exists, two more questions arrive at the same address.
   await page.route('**/api/content**', (route) => {
-    const documents = route.request().url().includes('filter%5Bkind%5D=Document');
+    const url = route.request().url();
 
-    return route.fulfill({
+    const answer = url.includes('filter%5BisTemplate%5D=true')
+      ? twoTemplates
+      : // "How many rows were made from this template?" — a page of one, read for its `total`.
+        url.includes('filter%5BtemplateId%5D=')
+        ? { ...noContent, total: 4 }
+        : // ⚠️ A search, and the only way to reach the row it answers with: the unfiltered call
+          // below returns nothing, exactly as a real first page of a hundred returns everything
+          // except what is past it.
+          url.includes('q=oltre')
+          ? thePageBeyondTheHundredth
+          : url.includes('filter%5Bkind%5D=Document')
+            ? twoDocuments
+            : noContent;
+
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) });
+  });
+
+  // ⚠️ **After** the list, so that it wins for a single row: Playwright matches in reverse
+  // registration order, and without this the editor of a template would be handed a page of rows
+  // where it expects one. The publish problems of a row are a segment deeper and get their own.
+  await page.route('**/api/content/*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneTemplate) }),
+  );
+
+  await page.route('**/api/content/*/publish-problems', (route) =>
+    route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(documents ? twoDocuments : noContent),
-    });
-  });
+      body: JSON.stringify({ errors: {}, localized: {} }),
+    }),
+  );
 
   // The vocabulary a department files its news and documents under. Empty: a division decides its
   // own shelves and a fresh one has none, which is the state the screens have to survive.
@@ -433,6 +675,39 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
       contentType: 'application/json',
       body: JSON.stringify(twoCalendarEntries),
     }),
+  );
+
+  // ⚠️ **After** the entries and not before them, and the order is the whole point: Playwright
+  // matches routes in **reverse** registration order, so `**/api/calendar**` — which also matches
+  // `/api/calendar-kinds` — would answer this one with a page of entries. It did, and the screen
+  // drew two rows of empty cells until this moved down here.
+  await page.route('**/api/menu**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(oneMenuPage) }),
+  );
+
+  // After the list, so that it wins for a single row: the detail a cell reads before it writes, and
+  // the write itself, which answers with the row as it now stands.
+  await page.route('**/api/menu/*', async (route) => {
+    const request = route.request();
+
+    if (request.method() === 'PUT') {
+      const sent = JSON.parse(request.postData() ?? '{}') as Record<string, unknown>;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...oneMenuItem, ...sent }),
+      });
+    }
+
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(oneMenuItem),
+    });
+  });
+
+  await page.route('**/api/calendar-kinds**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(theVocabulary) }),
   );
 
   await page.route('**/api/categories**', (route) =>
@@ -452,7 +727,8 @@ export async function stubTheApiAsStaff(page: Page): Promise<void> {
       url.includes('/api/media') ||
       url.includes('/api/content') ||
       url.includes('/api/categories') ||
-      url.includes('/api/calendar')
+      url.includes('/api/calendar') ||
+      url.includes('/api/menu')
     ) {
       return route.fallback();
     }

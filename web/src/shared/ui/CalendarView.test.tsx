@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/harness';
 
 import { CalendarView } from './CalendarView';
-import { calendarDays, calendarWindow, type CalendarItem } from './calendar';
+import { calendarDays, calendarKindColour, calendarWindow, type CalendarItem } from './calendar';
 
 /**
  * What the calendar says. What it *looks like* — a grid of seven columns rather than a column of
@@ -46,8 +46,14 @@ describe('CalendarView', () => {
     // that makes a reader guess which one is theirs (plan §9.5).
     // Two in the afternoon in UTC is eleven at night in Tokyo, and the nine hours between them are
     // what says the conversion happened at all rather than the same string being printed twice.
-    expect(screen.getByText(/2:00\sPM UTC/)).toBeInTheDocument();
-    expect(screen.getByText(/11:00\sPM local/)).toBeInTheDocument();
+    //
+    // ⚠️ **Twenty four hours, `Z` and `LT`** since 9 September 2026: this is a hub for a flight
+    // simulation network, where a briefing at 14:00 is written 14:00 and the zone is a letter.
+    expect(screen.getByText(/14:00Z/)).toBeInTheDocument();
+    expect(screen.getByText(/23:00 LT/)).toBeInTheDocument();
+
+    // And no "PM" anywhere, which is the half a reader would notice first.
+    expect(screen.queryByText(/PM/)).not.toBeInTheDocument();
   });
 
   it('shows no local time for an all-day entry, because there is none to show', () => {
@@ -55,7 +61,7 @@ describe('CalendarView', () => {
 
     // The deadline is a day and not an instant. A second line for it would be inventing a
     // difference — and in Tokyo it would move the entry to the previous day, which is a lie.
-    expect(screen.getAllByText(/local/)).toHaveLength(1);
+    expect(screen.getAllByText(/LT/)).toHaveLength(1);
   });
 
   it('says so when there is nothing, rather than drawing an empty list', () => {
@@ -78,6 +84,110 @@ describe('CalendarView', () => {
     // for its day exists; where the square sits on screen is a measurement and lives in the browser.
     expect(screen.getByText('Staff meeting')).toBeInTheDocument();
     expect(screen.getByText('15')).toBeInTheDocument();
+  });
+
+  it('lists the same days down the page, and leaves out the ones with nothing on them', () => {
+    // The fourth view, asked for by Carmine after the demo: a month with two things in it reads as
+    // two headings rather than as thirty-five squares of which thirty-three are empty.
+    const anchor = new Date('2026-09-15T00:00:00.000Z');
+
+    renderWithProviders(
+      <CalendarView items={items} view="monthList" anchor={anchor} timezone="Asia/Tokyo" empty="Nothing" />,
+    );
+
+    // Both entries are there, each under the heading of its own UTC day.
+    expect(screen.getByText('Staff meeting')).toBeInTheDocument();
+    expect(screen.getByText('Applications close')).toBeInTheDocument();
+
+    const headings = screen.getAllByRole('heading', { level: 3 });
+    expect(headings).toHaveLength(2);
+    expect(headings[0]).toHaveTextContent('15');
+
+    // And the point of a list: the empty days of the month are not printed. The grid draws
+    // thirty-five squares for this month, so a list that printed every day would be the grid again.
+    expect(screen.queryByText(/September 16/)).not.toBeInTheDocument();
+  });
+
+  it('chips an entry with the word of the vocabulary, in the language on screen', () => {
+    renderWithProviders(
+      <CalendarView
+        items={items}
+        view="agenda"
+        timezone="Asia/Tokyo"
+        empty="Nothing"
+        kinds={[{ key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo' }]}
+      />,
+    );
+
+    // The word the division chose, not the key the row stores: `meeting` is what a database holds
+    // and "Meeting" is what a reader reads (decided 8 Sep 2026).
+    expect(screen.getByText('Meeting')).toBeInTheDocument();
+
+    // And an entry whose kind nobody declared keeps its key rather than disappearing: a module
+    // projects entries with words of its own, and the chip is not the place to refuse them.
+    expect(screen.getByText('deadline')).toBeInTheDocument();
+  });
+
+  it('writes the day beside the time only where nothing else says which day it is', () => {
+    // Asked for by Carmine running the demo: in a grid the square is the day, and in the list of a
+    // week the heading is — so repeating "Sep 15, 2026" on the line a reader actually reads is
+    // noise. The agenda has neither, because it is a flat list running forward, so there it stays.
+    const { unmount } = renderWithProviders(
+      <CalendarView items={items} view="agenda" timezone="Asia/Tokyo" empty="Nothing" />,
+    );
+
+    expect(screen.getByText(/Sep 15, 2026, 14:00Z/)).toBeInTheDocument();
+    unmount();
+
+    renderWithProviders(
+      <CalendarView
+        items={items}
+        view="weekList"
+        anchor={new Date(AFTERNOON)}
+        timezone="Asia/Tokyo"
+        empty="Nothing"
+      />,
+    );
+
+    // The line is **exactly** the time: no date in front of it, because the heading above already
+    // said the day. Exact, because `Sep 15, 2026, 14:00Z` would match a loose one.
+    expect(screen.getByText('14:00Z', { exact: true })).toBeInTheDocument();
+
+    // ⚠️ The entry that has no time keeps its date wherever it is drawn — a day is all it has, and
+    // a line with nothing on it would be worse than a repeated date. And no `Z` on it: a day is not
+    // an instant in UTC, which is a mistake this test caught the first time it ran.
+    expect(screen.getByText('Sep 20, 2026', { exact: true })).toBeInTheDocument();
+  });
+
+  it('says the local time in brackets, beside the UTC one', () => {
+    renderWithProviders(<CalendarView items={items} view="agenda" timezone="Asia/Tokyo" empty="Nothing" />);
+
+    // Asked for after the demo: UTC is what the network runs on and stays first; the reader's own
+    // zone is the aside, and brackets are what say so without a second label.
+    expect(screen.getByText(/\(.+23:00 LT\)/)).toBeInTheDocument();
+  });
+});
+
+describe('the chip of a kind', () => {
+  const vocabulary = [
+    { key: 'meeting', label: { en: 'Meeting' }, colour: 'indigo' },
+    { key: 'deadline', label: { en: 'Deadline' }, colour: 'orange' },
+  ];
+
+  it('takes the colour the division chose for that word', () => {
+    // ⚠️ It used to be derived from the word, because the kinds were free text and there was
+    // nothing to look one up in. Now there is a table the division decides, and a colour somebody
+    // chose can group two kinds that belong together — which a hash never could.
+    expect(calendarKindColour('meeting', vocabulary)).toBe('indigo');
+    expect(calendarKindColour('deadline', vocabulary)).toBe('orange');
+  });
+
+  it('draws a word nobody declared rather than refusing it, in grey', () => {
+    // An entry projected by a module carries whatever word that module wrote, and it is not this
+    // component's business to refuse it: it says the word it has, without a colour of its own.
+    expect(calendarKindColour('whatever-a-module-wrote', vocabulary)).toBe('gray');
+    expect(calendarKindColour('meeting')).toBe('gray');
+    expect(calendarKindColour('')).toBe('gray');
   });
 });
 

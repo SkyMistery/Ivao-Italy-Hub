@@ -1,4 +1,4 @@
-import { ThemeProvider, TooltipProvider } from '@ivao/atmosphere-react';
+import { ThemeProvider, ToastProvider, TooltipProvider } from '@ivao/atmosphere-react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import type { i18n as I18n } from 'i18next';
 import type { ReactNode } from 'react';
@@ -14,6 +14,10 @@ import { I18nextProvider } from 'react-i18next';
  * all 74 unit tests stayed green because none of them assembled the tree.
  *
  * So: a provider the application needs goes here, and nowhere else.
+ *
+ * `ToastProvider` is here for the same reason and by the same rule. It keeps the queue and draws
+ * the viewport a confirmation appears in, `useNotice` pushes into it, and a screen that calls that
+ * without this above it gets Atmosphere's own error rather than a silence.
  *
  * On `TooltipProvider` in particular — several Atmosphere components wrap themselves in a Radix
  * tooltip, `DarkModeToggle` among them, and it sits in the header of every layout. A tooltip
@@ -32,7 +36,9 @@ export function HubProviders({
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </I18nextProvider>

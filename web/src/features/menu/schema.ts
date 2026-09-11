@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { localized, type ChoiceOption } from '../../shared/forms';
+import { localized, type ChoiceOption, type Suggestion } from '../../shared/forms';
 
 /**
  * The form of a menu entry, as a zod schema mirroring `MenuItemWriteDto`. Types and what is
@@ -13,7 +13,7 @@ import { localized, type ChoiceOption } from '../../shared/forms';
  *
  * It is a function because the entries a row may hang under are rows, not a set the code knows.
  */
-export function menuItemSchema(parents: readonly ChoiceOption[] = []) {
+export function menuItemSchema(parents: readonly ChoiceOption[] = [], addresses: readonly Suggestion[] = []) {
   return z.object({
     scope: z.enum(['Public', 'Footer']),
     // The identifier of the parent, carried as text because a select whose labels are not its
@@ -21,7 +21,36 @@ export function menuItemSchema(parents: readonly ChoiceOption[] = []) {
     // Empty means "top level", which is what most entries are.
     parentId: z.string().optional().meta({ choices: parents }),
     label: localized(),
-    path: z.string(),
+    // ⚠️ Two annotations, and they answer two different halves of the same question. `suggestions`
+    // offers the addresses that **exist** — the published pages, grouped by the department that
+    // wrote them, and the screens the application itself has — because a menu entry that points at
+    // nothing is a 404 nobody notices until a visitor finds it. `slugFrom` proposes one from the
+    // label for the entry whose page does not exist yet, which is the other half of how a menu is
+    // written. Neither is a rule: the value stays free text, or the menu could not link the forum.
+    // ⚠️ **Closed**, since 8 September 2026: a menu entry leads to a page of this site, to a screen
+    // of the application, or to a link of the library, and to nothing else. The point is not the
+    // menu — it is that every address leaving the site lives in one table, so that changing where
+    // the forum lives is one row rather than a hunt. `MenuItemWriteDtoValidator` refuses the rest,
+    // which is what makes it a rule rather than a habit of this screen.
+    //
+    // `slugFrom` stays for the entry whose page is written next: a draft counts, so the proposal
+    // still meets a row that exists by the time anybody saves.
+    //
+    // ⚠️ And **empty is a state with a meaning** since 10 September 2026: a top level entry of the
+    // *footer* with no address is the heading of a column — "Quick links", "Resources" — which the
+    // footer draws as a word above its links. The server allows it there and nowhere else: a child
+    // with no address would be a line nobody can click, and a heading in the bar at the top would
+    // be an entry that does nothing when pressed (`MenuItemWriteDtoValidator.IsAHeading`).
+    path: z.string().optional().meta({
+      slugFrom: 'label',
+      slugPrefix: '/',
+      suggestions: addresses,
+      suggestionsOnly: true,
+    }),
+    // The mark beside the words, chosen from the allow list every other icon field offers. It is
+    // what turns the addresses of a division's accounts into a row of marks in the footer instead
+    // of five more lines in a list — and it is optional, because most entries are words.
+    icon: z.string().optional().meta({ icon: true }),
     sort: z.number().int(),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     isActive: z.boolean(),

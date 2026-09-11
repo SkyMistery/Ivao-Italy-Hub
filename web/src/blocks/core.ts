@@ -151,6 +151,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: HeadingBlock,
     example: { level: 2, text: { en: 'A heading', it: 'Un titolo' } },
     editorLabelKey: 'blocks.heading.label',
+    group: 'content',
+    subgroup: 'text',
     icon: Heading,
   },
   {
@@ -166,6 +168,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       },
     },
     editorLabelKey: 'blocks.text.label',
+    group: 'content',
+    subgroup: 'text',
     icon: Pilcrow,
   },
   {
@@ -183,6 +187,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       },
     },
     editorLabelKey: 'blocks.callout.label',
+    group: 'content',
+    subgroup: 'text',
     icon: Info,
   },
   {
@@ -196,6 +202,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       href: 'https://www.ivao.aero',
     },
     editorLabelKey: 'blocks.cta.label',
+    group: 'content',
+    subgroup: 'text',
     icon: MousePointerClick,
   },
   {
@@ -217,6 +225,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.linkList.label',
+    group: 'content',
+    subgroup: 'text',
     icon: Link2,
   },
 
@@ -237,6 +247,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       primary: { label: { en: 'Start here', it: 'Comincia da qui' }, href: '/start' },
     },
     editorLabelKey: 'blocks.hero.label',
+    group: 'content',
+    subgroup: 'media',
     icon: PanelTop,
   },
   {
@@ -249,6 +261,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     // fixture picture in the repository, and a made up address would be a broken one everywhere.
     example: { mediaId: 1, caption: { en: 'A picture', it: "Un'immagine" }, width: 'full', rounded: true },
     editorLabelKey: 'blocks.image.label',
+    group: 'content',
+    subgroup: 'media',
     icon: Image,
   },
   {
@@ -262,6 +276,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     // it. The other half — an address turned into a player — is what `allowlist.test.ts` is for.
     example: { mediaId: 1, aspect: '16x9' },
     editorLabelKey: 'blocks.video.label',
+    group: 'content',
+    subgroup: 'media',
     icon: Video,
   },
   {
@@ -276,6 +292,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       height: 360,
     },
     editorLabelKey: 'blocks.embed.label',
+    group: 'content',
+    subgroup: 'media',
     icon: Frame,
   },
   {
@@ -300,6 +318,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.timeline.label',
+    group: 'content',
+    subgroup: 'tables',
     icon: Milestone,
   },
   {
@@ -320,6 +340,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.table.label',
+    group: 'content',
+    subgroup: 'tables',
     icon: Table,
   },
 
@@ -340,6 +362,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.cardGrid.label',
+    group: 'layout',
+    subgroup: 'grids',
     icon: LayoutGrid,
   },
   {
@@ -357,6 +381,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.iconGrid.label',
+    group: 'layout',
+    subgroup: 'grids',
     icon: Shapes,
   },
   {
@@ -367,6 +393,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: GalleryBlock,
     example: { images: [{ mediaId: 1 }, { mediaId: 2 }, { mediaId: 3 }], columns: 3, lightbox: true },
     editorLabelKey: 'blocks.gallery.label',
+    group: 'layout',
+    subgroup: 'grids',
     icon: Images,
   },
   {
@@ -383,6 +411,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.logoGrid.label',
+    group: 'layout',
+    subgroup: 'grids',
     icon: Building2,
   },
   {
@@ -407,6 +437,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.tabs.label',
+    group: 'layout',
+    subgroup: 'containers',
     icon: PanelsTopLeft,
   },
   {
@@ -429,6 +461,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.accordion.label',
+    group: 'layout',
+    subgroup: 'containers',
     icon: ChevronsUpDown,
   },
 
@@ -449,6 +483,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       role: { en: 'Pilot', it: 'Pilota' },
     },
     editorLabelKey: 'blocks.testimonial.label',
+    group: 'interactive',
     icon: Quote,
   },
   {
@@ -465,6 +500,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.buttonGroup.label',
+    group: 'interactive',
     icon: Pointer,
   },
   {
@@ -475,6 +511,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: SpacerBlock,
     example: { size: 'md' },
     editorLabelKey: 'blocks.spacer.label',
+    group: 'structure',
     icon: MoveVertical,
   },
   {
@@ -485,6 +522,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: DividerBlock,
     example: { variant: 'line', spacing: 'md' },
     editorLabelKey: 'blocks.divider.label',
+    group: 'structure',
     icon: Minus,
   },
 
@@ -513,6 +551,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.stats.label',
+    group: 'data',
     icon: ChartColumn,
   },
   {
@@ -541,6 +580,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.networkStats.label',
+    group: 'data',
     icon: Radio,
   },
   {
@@ -566,6 +606,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.calendar.label',
+    group: 'data',
     icon: CalendarDays,
   },
   {
@@ -590,6 +631,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.newsList.label',
+    group: 'data',
     icon: Newspaper,
   },
   {
@@ -614,6 +656,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.documentList.label',
+    group: 'data',
     icon: FileText,
   },
   {
@@ -633,6 +676,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.staffList.label',
+    group: 'data',
     icon: Users,
   },
 ];

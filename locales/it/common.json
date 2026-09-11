@@ -13,7 +13,11 @@
   "nav": {
     "home": "Home",
     "staff": "Staff",
-    "modules": "Moduli"
+    "modules": "Moduli",
+    "sidebar": {
+      "collapse": "Comprimi il menu",
+      "expand": "Espandi il menu"
+    }
   },
   "home": {
     "empty": "Su questa pagina non è ancora stato pubblicato niente. La scrive dal back office chi manda avanti il sito."
@@ -45,7 +49,8 @@
       "empty": "Non ho trovato niente.",
       "results": "Nel sito",
       "screens": "Schermate",
-      "hint": "Premi Ctrl o Cmd e K"
+      "hint": "Premi Ctrl o Cmd e K",
+      "shortcut": "Ctrl K"
     }
   },
   "auth": {
@@ -79,6 +84,10 @@
     "toggle": "Passa da chiaro a scuro"
   },
   "footer": {
+    "rights": "© {{year}} {{division}}. Tutti i diritti riservati. · v{{version}}",
+    "partOf": "Parte della International Virtual Aviation Organisation",
+    "legalHeading": "IVAO",
+    "about": "Il sito ufficiale di {{division}}: eventi, training, tour e tutto quello che fa la divisione.",
     "legal": [
       {
         "label": "IVAO",
@@ -97,8 +106,7 @@
         "href": "https://www.ivao.aero/rules.htm"
       }
     ],
-    "disclaimer": "{{division}} è una divisione di IVAO, una rete di simulazione di volo senza scopo di lucro. Niente di quanto pubblicato qui è destinato all'aviazione reale.",
-    "version": "Versione {{version}}"
+    "disclaimer": "{{division}} è una divisione di IVAO, una rete di simulazione di volo senza scopo di lucro. Niente di quanto pubblicato qui è destinato all'aviazione reale."
   },
   "status": {
     "active": "Attivo",
@@ -117,7 +125,11 @@
     "removeEntry": "Rimuovi",
     "submitHint": "Premi Invio per salvare.",
     "moveUp": "Sposta su",
-    "moveDown": "Sposta giù"
+    "moveDown": "Sposta giù",
+    "suggest": {
+      "empty": "Nel sito non c’è niente che corrisponda. Vale quello che scrivi.",
+      "emptyClosed": "Qui non corrisponde niente. Una voce di menu porta a una pagina di questo sito, a una sua schermata, o a un link della libreria."
+    }
   },
   "list": {
     "search": "Cerca",
@@ -129,7 +141,10 @@
       "description": "Tutto quello che questo dipartimento crea comparirà in questo elenco.",
       "noMatch": "Nessuna riga corrisponde alla ricerca."
     },
-    "file": "Apri il file"
+    "file": "Apri il file",
+    "edit": {
+      "refused": "Quella modifica non è stata salvata. Può darsi che qualcun altro abbia cambiato la riga nel frattempo."
+    }
   },
   "notFound": {
     "title": "Questa pagina non esiste",
@@ -193,7 +208,7 @@
       "updatedAt": "Ultima modifica"
     },
     "hints": {
-      "path": "Una pagina di questo sito comincia con una barra, per esempio /start. Qualunque altro indirizzo va scritto per intero.",
+      "path": "Una pagina di questo sito, una sua schermata, o un link della libreria. Un indirizzo che non è uno di questi si aggiunge prima ai link, così ogni indirizzo esterno vive in un posto solo.",
       "parentId": "Lascia vuoto per una voce di primo livello. Un menu scende di un livello e non oltre."
     },
     "options": {
@@ -207,7 +222,18 @@
         "Staff": "Staff",
         "Department": "Questo dipartimento"
       }
-    }
+    },
+    "screens": {
+      "/": "Pagina iniziale",
+      "/calendar": "Calendario",
+      "/news": "News",
+      "/documents": "Documenti",
+      "/search": "Ricerca",
+      "/contact": "Contatti"
+    },
+    "screensGroup": "Schermate del sito",
+    "linksGroup": "Link della libreria",
+    "draftSuffix": "{{title}} (bozza)"
   },
   "dashboard": {
     "title": "{{department}}",
@@ -313,7 +339,12 @@
           "isActive": "Pubblicato",
           "updatedAt": "Ultima modifica"
         }
-      }
+      },
+      "noticeError": "Questa pagina non è stata pubblicata.",
+      "noticeWarning": "Due sezioni non sono più nel template.",
+      "noticeSuccess": "Bozza salvata.",
+      "noticeInfo": "Una bozza la vede solo lo staff.",
+      "noticeToast": "Mostralo come toast"
     },
     "registry": {
       "title": "Registri",
@@ -364,7 +395,8 @@
       "kind": {
         "Page": "Pagina",
         "News": "Notizia",
-        "Document": "Documento"
+        "Document": "Documento",
+        "Dashboard": "Home di dipartimento"
       },
       "status": {
         "Draft": "Bozza",
@@ -405,6 +437,9 @@
           "none": "Nessuno",
           "muted": "Tenue",
           "accent": "Accento",
+          "brand": "Blu del marchio",
+          "deep": "Blu profondo",
+          "dark": "Scuro",
           "image": "Immagine"
         },
         "padding": {
@@ -430,11 +465,18 @@
     "editor": {
       "structure": "Di cosa e' fatta questa pagina",
       "properties": "Proprieta'",
-      "nothingSelected": "Scegli una sezione o un blocco a sinistra per modificarlo.",
       "noSections": "Questa pagina non ha ancora sezioni.",
       "untitledSection": "Sezione senza nome",
       "addSection": "Aggiungi una sezione",
       "addBlock": "Aggiungi:",
+      "outline": "Struttura",
+      "onThePage": "Sulla pagina",
+      "components": "Componenti",
+      "componentsHint": "Scegli una sezione, poi un componente da aggiungerle.",
+      "addsTo": "Aggiunge a: {{section}}",
+      "notAllowedHere": "Il template non permette questo blocco nella sezione selezionata.",
+      "expandAll": "Espandi tutto",
+      "collapseAll": "Comprimi tutto",
       "removeSection": "Elimina questa sezione",
       "removeBlock": "Elimina questo blocco",
       "duplicate": "Duplica",
@@ -446,7 +488,6 @@
       "applyBlock": "Applica al blocco",
       "saveDraft": "Salva bozza",
       "preview": "Anteprima",
-      "backToEditing": "Torna alla modifica",
       "publish": "Pubblica",
       "saveBeforePublishing": "Salva la bozza prima di pubblicare: va in pubblico quello che e' salvato, non quello che e' a schermo.",
       "publishRefused": "Questa pagina non si puo' ancora pubblicare",
@@ -484,17 +525,51 @@
         "lockedByUnknown": "Questa sezione è fissata dal template da cui nasce questa pagina.",
         "lockedYouMay": "Puoi cambiarlo sui template di {{department}}.",
         "lockedWhoMay": "Può cambiarlo solo chi ha {{permission}} su {{department}}."
-      }
+      },
+      "saved": "Bozza salvata.",
+      "published": "Pubblicata. Il sito mostra questa versione da adesso.",
+      "deleted": "Eliminata.",
+      "publishMissing": "Che cosa manca per poterla pubblicare",
+      "undo": "Annulla",
+      "page": "Pagina",
+      "addRow": "Aggiungi riga",
+      "untitledRow": "Riga senza titolo",
+      "addHere": "+ Aggiungi qui"
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {
-      "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina."
+      "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina.",
+      "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più."
     }
+  },
+  "templates": {
+    "title": "Template",
+    "short": "Template",
+    "description": "Le forme da cui in questo dipartimento nascono una pagina, una news o un documento. Modificarne uno non cambia le righe già nate da lui: tengono quello che hanno ricevuto finché qualcuno non ripubblica.",
+    "create": "Nuovo template",
+    "edit": "Modifica template",
+    "madeFromIt_one": "Da questo template è nata {{count}} riga.",
+    "madeFromIt_other": "Da questo template sono nate {{count}} righe.",
+    "madeFromIt_zero": "Da questo template non è ancora nato niente."
   },
   "blocks": {
     "captured": "Catturato alla pubblicazione",
     "unknown": "Questa pagina usa un blocco di tipo \"{{type}}\" che questo browser non sa disegnare. Probabilmente e' un modulo non installato.",
     "unknownShort": "Blocco sconosciuto ({{type}})",
+    "groups": {
+      "content": "Contenuto",
+      "layout": "Impaginazione",
+      "interactive": "Interattivi",
+      "structure": "Struttura",
+      "data": "Dati"
+    },
+    "subgroups": {
+      "text": "Testo e link",
+      "media": "Media",
+      "tables": "Tabelle e passaggi",
+      "grids": "Griglie",
+      "containers": "Contenitori"
+    },
     "heading": {
       "label": "Titolo",
       "fields": {
@@ -920,7 +995,9 @@
         "view": {
           "agenda": "Un elenco di quello che viene",
           "week": "Una settimana",
-          "month": "Un mese"
+          "month": "Un mese",
+          "weekList": "Una settimana, come lista",
+          "monthList": "Un mese, come lista"
         }
       }
     },
@@ -1168,8 +1245,8 @@
     "edit": "Modifica voce",
     "projected": "Da un modulo",
     "projectedExplained": "Questa voce rispecchia una riga che appartiene al modulo {{module}}, quindi non si modifica da qui: la modifica tornerebbe indietro al primo salvataggio di quel modulo. Si cambia dove nasce.",
-    "utc": "{{at}} UTC",
-    "local": "{{at}} locali",
+    "utc": "{{at}}Z",
+    "local": "({{at}} LT)",
     "previous": "Precedente",
     "next": "Successivo",
     "delete": {
@@ -1190,7 +1267,7 @@
       "updatedAt": "Ultima modifica"
     },
     "hints": {
-      "kind": "Una parola con cui questo dipartimento archivia la voce, per esempio riunione o scadenza. I tipi che porta un modulo — eventi, training, tour — arrivano con le loro righe.",
+      "kind": "Una delle parole che usa la divisione, le stesse per ogni dipartimento. Una voce che arriva da un modulo porta con sé la propria.",
       "url": "Dove porta la voce, se porta da qualche parte. Un link a una riunione, una pagina del sito."
     },
     "options": {
@@ -1208,7 +1285,9 @@
       "views": {
         "agenda": "Agenda",
         "week": "Settimana",
-        "month": "Mese"
+        "month": "Mese",
+        "weekList": "Settimana, come lista",
+        "monthList": "Mese, come lista"
       },
       "filters": {
         "view": "Vista",
@@ -1258,6 +1337,38 @@
         "title": "Messaggi al mio dipartimento",
         "description": "Una mail quando un membro scrive a un dipartimento di cui fai parte."
       }
+    }
+  },
+  "calendarKinds": {
+    "title": "Tipi di calendario",
+    "description": "Le parole sotto cui tutta la divisione archivia il proprio calendario.",
+    "create": "Nuovo tipo",
+    "edit": "Modifica tipo",
+    "formHint": "Queste parole sono le stesse per ogni dipartimento: un coordinatore ne sceglie una, nessuno se la inventa. Ritirare un tipo lascia intatte le voci già scritte con quello.",
+    "fields": {
+      "label": "Nome",
+      "key": "Chiave",
+      "colour": "Colore",
+      "sort": "Ordine",
+      "isActive": "In uso",
+      "updatedAt": "Ultima modifica"
+    },
+    "options": {
+      "colour": {
+        "blue": "Blu",
+        "green": "Verde",
+        "orange": "Arancione",
+        "purple": "Viola",
+        "indigo": "Indaco",
+        "pink": "Rosa",
+        "red": "Rosso",
+        "yellow": "Giallo",
+        "gray": "Grigio"
+      }
+    },
+    "delete": {
+      "title": "Eliminare questo tipo?",
+      "description": "Le voci già archiviate sotto questo tipo mantengono la chiave con cui sono state scritte, e nessuno le riscrive. Per impedire che se ne archivino di nuove, togli invece «in uso»."
     }
   }
 }

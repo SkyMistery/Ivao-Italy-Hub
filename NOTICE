@@ -7,3 +7,14 @@ LICENSE file at the root of this repository.
 Attribution notices required by third-party code included in this product are
 listed below. A division that forks this project keeps the notices above and
 adds its own.
+
+Fonts bundled into the web client (web/src/main.tsx):
+
+  Poppins      Copyright 2020 The Poppins Project Authors
+               (https://github.com/itfoundry/Poppins)
+  Nunito Sans  Copyright 2016 The Nunito Sans Project Authors
+               (https://github.com/Fonthausen/NunitoSans)
+
+  Both are licensed under the SIL Open Font License, Version 1.1, and are
+  distributed through the @fontsource/poppins and @fontsource/nunito-sans
+  packages, which carry the full licence text.

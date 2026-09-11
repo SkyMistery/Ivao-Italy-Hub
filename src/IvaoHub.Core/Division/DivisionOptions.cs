@@ -36,6 +36,27 @@ public sealed record DivisionOptions
     public string Timezone { get; init; } = string.Empty;
 
     /// <summary>
+    /// Where the mark of the division is served from, or null for a division that has none.
+    /// <para>⚠️ It is configuration and not code, and that is the whole point: the hub draws the
+    /// mark of whatever division it is running for, and knows nothing about which one that is. A
+    /// fork puts its own file where this points and changes nothing else — and a division with no
+    /// mark simply leaves this out, which is what the example and the test division do.</para>
+    /// <para>An address rather than a media identifier, because the site's own frame is drawn before
+    /// anybody signs in and on every page: a row of a table read through the visibility filter is
+    /// the wrong shape for something the header needs on the first paint.</para>
+    /// </summary>
+    public string? LogoUrl { get; init; }
+
+    /// <summary>
+    /// Where the icon of a browser tab is served from, or null to leave the browser's own.
+    /// <para>A second address and not the same one, because they are two drawings: the mark of the
+    /// bar is white for the blue it sits on, and a tab icon has to read on a light tab bar and a
+    /// dark one alike. Every brand kit ships both, and a division that has only one points both
+    /// keys at it.</para>
+    /// </summary>
+    public string? FaviconUrl { get; init; }
+
+    /// <summary>
     /// The ICAO prefixes of the division, upper case, 1 to 4 letters. A safety net rather than a
     /// source: the FIRs and the airports themselves come from the IVAO API. The synchronisation
     /// uses them to notice that a snapshot has nothing to do with this division, which is what a

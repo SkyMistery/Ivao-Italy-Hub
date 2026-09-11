@@ -1,6 +1,6 @@
 import { Button } from '@ivao/atmosphere-react';
 import { queryOptions } from '@tanstack/react-query';
-import { Plane } from 'lucide-react';
+import { CalendarDays, FileText, KeyRound, Newspaper, Plane, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -18,9 +18,12 @@ import {
   LiveStatusStrip,
   MarkdownContent,
   MediaPicker,
+  Notice,
   PageShell,
   SectionHeader,
+  StaffSidebar,
   StatTile,
+  useNotice,
   type MediaLibraryQuery,
   type PickableMedia,
   type CalendarItem,
@@ -172,6 +175,32 @@ export function MarkdownSample() {
 export function ProblemAlertSample() {
   const { t } = useTranslation();
   return <ProblemAlert summary={t('uiKit.sample.problem')} />;
+}
+
+export function NoticeSample() {
+  const { t } = useTranslation();
+  const notice = useNotice();
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Notice tone="error" title={t('uiKit.sample.noticeError')} />
+      <Notice tone="warning" title={t('uiKit.sample.noticeWarning')} />
+      <Notice tone="success" title={t('uiKit.sample.noticeSuccess')} />
+      <Notice tone="info" title={t('uiKit.sample.noticeInfo')} />
+
+      {/* The other half of the same component: a confirmation is said in the corner and then gone,
+          and the gallery is the one place both halves can be seen next to each other. */}
+      <div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => notice({ tone: 'success', title: t('uiKit.sample.noticeSuccess') })}
+        >
+          {t('uiKit.sample.noticeToast')}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function ConfirmDialogSample() {
@@ -360,4 +389,54 @@ export function LiveStatusStripSample() {
  */
 export function ContactFormSample() {
   return <ContactForm onSubmit={() => Promise.resolve()} />;
+}
+
+/**
+ * The navigation of the back office, with two groups written here rather than read from the
+ * bootstrap. The gallery is a page about the component, and where a member of staff may actually go
+ * depends on their positions — so a sidebar fed from the real list would show something different
+ * to every reader, and on a fresh installation very little to anybody.
+ *
+ * Boxed with a height, because it is the `<aside>` itself and fills whatever column it is put in.
+ */
+export function StaffSidebarSample() {
+  return (
+    <div className="border-border h-96 overflow-hidden rounded-lg border">
+      <StaffSidebar
+        groups={[
+          {
+            title: 'Events',
+            Icon: CalendarDays,
+            items: [
+              {
+                title: 'Pages',
+                description: 'What this department publishes.',
+                href: '/ui-kit/pages',
+                Icon: FileText,
+              },
+              {
+                title: 'News',
+                description: 'What it announces.',
+                href: '/ui-kit/news',
+                Icon: Newspaper,
+              },
+            ],
+          },
+          {
+            title: 'Administration',
+            Icon: ShieldCheck,
+            items: [
+              {
+                title: 'Permissions',
+                description: 'Who holds what.',
+                href: '/ui-kit/permissions',
+                Icon: KeyRound,
+              },
+            ],
+          },
+        ]}
+        isActiveCheck={(href) => href === '/ui-kit/pages'}
+      />
+    </div>
+  );
 }

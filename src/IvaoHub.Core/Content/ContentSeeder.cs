@@ -45,6 +45,9 @@ public sealed class ContentSeeder(
     /// <summary>Where the setting that remembers an applied system page lives.</summary>
     public const string PageSettingPrefix = "page.system:";
 
+    /// <summary>Where the setting that remembers a seeded calendar kind lives.</summary>
+    public const string CalendarKindSettingPrefix = "calendar.kind:";
+
     /// <summary>
     /// Where the setting that remembers the dashboard of one department lives. A department added
     /// to the enum in a later release gets its own on the first start after it, and the eight that
@@ -75,13 +78,72 @@ public sealed class ContentSeeder(
                 .Where(setting =>
                     setting.Key.StartsWith(SettingPrefix)
                     || setting.Key.StartsWith(PageSettingPrefix)
-                    || setting.Key.StartsWith(DashboardSettingPrefix))
+                    || setting.Key.StartsWith(DashboardSettingPrefix)
+                    || setting.Key.StartsWith(CalendarKindSettingPrefix))
                 .Select(setting => setting.Key)
                 .ToListAsync(cancellationToken),
             StringComparer.Ordinal);
 
         await SeedTemplatesAsync(applied, cancellationToken);
         await SeedPagesAsync(applied, cancellationToken);
+        await SeedCalendarKindsAsync(applied, cancellationToken);
+    }
+
+    /// <summary>
+    /// The words an installation's calendar is born with: the five the entity documents, each with
+    /// a colour and a label that is an i18n key rather than a sentence — so a division that forks
+    /// this hub translates them where it translates everything else.
+    /// <para>They are seeded once, remembered one key at a time like a page, and never written
+    /// again: an installation that renames <c>meeting</c> or retires it keeps its decision through
+    /// every upgrade. Adding a sixth in a later release is a line in the seed file, not code.</para>
+    /// <para>⚠️ Without them, a fresh installation would start with an empty vocabulary and nobody
+    /// could file an entry under anything, because the kind of an entry is now chosen from this
+    /// list rather than typed (decided 7 Sep 2026, note
+    /// <c>decisions/2026-09-08-tipi-di-evento-di-divisione.md</c>).</para>
+    /// </summary>
+    private async Task SeedCalendarKindsAsync(HashSet<string> applied, CancellationToken cancellationToken)
+    {
+        var directory = Path.Combine(paths.Seed, "calendar-kinds");
+        if (!Directory.Exists(directory))
+        {
+            logger.LogWarning("No calendar kind seed directory at {Directory}.", directory);
+            return;
+        }
+
+        foreach (var file in Files(directory))
+        {
+            var seed = JsonSerializer.Deserialize<CalendarKindSeedFile>(
+                await File.ReadAllTextAsync(file, cancellationToken),
+                ReadOptions);
+
+            foreach (var kind in seed?.Kinds ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(kind.Key))
+                {
+                    logger.LogWarning("A calendar kind in {File} has no key and was skipped.", file);
+                    continue;
+                }
+
+                var setting = CalendarKindSettingPrefix + kind.Key;
+                if (!applied.Add(setting))
+                {
+                    continue;
+                }
+
+                database.CalendarKinds.Add(new CalendarKind
+                {
+                    Key = kind.Key,
+                    Label = Translated(kind.Label),
+                    Colour = kind.Colour,
+                    Sort = kind.Sort,
+                });
+
+                Remember(setting);
+                logger.LogInformation("Seeded the calendar kind {Key}.", kind.Key);
+            }
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     private async Task SeedTemplatesAsync(HashSet<string> applied, CancellationToken cancellationToken)
@@ -371,6 +433,12 @@ public sealed class ContentSeeder(
         new(division.Value.Locales.Select(locale => KeyValuePair.Create(
             locale,
             Key(marker) is { } key ? catalog.Resolve(locale, key) : marker.ToString())));
+
+    /// <summary>The whole seed file of the vocabulary: one list, because it is one vocabulary.</summary>
+    private sealed record CalendarKindSeedFile(IReadOnlyList<CalendarKindSeed>? Kinds);
+
+    /// <summary>One word of it. The label is a marker or a sentence, like every other seeded text.</summary>
+    private sealed record CalendarKindSeed(string Key, JsonNode Label, string Colour, int Sort);
 
     /// <summary>One template file. The body is opaque here too: validated as an envelope, never read.</summary>
     private sealed record ContentTemplateSeed(

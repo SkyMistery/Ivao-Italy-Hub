@@ -334,6 +334,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/{id}/publish-problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentPublishProblems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/content/public/{kind}/{slug}": {
         parameters: {
             query?: never;
@@ -441,6 +457,38 @@ export interface paths {
         put: operations["CalendarUpdate"];
         post?: never;
         delete: operations["CalendarDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calendar-kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarKindsList"];
+        put?: never;
+        post: operations["CalendarKindsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calendar-kinds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarKindsGet"];
+        put: operations["CalendarKindsUpdate"];
+        post?: never;
+        delete: operations["CalendarKindsDelete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -669,6 +717,21 @@ export interface components {
             alwaysLive: boolean;
         };
         /**
+         * @description One word of the division's calendar vocabulary, as everybody who draws a chip needs it: the key
+         *     an entry carries, what to call it in each language, and the colour somebody chose for it.
+         *     It is here rather than behind its own public endpoint because the client needs it before
+         *     it draws anything with a calendar in it, and "everything the SPA needs in order to draw itself"
+         *     is the whole job of this endpoint (plan §16.7). The back office reads the full rows — sort
+         *     order, retired words, who changed them — from `/api/calendar-kinds`.
+         */
+        BootstrapCalendarKind: {
+            key: string;
+            label: {
+                [key: string]: string;
+            };
+            colour: string;
+        };
+        /**
          * @description SiteDepartment is the department the site itself belongs to: its menu, its
          *     system templates and the pages the installation was born with. The client needs it in order to
          *     know where the menu screen lives, and it arrives here rather than being written into the client,
@@ -682,6 +745,8 @@ export interface components {
             locales: string[];
             defaultLocale: string;
             timezone: string;
+            logoUrl: null | string;
+            faviconUrl: null | string;
             firStaffScope: string;
             siteDepartment: string;
         };
@@ -733,6 +798,7 @@ export interface components {
             modules: components["schemas"]["BootstrapModule"][];
             navigation: components["schemas"]["BootstrapNavigation"];
             registries: components["schemas"]["BootstrapRegistries"];
+            calendarKinds: components["schemas"]["BootstrapCalendarKind"][];
             version: string;
         };
         BootstrapUser: {
@@ -785,6 +851,55 @@ export interface components {
             updatedAt: string;
             /** Format: int32 */
             updatedBy: number;
+        };
+        /** @description The same, as the form loads it, with the version to write back. */
+        CalendarKindDetailDto: {
+            /** Format: int64 */
+            id: number;
+            key: string;
+            label: components["schemas"]["LocalizedOfstring"];
+            colour: string;
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description One word of the division's calendar vocabulary, as a list row. */
+        CalendarKindListDto: {
+            /** Format: int64 */
+            id: number;
+            key: string;
+            label: components["schemas"]["LocalizedOfstring"];
+            colour: string;
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description What a client may set. The key is writable for the same reason a category's is: a key that could
+         *     never be corrected would mean a typo lives for ever, and renaming one is a decision somebody
+         *     takes knowing the entries already written with the old one keep it.
+         */
+        CalendarKindWriteDto: {
+            key: string;
+            label: components["schemas"]["LocalizedOfstring"];
+            colour: string;
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            rowVersion: string;
         };
         /**
          * @description One calendar entry as a list shows it.
@@ -1037,6 +1152,23 @@ export interface components {
             publishedAt: null | string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /**
+         * @description What stands between a row and the public, asked before anybody presses publish.
+         *     The shape is the refusal's own — one i18n key per path, and the languages that are
+         *     missing beside it — because the editor draws both with the same component. What differs is only
+         *     the moment it is asked for: this one answers 200 with two empty maps when there is nothing in
+         *     the way, where the refusal is a 400 nobody asked for.
+         */
+        ContentPublishProblemsDto: {
+            /** @description One or more i18n keys per field, keyed by the path the editor knows. */
+            errors: {
+                [key: string]: string[];
+            };
+            /** @description For the fields whose problem is a missing translation, which languages are missing. */
+            localized: {
+                [key: string]: string[];
+            };
         };
         /** @description What publication is told, beyond which row it is about. */
         ContentPublishRequest: {
@@ -1340,6 +1472,7 @@ export interface components {
             sort: number;
             label: components["schemas"]["LocalizedOfstring"];
             path: string;
+            icon: null | string;
             visibility: components["schemas"]["Visibility"];
             isActive: boolean;
             ownerDepartment: components["schemas"]["Department"];
@@ -1365,6 +1498,7 @@ export interface components {
             sort: number;
             label: components["schemas"]["LocalizedOfstring"];
             path: string;
+            icon: null | string;
             visibility: components["schemas"]["Visibility"];
             isActive: boolean;
             /** Format: date-time */
@@ -1383,6 +1517,7 @@ export interface components {
             sort: number;
             label: components["schemas"]["LocalizedOfstring"];
             path: string;
+            icon: null | string;
             visibility: components["schemas"]["Visibility"];
             isActive: boolean;
             /** Format: date-time */
@@ -1410,6 +1545,11 @@ export interface components {
             /** @description Where the entry leads: a path of this site, or an address of somewhere else. */
             path: string;
             label: null | components["schemas"]["LocalizedOfstring"];
+            /**
+             * @description Name of an icon from the client's allow list, or null for an entry drawn as
+             *         words. The server carries the name and never resolves it.
+             */
+            icon: null | string;
             /** @description Sub entries, one level deep and never more. */
             children: components["schemas"]["NavItem"][];
         };
@@ -1425,6 +1565,29 @@ export interface components {
         PagedResultOfAuditListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["AuditListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfCalendarKindListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["CalendarKindListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -2444,6 +2607,35 @@ export interface operations {
             };
         };
     };
+    ContentPublishProblems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentPublishProblemsDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ContentPublicRead: {
         parameters: {
             query?: never;
@@ -2919,6 +3111,163 @@ export interface operations {
         };
     };
     CalendarDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarKindsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfCalendarKindListDto"];
+                };
+            };
+        };
+    };
+    CalendarKindsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CalendarKindWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarKindDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CalendarKindsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarKindDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarKindsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CalendarKindWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarKindDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarKindsDelete: {
         parameters: {
             query?: never;
             header?: never;

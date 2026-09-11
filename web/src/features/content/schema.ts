@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { LAYOUTS, BACKGROUNDS, PADDINGS, WIDTHS } from '../../blocks';
+import { PADDINGS, WIDTHS } from '../../blocks';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { localized, localizedObject, type ChoiceOption } from '../../shared/forms';
 
@@ -30,7 +30,10 @@ export function contentMetadataSchema(kind: ContentKind, categories: readonly Ch
     // edits news. A select here would let a page become a document with the fields of a page still
     // on screen, which is a form that lies about what it is editing.
     kind: z.enum(['Page', 'News', 'Document', 'Dashboard']).meta({ hidden: true }),
-    slug: z.string(),
+    // Proposed from the title while nobody writes it by hand (design M0 §7.5, asked for after the
+    // demo of M1). An existing row never moves: it already carries an address, so the proposal
+    // stands aside from the first render — and an address outlives the page that has it.
+    slug: z.string().meta({ slugFrom: 'title' }),
     ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
     visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
     // Set once, by the template picker or by nobody. A checkbox here would let a page promote
@@ -109,10 +112,12 @@ export function sectionSettingsSchema(
    */
   template: { blocks: readonly ChoiceOption[]; unnamed: boolean } | null,
 ) {
+  // ⚠️ `layout` and `background` are **not** here, since 10 September 2026. They are the two things
+  // about a section that are judged by eye rather than written, and they live in `SectionFrame` as
+  // pictures applied at once — one place each, or a form holding a stale background would undo a
+  // swatch the moment somebody pressed Apply.
   const common = {
     title: localized(),
-    layout: z.enum(LAYOUTS),
-    background: z.enum(BACKGROUNDS),
     // Only read when the background is `image`, and chosen from the library like every other file.
     // Left here rather than hidden behind the choice: the generator draws a schema, and a field that
     // appears and disappears with the value of another one would be the first rule of its kind.

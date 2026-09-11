@@ -11,6 +11,7 @@ export {
   writtenValues,
   NO_CHOICE,
   type ChoiceOption,
+  type Suggestion,
   type FieldMeta,
   type FieldNode,
 } from './schema';

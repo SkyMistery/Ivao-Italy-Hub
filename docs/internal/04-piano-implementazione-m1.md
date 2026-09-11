@@ -9,7 +9,112 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.6 — 7 settembre 2026 (**G12 è chiusa, e con lei M1**, meno il tag. La fase che
+**Versione:** 2.20 — 11 settembre 2026 (**G15, l'editor che risponde**, decisa da Carmine e messa
+**prima di G14**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera con coalescenza,
+autosalvataggio a dieci secondi con audit senza corpo, trascinamento dalla barra fra due blocchi,
+anteprima mobile vera con le container query — la nostra era finta come quella di va.ivao.aero, e
+il test la misurava dove non poteva vederlo. Perimetro nella sezione G15 di D, nota
+`decisions/2026-09-11-l-editor-che-risponde.md`, piano 0.60. Nessun codice ancora.)
+
+**2.19** — 11 settembre 2026 (**il collaudo a occhio di Carmine**, due giornate di
+rifiniture, tutte dentro G13 e tutte sulla PR #57: editor a tre colonne con la barra dei componenti;
+barra del sito a una riga, footer a colonne dal menu, marchio e favicon della divisione da
+`division.json`, i caratteri di IVAO finalmente caricati; `StaffSidebar` al posto della barra di
+Atmosphere; testata a una riga delle schermate staff; colonne visibili mentre si compone e **sette
+sfondi** di sezione, che hanno riaperto §16.C del piano (piano 0.58). Il **documento operativo** è
+deciso e diventa **G14**, dopo il tag: la sua §30 si scrive come primo atto di G14. Le note sono in
+`decisions/2026-09-10-*` e `2026-09-11-*`, e `HANDOFF.md` le mette in ordine. Conto, misurato:
+**472 test .NET** (306 + 166), **324 Vitest**, **56 smoke Playwright**, **13 del giro completo**.)
+
+**2.18** — 10 settembre 2026 (**scritte le tre richieste sui documenti** che vivevano solo
+in chat — piè di pagina deciso, pubblicazione programmata e stampa parcheggiate,
+`decisions/2026-09-09-il-documento-dice-di-se.md` — e `HANDOFF.md` rifatto per chi apre da zero.
+Nessun codice: **G13 non ha più lavoro suo**, restano le tre cose di Carmine (rieseguire la scheda,
+mergiare la PR #57, il tag verificato sull'artefatto).)
+
+**2.17** — 10 settembre 2026 (**una sezione contiene righe**, e sfondo e colonne si
+scelgono con pastiglie e diagrammi invece che con un form. La riga era già nel modello, nel
+validatore e nel renderer: mancava solo il modo di farne una. Conto: **471 test .NET** (invariati),
+**286 Vitest**, **52 smoke Playwright** e **13 del giro completo**.)
+
+**2.16** — 9 settembre 2026 (**la pagina è una selezione**: i metadati hanno smesso di
+essere un modulo da 1182 px sopra l'editor e sono le proprietà della pagina, nello stesso pannello di
+sezioni e blocchi; la barra è in cima e `Save draft` invia il form da fuori con `form=`. La pagina che
+si compone comincia a 466 px invece di 1588 — misurato. Conto: **471 test .NET** (invariati),
+**282 Vitest**, **52 smoke Playwright** e **13 del giro completo**.)
+
+**2.15** — 9 settembre 2026 (**una pagina si compone guardandola**: l'anteprima è
+diventata la superficie di composizione, si clicca un blocco nella pagina disegnata e si aprono i
+suoi campi accanto. Strada (A) della nota, scelta da Carmine. Zero coordinate, zero dimensioni sui
+blocchi, modello invariato. Conto: **471 test .NET** (invariati), **282 Vitest**, **52 smoke
+Playwright** e **13 del giro completo**.)
+
+**2.14** — 9 settembre 2026 (**la terza esecuzione della demo**: le immagini non si
+caricavano in sviluppo — `/media` non era inoltrato all'API e ogni foto era `index.html` —, una
+tendina mostrava una voce sola perché Atmosphere le dà l'altezza del trigger, e l'ora del calendario
+adesso si scrive come in aviazione: 24 ore, `Z`, `LT`, e la data solo dove non c'è già. Conto:
+**471 test .NET** (invariati, niente C#), **279 Vitest**, **52 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.13** — 9 settembre 2026 (**un campo suggerito può chiedere al server**, nona
+estensione del generatore di form: chiude il difetto che l'indirizzo chiuso del menu aveva creato —
+cento righe per richiesta, e una pagina oltre la centesima che non si poteva scegliere. Zero
+endpoint, zero tabelle, zero permessi. Conto: **471 test .NET** (306 unitari, 165 di integrazione,
+invariati — niente C# è cambiato), **276 Vitest**, **51 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.12** — 9 settembre 2026 (**i template hanno una schermata**: lista, pulsante che ne
+crea uno, e quante righe sono nate da lui. Ultimo dei sei difetti di rifinitura del rapporto di
+chiusura, quindi **sono chiusi tutti**. Zero tabelle, zero permessi, zero endpoint, zero migrazioni:
+la lista generica con il filtro rovesciato e lo stesso editor dei contenuti. Conto: **471 test .NET**
+(306 unitari, 165 di integrazione), **274 Vitest**, **50 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.11** — 9 settembre 2026 (**il tema scuro ha il suo grigio**: `--muted-foreground` è
+l'unico colore che Atmosphere non ribalta, e a 12–14 px stava a 3,14 : 1 contro il 4,5 : 1 di AA. Una
+riga in fondo a `web/src/styles/index.css`, `e2e/contrast.spec.ts` che la difende misurando nove
+schermate, e la prima deroga a «Atmosphere così com'è» — scritta, motivata e sola. **Con questo il
+giro visivo di M1 è chiuso**: nessuno dei suoi quattro punti resta aperto. Conto: **470 test .NET**
+(306 unitari, 164 di integrazione), **274 Vitest**, **47 smoke Playwright** e **12 del giro
+completo**.)
+
+**2.10** — 9 settembre 2026 (**nell'indice di ricerca finisce solo prosa**: l'estrattore
+tiene i valori dentro una mappa tradotta e lascia fuori enumerazioni, identificatori e URL, e toglie
+il Markdown da quello che tiene. Chiude i punti 2 e 3 del giro visivo, cioè gli ultimi due difetti di
+M1 che non fossero una decisione aperta. Aggiornato anche il rapporto di chiusura, perché G13 ha
+mosso quattro dei suoi cinque numeri. Conto: **470 test .NET** (306 unitari, 164 di integrazione),
+**274 Vitest**, **45 smoke Playwright** e **12 del giro completo**.)
+
+**2.9** — 8 settembre 2026 (la seconda esecuzione della demo ha aggiunto **quattro**
+richieste, non tre, e la quarta è la più stretta: l'indirizzo di una voce di menu è un **insieme
+chiuso** — pagine, anche bozze, schermate del router, link in uso — imposto dal server e non solo
+offerto dal form. Il motivo non è il menu: è che ogni indirizzo che esce dal sito vive in una tabella
+sola. Nota `decisions/2026-09-08-dove-puo-portare-una-voce-di-menu.md`. Conto: **470 test .NET**
+(306 unitari, 164 di integrazione), **274 Vitest**, **45 smoke Playwright** e **12 del giro completo**.
+Resta il tag.)
+
+**2.8** — 7 settembre 2026 (**i quattro difetti di G13 sono chiusi**, e la prima delle
+richieste con loro: il logout ridisegna la pagina — il bootstrap non è una query ma il contesto del
+router, e una query invalidata non rifà un `beforeLoad` — e una pagina non si pubblica più portando
+un'immagine che i suoi lettori non possono vedere, sotto lo stesso `VisibilityCeiling` dei blocchi
+Data. La sigla di un dipartimento è il suo segno. Fatte anche le richieste 5, 6 e 9: lo `slug` proposto dal titolo — la **settima** estensione del
+generatore di form — e l'avviso a quattro stati, che è il **quinto componente custom** e porta con
+sé la conferma che l'editor deve a chi clicca. Fatte anche la 7 — con lei il **quarto** verbo a mano appeso a `MapCrud` — e le 10, 12 e 13.
+Fatta anche la **11**, decisa da Carmine sulla prima delle tre opzioni della nota: i tipi di evento
+sono una tabella di divisione, il `kind` di una voce non è più testo libero e il vocabolario viaggia
+in `/api/me`. **G13 è completa**: quattro difetti e dodici richieste su dodici. La seconda esecuzione della demo
+ne ha aggiunte tre, tutte fatte: l'indirizzo proposto anche fuori dai contenuti, `Order` e
+`Visible to` modificabili dalla tabella, e l'indirizzo di una voce di menu che **suggerisce le
+pagine che esistono** — l'**ottava** estensione del generatore di form. Resta il tag.)
+
+**2.7** — 7 settembre 2026 (**si apre G13**, che non era previsto e c'è per una buona
+ragione: Carmine ha eseguito `tools/demo-m1.md` fino al punto 7 e ha trovato **quattro difetti e
+dodici richieste**. Due difetti sono già corretti — ogni data dell'hub era mostrata due ore indietro,
+e cancellare una riga lasciava la pagina aperta — e il secondo era una **regressione della correzione
+del loader** della stessa mattina. Il tag `v0.2.0-m1` **aspetta la fine di G13**. Elenco completo e
+decisioni in `decisions/2026-09-07-dopo-la-demo.md`.)
+
+**2.6** — 7 settembre 2026 (**G12 è chiusa, e con lei M1**, meno il tag. La fase che
 verifica invece di costruire ha trovato più difetti di qualunque altra, e nessuno era trovabile
 prima: `/about` e `/start` ricopiate a mano dall'editor hanno fatto uscire che **ogni form del
 back-office si poteva salvare una volta sola per caricamento di pagina** e che **le pagine seminate
@@ -171,6 +276,9 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G10 | Ricerca: schermata, rilevanza, evidenziazione — **fatta** | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
 | G11 | Editor: differenze dal template, dnd-kit, anteprima | G8 | tre stati della diff, «allinea» una differenza alla volta, su/giù da tastiera intatto |
 | G12 | Migrazione a mano, giro visivo, chiusura di M1 | tutte | `/about` e `/start` ricopiati, giro visivo eseguito, rapporto di chiusura con i numeri, tag `v0.2.0-m1` |
+| G13 | I difetti trovati usando, e le rifiniture del collaudo — **fatta**, PR #57 | G12 | i quattro difetti e le dodici richieste della demo, poi le due giornate di collaudo a occhio |
+| G15 | L'editor che risponde — **dopo il tag, prima di G14** | G13 | proprietà applicate scrivendo, annulla/ripeti da tastiera, autosalvataggio a 10 s con audit senza corpo, trascinamento dalla barra, anteprima «Phone» che accorpa davvero le colonne |
+| G14 | Il documento operativo (LoA/SOP) | G15 | tipo SOP/LoA, sei campi operativi da `ref_`, `Archived`/`Superseded`, Frequency Table e Coordination, piè di pagina con la stampa |
 
 **Parallelismo.** G5 e G6 non si toccano (tabelle, rotte e schermate diverse) e possono girare in
 sessioni parallele **se** si rispetta la regola 2 di §A. G7 dipende solo da G2 e può anticipare G5/G6
@@ -1012,6 +1120,189 @@ sapeva mostrarlo stretto **e** autenticato insieme.
 **La correzione al piano 00** che questa chiusura chiede è una sola, ed è in §16: «endpoint scritti a
 mano» contava la cosa sbagliata. Da M2 i numeri sono due — CRUD scritti a mano (deve restare zero) e
 verbi a mano appesi a un gruppo `MapCrud` (oggi tre, ognuno da giustificare).
+
+---
+
+
+### G13 — I difetti trovati usando, e le rifiniture che Carmine ha chiesto
+
+**Obiettivo**: chiudere quello che è uscito eseguendo la demo. Nota
+`decisions/2026-09-07-dopo-la-demo.md`, che è la fonte di questa fase: contiene i quattro difetti, le
+dodici richieste e le quattro decisioni già prese.
+
+⚠️ **Il tag `v0.2.0-m1` non si mette prima della fine dei difetti.** Le richieste possono anche
+seguire il tag, se Carmine preferisce; i difetti no.
+
+**I difetti** (l'ordine è quello di priorità):
+
+1. ~~Ogni istante mostrato due ore indietro~~ — **fatto** (`6f8217e`), con
+   `InstantsAreUtcOnTheWireTests`.
+2. ~~Cancellare lascia la pagina aperta~~ — **fatto** (`fc33848`), sei mutazioni, con
+   `features/menu/mutations.test.tsx`. Era una regressione della correzione del loader.
+3. ~~Il logout non aggiorna la pagina~~ — **fatto** (`686ee82`), con
+   `web/src/features/me/logout.test.tsx`. L'ipotesi era giusta ed è stata misurata prima di
+   correggere: il bootstrap è il **contesto del router**, non una query che qualcuno osserva, e
+   invalidarla non rifà un `beforeLoad`. `sessionChanged` lo rimuove e chiama `router.invalidate()`;
+   lo usa anche la risposta al 401. Uscire porta prima a casa, o la guardia del back-office
+   risponderebbe al clic con il login di IVAO.
+4. ~~Un documento pubblicato con un'immagine non mostra l'immagine~~ — **fatto** (`0e28db1`), con
+   `MediaEndToEndTests.PublishRefusesAPageShowingAPictureItsReadersMayNotSee`. Era la visibilità
+   della riga media: un file nasce `Staff`, la pagina usciva lo stesso e il lettore riceveva 404.
+   La pubblicazione ora **rifiuta** sotto `VisibilityCeiling` — il corpo, la copertina di una news e
+   il file di un documento — e non ripara, perché pubblicare non deve rendere pubblico un file di
+   nascosto.
+
+**Le richieste**, nell'ordine che toglie più attrito a chi userà l'hub:
+
+5. ~~Lo `slug` proposto dal titolo e correggibile~~ — **fatto** (`38c6e1c`), con quattro test in
+   `shared/forms/extensions.test.tsx`. È l'annotazione `slugFrom` del **generatore di form**, non
+   una funzione della schermata dei contenuti: la **settima** estensione, e il numero da riportare
+   alla chiusura della fase (§12 ne prevedeva cinque, G11a ha fatto la sesta). Segue il titolo
+   finché il campo contiene esattamente quello che è stato proposto, e smette per sempre appena
+   qualcuno ci scrive — una riga che aveva già un indirizzo non lo sposta mai.
+6. ~~La conferma che l'editor ha fatto quello che è stato cliccato~~ — **fatto** (con la 9): salvare,
+   pubblicare ed eliminare rispondono con un toast, e una pubblicazione rifiutata lo dice anche lei
+   — la ragione resta in `PublishProblems`, che nomina il blocco e la lingua, ma quella lista sta
+   sopra il form e può essere fuori schermo.
+7. ~~«Cosa manca per pubblicare», viva e prima del rifiuto~~ — **fatto**, con
+   `ContentEndToEndTests.PublishProblemsSayTheSameThingBeforeAnybodyPresses`. Il servizio si è
+   diviso in due: `ProblemsAsync` fa i controlli, `PublishAsync` li fa e poi scrive. ⚠️ **Quarto
+   verbo a mano appeso al gruppo `MapCrud`** (`GET /api/content/{id}/publish-problems`), deciso con
+   Carmine: l'alternativa era il client che ricalcola le regole di pubblicazione, cioè le stesse
+   regole scritte due volte. Non c'è più una lista dopo il rifiuto e una prima: è **una**, in tono
+   `warning`, e si svuota da sola quando l'ultima cosa è sistemata e salvata.
+8. ~~Le **sigle** dei dipartimenti al posto delle nove icone identiche~~ — **fatto** (`6584438`),
+   con `web/src/app/layouts/staffDestinations.test.tsx`, e guardata in un browser. ⚠️ Il segno non
+   entra nell'elenco chiuso di §8.3: non prende props, si monta solo in uno slot di icona, e nasce
+   dai dati.
+9. ~~L'**avviso a quattro stati** condiviso~~ — **fatto**: `Notice` più `useNotice()`, riquadro e
+   conferma in un angolo che leggono la stessa tabella di quattro toni. È il **quinto componente
+   custom** e la riga in §8.3 del piano c'è, insieme a quella di `docs/UI-GUIDELINES.md` §3, alla
+   voce in `catalog.ts` e alla sezione della ui-kit — che il test accanto alla galleria pretende.
+   ⚠️ Deciso da Carmine: **non** sostituisce `ProblemAlert`, perché unirli tocca ogni schermata del
+   back-office ed è una decisione a sé. La forma della conferma — toast e non pannello — è sua.
+10. ~~Il calendario: chip colorata per tipo, orario UTC con il locale fra parentesi, e **quattro
+    viste**~~ — **fatto**. Le due liste disegnano gli **stessi** giorni della griglia, saltando
+    quelli vuoti, con lo stesso `Entry`: non è un secondo calendario. `agenda` resta ma non è più
+    fra le viste della schermata — è quella che mostra un **blocco** dentro una pagina. ⚠️ La chip
+    è colorata **senza** vocabolario: i cinque tipi che l'entità documenta hanno un colore ciascuno
+    e tutto il resto lo deriva dalla parola, finché la 11 non arriva.
+11. ~~I **tipi di evento decisi centralmente** e uguali per tutti~~ — **fatto** (`8b6458c`), sulla
+    prima delle tre opzioni della nota, decisa da Carmine: `cms_calendar_kinds`, servita da
+    `MapCrud` in modalità globale, letta con `Calendar.View` e scritta con il nuovo
+    `Calendar.ManageKinds`, che è **globale** e quindi appartiene ai ruoli che raggiungono ogni
+    dipartimento senza una riga in più nella matrice. Tre test di integrazione
+    (`CalendarKindsTests`), verificati rompendo il controllo.
+    ⚠️ **La nota conteneva un errore**, corretto in fondo a lei: questa **non** è la prima riga senza
+    `owner_department` — i grant lo sono da M0 — quindi la spina dorsale non è stata toccata e non
+    c'è nessuna opzione nuova di `MapCrud`. In più, il `kind` di una voce **non è più testo libero**
+    e il vocabolario viaggia in `/api/me`, perché una chip su una pagina pubblica deve dire la
+    parola e il colore.
+12. ~~`LiveStatusStrip` con una gerarchia visiva vera~~ — **fatto**, e senza aggiungere niente: il
+    numero è la cosa più forte della banda, le parole la più debole, un'icona per figura, e il
+    puntino che dice «di questo minuto» respira (solo per chi non ha chiesto meno movimento).
+13. ~~Una barra di ricerca nella sidebar dello staff~~ — **fatto**, con la scorciatoia scritta
+    sopra. ⚠️ In cima alla colonna del contenuto e **non** dentro la sidebar, che è il componente di
+    Atmosphere e non ha slot: avvolgerla in una colonna nostra è ciò che disegnò tutto il
+    back-office in 255 pixel (HANDOFF §13).
+    **Superato l'11 settembre 2026:** la barra laterale ora è nostra (`StaffSidebar`), ha uno slot
+    `top`, e la ricerca sta **in cima alla barra**, accanto al pulsante che la compatta
+    (`decisions/2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md`).
+14. ~~Il giro sull'editor «più intuitivo»~~ — **fatto** (`9bf76ea`), e sono le quattro cose che la
+    ricopiatura a mano e il giro visivo avevano **scritto**, non un rifacimento: l'**annulla**
+    sull'ultima mossa strutturale (venti passi, un pulsante, niente ⌘Z perché dentro un campo di
+    testo significa un'altra cosa), il blocco Titolo che **nasce a livello 2**, **un solo `h1`** per
+    pagina pubblica, e il pannello delle proprietà che **resta fermo** mentre l'albero scorre.
+    ⚠️ Misurato in un browser, non supposto: dopo la correzione la home ha un `h1` suo, e l'altro è
+    il nome della divisione dentro la `Navbar` di Atmosphere — loro, non nostro.
+
+**Accettazione**: i quattro difetti hanno un test ciascuno, verificato rompendolo; Carmine rifà
+`tools/demo-m1.md` **dal punto 1** e arriva in fondo — compresi i punti 8 e 9, che non ha ancora
+eseguito.
+
+#### Il collaudo a occhio del 10 e 11 settembre 2026
+
+Dopo le sedici richieste, Carmine ha guardato l'hub con davanti due siti di IVAO — il page builder e
+la home di va.ivao.aero, il footer della divisione UK & Ireland — e ha chiesto una serie di
+rifiniture. Nessuna era una funzione nuova di modulo; quelle che toccavano una decisione hanno la loro
+nota, e sono tutte fatte, sulla PR #57:
+
+| Che cosa | Nota |
+|---|---|
+| Editor a tre colonne, barra dei componenti per gruppi | `2026-09-10-la-barra-dei-componenti.md` |
+| Barra del sito a una riga e tasto Staff; `StaffSidebar` (21° dell'elenco chiuso); footer a colonne dal menu (colonna `icon` e intestazioni senza indirizzo); marchio e favicon da `division.json` | `2026-09-10-la-barra-la-sidebar-e-il-footer.md` |
+| Barra laterale: un dipartimento alla volta, voce più specifica, ricerca in cima, nomi per esteso; tendine leggibili; Poppins e Nunito Sans; testata a una riga | `2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md` |
+| Colonne visibili mentre si compone; sette sfondi (piano 0.58) | `2026-09-11-la-sezione-si-vede-com-e-divisa.md` |
+
+⚠️ **Due difetti trovati facendolo, che erano miei**: il bianco forzato della barra blu aveva reso
+illeggibili le voci delle tendine, e un e2e era rimasto verde perché `toBeVisible` non misura il
+contrasto — ora lo misura, con la funzione unica `e2e/contrast.ts`; e rinominare le intestazioni della
+barra laterale aveva rotto la ricerca per sigla («ED links»), che un test nuovo ha trovato.
+
+Il **documento operativo** (LoA/SOP alla va.ivao.aero) è deciso ma **non** è G13: diventa **G14**,
+dopo il tag (`2026-09-10-il-documento-operativo-come-va-ivao-aero.md`). E **prima di G14 viene G15**,
+l'editor che risponde, decisa l'11 settembre.
+
+### G15 — L'editor che risponde
+
+**Decisa da Carmine l'11 settembre 2026** con i due editor davanti, il loro e il nostro
+(`decisions/2026-09-11-l-editor-che-risponde.md`, piano 0.60). Viene **prima di G14**, dopo il tag
+`v0.2.0-m1`: è ciò che si sta collaudando, e il documento operativo nascerà in un editor migliore.
+Branch `m1/g15-editor-live`, una PR per sessione, **tre sessioni** nell'ordine qui sotto, ognuna
+chiusa da `pnpm e2e:full` perché quattro delle cinque cose cambiano il gesto che i test fanno.
+
+**Sessione 1 — la rete, poi la risposta, poi la verità dell'anteprima.**
+
+1. **Annulla e ripeti con coalescenza** (`useBodyHistory`): pila `future`, `redo`, `canRedo`;
+   `change(next, { coalesce: key })` sostituisce la cima quando la chiave è la stessa dell'ultima
+   modifica, e una chiave diversa o assente chiude la corsa; tetto **50**. Pulsante «Ripeti» accanto
+   ad «Annulla». Scorciatoie `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z`, `Ctrl+Y` su un gestore del documento che
+   **non fa niente** se `event.target` è `input`, `textarea`, `select` o `contenteditable` — la
+   ragione scritta nel file resta vera. Test: ripeti; ripeti svuotato da una modifica; coalescenza
+   per chiave; ⌘Z in un `textarea` non annulla, su un pulsante sì.
+2. **Le proprietà si applicano mentre si scrive**: `SchemaForm` riceve `onChange?: (values) => void`
+   (settima estensione del generatore), chiamato ~150 ms dopo l'ultimo tasto e **solo se
+   `schema.safeParse` passa**. `BlockProperties` e `SectionProperties` lo usano con
+   `coalesce: props:<id>` e perdono il pulsante «Apply»; il form dei metadati resta a `onSubmit`.
+   Test: `onChange` non chiamato su valori non validi, chiamato una volta per pausa; i test che
+   premevano «Apply» (`round.spec.ts`, `template.spec.ts`, `bench.ts`) scrivono e guardano.
+3. **Anteprima mobile vera**: la radice di `ContentRenderer` è `@container`; le 23 varianti `sm:`/`md:`
+   sotto `web/src/blocks/` diventano `@sm:`/`@md:`, con `--container-sm: 40rem` e
+   `--container-md: 48rem` in `@theme`, uguali ai breakpoint di finestra (⚠️ verificare nella build
+   che Tailwind 4.3 le legga). `PreviewFrame` non cambia. Test: l'e2e che misura la regione misura
+   anche `gridTemplateColumns` a «Phone» = **una** colonna — è la riga che avrebbe trovato il
+   difetto; un Vitest fa il grep di `sm:`/`md:` sotto `blocks/` e fallisce se ne torna una. Poi
+   **a occhio** sul set dei blocchi, perché un componente Atmosphere con media query sue guarda
+   ancora la finestra.
+4. Le due piccole: `{{department}}` nel percorso dell'editor della dashboard (`common.json:239`,
+   non interpolato) e la barra dei componenti che sembra disabilitata quando non lo è.
+
+**Sessione 2 — l'autosalvataggio.** Le sei regole della nota: dopo **10 s** senza tasti e
+all'uscita (`useBlocker` del router, `beforeunload` per la scheda); solo se cambiato; solo se i
+metadati sono validi lato client; **mai su una riga nuova**; un 409 ferma e lo dice; «Publish» prima
+svuota il salvataggio in sospeso. Indicatore «Salvato alle …» / «Salvataggio…» / «Modifiche non
+salvate» al posto della frase «salva prima di pubblicare». ⚠️ **La versione della riga esce dal
+form** dei metadati (`key={content?.rowVersion}` sparisce, la tiene l'editor e `onSave` la mette nel
+DTO): rimontare il form a ogni autosalvataggio porterebbe via il cursore a chi scrive nel titolo.
+Server, **(B)**: l'intestazione `X-Hub-Autosave: 1` letta dal motore CRUD mette un flag nell'ambito
+della richiesta, e `CollectAudit` scrive una riga `autosaved` con l'elenco dei campi cambiati e
+**senza `BeforeJson`/`AfterJson`**; senza intestazione tutto resta com'è. Test: Vitest con orologio
+finto (nessun `PUT` prima dei 10 s, uno solo dopo, nessuno se nulla è cambiato, nessuno su riga
+nuova, stop al 409); integrazione .NET sulla riga `autosaved` senza corpo contro la `updated` con;
+e2e: scrivere, aspettare l'indicatore, ricaricare, il testo c'è.
+
+**Sessione 3 — trascinare dalla barra.** Voci della `BlockPalette` `useDraggable` con `data: { type }`;
+un `DndContext` in `ContentEditor` intorno a barra e pagina **solo con la pagina nel mezzo** (l'outline
+ha il suo, i due non convivono). ⚠️ **Il renderer non importa dnd-kit**: la `Picking` porta un
+componente `DropZone` fornito dall'editor (`useDroppable` dentro) che `Column` disegna fra un blocco e
+l'altro e in fondo, **solo durante un trascinamento** e solo dove `accepts` dice sì; con
+`picking === null` non esiste. `addBlock` riceve un indice `at`. Il clic resta la strada da tastiera.
+Test: `addBlock` con `at`; `Column` con un `DropZone` finto, mai con `picking === null` (il test della
+pagina inerte resta); e2e con `dragTo` fra due blocchi, che è dove si sbaglia.
+
+**Criterio di chiusura**: le cinque cose in un browser, la scheda `tools/demo-m1.md` aggiornata dove
+descrive «Apply», l'HANDOFF con il conto dei test, e il rapporto di quanto è costata contro le tre
+sessioni previste.
 
 ---
 

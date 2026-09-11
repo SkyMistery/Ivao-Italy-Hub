@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Radio } from 'lucide-react';
+import { Plane, TowerControl } from 'lucide-react';
+import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { blockDataQuery } from '../../blocks/data';
@@ -73,31 +74,87 @@ export function LiveStatusStrip({ status: sample }: { status?: LiveNetworkStatus
   const count = (n: number) => new Intl.NumberFormat(i18n.language).format(n);
 
   return (
-    <div className="border-border bg-muted/40 border-b">
-      <div className="text-muted-foreground mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm">
-        <span className="text-foreground flex items-center gap-2 font-medium">
-          <Radio aria-hidden className="size-4" />
+    <div className="border-border bg-muted/30 border-b">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5">
+        {/* ⚠️ The words of the title are a direct child of this span, and the dot is its sibling
+            rather than its wrapper. `web/e2e/live-status.spec.ts` finds the band by going two
+            levels up from the title, so a wrapper here would have it measure the reading column
+            instead of the band — and the measurement is the only thing that says where the strip
+            is. */}
+        <span className="text-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+          <Pulse />
           {t('liveStatus.title')}
         </span>
+
+        {/* ⚠️ `max-sm:hidden`, never `hidden sm:block`: Atmosphere's stylesheet is imported after
+            Tailwind's utilities and declares `.hidden` again, so the plain class wins over the one
+            in the media query and the rule would never come back on a wide screen. */}
+        <span aria-hidden className="bg-border h-6 w-px max-sm:hidden" />
 
         {/* The words are the block's own: the strip and `networkStats` count the same two things,
             and one set of figures deserves one set of words (CLAUDE.md §2). Written as a number and
             a caption rather than as a sentence with a plural, because a plural key is one
             `pnpm i18n:check` cannot see — it looks for `_one` and `_other`, not for the key in the
             source. */}
-        <span className="tabular-nums">
-          <span className="text-foreground font-semibold">{count(value('divisionAtc'))}</span>{' '}
-          {t('blocks.networkStats.captions.divisionAtc')}
-        </span>
-        <span className="tabular-nums">
-          <span className="text-foreground font-semibold">{count(value('divisionPilots'))}</span>{' '}
-          {t('blocks.networkStats.captions.divisionPilots')}
-        </span>
+        <Figure
+          Icon={TowerControl}
+          value={count(value('divisionAtc'))}
+          caption={t('blocks.networkStats.captions.divisionAtc')}
+        />
+        <Figure
+          Icon={Plane}
+          value={count(value('divisionPilots'))}
+          caption={t('blocks.networkStats.captions.divisionPilots')}
+        />
 
         {/* When the network counted, and never when the hub asked: a reader who sees a number wants
             to know how old it is, and the two are not the same minute. */}
-        <span className="ml-auto text-xs">{t('liveStatus.updatedAt', { at: moment(status.updatedAt) })}</span>
+        <span className="text-muted-foreground ml-auto text-xs">
+          {t('liveStatus.updatedAt', { at: moment(status.updatedAt) })}
+        </span>
       </div>
     </div>
+  );
+}
+
+/**
+ * One figure: the number first and large, the word after it and small.
+ *
+ * ⚠️ This is the whole of what Carmine asked for after the demo — "too flat, it does not make the
+ * information stand out". The strip used to draw the number at the same size as everything else, in
+ * a line of small grey text, so the two things it exists to say weighed exactly as much as the
+ * label beside them and as the timestamp at the end. Nothing has been added: what changed is that
+ * the number is now the loudest thing in the band, the words around it the quietest, and the icon
+ * lets a reader find "who is controlling" without reading at all.
+ */
+function Figure({
+  Icon,
+  value,
+  caption,
+}: {
+  Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+  value: string;
+  caption: string;
+}) {
+  return (
+    <span className="flex items-center gap-2">
+      <Icon aria-hidden className="text-muted-foreground size-4 shrink-0" />
+      <span className="text-foreground text-lg leading-none font-semibold tabular-nums">{value}</span>
+      <span className="text-muted-foreground text-xs">{caption}</span>
+    </span>
+  );
+}
+
+/**
+ * The dot that says these numbers are of this minute. It breathes, because a still dot beside the
+ * word "live" says nothing a full stop would not — and it stops breathing for a reader who has
+ * asked their system for less motion, which is what `motion-safe` is.
+ */
+function Pulse() {
+  return (
+    <span aria-hidden className="relative flex size-2 shrink-0">
+      <span className="motion-safe:animate-ping absolute inline-flex size-full rounded-full bg-green-500 opacity-60" />
+      <span className="relative inline-flex size-2 rounded-full bg-green-600" />
+    </span>
   );
 }

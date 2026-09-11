@@ -68,11 +68,19 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
   };
 }
 
-/** The form as a new page starts it: empty, in the department of the route. */
+/**
+ * The form as a new row starts it: empty, in the department of the route.
+ *
+ * `isTemplate` is an argument and not a field, for the same reason it is hidden on the form: a page
+ * may not promote itself into a template. What decides it is **which screen you are on** — the
+ * templates screen of a department makes templates, every other screen makes rows — and that screen
+ * is behind `Content.ManageTemplates`.
+ */
 export function emptyContent(
   department: Department,
   locales: readonly string[],
   kind: ContentKind = 'Page',
+  isTemplate = false,
 ): ContentFormValues {
   return {
     kind,
@@ -81,7 +89,7 @@ export function emptyContent(
     // A page is drafted where only the staff can see it; making it public is a choice, and one
     // that only takes effect when somebody publishes.
     visibility: 'Staff',
-    isTemplate: false,
+    isTemplate,
     title: emptyLocalized(locales),
     summary: emptyLocalized(locales),
     seo: emptySeo(locales),
@@ -188,8 +196,15 @@ export function useDeleteContent() {
   return useMutation({
     mutationFn: async (id: number): Promise<void> =>
       unwrapEmpty(await api.DELETE('/api/content/{id}', { params: { path: { id: String(id) } } })),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: contentKey });
+    // ⚠️ Deliberately not awaited, and deliberately not `async`. What has just been deleted is the
+    // row a screen is **looking at**, so invalidating waits for that screen's own query to refetch
+    // — a row that no longer exists. The refetch 404s and retries, `onSuccess` never settles, and
+    // the callbacks a caller passed to `mutate` never run: the screen deletes the row and then sits
+    // there saying nothing. Found in G12, and caused by making the screens read the query rather
+    // than the loader (`decisions/2026-09-07-il-loader-non-e-la-riga.md`), which is what gave that
+    // query an observer in the first place.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: contentKey });
     },
   });
 }

@@ -26,7 +26,8 @@ export function LocaleSwitcher({ locales, signedIn }: { locales: readonly string
   });
 
   // The browser owns the names of languages, so the division does not have to carry one per
-  // language it might add.
+  // language it might add. It is no longer what the control *shows* — see below — but it is still
+  // what it is called, which is what somebody reading with a screen reader gets.
   const names = new Intl.DisplayNames([i18n.language], { type: 'language' });
   const current = locales.find((locale) => i18n.language.startsWith(locale)) ?? locales[0];
 
@@ -39,10 +40,19 @@ export function LocaleSwitcher({ locales, signedIn }: { locales: readonly string
   };
 
   return (
+    // ⚠️ Codes and not names (Carmine, 10 September 2026: "less invasive, just the initials"). What
+    // this control is worth on a page is one word — the language you are reading in — and "English"
+    // spelled out took more room in the bar than the search, the theme and the account together.
+    //
+    // The full name does not disappear, it moves: `aria-label` carries it, so a screen reader still
+    // says "Language: English" rather than reading two letters aloud. The names come from the
+    // browser either way, so a division that adds a language adds nothing here.
     <Select
       {...(current === undefined ? {} : { value: current })}
       onValueChange={choose}
-      items={locales.map((locale) => ({ value: locale, label: names.of(locale) ?? locale }))}
+      aria-label={current === undefined ? undefined : (names.of(current) ?? current)}
+      className="uppercase"
+      items={locales.map((locale) => ({ value: locale, label: locale.toUpperCase() }))}
     />
   );
 }

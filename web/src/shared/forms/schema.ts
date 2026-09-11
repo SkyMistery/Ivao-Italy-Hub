@@ -54,6 +54,50 @@ export interface FieldMeta {
   /** One small object per language. Set by `localizedObject()`, never written by hand. */
   localizedObject?: boolean;
   /**
+   * The path of the field this one proposes itself from: a title, and the address made out of it.
+   * The proposal follows the source while nobody has written in this field, and stops the moment
+   * somebody does — an address that kept rewriting itself under the person typing it would be
+   * worse than one they had to type in full.
+   *
+   * It is a proposal and never a rule: what an address may look like is the server's to say, and
+   * it says it (`slugify` explains where that line is). A source that is translated is read in the
+   * default language of the division, which is the language of the address the site publishes.
+   *
+   * The seventh extension of the generator, asked for by Carmine after the demo of M1: an address
+   * was typed from scratch beside a title that had just been written.
+   */
+  /**
+   * What a field offers while somebody types, **without** closing the set: the address of a menu
+   * entry is the case it was built for — the pages of the site, grouped by the department that
+   * wrote them, and an address of somewhere else typed in full.
+   *
+   * ⚠️ It is not `choices`. A select refuses everything it does not list, and a menu that could
+   * only point at a page of this site would be a menu that cannot link the forum. The value stays
+   * free text: the suggestions are a way of not typing, never a rule (asked for while running the
+   * demo of M1, part 1).
+   */
+  suggestions?: readonly Suggestion[];
+  /**
+   * With `suggestions`, whether the list is the **whole** of what the field accepts.
+   *
+   * ⚠️ It is the difference between offering and deciding, and the menu is the case that wanted the
+   * second (decided by Carmine on 8 September 2026): a menu entry leads to a page of this site, to
+   * a screen of the application, or to a link of the library — so that **every address leaving the
+   * site lives in one table**, and changing where the forum lives is one row rather than a hunt.
+   *
+   * The field still filters as somebody types: what closing it changes is that a word nobody
+   * offered is put back rather than kept. The server refuses it too, which is what makes it a rule
+   * rather than a habit of one screen.
+   */
+  suggestionsOnly?: boolean;
+  slugFrom?: string;
+  /**
+   * What the proposal starts with, for a field that is a **path** rather than a slug: the menu
+   * writes `/chi-siamo` where a page writes `chi-siamo`. It is a separate annotation and not a
+   * shape of `slugFrom`, so that reading a schema stays reading one word per idea.
+   */
+  slugPrefix?: string;
+  /**
    * An array of values out of `choices`, drawn as one checkbox each rather than as a repeatable
    * list. It is the difference between "pick several of a closed set" and "write as many of these
    * as you like": the first has an answer that fits on the screen, and a list of selects for it is
@@ -92,8 +136,17 @@ export interface ChoiceOption {
   label: string;
 }
 
+/**
+ * One thing a field offers without demanding it. `group` is a heading in the list — "the pages of
+ * Events", "the pages of Training" — and is what tells thirty suggestions apart from a wall.
+ */
+export interface Suggestion extends ChoiceOption {
+  group?: string;
+}
+
 export type FieldNode =
   | ({ kind: 'text'; choices: ChoiceOption[] | null } & FieldCommon)
+  | ({ kind: 'suggest'; suggestions: Suggestion[]; only: boolean } & FieldCommon)
   | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
@@ -146,7 +199,10 @@ export function blankValue(node: FieldNode, locales: readonly string[]): unknown
   switch (node.kind) {
     case 'localized':
       return Object.fromEntries(locales.map((locale) => [locale, '']));
+    // A field that suggests starts empty like any other text: what it offers is a way of not
+    // typing, not a value somebody chose.
     case 'text':
+    case 'suggest':
       return '';
     case 'number':
       return node.choices?.[0] ?? 0;
@@ -414,7 +470,17 @@ function readField(schema: unknown, path: string): FieldNode {
 
   switch (def.type) {
     case 'string':
-      return { kind: 'text', ...common, choices: stringChoices(meta.choices) };
+      // Suggestions before choices: a field that offers without demanding is a different field
+      // from one that refuses everything it does not list, and only one of the two annotations is
+      // ever written on a field.
+      return meta.suggestions === undefined
+        ? { kind: 'text', ...common, choices: stringChoices(meta.choices) }
+        : {
+            kind: 'suggest',
+            ...common,
+            suggestions: [...meta.suggestions],
+            only: meta.suggestionsOnly === true,
+          };
     case 'number':
     case 'int':
       return { kind: 'number', ...common, choices: numberChoices(meta.choices) };

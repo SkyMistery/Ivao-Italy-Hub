@@ -69,6 +69,7 @@ public class HubDbContext : DbContext
     public DbSet<MediaAsset> Media => Set<MediaAsset>();
     public DbSet<SearchIndexEntry> SearchIndex => Set<SearchIndexEntry>();
     public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();
+    public DbSet<CalendarKind> CalendarKinds => Set<CalendarKind>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<AwardSignal> AwardSignals => Set<AwardSignal>();
 
@@ -97,6 +98,11 @@ public class HubDbContext : DbContext
         configurationBuilder.Properties<GrantKind>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<GrantEffect>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<AwardSignalStatus>().HaveConversion<string>().HaveMaxLength(16);
+
+        // ⚠️ Every instant is UTC, and the model has to say so: MariaDB's `datetime` carries no
+        // zone, Pomelo returns `Unspecified`, and `System.Text.Json` then writes it without a `Z` —
+        // which a browser reads as *local time*. See `UtcDateTimeConverter`.
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
 
         // Title -> title_i18n, on top of the snake case convention. One place decides column names.
         configurationBuilder.Conventions.Add(_ => new LocalizedColumnConvention());

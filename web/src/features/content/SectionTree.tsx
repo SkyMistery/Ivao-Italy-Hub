@@ -47,7 +47,6 @@ export function SectionTree({
   selection,
   onSelect,
   onAddSection,
-  onAddBlock,
   onMoveSection,
   onMoveBlock,
   onReorderSections,
@@ -59,9 +58,10 @@ export function SectionTree({
   body: Body;
   rules: ReadonlyMap<string, SectionRule>;
   selection: Selection | null;
-  onSelect: (selection: Selection) => void;
-  onAddSection: () => void;
-  onAddBlock: (sectionId: string, type: string) => void;
+  /** `null` is the page itself, whose properties are the row's own: address, title, audience, SEO. */
+  onSelect: (selection: Selection | null) => void;
+  /** With no parent, a section at the top of the page; with one, a **row** inside that section. */
+  onAddSection: (parentId?: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
   /** A section dropped onto another one of the same list. */
@@ -93,6 +93,20 @@ export function SectionTree({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <div className="flex flex-col gap-4">
+        {/* ⚠️ The page is the first thing in the tree, and picking it opens its own properties in
+            the same panel a section and a block use. Before 9 September 2026 those lived in a form
+            above the editor that measured 1182 pixels — taller than the window — so both the page
+            and the buttons that save it were below the fold. One panel, three kinds of thing. */}
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          className={`rounded-md border px-3 py-2 text-left text-sm font-medium ${
+            selection === null ? 'border-primary bg-accent' : 'border-border'
+          }`}
+        >
+          {t('content.editor.page')}
+        </button>
+
         {body.sections.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t('content.editor.noSections')}</p>
         ) : (
@@ -108,7 +122,7 @@ export function SectionTree({
                 rules={rules}
                 selection={selection}
                 onSelect={onSelect}
-                onAddBlock={onAddBlock}
+                onAddSection={onAddSection}
                 onMoveSection={onMoveSection}
                 onMoveBlock={onMoveBlock}
                 onDuplicateBlock={onDuplicateBlock}
@@ -120,7 +134,7 @@ export function SectionTree({
         )}
 
         <div>
-          <Button type="button" variant="secondary" size="sm" onClick={onAddSection}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => onAddSection()}>
             <Plus aria-hidden className="mr-2 size-4" />
             {t('content.editor.addSection')}
           </Button>
@@ -137,7 +151,7 @@ function SectionNode({
   selection,
   depth = 0,
   onSelect,
-  onAddBlock,
+  onAddSection,
   onMoveSection,
   onMoveBlock,
   onDuplicateBlock,
@@ -150,7 +164,7 @@ function SectionNode({
   selection: Selection | null;
   depth?: number;
   onSelect: (selection: Selection) => void;
-  onAddBlock: (sectionId: string, type: string) => void;
+  onAddSection: (parentId?: string) => void;
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
   onDuplicateBlock: (id: string) => void;
@@ -161,7 +175,11 @@ function SectionNode({
   const read = useLocalized();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, style } = useRow(section.id, 'section');
 
-  const name = read(section.title) || section.key || t('content.editor.untitledSection');
+  // A nested one is a **row** to whoever is writing: same thing in the model, a word they can use.
+  const name =
+    read(section.title) ||
+    section.key ||
+    t(depth > 0 ? 'content.editor.untitledRow' : 'content.editor.untitledSection');
   const selected = selection?.kind === 'section' && selection.id === section.id;
 
   return (
@@ -220,7 +238,17 @@ function SectionNode({
         </ul>
       </SortableContext>
 
-      {rule.locked ? null : <AddBlock sectionId={section.id} rule={rule} onAddBlock={onAddBlock} />}
+      {/* ⚠️ Only inside a section of the first level. A row inside a row is allowed by the model —
+          the server refuses at three — but it is noise on a screen: what the depth buys is *one*
+          band of colour holding several column layouts, and a third level buys nothing. */}
+      {rule.locked || depth > 0 ? null : (
+        <div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onAddSection(section.id)}>
+            <Plus aria-hidden className="mr-2 size-4" />
+            {t('content.editor.addRow')}
+          </Button>
+        </div>
+      )}
 
       <SortableContext
         items={section.sections.map((nested) => nested.id)}
@@ -235,7 +263,7 @@ function SectionNode({
             selection={selection}
             depth={depth + 1}
             onSelect={onSelect}
-            onAddBlock={onAddBlock}
+            onAddSection={onAddSection}
             onMoveSection={onMoveSection}
             onMoveBlock={onMoveBlock}
             onDuplicateBlock={onDuplicateBlock}
@@ -351,53 +379,6 @@ function DragHandle({
     >
       <GripVertical aria-hidden className="size-4" />
     </button>
-  );
-}
-
-/**
- * Which blocks may be put here. The list is the registry narrowed by whatever the template allows,
- * so a section that says "text and headings" offers exactly those two.
- */
-function AddBlock({
-  sectionId,
-  rule,
-  onAddBlock,
-}: {
-  sectionId: string;
-  rule: SectionRule;
-  onAddBlock: (sectionId: string, type: string) => void;
-}) {
-  const { t } = useTranslation();
-
-  const allowed = registry.blocks.filter(
-    (block) => rule.allowedBlocks === null || rule.allowedBlocks.includes(block.type),
-  );
-
-  if (allowed.length === 0) {
-    return null;
-  }
-
-  // A palette rather than a select: adding a block is an action, and a select that fires one and
-  // then sits there showing what was added reads as a choice that can be un-made.
-  return (
-    <div className="flex flex-wrap items-center gap-1 pt-1">
-      <span className="text-muted-foreground pr-1 text-xs">{t('content.editor.addBlock')}</span>
-      {allowed.map((block) => {
-        const Icon = block.icon;
-        return (
-          <Button
-            key={block.type}
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onAddBlock(sectionId, block.type)}
-          >
-            <Icon aria-hidden className="mr-1 size-4" />
-            {t(block.editorLabelKey)}
-          </Button>
-        );
-      })}
-    </div>
   );
 }
 

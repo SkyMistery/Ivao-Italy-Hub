@@ -172,6 +172,13 @@
         "title": "Department dashboard",
         "summary": "What this department sees when it opens the back office."
       }
+    },
+    "calendarKinds": {
+      "event": "Event",
+      "training": "Training",
+      "tour": "Tour",
+      "meeting": "Meeting",
+      "deadline": "Deadline"
     }
   }
 }

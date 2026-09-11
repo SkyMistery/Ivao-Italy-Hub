@@ -43,7 +43,20 @@ test('an entry added to the menu appears on the site, and taking it away removes
   await expect(page).toHaveURL(new RegExp(`/staff/${department}/menu/new$`));
 
   await writeInBothLanguages(page.locator('form'), menu.fields.label, 'label', label);
-  await page.locator('[id="path"]').fill('/start');
+
+  // ⚠️ **Chosen and not typed**, since 8 September 2026: the address of a menu entry is a closed set
+  // — a page of this site, a screen of the application, or a link of the library — so what goes in
+  // the box is a way of searching that list and never a value. Typing an address and leaving the
+  // field puts back what was there, and the server answers 400 to what is left.
+  //
+  // ⚠️ And a **screen** rather than a page, deliberately: the pages offered are one request of a
+  // hundred rows, and this bench database has accumulated more than that across runs, so the page
+  // this test used to name was simply not in the list. The screens are six constants and always
+  // there. What the test is about is that the menu drives the site, not where this entry leads.
+  await page.locator('[id="path"]').click();
+  await page.getByRole('option', { name: `${menu.screens['/calendar']} /calendar` }).click();
+  await expect(page.locator('[id="path"]')).toHaveValue('/calendar');
+
   await page.locator('[id="sort"]').fill('900');
 
   await whileWaitingFor(page, 'POST', '/api/menu', async () => {
@@ -66,7 +79,7 @@ test('an entry added to the menu appears on the site, and taking it away removes
 
   // ---------------------------------------------------------------- and taking it away
   await page.getByRole('link', { name: englishCommon.common.edit }).last().click();
-  await expect(page.locator('[id="path"]')).toHaveValue('/start');
+  await expect(page.locator('[id="path"]')).toHaveValue('/calendar');
 
   await page.getByRole('button', { name: englishCommon.common.delete }).click();
 

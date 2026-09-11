@@ -444,6 +444,76 @@ namespace IvaoHub.Core.Data.Migrations
                     b.ToTable("cms_calendar_entries", (string)null);
                 });
 
+            modelBuilder.Entity("IvaoHub.Core.Content.CalendarKind", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Colour")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("colour");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("json")
+                        .HasColumnName("label_i18n");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)");
+
+                    b.Property<int>("Sort")
+                        .HasColumnType("int")
+                        .HasColumnName("sort");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cms_calendar_kinds");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("ix_cms_calendar_kinds_is_active");
+
+                    b.HasIndex("Key")
+                        .IsUnique()
+                        .HasDatabaseName("ix_cms_calendar_kinds_key");
+
+                    b.ToTable("cms_calendar_kinds", (string)null);
+                });
+
             modelBuilder.Entity("IvaoHub.Core.Content.ContactMessage", b =>
                 {
                     b.Property<long>("Id")
@@ -990,6 +1060,11 @@ namespace IvaoHub.Core.Data.Migrations
                     b.Property<int>("CreatedBy")
                         .HasColumnType("int")
                         .HasColumnName("created_by");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("icon");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)")

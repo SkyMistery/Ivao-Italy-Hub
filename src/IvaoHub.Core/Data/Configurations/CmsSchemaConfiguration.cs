@@ -69,6 +69,7 @@ internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
         builder.Property(item => item.Path)
             .HasMaxLength(MenuItemWriteDtoValidator.MaxPathLength)
             .IsRequired();
+        builder.Property(item => item.Icon).HasMaxLength(MenuItemWriteDtoValidator.MaxIconLength);
         builder.HasRowVersion(item => item.RowVersion);
 
         // How the menu is read: one scope at a time, top level entries first, in their own order.
@@ -150,6 +151,25 @@ internal sealed class CalendarEntryConfiguration : IEntityTypeConfiguration<Cale
         builder.HasIndex(entry => new { entry.SourceModule, entry.SourceId }).IsUnique();
         builder.HasIndex(entry => entry.StartsAtUtc);
         builder.HasIndex(entry => new { entry.OwnerDepartment, entry.StartsAtUtc });
+    }
+}
+
+internal sealed class CalendarKindConfiguration : IEntityTypeConfiguration<CalendarKind>
+{
+    public void Configure(EntityTypeBuilder<CalendarKind> builder)
+    {
+        builder.ToTable("cms_calendar_kinds");
+        builder.HasKey(kind => kind.Id);
+        builder.Property(kind => kind.Key)
+            .HasMaxLength(CalendarKindWriteDtoValidator.MaxKeyLength)
+            .IsRequired();
+        builder.Property(kind => kind.Colour).HasMaxLength(16).IsRequired();
+        builder.HasRowVersion(kind => kind.RowVersion);
+
+        // One word for the whole division, which is the entire point of the table: a unique index
+        // on the key alone, where a category has one per department and per kind.
+        builder.HasIndex(kind => kind.Key).IsUnique();
+        builder.HasIndex(kind => kind.IsActive);
     }
 }
 

@@ -39,17 +39,27 @@ public sealed class ContentPublishService(
     IClock clock,
     IOptions<DivisionOptions> division)
 {
+    /// <summary>The cover of a news item, named as the form names it.</summary>
+    private const string CoverField = "coverMediaId";
+
+    /// <summary>The file a document is, named as the form names it.</summary>
+    private const string FileField = "fileMediaId";
+
     /// <summary>The draft as the back office sees it: filters off, because a draft is invisible.</summary>
     public Task<ContentEntry?> FindAsync(long id, CancellationToken cancellationToken) =>
         CrudSource.BackOffice<ContentEntry>(database).FirstOrDefaultAsync(row => row.Id == id, cancellationToken);
 
     /// <summary>
-    /// Publishes the row, or says what stopped it. A template is never published: it is a tool of
-    /// the staff, it has no address of its own and nobody reads it.
+    /// What stands between this row and the public, without touching it: the same checks
+    /// <see cref="PublishAsync"/> runs, and <c>null</c> when there is nothing in the way.
+    /// <para>It exists so that the editor can say what is missing <b>before</b> somebody presses
+    /// publish and is told no. The alternative was the client working it out for itself, which
+    /// would be the rules of publication written a second time — and the second copy is the one
+    /// that goes stale (plan §16.E, rule (b)). So the answer comes from the one place that
+    /// decides, and the screen only draws it.</para>
     /// </summary>
-    public async Task<ContentPublishFailure?> PublishAsync(
+    public async Task<ContentPublishFailure?> ProblemsAsync(
         ContentEntry content,
-        string? changelog,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -66,10 +76,27 @@ public sealed class ContentPublishService(
 
         var body = JsonNode.Parse(content.BodyJson) ?? new JsonObject();
 
-        if (Incomplete(content, body) is { } failure)
+        return Incomplete(content, body)
+            ?? await PicturesTheReaderCannotSeeAsync(content, body, cancellationToken);
+    }
+
+    /// <summary>
+    /// Publishes the row, or says what stopped it. A template is never published: it is a tool of
+    /// the staff, it has no address of its own and nobody reads it.
+    /// </summary>
+    public async Task<ContentPublishFailure?> PublishAsync(
+        ContentEntry content,
+        string? changelog,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        if (await ProblemsAsync(content, cancellationToken) is { } failure)
         {
             return failure;
         }
+
+        var body = JsonNode.Parse(content.BodyJson) ?? new JsonObject();
 
         await FreezeAsync(body, DataBlockContext.Publishing(content.Visibility, content.OwnerDepartment), cancellationToken);
 
@@ -143,6 +170,89 @@ public sealed class ContentPublishService(
         }
 
         return errors.Count == 0 ? null : new ContentPublishFailure(errors, missing);
+    }
+
+    /// <summary>
+    /// Every picture the page shows, checked against its readers.
+    /// <para>⚠️ This is the defect the demo of M1 found: a file arrives in the library visible to
+    /// the staff and becomes public because somebody says so, so a picture uploaded and dropped
+    /// into a page is staff-only — and the page went out with it. Nothing refused, nothing warned,
+    /// and a visitor got a broken picture, because the address of a file they may not see answers
+    /// 404 by design.</para>
+    /// <para>The rule is the one that already exists: <see cref="VisibilityCeiling"/>, the same
+    /// ceiling a frozen data block is captured under. A page may only carry what its own readers
+    /// may be served — and a picture is exactly that, a row of another table copied into what
+    /// somebody else opens.</para>
+    /// <para>Refused rather than repaired: publishing a page must not quietly make a file public.
+    /// A file becomes public because somebody said so, which is the rule the upload already
+    /// follows, and this says so where the editor can act on it.</para>
+    /// <para>The rows are read past the query filter on purpose. The question is not what the
+    /// person publishing may see — they may well see more than the page's readers — but what the
+    /// reader will be served, and <c>HasFile</c> is that: a row whose bytes retention has already
+    /// taken away answers 404 whatever its visibility says.</para>
+    /// </summary>
+    private async Task<ContentPublishFailure?> PicturesTheReaderCannotSeeAsync(
+        ContentEntry content,
+        JsonNode body,
+        CancellationToken cancellationToken)
+    {
+        // The body, plus the two a row names in a column of its own: the cover of a news item and
+        // the file attached to a document. Three ways of saying "this page shows that file", and a
+        // reader is served all three the same way — which is why the check is one and not three.
+        // The names are the fields of the form, so a refusal lands on the control that holds them.
+        var shown = walker.MediaReferences(body)
+            .Select(reference => (Field: $"body.{reference.Path}", reference.Id))
+            .ToList();
+
+        if (content.CoverMediaId is { } cover)
+        {
+            shown.Add((CoverField, cover));
+        }
+
+        if (content.FileMediaId is { } file)
+        {
+            shown.Add((FileField, file));
+        }
+
+        if (shown.Count == 0)
+        {
+            return null;
+        }
+
+        var identifiers = shown.Select(reference => reference.Id).Distinct().ToArray();
+
+        var rows = await CrudSource.BackOffice<MediaAsset>(database)
+            .Where(media => identifiers.Contains(media.Id))
+            .Select(media => new
+            {
+                media.Id,
+                media.Visibility,
+                media.OwnerDepartment,
+                media.HasFile,
+            })
+            .ToDictionaryAsync(media => media.Id, cancellationToken);
+
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+
+        foreach (var (field, id) in shown)
+        {
+            if (!rows.TryGetValue(id, out var media) || !media.HasFile)
+            {
+                errors[field] = ["errors.content.mediaMissing"];
+            }
+            else if (!VisibilityCeiling.Allows(
+                content.Visibility,
+                content.OwnerDepartment,
+                media.Visibility,
+                media.OwnerDepartment))
+            {
+                errors[field] = ["errors.content.mediaNotVisible"];
+            }
+        }
+
+        return errors.Count == 0
+            ? null
+            : new ContentPublishFailure(errors, new Dictionary<string, string[]>(StringComparer.Ordinal));
     }
 
     /// <summary>

@@ -62,7 +62,6 @@ function draw(body: Body, rules: ReadonlyMap<string, SectionRule> = noRules) {
       selection={null}
       onSelect={vi.fn()}
       onAddSection={vi.fn()}
-      onAddBlock={vi.fn()}
       onMoveSection={moves.section}
       onMoveBlock={moves.block}
       onReorderSections={vi.fn()}

@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { menuColumns } from '../../features/menu/list';
+import { useInlineEditMenuItem } from '../../features/menu/mutations';
 import { menuListQuery } from '../../features/menu/queries';
 import { DataList, listSearchSchema } from '../../shared/list';
 import { PageShell } from '../../shared/ui';
@@ -32,6 +33,7 @@ function MenuPage() {
   const navigate = Route.useNavigate();
 
   const division = bootstrap.division;
+  const edit = useInlineEditMenuItem(division.locales);
 
   const create = (
     <Button asChild>
@@ -58,6 +60,10 @@ function MenuPage() {
         timezone={division.timezone}
         search={search}
         onSearchChange={(patch) => void navigate({ search: (previous) => ({ ...previous, ...patch }) })}
+        // The order and the audience are changed from the table. What saves them is the feature's
+        // own read-and-write-back, because the list is handed a projection and the engine writes
+        // with the whole payload (note `2026-09-08-modificare-da-una-lista.md`).
+        onEdit={(row, field, value) => edit(row.id, field, value)}
         actions={(row) => (
           <Button asChild variant="ghost" size="sm">
             <Link to="/staff/$dept/menu/$id" params={{ dept, id: String(row.id) }}>

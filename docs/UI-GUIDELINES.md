@@ -39,7 +39,28 @@ It is exactly:
 
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
-`StatusBadge`, `ConfirmDialog`, `MediaPicker`, `CalendarView`, `ContactForm`, `LiveStatusStrip`.
+`StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
+`LiveStatusStrip`, `StaffSidebar`.
+
+`StaffSidebar` is the navigation of the back office, and it is the one entry on this list that
+replaces something Atmosphere ships rather than adding something it lacks. The reason is narrow and
+worth knowing before anybody proposes going back: Atmosphere's `Sidebar` draws its own collapse
+button, last in the panel, the full width of it, carrying the string `"Close sidebar"` written into
+the library — so the button cannot be moved, cannot be made an icon, and **cannot be translated**,
+which made rule 1 of this file impossible to keep in the back office of a division that does not
+speak English.
+
+What it does *not* replace is as important: the open and closed state is still Atmosphere's
+`SidebarProvider` and `SidebarContext`, and every leaf is still its `SidebarItem`. Only the frame
+and the group heading are ours, because those are the two pieces the library exports no way to
+reach. And it **is** the `<aside>` — it is not a panel to wrap in a shell of your own. Wrapping the
+one it replaced once drew the whole back office inside a 288 pixel column with two collapse
+buttons, and `e2e/back-office.spec.ts` measures the geometry so that it cannot happen again.
+
+One department is open at a time, and the entry drawn as current is the **most specific** match,
+not every match: a department's dashboard lives at the department's root, which every other
+address of it begins with. The search sits at the top of the panel through a `top` slot rather
+than an import, because a shared component may never reach into a feature.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
@@ -61,6 +82,18 @@ constant anywhere.
 
 The list lives in `web/src/shared/ui/catalog.ts`. Everything else is Atmosphere.
 
+⚠️ **Atmosphere's `Select` throws `aria-label` away.** A select given only that attribute has no
+accessible name at all: label it with a real `<label htmlFor>` — visually hidden where there is no
+room for one — and give the select the matching `id`, which it does forward. Measured in the DOM
+after a test could not find a control by its name.
+
+⚠️ **`hidden sm:block` does nothing here — write `max-sm:hidden`.** Atmosphere's stylesheet is
+imported after Tailwind's own utilities and declares `.hidden` again, so the plain class wins over
+the one inside the `sm` media query and the element never comes back on a wide screen. Both rules
+have the same specificity, so the later sheet decides. Anything that should appear only above a
+breakpoint therefore hides itself inside the media query instead. Found in the built bundle, twice
+in one hour, after two elements quietly refused to exist.
+
 A screen of a feature — the section tree of the content editor, the template picker — is not on the
 list and does not belong on it: the list is the pieces that are meant to be reused, and a component
 that only one feature has any use for lives in `features/<x>/` where it can change without anybody
@@ -79,6 +112,23 @@ the contact page, and any section of a department's own page that grows one — 
 generated form is the two things a schema has no opinion about, which departments can be written to
 with their names in the language on screen, and what a sent message looks like. It contains no
 field: the form itself is `SchemaForm` reading `shared/ui/contact.ts`.
+
+`Notice` says one thing to the person using the hub, in one of four tones: something went wrong,
+something is worth their attention, something worked, something is worth knowing. It is on the list
+because it is mounted from anywhere, in both of its shapes — a panel that stays on the page, and the
+same sentence said in the corner of the screen and then gone, which is what `useNotice()` pushes into
+Atmosphere's toast queue. A confirmation is not something to close: "saved" has been read by the time
+the eye is back on the page.
+
+⚠️ It is **not** `ProblemAlert` and does not replace it. That one draws what the server refused,
+field by field, out of a `ProblemDetails`; this one is a sentence somebody wrote. The two may be
+worth merging one day; doing it touches every screen of the back office, so it is a decision of its
+own rather than a tidy-up.
+
+Two of its four tones are Atmosphere's own alert variants, used as they are; the other two are
+written in `shared/ui/notices.ts` in the same shape, because the theme ships the `semantic-yellow`
+and `semantic-blue` scales and only the component lacks a variant for them. That file is the one
+table both shapes read, so a tone cannot be green in one of them and grey in the other.
 
 `LiveStatusStrip` is the band under the header of the public site: who is connected to the network,
 refreshed by **polling** and never by a socket — a strip that changes by ones once a minute does not
@@ -107,6 +157,34 @@ is no light-only screen and no dark-only screen.
 
 `DarkModeToggle` sits in the header of every layout; `ThemeProvider` in `main.tsx` is what decides.
 
+**Two things are overridden in Atmosphere, and they are the only two.** Both live at the bottom of
+`src/styles/index.css`, both are measured, and both have a test that fails if the line goes away.
+
+The first is a **colour**. Atmosphere flips every foreground for the dark theme except
+`--muted-foreground`, which stays fuselage-500 in both — a grey that reads well on white and comes
+out at 3.14 : 1 on the dark ground, where WCAG AA asks 4.5 : 1 for text at 12 and 14px. It becomes
+fuselage-400 for the dark theme only, which is the distance the light theme already keeps from its
+own ground.
+
+The second is a **height**, and it is a plain defect rather than a matter of taste: their `Select`
+gives its popup the height of its **trigger**, so the list is one row tall whatever it holds —
+measured at 46px of viewport for rows of 30. Every option is in the document and reachable from a
+keyboard; what a reader sees is a control offering one thing out of four, with no sign there is a
+second. The rule gives the popup the height of its own list, capped by what Radix says is available
+on screen, so a long list still scrolls. `e2e/select.spec.ts` asserts the geometry, which is the only
+thing that would have caught it.
+
+Both have to sit **after** the Atmosphere imports, because that stylesheet is loaded after
+Tailwind's utilities and where a rule goes decides whether it wins — neither needs `!important`, and
+that was verified in a browser rather than assumed. `e2e/contrast.spec.ts` measures every visible
+piece of secondary text on nine screens in the dark theme and fails if the colour goes back; the
+colours are read out of a canvas, because some arrive as `oklab()` and a regular expression over one
+of those returns something close to black.
+
+If you fork this and change the palette, that is the test that tells you whether your greys are
+readable. **Adding a third override is a decision, not a tweak**: the point of keeping the list short
+is that "Atmosphere as it is" stays true enough to be worth saying.
+
 ## Screens are configuration, not markup
 
 A back office screen does not contain a table or a form.
@@ -119,6 +197,15 @@ empty on purpose, because the row's own title is in the cell beside it. `col.fil
 identifier drawn as a **link**, for an attachment whose type the row does not carry: a thumbnail
 handed a PDF draws a broken image, which reads as a failed upload. An empty cell there means the row
 has no file, which is a state and not a gap.
+
+A column can be written in place: `col.number('sort', { editable: true })` draws a field in the cell
+and `col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff'] })` a select — a badge cannot
+know its own set, so it is given one. Only those two and a boolean: a translated text or a file needs
+the form, and a cell that opens half of one is the second way of writing a row that this whole
+mechanism exists to avoid. The control appears only if the screen also handed `DataList` an `onEdit`,
+or a list with no way of saving would draw a field that does nothing. A number saves when the field
+is left, a select when the choice is made, and a refusal puts the old value back and says why in a
+`Notice`.
 
 Two lists that differ only in what they are about are **one screen twice**, not two screens. The
 news, the documents and the pages of a department are the same list with a fixed `kind` and a
@@ -175,7 +262,38 @@ What the schema may say about how a field is drawn:
   the generator again. `seo` is the first, and it is how a translated JSON column becomes fields a
   coordinator can fill in rather than JSON they have to write;
 - a **list** of objects can be reordered with the up and down buttons beside add and remove. They
-  are what a keyboard reaches, and they stay when dragging arrives.
+  are what a keyboard reaches, and they stay when dragging arrives;
+- `.meta({ slugFrom: 'title' })` proposes a field from another one while the other is being typed,
+  and stops for ever the moment somebody writes in it. `slugPrefix: '/'` puts the leading slash of a
+  menu path in front. An address outlives the page it was made for, so a row that already has one
+  never has it moved;
+- `.meta({ suggestions: [{ value: '/about', label: 'About us', group: 'Web' }] })` is a box that
+  offers what exists while somebody types, grouped by whatever the caller says the group is. It is
+  **not** a select: what is typed is the value, and the list is a way of not typing it. Add
+  `suggestionsOnly: true` and it becomes the opposite — what is typed is a way of *searching* the
+  list, and anything the list did not offer is gone when the field is left. What is typed reaches the
+  screen through `onSuggestSearch`, so the list can be a question to the server rather than a page of
+  rows already downloaded.
+
+⚠️ `suggestionsOnly` is the only field kind that **decides** rather than offers, so it comes with two
+obligations. The first: **the server has to refuse the same set.** The closed field is a convenience,
+and a convenience is not a rule (a `PUT` from anywhere else would walk straight past it). The one use
+of it is the address of a menu entry, and the pair to read is
+`MenuItemWriteDtoValidator.LeadsSomewhereThisSiteOwnsAsync` next to `menuItemSchema`.
+
+⚠️ The second: **the list must be able to grow past one request.** A list endpoint answers at most a
+hundred rows, and while a field only suggests that is an inconvenience — whoever does not find their
+row types it. A closed field turns it into a row nobody can point at. So hand `SchemaForm` an
+`onSuggestSearch` — it is called with the field's path and what is being typed, three hundred
+milliseconds after the typing stops — and let the screen ask the server again with `q` (use
+`keepPreviousData`, or the list blinks empty and an empty list here reads as "nothing matches").
+Filtering in memory is right for a short, fixed list and wrong for anything a database grows.
+
+⚠️ And where that set contains **routes of this client**, the two halves agree **by hand**: a route
+is not something the OpenAPI contract can carry. `MenuItemWriteDtoValidator.Screens` and
+`SITE_SCREENS` in `web/src/routes/_staff/staff.$dept.menu.$id.tsx` are one list written twice. A fork
+that adds or removes a screen edits both, and an integration test posting a screen keeps them honest
+— the same arrangement the backgrounds of a section already use.
 
 If the generator does not cover a case, extend the generator. Writing the form by hand is what this
 whole mechanism exists to avoid, and the reviewer's checklist asks about it.
@@ -195,7 +313,22 @@ So a block is three things, in three files under `web/src/blocks/`:
   about the page around it and never takes a language as a prop: `useLocalized()` knows which one is
   on screen;
 - a registration in `core.ts` tying the two together with a type, a version, an icon, the i18n key
-  of its name, and `example` properties the gallery mounts.
+  of its name, the **drawer of the palette it belongs in**, and `example` properties the gallery
+  mounts.
+
+**Where a block appears in the editor is declared on the block, in code.** The bar of components on
+the left of the editor is the registry drawn: `group` — one of `content`, `layout`, `interactive`,
+`structure`, `data` — and optionally `subgroup`, and the drawers come out in the order those two
+lists are written in, not the order the blocks happen to be registered. A module's blocks arrive in
+the same bar through its manifest and declare the same field.
+
+There is no table of palette entries and no screen where anybody arranges them, and that is the
+point: a palette somebody could rearrange would be a second place where the catalogue lives, and the
+two would disagree the first time a block was added. Adding a group or a subgroup means adding it to
+those lists and giving it a name in every language (`blocks.groups.<group>`,
+`blocks.subgroups.<subgroup>`); `blocks/registry.test.ts` refuses a block whose drawer has no name.
+A drawer nothing is in is not drawn, so a fork that registers no data block simply has no Data
+drawer.
 
 Three files rather than one because a module that exports components and constants together loses
 fast refresh, which is a thing you notice every day.
@@ -236,11 +369,25 @@ their own, the distance between them would depend on *which two they are*, and n
 where to change it. `spacer` exists for the declared exception — air between two blocks that belong
 together and two that do not — and not to make up for margins that disagree.
 
-**The background belongs to the section too, and there are four**: `none`, `muted`, `accent`, and
-`image`, which carries a `mediaId` of the library. A block has no ground of its own, with three
-exceptions whose identity *is* their ground — `hero`, `callout`, `testimonial` — and even those use
-the semantic tokens of the theme and never a colour written by hand. Two `muted` sections one after
-the other simply merge, and that is fine: alternating is the editor's choice, not a rule.
+**The background belongs to the section too, and there are seven**: `none`, `muted`, `accent`, the
+three dark grounds `brand`, `deep` and `dark`, and `image`, which carries a `mediaId` of the library.
+A block has no ground of its own, with three exceptions whose identity *is* their ground — `hero`,
+`callout`, `testimonial` — and even those use the semantic tokens of the theme and never a colour
+written by hand. Two `muted` sections one after the other simply merge, and that is fine:
+alternating is the editor's choice, not a rule.
+
+⚠️ **A dark ground is a piece of the page in the dark theme.** `brand`, `deep` and `dark` carry the
+class `dark` as well as their colour, so every token inside them — foreground, secondary text,
+borders — takes its dark-theme value, and whatever a block draws there reads light by construction.
+That is what made them safe to add, and it is why there is still **no free colour**: a colour chosen
+by hand can promise nothing about the text on it. They are Atmosphere's own tokens (`atmos-700`,
+`atmos-800`, `fuselage-900`), measured by `e2e/contrast.spec.ts`; the brand blue needed a lighter
+secondary grey to reach AA, which `.on-brand-ground` gives it.
+
+While a page is being composed, every column of a section is drawn with a dashed outline and an
+empty one says where a component would go; choosing it sends the next component of the palette
+there. None of it exists for a visitor — it is the picking context of `blocks/picking.ts`, which the
+public site never mounts.
 
 A picture behind a section is for a quiet section. The text over it keeps the page's own foreground
 colour — there is no veil, because a veil is a colour that is not a token — so a wall of prose over a
@@ -257,6 +404,19 @@ line at the top saying which template fixes it and who may change that (`Content
 A disabled button with no explanation produces support tickets; a sentence saying "this section is
 fixed by the *Policy* template" does not.
 
+**The renderer has an editing mode, and it does not exist for a visitor.** Since 9 September 2026 a
+page is composed **on the page**: in the editor's preview you click a block and its fields open
+beside it. The same component draws both, so the interactivity is a context (`blocks/picking.ts`)
+that is `null` everywhere and that the public path never provides — not a flag that is switched off,
+a thing that is not there. A block you write needs to do nothing about it; what you must not do is
+make the renderer read a global, an environment variable or a route to decide, because then a
+visitor's page and the editor's stop being the same page.
+
+⚠️ A block is wrapped, not replaced: the click is caught in the **capture** phase and stopped there,
+so a link or a button inside a block selects the block instead of firing. That is why a call to
+action in the preview does not carry the editor away with unsaved changes — and why a section is
+picked by its own space rather than by its children.
+
 **An unknown block is shown to the staff only.** If the server declares a type this browser has no
 component for, or the other way round, a coordinator gets a dashed box naming the `type`, and a
 visitor gets nothing at all. A page does not break because a browser is one release behind.
@@ -264,11 +424,27 @@ visitor gets nothing at all. A page does not break because a browser is one rele
 **Every block declares its own `lucide` icon**, and the type insists on it: it is what the editor
 shows in the "add a block" list and in the tree.
 
-**Nothing that is not prose is a free string.** Every string inside a block's properties is
-concatenated into the text of the page for the search index, so an alignment, a column count or an
-icon name is a `z.enum` with values nobody would search for, or a number with `choices`. A column
-count is a number; the shape of a video is `16x9` and not `16:9`, because a colon is what i18next
-reads as a namespace separator.
+**The prose of a block is what is translated, and only that reaches the search index.** The
+extractor walks the properties and keeps a string only if the walk passed through a `Localized` map
+on its way to it; an alignment, a column count, an icon name, a URL — bare strings, all of them — are
+left out. It needs to know nothing about any block's schema, which is the constraint the backend is
+held to, and it is why "nothing that is not prose is a free string" is now a property of the
+mechanism rather than a rule somebody has to remember. It used to be only the rule, and the rule was
+broken by a block in the first set: a snippet read "… four simple steps. `left muted` First of
+all…".
+
+⚠️ The corollary, and it bites: **a searchable string that is not translated is not indexed.** A
+partner's name in `logoWall` and the author of a `testimonial` are written once because they read the
+same in every language, and they are the two that pay for it. If a block of yours carries prose that
+does not vary by language and has to be findable, make it `localized()` anyway.
+
+An alignment or a tone is still a `z.enum` and a column count still a number — not because the index
+would otherwise eat them, but because a select is the right control for a closed set. The shape of a
+video is `16x9` and not `16:9`, because a colon is what i18next reads as a namespace separator.
+
+**And prose loses its Markdown on the way in.** A snippet is read by a person, so the asterisks come
+off, a link keeps its text and loses its address, and a heading or a bullet loses its marker.
+Underscores stay: `snake_case` is a word.
 
 **A block never contains blocks.** `tabs` and `accordion` carry markdown per entry — the same
 sanitized `MarkdownContent` as `text` — and the only nesting in the model is the one sections have
@@ -317,10 +493,133 @@ way round would close a circle between the two.
 Growing the list is adding a line. It is not a decision, because what it draws from — `lucide` — was
 decided once and is not up for discussion.
 
+The five marks in `brands.tsx` are the exception the paragraph above promised, and the only one so
+far: `lucide` carried brand icons until version 1 and then dropped every one of them, so Discord, X,
+Facebook, Instagram and YouTube are drawn here, on lucide's grid, in `currentColor`. They are
+simplified marks and not the brands' own artwork — a division that wants the logotypes puts them in
+the media library.
+
+⚠️ **Draw an icon through `iconGlyph(name, classes)`, never by calling `iconByName` in a render.** A
+component read out of a map while something renders is one React treats as new on every pass: it
+remounts what it draws, and `react-hooks/static-components` refuses it outright. `iconGlyph` hands
+back an element, built once per set of classes and kept.
+
+## The top of a back office screen is one line
+
+`PageShell` has two densities, and a screen does not choose: the back office's layout wraps every
+screen in `CompactPageShells`, the public site does not.
+
+- **In the back office**, the trail and the title are one line — the title *is* the end of the
+  trail, so it is written once — with the screen's actions on the same line to the right, sticky
+  while the page scrolls. Before 11 September 2026 the same screen spent about 190 pixels on a
+  margin, a trail, a very large title and a sentence before its content began.
+- `description` is **not drawn** there: it is the same sentence the sidebar already shows under the
+  entry that leads to the screen. It stays as the title's tooltip, and the public site still draws
+  it under the title.
+- `note` is for what is true of **this** page and must stay visible — how many pages were made from
+  a template, the rule a form is filled against. It is drawn in both densities. Choosing between the
+  two is the one thing this component asks of a caller: a caption the sidebar repeats is a
+  `description`, a fact about the row is a `note`.
+- A control built deep inside a screen — the content editor's toolbar, which lives on the editor's
+  own state — goes up beside the title through `PageActions`, a portal into the frame's slot, rather
+  than by turning the screen inside out to pass it up as `actions`.
+
+## Typefaces
+
+IVAO's two typefaces are **Poppins** and **Nunito Sans**, and Atmosphere asks for both
+(`--ivao-font-head`, `--ivao-font-sans`) without shipping either. The hub loads them itself, from
+`@fontsource`, in `web/src/main.tsx`: self-hosted, so a visitor's browser asks no third party for
+anything, and only the weights the hub draws with. Refer to them through Atmosphere's `font-head`
+and `font-sans` utilities, never by name. Before 11 September 2026 they were missing, and every
+screen fell back to whatever sans-serif the reader's machine had — the kind of fault nobody notices
+on the one machine that happens to have the fonts installed.
+
+The bar and the footer follow the pairing of IVAO's own division sites: Poppins for what they say,
+Nunito Sans at its heaviest for the division's name and the column headings.
+
+⚠️ **Nothing that sits on the blue bar may force a colour on the menu's drop downs.** The bar forces
+its links white, and a drop down's panel is light: the white has to stop at the panel, which is told
+apart by the `aria-labelledby` Radix puts on it. `e2e/smoke.spec.ts` measures the contrast of a
+drop-down entry, because "visible" to a test runner only means that an element has a box.
+
+## The frame of every page: one bar, and a footer in columns
+
+**The mark of the division comes from configuration, never from this repository.**
+`config/division.json` says where it is served from (`logoUrl`) and the frame draws whatever that
+points at, in two places: the start of the bar — in place of IVAO’s own lockup, since a division’s
+mark *is* the IVAO circle with the division’s badge on it — and beside the name in the footer. Once
+per line: a second copy at the end of the bar was the same circle twice, and was taken away. The tab
+icon is a separate key (`faviconUrl`) and a separate file, because a mark drawn white for the blue
+bar vanishes on a light tab bar. A division that has
+no mark leaves the key out and gets a bar and a footer with one thing fewer on them — which is the
+state the tests are written against, because it is the state a fork starts in.
+
+It carries **no alternative text**. The name of the division is written beside it in both places, so
+a filled-in `alt` would say the same thing twice to whoever cannot see the picture; `alt=""` is what
+says decorative instead.
+
+**The bar at the top is one row.** The menu, the search, the language, the theme, the account and
+the way into the back office all ride in `Navbar`'s own children slot, which Atmosphere draws at the
+far end of the line that carries the logo and the division's name. Two rows was a second band of
+chrome above every page for no gain. Anything put there needs forcing white — it sits on a dark
+blue — and the primary button variant is that same blue, so a call to action there is `secondary`
+or it is invisible.
+
+Three zones, and the middle one grows: the brand on the left, the **menu centred**, the tools on
+the right. That is why the bar is composed from `NavbarContainer` and `IVAOLogo` rather than from
+`Navbar` — `Navbar` puts its children in a box of their own at the far end of the line, and a box
+that cannot grow cannot hold anything in the middle.
+
+And everything in the right hand zone is **one word wide or less**. The language switcher shows the
+code (`EN`, `IT`) and carries the full name as its accessible label: spelled out it took more room
+than the search, the theme and the account together, on every page of the site, to say something the
+reader already knows.
+
+**The footer is the footer menu, drawn in columns.** A top level entry of `Scope = Footer` is a
+column and its children are its links; nothing in the component decides what is in them. Three
+shapes, and all three are states of the menu table:
+
+- an entry with **no address** is a column heading — "Quick links", "Resources" — and it is the one
+  entry in the whole hub allowed to lead nowhere. Only at the top of the footer: a child with no
+  address is a line nobody can click, and a heading in the bar at the top is an entry that does
+  nothing when pressed;
+- a column whose links **all carry an icon** is the row of the division's accounts, and it is drawn
+  beside the division's own words rather than as one more column of text. This is the one inference
+  in the footer, and it is here rather than in a second field on every menu entry because only one
+  column in a whole site ever asks the question;
+- an entry with **no children** keeps the shape footers had before columns: a plain link in a row of
+  its own. A division that upgrades does not lose what it already wrote.
+
+The sentence under the division's name and the legal links are words, not rows: they live in
+`locales/`, so a fork changes them where it changes every other sentence.
+
+The columns are **centred**, not pinned to the left edge: a division may write one or four, and a
+row that centres what it has looks deliberate at either count where a four column grid holding two
+leaves empty tracks.
+
+**The line under the rule carries two sentences and no links**: who the site belongs to with the
+release it is running, and what it is part of. It is where the eye stops, so everything else put
+there competes with the only two facts that belong there — the legal links of headquarters are a
+column above. The year in it comes from the browser: a year written into a language file is wrong
+every January, in every language at once.
+
 ## The editor of a page, and what it may not do
 
-Four rules M1 settled by using the editor rather than by designing it. They are here because they
+Five rules M1 settled by using the editor rather than by designing it. They are here because they
 are the ones a contributor is most likely to break by improving something.
+
+**Three columns, and the middle one is the only one that changes.** Components on the left, the page
+in the middle, the properties of whatever is selected on the right. The middle column opens on the
+page itself — the same renderer the public gets, clicked to select — and one press swaps it for the
+outline, which is the road for anybody without a mouse. The two side columns do not move when it
+does: an editor whose panels jump when you change how you are looking at the page is one you have to
+re-find your place in every time.
+
+**There is one place a block is added from.** The palette is the bar on the left, and adding a block
+puts it in the section that is selected — the section itself, or the one holding the selected block.
+A block the template forbids there is **disabled and still shown**, with the reason on it, rather
+than filtered out: the target changes as you click around the page, and a list that changed shape
+each time would be one nobody could learn.
 
 **A section is reordered by dragging *and* by two arrows, and the arrows are not decoration.**
 Dragging is a pointer and nothing else — no keyboard, no screen reader, no touch worth the name — so
@@ -345,6 +644,17 @@ agent or touch emulation: the value of one renderer is that "what will this look
 disagree with "what this looks like".
 
 ## Times
+
+**Aviation, not the locale's habit.** Twenty four hours everywhere, `Z` for zulu and `LT` for the
+reader's own zone — `14:00Z (16:00 LT)`. A briefing at 14:00 is written 14:00, and "2:00 PM" is a
+form nobody on the network uses. It is one line in `useMoment`, which is the only place in the client
+that formats an instant, and that is why it is one line.
+
+**The date goes only where nothing else has said the day.** A square of a calendar grid and the
+heading of a day list have already said it; repeating it is noise on the line a reader actually
+reads. The agenda keeps it, because it is a flat list running forward and has neither. An entry that
+is a whole day keeps its date wherever it is drawn — and takes **no** `Z`, because a day is not an
+instant.
 
 Always in UTC, with the time zone of the division next to it — a hub is read by people flying in one
 and organising in the other. `DataList` does that for a `col.date`; anywhere else, use

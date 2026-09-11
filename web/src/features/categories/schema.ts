@@ -14,7 +14,9 @@ export const categorySchema = z.object({
   kind: z.enum(['News', 'Document']),
   // The stable name a content row stores. It is not the name anybody reads — that is the label —
   // and changing it leaves the rows already filed under the old one where they are.
-  key: z.string(),
+  // Proposed from the label, and correctable: a key ends up in the address of a filtered list, so
+  // it is the same idea as the slug of a page (asked for while running the demo of M1, part 1).
+  key: z.string().meta({ slugFrom: 'label' }),
   label: localized(),
   sort: z.number().int(),
   isActive: z.boolean(),

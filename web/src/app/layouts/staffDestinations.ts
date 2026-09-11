@@ -6,6 +6,7 @@ import {
   Images,
   KeyRound,
   LayoutDashboard,
+  LayoutTemplate,
   Link2,
   Mail,
   Menu as MenuIcon,
@@ -19,11 +20,13 @@ import type { ComponentType } from 'react';
 
 import {
   type Bootstrap,
+  holdsPermission,
   holdsPermissionAnywhere,
   menuDepartment,
   reachableDepartments,
 } from '../../shared/api/bootstrap';
 import { deptParam } from '../../shared/api/department';
+import { DEPARTMENT_MARKS } from '../../shared/icons/departmentMark';
 
 /**
  * Everywhere a member of staff may go, grouped the way the back office is: one group per department
@@ -51,6 +54,12 @@ export interface StaffDestination {
 /** A heading and what is under it. */
 export interface StaffDestinationGroup {
   readonly title: string;
+  /**
+   * The short code the heading used to be, kept because people type it: somebody looking for the
+   * documents of Events writes "ED doc" into the palette, not the word. Absent for the groups that
+   * are not a department.
+   */
+  readonly code?: string;
   readonly Icon: ComponentType<{ className?: string }>;
   readonly items: readonly StaffDestination[];
 }
@@ -59,6 +68,10 @@ export interface StaffDestinationGroup {
 const ADMIN_ACCESS = 'Admin.Access';
 const PERMISSIONS_MANAGE = 'Permissions.Manage';
 const MODULES_MANAGE = 'Modules.Manage';
+/** Global, like the three above it: the calendar vocabulary belongs to the division. */
+const CALENDAR_MANAGE_KINDS = 'Calendar.ManageKinds';
+/** Departmental, unlike the four above: templates belong to the department that wrote them. */
+const CONTENT_MANAGE_TEMPLATES = 'Content.ManageTemplates';
 const AUDIT_VIEW = 'Audit.View';
 
 export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => string): StaffDestinationGroup[] {
@@ -68,8 +81,14 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
     const at = (resource: string) => `/staff/${deptParam.format(department)}${resource}`;
 
     return {
-      title: department,
-      Icon: ShieldCheck,
+      // ⚠️ The name and not the code since 11 September 2026 (Carmine: "ED becomes Events, AOD ATC
+      // Operations"). The code is still on screen, in the square beside it, so nothing is lost and a
+      // newcomer no longer has to know nine acronyms to find their way.
+      title: t(`departments.${department}`),
+      code: department,
+      // The code is the mark: no icon for a department (decided 7 Sep 2026, after the demo). All
+      // nine used to carry the same shield, which told nobody anything.
+      Icon: DEPARTMENT_MARKS[department],
       items: [
         // The home of the department, and the first entry because it is where `/staff` lands.
         {
@@ -109,6 +128,21 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
           Icon: Mail,
           href: at('/contacts'),
         },
+        // Templates are of this department and only whoever may change them is offered them: every
+        // staff member *reads* them — that is what makes "new from a template" work across
+        // departments — but the screen that changes them is behind the permission, so putting the
+        // entry in front of somebody who would be turned away would be a menu teaching people to
+        // ignore the menu.
+        ...(holdsPermission(bootstrap, CONTENT_MANAGE_TEMPLATES, department)
+          ? [
+              {
+                title: t('templates.title'),
+                description: t('templates.description'),
+                Icon: LayoutTemplate,
+                href: at('/templates'),
+              },
+            ]
+          : []),
         { title: t('links.title'), description: t('links.description'), Icon: Link2, href: at('/links') },
         { title: t('media.title'), description: t('media.description'), Icon: Images, href: at('/media') },
         // The menu of the site belongs to one department, so the entry exists under that one and
@@ -151,6 +185,15 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
         description: t('grants.description'),
         Icon: KeyRound,
         href: '/staff/admin/permissions',
+      });
+    }
+
+    if (holdsPermissionAnywhere(bootstrap, CALENDAR_MANAGE_KINDS)) {
+      administration.push({
+        title: t('calendarKinds.title'),
+        description: t('calendarKinds.description'),
+        Icon: Tags,
+        href: '/staff/admin/calendar-kinds',
       });
     }
 

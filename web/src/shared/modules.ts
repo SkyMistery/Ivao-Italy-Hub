@@ -18,6 +18,29 @@ import type { z } from 'zod';
 /** What a block is made of, spelled the way the server declares it in `/api/me`. */
 export type BlockKind = 'Content' | 'Data';
 
+/**
+ * Where a block sits in the palette of the editor. The five are the families design M1 §1.2 already
+ * named — G3 is titled after four of them and G4 brought the fifth — so this declares a grouping
+ * that existed on paper, it does not invent one.
+ *
+ * ⚠️ A block's group is **code**, declared on its own registration next to its icon and its schema,
+ * and a module's blocks declare theirs the same way. There is no screen where somebody arranges the
+ * palette, and no table behind it: a palette an editor can rearrange is a second place where the
+ * catalogue lives, and the two would drift.
+ */
+export const BLOCK_GROUPS = ['content', 'layout', 'interactive', 'structure', 'data'] as const;
+
+export type BlockGroup = (typeof BLOCK_GROUPS)[number];
+
+/**
+ * The optional second level, for the groups big enough to need one. Closed, like the groups, for
+ * one reason: every entry needs a label in every language, and `pnpm i18n:check` can only prove
+ * that for a list it can enumerate.
+ */
+export const BLOCK_SUBGROUPS = ['text', 'media', 'tables', 'grids', 'containers'] as const;
+
+export type BlockSubgroup = (typeof BLOCK_SUBGROUPS)[number];
+
 /** What every block component is handed. */
 export interface BlockComponentProps {
   /** The properties an editor wrote. Already checked against the block's own schema. */
@@ -55,6 +78,11 @@ export interface BlockRegistration {
   readonly exampleData?: unknown;
   /** i18n key for the name the editor puts on it, for instance `blocks.text.label`. */
   readonly editorLabelKey: string;
+  /** Which drawer of the palette it appears in. Required: a block with nowhere to be added is a
+   * block nobody can use, and `registry.test.ts` refuses one. */
+  readonly group: BlockGroup;
+  /** The drawer inside the drawer, where the group has them. */
+  readonly subgroup?: BlockSubgroup;
   /** From `lucide-react`, like every other icon of the hub (docs/UI-GUIDELINES.md). */
   readonly icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 }

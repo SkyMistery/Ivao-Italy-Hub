@@ -199,6 +199,76 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task MakingATemplateIsTheSamePermissionAsChangingOne()
+    {
+        // ⚠️ The half that had no caller until 9 September 2026, and therefore no test: until the
+        // templates screen existed, a template could only be *seeded*, so nothing ever posted one.
+        // The screen is behind the permission — but the screen is a door, and this is the lock.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebAdvisorVid, position: "IT-WMA1", cancellationToken: token);
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
+
+        using var advisor = _factory.CreateApiClient();
+        await _factory.SignInAsync(advisor, WebAdvisorVid, token);
+
+        // An advisor of the web team holds `Content.Edit` on WD and may write an ordinary page
+        // there — asserted next door. The very same payload with `isTemplate` turned on is refused,
+        // which is the extra write policy reading the entity **after** the payload was applied to
+        // it: what is being asked is "would this row be a template?", not "was it one?".
+        using var refused = await SendAsync(
+            advisor,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.WD, $"advisor-template-{Guid.NewGuid():N}"[..30], isTemplate: true),
+            token);
+
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+
+        using var superadmin = _factory.CreateApiClient();
+        await _factory.SignInAsync(superadmin, SuperadminVid, token);
+
+        var slug = $"made-template-{Guid.NewGuid():N}"[..28];
+        using var created = await SendAsync(
+            superadmin,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.WD, slug, isTemplate: true),
+            token);
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var template = await created.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.True(template.GetProperty("isTemplate").GetBoolean());
+
+        // And it is a template in the sense that matters: the picker finds it, the ordinary list
+        // does not, and a page can be made from it. Nothing here seeded it.
+        var templates = await superadmin.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}?filter[isTemplate]=true&filter[ownerDepartment]=WD&pageSize=100",
+            token);
+
+        Assert.Contains(
+            templates.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("slug").GetString() == slug);
+
+        var page = await FromTemplateAsync(
+            superadmin,
+            template.GetProperty("id").GetInt64(),
+            Department.WD,
+            $"from-made-{Guid.NewGuid():N}"[..24],
+            token);
+
+        Assert.False(page.GetProperty("isTemplate").GetBoolean());
+
+        // ⚠️ And the count the templates screen shows is this, and no endpoint of its own: the same
+        // list, filtered by the template, read for its total.
+        var madeFromIt = await superadmin.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}?filter[templateId]={template.GetProperty("id").GetInt64()}&pageSize=1",
+            token);
+
+        Assert.Equal(1, madeFromIt.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
     public async Task EnvelopeValidationRejectsUnknownBlockAndDepth()
     {
         var token = TestContext.Current.CancellationToken;
@@ -273,10 +343,15 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             errors.GetProperty("body.sections[0].background")[0].GetString());
 
         // And the fourth one, which is the one G3 added, goes through with the picture it carries.
+        //
+        // ⚠️ The identifier is one no upload will ever reach, and that is deliberate: every test of
+        // this assembly writes into the same database, so a small number here is a number a file
+        // uploaded by another test class eventually gets — and then "this media is used nowhere"
+        // over there finds this page. It cost one red run to learn.
         var withPicture = JsonNode.Parse("""
         {
           "schemaVersion": 1,
-          "sections": [ { "id": "s1", "background": "image", "mediaId": 7, "blocks": [] } ]
+          "sections": [ { "id": "s1", "background": "image", "mediaId": 999999997, "blocks": [] } ]
         }
         """);
 
@@ -288,6 +363,28 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             token);
 
         Assert.Equal(HttpStatusCode.Created, accepted.StatusCode);
+
+        // And the three dark grounds of 11 September 2026. Asked one by one, because the day the
+        // client grows a fourth and this list does not, it is the new one that must fail here and
+        // not a page an editor saved.
+        foreach (var ground in new[] { "brand", "deep", "dark" })
+        {
+            var onGround = JsonNode.Parse($$"""
+            {
+              "schemaVersion": 1,
+              "sections": [ { "id": "s1", "background": "{{ground}}", "blocks": [] } ]
+            }
+            """);
+
+            using var saved = await SendAsync(
+                client,
+                HttpMethod.Post,
+                ContentEndpoints.Pattern,
+                Payload(Department.ED, $"bg-{Guid.NewGuid():N}"[..20], body: onGround),
+                token);
+
+            Assert.True(saved.StatusCode == HttpStatusCode.Created, $"{ground} was refused: {saved.StatusCode}");
+        }
     }
 
     [Fact]
@@ -332,6 +429,81 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             "errors.localized.missing",
             errors.GetProperty("body.sections[0].blocks[0].props.text")[0].GetString());
         Assert.Equal(["en"], Strings(missing.GetProperty("body.sections[0].blocks[0].props.text")));
+    }
+
+    [Fact]
+    public async Task PublishProblemsSayTheSameThingBeforeAnybodyPresses()
+    {
+        // Asked for by Carmine after the demo: "what is missing to publish", visible *before*
+        // trying. The point of the test is that it is the **same** answer and not a second opinion
+        // — a client working the rules out for itself would be the rules written twice, and this
+        // endpoint exists precisely so that they are not.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, EventsCoordinatorVid, token);
+
+        var slug = $"missing-{Guid.NewGuid():N}"[..20];
+        using var created = await SendAsync(
+            client,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Payload(Department.ED, slug, body: Body(italianOnly: true), english: null),
+            token);
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var row = await created.Content.ReadFromJsonAsync<JsonElement>(token);
+        var id = row.GetProperty("id").GetInt64();
+        var rowVersion = row.GetProperty("rowVersion").GetString();
+
+        // Nothing has been published and nothing has been refused: this is just the question.
+        var problems = await client.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}/{id}/publish-problems",
+            token);
+
+        var errors = problems.GetProperty("errors");
+        Assert.Equal("errors.localized.missing", errors.GetProperty("title")[0].GetString());
+        Assert.Equal(
+            "errors.localized.missing",
+            errors.GetProperty("body.sections[0].blocks[0].props.text")[0].GetString());
+
+        // And which language, which is the half that lets the editor say "English is missing".
+        Assert.Equal(["en"], Strings(problems.GetProperty("localized").GetProperty("title")));
+
+        // The refusal says exactly the same, which is the property this endpoint is for.
+        using var refused = await SendAsync(
+            client,
+            HttpMethod.Post,
+            $"{ContentEndpoints.Pattern}/{id}/publish",
+            new { changelog = (string?)null },
+            token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        var refusal = await refused.Content.ReadFromJsonAsync<JsonElement>(token);
+        Assert.Equal(
+            errors.GetProperty("title")[0].GetString(),
+            refusal.GetProperty("errors").GetProperty("title")[0].GetString());
+
+        // Write the missing language and the list empties itself: two empty maps and a 200, which
+        // is how the editor knows the button will work rather than guessing.
+        using var completed = await SendAsync(
+            client,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{id}",
+            Payload(Department.ED, slug, body: Body(), rowVersion: rowVersion),
+            token);
+
+        Assert.Equal(HttpStatusCode.OK, completed.StatusCode);
+
+        var nothingLeft = await client.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}/{id}/publish-problems",
+            token);
+
+        Assert.Empty(nothingLeft.GetProperty("errors").EnumerateObject());
+        Assert.Empty(nothingLeft.GetProperty("localized").EnumerateObject());
+
+        await PublishAsync(client, id, token);
     }
 
     [Fact]

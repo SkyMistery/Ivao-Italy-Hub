@@ -3,7 +3,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 
-import { menuDetailKey, menuKey, type MenuItemDetailDto, type MenuItemWriteDto } from './queries';
+import {
+  menuDetailKey,
+  menuItemQuery,
+  menuKey,
+  type MenuItemDetailDto,
+  type MenuItemWriteDto,
+} from './queries';
 import type { MenuItemFormValues } from './schema';
 
 /**
@@ -20,7 +26,12 @@ export function toWriteDto(values: MenuItemFormValues): MenuItemWriteDto {
     // Sent as it stands, so the server can name the language that is missing rather than being
     // handed a field that quietly became null.
     label: values.label,
-    path: values.path.trim(),
+    // Trimmed, and empty stays empty: for a top level entry of the footer that is the heading of a
+    // column, which is a thing the server knows how to accept.
+    path: (values.path ?? '').trim(),
+    // Empty means "no mark", and the column is nullable: the one line where the two meet, the same
+    // as the parent above.
+    icon: values.icon ? values.icon : null,
     sort: values.sort,
     visibility: values.visibility,
     isActive: values.isActive,
@@ -35,6 +46,7 @@ export function emptyMenuItem(locales: readonly string[]): MenuItemFormValues {
     parentId: '',
     label: Object.fromEntries(locales.map((locale) => [locale, ''])),
     path: '',
+    icon: '',
     sort: 0,
     visibility: 'Public',
     isActive: true,
@@ -49,6 +61,7 @@ export function toFormValues(item: MenuItemDetailDto, locales: readonly string[]
     parentId: item.parentId === null ? '' : String(item.parentId),
     label: Object.fromEntries(locales.map((locale) => [locale, item.label?.[locale] ?? ''])),
     path: item.path,
+    icon: item.icon ?? '',
     sort: item.sort,
     visibility: item.visibility,
     isActive: item.isActive,
@@ -96,8 +109,48 @@ export function useDeleteMenuItem() {
   return useMutation({
     mutationFn: async (id: number): Promise<void> =>
       unwrapEmpty(await api.DELETE('/api/menu/{id}', { params: { path: { id: String(id) } } })),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: menuKey });
+    // ⚠️ Deliberately not awaited, and deliberately not `async`. What has just been deleted is the
+    // row a screen is **looking at**, so invalidating waits for that screen's own query to refetch
+    // — a row that no longer exists. The refetch 404s and retries, `onSuccess` never settles, and
+    // the callbacks a caller passed to `mutate` never run: the screen deletes the row and then sits
+    // there saying nothing. Found in G12, and caused by making the screens read the query rather
+    // than the loader (`decisions/2026-09-07-il-loader-non-e-la-riga.md`), which is what gave that
+    // query an observer in the first place.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: menuKey });
     },
   });
+}
+
+/**
+ * Changing one field of one entry from the list, without opening it.
+ *
+ * ⚠️ It reads the row and writes it back, which is the decision of
+ * `decisions/2026-09-08-modificare-da-una-lista.md`: the list is handed a projection and the engine
+ * writes with the whole payload, so a cell has to fetch the row it is editing before it can save
+ * one field of it. Two round trips, no new verb on the API — and `rowVersion` still answers 409 to
+ * somebody who saved in between, exactly as it does from the form.
+ *
+ * It lives here and not in `DataList` because only this feature knows what a menu entry is: the
+ * list engine draws a control and hands back a field and a value.
+ */
+export function useInlineEditMenuItem(locales: readonly string[]) {
+  const queryClient = useQueryClient();
+
+  return async (id: number, field: string, value: unknown): Promise<void> => {
+    const current = await queryClient.fetchQuery(menuItemQuery(id));
+    const values = { ...toFormValues(current, locales), [field]: value };
+
+    const saved = unwrap(
+      await api.PUT('/api/menu/{id}', {
+        params: { path: { id: String(id) } },
+        body: toWriteDto(values),
+      }),
+    );
+
+    queryClient.setQueryData(menuDetailKey(id), saved);
+    // Not awaited: the row on screen is already right, and waiting for every list under that key to
+    // refetch is what made a delete say nothing at all (`2026-09-07-dopo-la-demo.md`, defect D2).
+    void queryClient.invalidateQueries({ queryKey: menuKey });
+  };
 }

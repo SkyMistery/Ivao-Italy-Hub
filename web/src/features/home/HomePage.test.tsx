@@ -39,12 +39,15 @@ const bootstrap = {
     locales: ['en'],
     defaultLocale: 'en',
     timezone: 'UTC',
+    logoUrl: null,
+    faviconUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
   },
   modules: [],
   navigation: { public: [], footer: [], staff: [] },
   registries: { blocks: [], widgets: [], permissions: [] },
+  calendarKinds: [],
   version: '0.0.0-test',
 };
 

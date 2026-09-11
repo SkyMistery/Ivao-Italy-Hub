@@ -1,17 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { holdsPermission, type Bootstrap, type Department } from '../../shared/api/bootstrap';
 import type { ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { PageShell } from '../../shared/ui';
+import { PageShell, useNotice } from '../../shared/ui';
 import { categoriesOfKindQuery } from '../categories/queries';
 import { mediaPickerQuery } from '../media/queries';
 
 import { ContentEditor } from './ContentEditor';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
-import type { ContentDetailDto } from './queries';
+import { publishProblemsKey, publishProblemsQuery, type ContentDetailDto } from './queries';
 import type { ContentFormValues } from './schema';
 import { MANAGE_TEMPLATES } from './templateRules';
 
@@ -35,6 +35,8 @@ export function ContentFormScreen({
   id,
   content,
   breadcrumbTo,
+  note,
+  startsAsTemplate = false,
   onCreated,
   onFinished,
 }: {
@@ -46,14 +48,29 @@ export function ContentFormScreen({
   content: ContentDetailDto | null;
   /** Where the breadcrumb goes back to; the route knows the address, this screen does not. */
   breadcrumbTo: string;
+  /**
+   * One line under the title, when the screen has something to say about this row. The templates
+   * screen uses it to say how many rows were made from this one, which is the sentence that stops a
+   * careless edit — a template with eleven pages behind it is not one to reorganise casually.
+   */
+  note?: string;
+  /** Passed through: a row created here is a template. See `ContentEditor.startsAsTemplate`. */
+  startsAsTemplate?: boolean;
   onCreated: (id: number) => Promise<void>;
   onFinished: () => void;
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
 
+  // What tells the editor that the click did something. Asked for by Carmine after the demo: a
+  // save that worked said nothing, and neither did an action that went nowhere — which is how a
+  // section was lost while copying a page across by hand.
+  const notice = useNotice();
+
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
+
+  const queryClient = useQueryClient();
 
   const create = useCreateContent();
   const update = useUpdateContent(Number(id));
@@ -67,6 +84,18 @@ export function ContentFormScreen({
     enabled: config.kind !== 'Page',
   });
 
+  // What still stands between this row and the public, answered by the server running the very same
+  // checks publication runs. There is nothing to ask about a row that does not exist yet.
+  const problems = useQuery({ ...publishProblemsQuery(Number(id)), enabled: !isNew });
+
+  // Asked again after anything that could have changed the answer. Not awaited: the screen has
+  // already been told what happened, and a list that arrives a moment later is a list arriving.
+  const askAgain = () => {
+    if (!isNew) {
+      void queryClient.invalidateQueries({ queryKey: publishProblemsKey(Number(id)) });
+    }
+  };
+
   const categories: ChoiceOption[] = (vocabulary.data?.items ?? []).map((category) => ({
     value: category.key,
     // Resolved here, in the language on screen: the generator draws the label it is handed and
@@ -79,6 +108,7 @@ export function ContentFormScreen({
   return (
     <PageShell
       title={title}
+      {...(note === undefined ? {} : { note })}
       breadcrumb={[
         { label: department },
         { label: t(`${config.titles}.title`), to: breadcrumbTo },
@@ -88,6 +118,7 @@ export function ContentFormScreen({
       <ContentEditor
         content={content}
         kind={config.kind}
+        startsAsTemplate={startsAsTemplate}
         categories={categories}
         department={department}
         locales={locales}
@@ -101,18 +132,51 @@ export function ContentFormScreen({
         // be made from the template of another (design M1 §9.4).
         canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}
         busy={create.isPending || update.isPending || publish.isPending || remove.isPending}
-        publishError={publish.error}
+        publishProblems={problems.data}
         onSave={async (values: ContentFormValues, body) => {
           if (isNew) {
             const created = await create.mutateAsync({ values, body });
             await onCreated(created.id);
+            notice({ tone: 'success', title: t('content.editor.saved') });
             return created;
           }
 
-          return update.mutateAsync({ values, body });
+          const saved = await update.mutateAsync({ values, body });
+          notice({ tone: 'success', title: t('content.editor.saved') });
+          askAgain();
+          return saved;
         }}
-        onPublish={isNew ? null : () => publish.mutate(null)}
-        onDelete={isNew ? null : () => remove.mutate(Number(id), { onSuccess: onFinished })}
+        onPublish={
+          isNew
+            ? null
+            : () =>
+                publish.mutate(null, {
+                  onSuccess: () => {
+                    notice({ tone: 'success', title: t('content.editor.published') });
+                    askAgain();
+                  },
+                  // The reason stays in `PublishProblems`, which names the block and the language.
+                  // This only says that the click was answered, and answered no: the list of
+                  // reasons is above the form and may well be off the screen.
+                  onError: () => {
+                    notice({ tone: 'error', title: t('content.editor.publishRefused') });
+                    // The reason is the list above the form, and it is the same list: ask for it
+                    // again rather than reading the refusal, so there is one answer and not two.
+                    askAgain();
+                  },
+                })
+        }
+        onDelete={
+          isNew
+            ? null
+            : () =>
+                remove.mutate(Number(id), {
+                  onSuccess: () => {
+                    notice({ tone: 'success', title: t('content.editor.deleted') });
+                    onFinished();
+                  },
+                })
+        }
       />
     </PageShell>
   );

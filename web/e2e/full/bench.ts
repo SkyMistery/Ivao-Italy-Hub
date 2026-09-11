@@ -76,14 +76,31 @@ export async function writeInBothLanguages(
 }
 
 /**
- * Adds a block of that kind to the first section that accepts one.
+ * Adds a block of that kind to whatever is selected, from the bar of components on the left.
  *
- * Scoped to the palette on purpose: the same words label the blocks already in the page over in
- * the outline, so "click the button that says Heading" is three buttons and not one.
+ * ⚠️ Scoped to the drawer the block lives in, and it has to be: the same word labels the block
+ * already in the page over in the outline, so "click the button that says Heading" is two buttons
+ * and not one. The drawer is named by the subgroup its blocks declare in code.
  */
-export async function addBlock(page: Page, paletteLabel: string, block: string): Promise<void> {
-  const palette = page.getByText(paletteLabel, { exact: true }).first().locator('..');
-  await palette.getByRole('button', { name: block, exact: true }).click();
+export async function addBlock(page: Page, drawer: string, block: string): Promise<void> {
+  await page.getByLabel(drawer).getByRole('button', { name: block, exact: true }).click();
+}
+
+/**
+ * Swaps the middle column for the outline, which is where a section is chosen without a mouse.
+ *
+ * The editor opens on the page itself since 10 September 2026, so a suite that wants the outline
+ * asks for it.
+ */
+export async function openOutline(page: Page, label: string): Promise<void> {
+  await page.getByRole('button', { name: label, exact: true }).click();
+}
+
+/**
+ * Picks a section in the outline, which is what tells the palette where a component would land.
+ */
+export async function selectSection(page: Page, name: string): Promise<void> {
+  await page.getByRole('button', { name, exact: true }).first().click();
 }
 
 /**
@@ -123,9 +140,21 @@ export async function selectBlock(page: Page, label: string): Promise<void> {
     .click();
 }
 
-/** The metadata of the page, which is the first form on the editor screen. */
+/**
+ * The metadata of the page, which is the first form on the editor screen.
+ *
+ * ⚠️ Since 9 September 2026 it lives in the **panel on the right**, as the properties of the page —
+ * a section and a block are edited in the same place — and its `Save draft` is in the toolbar at the
+ * top, outside the form, submitting it by `form=`. So `saveDraft(page)` and not
+ * `metadata(page).getByRole('button', …)`, which used to be the same thing and is not any more.
+ */
 export function metadata(page: Page): Locator {
   return page.locator('form').first();
+}
+
+/** The button that saves the row, wherever it is drawn. */
+export function saveDraft(page: Page, label: string): Locator {
+  return page.getByRole('button', { name: label, exact: true });
 }
 
 /** The properties of whatever is selected, which is the last one. */

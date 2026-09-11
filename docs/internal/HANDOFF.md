@@ -3,7 +3,16 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 7 settembre 2026 — **M0 è chiusa e M1 pure**, tredici fasi e mezza: design
+**Ultimo aggiornamento:** 11 settembre 2026 — **il 10 e l'11 settembre Carmine ha collaudato l'hub a
+occhio e ha chiesto una lunga serie di rifiniture, tutte fatte e tutte sulla PR #57**: l'editor a tre
+colonne con la barra dei componenti, la cornice del sito (barra a una riga, footer a colonne dal menu,
+marchio della divisione, caratteri di IVAO), la barra laterale dello staff nostra, la testata a una riga
+delle schermate staff, le colonne visibili mentre si compone e tre fondi scuri per le sezioni. Il
+**documento operativo** alla va.ivao.aero è **deciso e rimandato a G14**, dopo il tag. Per chi apre
+adesso conta la sezione subito sotto, «Dove si è arrivati»; il paragrafo che segue è la storia di M1
+fino al 10 settembre.
+
+**Storia fino al 10 settembre** — **M0 è chiusa, M1 è costruita e in collaudo**: design
 (`03-design-m1.md`), piano (`04-piano-implementazione-m1.md`), **G0** il giro contro l'API vera in un
 browser (**§14**), **G1** la media library (**§15**), **G2** le cinque estensioni del generatore di
 form (**§16**), **G3** i sedici blocchi Content, Layout, Interactive e Structure (**§17**), che ha
@@ -26,7 +35,12 @@ quanti design §12 ne prevedesse, ed è un numero che G12 riporta invece di nasc
 e **G12** (**§27**), la fase che verifica invece di costruire: due pagine ricopiate a mano
 dall'editor, il giro visivo, la demo, la revisione §16.E e il conto contro la previsione. Ha trovato
 più difetti di qualunque altra fase, fra cui **ogni form del back-office si poteva salvare una volta
-sola per caricamento di pagina**. Manca solo il **tag `v0.2.0-m1`** (§28). M0 resta chiusa e non
+sola per caricamento di pagina**. ⚠️ Poi Carmine ha **eseguito la demo** e ha trovato altri quattro
+difetti e dodici richieste (**§28**): **tutti e quattro i difetti sono corretti e tutte e dodici le
+richieste fatte**; una seconda esecuzione ne ha aggiunte quattro, fatte anche quelle — l'ultima è che
+l'indirizzo di una voce di menu è un **insieme chiuso**, perché ogni indirizzo che esce dal sito deve
+vivere in una tabella sola. **Il tag `v0.2.0-m1` aspetta** che Carmine riesegua la scheda da capo e
+mergi la PR #57 (§29). M0 resta chiusa e non
 c'è niente di suo da finire: F9 aveva verificato invece di costruire (la checklist §16.E letta su
 tutto il codice, la demo a mano, i passi reali di un fork, il tag `v0.1.0-m0`), e le fondamenta con
 la spina dorsale generica sono dimostrate end-to-end su `links` e su una pagina nata da un template,
@@ -37,12 +51,99 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** v0.45. **Design M1:** v1.15 (`03-design-m1.md`). **Piano di implementazione M1:** v2.6
-(`04-piano-implementazione-m1.md`, fasi G0–G12): **sono chiuse tutte** (§14–§27); resta il tag.
-**Test:** 456 .NET verdi (300 unit + 156 integrazione) + **243 Vitest** + **42 smoke Playwright** +
-**11 del giro pieno** (`pnpm e2e:full`).
-Nessuno skippato, **rieseguiti tutti e quattro il 7 set 2026** contro la MariaDB vera prima di
-scrivere questa riga: i numeri qui sopra sono misurati oggi, non ricopiati.
+**Piano:** **v0.60** (11 set: **G15, l'editor che risponde**, decisa e da costruire prima di G14; v0.59
+le due dashboard personali si progettano per prime in M2; v0.58 i sette sfondi di sezione, §16.C
+riaperto e cambiato). **Design M1:** v1.15
+(`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
+G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è aperta** (§28) e raccoglie le rifiniture del
+collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
+**Test, misurati l'11 settembre sul commit `40d81a7`:** **472 .NET** verdi (306 unit + 166
+integrazione) + **324 Vitest** + **56 smoke Playwright** + **13 del giro pieno** (`pnpm e2e:full`).
+Nessuno skippato. ⚠️ Il C# **è cambiato** dal 10 settembre (icona e intestazioni del menu, marchio e
+favicon della divisione, i tre fondi scuri nel walker): l'avviso «dall'8 settembre non è cambiata una
+riga di C#» che stava qui non vale più.
+
+---
+
+## Dove si è arrivati, per chi apre adesso
+
+**Tutto il lavoro è sulla PR #57** (`m1/g13-fixes`), verde, che Carmine mergia prima del tag. Dal 9
+all'11 settembre si è lavorato per collaudo: Carmine guarda l'hub, a volte con davanti un sito di
+IVAO (va.ivao.aero, il sito della divisione UK & Ireland), e chiede; ogni richiesta che toccava una
+decisione ha una nota in `decisions/`. **Leggerle in quest'ordine** è il modo più rapido di sapere
+com'è fatto l'hub oggi:
+
+| Nota | Che cosa ha deciso |
+|---|---|
+| `2026-09-09-comporre-una-pagina-guardandola.md` | la pagina **è** la superficie di composizione (strada A); la pagina è una selezione |
+| `2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md` | il page builder di va.ivao.aero **non è una tela**; presi la riga e i comandi «che si scelgono guardando»; **aperto il punto 3**, il trascinamento dalla tavolozza |
+| `2026-09-10-la-barra-dei-componenti.md` | editor a **tre colonne**: componenti a sinistra (gruppi e sottogruppi richiudibili, dichiarati dai blocchi in codice), pagina al centro, proprietà a destra; tre colonne da `xl` in su |
+| `2026-09-10-il-documento-operativo-come-va-ivao-aero.md` | il **documento operativo** (LoA/SOP): **deciso, rimandato a G14** dopo il tag, con la prima passata già scelta |
+| `2026-09-10-la-barra-la-sidebar-e-il-footer.md` | barra del sito **a una riga** col tasto Staff; **`StaffSidebar`**, ventunesimo dell'elenco chiuso; **footer a colonne dal menu** (intestazioni senza indirizzo, icone social); marchio della divisione e favicon da `division.json` |
+| `2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md` | barra laterale: un dipartimento alla volta, voce accesa più specifica, ricerca in cima, nomi per esteso; **tendine del menu di nuovo leggibili**; **Poppins e Nunito Sans caricati**; il tasto Staff resta su `/staff`; **testata a una riga** delle schermate staff |
+| `2026-09-11-la-sezione-si-vede-com-e-divisa.md` | mentre si compone, **colonne tratteggiate** e «+ Aggiungi qui»; **sette sfondi** di sezione (tre scuri, disegnati nel tema scuro), niente colore libero; piano 0.58 |
+
+⚠️ **Tre cose di queste due giornate da non disfare**, perché sembrano rifiniture e sono correzioni:
+
+- **`RouterAnchor` confronta in modo esatto** (`exact`, `includeSearch: false`). Prima il router
+  annunciava «pagina corrente» a uno screen reader su due link insieme, e la home `/` su ogni pagina.
+- **Il bianco forzato della barra blu si ferma alla tendina** (`[aria-labelledby]`). Bianco su bianco
+  era passato inosservato perché un e2e controllava `toBeVisible`, che non dice nulla del contrasto:
+  ora lo misura, con la funzione unica `e2e/contrast.ts`.
+- **I tre fondi scuri portano la classe `dark`**, ed è quello che li rende leggibili per costruzione;
+  il blu del marchio ha in più `.on-brand-ground` (grigio secondario 3,50 : 1 → 4,88 : 1).
+
+### Che cosa resta aperto, e a chi tocca
+
+**A Carmine, e chiude M1:**
+
+1. rieseguire `tools/demo-m1.md` da capo — ⚠️ la scheda è stata scritta prima di queste due giornate:
+   dove descrive la barra, la barra laterale o la testata delle schermate staff, l'hub ora è diverso;
+2. mergiare la **PR #57** (verde, ultimo commit verificato in CI `40d81a7`);
+3. il tag **`v0.2.0-m1`**, che si verifica **sull'artefatto** e non sul commit — in M0 ci vollero
+   cinque tentativi, il server di prova deve fare il fallback SPA, e un grep su un bundle minificato
+   non è una verifica.
+
+**Dopo il tag, G15 — l'editor che risponde** (`decisions/2026-09-11-l-editor-che-risponde.md`,
+piano 0.60, `04-piano-implementazione-m1.md` fase G15), **decisa l'11 settembre e messa prima di G14**.
+Tre sessioni: (1) annulla/ripeti con coalescenza, proprietà applicate mentre si scrive, anteprima
+mobile vera con le container query; (2) autosalvataggio a dieci secondi con audit `autosaved` senza
+corpo — la versione della riga esce dal form dei metadati; (3) trascinamento dalla barra fra due
+blocchi. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
+e2e misurava la regione e non le colonne.
+
+**Poi G14 — il documento operativo** (`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
+Prima passata decisa: tipo SOP/LoA, sei campi operativi (posizione primaria e secondaria, ICAO, FIR,
+efficacia, revisione, scelti da elenchi `ref_` e non digitati), `Archived` e `Superseded` **col
+successore**, i blocchi **Frequency Table** e **Coordination**, il **piè di pagina con la stampa**. Il
+METAR c'è sull'API IVAO (`/v2/airports/{icao}/metar`), ma la forma della risposta non è stata vista.
+**Il primo atto di G14 è scrivere**: la sezione §30 di `04-piano-implementazione-m1.md` e il design del
+documento operativo, prima del codice.
+
+**Da decidere prima di scrivere codice:**
+
+- la **pubblicazione programmata**, con le sue tre domande (`2026-09-09-il-documento-dice-di-se.md`);
+- la **dashboard personale da staffista** su `/staff`, oggi una porta verso la dashboard del primo
+  dipartimento, e la forma di **`/me`**: **si progettano per prime in M2**, con una nota su tutte e due
+  prima di `05-design-m2.md` (piano 0.59, §13, dove sono scritte le domande che la nota deve chiudere);
+- il **gruppo richiudibile** nel generatore di form — sarebbe la **decima** estensione. Serve perché
+  lo **stato vuoto di un campo opzionale occupa più spazio del campo**: la SEO misura 536 px e il
+  selettore di file disegna «No files yet / Upload one in the media library» anche quando nessuno
+  gliel'ha chiesto;
+- una parola: nella colonna dei link legali del footer l'intestazione «IVAO» sta sopra un link che si
+  chiama anche lui «IVAO» (`footer.legalHeading` o la prima voce di `footer.legal`).
+
+**Da guardare a occhio**, perché nessun test lo dice: la **tipografia** nuova sulle schermate dense
+(le liste del back-office, l'editor), dove il cambio di carattere ha cambiato le larghezze.
+
+**Un rumore che non è un difetto:** `Unknown event handler property onValueChange` in console è di
+Atmosphere, spiegato in `e2e/smoke.spec.ts`; non si «corregge» togliendo `onValueChange`.
+
+**M2 è divisa in due** (piano §13): il modulo Events parte quando si vuole; il deploy su Plesk aspetta
+le risposte A9 **e** la persona che carica, che a oggi non c'è. Prima del codice ci vanno, in
+quest'ordine, la **nota sulle due dashboard personali** (`/me` e `/staff`, piano 0.59) e
+`05-design-m2.md`, che si può scrivere adesso perché riguarda il modulo e non il deploy.
 
 ⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa
 cosa vista **tre** volte: **i test provano i pezzi, e niente provava la composizione.** Prima la
@@ -3094,17 +3195,146 @@ per caso.
 
 ---
 
-## 28. Da dove riparte la prossima sessione (7 settembre 2026)
+## 28. G13: che cosa è uscito eseguendo la demo (7 settembre 2026)
 
-### Resta il tag, e poi si apre M2
+M1 era chiusa nei documenti e mancava solo il tag. Poi Carmine ha eseguito `tools/demo-m1.md` fino al
+punto 7 e ha trovato **quattro difetti e dodici richieste**. È il motivo per cui quel documento
+esiste, e la prova che l'accettazione non può darla chi ha scritto il codice.
 
-`04-piano-implementazione-m1.md` §C. Di G12 restano **due cose sole**, ed entrambe sono di Carmine:
+⚠️ **Il tag `v0.2.0-m1` aspetta la fine dei difetti.** Deciso da Carmine.
 
-1. **Eseguire `tools/demo-m1.md` da zero** — clone, docker-compose, run — e spuntare gli otto punti.
-   È l'accettazione della milestone, e nessun altro può darla.
-2. **Il tag `v0.2.0-m1`.** ⚠️ Si spinge **dopo** il merge, e si verifica **sull'artefatto**, non sul
+La fonte di questa sezione è `decisions/2026-09-07-dopo-la-demo.md`, che ha l'elenco completo: qui c'è
+solo quello che serve per riprendere in mano il lavoro.
+
+### Corretti, con un test ciascuno verificato rompendolo
+
+**Ogni data dell'hub era mostrata due ore indietro** (`6f8217e`). L'API mandava
+`2026-09-07T14:22:35.99759`, senza `Z`: un browser legge una stringa così come ora **locale**. I
+valori nel database erano giusti; mancava che il modello dicesse che sono UTC.
+`UtcDateTimeConverter`, un posto solo. Il test guarda **il testo sul filo** e su una **lettura** —
+la risposta alla creazione serializza l'entità ancora nel change tracker e passa anche senza la
+correzione.
+
+**Cancellare lasciava la pagina aperta** (`fc33848`), ed ⚠️ **era una regressione della correzione
+del loader della stessa mattina**. La mutazione aspettava `invalidateQueries`, che aspetta il refetch
+di ogni query attiva sotto quella chiave — compresa quella della schermata che sta cancellando, la
+cui riga è appena sparita. Il refetch va in 404, riprova, `onSuccess` non si risolve e i callback di
+`mutate` non partono. Prima che le schermate leggessero la query invece del loader, quella query non
+aveva osservatori: **una correzione ne ha scoperta un'altra**, e vale la pena aspettarselo di nuovo.
+
+### Chiusi il 7 settembre, misurando prima di correggere
+
+**Il logout non aggiornava la pagina** (`686ee82`), e l'ipotesi era giusta: **il bootstrap non è
+solo una query**. La radice lo carica una volta con `ensureQueryData` e lo passa come **contesto del
+router**, ed è quella copia che leggono l'header, la sidebar e ogni guardia — invalidare una query
+non rifà un `beforeLoad`. Un posto solo lo dice adesso, `sessionChanged`: **rimuove** la risposta in
+cache (invalidarla non basta, `ensureQueryData` restituisce ciò che trova) e chiama
+`router.invalidate()`. Lo usa anche la risposta al 401. ⚠️ Uscire porta prima **a casa**: una
+schermata del back-office sta dietro una guardia che manda a `/auth/login`, e ridisegnare dove si è
+avrebbe risposto a un clic su «esci» con il login di IVAO, che ha ancora la sua sessione.
+
+**Un documento pubblicato con un'immagine non la mostrava** (`0e28db1`): guardato dal filo, è **la
+visibilità della riga media**. Un file nasce `Staff` — diventa pubblico perché qualcuno lo dice — e
+la pagina usciva lo stesso, così il lettore riceveva 404, anche questo per disegno. Quello che
+mancava è che la pagina non aveva titolo per uscire portandola. La pubblicazione ora **rifiuta**
+sotto `VisibilityCeiling`, lo stesso soffitto di un blocco Data `frozen`, per i **tre** modi di
+nominare un file: il corpo, la copertina di una news e il file di un documento — che è la forma in
+cui Carmine l'ha incontrato. Rifiuta e non ripara: pubblicare non deve rendere pubblico un file di
+nascosto.
+
+⚠️ Quel test ha fatto uscire un accoppiamento fra classi di test che era lì da prima: tutta
+l'assemblea di integrazione scrive nello **stesso** database, `ContentEndToEndTests` nominava la
+media `7` in un corpo, e il file caricato in più ha spostato gli identificatori finché «questa media
+non è usata da nessuna parte» ha trovato quella pagina. Un numero che nessun upload raggiunge, e la
+ragione scritta lì.
+
+### Le decisioni prese in quella conversazione
+
+1. **Il tag dopo i difetti.**
+2. **Niente icone per i dipartimenti: la sigla è il segno.** Oggi sono nove scudi identici. Ragione
+   di Carmine: un fork non-IVAO riscrive comunque l'enum `Department`, quindi l'icona non è il pezzo
+   che gli costa — e la sigla è già l'identificatore che lo staff usa.
+3. **L'avviso a quattro stati** (errore, avviso, successo, informazione) è un componente
+   **condiviso**. ⚠️ Quinto della lista chiusa di piano §8.3: va scritto, non aggiunto di straforo.
+4. **I tipi di evento del calendario sono di divisione**, decisi centralmente e uguali per tutti.
+   ⚠️ Non sono le categorie, che sono per dipartimento: serve un vocabolario di divisione con un
+   permesso di scope diverso da `Calendar.Edit`.
+
+### Due lezioni di metodo, pagate care
+
+- ⚠️ **`grep "error CS"` non dice se una build è riuscita.** Con l'API in esecuzione MSBuild fallisce
+  con `MSB3027`/`MSB3021` — DLL bloccate — senza **nessun** errore `CS`. Due volte ho letto «0
+  errori» ed eseguito un binario vecchio, e una verifica «rotta apposta» è passata a vuoto. Si guarda
+  `Error(s)` nel riepilogo, e **si ferma l'API prima di compilare**.
+- **Tre ipotesi plausibili di fila possono essere tutte sbagliate.** Sul difetto della cancellazione:
+  componente smontato, promessa rifiutata, retry lento — tutte no. Le sonde dentro la mutazione hanno
+  risolto in un giro.
+
+---
+
+## 29. Da dove riparte la prossima sessione (7 settembre 2026)
+
+### Si continua G13 dalle richieste: **i quattro difetti sono chiusi**
+
+Ramo **`m1/g13-fixes`**, sedici commit, spinto, con la **PR #57 aperta e la CI verde**. Il piano di implementazione è a
+v2.8 e la fase è scritta lì; l'elenco completo è in `decisions/2026-09-07-dopo-la-demo.md`. Verde in
+locale: **462 .NET** (300 unit + 162 integrazione), **270 Vitest**, **43 smoke Playwright** e **12
+del giro pieno** (`pnpm e2e:full`, rieseguito l'8 set 2026 contro l'API vera, e nei suoi log si vede
+l'editor che chiede `publish-problems`), più lint, typecheck, format e i18n. Non resta niente di
+non eseguito.
+
+⚠️ **Il numero da riportare alla chiusura sono otto estensioni del generatore di form**, non sei:
+`slugFrom` è la settima e `suggestions` l'ottava, e §12 del design ne prevedeva cinque. Le ultime
+due le ha chieste l'uso, non i blocchi — che è la ragione dello scarto, e vale la pena scriverla
+così nel rapporto.
+
+**Il prossimo passo**, nell'ordine del piano di implementazione §G13:
+
+1. ~~Lo **`slug` proposto dal titolo**~~ — fatto (`38c6e1c`).
+2. ~~La **conferma dell'editor** (6) e l'**avviso a quattro stati** (9)~~ — fatti. `Notice` è il
+   **quinto** componente dell'elenco chiuso, e la riga in piano §8.3 c'è insieme a
+   `docs/UI-GUIDELINES.md` §3, `catalog.ts` e la sezione della ui-kit. La conferma è un **toast**,
+   scelta di Carmine, e `ProblemAlert` resta dov'è — unirli tocca ogni schermata del back-office.
+3. ~~**«Cosa manca per pubblicare»**~~ — fatto: un `GET` che fa la prova a vuoto, e una lista sola
+   in tono `warning` che si svuota da sola. ⚠️ **Quarto verbo a mano** appeso a `MapCrud`, deciso
+   con Carmine perché l'alternativa era riscrivere le regole nel client.
+4. ~~Il calendario (10), la striscia (12) e la ricerca visibile (13)~~ — fatti.
+5. ~~La **11**, i tipi di evento di divisione~~ — decisa da Carmine sulla prima opzione della nota e
+   **fatta** (`8b6458c`): `cms_calendar_kinds`, modalità globale del motore CRUD, `Calendar.View`
+   per leggere e il nuovo **globale** `Calendar.ManageKinds` per scrivere, schermata sotto
+   `/staff/admin/calendar-kinds`, cinque parole seminate con etichette i18n.
+   ⚠️ Da qui in avanti **il `kind` di una voce non è testo libero**: il validatore chiede al
+   vocabolario, ed è l'unico validatore dell'hub che interroga il database. Una voce che un modulo
+   proietta non passa da quel DTO e resta libera, ed è voluto. Il vocabolario viaggia in `/api/me`,
+   perché la chip di un calendario pubblico deve dire la parola e il colore.
+6. ~~La **14**, il giro sull'editor~~ — **fatta** (`9bf76ea`), e sono le quattro cose che la
+   ricopiatura a mano e il giro visivo avevano già scritto: l'**annulla** sull'ultima mossa
+   strutturale, il blocco Titolo che **nasce a livello 2**, **un solo `h1`** per pagina pubblica, e
+   il pannello delle proprietà che **resta fermo** mentre l'albero scorre.
+
+**G13 è completa**: quattro difetti e dodici richieste su dodici. Restano due cose, e sono di
+Carmine: **rifare `tools/demo-m1.md` dal punto 1** — i punti 8 e 9 non erano mai stati eseguiti
+prima del 7 settembre — e il **tag `v0.2.0-m1`** dopo il merge della PR #57, verificato
+**sull'artefatto** e non sul commit.
+
+⚠️ **`hidden sm:block` non funziona in questa applicazione**, ed è costato due elementi invisibili
+nella stessa ora: il foglio di stile di Atmosphere è importato **dopo** le utility di Tailwind e
+ridichiara `.hidden`, quindi la classe semplice batte quella dentro la media query e l'elemento non
+torna più. Si scrive `max-sm:hidden`. È in `docs/UI-GUIDELINES.md` §3 per chi forka.
+
+**Poi, e solo poi:**
+
+5. **Carmine rifà `tools/demo-m1.md` dal punto 1** e arriva in fondo. ⚠️ **I punti 8 e 9 non sono
+   ancora stati eseguiti**: sono i test, la forkabilità e il pacchetto, cioè l'ultimo pezzo di
+   accettazione.
+6. **Il tag `v0.2.0-m1`.** ⚠️ Si spinge **dopo** il merge, e si verifica **sull'artefatto**, non sul
    commit: in M0 ci vollero cinque tentativi, il server di prova deve fare il fallback SPA, e un grep
    su un bundle minificato non è una verifica — la verifica è comportamentale o non è.
+
+⚠️ **Come si lavora su questa macchina**, imparato oggi: l'API di sviluppo (`dotnet run`) tiene
+bloccate le DLL, quindi **si ferma prima di compilare** o la build fallisce con errori `MSB` che un
+`grep "error CS"` non vede. E il banco di sviluppo gira su `ivaohub`, il database vero dello
+sviluppo: le due pagine ricopiate a mano stanno lì e non nei seed.
 
 - **G12 — migrazione a mano, giro visivo, chiusura di M1.** Ricopiare `/about` e `/start` a mano
   dall'editor — che è il vero collaudo di tutto quello che M1 ha costruito, fatto da chi lo userà —

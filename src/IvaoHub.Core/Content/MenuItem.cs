@@ -57,8 +57,26 @@ public sealed class MenuItem : IOwnedByDepartment, IVisible, IAuditable
     /// <summary>
     /// Where it leads. A path of this site, or an absolute address of somewhere else: both are
     /// things a division puts in its own menu, and the client decides how to follow one.
+    /// <para>⚠️ <b>Empty means a heading</b>, and only for a top level entry of the
+    /// <see cref="MenuScope.Footer"/> menu: the footer is drawn in columns, and the word at the top
+    /// of a column — "Quick links", "Resources" — leads nowhere. It is empty rather than null so
+    /// that the migration stays additive: widening a <c>NOT NULL</c> column is a change to a column
+    /// that already carries every menu of every fork, and the state it would express is one this
+    /// string already expresses (decided 10 September 2026).</para>
     /// </summary>
     public string Path { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The name of an icon, from the allow list the client keeps, or null for an entry drawn as
+    /// words. It is what turns the five addresses of a division's social accounts into a row of
+    /// marks in the footer instead of five more links in a list.
+    /// <para>⚠️ The server stores the name and never resolves it, exactly as it stores the body of a
+    /// page without knowing what a block means: the set of icons exists only in TypeScript
+    /// (<c>web/src/shared/icons/</c>), and a copy of it here would be a second list to keep in
+    /// step. A name this release has never heard of draws nothing, which is what the client already
+    /// does for a block type it does not know.</para>
+    /// </summary>
+    public string? Icon { get; set; }
 
     /// <summary>
     /// Who the entry is shown to, enforced by the global query filter like every other visible row.

@@ -78,7 +78,25 @@ export function findBlock(
 }
 
 /** A new section, at the end, with the frame a section has when nobody has chosen one. */
-export function addSection(body: Body, locales: readonly string[]): { body: Body; id: string } {
+/**
+ * A section, at the top of the page or **inside another one** — which is what the editor calls a
+ * *row*.
+ *
+ * ⚠️ Nesting is not new: `MaxDepth` in the envelope validator has been 3 since M1, the renderer
+ * draws a nested section inside its parent's width container, and `removeSection` prunes
+ * recursively. What was missing was any way to make one, so none of the ten seeded pages and
+ * templates has ever nested — we built three levels, validated them, drew them, and offered two
+ * (nota `2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`).
+ *
+ * What it buys: a section carries the frame — the background, the air around it, how wide it is —
+ * and each row inside it carries its own column layout. So one band of colour can hold two columns
+ * and then three, which before took two sections and therefore two bands.
+ */
+export function addSection(
+  body: Body,
+  locales: readonly string[],
+  parentId?: string,
+): { body: Body; id: string } {
   const id = newId('s');
   const section: SectionEnvelope = {
     id,
@@ -91,7 +109,23 @@ export function addSection(body: Body, locales: readonly string[]): { body: Body
     sections: [],
   };
 
-  return { body: { ...body, sections: [...body.sections, section] }, id };
+  if (parentId === undefined) {
+    return { body: { ...body, sections: [...body.sections, section] }, id };
+  }
+
+  // A row is born without a frame of its own: the section around it already draws one, and a second
+  // background inside the first is the thing that makes a page look assembled rather than composed.
+  const row: SectionEnvelope = { ...section, background: 'none', padding: 'none' };
+
+  return {
+    body: {
+      ...body,
+      sections: mapSections(body.sections, (candidate) =>
+        candidate.id === parentId ? { ...candidate, sections: [...candidate.sections, row] } : candidate,
+      ),
+    },
+    id,
+  };
 }
 
 export function removeSection(body: Body, id: string): Body {
@@ -133,15 +167,24 @@ export function reorderBlocks(body: Body, activeId: string, overId: string): Bod
   };
 }
 
+/**
+ * Adds a block at the end of one column of a section.
+ *
+ * `column` since 11 September 2026: it used to be 0 for every block, so in a section of two columns a
+ * component always landed in the first and had to be moved into the second afterwards — which is the
+ * friction the "add here" of an empty column exists to remove. It defaults to the first, which is also
+ * where a block of a stacked section is.
+ */
 export function addBlock(
   body: Body,
   sectionId: string,
   type: string,
   props: Record<string, unknown>,
   renderMode: 'live' | 'frozen' | null,
+  column = 0,
 ): { body: Body; id: string } {
   const id = newId('b');
-  const block: BlockEnvelope = { id, type, version: 1, props, renderMode, frozen: null, column: 0 };
+  const block: BlockEnvelope = { id, type, version: 1, props, renderMode, frozen: null, column };
 
   return {
     body: {

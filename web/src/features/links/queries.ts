@@ -43,6 +43,31 @@ export function linksListQuery(department: Department, search: ListSearch) {
   });
 }
 
+/**
+ * Every link that is in use, whichever department wrote it, so that a screen can offer the outside
+ * addresses this site already knows about instead of asking somebody to paste one.
+ *
+ * ⚠️ It is what makes the menu's closed set possible (decided 8 Sep 2026): an address that leaves
+ * this site lives in `cms_links` and nowhere else, so the menu offers these and the server refuses
+ * anything that is not one of them. A retired link is not offered — and not accepted either.
+ *
+ * ⚠️ And it takes what is being typed, for the reason the pages do: a page of this list is a hundred
+ * rows, and a closed field that cannot offer the hundred and first cannot point at it either. The
+ * server searches the title and the address, which is what the entry shows.
+ */
+export function activeLinksQuery(q = '') {
+  return queryOptions({
+    queryKey: [...linksKey, 'active', q] as const,
+    queryFn: async (): Promise<LinkPage> =>
+      unwrap(
+        await api.GET('/api/links', {
+          params: { query: { page: 1, pageSize: 100, ...(q === '' ? {} : { q }) } },
+          querySerializer: listQuerySerializer({ isActive: 'true' }),
+        }),
+      ),
+  });
+}
+
 export function linkQuery(id: number) {
   return queryOptions({
     queryKey: linkKey(id),

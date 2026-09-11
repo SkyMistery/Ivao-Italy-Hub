@@ -1,4 +1,4 @@
-import type { LocalizedString } from '../api/bootstrap';
+import type { CalendarKind, LocalizedString } from '../api/bootstrap';
 
 /**
  * What `CalendarView` is handed, and the three ways of looking at it.
@@ -21,10 +21,85 @@ export interface CalendarItem {
   url?: string | null;
 }
 
-/** Agenda reads forwards from now; the two grids are drawn around a day somebody chose. */
-export const CALENDAR_VIEWS = ['agenda', 'week', 'month'] as const;
+/**
+ * Agenda reads forwards from now; the other four are drawn around a day somebody chose — a week or
+ * a month, as a grid of squares or as a list of days.
+ *
+ * The two lists were asked for by Carmine after running the demo of M1: a grid answers "what does
+ * this month look like" and a list answers "what is on, in order", and a month with four entries in
+ * it reads as four lines far better than as thirty-five squares of which thirty-one are empty.
+ *
+ * ⚠️ `agenda` is not offered by the public screen. It is what a `calendar` **block** inside a page
+ * shows — "what is coming up", read forwards from now, with nothing to navigate — and the switcher
+ * of the screen lists `CALENDAR_SCREEN_VIEWS` instead.
+ */
+export const CALENDAR_VIEWS = ['agenda', 'week', 'weekList', 'month', 'monthList'] as const;
 
 export type CalendarViewMode = (typeof CALENDAR_VIEWS)[number];
+
+/** The four a visitor chooses between: two stretches of time, two ways of drawing each. */
+export const CALENDAR_SCREEN_VIEWS = ['week', 'weekList', 'month', 'monthList'] as const;
+
+/** How long a view is. The agenda has no anchor, so it has no span either. */
+export function calendarSpan(view: CalendarViewMode): 'week' | 'month' | null {
+  switch (view) {
+    case 'week':
+    case 'weekList':
+      return 'week';
+    case 'month':
+    case 'monthList':
+      return 'month';
+    default:
+      return null;
+  }
+}
+
+/** Squares or lines. The two say the same thing about the same days, and share their navigation. */
+export function isCalendarGrid(view: CalendarViewMode): boolean {
+  return view === 'week' || view === 'month';
+}
+
+/** The colours a chip may take. Atmosphere's own badge palette, and the server holds the same set. */
+export type CalendarKindColour =
+  'blue' | 'green' | 'orange' | 'purple' | 'indigo' | 'pink' | 'red' | 'yellow' | 'gray';
+
+/**
+ * ⚠️ The other half of `CalendarKindWriteDtoValidator.Colours`. The two agree by hand — a colour is
+ * a value inside a design system, which the OpenAPI contract cannot carry — and the integration
+ * test that posts a colour the server does not know is what keeps them agreeing, exactly as it does
+ * for the backgrounds of a section.
+ */
+export const CALENDAR_KIND_COLOURS: readonly CalendarKindColour[] = [
+  'blue',
+  'green',
+  'orange',
+  'purple',
+  'indigo',
+  'pink',
+  'red',
+  'yellow',
+  'gray',
+];
+
+/**
+ * The colour and the word of a kind, out of the division's vocabulary.
+ *
+ * ⚠️ Until G13 the colour was **derived from the word**, because the kinds were free text and there
+ * was nothing to look one up in. Now there is a table the division decides
+ * (`decisions/2026-09-08-tipi-di-evento-di-divisione.md`), it travels with the bootstrap, and a
+ * colour somebody chose can group two kinds that belong together — which a hash never could.
+ *
+ * A kind that is not in the vocabulary still draws: an entry projected by a module carries whatever
+ * word that module wrote, and it is not this component's business to refuse it. It is grey and it
+ * says the word it has.
+ */
+export function calendarKindColour(
+  kind: string,
+  vocabulary: readonly CalendarKind[] = [],
+): CalendarKindColour {
+  const known = vocabulary.find((word) => word.key === kind)?.colour;
+  return CALENDAR_KIND_COLOURS.includes(known as CalendarKindColour) ? (known as CalendarKindColour) : 'gray';
+}
 
 /**
  * The days a grid draws, in UTC.
@@ -43,7 +118,7 @@ export type CalendarViewMode = (typeof CALENDAR_VIEWS)[number];
  * empty days that are not empty. One function decides, and the other reads it.
  */
 export function calendarDays(view: CalendarViewMode, anchor: Date): Date[] {
-  const week = view === 'week';
+  const week = calendarSpan(view) === 'week';
 
   const start = new Date(
     Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), week ? anchor.getUTCDate() : 1),

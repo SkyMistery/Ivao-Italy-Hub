@@ -3,11 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { blockDataQuery } from '../../blocks';
-import type { Department } from '../../shared/api/bootstrap';
+import type { CalendarKind, Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { NO_CHOICE } from '../../shared/forms';
+import { useLocalized } from '../../shared/i18n/useLocalized';
 import {
-  CALENDAR_VIEWS,
+  CALENDAR_SCREEN_VIEWS,
   CalendarView,
   calendarWindow,
   type CalendarItem,
@@ -42,12 +43,16 @@ export function PublicCalendarScreen({
   filters,
   onFilter,
   timezone,
+  vocabulary,
 }: {
   filters: PublicCalendarFilters;
   onFilter: (patch: PublicCalendarFilters) => void;
   timezone: string;
+  /** The division's kinds, from `/api/me`: what to call one, and the colour of its chip. */
+  vocabulary: readonly CalendarKind[];
 }) {
   const { t } = useTranslation();
+  const read = useLocalized();
 
   const view = filters.view ?? 'month';
   const anchor = readAnchor(filters.on);
@@ -83,7 +88,7 @@ export function PublicCalendarScreen({
             id="view"
             value={view}
             onValueChange={(chosen) => onFilter({ ...filters, view: chosen as CalendarViewMode })}
-            items={CALENDAR_VIEWS.map((mode) => ({
+            items={CALENDAR_SCREEN_VIEWS.map((mode) => ({
               value: mode,
               label: t(`calendar.public.views.${mode}`),
             }))}
@@ -105,7 +110,12 @@ export function PublicCalendarScreen({
           none={t('calendar.public.filters.allKinds')}
           value={filters.kind}
           onChange={(chosen) => onFilter({ ...filters, kind: chosen })}
-          items={kinds.map((kind) => ({ value: kind, label: kind }))}
+          // The words come from the vocabulary, so a visitor reads "Riunione" rather than
+          // `meeting`; a kind that is not in it — one a module projected — keeps its key.
+          items={kinds.map((kind) => ({
+            value: kind,
+            label: read(vocabulary.find((word) => word.key === kind)?.label) || kind,
+          }))}
         />
       </div>
 
@@ -113,14 +123,16 @@ export function PublicCalendarScreen({
         items={items}
         view={view}
         anchor={anchor}
-        // The agenda reads forwards from now and has nothing to navigate; the grids move a month or
-        // a week at a time, and where they are is in the address so a visitor can send it on.
+        // Where the four views are is in the address, so a visitor can send the view they are
+        // looking at to somebody else. The agenda is not one of the four: it reads forwards from
+        // now and has nothing to navigate, and it is what a block inside a page shows.
         onAnchorChange={
           view === 'agenda'
             ? undefined
             : (next) => onFilter({ ...filters, on: next.toISOString().slice(0, 10) })
         }
         timezone={timezone}
+        kinds={vocabulary}
         empty={t('calendar.public.empty')}
       />
     </div>

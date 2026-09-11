@@ -111,8 +111,11 @@ test('an entry is drawn in the square of its day, and both times are on it', asy
   // The fixture's division sits in Europe/Rome, so the two readings of an afternoon differ by two
   // hours. A fixture in UTC would have made them identical and this assertion meaningless — which
   // is exactly how a screen showing UTC twice went unnoticed in M0 (HANDOFF §13).
-  await expect(page.getByText(/2:00\sPM UTC/).first()).toBeVisible();
-  await expect(page.getByText(/4:00\sPM local/).first()).toBeVisible();
+  //
+  // ⚠️ Twenty four hours, `Z` and `LT` since 9 September 2026, and **no date**: the square of the
+  // grid has already said which day this is, so the line reads `14:00Z (16:00 LT)` and nothing more.
+  await expect(page.getByText('14:00Z', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('(16:00 LT)', { exact: true }).first()).toBeVisible();
 });
 
 test('moving to the next month puts the month in the address', async ({ page }) => {

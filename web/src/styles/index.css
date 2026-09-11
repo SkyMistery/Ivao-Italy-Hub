@@ -3,3 +3,64 @@
 @import '@ivao/atmosphere-react/styles.css';
 
 @source '../../src';
+
+/*
+ * The one token this hub overrides, and the reason is written in
+ * `docs/internal/decisions/2026-09-09-il-grigio-dei-testi-secondari.md`.
+ *
+ * Atmosphere flips every foreground for the dark theme — `--foreground` goes from fuselage-800 to
+ * fuselage-100, `--card-foreground` to fuselage-200 — except this one, which stays fuselage-500 in
+ * both. A grey that is dark on white is the same grey on near black: measured in the browser on
+ * `/about`, the staff position codes (14px) and the note under them (12px) came out at 3.14 : 1,
+ * where WCAG AA asks 4.5 : 1 for text this size. In the light theme the same grey is 5.89 : 1 and
+ * is fine, so what is missing is a second value and not a better colour.
+ *
+ * fuselage-400 for symmetry rather than for taste: it puts the dark theme's secondary text at
+ * 5.66 : 1 from the page and 5.29 : 1 from a card, which is the distance the light theme already
+ * keeps. fuselage-300 would pass with more room and stop reading as secondary — it is too close to
+ * the primary foreground, which is fuselage-100/200 here.
+ *
+ * ⚠️ It has to sit **after** the Atmosphere imports: that stylesheet is loaded after Tailwind's
+ * utilities, and where a rule goes decides whether it wins. Asserted by `e2e/contrast.spec.ts`,
+ * which reads the colours the browser actually computed.
+ *
+ * ⚠️ And it is the token that also feeds Atmosphere's own components, 24 times inside their
+ * bundle — which is why this is one line and not a pass over our 72 screens.
+ */
+.dark {
+  --muted-foreground: var(--ivao-color-fuselage-400);
+}
+
+/*
+ * The same token once more, for the one ground where fuselage-400 is not enough.
+ *
+ * Since 11 September 2026 a section can stand on the brand blue, the deep blue or the dark
+ * (`blocks/ContentRenderer.tsx`), and each of those is drawn in the dark theme so that what is on
+ * it reads light. Measured on each, secondary text in the dark theme's grey: 4.67 : 1 on the deep
+ * blue and 5.29 : 1 on the dark, which pass — and **3.50 : 1 on the brand blue**, which does not.
+ * fuselage-300 there is 4.88 : 1. Only there: on the other two it would stop reading as secondary,
+ * for the reason the paragraph above gives.
+ */
+.on-brand-ground {
+  --muted-foreground: var(--ivao-color-fuselage-300);
+}
+
+/*
+ * The second — and, so far, the last — thing this hub overrides in Atmosphere, and unlike the grey
+ * above it is not a matter of taste: their `Select` gives its popup the height of its **trigger**
+ * (`h-radix-select-trigger` on the Radix viewport), so the list is one row tall whatever it holds.
+ * Measured in a browser on the language switcher: 46px of viewport for two rows of 30px, so one is
+ * visible and the other needs a scroll — and a reader has no way of knowing there is another. It is
+ * the same on every select of the back office: "Visible to" has four.
+ *
+ * The height becomes the list's own, capped by what Radix says is available on screen, so a long
+ * list still scrolls and a short one is simply shown.
+ *
+ * ⚠️ No `!important` needed, and that is deliberate: this rule is unlayered and Tailwind's utilities
+ * are in a layer, so it wins on the cascade rather than by force. Verified in the browser, the way
+ * `hidden sm:block` had to be. Asserted by `e2e/select.spec.ts`.
+ */
+[data-radix-select-viewport] {
+  height: auto;
+  max-height: var(--radix-select-content-available-height, 20rem);
+}

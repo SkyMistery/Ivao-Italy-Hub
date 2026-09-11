@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, readBody } from '../../blocks';
+import { ContentRenderer, readBody, startsWithPageTitle } from '../../blocks';
 import { publicContentQuery } from '../../features/content/queries';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
@@ -32,6 +32,8 @@ function PublicContentPage() {
   const content = Route.useLoaderData();
   const { bootstrap } = Route.useRouteContext();
 
+  const body = readBody(content.body);
+
   return (
     <article className="flex flex-col">
       <PageMetadata
@@ -46,9 +48,14 @@ function PublicContentPage() {
       />
 
       {/* The title of the row is what a browser tab and a search result use; what the page itself
-          shows is whatever heading block the editor put at the top of it. */}
-      <h1 className="sr-only">{read(content.title)}</h1>
-      <ContentRenderer body={readBody(content.body)} />
+          shows is whatever heading block the editor put at the top of it.
+
+          ⚠️ And when that block is already a title, this one is not drawn: a page had **two** `h1`
+          otherwise, one of them invisible (`decisions/2026-09-07-giro-visivo-m1.md`, finding 4).
+          The row's title still reaches a tab and a search result — `PageMetadata` writes it — and a
+          page that opens with a paragraph still gets a name here. */}
+      {startsWithPageTitle(body) ? null : <h1 className="sr-only">{read(content.title)}</h1>}
+      <ContentRenderer body={body} />
     </article>
   );
 }

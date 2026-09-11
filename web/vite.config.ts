@@ -8,6 +8,8 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 
+import { BACKEND_PATHS } from './backendPaths';
+
 /** The backend during development; Vite proxies the host endpoints to it. */
 const KESTREL_ORIGIN = 'http://localhost:5000';
 
@@ -73,11 +75,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: {
-      '/api': KESTREL_ORIGIN,
-      '/auth': KESTREL_ORIGIN,
-      '/health': KESTREL_ORIGIN,
-    },
+    proxy: Object.fromEntries(BACKEND_PATHS.map((path) => [path, KESTREL_ORIGIN])),
   },
   build: {
     outDir: 'dist',

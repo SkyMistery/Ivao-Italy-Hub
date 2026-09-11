@@ -12,6 +12,7 @@ public sealed record MenuItemListDto(
     int Sort,
     Localized<string> Label,
     string Path,
+    string? Icon,
     Visibility Visibility,
     bool IsActive,
     DateTime UpdatedAt);
@@ -24,6 +25,7 @@ public sealed record MenuItemDetailDto(
     int Sort,
     Localized<string> Label,
     string Path,
+    string? Icon,
     Visibility Visibility,
     bool IsActive,
     Department OwnerDepartment,
@@ -44,6 +46,7 @@ public sealed record MenuItemWriteDto(
     int Sort,
     Localized<string> Label,
     string Path,
+    string? Icon,
     Visibility Visibility,
     bool IsActive,
     DateTime RowVersion);

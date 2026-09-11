@@ -3,17 +3,18 @@ import {
   DataTableColumnHeader,
   Input,
   Pagination,
+  Select,
   Subtle,
   type DataTableProps,
 } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { Paperclip, Search } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { mediaFileUrl } from '../api/mediaUrl';
 import { resolveLocalized } from '../i18n/localized';
-import { DepartmentBadge, EmptyState, StatusBadge } from '../ui';
+import { DepartmentBadge, EmptyState, StatusBadge, useNotice } from '../ui';
 import type { ColumnSpec } from './columns';
 import type { ListSearch } from './search';
 
@@ -53,6 +54,7 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
   actions,
   toolbar,
   emptyAction,
+  onEdit,
 }: {
   columns: readonly ColumnSpec<TRow>[];
   /** The page, as query options: the route loader has already put it in the cache. */
@@ -76,6 +78,17 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
   toolbar?: ReactNode;
   /** Offered when the list is empty and nothing is being searched for. */
   emptyAction?: ReactNode;
+  /**
+   * Saves one field of one row, for the columns that declare themselves editable. Without it a
+   * column that says `editable` is drawn as it always was: the list can put a control in a cell,
+   * but only the feature knows how to write a row (note `2026-09-08-modificare-da-una-lista.md`).
+   *
+   * ⚠️ It reads the row and writes it back — the list is handed a projection, and the engine writes
+   * with the whole payload — so what it must reject is a stale write, which `rowVersion` already
+   * does: a refusal comes back here as a rejected promise, the cell returns to what it showed, and
+   * the reason is said out loud.
+   */
+  onEdit?: (row: TRow, field: string, value: unknown) => Promise<unknown>;
 }) {
   const { t } = useTranslation();
   const { data, isPending } = useQuery(query);
@@ -101,6 +114,8 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
         locale={locale}
         defaultLocale={defaultLocale}
         timezone={timezone}
+        labels={labels}
+        {...(onEdit === undefined ? {} : { onEdit })}
       />
     ),
   }));
@@ -222,15 +237,49 @@ function Cell<TRow>({
   locale,
   defaultLocale,
   timezone,
+  labels,
+  onEdit,
 }: {
   column: ColumnSpec<TRow>;
   row: TRow;
   locale: string;
   defaultLocale: string;
   timezone: string;
+  labels: string;
+  onEdit?: (row: TRow, field: string, value: unknown) => Promise<unknown>;
 }) {
   const { t } = useTranslation();
   const value = (row as Record<string, unknown>)[column.field];
+
+  // A cell writes only when the column asked for it *and* the screen said how. Two conditions and
+  // not one: a column may be editable on a screen that offers no way to save, and drawing a field
+  // there would be a control that does nothing.
+  if (onEdit !== undefined) {
+    if (column.kind === 'number' && column.editable) {
+      return (
+        <EditableNumber
+          value={typeof value === 'number' ? value : 0}
+          label={t(`${labels}.fields.${column.field}`)}
+          save={(next) => onEdit(row, column.field, next)}
+        />
+      );
+    }
+
+    if (column.kind === 'badge' && column.editable.length > 0) {
+      const options = column.editable;
+      return (
+        <EditableChoice
+          value={typeof value === 'string' ? value : ''}
+          label={t(`${labels}.fields.${column.field}`)}
+          items={options.map((option) => ({
+            value: option,
+            label: t(`${column.labels}.options.${column.field}.${option}`),
+          }))}
+          save={(next) => onEdit(row, column.field, next)}
+        />
+      );
+    }
+  }
 
   switch (column.kind) {
     case 'localized':
@@ -302,5 +351,142 @@ function DateCell({ value, locale, timezone }: { value: string; locale: string; 
       <span className="tabular-nums">{format('UTC')} UTC</span>
       <Subtle className="tabular-nums">{format(timezone)}</Subtle>
     </span>
+  );
+}
+
+/**
+ * A number somebody may change without opening the row: the order of a menu entry is the case it
+ * was asked for, and it is the one where opening a form to type `3` is plainly too much.
+ *
+ * It saves when the field is left and not while it is being typed — twenty rows would be twenty
+ * requests otherwise — and it puts back what it showed when the server refuses, because a cell that
+ * kept a value the row does not have is a screen quietly lying about what is stored.
+ */
+function EditableNumber({
+  value,
+  label,
+  save,
+}: {
+  value: number;
+  label: string;
+  save: (next: number) => Promise<unknown>;
+}) {
+  const { t } = useTranslation();
+  const notice = useNotice();
+  const id = useId();
+
+  const [draft, setDraft] = useState(String(value));
+  const [saving, setSaving] = useState(false);
+
+  // The row has moved on — somebody else saved, or the list refetched — so the field follows it.
+  // Adjusted while rendering rather than in an effect: React's own advice, and the rule that says
+  // so is on in this repository. An effect here would render twice for every refetch.
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    setDraft(String(value));
+  }
+
+  const commit = async () => {
+    const next = Number(draft);
+
+    if (draft.trim() === '' || Number.isNaN(next) || next === value) {
+      setDraft(String(value));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await save(next);
+    } catch {
+      setDraft(String(value));
+      notice({ tone: 'error', title: t('list.edit.refused') });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      {/* ⚠️ A real label and not only an `aria-label`: Atmosphere's `Select` drops the attribute, so
+          the control next to this one had no accessible name at all — measured in the DOM, after a
+          test could not find it by its name. One way of labelling a cell, for both of them. */}
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
+      <Input
+        id={id}
+        type="number"
+        className="w-20 tabular-nums"
+        value={draft}
+        disabled={saving}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => void commit()}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.currentTarget.blur();
+          }
+        }}
+      />
+    </>
+  );
+}
+
+/** One word out of a closed set, changed from the row. Saves on the choice: there is nothing to type. */
+function EditableChoice({
+  value,
+  label,
+  items,
+  save,
+}: {
+  value: string;
+  label: string;
+  items: { value: string; label: string }[];
+  save: (next: string) => Promise<unknown>;
+}) {
+  const { t } = useTranslation();
+  const notice = useNotice();
+  const id = useId();
+
+  const [chosen, setChosen] = useState(value);
+  const [saving, setSaving] = useState(false);
+
+  // The same as above: the row moved on, so the control follows it, adjusted during the render.
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    setChosen(value);
+  }
+
+  const commit = async (next: string) => {
+    if (next === value) {
+      return;
+    }
+
+    setChosen(next);
+    setSaving(true);
+    try {
+      await save(next);
+    } catch {
+      setChosen(value);
+      notice({ tone: 'error', title: t('list.edit.refused') });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
+      <Select
+        id={id}
+        value={chosen}
+        disabled={saving}
+        items={items}
+        onValueChange={(next) => void commit(next)}
+      />
+    </>
   );
 }

@@ -57,7 +57,7 @@ function GrantForm() {
   return (
     <PageShell
       title={isNew ? t('grants.create') : t('grants.edit')}
-      description={t('grants.formHint')}
+      note={t('grants.formHint')}
       breadcrumb={[
         { label: t('admin.title') },
         { label: t('grants.title'), to: '/staff/admin/permissions' },
