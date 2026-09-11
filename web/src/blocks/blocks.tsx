@@ -33,6 +33,7 @@ import { CALENDAR_VIEWS, CalendarView, MarkdownContent, type CalendarItem } from
 
 import { embedSource } from './allowlist';
 import { categoryLabel, type ContentListData } from './data';
+import { usePrinting } from './print';
 import { CALLOUT_TONES } from './schemas';
 
 /**
@@ -689,10 +690,25 @@ export function LogoGridBlock({ props }: BlockComponentProps) {
 
 export function TabsBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
+  const printing = usePrinting();
   const items = entries(props, 'tabs');
 
   if (items.length === 0) {
     return null;
+  }
+
+  // On paper there is nothing to click, so every panel is drawn under its own heading (G14).
+  if (printing) {
+    return (
+      <div className="flex flex-col gap-4">
+        {items.map((tab, index) => (
+          <section key={index}>
+            <H3>{read(text(tab, 'label'))}</H3>
+            <MarkdownContent source={read(text(tab, 'body'))} />
+          </section>
+        ))}
+      </div>
+    );
   }
 
   const tabs = Object.fromEntries(
@@ -718,6 +734,22 @@ export function TabsBlock({ props }: BlockComponentProps) {
 
 export function AccordionBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
+  const printing = usePrinting();
+
+  // Unfolded for paper, question and answer one under the other, for the reason `tabs` is (G14).
+  if (printing) {
+    return (
+      <div className="flex flex-col gap-4">
+        {entries(props, 'items').map((item, index) => (
+          <section key={index}>
+            <H3>{read(text(item, 'question'))}</H3>
+            <MarkdownContent source={read(text(item, 'answer'))} />
+          </section>
+        ))}
+      </div>
+    );
+  }
+
   const items = entries(props, 'items').map((item, index) => (
     <AccordionItem key={index} value={String(index)}>
       <AccordionTrigger>{read(text(item, 'question'))}</AccordionTrigger>

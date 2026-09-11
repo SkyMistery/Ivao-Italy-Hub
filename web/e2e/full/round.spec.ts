@@ -107,11 +107,16 @@ test('from a template to a page a visitor can read, and a draft that stays priva
     await saveDraft(page, content.editor.saveDraft).click();
   });
 
-  // Exact, since the frame has a "Published" toggle beside the draft, and "Publish" is in it.
+  // Exact, since the frame has a "Published" toggle beside the draft, and "Publish" is in it. The
+  // button asks first — what changed, and on a document the AIRAC cycle (G14) — so the press that
+  // publishes is the dialog's own.
   const publish = page.getByRole('button', { name: content.editor.publish, exact: true });
   await expect(publish).toBeEnabled();
+  await publish.click();
+  const dialog = page.getByRole('alertdialog');
+  await dialog.getByLabel(content.editor.publishDialog.changelog).fill('First edition');
   await whileWaitingFor(page, 'POST', '/publish', async () => {
-    await publish.click();
+    await dialog.getByRole('button', { name: content.editor.publishDialog.confirm }).click();
   });
 
   // ---------------------------------------------------------------- a visitor reads it

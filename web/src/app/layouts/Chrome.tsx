@@ -83,7 +83,8 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
     // for what the bar says, Nunito Sans at its heaviest for the division's name. Atmosphere's own
     // `font-head` and `font-sans` utilities, which point at exactly those two, so nothing here names a
     // font. The footer below does the same.
-    <header className="border-border font-head border-b">
+    // `print:hidden`: a bar of links is a picture of a menu on paper (G14, `styles/index.css`).
+    <header className="border-border font-head border-b print:hidden">
       {/* ⚠️ `NavbarContainer` and not `Navbar`, and the brand block written out here.
           `Navbar` puts its children in a box of their own at the far end of the line, which cannot
           be made to grow — so the menu could only ever be pushed against the tools on the right.
@@ -270,7 +271,7 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
     // background; the day it was given a ground of its own it became a white strip between the two —
     // and in the back office a gap between the bottom of the sidebar and the top of the footer,
     // which is where Carmine saw it. The room the footer needs is its own `py-10`, inside its band.
-    <footer className="bg-atmos-700 dark:bg-fuselage-800 font-head text-white">
+    <footer className="bg-atmos-700 dark:bg-fuselage-800 font-head text-white print:hidden">
       <div className="mx-auto w-full max-w-6xl px-4 py-10">
         {/* ⚠️ Centred rather than pinned to the left edge (Carmine, 10 September 2026), and that is
             why this is a wrapping flex row and not a grid: a grid of four columns holding two leaves

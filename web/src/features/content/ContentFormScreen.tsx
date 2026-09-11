@@ -186,8 +186,8 @@ export function ContentFormScreen({
         onPublish={
           isNew
             ? null
-            : () =>
-                publish.mutate(null, {
+            : (request) =>
+                publish.mutate(request, {
                   onSuccess: () => {
                     notice({ tone: 'success', title: t('content.editor.published') });
                     askAgain();

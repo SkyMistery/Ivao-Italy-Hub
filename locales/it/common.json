@@ -525,6 +525,13 @@
         "leave": "Lasciare questa pagina? Le modifiche dall'ultimo salvataggio andranno perse."
       },
       "publishRefused": "Questa pagina non si puo' ancora pubblicare",
+      "publishDialog": {
+        "title": "Pubblicare questa versione?",
+        "description": "Prima si salva ciò che è sullo schermo, poi lo vedono i lettori. Una riga su che cosa è cambiato resta con la versione, per lo staff.",
+        "changelog": "Che cosa è cambiato",
+        "airac": "Ciclo AIRAC",
+        "confirm": "Pubblica"
+      },
       "renderMode": "Cosa mostra questo blocco",
       "renderModes": {
         "live": "La risposta del momento in cui si legge",
@@ -1254,6 +1261,20 @@
       "description": "Regolamenti, guide e moduli, ordinati per il dipartimento che li tiene.",
       "download": "Scarica",
       "fileHint": "Questo documento è un file.",
+      "documentType": "Tipo",
+      "primaryPosition": "Posizione",
+      "secondaryPosition": "Controparte",
+      "icao": "Aeroporto",
+      "fir": "FIR",
+      "effectiveOn": "In vigore dal",
+      "notYetInForce": "Non ancora in vigore: vale dal {{date}}.",
+      "retired": "Non più in vigore dal {{date}}.",
+      "supersededBy": "Sostituito da",
+      "version": "Versione",
+      "publishedOn": "Pubblicato il",
+      "publishedBy": "da",
+      "airac": "AIRAC",
+      "print": "Stampa",
       "filters": {
         "category": "Categoria",
         "allCategories": "Tutte le categorie",

@@ -525,6 +525,13 @@
         "leave": "Leave this page? The changes since the last save will be lost."
       },
       "publishRefused": "This page cannot be published yet",
+      "publishDialog": {
+        "title": "Publish this version?",
+        "description": "What is on screen is saved first, then shown to its readers. A line about what changed stays with the version, for the staff.",
+        "changelog": "What changed",
+        "airac": "AIRAC cycle",
+        "confirm": "Publish"
+      },
       "renderMode": "What this block shows",
       "renderModes": {
         "live": "The answer of the moment it is read",
@@ -1254,6 +1261,20 @@
       "description": "Rules, guides and forms, filed by the department that keeps them.",
       "download": "Download",
       "fileHint": "This document is a file.",
+      "documentType": "Type",
+      "primaryPosition": "Position",
+      "secondaryPosition": "Counterpart",
+      "icao": "Airport",
+      "fir": "FIR",
+      "effectiveOn": "In force from",
+      "notYetInForce": "Not in force yet: it applies from {{date}}.",
+      "retired": "No longer in force since {{date}}.",
+      "supersededBy": "Replaced by",
+      "version": "Version",
+      "publishedOn": "Published on",
+      "publishedBy": "by",
+      "airac": "AIRAC",
+      "print": "Print",
       "filters": {
         "category": "Category",
         "allCategories": "Every category",

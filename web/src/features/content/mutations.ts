@@ -248,6 +248,16 @@ export function useDeleteContent() {
 }
 
 /**
+ * What publication is told beside which row: a line for the staff about what changed, and — for an
+ * operational document (G14) — the AIRAC cycle written on its footer. Both optional, both asked in
+ * the dialog the Publish button opens.
+ */
+export interface PublishRequest {
+  changelog: string;
+  airac: string;
+}
+
+/**
  * Publishing. A refusal reaches the caller as an `ApiError` like any other, so the dialog shows
  * the missing languages per path through the very same `useProblemDetails` a form uses.
  */
@@ -255,13 +265,13 @@ export function usePublishContent(id: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (changelog: string | null): Promise<ContentDetailDto> =>
+    mutationFn: async (request: PublishRequest): Promise<ContentDetailDto> =>
       unwrap(
         await api.POST('/api/content/{id}/publish', {
           // A number, not a string: the route constrains it to a long, so the contract says
           // integer -- unlike `/api/content/{id}`, which the CRUD engine addresses as text.
           params: { path: { id } },
-          body: { changelog },
+          body: { changelog: blankToNull(request.changelog), airac: blankToNull(request.airac) },
         }),
       ),
     onSuccess: async (content) => {
