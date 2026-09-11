@@ -9,7 +9,17 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.18 — 10 settembre 2026 (**scritte le tre richieste sui documenti** che vivevano solo
+**Versione:** 2.19 — 11 settembre 2026 (**il collaudo a occhio di Carmine**, due giornate di
+rifiniture, tutte dentro G13 e tutte sulla PR #57: editor a tre colonne con la barra dei componenti;
+barra del sito a una riga, footer a colonne dal menu, marchio e favicon della divisione da
+`division.json`, i caratteri di IVAO finalmente caricati; `StaffSidebar` al posto della barra di
+Atmosphere; testata a una riga delle schermate staff; colonne visibili mentre si compone e **sette
+sfondi** di sezione, che hanno riaperto §16.C del piano (piano 0.58). Il **documento operativo** è
+deciso e diventa **G14**, dopo il tag: la sua §30 si scrive come primo atto di G14. Le note sono in
+`decisions/2026-09-10-*` e `2026-09-11-*`, e `HANDOFF.md` le mette in ordine. Conto, misurato:
+**472 test .NET** (306 + 166), **324 Vitest**, **56 smoke Playwright**, **13 del giro completo**.)
+
+**2.18** — 10 settembre 2026 (**scritte le tre richieste sui documenti** che vivevano solo
 in chat — piè di pagina deciso, pubblicazione programmata e stampa parcheggiate,
 `decisions/2026-09-09-il-documento-dice-di-se.md` — e `HANDOFF.md` rifatto per chi apre da zero.
 Nessun codice: **G13 non ha più lavoro suo**, restano le tre cose di Carmine (rieseguire la scheda,
@@ -1185,6 +1195,9 @@ seguire il tag, se Carmine preferisce; i difetti no.
     sopra. ⚠️ In cima alla colonna del contenuto e **non** dentro la sidebar, che è il componente di
     Atmosphere e non ha slot: avvolgerla in una colonna nostra è ciò che disegnò tutto il
     back-office in 255 pixel (HANDOFF §13).
+    **Superato l'11 settembre 2026:** la barra laterale ora è nostra (`StaffSidebar`), ha uno slot
+    `top`, e la ricerca sta **in cima alla barra**, accanto al pulsante che la compatta
+    (`decisions/2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md`).
 14. ~~Il giro sull'editor «più intuitivo»~~ — **fatto** (`9bf76ea`), e sono le quattro cose che la
     ricopiatura a mano e il giro visivo avevano **scritto**, non un rifacimento: l'**annulla**
     sull'ultima mossa strutturale (venti passi, un pulsante, niente ⌘Z perché dentro un campo di
@@ -1196,6 +1209,28 @@ seguire il tag, se Carmine preferisce; i difetti no.
 **Accettazione**: i quattro difetti hanno un test ciascuno, verificato rompendolo; Carmine rifà
 `tools/demo-m1.md` **dal punto 1** e arriva in fondo — compresi i punti 8 e 9, che non ha ancora
 eseguito.
+
+#### Il collaudo a occhio del 10 e 11 settembre 2026
+
+Dopo le sedici richieste, Carmine ha guardato l'hub con davanti due siti di IVAO — il page builder e
+la home di va.ivao.aero, il footer della divisione UK & Ireland — e ha chiesto una serie di
+rifiniture. Nessuna era una funzione nuova di modulo; quelle che toccavano una decisione hanno la loro
+nota, e sono tutte fatte, sulla PR #57:
+
+| Che cosa | Nota |
+|---|---|
+| Editor a tre colonne, barra dei componenti per gruppi | `2026-09-10-la-barra-dei-componenti.md` |
+| Barra del sito a una riga e tasto Staff; `StaffSidebar` (21° dell'elenco chiuso); footer a colonne dal menu (colonna `icon` e intestazioni senza indirizzo); marchio e favicon da `division.json` | `2026-09-10-la-barra-la-sidebar-e-il-footer.md` |
+| Barra laterale: un dipartimento alla volta, voce più specifica, ricerca in cima, nomi per esteso; tendine leggibili; Poppins e Nunito Sans; testata a una riga | `2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md` |
+| Colonne visibili mentre si compone; sette sfondi (piano 0.58) | `2026-09-11-la-sezione-si-vede-com-e-divisa.md` |
+
+⚠️ **Due difetti trovati facendolo, che erano miei**: il bianco forzato della barra blu aveva reso
+illeggibili le voci delle tendine, e un e2e era rimasto verde perché `toBeVisible` non misura il
+contrasto — ora lo misura, con la funzione unica `e2e/contrast.ts`; e rinominare le intestazioni della
+barra laterale aveva rotto la ricerca per sigla («ED links»), che un test nuovo ha trovato.
+
+Il **documento operativo** (LoA/SOP alla va.ivao.aero) è deciso ma **non** è G13: diventa **G14**,
+dopo il tag (`2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
 
 ---
 
