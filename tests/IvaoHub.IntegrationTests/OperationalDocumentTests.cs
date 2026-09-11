@@ -25,7 +25,7 @@ namespace IvaoHub.IntegrationTests;
 public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
     private const int SuperadminVid = 660001;
-    private const int AtcCoordinatorVid = 660002;
+    private const int SpecialOpsCoordinatorVid = 660002;
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -222,17 +222,25 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
     {
         var token = TestContext.Current.CancellationToken;
         await SeedUserAsync(SuperadminVid, token);
-        await SeedUserAsync(AtcCoordinatorVid, token, position: "IT-AOC", email: "aoc@example.org");
+        // ⚠️ Special operations, and not ATC: `ContactsAndNotificationsTests` asserts the exact set
+        // of people who hear about a message to the ATC department, and every class of this
+        // assembly writes into the same database — a second ATC coordinator here was a red CI there.
+        await SeedUserAsync(SpecialOpsCoordinatorVid, token, position: "IT-SOC", email: "soc@example.org");
         await SeedSnapshotAsync(token);
 
         using var client = _factory.CreateApiClient();
         await _factory.SignInAsync(client, SuperadminVid, token);
 
-        // One stem for both slugs, so the list can be asked about these two rows and nobody else's:
-        // every class of this assembly writes into the same database.
+        // One stem for both slugs, so the list can be asked about these two rows and nobody else's.
         var stem = $"rv{Guid.NewGuid():N}"[..14];
-        var overdue = await CreateAsync(client, Payload($"{stem}-overdue", reviewOn: "2026-01-01"), token);
-        var fresh = await CreateAsync(client, Payload($"{stem}-fresh", reviewOn: "2099-01-01"), token);
+        var overdue = await CreateAsync(
+            client,
+            Payload($"{stem}-overdue", department: Department.SOD, reviewOn: "2026-01-01"),
+            token);
+        var fresh = await CreateAsync(
+            client,
+            Payload($"{stem}-fresh", department: Department.SOD, reviewOn: "2099-01-01"),
+            token);
 
         // The job, run as the scheduler would run it: nobody signed in, the whole table in view.
         await using (var scope = _factory.Services.CreateAsyncScope())
@@ -286,6 +294,7 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
     private static object Payload(
         string slug,
         ContentKind kind = ContentKind.Document,
+        Department department = Department.AOD,
         string? documentType = "Sop",
         string? icao = null,
         string? fir = null,
@@ -299,7 +308,7 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         {
             kind = kind.ToString(),
             slug,
-            ownerDepartment = nameof(Department.AOD),
+            ownerDepartment = department.ToString(),
             visibility = nameof(Visibility.Public),
             isTemplate = false,
             title = new Dictionary<string, string>(StringComparer.Ordinal)
