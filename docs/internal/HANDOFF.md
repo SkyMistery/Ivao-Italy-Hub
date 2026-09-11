@@ -66,8 +66,8 @@ riaperto e cambiato). **Design M1:** v1.15
 (`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
 G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è aperta** (§28) e raccoglie le rifiniture del
 collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
-**Test, misurati il 12 settembre su `m1/g14-operational-document`:** **477 .NET** (306 unit +
-171 integrazione, **tutta la suite eseguita in locale**, verde in 90 s) + **371 Vitest** + **56
+**Test, misurati il 12 settembre su `m1/media-dedupe` (sopra G14):** **478 .NET** (306 unit +
+172 integrazione, **tutta la suite eseguita in locale**, verde in 80 s) + **371 Vitest** + **56
 smoke Playwright** + **17 del giro pieno** (`pnpm e2e:full`, rieseguito dopo G14: il giro preme ora
 il pulsante della finestra di pubblicazione).
 ⚠️ Nel giro pieno compaiono a volte, nel log del server, errori di **connessione al DB** su
