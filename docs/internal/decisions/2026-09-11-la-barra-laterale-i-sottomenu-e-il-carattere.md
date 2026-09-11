@@ -108,3 +108,28 @@ sta nell'area membri.
 un dipartimento, quindi quando si progetteranno le sezioni personali basterà che `/staff` diventi quella
 pagina: il tasto ci porterà senza essere toccato. Farla adesso sarebbe stata una pagina vuota, e una
 schermata nuova è (c): prima la nota di design.
+
+---
+
+## Poi: lo spazio in cima alle schermate staff
+
+Carmine, con due schermate cerchiate in rosso (l'editor di una news e la lista delle pagine): «ci possiamo
+inventare un modo per non sprecare tutto questo spazio qui sopra?». Misurato: circa **190 px** prima del
+contenuto — margine, percorso, titolo enorme, frase, altri margini — e **430** nell'editor, che aveva in
+più la sua barra su una riga a parte.
+
+Due ripetizioni lo spiegavano: il titolo era già l'ultima voce del percorso, e la frase sotto era la
+stessa che la barra laterale scrive sotto la voce che porta lì.
+
+**Scelta di Carmine fra tre proposte: una riga sola.** Percorso e titolo sono una riga, il titolo ne è la
+fine, i pulsanti stanno a destra sulla stessa riga, e la riga resta in vista mentre si scorre.
+
+- **Un componente, non trenta schermate:** `PageShell` ha due densità e la sceglie il layout, con un
+  contesto (`CompactPageShells`) messo una volta in `StaffLayout`. Il sito pubblico non cambia.
+- ⚠️ **`description` e `note`.** Delle descrizioni dello staff, tutte ripetevano la barra laterale
+  **tranne due** che portavano un'informazione vera: quante righe sono nate da un template, e la regola
+  «un divieto vince sempre» nel form dei permessi. Quelle due sono passate a `note`, che resta visibile;
+  le altre restano come tooltip del titolo. Buttarle tutte avrebbe perso quelle due in silenzio.
+- **La barra dell'editor sulla riga del titolo**, con `PageActions`: un portale nello slot della cornice.
+  I pulsanti restano dove sta il loro stato (la cronologia di Annulla, il form che Salva invia con
+  `form=`) e cambia solo dove vengono disegnati. Nell'editor le colonne partono ora a circa 140 px.

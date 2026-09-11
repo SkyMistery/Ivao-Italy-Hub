@@ -10,7 +10,7 @@ import type { Department } from '../../shared/api/bootstrap';
 import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import type { MediaLibraryQuery } from '../../shared/ui';
-import { ConfirmDialog, SectionHeader } from '../../shared/ui';
+import { ConfirmDialog, PageActions, SectionHeader } from '../../shared/ui';
 
 import { BlockPalette } from './BlockPalette';
 import { BlockProperties, SectionProperties } from './BlockProperties';
@@ -354,60 +354,65 @@ export function ContentEditor({
           `Save draft` submits by `form=`, which is how HTML has always let a button live outside the
           form it belongs to: the form is in the panel on the right, where the page's own properties
           are edited. */}
-      <div className="bg-body sticky top-0 z-10 flex flex-wrap items-center gap-3 py-3">
-        <Button type="submit" form={METADATA_FORM} disabled={busy}>
-          {t('content.editor.saveDraft')}
-        </Button>
+      {/* ⚠️ And since 11 September 2026 on the frame's own line, beside the title, rather than on a
+          line of its own under it (Carmine: stop wasting the space at the top). `PageActions` draws
+          it up there while its state stays here, and that line is the sticky one now. */}
+      <PageActions>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" form={METADATA_FORM} disabled={busy}>
+            {t('content.editor.saveDraft')}
+          </Button>
 
-        <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
-          {preview ? (
-            <List aria-hidden className="mr-2 size-4" />
-          ) : (
-            <Eye aria-hidden className="mr-2 size-4" />
-          )}
-          {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
-        </Button>
+          <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
+            {preview ? (
+              <List aria-hidden className="mr-2 size-4" />
+            ) : (
+              <Eye aria-hidden className="mr-2 size-4" />
+            )}
+            {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
+          </Button>
 
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={!history.canUndo}
-          onClick={() => {
-            history.undo();
-            setUnsaved(true);
-            // What was selected may not exist in the body that comes back, and the page's own
-            // properties are always there to fall back on.
-            setSelection(null);
-          }}
-        >
-          <Undo2 aria-hidden className="mr-2 size-4" />
-          {t('content.editor.undo')}
-        </Button>
-
-        {onPublish === null ? null : (
           <Button
             type="button"
-            variant="secondary"
-            disabled={unsaved || busy}
-            onClick={onPublish}
-            title={unsaved ? t('content.editor.saveBeforePublishing') : undefined}
+            variant="ghost"
+            disabled={!history.canUndo}
+            onClick={() => {
+              history.undo();
+              setUnsaved(true);
+              // What was selected may not exist in the body that comes back, and the page's own
+              // properties are always there to fall back on.
+              setSelection(null);
+            }}
           >
-            <Send aria-hidden className="mr-2 size-4" />
-            {t('content.editor.publish')}
+            <Undo2 aria-hidden className="mr-2 size-4" />
+            {t('content.editor.undo')}
           </Button>
-        )}
 
-        {onDelete === null ? null : (
-          <ConfirmDialog
-            triggerText={t('common.delete')}
-            title={t('content.delete.title')}
-            description={t('content.delete.description')}
-            confirmText={t('common.delete')}
-            disabled={busy}
-            onConfirm={onDelete}
-          />
-        )}
-      </div>
+          {onPublish === null ? null : (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={unsaved || busy}
+              onClick={onPublish}
+              title={unsaved ? t('content.editor.saveBeforePublishing') : undefined}
+            >
+              <Send aria-hidden className="mr-2 size-4" />
+              {t('content.editor.publish')}
+            </Button>
+          )}
+
+          {onDelete === null ? null : (
+            <ConfirmDialog
+              triggerText={t('common.delete')}
+              title={t('content.delete.title')}
+              description={t('content.delete.description')}
+              confirmText={t('common.delete')}
+              disabled={busy}
+              onConfirm={onDelete}
+            />
+          )}
+        </div>
+      </PageActions>
 
       <PublishProblems body={body} problems={publishProblems} />
 

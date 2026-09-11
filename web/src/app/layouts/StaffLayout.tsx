@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { SearchPalette } from '../../features/search/SearchPalette';
 import type { Bootstrap } from '../../shared/api/bootstrap';
-import { StaffSidebar, type StaffSidebarGroup } from '../../shared/ui';
+import { CompactPageShells, StaffSidebar, type StaffSidebarGroup } from '../../shared/ui';
 
 import { AppFooter, AppHeader } from './Chrome';
 import { RouterAnchor } from './RouterAnchor';
@@ -57,8 +57,13 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
           // because a palette that only opens on one screen is a palette nobody learns (design M1 §7).
           top={(collapsed) => <SearchPalette bootstrap={bootstrap} compact={collapsed} />}
         />
-        <main className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-8">
-          <Outlet />
+        {/* ⚠️ Every screen of the back office in the one-line frame, said here once rather than on
+            thirty screens (Carmine, 11 September 2026), and with less room above it: `py-8` was a
+            band the width of the window above every title. */}
+        <main className="flex min-w-0 flex-1 flex-col gap-6 px-6 py-5">
+          <CompactPageShells>
+            <Outlet />
+          </CompactPageShells>
         </main>
       </div>
 

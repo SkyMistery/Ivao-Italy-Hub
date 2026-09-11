@@ -490,6 +490,26 @@ component read out of a map while something renders is one React treats as new o
 remounts what it draws, and `react-hooks/static-components` refuses it outright. `iconGlyph` hands
 back an element, built once per set of classes and kept.
 
+## The top of a back office screen is one line
+
+`PageShell` has two densities, and a screen does not choose: the back office's layout wraps every
+screen in `CompactPageShells`, the public site does not.
+
+- **In the back office**, the trail and the title are one line — the title *is* the end of the
+  trail, so it is written once — with the screen's actions on the same line to the right, sticky
+  while the page scrolls. Before 11 September 2026 the same screen spent about 190 pixels on a
+  margin, a trail, a very large title and a sentence before its content began.
+- `description` is **not drawn** there: it is the same sentence the sidebar already shows under the
+  entry that leads to the screen. It stays as the title's tooltip, and the public site still draws
+  it under the title.
+- `note` is for what is true of **this** page and must stay visible — how many pages were made from
+  a template, the rule a form is filled against. It is drawn in both densities. Choosing between the
+  two is the one thing this component asks of a caller: a caption the sidebar repeats is a
+  `description`, a fact about the row is a `note`.
+- A control built deep inside a screen — the content editor's toolbar, which lives on the editor's
+  own state — goes up beside the title through `PageActions`, a portal into the frame's slot, rather
+  than by turning the screen inside out to pass it up as `actions`.
+
 ## Typefaces
 
 IVAO's two typefaces are **Poppins** and **Nunito Sans**, and Atmosphere asks for both

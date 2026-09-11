@@ -1,5 +1,5 @@
 export { Hero, SectionHeader, StatTile, EmptyState } from './layout-pieces';
-export { PageShell, type Crumb } from './PageShell';
+export { CompactPageShells, PageActions, PageShell, type Crumb } from './PageShell';
 export { DepartmentBadge, VisibilityBadge, StatusBadge, type Visibility } from './badges';
 export { LocaleSwitcher } from './LocaleSwitcher';
 export { MarkdownContent } from './MarkdownContent';

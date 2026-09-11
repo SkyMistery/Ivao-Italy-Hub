@@ -108,7 +108,7 @@ export function ContentFormScreen({
   return (
     <PageShell
       title={title}
-      {...(note === undefined ? {} : { description: note })}
+      {...(note === undefined ? {} : { note })}
       breadcrumb={[
         { label: department },
         { label: t(`${config.titles}.title`), to: breadcrumbTo },
