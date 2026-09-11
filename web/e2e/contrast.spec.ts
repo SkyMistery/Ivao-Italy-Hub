@@ -1,7 +1,7 @@
 import { type Page, expect, test } from '@playwright/test';
 
 import { measureContrast, type Measured } from './contrast';
-import { siteStaffBootstrap, stubTheApi, stubTheApiAsStaff } from './fixtures';
+import { oneTemplate, siteStaffBootstrap, stubTheApi, stubTheApiAsStaff } from './fixtures';
 
 /**
  * The secondary text is readable in the dark theme, measured rather than looked at.
@@ -79,4 +79,77 @@ test.describe('the dark theme', () => {
       readable(path, await secondaryTextOf(page));
     }
   });
+});
+
+/**
+ * The three dark grounds a section can stand on since 11 September 2026 — the brand blue, the deep
+ * blue and the dark — and the promise they were added on: that whatever a block draws on them can be
+ * read. Each ground is drawn in the dark theme for exactly that reason, and one of them still needed
+ * a lighter grey (`.on-brand-ground` in `styles/index.css`): measured at 3.50 : 1 before it.
+ *
+ * Measured in the editor, whose page is the same renderer a visitor gets, in the light theme on
+ * purpose: these grounds are dark whatever the reader's theme is, so the light one is the case in
+ * which a block could still bring dark text with it.
+ */
+test('text on the dark grounds of a section meets AA', async ({ page }) => {
+  const section = (id: string, background: string, blocks: unknown[]) => ({
+    id,
+    key: id,
+    title: { en: id, it: id },
+    layout: 'stacked',
+    background,
+    padding: 'md',
+    width: 'default',
+    mediaId: null,
+    required: null,
+    locked: null,
+    allowedBlocks: null,
+    blocks,
+    sections: [],
+  });
+
+  // A heading, and a data block, whose loading line is the secondary grey the brand ground failed.
+  const onIt = (ground: string) => [
+    {
+      id: `h-${ground}`,
+      type: 'heading',
+      version: 1,
+      renderMode: null,
+      frozen: null,
+      column: 0,
+      props: { level: 2, text: { en: `On ${ground}`, it: ground } },
+    },
+    { id: `s-${ground}`, type: 'stats', version: 1, renderMode: null, frozen: null, column: 0, props: {} },
+  ];
+
+  const row = {
+    ...oneTemplate,
+    isTemplate: false,
+    body: {
+      schemaVersion: 1,
+      sections: ['brand', 'deep', 'dark'].map((ground) => section(ground, ground, onIt(ground))),
+    },
+  };
+
+  await stubTheApiAsStaff(page);
+  await page.route('**/api/content/*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(row) }),
+  );
+  await page.route('**/api/content/*/publish-problems', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ errors: {}, localized: {} }),
+    }),
+  );
+
+  await page.goto('/staff/ed/content/1');
+  await page.locator('section.dark h2').first().waitFor({ state: 'visible' });
+
+  const rows = await measureContrast(page, 'section.dark h2, section.dark .text-muted-foreground');
+
+  // Three headings at least, and the secondary line on the brand blue among what was measured: a
+  // check that found nothing on the ground that failed would say nothing.
+  expect(rows.filter((row) => row.text.startsWith('On ')).length).toBe(3);
+  readable('the dark grounds', rows);
 });

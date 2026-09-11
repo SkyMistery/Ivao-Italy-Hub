@@ -363,6 +363,28 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             token);
 
         Assert.Equal(HttpStatusCode.Created, accepted.StatusCode);
+
+        // And the three dark grounds of 11 September 2026. Asked one by one, because the day the
+        // client grows a fourth and this list does not, it is the new one that must fail here and
+        // not a page an editor saved.
+        foreach (var ground in new[] { "brand", "deep", "dark" })
+        {
+            var onGround = JsonNode.Parse($$"""
+            {
+              "schemaVersion": 1,
+              "sections": [ { "id": "s1", "background": "{{ground}}", "blocks": [] } ]
+            }
+            """);
+
+            using var saved = await SendAsync(
+                client,
+                HttpMethod.Post,
+                ContentEndpoints.Pattern,
+                Payload(Department.ED, $"bg-{Guid.NewGuid():N}"[..20], body: onGround),
+                token);
+
+            Assert.True(saved.StatusCode == HttpStatusCode.Created, $"{ground} was refused: {saved.StatusCode}");
+        }
     }
 
     [Fact]

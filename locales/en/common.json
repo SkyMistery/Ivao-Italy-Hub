@@ -437,6 +437,9 @@
           "none": "None",
           "muted": "Muted",
           "accent": "Accent",
+          "brand": "Brand blue",
+          "deep": "Deep blue",
+          "dark": "Dark",
           "image": "Picture"
         },
         "padding": {
@@ -530,7 +533,8 @@
       "undo": "Undo",
       "page": "Page",
       "addRow": "Add row",
-      "untitledRow": "Untitled row"
+      "untitledRow": "Untitled row",
+      "addHere": "+ Add here"
     },
     "slugPlaceholder": "my-new-page",
     "hints": {

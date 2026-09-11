@@ -437,6 +437,9 @@
           "none": "Nessuno",
           "muted": "Tenue",
           "accent": "Accento",
+          "brand": "Blu del marchio",
+          "deep": "Blu profondo",
+          "dark": "Scuro",
           "image": "Immagine"
         },
         "padding": {
@@ -530,7 +533,8 @@
       "undo": "Annulla",
       "page": "Pagina",
       "addRow": "Aggiungi riga",
-      "untitledRow": "Riga senza titolo"
+      "untitledRow": "Riga senza titolo",
+      "addHere": "+ Aggiungi qui"
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

@@ -1,9 +1,28 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.57 — 10 settembre 2026 (**una pagina si compone guardandola**, e una sezione contiene righe; il documento pubblicato dirà di sé; M2 si divide in due)
+**Versione documento:** 0.58 — 11 settembre 2026 (**sette sfondi di sezione e non quattro**, tre dei quali scuri; mentre si compone, una sezione mostra come è divisa)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.58** (11 set 2026): **una sezione può stare su tre fondi scuri**, e mentre si compone
+si vede com'è divisa. Nota `decisions/2026-09-11-la-sezione-si-vede-com-e-divisa.md`, chiesta da Carmine
+con davanti il page builder di va.ivao.aero.
+
+**Riaperta e cambiata una convenzione di §16.C**, chiusa il 6 settembre: gli sfondi di una sezione
+erano **quattro** (`none`, `muted`, `accent`, `image`) e ora sono **sette** — si aggiungono `brand`,
+`deep` e `dark`, i tre fondi scuri della tavolozza di va.ivao.aero, presi dai token di Atmosphere
+(`atmos-700` è esattamente il loro #0D2C99). Ognuno è disegnato **nel tema scuro**, quindi quello
+che un blocco ci scrive sopra si legge per costruzione; misurato, e il blu del marchio ha avuto
+bisogno di un grigio secondario più chiaro (3,50 : 1 prima, 4,88 dopo). **Il colore libero no**: è
+l'unico pezzo loro non preso, perché un colore scelto a mano non può promettere che il testo si legga
+— la ragione per cui gli sfondi erano un insieme chiuso resta intera.
+
+**Mentre si compone**, ogni colonna di una sezione è tratteggiata e una colonna vuota dice «+ Aggiungi
+qui»: sceglierla manda lì il prossimo componente della barra di sinistra. Prima un componente finiva
+**sempre nella prima colonna**. Il visitatore non vede niente di tutto questo: è lo stesso contesto di
+picking del 9 settembre, che sul sito pubblico non esiste. Il trascinamento dalla barra alla colonna
+resta il punto 3 aperto del 10 settembre.
 
 **Changelog 0.57** (10 set 2026): **un documento pubblicato dirà di sé**, e due richieste restano
 sul tavolo. Nota `decisions/2026-09-09-il-documento-dice-di-se.md`, scritta perché nessuna delle tre
@@ -1545,7 +1564,7 @@ Criterio di Carmine: **quanto meno codice possibile; un pezzo usato in due punti
 
 **C. Convenzioni UI — da trattare nel design di M0, prima della prima schermata** (concordato il 2 set 2026)
 
-Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti. ✅ **Chiuso il 6 settembre 2026 con G3 di M1**: i 21 blocchi esistono e le convenzioni sono scritte in `docs/UI-GUIDELINES.md`, sezione «The conventions every block follows» — la spaziatura e lo sfondo sono della sezione e mai del blocco, quattro sfondi (`none`, `muted`, `accent`, `image` con `mediaId`), quattro larghezze, la resa di una sezione `locked`, il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che non sia prosa dentro `props`, nessun blocco che contiene blocchi, e l'allowlist degli host per i riquadri.
+Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti. ✅ **Chiuso il 6 settembre 2026 con G3 di M1**: i 21 blocchi esistono e le convenzioni sono scritte in `docs/UI-GUIDELINES.md`, sezione «The conventions every block follows» — la spaziatura e lo sfondo sono della sezione e mai del blocco, quattro sfondi (`none`, `muted`, `accent`, `image` con `mediaId`) — **sette dall'11 settembre 2026**, con i tre fondi scuri `brand`, `deep`, `dark` disegnati nel tema scuro e ancora nessun colore libero (changelog 0.58) —, quattro larghezze, la resa di una sezione `locked`, il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che non sia prosa dentro `props`, nessun blocco che contiene blocchi, e l'allowlist degli host per i riquadri.
 
 **D. Buchi chiusi**
 

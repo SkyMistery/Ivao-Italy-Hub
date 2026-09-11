@@ -167,15 +167,24 @@ export function reorderBlocks(body: Body, activeId: string, overId: string): Bod
   };
 }
 
+/**
+ * Adds a block at the end of one column of a section.
+ *
+ * `column` since 11 September 2026: it used to be 0 for every block, so in a section of two columns a
+ * component always landed in the first and had to be moved into the second afterwards — which is the
+ * friction the "add here" of an empty column exists to remove. It defaults to the first, which is also
+ * where a block of a stacked section is.
+ */
 export function addBlock(
   body: Body,
   sectionId: string,
   type: string,
   props: Record<string, unknown>,
   renderMode: 'live' | 'frozen' | null,
+  column = 0,
 ): { body: Body; id: string } {
   const id = newId('b');
-  const block: BlockEnvelope = { id, type, version: 1, props, renderMode, frozen: null, column: 0 };
+  const block: BlockEnvelope = { id, type, version: 1, props, renderMode, frozen: null, column };
 
   return {
     body: {

@@ -1,5 +1,6 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
@@ -38,6 +39,19 @@ const BACKGROUND = {
   none: '',
   muted: 'bg-muted',
   accent: 'bg-accent',
+  // ⚠️ The three dark grounds (Carmine, 11 September 2026: the palette of va.ivao.aero's page
+  // builder, less its free colour picker). Each carries the class `dark` as well as its colour, and
+  // that is what makes them safe: Atmosphere defines the dark theme's tokens on `.dark` and Tailwind's
+  // `dark:` variant matches `.dark *`, so a dark section is a piece of the page in the dark theme —
+  // every block inside it reads light on dark **by construction**, whatever colours it asks for.
+  // A free colour could promise none of that, which is why there is none.
+  //
+  // Atmosphere's own tokens, not colours written here: `atmos-700` is exactly va.ivao.aero's #0D2C99.
+  // `on-brand-ground` lightens the secondary grey on this one ground, where the dark theme's own
+  // measured 3.50 : 1 (`styles/index.css`).
+  brand: 'dark on-brand-ground bg-atmos-700 text-foreground',
+  deep: 'dark bg-atmos-800 text-foreground',
+  dark: 'dark bg-fuselage-900 text-foreground',
   image: 'bg-muted bg-cover bg-center',
 } as const;
 
@@ -138,11 +152,11 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
 function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
   if (section.layout === 'stacked') {
     return (
-      <div className="flex flex-col gap-6">
+      <Column section={section} column={0}>
         {section.blocks.map((block) => (
           <BlockView key={block.id} block={block} staff={staff} />
         ))}
-      </div>
+      </Column>
     );
   }
 
@@ -152,7 +166,7 @@ function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: bo
   return (
     <div className={`grid grid-cols-1 gap-6 ${GRID[section.layout] ?? ''}`}>
       {Array.from({ length: columns }, (_, column) => (
-        <div key={column} className={`flex flex-col gap-6 ${spans[column] ?? ''}`}>
+        <Column key={column} section={section} column={column} className={spans[column] ?? ''}>
           {section.blocks
             // A block with no column belongs to the first one: a section whose layout changed
             // must not lose the blocks that were written before it did.
@@ -160,8 +174,81 @@ function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: bo
             .map((block) => (
               <BlockView key={block.id} block={block} staff={staff} />
             ))}
-        </div>
+        </Column>
       ))}
+    </div>
+  );
+}
+
+/**
+ * One column of a section. For a visitor it is a plain column and nothing else.
+ *
+ * ⚠️ While a page is being composed it is **drawn**, and that is the whole of the request of
+ * 11 September 2026 (Carmine, with va.ivao.aero's page builder in front of him: "when a section is
+ * added you see clearly how it is divided — the drop here in the empty areas"). Every column gets a
+ * dashed outline, so a section in two columns reads as two columns before anything is in them; an
+ * empty one says where a component would go and takes the click that chooses it. Before this an
+ * empty section drew nothing at all, and a component always landed in the first column.
+ *
+ * `outline` and not `border`, for the reason the selection ring gives: a border would move
+ * everything by a pixel, and what is composed here has to be what a reader gets.
+ */
+function Column({
+  section,
+  column,
+  className = '',
+  children,
+}: {
+  section: SectionEnvelope;
+  column: number;
+  className?: string;
+  children: ReactNode[];
+}) {
+  const picking = usePicking();
+  const { t } = useTranslation();
+
+  if (picking === null) {
+    return <div className={`flex flex-col gap-6 ${className}`}>{children}</div>;
+  }
+
+  const chosen = picking.target?.section === section.id && picking.target.column === column;
+  const open = picking.accepts(section.id);
+
+  return (
+    <div
+      data-pickable="column"
+      // The bubble phase, like the section's: a block takes the capture phase and stops there, so a
+      // click on a block picks the block, and a click on the air of a column picks the column.
+      // Stopped here, or the section would take it next and forget which column it was.
+      onClick={(event) => {
+        if (!open) {
+          return;
+        }
+        event.stopPropagation();
+        picking.onPickColumn(section.id, column);
+      }}
+      className={`flex min-h-16 flex-col gap-6 rounded-md outline-1 outline-offset-4 ${
+        chosen ? 'outline-primary outline-solid' : 'outline-border outline-dashed'
+      } ${className}`}
+    >
+      {children}
+
+      {children.length === 0 && open ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            picking.onPickColumn(section.id, column);
+          }}
+          className={`text-muted-foreground flex min-h-16 flex-1 items-center justify-center rounded-md border border-dashed text-sm transition-colors ${
+            chosen
+              ? 'border-primary text-foreground'
+              : 'border-border hover:border-primary hover:text-foreground'
+          }`}
+        >
+          {t('content.editor.addHere')}
+        </button>
+      ) : null}
     </div>
   );
 }

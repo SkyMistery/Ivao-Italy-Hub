@@ -22,7 +22,10 @@ const SWATCH: Record<Background, string> = {
   none: 'bg-body border-border',
   muted: 'bg-muted border-muted',
   accent: 'bg-accent border-accent',
-  // A picture is chosen in the form below — this only says which of the four is on.
+  brand: 'bg-atmos-700 border-atmos-700',
+  deep: 'bg-atmos-800 border-atmos-800',
+  dark: 'bg-fuselage-900 border-fuselage-900',
+  // A picture is chosen in the form below — this only says which of the grounds is on.
   image:
     'bg-muted border-border bg-[linear-gradient(45deg,transparent_45%,currentColor_45%,currentColor_55%,transparent_55%)]',
 };

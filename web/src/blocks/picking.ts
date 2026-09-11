@@ -21,6 +21,23 @@ export interface Picking {
   /** The identifier of whatever is selected, section or block; `null` when nothing is. */
   readonly selected: string | null;
   readonly onPick: (kind: 'section' | 'block', id: string) => void;
+  /**
+   * The column a component from the palette would land in, when one has been chosen. Drawn as
+   * chosen, so the next click on the palette has a visible destination.
+   */
+  readonly target: { readonly section: string; readonly column: number } | null;
+  /**
+   * Chooses a column of a section as where the next component goes (Carmine, 11 September 2026:
+   * "you see clearly how it is divided — the drop here in the empty areas"). Before this, a
+   * component always landed in the first column of a section and had to be moved to the second.
+   */
+  readonly onPickColumn: (section: string, column: number) => void;
+  /**
+   * Whether anything may be added to a section. A section a template locks takes no new component,
+   * and an empty column in it must not invite one: an invitation the palette then refuses is a
+   * button that lies.
+   */
+  readonly accepts: (section: string) => boolean;
 }
 
 export const PickingContext = createContext<Picking | null>(null);

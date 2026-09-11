@@ -80,7 +80,8 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// carry — and the integration test that posts a background the server does not know is what
     /// keeps them agreeing.</para>
     /// </summary>
-    public static readonly IReadOnlyList<string> Backgrounds = ["none", "muted", "accent", "image"];
+    public static readonly IReadOnlyList<string> Backgrounds =
+        ["none", "muted", "accent", "brand", "deep", "dark", "image"];
 
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 

@@ -369,11 +369,25 @@ their own, the distance between them would depend on *which two they are*, and n
 where to change it. `spacer` exists for the declared exception — air between two blocks that belong
 together and two that do not — and not to make up for margins that disagree.
 
-**The background belongs to the section too, and there are four**: `none`, `muted`, `accent`, and
-`image`, which carries a `mediaId` of the library. A block has no ground of its own, with three
-exceptions whose identity *is* their ground — `hero`, `callout`, `testimonial` — and even those use
-the semantic tokens of the theme and never a colour written by hand. Two `muted` sections one after
-the other simply merge, and that is fine: alternating is the editor's choice, not a rule.
+**The background belongs to the section too, and there are seven**: `none`, `muted`, `accent`, the
+three dark grounds `brand`, `deep` and `dark`, and `image`, which carries a `mediaId` of the library.
+A block has no ground of its own, with three exceptions whose identity *is* their ground — `hero`,
+`callout`, `testimonial` — and even those use the semantic tokens of the theme and never a colour
+written by hand. Two `muted` sections one after the other simply merge, and that is fine:
+alternating is the editor's choice, not a rule.
+
+⚠️ **A dark ground is a piece of the page in the dark theme.** `brand`, `deep` and `dark` carry the
+class `dark` as well as their colour, so every token inside them — foreground, secondary text,
+borders — takes its dark-theme value, and whatever a block draws there reads light by construction.
+That is what made them safe to add, and it is why there is still **no free colour**: a colour chosen
+by hand can promise nothing about the text on it. They are Atmosphere's own tokens (`atmos-700`,
+`atmos-800`, `fuselage-900`), measured by `e2e/contrast.spec.ts`; the brand blue needed a lighter
+secondary grey to reach AA, which `.on-brand-ground` gives it.
+
+While a page is being composed, every column of a section is drawn with a dashed outline and an
+empty one says where a component would go; choosing it sends the next component of the palette
+there. None of it exists for a visitor — it is the picking context of `blocks/picking.ts`, which the
+public site never mounts.
 
 A picture behind a section is for a quiet section. The text over it keeps the page's own foreground
 colour — there is no veil, because a veil is a colour that is not a token — so a wall of prose over a

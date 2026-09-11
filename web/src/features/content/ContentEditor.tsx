@@ -123,6 +123,10 @@ export function ContentEditor({
   const body = history.body;
 
   const [selection, setSelection] = useState<Selection | null>(null);
+  // The column an empty "add here" on the page chose. Only meaningful while its section is the one
+  // selected: select anything else and it is simply not read (see `targetColumn`), which is why no
+  // effect has to clear it.
+  const [chosenColumn, setChosenColumn] = useState<{ section: string; column: number } | null>(null);
   // ⚠️ The page, not the outline, is what the middle column shows to begin with (Carmine, 10
   // September 2026: "the visual editor in the middle"). Composing by clicking the page itself was
   // decided on 9 September and then reached only by pressing a button, which made the road that was
@@ -155,7 +159,7 @@ export function ContentEditor({
   // Adding a block, written once: the palette on the left and the one inside the outline do the
   // very same thing, and a block added from either has to start out identical -- same blank
   // properties, same render mode. Two copies of this would be two ways of being born.
-  const addBlockTo = (sectionId: string, type: string) => {
+  const addBlockTo = (sectionId: string, type: string, column = 0) => {
     const registration = registry.blocks.find((candidate) => candidate.type === type);
     if (registration === undefined) {
       return;
@@ -172,6 +176,7 @@ export function ContentEditor({
       // A data block starts live: capturing is a decision somebody makes, and one that
       // only means anything once the page is published.
       registration.kind === 'Data' ? 'live' : null,
+      column,
     );
 
     change(added.body);
@@ -182,6 +187,17 @@ export function ContentEditor({
   // clicking a paragraph and then `Image` should put the image where you are looking, not ask you
   // to go and select the section first.
   const targetSection = section ?? block?.section;
+
+  // And which column of it (11 September 2026). A block selected means its own column — the image
+  // goes next to the paragraph you clicked, not to the top of the first column. An empty column
+  // clicked on the page means that column. Anything else means the first, which is where a stacked
+  // section keeps its blocks anyway.
+  const targetColumn =
+    block !== undefined
+      ? (block.block.column ?? 0)
+      : chosenColumn !== null && chosenColumn.section === targetSection?.id
+        ? chosenColumn.column
+        : 0;
 
   const targetRule = ruleFor(rules, targetSection?.key);
 
@@ -196,7 +212,14 @@ export function ContentEditor({
       ? null
       : {
           id: targetSection.id,
-          name: read(targetSection.title) || targetSection.key || t('content.editor.untitledSection'),
+          name: [
+            read(targetSection.title) || targetSection.key || t('content.editor.untitledSection'),
+            // Which column, said only where there is a choice: "column 1" of a stacked section
+            // tells nobody anything.
+            ...(columnsOf(targetSection.layout) > 1
+              ? [t('content.editor.columnNumber', { number: targetColumn + 1 })]
+              : []),
+          ].join(' · '),
         };
 
   // ⚠️ Written once and drawn in both ways of composing: beside the outline, and beside the page
@@ -340,8 +363,18 @@ export function ContentEditor({
     () => ({
       selected: selection?.id ?? null,
       onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
+      // The column the palette will fill, drawn as chosen on the page. Only a selected section has
+      // one to show: with a block selected, the destination is that block's column, and the block's
+      // own ring already says where that is.
+      target: selection?.kind === 'section' ? { section: selection.id, column: targetColumn } : null,
+      onPickColumn: (sectionId: string, column: number) => {
+        setSelection({ kind: 'section', id: sectionId });
+        setChosenColumn({ section: sectionId, column });
+      },
+      // A section a template locks takes no new block, so its empty columns must not offer one.
+      accepts: (sectionId: string) => !ruleFor(rules, findSection(body, sectionId)?.key).locked,
     }),
-    [selection],
+    [selection, targetColumn, rules, body],
   );
 
   return (
@@ -441,7 +474,7 @@ export function ContentEditor({
           rule={paletteRule}
           onAdd={(type) => {
             if (paletteTarget !== null) {
-              addBlockTo(paletteTarget.id, type);
+              addBlockTo(paletteTarget.id, type, targetColumn);
             }
           }}
         />

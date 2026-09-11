@@ -32,6 +32,20 @@
 }
 
 /*
+ * The same token once more, for the one ground where fuselage-400 is not enough.
+ *
+ * Since 11 September 2026 a section can stand on the brand blue, the deep blue or the dark
+ * (`blocks/ContentRenderer.tsx`), and each of those is drawn in the dark theme so that what is on
+ * it reads light. Measured on each, secondary text in the dark theme's grey: 4.67 : 1 on the deep
+ * blue and 5.29 : 1 on the dark, which pass — and **3.50 : 1 on the brand blue**, which does not.
+ * fuselage-300 there is 4.88 : 1. Only there: on the other two it would stop reading as secondary,
+ * for the reason the paragraph above gives.
+ */
+.on-brand-ground {
+  --muted-foreground: var(--ivao-color-fuselage-300);
+}
+
+/*
  * The second — and, so far, the last — thing this hub overrides in Atmosphere, and unlike the grey
  * above it is not a matter of taste: their `Select` gives its popup the height of its **trigger**
  * (`h-radix-select-trigger` on the Radix viewport), so the list is one row tall whatever it holds.

@@ -21,12 +21,19 @@ export const RENDER_MODES = ['live', 'frozen'] as const;
 export type RenderMode = (typeof RENDER_MODES)[number];
 
 /**
- * What sits behind a section. Four, since G3: `image` is the one that carries something with it —
- * `mediaId`, a file of the library — and it is what the design asked for from the start
- * (design M1 §1.4). A background belongs to the section and never to a block, so that the ground
- * under two blocks does not depend on which two they are.
+ * What sits behind a section. Four since G3 and seven since 11 September 2026, when Carmine asked
+ * for the palette of va.ivao.aero's page builder: `brand`, `deep` and `dark` are the three dark
+ * grounds, drawn in the dark theme so that what is on them reads by construction (the renderer
+ * explains how). There is still no free colour, and deliberately — that is the one piece of theirs
+ * not taken, because a colour chosen by hand cannot promise that the text on it can be read.
+ *
+ * `image` is the one that carries something with it — `mediaId`, a file of the library. A background
+ * belongs to the section and never to a block, so that the ground under two blocks does not depend
+ * on which two they are.
+ *
+ * ⚠️ The other half is `BlockDocumentWalker.Backgrounds` on the server, and the two agree by hand.
  */
-export const BACKGROUNDS = ['none', 'muted', 'accent', 'image'] as const;
+export const BACKGROUNDS = ['none', 'muted', 'accent', 'brand', 'deep', 'dark', 'image'] as const;
 export type Background = (typeof BACKGROUNDS)[number];
 export const PADDINGS = ['none', 'sm', 'md', 'lg'] as const;
 
