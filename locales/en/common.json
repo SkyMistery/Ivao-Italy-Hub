@@ -1473,6 +1473,10 @@
       "contact.received": {
         "title": "Messages to my department",
         "description": "An email when a member writes to a department you are staff of."
+      },
+      "document.reviewDue": {
+        "title": "Documents due for review",
+        "description": "An email, once, when a document of a department you are staff of passes its review date."
       }
     }
   },

@@ -77,7 +77,7 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindConfig> = {
       // says about it. The retirement is not a column: a retired document reads as one in the
       // public list, and the back office has the row itself for that.
       col.badge('documentType', 'content'),
-      col.date('reviewOn'),
+      col.date('reviewOn', { sortable: true }),
       col.number('sort'),
       col.file('fileMediaId'),
       ...state,

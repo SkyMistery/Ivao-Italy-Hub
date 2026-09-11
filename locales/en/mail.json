@@ -5,6 +5,12 @@
         "subject": "[{{department}}] {{subject}}",
         "body": "A member has written to the {{department}} department.\n\nFrom: VID {{vid}}\nSubject: {{subject}}\n\n{{body}}\n\n---\nRead the message and change its status here: {{url}}\nYou are receiving this because you are staff of {{department}}. You can turn these off on your profile page."
       }
+    },
+    "document": {
+      "reviewDue": {
+        "subject": "[{{department}}] Due for review: {{title}}",
+        "body": "The document \"{{title}}\" of the {{department}} department was to be reviewed by {{reviewOn}}.\n\nOpen it, check it still says what it should, and either publish a new version or move the review date: {{url}}\n\n---\nYou are receiving this once, because you are staff of {{department}}. You can turn these off on your profile page."
+      }
     }
   }
 }

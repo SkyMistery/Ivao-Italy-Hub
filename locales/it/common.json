@@ -1473,6 +1473,10 @@
       "contact.received": {
         "title": "Messaggi al mio dipartimento",
         "description": "Una mail quando un membro scrive a un dipartimento di cui fai parte."
+      },
+      "document.reviewDue": {
+        "title": "Documenti da rivedere",
+        "description": "Una mail, una volta sola, quando un documento di un dipartimento di cui fai parte supera la data di revisione."
       }
     }
   },

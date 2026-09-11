@@ -52,7 +52,7 @@ public static class IvaoServiceCollectionExtensions
             .Configure<IOptions<DivisionOptions>>((options, division) => options.AddTrigger(trigger => trigger
                 .ForJob(RefDataSyncJob.JobName)
                 .WithIdentity($"{RefDataSyncJob.JobName}-daily")
-                .WithCronSchedule(DailyCron, schedule => schedule.InTimeZone(TimeZone(division.Value)))));
+                .WithCronSchedule(DailyCron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
 
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
@@ -64,19 +64,5 @@ public static class IvaoServiceCollectionExtensions
         var ivao = provider.GetRequiredService<IOptions<IvaoOAuthOptions>>().Value;
         client.BaseAddress = new Uri(ivao.Authority);
         client.Timeout = TimeSpan.FromSeconds(30);
-    }
-
-    private static TimeZoneInfo TimeZone(DivisionOptions division)
-    {
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(division.Timezone);
-        }
-        catch (Exception exception) when (exception is TimeZoneNotFoundException or InvalidTimeZoneException)
-        {
-            // The options validator already refuses an unknown time zone at start up; this is only
-            // here so that a schedule can never be the thing that stops the site.
-            return TimeZoneInfo.Utc;
-        }
     }
 }

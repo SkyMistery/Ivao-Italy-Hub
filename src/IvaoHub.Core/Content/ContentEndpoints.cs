@@ -8,12 +8,14 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IvaoHub.Core.Content;
 
@@ -39,6 +41,7 @@ public static class ContentEndpoints
         ArgumentNullException.ThrowIfNull(app);
 
         var mapper = new ContentMapper();
+        var clock = app.ServiceProvider.GetRequiredService<IClock>();
 
         var group = app.MapCrud<ContentEntry, ContentListDto, ContentDetailDto, ContentWriteDto>(
             Pattern,
@@ -53,6 +56,7 @@ public static class ContentEndpoints
                 options.Sortable.Add(nameof(ContentEntry.Status));
                 options.Sortable.Add(nameof(ContentEntry.UpdatedAt));
                 options.Sortable.Add(nameof(ContentEntry.PublishedAt));
+                options.Sortable.Add(nameof(ContentEntry.ReviewOn));
 
                 options.Filterable.Add(nameof(ContentEntry.Kind));
                 options.Filterable.Add(nameof(ContentEntry.OwnerDepartment));
@@ -73,6 +77,17 @@ public static class ContentEndpoints
                 options.CustomFilters[UsesMediaFilter] = (query, raw) =>
                     long.TryParse(raw, CultureInfo.InvariantCulture, out var mediaId)
                         ? query.UsingMedia(mediaId)
+                        : null;
+
+                // "Which documents are due for a look?" (G14): a date compared with today, which
+                // no equality filter can say. The clock is the host's, read once here.
+                options.CustomFilters[ReviewDueFilter] = (query, raw) =>
+                    bool.TryParse(raw, out var due)
+                        ? due
+                            ? query.Where(content => content.ReviewOn != null
+                                && content.ReviewOn <= clock.UtcNow.Date
+                                && content.RetiredAt == null)
+                            : query
                         : null;
 
                 options.SearchFields.Add(content => content.Title);
@@ -170,6 +185,9 @@ public static class ContentEndpoints
     /// writes it too, and a filter name spelled twice is a filter name that drifts.
     /// </summary>
     public const string UsesMediaFilter = "usesMedia";
+
+    /// <summary><c>filter[reviewDue]=true</c>: the documents whose review date has passed (G14).</summary>
+    public const string ReviewDueFilter = "reviewDue";
 
     private static async Task<IResult> CreateFromTemplateAsync(
         long templateId,

@@ -7,6 +7,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,7 @@ namespace IvaoHub.IntegrationTests;
 public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
     private const int SuperadminVid = 660001;
+    private const int AtcCoordinatorVid = 660002;
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -215,6 +217,72 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         Assert.Equal("LoA di prova", after.GetProperty("supersededByTitle").GetProperty("it").GetString());
     }
 
+    [Fact]
+    public async Task ADocumentPastItsReviewDateIsPointedOutToItsDepartmentOnce()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, token);
+        await SeedUserAsync(AtcCoordinatorVid, token, position: "IT-AOC", email: "aoc@example.org");
+        await SeedSnapshotAsync(token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, SuperadminVid, token);
+
+        // One stem for both slugs, so the list can be asked about these two rows and nobody else's:
+        // every class of this assembly writes into the same database.
+        var stem = $"rv{Guid.NewGuid():N}"[..14];
+        var overdue = await CreateAsync(client, Payload($"{stem}-overdue", reviewOn: "2026-01-01"), token);
+        var fresh = await CreateAsync(client, Payload($"{stem}-fresh", reviewOn: "2099-01-01"), token);
+
+        // The job, run as the scheduler would run it: nobody signed in, the whole table in view.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var told = await scope.ServiceProvider.GetRequiredService<DocumentReviewJob>().RunAsync(token);
+            Assert.True(told >= 1);
+        }
+
+        // One row per member of the department's staff who can be reached — and other classes of
+        // this assembly seed staff of the same department, so what is counted is "some, and then
+        // no more", never "exactly one".
+        var reminded = (await RemindersForAsync(overdue.Id, token)).Count;
+        Assert.True(reminded >= 1);
+        Assert.Empty(await RemindersForAsync(fresh.Id, token));
+
+        // Told once: the row remembers, and the next night says nothing about it.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var row = await database.Contents.IgnoreQueryFilters().AsNoTracking().FirstAsync(c => c.Id == overdue.Id, token);
+            Assert.NotNull(row.ReviewNotifiedAt);
+
+            await scope.ServiceProvider.GetRequiredService<DocumentReviewJob>().RunAsync(token);
+        }
+
+        Assert.Equal(reminded, (await RemindersForAsync(overdue.Id, token)).Count);
+
+        // And the list can be asked the same question, for the screen of the department.
+        var due = await client.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}?filter[{ContentEndpoints.ReviewDueFilter}]=true&filter[kind]=Document&q={stem}",
+            token);
+        var ids = due.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetInt64()).ToList();
+        Assert.Contains(overdue.Id, ids);
+        Assert.DoesNotContain(fresh.Id, ids);
+    }
+
+    /// <summary>The reminders queued about one document, found by the address the mail points at.</summary>
+    private async Task<IReadOnlyList<Notification>> RemindersForAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var all = await database.Notifications
+            .AsNoTracking()
+            .Where(row => row.Type == NotificationTypes.DocumentReviewDue)
+            .ToListAsync(cancellationToken);
+
+        return [.. all.Where(row => row.DataJson.Contains($"/documents/{id}\"", StringComparison.Ordinal))];
+    }
+
     private static object Payload(
         string slug,
         ContentKind kind = ContentKind.Document,
@@ -308,7 +376,11 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         return await client.SendAsync(request, cancellationToken);
     }
 
-    private async Task SeedUserAsync(int vid, CancellationToken cancellationToken)
+    private async Task SeedUserAsync(
+        int vid,
+        CancellationToken cancellationToken,
+        string? position = null,
+        string? email = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
@@ -323,9 +395,28 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
 
         user.FirstName = "Test";
         user.LastName = "User";
-        user.IsSuperadmin = true;
+        // Nobody with a position is the superadmin: the one who publishes here is, the staff member
+        // who is told about the review is not.
+        user.IsSuperadmin = position is null;
+        user.IsStaff = position is not null;
+        user.Email = email;
         user.SecurityStamp = SuperadminService.NewStamp();
         user.UpdatedAt = clock.UtcNow;
+
+        if (position is not null
+            && !await database.UserStaffPositions.AnyAsync(row => row.Vid == vid && row.Position == position, cancellationToken))
+        {
+            var parsed = StaffRoleMap.Parse(position, "IT", new HashSet<string>());
+            database.UserStaffPositions.Add(new UserStaffPosition
+            {
+                Vid = vid,
+                Position = position,
+                Department = parsed?.Department,
+                Level = parsed?.Level,
+                Fir = parsed?.Fir,
+                SyncedAt = clock.UtcNow,
+            });
+        }
 
         await database.SaveChangesAsync(cancellationToken);
     }

@@ -12,8 +12,14 @@ public static class NotificationTypes
     /// <summary>A member has written to a department. Its audience is that department's staff.</summary>
     public const string ContactReceived = "contact.received";
 
+    /// <summary>
+    /// An operational document's review date has passed (G14). Its audience is the staff of the
+    /// department that owns it, told once: <c>DocumentReviewJob</c> writes when it told them.
+    /// </summary>
+    public const string DocumentReviewDue = "document.reviewDue";
+
     /// <summary>In the order the profile screen lists them.</summary>
-    public static readonly IReadOnlyList<string> All = [ContactReceived];
+    public static readonly IReadOnlyList<string> All = [ContactReceived, DocumentReviewDue];
 
     /// <summary>The key of the subject line of a type, in <c>locales/{lang}/mail.json</c>.</summary>
     public static string SubjectKey(string type) => $"mail.{type}.subject";
