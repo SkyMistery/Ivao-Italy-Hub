@@ -17,10 +17,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import { allSections, columnsOf, readBody, PickingContext, type Body } from '../../blocks';
+import {
+  allSections,
+  columnsOf,
+  readBody,
+  PickingContext,
+  type BlockEnvelope,
+  type Body,
+} from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { ApiError } from '../../shared/api/problem';
-import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
+import { SchemaForm, isBlank, writtenValues, type ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { useMoment } from '../../shared/i18n/useMoment';
 import type { MediaLibraryQuery } from '../../shared/ui';
@@ -618,6 +625,16 @@ export function ContentEditor({
       ];
     },
     onAddSection: () => addSectionAt(),
+    // What to draw a block by while nothing is written in it. A data block is never blank: it
+    // draws an answer, or its own empty state.
+    blank: (candidate: BlockEnvelope) => {
+      const registration = registry.blocks.find((known) => known.type === candidate.type);
+      if (registration === undefined || registration.kind === 'Data') {
+        return null;
+      }
+
+      return isBlank(registration.schema, candidate.props) ? t(registration.editorLabelKey) : null;
+    },
     // What lets a section be dragged among its siblings on the page, and a block onto any slot of
     // it; the grip is on the bar of the picked one.
     SortableGroup: SectionSortableGroup,

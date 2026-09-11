@@ -550,6 +550,7 @@
       "addRow": "Add row",
       "untitledRow": "Untitled row",
       "addHere": "+ Add here",
+      "blankBlock": "{{block}} — nothing written yet. Fill it in on the right.",
       "dropHere": "Drop here"
     },
     "slugPlaceholder": "my-new-page",

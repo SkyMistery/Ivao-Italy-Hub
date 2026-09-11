@@ -1,5 +1,7 @@
 import { createContext, useContext, type CSSProperties, type ComponentType, type ReactNode } from 'react';
 
+import type { BlockEnvelope } from './envelope';
+
 /**
  * Composing a page **on the page**, instead of in an outline beside a preview.
  *
@@ -55,6 +57,13 @@ export interface Picking {
   readonly actions?: (target: { kind: 'section' | 'block'; id: string }) => readonly PickAction[];
   /** A section at the end of the page, offered after the last one, the way an empty column offers a block. */
   readonly onAddSection?: () => void;
+  /**
+   * The name to draw a block by while nothing has been written into it, or `null` once something
+   * has (Carmine, 11 September 2026). A heading without words draws nothing, and nothing is what
+   * looked lost; the editor decides what "nothing written" means for each block, the page draws a
+   * placeholder in its place, and a visitor — who never reads a draft — is never shown one.
+   */
+  readonly blank?: (block: BlockEnvelope) => string | null;
   /**
    * What makes a section draggable among its siblings on the page (Carmine, 11 September 2026:
    * "by hand, meaning draggable, on the page"). Two components handed over for the reason the drop

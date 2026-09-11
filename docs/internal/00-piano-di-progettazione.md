@@ -26,7 +26,13 @@ picking come riceve `Sortable` per le sezioni; un blocco a cui l'editor non risp
 sezione bloccata) non ha grip. **La strada da tastiera** è un selettore «Sezione» nelle proprietà del
 blocco, accanto a «Colonna»: lo sposta in fondo alla prima colonna della sezione scelta. In più, un
 campo di ricerca in cima alla barra dei componenti, e barre di scorrimento sottili nei due pannelli
-laterali.
+laterali. **E un blocco in cui non è scritto niente si disegna come segnaposto**: un titolo appena
+aggiunto non disegnava nulla e sembrava perso; ora, finché è vuoto, la pagina mostra al suo posto
+un riquadro tratteggiato con l'icona, il nome e «compilalo nel pannello a destra», che sparisce
+alla prima cosa scritta. «Vuoto» lo decide lo schema (`isBlank`): i campi che portano contenuto —
+parole, un file, una data, una lista — tutti non scritti, qualunque impostazione sia scelta; un
+blocco Data non è mai vuoto, perché disegna una risposta o il suo stato vuoto. Il visitatore, che
+non legge mai una bozza, non lo vede mai.
 
 **Changelog 0.61** (11 set 2026, sera): **i comandi stanno anche sull'oggetto, nella pagina.**
 Chiesto da Carmine con G15 appena costruita: aggiungere e togliere sezioni, e togliere un blocco,

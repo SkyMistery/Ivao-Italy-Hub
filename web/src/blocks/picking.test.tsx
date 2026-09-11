@@ -321,9 +321,22 @@ test('a picked block is drawn through what makes it draggable, and a block nothi
   expect(screen.queryByRole('button', { name: 'Drag to reorder' })).not.toBeInTheDocument();
 });
 
+test('a block nothing is written in is drawn as a placeholder, and a visitor never sees one', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ blank: (block) => (block.id === 'b1' ? 'Button' : null) })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  // In its place, not beside it: what the block would have drawn is not there.
+  expect(screen.getByText('Button — nothing written yet. Fill it in on the right.')).toBeVisible();
+  expect(screen.queryByRole('link', { name: 'Join' })).not.toBeInTheDocument();
+});
+
 test('a visitor is offered no section and sees no bar', () => {
   renderWithProviders(<ContentRenderer body={body} />);
 
   expect(screen.queryByRole('button', { name: 'Add a section' })).not.toBeInTheDocument();
   expect(document.querySelectorAll('[data-chrome]')).toHaveLength(0);
+  expect(screen.queryByText(/nothing written yet/u)).not.toBeInTheDocument();
 });

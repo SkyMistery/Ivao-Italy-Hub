@@ -360,6 +360,19 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
   const actions =
     picking.selected === block.id ? (picking.actions?.({ kind: 'block', id: block.id }) ?? []) : [];
 
+  // Nothing written in it yet: a placeholder in its place, so a block just added is seen to be
+  // there. Gone the moment something is written (`Picking.blank`).
+  const blank = picking.blank?.(block) ?? null;
+  const shown =
+    blank === null ? (
+      drawn
+    ) : (
+      <div className="border-border text-muted-foreground flex items-center gap-2 rounded-md border border-dashed px-4 py-3 text-sm">
+        {registration === undefined ? null : <registration.icon aria-hidden className="size-4 shrink-0" />}
+        <span>{t('content.editor.blankBlock', { block: blank })}</span>
+      </div>
+    );
+
   const draw = (draggable: SortableBinding | null) => (
     <div
       data-pickable="block"
@@ -389,7 +402,7 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
           handle={actions.length === 0 ? undefined : draggable?.handle}
         />
       ) : null}
-      {drawn}
+      {shown}
     </div>
   );
 

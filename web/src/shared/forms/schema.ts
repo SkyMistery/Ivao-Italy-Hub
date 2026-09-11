@@ -278,6 +278,39 @@ function unwritten(node: FieldNode, value: unknown): boolean {
 }
 
 /**
+ * Whether nothing that *reads* as content has been written: every field that carries words, a
+ * file, a date or a list is still empty, whatever the settings — a level, a tone, a column count —
+ * happen to be. What the editor draws a placeholder for (Carmine, 11 September 2026: a heading just
+ * added drew nothing and looked lost; "some background text so that whoever looks understands it is
+ * there, gone the moment something is written in the properties").
+ */
+export function isBlank<TValues extends Record<string, unknown>>(
+  schema: z.ZodType<TValues>,
+  values: TValues,
+): boolean {
+  return readFields(schema).every((field) => !carriesContent(field) || unwritten(field, values[field.path]));
+}
+
+/** A field somebody writes into, as opposed to one they choose a setting in. */
+function carriesContent(node: FieldNode): boolean {
+  switch (node.kind) {
+    case 'localized':
+    case 'localizedObject':
+    case 'media':
+    case 'suggest':
+    case 'instant':
+    case 'list':
+      return true;
+    case 'text':
+      return node.choices === null;
+    case 'object':
+      return node.children.some(carriesContent);
+    default:
+      return false;
+  }
+}
+
+/**
  * The values worth storing: the same object, without the optional fields nobody filled in.
  *
  * ⚠️ This is not tidiness. Publication refuses a page holding a translated value that is written in

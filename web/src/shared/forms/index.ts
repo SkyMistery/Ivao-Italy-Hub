@@ -9,6 +9,7 @@ export {
   blankValue,
   blankValues,
   writtenValues,
+  isBlank,
   NO_CHOICE,
   type ChoiceOption,
   type Suggestion,
