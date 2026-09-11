@@ -61,7 +61,7 @@ collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
 **Test, misurati l'11 settembre su `m1/g15-editor-live` (le tre sessioni di G15):** **473 .NET**
 (306 unit + 167 integrazione — la sessione 2 ne aggiunge uno sull'audit dell'autosalvataggio; ⚠️
 della suite di integrazione sono stati eseguiti in locale solo i due test dell'audit, il resto lo
-verifica la CI) + **344 Vitest** + **56 smoke Playwright** + **15 del giro pieno** (`pnpm e2e:full`).
+verifica la CI) + **345 Vitest** + **56 smoke Playwright** + **16 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato. ⚠️ Il C# **è cambiato** dal 10 settembre (icona e intestazioni del menu, marchio e
 favicon della divisione, i tre fondi scuri nel walker): l'avviso «dall'8 settembre non è cambiata una
 riga di C#» che stava qui non vale più.
@@ -120,10 +120,12 @@ gli slot disegnati dal renderer attraverso il contesto di picking e dnd-kit che 
 `blocks/`. **G15 è tutta sulla PR #58**, in tre commit, e ha chiuso il punto 3 della nota del 10
 settembre. **Poi un quarto commit, la sera** (piano 0.61): Carmine, provandola, ha chiesto di
 aggiungere e togliere sezioni e togliere un blocco **dalla pagina**, e di vedere nell'outline in
-quale colonna sta un blocco, e poi di **spostare le sezioni dalla pagina**. La targhetta sull'oggetto
-scelto porta i comandi che il template permette, frecce comprese; l'outline elenca una colonna alla
-volta, le frecce muovono un blocco dentro la colonna e una riga fra le righe della sua sezione. Dopo
-il merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+quale colonna sta un blocco, e poi di **spostare le sezioni dalla pagina** — con le frecce e, «a mano
+nel senso di trascinabili», col grip sulla targhetta. La targhetta sull'oggetto scelto porta i comandi
+che il template permette, frecce e grip compresi; l'outline elenca una colonna alla volta, le frecce
+muovono un blocco dentro la colonna e una riga fra le righe della sua sezione. Il renderer continua a
+non importare dnd-kit: `Sortable` e `SortableGroup` arrivano dal contesto di picking come gli slot.
+Dopo il merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 

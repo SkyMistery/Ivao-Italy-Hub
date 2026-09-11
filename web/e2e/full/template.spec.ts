@@ -387,3 +387,48 @@ test('a component dragged from the palette lands between two blocks', async ({ p
   await expect(frame.getByText('Dropped between')).toBeVisible();
   await expect(frame.locator('h2, p')).toHaveText([first.en, 'Dropped between', later.en]);
 });
+
+test('a section is dragged above another on the page itself', async ({ page, context }) => {
+  // Carmine, 11 September 2026: "by hand, meaning draggable, on the page". A section is picked,
+  // and then dragged by the grip on its bar; the order of what the page draws is the assertion.
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await page.setViewportSize({ width: 1920, height: 1000 });
+
+  const born = await createContent(context, {
+    slug: `bench-sections-${stamp}`,
+    title: { en: 'Bench sections', it: 'Sezioni del banco' },
+    body: {
+      schemaVersion: 1,
+      sections: [section('upper', 'Upper', first), section('lower', 'Lower', later)],
+    },
+  });
+
+  await page.goto(`/staff/${department}/content/${born.id}`);
+
+  const frame = page.getByRole('region', { name: words.preview });
+  await expect(frame.locator('h2')).toHaveText([first.en, later.en]);
+
+  // A section is picked by its own air: a click on the section's padding, above its heading.
+  const lower = frame.locator('[data-pickable="section"]').nth(1);
+  const box = (await lower.boundingBox())!;
+  await page.mouse.click(box.x + 8, box.y + 8);
+
+  const grip = frame.getByRole('button', { name: words.reorder });
+  await expect(grip).toBeVisible();
+
+  const from = (await grip.boundingBox())!;
+  const upper = (await frame.locator('[data-pickable="section"]').first().boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2, from.y - 20, { steps: 4 });
+  await page.mouse.move(upper.x + upper.width / 2, upper.y + 8, { steps: 12 });
+  await page.mouse.up();
+
+  await expect(frame.locator('h2')).toHaveText([later.en, first.en]);
+});

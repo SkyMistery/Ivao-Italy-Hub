@@ -1,7 +1,7 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
@@ -11,7 +11,7 @@ import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
 import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from './envelope';
-import { usePicking, type PickAction, type Picking } from './picking';
+import { usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -111,13 +111,23 @@ export function ContentRenderer({
     // The container the sections measure themselves against: as wide as the page is given, which
     // on the public site is the window and in the editor's preview is the width that was chosen.
     <div className="@container flex flex-col">
-      {body.sections.map((section) => (
-        <SectionView key={section.id} section={section} staff={staff} />
-      ))}
+      <Siblings sections={body.sections} staff={staff} />
 
       <AddSectionInvitation />
     </div>
   );
+}
+
+/**
+ * The sections of one parent — the page's, or the rows of a section — drawn in order, and while
+ * composing wrapped in what lets them be dragged among themselves (`Picking.SortableGroup`).
+ */
+function Siblings({ sections, staff }: { sections: SectionEnvelope[]; staff: boolean }) {
+  const picking = usePicking();
+  const views = sections.map((section) => <SectionView key={section.id} section={section} staff={staff} />);
+  const Group = picking?.SortableGroup;
+
+  return Group === undefined ? views : <Group ids={sections.map((section) => section.id)}>{views}</Group>;
 }
 
 /**
@@ -162,15 +172,17 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
 
   // The one place a style is written rather than a class: which picture it is only exists at
   // runtime, and Tailwind reads the source rather than the page.
-  const picture =
+  const picture: CSSProperties =
     section.background === 'image' && typeof section.mediaId === 'number'
       ? { backgroundImage: `url(${mediaFileUrl(section.mediaId)})` }
-      : undefined;
+      : {};
 
-  return (
+  // The section, given what makes it draggable while composing — nothing, for a visitor.
+  const draw = (sortable: SortableBinding | null) => (
     <section
       className={frame}
-      {...(picture === undefined ? {} : { style: picture })}
+      {...(sortable === null ? {} : { ref: sortable.setNodeRef })}
+      style={{ ...picture, ...sortable?.style }}
       {...(picking === null
         ? {}
         : {
@@ -185,18 +197,20 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
         <PickedBar
           name={read(section.title) || section.key || t('content.editor.untitledSection')}
           actions={picking.actions?.({ kind: 'section', id: section.id }) ?? []}
+          handle={sortable?.handle}
         />
       ) : null}
 
       <div className={`${WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 
-        {section.sections.map((nested) => (
-          <SectionView key={nested.id} section={nested} staff={staff} />
-        ))}
+        <Siblings sections={section.sections} staff={staff} />
       </div>
     </section>
   );
+
+  const Sortable = picking?.Sortable;
+  return Sortable === undefined ? draw(null) : <Sortable id={section.id}>{draw}</Sortable>;
 }
 
 function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
@@ -391,7 +405,16 @@ const ACTION_LABEL: Record<PickAction['key'], { label: string; Icon: typeof Tras
  * The buttons stop their clicks where they are, so pressing "remove" does not also re-pick the
  * section the block was in.
  */
-function PickedBar({ name, actions }: { name: string; actions: readonly PickAction[] }) {
+function PickedBar({
+  name,
+  actions,
+  handle,
+}: {
+  name: string;
+  actions: readonly PickAction[];
+  /** Where to grab a section to drag it; a block has none, it is dragged from the outline. */
+  handle?: SortableBinding['handle'] | undefined;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -400,6 +423,20 @@ function PickedBar({ name, actions }: { name: string; actions: readonly PickActi
       className="bg-body text-foreground border-primary absolute -top-3 right-2 z-10 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm"
       onClick={(event) => event.stopPropagation()}
     >
+      {handle === undefined ? null : (
+        <button
+          type="button"
+          // Attached from a callback and not handed over as the ref itself: handed over, the lint
+          // takes the whole handle for a ref and refuses to read its listeners while drawing.
+          ref={(element) => handle.attach(element)}
+          aria-label={t('content.editor.reorder')}
+          title={t('content.editor.reorder')}
+          className="text-muted-foreground cursor-grab touch-none"
+          {...handle.listeners}
+        >
+          <GripVertical aria-hidden className="size-3.5" />
+        </button>
+      )}
       <span className="text-primary font-medium">{name}</span>
       {actions.map(({ key, run }) => {
         const { label, Icon } = ACTION_LABEL[key];

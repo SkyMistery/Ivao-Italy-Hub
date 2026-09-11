@@ -3,8 +3,10 @@ import {
   DragOverlay,
   MeasuringStrategy,
   PointerSensor,
+  closestCenter,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { Button } from '@ivao/atmosphere-react';
@@ -27,6 +29,7 @@ import { ConfirmDialog, PageActions, SectionHeader } from '../../shared/ui';
 import { BlockPalette } from './BlockPalette';
 import { BlockProperties, SectionProperties } from './BlockProperties';
 import { DropZone, type PaletteDrag, type SlotDrop } from './DropZone';
+import { SectionSortable, SectionSortableGroup, type SectionDrag } from './SectionSortable';
 import {
   addBlock,
   addSection,
@@ -311,16 +314,39 @@ export function ContentEditor({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [dragging, setDragging] = useState<PaletteDrag | null>(null);
 
+  // Two things are dragged in this one context, and each only ever lands on its own kind: a
+  // component from the palette on a slot, a section on a section. Told apart here, so that a
+  // component carried over a section is not "over" it, and a section carried over a slot neither.
+  const collisions: CollisionDetection = (args) => {
+    const wanted =
+      (args.active.data.current as PaletteDrag | SectionDrag | undefined)?.kind === 'palette'
+        ? 'slot'
+        : 'section';
+
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(
+        (container) => (container.data.current as { kind?: string } | undefined)?.kind === wanted,
+      ),
+    });
+  };
+
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     setDragging(null);
 
-    const dragged = active.data.current as PaletteDrag | undefined;
-    const slot = over?.data.current as SlotDrop | undefined;
-    if (dragged?.kind !== 'palette' || slot?.kind !== 'slot') {
+    const dragged = active.data.current as PaletteDrag | SectionDrag | undefined;
+    const target = over?.data.current as SlotDrop | SectionDrag | undefined;
+
+    if (dragged?.kind === 'palette' && target?.kind === 'slot') {
+      addBlockTo(target.section, dragged.type, target.column, target.index);
       return;
     }
 
-    addBlockTo(slot.section, dragged.type, slot.column, slot.index);
+    // A section dropped onto another of its siblings. Crossing into another parent is refused by
+    // the body helper, as it is in the outline: a drop that moved nothing is a drop that moved nothing.
+    if (dragged?.kind === 'section' && target?.kind === 'section' && over !== null && active.id !== over.id) {
+      change(reorderSections(body, String(active.id), String(over.id)));
+    }
   };
 
   const draggedRegistration =
@@ -570,6 +596,9 @@ export function ContentEditor({
       ];
     },
     onAddSection: () => addSectionAt(),
+    // What lets a section be dragged among its siblings on the page; the grip is on its bar.
+    SortableGroup: SectionSortableGroup,
+    Sortable: SectionSortable,
     selected: selection?.id ?? null,
     onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
     // The column the palette will fill, drawn as chosen on the page. Only a selected section has
@@ -694,7 +723,11 @@ export function ContentEditor({
         sensors={sensors}
         // The slots are hidden until a drag begins, so they have to be measured once it has.
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-        onDragStart={({ active }) => setDragging((active.data.current as PaletteDrag | undefined) ?? null)}
+        collisionDetection={collisions}
+        onDragStart={({ active }) => {
+          const started = active.data.current as PaletteDrag | SectionDrag | undefined;
+          setDragging(started?.kind === 'palette' ? started : null);
+        }}
         onDragCancel={() => setDragging(null)}
         onDragEnd={onDragEnd}
       >

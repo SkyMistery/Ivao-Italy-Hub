@@ -106,6 +106,7 @@ interface CommonStrings {
       readonly dropHere: string;
       readonly remove: string;
       readonly removeSection: string;
+      readonly reorder: string;
       readonly template: {
         readonly differences: string;
         readonly added: string;

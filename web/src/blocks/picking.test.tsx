@@ -6,7 +6,7 @@ import { renderWithProviders } from '../test/harness';
 
 import { ContentRenderer } from './ContentRenderer';
 import type { Body } from './envelope';
-import { PickingContext, type Picking } from './picking';
+import { PickingContext, type Picking, type SortableBinding } from './picking';
 
 /**
  * Composing on the page, and the promise that keeps it safe.
@@ -256,6 +256,33 @@ test('a section is offered at the end of the page while composing, and to nobody
 
   await user.click(screen.getByRole('button', { name: 'Add a section' }));
   expect(added).toHaveBeenCalledTimes(1);
+});
+
+test('a picked section is drawn through what makes it draggable, with a grip on its bar', () => {
+  // What the editor hands over, faked: a group that marks its list, and an item that hands back a
+  // node ref, a style and a handle — the renderer attaches all three and asks nothing about drag.
+  const Group = ({ ids, children }: { ids: readonly string[]; children: React.ReactNode }) => (
+    <div data-group={ids.join(',')}>{children}</div>
+  );
+  const Item = ({ id, children }: { id: string; children: (s: SortableBinding) => React.ReactNode }) => (
+    <>
+      {children({
+        setNodeRef: () => {},
+        style: { opacity: 0.5 },
+        handle: { attach: () => {}, listeners: { 'data-handle': id } },
+      })}
+    </>
+  );
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ selected: 's1', SortableGroup: Group, Sortable: Item })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(document.querySelector('[data-group]')).toHaveAttribute('data-group', 's1');
+  expect(document.querySelector('[data-pickable="section"]')).toHaveStyle({ opacity: '0.5' });
+  expect(screen.getByRole('button', { name: 'Drag to reorder' })).toHaveAttribute('data-handle', 's1');
 });
 
 test('a visitor is offered no section and sees no bar', () => {

@@ -1,4 +1,4 @@
-import { createContext, useContext, type ComponentType } from 'react';
+import { createContext, useContext, type CSSProperties, type ComponentType, type ReactNode } from 'react';
 
 /**
  * Composing a page **on the page**, instead of in an outline beside a preview.
@@ -55,6 +55,27 @@ export interface Picking {
   readonly actions?: (target: { kind: 'section' | 'block'; id: string }) => readonly PickAction[];
   /** A section at the end of the page, offered after the last one, the way an empty column offers a block. */
   readonly onAddSection?: () => void;
+  /**
+   * What makes a section draggable among its siblings on the page (Carmine, 11 September 2026:
+   * "by hand, meaning draggable, on the page"). Two components handed over for the reason the drop
+   * slot is one: the renderer must not import the drag and drop library. `SortableGroup` wraps the
+   * sections of one parent — the page's, or the rows of a section — and `Sortable` wraps one of
+   * them and hands back where to attach the node, the style that moves it, and the handle to grab.
+   * The handle sits on the picked section's bar: a section is dragged after it is picked, so
+   * clicking the air of a section still picks it and nothing else.
+   */
+  readonly SortableGroup?: ComponentType<{ ids: readonly string[]; children: ReactNode }>;
+  readonly Sortable?: ComponentType<{ id: string; children: (sortable: SortableBinding) => ReactNode }>;
+}
+
+export interface SortableBinding {
+  readonly setNodeRef: (element: HTMLElement | null) => void;
+  readonly style: CSSProperties;
+  /** The grip: where to attach it, and what it listens to. Not spelled `ref`, which the lint reads as one. */
+  readonly handle: {
+    readonly attach: (element: HTMLElement | null) => void;
+    readonly listeners: Record<string, unknown> | undefined;
+  };
 }
 
 export interface PickAction {

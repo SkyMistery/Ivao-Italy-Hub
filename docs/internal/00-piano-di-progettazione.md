@@ -24,8 +24,14 @@ sua colonna** — prima scambiava posti nella lista senza che sulla pagina si mu
 blocco lasciato su uno di un'altra colonna non si muove, come già un drop fra due sezioni. E una
 **riga si sposta fra le righe della sua sezione**: prima `moveSection` muoveva solo il primo livello
 e le frecce su una riga nell'outline non facevano niente. Costruito lo stesso giorno, sulla PR #58
-di G15. Il trascinamento delle sezioni sulla pagina non c'è: le frecce sulla targhetta sono la
-strada, anche da tastiera, e si vedrà all'uso se bastano.
+di G15. **E le sezioni si trascinano sulla pagina** («a mano nel senso di trascinabili»): il
+contesto di picking porta due componenti in più, `SortableGroup` intorno ai fratelli — le sezioni
+della pagina, o le righe di una sezione — e `Sortable` intorno a una di loro, che restituisce dove
+attaccare il nodo, lo stile che lo muove e la presa; la presa è un **grip sulla targhetta** della
+sezione scelta, così cliccare l'aria di una sezione la sceglie e basta. Lo stesso `DndContext`
+della barra dei componenti sente il rilascio, e distingue le due cose che vi si trascinano con una
+collision detection che guarda solo il proprio genere — un componente sopra una sezione non le è
+«sopra», né una sezione sopra uno slot. Le frecce restano, e sono la strada da tastiera.
 
 **Changelog 0.60** (11 set 2026): **l'editor che risponde**, fase **G15**, decisa da Carmine con
 davanti il page builder di va.ivao.aero e il nostro editor uno accanto all'altro. Nota
