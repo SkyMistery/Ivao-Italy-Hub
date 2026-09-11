@@ -627,7 +627,71 @@
       "media": "Media",
       "tables": "Tables and steps",
       "grids": "Grids",
-      "containers": "Containers"
+      "containers": "Containers",
+      "atc": "Air traffic control"
+    },
+    "frequencyTable": {
+      "label": "Frequency table",
+      "fields": {
+        "caption": "Caption",
+        "stations": "Stations",
+        "stations.callsign": "Callsign",
+        "stations.frequency": "Frequency",
+        "stations.kind": "Kind",
+        "stations.cpdlc": "CPDLC",
+        "stations.minimumRating": "Minimum rating",
+        "stations.note": "Note"
+      },
+      "options": {
+        "stations.kind": {
+          "DEL": "Delivery",
+          "GND": "Ground",
+          "TWR": "Tower",
+          "APP": "Approach",
+          "DEP": "Departure",
+          "CTR": "Centre",
+          "FSS": "Flight service",
+          "ATIS": "ATIS"
+        }
+      },
+      "columns": {
+        "callsign": "Callsign",
+        "frequency": "Frequency",
+        "kind": "Kind",
+        "cpdlc": "CPDLC",
+        "minimumRating": "Min. rating",
+        "note": "Note"
+      },
+      "yes": "Yes",
+      "no": "No"
+    },
+    "coordination": {
+      "label": "Coordination",
+      "fields": {
+        "caption": "Caption",
+        "agreements": "Agreements",
+        "agreements.from": "From",
+        "agreements.to": "To",
+        "agreements.point": "Point",
+        "agreements.level": "Level",
+        "agreements.direction": "Direction",
+        "agreements.note": "Note"
+      },
+      "options": {
+        "agreements.direction": {
+          "inbound": "Inbound",
+          "outbound": "Outbound",
+          "both": "Both ways"
+        }
+      },
+      "columns": {
+        "from": "From",
+        "to": "To",
+        "point": "Point",
+        "level": "Level",
+        "direction": "Direction",
+        "note": "Note"
+      }
     },
     "heading": {
       "label": "Heading",

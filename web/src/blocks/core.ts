@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   Building2,
   CalendarDays,
   ChartColumn,
@@ -22,6 +23,7 @@ import {
   Pointer,
   Quote,
   Radio,
+  RadioTower,
   Shapes,
   Table,
   Users,
@@ -36,10 +38,12 @@ import {
   CalendarBlock,
   CalloutBlock,
   CardGridBlock,
+  CoordinationBlock,
   CtaBlock,
   DividerBlock,
   DocumentListBlock,
   EmbedBlock,
+  FrequencyTableBlock,
   GalleryBlock,
   HeadingBlock,
   HeroBlock,
@@ -65,10 +69,12 @@ import {
   calendarSchema,
   calloutSchema,
   cardGridSchema,
+  coordinationSchema,
   ctaSchema,
   dividerSchema,
   documentListSchema,
   embedSchema,
+  frequencyTableSchema,
   gallerySchema,
   headingSchema,
   heroSchema,
@@ -131,6 +137,8 @@ export const CORE_BLOCK_TYPES = {
   newsList: 'newsList',
   documentList: 'documentList',
   staffList: 'staffList',
+  frequencyTable: 'frequencyTable',
+  coordination: 'coordination',
 } as const;
 
 /** Two languages of prose, written once and read by the examples below. */
@@ -678,5 +686,59 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     editorLabelKey: 'blocks.staffList.label',
     group: 'data',
     icon: Users,
+  },
+
+  // --- The operational document (G14) ----------------------------------------------------------
+  // Two tables with fixed columns, filed in the Data drawer under "air traffic control" so that
+  // whoever writes a SOP finds them beside the lists — content by kind, though: what is in them is
+  // typed by the editor, and nothing is resolved by the server.
+
+  {
+    type: CORE_BLOCK_TYPES.frequencyTable,
+    version: 1,
+    kind: 'Content',
+    schema: frequencyTableSchema,
+    component: FrequencyTableBlock,
+    example: {
+      stations: [
+        {
+          callsign: 'XXXX_TWR',
+          frequency: '118.700',
+          kind: 'TWR',
+          cpdlc: false,
+          minimumRating: 'ADC',
+          note: { en: 'Runway 16L/16R', it: 'Pista 16L/16R' },
+        },
+        { callsign: 'XXXX_CTR', frequency: '124.750', kind: 'CTR', cpdlc: true },
+      ],
+    },
+    editorLabelKey: 'blocks.frequencyTable.label',
+    group: 'data',
+    subgroup: 'atc',
+    icon: RadioTower,
+  },
+  {
+    type: CORE_BLOCK_TYPES.coordination,
+    version: 1,
+    kind: 'Content',
+    schema: coordinationSchema,
+    component: CoordinationBlock,
+    example: {
+      agreements: [
+        {
+          from: 'XXXX_CTR',
+          to: 'XXXX_APP',
+          point: 'ABCDE',
+          level: 'FL110',
+          direction: 'inbound',
+          note: { en: 'Descending, released', it: 'In discesa, rilasciato' },
+        },
+        { from: 'XXXX_APP', to: 'XXXX_CTR', level: 'FL090', direction: 'outbound' },
+      ],
+    },
+    editorLabelKey: 'blocks.coordination.label',
+    group: 'data',
+    subgroup: 'atc',
+    icon: ArrowLeftRight,
   },
 ];

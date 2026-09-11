@@ -34,7 +34,7 @@ import { CALENDAR_VIEWS, CalendarView, MarkdownContent, type CalendarItem } from
 import { embedSource } from './allowlist';
 import { categoryLabel, type ContentListData } from './data';
 import { usePrinting } from './print';
-import { CALLOUT_TONES } from './schemas';
+import { CALLOUT_TONES, COORDINATION_DIRECTIONS, STATION_KINDS } from './schemas';
 
 /**
  * How the blocks of the core are drawn (design M0 §5.4, design M1 §1). All but one draw what an
@@ -551,6 +551,89 @@ export function TableBlock({ props }: BlockComponentProps) {
         }))}
       />
     </>
+  );
+}
+
+// ---- frequencyTable (G14) --------------------------------------------------------------------
+
+/**
+ * The frequencies of a SOP, as a table whose headings are the block's own words and not the
+ * editor's: the columns are fixed, so a coordinator fills rows and never draws a table.
+ */
+export function FrequencyTableBlock({ props }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const caption = read(text(props, 'caption'));
+  const column = (name: string) => t(`blocks.frequencyTable.columns.${name}`);
+
+  return (
+    <Table
+      {...(caption === '' ? {} : { caption })}
+      columns={[
+        { label: column('callsign') },
+        { label: column('frequency') },
+        { label: column('kind') },
+        { label: column('cpdlc') },
+        { label: column('minimumRating') },
+        { label: column('note') },
+      ]}
+      rows={entries(props, 'stations').map((station) => ({
+        columns: [
+          { value: plain(station, 'callsign'), className: 'font-mono' },
+          { value: plain(station, 'frequency'), className: 'font-mono tabular-nums' },
+          {
+            value: t(
+              `blocks.frequencyTable.options.stations.kind.${choice(station, 'kind', STATION_KINDS, 'TWR')}`,
+            ),
+          },
+          {
+            value: t(
+              flag(station, 'cpdlc', false) ? 'blocks.frequencyTable.yes' : 'blocks.frequencyTable.no',
+            ),
+          },
+          { value: plain(station, 'minimumRating') },
+          { value: read(text(station, 'note')) },
+        ],
+      }))}
+    />
+  );
+}
+
+// ---- coordination (G14) ----------------------------------------------------------------------
+
+/** The agreements of a LoA, one row each: who hands what to whom, where, at which level. */
+export function CoordinationBlock({ props }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const caption = read(text(props, 'caption'));
+  const column = (name: string) => t(`blocks.coordination.columns.${name}`);
+
+  return (
+    <Table
+      {...(caption === '' ? {} : { caption })}
+      columns={[
+        { label: column('from') },
+        { label: column('to') },
+        { label: column('point') },
+        { label: column('level') },
+        { label: column('direction') },
+        { label: column('note') },
+      ]}
+      rows={entries(props, 'agreements').map((agreement) => ({
+        columns: [
+          { value: plain(agreement, 'from'), className: 'font-mono' },
+          { value: plain(agreement, 'to'), className: 'font-mono' },
+          { value: plain(agreement, 'point'), className: 'font-mono' },
+          { value: plain(agreement, 'level'), className: 'tabular-nums' },
+          {
+            value: t(
+              `blocks.coordination.options.agreements.direction.${choice(agreement, 'direction', COORDINATION_DIRECTIONS, 'both')}`,
+            ),
+          },
+          { value: read(text(agreement, 'note')) },
+        ],
+      }))}
+    />
   );
 }
 

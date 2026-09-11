@@ -627,7 +627,71 @@
       "media": "Media",
       "tables": "Tabelle e passaggi",
       "grids": "Griglie",
-      "containers": "Contenitori"
+      "containers": "Contenitori",
+      "atc": "Controllo del traffico aereo"
+    },
+    "frequencyTable": {
+      "label": "Tabella delle frequenze",
+      "fields": {
+        "caption": "Didascalia",
+        "stations": "Postazioni",
+        "stations.callsign": "Nominativo",
+        "stations.frequency": "Frequenza",
+        "stations.kind": "Tipo",
+        "stations.cpdlc": "CPDLC",
+        "stations.minimumRating": "Rating minimo",
+        "stations.note": "Nota"
+      },
+      "options": {
+        "stations.kind": {
+          "DEL": "Delivery",
+          "GND": "Ground",
+          "TWR": "Torre",
+          "APP": "Avvicinamento",
+          "DEP": "Partenze",
+          "CTR": "Centro",
+          "FSS": "Servizio informazioni volo",
+          "ATIS": "ATIS"
+        }
+      },
+      "columns": {
+        "callsign": "Nominativo",
+        "frequency": "Frequenza",
+        "kind": "Tipo",
+        "cpdlc": "CPDLC",
+        "minimumRating": "Rating min.",
+        "note": "Nota"
+      },
+      "yes": "Sì",
+      "no": "No"
+    },
+    "coordination": {
+      "label": "Coordinamento",
+      "fields": {
+        "caption": "Didascalia",
+        "agreements": "Accordi",
+        "agreements.from": "Da",
+        "agreements.to": "A",
+        "agreements.point": "Punto",
+        "agreements.level": "Livello",
+        "agreements.direction": "Direzione",
+        "agreements.note": "Nota"
+      },
+      "options": {
+        "agreements.direction": {
+          "inbound": "In arrivo",
+          "outbound": "In partenza",
+          "both": "Entrambe"
+        }
+      },
+      "columns": {
+        "from": "Da",
+        "to": "A",
+        "point": "Punto",
+        "level": "Livello",
+        "direction": "Direzione",
+        "note": "Nota"
+      }
     },
     "heading": {
       "label": "Titolo",
