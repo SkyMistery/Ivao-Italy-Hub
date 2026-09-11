@@ -512,6 +512,7 @@
       "renderModeHint": "A captured block stops changing until somebody publishes the page again.",
       "column": "Column",
       "columnNumber": "Column {{number}}",
+      "section": "Section",
       "reorder": "Drag to reorder",
       "previewWidth": "Preview width",
       "previewWidths": {

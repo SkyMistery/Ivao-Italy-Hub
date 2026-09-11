@@ -357,9 +357,13 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
     return drawn;
   }
 
-  return (
+  const actions =
+    picking.selected === block.id ? (picking.actions?.({ kind: 'block', id: block.id }) ?? []) : [];
+
+  const draw = (draggable: SortableBinding | null) => (
     <div
       data-pickable="block"
+      {...(draggable === null ? {} : { ref: draggable.setNodeRef, style: draggable.style })}
       className={`relative rounded-sm ${ring(picking, block.id)}`}
       // ⚠️ The **capture** phase, and both `preventDefault` and `stopPropagation`. A block is not
       // an inert rectangle: it holds links, buttons, a contact form. Capturing means a click lands
@@ -380,11 +384,22 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
       {picking.selected === block.id ? (
         <PickedBar
           name={registration === undefined ? block.type : t(registration.editorLabelKey)}
-          actions={picking.actions?.({ kind: 'block', id: block.id }) ?? []}
+          actions={actions}
+          // A block nothing may be done to — one of a locked section — is not dragged either.
+          handle={actions.length === 0 ? undefined : draggable?.handle}
         />
       ) : null}
       {drawn}
     </div>
+  );
+
+  const Draggable = picking.BlockDraggable;
+  return Draggable === undefined ? (
+    draw(null)
+  ) : (
+    <Draggable id={block.id} type={block.type}>
+      {draw}
+    </Draggable>
   );
 }
 

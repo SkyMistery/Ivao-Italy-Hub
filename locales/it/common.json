@@ -512,6 +512,7 @@
       "renderModeHint": "Un blocco catturato smette di cambiare finche' qualcuno non ripubblica la pagina.",
       "column": "Colonna",
       "columnNumber": "Colonna {{number}}",
+      "section": "Sezione",
       "reorder": "Trascina per riordinare",
       "previewWidth": "Larghezza dell’anteprima",
       "previewWidths": {

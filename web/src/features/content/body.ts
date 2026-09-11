@@ -253,6 +253,45 @@ export function addBlock(
   };
 }
 
+/**
+ * A block dragged to a place on the page — another column, another section, another spot in its
+ * own column (Carmine, 11 September 2026: "the elements in a section too, and between sections").
+ * `at` is a slot as the page draws them: before the `at`-th block of that column, counting the
+ * blocks as they stand — the moved one included, since it is still drawn while it is dragged — or
+ * after the last. Dropped on the slot just before itself, a block stays where it is.
+ */
+export function moveBlockTo(body: Body, id: string, sectionId: string, column: number, at: number): Body {
+  const found = findBlock(body, id);
+  const target = findSection(body, sectionId);
+  if (found === undefined || target === undefined) {
+    return body;
+  }
+
+  const anchor = target.blocks.filter((block) => (block.column ?? 0) === column)[at];
+  if (anchor?.id === id) {
+    return body;
+  }
+
+  const moved: BlockEnvelope = { ...found.block, column };
+  const without = removeBlock(body, id);
+
+  return {
+    ...without,
+    sections: mapSections(without.sections, (section) => {
+      if (section.id !== sectionId) {
+        return section;
+      }
+
+      const position =
+        anchor === undefined
+          ? section.blocks.length
+          : section.blocks.findIndex((block) => block.id === anchor.id);
+
+      return { ...section, blocks: section.blocks.toSpliced(position, 0, moved) };
+    }),
+  };
+}
+
 export function removeBlock(body: Body, id: string): Body {
   return {
     ...body,

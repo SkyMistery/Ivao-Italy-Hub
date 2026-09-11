@@ -145,14 +145,22 @@ export function SectionProperties({
 export function BlockProperties({
   block,
   section,
+  sections,
   locales,
   division,
   mediaLibrary,
   onApplyProps,
   onEnvelope,
+  onMoveTo,
 }: {
   block: BlockEnvelope;
   section: SectionEnvelope;
+  /**
+   * Every section of the page a block may be moved into, named as the outline names them. The
+   * keyboard's road between sections (Carmine, 11 September 2026): dragging on the page is the
+   * pointer's, and a select here is the same move without one.
+   */
+  sections: readonly { value: string; label: string }[];
   locales: readonly string[];
   /** What an instant needs to say where the division is, and a media field to name its language. */
   division: { defaultLocale: string; timezone: string };
@@ -163,6 +171,8 @@ export function BlockProperties({
   mediaLibrary: MediaLibraryQuery;
   onApplyProps: (props: Record<string, unknown>) => void;
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
+  /** Moves the block to the end of the first column of that section. */
+  onMoveTo: (sectionId: string) => void;
 }) {
   const { t } = useTranslation();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
@@ -175,6 +185,21 @@ export function BlockProperties({
 
   return (
     <div className="flex flex-col gap-6">
+      {sections.length > 1 ? (
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="section">{t('content.editor.section')}</Label>
+          <Select
+            value={section.id}
+            onValueChange={(sectionId) => {
+              if (sectionId !== section.id) {
+                onMoveTo(sectionId);
+              }
+            }}
+            items={[...sections]}
+          />
+        </div>
+      ) : null}
+
       {registration.kind === 'Data' && registration.alwaysLive !== true ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="renderMode">{t('content.editor.renderMode')}</Label>

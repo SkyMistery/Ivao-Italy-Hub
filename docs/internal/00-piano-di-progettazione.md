@@ -18,7 +18,15 @@ uno screenshot**: la targhetta della prima sezione stava a cavallo del bordo del
 ritaglia, e usciva tagliata a metà — ora sta dentro l'aria della sezione; e fra gli sfondi la
 pastiglia «foto» era una riga nera in diagonale che si leggeva come un divieto, «nessuno» un punto
 bianco su fondo bianco — ora i due che non sono un colore hanno un glifo: un cerchio barrato e una
-foto.
+foto. **Poi, sempre la sera: anche i blocchi si trascinano sulla pagina, e fra sezioni diverse.**
+Un blocco scelto ha il grip sulla targhetta; mentre lo si trascina compaiono gli stessi slot dei
+componenti della barra, in ogni sezione non bloccata, e lo si lascia dove si vuole — la sua colonna,
+un'altra, un'altra sezione (`moveBlockTo`). Il renderer riceve `BlockDraggable` dal contesto di
+picking come riceve `Sortable` per le sezioni; un blocco a cui l'editor non risponde comandi (una
+sezione bloccata) non ha grip. **La strada da tastiera** è un selettore «Sezione» nelle proprietà del
+blocco, accanto a «Colonna»: lo sposta in fondo alla prima colonna della sezione scelta. In più, un
+campo di ricerca in cima alla barra dei componenti, e barre di scorrimento sottili nei due pannelli
+laterali.
 
 **Changelog 0.61** (11 set 2026, sera): **i comandi stanno anche sull'oggetto, nella pagina.**
 Chiesto da Carmine con G15 appena costruita: aggiungere e togliere sezioni, e togliere un blocco,

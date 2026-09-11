@@ -455,3 +455,55 @@ test('a section is dragged above another on the page itself', async ({ page, con
 
   await expect(frame.locator('h2')).toHaveText([later.en, first.en]);
 });
+
+test('a block is dragged from one section into another on the page itself', async ({ page, context }) => {
+  // Carmine, 11 September 2026: "the elements in a section too, and between sections". The block
+  // is picked, grabbed by the grip on its bar, and dropped on the slot at the top of the other
+  // section; the order of the headings on the page is the assertion.
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await page.setViewportSize({ width: 1920, height: 1000 });
+
+  const born = await createContent(context, {
+    slug: `bench-blocks-${stamp}`,
+    title: { en: 'Bench blocks', it: 'Blocchi del banco' },
+    body: {
+      schemaVersion: 1,
+      sections: [section('upper', 'Upper', first), section('lower', 'Lower', later)],
+    },
+  });
+
+  await page.goto(`/staff/${department}/content/${born.id}`);
+
+  const frame = page.getByRole('region', { name: words.preview });
+  await expect(frame.locator('h2')).toHaveText([first.en, later.en]);
+
+  await frame.getByRole('heading', { name: later.en }).click();
+  const grip = frame.getByRole('button', { name: words.reorder });
+  await expect(grip).toBeVisible();
+
+  const from = (await grip.boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2, from.y - 20, { steps: 4 });
+
+  // The slots of every section are offered, the dragged block's own included: two in the upper
+  // section, two in the lower.
+  const slots = frame.getByLabel(words.dropHere).filter({ visible: true });
+  await expect(slots).toHaveCount(4);
+
+  const to = (await slots.first().boundingBox())!;
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  await expect(frame.locator('h2')).toHaveText([later.en, first.en]);
+  // And it is the upper section that holds both now: the lower one is empty and invites a block.
+  await expect(
+    frame.locator('[data-pickable="section"]').nth(1).getByRole('button', { name: '+ Add here' }),
+  ).toBeVisible();
+});

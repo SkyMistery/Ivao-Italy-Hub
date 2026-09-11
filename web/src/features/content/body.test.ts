@@ -11,6 +11,7 @@ import {
   duplicateBlock,
   findBlock,
   moveBlock,
+  moveBlockTo,
   moveSection,
   removeSection,
   reorderBlocks,
@@ -62,6 +63,29 @@ test('moving a block swaps it with its neighbour in the same column, and stops a
 
   const stuck = moveBlock(body(), 'b_1', -1);
   expect(ids(stuck)).toEqual(['b_1', 'b_2']);
+});
+
+test('a block dragged to a slot lands there: its own column, another, another section', () => {
+  const ids = (page: Body, section = 0) => page.sections[section]!.blocks.map((block) => block.id);
+
+  // Into the second section, which is empty: the only slot is its end.
+  const across = moveBlockTo(body(), 'b_1', 's_2', 0, 0);
+  expect(ids(across)).toEqual(['b_2']);
+  expect(ids(across, 1)).toEqual(['b_1']);
+  expect(findBlock(across, 'b_1')!.block.column).toBe(0);
+
+  // Into another column of its own section, before the block that stands there.
+  const sideways = moveBlockTo(body(), 'b_1', 's_1', 0, 0);
+  expect(ids(sideways)).toEqual(['b_1', 'b_2']);
+  expect(findBlock(sideways, 'b_1')!.block.column).toBe(0);
+
+  // Within its column: two blocks in the first column, the second dropped on the slot before the
+  // first — and dropped on the slot just before itself, it stays where it is.
+  const two = addBlock(updateBlock(body(), 'b_1', { column: 0 }), 's_1', 'text', {}, null, 0).body;
+  const [, , third] = ids(two);
+  expect(ids(moveBlockTo(two, third!, 's_1', 0, 0))).toEqual([third, 'b_1', 'b_2']);
+  expect(ids(moveBlockTo(two, third!, 's_1', 0, 2))).toEqual(['b_1', 'b_2', third]);
+  expect(ids(moveBlockTo(two, 'b_1', 's_1', 0, 3))).toEqual(['b_2', third, 'b_1']);
 });
 
 test('a block dropped onto one of another column in the outline moves nothing', () => {

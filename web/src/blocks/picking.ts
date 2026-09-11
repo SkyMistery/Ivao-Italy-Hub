@@ -66,6 +66,16 @@ export interface Picking {
    */
   readonly SortableGroup?: ComponentType<{ ids: readonly string[]; children: ReactNode }>;
   readonly Sortable?: ComponentType<{ id: string; children: (sortable: SortableBinding) => ReactNode }>;
+  /**
+   * What makes a block draggable onto any slot of the page — its own column, another, another
+   * section's (Carmine, 11 September 2026). The same binding a section gets; the grip is on the
+   * picked block's bar, and a block the editor answers no commands for gets no grip.
+   */
+  readonly BlockDraggable?: ComponentType<{
+    id: string;
+    type: string;
+    children: (draggable: SortableBinding) => ReactNode;
+  }>;
 }
 
 export interface SortableBinding {

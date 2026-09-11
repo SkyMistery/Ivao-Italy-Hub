@@ -285,6 +285,42 @@ test('a picked section is drawn through what makes it draggable, with a grip on 
   expect(screen.getByRole('button', { name: 'Drag to reorder' })).toHaveAttribute('data-handle', 's1');
 });
 
+test('a picked block is drawn through what makes it draggable, and a block nothing may be done to gets no grip', () => {
+  const Item = ({ id, children }: { id: string; children: (s: SortableBinding) => React.ReactNode }) => (
+    <>
+      {children({
+        setNodeRef: () => {},
+        style: { opacity: 0.5 },
+        handle: { attach: () => {}, listeners: { 'data-handle': id } },
+      })}
+    </>
+  );
+
+  const { unmount } = renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        selected: 'b1',
+        BlockDraggable: Item,
+        actions: () => [{ key: 'remove', run: () => {} }],
+      })}
+    >
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(screen.getByRole('button', { name: 'Drag to reorder' })).toHaveAttribute('data-handle', 'b1');
+  unmount();
+
+  // The editor answers no commands — a locked section — so the block is not dragged either.
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ selected: 'b1', BlockDraggable: Item, actions: () => [] })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(screen.queryByRole('button', { name: 'Drag to reorder' })).not.toBeInTheDocument();
+});
+
 test('a visitor is offered no section and sees no bar', () => {
   renderWithProviders(<ContentRenderer body={body} />);
 

@@ -18,6 +18,13 @@ export interface PaletteDrag {
   readonly type: string;
 }
 
+/** What a block dragged on the page carries: which one, and its type for the chip under the pointer. */
+export interface BlockDrag {
+  readonly kind: 'block';
+  readonly id: string;
+  readonly type: string;
+}
+
 export interface SlotDrop {
   readonly kind: 'slot';
   readonly section: string;
@@ -31,7 +38,10 @@ export function DropZone({ section, column, index }: { section: string; column: 
   const data: SlotDrop = { kind: 'slot', section, column, index };
   const { setNodeRef, isOver } = useDroppable({ id: `slot:${section}:${column}:${index}`, data });
 
-  const dragging = (active?.data.current as PaletteDrag | undefined)?.kind === 'palette';
+  // A slot is for a component from the palette and for a block already on the page; a section
+  // being dragged lands on sections, and the slots stay out of its way.
+  const kind = (active?.data.current as PaletteDrag | BlockDrag | undefined)?.kind;
+  const dragging = kind === 'palette' || kind === 'block';
 
   return (
     <div

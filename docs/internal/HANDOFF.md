@@ -63,7 +63,7 @@ collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
 **Test, misurati l'11 settembre su `m1/g15-editor-live` (le tre sessioni di G15):** **473 .NET**
 (306 unit + 167 integrazione — la sessione 2 ne aggiunge uno sull'audit dell'autosalvataggio; ⚠️
 della suite di integrazione sono stati eseguiti in locale solo i due test dell'audit, il resto lo
-verifica la CI) + **346 Vitest** + **56 smoke Playwright** + **16 del giro pieno** (`pnpm e2e:full`).
+verifica la CI) + **348 Vitest** + **56 smoke Playwright** + **17 del giro pieno** (`pnpm e2e:full`).
 ⚠️ Il banco (`ivaohub_e2e`) **non si azzera fra un giro e l'altro**: l'11 settembre 105 template
 lasciati dai giri della giornata avevano fatto cadere «Section page» fuori dalla prima pagina del
 selettore, e due test della round sono caduti senza che il codice c'entrasse. Ora i test dei template
@@ -131,8 +131,11 @@ quale colonna sta un blocco, e poi di **spostare le sezioni dalla pagina** — c
 nel senso di trascinabili», col grip sulla targhetta. La targhetta sull'oggetto scelto porta i comandi
 che il template permette, frecce e grip compresi; l'outline elenca una colonna alla volta, le frecce
 muovono un blocco dentro la colonna e una riga fra le righe della sua sezione. Il renderer continua a
-non importare dnd-kit: `Sortable` e `SortableGroup` arrivano dal contesto di picking come gli slot.
-Dopo il merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+non importare dnd-kit: `Sortable` e `SortableGroup` arrivano dal contesto di picking come gli slot,
+e così `BlockDraggable`, con cui **un blocco si trascina su qualunque slot della pagina, anche di
+un'altra sezione** (`moveBlockTo`); da tastiera lo fa il selettore «Sezione» nelle proprietà del
+blocco. Poi quattro livelli di sezioni, il link alla libreria dal selettore di file, la ricerca nella
+barra dei componenti, le barre di scorrimento sottili (piano 0.62). Dopo il merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 
