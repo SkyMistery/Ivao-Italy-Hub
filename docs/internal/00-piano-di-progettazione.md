@@ -1,9 +1,61 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.58 — 11 settembre 2026 (**sette sfondi di sezione e non quattro**, tre dei quali scuri; mentre si compone, una sezione mostra come è divisa)
+**Versione documento:** 0.60 — 11 settembre 2026 (**G15, l'editor che risponde**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera, autosalvataggio della bozza, trascinamento dalla barra, anteprima mobile vera — e viene prima di G14)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.60** (11 set 2026): **l'editor che risponde**, fase **G15**, decisa da Carmine con
+davanti il page builder di va.ivao.aero e il nostro editor uno accanto all'altro. Nota
+`decisions/2026-09-11-l-editor-che-risponde.md`; perimetro e ordine in `04-piano-implementazione-m1.md`,
+fase G15. **Viene prima di G14** (il documento operativo), perché è ciò che si sta collaudando adesso.
+
+Cinque cose, quattro delle quali non toccano il server: le **proprietà di un blocco si applicano
+mentre si scrive** (settima estensione del generatore di form, `onChange` su valori validi, via il
+pulsante «Apply»); **annulla e ripeti** con `Ctrl/⌘+Z` e `Shift+Z`, che non agiscono dentro un campo,
+con **coalescenza** per chiave — una frase scritta è un passo, non venti — e cinquanta passi;
+**trascinare un componente dalla barra fra due blocchi**, con dnd-kit che c'è già e un `DropZone`
+portato dal contesto di picking, così il renderer non importa dnd-kit e il pubblico resta inerte; e
+**l'anteprima mobile vera**: misurato, a 390 px una sezione a due colonne ne disegnava ancora due da
+167 px, perché `md:grid-cols-2` guarda la finestra. La nostra anteprima era finta come la loro; con
+le container query di Tailwind 4 sulla radice del renderer non lo è più, senza iframe.
+
+La quinta, l'**autosalvataggio della bozza**, è l'unica che tocca il DB, e ha tre decisioni dentro:
+**dieci secondi** di pausa e all'uscita, mai su una riga nuova, mai se non è cambiato niente; la
+versione della riga **esce dal form** dei metadati, che altrimenti verrebbe rimontato mentre
+qualcuno scrive; e l'audit dell'autosalvataggio è la **(B)**: una riga `autosaved` con i campi
+cambiati e **senza il corpo** (~200 byte invece di due copie del corpo), mentre «Save draft» premuto
+a mano e «Publish» restano auditati per intero. Scelta per il DB condiviso con vIPI (§2.5), e perché
+della bozza di dieci secondi fa nessuno chiederà la storia. Si chiude così anche il punto 3 della
+nota del 10 settembre (`2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`).
+
+**Changelog 0.59** (11 set 2026): **le due dashboard personali hanno una data** — si progettano
+**per prime in M2**, prima di `05-design-m2.md`. Decisione di Carmine, presa mentre collaudava
+l'editor.
+
+Fino a oggi nessuna milestone le nominava. **`/me`** compone i widget che i moduli registrano, ma il
+nucleo ne registra uno solo (`welcome`): il «cosa posso fare oggi» di §8.1 si riempie coi moduli. La
+**dashboard personale da staffista** non esiste: `/staff` è una porta verso la dashboard del primo
+dipartimento raggiungibile, lasciata così l'11 settembre «finché non si progettano le sue sezioni»
+(`decisions/2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md`).
+
+**Perché proprio all'apertura di M2:** Events è il primo modulo che registra widget per `/me` (i
+prossimi eventi a cui sono iscritto, le mie prenotazioni). Se la forma della dashboard si decidesse
+dopo, quei widget nascerebbero in una forma da rifare. La parte staff è una schermata nuova, quindi
+caso (c): **una nota di design** in `decisions/` su tutte e due, poi il piano aggiornato, poi il codice.
+
+Che cosa la nota deve chiudere:
+
+- **`/me`**: quali sezioni, chi ne decide l'ordine (fisso, o scelto dalla persona), e che cosa vede
+  chi non ha ancora niente (nessuna iscrizione, nessun training);
+- **`/staff`**: quali sezioni personali (per esempio ciò che aspetta me — bozze, contatti arrivati,
+  richieste — e i miei dipartimenti), e se sono **widget dello stesso registry**: `WidgetDescriptor`
+  porta già un `Department?` che nessuno usa. ⚠️ Una seconda macchina per comporre schermate l'ha già
+  scartata la dashboard di dipartimento (§9.3), e lo stesso vale qui;
+- **il rapporto con `/staff/{dept}`**: il tasto Staff punta già a `/staff`, quindi quando la pagina
+  esiste ci porta senza essere toccato.
+
+Toccate §8.1, §8.2 e §13.
 
 **Changelog 0.58** (11 set 2026): **una sezione può stare su tre fondi scuri**, e mentre si compone
 si vede com'è divisa. Nota `decisions/2026-09-11-la-sezione-si-vede-com-e-divisa.md`, chiesta da Carmine
@@ -1257,7 +1309,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 
 - **Atmosphere così com'è**: stessa navbar (logo IVAO + divisore + titolo "Italy"), stessi radius, stesse card. La personalità divisionale sta nei contenuti e nelle foto, non nei colori.
 - **Due mondi, una navigazione**: area pubblica editoriale (chi siamo, come iniziare, eventi, news) e area riservata operativa (dashboard personale, moduli). Il login non è un muro: le pagine pubbliche sono davvero pubbliche (oggi non lo sono), l'accesso sblocca i servizi.
-- **Dashboard personale come home post-login**: "cosa posso fare oggi" — prossimi eventi a cui sono iscritto, richieste training in corso, mie prenotazioni, ATC online in Italia adesso, avvisi staff.
+- **Dashboard personale come home post-login**: "cosa posso fare oggi" — prossimi eventi a cui sono iscritto, richieste training in corso, mie prenotazioni, ATC online in Italia adesso, avvisi staff. La sua forma, insieme a quella della dashboard personale da staffista su `/staff`, la decide la nota di design che **apre M2** (§13, piano 0.59).
 - **Dark mode** di serie (Atmosphere la fornisce), preferenza salvata nel profilo.
 - **Mobile-first per la consultazione**, desktop per la gestione (data-table, back-office).
 
@@ -1277,7 +1329,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /news, /news/{slug}
 /about                     Divisione, staff directory (da claim IVAO), partner, contatti
 /me                        Dashboard personale; /me/profile, /me/bookings, /me/training, /me/tours
-/staff                     Back-office: entri e vedi SOLO il tuo dipartimento (§9.0); DIR/ADIR/WM vedono tutti
+/staff                     Back-office: entri e vedi SOLO il tuo dipartimento (§9.0); DIR/ADIR/WM vedono tutti. Oggi porta alla dashboard del primo dipartimento; diventa la dashboard personale da staffista, progettata all'apertura di M2 (§13)
 /staff/{dept}              Dashboard del dipartimento: seminata alla nascita, poi modificata dal dipartimento nell'editor dei contenuti (riga di `cms_contents` con visibilità `department`)
 /staff/{dept}/**           Spazio del dipartimento: le sue pagine, news, documenti, voci di calendario, contatti + le schermate del suo modulo (es. /staff/ev/events, /staff/tr/requests, /staff/fo/tours)
 /staff/admin/**            Solo Director/WM/superadmin: utenti e grant, moduli/maintenance, impostazioni divisione, audit
@@ -1488,7 +1540,7 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 |---|---|---|
 | **M0 — Fondamenta** ✅ **chiusa** (4 set 2026, `v0.1.0-m0`) | Repo, soluzione .NET, SPA Vite+Atmosphere, docker-compose, CI, `division.json`, i18n IT/EN, login OIDC BFF con credenziali di test, `users` + ruoli, layout pubblico/riservato, dashboard vuota; **la spina dorsale generica di §16** (`Localized<T>`, interfacce trasversali + interceptor + authorization handler, grammatica permessi, `IProjectable`, motore lista+form, endpoint di bootstrap) **dimostrata end-to-end** su `links` e su un primo `cms_contents` creato da template (§16.15) | Skeleton navigabile, login funzionante, meccanismi generici provati. Design: `01-design-m0.md`; fasi: `02-piano-implementazione-m0.md`. Il **deploy su staging Plesk** è spostato a M1 (deciso 2 set 2026: attende le risposte A9). Demo da eseguire a mano: `tools/demo-m0.md`; revisione finale: `decisions/2026-09-04-m0-review.md` |
 | **M1 — Sito pubblico** | Nucleo editoriale: pagine a blocchi (**set completo dei blocchi del nucleo**, 22 nuovi), news, documenti per dipartimento con vocabolario delle categorie, calendario unico con UI (con sole voci interne per ora), media library, contatti + servizio notifiche, staff directory, live status; **menu editoriale**; pagine di sistema seedate (`/start`, `/pilots`, `/atc`, `/about`, home); back-office per dipartimento; schermata di ricerca; modulo `atc` come sezione `/atc` con deep link a vIPI; SEO minima; migrazione contenuti dal Blazor **a mano dall'editor**. Il **giro e2e contro l'API vera** è la prima fase. Design: `03-design-m1.md`; fasi: `04-piano-implementazione-m1.md` (G0–G12) | Sostituisce `it.ivao.aero` |
-| **M2 — Eventi** | **Due metà, e si fanno in quest'ordine** (deciso il 9 set 2026). **(a) Il modulo Events**, che parte subito: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import. **(b) Il primo pacchetto self-contained e il deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026: aspetta le risposte A9 (§15.2c) **e** la persona che carica su Plesk, che al 9 set non è disponibile | Spegne `ivao-booking` |
+| **M2 — Eventi** | **Prima di tutto, le due dashboard personali** (deciso l'11 set 2026, piano 0.59): una nota di design su `/me` e sulla dashboard da staffista `/staff`, scritta prima di `05-design-m2.md`, perché Events è il primo modulo che registra widget per `/me` e deve trovarne la forma già decisa. Poi **due metà, e si fanno in quest'ordine** (deciso il 9 set 2026). **(a) Il modulo Events**, che parte subito: eventi, slot RFE/RFO, booking, partecipanti, notifiche mail, voci nel calendario unico, blocco Data `eventList`, back-office Events. Nessun import. **(b) Il primo pacchetto self-contained e il deploy su staging Plesk** (foglio `LEGGIMI`), spostato qui da M1 il 5 set 2026: aspetta le risposte A9 (§15.2c) **e** la persona che carica su Plesk, che al 9 set non è disponibile | Spegne `ivao-booking` |
 | **M3 — Tour** | Modulo Flight Ops: tour, leg, PIREP, validatore automatico, classifiche, award con mail, voci nel calendario; design ereditato da `Ivao Italy Toursystem` | I tour IT lasciano `tours.th.ivao.aero` |
 | **M4 — Training** | Modulo Training: richieste, trainer, disponibilità, sessioni, esiti, mock exam, group training, import storico se possibile | Spegne `training.ivao.it` |
 | **M5 — vIPI dentro l'hub** | Allineamento TFM (il ramo **net10 + EF 9 + Pomelo 9** di vIPI, lavoro nel suo repository), montaggio in-process sotto `/services/vsop`, `atc.it.ivao.aero` → redirect, spegnimento di `quickoverview.ivao.it` (già confluito in vIPI). ⚠️ Fino ad allora l'indirizzo è servito **per proxy** dalla vhost che esiste: il lettore vede un sito solo da subito (decisione del 7 set 2026) | Un solo sito ATC+hub |

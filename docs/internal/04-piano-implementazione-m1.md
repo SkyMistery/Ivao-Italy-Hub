@@ -9,7 +9,14 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.19 — 11 settembre 2026 (**il collaudo a occhio di Carmine**, due giornate di
+**Versione:** 2.20 — 11 settembre 2026 (**G15, l'editor che risponde**, decisa da Carmine e messa
+**prima di G14**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera con coalescenza,
+autosalvataggio a dieci secondi con audit senza corpo, trascinamento dalla barra fra due blocchi,
+anteprima mobile vera con le container query — la nostra era finta come quella di va.ivao.aero, e
+il test la misurava dove non poteva vederlo. Perimetro nella sezione G15 di D, nota
+`decisions/2026-09-11-l-editor-che-risponde.md`, piano 0.60. Nessun codice ancora.)
+
+**2.19** — 11 settembre 2026 (**il collaudo a occhio di Carmine**, due giornate di
 rifiniture, tutte dentro G13 e tutte sulla PR #57: editor a tre colonne con la barra dei componenti;
 barra del sito a una riga, footer a colonne dal menu, marchio e favicon della divisione da
 `division.json`, i caratteri di IVAO finalmente caricati; `StaffSidebar` al posto della barra di
@@ -269,6 +276,9 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G10 | Ricerca: schermata, rilevanza, evidenziazione — **fatta** | G5, G8 | `/search` e ⌘K; le tre domande di HANDOFF §10 n.10 hanno una risposta scritta e testata |
 | G11 | Editor: differenze dal template, dnd-kit, anteprima | G8 | tre stati della diff, «allinea» una differenza alla volta, su/giù da tastiera intatto |
 | G12 | Migrazione a mano, giro visivo, chiusura di M1 | tutte | `/about` e `/start` ricopiati, giro visivo eseguito, rapporto di chiusura con i numeri, tag `v0.2.0-m1` |
+| G13 | I difetti trovati usando, e le rifiniture del collaudo — **fatta**, PR #57 | G12 | i quattro difetti e le dodici richieste della demo, poi le due giornate di collaudo a occhio |
+| G15 | L'editor che risponde — **dopo il tag, prima di G14** | G13 | proprietà applicate scrivendo, annulla/ripeti da tastiera, autosalvataggio a 10 s con audit senza corpo, trascinamento dalla barra, anteprima «Phone» che accorpa davvero le colonne |
+| G14 | Il documento operativo (LoA/SOP) | G15 | tipo SOP/LoA, sei campi operativi da `ref_`, `Archived`/`Superseded`, Frequency Table e Coordination, piè di pagina con la stampa |
 
 **Parallelismo.** G5 e G6 non si toccano (tabelle, rotte e schermate diverse) e possono girare in
 sessioni parallele **se** si rispetta la regola 2 di §A. G7 dipende solo da G2 e può anticipare G5/G6
@@ -1230,7 +1240,69 @@ contrasto — ora lo misura, con la funzione unica `e2e/contrast.ts`; e rinomina
 barra laterale aveva rotto la ricerca per sigla («ED links»), che un test nuovo ha trovato.
 
 Il **documento operativo** (LoA/SOP alla va.ivao.aero) è deciso ma **non** è G13: diventa **G14**,
-dopo il tag (`2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
+dopo il tag (`2026-09-10-il-documento-operativo-come-va-ivao-aero.md`). E **prima di G14 viene G15**,
+l'editor che risponde, decisa l'11 settembre.
+
+### G15 — L'editor che risponde
+
+**Decisa da Carmine l'11 settembre 2026** con i due editor davanti, il loro e il nostro
+(`decisions/2026-09-11-l-editor-che-risponde.md`, piano 0.60). Viene **prima di G14**, dopo il tag
+`v0.2.0-m1`: è ciò che si sta collaudando, e il documento operativo nascerà in un editor migliore.
+Branch `m1/g15-editor-live`, una PR per sessione, **tre sessioni** nell'ordine qui sotto, ognuna
+chiusa da `pnpm e2e:full` perché quattro delle cinque cose cambiano il gesto che i test fanno.
+
+**Sessione 1 — la rete, poi la risposta, poi la verità dell'anteprima.**
+
+1. **Annulla e ripeti con coalescenza** (`useBodyHistory`): pila `future`, `redo`, `canRedo`;
+   `change(next, { coalesce: key })` sostituisce la cima quando la chiave è la stessa dell'ultima
+   modifica, e una chiave diversa o assente chiude la corsa; tetto **50**. Pulsante «Ripeti» accanto
+   ad «Annulla». Scorciatoie `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z`, `Ctrl+Y` su un gestore del documento che
+   **non fa niente** se `event.target` è `input`, `textarea`, `select` o `contenteditable` — la
+   ragione scritta nel file resta vera. Test: ripeti; ripeti svuotato da una modifica; coalescenza
+   per chiave; ⌘Z in un `textarea` non annulla, su un pulsante sì.
+2. **Le proprietà si applicano mentre si scrive**: `SchemaForm` riceve `onChange?: (values) => void`
+   (settima estensione del generatore), chiamato ~150 ms dopo l'ultimo tasto e **solo se
+   `schema.safeParse` passa**. `BlockProperties` e `SectionProperties` lo usano con
+   `coalesce: props:<id>` e perdono il pulsante «Apply»; il form dei metadati resta a `onSubmit`.
+   Test: `onChange` non chiamato su valori non validi, chiamato una volta per pausa; i test che
+   premevano «Apply» (`round.spec.ts`, `template.spec.ts`, `bench.ts`) scrivono e guardano.
+3. **Anteprima mobile vera**: la radice di `ContentRenderer` è `@container`; le 23 varianti `sm:`/`md:`
+   sotto `web/src/blocks/` diventano `@sm:`/`@md:`, con `--container-sm: 40rem` e
+   `--container-md: 48rem` in `@theme`, uguali ai breakpoint di finestra (⚠️ verificare nella build
+   che Tailwind 4.3 le legga). `PreviewFrame` non cambia. Test: l'e2e che misura la regione misura
+   anche `gridTemplateColumns` a «Phone» = **una** colonna — è la riga che avrebbe trovato il
+   difetto; un Vitest fa il grep di `sm:`/`md:` sotto `blocks/` e fallisce se ne torna una. Poi
+   **a occhio** sul set dei blocchi, perché un componente Atmosphere con media query sue guarda
+   ancora la finestra.
+4. Le due piccole: `{{department}}` nel percorso dell'editor della dashboard (`common.json:239`,
+   non interpolato) e la barra dei componenti che sembra disabilitata quando non lo è.
+
+**Sessione 2 — l'autosalvataggio.** Le sei regole della nota: dopo **10 s** senza tasti e
+all'uscita (`useBlocker` del router, `beforeunload` per la scheda); solo se cambiato; solo se i
+metadati sono validi lato client; **mai su una riga nuova**; un 409 ferma e lo dice; «Publish» prima
+svuota il salvataggio in sospeso. Indicatore «Salvato alle …» / «Salvataggio…» / «Modifiche non
+salvate» al posto della frase «salva prima di pubblicare». ⚠️ **La versione della riga esce dal
+form** dei metadati (`key={content?.rowVersion}` sparisce, la tiene l'editor e `onSave` la mette nel
+DTO): rimontare il form a ogni autosalvataggio porterebbe via il cursore a chi scrive nel titolo.
+Server, **(B)**: l'intestazione `X-Hub-Autosave: 1` letta dal motore CRUD mette un flag nell'ambito
+della richiesta, e `CollectAudit` scrive una riga `autosaved` con l'elenco dei campi cambiati e
+**senza `BeforeJson`/`AfterJson`**; senza intestazione tutto resta com'è. Test: Vitest con orologio
+finto (nessun `PUT` prima dei 10 s, uno solo dopo, nessuno se nulla è cambiato, nessuno su riga
+nuova, stop al 409); integrazione .NET sulla riga `autosaved` senza corpo contro la `updated` con;
+e2e: scrivere, aspettare l'indicatore, ricaricare, il testo c'è.
+
+**Sessione 3 — trascinare dalla barra.** Voci della `BlockPalette` `useDraggable` con `data: { type }`;
+un `DndContext` in `ContentEditor` intorno a barra e pagina **solo con la pagina nel mezzo** (l'outline
+ha il suo, i due non convivono). ⚠️ **Il renderer non importa dnd-kit**: la `Picking` porta un
+componente `DropZone` fornito dall'editor (`useDroppable` dentro) che `Column` disegna fra un blocco e
+l'altro e in fondo, **solo durante un trascinamento** e solo dove `accepts` dice sì; con
+`picking === null` non esiste. `addBlock` riceve un indice `at`. Il clic resta la strada da tastiera.
+Test: `addBlock` con `at`; `Column` con un `DropZone` finto, mai con `picking === null` (il test della
+pagina inerte resta); e2e con `dragTo` fra due blocchi, che è dove si sbaglia.
+
+**Criterio di chiusura**: le cinque cose in un browser, la scheda `tools/demo-m1.md` aggiornata dove
+descrive «Apply», l'HANDOFF con il conto dei test, e il rapporto di quanto è costata contro le tre
+sessioni previste.
 
 ---
 

@@ -51,7 +51,9 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** **v0.58** (11 set: sette sfondi di sezione, §16.C riaperto e cambiato). **Design M1:** v1.15
+**Piano:** **v0.60** (11 set: **G15, l'editor che risponde**, decisa e da costruire prima di G14; v0.59
+le due dashboard personali si progettano per prime in M2; v0.58 i sette sfondi di sezione, §16.C
+riaperto e cambiato). **Design M1:** v1.15
 (`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
 G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è aperta** (§28) e raccoglie le rifiniture del
 collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
@@ -102,7 +104,16 @@ com'è fatto l'hub oggi:
    cinque tentativi, il server di prova deve fare il fallback SPA, e un grep su un bundle minificato
    non è una verifica.
 
-**Dopo il tag, G14 — il documento operativo** (`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
+**Dopo il tag, G15 — l'editor che risponde** (`decisions/2026-09-11-l-editor-che-risponde.md`,
+piano 0.60, `04-piano-implementazione-m1.md` fase G15), **decisa l'11 settembre e messa prima di G14**.
+Tre sessioni: (1) annulla/ripeti con coalescenza, proprietà applicate mentre si scrive, anteprima
+mobile vera con le container query; (2) autosalvataggio a dieci secondi con audit `autosaved` senza
+corpo — la versione della riga esce dal form dei metadati; (3) trascinamento dalla barra fra due
+blocchi. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
+e2e misurava la regione e non le colonne.
+
+**Poi G14 — il documento operativo** (`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
 Prima passata decisa: tipo SOP/LoA, sei campi operativi (posizione primaria e secondaria, ICAO, FIR,
 efficacia, revisione, scelti da elenchi `ref_` e non digitati), `Archived` e `Superseded` **col
 successore**, i blocchi **Frequency Table** e **Coordination**, il **piè di pagina con la stampa**. Il
@@ -113,10 +124,9 @@ documento operativo, prima del codice.
 **Da decidere prima di scrivere codice:**
 
 - la **pubblicazione programmata**, con le sue tre domande (`2026-09-09-il-documento-dice-di-se.md`);
-- il **trascinamento** di un componente dalla barra dentro una colonna — il punto 3 del 10 settembre;
-  oggi si fa col clic, che resta comunque l'unica strada da tastiera;
 - la **dashboard personale da staffista** su `/staff`, oggi una porta verso la dashboard del primo
-  dipartimento: Carmine ha deciso di lasciarla così finché non si progettano le sue sezioni;
+  dipartimento, e la forma di **`/me`**: **si progettano per prime in M2**, con una nota su tutte e due
+  prima di `05-design-m2.md` (piano 0.59, §13, dove sono scritte le domande che la nota deve chiudere);
 - il **gruppo richiudibile** nel generatore di form — sarebbe la **decima** estensione. Serve perché
   lo **stato vuoto di un campo opzionale occupa più spazio del campo**: la SEO misura 536 px e il
   selettore di file disegna «No files yet / Upload one in the media library» anche quando nessuno
@@ -131,7 +141,8 @@ documento operativo, prima del codice.
 Atmosphere, spiegato in `e2e/smoke.spec.ts`; non si «corregge» togliendo `onValueChange`.
 
 **M2 è divisa in due** (piano §13): il modulo Events parte quando si vuole; il deploy su Plesk aspetta
-le risposte A9 **e** la persona che carica, che a oggi non c'è. Prima del codice ci va
+le risposte A9 **e** la persona che carica, che a oggi non c'è. Prima del codice ci vanno, in
+quest'ordine, la **nota sulle due dashboard personali** (`/me` e `/staff`, piano 0.59) e
 `05-design-m2.md`, che si può scrivere adesso perché riguarda il modulo e non il deploy.
 
 ⚠️ **Tre difetti sono stati trovati aprendo l'applicazione a mano, dopo il tag** — e sono la stessa

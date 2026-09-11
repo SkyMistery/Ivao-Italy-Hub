@@ -109,6 +109,10 @@ un dipartimento, quindi quando si progetteranno le sezioni personali basterà ch
 pagina: il tasto ci porterà senza essere toccato. Farla adesso sarebbe stata una pagina vuota, e una
 schermata nuova è (c): prima la nota di design.
 
+**Quando, deciso lo stesso giorno:** la nota si scrive **per prima in M2**, prima di `05-design-m2.md`,
+e tratta insieme `/staff` e `/me`, perché Events è il primo modulo che registra widget per `/me`.
+Piano 0.59, §13.
+
 ---
 
 ## Poi: lo spazio in cima alle schermate staff
