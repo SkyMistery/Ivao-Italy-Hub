@@ -91,8 +91,7 @@ interface CommonStrings {
       readonly saveDraft: string;
       readonly publish: string;
       readonly page: string;
-      readonly applyBlock: string;
-      readonly applySection: string;
+      readonly setKey: string;
       readonly addBlock: string;
       readonly addSection: string;
       readonly components: string;

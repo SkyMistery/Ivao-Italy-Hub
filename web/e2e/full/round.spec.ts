@@ -81,20 +81,26 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   await openOutline(page, content.editor.outline);
   await selectSection(page, englishSeed.seed.templates.sectionPage!.body!.section);
 
+  // Back to the page, which is where what is written shows up: since G15 the properties apply as
+  // they are typed, and there is no button to press. Reading the words on the page is how the
+  // round knows they were applied before it saves — a wait on the thing itself, not on a clock.
+  await page.getByRole('button', { name: content.editor.onThePage, exact: true }).click();
+  const onThePage = page.getByRole('region', { name: content.editor.preview });
+
   await addBlock(page, blocks.subgroups.text, blocks.heading.label);
   await choose(page, blocks.heading.fields.level, blocks.heading.options.level['2']!, properties(page));
   await writeInBothLanguages(properties(page), blocks.heading.fields.text, 'text', heading);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByRole('heading', { name: heading.en })).toBeVisible();
 
   await addBlock(page, blocks.subgroups.text, blocks.text.label);
   await writeInBothLanguages(properties(page), blocks.text.fields.markdown, 'markdown', paragraph);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByText(paragraph.en)).toBeVisible();
 
   await addBlock(page, blocks.subgroups.text, blocks.callout.label);
   await choose(page, blocks.callout.fields.tone, blocks.callout.options.tone.info!, properties(page));
   await writeInBothLanguages(properties(page), blocks.callout.fields.title, 'title', callout);
   await writeInBothLanguages(properties(page), blocks.callout.fields.text, 'text', paragraph);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByText(callout.en)).toBeVisible();
 
   // ---------------------------------------------------------------- save, then publish
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
@@ -132,9 +138,10 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   // what `selectBlock` reads.
   await openOutline(page, content.editor.outline);
   await selectBlock(page, blocks.callout.label);
+  await page.getByRole('button', { name: content.editor.onThePage, exact: true }).click();
 
   await writeInBothLanguages(properties(page), blocks.callout.fields.title, 'title', edited);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByText(edited.en)).toBeVisible();
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
     await saveDraft(page, content.editor.saveDraft).click();
   });

@@ -124,11 +124,15 @@ function ChosenIcon({ name, className }: { name: string; className: string }) {
   return Icon === undefined ? null : <Icon className={className} aria-hidden />;
 }
 
-/** How many columns a grid stands in. Literal classes, because Tailwind reads the source. */
+/**
+ * How many columns a grid stands in. Literal classes, because Tailwind reads the source; container
+ * variants, because the width that decides is the column the block stands in and not the window
+ * (`ContentRenderer.tsx`, `COLUMN_SPAN`).
+ */
 const GRID_OF: Record<number, string> = {
-  2: 'sm:grid-cols-2',
-  3: 'sm:grid-cols-2 md:grid-cols-3',
-  4: 'sm:grid-cols-2 md:grid-cols-4',
+  2: '@view-sm:grid-cols-2',
+  3: '@view-sm:grid-cols-2 @view-md:grid-cols-3',
+  4: '@view-sm:grid-cols-2 @view-md:grid-cols-4',
 };
 
 function gridOf(columns: number): string {
@@ -308,11 +312,11 @@ export function HeroBlock({ props }: BlockComponentProps) {
   );
 
   return (
-    <section className={`rounded-lg p-8 md:p-12 ${HERO_TONE[tone]}`}>
+    <section className={`rounded-lg p-8 @view-md:p-12 ${HERO_TONE[tone]}`}>
       {picture === null ? (
         words
       ) : (
-        <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
+        <div className="grid grid-cols-1 items-center gap-8 @view-md:grid-cols-2">
           {words}
           <img src={mediaFileUrl(picture)} alt="" className="w-full rounded-lg object-cover" loading="lazy" />
         </div>

@@ -1251,7 +1251,18 @@ l'editor che risponde, decisa l'11 settembre.
 Branch `m1/g15-editor-live`, una PR per sessione, **tre sessioni** nell'ordine qui sotto, ognuna
 chiusa da `pnpm e2e:full` perché quattro delle cinque cose cambiano il gesto che i test fanno.
 
-**Sessione 1 — la rete, poi la risposta, poi la verità dell'anteprima.**
+**Sessione 1 — la rete, poi la risposta, poi la verità dell'anteprima — fatta l'11 settembre 2026**
+(branch `m1/g15-editor-live`, sopra la PR #57). Costata quanto previsto: una sessione. Misurato nel
+browser di Carmine a cose fatte: una proprietà si applica **~180 ms** dopo l'ultimo tasto, annulla e
+ripeti ridisegnano in ~25 ms e non chiudono il blocco selezionato, ⌘Z dentro il campo resta del
+browser, l'anteprima «Phone» a 390 px disegna **una** colonna (358 px) dove prima ne disegnava due da
+167. Due cose imparate facendolo, entrambe scritte nel codice: **un blocco disegnato fuori da una
+pagina** (la lista delle news, la galleria) non ha un renderer intorno da misurare, quindi
+`@container` sta anche sui due `<main>` dei layout — senza, la lista delle news era una colonna anche
+a 1280 px, e lo smoke l'ha detto al primo giro; e **la `key` di una sezione di template non si
+applica scrivendo**, perché si fissa una volta sola: «in» sarebbe diventata la chiave di «intro».
+Ha un pulsante suo, «Fissa la chiave», l'unico rimasto sotto un form di proprietà. Conto: **331
+Vitest**, **56 smoke**, **13 del giro pieno**, .NET invariato.
 
 1. **Annulla e ripeti con coalescenza** (`useBodyHistory`): pila `future`, `redo`, `canRedo`;
    `change(next, { coalesce: key })` sostituisce la cima quando la chiave è la stessa dell'ultima
@@ -1275,7 +1286,9 @@ chiusa da `pnpm e2e:full` perché quattro delle cinque cose cambiano il gesto ch
    **a occhio** sul set dei blocchi, perché un componente Atmosphere con media query sue guarda
    ancora la finestra.
 4. Le due piccole: `{{department}}` nel percorso dell'editor della dashboard (`common.json:239`,
-   non interpolato) e la barra dei componenti che sembra disabilitata quando non lo è.
+   non interpolato) e il suggerimento sopra la barra dei componenti, che diceva «Aggiunge a:
+   Welcome» sopra una barra tutta grigia — la barra era disabilitata a ragione, perché la sezione è
+   bloccata dal template; ora lo dice.
 
 **Sessione 2 — l'autosalvataggio.** Le sei regole della nota: dopo **10 s** senza tasti e
 all'uscita (`useBlocker` del router, `beforeunload` per la scheda); solo se cambiato; solo se i

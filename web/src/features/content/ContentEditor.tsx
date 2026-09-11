@@ -1,6 +1,6 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Eye, List, Send, Undo2 } from 'lucide-react';
+import { ChevronLeft, Eye, List, Redo2, Send, Undo2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -42,7 +42,7 @@ import {
 } from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
 import { SectionTree, type Selection } from './SectionTree';
-import { useBodyHistory } from './useBodyHistory';
+import { useBodyHistory, useHistoryShortcuts } from './useBodyHistory';
 import { applyDifference, templateDiff } from './templateDiff';
 import { LockedByTemplate, TemplateDifferences } from './TemplatePanel';
 import { NO_RULES, ruleFor, templateRules } from './templateRules';
@@ -148,10 +148,36 @@ export function ContentEditor({
   // read out, and one line at a time is acted on (design M1 §9.1).
   const differences = templateDiff(body, templateBody);
 
-  const change = (next: Body) => {
-    history.change(next);
+  const change = (next: Body, options?: { coalesce?: string }) => {
+    history.change(next, options);
     setUnsaved(true);
   };
+
+  // The way back, and forth. What was selected may not exist in the body that comes back — a block
+  // added and then undone — and then the page's own properties are what is left to show. When it
+  // does exist it stays selected, so undoing a word typed into a block does not also close it.
+  const restore = (restored: Body | null): boolean => {
+    if (restored === null) {
+      return false;
+    }
+
+    setUnsaved(true);
+
+    if (
+      selection !== null &&
+      (selection.kind === 'block'
+        ? findBlock(restored, selection.id)
+        : findSection(restored, selection.id)) === undefined
+    ) {
+      setSelection(null);
+    }
+
+    return true;
+  };
+
+  const undo = () => restore(history.undo());
+  const redo = () => restore(history.redo());
+  useHistoryShortcuts(undo, redo);
 
   const section = selection?.kind === 'section' ? findSection(body, selection.id) : undefined;
   const block = selection?.kind === 'block' ? findBlock(body, selection.id) : undefined;
@@ -337,7 +363,8 @@ export function ContentEditor({
                   : {}),
               });
 
-              change(withSettings);
+              // A run of typing into one section's settings is one step to undo.
+              change(withSettings, { coalesce: `section:${section.id}` });
             }}
           />
         </>
@@ -349,7 +376,11 @@ export function ContentEditor({
           locales={locales}
           division={division}
           mediaLibrary={mediaLibrary}
-          onApplyProps={(props) => change(updateBlock(body, block.block.id, { props }))}
+          // Applied at every pause in typing, and remembered as one step: a sentence written into
+          // a block is one thing to undo, not one per pause (`useBodyHistory`).
+          onApplyProps={(props) =>
+            change(updateBlock(body, block.block.id, { props }), { coalesce: `props:${block.block.id}` })
+          }
           onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
         />
       ) : null}
@@ -405,20 +436,16 @@ export function ContentEditor({
             {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
           </Button>
 
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!history.canUndo}
-            onClick={() => {
-              history.undo();
-              setUnsaved(true);
-              // What was selected may not exist in the body that comes back, and the page's own
-              // properties are always there to fall back on.
-              setSelection(null);
-            }}
-          >
+          {/* Also ⌘Z and ⌘⇧Z, outside a field (`useHistoryShortcuts`); the buttons are what says
+              the two exist, and the road for anybody who does not know the keys. */}
+          <Button type="button" variant="ghost" disabled={!history.canUndo} onClick={undo}>
             <Undo2 aria-hidden className="mr-2 size-4" />
             {t('content.editor.undo')}
+          </Button>
+
+          <Button type="button" variant="ghost" disabled={!history.canRedo} onClick={redo}>
+            <Redo2 aria-hidden className="mr-2 size-4" />
+            {t('content.editor.redo')}
           </Button>
 
           {onPublish === null ? null : (

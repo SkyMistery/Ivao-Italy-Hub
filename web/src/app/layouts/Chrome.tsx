@@ -474,7 +474,11 @@ export function Shell({
     <div className="bg-body text-foreground flex min-h-screen flex-col">
       <AppHeader bootstrap={bootstrap} />
       {banner}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      {/* `@container`: the widths that lay a block out are measured on the column it stands in
+          (`styles/index.css`). A block drawn on a screen of its own — the news list, the gallery —
+          has no renderer around it to measure, and without a container here it would never fold
+          or unfold at all. */}
+      <main className="@container mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <AppFooter bootstrap={bootstrap} />
     </div>
   );

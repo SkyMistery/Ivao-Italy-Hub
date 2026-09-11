@@ -134,13 +134,25 @@ test('the preview is three widths of the same page, and the narrow one is really
 
   // ⚠️ The window is pinned, and it has to be now that the editor is three columns: the frame is
   // the middle one, so how wide it draws is a fact about the window as much as about the preview.
-  // What this test is about is that the three widths differ from one another.
-  await page.setViewportSize({ width: 1600, height: 900 });
+  // What this test is about is that the three widths differ from one another — and, since G15,
+  // that the page lays out by the width it is given: at 1600 the middle column is under 768 pixels
+  // and a two column section honestly stands in **one**, so the window is wider than that here.
+  await page.setViewportSize({ width: 1920, height: 900 });
+
+  // A section in two columns, because that is what a narrow preview has to be seen to fold.
+  const twoColumns = {
+    ...section('pair', 'Pair', first),
+    layout: '1/2+1/2',
+    blocks: [
+      { id: 'b_left', type: 'heading', version: 1, props: { level: 2, text: first }, column: 0 },
+      { id: 'b_right', type: 'heading', version: 1, props: { level: 2, text: later }, column: 1 },
+    ],
+  };
 
   const born = await createContent(context, {
     slug: `bench-preview-${stamp}`,
     title: { en: 'Bench preview', it: 'Anteprima del banco' },
-    body: { schemaVersion: 1, sections: [section('opening', 'Opening', first)] },
+    body: { schemaVersion: 1, sections: [twoColumns] },
   });
 
   await page.goto(`/staff/${department}/content/${born.id}`);
@@ -149,10 +161,18 @@ test('the preview is three widths of the same page, and the narrow one is really
   const frame = page.getByRole('region', { name: words.preview });
   await expect(frame).toBeVisible();
 
+  // How many columns the section is standing in: the grid's own computed tracks, which is the one
+  // fact a screenshot of a narrow preview cannot be trusted about.
+  const grid = frame.locator('section > div > div.grid').first();
+  const columnsOf = () =>
+    grid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/u).length);
+
   // A measure, because this is the fault no assertion about text can see: three buttons that all
   // draw the same page at the same width would look exactly like a working preview in a
   // screenshot, and every word asserted about it would still be there.
   const wide = await frame.boundingBox();
+  expect(await columnsOf()).toBe(2);
+
   await page.getByRole('button', { name: words.previewWidths.phone }).click();
   const narrow = await frame.boundingBox();
 
@@ -160,6 +180,12 @@ test('the preview is three widths of the same page, and the narrow one is really
   expect(wide).not.toBeNull();
   expect(narrow!.width).toBeLessThanOrEqual(390);
   expect(wide!.width - narrow!.width).toBeGreaterThan(100);
+
+  // ⚠️ And the section **folded**. Until G15 this was two columns of 167 pixels inside a frame of
+  // 390 — the preview looked like a phone and laid out like a desktop, because the renderer asked
+  // the window — and the width assertion above stayed green throughout. This is the line that
+  // would have caught it.
+  await expect.poll(columnsOf).toBe(1);
 
   // And it is the same renderer, not a picture of one: the page is still in there.
   await expect(frame.getByRole('heading', { name: first.en })).toBeVisible();
@@ -191,7 +217,12 @@ test('a template written in the editor is obeyed by the pages made from it', asy
   const form = properties(page);
   await form.getByLabel(sectionFields.key).fill('intro');
   await form.getByRole('checkbox', { name: blocks.heading.label }).check();
-  await form.getByRole('button', { name: words.applySection }).click();
+  // The one setting of a section that does **not** apply as it is typed: a key is written once and
+  // then fixed, so it is set with a button — or "in" would be the key of a section meant to be
+  // "intro". The line under the form saying which key it is comes the moment it is set, and is
+  // what the save below waits for.
+  await form.getByRole('button', { name: words.setKey }).click();
+  await expect(page.getByText(`Key: intro`, { exact: false })).toBeVisible();
 
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
     await saveDraft(page, words.saveDraft).click();

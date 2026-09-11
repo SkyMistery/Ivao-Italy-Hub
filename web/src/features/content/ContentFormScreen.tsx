@@ -111,7 +111,13 @@ export function ContentFormScreen({
       {...(note === undefined ? {} : { note })}
       breadcrumb={[
         { label: department },
-        { label: t(`${config.titles}.title`), to: breadcrumbTo },
+        // The department goes in for the one kind whose title is the department's name — the
+        // dashboard — and is ignored by the three whose title is a word. Without it the crumb read
+        // "{{department}}", literally.
+        {
+          label: t(`${config.titles}.title`, { department: t(`departments.${department}`) }),
+          to: breadcrumbTo,
+        },
         { label: title },
       ]}
     >

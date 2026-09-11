@@ -69,19 +69,29 @@ const WIDTH = {
   full: 'w-full px-4',
 } as const;
 
-/** The share of the grid each column takes, per layout. Literal classes: Tailwind reads the source. */
+/**
+ * The share of the grid each column takes, per layout. Literal classes: Tailwind reads the source.
+ *
+ * ⚠️ `@view-md:` and not `md:` — a **container** query on the page, not a media query on the window
+ * (G15, 11 September 2026). Measured before the change: the editor's "Phone" preview was 390 pixels
+ * wide and a two column section still drew two columns of 167 pixels in it, because `md:` asked the
+ * window, which was 1912. The preview looked like a phone and laid out like a desktop — exactly the
+ * fault va.ivao.aero's builder has. The thresholds are the window's own (`styles/index.css`), so a
+ * visitor sees what they saw; what changed is what is measured. Every variant under `blocks/` is a
+ * container one for this reason, and `containerQueries.test.ts` keeps it so.
+ */
 const COLUMN_SPAN: Record<string, readonly string[]> = {
-  '1/2+1/2': ['md:col-span-1', 'md:col-span-1'],
-  '1/3+2/3': ['md:col-span-1', 'md:col-span-2'],
-  '2/3+1/3': ['md:col-span-2', 'md:col-span-1'],
-  '3x1/3': ['md:col-span-1', 'md:col-span-1', 'md:col-span-1'],
+  '1/2+1/2': ['@view-md:col-span-1', '@view-md:col-span-1'],
+  '1/3+2/3': ['@view-md:col-span-1', '@view-md:col-span-2'],
+  '2/3+1/3': ['@view-md:col-span-2', '@view-md:col-span-1'],
+  '3x1/3': ['@view-md:col-span-1', '@view-md:col-span-1', '@view-md:col-span-1'],
 };
 
 const GRID: Record<string, string> = {
-  '1/2+1/2': 'md:grid-cols-2',
-  '1/3+2/3': 'md:grid-cols-3',
-  '2/3+1/3': 'md:grid-cols-3',
-  '3x1/3': 'md:grid-cols-3',
+  '1/2+1/2': '@view-md:grid-cols-2',
+  '1/3+2/3': '@view-md:grid-cols-3',
+  '2/3+1/3': '@view-md:grid-cols-3',
+  '3x1/3': '@view-md:grid-cols-3',
 };
 
 export function ContentRenderer({
@@ -96,7 +106,9 @@ export function ContentRenderer({
   staff?: boolean;
 }) {
   return (
-    <div className="flex flex-col">
+    // The container the sections measure themselves against: as wide as the page is given, which
+    // on the public site is the window and in the editor's preview is the width that was chosen.
+    <div className="@container flex flex-col">
       {body.sections.map((section) => (
         <SectionView key={section.id} section={section} staff={staff} />
       ))}
@@ -207,8 +219,10 @@ function Column({
   const picking = usePicking();
   const { t } = useTranslation();
 
+  // A column is a container too, so a grid of cards inside a third of the page measures the third
+  // and not the page: three cards in a narrow column were three slivers before.
   if (picking === null) {
-    return <div className={`flex flex-col gap-6 ${className}`}>{children}</div>;
+    return <div className={`@container flex flex-col gap-6 ${className}`}>{children}</div>;
   }
 
   const chosen = picking.target?.section === section.id && picking.target.column === column;
@@ -227,7 +241,7 @@ function Column({
         event.stopPropagation();
         picking.onPickColumn(section.id, column);
       }}
-      className={`flex min-h-16 flex-col gap-6 rounded-md outline-1 outline-offset-4 ${
+      className={`@container flex min-h-16 flex-col gap-6 rounded-md outline-1 outline-offset-4 ${
         chosen ? 'outline-primary outline-solid' : 'outline-border outline-dashed'
       } ${className}`}
     >

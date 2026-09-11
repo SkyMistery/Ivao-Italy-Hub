@@ -81,11 +81,15 @@ export function BlockPalette({
         }
       />
 
-      {/* What a click will do, said before it is clicked rather than after nothing happens. */}
+      {/* What a click will do, said before it is clicked rather than after nothing happens — and
+          when nothing can happen, why: a section the template fixes greys every entry out, and
+          "Adds to: Welcome" over a greyed out list read as a palette that was broken. */}
       <p className="text-muted-foreground text-xs">
         {target === null
           ? t('content.editor.componentsHint')
-          : t('content.editor.addsTo', { section: target.name })}
+          : rule.locked
+            ? t('content.editor.lockedTarget', { section: target.name })
+            : t('content.editor.addsTo', { section: target.name })}
       </p>
 
       <AccordionRoot type="multiple" value={openGroups} onValueChange={setOpenGroups} className="w-full">

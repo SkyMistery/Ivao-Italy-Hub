@@ -95,8 +95,8 @@ test('a component from the palette lands in the section that was selected', asyn
   await heading.click();
 
   // The block was added *and* selected, so the panel on the right is a block's properties now
-  // rather than the page's: that form is the only one with this button on it.
-  await expect(page.getByRole('button', { name: editor.applyBlock })).toBeVisible();
+  // rather than the page's: a heading's level is a field no other form on this screen has.
+  await expect(page.getByText(englishCommon.blocks.heading.fields.level, { exact: true })).toBeVisible();
 
   // And it is in the page, not only in the panel: the outline has a row for it.
   await expect(

@@ -5,6 +5,26 @@
 @source '../../src';
 
 /*
+ * The breakpoints of a page, measured on the page and not on the window (G15, 11 September 2026).
+ *
+ * The renderer of a page (`blocks/ContentRenderer.tsx`) is a container, and every width that
+ * decides a layout under `blocks/` — where a section's columns stand side by side, where a grid of
+ * cards goes to two — is a container query on it: `@view-sm:` and `@view-md:`. Measured before the
+ * change: the editor's "Phone" preview, 390 pixels wide, still drew a two column section in two
+ * columns, because `md:` asked the window. Now the preview lays out as a phone would, without an
+ * iframe, and the public site lays out as before — the two values are the window's own `sm` and
+ * `md`, and on the public site the page is as wide as the window.
+ *
+ * ⚠️ Names of their own rather than `--container-sm` and `--container-md`: in Tailwind 4 those are
+ * also the scale of `max-w-sm` and `max-w-md`, and redefining them would move every `max-w-*` in
+ * the application to make two variants read nicely.
+ */
+@theme {
+  --container-view-sm: 40rem;
+  --container-view-md: 48rem;
+}
+
+/*
  * The one token this hub overrides, and the reason is written in
  * `docs/internal/decisions/2026-09-09-il-grigio-dei-testi-secondari.md`.
  *
