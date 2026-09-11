@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { emptyBody, type Body } from '../../blocks';
 import type { Department, LocalizedString } from '../../shared/api/bootstrap';
-import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
+import { AUTOSAVE_HEADER, api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 import { emptyLocalized } from '../../shared/i18n/localized';
 
@@ -158,6 +158,8 @@ function spreadSeo(
 interface ContentWrite {
   values: ContentFormValues;
   body: Body;
+  /** A save the editor made by itself, after a pause: audited without the body (`AUTOSAVE_HEADER`). */
+  autosave?: boolean;
 }
 
 export function useCreateContent() {
@@ -181,6 +183,7 @@ export function useUpdateContent(id: number) {
         await api.PUT('/api/content/{id}', {
           params: { path: { id: String(id) } },
           body: toWriteDto(write.values, write.body),
+          ...(write.autosave === true ? { headers: { [AUTOSAVE_HEADER]: '1' } } : {}),
         }),
       ),
     onSuccess: async (content) => {

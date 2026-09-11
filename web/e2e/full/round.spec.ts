@@ -195,6 +195,72 @@ test('a draft nobody published is not there for a visitor', async ({ page, conte
   await visitor.close();
 });
 
+test('the draft saves itself after a pause, and on the way out', async ({ page, context }) => {
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  const first = { en: 'Written before the pause', it: 'Scritto prima della pausa' };
+  const paused = { en: 'Stored by the pause', it: 'Salvato dalla pausa' };
+  const left = { en: 'Stored on the way out', it: 'Salvato uscendo' };
+
+  const row = await createContent(context, {
+    slug: `bench-autosave-${Date.now().toString(36)}`,
+    title: { en: 'Saves itself', it: 'Si salva da sola' },
+    body: {
+      schemaVersion: 1,
+      sections: [
+        {
+          id: 's_only',
+          key: null,
+          title: null,
+          layout: 'stacked',
+          background: 'none',
+          padding: 'md',
+          width: 'default',
+          blocks: [{ id: 'b_only', type: 'heading', version: 1, props: { level: 2, text: first } }],
+          sections: [],
+        },
+      ],
+    },
+  });
+
+  await page.goto(`/staff/${department}/content/${row.id}`);
+  const onThePage = page.getByRole('region', { name: content.editor.preview });
+
+  // Picking the heading on the page opens its fields; writing in them applies at once (session 1)
+  // and, ten seconds later, stores (session 2). The line under the toolbar says which of the two
+  // has happened, and the round waits on the call and on the line, never on a clock of its own.
+  await onThePage.getByRole('heading', { name: first.en }).click();
+  await writeInBothLanguages(properties(page), blocks.heading.fields.text, 'text', paused);
+  await expect(onThePage.getByRole('heading', { name: paused.en })).toBeVisible();
+  await expect(page.getByRole('status')).toHaveText(content.editor.autosave.unsaved);
+
+  await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+    await expect(page.getByRole('status')).toHaveText(
+      new RegExp(`^${content.editor.autosave.saved.replace('{{time}}', '\\d\\d:\\d\\d')}$`, 'u'),
+      { timeout: 15_000 },
+    );
+  });
+
+  expect(JSON.stringify((await readContent(context, row.id)).body)).toContain(paused.en);
+
+  // Then the way out: written again, and the page left through the application before any pause.
+  // The blocker stores first and lets the navigation through; nothing is asked.
+  await writeInBothLanguages(properties(page), blocks.heading.fields.text, 'text', left);
+  await expect(onThePage.getByRole('heading', { name: left.en })).toBeVisible();
+
+  await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+    await page.getByRole('link', { name: content.title, exact: true }).first().click();
+  });
+
+  await expect(page).toHaveURL(new RegExp(`/staff/${department}/content(\\?.*)?$`));
+  expect(JSON.stringify((await readContent(context, row.id)).body)).toContain(left.en);
+});
+
 test('the application serves its own deep addresses, which no static server does', async ({ request }) => {
   // The check that says at once which side a failure is on. Serving the published package with
   // something that only knows files answers 404 here, and every back office test then fails for a

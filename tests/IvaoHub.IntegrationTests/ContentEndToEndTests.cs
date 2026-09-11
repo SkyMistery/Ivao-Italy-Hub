@@ -131,6 +131,63 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task ASaveTheEditorMadeByItselfIsAuditedWithoutTheBody()
+    {
+        // Decision (B) of `2026-09-11-l-editor-che-risponde.md`: the draft saves itself after a
+        // pause, and on a database shared with vIPI that must not write the body twice into the
+        // audit log every ten seconds. So an update that says it was nobody's press is audited as
+        // `autosaved` with the names of what moved; the next press audits in full, values and all.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, SuperadminVid, token);
+
+        var slug = $"autosave-{Guid.NewGuid():N}"[..20];
+        using var created = await SendAsync(client, HttpMethod.Post, ContentEndpoints.Pattern, Payload(Department.WD, slug), token);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var page = await created.Content.ReadFromJsonAsync<JsonElement>(token);
+        var id = page.GetProperty("id").GetInt64();
+
+        using var autosaved = await SendAsync(
+            client,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{id}",
+            Payload(Department.WD, slug, italian: "Bozza", english: "Draft", rowVersion: page.GetProperty("rowVersion").GetString()),
+            token,
+            autosave: true);
+        Assert.Equal(HttpStatusCode.OK, autosaved.StatusCode);
+        var moved = await autosaved.Content.ReadFromJsonAsync<JsonElement>(token);
+
+        using var pressed = await SendAsync(
+            client,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{id}",
+            Payload(Department.WD, slug, italian: "Salvata", english: "Saved", rowVersion: moved.GetProperty("rowVersion").GetString()),
+            token);
+        Assert.Equal(HttpStatusCode.OK, pressed.StatusCode);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var key = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var rows = await database.AuditLog.AsNoTracking()
+            .Where(entry => entry.Entity == "cms_contents" && entry.EntityId == key)
+            .OrderBy(entry => entry.Id)
+            .ToListAsync(token);
+
+        Assert.Equal(["created", "autosaved", "updated"], rows.Select(row => row.Action));
+
+        // The autosave says which columns moved and not what they hold.
+        Assert.Null(rows[1].BeforeJson);
+        Assert.Contains("\"Title\"", rows[1].AfterJson!, StringComparison.Ordinal);
+        Assert.DoesNotContain("Bozza", rows[1].AfterJson!, StringComparison.Ordinal);
+
+        // The press says what was there and what is there now, as it always has.
+        Assert.Contains("Bozza", rows[2].BeforeJson!, StringComparison.Ordinal);
+        Assert.Contains("Salvata", rows[2].AfterJson!, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task TemplateEditRequiresManageTemplates()
     {
         var token = TestContext.Current.CancellationToken;
@@ -860,7 +917,8 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         HttpMethod method,
         string path,
         object? payload,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool autosave = false)
     {
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
 
@@ -870,6 +928,12 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         }
 
         request.Headers.Add("X-Requested-With", "hub");
+
+        if (autosave)
+        {
+            request.Headers.Add(HubSaveChangesInterceptor.AutosaveHeader, "1");
+        }
+
         return await client.SendAsync(request, cancellationToken);
     }
 

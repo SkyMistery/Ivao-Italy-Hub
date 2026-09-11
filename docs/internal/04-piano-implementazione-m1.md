@@ -1290,7 +1290,21 @@ Vitest**, **56 smoke**, **13 del giro pieno**, .NET invariato.
    Welcome» sopra una barra tutta grigia — la barra era disabilitata a ragione, perché la sezione è
    bloccata dal template; ora lo dice.
 
-**Sessione 2 — l'autosalvataggio.** Le sei regole della nota: dopo **10 s** senza tasti e
+**Sessione 2 — l'autosalvataggio — fatta l'11 settembre 2026**, stesso branch, stesso giorno
+della prima: costata mezza sessione invece di una. Costruita come scritto sotto, con tre cose da
+sapere. **La versione della riga è uscita dal form** e il `key={rowVersion}` è sparito: `onSave` la
+legge dalla riga al momento di salvare. **L'hook `useAutosave` non sa cos'è una bozza**: riceve una
+stringa (la bozza serializzata) e una funzione che salva, e questo è ciò che lo tiene un hook
+dell'editor e non una seconda copia del suo stato; i metadati che manda sono l'ultima versione
+**valida** del form (`SchemaForm.onChange`), quindi un indirizzo svuotato a metà viaggia com'era.
+**La guardia all'uscita è del router** (`useBlocker`, che porta anche il `beforeunload`): salva e
+lascia passare, e chiede — con la finestra del browser, la stessa che può fare un `beforeunload` —
+solo per una riga nuova o un salvataggio che non riesce. Sul server l'intestazione la legge
+l'**interceptor**, che ha già l'`HttpContext` per l'IP: una riga `autosaved` con l'elenco dei campi
+mossi, `BeforeJson` nullo. Conto: **336 Vitest**, **56 smoke**, **14 del giro pieno** (uno nuovo,
+undici secondi: scrive, aspetta «Salvato alle», ricarica; poi scrive ed esce dalla pagina, e il
+`PUT` parte dalla guardia), **473 .NET** (306 + 167, uno nuovo: `created`, `autosaved` senza corpo,
+`updated` con). Le regole della nota, per esteso: dopo **10 s** senza tasti e
 all'uscita (`useBlocker` del router, `beforeunload` per la scheda); solo se cambiato; solo se i
 metadati sono validi lato client; **mai su una riga nuova**; un 409 ferma e lo dice; «Publish» prima
 svuota il salvataggio in sospeso. Indicatore «Salvato alle …» / «Salvataggio…» / «Modifiche non

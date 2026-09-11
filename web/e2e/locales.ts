@@ -102,6 +102,7 @@ interface CommonStrings {
       readonly properties: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
+      readonly autosave: { readonly saved: string; readonly unsaved: string };
       readonly template: {
         readonly differences: string;
         readonly added: string;

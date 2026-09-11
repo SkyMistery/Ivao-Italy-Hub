@@ -139,7 +139,7 @@ export function ContentFormScreen({
         canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}
         busy={create.isPending || update.isPending || publish.isPending || remove.isPending}
         publishProblems={problems.data}
-        onSave={async (values: ContentFormValues, body) => {
+        onSave={async (values: ContentFormValues, body, options) => {
           if (isNew) {
             const created = await create.mutateAsync({ values, body });
             await onCreated(created.id);
@@ -147,8 +147,13 @@ export function ContentFormScreen({
             return created;
           }
 
-          const saved = await update.mutateAsync({ values, body });
-          notice({ tone: 'success', title: t('content.editor.saved') });
+          const autosave = options?.autosave === true;
+          const saved = await update.mutateAsync({ values, body, autosave });
+          // A save the editor made by itself says so in its own line under the toolbar, not in a
+          // toast every ten seconds.
+          if (!autosave) {
+            notice({ tone: 'success', title: t('content.editor.saved') });
+          }
           askAgain();
           return saved;
         }}

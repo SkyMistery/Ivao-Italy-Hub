@@ -1,14 +1,17 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import { useBlocker } from '@tanstack/react-router';
 import { ChevronLeft, Eye, List, Redo2, Send, Undo2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import { columnsOf, readBody, PickingContext, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
+import { ApiError } from '../../shared/api/problem';
 import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { useMoment } from '../../shared/i18n/useMoment';
 import type { MediaLibraryQuery } from '../../shared/ui';
 import { ConfirmDialog, PageActions, SectionHeader } from '../../shared/ui';
 
@@ -42,6 +45,7 @@ import {
 } from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
 import { SectionTree, type Selection } from './SectionTree';
+import { useAutosave, type SaveOutcome } from './useAutosave';
 import { useBodyHistory, useHistoryShortcuts } from './useBodyHistory';
 import { applyDifference, templateDiff } from './templateDiff';
 import { LockedByTemplate, TemplateDifferences } from './TemplatePanel';
@@ -53,9 +57,10 @@ import { NO_RULES, ruleFor, templateRules } from './templateRules';
  * gets — because "what will this look like" and "what does this look like" must not be two pieces
  * of code that can disagree.
  *
- * The draft lives in state and is saved whole. Publishing is a separate action on the *saved* row,
- * and is refused while there are unsaved changes: publishing what is on screen rather than what is
- * stored would be a page that says something nobody saved.
+ * The draft lives in state and is saved whole — by a press on "save draft", and since G15 by itself
+ * after a pause and on the way out (`useAutosave`). Publishing is a separate action on the *saved*
+ * row: what is on screen is stored first, then published, so a page never says something nobody
+ * saved.
  */
 /**
  * The metadata form's own `id`, so that `Save draft` can live in the toolbar at the top while the
@@ -103,7 +108,8 @@ export function ContentEditor({
    * — and which department that is, only the loaded template knows.
    */
   canManageTemplates: (department: Department) => boolean;
-  onSave: (values: ContentFormValues, body: Body) => Promise<unknown>;
+  /** `autosave` marks a save the editor made by itself: no toast, and audited without the body. */
+  onSave: (values: ContentFormValues, body: Body, options?: { autosave?: boolean }) => Promise<unknown>;
   /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
   onPublish: (() => void) | null;
   onDelete: (() => void) | null;
@@ -116,11 +122,22 @@ export function ContentEditor({
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
+  const moment = useMoment();
 
   // The body, and the way back from the last thing that happened to it. A section moved by mistake
   // was one of the frictions the hand copy of `/about` recorded (HANDOFF §27).
   const history = useBodyHistory(readBody(content?.body));
   const body = history.body;
+
+  // The row's own fields as the form last had them valid — what a save made by itself sends. The
+  // form still owns the fields; this is its shadow, kept because a save after a pause cannot press
+  // a submit button. A value the schema refuses never arrives here, so an address emptied halfway
+  // through travels as the last one that was whole (`SchemaForm.onChange`).
+  const [metadata, setMetadata] = useState<ContentFormValues>(() =>
+    content === null
+      ? emptyContent(department, locales, kind, startsAsTemplate)
+      : toFormValues(content, locales),
+  );
 
   const [selection, setSelection] = useState<Selection | null>(null);
   // The column an empty "add here" on the page chose. Only meaningful while its section is the one
@@ -132,7 +149,6 @@ export function ContentEditor({
   // decided on 9 September and then reached only by pressing a button, which made the road that was
   // chosen the one nobody took. The outline is one press away and is still the keyboard road.
   const [preview, setPreview] = useState(true);
-  const [unsaved, setUnsaved] = useState(false);
 
   // What the template still says about this page: which sections are fixed, which are locked, and
   // which blocks may go in them. The page itself does not carry any of it (see `templateRules`).
@@ -150,7 +166,6 @@ export function ContentEditor({
 
   const change = (next: Body, options?: { coalesce?: string }) => {
     history.change(next, options);
-    setUnsaved(true);
   };
 
   // The way back, and forth. What was selected may not exist in the body that comes back — a block
@@ -160,8 +175,6 @@ export function ContentEditor({
     if (restored === null) {
       return false;
     }
-
-    setUnsaved(true);
 
     if (
       selection !== null &&
@@ -178,6 +191,77 @@ export function ContentEditor({
   const undo = () => restore(history.undo());
   const redo = () => restore(history.redo());
   useHistoryShortcuts(undo, redo);
+
+  // ⚠️ The version of the row is the **row's**, read at the moment of saving, and not a field of the
+  // form any more. It used to be, and the form was remounted at every save to refresh it — which a
+  // save made by itself would do under somebody's fingers, taking the cursor out of the title. A
+  // row that does not exist yet has the version a new row carries, from the form.
+  const withVersion = (values: ContentFormValues): ContentFormValues => ({
+    ...values,
+    rowVersion: content?.rowVersion ?? values.rowVersion,
+  });
+
+  // The draft, as one string: what the autosave compares, so that a change undone before the pause
+  // ends is not a save.
+  const snapshot = useMemo(() => JSON.stringify({ metadata, body }), [metadata, body]);
+
+  const autosave = useAutosave({
+    // Never before the first press on "save draft": a row that does not exist is not saved by
+    // itself, or every "new page" somebody opened and left would be a page.
+    enabled: content !== null,
+    snapshot,
+    busy,
+    save: async (): Promise<SaveOutcome> => {
+      try {
+        await onSave(withVersion(metadata), body, { autosave: true });
+        return 'saved';
+      } catch (error) {
+        // 409 is somebody else's save, and the one refusal that must not be retried.
+        return error instanceof ApiError && error.status === 409 ? 'conflict' : 'failed';
+      }
+    },
+  });
+
+  // On the way out: stored, or asked. The in-application road is the router's blocker; the tab
+  // being closed is the browser's own question, which is all a page is allowed to do there.
+  const leaving = useRef({ autosave, existing: content !== null });
+  useEffect(() => {
+    leaving.current = { autosave, existing: content !== null };
+  });
+
+  useBlocker({
+    shouldBlockFn: async () => {
+      const { autosave: draft, existing } = leaving.current;
+      if (!draft.dirty) {
+        return false;
+      }
+
+      if (existing && !draft.stopped && (await draft.flush())) {
+        return false;
+      }
+
+      // A new row, or a save that could not be made: the person decides, in the browser's own
+      // dialog — the one thing a `beforeunload` can do too, so the two roads out ask the same way.
+      return !window.confirm(t('content.editor.autosave.leave'));
+    },
+    enableBeforeUnload: () => leaving.current.autosave.dirty,
+  });
+
+  // What the line under the toolbar says about the draft. One sentence, in order of what matters:
+  // a stop nobody can miss, then what is happening, then what is pending, then when it was stored.
+  const draftStatus = autosave.stopped
+    ? t('content.editor.autosave.stopped')
+    : autosave.saving
+      ? t('content.editor.autosave.saving')
+      : autosave.failed
+        ? t('content.editor.autosave.failed')
+        : autosave.dirty
+          ? t(content === null ? 'content.editor.autosave.unsavedNew' : 'content.editor.autosave.unsaved')
+          : autosave.savedAt === null
+            ? null
+            : t('content.editor.autosave.saved', {
+                time: moment(autosave.savedAt.toISOString(), { date: false, timeZone: division.timezone }),
+              });
 
   const section = selection?.kind === 'section' ? findSection(body, selection.id) : undefined;
   const block = selection?.kind === 'block' ? findBlock(body, selection.id) : undefined;
@@ -281,9 +365,6 @@ export function ContentEditor({
           button cannot submit a form that is not in the document. */}
       <div {...(selection === null ? {} : { hidden: true })}>
         <SchemaForm
-          // Remounted whenever the stored row moves on, so the version the form carries is the one
-          // the server last returned; keeping a stale one would answer 409 on the next save.
-          key={content?.rowVersion ?? 'new'}
           id={METADATA_FORM}
           actionsElsewhere
           schema={contentMetadataSchema(kind, categories)}
@@ -296,9 +377,13 @@ export function ContentEditor({
           labels="content"
           division={division}
           mediaLibrary={mediaLibrary}
+          // The shadow the autosave sends, kept in step with the fields as they are written.
+          onChange={setMetadata}
           onSubmit={async (values) => {
-            await onSave(values, body);
-            setUnsaved(false);
+            setMetadata(values);
+            await onSave(withVersion(values), body);
+            // Stored by a press, so the draft as it stands is not dirty any more.
+            autosave.settle(JSON.stringify({ metadata: values, body }));
           }}
           submitLabel={t('content.editor.saveDraft')}
         />
@@ -452,9 +537,18 @@ export function ContentEditor({
             <Button
               type="button"
               variant="secondary"
-              disabled={unsaved || busy}
-              onClick={onPublish}
-              title={unsaved ? t('content.editor.saveBeforePublishing') : undefined}
+              disabled={busy || autosave.stopped}
+              // What is on screen is stored first, then published: one press, and never a page
+              // that says something nobody saved. A store that fails leaves the draft where it is,
+              // and the line under the toolbar says why.
+              onClick={() => {
+                void (async () => {
+                  if (autosave.dirty && !(await autosave.flush())) {
+                    return;
+                  }
+                  onPublish();
+                })();
+              }}
             >
               <Send aria-hidden className="mr-2 size-4" />
               {t('content.editor.publish')}
@@ -476,9 +570,11 @@ export function ContentEditor({
 
       <PublishProblems body={body} problems={publishProblems} />
 
-      {unsaved ? (
-        <p className="text-muted-foreground text-sm">{t('content.editor.saveBeforePublishing')}</p>
-      ) : null}
+      {draftStatus === null ? null : (
+        <p role="status" className="text-muted-foreground text-sm">
+          {draftStatus}
+        </p>
+      )}
 
       <TemplateDifferences
         body={body}

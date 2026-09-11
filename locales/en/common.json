@@ -489,7 +489,15 @@
       "saveDraft": "Save draft",
       "preview": "Preview",
       "publish": "Publish",
-      "saveBeforePublishing": "Save the draft before publishing: what goes public is what is stored, not what is on screen.",
+      "autosave": {
+        "saved": "Saved at {{time}}",
+        "saving": "Saving…",
+        "unsaved": "Unsaved changes — the draft saves itself after a pause.",
+        "unsavedNew": "Unsaved: a new page is stored the first time with “Save draft”.",
+        "failed": "The draft could not be saved by itself. Press “Save draft” to see why.",
+        "stopped": "Somebody else saved this page while you were editing it. Reload to see their version; what you changed since is not saved.",
+        "leave": "Leave this page? The changes since the last save will be lost."
+      },
       "publishRefused": "This page cannot be published yet",
       "renderMode": "What this block shows",
       "renderModes": {

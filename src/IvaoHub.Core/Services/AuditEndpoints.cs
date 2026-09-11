@@ -19,7 +19,9 @@ public sealed record AuditListDto(
 /// <summary>
 /// One row in full. <c>BeforeJson</c> and <c>AfterJson</c> are the scalar columns as they were and
 /// as they became, exactly as the interceptor wrote them: they travel as text, because what they
-/// contain depends on the entity and the hub does not model it.
+/// contain depends on the entity and the hub does not model it. On an <c>autosaved</c> row — a
+/// draft the editor stored by itself — <c>BeforeJson</c> is null and <c>AfterJson</c> is the list of
+/// the columns that moved, without their values (<c>HubSaveChangesInterceptor.AutosaveHeader</c>).
 /// </summary>
 public sealed record AuditDetailDto(
     long Id,

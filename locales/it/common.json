@@ -489,7 +489,15 @@
       "saveDraft": "Salva bozza",
       "preview": "Anteprima",
       "publish": "Pubblica",
-      "saveBeforePublishing": "Salva la bozza prima di pubblicare: va in pubblico quello che e' salvato, non quello che e' a schermo.",
+      "autosave": {
+        "saved": "Salvato alle {{time}}",
+        "saving": "Salvataggio…",
+        "unsaved": "Modifiche non salvate: la bozza si salva da sola dopo una pausa.",
+        "unsavedNew": "Non salvata: una pagina nuova si salva la prima volta con «Salva bozza».",
+        "failed": "La bozza non si è potuta salvare da sola. Premi «Salva bozza» per vedere perché.",
+        "stopped": "Qualcun altro ha salvato questa pagina mentre la modificavi. Ricarica per vedere la sua versione; quello che hai cambiato da allora non è salvato.",
+        "leave": "Lasciare questa pagina? Le modifiche dall'ultimo salvataggio andranno perse."
+      },
       "publishRefused": "Questa pagina non si puo' ancora pubblicare",
       "renderMode": "Cosa mostra questo blocco",
       "renderModes": {

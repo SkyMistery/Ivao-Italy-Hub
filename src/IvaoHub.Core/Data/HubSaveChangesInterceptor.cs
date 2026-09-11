@@ -327,6 +327,21 @@ public sealed class HubSaveChangesInterceptor(
         };
     }
 
+    /// <summary>
+    /// The header the editor sends on a save it made by itself (G15; decision (B) of
+    /// <c>decisions/2026-09-11-l-editor-che-risponde.md</c>). An update carrying it is audited as
+    /// <c>autosaved</c>, with the names of the columns that moved and <b>without</b> their values:
+    /// a draft stored at every pause would otherwise write its body twice into the audit log every
+    /// ten seconds, on a database shared with vIPI. A save somebody pressed, a creation, a deletion
+    /// and a publication are audited in full, as before — the published version is a row of its
+    /// own and arrives here as <c>created</c>.
+    /// </summary>
+    public const string AutosaveHeader = "X-Hub-Autosave";
+
+    private bool IsAutosave() =>
+        httpContext?.HttpContext?.Request.Headers.TryGetValue(AutosaveHeader, out var value) == true
+        && value == "1";
+
     private void CollectAudit(EntityEntry entry, Pending pending, int vid, DateTime now)
     {
         if (!entry.Metadata.ClrType.IsDefined(typeof(AuditedAttribute), inherit: false))
@@ -338,6 +353,7 @@ public sealed class HubSaveChangesInterceptor(
         {
             EntityState.Added => ("created", null, Serialize(entry, current: true, changedOnly: false)),
             EntityState.Deleted => ("deleted", Serialize(entry, current: false, changedOnly: false), null),
+            _ when IsAutosave() => ("autosaved", null, ChangedColumns(entry)),
             _ => ("updated", Serialize(entry, current: false, changedOnly: true), Serialize(entry, current: true, changedOnly: true)),
         };
 
@@ -525,6 +541,12 @@ public sealed class HubSaveChangesInterceptor(
 
             return set?.Name ?? key.Entity.Name;
         });
+
+    /// <summary>What an autosave is audited with: which columns moved, as a JSON array of names.</summary>
+    private static string ChangedColumns(EntityEntry entry) =>
+        JsonSerializer.Serialize(
+            entry.Properties.Where(property => property.IsModified).Select(property => property.Metadata.Name).ToArray(),
+            AuditJson);
 
     private static string Serialize(EntityEntry entry, bool current, bool changedOnly)
     {
