@@ -74,7 +74,11 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
     effectiveOn: blankToNull(values.effectiveOn),
     reviewOn: blankToNull(values.reviewOn),
     retiredAt: blankToNull(values.retiredAt),
-    supersededById: values.supersededById ?? null,
+    // Text on the form, a number on the row: the same conversion the parent of a menu entry makes.
+    supersededById:
+      values.supersededById === undefined || values.supersededById === ''
+        ? null
+        : Number(values.supersededById),
     showFooter: values.showFooter ?? true,
     rowVersion: values.rowVersion,
   };
@@ -113,6 +117,8 @@ export function emptyContent(
     category: '',
     pinned: false,
     sort: 0,
+    // On by default: a document that says nothing about its footer has one (G14).
+    showFooter: true,
     rowVersion: NEW_ROW_VERSION,
   };
 }
@@ -148,7 +154,7 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     ...(content.effectiveOn === null ? {} : { effectiveOn: content.effectiveOn }),
     ...(content.reviewOn === null ? {} : { reviewOn: content.reviewOn }),
     ...(content.retiredAt === null ? {} : { retiredAt: content.retiredAt }),
-    ...(content.supersededById === null ? {} : { supersededById: content.supersededById }),
+    ...(content.supersededById === null ? {} : { supersededById: String(content.supersededById) }),
     showFooter: content.showFooter,
     rowVersion: content.rowVersion,
   };

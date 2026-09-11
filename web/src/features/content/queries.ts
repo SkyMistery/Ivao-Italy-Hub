@@ -17,6 +17,7 @@ export type PublicContentDto = components['schemas']['PublicContentDto'];
 export type ContentKind = components['schemas']['ContentKind'];
 /** SOP or LoA: what an operational document is, when it is one (G14). Never null on a form. */
 export type DocumentType = NonNullable<components['schemas']['DocumentType']>;
+export type AirspaceListingDto = components['schemas']['AirspaceListingDto'];
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
 export type ContentPublishProblemsDto = components['schemas']['ContentPublishProblemsDto'];
 
@@ -41,6 +42,12 @@ export function menuDestinationsKey(q: string) {
 export function madeFromTemplateKey(templateId: number) {
   return [...contentKey, 'made-from', templateId] as const;
 }
+
+export function successorsKey(department: Department) {
+  return [...contentKey, 'successors', department] as const;
+}
+
+export const airspaceKey = ['ref', 'airspace'] as const;
 
 export function publishProblemsKey(id: number) {
   return [...contentKey, 'publish-problems', id] as const;
@@ -171,6 +178,42 @@ export function menuDestinationPagesQuery(q = '') {
           }),
         }),
       ),
+  });
+}
+
+/**
+ * The published documents of a department, for the select that says which one replaced this one
+ * (G14). A hundred, like the templates: a shelf longer than that is a shelf with a category, and
+ * the successor of a SOP is on the same shelf as the SOP. The server accepts any document there is
+ * — the narrowing to one department is this screen's, not a rule.
+ */
+export function successorsQuery(department: Department) {
+  return queryOptions({
+    queryKey: successorsKey(department),
+    queryFn: async (): Promise<ContentPage> =>
+      unwrap(
+        await api.GET('/api/content', {
+          params: { query: { page: 1, pageSize: 100 } },
+          querySerializer: listQuerySerializer({
+            ownerDepartment: department,
+            kind: 'Document',
+            status: 'Published',
+          }),
+        }),
+      ),
+  });
+}
+
+/**
+ * The airports and the centres of the division with their names, for the two fields of a document
+ * that choose from a list rather than type (G14). Read from the snapshot the login reads and cached
+ * for the session: it moves when the daily synchronisation does, not while a form is open.
+ */
+export function airspaceQuery() {
+  return queryOptions({
+    queryKey: airspaceKey,
+    queryFn: async (): Promise<AirspaceListingDto> => unwrap(await api.GET('/api/ref/airspace')),
+    staleTime: Infinity,
   });
 }
 

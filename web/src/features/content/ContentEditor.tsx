@@ -60,16 +60,18 @@ import {
   updateSection,
 } from './body';
 import { emptyContent, toFormValues } from './mutations';
+import { suggestedPositions } from './positions';
 import { PreviewFrame, type PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
   contentQuery,
   publicContentQuery,
+  type AirspaceListingDto,
   type ContentDetailDto,
   type ContentKind,
   type ContentPublishProblemsDto,
 } from './queries';
-import { contentMetadataSchema, type ContentFormValues } from './schema';
+import { contentMetadataSchema, type ContentFormValues, type DocumentChoices } from './schema';
 import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
 import { useAutosave, type SaveOutcome } from './useAutosave';
 import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
@@ -102,6 +104,8 @@ export function ContentEditor({
   kind,
   startsAsTemplate = false,
   categories,
+  airspace,
+  successors = [],
   department,
   locales,
   division,
@@ -126,6 +130,13 @@ export function ContentEditor({
   startsAsTemplate?: boolean;
   /** The shelves of this department, already resolved into the language on screen. */
   categories: readonly ChoiceOption[];
+  /**
+   * The airspace of the division, for a document (G14): what its ICAO and its FIR are chosen from.
+   * Undefined on every other kind, and while it is still being read.
+   */
+  airspace?: AirspaceListingDto | undefined;
+  /** The published documents this one may say it was replaced by, already labelled. */
+  successors?: readonly ChoiceOption[];
   department: Department;
   locales: readonly string[];
   /** The two facts the `seo` field needs: which language is the fallback, and where the division is. */
@@ -199,6 +210,22 @@ export function ContentEditor({
       ? emptyContent(department, locales, kind, startsAsTemplate)
       : toFormValues(content, locales),
   );
+
+  // What the form of a document offers, out of what it already says: the positions follow the
+  // airport and the FIR as they are chosen, which is why they are read from the shadow and not
+  // handed in once (`suggestedPositions`).
+  const documentChoices: DocumentChoices = {
+    airports: (airspace?.airports ?? []).map((entry) => ({
+      value: entry.code,
+      label: `${entry.code} — ${entry.name}`,
+    })),
+    centers: (airspace?.centers ?? []).map((entry) => ({
+      value: entry.code,
+      label: `${entry.code} — ${entry.name}`,
+    })),
+    positions: suggestedPositions(metadata.icao, metadata.fir),
+    successors,
+  };
 
   const [selection, setSelection] = useState<Selection | null>(null);
   // The column an empty "add here" on the page chose. Only meaningful while its section is the one
@@ -517,7 +544,7 @@ export function ContentEditor({
         <SchemaForm
           id={METADATA_FORM}
           actionsElsewhere
-          schema={contentMetadataSchema(kind, categories)}
+          schema={contentMetadataSchema(kind, categories, documentChoices)}
           defaults={
             content === null
               ? emptyContent(department, locales, kind, startsAsTemplate)

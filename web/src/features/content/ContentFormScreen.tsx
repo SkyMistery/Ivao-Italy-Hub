@@ -12,7 +12,13 @@ import { mediaPickerQuery } from '../media/queries';
 import { ContentEditor } from './ContentEditor';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
-import { publishProblemsKey, publishProblemsQuery, type ContentDetailDto } from './queries';
+import {
+  airspaceQuery,
+  publishProblemsKey,
+  publishProblemsQuery,
+  successorsQuery,
+  type ContentDetailDto,
+} from './queries';
 import type { ContentFormValues } from './schema';
 import { MANAGE_TEMPLATES } from './templateRules';
 
@@ -100,6 +106,18 @@ export function ContentFormScreen({
     }
   };
 
+  // What a document chooses from (G14): the airspace of the division, and the published documents
+  // of this department one of which may have replaced this one. Neither is asked for on any other
+  // kind, for the reason the shelves are not asked for on a page.
+  const isDocument = config.kind === 'Document';
+  const airspace = useQuery({ ...airspaceQuery(), enabled: isDocument });
+  const successors = useQuery({ ...successorsQuery(department), enabled: isDocument });
+
+  const successorChoices: ChoiceOption[] = (successors.data?.items ?? [])
+    // A document is not its own successor, and the form should not offer the choice.
+    .filter((row) => String(row.id) !== id)
+    .map((row) => ({ value: String(row.id), label: read(row.title) || row.slug }));
+
   const categories: ChoiceOption[] = (vocabulary.data?.items ?? []).map((category) => ({
     value: category.key,
     // Resolved here, in the language on screen: the generator draws the label it is handed and
@@ -130,6 +148,8 @@ export function ContentFormScreen({
         kind={config.kind}
         startsAsTemplate={startsAsTemplate}
         categories={categories}
+        airspace={airspace.data}
+        successors={successorChoices}
         department={department}
         locales={locales}
         division={{

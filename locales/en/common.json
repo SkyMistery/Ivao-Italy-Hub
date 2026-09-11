@@ -393,7 +393,17 @@
       "coverMediaId": "Cover picture",
       "pinned": "Pinned to the top",
       "sort": "Order",
-      "fileMediaId": "File"
+      "fileMediaId": "File",
+      "documentType": "Document type",
+      "icao": "Airport",
+      "fir": "FIR",
+      "primaryPosition": "Position",
+      "secondaryPosition": "Counterpart",
+      "effectiveOn": "In force from",
+      "reviewOn": "Review by",
+      "retiredAt": "No longer in force since",
+      "supersededById": "Replaced by",
+      "showFooter": "Show the footer (version, date, publisher, print)"
     },
     "options": {
       "kind": {
@@ -401,6 +411,14 @@
         "News": "News",
         "Document": "Document",
         "Dashboard": "Department home"
+      },
+      "documentType": {
+        "none": "Not an operational document",
+        "Sop": "SOP",
+        "Loa": "LoA"
+      },
+      "supersededById": {
+        "none": "Nothing"
       },
       "status": {
         "Draft": "Draft",
@@ -569,7 +587,11 @@
     "slugPlaceholder": "my-new-page",
     "hints": {
       "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used.",
-      "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved."
+      "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved.",
+      "primaryPosition": "As a callsign, like LIRF_TWR. The list proposes the positions of the airport and the FIR chosen above; any other can be typed.",
+      "secondaryPosition": "The other side of a letter of agreement, or the position handed over to.",
+      "reviewOn": "Past this day, the department is told once that the document is due for a look.",
+      "retiredAt": "A document no longer in force stays readable with a notice on top, so that an old link finds the way on. Choose what replaced it below, when something did."
     }
   },
   "templates": {

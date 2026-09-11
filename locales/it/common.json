@@ -393,7 +393,17 @@
       "coverMediaId": "Immagine di copertina",
       "pinned": "In cima all'elenco",
       "sort": "Ordine",
-      "fileMediaId": "File"
+      "fileMediaId": "File",
+      "documentType": "Tipo di documento",
+      "icao": "Aeroporto",
+      "fir": "FIR",
+      "primaryPosition": "Posizione",
+      "secondaryPosition": "Controparte",
+      "effectiveOn": "In vigore dal",
+      "reviewOn": "Da rivedere entro",
+      "retiredAt": "Non più in vigore dal",
+      "supersededById": "Sostituito da",
+      "showFooter": "Mostra il piè di pagina (versione, data, chi ha pubblicato, stampa)"
     },
     "options": {
       "kind": {
@@ -401,6 +411,14 @@
         "News": "Notizia",
         "Document": "Documento",
         "Dashboard": "Home di dipartimento"
+      },
+      "documentType": {
+        "none": "Non è un documento operativo",
+        "Sop": "SOP",
+        "Loa": "LoA"
+      },
+      "supersededById": {
+        "none": "Niente"
       },
       "status": {
         "Draft": "Bozza",
@@ -569,7 +587,11 @@
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {
       "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina.",
-      "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più."
+      "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più.",
+      "primaryPosition": "Come nominativo, tipo LIRF_TWR. L'elenco propone le posizioni dell'aeroporto e della FIR scelti sopra; se ne può scrivere un'altra.",
+      "secondaryPosition": "L'altra parte di una lettera di accordo, o la posizione a cui si passa il traffico.",
+      "reviewOn": "Passato questo giorno, il dipartimento riceve una volta l'avviso che il documento va rivisto.",
+      "retiredAt": "Un documento non più in vigore resta leggibile con un avviso in cima, così un vecchio link trova la strada. Scegli qui sotto che cosa lo ha sostituito, se qualcosa lo ha fatto."
     }
   },
   "templates": {
