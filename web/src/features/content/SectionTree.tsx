@@ -13,7 +13,7 @@ import { ArrowDown, ArrowUp, Copy, GripVertical, Lock, Plus, Trash2 } from 'luci
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import type { BlockEnvelope, Body, SectionEnvelope } from '../../blocks';
+import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from '../../blocks';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 
 import { ruleFor, type SectionRule } from './templateRules';
@@ -38,6 +38,9 @@ export interface Selection {
   readonly id: string;
 }
 
+/** The deepest section a row may still be added to: depth 3 holds the fourth level, the server's last. */
+export const MAX_ROW_DEPTH = 3;
+
 /** Which list a dragged row belongs to, carried by the row rather than read off its identifier. */
 type RowKind = 'section' | 'block';
 
@@ -52,6 +55,7 @@ export function SectionTree({
   onReorderSections,
   onReorderBlocks,
   onDuplicateBlock,
+  onDuplicateSection,
   onRemoveSection,
   onRemoveBlock,
 }: {
@@ -68,6 +72,7 @@ export function SectionTree({
   onReorderSections: (activeId: string, overId: string) => void;
   onReorderBlocks: (activeId: string, overId: string) => void;
   onDuplicateBlock: (id: string) => void;
+  onDuplicateSection: (id: string) => void;
   onRemoveSection: (id: string) => void;
   onRemoveBlock: (id: string) => void;
 }) {
@@ -126,6 +131,7 @@ export function SectionTree({
                 onMoveSection={onMoveSection}
                 onMoveBlock={onMoveBlock}
                 onDuplicateBlock={onDuplicateBlock}
+                onDuplicateSection={onDuplicateSection}
                 onRemoveSection={onRemoveSection}
                 onRemoveBlock={onRemoveBlock}
               />
@@ -155,6 +161,7 @@ function SectionNode({
   onMoveSection,
   onMoveBlock,
   onDuplicateBlock,
+  onDuplicateSection,
   onRemoveSection,
   onRemoveBlock,
 }: {
@@ -168,6 +175,7 @@ function SectionNode({
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
   onDuplicateBlock: (id: string) => void;
+  onDuplicateSection: (id: string) => void;
   onRemoveSection: (id: string) => void;
   onRemoveBlock: (id: string) => void;
 }) {
@@ -214,6 +222,15 @@ function SectionNode({
           </>
         )}
 
+        {rule.locked ? null : (
+          <IconButton
+            label={t('content.editor.duplicateSection')}
+            onClick={() => onDuplicateSection(section.id)}
+          >
+            <Copy aria-hidden className="size-4" />
+          </IconButton>
+        )}
+
         {rule.locked || rule.required ? null : (
           <IconButton label={t('content.editor.removeSection')} onClick={() => onRemoveSection(section.id)}>
             <Trash2 aria-hidden className="size-4" />
@@ -221,27 +238,43 @@ function SectionNode({
         )}
       </div>
 
-      <SortableContext items={section.blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
-        <ul className="flex flex-col gap-1">
-          {section.blocks.map((block) => (
-            <BlockNode
-              key={block.id}
-              block={block}
+      {/* A section in columns lists them one at a time, each under its name (Carmine, 11 September
+          2026: "in the outline, when a section is split in two, where does what go?"). One sortable
+          list per column, because a block dragged onto one of another column would move in the
+          list and not on the page; an empty column is listed too, so it reads as a place. */}
+      {columnsOf(section.layout) > 1 ? (
+        Array.from({ length: columnsOf(section.layout) }, (_, column) => (
+          <div key={column} className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs">
+              {t('content.editor.columnNumber', { number: column + 1 })}
+            </span>
+            <BlockList
+              blocks={section.blocks.filter((block) => (block.column ?? 0) === column)}
               locked={rule.locked}
-              selected={selection?.kind === 'block' && selection.id === block.id}
+              selection={selection}
               onSelect={onSelect}
               onMoveBlock={onMoveBlock}
               onDuplicateBlock={onDuplicateBlock}
               onRemoveBlock={onRemoveBlock}
             />
-          ))}
-        </ul>
-      </SortableContext>
+          </div>
+        ))
+      ) : (
+        <BlockList
+          blocks={section.blocks}
+          locked={rule.locked}
+          selection={selection}
+          onSelect={onSelect}
+          onMoveBlock={onMoveBlock}
+          onDuplicateBlock={onDuplicateBlock}
+          onRemoveBlock={onRemoveBlock}
+        />
+      )}
 
-      {/* ⚠️ Only inside a section of the first level. A row inside a row is allowed by the model —
-          the server refuses at three — but it is noise on a screen: what the depth buys is *one*
-          band of colour holding several column layouts, and a third level buys nothing. */}
-      {rule.locked || depth > 0 ? null : (
+      {/* Down to the fourth level, which is where the server stops (`BlockDocumentWalker.MaxDepth`;
+          Carmine, 11 September 2026: "a section in a section in a section in a section"). Until
+          then a row was offered inside a section of the first level only. */}
+      {rule.locked || depth >= MAX_ROW_DEPTH ? null : (
         <div>
           <Button type="button" variant="ghost" size="sm" onClick={() => onAddSection(section.id)}>
             <Plus aria-hidden className="mr-2 size-4" />
@@ -267,12 +300,51 @@ function SectionNode({
             onMoveSection={onMoveSection}
             onMoveBlock={onMoveBlock}
             onDuplicateBlock={onDuplicateBlock}
+            onDuplicateSection={onDuplicateSection}
             onRemoveSection={onRemoveSection}
             onRemoveBlock={onRemoveBlock}
           />
         ))}
       </SortableContext>
     </div>
+  );
+}
+
+/** The blocks of one column, or of a stacked section, as one sortable list. */
+function BlockList({
+  blocks,
+  locked,
+  selection,
+  onSelect,
+  onMoveBlock,
+  onDuplicateBlock,
+  onRemoveBlock,
+}: {
+  blocks: readonly BlockEnvelope[];
+  locked: boolean;
+  selection: Selection | null;
+  onSelect: (selection: Selection) => void;
+  onMoveBlock: (id: string, delta: -1 | 1) => void;
+  onDuplicateBlock: (id: string) => void;
+  onRemoveBlock: (id: string) => void;
+}) {
+  return (
+    <SortableContext items={blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
+      <ul className="flex flex-col gap-1">
+        {blocks.map((block) => (
+          <BlockNode
+            key={block.id}
+            block={block}
+            locked={locked}
+            selected={selection?.kind === 'block' && selection.id === block.id}
+            onSelect={onSelect}
+            onMoveBlock={onMoveBlock}
+            onDuplicateBlock={onDuplicateBlock}
+            onRemoveBlock={onRemoveBlock}
+          />
+        ))}
+      </ul>
+    </SortableContext>
   );
 }
 

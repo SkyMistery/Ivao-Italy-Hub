@@ -19,6 +19,13 @@ import type { paths } from './schema';
 /** What the server checks for on every state changing call. */
 export const REQUESTED_WITH = 'hub';
 
+/**
+ * Sent on a save the editor made by itself, so the server audits it as `autosaved` with the names
+ * of what moved and not the values (`HubSaveChangesInterceptor.AutosaveHeader`; decision (B) of
+ * `2026-09-11-l-editor-che-risponde.md`). A save somebody pressed does not carry it.
+ */
+export const AUTOSAVE_HEADER = 'X-Hub-Autosave';
+
 /** Called when the server says the session is gone, so the cached bootstrap can be dropped. */
 type UnauthorizedHandler = () => void;
 

@@ -53,8 +53,12 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// <summary>Bodies larger than this are refused: a page is text, not an upload channel.</summary>
     public const int MaxBodyBytes = 1024 * 1024;
 
-    /// <summary>How deeply sections may nest. Three is what the editor can still show sensibly.</summary>
-    public const int MaxDepth = 3;
+    /// <summary>
+    /// How deeply sections may nest: a section, a row in it, a row in that, and one more — four,
+    /// since 11 September 2026 (Carmine, composing: "a section in a section in a section in a
+    /// section"). Three had been the ceiling since M1, and the editor offered two.
+    /// </summary>
+    public const int MaxDepth = 4;
 
     /// <summary>The only envelope version M0 knows how to read.</summary>
     public const int SupportedSchemaVersion = 1;

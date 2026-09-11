@@ -4,7 +4,9 @@
 (`editor.php?id=4`) e il nostro editor sulla dashboard di HQ
 **Stato:** **decisa da Carmine l'11 settembre 2026**, sulle tre domande in fondo: **G15 viene
 prima di G14**; l'audit dell'autosalvataggio è la **(B)**, senza corpo; la pausa è di **10 secondi**.
-Piano 0.60, piano di implementazione M1 2.20 (fase G15). Non ancora costruita.
+Piano 0.60, piano di implementazione M1 2.20 (fase G15). **Costruita per intero lo stesso giorno**,
+le tre sessioni in tre commit sulla PR #58; quanto è costata e cosa ha insegnato sta nella sezione
+G15 del piano di implementazione.
 **Come è stato guardato:** i due editor nel browser di Carmine, uno accanto all'altro, in sola
 lettura sul loro; il nostro letto nel codice (`ContentEditor.tsx`, `useBodyHistory.ts`,
 `PreviewFrame.tsx`, `BlockProperties.tsx`, `BlockPalette.tsx`, `SchemaForm.tsx`,
@@ -202,8 +204,11 @@ variante di finestra non torna).
 
 - Il percorso dell'editor della dashboard mostra **`{{department}}`** letterale: `common.json:239`
   ha `"dashboard.title": "{{department}}"` e chi disegna il percorso non lo interpola.
-- La barra dei componenti sembra **disabilitata** (grigio chiaro) anche quando dice «Adds to:
-  Welcome»: è lo stile del `ghost` piccolo, e si legge come «non cliccabile».
+- La barra dei componenti sembrava **disabilitata** (grigio chiaro) mentre diceva «Adds to:
+  Welcome». ⚠️ Costruendolo si è visto che **era** disabilitata, e a ragione: «Welcome» è una sezione
+  che il template blocca, quindi non ci si aggiunge niente. A mentire era il suggerimento sopra la
+  barra, che prometteva un'aggiunta impossibile. Corretto lì: con una sezione bloccata la barra dice
+  «“Welcome” è fissata dal template: non ci si può aggiungere niente».
 
 ## Che cosa **non** si prende, di nuovo
 

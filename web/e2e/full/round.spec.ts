@@ -81,27 +81,34 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   await openOutline(page, content.editor.outline);
   await selectSection(page, englishSeed.seed.templates.sectionPage!.body!.section);
 
+  // Back to the page, which is where what is written shows up: since G15 the properties apply as
+  // they are typed, and there is no button to press. Reading the words on the page is how the
+  // round knows they were applied before it saves — a wait on the thing itself, not on a clock.
+  await page.getByRole('button', { name: content.editor.onThePage, exact: true }).click();
+  const onThePage = page.getByRole('region', { name: content.editor.preview });
+
   await addBlock(page, blocks.subgroups.text, blocks.heading.label);
   await choose(page, blocks.heading.fields.level, blocks.heading.options.level['2']!, properties(page));
   await writeInBothLanguages(properties(page), blocks.heading.fields.text, 'text', heading);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByRole('heading', { name: heading.en })).toBeVisible();
 
   await addBlock(page, blocks.subgroups.text, blocks.text.label);
   await writeInBothLanguages(properties(page), blocks.text.fields.markdown, 'markdown', paragraph);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByText(paragraph.en)).toBeVisible();
 
   await addBlock(page, blocks.subgroups.text, blocks.callout.label);
   await choose(page, blocks.callout.fields.tone, blocks.callout.options.tone.info!, properties(page));
   await writeInBothLanguages(properties(page), blocks.callout.fields.title, 'title', callout);
   await writeInBothLanguages(properties(page), blocks.callout.fields.text, 'text', paragraph);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByText(callout.en)).toBeVisible();
 
   // ---------------------------------------------------------------- save, then publish
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
     await saveDraft(page, content.editor.saveDraft).click();
   });
 
-  const publish = page.getByRole('button', { name: content.editor.publish });
+  // Exact, since the frame has a "Published" toggle beside the draft, and "Publish" is in it.
+  const publish = page.getByRole('button', { name: content.editor.publish, exact: true });
   await expect(publish).toBeEnabled();
   await whileWaitingFor(page, 'POST', '/publish', async () => {
     await publish.click();
@@ -132,9 +139,10 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   // what `selectBlock` reads.
   await openOutline(page, content.editor.outline);
   await selectBlock(page, blocks.callout.label);
+  await page.getByRole('button', { name: content.editor.onThePage, exact: true }).click();
 
   await writeInBothLanguages(properties(page), blocks.callout.fields.title, 'title', edited);
-  await properties(page).getByRole('button', { name: content.editor.applyBlock }).click();
+  await expect(onThePage.getByText(edited.en)).toBeVisible();
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
     await saveDraft(page, content.editor.saveDraft).click();
   });
@@ -186,6 +194,74 @@ test('a draft nobody published is not there for a visitor', async ({ page, conte
   await expect(publicPage.getByText(englishSeed.seed.templates.sectionPage!.hero!.heading)).toHaveCount(0);
 
   await visitor.close();
+});
+
+test('the draft saves itself after a pause, and on the way out', async ({ page, context }) => {
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  const first = { en: 'Written before the pause', it: 'Scritto prima della pausa' };
+  const paused = { en: 'Stored by the pause', it: 'Salvato dalla pausa' };
+  const left = { en: 'Stored on the way out', it: 'Salvato uscendo' };
+
+  const row = await createContent(context, {
+    slug: `bench-autosave-${Date.now().toString(36)}`,
+    title: { en: 'Saves itself', it: 'Si salva da sola' },
+    body: {
+      schemaVersion: 1,
+      sections: [
+        {
+          id: 's_only',
+          key: null,
+          title: null,
+          layout: 'stacked',
+          background: 'none',
+          padding: 'md',
+          width: 'default',
+          blocks: [{ id: 'b_only', type: 'heading', version: 1, props: { level: 2, text: first } }],
+          sections: [],
+        },
+      ],
+    },
+  });
+
+  await page.goto(`/staff/${department}/content/${row.id}`);
+  const onThePage = page.getByRole('region', { name: content.editor.preview });
+
+  // Picking the heading on the page opens its fields; writing in them applies at once (session 1)
+  // and, ten seconds later, stores (session 2). The line under the toolbar says which of the two
+  // has happened, and the round waits on the call and on the line, never on a clock of its own.
+  await onThePage.getByRole('heading', { name: first.en }).click();
+  await writeInBothLanguages(properties(page), blocks.heading.fields.text, 'text', paused);
+  await expect(onThePage.getByRole('heading', { name: paused.en })).toBeVisible();
+  // Named: the drag and drop context has a live region of its own on this screen.
+  const status = page.getByRole('status', { name: content.editor.autosave.title });
+  await expect(status).toHaveText(content.editor.autosave.unsaved);
+
+  await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+    await expect(status).toHaveText(
+      new RegExp(`^${content.editor.autosave.saved.replace('{{time}}', '\\d\\d:\\d\\d')}$`, 'u'),
+      { timeout: 15_000 },
+    );
+  });
+
+  expect(JSON.stringify((await readContent(context, row.id)).body)).toContain(paused.en);
+
+  // Then the way out: written again, and the page left through the application before any pause.
+  // The blocker stores first and lets the navigation through; nothing is asked.
+  await writeInBothLanguages(properties(page), blocks.heading.fields.text, 'text', left);
+  await expect(onThePage.getByRole('heading', { name: left.en })).toBeVisible();
+
+  await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+    await page.getByRole('link', { name: content.title, exact: true }).first().click();
+  });
+
+  await expect(page).toHaveURL(new RegExp(`/staff/${department}/content(\\?.*)?$`));
+  expect(JSON.stringify((await readContent(context, row.id)).body)).toContain(left.en);
 });
 
 test('the application serves its own deep addresses, which no static server does', async ({ request }) => {

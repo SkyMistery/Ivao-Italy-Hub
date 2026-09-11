@@ -9,8 +9,9 @@ import { emptyLocalized } from '../../shared/i18n/localized';
  * saves it whole, so every operation here is a pure rewrite of the tree: no operation reaches into
  * the one the screen is currently drawing, and undoing is a matter of not calling the setter.
  *
- * Sections nest, so every walk here is recursive. Three is as deep as they go, which the server
- * enforces (`BlockDocumentWalker.MaxDepth`) and the editor does not need to know.
+ * Sections nest, so every walk here is recursive. Four is as deep as they go, which the server
+ * enforces (`BlockDocumentWalker.MaxDepth`); the editor knows it only to stop offering a row where
+ * the server would refuse one (`depthOf`).
  */
 
 type SectionPatch = Partial<Omit<SectionEnvelope, 'id' | 'blocks' | 'sections'>>;
@@ -50,6 +51,26 @@ export function findSection(body: Body, id: string): SectionEnvelope | undefined
   }
 
   return undefined;
+}
+
+/** How deep a section stands: 0 at the top of the page, 1 for a row in one, and so on; `undefined` if absent. */
+export function depthOf(body: Body, id: string): number | undefined {
+  const walk = (sections: SectionEnvelope[], depth: number): number | undefined => {
+    for (const section of sections) {
+      if (section.id === id) {
+        return depth;
+      }
+
+      const below = walk(section.sections, depth + 1);
+      if (below !== undefined) {
+        return below;
+      }
+    }
+
+    return undefined;
+  };
+
+  return walk(body.sections, 0);
 }
 
 export function findBlock(
@@ -128,6 +149,38 @@ export function addSection(
   };
 }
 
+/**
+ * A copy of a section right after it, among its siblings — new identifiers all the way down, no
+ * capture carried over, and **no key**: a key names the section a template imposes, and a copy is
+ * a section of the page's own (Carmine, 11 September 2026: a section set up well, background and
+ * columns, is one to copy).
+ */
+export function duplicateSection(body: Body, id: string): { body: Body; id: string } {
+  const copyId = newId('s');
+
+  const clone = (section: SectionEnvelope, sectionId: string): SectionEnvelope => ({
+    ...section,
+    id: sectionId,
+    key: null,
+    required: null,
+    locked: null,
+    allowedBlocks: null,
+    blocks: section.blocks.map((block) => ({ ...block, id: newId('b'), frozen: null })),
+    sections: section.sections.map((nested) => clone(nested, newId('s'))),
+  });
+
+  const walk = (sections: SectionEnvelope[]): SectionEnvelope[] => {
+    const index = sections.findIndex((section) => section.id === id);
+    if (index >= 0) {
+      return sections.toSpliced(index + 1, 0, clone(sections[index]!, copyId));
+    }
+
+    return sections.map((section) => ({ ...section, sections: walk(section.sections) }));
+  };
+
+  return { body: { ...body, sections: walk(body.sections) }, id: copyId };
+}
+
 export function removeSection(body: Body, id: string): Body {
   const prune = (sections: SectionEnvelope[]): SectionEnvelope[] =>
     sections
@@ -137,9 +190,18 @@ export function removeSection(body: Body, id: string): Body {
   return { ...body, sections: prune(body.sections) };
 }
 
-/** Moves a top level section one place up or down. Nested ones move with the section they are in. */
+/**
+ * Moves a section one place up or down **among its siblings**: a section of the page among the
+ * page's sections, a row among the rows of its section. Until 11 September 2026 only the first
+ * level moved, and the arrows on a row in the outline did nothing.
+ */
 export function moveSection(body: Body, id: string, delta: -1 | 1): Body {
-  return { ...body, sections: move(body.sections, (section) => section.id === id, delta) };
+  const walk = (sections: SectionEnvelope[]): SectionEnvelope[] =>
+    sections.some((section) => section.id === id)
+      ? move(sections, (section) => section.id === id, delta)
+      : sections.map((section) => ({ ...section, sections: walk(section.sections) }));
+
+  return { ...body, sections: walk(body.sections) };
 }
 
 /**
@@ -156,11 +218,21 @@ export function reorderSections(body: Body, activeId: string, overId: string): B
   return { ...body, sections: walk(body.sections) };
 }
 
-/** The same, for the blocks of one section. */
+/**
+ * The same, for the blocks of one section — and of one **column**: the outline lists a column at a
+ * time, and a block dropped onto one of another column would move in the list and not on the page.
+ * Refused here, for the reason a drop across sections is: the drag and the arrows do the same thing.
+ */
 export function reorderBlocks(body: Body, activeId: string, overId: string): Body {
   return {
     ...body,
     sections: mapSections(body.sections, (section) => {
+      const active = section.blocks.find((block) => block.id === activeId);
+      const over = section.blocks.find((block) => block.id === overId);
+      if (active !== undefined && over !== undefined && (active.column ?? 0) !== (over.column ?? 0)) {
+        return section;
+      }
+
       const moved = reorder(section.blocks, activeId, overId);
       return moved === null ? section : { ...section, blocks: moved };
     }),
@@ -168,12 +240,17 @@ export function reorderBlocks(body: Body, activeId: string, overId: string): Bod
 }
 
 /**
- * Adds a block at the end of one column of a section.
+ * Adds a block to one column of a section — at its end, or at a place in it.
  *
  * `column` since 11 September 2026: it used to be 0 for every block, so in a section of two columns a
  * component always landed in the first and had to be moved into the second afterwards — which is the
  * friction the "add here" of an empty column exists to remove. It defaults to the first, which is also
  * where a block of a stacked section is.
+ *
+ * `at` since G15: the position **within the column**, counted over the blocks that stand in it, for a
+ * component dropped between two of them. The blocks of a section are one list whatever column they
+ * are in, so the place in that list is the place of the block the new one goes before; past the last
+ * of the column, or with no `at`, it goes at the end of the list — which is the end of every column.
  */
 export function addBlock(
   body: Body,
@@ -182,6 +259,7 @@ export function addBlock(
   props: Record<string, unknown>,
   renderMode: 'live' | 'frozen' | null,
   column = 0,
+  at?: number,
 ): { body: Body; id: string } {
   const id = newId('b');
   const block: BlockEnvelope = { id, type, version: 1, props, renderMode, frozen: null, column };
@@ -189,11 +267,60 @@ export function addBlock(
   return {
     body: {
       ...body,
-      sections: mapSections(body.sections, (section) =>
-        section.id === sectionId ? { ...section, blocks: [...section.blocks, block] } : section,
-      ),
+      sections: mapSections(body.sections, (section) => {
+        if (section.id !== sectionId) {
+          return section;
+        }
+
+        const before =
+          at === undefined
+            ? undefined
+            : section.blocks.filter((candidate) => (candidate.column ?? 0) === column)[at];
+        const position = before === undefined ? section.blocks.length : section.blocks.indexOf(before);
+
+        return { ...section, blocks: section.blocks.toSpliced(position, 0, block) };
+      }),
     },
     id,
+  };
+}
+
+/**
+ * A block dragged to a place on the page — another column, another section, another spot in its
+ * own column (Carmine, 11 September 2026: "the elements in a section too, and between sections").
+ * `at` is a slot as the page draws them: before the `at`-th block of that column, counting the
+ * blocks as they stand — the moved one included, since it is still drawn while it is dragged — or
+ * after the last. Dropped on the slot just before itself, a block stays where it is.
+ */
+export function moveBlockTo(body: Body, id: string, sectionId: string, column: number, at: number): Body {
+  const found = findBlock(body, id);
+  const target = findSection(body, sectionId);
+  if (found === undefined || target === undefined) {
+    return body;
+  }
+
+  const anchor = target.blocks.filter((block) => (block.column ?? 0) === column)[at];
+  if (anchor?.id === id) {
+    return body;
+  }
+
+  const moved: BlockEnvelope = { ...found.block, column };
+  const without = removeBlock(body, id);
+
+  return {
+    ...without,
+    sections: mapSections(without.sections, (section) => {
+      if (section.id !== sectionId) {
+        return section;
+      }
+
+      const position =
+        anchor === undefined
+          ? section.blocks.length
+          : section.blocks.findIndex((block) => block.id === anchor.id);
+
+      return { ...section, blocks: section.blocks.toSpliced(position, 0, moved) };
+    }),
   };
 }
 
@@ -235,13 +362,35 @@ export function duplicateBlock(body: Body, id: string): { body: Body; id: string
   };
 }
 
+/**
+ * Moves a block one place up or down **within its column**. The blocks of a section are one list
+ * whatever column they stand in, so the neighbour is the nearest block of the same column in that
+ * direction, and the two swap places in the list; the blocks of the other columns keep their order.
+ * A block alone in its column has nowhere to go, as one alone in a stacked section never had.
+ */
 export function moveBlock(body: Body, id: string, delta: -1 | 1): Body {
   return {
     ...body,
-    sections: mapSections(body.sections, (section) => ({
-      ...section,
-      blocks: move(section.blocks, (block) => block.id === id, delta),
-    })),
+    sections: mapSections(body.sections, (section) => {
+      const index = section.blocks.findIndex((block) => block.id === id);
+      if (index < 0) {
+        return section;
+      }
+
+      const column = section.blocks[index]!.column ?? 0;
+      let other = index + delta;
+      while (other >= 0 && other < section.blocks.length && (section.blocks[other]!.column ?? 0) !== column) {
+        other += delta;
+      }
+
+      if (other < 0 || other >= section.blocks.length) {
+        return section;
+      }
+
+      const blocks = [...section.blocks];
+      [blocks[index], blocks[other]] = [blocks[other]!, blocks[index]!];
+      return { ...section, blocks };
+    }),
   };
 }
 

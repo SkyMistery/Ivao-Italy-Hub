@@ -6,7 +6,7 @@ import { renderWithProviders } from '../test/harness';
 
 import { ContentRenderer } from './ContentRenderer';
 import type { Body } from './envelope';
-import { PickingContext, type Picking } from './picking';
+import { PickingContext, type Picking, type SortableBinding } from './picking';
 
 /**
  * Composing on the page, and the promise that keeps it safe.
@@ -179,4 +179,180 @@ test('a visitor sees none of it: an empty column is simply empty', () => {
 
   expect(screen.queryByRole('button', { name: '+ Add here' })).not.toBeInTheDocument();
   expect(document.querySelectorAll('[data-pickable]')).toHaveLength(0);
+});
+
+/** What the editor hands over as a place to drop onto: here, a marker that says where it stands. */
+function Slot({ section, column, index }: { section: string; column: number; index: number }) {
+  return <div data-slot={`${section}:${column}:${index}`} />;
+}
+
+test('a place to drop onto stands before every block and after the last, only while composing', () => {
+  // One block in `body`: a place before it and one after it. The renderer draws the component the
+  // editor hands over and knows nothing else about dropping — dnd-kit is never imported here.
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ DropZone: Slot })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect([...document.querySelectorAll('[data-slot]')].map((slot) => slot.getAttribute('data-slot'))).toEqual(
+    ['s1:0:0', 's1:0:1'],
+  );
+});
+
+test('a section a template locks offers no place to drop onto either', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ DropZone: Slot, accepts: () => false })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(document.querySelectorAll('[data-slot]')).toHaveLength(0);
+});
+
+test('a visitor gets no place to drop onto, because there is nothing to drop', () => {
+  renderWithProviders(<ContentRenderer body={body} />);
+
+  expect(document.querySelectorAll('[data-slot]')).toHaveLength(0);
+});
+
+test('the picked block carries what may be done to it, and a press there does not re-pick', async () => {
+  const user = userEvent.setup();
+  const picked = vi.fn();
+  const removed = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        selected: 'b1',
+        onPick: picked,
+        actions: ({ kind, id }) => (kind === 'block' && id === 'b1' ? [{ key: 'remove', run: removed }] : []),
+      })}
+    >
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  // The bar names the block — by the label the palette uses — and offers exactly what the editor
+  // answered: one command, not a menu.
+  expect(document.querySelector('[data-chrome]')).toHaveTextContent('Button');
+  await user.click(screen.getByRole('button', { name: 'Remove' }));
+
+  expect(removed).toHaveBeenCalledTimes(1);
+  // The block's own capture handler lets the bar through: pressing "remove" is not a click on the
+  // block, and must not pick the section the block was in either.
+  expect(picked).not.toHaveBeenCalled();
+});
+
+test('a section is offered at the end of the page while composing, and to nobody else', async () => {
+  const user = userEvent.setup();
+  const added = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ onAddSection: added })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Add a section' }));
+  expect(added).toHaveBeenCalledTimes(1);
+});
+
+test('a picked section is drawn through what makes it draggable, with a grip on its bar', () => {
+  // What the editor hands over, faked: a group that marks its list, and an item that hands back a
+  // node ref, a style and a handle — the renderer attaches all three and asks nothing about drag.
+  const Group = ({ ids, children }: { ids: readonly string[]; children: React.ReactNode }) => (
+    <div data-group={ids.join(',')}>{children}</div>
+  );
+  const Item = ({ id, children }: { id: string; children: (s: SortableBinding) => React.ReactNode }) => (
+    <>
+      {children({
+        setNodeRef: () => {},
+        style: { opacity: 0.5 },
+        handle: { attach: () => {}, listeners: { 'data-handle': id } },
+      })}
+    </>
+  );
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ selected: 's1', SortableGroup: Group, Sortable: Item })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(document.querySelector('[data-group]')).toHaveAttribute('data-group', 's1');
+  expect(document.querySelector('[data-pickable="section"]')).toHaveStyle({ opacity: '0.5' });
+  expect(screen.getByRole('button', { name: 'Drag to reorder' })).toHaveAttribute('data-handle', 's1');
+});
+
+test('a picked block is drawn through what makes it draggable, and a block nothing may be done to gets no grip', () => {
+  const Item = ({ id, children }: { id: string; children: (s: SortableBinding) => React.ReactNode }) => (
+    <>
+      {children({
+        setNodeRef: () => {},
+        style: { opacity: 0.5 },
+        handle: { attach: () => {}, listeners: { 'data-handle': id } },
+      })}
+    </>
+  );
+
+  const { unmount } = renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        selected: 'b1',
+        BlockDraggable: Item,
+        actions: () => [{ key: 'remove', run: () => {} }],
+      })}
+    >
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(screen.getByRole('button', { name: 'Drag to reorder' })).toHaveAttribute('data-handle', 'b1');
+  unmount();
+
+  // The editor answers no commands — a locked section — so the block is not dragged either.
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ selected: 'b1', BlockDraggable: Item, actions: () => [] })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(screen.queryByRole('button', { name: 'Drag to reorder' })).not.toBeInTheDocument();
+});
+
+test('a block nothing is written in is drawn as a placeholder, and a visitor never sees one', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ blank: (block) => (block.id === 'b1' ? 'Button' : null) })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  // In its place, not beside it: what the block would have drawn is not there.
+  expect(screen.getByText('Button — nothing written yet. Fill it in on the right.')).toBeVisible();
+  expect(screen.queryByRole('link', { name: 'Join' })).not.toBeInTheDocument();
+});
+
+test('a double click opens a block, and the picked one is marked for the editor to scroll to', async () => {
+  const user = userEvent.setup();
+  const opened = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ selected: 'b1', onOpen: opened })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(document.querySelector('[data-picked]')).toHaveAttribute('data-pickable', 'block');
+
+  await user.dblClick(screen.getByRole('link', { name: 'Join' }));
+  expect(opened).toHaveBeenCalledWith('block', 'b1');
+});
+
+test('a visitor is offered no section and sees no bar', () => {
+  renderWithProviders(<ContentRenderer body={body} />);
+
+  expect(screen.queryByRole('button', { name: 'Add a section' })).not.toBeInTheDocument();
+  expect(document.querySelectorAll('[data-chrome]')).toHaveLength(0);
+  expect(screen.queryByText(/nothing written yet/u)).not.toBeInTheDocument();
 });

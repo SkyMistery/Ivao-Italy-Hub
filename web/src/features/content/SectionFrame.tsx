@@ -1,3 +1,4 @@
+import { Ban, Image as ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { BACKGROUNDS, LAYOUTS, columnsOf, type Background, type Layout } from '../../blocks';
@@ -17,18 +18,24 @@ import { BACKGROUNDS, LAYOUTS, columnsOf, type Background, type Layout } from '.
  * background would undo a swatch the moment somebody pressed Apply.
  */
 
-/** What each background looks like in the strip. The renderer's own classes, so they cannot drift. */
+/**
+ * What each background looks like in the strip. The renderer's own classes, so they cannot drift.
+ * Two of the seven are not a colour and say so with a glyph (Carmine, 11 September 2026, with a
+ * screenshot: the picture used to be a diagonal stripe that read as "forbidden", and "none" was a
+ * white dot on a white panel): "none" is a struck circle, the picture is a picture.
+ */
 const SWATCH: Record<Background, string> = {
-  none: 'bg-body border-border',
+  none: 'bg-body border-border text-muted-foreground',
   muted: 'bg-muted border-muted',
   accent: 'bg-accent border-accent',
   brand: 'bg-atmos-700 border-atmos-700',
   deep: 'bg-atmos-800 border-atmos-800',
   dark: 'bg-fuselage-900 border-fuselage-900',
   // A picture is chosen in the form below — this only says which of the grounds is on.
-  image:
-    'bg-muted border-border bg-[linear-gradient(45deg,transparent_45%,currentColor_45%,currentColor_55%,transparent_55%)]',
+  image: 'bg-muted border-border text-muted-foreground',
 };
+
+const GLYPH: Partial<Record<Background, typeof Ban>> = { none: Ban, image: ImageIcon };
 
 export function SectionFrame({
   background,
@@ -46,19 +53,25 @@ export function SectionFrame({
   return (
     <div className="flex flex-col gap-3">
       <Choice label={t('content.section.fields.background')}>
-        {BACKGROUNDS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={value === background}
-            title={t(`content.section.options.background.${value}`)}
-            aria-label={t(`content.section.options.background.${value}`)}
-            onClick={() => onBackground(value)}
-            className={`size-7 rounded-full border-2 ${SWATCH[value]} ${
-              value === background ? 'ring-primary ring-2 ring-offset-2' : ''
-            }`}
-          />
-        ))}
+        {BACKGROUNDS.map((value) => {
+          const Glyph = GLYPH[value];
+
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={value === background}
+              title={t(`content.section.options.background.${value}`)}
+              aria-label={t(`content.section.options.background.${value}`)}
+              onClick={() => onBackground(value)}
+              className={`flex size-7 items-center justify-center rounded-full border-2 ${SWATCH[value]} ${
+                value === background ? 'ring-primary ring-2 ring-offset-2' : ''
+              }`}
+            >
+              {Glyph === undefined ? null : <Glyph aria-hidden className="size-3.5" />}
+            </button>
+          );
+        })}
       </Choice>
 
       <Choice label={t('content.section.fields.layout')}>
@@ -110,7 +123,10 @@ function Choice({ label, children }: { label: string; children: React.ReactNode 
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-muted-foreground text-xs font-medium">{label}</span>
-      <div className="flex flex-wrap items-center gap-2">{children}</div>
+      {/* Room for the ring of the chosen one, which sits outside its button: the panel scrolls and
+          therefore clips, and the first swatch against its edge lost the left of its ring (Carmine,
+          11 September 2026, with a screenshot). */}
+      <div className="flex flex-wrap items-center gap-2 p-1">{children}</div>
     </div>
   );
 }

@@ -133,13 +133,21 @@ modifica, da noi il renderer è **lo stesso del sito pubblico** e non deve mette
 (`blocks/picking.ts`). Il pannello sta accanto alla pagina, quindi la pastiglia si sceglie
 guardandola comunque.
 
+**Rivisto l'11 settembre 2026** (piano 0.61): le pastiglie restano nel pannello, ma i **comandi**
+— aggiungi riga ed elimina su una sezione, duplica ed elimina su un blocco, «aggiungi una sezione»
+in fondo alla pagina — stanno anche sull'oggetto scelto, in una targhetta. Non contraddice quanto
+sopra: il chrome esiste solo attraverso il contesto di picking, che sul sito pubblico è `null`, e
+la lista dei comandi la decide l'editor con le regole del template.
+
 I diagrammi sono disegnati con le proporzioni vere (`1/3+2/3` è una barra stretta e una larga), e
 ognuno porta il proprio nome come etichetta: un colore e un disegno non dicono niente a chi non li
 vede.
 
 ### Che cosa resta
 
-- **La 3** — trascinare dalla tavolozza nella pagina — non fatta, come deciso.
+- **La 3** — trascinare dalla tavolozza nella pagina — non fatta, come deciso. **Poi fatta l'11
+  settembre**, sessione 3 di G15 (`2026-09-11-l-editor-che-risponde.md`): gli slot fra un blocco e
+  l'altro li disegna il renderer attraverso il contesto di picking, e dnd-kit resta fuori da `blocks/`.
 - ⚠️ Il selettore di file per la «foto dietro» disegna tutto il pannello «No files yet / Upload one in
   the media library» anche quando lo sfondo non è una foto, e adesso quel pannello sta in una colonna
   stretta. È lo stesso difetto dei 536 px della SEO visto da un'altra parte: **lo stato vuoto di un

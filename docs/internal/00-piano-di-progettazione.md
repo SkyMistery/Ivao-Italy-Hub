@@ -1,9 +1,87 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.60 — 11 settembre 2026 (**G15, l'editor che risponde**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera, autosalvataggio della bozza, trascinamento dalla barra, anteprima mobile vera — e viene prima di G14)
+**Versione documento:** 0.63 — 11 settembre 2026 (**sette comodità dell'editor** scelte da Carmine su otto proposte: lingua dell'anteprima, doppio clic, tasti sull'oggetto scelto, scorrimento, duplica sezione, upload dal selettore, bozza accanto a pubblicato; il caricamento di due file identici non è controllato)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.63** (11 set 2026, notte): **sette comodità dell'editor**, proposte guardandolo e
+scelte da Carmine (la 6, i pezzi riutilizzabili, no). (1) **La lingua dell'anteprima**: IT / EN
+accanto alle larghezze; ogni valore tradotto letto dentro l'editor la segue
+(`PreviewLocaleContext` sotto `useLocalized`) e ogni campo tradotto apre su quella scheda — prima
+il sito era in inglese, il form apriva sull'italiano e quello che si scriveva non si vedeva. (2)
+**Doppio clic** su un blocco o una sezione: scelto, e il cursore nel primo campo del pannello.
+(3) **Canc** elimina, **⌘D** duplica, **Esc** lascia: gli stessi comandi della targhetta, fuori
+da un campo. (4) L'oggetto scelto è **portato in vista** sulla pagina. (5) **Duplica sezione**,
+dalla targhetta e dall'outline: copia subito dopo, identificatori nuovi, senza chiave. (7) **Il
+selettore di file carica** nella libreria del dipartimento — dallo stato vuoto e sotto la griglia,
+con la stessa chiamata della schermata della libreria, passata al generatore come `uploadMedia`;
+quello che si carica è scelto. Non riapre la scelta di G1 «un posto solo da cui un file entra»: la
+chiamata è una, offerta da un posto in più. (8) **Bozza | Pubblicato** sull'anteprima: la versione
+pubblicata disegnata dallo stesso renderer senza picking, o «non ancora pubblicata».
+
+⚠️ **Verificato, e da decidere: due file identici caricati sono due righe e due file.** Non c'è
+hash né controllo sul nome: ogni upload salva sotto un nome nuovo (`Guid`) e crea una riga. Una
+deduplica vorrebbe una colonna `sha256` (migrazione additiva), il calcolo all'upload — i primi
+byte già si leggono per riconoscere il formato — e una risposta «c'è già, eccolo» che restituisce
+la riga esistente. È (c): mezza pagina prima del codice, se Carmine la vuole.
+
+**Changelog 0.62** (11 set 2026, sera): tre richieste di Carmine mentre compone. **Le sezioni si
+annidano fino a quattro livelli**, non tre: «una sezione in una sezione in una sezione in una
+sezione». `MaxDepth` passa a 4 nel validatore, e l'editor offre «Aggiungi riga» fino al terzo livello
+compreso — dall'outline e dalla targhetta — così l'ultimo consentito è il quarto; il 10 settembre la
+riga era offerta solo al primo livello, «una riga dentro una riga è rumore», e la pratica ha detto il
+contrario. **Il selettore di file porta alla libreria**: dove chiede di caricare un file «nella
+libreria media del dipartimento», c'è il link per andarci — anche quando la libreria non è vuota,
+sotto la griglia. L'indirizzo viaggia sulla query (`meta.libraryHref`), perché la query è la sola
+cosa della libreria che raggiunge il selettore attraverso il generatore di form. **Due cose viste in
+uno screenshot**: la targhetta della prima sezione stava a cavallo del bordo dell'anteprima, che
+ritaglia, e usciva tagliata a metà — ora sta dentro l'aria della sezione; e fra gli sfondi la
+pastiglia «foto» era una riga nera in diagonale che si leggeva come un divieto, «nessuno» un punto
+bianco su fondo bianco — ora i due che non sono un colore hanno un glifo: un cerchio barrato e una
+foto. **Poi, sempre la sera: anche i blocchi si trascinano sulla pagina, e fra sezioni diverse.**
+Un blocco scelto ha il grip sulla targhetta; mentre lo si trascina compaiono gli stessi slot dei
+componenti della barra, in ogni sezione non bloccata, e lo si lascia dove si vuole — la sua colonna,
+un'altra, un'altra sezione (`moveBlockTo`). Il renderer riceve `BlockDraggable` dal contesto di
+picking come riceve `Sortable` per le sezioni; un blocco a cui l'editor non risponde comandi (una
+sezione bloccata) non ha grip. **La strada da tastiera** è un selettore «Sezione» nelle proprietà del
+blocco, accanto a «Colonna»: lo sposta in fondo alla prima colonna della sezione scelta. In più, un
+campo di ricerca in cima alla barra dei componenti, e barre di scorrimento sottili nei due pannelli
+laterali. **E un blocco in cui non è scritto niente si disegna come segnaposto**: un titolo appena
+aggiunto non disegnava nulla e sembrava perso; ora, finché è vuoto, la pagina mostra al suo posto
+un riquadro tratteggiato con l'icona, il nome e «compilalo nel pannello a destra», che sparisce
+alla prima cosa scritta. «Vuoto» lo decide lo schema (`isBlank`): i campi che portano contenuto —
+parole, un file, una data, una lista — tutti non scritti, qualunque impostazione sia scelta; un
+blocco Data non è mai vuoto, perché disegna una risposta o il suo stato vuoto. Il visitatore, che
+non legge mai una bozza, non lo vede mai.
+
+**Changelog 0.61** (11 set 2026, sera): **i comandi stanno anche sull'oggetto, nella pagina.**
+Chiesto da Carmine con G15 appena costruita: aggiungere e togliere sezioni, e togliere un blocco,
+**dalla pagina** e non solo dall'outline; e nell'outline capire, quando una sezione è divisa in
+colonne, «dove va cosa». Riapre il punto 2 della nota del 10 settembre
+(`2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`), che aveva tenuto i comandi nel pannello perché
+il renderer non deve mettere su chrome da editor. **La risposta è la stessa del 9 settembre:** il
+chrome esiste solo attraverso il contesto di picking, che sul sito pubblico è `null`. Il contesto
+porta `actions` — l'editor risponde con ciò che il template permette, la pagina disegna esattamente
+quella lista — e `onAddSection`; la cosa scelta porta una **targhetta** con il nome e i comandi
+(sposta su e giù, duplica ed elimina su un blocco; sposta su e giù, aggiungi riga ed elimina su una
+sezione — «le sezioni già posizionate le vorrei poter spostare a mano»), e in fondo alla pagina
+c'è «Aggiungi una sezione» come una colonna vuota offre un blocco. Le regole del template — niente su
+una sezione bloccata, niente eliminazione di una obbligatoria — sono lette in un posto solo e
+valgono per outline e pagina insieme. **L'outline elenca una colonna alla volta**, ognuna col suo
+nome, una lista ordinabile per colonna; per conseguenza «sposta su/giù» muove un blocco **dentro la
+sua colonna** — prima scambiava posti nella lista senza che sulla pagina si muovesse niente — e un
+blocco lasciato su uno di un'altra colonna non si muove, come già un drop fra due sezioni. E una
+**riga si sposta fra le righe della sua sezione**: prima `moveSection` muoveva solo il primo livello
+e le frecce su una riga nell'outline non facevano niente. Costruito lo stesso giorno, sulla PR #58
+di G15. **E le sezioni si trascinano sulla pagina** («a mano nel senso di trascinabili»): il
+contesto di picking porta due componenti in più, `SortableGroup` intorno ai fratelli — le sezioni
+della pagina, o le righe di una sezione — e `Sortable` intorno a una di loro, che restituisce dove
+attaccare il nodo, lo stile che lo muove e la presa; la presa è un **grip sulla targhetta** della
+sezione scelta, così cliccare l'aria di una sezione la sceglie e basta. Lo stesso `DndContext`
+della barra dei componenti sente il rilascio, e distingue le due cose che vi si trascinano con una
+collision detection che guarda solo il proprio genere — un componente sopra una sezione non le è
+«sopra», né una sezione sopra uno slot. Le frecce restano, e sono la strada da tastiera.
 
 **Changelog 0.60** (11 set 2026): **l'editor che risponde**, fase **G15**, decisa da Carmine con
 davanti il page builder di va.ivao.aero e il nostro editor uno accanto all'altro. Nota

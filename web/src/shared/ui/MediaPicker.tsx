@@ -1,6 +1,8 @@
 import { Button, Subtle } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { FileText } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { FileText, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveLocalized } from '../i18n/localized';
@@ -47,6 +49,7 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   query,
   value,
   onChange,
+  onUpload,
   locale,
   defaultLocale,
   disabled = false,
@@ -56,6 +59,13 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   /** The chosen file, or null for none. */
   value: number | null;
   onChange: (id: number | null) => void;
+  /**
+   * Uploads a file into this library and answers its identifier, which is then chosen. Given by a
+   * screen that may upload here (Carmine, 11 September 2026: "yes, if it lands in the library of
+   * the department the document belongs to"); the picker still only picks — the upload is the same
+   * call the library screen makes, reached from one more place.
+   */
+  onUpload?: ((file: File) => Promise<number>) | undefined;
   locale: string;
   defaultLocale: string;
   disabled?: boolean;
@@ -65,8 +75,86 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
 
   const items = data?.items ?? [];
 
+  // The file input is hidden and a button opens it: what the browser draws for one is not a thing
+  // that reads in every language or theme.
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
+
+  const upload = async (file: File | undefined) => {
+    if (file === undefined || onUpload === undefined) {
+      return;
+    }
+
+    setUploading(true);
+    setRefused(null);
+    try {
+      onChange(await onUpload(file));
+    } catch (error) {
+      setRefused(error instanceof Error ? error.message : String(error));
+    } finally {
+      setUploading(false);
+      if (fileInput.current !== null) {
+        fileInput.current.value = '';
+      }
+    }
+  };
+
+  const uploader =
+    onUpload === undefined ? null : (
+      <div className="flex flex-col gap-1">
+        <input
+          ref={fileInput}
+          type="file"
+          hidden
+          aria-label={t('media.picker.upload')}
+          onChange={(event) => void upload(event.target.files?.[0])}
+        />
+        <div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled || uploading}
+            isLoading={uploading}
+            onClick={() => fileInput.current?.click()}
+          >
+            <Upload aria-hidden className="mr-2 size-4" />
+            {t(uploading ? 'media.picker.uploading' : 'media.picker.upload')}
+          </Button>
+        </div>
+        {refused === null ? null : (
+          <p role="alert" className="text-destructive text-sm">
+            {t('media.picker.uploadRefused')}
+          </p>
+        )}
+      </div>
+    );
+
+  // Where the files come from, when the query says so (`mediaPickerQuery` does): the picker only
+  // picks, and the way to the page that uploads should be one press away and not a thing to know
+  // (Carmine, 11 September 2026).
+  const libraryHref = typeof query.meta?.libraryHref === 'string' ? query.meta.libraryHref : null;
+  const library =
+    libraryHref === null ? null : (
+      <Link to={libraryHref} className="text-primary text-sm underline-offset-2 hover:underline">
+        {t('media.picker.open')}
+      </Link>
+    );
+
   if (!isPending && items.length === 0) {
-    return <EmptyState title={t('media.picker.empty')} description={t('media.picker.emptyHint')} />;
+    return (
+      <EmptyState
+        title={t('media.picker.empty')}
+        description={t('media.picker.emptyHint')}
+        action={
+          <div className="flex flex-col items-center gap-2">
+            {uploader}
+            {library}
+          </div>
+        }
+      />
+    );
   }
 
   return (
@@ -114,6 +202,11 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
           </Button>
         </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        {uploader}
+        {library}
+      </div>
     </div>
   );
 }

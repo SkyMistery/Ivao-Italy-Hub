@@ -9,10 +9,13 @@ import {
   clampColumns,
   defaultProps,
   duplicateBlock,
+  duplicateSection,
   findBlock,
   moveBlock,
+  moveBlockTo,
   moveSection,
   removeSection,
+  reorderBlocks,
   updateBlock,
 } from './body';
 
@@ -41,17 +44,87 @@ function body(): Body {
   });
 }
 
-test('moving a block swaps it with its neighbour, and stops at the ends', () => {
-  const moved = moveBlock(body(), 'b_1', 1);
-  expect(moved.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_2', 'b_1']);
+test('moving a block swaps it with its neighbour in the same column, and stops at the ends', () => {
+  // `b_1` stands in the third column and `b_2` in the first: neither has a neighbour, so neither
+  // moves. Before 11 September 2026 they swapped places in the list — which changed nothing on
+  // the page, since each column draws its own — and the arrows in the outline seemed broken.
+  const alone = moveBlock(body(), 'b_1', 1);
+  expect(alone.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2']);
+
+  // Two in the first column, with one of another column between them in the list: they swap, and
+  // the one in between keeps its place.
+  const shared = updateBlock(body(), 'b_1', { column: 0 });
+  const third = addBlock(shared, 's_1', 'text', {}, null, 2).body;
+  const withTwo = addBlock(third, 's_1', 'text', {}, null, 0).body;
+  const ids = (page: Body) => page.sections[0]!.blocks.map((block) => block.id);
+  const [, , other, last] = ids(withTwo);
+
+  const moved = moveBlock(withTwo, last!, -1);
+  expect(ids(moved)).toEqual(['b_1', last, other, 'b_2']);
 
   const stuck = moveBlock(body(), 'b_1', -1);
-  expect(stuck.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2']);
+  expect(ids(stuck)).toEqual(['b_1', 'b_2']);
 });
 
-test('moving a section does the same, one level at a time', () => {
+test('a block dragged to a slot lands there: its own column, another, another section', () => {
+  const ids = (page: Body, section = 0) => page.sections[section]!.blocks.map((block) => block.id);
+
+  // Into the second section, which is empty: the only slot is its end.
+  const across = moveBlockTo(body(), 'b_1', 's_2', 0, 0);
+  expect(ids(across)).toEqual(['b_2']);
+  expect(ids(across, 1)).toEqual(['b_1']);
+  expect(findBlock(across, 'b_1')!.block.column).toBe(0);
+
+  // Into another column of its own section, before the block that stands there.
+  const sideways = moveBlockTo(body(), 'b_1', 's_1', 0, 0);
+  expect(ids(sideways)).toEqual(['b_1', 'b_2']);
+  expect(findBlock(sideways, 'b_1')!.block.column).toBe(0);
+
+  // Within its column: two blocks in the first column, the second dropped on the slot before the
+  // first — and dropped on the slot just before itself, it stays where it is.
+  const two = addBlock(updateBlock(body(), 'b_1', { column: 0 }), 's_1', 'text', {}, null, 0).body;
+  const [, , third] = ids(two);
+  expect(ids(moveBlockTo(two, third!, 's_1', 0, 0))).toEqual([third, 'b_1', 'b_2']);
+  expect(ids(moveBlockTo(two, third!, 's_1', 0, 2))).toEqual(['b_1', 'b_2', third]);
+  expect(ids(moveBlockTo(two, 'b_1', 's_1', 0, 3))).toEqual(['b_2', third, 'b_1']);
+});
+
+test('a duplicated section is a copy right after it, with its own identifiers and no key', () => {
+  const withRow = addSection(body(), LOCALES, 's_1').body;
+  const original = withRow.sections[0]!;
+  const copied = duplicateSection(withRow, 's_1');
+  const copy = copied.body.sections[1]!;
+
+  expect(copied.body.sections.map((section) => section.id)).toEqual(['s_1', copied.id, 's_2']);
+  expect(copy.layout).toBe(original.layout);
+  expect(copy.blocks.map((block) => block.type)).toEqual(original.blocks.map((block) => block.type));
+  expect(copy.blocks.map((block) => block.id)).not.toEqual(original.blocks.map((block) => block.id));
+  expect(copy.sections).toHaveLength(1);
+  expect(copy.sections[0]!.id).not.toBe(original.sections[0]!.id);
+  // A key names what a template imposes; a copy is the page's own, and nothing is imposed on it.
+  expect(copy.key).toBeNull();
+});
+
+test('a block dropped onto one of another column in the outline moves nothing', () => {
+  const refused = reorderBlocks(body(), 'b_1', 'b_2');
+  expect(refused.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2']);
+
+  const sameColumn = updateBlock(body(), 'b_1', { column: 0 });
+  const moved = reorderBlocks(sameColumn, 'b_1', 'b_2');
+  expect(moved.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_2', 'b_1']);
+});
+
+test('moving a section does the same, among its siblings at whichever level', () => {
   const moved = moveSection(body(), 's_2', -1);
   expect(moved.sections.map((section) => section.id)).toEqual(['s_2', 's_1']);
+
+  // A row moves among the rows of its section, and the page's sections stay where they are.
+  const withRows = addSection(addSection(body(), LOCALES, 's_1').body, LOCALES, 's_1');
+  const [first, second] = withRows.body.sections[0]!.sections.map((row) => row.id);
+  const rowMoved = moveSection(withRows.body, second!, -1);
+
+  expect(rowMoved.sections.map((section) => section.id)).toEqual(['s_1', 's_2']);
+  expect(rowMoved.sections[0]!.sections.map((row) => row.id)).toEqual([second, first]);
 });
 
 test('a duplicate is a copy with its own identifier, its own properties and no capture', () => {
@@ -130,6 +203,30 @@ test('a new block starts with the properties its own schema describes', () => {
     title: { it: '', en: '' },
     text: { it: '', en: '' },
   });
+});
+
+test('a block dropped at a place in a column goes before the block that stood there', () => {
+  const props = defaultProps(calloutSchema, LOCALES);
+
+  // The blocks of a section are one list whatever column they stand in: `b_1` is in the third
+  // column and `b_2` in the first. Dropped at the top of the first column, the new block goes
+  // before `b_2` in that list — where `b_1` stands is another column's business.
+  const first = addBlock(body(), 's_1', 'callout', props, null, 0, 0);
+  expect(first.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', first.id, 'b_2']);
+  expect(findBlock(first.body, first.id)!.block.column).toBe(0);
+
+  // Past the last block of the column — one block, position one — is the end of the list.
+  const last = addBlock(body(), 's_1', 'callout', props, null, 0, 1);
+  expect(last.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2', last.id]);
+
+  // An empty column has one place, and it is the end.
+  const middle = addBlock(body(), 's_1', 'callout', props, null, 1, 0);
+  expect(middle.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2', middle.id]);
+  expect(findBlock(middle.body, middle.id)!.block.column).toBe(1);
+
+  // And with no place named, the end, as the palette's click has always done.
+  const clicked = addBlock(body(), 's_1', 'callout', props, null, 2);
+  expect(clicked.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2', clicked.id]);
 });
 
 test('defaults are read off the schema, not written next to the block', () => {

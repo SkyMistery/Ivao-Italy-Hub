@@ -1,15 +1,17 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
 import { mediaFileUrl } from '../shared/api/mediaUrl';
+import { useLocalized } from '../shared/i18n/useLocalized';
 import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
 import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from './envelope';
-import { usePicking, type Picking } from './picking';
+import { usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -69,19 +71,29 @@ const WIDTH = {
   full: 'w-full px-4',
 } as const;
 
-/** The share of the grid each column takes, per layout. Literal classes: Tailwind reads the source. */
+/**
+ * The share of the grid each column takes, per layout. Literal classes: Tailwind reads the source.
+ *
+ * ⚠️ `@view-md:` and not `md:` — a **container** query on the page, not a media query on the window
+ * (G15, 11 September 2026). Measured before the change: the editor's "Phone" preview was 390 pixels
+ * wide and a two column section still drew two columns of 167 pixels in it, because `md:` asked the
+ * window, which was 1912. The preview looked like a phone and laid out like a desktop — exactly the
+ * fault va.ivao.aero's builder has. The thresholds are the window's own (`styles/index.css`), so a
+ * visitor sees what they saw; what changed is what is measured. Every variant under `blocks/` is a
+ * container one for this reason, and `containerQueries.test.ts` keeps it so.
+ */
 const COLUMN_SPAN: Record<string, readonly string[]> = {
-  '1/2+1/2': ['md:col-span-1', 'md:col-span-1'],
-  '1/3+2/3': ['md:col-span-1', 'md:col-span-2'],
-  '2/3+1/3': ['md:col-span-2', 'md:col-span-1'],
-  '3x1/3': ['md:col-span-1', 'md:col-span-1', 'md:col-span-1'],
+  '1/2+1/2': ['@view-md:col-span-1', '@view-md:col-span-1'],
+  '1/3+2/3': ['@view-md:col-span-1', '@view-md:col-span-2'],
+  '2/3+1/3': ['@view-md:col-span-2', '@view-md:col-span-1'],
+  '3x1/3': ['@view-md:col-span-1', '@view-md:col-span-1', '@view-md:col-span-1'],
 };
 
 const GRID: Record<string, string> = {
-  '1/2+1/2': 'md:grid-cols-2',
-  '1/3+2/3': 'md:grid-cols-3',
-  '2/3+1/3': 'md:grid-cols-3',
-  '3x1/3': 'md:grid-cols-3',
+  '1/2+1/2': '@view-md:grid-cols-2',
+  '1/3+2/3': '@view-md:grid-cols-3',
+  '2/3+1/3': '@view-md:grid-cols-3',
+  '3x1/3': '@view-md:grid-cols-3',
 };
 
 export function ContentRenderer({
@@ -96,57 +108,116 @@ export function ContentRenderer({
   staff?: boolean;
 }) {
   return (
-    <div className="flex flex-col">
-      {body.sections.map((section) => (
-        <SectionView key={section.id} section={section} staff={staff} />
-      ))}
+    // The container the sections measure themselves against: as wide as the page is given, which
+    // on the public site is the window and in the editor's preview is the width that was chosen.
+    <div className="@container flex flex-col">
+      <Siblings sections={body.sections} staff={staff} />
+
+      <AddSectionInvitation />
+    </div>
+  );
+}
+
+/**
+ * The sections of one parent — the page's, or the rows of a section — drawn in order, and while
+ * composing wrapped in what lets them be dragged among themselves (`Picking.SortableGroup`).
+ */
+function Siblings({ sections, staff }: { sections: SectionEnvelope[]; staff: boolean }) {
+  const picking = usePicking();
+  const views = sections.map((section) => <SectionView key={section.id} section={section} staff={staff} />);
+  const Group = picking?.SortableGroup;
+
+  return Group === undefined ? views : <Group ids={sections.map((section) => section.id)}>{views}</Group>;
+}
+
+/**
+ * A section at the end of the page, while composing — the same invitation an empty column makes
+ * for a block (Carmine, 11 September 2026: adding a section should not need the outline).
+ */
+function AddSectionInvitation() {
+  const picking = usePicking();
+  const { t } = useTranslation();
+
+  if (picking?.onAddSection === undefined) {
+    return null;
+  }
+
+  return (
+    <div className="px-4 py-4">
+      <button
+        type="button"
+        onClick={picking.onAddSection}
+        className="border-border text-muted-foreground hover:border-primary hover:text-foreground flex min-h-12 w-full items-center justify-center rounded-md border border-dashed text-sm transition-colors"
+      >
+        {t('content.editor.addSection')}
+      </button>
     </div>
   );
 }
 
 function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
   const picking = usePicking();
+  const { t } = useTranslation();
+  const read = useLocalized();
   const frame = [
     BACKGROUND[section.background],
     PADDING[section.padding],
     // A section is picked by its own space — the air around its blocks — because clicking a block
     // picks the block. `outline` and not `border`: a border would move everything by two pixels and
     // the point of composing here is that what you see is what a reader gets.
-    picking === null ? '' : ring(picking, section.id),
+    picking === null ? '' : `relative ${ring(picking, section.id)}`,
   ]
     .filter(Boolean)
     .join(' ');
 
   // The one place a style is written rather than a class: which picture it is only exists at
   // runtime, and Tailwind reads the source rather than the page.
-  const picture =
+  const picture: CSSProperties =
     section.background === 'image' && typeof section.mediaId === 'number'
       ? { backgroundImage: `url(${mediaFileUrl(section.mediaId)})` }
-      : undefined;
+      : {};
 
-  return (
+  // The section, given what makes it draggable while composing — nothing, for a visitor.
+  const draw = (sortable: SortableBinding | null) => (
     <section
       className={frame}
-      {...(picture === undefined ? {} : { style: picture })}
+      {...(sortable === null ? {} : { ref: sortable.setNodeRef })}
+      style={{ ...picture, ...sortable?.style }}
       {...(picking === null
         ? {}
         : {
             'data-pickable': 'section',
+            // What the editor scrolls to when the pick came from the outline (`data-picked`).
+            ...(picking.selected === section.id ? { 'data-picked': '' } : {}),
             // The bubble phase, while a block takes the capture phase and stops there: outer
             // handlers capture first, so a section that captured would always win and a block could
             // never be picked.
             onClick: () => picking.onPick('section', section.id),
+            onDoubleClick: () => picking.onOpen?.('section', section.id),
           })}
     >
+      {picking !== null && picking.selected === section.id ? (
+        <PickedBar
+          name={read(section.title) || section.key || t('content.editor.untitledSection')}
+          actions={picking.actions?.({ kind: 'section', id: section.id }) ?? []}
+          handle={sortable?.handle}
+          // Inside the section's own air, not astride its edge: the first section of a page sits
+          // against the preview's frame, which clips, and a bar astride that edge was cut in half
+          // (Carmine, 11 September 2026, with a screenshot).
+          placement="inside"
+        />
+      ) : null}
+
       <div className={`${WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 
-        {section.sections.map((nested) => (
-          <SectionView key={nested.id} section={nested} staff={staff} />
-        ))}
+        <Siblings sections={section.sections} staff={staff} />
       </div>
     </section>
   );
+
+  const Sortable = picking?.Sortable;
+  return Sortable === undefined ? draw(null) : <Sortable id={section.id}>{draw}</Sortable>;
 }
 
 function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
@@ -207,12 +278,28 @@ function Column({
   const picking = usePicking();
   const { t } = useTranslation();
 
+  // A column is a container too, so a grid of cards inside a third of the page measures the third
+  // and not the page: three cards in a narrow column were three slivers before.
   if (picking === null) {
-    return <div className={`flex flex-col gap-6 ${className}`}>{children}</div>;
+    return <div className={`@container flex flex-col gap-6 ${className}`}>{children}</div>;
   }
 
   const chosen = picking.target?.section === section.id && picking.target.column === column;
   const open = picking.accepts(section.id);
+
+  // A place to drop a dragged component before each block and after the last — the editor's own
+  // component, drawn here only so that the places exist where the blocks are (`Picking.DropZone`).
+  const DropZone = open ? picking.DropZone : undefined;
+  const slotted =
+    DropZone === undefined
+      ? children
+      : [
+          ...children.flatMap((child, index) => [
+            <DropZone key={`drop-${index}`} section={section.id} column={column} index={index} />,
+            child,
+          ]),
+          <DropZone key="drop-end" section={section.id} column={column} index={children.length} />,
+        ];
 
   return (
     <div
@@ -227,11 +314,11 @@ function Column({
         event.stopPropagation();
         picking.onPickColumn(section.id, column);
       }}
-      className={`flex min-h-16 flex-col gap-6 rounded-md outline-1 outline-offset-4 ${
+      className={`@container flex min-h-16 flex-col gap-6 rounded-md outline-1 outline-offset-4 ${
         chosen ? 'outline-primary outline-solid' : 'outline-border outline-dashed'
       } ${className}`}
     >
-      {children}
+      {slotted}
 
       {children.length === 0 && open ? (
         <button
@@ -255,6 +342,7 @@ function Column({
 
 export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boolean }) {
   const picking = usePicking();
+  const { t } = useTranslation();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
   const drawn =
@@ -272,23 +360,68 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
     return drawn;
   }
 
-  return (
+  const actions =
+    picking.selected === block.id ? (picking.actions?.({ kind: 'block', id: block.id }) ?? []) : [];
+
+  // Nothing written in it yet: a placeholder in its place, so a block just added is seen to be
+  // there. Gone the moment something is written (`Picking.blank`).
+  const blank = picking.blank?.(block) ?? null;
+  const shown =
+    blank === null ? (
+      drawn
+    ) : (
+      <div className="border-border text-muted-foreground flex items-center gap-2 rounded-md border border-dashed px-4 py-3 text-sm">
+        {registration === undefined ? null : <registration.icon aria-hidden className="size-4 shrink-0" />}
+        <span>{t('content.editor.blankBlock', { block: blank })}</span>
+      </div>
+    );
+
+  const draw = (draggable: SortableBinding | null) => (
     <div
       data-pickable="block"
-      className={`rounded-sm ${ring(picking, block.id)}`}
+      {...(picking.selected === block.id ? { 'data-picked': '' } : {})}
+      {...(draggable === null ? {} : { ref: draggable.setNodeRef, style: draggable.style })}
+      className={`relative rounded-sm ${ring(picking, block.id)}`}
+      // A double click opens the block: picked, and the cursor in its first field.
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        picking.onOpen?.('block', block.id);
+      }}
       // ⚠️ The **capture** phase, and both `preventDefault` and `stopPropagation`. A block is not
       // an inert rectangle: it holds links, buttons, a contact form. Capturing means a click lands
       // on the block rather than on what is inside it — so a call to action selects itself instead
       // of carrying whoever is composing out of the editor with unsaved changes — and stopping it
-      // there is what leaves the section pickable by its own space.
+      // there is what leaves the section pickable by its own space. The bar of commands drawn on a
+      // picked block is the one thing inside it that is meant to be clicked, and is let through.
       onClickCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest('[data-chrome]') !== null) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
         picking.onPick('block', block.id);
       }}
     >
-      {drawn}
+      {picking.selected === block.id ? (
+        <PickedBar
+          name={registration === undefined ? block.type : t(registration.editorLabelKey)}
+          actions={actions}
+          // A block nothing may be done to — one of a locked section — is not dragged either.
+          handle={actions.length === 0 ? undefined : draggable?.handle}
+        />
+      ) : null}
+      {shown}
     </div>
+  );
+
+  const Draggable = picking.BlockDraggable;
+  return Draggable === undefined ? (
+    draw(null)
+  ) : (
+    <Draggable id={block.id} type={block.type}>
+      {draw}
+    </Draggable>
   );
 }
 
@@ -297,6 +430,81 @@ function ring(picking: Picking, id: string): string {
   return picking.selected === id
     ? 'outline-primary outline-2 outline-offset-2'
     : 'hover:outline-border hover:outline-2 hover:outline-offset-2';
+}
+
+const ACTION_LABEL: Record<PickAction['key'], { label: string; Icon: typeof Trash2 }> = {
+  moveUp: { label: 'content.editor.moveUp', Icon: ArrowUp },
+  moveDown: { label: 'content.editor.moveDown', Icon: ArrowDown },
+  remove: { label: 'content.editor.remove', Icon: Trash2 },
+  duplicate: { label: 'content.editor.duplicate', Icon: Copy },
+  addRow: { label: 'content.editor.addRow', Icon: Plus },
+};
+
+/**
+ * The name of what is picked and what may be done to it, on the thing itself (Carmine, 11 September
+ * 2026). Over the top right corner, out of the flow: nothing on the page moves when it appears.
+ * The buttons stop their clicks where they are, so pressing "remove" does not also re-pick the
+ * section the block was in.
+ */
+function PickedBar({
+  name,
+  actions,
+  handle,
+  placement = 'astride',
+}: {
+  name: string;
+  actions: readonly PickAction[];
+  /** Where to grab a section to drag it; a block has none, it is dragged from the outline. */
+  handle?: SortableBinding['handle'] | undefined;
+  /** Astride the top edge, over the air around a block; or inside, for a section that may have no air above it. */
+  placement?: 'astride' | 'inside';
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      data-chrome
+      className={`bg-body text-foreground border-primary absolute right-2 z-10 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
+        placement === 'inside' ? 'top-2' : '-top-3'
+      }`}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {handle === undefined ? null : (
+        <button
+          type="button"
+          // Attached from a callback and not handed over as the ref itself: handed over, the lint
+          // takes the whole handle for a ref and refuses to read its listeners while drawing.
+          ref={(element) => handle.attach(element)}
+          aria-label={t('content.editor.reorder')}
+          title={t('content.editor.reorder')}
+          className="text-muted-foreground cursor-grab touch-none"
+          {...handle.listeners}
+        >
+          <GripVertical aria-hidden className="size-3.5" />
+        </button>
+      )}
+      <span className="text-primary font-medium">{name}</span>
+      {actions.map(({ key, run }) => {
+        const { label, Icon } = ACTION_LABEL[key];
+
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-label={t(label)}
+            title={t(label)}
+            onClick={(event) => {
+              event.stopPropagation();
+              run();
+            }}
+            className="hover:text-primary rounded-sm p-0.5"
+          >
+            <Icon aria-hidden className="size-3.5" />
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 /**

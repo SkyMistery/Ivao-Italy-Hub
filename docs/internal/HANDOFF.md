@@ -51,14 +51,30 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** **v0.60** (11 set: **G15, l'editor che risponde**, decisa e da costruire prima di G14; v0.59
+**Piano:** **v0.63** (11 set, notte: sette comodità dell'editor — lingua dell'anteprima, doppio
+clic, tasti, scorrimento, duplica sezione, upload dal selettore, bozza | pubblicato — e la
+deduplica dei file caricati **da decidere**; v0.62 quattro livelli di sezioni, il selettore di file
+porta alla libreria, la targhetta dentro la sezione e i due sfondi con un glifo; v0.61 i comandi
+anche sull'oggetto nella pagina, l'outline per colonne;
+v0.60 **G15, l'editor che risponde**, decisa e costruita in giornata prima di G14; v0.59
 le due dashboard personali si progettano per prime in M2; v0.58 i sette sfondi di sezione, §16.C
 riaperto e cambiato). **Design M1:** v1.15
 (`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
 G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è aperta** (§28) e raccoglie le rifiniture del
 collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
-**Test, misurati l'11 settembre sul commit `40d81a7`:** **472 .NET** verdi (306 unit + 166
-integrazione) + **324 Vitest** + **56 smoke Playwright** + **13 del giro pieno** (`pnpm e2e:full`).
+**Test, misurati l'11 settembre su `m1/g15-editor-live` (le tre sessioni di G15):** **473 .NET**
+(306 unit + 167 integrazione — la sessione 2 ne aggiunge uno sull'audit dell'autosalvataggio; ⚠️
+della suite di integrazione sono stati eseguiti in locale solo i due test dell'audit, il resto lo
+verifica la CI) + **352 Vitest** + **56 smoke Playwright** + **17 del giro pieno** (`pnpm e2e:full`).
+⚠️ Nel giro pieno compaiono a volte, nel log del server, errori di **connessione al DB** su
+`/api/blocks/data/*` (500 su `newsList` e `linkList`) senza che nessun test cada: visti due volte l'11
+settembre, la prima al primo giro della giornata. Non indagati; da guardare se un test dei blocchi
+Data dovesse cadere in CI.
+⚠️ Il banco (`ivaohub_e2e`) **non si azzera fra un giro e l'altro**: l'11 settembre 105 template
+lasciati dai giri della giornata avevano fatto cadere «Section page» fuori dalla prima pagina del
+selettore, e due test della round sono caduti senza che il codice c'entrasse. Ora i test dei template
+si riprendono le righe che creano (`deleteContent` in `bench.ts`); se ricapita, contare e poi
+`DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` nel container MariaDB.
 Nessuno skippato. ⚠️ Il C# **è cambiato** dal 10 settembre (icona e intestazioni del menu, marchio e
 favicon della divisione, i tre fondi scuri nel walker): l'avviso «dall'8 settembre non è cambiata una
 riga di C#» che stava qui non vale più.
@@ -104,12 +120,29 @@ com'è fatto l'hub oggi:
    cinque tentativi, il server di prova deve fare il fallback SPA, e un grep su un bundle minificato
    non è una verifica.
 
-**Dopo il tag, G15 — l'editor che risponde** (`decisions/2026-09-11-l-editor-che-risponde.md`,
-piano 0.60, `04-piano-implementazione-m1.md` fase G15), **decisa l'11 settembre e messa prima di G14**.
-Tre sessioni: (1) annulla/ripeti con coalescenza, proprietà applicate mentre si scrive, anteprima
-mobile vera con le container query; (2) autosalvataggio a dieci secondi con audit `autosaved` senza
-corpo — la versione della riga esce dal form dei metadati; (3) trascinamento dalla barra fra due
-blocchi. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+**G15 — l'editor che risponde** (`decisions/2026-09-11-l-editor-che-risponde.md`, piano 0.60,
+`04-piano-implementazione-m1.md` fase G15), **decisa l'11 settembre e messa prima di G14**. Tre
+sessioni: **(1) fatta lo stesso giorno**, sul branch `m1/g15-editor-live` sopra la PR #57 —
+annulla/ripeti con coalescenza e da tastiera, proprietà applicate mentre si scrive (via il pulsante
+«Apply»; resta solo «Fissa la chiave» per la `key` di un template), anteprima mobile vera con le
+container query, `{{department}}` nel percorso e il suggerimento della barra su una sezione
+bloccata; **(2) fatta lo stesso giorno**: autosalvataggio a dieci secondi e all'uscita, riga
+`autosaved` senza corpo, la versione della riga fuori dal form dei metadati, «Publish» che prima
+salva; **(3) fatta lo stesso giorno**: un componente si trascina dalla barra fra due blocchi, con
+gli slot disegnati dal renderer attraverso il contesto di picking e dnd-kit che resta fuori da
+`blocks/`. **G15 è tutta sulla PR #58**, in tre commit, e ha chiuso il punto 3 della nota del 10
+settembre. **Poi un quarto commit, la sera** (piano 0.61): Carmine, provandola, ha chiesto di
+aggiungere e togliere sezioni e togliere un blocco **dalla pagina**, e di vedere nell'outline in
+quale colonna sta un blocco, e poi di **spostare le sezioni dalla pagina** — con le frecce e, «a mano
+nel senso di trascinabili», col grip sulla targhetta. La targhetta sull'oggetto scelto porta i comandi
+che il template permette, frecce e grip compresi; l'outline elenca una colonna alla volta, le frecce
+muovono un blocco dentro la colonna e una riga fra le righe della sua sezione. Il renderer continua a
+non importare dnd-kit: `Sortable` e `SortableGroup` arrivano dal contesto di picking come gli slot,
+e così `BlockDraggable`, con cui **un blocco si trascina su qualunque slot della pagina, anche di
+un'altra sezione** (`moveBlockTo`); da tastiera lo fa il selettore «Sezione» nelle proprietà del
+blocco. Poi quattro livelli di sezioni, il link alla libreria dal selettore di file, la ricerca nella
+barra dei componenti, le barre di scorrimento sottili, e il **segnaposto di un blocco vuoto**
+(`isBlank` letto dallo schema, `Picking.blank`) (piano 0.62). Dopo il merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 

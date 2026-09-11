@@ -60,7 +60,9 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
         {/* ⚠️ Every screen of the back office in the one-line frame, said here once rather than on
             thirty screens (Carmine, 11 September 2026), and with less room above it: `py-8` was a
             band the width of the window above every title. */}
-        <main className="flex min-w-0 flex-1 flex-col gap-6 px-6 py-5">
+        {/* `@container` for the same reason the public `<main>` has one (`Chrome.tsx`): a block drawn
+            outside a page — the ui-kit gallery — measures this column. */}
+        <main className="@container flex min-w-0 flex-1 flex-col gap-6 px-6 py-5">
           <CompactPageShells>
             <Outlet />
           </CompactPageShells>

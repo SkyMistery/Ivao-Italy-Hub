@@ -6,6 +6,7 @@ import type { ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageShell, useNotice } from '../../shared/ui';
 import { categoriesOfKindQuery } from '../categories/queries';
+import { useUploadMedia } from '../media/mutations';
 import { mediaPickerQuery } from '../media/queries';
 
 import { ContentEditor } from './ContentEditor';
@@ -76,6 +77,9 @@ export function ContentFormScreen({
   const update = useUpdateContent(Number(id));
   const remove = useDeleteContent();
   const publish = usePublishContent(Number(id));
+  // Into this department's library, from the picker of any field of this screen: the same call
+  // the library screen makes.
+  const upload = useUploadMedia();
 
   // The shelves this department has for this kind. A page has none, so nothing is asked for one:
   // the select only exists on the kinds whose schema declares it.
@@ -111,7 +115,13 @@ export function ContentFormScreen({
       {...(note === undefined ? {} : { note })}
       breadcrumb={[
         { label: department },
-        { label: t(`${config.titles}.title`), to: breadcrumbTo },
+        // The department goes in for the one kind whose title is the department's name — the
+        // dashboard — and is ignored by the three whose title is a word. Without it the crumb read
+        // "{{department}}", literally.
+        {
+          label: t(`${config.titles}.title`, { department: t(`departments.${department}`) }),
+          to: breadcrumbTo,
+        },
         { label: title },
       ]}
     >
@@ -126,14 +136,16 @@ export function ContentFormScreen({
           defaultLocale: bootstrap.division.defaultLocale,
           timezone: bootstrap.division.timezone,
         }}
-        // The library of this department: a row picks its pictures out of its own files.
+        // The library of this department: a row picks its pictures out of its own files, and may
+        // put a new one there from the picker.
         mediaLibrary={mediaPickerQuery(department)}
+        uploadMedia={async (file) => (await upload.mutateAsync({ file, ownerDepartment: department })).id}
         // Asked of the template's department and not of this page's: a page of one department can
         // be made from the template of another (design M1 §9.4).
         canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}
         busy={create.isPending || update.isPending || publish.isPending || remove.isPending}
         publishProblems={problems.data}
-        onSave={async (values: ContentFormValues, body) => {
+        onSave={async (values: ContentFormValues, body, options) => {
           if (isNew) {
             const created = await create.mutateAsync({ values, body });
             await onCreated(created.id);
@@ -141,8 +153,13 @@ export function ContentFormScreen({
             return created;
           }
 
-          const saved = await update.mutateAsync({ values, body });
-          notice({ tone: 'success', title: t('content.editor.saved') });
+          const autosave = options?.autosave === true;
+          const saved = await update.mutateAsync({ values, body, autosave });
+          // A save the editor made by itself says so in its own line under the toolbar, not in a
+          // toast every ten seconds.
+          if (!autosave) {
+            notice({ tone: 'success', title: t('content.editor.saved') });
+          }
           askAgain();
           return saved;
         }}

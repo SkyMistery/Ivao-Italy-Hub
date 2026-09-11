@@ -55,6 +55,8 @@ interface FormEnvironment {
   labels: string;
   /** The page a media field chooses from. A media field without one throws, and says why. */
   mediaLibrary?: MediaLibraryQuery | undefined;
+  /** Uploads into that library and answers the identifier, when the screen allows it. */
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
   /** The two facts about the division a media field and an instant need. */
   division?: { defaultLocale: string; timezone: string } | undefined;
   /**
@@ -82,11 +84,13 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   locales,
   labels,
   onSubmit,
+  onChange,
   submitLabel,
   secondaryAction,
   id,
   actionsElsewhere = false,
   mediaLibrary,
+  uploadMedia,
   division,
   onSuggestSearch,
 }: {
@@ -96,9 +100,20 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   locales: readonly string[];
   /** i18n prefix for labels, for example `links`. */
   labels: string;
-  /** Rejecting with an `ApiError` is how the server's refusal reaches the fields. */
-  onSubmit: (values: TValues) => Promise<unknown>;
-  submitLabel: string;
+  /**
+   * Rejecting with an `ApiError` is how the server's refusal reaches the fields. Absent on a form
+   * that only applies as it is written (`onChange`): such a form has no button and nothing to send.
+   */
+  onSubmit?: ((values: TValues) => Promise<unknown>) | undefined;
+  /**
+   * The seventh extension of the generator (G15, 11 September 2026): a form that **applies while it
+   * is written**. Called a moment after the last keystroke with the values, and only when they pass
+   * the schema — a required field emptied halfway through a sentence applies nothing, shows its
+   * error, and the thing being edited stays as it was until the next valid value. The properties of
+   * a block and of a section are edited this way; the row of an entity is still sent with a button.
+   */
+  onChange?: ((values: TValues) => void) | undefined;
+  submitLabel?: string | undefined;
   secondaryAction?: React.ReactNode;
   /**
    * The `id` of the `<form>`, so that a button anywhere else on the screen can submit it with
@@ -117,6 +132,12 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
    * cannot build it: which department's library to show is a fact of the screen, not of the schema.
    */
   mediaLibrary?: MediaLibraryQuery;
+  /**
+   * Uploads a file into that library and answers its identifier (Carmine, 11 September 2026): the
+   * picker then offers "upload" beside "choose", and what was uploaded is chosen. It is the same
+   * call the library screen makes — one way in, offered from one more place.
+   */
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
   /**
    * The default language and the time zone of the division. Only two kinds of field need them — a
    * media field, to announce a thumbnail, and an instant, to say what a UTC time is locally — so a
@@ -138,14 +159,22 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: defaults as never,
+    // A form that applies as it is written says what is wrong as it is written: an error that only
+    // showed on a submit would never show at all.
+    mode: onChange === undefined ? 'onSubmit' : 'onChange',
   });
   const problem = useProblemDetails(form);
   const fields = readFields(schema);
-  const env: FormEnvironment = { locales, labels, mediaLibrary, division, onSuggestSearch };
+  const env: FormEnvironment = { locales, labels, mediaLibrary, uploadMedia, division, onSuggestSearch };
 
   useProposedSlugs(form, fields, division?.defaultLocale);
+  useLiveValues(form, schema, onChange);
 
   const submit = form.handleSubmit(async (values) => {
+    if (onSubmit === undefined) {
+      return;
+    }
+
     problem.reset();
     try {
       await onSubmit(values);
@@ -170,7 +199,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
           ))}
         </div>
 
-        {actionsElsewhere ? (
+        {onSubmit === undefined ? null : actionsElsewhere ? (
           // The hint stays: it is what tells somebody reading with a screen reader that Enter saves,
           // and that is true whichever corner of the screen the button is drawn in.
           <span className="sr-only">{t('form.submitHint')}</span>
@@ -186,6 +215,53 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
       </form>
     </FormProvider>
   );
+}
+
+/**
+ * How long after the last keystroke a live form applies: long enough not to redraw the page at
+ * every letter, short enough to read as "while I type".
+ */
+const LIVE_DELAY = 150;
+
+/**
+ * What makes a form live (`onChange` above). One subscription for as long as the form exists —
+ * not one per render: the screen hands a fresh lambda every time it draws, and resubscribing on
+ * each would throw away the timer of the keystroke it was in the middle of.
+ */
+function useLiveValues<TValues extends Record<string, unknown>>(
+  form: UseFormReturn<TValues, unknown, TValues>,
+  schema: z.ZodType<TValues, TValues>,
+  onChange: ((values: TValues) => void) | undefined,
+): void {
+  const latest = useRef({ schema, onChange });
+
+  useEffect(() => {
+    latest.current = { schema, onChange };
+  });
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const subscription = form.watch((_values, { name }) => {
+      // `name` is the field somebody changed. A reset reports none, and is not an edit.
+      if (name === undefined || latest.current.onChange === undefined) {
+        return;
+      }
+
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const parsed = latest.current.schema.safeParse(form.getValues());
+        if (parsed.success) {
+          latest.current.onChange?.(parsed.data);
+        }
+      }, LIVE_DELAY);
+    });
+
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
+  }, [form]);
 }
 
 /**
@@ -507,6 +583,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
             render={({ field }) => (
               <MediaPicker
                 query={library}
+                onUpload={env.uploadMedia}
                 value={typeof field.value === 'number' ? field.value : null}
                 // Undefined and not null when nothing is chosen: an optional field that is absent
                 // is absent, and a null would be a value the contract does not have.

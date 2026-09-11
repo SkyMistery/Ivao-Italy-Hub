@@ -23,9 +23,12 @@ import type { SectionRule } from './templateRules';
  * hand in this file — a block's properties are drawn by `SchemaForm` from the schema the block
  * registered, which is the same generator the entity screens use (design M0 §7.5).
  *
+ * Since G15 (11 September 2026) the form **applies as it is written**: the block on the page
+ * changes a moment after the last keystroke, and there is no "apply" button any more. What used to
+ * be write, press, look, correct, press is now write and look — which is what an editor is for.
+ *
  * What is *not* a property sits outside the form, because it is not part of `props`: whether a data
- * block shows a capture or asks the provider, and which column it stands in. Both are the envelope,
- * and both take effect straight away rather than on a submit.
+ * block shows a capture or asks the provider, and which column it stands in. Both are the envelope.
  */
 
 export function SectionProperties({
@@ -35,6 +38,7 @@ export function SectionProperties({
   locales,
   division,
   mediaLibrary,
+  uploadMedia,
   onApply,
   onFrame,
 }: {
@@ -50,10 +54,18 @@ export function SectionProperties({
   division: { defaultLocale: string; timezone: string };
   /** The library the picture behind a section is chosen from — this department's. */
   mediaLibrary: MediaLibraryQuery;
+  /** Uploads into that library and answers the identifier; the picker offers it beside "choose". */
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  /**
+   * The settings, applied as they are written — with one exception, the `key` of a template's
+   * section, which comes through here only when the button under the form is pressed. A key is
+   * written once and then fixed (decision `2026-09-07-scrivere-un-template.md`), so it must not be
+   * fixed at the first pause in typing it: "in" would be the key of a section meant to be "intro".
+   */
   onApply: (values: SectionFormValues) => void;
   /**
-   * The two the strip changes, applied at once and without a button: they are chosen while looking
-   * at the page, not written and read back (`SectionFrame`).
+   * The two the strip changes, chosen while looking at the page rather than written and read back
+   * (`SectionFrame`).
    */
   onFrame: (patch: { background?: Background; layout?: Layout }) => void;
 }) {
@@ -115,11 +127,20 @@ export function SectionProperties({
         labels="content.section"
         division={division}
         mediaLibrary={mediaLibrary}
-        onSubmit={(values) => {
-          onApply(values);
-          return Promise.resolve();
-        }}
-        submitLabel={t('content.editor.applySection')}
+        uploadMedia={uploadMedia}
+        // Everything but the key, as it is written. The key is emptied rather than dropped so the
+        // values keep their shape, and an empty key is what `onApply` reads as "none".
+        onChange={(values) => onApply({ ...values, key: '' })}
+        // The key, and only while there is one to write: the button goes with the field.
+        {...(isTemplate && !named
+          ? {
+              onSubmit: (values: SectionFormValues) => {
+                onApply(values);
+                return Promise.resolve();
+              },
+              submitLabel: t('content.editor.setKey'),
+            }
+          : {})}
       />
     </div>
   );
@@ -128,14 +149,23 @@ export function SectionProperties({
 export function BlockProperties({
   block,
   section,
+  sections,
   locales,
   division,
   mediaLibrary,
+  uploadMedia,
   onApplyProps,
   onEnvelope,
+  onMoveTo,
 }: {
   block: BlockEnvelope;
   section: SectionEnvelope;
+  /**
+   * Every section of the page a block may be moved into, named as the outline names them. The
+   * keyboard's road between sections (Carmine, 11 September 2026): dragging on the page is the
+   * pointer's, and a select here is the same move without one.
+   */
+  sections: readonly { value: string; label: string }[];
   locales: readonly string[];
   /** What an instant needs to say where the division is, and a media field to name its language. */
   division: { defaultLocale: string; timezone: string };
@@ -144,8 +174,11 @@ export function BlockProperties({
    * so from G3 on this is not an occasional prop: without it those forms throw, and say why.
    */
   mediaLibrary: MediaLibraryQuery;
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
   onApplyProps: (props: Record<string, unknown>) => void;
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
+  /** Moves the block to the end of the first column of that section. */
+  onMoveTo: (sectionId: string) => void;
 }) {
   const { t } = useTranslation();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
@@ -158,6 +191,21 @@ export function BlockProperties({
 
   return (
     <div className="flex flex-col gap-6">
+      {sections.length > 1 ? (
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="section">{t('content.editor.section')}</Label>
+          <Select
+            value={section.id}
+            onValueChange={(sectionId) => {
+              if (sectionId !== section.id) {
+                onMoveTo(sectionId);
+              }
+            }}
+            items={[...sections]}
+          />
+        </div>
+      ) : null}
+
       {registration.kind === 'Data' && registration.alwaysLive !== true ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="renderMode">{t('content.editor.renderMode')}</Label>
@@ -194,15 +242,12 @@ export function BlockProperties({
         labels={`blocks.${block.type}`}
         division={division}
         mediaLibrary={mediaLibrary}
-        onSubmit={(values) => {
-          // What is stored is what was written. An optional translated property left empty in every
-          // language would otherwise travel as `{ en: "", it: "" }`, and publication — which reads
-          // the body without knowing what a block means — would read that as a translation hole and
-          // refuse the page (`writtenValues`).
-          onApplyProps(writtenValues(registration.schema, values));
-          return Promise.resolve();
-        }}
-        submitLabel={t('content.editor.applyBlock')}
+        uploadMedia={uploadMedia}
+        // What is stored is what was written. An optional translated property left empty in every
+        // language would otherwise travel as `{ en: "", it: "" }`, and publication — which reads
+        // the body without knowing what a block means — would read that as a translation hole and
+        // refuse the page (`writtenValues`).
+        onChange={(values) => onApplyProps(writtenValues(registration.schema, values))}
       />
     </div>
   );

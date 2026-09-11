@@ -67,6 +67,7 @@ function draw(body: Body, rules: ReadonlyMap<string, SectionRule> = noRules) {
       onReorderSections={vi.fn()}
       onReorderBlocks={vi.fn()}
       onDuplicateBlock={vi.fn()}
+      onDuplicateSection={vi.fn()}
       onRemoveSection={vi.fn()}
       onRemoveBlock={vi.fn()}
     />,

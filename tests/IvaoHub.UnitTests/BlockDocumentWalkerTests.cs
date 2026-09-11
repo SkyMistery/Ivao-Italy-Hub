@@ -209,14 +209,16 @@ public sealed class BlockDocumentWalkerTests
         {
           "schemaVersion": 1,
           "sections": [ { "id": "s", "sections": [ { "id": "s", "sections": [ { "id": "s3",
-            "sections": [ { "id": "s4" } ] } ] } ] } ]
+            "sections": [ { "id": "s4", "sections": [ { "id": "s5" } ] } ] } ] } ] } ]
         }
         """);
 
         var result = Walker.ValidateEnvelope(body);
 
         Assert.Contains(result.Errors, error => error.Key == "errors.body.idDuplicated");
-        Assert.Contains(result.Errors, error => error is { Key: "errors.body.tooDeep", Path: "sections[0].sections[0].sections[0].sections[0]" });
+        // Four levels are allowed since 11 September 2026; the fifth is the one refused.
+        Assert.DoesNotContain(result.Errors, error => error is { Key: "errors.body.tooDeep", Path: "sections[0].sections[0].sections[0].sections[0]" });
+        Assert.Contains(result.Errors, error => error is { Key: "errors.body.tooDeep", Path: "sections[0].sections[0].sections[0].sections[0].sections[0]" });
     }
 
     [Fact]

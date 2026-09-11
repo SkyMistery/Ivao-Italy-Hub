@@ -1,28 +1,56 @@
+import {
+  DndContext,
+  DragOverlay,
+  MeasuringStrategy,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Eye, List, Send, Undo2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useBlocker } from '@tanstack/react-router';
+import { ChevronLeft, Eye, List, Redo2, Send, Undo2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import { columnsOf, readBody, PickingContext, type Body } from '../../blocks';
+import {
+  allSections,
+  columnsOf,
+  readBody,
+  PickingContext,
+  type BlockEnvelope,
+  type Body,
+} from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
-import { SchemaForm, writtenValues, type ChoiceOption } from '../../shared/forms';
+import { ApiError } from '../../shared/api/problem';
+import { SchemaForm, isBlank, writtenValues, type ChoiceOption } from '../../shared/forms';
+import { PreviewLocaleContext } from '../../shared/i18n/previewLocale';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { useMoment } from '../../shared/i18n/useMoment';
 import type { MediaLibraryQuery } from '../../shared/ui';
 import { ConfirmDialog, PageActions, SectionHeader } from '../../shared/ui';
 
 import { BlockPalette } from './BlockPalette';
 import { BlockProperties, SectionProperties } from './BlockProperties';
+import { BlockDraggable } from './BlockDraggable';
+import { DropZone, type BlockDrag, type PaletteDrag, type SlotDrop } from './DropZone';
+import { SectionSortable, SectionSortableGroup, type SectionDrag } from './SectionSortable';
 import {
   addBlock,
   addSection,
   clampColumns,
   defaultProps,
+  depthOf,
   duplicateBlock,
+  duplicateSection,
   findBlock,
   findSection,
   moveBlock,
+  moveBlockTo,
   moveSection,
   removeBlock,
   removeSection,
@@ -32,17 +60,19 @@ import {
   updateSection,
 } from './body';
 import { emptyContent, toFormValues } from './mutations';
-import { PreviewFrame } from './PreviewFrame';
+import { PreviewFrame, type PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
   contentQuery,
+  publicContentQuery,
   type ContentDetailDto,
   type ContentKind,
   type ContentPublishProblemsDto,
 } from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
-import { SectionTree, type Selection } from './SectionTree';
-import { useBodyHistory } from './useBodyHistory';
+import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
+import { useAutosave, type SaveOutcome } from './useAutosave';
+import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
 import { applyDifference, templateDiff } from './templateDiff';
 import { LockedByTemplate, TemplateDifferences } from './TemplatePanel';
 import { NO_RULES, ruleFor, templateRules } from './templateRules';
@@ -53,15 +83,19 @@ import { NO_RULES, ruleFor, templateRules } from './templateRules';
  * gets — because "what will this look like" and "what does this look like" must not be two pieces
  * of code that can disagree.
  *
- * The draft lives in state and is saved whole. Publishing is a separate action on the *saved* row,
- * and is refused while there are unsaved changes: publishing what is on screen rather than what is
- * stored would be a page that says something nobody saved.
+ * The draft lives in state and is saved whole — by a press on "save draft", and since G15 by itself
+ * after a pause and on the way out (`useAutosave`). Publishing is a separate action on the *saved*
+ * row: what is on screen is stored first, then published, so a page never says something nobody
+ * saved.
  */
 /**
  * The metadata form's own `id`, so that `Save draft` can live in the toolbar at the top while the
  * form itself lives in the panel on the right (`SchemaForm`'s `id` and `actionsElsewhere`).
  */
 const METADATA_FORM = 'content-metadata';
+
+/** The panel on the right, by id: where a double click on the page sends the cursor. */
+const PROPERTIES_PANEL = 'content-properties';
 
 export function ContentEditor({
   content,
@@ -72,6 +106,7 @@ export function ContentEditor({
   locales,
   division,
   mediaLibrary,
+  uploadMedia,
   canManageTemplates,
   onSave,
   onPublish,
@@ -98,12 +133,19 @@ export function ContentEditor({
   /** The library the picture of `seo` is chosen from — this department's. */
   mediaLibrary: MediaLibraryQuery;
   /**
+   * Uploads a file into that same library and answers its identifier, for the picker to offer
+   * "upload" beside "choose" (Carmine, 11 September 2026: "yes, if it lands in the library of the
+   * department the document belongs to"). The same call the library screen makes.
+   */
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  /**
    * Whether this member may change a template of that department. Asked as a question rather than
    * handed the bootstrap, because the answer is about the template's department and not this page's
    * — and which department that is, only the loaded template knows.
    */
   canManageTemplates: (department: Department) => boolean;
-  onSave: (values: ContentFormValues, body: Body) => Promise<unknown>;
+  /** `autosave` marks a save the editor made by itself: no toast, and audited without the body. */
+  onSave: (values: ContentFormValues, body: Body, options?: { autosave?: boolean }) => Promise<unknown>;
   /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
   onPublish: (() => void) | null;
   onDelete: (() => void) | null;
@@ -114,13 +156,49 @@ export function ContentEditor({
   publishProblems: ContentPublishProblemsDto | undefined;
   busy: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const read = useLocalized();
+  const moment = useMoment();
 
   // The body, and the way back from the last thing that happened to it. A section moved by mistake
   // was one of the frictions the hand copy of `/about` recorded (HANDOFF §27).
   const history = useBodyHistory(readBody(content?.body));
   const body = history.body;
+
+  // The language the page is drawn in, and the tab every translated field opens on: the site's to
+  // begin with, changed from the frame (`PreviewLocaleContext`). Before this the form opened on
+  // the division's first language while the page showed the site's, and what was typed in one did
+  // not show in the other.
+  const [previewLocale, setPreviewLocale] = useState<string>(
+    () => (locales.includes(i18n.language) ? i18n.language : locales[0]) ?? i18n.language,
+  );
+
+  // The draft, or what visitors read now. Asked for only when asked to be shown; a row that does
+  // not exist yet has nothing published to show.
+  const [comparing, setComparing] = useState(false);
+  const publishedQuery = useQuery({
+    ...publicContentQuery(kind, content?.slug ?? ''),
+    enabled: content !== null && comparing,
+    retry: false,
+  });
+  const published: PublishedView | undefined =
+    content === null
+      ? undefined
+      : publishedQuery.data !== undefined
+        ? { state: 'ready', body: readBody(publishedQuery.data.body) }
+        : publishedQuery.isError
+          ? { state: 'none' }
+          : { state: 'loading' };
+
+  // The row's own fields as the form last had them valid — what a save made by itself sends. The
+  // form still owns the fields; this is its shadow, kept because a save after a pause cannot press
+  // a submit button. A value the schema refuses never arrives here, so an address emptied halfway
+  // through travels as the last one that was whole (`SchemaForm.onChange`).
+  const [metadata, setMetadata] = useState<ContentFormValues>(() =>
+    content === null
+      ? emptyContent(department, locales, kind, startsAsTemplate)
+      : toFormValues(content, locales),
+  );
 
   const [selection, setSelection] = useState<Selection | null>(null);
   // The column an empty "add here" on the page chose. Only meaningful while its section is the one
@@ -132,7 +210,6 @@ export function ContentEditor({
   // decided on 9 September and then reached only by pressing a button, which made the road that was
   // chosen the one nobody took. The outline is one press away and is still the keyboard road.
   const [preview, setPreview] = useState(true);
-  const [unsaved, setUnsaved] = useState(false);
 
   // What the template still says about this page: which sections are fixed, which are locked, and
   // which blocks may go in them. The page itself does not carry any of it (see `templateRules`).
@@ -148,10 +225,136 @@ export function ContentEditor({
   // read out, and one line at a time is acted on (design M1 §9.1).
   const differences = templateDiff(body, templateBody);
 
-  const change = (next: Body) => {
-    history.change(next);
-    setUnsaved(true);
+  const change = (next: Body, options?: { coalesce?: string }) => {
+    history.change(next, options);
   };
+
+  // The way back, and forth. What was selected may not exist in the body that comes back — a block
+  // added and then undone — and then the page's own properties are what is left to show. When it
+  // does exist it stays selected, so undoing a word typed into a block does not also close it.
+  const restore = (restored: Body | null): boolean => {
+    if (restored === null) {
+      return false;
+    }
+
+    if (
+      selection !== null &&
+      (selection.kind === 'block'
+        ? findBlock(restored, selection.id)
+        : findSection(restored, selection.id)) === undefined
+    ) {
+      setSelection(null);
+    }
+
+    return true;
+  };
+
+  const undo = () => restore(history.undo());
+  const redo = () => restore(history.redo());
+  useHistoryShortcuts(undo, redo);
+
+  // A double click on the page: picked, and the cursor in the first field of the panel — the
+  // first one that is *shown*, since the page's own form is always there and merely hidden. When
+  // the pick changes, the panel is drawn first and the cursor follows (the ref, read after the
+  // render); when it does not, the panel is already there and the cursor goes at once.
+  const focusWanted = useRef(false);
+  const focusFirstField = () => {
+    const fields = document
+      .getElementById(PROPERTIES_PANEL)
+      ?.querySelectorAll<HTMLElement>('input:not([type="hidden"]), textarea, [role="combobox"]');
+    [...(fields ?? [])].find((field) => field.offsetParent !== null)?.focus();
+  };
+  useEffect(() => {
+    if (focusWanted.current) {
+      focusWanted.current = false;
+      focusFirstField();
+    }
+  }, [selection]);
+
+  // What is picked, brought into view on the page: a pick made in the outline, or a block just
+  // added at the bottom of a long section, would otherwise be picked off screen. `nearest` moves
+  // nothing when it is already in view.
+  useEffect(() => {
+    if (!preview) {
+      return;
+    }
+
+    const picked = document.querySelector('[data-picked]');
+    if (picked !== null && typeof picked.scrollIntoView === 'function') {
+      picked.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selection, preview]);
+
+  // ⚠️ The version of the row is the **row's**, read at the moment of saving, and not a field of the
+  // form any more. It used to be, and the form was remounted at every save to refresh it — which a
+  // save made by itself would do under somebody's fingers, taking the cursor out of the title. A
+  // row that does not exist yet has the version a new row carries, from the form.
+  const withVersion = (values: ContentFormValues): ContentFormValues => ({
+    ...values,
+    rowVersion: content?.rowVersion ?? values.rowVersion,
+  });
+
+  // The draft, as one string: what the autosave compares, so that a change undone before the pause
+  // ends is not a save.
+  const snapshot = useMemo(() => JSON.stringify({ metadata, body }), [metadata, body]);
+
+  const autosave = useAutosave({
+    // Never before the first press on "save draft": a row that does not exist is not saved by
+    // itself, or every "new page" somebody opened and left would be a page.
+    enabled: content !== null,
+    snapshot,
+    busy,
+    save: async (): Promise<SaveOutcome> => {
+      try {
+        await onSave(withVersion(metadata), body, { autosave: true });
+        return 'saved';
+      } catch (error) {
+        // 409 is somebody else's save, and the one refusal that must not be retried.
+        return error instanceof ApiError && error.status === 409 ? 'conflict' : 'failed';
+      }
+    },
+  });
+
+  // On the way out: stored, or asked. The in-application road is the router's blocker; the tab
+  // being closed is the browser's own question, which is all a page is allowed to do there.
+  const leaving = useRef({ autosave, existing: content !== null });
+  useEffect(() => {
+    leaving.current = { autosave, existing: content !== null };
+  });
+
+  useBlocker({
+    shouldBlockFn: async () => {
+      const { autosave: draft, existing } = leaving.current;
+      if (!draft.dirty) {
+        return false;
+      }
+
+      if (existing && !draft.stopped && (await draft.flush())) {
+        return false;
+      }
+
+      // A new row, or a save that could not be made: the person decides, in the browser's own
+      // dialog — the one thing a `beforeunload` can do too, so the two roads out ask the same way.
+      return !window.confirm(t('content.editor.autosave.leave'));
+    },
+    enableBeforeUnload: () => leaving.current.autosave.dirty,
+  });
+
+  // What the line under the toolbar says about the draft. One sentence, in order of what matters:
+  // a stop nobody can miss, then what is happening, then what is pending, then when it was stored.
+  const draftStatus = autosave.stopped
+    ? t('content.editor.autosave.stopped')
+    : autosave.saving
+      ? t('content.editor.autosave.saving')
+      : autosave.failed
+        ? t('content.editor.autosave.failed')
+        : autosave.dirty
+          ? t(content === null ? 'content.editor.autosave.unsavedNew' : 'content.editor.autosave.unsaved')
+          : autosave.savedAt === null
+            ? null
+            : t('content.editor.autosave.saved', {
+                time: moment(autosave.savedAt.toISOString(), { date: false, timeZone: division.timezone }),
+              });
 
   const section = selection?.kind === 'section' ? findSection(body, selection.id) : undefined;
   const block = selection?.kind === 'block' ? findBlock(body, selection.id) : undefined;
@@ -159,7 +362,7 @@ export function ContentEditor({
   // Adding a block, written once: the palette on the left and the one inside the outline do the
   // very same thing, and a block added from either has to start out identical -- same blank
   // properties, same render mode. Two copies of this would be two ways of being born.
-  const addBlockTo = (sectionId: string, type: string, column = 0) => {
+  const addBlockTo = (sectionId: string, type: string, column = 0, at?: number) => {
     const registration = registry.blocks.find((candidate) => candidate.type === type);
     if (registration === undefined) {
       return;
@@ -177,11 +380,65 @@ export function ContentEditor({
       // only means anything once the page is published.
       registration.kind === 'Data' ? 'live' : null,
       column,
+      at,
     );
 
     change(added.body);
     setSelection({ kind: 'block', id: added.id });
   };
+
+  // Dragging a component from the palette onto the page (G15, session 3). One context around the
+  // palette and the page; the outline, when it is in the middle, has a context of its own for its
+  // rows, and the palette entries are not draggable then — so the two never handle one gesture.
+  // A drag has to start further than a click, or a click on the palette would be a lottery.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [dragging, setDragging] = useState<PaletteDrag | BlockDrag | null>(null);
+
+  // Three things are dragged in this one context, and each only ever lands on its own kind: a
+  // component from the palette and a block of the page on a slot, a section on a section. Told
+  // apart here, so that a block carried over a section is not "over" it, and a section carried
+  // over a slot neither.
+  const collisions: CollisionDetection = (args) => {
+    const wanted =
+      (args.active.data.current as PaletteDrag | BlockDrag | SectionDrag | undefined)?.kind === 'section'
+        ? 'section'
+        : 'slot';
+
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(
+        (container) => (container.data.current as { kind?: string } | undefined)?.kind === wanted,
+      ),
+    });
+  };
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    setDragging(null);
+
+    const dragged = active.data.current as PaletteDrag | BlockDrag | SectionDrag | undefined;
+    const target = over?.data.current as SlotDrop | SectionDrag | undefined;
+
+    if (dragged?.kind === 'palette' && target?.kind === 'slot') {
+      addBlockTo(target.section, dragged.type, target.column, target.index);
+      return;
+    }
+
+    // A block of the page, dropped on a slot anywhere on it: its own column, another, another
+    // section's. It stays picked, so the panel keeps showing it wherever it landed.
+    if (dragged?.kind === 'block' && target?.kind === 'slot') {
+      change(moveBlockTo(body, dragged.id, target.section, target.column, target.index));
+      return;
+    }
+
+    // A section dropped onto another of its siblings. Crossing into another parent is refused by
+    // the body helper, as it is in the outline: a drop that moved nothing is a drop that moved nothing.
+    if (dragged?.kind === 'section' && target?.kind === 'section' && over !== null && active.id !== over.id) {
+      change(reorderSections(body, String(active.id), String(over.id)));
+    }
+  };
+
+  const draggedRegistration =
+    dragging === null ? undefined : registry.blocks.find((candidate) => candidate.type === dragging.type);
 
   // Which section the palette on the left adds to. A block selected means the section it is in:
   // clicking a paragraph and then `Image` should put the image where you are looking, not ask you
@@ -232,7 +489,10 @@ export function ContentEditor({
   // child of a grid work at all — a stretched cell has nothing to stick inside — and it scrolls on
   // its own when it is taller than the window.
   const properties = (
-    <div className="flex flex-col gap-4 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
+    <div
+      id={PROPERTIES_PANEL}
+      className="scroll-thin flex flex-col gap-4 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto"
+    >
       <SectionHeader
         title={t('content.editor.properties')}
         {...(selection === null
@@ -255,9 +515,6 @@ export function ContentEditor({
           button cannot submit a form that is not in the document. */}
       <div {...(selection === null ? {} : { hidden: true })}>
         <SchemaForm
-          // Remounted whenever the stored row moves on, so the version the form carries is the one
-          // the server last returned; keeping a stale one would answer 409 on the next save.
-          key={content?.rowVersion ?? 'new'}
           id={METADATA_FORM}
           actionsElsewhere
           schema={contentMetadataSchema(kind, categories)}
@@ -270,9 +527,14 @@ export function ContentEditor({
           labels="content"
           division={division}
           mediaLibrary={mediaLibrary}
+          uploadMedia={uploadMedia}
+          // The shadow the autosave sends, kept in step with the fields as they are written.
+          onChange={setMetadata}
           onSubmit={async (values) => {
-            await onSave(values, body);
-            setUnsaved(false);
+            setMetadata(values);
+            await onSave(withVersion(values), body);
+            // Stored by a press, so the draft as it stands is not dirty any more.
+            autosave.settle(JSON.stringify({ metadata: values, body }));
           }}
           submitLabel={t('content.editor.saveDraft')}
         />
@@ -299,6 +561,7 @@ export function ContentEditor({
             locales={locales}
             division={division}
             mediaLibrary={mediaLibrary}
+            uploadMedia={uploadMedia}
             // The two the strip owns, applied the moment they are clicked. Narrowing the layout has
             // to pull the blocks back into a column that still exists, or the server refuses the
             // save and the editor cannot say why.
@@ -337,7 +600,8 @@ export function ContentEditor({
                   : {}),
               });
 
-              change(withSettings);
+              // A run of typing into one section's settings is one step to undo.
+              change(withSettings, { coalesce: `section:${section.id}` });
             }}
           />
         </>
@@ -346,40 +610,185 @@ export function ContentEditor({
           key={block.block.id}
           block={block.block}
           section={block.section}
+          // Where it may be moved to from the keyboard: every section the template does not lock,
+          // named as the outline names them — and nowhere at all from a locked section, whose
+          // blocks stay where the template put them (a select that listed everywhere but here
+          // drew itself empty).
+          sections={
+            ruleFor(rules, block.section.key).locked
+              ? []
+              : allSections(body)
+                  .filter((candidate) => !ruleFor(rules, candidate.key).locked)
+                  .map((candidate) => ({
+                    value: candidate.id,
+                    label: read(candidate.title) || candidate.key || t('content.editor.untitledSection'),
+                  }))
+          }
+          onMoveTo={(sectionId) =>
+            change(moveBlockTo(body, block.block.id, sectionId, 0, Number.MAX_SAFE_INTEGER))
+          }
           locales={locales}
           division={division}
           mediaLibrary={mediaLibrary}
-          onApplyProps={(props) => change(updateBlock(body, block.block.id, { props }))}
+          uploadMedia={uploadMedia}
+          // Applied at every pause in typing, and remembered as one step: a sentence written into
+          // a block is one thing to undo, not one per pause (`useBodyHistory`).
+          onApplyProps={(props) =>
+            change(updateBlock(body, block.block.id, { props }), { coalesce: `props:${block.block.id}` })
+          }
           onEnvelope={(patch) => change(updateBlock(body, block.block.id, patch))}
         />
       ) : null}
     </div>
   );
 
+  // What may be done to a section or a block, written once and reached from two places: the rows
+  // of the outline, and the bar on the picked thing itself on the page (Carmine, 11 September
+  // 2026). The rules of the template are read here, so the page and the outline offer the same.
+  const addSectionAt = (parentId?: string) => {
+    const added = addSection(body, locales, parentId);
+    change(added.body);
+    setSelection({ kind: 'section', id: added.id });
+  };
+  const duplicateBlockById = (id: string) => {
+    const copy = duplicateBlock(body, id);
+    change(copy.body);
+    setSelection({ kind: 'block', id: copy.id });
+  };
+  const removeSectionById = (id: string) => {
+    change(removeSection(body, id));
+    setSelection(null);
+  };
+  const duplicateSectionById = (id: string) => {
+    const copy = duplicateSection(body, id);
+    change(copy.body);
+    setSelection({ kind: 'section', id: copy.id });
+  };
+  const removeBlockById = (id: string) => {
+    change(removeBlock(body, id));
+    setSelection(null);
+  };
+
   // What the page needs to be composed in: what is selected, and what to do about a click. The
   // renderer reads it from a context that is `null` everywhere else, so a visitor's page has no
   // handler to remove (`blocks/picking.ts`).
-  const picking = useMemo(
-    () => ({
-      selected: selection?.id ?? null,
-      onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
-      // The column the palette will fill, drawn as chosen on the page. Only a selected section has
-      // one to show: with a block selected, the destination is that block's column, and the block's
-      // own ring already says where that is.
-      target: selection?.kind === 'section' ? { section: selection.id, column: targetColumn } : null,
-      onPickColumn: (sectionId: string, column: number) => {
-        setSelection({ kind: 'section', id: sectionId });
-        setChosenColumn({ section: sectionId, column });
-      },
-      // A section a template locks takes no new block, so its empty columns must not offer one.
-      accepts: (sectionId: string) => !ruleFor(rules, findSection(body, sectionId)?.key).locked,
-    }),
-    [selection, targetColumn, rules, body],
-  );
+  // Not memoized by hand: the compiler does it, and refused to keep a manual memo whose inputs it
+  // could not prove untouched once the drop handler read the body.
+  // The bar on the picked thing: what the outline's row offers, with the template's rules. A row
+  // is offered down to the level the server still accepts, as in the outline. Written once, and
+  // read by the page, by the keys below, and by nothing else.
+  const actionsFor = ({ kind, id }: { kind: 'section' | 'block'; id: string }) => {
+    if (kind === 'block') {
+      const found = findBlock(body, id);
+      if (found === undefined || ruleFor(rules, found.section.key).locked) {
+        return [];
+      }
+
+      return [
+        { key: 'moveUp' as const, run: () => change(moveBlock(body, id, -1)) },
+        { key: 'moveDown' as const, run: () => change(moveBlock(body, id, 1)) },
+        { key: 'duplicate' as const, run: () => duplicateBlockById(id) },
+        { key: 'remove' as const, run: () => removeBlockById(id) },
+      ];
+    }
+
+    // A section moves among its siblings — the page's sections, or the rows of one section
+    // (Carmine, 11 September 2026: "the sections already placed, I want to move them by hand on
+    // the page"). The same arrows the outline has, on the thing itself.
+    const rule = ruleFor(rules, findSection(body, id)?.key);
+    return [
+      ...(rule.locked
+        ? []
+        : [
+            { key: 'moveUp' as const, run: () => change(moveSection(body, id, -1)) },
+            { key: 'moveDown' as const, run: () => change(moveSection(body, id, 1)) },
+          ]),
+      ...(rule.locked || (depthOf(body, id) ?? MAX_ROW_DEPTH) >= MAX_ROW_DEPTH
+        ? []
+        : [{ key: 'addRow' as const, run: () => addSectionAt(id) }]),
+      ...(rule.locked ? [] : [{ key: 'duplicate' as const, run: () => duplicateSectionById(id) }]),
+      ...(rule.locked || rule.required ? [] : [{ key: 'remove' as const, run: () => removeSectionById(id) }]),
+    ];
+  };
+
+  // Delete, ⌘D and Escape on what is picked: the same commands the bar offers, so a key can never
+  // do what the bar would refuse.
+  const runOnPicked = (key: 'remove' | 'duplicate'): boolean => {
+    if (selection === null) {
+      return false;
+    }
+
+    const action = actionsFor(selection).find((candidate) => candidate.key === key);
+    if (action === undefined) {
+      return false;
+    }
+
+    action.run();
+    return true;
+  };
+
+  useSelectionShortcuts({
+    remove: () => runOnPicked('remove'),
+    duplicate: () => runOnPicked('duplicate'),
+    release: () => {
+      if (selection === null) {
+        return false;
+      }
+
+      setSelection(null);
+      return true;
+    },
+  });
+
+  const picking = {
+    actions: actionsFor,
+    onOpen: (kind: 'section' | 'block', id: string) => {
+      if (selection?.kind === kind && selection.id === id) {
+        focusFirstField();
+        return;
+      }
+
+      focusWanted.current = true;
+      setSelection({ kind, id });
+    },
+    onAddSection: () => addSectionAt(),
+    // What to draw a block by while nothing is written in it. A data block is never blank: it
+    // draws an answer, or its own empty state.
+    blank: (candidate: BlockEnvelope) => {
+      const registration = registry.blocks.find((known) => known.type === candidate.type);
+      if (registration === undefined || registration.kind === 'Data') {
+        return null;
+      }
+
+      return isBlank(registration.schema, candidate.props) ? t(registration.editorLabelKey) : null;
+    },
+    // What lets a section be dragged among its siblings on the page, and a block onto any slot of
+    // it; the grip is on the bar of the picked one.
+    SortableGroup: SectionSortableGroup,
+    Sortable: SectionSortable,
+    BlockDraggable,
+    selected: selection?.id ?? null,
+    onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
+    // The column the palette will fill, drawn as chosen on the page. Only a selected section has
+    // one to show: with a block selected, the destination is that block's column, and the block's
+    // own ring already says where that is.
+    target: selection?.kind === 'section' ? { section: selection.id, column: targetColumn } : null,
+    onPickColumn: (sectionId: string, column: number) => {
+      setSelection({ kind: 'section', id: sectionId });
+      setChosenColumn({ section: sectionId, column });
+    },
+    // A section a template locks takes no new block, so its empty columns must not offer one.
+    accepts: (sectionId: string) => !ruleFor(rules, findSection(body, sectionId)?.key).locked,
+    // Where a dragged component may land, drawn by the renderer, known to dnd-kit only here.
+    DropZone,
+  };
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
+    // The language the page is drawn in, for every translated value read inside the editor and for
+    // the tab every translated field opens on.
+    <PreviewLocaleContext.Provider value={previewLocale}>
+      <div className="flex flex-col gap-8">
+        {/* ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
           measured 1182 pixels in a window of 950, so the page being composed and the buttons that
           save it were both below the fold. Measured, not guessed (road A1 of
           `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
@@ -387,79 +796,92 @@ export function ContentEditor({
           `Save draft` submits by `form=`, which is how HTML has always let a button live outside the
           form it belongs to: the form is in the panel on the right, where the page's own properties
           are edited. */}
-      {/* ⚠️ And since 11 September 2026 on the frame's own line, beside the title, rather than on a
+        {/* ⚠️ And since 11 September 2026 on the frame's own line, beside the title, rather than on a
           line of its own under it (Carmine: stop wasting the space at the top). `PageActions` draws
           it up there while its state stays here, and that line is the sticky one now. */}
-      <PageActions>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" form={METADATA_FORM} disabled={busy}>
-            {t('content.editor.saveDraft')}
-          </Button>
-
-          <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
-            {preview ? (
-              <List aria-hidden className="mr-2 size-4" />
-            ) : (
-              <Eye aria-hidden className="mr-2 size-4" />
-            )}
-            {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!history.canUndo}
-            onClick={() => {
-              history.undo();
-              setUnsaved(true);
-              // What was selected may not exist in the body that comes back, and the page's own
-              // properties are always there to fall back on.
-              setSelection(null);
-            }}
-          >
-            <Undo2 aria-hidden className="mr-2 size-4" />
-            {t('content.editor.undo')}
-          </Button>
-
-          {onPublish === null ? null : (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={unsaved || busy}
-              onClick={onPublish}
-              title={unsaved ? t('content.editor.saveBeforePublishing') : undefined}
-            >
-              <Send aria-hidden className="mr-2 size-4" />
-              {t('content.editor.publish')}
+        <PageActions>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="submit" form={METADATA_FORM} disabled={busy}>
+              {t('content.editor.saveDraft')}
             </Button>
-          )}
 
-          {onDelete === null ? null : (
-            <ConfirmDialog
-              triggerText={t('common.delete')}
-              title={t('content.delete.title')}
-              description={t('content.delete.description')}
-              confirmText={t('common.delete')}
-              disabled={busy}
-              onConfirm={onDelete}
-            />
-          )}
-        </div>
-      </PageActions>
+            <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
+              {preview ? (
+                <List aria-hidden className="mr-2 size-4" />
+              ) : (
+                <Eye aria-hidden className="mr-2 size-4" />
+              )}
+              {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
+            </Button>
 
-      <PublishProblems body={body} problems={publishProblems} />
+            {/* Also ⌘Z and ⌘⇧Z, outside a field (`useHistoryShortcuts`); the buttons are what says
+              the two exist, and the road for anybody who does not know the keys. */}
+            <Button type="button" variant="ghost" disabled={!history.canUndo} onClick={undo}>
+              <Undo2 aria-hidden className="mr-2 size-4" />
+              {t('content.editor.undo')}
+            </Button>
 
-      {unsaved ? (
-        <p className="text-muted-foreground text-sm">{t('content.editor.saveBeforePublishing')}</p>
-      ) : null}
+            <Button type="button" variant="ghost" disabled={!history.canRedo} onClick={redo}>
+              <Redo2 aria-hidden className="mr-2 size-4" />
+              {t('content.editor.redo')}
+            </Button>
 
-      <TemplateDifferences
-        body={body}
-        differences={differences}
-        onAlign={(difference) => change(applyDifference(body, templateBody, difference))}
-      />
+            {onPublish === null ? null : (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy || autosave.stopped}
+                // What is on screen is stored first, then published: one press, and never a page
+                // that says something nobody saved. A store that fails leaves the draft where it is,
+                // and the line under the toolbar says why.
+                onClick={() => {
+                  void (async () => {
+                    if (autosave.dirty && !(await autosave.flush())) {
+                      return;
+                    }
+                    onPublish();
+                  })();
+                }}
+              >
+                <Send aria-hidden className="mr-2 size-4" />
+                {t('content.editor.publish')}
+              </Button>
+            )}
 
-      {/* ⚠️ Three columns, asked for by Carmine on 10 September 2026: the components on the left,
+            {onDelete === null ? null : (
+              <ConfirmDialog
+                triggerText={t('common.delete')}
+                title={t('content.delete.title')}
+                description={t('content.delete.description')}
+                confirmText={t('common.delete')}
+                disabled={busy}
+                onConfirm={onDelete}
+              />
+            )}
+          </div>
+        </PageActions>
+
+        <PublishProblems body={body} problems={publishProblems} />
+
+        {draftStatus === null ? null : (
+          // Named, because the drag and drop context draws a live region of its own for its
+          // announcements, and "the status" would otherwise be two things on this screen.
+          <p
+            role="status"
+            aria-label={t('content.editor.autosave.title')}
+            className="text-muted-foreground text-sm"
+          >
+            {draftStatus}
+          </p>
+        )}
+
+        <TemplateDifferences
+          body={body}
+          differences={differences}
+          onAlign={(difference) => change(applyDifference(body, templateBody, difference))}
+        />
+
+        {/* ⚠️ Three columns, asked for by Carmine on 10 September 2026: the components on the left,
           the page in the middle, the properties of whatever is selected on the right. What used to
           be a two-column screen that swapped its left half between an outline and a preview is now
           a fixed frame whose **middle** swaps — so the palette and the properties stay exactly
@@ -468,61 +890,82 @@ export function ContentEditor({
           The outline is not a mode you leave behind: it is the keyboard road (`blocks/picking.ts`),
           and clicking the page is the pointer one. Both put the same thing in the panel on the
           right, which is the property that made road (A) work in the first place. */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
-        <BlockPalette
-          target={paletteTarget}
-          rule={paletteRule}
-          onAdd={(type) => {
-            if (paletteTarget !== null) {
-              addBlockTo(paletteTarget.id, type, targetColumn);
-            }
+        <DndContext
+          sensors={sensors}
+          // The slots are hidden until a drag begins, so they have to be measured once it has.
+          measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+          collisionDetection={collisions}
+          onDragStart={({ active }) => {
+            const started = active.data.current as PaletteDrag | BlockDrag | SectionDrag | undefined;
+            setDragging(started?.kind === 'palette' || started?.kind === 'block' ? started : null);
           }}
-        />
-
-        {preview ? (
-          // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
-          // ways of composing — the page itself — and it keeps the same panel beside it, so a block
-          // clicked here and the same block clicked in the outline lead to exactly the same fields
-          // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
-          <PickingContext.Provider value={picking}>
-            <PreviewFrame body={body} />
-          </PickingContext.Provider>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <SectionHeader title={t('content.editor.structure')} />
-            <SectionTree
-              body={body}
-              rules={rules}
-              selection={selection}
-              onSelect={setSelection}
-              onAddSection={(parentId) => {
-                const added = addSection(body, locales, parentId);
-                change(added.body);
-                setSelection({ kind: 'section', id: added.id });
-              }}
-              onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
-              onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
-              onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
-              onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
-              onDuplicateBlock={(id) => {
-                const copy = duplicateBlock(body, id);
-                change(copy.body);
-                setSelection({ kind: 'block', id: copy.id });
-              }}
-              onRemoveSection={(id) => {
-                change(removeSection(body, id));
-                setSelection(null);
-              }}
-              onRemoveBlock={(id) => {
-                change(removeBlock(body, id));
-                setSelection(null);
+          onDragCancel={() => setDragging(null)}
+          onDragEnd={onDragEnd}
+        >
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
+            <BlockPalette
+              target={paletteTarget}
+              rule={paletteRule}
+              draggable={preview}
+              onAdd={(type) => {
+                if (paletteTarget !== null) {
+                  addBlockTo(paletteTarget.id, type, targetColumn);
+                }
               }}
             />
-          </div>
-        )}
 
-        {properties}
+            {preview ? (
+              // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
+              // ways of composing — the page itself — and it keeps the same panel beside it, so a block
+              // clicked here and the same block clicked in the outline lead to exactly the same fields
+              // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
+              <PickingContext.Provider value={picking}>
+                <PreviewFrame
+                  body={body}
+                  locales={locales}
+                  locale={previewLocale}
+                  onLocale={setPreviewLocale}
+                  published={published}
+                  comparing={comparing}
+                  onCompare={setComparing}
+                />
+              </PickingContext.Provider>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <SectionHeader title={t('content.editor.structure')} />
+                <SectionTree
+                  body={body}
+                  rules={rules}
+                  selection={selection}
+                  onSelect={setSelection}
+                  onAddSection={addSectionAt}
+                  onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
+                  onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
+                  onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
+                  onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
+                  onDuplicateBlock={duplicateBlockById}
+                  onDuplicateSection={duplicateSectionById}
+                  onRemoveSection={removeSectionById}
+                  onRemoveBlock={removeBlockById}
+                />
+              </div>
+            )}
+
+            {properties}
+          </div>
+
+          {/* What travels under the pointer: a copy of the entry, not the entry itself, which sits in a
+          panel that scrolls and would clip it. */}
+          <DragOverlay dropAnimation={null}>
+            {draggedRegistration === undefined ? null : (
+              <div className="bg-body text-foreground border-border flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm shadow-md">
+                <draggedRegistration.icon aria-hidden className="size-4 shrink-0" />
+                {t(draggedRegistration.editorLabelKey)}
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       </div>
-    </div>
+    </PreviewLocaleContext.Provider>
   );
 }
