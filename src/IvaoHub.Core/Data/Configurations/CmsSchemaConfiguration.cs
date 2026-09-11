@@ -121,6 +121,10 @@ internal sealed class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAs
         // generator that made it.
         builder.HasIndex(media => media.StoredName).IsUnique();
         builder.HasIndex(media => new { media.OwnerDepartment, media.DeletedAt });
+
+        // "Is this file already here?", asked per department at every upload.
+        builder.Property(media => media.Sha256).HasMaxLength(64).IsFixedLength();
+        builder.HasIndex(media => new { media.OwnerDepartment, media.Sha256 });
         builder.HasIndex(media => media.Category);
     }
 }

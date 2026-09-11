@@ -34,6 +34,14 @@ public sealed class MediaAsset : IOwnedByDepartment, IVisible, IAuditable
 
     public long ByteSize { get; set; }
 
+    /// <summary>
+    /// The SHA-256 of the bytes, lower case hex, computed while they were written. It is what says
+    /// "this file is already here": a second upload of the same bytes into the same department
+    /// answers the row that exists (decision note of 12 September 2026). Null on the rows uploaded
+    /// before the column existed, which are therefore never matched.
+    /// </summary>
+    public string? Sha256 { get; set; }
+
     /// <summary>Read from the header of the file, for the formats the parser knows.</summary>
     public int? Width { get; set; }
 

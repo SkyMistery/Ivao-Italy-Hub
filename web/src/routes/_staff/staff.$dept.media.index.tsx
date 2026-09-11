@@ -9,7 +9,7 @@ import { useUploadMedia } from '../../features/media/mutations';
 import { mediaListQuery } from '../../features/media/queries';
 import { ProblemAlert, describeProblem } from '../../shared/forms';
 import { DataList, listSearchSchema } from '../../shared/list';
-import { PageShell } from '../../shared/ui';
+import { PageShell, useNotice } from '../../shared/ui';
 
 /**
  * The library of one department: the same list engine as every other screen, with one control the
@@ -38,6 +38,7 @@ function MediaLibraryPage() {
   const chooser = useRef<HTMLInputElement>(null);
 
   const upload = useUploadMedia();
+  const notice = useNotice();
   const refusal = describeProblem(upload.error, t, i18n.language);
 
   const choose = (file: File | undefined) => {
@@ -48,8 +49,15 @@ function MediaLibraryPage() {
     upload.mutate(
       { file, ownerDepartment: dept },
       {
-        onSuccess: (media) =>
-          void navigate({ to: '/staff/$dept/media/$id', params: { dept, id: String(media.id) } }),
+        onSuccess: ({ media, alreadyHere }) => {
+          // The same bytes were already here: the screen goes to the row that exists and says so,
+          // because "I uploaded a file and it opened somebody else's alt text" needs a sentence.
+          if (alreadyHere) {
+            notice({ tone: 'info', title: t('media.alreadyHere') });
+          }
+
+          void navigate({ to: '/staff/$dept/media/$id', params: { dept, id: String(media.id) } });
+        },
       },
     );
   };

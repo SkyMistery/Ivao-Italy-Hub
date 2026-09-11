@@ -586,7 +586,8 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
             OwnerDepartment = department,
             Visibility = Visibility.Public,
             FileName = "seed.png",
-            StoredName = stored,
+            StoredName = stored.StoredName,
+            Sha256 = stored.Sha256,
             ContentType = format.ContentType,
             ByteSize = bytes.Length,
             Alt = new Localized<string>(

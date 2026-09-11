@@ -1,9 +1,17 @@
+using System.Buffers;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Core.Content;
+
+/// <summary>
+/// What a save answers: the opaque name the bytes went under, and their SHA-256 in lower case hex
+/// — the fingerprint an upload is compared by (decision note of 12 September 2026).
+/// </summary>
+public sealed record StoredFile(string StoredName, string Sha256);
 
 /// <summary>
 /// Where an uploaded file goes and how it comes back. One place, so that "the name on disk is
@@ -38,7 +46,7 @@ public sealed partial class MediaStorage
     /// last part is a fresh identifier: two departments uploading <c>logo.png</c> get two files,
     /// and nothing a person typed becomes a path.
     /// </summary>
-    public async Task<string> SaveAsync(Stream content, MediaFormat format, DateTime nowUtc, CancellationToken cancellationToken)
+    public async Task<StoredFile> SaveAsync(Stream content, MediaFormat format, DateTime nowUtc, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(format);
@@ -49,12 +57,28 @@ public sealed partial class MediaStorage
         var path = Resolve(storedName);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-        await using (var file = File.Create(path))
+        // The fingerprint is taken in the same pass as the copy: the bytes go by once, and reading
+        // the file back to hash it would be a second pass for nothing.
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var buffer = ArrayPool<byte>.Shared.Rent(81920);
+
+        try
         {
-            await content.CopyToAsync(file, cancellationToken);
+            await using var file = File.Create(path);
+
+            int read;
+            while ((read = await content.ReadAsync(buffer, cancellationToken)) > 0)
+            {
+                hash.AppendData(buffer, 0, read);
+                await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
 
-        return storedName;
+        return new StoredFile(storedName, Convert.ToHexStringLower(hash.GetHashAndReset()));
     }
 
     /// <summary>The file itself, or null when the row outlived it.</summary>

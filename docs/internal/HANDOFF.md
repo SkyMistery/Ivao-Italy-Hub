@@ -3,8 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 12 settembre 2026, notte — **G14, il documento operativo, è costruita**
-sul branch `m1/g14-operational-document` (cinque commit, il paragrafo «G14» più sotto). Prima: **il
+**Ultimo aggiornamento:** 12 settembre 2026 — **G14, il documento operativo, è costruita**
+sul branch `m1/g14-operational-document` (cinque commit, il paragrafo «G14» più sotto, PR #59), e
+**due immagini identiche sono un file** sul branch `m1/media-dedupe` sopra di essa (piano 0.66,
+nota del 12 settembre). Prima: **il
 10 e l'11 settembre Carmine ha collaudato l'hub a occhio e ha chiesto una lunga serie di
 rifiniture, tutte fatte e tutte sulla PR #57**: l'editor a tre
 colonne con la barra dei componenti, la cornice del sito (barra a una riga, footer a colonne dal menu,
@@ -96,7 +98,8 @@ com'è fatto l'hub oggi:
 | `2026-09-09-comporre-una-pagina-guardandola.md` | la pagina **è** la superficie di composizione (strada A); la pagina è una selezione |
 | `2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md` | il page builder di va.ivao.aero **non è una tela**; presi la riga e i comandi «che si scelgono guardando»; **aperto il punto 3**, il trascinamento dalla tavolozza |
 | `2026-09-10-la-barra-dei-componenti.md` | editor a **tre colonne**: componenti a sinistra (gruppi e sottogruppi richiudibili, dichiarati dai blocchi in codice), pagina al centro, proprietà a destra; tre colonne da `xl` in su |
-| `2026-09-10-il-documento-operativo-come-va-ivao-aero.md` | il **documento operativo** (LoA/SOP): **deciso, rimandato a G14** dopo il tag, con la prima passata già scelta |
+| `2026-09-10-il-documento-operativo-come-va-ivao-aero.md` | il **documento operativo** (LoA/SOP): deciso il 10, **costruito il 12 come G14** (PR #59) |
+| `2026-09-12-due-immagini-identiche.md` | **due immagini identiche** nella stessa libreria sono **un file**: `sha256` sulla riga, `200` con la riga che c'era; decisa e costruita il 12 (branch `m1/media-dedupe`, sopra G14) |
 | `2026-09-10-la-barra-la-sidebar-e-il-footer.md` | barra del sito **a una riga** col tasto Staff; **`StaffSidebar`**, ventunesimo dell'elenco chiuso; **footer a colonne dal menu** (intestazioni senza indirizzo, icone social); marchio della divisione e favicon da `division.json` |
 | `2026-09-11-la-barra-laterale-i-sottomenu-e-il-carattere.md` | barra laterale: un dipartimento alla volta, voce accesa più specifica, ricerca in cima, nomi per esteso; **tendine del menu di nuovo leggibili**; **Poppins e Nunito Sans caricati**; il tasto Staff resta su `/staff`; **testata a una riga** delle schermate staff |
 | `2026-09-11-la-sezione-si-vede-com-e-divisa.md` | mentre si compone, **colonne tratteggiate** e «+ Aggiungi qui»; **sette sfondi** di sezione (tre scuri, disegnati nel tema scuro), niente colore libero; piano 0.58 |
