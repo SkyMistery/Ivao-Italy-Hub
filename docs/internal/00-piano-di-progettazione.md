@@ -1,9 +1,26 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.64 — 12 settembre 2026 (**G14 aperta**: il documento operativo è `kind = Document` con sei colonne, due stati come colonne, due blocchi ATC, il piè di pagina con la stampa e il job di revisione; G15 e la PR #57 sono su `main`)
+**Versione documento:** 0.65 — 12 settembre 2026 (**G14 costruita in una notte**, prima passata completa sul branch `m1/g14-operational-document`: sei colonne, l'elenco dell'airspace, il form da elenchi, la schermata pubblica con striscia/avviso/piè di pagina/stampa, i due blocchi ATC, il job di revisione; la finestra di pubblicazione con changelog e AIRAC)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.65** (12 set 2026, notte): **G14 costruita**, i cinque passi dell'ordine di lavoro in
+cinque commit sullo stesso branch, tutto come la sezione G14 di `04-piano-implementazione-m1.md`
+diceva, con quattro cose decise strada facendo e scritte lì: (1) **la pubblicazione chiede** —
+`ConfirmDialog` (§8.3, quarto dell'elenco chiuso) **esteso** con campi e con una conferma non
+distruttiva invece di una seconda finestra scritta accanto: la riga di changelog che ogni versione
+poteva portare da M0 e non aveva mai avuto una casella, e il ciclo AIRAC su un documento; l'elenco
+dei componenti non cresce. (2) **I giorni di un documento si leggono come giorni** (`dayOf`): il
+server scrive una mezzanotte senza fuso e `new Date()` formattata in UTC era il giorno prima a est
+di Greenwich. (3) **Il job scrive attraverso il change tracker** — il test di architettura non
+ammette aggiornamenti in blocco oltre l'interceptor — e il prezzo, una versione di riga mossa sotto
+chi edita alle tre e mezza di notte, è accettato e scritto. (4) **I due blocchi ATC sono nel cassetto
+Data, sottogruppo `atc`, ma di tipo Content**: righe scritte dal redattore, niente risolto dal server.
+Trovato e corretto sulla strada: **una riga nuova salvata con «Salva bozza» veniva fermata dalla
+guardia** («lasciare la pagina?») perché la navigazione al suo indirizzo avviene dentro il
+salvataggio — il giro e2e non l'aveva mai incontrato, parte sempre da un template. Il tag
+`v0.2.0-m1` resta in attesa della scheda.
 
 **Changelog 0.64** (12 set 2026): **G14 aperta**, dopo il merge delle PR #57 e #58 su `main`
 («mergia e poi vai di G14»). Il design della prima passata sta nella sezione G14 di

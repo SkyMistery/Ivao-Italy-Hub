@@ -9,7 +9,9 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.20 — 11 settembre 2026 (**G15, l'editor che risponde**, decisa da Carmine e messa
+**Versione:** 2.21 — 12 settembre 2026 (**G14 costruita in una notte**, il resoconto in fondo alla sua
+sezione: la finestra di pubblicazione, i giorni letti come giorni, il job attraverso il change
+tracker, la guardia che fermava una riga nuova). Prima, 2.20 — 11 settembre 2026 (**G15, l'editor che risponde**, decisa da Carmine e messa
 **prima di G14**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera con coalescenza,
 autosalvataggio a dieci secondi con audit senza corpo, trascinamento dalla barra fra due blocchi,
 anteprima mobile vera con le container query — la nostra era finta come quella di va.ivao.aero, e
@@ -1425,6 +1427,43 @@ Steps, Reference List, la clonazione, le frequenze precompilate.
 integrazione; (2) i campi nel form del documento, ICAO/FIR da elenco, le posizioni suggerite;
 (3) la schermata pubblica: striscia, avviso, piè di pagina, stampa; (4) i due blocchi con i loro
 test e la galleria; (5) il job di revisione con il suo test. Ogni passo un commit sulla stessa PR.
+
+**Fatta nella notte fra l'11 e il 12 settembre 2026**, i cinque passi in cinque commit, **una
+notte** contro la fase intera prevista. Costruita come sopra; quello che il disegno non diceva:
+
+- **La pubblicazione chiede.** Il piano diceva «AIRAC nella stessa finestra del changelog» e la
+  finestra non esisteva: «Publish» pubblicava e basta, e il changelog di M0 non aveva mai avuto una
+  casella. Ora il pulsante apre `ConfirmDialog` — **esteso** con `children` per i campi e con una
+  conferma `primary` (piano §16.E, (b)): una finestra scritta accanto sarebbe stata il quinto
+  componente-dialogo — con «Che cosa è cambiato» per tutti e «Ciclo AIRAC» su un documento. ⚠️ Il
+  primo tentativo con `asChild` sui tre wrapper di Radix ha rotto la pagina: il `Button` di
+  Atmosphere non è un elemento solo che uno slot possa prendersi; si passa il `Button` come figlio,
+  come fa l'`AlertDialog` composito di Atmosphere. Il giro e2e preme il pulsante della finestra.
+- **I giorni si leggono come giorni** (`operational.ts`, `dayOf`): le colonne sono `date`, il server
+  le serializza come mezzanotte senza fuso, `new Date()` la legge locale e formattata in UTC era il
+  giorno prima. Scoperto dal test, che girava su una macchina a UTC+2.
+- **Il job scrive attraverso il change tracker**: `ExecuteUpdateAsync` era la scelta pulita (niente
+  riga di audit, niente versione mossa) e `NothingBypassesTheInterceptorWithABulkOperation` l'ha
+  rifiutata. Prezzo accettato: chi edita un documento alle 03:30 trova un 409 al salvataggio dopo,
+  una volta nella vita del documento.
+- **Il filtro «da rivedere»** è `filter[reviewDue]=true` sul motore CRUD (un `CustomFilter` con
+  l'orologio dell'host letto al mapping) e `reviewOn` ordinabile; **la schermata non ha ancora un
+  interruttore** per chiederlo — la lista ha la colonna, il filtro aspetta chi lo disegna.
+- **`DivisionOptions.ResolveTimeZone()`** sostituisce il helper privato dell'integrazione IVAO: due
+  schedule lo volevano.
+- **Trovato sulla strada, corretto in G14:** una riga **nuova** salvata con «Salva bozza» veniva
+  fermata dalla guardia di G15 («lasciare la pagina?»), perché la navigazione al suo indirizzo
+  avviene *dentro* `onSave` e la bozza era ancora sporca. Il giro e2e non lo vedeva: parte sempre da
+  un template. Ora una riga nuova è `settle` prima del salvataggio e «unsettled» se fallisce.
+- **Non fatto**: la scheda `tools/demo-m1.md` non nomina il documento operativo; il conteggio di §9.3
+  del piano resta a parole; la stampa è verificata dal test (`PrintContext` apre `tabs` e
+  `accordion`) e non a occhio su carta.
+
+Conto: **371 Vitest** (+16), **477 .NET** (306 + 171, +4 di integrazione: l'elenco dell'airspace,
+i rifiuti e l'accettazione, la pagina pubblica dopo pubblicazione e sostituzione, il job che avvisa
+una volta). Verificato in Chrome: l'elenco «LIRF — Roma Fiumicino» nel campo Aeroporto, le posizioni
+che seguono l'aeroporto scelto, la pagina pubblica con avviso «Not in force yet», striscia, piè di
+pagina «Version 2 · Published on · by Carmine Granato · AIRAC 2609 · Print».
 
 ---
 

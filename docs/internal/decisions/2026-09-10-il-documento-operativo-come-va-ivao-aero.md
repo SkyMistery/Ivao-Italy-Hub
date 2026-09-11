@@ -4,8 +4,10 @@
 dopo essersi consultato con altri membri dello staff della divisione italiana, che preferirebbe «un
 meccanismo come quello di va.ivao.aero», con qualche miglioramento.
 
-**Stato:** **decisa da Carmine il 10 settembre 2026**, sulle due domande di §5. Niente è ancora
-stato scritto in codice. Questa nota esiste perché il grosso di ciò che segue è **(c)** di piano
+**Stato:** **decisa da Carmine il 10 settembre 2026**, sulle due domande di §5; **costruita nella
+notte fra l'11 e il 12 settembre** come G14, prima passata completa in cinque commit sul branch
+`m1/g14-operational-document` (sezione G14 di `04-piano-implementazione-m1.md`, piano 0.65). Questa
+nota esiste perché il grosso di ciò che segue era **(c)** di piano
 §16.E — meccanismi che non ci sono — e §16.E dice che ci si ferma, si scrive mezza pagina, si decide
 con Carmine, si aggiorna il piano, e solo dopo si codifica.
 
