@@ -46,6 +46,20 @@ export interface Picking {
    * knows dnd-kit; here it is only drawn where a block could land, and never where `accepts` says no.
    */
   readonly DropZone?: ComponentType<{ section: string; column: number; index: number }>;
+  /**
+   * What may be done to the thing that is picked, drawn on it (Carmine, 11 September 2026: add and
+   * remove sections, and remove a block, from the page and not only from the outline). The editor
+   * answers with what the template allows — nothing for a locked section, no removal of a required
+   * one — and the page draws exactly that list, so a rule lives in one place.
+   */
+  readonly actions?: (target: { kind: 'section' | 'block'; id: string }) => readonly PickAction[];
+  /** A section at the end of the page, offered after the last one, the way an empty column offers a block. */
+  readonly onAddSection?: () => void;
+}
+
+export interface PickAction {
+  readonly key: 'remove' | 'duplicate' | 'addRow';
+  readonly run: () => void;
 }
 
 export const PickingContext = createContext<Picking | null>(null);

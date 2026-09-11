@@ -215,3 +215,52 @@ test('a visitor gets no place to drop onto, because there is nothing to drop', (
 
   expect(document.querySelectorAll('[data-slot]')).toHaveLength(0);
 });
+
+test('the picked block carries what may be done to it, and a press there does not re-pick', async () => {
+  const user = userEvent.setup();
+  const picked = vi.fn();
+  const removed = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider
+      value={editing({
+        selected: 'b1',
+        onPick: picked,
+        actions: ({ kind, id }) => (kind === 'block' && id === 'b1' ? [{ key: 'remove', run: removed }] : []),
+      })}
+    >
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  // The bar names the block — by the label the palette uses — and offers exactly what the editor
+  // answered: one command, not a menu.
+  expect(document.querySelector('[data-chrome]')).toHaveTextContent('Button');
+  await user.click(screen.getByRole('button', { name: 'Remove' }));
+
+  expect(removed).toHaveBeenCalledTimes(1);
+  // The block's own capture handler lets the bar through: pressing "remove" is not a click on the
+  // block, and must not pick the section the block was in either.
+  expect(picked).not.toHaveBeenCalled();
+});
+
+test('a section is offered at the end of the page while composing, and to nobody else', async () => {
+  const user = userEvent.setup();
+  const added = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ onAddSection: added })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Add a section' }));
+  expect(added).toHaveBeenCalledTimes(1);
+});
+
+test('a visitor is offered no section and sees no bar', () => {
+  renderWithProviders(<ContentRenderer body={body} />);
+
+  expect(screen.queryByRole('button', { name: 'Add a section' })).not.toBeInTheDocument();
+  expect(document.querySelectorAll('[data-chrome]')).toHaveLength(0);
+});

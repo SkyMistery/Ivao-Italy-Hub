@@ -104,6 +104,8 @@ interface CommonStrings {
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
       readonly autosave: { readonly title: string; readonly saved: string; readonly unsaved: string };
       readonly dropHere: string;
+      readonly remove: string;
+      readonly removeSection: string;
       readonly template: {
         readonly differences: string;
         readonly added: string;

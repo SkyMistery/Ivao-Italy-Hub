@@ -13,6 +13,7 @@ import {
   moveBlock,
   moveSection,
   removeSection,
+  reorderBlocks,
   updateBlock,
 } from './body';
 
@@ -41,12 +42,35 @@ function body(): Body {
   });
 }
 
-test('moving a block swaps it with its neighbour, and stops at the ends', () => {
-  const moved = moveBlock(body(), 'b_1', 1);
-  expect(moved.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_2', 'b_1']);
+test('moving a block swaps it with its neighbour in the same column, and stops at the ends', () => {
+  // `b_1` stands in the third column and `b_2` in the first: neither has a neighbour, so neither
+  // moves. Before 11 September 2026 they swapped places in the list — which changed nothing on
+  // the page, since each column draws its own — and the arrows in the outline seemed broken.
+  const alone = moveBlock(body(), 'b_1', 1);
+  expect(alone.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2']);
+
+  // Two in the first column, with one of another column between them in the list: they swap, and
+  // the one in between keeps its place.
+  const shared = updateBlock(body(), 'b_1', { column: 0 });
+  const third = addBlock(shared, 's_1', 'text', {}, null, 2).body;
+  const withTwo = addBlock(third, 's_1', 'text', {}, null, 0).body;
+  const ids = (page: Body) => page.sections[0]!.blocks.map((block) => block.id);
+  const [, , other, last] = ids(withTwo);
+
+  const moved = moveBlock(withTwo, last!, -1);
+  expect(ids(moved)).toEqual(['b_1', last, other, 'b_2']);
 
   const stuck = moveBlock(body(), 'b_1', -1);
-  expect(stuck.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2']);
+  expect(ids(stuck)).toEqual(['b_1', 'b_2']);
+});
+
+test('a block dropped onto one of another column in the outline moves nothing', () => {
+  const refused = reorderBlocks(body(), 'b_1', 'b_2');
+  expect(refused.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2']);
+
+  const sameColumn = updateBlock(body(), 'b_1', { column: 0 });
+  const moved = reorderBlocks(sameColumn, 'b_1', 'b_2');
+  expect(moved.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_2', 'b_1']);
 });
 
 test('moving a section does the same, one level at a time', () => {

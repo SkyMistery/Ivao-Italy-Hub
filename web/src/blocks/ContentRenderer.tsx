@@ -1,15 +1,17 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import { Copy, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
 import { mediaFileUrl } from '../shared/api/mediaUrl';
+import { useLocalized } from '../shared/i18n/useLocalized';
 import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
 import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from './envelope';
-import { usePicking, type Picking } from './picking';
+import { usePicking, type PickAction, type Picking } from './picking';
 
 /**
  * Drawing a page. The same component renders the published version for a visitor and the draft in
@@ -112,19 +114,48 @@ export function ContentRenderer({
       {body.sections.map((section) => (
         <SectionView key={section.id} section={section} staff={staff} />
       ))}
+
+      <AddSectionInvitation />
+    </div>
+  );
+}
+
+/**
+ * A section at the end of the page, while composing — the same invitation an empty column makes
+ * for a block (Carmine, 11 September 2026: adding a section should not need the outline).
+ */
+function AddSectionInvitation() {
+  const picking = usePicking();
+  const { t } = useTranslation();
+
+  if (picking?.onAddSection === undefined) {
+    return null;
+  }
+
+  return (
+    <div className="px-4 py-4">
+      <button
+        type="button"
+        onClick={picking.onAddSection}
+        className="border-border text-muted-foreground hover:border-primary hover:text-foreground flex min-h-12 w-full items-center justify-center rounded-md border border-dashed text-sm transition-colors"
+      >
+        {t('content.editor.addSection')}
+      </button>
     </div>
   );
 }
 
 function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
   const picking = usePicking();
+  const { t } = useTranslation();
+  const read = useLocalized();
   const frame = [
     BACKGROUND[section.background],
     PADDING[section.padding],
     // A section is picked by its own space — the air around its blocks — because clicking a block
     // picks the block. `outline` and not `border`: a border would move everything by two pixels and
     // the point of composing here is that what you see is what a reader gets.
-    picking === null ? '' : ring(picking, section.id),
+    picking === null ? '' : `relative ${ring(picking, section.id)}`,
   ]
     .filter(Boolean)
     .join(' ');
@@ -150,6 +181,13 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
             onClick: () => picking.onPick('section', section.id),
           })}
     >
+      {picking !== null && picking.selected === section.id ? (
+        <PickedBar
+          name={read(section.title) || section.key || t('content.editor.untitledSection')}
+          actions={picking.actions?.({ kind: 'section', id: section.id }) ?? []}
+        />
+      ) : null}
+
       <div className={`${WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 
@@ -283,6 +321,7 @@ function Column({
 
 export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boolean }) {
   const picking = usePicking();
+  const { t } = useTranslation();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
   const drawn =
@@ -303,18 +342,29 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
   return (
     <div
       data-pickable="block"
-      className={`rounded-sm ${ring(picking, block.id)}`}
+      className={`relative rounded-sm ${ring(picking, block.id)}`}
       // ⚠️ The **capture** phase, and both `preventDefault` and `stopPropagation`. A block is not
       // an inert rectangle: it holds links, buttons, a contact form. Capturing means a click lands
       // on the block rather than on what is inside it — so a call to action selects itself instead
       // of carrying whoever is composing out of the editor with unsaved changes — and stopping it
-      // there is what leaves the section pickable by its own space.
+      // there is what leaves the section pickable by its own space. The bar of commands drawn on a
+      // picked block is the one thing inside it that is meant to be clicked, and is let through.
       onClickCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest('[data-chrome]') !== null) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
         picking.onPick('block', block.id);
       }}
     >
+      {picking.selected === block.id ? (
+        <PickedBar
+          name={registration === undefined ? block.type : t(registration.editorLabelKey)}
+          actions={picking.actions?.({ kind: 'block', id: block.id }) ?? []}
+        />
+      ) : null}
       {drawn}
     </div>
   );
@@ -325,6 +375,51 @@ function ring(picking: Picking, id: string): string {
   return picking.selected === id
     ? 'outline-primary outline-2 outline-offset-2'
     : 'hover:outline-border hover:outline-2 hover:outline-offset-2';
+}
+
+const ACTION_LABEL: Record<PickAction['key'], { label: string; Icon: typeof Trash2 }> = {
+  remove: { label: 'content.editor.remove', Icon: Trash2 },
+  duplicate: { label: 'content.editor.duplicate', Icon: Copy },
+  addRow: { label: 'content.editor.addRow', Icon: Plus },
+};
+
+/**
+ * The name of what is picked and what may be done to it, on the thing itself (Carmine, 11 September
+ * 2026). Over the top right corner, out of the flow: nothing on the page moves when it appears.
+ * The buttons stop their clicks where they are, so pressing "remove" does not also re-pick the
+ * section the block was in.
+ */
+function PickedBar({ name, actions }: { name: string; actions: readonly PickAction[] }) {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      data-chrome
+      className="bg-body text-foreground border-primary absolute -top-3 right-2 z-10 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <span className="text-primary font-medium">{name}</span>
+      {actions.map(({ key, run }) => {
+        const { label, Icon } = ACTION_LABEL[key];
+
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-label={t(label)}
+            title={t(label)}
+            onClick={(event) => {
+              event.stopPropagation();
+              run();
+            }}
+            className="hover:text-primary rounded-sm p-0.5"
+          >
+            <Icon aria-hidden className="size-3.5" />
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 /**

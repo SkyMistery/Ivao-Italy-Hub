@@ -505,12 +505,60 @@ export function ContentEditor({
     </div>
   );
 
+  // What may be done to a section or a block, written once and reached from two places: the rows
+  // of the outline, and the bar on the picked thing itself on the page (Carmine, 11 September
+  // 2026). The rules of the template are read here, so the page and the outline offer the same.
+  const addSectionAt = (parentId?: string) => {
+    const added = addSection(body, locales, parentId);
+    change(added.body);
+    setSelection({ kind: 'section', id: added.id });
+  };
+  const duplicateBlockById = (id: string) => {
+    const copy = duplicateBlock(body, id);
+    change(copy.body);
+    setSelection({ kind: 'block', id: copy.id });
+  };
+  const removeSectionById = (id: string) => {
+    change(removeSection(body, id));
+    setSelection(null);
+  };
+  const removeBlockById = (id: string) => {
+    change(removeBlock(body, id));
+    setSelection(null);
+  };
+
   // What the page needs to be composed in: what is selected, and what to do about a click. The
   // renderer reads it from a context that is `null` everywhere else, so a visitor's page has no
   // handler to remove (`blocks/picking.ts`).
   // Not memoized by hand: the compiler does it, and refused to keep a manual memo whose inputs it
   // could not prove untouched once the drop handler read the body.
   const picking = {
+    // The bar on the picked thing: what the outline's row offers, with the template's rules. A row
+    // is only offered inside a section of the first level, for the reason the outline gives.
+    actions: ({ kind, id }: { kind: 'section' | 'block'; id: string }) => {
+      if (kind === 'block') {
+        const found = findBlock(body, id);
+        if (found === undefined || ruleFor(rules, found.section.key).locked) {
+          return [];
+        }
+
+        return [
+          { key: 'duplicate' as const, run: () => duplicateBlockById(id) },
+          { key: 'remove' as const, run: () => removeBlockById(id) },
+        ];
+      }
+
+      const rule = ruleFor(rules, findSection(body, id)?.key);
+      return [
+        ...(rule.locked || !body.sections.some((section) => section.id === id)
+          ? []
+          : [{ key: 'addRow' as const, run: () => addSectionAt(id) }]),
+        ...(rule.locked || rule.required
+          ? []
+          : [{ key: 'remove' as const, run: () => removeSectionById(id) }]),
+      ];
+    },
+    onAddSection: () => addSectionAt(),
     selected: selection?.id ?? null,
     onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
     // The column the palette will fill, drawn as chosen on the page. Only a selected section has
@@ -667,28 +715,14 @@ export function ContentEditor({
                 rules={rules}
                 selection={selection}
                 onSelect={setSelection}
-                onAddSection={(parentId) => {
-                  const added = addSection(body, locales, parentId);
-                  change(added.body);
-                  setSelection({ kind: 'section', id: added.id });
-                }}
+                onAddSection={addSectionAt}
                 onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
                 onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
                 onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
                 onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
-                onDuplicateBlock={(id) => {
-                  const copy = duplicateBlock(body, id);
-                  change(copy.body);
-                  setSelection({ kind: 'block', id: copy.id });
-                }}
-                onRemoveSection={(id) => {
-                  change(removeSection(body, id));
-                  setSelection(null);
-                }}
-                onRemoveBlock={(id) => {
-                  change(removeBlock(body, id));
-                  setSelection(null);
-                }}
+                onDuplicateBlock={duplicateBlockById}
+                onRemoveSection={removeSectionById}
+                onRemoveBlock={removeBlockById}
               />
             </div>
           )}

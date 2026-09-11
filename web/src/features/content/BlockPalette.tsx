@@ -107,7 +107,13 @@ export function BlockPalette({
             <AccordionTrigger>{t(`blocks.groups.${group.group}`)}</AccordionTrigger>
             <AccordionContent>
               <div className="flex flex-col gap-1">
-                <Entries blocks={group.blocks} target={target} rule={rule} onAdd={onAdd} draggable={draggable} />
+                <Entries
+                  blocks={group.blocks}
+                  target={target}
+                  rule={rule}
+                  onAdd={onAdd}
+                  draggable={draggable}
+                />
 
                 {group.subgroups.length === 0 ? null : (
                   <AccordionRoot

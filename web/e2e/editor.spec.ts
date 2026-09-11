@@ -102,4 +102,22 @@ test('a component from the palette lands in the section that was selected', asyn
   await expect(
     page.getByRole('listitem').filter({ hasText: englishCommon.blocks.heading.label }),
   ).toHaveCount(1);
+
+  // Back on the page, the block just added is the picked one, and it carries its own commands
+  // (Carmine, 11 September 2026: removing a block should not need the outline). Pressing "remove"
+  // there takes it out of the page and, when the outline is asked again, out of the outline.
+  await page.getByRole('button', { name: editor.onThePage, exact: true }).click();
+  const frame = page.getByRole('region', { name: editor.preview });
+  await frame.getByRole('button', { name: englishCommon.content.editor.remove, exact: true }).click();
+
+  await page.getByRole('button', { name: editor.outline, exact: true }).click();
+  await expect(
+    page.getByRole('listitem').filter({ hasText: englishCommon.blocks.heading.label }),
+  ).toHaveCount(0);
+
+  // And a section is offered at the end of the page itself: pressing it adds a second one.
+  await page.getByRole('button', { name: editor.onThePage, exact: true }).click();
+  await frame.getByRole('button', { name: editor.addSection, exact: true }).click();
+  await page.getByRole('button', { name: editor.outline, exact: true }).click();
+  await expect(page.getByRole('button', { name: editor.removeSection })).toHaveCount(2);
 });

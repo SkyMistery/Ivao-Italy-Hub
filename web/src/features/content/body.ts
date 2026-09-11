@@ -156,11 +156,21 @@ export function reorderSections(body: Body, activeId: string, overId: string): B
   return { ...body, sections: walk(body.sections) };
 }
 
-/** The same, for the blocks of one section. */
+/**
+ * The same, for the blocks of one section — and of one **column**: the outline lists a column at a
+ * time, and a block dropped onto one of another column would move in the list and not on the page.
+ * Refused here, for the reason a drop across sections is: the drag and the arrows do the same thing.
+ */
 export function reorderBlocks(body: Body, activeId: string, overId: string): Body {
   return {
     ...body,
     sections: mapSections(body.sections, (section) => {
+      const active = section.blocks.find((block) => block.id === activeId);
+      const over = section.blocks.find((block) => block.id === overId);
+      if (active !== undefined && over !== undefined && (active.column ?? 0) !== (over.column ?? 0)) {
+        return section;
+      }
+
       const moved = reorder(section.blocks, activeId, overId);
       return moved === null ? section : { ...section, blocks: moved };
     }),
@@ -251,13 +261,35 @@ export function duplicateBlock(body: Body, id: string): { body: Body; id: string
   };
 }
 
+/**
+ * Moves a block one place up or down **within its column**. The blocks of a section are one list
+ * whatever column they stand in, so the neighbour is the nearest block of the same column in that
+ * direction, and the two swap places in the list; the blocks of the other columns keep their order.
+ * A block alone in its column has nowhere to go, as one alone in a stacked section never had.
+ */
 export function moveBlock(body: Body, id: string, delta: -1 | 1): Body {
   return {
     ...body,
-    sections: mapSections(body.sections, (section) => ({
-      ...section,
-      blocks: move(section.blocks, (block) => block.id === id, delta),
-    })),
+    sections: mapSections(body.sections, (section) => {
+      const index = section.blocks.findIndex((block) => block.id === id);
+      if (index < 0) {
+        return section;
+      }
+
+      const column = section.blocks[index]!.column ?? 0;
+      let other = index + delta;
+      while (other >= 0 && other < section.blocks.length && (section.blocks[other]!.column ?? 0) !== column) {
+        other += delta;
+      }
+
+      if (other < 0 || other >= section.blocks.length) {
+        return section;
+      }
+
+      const blocks = [...section.blocks];
+      [blocks[index], blocks[other]] = [blocks[other]!, blocks[index]!];
+      return { ...section, blocks };
+    }),
   };
 }
 

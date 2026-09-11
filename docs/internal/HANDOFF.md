@@ -51,7 +51,8 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** **v0.60** (11 set: **G15, l'editor che risponde**, decisa e da costruire prima di G14; v0.59
+**Piano:** **v0.61** (11 set, sera: i comandi anche sull'oggetto nella pagina, l'outline per colonne;
+v0.60 **G15, l'editor che risponde**, decisa e costruita in giornata prima di G14; v0.59
 le due dashboard personali si progettano per prime in M2; v0.58 i sette sfondi di sezione, §16.C
 riaperto e cambiato). **Design M1:** v1.15
 (`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
@@ -60,7 +61,7 @@ collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
 **Test, misurati l'11 settembre su `m1/g15-editor-live` (le tre sessioni di G15):** **473 .NET**
 (306 unit + 167 integrazione — la sessione 2 ne aggiunge uno sull'audit dell'autosalvataggio; ⚠️
 della suite di integrazione sono stati eseguiti in locale solo i due test dell'audit, il resto lo
-verifica la CI) + **340 Vitest** + **56 smoke Playwright** + **15 del giro pieno** (`pnpm e2e:full`).
+verifica la CI) + **344 Vitest** + **56 smoke Playwright** + **15 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato. ⚠️ Il C# **è cambiato** dal 10 settembre (icona e intestazioni del menu, marchio e
 favicon della divisione, i tre fondi scuri nel walker): l'avviso «dall'8 settembre non è cambiata una
 riga di C#» che stava qui non vale più.
@@ -117,7 +118,11 @@ bloccata; **(2) fatta lo stesso giorno**: autosalvataggio a dieci secondi e all'
 salva; **(3) fatta lo stesso giorno**: un componente si trascina dalla barra fra due blocchi, con
 gli slot disegnati dal renderer attraverso il contesto di picking e dnd-kit che resta fuori da
 `blocks/`. **G15 è tutta sulla PR #58**, in tre commit, e ha chiuso il punto 3 della nota del 10
-settembre. Dopo il suo merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+settembre. **Poi un quarto commit, la sera** (piano 0.61): Carmine, provandola, ha chiesto di
+aggiungere e togliere sezioni e togliere un blocco **dalla pagina**, e di vedere nell'outline in
+quale colonna sta un blocco. La targhetta sull'oggetto scelto porta i comandi che il template
+permette; l'outline elenca una colonna alla volta, e le frecce muovono dentro la colonna. Dopo il
+merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 

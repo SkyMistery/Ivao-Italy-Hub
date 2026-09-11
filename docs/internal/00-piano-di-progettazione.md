@@ -1,9 +1,27 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.60 — 11 settembre 2026 (**G15, l'editor che risponde**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera, autosalvataggio della bozza, trascinamento dalla barra, anteprima mobile vera — e viene prima di G14)
+**Versione documento:** 0.61 — 11 settembre 2026 (**i comandi stanno anche sull'oggetto, nella pagina**: aggiungere e togliere sezioni, togliere e duplicare un blocco dalla pagina; l'outline dice in quale colonna sta un blocco)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.61** (11 set 2026, sera): **i comandi stanno anche sull'oggetto, nella pagina.**
+Chiesto da Carmine con G15 appena costruita: aggiungere e togliere sezioni, e togliere un blocco,
+**dalla pagina** e non solo dall'outline; e nell'outline capire, quando una sezione è divisa in
+colonne, «dove va cosa». Riapre il punto 2 della nota del 10 settembre
+(`2026-09-10-che-cosa-fa-il-pagebuilder-di-hq.md`), che aveva tenuto i comandi nel pannello perché
+il renderer non deve mettere su chrome da editor. **La risposta è la stessa del 9 settembre:** il
+chrome esiste solo attraverso il contesto di picking, che sul sito pubblico è `null`. Il contesto
+porta `actions` — l'editor risponde con ciò che il template permette, la pagina disegna esattamente
+quella lista — e `onAddSection`; la cosa scelta porta una **targhetta** con il nome e i comandi
+(duplica ed elimina su un blocco; aggiungi riga ed elimina su una sezione), e in fondo alla pagina
+c'è «Aggiungi una sezione» come una colonna vuota offre un blocco. Le regole del template — niente su
+una sezione bloccata, niente eliminazione di una obbligatoria — sono lette in un posto solo e
+valgono per outline e pagina insieme. **L'outline elenca una colonna alla volta**, ognuna col suo
+nome, una lista ordinabile per colonna; per conseguenza «sposta su/giù» muove un blocco **dentro la
+sua colonna** — prima scambiava posti nella lista senza che sulla pagina si muovesse niente — e un
+blocco lasciato su uno di un'altra colonna non si muove, come già un drop fra due sezioni. Costruito
+lo stesso giorno, sulla PR #58 di G15.
 
 **Changelog 0.60** (11 set 2026): **l'editor che risponde**, fase **G15**, decisa da Carmine con
 davanti il page builder di va.ivao.aero e il nostro editor uno accanto all'altro. Nota

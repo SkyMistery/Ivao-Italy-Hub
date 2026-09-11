@@ -133,6 +133,12 @@ modifica, da noi il renderer è **lo stesso del sito pubblico** e non deve mette
 (`blocks/picking.ts`). Il pannello sta accanto alla pagina, quindi la pastiglia si sceglie
 guardandola comunque.
 
+**Rivisto l'11 settembre 2026** (piano 0.61): le pastiglie restano nel pannello, ma i **comandi**
+— aggiungi riga ed elimina su una sezione, duplica ed elimina su un blocco, «aggiungi una sezione»
+in fondo alla pagina — stanno anche sull'oggetto scelto, in una targhetta. Non contraddice quanto
+sopra: il chrome esiste solo attraverso il contesto di picking, che sul sito pubblico è `null`, e
+la lista dei comandi la decide l'editor con le regole del template.
+
 I diagrammi sono disegnati con le proporzioni vere (`1/3+2/3` è una barra stretta e una larga), e
 ognuno porta il proprio nome come etichetta: un colore e un disegno non dicono niente a chi non li
 vede.
