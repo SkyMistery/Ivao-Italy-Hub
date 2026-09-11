@@ -24,6 +24,12 @@ export interface Picking {
   readonly selected: string | null;
   readonly onPick: (kind: 'section' | 'block', id: string) => void;
   /**
+   * A double click: pick it **and** put the cursor in its first field (Carmine, 11 September 2026:
+   * one gesture less on every change). The page only says what was opened; where the cursor goes
+   * is the editor's, which owns the panel.
+   */
+  readonly onOpen?: (kind: 'section' | 'block', id: string) => void;
+  /**
    * The column a component from the palette would land in, when one has been chosen. Drawn as
    * chosen, so the next click on the palette has a visible destination.
    */

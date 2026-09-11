@@ -333,6 +333,22 @@ test('a block nothing is written in is drawn as a placeholder, and a visitor nev
   expect(screen.queryByRole('link', { name: 'Join' })).not.toBeInTheDocument();
 });
 
+test('a double click opens a block, and the picked one is marked for the editor to scroll to', async () => {
+  const user = userEvent.setup();
+  const opened = vi.fn();
+
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ selected: 'b1', onOpen: opened })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(document.querySelector('[data-picked]')).toHaveAttribute('data-pickable', 'block');
+
+  await user.dblClick(screen.getByRole('link', { name: 'Join' }));
+  expect(opened).toHaveBeenCalledWith('block', 'b1');
+});
+
 test('a visitor is offered no section and sees no bar', () => {
   renderWithProviders(<ContentRenderer body={body} />);
 

@@ -55,6 +55,7 @@ export function SectionTree({
   onReorderSections,
   onReorderBlocks,
   onDuplicateBlock,
+  onDuplicateSection,
   onRemoveSection,
   onRemoveBlock,
 }: {
@@ -71,6 +72,7 @@ export function SectionTree({
   onReorderSections: (activeId: string, overId: string) => void;
   onReorderBlocks: (activeId: string, overId: string) => void;
   onDuplicateBlock: (id: string) => void;
+  onDuplicateSection: (id: string) => void;
   onRemoveSection: (id: string) => void;
   onRemoveBlock: (id: string) => void;
 }) {
@@ -129,6 +131,7 @@ export function SectionTree({
                 onMoveSection={onMoveSection}
                 onMoveBlock={onMoveBlock}
                 onDuplicateBlock={onDuplicateBlock}
+                onDuplicateSection={onDuplicateSection}
                 onRemoveSection={onRemoveSection}
                 onRemoveBlock={onRemoveBlock}
               />
@@ -158,6 +161,7 @@ function SectionNode({
   onMoveSection,
   onMoveBlock,
   onDuplicateBlock,
+  onDuplicateSection,
   onRemoveSection,
   onRemoveBlock,
 }: {
@@ -171,6 +175,7 @@ function SectionNode({
   onMoveSection: (id: string, delta: -1 | 1) => void;
   onMoveBlock: (id: string, delta: -1 | 1) => void;
   onDuplicateBlock: (id: string) => void;
+  onDuplicateSection: (id: string) => void;
   onRemoveSection: (id: string) => void;
   onRemoveBlock: (id: string) => void;
 }) {
@@ -215,6 +220,15 @@ function SectionNode({
               <ArrowDown aria-hidden className="size-4" />
             </IconButton>
           </>
+        )}
+
+        {rule.locked ? null : (
+          <IconButton
+            label={t('content.editor.duplicateSection')}
+            onClick={() => onDuplicateSection(section.id)}
+          >
+            <Copy aria-hidden className="size-4" />
+          </IconButton>
         )}
 
         {rule.locked || rule.required ? null : (
@@ -286,6 +300,7 @@ function SectionNode({
             onMoveSection={onMoveSection}
             onMoveBlock={onMoveBlock}
             onDuplicateBlock={onDuplicateBlock}
+            onDuplicateSection={onDuplicateSection}
             onRemoveSection={onRemoveSection}
             onRemoveBlock={onRemoveBlock}
           />

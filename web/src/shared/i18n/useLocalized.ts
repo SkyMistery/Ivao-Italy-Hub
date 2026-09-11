@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { LocalizedString } from '../api/bootstrap';
 
 import { resolveLocalized } from './localized';
+import { usePreviewLocale } from './previewLocale';
 
 /**
  * Reading translated values in the language on screen, for a component that is handed no locale.
@@ -16,7 +17,9 @@ import { resolveLocalized } from './localized';
  */
 export function useLocalized(): (value: LocalizedString | null | undefined) => string {
   const { i18n } = useTranslation();
-  const locale = i18n.language;
+  // The language the editor is showing the page in, when it is showing one; the site's otherwise.
+  const previewed = usePreviewLocale();
+  const locale = previewed ?? i18n.language;
 
   return useCallback((value) => resolveLocalized(value, locale, locale), [locale]);
 }

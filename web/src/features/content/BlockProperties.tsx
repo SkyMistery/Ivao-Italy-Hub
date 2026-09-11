@@ -38,6 +38,7 @@ export function SectionProperties({
   locales,
   division,
   mediaLibrary,
+  uploadMedia,
   onApply,
   onFrame,
 }: {
@@ -53,6 +54,8 @@ export function SectionProperties({
   division: { defaultLocale: string; timezone: string };
   /** The library the picture behind a section is chosen from — this department's. */
   mediaLibrary: MediaLibraryQuery;
+  /** Uploads into that library and answers the identifier; the picker offers it beside "choose". */
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
   /**
    * The settings, applied as they are written — with one exception, the `key` of a template's
    * section, which comes through here only when the button under the form is pressed. A key is
@@ -124,6 +127,7 @@ export function SectionProperties({
         labels="content.section"
         division={division}
         mediaLibrary={mediaLibrary}
+        uploadMedia={uploadMedia}
         // Everything but the key, as it is written. The key is emptied rather than dropped so the
         // values keep their shape, and an empty key is what `onApply` reads as "none".
         onChange={(values) => onApply({ ...values, key: '' })}
@@ -149,6 +153,7 @@ export function BlockProperties({
   locales,
   division,
   mediaLibrary,
+  uploadMedia,
   onApplyProps,
   onEnvelope,
   onMoveTo,
@@ -169,6 +174,7 @@ export function BlockProperties({
    * so from G3 on this is not an occasional prop: without it those forms throw, and say why.
    */
   mediaLibrary: MediaLibraryQuery;
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
   onApplyProps: (props: Record<string, unknown>) => void;
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
   /** Moves the block to the end of the first column of that section. */
@@ -236,6 +242,7 @@ export function BlockProperties({
         labels={`blocks.${block.type}`}
         division={division}
         mediaLibrary={mediaLibrary}
+        uploadMedia={uploadMedia}
         // What is stored is what was written. An optional translated property left empty in every
         // language would otherwise travel as `{ en: "", it: "" }`, and publication — which reads
         // the body without knowing what a block means — would read that as a translation hole and

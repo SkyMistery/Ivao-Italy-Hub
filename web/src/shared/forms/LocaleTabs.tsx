@@ -2,6 +2,8 @@ import { Badge, Label, Tabs } from '@ivao/atmosphere-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { usePreviewLocale } from '../i18n/previewLocale';
+
 import { FieldHint } from './SchemaForm';
 
 /**
@@ -34,6 +36,12 @@ export function LocaleTabs({
   const { t, i18n } = useTranslation();
   const names = new Intl.DisplayNames([i18n.language], { type: 'language' });
 
+  // The tab that opens: the language the page is being looked at in, or the site's. Before this
+  // the first language of the division opened, whatever was on screen — Italian in the form,
+  // English on the page, and what was typed changed nothing anybody could see.
+  const preferred = usePreviewLocale() ?? i18n.language;
+  const opening = locales.includes(preferred) ? preferred : locales[0];
+
   const tabs = Object.fromEntries(
     locales.map((locale) => [
       locale,
@@ -57,10 +65,13 @@ export function LocaleTabs({
         <legend>{label}</legend>
       </Label>
       <FieldHint hint={hint} />
+      {/* Remounted when the language looked at changes, so the open tab follows it: the tabs are
+          uncontrolled, and a default only counts once. */}
       <Tabs
+        key={opening}
         className="w-full"
         tabs={tabs}
-        {...(locales[0] === undefined ? {} : { defaultValue: locales[0] })}
+        {...(opening === undefined ? {} : { defaultValue: opening })}
       />
       {error === undefined ? null : (
         <p role="alert" className="text-destructive text-sm">

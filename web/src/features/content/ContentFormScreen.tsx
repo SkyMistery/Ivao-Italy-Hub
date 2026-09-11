@@ -6,6 +6,7 @@ import type { ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageShell, useNotice } from '../../shared/ui';
 import { categoriesOfKindQuery } from '../categories/queries';
+import { useUploadMedia } from '../media/mutations';
 import { mediaPickerQuery } from '../media/queries';
 
 import { ContentEditor } from './ContentEditor';
@@ -76,6 +77,9 @@ export function ContentFormScreen({
   const update = useUpdateContent(Number(id));
   const remove = useDeleteContent();
   const publish = usePublishContent(Number(id));
+  // Into this department's library, from the picker of any field of this screen: the same call
+  // the library screen makes.
+  const upload = useUploadMedia();
 
   // The shelves this department has for this kind. A page has none, so nothing is asked for one:
   // the select only exists on the kinds whose schema declares it.
@@ -132,8 +136,10 @@ export function ContentFormScreen({
           defaultLocale: bootstrap.division.defaultLocale,
           timezone: bootstrap.division.timezone,
         }}
-        // The library of this department: a row picks its pictures out of its own files.
+        // The library of this department: a row picks its pictures out of its own files, and may
+        // put a new one there from the picker.
         mediaLibrary={mediaPickerQuery(department)}
+        uploadMedia={async (file) => (await upload.mutateAsync({ file, ownerDepartment: department })).id}
         // Asked of the template's department and not of this page's: a page of one department can
         // be made from the template of another (design M1 §9.4).
         canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}

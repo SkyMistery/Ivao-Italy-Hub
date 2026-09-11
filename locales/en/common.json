@@ -260,6 +260,9 @@
       "empty": "No files yet",
       "emptyHint": "Upload one in the media library of this department first.",
       "open": "Open the media library",
+      "upload": "Upload a file",
+      "uploading": "Uploading…",
+      "uploadRefused": "The file was not accepted: too large, or not a kind this library takes.",
       "chosen": "Chosen: #{{id}}",
       "clear": "Choose none"
     },
@@ -515,6 +518,16 @@
       "section": "Section",
       "reorder": "Drag to reorder",
       "previewWidth": "Preview width",
+      "previewLanguage": "Language of the preview",
+      "duplicateSection": "Duplicate this section",
+      "compare": {
+        "label": "Draft or published",
+        "draft": "Draft",
+        "published": "Published",
+        "showingPublished": "What visitors read now. Editing is on the draft.",
+        "none": "Not published yet: there is nothing to compare with.",
+        "loading": "Loading the published version…"
+      },
       "previewWidths": {
         "phone": "Phone",
         "tablet": "Tablet",

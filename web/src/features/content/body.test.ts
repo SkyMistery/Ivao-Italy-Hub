@@ -9,6 +9,7 @@ import {
   clampColumns,
   defaultProps,
   duplicateBlock,
+  duplicateSection,
   findBlock,
   moveBlock,
   moveBlockTo,
@@ -86,6 +87,22 @@ test('a block dragged to a slot lands there: its own column, another, another se
   expect(ids(moveBlockTo(two, third!, 's_1', 0, 0))).toEqual([third, 'b_1', 'b_2']);
   expect(ids(moveBlockTo(two, third!, 's_1', 0, 2))).toEqual(['b_1', 'b_2', third]);
   expect(ids(moveBlockTo(two, 'b_1', 's_1', 0, 3))).toEqual(['b_2', third, 'b_1']);
+});
+
+test('a duplicated section is a copy right after it, with its own identifiers and no key', () => {
+  const withRow = addSection(body(), LOCALES, 's_1').body;
+  const original = withRow.sections[0]!;
+  const copied = duplicateSection(withRow, 's_1');
+  const copy = copied.body.sections[1]!;
+
+  expect(copied.body.sections.map((section) => section.id)).toEqual(['s_1', copied.id, 's_2']);
+  expect(copy.layout).toBe(original.layout);
+  expect(copy.blocks.map((block) => block.type)).toEqual(original.blocks.map((block) => block.type));
+  expect(copy.blocks.map((block) => block.id)).not.toEqual(original.blocks.map((block) => block.id));
+  expect(copy.sections).toHaveLength(1);
+  expect(copy.sections[0]!.id).not.toBe(original.sections[0]!.id);
+  // A key names what a template imposes; a copy is the page's own, and nothing is imposed on it.
+  expect(copy.key).toBeNull();
 });
 
 test('a block dropped onto one of another column in the outline moves nothing', () => {

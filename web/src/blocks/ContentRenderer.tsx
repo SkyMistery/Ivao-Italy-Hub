@@ -187,10 +187,13 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
         ? {}
         : {
             'data-pickable': 'section',
+            // What the editor scrolls to when the pick came from the outline (`data-picked`).
+            ...(picking.selected === section.id ? { 'data-picked': '' } : {}),
             // The bubble phase, while a block takes the capture phase and stops there: outer
             // handlers capture first, so a section that captured would always win and a block could
             // never be picked.
             onClick: () => picking.onPick('section', section.id),
+            onDoubleClick: () => picking.onOpen?.('section', section.id),
           })}
     >
       {picking !== null && picking.selected === section.id ? (
@@ -376,8 +379,14 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
   const draw = (draggable: SortableBinding | null) => (
     <div
       data-pickable="block"
+      {...(picking.selected === block.id ? { 'data-picked': '' } : {})}
       {...(draggable === null ? {} : { ref: draggable.setNodeRef, style: draggable.style })}
       className={`relative rounded-sm ${ring(picking, block.id)}`}
+      // A double click opens the block: picked, and the cursor in its first field.
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        picking.onOpen?.('block', block.id);
+      }}
       // ⚠️ The **capture** phase, and both `preventDefault` and `stopPropagation`. A block is not
       // an inert rectangle: it holds links, buttons, a contact form. Capturing means a click lands
       // on the block rather than on what is inside it — so a call to action selects itself instead

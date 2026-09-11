@@ -129,6 +129,43 @@ export function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 /**
+ * The keys that act on what is picked (Carmine, 11 September 2026): Delete removes it, ⌘D / Ctrl+D
+ * duplicates it, Escape lets go of it. Outside a field only, like the history keys; each handler
+ * says whether it did anything, and only then is the key kept from the browser — Ctrl+D is a
+ * bookmark otherwise, and stays one when nothing is picked.
+ */
+export function useSelectionShortcuts(handlers: {
+  remove: () => boolean;
+  duplicate: () => boolean;
+  release: () => boolean;
+}): void {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey || isEditableTarget(event.target)) {
+        return;
+      }
+
+      const modified = event.ctrlKey || event.metaKey;
+      const done =
+        event.key === 'Delete' && !modified
+          ? handlers.remove()
+          : event.key.toLowerCase() === 'd' && modified
+            ? handlers.duplicate()
+            : event.key === 'Escape' && !modified
+              ? handlers.release()
+              : false;
+
+      if (done) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [handlers]);
+}
+
+/**
  * ⌘Z / Ctrl+Z, ⌘⇧Z / Ctrl+Shift+Z and Ctrl+Y, on the document, for as long as the editor is on
  * screen — and only outside a field, for the reason `useBodyHistory` gives. `preventDefault` only
  * when there was something to do, so a page with nothing to undo leaves the key to the browser.

@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest';
 
 import { emptyBody, type Body } from '../../blocks';
 
-import { useBodyHistory, useHistoryShortcuts } from './useBodyHistory';
+import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
 
 /**
  * The way back — and forth — from the last things that happened to a body.
@@ -187,6 +187,42 @@ function Keys({ undo, redo }: { undo: () => boolean; redo: () => boolean }) {
     </>
   );
 }
+
+function PickedKeys({ handlers }: { handlers: Parameters<typeof useSelectionShortcuts>[0] }) {
+  useSelectionShortcuts(handlers);
+  return (
+    <>
+      <textarea aria-label="A field" />
+      <button type="button">A button</button>
+    </>
+  );
+}
+
+test('Delete, ⌘D and Escape act on what is picked, outside a field, and only when there is something to do', () => {
+  const remove = vi.fn(() => true);
+  const duplicate = vi.fn(() => false);
+  const release = vi.fn(() => true);
+  render(<PickedKeys handlers={{ remove, duplicate, release }} />);
+
+  const button = screen.getByRole('button', { name: 'A button' });
+
+  const deleting = fireEvent.keyDown(button, { key: 'Delete' });
+  expect(remove).toHaveBeenCalledTimes(1);
+  // Kept from the browser, because something was done.
+  expect(deleting).toBe(false);
+
+  // Nothing to duplicate: the key stays the browser's — Ctrl+D is a bookmark there.
+  const bookmarking = fireEvent.keyDown(button, { key: 'd', ctrlKey: true });
+  expect(duplicate).toHaveBeenCalledTimes(1);
+  expect(bookmarking).toBe(true);
+
+  fireEvent.keyDown(button, { key: 'Escape' });
+  expect(release).toHaveBeenCalledTimes(1);
+
+  // Inside a field, Delete deletes a character and nothing else.
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'A field' }), { key: 'Delete' });
+  expect(remove).toHaveBeenCalledTimes(1);
+});
 
 test('⌘Z is the editor’s outside a field and the browser’s inside one', () => {
   const undo = vi.fn(() => true);

@@ -149,6 +149,38 @@ export function addSection(
   };
 }
 
+/**
+ * A copy of a section right after it, among its siblings — new identifiers all the way down, no
+ * capture carried over, and **no key**: a key names the section a template imposes, and a copy is
+ * a section of the page's own (Carmine, 11 September 2026: a section set up well, background and
+ * columns, is one to copy).
+ */
+export function duplicateSection(body: Body, id: string): { body: Body; id: string } {
+  const copyId = newId('s');
+
+  const clone = (section: SectionEnvelope, sectionId: string): SectionEnvelope => ({
+    ...section,
+    id: sectionId,
+    key: null,
+    required: null,
+    locked: null,
+    allowedBlocks: null,
+    blocks: section.blocks.map((block) => ({ ...block, id: newId('b'), frozen: null })),
+    sections: section.sections.map((nested) => clone(nested, newId('s'))),
+  });
+
+  const walk = (sections: SectionEnvelope[]): SectionEnvelope[] => {
+    const index = sections.findIndex((section) => section.id === id);
+    if (index >= 0) {
+      return sections.toSpliced(index + 1, 0, clone(sections[index]!, copyId));
+    }
+
+    return sections.map((section) => ({ ...section, sections: walk(section.sections) }));
+  };
+
+  return { body: { ...body, sections: walk(body.sections) }, id: copyId };
+}
+
 export function removeSection(body: Body, id: string): Body {
   const prune = (sections: SectionEnvelope[]): SectionEnvelope[] =>
     sections

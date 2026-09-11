@@ -51,9 +51,11 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** **v0.62** (11 set, sera: quattro livelli di sezioni, il selettore di file porta alla
-libreria, la targhetta dentro la sezione e i due sfondi con un glifo; v0.61 i comandi anche
-sull'oggetto nella pagina, l'outline per colonne;
+**Piano:** **v0.63** (11 set, notte: sette comodità dell'editor — lingua dell'anteprima, doppio
+clic, tasti, scorrimento, duplica sezione, upload dal selettore, bozza | pubblicato — e la
+deduplica dei file caricati **da decidere**; v0.62 quattro livelli di sezioni, il selettore di file
+porta alla libreria, la targhetta dentro la sezione e i due sfondi con un glifo; v0.61 i comandi
+anche sull'oggetto nella pagina, l'outline per colonne;
 v0.60 **G15, l'editor che risponde**, decisa e costruita in giornata prima di G14; v0.59
 le due dashboard personali si progettano per prime in M2; v0.58 i sette sfondi di sezione, §16.C
 riaperto e cambiato). **Design M1:** v1.15

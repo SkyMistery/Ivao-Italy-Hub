@@ -1,9 +1,30 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.62 — 11 settembre 2026 (**quattro livelli di sezioni**, non tre; il selettore di file porta alla libreria; due cose viste in uno screenshot)
+**Versione documento:** 0.63 — 11 settembre 2026 (**sette comodità dell'editor** scelte da Carmine su otto proposte: lingua dell'anteprima, doppio clic, tasti sull'oggetto scelto, scorrimento, duplica sezione, upload dal selettore, bozza accanto a pubblicato; il caricamento di due file identici non è controllato)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.63** (11 set 2026, notte): **sette comodità dell'editor**, proposte guardandolo e
+scelte da Carmine (la 6, i pezzi riutilizzabili, no). (1) **La lingua dell'anteprima**: IT / EN
+accanto alle larghezze; ogni valore tradotto letto dentro l'editor la segue
+(`PreviewLocaleContext` sotto `useLocalized`) e ogni campo tradotto apre su quella scheda — prima
+il sito era in inglese, il form apriva sull'italiano e quello che si scriveva non si vedeva. (2)
+**Doppio clic** su un blocco o una sezione: scelto, e il cursore nel primo campo del pannello.
+(3) **Canc** elimina, **⌘D** duplica, **Esc** lascia: gli stessi comandi della targhetta, fuori
+da un campo. (4) L'oggetto scelto è **portato in vista** sulla pagina. (5) **Duplica sezione**,
+dalla targhetta e dall'outline: copia subito dopo, identificatori nuovi, senza chiave. (7) **Il
+selettore di file carica** nella libreria del dipartimento — dallo stato vuoto e sotto la griglia,
+con la stessa chiamata della schermata della libreria, passata al generatore come `uploadMedia`;
+quello che si carica è scelto. Non riapre la scelta di G1 «un posto solo da cui un file entra»: la
+chiamata è una, offerta da un posto in più. (8) **Bozza | Pubblicato** sull'anteprima: la versione
+pubblicata disegnata dallo stesso renderer senza picking, o «non ancora pubblicata».
+
+⚠️ **Verificato, e da decidere: due file identici caricati sono due righe e due file.** Non c'è
+hash né controllo sul nome: ogni upload salva sotto un nome nuovo (`Guid`) e crea una riga. Una
+deduplica vorrebbe una colonna `sha256` (migrazione additiva), il calcolo all'upload — i primi
+byte già si leggono per riconoscere il formato — e una risposta «c'è già, eccolo» che restituisce
+la riga esistente. È (c): mezza pagina prima del codice, se Carmine la vuole.
 
 **Changelog 0.62** (11 set 2026, sera): tre richieste di Carmine mentre compone. **Le sezioni si
 annidano fino a quattro livelli**, non tre: «una sezione in una sezione in una sezione in una

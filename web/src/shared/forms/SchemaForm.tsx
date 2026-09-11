@@ -55,6 +55,8 @@ interface FormEnvironment {
   labels: string;
   /** The page a media field chooses from. A media field without one throws, and says why. */
   mediaLibrary?: MediaLibraryQuery | undefined;
+  /** Uploads into that library and answers the identifier, when the screen allows it. */
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
   /** The two facts about the division a media field and an instant need. */
   division?: { defaultLocale: string; timezone: string } | undefined;
   /**
@@ -88,6 +90,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   id,
   actionsElsewhere = false,
   mediaLibrary,
+  uploadMedia,
   division,
   onSuggestSearch,
 }: {
@@ -130,6 +133,12 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
    */
   mediaLibrary?: MediaLibraryQuery;
   /**
+   * Uploads a file into that library and answers its identifier (Carmine, 11 September 2026): the
+   * picker then offers "upload" beside "choose", and what was uploaded is chosen. It is the same
+   * call the library screen makes — one way in, offered from one more place.
+   */
+  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  /**
    * The default language and the time zone of the division. Only two kinds of field need them — a
    * media field, to announce a thumbnail, and an instant, to say what a UTC time is locally — so a
    * form with neither is never asked for them.
@@ -156,7 +165,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   });
   const problem = useProblemDetails(form);
   const fields = readFields(schema);
-  const env: FormEnvironment = { locales, labels, mediaLibrary, division, onSuggestSearch };
+  const env: FormEnvironment = { locales, labels, mediaLibrary, uploadMedia, division, onSuggestSearch };
 
   useProposedSlugs(form, fields, division?.defaultLocale);
   useLiveValues(form, schema, onChange);
@@ -574,6 +583,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
             render={({ field }) => (
               <MediaPicker
                 query={library}
+                onUpload={env.uploadMedia}
                 value={typeof field.value === 'number' ? field.value : null}
                 // Undefined and not null when nothing is chosen: an optional field that is absent
                 // is absent, and a null would be a value the contract does not have.

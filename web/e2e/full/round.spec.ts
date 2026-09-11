@@ -107,7 +107,8 @@ test('from a template to a page a visitor can read, and a draft that stays priva
     await saveDraft(page, content.editor.saveDraft).click();
   });
 
-  const publish = page.getByRole('button', { name: content.editor.publish });
+  // Exact, since the frame has a "Published" toggle beside the draft, and "Publish" is in it.
+  const publish = page.getByRole('button', { name: content.editor.publish, exact: true });
   await expect(publish).toBeEnabled();
   await whileWaitingFor(page, 'POST', '/publish', async () => {
     await publish.click();

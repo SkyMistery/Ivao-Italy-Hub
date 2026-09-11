@@ -260,6 +260,9 @@
       "empty": "Ancora nessun file",
       "emptyHint": "Caricane uno nella libreria media di questo dipartimento.",
       "open": "Apri la libreria media",
+      "upload": "Carica un file",
+      "uploading": "Caricamento…",
+      "uploadRefused": "Il file non è stato accettato: troppo grande, o di un tipo che questa libreria non prende.",
       "chosen": "Scelto: #{{id}}",
       "clear": "Non scegliere nessuno"
     },
@@ -515,6 +518,16 @@
       "section": "Sezione",
       "reorder": "Trascina per riordinare",
       "previewWidth": "Larghezza dell’anteprima",
+      "previewLanguage": "Lingua dell’anteprima",
+      "duplicateSection": "Duplica questa sezione",
+      "compare": {
+        "label": "Bozza o pubblicato",
+        "draft": "Bozza",
+        "published": "Pubblicato",
+        "showingPublished": "Quello che i visitatori leggono adesso. Le modifiche vanno sulla bozza.",
+        "none": "Non ancora pubblicata: non c’è niente con cui confrontare.",
+        "loading": "Carico la versione pubblicata…"
+      },
       "previewWidths": {
         "phone": "Telefono",
         "tablet": "Tablet",
