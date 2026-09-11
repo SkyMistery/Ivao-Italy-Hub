@@ -146,7 +146,11 @@ barra dei componenti, le barre di scorrimento sottili, e il **segnaposto di un b
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 
-**Poi G14 — il documento operativo** (`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
+**G14 — il documento operativo — aperta il 12 settembre 2026** sul branch
+`m1/g14-operational-document`, da `main` con le PR #57 e #58 mergiate (Carmine: «mergia e poi vai
+di G14»; il tag `v0.2.0-m1` aspetta ancora la scheda). Il design della prima passata è la sezione
+G14 di `04-piano-implementazione-m1.md` (piano 0.64); la nota:
+(`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
 Prima passata decisa: tipo SOP/LoA, sei campi operativi (posizione primaria e secondaria, ICAO, FIR,
 efficacia, revisione, scelti da elenchi `ref_` e non digitati), `Archived` e `Superseded` **col
 successore**, i blocchi **Frequency Table** e **Coordination**, il **piè di pagina con la stampa**. Il

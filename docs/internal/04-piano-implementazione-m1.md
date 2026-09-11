@@ -1344,6 +1344,88 @@ pagina inerte resta); e2e con `dragTo` fra due blocchi, che è dove si sbaglia.
 descrive «Apply», l'HANDOFF con il conto dei test, e il rapporto di quanto è costata contro le tre
 sessioni previste.
 
+### G14 — Il documento operativo (LoA / SOP)
+
+**Aperta il 12 settembre 2026**, dopo il merge delle PR #57 e #58 (Carmine: «mergia e poi vai di
+G14»). Decisa il 10 settembre (`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`):
+il documento operativo di un controllore — chi parla con chi, su quale frequenza, a quale quota si
+passa il traffico — **non è un secondo tipo di contenuto**: è `kind = Document` con sei colonne
+in più, due stati in più, due blocchi in più e un piè di pagina. `NoSecondContentEntity` di G5 resta
+verde, o questa sezione ha sbagliato strada. Branch `m1/g14-operational-document`.
+
+**Il modello — (b), una migrazione additiva `AddOperationalDocument`.** Su `cms_contents`:
+
+| Colonna | Tipo | Che cos'è |
+|---|---|---|
+| `document_type` | varchar(8) null | `Sop` o `Loa` (enum `DocumentType`), ortogonale alla categoria |
+| `primary_position`, `secondary_position` | varchar(16) null | il callsign (`LIRR_CTR`, `LIRF_TWR`), maiuscolo, `^[A-Z0-9_]{3,16}$` |
+| `icao` | char(4) null | un aeroporto **di `ref_ivao_airports`**: il validatore rifiuta gli altri |
+| `fir` | varchar(4) null | un centro **di `ref_ivao_centers`**, stessa regola |
+| `effective_on`, `review_on` | date null | in vigore dal; da rivedere entro |
+| `retired_at` | datetime null | «non vale più»: **Archived** |
+| `superseded_by_id` | bigint null | «vale quest'altro»: con `retired_at`, **Superseded**. Un altro `Document` della divisione, non un vicolo cieco |
+| `review_notified_at` | datetime null | quando il dipartimento è stato avvisato della scadenza (il job, sotto) |
+| `show_footer` | bool, default 1 | l'unica scelta di chi edita sul piè di pagina |
+
+Su `cms_content_versions`: `airac` varchar(4) null — l'etichetta facoltativa **per pubblicazione**
+della nota del 9 settembre, scritta nella stessa finestra del changelog.
+
+⚠️ **Due scelte di design, prese qui e non nella nota**, da contestare se non convincono:
+
+1. **Archived e Superseded non sono valori nuovi di `PublishStatus`.** Sono due colonne (`retired_at`,
+   `superseded_by_id`): un documento ritirato **resta pubblicato e leggibile** — chi arriva da un
+   vecchio link deve trovare l'avviso e, se c'è, la strada verso il successore, non un 404. Un valore
+   nuovo dell'enum avrebbe dovuto insegnare al query filter, alla pubblicazione e alla ricerca che
+   cosa farne; due colonne non insegnano niente a nessuno. La lista del back-office mostra un badge
+   derivato, e la ricerca continua a trovare il documento (con l'avviso in cima).
+2. **Le posizioni non hanno una tabella `ref_`** (l'API IVAO non le sincronizza). ICAO e FIR si
+   **scelgono** da un elenco (`suggestionsOnly`, l'estensione del generatore dell'8 settembre); le
+   due posizioni sono un campo `suggest` **aperto**, coi suggerimenti costruiti dall'ICAO e dalla FIR
+   scelti (`LIRF_DEL / GND / TWR / APP / DEP`, `LIRR_CTR`). Il «terzo miglioramento» della nota — la
+   tabella delle frequenze che nasce precompilata — **non è in questa passata**: le frequenze non
+   sono in nessuna tabella nostra, e inventarle sarebbe peggio che lasciarle scrivere.
+
+**Gli elenchi per la SPA**: un endpoint di sola lettura `GET /api/ref/airspace` — `{ airports:
+[{icao, name}], centers: [{id, name}] }` — in `Core/Ivao`, dentro il perimetro IVAO, servito dalla
+cache di `FirDirectory` (6 ore, invalidata dalla sincronizzazione). ⚠️ È un endpoint scritto a mano
+e va contato nella PR: il motore CRUD è per le risorse di un dipartimento, e questa è la fotografia
+di un'API.
+
+**Il pubblico** (`PublicContentDto` cresce, `PublicEntryScreen` disegna): una **striscia operativa**
+sotto il titolo — tipo, posizioni, ICAO / FIR, in vigore dal, da rivedere entro; **l'avviso** in cima
+se ritirato («non è più in vigore» / «è stato sostituito da …» con il link); il **piè di pagina** in
+fondo — versione, pubblicato il, da chi (nome risolto dal server, `published_by_name`), AIRAC se
+c'è, e il pulsante **Stampa** — quando `show_footer`. Il piè di pagina lo disegna la schermata del
+documento e non il renderer: è la pagina intorno al corpo, come la copertina di una news.
+
+**La stampa — (b)**: un foglio `@media print` che spegne barra, sidebar e piè di pagina del sito;
+e la **trappola scritta il 9 settembre**: `tabs` e `accordion` nascondono testo. Un `PrintContext`
+in `blocks/`, acceso da `beforeprint` e spento da `afterprint`, fa disegnare a quei due blocchi
+tutti i pannelli, uno sotto l'altro, finché si stampa.
+
+**I due blocchi — (c), nel registry del nucleo**, sottogruppo nuovo `atc` del gruppo Data:
+`frequencyTable` (righe: callsign, frequenza, tipo `DEL/GND/TWR/APP/DEP/CTR/FSS/ATIS`, CPDLC,
+rating minimo come testo breve, nota tradotta) e `coordination` (righe: da, a, punto di
+trasferimento, livello, direzione `inbound/outbound/both`, nota tradotta). ⚠️ Il rating minimo è
+**testo** e non un enum di rating IVAO: un enum sarebbe codice IVAO fuori dal perimetro
+(`CLAUDE.md` §3), e il distintivo con l'immagine è un pezzo di un'altra passata, se mai.
+**La prosa tradotta, il resto no**: callsign, frequenze, punti e livelli non sono `Localized` e non
+finiscono nell'indice; le note sì.
+
+**La data di revisione fa qualcosa — (b)**: `DocumentReviewJob`, Quartz, una volta al giorno: per
+ogni documento con `review_on` passata e `review_notified_at` nulla, un intento
+`document.reviewDue` allo staff del dipartimento proprietario, poi `review_notified_at`. La lista
+del back-office ha il filtro «da rivedere». La data di efficacia nel futuro si dice al lettore
+nella striscia («in vigore dal …»).
+
+**Fuori da questa passata**, come deciso il 10: METAR e Runway Config, Airspace/Sector, Procedure
+Steps, Reference List, la clonazione, le frequenze precompilate.
+
+**Ordine di lavoro**: (1) modello, migrazione, DTO, validatore, endpoint `airspace` — test di
+integrazione; (2) i campi nel form del documento, ICAO/FIR da elenco, le posizioni suggerite;
+(3) la schermata pubblica: striscia, avviso, piè di pagina, stampa; (4) i due blocchi con i loro
+test e la galleria; (5) il job di revisione con il suo test. Ogni passo un commit sulla stessa PR.
+
 ---
 
 ## E. Rischi specifici di M1 e come Claude Code deve reagire

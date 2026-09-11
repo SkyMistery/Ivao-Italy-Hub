@@ -1,9 +1,21 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.63 — 11 settembre 2026 (**sette comodità dell'editor** scelte da Carmine su otto proposte: lingua dell'anteprima, doppio clic, tasti sull'oggetto scelto, scorrimento, duplica sezione, upload dal selettore, bozza accanto a pubblicato; il caricamento di due file identici non è controllato)
+**Versione documento:** 0.64 — 12 settembre 2026 (**G14 aperta**: il documento operativo è `kind = Document` con sei colonne, due stati come colonne, due blocchi ATC, il piè di pagina con la stampa e il job di revisione; G15 e la PR #57 sono su `main`)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.64** (12 set 2026): **G14 aperta**, dopo il merge delle PR #57 e #58 su `main`
+(«mergia e poi vai di G14»). Il design della prima passata sta nella sezione G14 di
+`04-piano-implementazione-m1.md`, scritto prima del codice come la nota del 10 settembre chiedeva.
+Due scelte prese lì e non nella nota, da contestare se non convincono: **Archived e Superseded sono
+due colonne** (`retired_at`, `superseded_by_id`) e non valori nuovi di `PublishStatus` — un
+documento ritirato resta pubblicato e leggibile, con l'avviso in cima e il link al successore, e
+niente deve insegnare al query filter o alla ricerca un terzo stato; e **le posizioni sono un campo
+suggerito e aperto** (ICAO e FIR invece si scelgono da elenco), perché l'API IVAO non sincronizza le
+posizioni e una tabella inventata sarebbe peggio di un campo. In §9.3 e §9.4 il documento
+operativo è una **specializzazione** di `Document`, non un `kind`: `NoSecondContentEntity` resta il
+test che lo dice. Il tag `v0.2.0-m1` **non è stato messo**: aspetta la scheda riseguita da Carmine.
 
 **Changelog 0.63** (11 set 2026, notte): **sette comodità dell'editor**, proposte guardandolo e
 scelte da Carmine (la 6, i pezzi riutilizzabili, no). (1) **La lingua dell'anteprima**: IT / EN
