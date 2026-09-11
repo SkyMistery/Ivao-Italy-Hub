@@ -84,3 +84,14 @@
   height: auto;
   max-height: var(--radix-select-content-available-height, 20rem);
 }
+
+/*
+ * A panel that scrolls on its own — the bar of components and the properties of the editor — with
+ * a scrollbar that does not shout (Carmine, 11 September 2026, with a screenshot: two wide, pale
+ * bars framing the page being composed). The two standard properties, in the theme's own colours,
+ * so the bar is thin and dark on dark; nothing vendor specific, nothing that removes it.
+ */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}

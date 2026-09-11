@@ -474,6 +474,8 @@
       "onThePage": "Sulla pagina",
       "components": "Componenti",
       "componentsHint": "Scegli una sezione, poi un componente da aggiungerle.",
+      "searchComponents": "Cerca un componente",
+      "noComponentMatches": "Nessun componente si chiama «{{query}}».",
       "addsTo": "Aggiunge a: {{section}}",
       "lockedTarget": "«{{section}}» è fissata dal template: non ci si può aggiungere niente.",
       "notAllowedHere": "Il template non permette questo blocco nella sezione selezionata.",

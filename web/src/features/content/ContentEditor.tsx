@@ -402,7 +402,7 @@ export function ContentEditor({
   // child of a grid work at all — a stretched cell has nothing to stick inside — and it scrolls on
   // its own when it is taller than the window.
   const properties = (
-    <div className="flex flex-col gap-4 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
+    <div className="scroll-thin flex flex-col gap-4 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
       <SectionHeader
         title={t('content.editor.properties')}
         {...(selection === null

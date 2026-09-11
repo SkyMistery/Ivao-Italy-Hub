@@ -63,7 +63,12 @@ collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
 **Test, misurati l'11 settembre su `m1/g15-editor-live` (le tre sessioni di G15):** **473 .NET**
 (306 unit + 167 integrazione — la sessione 2 ne aggiunge uno sull'audit dell'autosalvataggio; ⚠️
 della suite di integrazione sono stati eseguiti in locale solo i due test dell'audit, il resto lo
-verifica la CI) + **345 Vitest** + **56 smoke Playwright** + **16 del giro pieno** (`pnpm e2e:full`).
+verifica la CI) + **346 Vitest** + **56 smoke Playwright** + **16 del giro pieno** (`pnpm e2e:full`).
+⚠️ Il banco (`ivaohub_e2e`) **non si azzera fra un giro e l'altro**: l'11 settembre 105 template
+lasciati dai giri della giornata avevano fatto cadere «Section page» fuori dalla prima pagina del
+selettore, e due test della round sono caduti senza che il codice c'entrasse. Ora i test dei template
+si riprendono le righe che creano (`deleteContent` in `bench.ts`); se ricapita, contare e poi
+`DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` nel container MariaDB.
 Nessuno skippato. ⚠️ Il C# **è cambiato** dal 10 settembre (icona e intestazioni del menu, marchio e
 favicon della divisione, i tre fondi scuri nel walker): l'avviso «dall'8 settembre non è cambiata una
 riga di C#» che stava qui non vale più.

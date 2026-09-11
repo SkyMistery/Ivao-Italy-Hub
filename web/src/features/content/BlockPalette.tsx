@@ -5,12 +5,14 @@ import {
   AccordionRoot,
   AccordionTrigger,
   Button,
+  Input,
 } from '@ivao/atmosphere-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import { type BlockRegistration } from '../../shared/modules';
+import { fold } from '../../shared/search/highlight';
 import { SectionHeader } from '../../shared/ui';
 
 import type { PaletteDrag } from './DropZone';
@@ -53,10 +55,31 @@ export function BlockPalette({
 }) {
   const { t } = useTranslation();
 
-  const groups = groupsOf(registry.blocks);
+  const arranged = groupsOf(registry.blocks);
 
-  const everyGroup = groups.map((group) => group.group);
-  const everySubgroup = groups.flatMap((group) =>
+  // A word typed to find a component by its name (Carmine, 11 September 2026: "a field to search
+  // for a certain one would be very handy"). Folded the way the site's search folds, so "citta"
+  // finds "Città"; a drawer with nothing left in it is not drawn, and while a word is typed every
+  // drawer with a match is open — a match inside a shut drawer would be a match nobody sees.
+  const [query, setQuery] = useState('');
+  const typed = fold(query.trim());
+  const matches = (block: BlockRegistration) => typed === '' || fold(t(block.editorLabelKey)).includes(typed);
+
+  const groups =
+    typed === ''
+      ? arranged
+      : arranged
+          .map((group) => ({
+            ...group,
+            blocks: group.blocks.filter(matches),
+            subgroups: group.subgroups
+              .map((subgroup) => ({ ...subgroup, blocks: subgroup.blocks.filter(matches) }))
+              .filter((subgroup) => subgroup.blocks.length > 0),
+          }))
+          .filter((group) => group.blocks.length > 0 || group.subgroups.length > 0);
+
+  const everyGroup = arranged.map((group) => group.group);
+  const everySubgroup = arranged.flatMap((group) =>
     group.subgroups.map((subgroup) => `${group.group}.${subgroup.subgroup}`),
   );
 
@@ -80,7 +103,7 @@ export function BlockPalette({
   };
 
   return (
-    <div className="flex flex-col gap-3 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
+    <div className="scroll-thin flex flex-col gap-3 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
       <SectionHeader
         title={t('content.editor.components')}
         actions={
@@ -88,6 +111,14 @@ export function BlockPalette({
             {everythingOpen ? t('content.editor.collapseAll') : t('content.editor.expandAll')}
           </Button>
         }
+      />
+
+      <Input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={t('content.editor.searchComponents')}
+        aria-label={t('content.editor.searchComponents')}
       />
 
       {/* What a click will do, said before it is clicked rather than after nothing happens — and
@@ -101,7 +132,16 @@ export function BlockPalette({
             : t('content.editor.addsTo', { section: target.name })}
       </p>
 
-      <AccordionRoot type="multiple" value={openGroups} onValueChange={setOpenGroups} className="w-full">
+      {groups.length === 0 ? (
+        <p className="text-muted-foreground text-sm">{t('content.editor.noComponentMatches', { query })}</p>
+      ) : null}
+
+      <AccordionRoot
+        type="multiple"
+        value={typed === '' ? openGroups : groups.map((group) => group.group)}
+        onValueChange={setOpenGroups}
+        className="w-full"
+      >
         {groups.map((group) => (
           <AccordionItem key={group.group} value={group.group}>
             <AccordionTrigger>{t(`blocks.groups.${group.group}`)}</AccordionTrigger>
@@ -118,7 +158,11 @@ export function BlockPalette({
                 {group.subgroups.length === 0 ? null : (
                   <AccordionRoot
                     type="multiple"
-                    value={openSubgroups}
+                    value={
+                      typed === ''
+                        ? openSubgroups
+                        : group.subgroups.map((subgroup) => `${group.group}.${subgroup.subgroup}`)
+                    }
                     onValueChange={(next) =>
                       // Only this group's drawers are this accordion's to report; everybody else's
                       // are carried across untouched.

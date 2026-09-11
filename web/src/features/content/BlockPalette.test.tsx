@@ -56,6 +56,22 @@ test('the drawers are in the order the groups are declared, not the order blocks
   expect(arranged.map((group) => group.group)).toEqual([...declared]);
 });
 
+test('a word typed finds a component by its name, and empties the drawers that have none', async () => {
+  const user = userEvent.setup();
+  render();
+
+  await user.type(screen.getByRole('searchbox', { name: editor.searchComponents }), 'pict');
+
+  // The picture stays, the heading goes, and the drawer the picture lives in is open whatever it
+  // was before — a match inside a shut drawer would be a match nobody sees.
+  expect(screen.getByRole('button', { name: englishCommon.blocks.image.label })).toBeVisible();
+  expect(screen.queryByRole('button', { name: englishCommon.blocks.heading.label })).not.toBeInTheDocument();
+
+  await user.clear(screen.getByRole('searchbox', { name: editor.searchComponents }));
+  await user.type(screen.getByRole('searchbox', { name: editor.searchComponents }), 'zzz');
+  expect(screen.getByText(editor.noComponentMatches.replace('{{query}}', 'zzz'))).toBeVisible();
+});
+
 test('a group can be collapsed and opened again', async () => {
   const user = userEvent.setup();
   render();
