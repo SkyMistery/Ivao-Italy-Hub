@@ -73,9 +73,17 @@ test('a block dropped onto one of another column in the outline moves nothing', 
   expect(moved.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_2', 'b_1']);
 });
 
-test('moving a section does the same, one level at a time', () => {
+test('moving a section does the same, among its siblings at whichever level', () => {
   const moved = moveSection(body(), 's_2', -1);
   expect(moved.sections.map((section) => section.id)).toEqual(['s_2', 's_1']);
+
+  // A row moves among the rows of its section, and the page's sections stay where they are.
+  const withRows = addSection(addSection(body(), LOCALES, 's_1').body, LOCALES, 's_1');
+  const [first, second] = withRows.body.sections[0]!.sections.map((row) => row.id);
+  const rowMoved = moveSection(withRows.body, second!, -1);
+
+  expect(rowMoved.sections.map((section) => section.id)).toEqual(['s_1', 's_2']);
+  expect(rowMoved.sections[0]!.sections.map((row) => row.id)).toEqual([second, first]);
 });
 
 test('a duplicate is a copy with its own identifier, its own properties and no capture', () => {

@@ -58,7 +58,7 @@ export interface Picking {
 }
 
 export interface PickAction {
-  readonly key: 'remove' | 'duplicate' | 'addRow';
+  readonly key: 'moveUp' | 'moveDown' | 'remove' | 'duplicate' | 'addRow';
   readonly run: () => void;
 }
 

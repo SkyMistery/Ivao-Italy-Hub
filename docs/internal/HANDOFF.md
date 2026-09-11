@@ -120,9 +120,10 @@ gli slot disegnati dal renderer attraverso il contesto di picking e dnd-kit che 
 `blocks/`. **G15 è tutta sulla PR #58**, in tre commit, e ha chiuso il punto 3 della nota del 10
 settembre. **Poi un quarto commit, la sera** (piano 0.61): Carmine, provandola, ha chiesto di
 aggiungere e togliere sezioni e togliere un blocco **dalla pagina**, e di vedere nell'outline in
-quale colonna sta un blocco. La targhetta sull'oggetto scelto porta i comandi che il template
-permette; l'outline elenca una colonna alla volta, e le frecce muovono dentro la colonna. Dopo il
-merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+quale colonna sta un blocco, e poi di **spostare le sezioni dalla pagina**. La targhetta sull'oggetto
+scelto porta i comandi che il template permette, frecce comprese; l'outline elenca una colonna alla
+volta, le frecce muovono un blocco dentro la colonna e una riga fra le righe della sua sezione. Dopo
+il merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 

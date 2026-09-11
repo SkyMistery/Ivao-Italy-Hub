@@ -14,14 +14,18 @@ il renderer non deve mettere su chrome da editor. **La risposta è la stessa del
 chrome esiste solo attraverso il contesto di picking, che sul sito pubblico è `null`. Il contesto
 porta `actions` — l'editor risponde con ciò che il template permette, la pagina disegna esattamente
 quella lista — e `onAddSection`; la cosa scelta porta una **targhetta** con il nome e i comandi
-(duplica ed elimina su un blocco; aggiungi riga ed elimina su una sezione), e in fondo alla pagina
+(sposta su e giù, duplica ed elimina su un blocco; sposta su e giù, aggiungi riga ed elimina su una
+sezione — «le sezioni già posizionate le vorrei poter spostare a mano»), e in fondo alla pagina
 c'è «Aggiungi una sezione» come una colonna vuota offre un blocco. Le regole del template — niente su
 una sezione bloccata, niente eliminazione di una obbligatoria — sono lette in un posto solo e
 valgono per outline e pagina insieme. **L'outline elenca una colonna alla volta**, ognuna col suo
 nome, una lista ordinabile per colonna; per conseguenza «sposta su/giù» muove un blocco **dentro la
 sua colonna** — prima scambiava posti nella lista senza che sulla pagina si muovesse niente — e un
-blocco lasciato su uno di un'altra colonna non si muove, come già un drop fra due sezioni. Costruito
-lo stesso giorno, sulla PR #58 di G15.
+blocco lasciato su uno di un'altra colonna non si muove, come già un drop fra due sezioni. E una
+**riga si sposta fra le righe della sua sezione**: prima `moveSection` muoveva solo il primo livello
+e le frecce su una riga nell'outline non facevano niente. Costruito lo stesso giorno, sulla PR #58
+di G15. Il trascinamento delle sezioni sulla pagina non c'è: le frecce sulla targhetta sono la
+strada, anche da tastiera, e si vedrà all'uso se bastano.
 
 **Changelog 0.60** (11 set 2026): **l'editor che risponde**, fase **G15**, decisa da Carmine con
 davanti il page builder di va.ivao.aero e il nostro editor uno accanto all'altro. Nota

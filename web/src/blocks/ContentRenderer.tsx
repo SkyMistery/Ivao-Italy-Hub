@@ -1,6 +1,6 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { Copy, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -378,6 +378,8 @@ function ring(picking: Picking, id: string): string {
 }
 
 const ACTION_LABEL: Record<PickAction['key'], { label: string; Icon: typeof Trash2 }> = {
+  moveUp: { label: 'content.editor.moveUp', Icon: ArrowUp },
+  moveDown: { label: 'content.editor.moveDown', Icon: ArrowDown },
   remove: { label: 'content.editor.remove', Icon: Trash2 },
   duplicate: { label: 'content.editor.duplicate', Icon: Copy },
   addRow: { label: 'content.editor.addRow', Icon: Plus },

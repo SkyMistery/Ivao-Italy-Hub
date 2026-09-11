@@ -137,9 +137,18 @@ export function removeSection(body: Body, id: string): Body {
   return { ...body, sections: prune(body.sections) };
 }
 
-/** Moves a top level section one place up or down. Nested ones move with the section they are in. */
+/**
+ * Moves a section one place up or down **among its siblings**: a section of the page among the
+ * page's sections, a row among the rows of its section. Until 11 September 2026 only the first
+ * level moved, and the arrows on a row in the outline did nothing.
+ */
 export function moveSection(body: Body, id: string, delta: -1 | 1): Body {
-  return { ...body, sections: move(body.sections, (section) => section.id === id, delta) };
+  const walk = (sections: SectionEnvelope[]): SectionEnvelope[] =>
+    sections.some((section) => section.id === id)
+      ? move(sections, (section) => section.id === id, delta)
+      : sections.map((section) => ({ ...section, sections: walk(section.sections) }));
+
+  return { ...body, sections: walk(body.sections) };
 }
 
 /**

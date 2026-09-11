@@ -543,13 +543,24 @@ export function ContentEditor({
         }
 
         return [
+          { key: 'moveUp' as const, run: () => change(moveBlock(body, id, -1)) },
+          { key: 'moveDown' as const, run: () => change(moveBlock(body, id, 1)) },
           { key: 'duplicate' as const, run: () => duplicateBlockById(id) },
           { key: 'remove' as const, run: () => removeBlockById(id) },
         ];
       }
 
+      // A section moves among its siblings — the page's sections, or the rows of one section
+      // (Carmine, 11 September 2026: "the sections already placed, I want to move them by hand on
+      // the page"). The same arrows the outline has, on the thing itself.
       const rule = ruleFor(rules, findSection(body, id)?.key);
       return [
+        ...(rule.locked
+          ? []
+          : [
+              { key: 'moveUp' as const, run: () => change(moveSection(body, id, -1)) },
+              { key: 'moveDown' as const, run: () => change(moveSection(body, id, 1)) },
+            ]),
         ...(rule.locked || !body.sections.some((section) => section.id === id)
           ? []
           : [{ key: 'addRow' as const, run: () => addSectionAt(id) }]),
