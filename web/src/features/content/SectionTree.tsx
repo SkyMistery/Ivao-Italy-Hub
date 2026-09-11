@@ -38,6 +38,9 @@ export interface Selection {
   readonly id: string;
 }
 
+/** The deepest section a row may still be added to: depth 3 holds the fourth level, the server's last. */
+export const MAX_ROW_DEPTH = 3;
+
 /** Which list a dragged row belongs to, carried by the row rather than read off its identifier. */
 type RowKind = 'section' | 'block';
 
@@ -254,10 +257,10 @@ function SectionNode({
         />
       )}
 
-      {/* ⚠️ Only inside a section of the first level. A row inside a row is allowed by the model —
-          the server refuses at three — but it is noise on a screen: what the depth buys is *one*
-          band of colour holding several column layouts, and a third level buys nothing. */}
-      {rule.locked || depth > 0 ? null : (
+      {/* Down to the fourth level, which is where the server stops (`BlockDocumentWalker.MaxDepth`;
+          Carmine, 11 September 2026: "a section in a section in a section in a section"). Until
+          then a row was offered inside a section of the first level only. */}
+      {rule.locked || depth >= MAX_ROW_DEPTH ? null : (
         <div>
           <Button type="button" variant="ghost" size="sm" onClick={() => onAddSection(section.id)}>
             <Plus aria-hidden className="mr-2 size-4" />

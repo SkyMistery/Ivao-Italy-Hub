@@ -9,8 +9,9 @@ import { emptyLocalized } from '../../shared/i18n/localized';
  * saves it whole, so every operation here is a pure rewrite of the tree: no operation reaches into
  * the one the screen is currently drawing, and undoing is a matter of not calling the setter.
  *
- * Sections nest, so every walk here is recursive. Three is as deep as they go, which the server
- * enforces (`BlockDocumentWalker.MaxDepth`) and the editor does not need to know.
+ * Sections nest, so every walk here is recursive. Four is as deep as they go, which the server
+ * enforces (`BlockDocumentWalker.MaxDepth`); the editor knows it only to stop offering a row where
+ * the server would refuse one (`depthOf`).
  */
 
 type SectionPatch = Partial<Omit<SectionEnvelope, 'id' | 'blocks' | 'sections'>>;
@@ -50,6 +51,26 @@ export function findSection(body: Body, id: string): SectionEnvelope | undefined
   }
 
   return undefined;
+}
+
+/** How deep a section stands: 0 at the top of the page, 1 for a row in one, and so on; `undefined` if absent. */
+export function depthOf(body: Body, id: string): number | undefined {
+  const walk = (sections: SectionEnvelope[], depth: number): number | undefined => {
+    for (const section of sections) {
+      if (section.id === id) {
+        return depth;
+      }
+
+      const below = walk(section.sections, depth + 1);
+      if (below !== undefined) {
+        return below;
+      }
+    }
+
+    return undefined;
+  };
+
+  return walk(body.sections, 0);
 }
 
 export function findBlock(

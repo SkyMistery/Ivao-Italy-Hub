@@ -259,6 +259,7 @@
       "label": "Files of this department",
       "empty": "No files yet",
       "emptyHint": "Upload one in the media library of this department first.",
+      "open": "Open the media library",
       "chosen": "Chosen: #{{id}}",
       "clear": "Choose none"
     },

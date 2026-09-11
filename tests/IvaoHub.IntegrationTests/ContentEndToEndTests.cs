@@ -339,7 +339,7 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
           "schemaVersion": 1,
           "sections": [ { "id": "s1", "blocks": [ { "id": "b1", "type": "mystery", "props": {} } ],
             "sections": [ { "id": "s2", "sections": [ { "id": "s3",
-              "sections": [ { "id": "s4" } ] } ] } ] } ]
+              "sections": [ { "id": "s4", "sections": [ { "id": "s5" } ] } ] } ] } ] } ]
         }
         """);
 
@@ -360,9 +360,10 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             "errors.body.blockTypeUnknown",
             errors.GetProperty("body.sections[0].blocks[0]")[0].GetString());
 
+        // Four levels are allowed since 11 September 2026; the fifth is the one refused.
         Assert.Equal(
             "errors.body.tooDeep",
-            errors.GetProperty("body.sections[0].sections[0].sections[0].sections[0]")[0].GetString());
+            errors.GetProperty("body.sections[0].sections[0].sections[0].sections[0].sections[0]")[0].GetString());
     }
 
     [Fact]

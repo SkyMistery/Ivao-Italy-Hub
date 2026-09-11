@@ -35,6 +35,7 @@ import {
   addSection,
   clampColumns,
   defaultProps,
+  depthOf,
   duplicateBlock,
   findBlock,
   findSection,
@@ -57,7 +58,7 @@ import {
   type ContentPublishProblemsDto,
 } from './queries';
 import { contentMetadataSchema, type ContentFormValues } from './schema';
-import { SectionTree, type Selection } from './SectionTree';
+import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
 import { useAutosave, type SaveOutcome } from './useAutosave';
 import { useBodyHistory, useHistoryShortcuts } from './useBodyHistory';
 import { applyDifference, templateDiff } from './templateDiff';
@@ -560,7 +561,7 @@ export function ContentEditor({
   // could not prove untouched once the drop handler read the body.
   const picking = {
     // The bar on the picked thing: what the outline's row offers, with the template's rules. A row
-    // is only offered inside a section of the first level, for the reason the outline gives.
+    // is offered down to the level the server still accepts, as in the outline.
     actions: ({ kind, id }: { kind: 'section' | 'block'; id: string }) => {
       if (kind === 'block') {
         const found = findBlock(body, id);
@@ -587,7 +588,7 @@ export function ContentEditor({
               { key: 'moveUp' as const, run: () => change(moveSection(body, id, -1)) },
               { key: 'moveDown' as const, run: () => change(moveSection(body, id, 1)) },
             ]),
-        ...(rule.locked || !body.sections.some((section) => section.id === id)
+        ...(rule.locked || (depthOf(body, id) ?? MAX_ROW_DEPTH) >= MAX_ROW_DEPTH
           ? []
           : [{ key: 'addRow' as const, run: () => addSectionAt(id) }]),
         ...(rule.locked || rule.required

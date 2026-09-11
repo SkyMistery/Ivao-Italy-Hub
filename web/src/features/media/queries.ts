@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap } from '../../shared/api/client';
+import { deptParam } from '../../shared/api/department';
 import type { components } from '../../shared/api/schema';
 import { listQuerySerializer, toQuery, listSearchSchema, type ListSearch } from '../../shared/list';
 import type { MediaLibraryQuery, MediaPage, PickableMedia } from '../../shared/ui';
@@ -82,6 +83,10 @@ export function mediaPickerQuery(department: Department): MediaLibraryQuery {
 
       return { items: page.items, total: page.total };
     },
+    // Where this library lives, for the picker to point at (Carmine, 11 September 2026: "a link to
+    // the page where the files are uploaded"). Carried on the query, because the query is the one
+    // thing about the library that reaches the picker through the form generator.
+    meta: { libraryHref: `/staff/${deptParam.format(department)}/media` },
   });
 }
 

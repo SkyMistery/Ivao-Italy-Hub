@@ -1,5 +1,6 @@
 import { Button, Subtle } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -65,8 +66,25 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
 
   const items = data?.items ?? [];
 
+  // Where the files come from, when the query says so (`mediaPickerQuery` does): the picker only
+  // picks, and the way to the page that uploads should be one press away and not a thing to know
+  // (Carmine, 11 September 2026).
+  const libraryHref = typeof query.meta?.libraryHref === 'string' ? query.meta.libraryHref : null;
+  const library =
+    libraryHref === null ? null : (
+      <Link to={libraryHref} className="text-primary text-sm underline-offset-2 hover:underline">
+        {t('media.picker.open')}
+      </Link>
+    );
+
   if (!isPending && items.length === 0) {
-    return <EmptyState title={t('media.picker.empty')} description={t('media.picker.emptyHint')} />;
+    return (
+      <EmptyState
+        title={t('media.picker.empty')}
+        description={t('media.picker.emptyHint')}
+        {...(library === null ? {} : { action: library })}
+      />
+    );
   }
 
   return (
@@ -114,6 +132,8 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
           </Button>
         </div>
       )}
+
+      {library}
     </div>
   );
 }

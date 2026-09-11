@@ -198,6 +198,10 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
           name={read(section.title) || section.key || t('content.editor.untitledSection')}
           actions={picking.actions?.({ kind: 'section', id: section.id }) ?? []}
           handle={sortable?.handle}
+          // Inside the section's own air, not astride its edge: the first section of a page sits
+          // against the preview's frame, which clips, and a bar astride that edge was cut in half
+          // (Carmine, 11 September 2026, with a screenshot).
+          placement="inside"
         />
       ) : null}
 
@@ -409,18 +413,23 @@ function PickedBar({
   name,
   actions,
   handle,
+  placement = 'astride',
 }: {
   name: string;
   actions: readonly PickAction[];
   /** Where to grab a section to drag it; a block has none, it is dragged from the outline. */
   handle?: SortableBinding['handle'] | undefined;
+  /** Astride the top edge, over the air around a block; or inside, for a section that may have no air above it. */
+  placement?: 'astride' | 'inside';
 }) {
   const { t } = useTranslation();
 
   return (
     <div
       data-chrome
-      className="bg-body text-foreground border-primary absolute -top-3 right-2 z-10 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm"
+      className={`bg-body text-foreground border-primary absolute right-2 z-10 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs shadow-sm ${
+        placement === 'inside' ? 'top-2' : '-top-3'
+      }`}
       onClick={(event) => event.stopPropagation()}
     >
       {handle === undefined ? null : (

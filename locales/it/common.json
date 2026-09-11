@@ -259,6 +259,7 @@
       "label": "File di questo dipartimento",
       "empty": "Ancora nessun file",
       "emptyHint": "Caricane uno nella libreria media di questo dipartimento.",
+      "open": "Apri la libreria media",
       "chosen": "Scelto: #{{id}}",
       "clear": "Non scegliere nessuno"
     },

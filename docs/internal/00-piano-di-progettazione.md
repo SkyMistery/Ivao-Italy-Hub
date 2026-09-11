@@ -1,9 +1,24 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.61 — 11 settembre 2026 (**i comandi stanno anche sull'oggetto, nella pagina**: aggiungere e togliere sezioni, togliere e duplicare un blocco dalla pagina; l'outline dice in quale colonna sta un blocco)
+**Versione documento:** 0.62 — 11 settembre 2026 (**quattro livelli di sezioni**, non tre; il selettore di file porta alla libreria; due cose viste in uno screenshot)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.62** (11 set 2026, sera): tre richieste di Carmine mentre compone. **Le sezioni si
+annidano fino a quattro livelli**, non tre: «una sezione in una sezione in una sezione in una
+sezione». `MaxDepth` passa a 4 nel validatore, e l'editor offre «Aggiungi riga» fino al terzo livello
+compreso — dall'outline e dalla targhetta — così l'ultimo consentito è il quarto; il 10 settembre la
+riga era offerta solo al primo livello, «una riga dentro una riga è rumore», e la pratica ha detto il
+contrario. **Il selettore di file porta alla libreria**: dove chiede di caricare un file «nella
+libreria media del dipartimento», c'è il link per andarci — anche quando la libreria non è vuota,
+sotto la griglia. L'indirizzo viaggia sulla query (`meta.libraryHref`), perché la query è la sola
+cosa della libreria che raggiunge il selettore attraverso il generatore di form. **Due cose viste in
+uno screenshot**: la targhetta della prima sezione stava a cavallo del bordo dell'anteprima, che
+ritaglia, e usciva tagliata a metà — ora sta dentro l'aria della sezione; e fra gli sfondi la
+pastiglia «foto» era una riga nera in diagonale che si leggeva come un divieto, «nessuno» un punto
+bianco su fondo bianco — ora i due che non sono un colore hanno un glifo: un cerchio barrato e una
+foto.
 
 **Changelog 0.61** (11 set 2026, sera): **i comandi stanno anche sull'oggetto, nella pagina.**
 Chiesto da Carmine con G15 appena costruita: aggiungere e togliere sezioni, e togliere un blocco,

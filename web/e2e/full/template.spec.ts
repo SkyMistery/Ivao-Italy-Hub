@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { englishCommon } from '../locales';
 import {
   createContent,
+  deleteContent,
   department,
   pageFromTemplate,
   properties,
@@ -74,56 +75,66 @@ test('a template that moves on is said in the editor, and changes nothing a visi
   });
 
   const born = await pageFromTemplate(context, template.id, `bench-from-template-${stamp}`);
-  await writeContent(context, born, { visibility: 'Public' });
-  await publishContent(context, born.id);
 
-  const visitor = await browser.newContext();
-  await readInEnglish(visitor);
-  const publicPage = await visitor.newPage();
+  try {
+    await writeContent(context, born, { visibility: 'Public' });
+    await publishContent(context, born.id);
 
-  await publicPage.goto(`/${born.slug}`);
-  await expect(publicPage.getByRole('heading', { name: first.en })).toBeVisible();
+    const visitor = await browser.newContext();
+    await readInEnglish(visitor);
+    const publicPage = await visitor.newPage();
 
-  // ---------------------------------------------------------------- the template gains a section
-  const before: ContentRow = await readContent(context, template.id);
-  await writeContent(context, before, {
-    body: {
-      schemaVersion: 1,
-      sections: [...before.body.sections, section('closing', 'Closing', later)],
-    },
-  });
+    await publicPage.goto(`/${born.slug}`);
+    await expect(publicPage.getByRole('heading', { name: first.en })).toBeVisible();
 
-  // ---------------------------------------------------------------- the editor says so
-  await page.goto(`/staff/${department}/content/${born.id}`);
+    // ---------------------------------------------------------------- the template gains a section
+    const before: ContentRow = await readContent(context, template.id);
+    await writeContent(context, before, {
+      body: {
+        schemaVersion: 1,
+        sections: [...before.body.sections, section('closing', 'Closing', later)],
+      },
+    });
 
-  await expect(page.getByText(words.template.differences)).toBeVisible();
-  await expect(page.getByText(words.template.added.replace('{{section}}', 'Closing'))).toBeVisible();
+    // ---------------------------------------------------------------- the editor says so
+    await page.goto(`/staff/${department}/content/${born.id}`);
 
-  // And nothing has happened to the page while it said so.
-  await publicPage.reload();
-  await expect(publicPage.getByRole('heading', { name: first.en })).toBeVisible();
-  await expect(publicPage.getByRole('heading', { name: later.en })).toHaveCount(0);
+    await expect(page.getByText(words.template.differences)).toBeVisible();
+    await expect(page.getByText(words.template.added.replace('{{section}}', 'Closing'))).toBeVisible();
 
-  // ---------------------------------------------------------------- accepting it, one difference
-  await page.getByRole('button', { name: words.template.apply.added }).click();
+    // And nothing has happened to the page while it said so.
+    await publicPage.reload();
+    await expect(publicPage.getByRole('heading', { name: first.en })).toBeVisible();
+    await expect(publicPage.getByRole('heading', { name: later.en })).toHaveCount(0);
 
-  // In the outline, where the section now is; and the panel has nothing left to report. The middle
-  // column opens on the page, so the outline is asked for.
-  await page.getByRole('button', { name: words.outline, exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Closing', exact: true })).toBeVisible();
-  await expect(page.getByText(words.template.differences)).toHaveCount(0);
+    // ---------------------------------------------------------------- accepting it, one difference
+    await page.getByRole('button', { name: words.template.apply.added }).click();
 
-  await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await saveDraft(page, words.saveDraft).click();
-  });
+    // In the outline, where the section now is; and the panel has nothing left to report. The
+    // middle column opens on the page, so the outline is asked for.
+    await page.getByRole('button', { name: words.outline, exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Closing', exact: true })).toBeVisible();
+    await expect(page.getByText(words.template.differences)).toHaveCount(0);
 
-  // The assertion the whole rule rests on: a draft that has accepted the change is still a draft.
-  // What a visitor reads moved the day somebody published it and has not moved since.
-  await publicPage.reload();
-  await expect(publicPage.getByRole('heading', { name: first.en })).toBeVisible();
-  await expect(publicPage.getByRole('heading', { name: later.en })).toHaveCount(0);
+    await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+      await saveDraft(page, words.saveDraft).click();
+    });
 
-  await visitor.close();
+    // The assertion the whole rule rests on: a draft that has accepted the change is still a
+    // draft. What a visitor reads moved the day somebody published it and has not moved since.
+    await publicPage.reload();
+    await expect(publicPage.getByRole('heading', { name: first.en })).toBeVisible();
+    await expect(publicPage.getByRole('heading', { name: later.en })).toHaveCount(0);
+
+    await visitor.close();
+  } finally {
+    // Taken back, page first and template after: a template left behind is a row in the picker of
+    // every run that follows (`deleteContent`). Away from the editor first, or the draft the page
+    // holds would be stored on the way out, onto a row that is being deleted.
+    await page.goto('/');
+    await deleteContent(context, born.id);
+    await deleteContent(context, template.id);
+  }
 });
 
 test('the preview is three widths of the same page, and the narrow one is really narrow', async ({
@@ -208,53 +219,65 @@ test('a template written in the editor is obeyed by the pages made from it', asy
     body: { schemaVersion: 1, sections: [] },
   });
 
-  await page.goto(`/staff/${department}/content/${template.id}`);
-  // The outline is where a section is added; the middle column opens on the page.
-  await page.getByRole('button', { name: words.outline, exact: true }).click();
-  await page.getByRole('button', { name: words.addSection }).click();
+  let born: ContentRow | null = null;
 
-  // The four fields a template has and a page does not. `key` is the one everything else hangs
-  // from: without it the section imposes nothing on anybody.
-  const form = properties(page);
-  await form.getByLabel(sectionFields.key).fill('intro');
-  await form.getByRole('checkbox', { name: blocks.heading.label }).check();
-  // The one setting of a section that does **not** apply as it is typed: a key is written once and
-  // then fixed, so it is set with a button — or "in" would be the key of a section meant to be
-  // "intro". The line under the form saying which key it is comes the moment it is set, and is
-  // what the save below waits for.
-  await form.getByRole('button', { name: words.setKey }).click();
-  await expect(page.getByText(`Key: intro`, { exact: false })).toBeVisible();
+  try {
+    await page.goto(`/staff/${department}/content/${template.id}`);
+    // The outline is where a section is added; the middle column opens on the page.
+    await page.getByRole('button', { name: words.outline, exact: true }).click();
+    await page.getByRole('button', { name: words.addSection }).click();
 
-  await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await saveDraft(page, words.saveDraft).click();
-  });
+    // The four fields a template has and a page does not. `key` is the one everything else hangs
+    // from: without it the section imposes nothing on anybody.
+    const form = properties(page);
+    await form.getByLabel(sectionFields.key).fill('intro');
+    await form.getByRole('checkbox', { name: blocks.heading.label }).check();
+    // The one setting of a section that does **not** apply as it is typed: a key is written once
+    // and then fixed, so it is set with a button — or "in" would be the key of a section meant to
+    // be "intro". The line under the form saying which key it is comes the moment it is set, and
+    // is what the save below waits for.
+    await form.getByRole('button', { name: words.setKey }).click();
+    await expect(page.getByText(`Key: intro`, { exact: false })).toBeVisible();
 
-  // Written once, then shown: the field is gone and the key is a line, because changing it would
-  // silently detach every page already made from this template.
-  await page.reload();
-  await page.getByRole('button', { name: words.outline, exact: true }).click();
-  await page.getByRole('button', { name: 'intro', exact: true }).click();
-  await expect(properties(page).getByLabel(sectionFields.key)).toHaveCount(0);
-  await expect(page.getByText(`Key: intro`, { exact: false })).toBeVisible();
+    await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
+      await saveDraft(page, words.saveDraft).click();
+    });
 
-  // ---------------------------------------------------------------- and a page obeys it
-  const born = await pageFromTemplate(context, template.id, `bench-obeys-${stamp}`);
-  await page.goto(`/staff/${department}/content/${born.id}`);
+    // Written once, then shown: the field is gone and the key is a line, because changing it would
+    // silently detach every page already made from this template.
+    await page.reload();
+    await page.getByRole('button', { name: words.outline, exact: true }).click();
+    await page.getByRole('button', { name: 'intro', exact: true }).click();
+    await expect(properties(page).getByLabel(sectionFields.key)).toHaveCount(0);
+    await expect(page.getByText(`Key: intro`, { exact: false })).toBeVisible();
 
-  // The assertion the four fields exist for: with that section selected, the bar of components
-  // offers the one block the template allows and refuses the twenty-six others. Nothing of this
-  // travelled in the copy — the editor read it off the template, by key.
-  //
-  // ⚠️ Refused means **disabled and still shown**, not filtered out, since the palette moved to the
-  // left on 10 September 2026: it is beside the page and its target changes as you click around, so
-  // a list that changed shape each time would be one nobody could learn. Asserted on both halves,
-  // because a bar that had quietly disabled everything would pass on the second line alone.
-  await page.getByRole('button', { name: words.outline, exact: true }).click();
-  await selectSection(page, 'intro');
+    // ---------------------------------------------------------------- and a page obeys it
+    born = await pageFromTemplate(context, template.id, `bench-obeys-${stamp}`);
+    await page.goto(`/staff/${department}/content/${born.id}`);
 
-  const palette = page.getByLabel(blocks.subgroups.text);
-  await expect(palette.getByRole('button', { name: blocks.heading.label, exact: true })).toBeEnabled();
-  await expect(palette.getByRole('button', { name: blocks.text.label, exact: true })).toBeDisabled();
+    // The assertion the four fields exist for: with that section selected, the bar of components
+    // offers the one block the template allows and refuses the twenty-six others. Nothing of this
+    // travelled in the copy — the editor read it off the template, by key.
+    //
+    // ⚠️ Refused means **disabled and still shown**, not filtered out, since the palette moved to
+    // the left on 10 September 2026: it is beside the page and its target changes as you click
+    // around, so a list that changed shape each time would be one nobody could learn. Asserted on
+    // both halves, because a bar that had quietly disabled everything would pass on the second
+    // line alone.
+    await page.getByRole('button', { name: words.outline, exact: true }).click();
+    await selectSection(page, 'intro');
+
+    const palette = page.getByLabel(blocks.subgroups.text);
+    await expect(palette.getByRole('button', { name: blocks.heading.label, exact: true })).toBeEnabled();
+    await expect(palette.getByRole('button', { name: blocks.text.label, exact: true })).toBeDisabled();
+  } finally {
+    // Taken back (`deleteContent`), away from the editor first so nothing is stored on the way out.
+    await page.goto('/');
+    if (born !== null) {
+      await deleteContent(context, born.id);
+    }
+    await deleteContent(context, template.id);
+  }
 });
 
 test('the preview is where a page is composed: a block picked there opens its own fields', async ({

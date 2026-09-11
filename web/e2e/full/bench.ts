@@ -287,6 +287,17 @@ export function pageFromTemplate(
   );
 }
 
+/**
+ * A row a test made, taken back. ⚠️ The bench database is not thrown away between runs, and a
+ * template left behind is a row in the template picker of every run after: after enough local runs
+ * "Section page" had fallen off the picker's first page of a hundred, and the round could not
+ * start. A row a test writes is a row that test takes back, as `menu.spec.ts` learnt first.
+ */
+export async function deleteContent(context: BrowserContext, id: number): Promise<void> {
+  const response = await context.request.delete(`/api/content/${id}`, { headers: asTheClientDoes });
+  expect(response.status(), await response.text()).toBeLessThan(300);
+}
+
 export function publishContent(context: BrowserContext, id: number): Promise<ContentRow> {
   // The changelog goes in even though it is null: the endpoint takes a body, and a POST with no
   // body at all is not routed to it — it comes back a bare 404, which reads like a missing row.
