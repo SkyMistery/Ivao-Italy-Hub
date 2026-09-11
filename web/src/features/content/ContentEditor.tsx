@@ -536,13 +536,19 @@ export function ContentEditor({
           block={block.block}
           section={block.section}
           // Where it may be moved to from the keyboard: every section the template does not lock,
-          // named as the outline names them.
-          sections={allSections(body)
-            .filter((candidate) => !ruleFor(rules, candidate.key).locked)
-            .map((candidate) => ({
-              value: candidate.id,
-              label: read(candidate.title) || candidate.key || t('content.editor.untitledSection'),
-            }))}
+          // named as the outline names them — and nowhere at all from a locked section, whose
+          // blocks stay where the template put them (a select that listed everywhere but here
+          // drew itself empty).
+          sections={
+            ruleFor(rules, block.section.key).locked
+              ? []
+              : allSections(body)
+                  .filter((candidate) => !ruleFor(rules, candidate.key).locked)
+                  .map((candidate) => ({
+                    value: candidate.id,
+                    label: read(candidate.title) || candidate.key || t('content.editor.untitledSection'),
+                  }))
+          }
           onMoveTo={(sectionId) =>
             change(moveBlockTo(body, block.block.id, sectionId, 0, Number.MAX_SAFE_INTEGER))
           }
