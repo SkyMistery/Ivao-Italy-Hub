@@ -668,7 +668,9 @@ export interface components {
         /**
          * @description One row in full. `BeforeJson` and `AfterJson` are the scalar columns as they were and
          *     as they became, exactly as the interceptor wrote them: they travel as text, because what they
-         *     contain depends on the entity and the hub does not model it.
+         *     contain depends on the entity and the hub does not model it. On an `autosaved` row — a
+         *     draft the editor stored by itself — `BeforeJson` is null and `AfterJson` is the list of
+         *     the columns that moved, without their values (`HubSaveChangesInterceptor.AutosaveHeader`).
          */
         AuditDetailDto: {
             /** Format: int64 */
