@@ -123,7 +123,10 @@ function Choice({ label, children }: { label: string; children: React.ReactNode 
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-muted-foreground text-xs font-medium">{label}</span>
-      <div className="flex flex-wrap items-center gap-2">{children}</div>
+      {/* Room for the ring of the chosen one, which sits outside its button: the panel scrolls and
+          therefore clips, and the first swatch against its edge lost the left of its ring (Carmine,
+          11 September 2026, with a screenshot). */}
+      <div className="flex flex-wrap items-center gap-2 p-1">{children}</div>
     </div>
   );
 }
