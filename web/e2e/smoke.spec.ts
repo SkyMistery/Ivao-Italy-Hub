@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 
+import { measureContrast } from './contrast';
 import { stubTheApi } from './fixtures';
 import { englishAtc, englishCommon } from './locales';
 
@@ -65,7 +66,20 @@ test('the menu is what the bootstrap says, one level deep, and the footer carrie
   // A parent with children is a drop down, and it holds itself first so its own address stays
   // reachable: a heading that leads nowhere is what the alternative would be.
   await navigation.getByText('About', { exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Team', exact: true })).toBeVisible();
+  const team = page.getByRole('link', { name: 'Team', exact: true });
+  await expect(team).toBeVisible();
+
+  // ⚠️ And **readable**, which is not the same thing and is the half that was missing. On
+  // 10 September 2026 the menu moved onto the blue bar and every link inside it was forced white —
+  // the drop down's too, on a light panel. White on white, and the line above stayed green, because
+  // "visible" to Playwright means the element has a box, not that anybody can read it. Found by
+  // Carmine asking whether the menu could have sub-entries, which it had had all along.
+  // Measured with the one function the contrast spec uses: the first attempt here read an
+  // `oklab()` background with a regular expression and reported dark on white as 1.3 : 1.
+  const [entry] = await measureContrast(page, 'header [aria-labelledby] a');
+
+  expect(entry, 'the drop down drew no entry to measure').toBeDefined();
+  expect(entry!.measured).toBeGreaterThanOrEqual(entry!.needs);
 
   // The footer draws the entries of its own scope, which the top menu must not show.
   await expect(page.getByRole('link', { name: 'Legal', exact: true })).toBeVisible();

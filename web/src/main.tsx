@@ -9,6 +9,26 @@ import { registry } from './app/registry';
 import { createHubRouter } from './app/router';
 import { sessionChanged } from './features/me/queries';
 import { setUnauthorizedHandler } from './shared/api/client';
+
+// ⚠️ The two typefaces of IVAO, finally loaded. Atmosphere has always *asked* for them —
+// `--ivao-font-head: Poppins` and `--ivao-font-sans: "Nunito Sans"` — and never shipped them, so
+// until 11 September 2026 every screen of the hub fell back to whatever sans-serif the reader's
+// machine had. Found when IVAO's PR department asked for the typeface of va.ivao.aero, which turned
+// out to be these same two.
+//
+// Self-hosted and not fetched from Google: Vite bundles the files, so the site asks no third party
+// for anything on a visitor's behalf. Both are under the SIL Open Font License 1.1. Only the weights
+// the hub draws with are imported, and each one splits by script, so a page in Italian downloads the
+// Latin files and nothing else.
+import '@fontsource/poppins/400.css';
+import '@fontsource/poppins/500.css';
+import '@fontsource/poppins/600.css';
+import '@fontsource/poppins/700.css';
+import '@fontsource/poppins/800.css';
+import '@fontsource/nunito-sans/400.css';
+import '@fontsource/nunito-sans/600.css';
+import '@fontsource/nunito-sans/700.css';
+import '@fontsource/nunito-sans/800.css';
 import './styles/index.css';
 
 const queryClient = new QueryClient();

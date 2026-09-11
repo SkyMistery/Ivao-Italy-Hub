@@ -79,7 +79,11 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
     // is, and save the space). The menu, the tools and the account all ride in `Navbar`'s own
     // children slot, which it draws at the far end of the same line as the logo and the division's
     // name — so the height of the site's frame is the height of the banner, and nothing else.
-    <header className="border-border border-b">
+    // ⚠️ The typeface of va.ivao.aero (asked for by IVAO's PR department, 11 September 2026): Poppins
+    // for what the bar says, Nunito Sans at its heaviest for the division's name. Atmosphere's own
+    // `font-head` and `font-sans` utilities, which point at exactly those two, so nothing here names a
+    // font. The footer below does the same.
+    <header className="border-border font-head border-b">
       {/* ⚠️ `NavbarContainer` and not `Navbar`, and the brand block written out here.
           `Navbar` puts its children in a box of their own at the far end of the line, which cannot
           be made to grow — so the menu could only ever be pushed against the tools on the right.
@@ -113,10 +117,17 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
             </>
           )}
           <div className="bg-ocean-400 dark:bg-fuselage-400 h-8 w-0.5" />
-          <h1 className="text-lg font-semibold text-white">{title}</h1>
+          <h1 className="font-sans text-lg font-extrabold text-white">{title}</h1>
         </div>
 
-        <div className="flex flex-1 justify-center text-white [&_a]:text-white [&_button]:text-white">
+        {/* ⚠️ White for the entries on the bar, and **not** for the ones in a drop down. The first
+            version forced white on every link inside the menu, and a drop down's panel is light: its
+            entries were white on white, invisible — found on 11 September 2026 when Carmine asked
+            whether the menu could have sub-entries, which it had had all along. The panel is told
+            apart by `aria-labelledby`, which Radix puts on it because the content of a menu is
+            labelled by the button that opens it: an accessibility contract, so a sturdier handle
+            than the shape of the markup. */}
+        <div className="flex flex-1 justify-center text-white [&_[aria-labelledby]_a]:text-foreground [&_a]:text-white [&_button]:text-white">
           <NavigationMenu sections={sections} asLink={RouterAnchor} />
         </div>
 
@@ -259,7 +270,7 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
     // background; the day it was given a ground of its own it became a white strip between the two —
     // and in the back office a gap between the bottom of the sidebar and the top of the footer,
     // which is where Carmine saw it. The room the footer needs is its own `py-10`, inside its band.
-    <footer className="bg-atmos-700 dark:bg-fuselage-800 text-white">
+    <footer className="bg-atmos-700 dark:bg-fuselage-800 font-head text-white">
       <div className="mx-auto w-full max-w-6xl px-4 py-10">
         {/* ⚠️ Centred rather than pinned to the left edge (Carmine, 10 September 2026), and that is
             why this is a wrapping flex row and not a grid: a grid of four columns holding two leaves
@@ -273,7 +284,7 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
                 is a reminder at the end of a line. */}
             <div className="flex items-center gap-3">
               <DivisionMark bootstrap={bootstrap} className="h-10" />
-              <p className="text-base font-semibold text-white">{division}</p>
+              <p className="font-sans text-base font-extrabold text-white">{division}</p>
             </div>
             <p data-secondary className="text-sm text-white/70">
               {t('footer.about', { division })}
@@ -299,7 +310,10 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
             <nav key={column.path || label(column)} className="flex flex-col items-center gap-3">
               {/* The heading of a column may be a link or may lead nowhere, and both are written the
                   same way in the back office: an entry with an address, or one without. */}
-              <p data-secondary className="text-xs font-semibold tracking-wider text-white/60 uppercase">
+              <p
+                data-secondary
+                className="font-sans text-xs font-extrabold tracking-wider text-white/60 uppercase"
+              >
                 {column.path ? <FooterEntry path={column.path} label={label(column)} /> : label(column)}
               </p>
 
@@ -319,7 +333,10 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
               menu entry, because nobody in a division edits these. */}
           {legal.length === 0 ? null : (
             <nav className="flex flex-col items-center gap-3">
-              <p data-secondary className="text-xs font-semibold tracking-wider text-white/60 uppercase">
+              <p
+                data-secondary
+                className="font-sans text-xs font-extrabold tracking-wider text-white/60 uppercase"
+              >
                 {t('footer.legalHeading')}
               </p>
 

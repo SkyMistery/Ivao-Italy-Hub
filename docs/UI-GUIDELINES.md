@@ -57,6 +57,11 @@ reach. And it **is** the `<aside>` — it is not a panel to wrap in a shell of y
 one it replaced once drew the whole back office inside a 288 pixel column with two collapse
 buttons, and `e2e/back-office.spec.ts` measures the geometry so that it cannot happen again.
 
+One department is open at a time, and the entry drawn as current is the **most specific** match,
+not every match: a department's dashboard lives at the department's root, which every other
+address of it begins with. The search sits at the top of the panel through a `top` slot rather
+than an import, because a shared component may never reach into a feature.
+
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
 picks and nothing else — uploading belongs to the library screen, and a picker that also uploaded
@@ -484,6 +489,24 @@ the media library.
 component read out of a map while something renders is one React treats as new on every pass: it
 remounts what it draws, and `react-hooks/static-components` refuses it outright. `iconGlyph` hands
 back an element, built once per set of classes and kept.
+
+## Typefaces
+
+IVAO's two typefaces are **Poppins** and **Nunito Sans**, and Atmosphere asks for both
+(`--ivao-font-head`, `--ivao-font-sans`) without shipping either. The hub loads them itself, from
+`@fontsource`, in `web/src/main.tsx`: self-hosted, so a visitor's browser asks no third party for
+anything, and only the weights the hub draws with. Refer to them through Atmosphere's `font-head`
+and `font-sans` utilities, never by name. Before 11 September 2026 they were missing, and every
+screen fell back to whatever sans-serif the reader's machine had — the kind of fault nobody notices
+on the one machine that happens to have the fonts installed.
+
+The bar and the footer follow the pairing of IVAO's own division sites: Poppins for what they say,
+Nunito Sans at its heaviest for the division's name and the column headings.
+
+⚠️ **Nothing that sits on the blue bar may force a colour on the menu's drop downs.** The bar forces
+its links white, and a drop down's panel is light: the white has to stop at the panel, which is told
+apart by the `aria-labelledby` Radix puts on it. `e2e/smoke.spec.ts` measures the contrast of a
+drop-down entry, because "visible" to a test runner only means that an element has a box.
 
 ## The frame of every page: one bar, and a footer in columns
 
