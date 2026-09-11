@@ -1,3 +1,4 @@
+import { useDraggable } from '@dnd-kit/core';
 import {
   AccordionContent,
   AccordionItem,
@@ -12,6 +13,7 @@ import { registry } from '../../app/registry';
 import { type BlockRegistration } from '../../shared/modules';
 import { SectionHeader } from '../../shared/ui';
 
+import type { PaletteDrag } from './DropZone';
 import { groupsOf } from './palette';
 import type { SectionRule } from './templateRules';
 
@@ -35,12 +37,19 @@ export function BlockPalette({
   target,
   rule,
   onAdd,
+  draggable = false,
 }: {
   /** The section a component would be added to, and what to call it; `null` when none is chosen. */
   target: { id: string; name: string } | null;
   /** What the template allows in that section. Free rules when there is no template. */
   rule: SectionRule;
   onAdd: (type: string) => void;
+  /**
+   * Whether an entry can also be **dragged** onto the page (G15, session 3). Only while the page is
+   * in the middle: the outline has nowhere to drop onto and a drag of its own. The click stays, and
+   * is the road from a keyboard.
+   */
+  draggable?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -98,7 +107,7 @@ export function BlockPalette({
             <AccordionTrigger>{t(`blocks.groups.${group.group}`)}</AccordionTrigger>
             <AccordionContent>
               <div className="flex flex-col gap-1">
-                <Entries blocks={group.blocks} target={target} rule={rule} onAdd={onAdd} />
+                <Entries blocks={group.blocks} target={target} rule={rule} onAdd={onAdd} draggable={draggable} />
 
                 {group.subgroups.length === 0 ? null : (
                   <AccordionRoot
@@ -121,7 +130,13 @@ export function BlockPalette({
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="flex flex-col gap-1">
-                            <Entries blocks={subgroup.blocks} target={target} rule={rule} onAdd={onAdd} />
+                            <Entries
+                              blocks={subgroup.blocks}
+                              target={target}
+                              rule={rule}
+                              onAdd={onAdd}
+                              draggable={draggable}
+                            />
                           </div>
                         </AccordionContent>
                       </AccordionItem>
@@ -142,42 +157,83 @@ function Entries({
   target,
   rule,
   onAdd,
+  draggable,
 }: {
   blocks: readonly BlockRegistration[];
   target: { id: string; name: string } | null;
   rule: SectionRule;
   onAdd: (type: string) => void;
+  draggable: boolean;
 }) {
-  const { t } = useTranslation();
-
   return (
     <>
       {blocks.map((block) => {
-        const Icon = block.icon;
-
         // ⚠️ Disabled, not hidden. The outline's own palette *filters* by the template, because it
         // is drawn inside the one section it adds to. This one is beside the page and the target
         // changes as you click around: a list that changed shape every time would be a palette
         // nobody could learn. The reason is on the button instead.
         const allowed = rule.allowedBlocks === null || rule.allowedBlocks.includes(block.type);
-        const disabled = target === null || !allowed;
 
         return (
-          <Button
+          <Entry
             key={block.type}
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="justify-start"
-            disabled={disabled}
-            {...(target === null ? {} : allowed ? {} : { title: t('content.editor.notAllowedHere') })}
-            onClick={() => onAdd(block.type)}
-          >
-            <Icon aria-hidden className="mr-2 size-4 shrink-0" />
-            {t(block.editorLabelKey)}
-          </Button>
+            block={block}
+            disabled={target === null || !allowed}
+            reason={target !== null && !allowed}
+            draggable={draggable}
+            onAdd={onAdd}
+          />
         );
       })}
     </>
+  );
+}
+
+function Entry({
+  block,
+  disabled,
+  reason,
+  draggable,
+  onAdd,
+}: {
+  block: BlockRegistration;
+  disabled: boolean;
+  /** Whether the button is disabled for a reason worth a tooltip — the template — and not for want of a target. */
+  reason: boolean;
+  draggable: boolean;
+  onAdd: (type: string) => void;
+}) {
+  const { t } = useTranslation();
+  const Icon = block.icon;
+
+  // Draggable onto the page, and a drag has to start further than a click (`SectionTree` learnt the
+  // same): otherwise adding a block by clicking becomes a lottery. The entry itself does not move —
+  // the panel it sits in scrolls and would clip it — what moves is the `DragOverlay` the editor draws.
+  // ⚠️ A dragged palette entry, and only that, is what the page's drop slots wait for (`PaletteDrag`).
+  const data: PaletteDrag = { kind: 'palette', type: block.type };
+  // Only the listeners, not dnd-kit's `attributes`: those describe a thing whose *only* road is the
+  // drag — a role, a tab stop, an `aria-disabled` when the drag is off — and this is a button whose
+  // road from a keyboard is the click. `aria-disabled` on an enabled button was read as disabled.
+  const { setNodeRef, listeners } = useDraggable({
+    id: `palette:${block.type}`,
+    data,
+    disabled: disabled || !draggable,
+  });
+
+  return (
+    <Button
+      ref={setNodeRef}
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="justify-start"
+      disabled={disabled}
+      {...(reason ? { title: t('content.editor.notAllowedHere') } : {})}
+      {...listeners}
+      onClick={() => onAdd(block.type)}
+    >
+      <Icon aria-hidden className="mr-2 size-4 shrink-0" />
+      {t(block.editorLabelKey)}
+    </Button>
   );
 }

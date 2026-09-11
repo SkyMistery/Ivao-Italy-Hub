@@ -228,6 +228,20 @@ function Column({
   const chosen = picking.target?.section === section.id && picking.target.column === column;
   const open = picking.accepts(section.id);
 
+  // A place to drop a dragged component before each block and after the last — the editor's own
+  // component, drawn here only so that the places exist where the blocks are (`Picking.DropZone`).
+  const DropZone = open ? picking.DropZone : undefined;
+  const slotted =
+    DropZone === undefined
+      ? children
+      : [
+          ...children.flatMap((child, index) => [
+            <DropZone key={`drop-${index}`} section={section.id} column={column} index={index} />,
+            child,
+          ]),
+          <DropZone key="drop-end" section={section.id} column={column} index={children.length} />,
+        ];
+
   return (
     <div
       data-pickable="column"
@@ -245,7 +259,7 @@ function Column({
         chosen ? 'outline-primary outline-solid' : 'outline-border outline-dashed'
       } ${className}`}
     >
-      {children}
+      {slotted}
 
       {children.length === 0 && open ? (
         <button

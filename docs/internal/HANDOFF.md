@@ -57,10 +57,10 @@ riaperto e cambiato). **Design M1:** v1.15
 (`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
 G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è aperta** (§28) e raccoglie le rifiniture del
 collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
-**Test, misurati l'11 settembre su `m1/g15-editor-live` (sessioni 1 e 2 di G15):** **473 .NET**
+**Test, misurati l'11 settembre su `m1/g15-editor-live` (le tre sessioni di G15):** **473 .NET**
 (306 unit + 167 integrazione — la sessione 2 ne aggiunge uno sull'audit dell'autosalvataggio; ⚠️
 della suite di integrazione sono stati eseguiti in locale solo i due test dell'audit, il resto lo
-verifica la CI) + **336 Vitest** + **56 smoke Playwright** + **14 del giro pieno** (`pnpm e2e:full`).
+verifica la CI) + **340 Vitest** + **56 smoke Playwright** + **15 del giro pieno** (`pnpm e2e:full`).
 Nessuno skippato. ⚠️ Il C# **è cambiato** dal 10 settembre (icona e intestazioni del menu, marchio e
 favicon della divisione, i tre fondi scuri nel walker): l'avviso «dall'8 settembre non è cambiata una
 riga di C#» che stava qui non vale più.
@@ -114,7 +114,10 @@ annulla/ripeti con coalescenza e da tastiera, proprietà applicate mentre si scr
 container query, `{{department}}` nel percorso e il suggerimento della barra su una sezione
 bloccata; **(2) fatta lo stesso giorno**: autosalvataggio a dieci secondi e all'uscita, riga
 `autosaved` senza corpo, la versione della riga fuori dal form dei metadati, «Publish» che prima
-salva; (3) trascinamento dalla barra fra due blocchi — **la sola che resta**. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
+salva; **(3) fatta lo stesso giorno**: un componente si trascina dalla barra fra due blocchi, con
+gli slot disegnati dal renderer attraverso il contesto di picking e dnd-kit che resta fuori da
+`blocks/`. **G15 è tutta sulla PR #58**, in tre commit, e ha chiuso il punto 3 della nota del 10
+settembre. Dopo il suo merge viene G14. ⚠️ **Misurato**: la nostra anteprima «Phone» era finta come quella di va.ivao.aero — 390 px
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 

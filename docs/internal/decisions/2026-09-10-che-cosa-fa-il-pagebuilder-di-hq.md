@@ -139,7 +139,9 @@ vede.
 
 ### Che cosa resta
 
-- **La 3** — trascinare dalla tavolozza nella pagina — non fatta, come deciso.
+- **La 3** — trascinare dalla tavolozza nella pagina — non fatta, come deciso. **Poi fatta l'11
+  settembre**, sessione 3 di G15 (`2026-09-11-l-editor-che-risponde.md`): gli slot fra un blocco e
+  l'altro li disegna il renderer attraverso il contesto di picking, e dnd-kit resta fuori da `blocks/`.
 - ⚠️ Il selettore di file per la «foto dietro» disegna tutto il pannello «No files yet / Upload one in
   the media library» anche quando lo sfondo non è una foto, e adesso quel pannello sta in una colonna
   stretta. È lo stesso difetto dei 536 px della SEO visto da un'altra parte: **lo stato vuoto di un

@@ -237,10 +237,12 @@ test('the draft saves itself after a pause, and on the way out', async ({ page, 
   await onThePage.getByRole('heading', { name: first.en }).click();
   await writeInBothLanguages(properties(page), blocks.heading.fields.text, 'text', paused);
   await expect(onThePage.getByRole('heading', { name: paused.en })).toBeVisible();
-  await expect(page.getByRole('status')).toHaveText(content.editor.autosave.unsaved);
+  // Named: the drag and drop context has a live region of its own on this screen.
+  const status = page.getByRole('status', { name: content.editor.autosave.title });
+  await expect(status).toHaveText(content.editor.autosave.unsaved);
 
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
-    await expect(page.getByRole('status')).toHaveText(
+    await expect(status).toHaveText(
       new RegExp(`^${content.editor.autosave.saved.replace('{{time}}', '\\d\\d:\\d\\d')}$`, 'u'),
       { timeout: 15_000 },
     );

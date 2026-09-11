@@ -168,12 +168,17 @@ export function reorderBlocks(body: Body, activeId: string, overId: string): Bod
 }
 
 /**
- * Adds a block at the end of one column of a section.
+ * Adds a block to one column of a section — at its end, or at a place in it.
  *
  * `column` since 11 September 2026: it used to be 0 for every block, so in a section of two columns a
  * component always landed in the first and had to be moved into the second afterwards — which is the
  * friction the "add here" of an empty column exists to remove. It defaults to the first, which is also
  * where a block of a stacked section is.
+ *
+ * `at` since G15: the position **within the column**, counted over the blocks that stand in it, for a
+ * component dropped between two of them. The blocks of a section are one list whatever column they
+ * are in, so the place in that list is the place of the block the new one goes before; past the last
+ * of the column, or with no `at`, it goes at the end of the list — which is the end of every column.
  */
 export function addBlock(
   body: Body,
@@ -182,6 +187,7 @@ export function addBlock(
   props: Record<string, unknown>,
   renderMode: 'live' | 'frozen' | null,
   column = 0,
+  at?: number,
 ): { body: Body; id: string } {
   const id = newId('b');
   const block: BlockEnvelope = { id, type, version: 1, props, renderMode, frozen: null, column };
@@ -189,9 +195,19 @@ export function addBlock(
   return {
     body: {
       ...body,
-      sections: mapSections(body.sections, (section) =>
-        section.id === sectionId ? { ...section, blocks: [...section.blocks, block] } : section,
-      ),
+      sections: mapSections(body.sections, (section) => {
+        if (section.id !== sectionId) {
+          return section;
+        }
+
+        const before =
+          at === undefined
+            ? undefined
+            : section.blocks.filter((candidate) => (candidate.column ?? 0) === column)[at];
+        const position = before === undefined ? section.blocks.length : section.blocks.indexOf(before);
+
+        return { ...section, blocks: section.blocks.toSpliced(position, 0, block) };
+      }),
     },
     id,
   };

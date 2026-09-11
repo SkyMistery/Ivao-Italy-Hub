@@ -180,3 +180,38 @@ test('a visitor sees none of it: an empty column is simply empty', () => {
   expect(screen.queryByRole('button', { name: '+ Add here' })).not.toBeInTheDocument();
   expect(document.querySelectorAll('[data-pickable]')).toHaveLength(0);
 });
+
+/** What the editor hands over as a place to drop onto: here, a marker that says where it stands. */
+function Slot({ section, column, index }: { section: string; column: number; index: number }) {
+  return <div data-slot={`${section}:${column}:${index}`} />;
+}
+
+test('a place to drop onto stands before every block and after the last, only while composing', () => {
+  // One block in `body`: a place before it and one after it. The renderer draws the component the
+  // editor hands over and knows nothing else about dropping — dnd-kit is never imported here.
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ DropZone: Slot })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect([...document.querySelectorAll('[data-slot]')].map((slot) => slot.getAttribute('data-slot'))).toEqual(
+    ['s1:0:0', 's1:0:1'],
+  );
+});
+
+test('a section a template locks offers no place to drop onto either', () => {
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ DropZone: Slot, accepts: () => false })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  expect(document.querySelectorAll('[data-slot]')).toHaveLength(0);
+});
+
+test('a visitor gets no place to drop onto, because there is nothing to drop', () => {
+  renderWithProviders(<ContentRenderer body={body} />);
+
+  expect(document.querySelectorAll('[data-slot]')).toHaveLength(0);
+});

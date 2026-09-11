@@ -490,6 +490,7 @@
       "preview": "Anteprima",
       "publish": "Pubblica",
       "autosave": {
+        "title": "Bozza",
         "saved": "Salvato alle {{time}}",
         "saving": "Salvataggio…",
         "unsaved": "Modifiche non salvate: la bozza si salva da sola dopo una pausa.",
@@ -543,7 +544,8 @@
       "page": "Pagina",
       "addRow": "Aggiungi riga",
       "untitledRow": "Riga senza titolo",
-      "addHere": "+ Aggiungi qui"
+      "addHere": "+ Aggiungi qui",
+      "dropHere": "Lascia qui"
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

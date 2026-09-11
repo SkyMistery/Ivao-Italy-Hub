@@ -132,6 +132,30 @@ test('a new block starts with the properties its own schema describes', () => {
   });
 });
 
+test('a block dropped at a place in a column goes before the block that stood there', () => {
+  const props = defaultProps(calloutSchema, LOCALES);
+
+  // The blocks of a section are one list whatever column they stand in: `b_1` is in the third
+  // column and `b_2` in the first. Dropped at the top of the first column, the new block goes
+  // before `b_2` in that list — where `b_1` stands is another column's business.
+  const first = addBlock(body(), 's_1', 'callout', props, null, 0, 0);
+  expect(first.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', first.id, 'b_2']);
+  expect(findBlock(first.body, first.id)!.block.column).toBe(0);
+
+  // Past the last block of the column — one block, position one — is the end of the list.
+  const last = addBlock(body(), 's_1', 'callout', props, null, 0, 1);
+  expect(last.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2', last.id]);
+
+  // An empty column has one place, and it is the end.
+  const middle = addBlock(body(), 's_1', 'callout', props, null, 1, 0);
+  expect(middle.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2', middle.id]);
+  expect(findBlock(middle.body, middle.id)!.block.column).toBe(1);
+
+  // And with no place named, the end, as the palette's click has always done.
+  const clicked = addBlock(body(), 's_1', 'callout', props, null, 2);
+  expect(clicked.body.sections[0]!.blocks.map((block) => block.id)).toEqual(['b_1', 'b_2', clicked.id]);
+});
+
 test('defaults are read off the schema, not written next to the block', () => {
   // ⚠️ A heading starts at **2**, because the schema says so. Before G13 it had no default, so it
   // took the first of its choices and every heading anybody added was an `h1` — `/start` had four

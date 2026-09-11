@@ -1318,7 +1318,20 @@ finto (nessun `PUT` prima dei 10 s, uno solo dopo, nessuno se nulla è cambiato,
 nuova, stop al 409); integrazione .NET sulla riga `autosaved` senza corpo contro la `updated` con;
 e2e: scrivere, aspettare l'indicatore, ricaricare, il testo c'è.
 
-**Sessione 3 — trascinare dalla barra.** Voci della `BlockPalette` `useDraggable` con `data: { type }`;
+**Sessione 3 — trascinare dalla barra — fatta l'11 settembre 2026**, terza dello stesso giorno:
+G15 è costata **una giornata** invece delle tre sessioni previste. Costruita come sotto, con due
+scarti dal disegno. **Un contesto dnd-kit solo, sempre montato**, intorno a barra e pagina; con
+l'outline nel mezzo le voci della barra non sono trascinabili, quindi il contesto dell'outline e
+questo non si contendono mai un gesto — un contesto condizionale avrebbe rimontato barra e pannello
+a ogni cambio. **Gli slot sono sempre nel documento, nascosti** finché un trascinamento non parte:
+uno slot che occupasse spazio a riposo metterebbe aria fra i blocchi che il visitatore non ha, e uno
+montato solo durante il trascinamento non sarebbe registrato quando serve. Due cose che solo il
+browser ha detto: la live region di dnd-kit ha `role="status"` e si confondeva con la riga della
+bozza, che ora è nominata; e gli `attributes` di dnd-kit mettono `aria-disabled` su un pulsante
+abilitato, che Playwright legge come disabilitato — via, restano i soli `listeners`, perché il clic
+è già la strada da tastiera. Conto: **340 Vitest**, **56 smoke**, **15 del giro pieno** (uno nuovo:
+due titoli, «Text» trascinato sullo slot in mezzo, l'ordine di `h2, p` sulla pagina). Il disegno:
+voci della `BlockPalette` `useDraggable` con `data: { type }`;
 un `DndContext` in `ContentEditor` intorno a barra e pagina **solo con la pagina nel mezzo** (l'outline
 ha il suo, i due non convivono). ⚠️ **Il renderer non importa dnd-kit**: la `Picking` porta un
 componente `DropZone` fornito dall'editor (`useDroppable` dentro) che `Column` disegna fra un blocco e

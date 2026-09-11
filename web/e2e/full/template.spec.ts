@@ -15,6 +15,7 @@ import {
   type ContentRow,
   whileWaitingFor,
   writeContent,
+  writeInBothLanguages,
 } from './bench';
 
 /**
@@ -311,4 +312,78 @@ test('the preview is where a page is composed: a block picked there opens its ow
   // The way back, which is the panel's own header — there is no outline to return to in here.
   await page.getByRole('button', { name: words.page, exact: true }).click();
   await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toBeVisible();
+});
+
+test('a component dragged from the palette lands between two blocks', async ({ page, context }) => {
+  // The third thing the page builder of va.ivao.aero has (G15, session 3), and the one the note of
+  // 10 September said had to be measured in a browser: the drop **between** two blocks is where
+  // this is got wrong. So: two headings, "Text" dragged onto the slot between them, and the order
+  // of what the page then draws.
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await page.setViewportSize({ width: 1920, height: 1000 });
+
+  const pair = {
+    ...section('pair', 'Pair', first),
+    blocks: [
+      { id: 'b_top', type: 'heading', version: 1, props: { level: 2, text: first } },
+      { id: 'b_bottom', type: 'heading', version: 1, props: { level: 2, text: later } },
+    ],
+  };
+
+  const born = await createContent(context, {
+    slug: `bench-drag-${stamp}`,
+    title: { en: 'Bench drag', it: 'Trascinamento del banco' },
+    body: { schemaVersion: 1, sections: [pair] },
+  });
+
+  await page.goto(`/staff/${department}/content/${born.id}`);
+
+  const frame = page.getByRole('region', { name: words.preview });
+  await expect(frame.getByRole('heading', { name: later.en })).toBeVisible();
+
+  // The palette only offers what has somewhere to go: picking a block on the page picks its section.
+  await frame.getByRole('heading', { name: first.en }).click();
+
+  const entry = page
+    .getByLabel(blocks.subgroups.text)
+    .getByRole('button', { name: blocks.text.label, exact: true });
+  await expect(entry).toBeEnabled();
+
+  // Nothing to drop onto until a drag is under way: the slots would otherwise be air between the
+  // blocks that a visitor does not get. They are in the document and hidden — registered before
+  // the drag that needs them — so what is counted is what can be seen.
+  const slots = frame.getByLabel(words.dropHere).filter({ visible: true });
+  await expect(slots).toHaveCount(0);
+
+  const from = (await entry.boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  // Past the distance a click may travel, which is what makes it a drag and not a click.
+  await page.mouse.move(from.x + from.width / 2 + 16, from.y + from.height / 2 + 16, { steps: 4 });
+
+  // One before each block and one after the last: three, for two blocks.
+  await expect(slots).toHaveCount(3);
+  const between = frame.locator('[data-drop-index="1"]');
+  const to = (await between.boundingBox())!;
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 10 });
+  await page.mouse.up();
+
+  // Dropped and selected: its fields are in the panel, and the slots are gone again.
+  const markdown = page.getByRole('group', { name: blocks.text.fields.markdown });
+  await expect(markdown).toBeVisible();
+  await expect(slots).toHaveCount(0);
+
+  // Written into, so the page has something to show where it landed — between the two.
+  await writeInBothLanguages(properties(page), blocks.text.fields.markdown, 'markdown', {
+    en: 'Dropped between',
+    it: 'Lasciato in mezzo',
+  });
+  await expect(frame.getByText('Dropped between')).toBeVisible();
+  await expect(frame.locator('h2, p')).toHaveText([first.en, 'Dropped between', later.en]);
 });

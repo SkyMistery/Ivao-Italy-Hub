@@ -490,6 +490,7 @@
       "preview": "Preview",
       "publish": "Publish",
       "autosave": {
+        "title": "Draft",
         "saved": "Saved at {{time}}",
         "saving": "Saving…",
         "unsaved": "Unsaved changes — the draft saves itself after a pause.",
@@ -543,7 +544,8 @@
       "page": "Page",
       "addRow": "Add row",
       "untitledRow": "Untitled row",
-      "addHere": "+ Add here"
+      "addHere": "+ Add here",
+      "dropHere": "Drop here"
     },
     "slugPlaceholder": "my-new-page",
     "hints": {

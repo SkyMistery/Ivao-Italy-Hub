@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, type ComponentType } from 'react';
 
 /**
  * Composing a page **on the page**, instead of in an outline beside a preview.
@@ -38,6 +38,14 @@ export interface Picking {
    * button that lies.
    */
   readonly accepts: (section: string) => boolean;
+  /**
+   * Where a component dragged from the palette may be dropped: one before every block of a column
+   * and one after the last (G15, session 3). A **component** handed over rather than a hook, because
+   * the renderer must not import the drag and drop library — a visitor's page has no drag in it —
+   * and a hook cannot travel through a context the way a component can. The editor provides one that
+   * knows dnd-kit; here it is only drawn where a block could land, and never where `accepts` says no.
+   */
+  readonly DropZone?: ComponentType<{ section: string; column: number; index: number }>;
 }
 
 export const PickingContext = createContext<Picking | null>(null);

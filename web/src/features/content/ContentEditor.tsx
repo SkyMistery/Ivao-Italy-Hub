@@ -1,3 +1,12 @@
+import {
+  DndContext,
+  DragOverlay,
+  MeasuringStrategy,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
@@ -17,6 +26,7 @@ import { ConfirmDialog, PageActions, SectionHeader } from '../../shared/ui';
 
 import { BlockPalette } from './BlockPalette';
 import { BlockProperties, SectionProperties } from './BlockProperties';
+import { DropZone, type PaletteDrag, type SlotDrop } from './DropZone';
 import {
   addBlock,
   addSection,
@@ -269,7 +279,7 @@ export function ContentEditor({
   // Adding a block, written once: the palette on the left and the one inside the outline do the
   // very same thing, and a block added from either has to start out identical -- same blank
   // properties, same render mode. Two copies of this would be two ways of being born.
-  const addBlockTo = (sectionId: string, type: string, column = 0) => {
+  const addBlockTo = (sectionId: string, type: string, column = 0, at?: number) => {
     const registration = registry.blocks.find((candidate) => candidate.type === type);
     if (registration === undefined) {
       return;
@@ -287,11 +297,34 @@ export function ContentEditor({
       // only means anything once the page is published.
       registration.kind === 'Data' ? 'live' : null,
       column,
+      at,
     );
 
     change(added.body);
     setSelection({ kind: 'block', id: added.id });
   };
+
+  // Dragging a component from the palette onto the page (G15, session 3). One context around the
+  // palette and the page; the outline, when it is in the middle, has a context of its own for its
+  // rows, and the palette entries are not draggable then — so the two never handle one gesture.
+  // A drag has to start further than a click, or a click on the palette would be a lottery.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [dragging, setDragging] = useState<PaletteDrag | null>(null);
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    setDragging(null);
+
+    const dragged = active.data.current as PaletteDrag | undefined;
+    const slot = over?.data.current as SlotDrop | undefined;
+    if (dragged?.kind !== 'palette' || slot?.kind !== 'slot') {
+      return;
+    }
+
+    addBlockTo(slot.section, dragged.type, slot.column, slot.index);
+  };
+
+  const draggedRegistration =
+    dragging === null ? undefined : registry.blocks.find((candidate) => candidate.type === dragging.type);
 
   // Which section the palette on the left adds to. A block selected means the section it is in:
   // clicking a paragraph and then `Image` should put the image where you are looking, not ask you
@@ -475,23 +508,24 @@ export function ContentEditor({
   // What the page needs to be composed in: what is selected, and what to do about a click. The
   // renderer reads it from a context that is `null` everywhere else, so a visitor's page has no
   // handler to remove (`blocks/picking.ts`).
-  const picking = useMemo(
-    () => ({
-      selected: selection?.id ?? null,
-      onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
-      // The column the palette will fill, drawn as chosen on the page. Only a selected section has
-      // one to show: with a block selected, the destination is that block's column, and the block's
-      // own ring already says where that is.
-      target: selection?.kind === 'section' ? { section: selection.id, column: targetColumn } : null,
-      onPickColumn: (sectionId: string, column: number) => {
-        setSelection({ kind: 'section', id: sectionId });
-        setChosenColumn({ section: sectionId, column });
-      },
-      // A section a template locks takes no new block, so its empty columns must not offer one.
-      accepts: (sectionId: string) => !ruleFor(rules, findSection(body, sectionId)?.key).locked,
-    }),
-    [selection, targetColumn, rules, body],
-  );
+  // Not memoized by hand: the compiler does it, and refused to keep a manual memo whose inputs it
+  // could not prove untouched once the drop handler read the body.
+  const picking = {
+    selected: selection?.id ?? null,
+    onPick: (kind: 'section' | 'block', id: string) => setSelection({ kind, id }),
+    // The column the palette will fill, drawn as chosen on the page. Only a selected section has
+    // one to show: with a block selected, the destination is that block's column, and the block's
+    // own ring already says where that is.
+    target: selection?.kind === 'section' ? { section: selection.id, column: targetColumn } : null,
+    onPickColumn: (sectionId: string, column: number) => {
+      setSelection({ kind: 'section', id: sectionId });
+      setChosenColumn({ section: sectionId, column });
+    },
+    // A section a template locks takes no new block, so its empty columns must not offer one.
+    accepts: (sectionId: string) => !ruleFor(rules, findSection(body, sectionId)?.key).locked,
+    // Where a dragged component may land, drawn by the renderer, known to dnd-kit only here.
+    DropZone,
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -571,7 +605,13 @@ export function ContentEditor({
       <PublishProblems body={body} problems={publishProblems} />
 
       {draftStatus === null ? null : (
-        <p role="status" className="text-muted-foreground text-sm">
+        // Named, because the drag and drop context draws a live region of its own for its
+        // announcements, and "the status" would otherwise be two things on this screen.
+        <p
+          role="status"
+          aria-label={t('content.editor.autosave.title')}
+          className="text-muted-foreground text-sm"
+        >
           {draftStatus}
         </p>
       )}
@@ -591,61 +631,82 @@ export function ContentEditor({
           The outline is not a mode you leave behind: it is the keyboard road (`blocks/picking.ts`),
           and clicking the page is the pointer one. Both put the same thing in the panel on the
           right, which is the property that made road (A) work in the first place. */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
-        <BlockPalette
-          target={paletteTarget}
-          rule={paletteRule}
-          onAdd={(type) => {
-            if (paletteTarget !== null) {
-              addBlockTo(paletteTarget.id, type, targetColumn);
-            }
-          }}
-        />
+      <DndContext
+        sensors={sensors}
+        // The slots are hidden until a drag begins, so they have to be measured once it has.
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+        onDragStart={({ active }) => setDragging((active.data.current as PaletteDrag | undefined) ?? null)}
+        onDragCancel={() => setDragging(null)}
+        onDragEnd={onDragEnd}
+      >
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
+          <BlockPalette
+            target={paletteTarget}
+            rule={paletteRule}
+            draggable={preview}
+            onAdd={(type) => {
+              if (paletteTarget !== null) {
+                addBlockTo(paletteTarget.id, type, targetColumn);
+              }
+            }}
+          />
 
-        {preview ? (
-          // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
-          // ways of composing — the page itself — and it keeps the same panel beside it, so a block
-          // clicked here and the same block clicked in the outline lead to exactly the same fields
-          // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
-          <PickingContext.Provider value={picking}>
-            <PreviewFrame body={body} />
-          </PickingContext.Provider>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <SectionHeader title={t('content.editor.structure')} />
-            <SectionTree
-              body={body}
-              rules={rules}
-              selection={selection}
-              onSelect={setSelection}
-              onAddSection={(parentId) => {
-                const added = addSection(body, locales, parentId);
-                change(added.body);
-                setSelection({ kind: 'section', id: added.id });
-              }}
-              onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
-              onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
-              onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
-              onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
-              onDuplicateBlock={(id) => {
-                const copy = duplicateBlock(body, id);
-                change(copy.body);
-                setSelection({ kind: 'block', id: copy.id });
-              }}
-              onRemoveSection={(id) => {
-                change(removeSection(body, id));
-                setSelection(null);
-              }}
-              onRemoveBlock={(id) => {
-                change(removeBlock(body, id));
-                setSelection(null);
-              }}
-            />
-          </div>
-        )}
+          {preview ? (
+            // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
+            // ways of composing — the page itself — and it keeps the same panel beside it, so a block
+            // clicked here and the same block clicked in the outline lead to exactly the same fields
+            // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
+            <PickingContext.Provider value={picking}>
+              <PreviewFrame body={body} />
+            </PickingContext.Provider>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <SectionHeader title={t('content.editor.structure')} />
+              <SectionTree
+                body={body}
+                rules={rules}
+                selection={selection}
+                onSelect={setSelection}
+                onAddSection={(parentId) => {
+                  const added = addSection(body, locales, parentId);
+                  change(added.body);
+                  setSelection({ kind: 'section', id: added.id });
+                }}
+                onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
+                onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
+                onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
+                onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
+                onDuplicateBlock={(id) => {
+                  const copy = duplicateBlock(body, id);
+                  change(copy.body);
+                  setSelection({ kind: 'block', id: copy.id });
+                }}
+                onRemoveSection={(id) => {
+                  change(removeSection(body, id));
+                  setSelection(null);
+                }}
+                onRemoveBlock={(id) => {
+                  change(removeBlock(body, id));
+                  setSelection(null);
+                }}
+              />
+            </div>
+          )}
 
-        {properties}
-      </div>
+          {properties}
+        </div>
+
+        {/* What travels under the pointer: a copy of the entry, not the entry itself, which sits in a
+          panel that scrolls and would clip it. */}
+        <DragOverlay dropAnimation={null}>
+          {draggedRegistration === undefined ? null : (
+            <div className="bg-body text-foreground border-border flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm shadow-md">
+              <draggedRegistration.icon aria-hidden className="size-4 shrink-0" />
+              {t(draggedRegistration.editorLabelKey)}
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }
