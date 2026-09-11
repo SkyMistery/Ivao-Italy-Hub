@@ -4,7 +4,7 @@ import { PADDINGS, WIDTHS } from '../../blocks';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { localized, localizedObject, type ChoiceOption } from '../../shared/forms';
 
-import type { ContentKind } from './queries';
+import type { ContentKind, DocumentType } from './queries';
 
 /**
  * The metadata of a content row, as a zod schema mirroring `ContentWriteDto`. Types and what is
@@ -90,6 +90,18 @@ export type ContentFormValues = z.output<ReturnType<typeof contentMetadataSchema
   pinned?: boolean;
   fileMediaId?: number;
   sort?: number;
+  // The operational document (G14): what a SOP or a LoA says about itself beside its body. All
+  // optional here for the reason the five above are; a kind that has none of them sends null.
+  documentType?: DocumentType;
+  primaryPosition?: string;
+  secondaryPosition?: string;
+  icao?: string;
+  fir?: string;
+  effectiveOn?: string;
+  reviewOn?: string;
+  retiredAt?: string;
+  supersededById?: number;
+  showFooter?: boolean;
 };
 
 /**

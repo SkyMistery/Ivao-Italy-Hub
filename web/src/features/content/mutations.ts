@@ -64,8 +64,25 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
     pinned: values.pinned ?? false,
     sort: values.sort ?? 0,
     fileMediaId: values.fileMediaId ?? null,
+    // The operational document (G14). The same rule: a kind whose form does not draw them sends
+    // nothing, and the server refuses them on anything but a document anyway.
+    documentType: values.documentType ?? null,
+    primaryPosition: blankToNull(values.primaryPosition),
+    secondaryPosition: blankToNull(values.secondaryPosition),
+    icao: blankToNull(values.icao),
+    fir: blankToNull(values.fir),
+    effectiveOn: blankToNull(values.effectiveOn),
+    reviewOn: blankToNull(values.reviewOn),
+    retiredAt: blankToNull(values.retiredAt),
+    supersededById: values.supersededById ?? null,
+    showFooter: values.showFooter ?? true,
     rowVersion: values.rowVersion,
   };
+}
+
+/** A text field left empty is a column left null, not an empty string the server has to refuse. */
+function blankToNull(value: string | undefined): string | null {
+  return value === undefined || value.trim() === '' ? null : value.trim();
 }
 
 /**
@@ -121,6 +138,18 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     pinned: content.pinned,
     sort: content.sort,
     ...(content.fileMediaId === null ? {} : { fileMediaId: content.fileMediaId }),
+    // The operational document (G14), carried whether or not this kind's form draws them: a save
+    // from the editor must never wipe what the row already says about itself.
+    ...(content.documentType === null ? {} : { documentType: content.documentType }),
+    ...(content.primaryPosition === null ? {} : { primaryPosition: content.primaryPosition }),
+    ...(content.secondaryPosition === null ? {} : { secondaryPosition: content.secondaryPosition }),
+    ...(content.icao === null ? {} : { icao: content.icao }),
+    ...(content.fir === null ? {} : { fir: content.fir }),
+    ...(content.effectiveOn === null ? {} : { effectiveOn: content.effectiveOn }),
+    ...(content.reviewOn === null ? {} : { reviewOn: content.reviewOn }),
+    ...(content.retiredAt === null ? {} : { retiredAt: content.retiredAt }),
+    ...(content.supersededById === null ? {} : { supersededById: content.supersededById }),
+    showFooter: content.showFooter,
     rowVersion: content.rowVersion,
   };
 }

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
@@ -30,7 +31,7 @@ public sealed record ContentPublishFailure(
 /// <para>The draft is not rewritten: the captured data lives in the version. Publish again and it
 /// is captured again, which is the whole of what "republish to refresh" means.</para>
 /// </summary>
-public sealed class ContentPublishService(
+public sealed partial class ContentPublishService(
     HubDbContext database,
     BlockDocumentWalker walker,
     BlockRegistry blocks,
@@ -87,13 +88,25 @@ public sealed class ContentPublishService(
     public async Task<ContentPublishFailure?> PublishAsync(
         ContentEntry content,
         string? changelog,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? airac = null)
     {
         ArgumentNullException.ThrowIfNull(content);
 
         if (await ProblemsAsync(content, cancellationToken) is { } failure)
         {
             return failure;
+        }
+
+        // The one thing publication is told that is about the document and not the row: four
+        // digits or nothing. Checked here and not by a validator of its own, because the request
+        // has one field beside it and the refusal has to land on the same dialog anyway.
+        airac = string.IsNullOrWhiteSpace(airac) ? null : airac.Trim();
+        if (airac is not null && !AiracPattern().IsMatch(airac))
+        {
+            return new ContentPublishFailure(
+                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["airac"] = ["errors.content.airacInvalid"] },
+                new Dictionary<string, string[]>(StringComparer.Ordinal));
         }
 
         var body = JsonNode.Parse(content.BodyJson) ?? new JsonObject();
@@ -109,6 +122,7 @@ public sealed class ContentPublishService(
             BodyJson = body.ToJsonString(),
             SchemaVersion = content.SchemaVersion,
             Changelog = changelog,
+            Airac = airac,
             PublishedAt = now,
             PublishedBy = currentUser.Vid,
         };
@@ -292,6 +306,10 @@ public sealed class ContentPublishService(
             block.Node["frozen"] = resolved;
         }
     }
+
+    /// <summary>An AIRAC cycle as the charts write it: the year and the cycle, <c>2609</c>.</summary>
+    [GeneratedRegex("^[0-9]{4}$")]
+    private static partial Regex AiracPattern();
 
     private async Task<int> NextVersionAsync(long contentId, CancellationToken cancellationToken)
     {

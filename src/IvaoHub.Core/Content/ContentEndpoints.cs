@@ -214,12 +214,22 @@ public static class ContentEndpoints
             body,
             template.SchemaVersion,
             // A template carries structure, never the editorial facts of one row: a page born from
-            // one starts with no category, no cover, unpinned, first in order and no file.
+            // one starts with no category, no cover, unpinned, first in order and no file — and a
+            // document with none of what makes it operational, which the form asks for next.
             Category: null,
             CoverMediaId: null,
             Pinned: false,
             Sort: 0,
             FileMediaId: null,
+            DocumentType: null,
+            PrimaryPosition: null,
+            SecondaryPosition: null,
+            Icao: null,
+            Fir: null,
+            EffectiveOn: null,
+            ReviewOn: null,
+            RetiredAt: null,
+            SupersededById: null,
             RowVersion: default);
 
         var validation = await validator.ValidateAsync(payload, http.RequestAborted);
@@ -273,7 +283,7 @@ public static class ContentEndpoints
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
         }
 
-        var failure = await publish.PublishAsync(content, request?.Changelog, http.RequestAborted);
+        var failure = await publish.PublishAsync(content, request?.Changelog, http.RequestAborted, request?.Airac);
         if (failure is not null)
         {
             return CrudProblems.Validation(failure.Errors, failure.MissingLocales, catalog, currentUser.Locale);
@@ -350,6 +360,22 @@ public static class ContentEndpoints
             return TypedResults.NotFound();
         }
 
+        // What the footer and the notice of a document say about people and other rows, read here
+        // and given as words: the visitor gets a name and an address, never a VID or an identifier.
+        var publishedBy = await database.Users
+            .AsNoTracking()
+            .Where(user => user.Vid == version.PublishedBy)
+            .Select(user => user.FirstName + " " + user.LastName)
+            .FirstOrDefaultAsync(http.RequestAborted);
+
+        var successor = content.SupersededById is { } successorId
+            ? await database.Contents
+                .AsNoTracking()
+                .Where(row => row.Id == successorId && row.PublishedVersionId != null)
+                .Select(row => new { row.Slug, row.Title })
+                .FirstOrDefaultAsync(http.RequestAborted)
+            : null;
+
         return TypedResults.Ok(new PublicContentDto(
             content.Kind,
             content.Slug,
@@ -363,7 +389,20 @@ public static class ContentEndpoints
             content.CoverMediaId,
             content.FileMediaId,
             version.Version,
-            version.PublishedAt));
+            version.PublishedAt,
+            content.DocumentType,
+            content.PrimaryPosition,
+            content.SecondaryPosition,
+            content.Icao,
+            content.Fir,
+            content.EffectiveOn,
+            content.ReviewOn,
+            content.RetiredAt,
+            successor?.Slug,
+            successor?.Title,
+            content.ShowFooter,
+            string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim(),
+            version.Airac));
     }
 
     /// <summary>

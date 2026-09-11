@@ -55,6 +55,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ref/airspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AirspaceListing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/notifications": {
         parameters: {
             query?: never;
@@ -658,6 +674,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description An airport or a centre, as a list offers it: the code, and the name beside it. */
+        AirspaceEntryDto: {
+            code: string;
+            name: string;
+        };
+        /** @description The airports and the centres of the division, sorted by code. */
+        AirspaceListingDto: {
+            airports: components["schemas"]["AirspaceEntryDto"][];
+            centers: components["schemas"]["AirspaceEntryDto"][];
+        };
         /**
          * @description What `GET /api/atc/ping` answers. Typed, so that it reaches the OpenAPI document
          *                 and from there the generated client, like every other response of the hub.
@@ -1103,6 +1129,20 @@ export interface components {
             sort: number;
             /** Format: int64 */
             fileMediaId: null | number;
+            documentType: null | components["schemas"]["DocumentType"];
+            primaryPosition: null | string;
+            secondaryPosition: null | string;
+            icao: null | string;
+            fir: null | string;
+            /** Format: date-time */
+            effectiveOn: null | string;
+            /** Format: date-time */
+            reviewOn: null | string;
+            /** Format: date-time */
+            retiredAt: null | string;
+            /** Format: int64 */
+            supersededById: null | number;
+            showFooter: boolean;
             /** Format: int64 */
             publishedVersionId: null | number;
             /** Format: date-time */
@@ -1150,6 +1190,13 @@ export interface components {
             sort: number;
             /** Format: int64 */
             fileMediaId: null | number;
+            documentType: null | components["schemas"]["DocumentType"];
+            /** Format: date-time */
+            reviewOn: null | string;
+            /** Format: date-time */
+            retiredAt: null | string;
+            /** Format: int64 */
+            supersededById: null | number;
             /** Format: date-time */
             publishedAt: null | string;
             /** Format: date-time */
@@ -1176,6 +1223,8 @@ export interface components {
         ContentPublishRequest: {
             /** @description A line for the staff about what changed. Never shown to a visitor. */
             changelog: null | string;
+            /** @description The AIRAC cycle of this publication (`2609`), optional, shown on the footer. */
+            airac?: null | string;
         };
         /**
          * @description What a client may set on a content row.
@@ -1183,7 +1232,9 @@ export interface components {
          *     the interceptor and by publication. status is not a field either: a page becomes public
          *     by being published, which is an endpoint with its own permission, not a checkbox. And
          *     templateId is written once, by "new from template", so that the record of where a page
-         *     came from cannot be rewritten afterwards.
+         *     came from cannot be rewritten afterwards.The operational fields (G14) are nullable and only a Document may carry them; the
+         *     validator refuses them on any other kind. reviewNotifiedAt is not here: the job writes
+         *     it, and a client that could clear it would be a client that could make the reminder ring twice.
          */
         ContentWriteDto: {
             kind: components["schemas"]["ContentKind"];
@@ -1205,8 +1256,23 @@ export interface components {
             sort: number;
             /** Format: int64 */
             fileMediaId: null | number;
+            documentType: null | components["schemas"]["DocumentType"];
+            primaryPosition: null | string;
+            secondaryPosition: null | string;
+            icao: null | string;
+            fir: null | string;
+            /** Format: date-time */
+            effectiveOn: null | string;
+            /** Format: date-time */
+            reviewOn: null | string;
+            /** Format: date-time */
+            retiredAt: null | string;
+            /** Format: int64 */
+            supersededById: null | number;
             /** Format: date-time */
             rowVersion: string;
+            /** @default true */
+            showFooter: boolean;
         };
         /**
          * @description Owner of a row. These are the department codes IVAO itself uses, so a staff position maps onto a
@@ -1216,6 +1282,8 @@ export interface components {
          * @enum {unknown}
          */
         Department: "HQ" | "SOD" | "FOD" | "AOD" | "TD" | "MD" | "ED" | "PRD" | "WD";
+        /** @enum {unknown} */
+        DocumentType: "Sop" | "Loa" | null;
         /** @description A grant as the form loads it, with the audit trail and the version to write back. */
         GrantDetailDto: {
             /** Format: int64 */
@@ -1842,6 +1910,22 @@ export interface components {
             version: number;
             /** Format: date-time */
             publishedAt: string;
+            documentType: null | components["schemas"]["DocumentType"];
+            primaryPosition: null | string;
+            secondaryPosition: null | string;
+            icao: null | string;
+            fir: null | string;
+            /** Format: date-time */
+            effectiveOn: null | string;
+            /** Format: date-time */
+            reviewOn: null | string;
+            /** Format: date-time */
+            retiredAt: null | string;
+            supersededBySlug: null | string;
+            supersededByTitle: null | components["schemas"]["LocalizedOfstring"];
+            showFooter: boolean;
+            publishedByName: null | string;
+            airac: null | string;
         };
         /**
          * @description Editorial state. The public site only ever reads published rows.
@@ -1935,6 +2019,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    AirspaceListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AirspaceListingDto"];
                 };
             };
         };

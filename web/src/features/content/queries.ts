@@ -15,6 +15,8 @@ export type ContentDetailDto = components['schemas']['ContentDetailDto'];
 export type ContentWriteDto = components['schemas']['ContentWriteDto'];
 export type PublicContentDto = components['schemas']['PublicContentDto'];
 export type ContentKind = components['schemas']['ContentKind'];
+/** SOP or LoA: what an operational document is, when it is one (G14). Never null on a form. */
+export type DocumentType = NonNullable<components['schemas']['DocumentType']>;
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
 export type ContentPublishProblemsDto = components['schemas']['ContentPublishProblemsDto'];
 

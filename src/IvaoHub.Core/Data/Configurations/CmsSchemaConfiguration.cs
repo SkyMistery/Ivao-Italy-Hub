@@ -16,6 +16,18 @@ internal sealed class ContentEntryConfiguration : IEntityTypeConfiguration<Conte
         builder.Property(content => content.Category).HasMaxLength(64);
         builder.HasRowVersion(content => content.RowVersion);
 
+        // The operational document (G14). Stored as names and short codes; sized to what they are.
+        builder.Property(content => content.DocumentType).HasConversion<string>().HasMaxLength(8);
+        builder.Property(content => content.PrimaryPosition).HasMaxLength(ContentWriteDtoValidator.MaxPositionLength);
+        builder.Property(content => content.SecondaryPosition).HasMaxLength(ContentWriteDtoValidator.MaxPositionLength);
+        builder.Property(content => content.Icao).HasMaxLength(4);
+        builder.Property(content => content.Fir).HasMaxLength(4);
+        // Days, not instants: a document comes into force on a date, whatever the time zone.
+        builder.Property(content => content.EffectiveOn).HasColumnType("date");
+        builder.Property(content => content.ReviewOn).HasColumnType("date");
+        builder.Property(content => content.ShowFooter).HasDefaultValue(true);
+        builder.HasIndex(content => new { content.Kind, content.ReviewOn });
+
         // MariaDB has no filtered indexes, so a template and a page may share a slug but two pages
         // may not (design M0 section 5.1).
         builder.HasIndex(content => new { content.Kind, content.Slug, content.IsTemplate }).IsUnique();
@@ -33,6 +45,7 @@ internal sealed class ContentVersionConfiguration : IEntityTypeConfiguration<Con
         builder.HasKey(version => version.Id);
         builder.Property(version => version.BodyJson).HasColumnType("json").IsRequired();
         builder.Property(version => version.Changelog).HasMaxLength(512);
+        builder.Property(version => version.Airac).HasMaxLength(4);
         builder.HasOne(version => version.Content)
             .WithMany()
             .HasForeignKey(version => version.ContentId)

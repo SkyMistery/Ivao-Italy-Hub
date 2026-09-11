@@ -23,6 +23,10 @@ public sealed record ContentListDto(
     bool Pinned,
     int Sort,
     long? FileMediaId,
+    DocumentType? DocumentType,
+    DateTime? ReviewOn,
+    DateTime? RetiredAt,
+    long? SupersededById,
     DateTime? PublishedAt,
     DateTime UpdatedAt);
 
@@ -49,6 +53,16 @@ public sealed record ContentDetailDto(
     bool Pinned,
     int Sort,
     long? FileMediaId,
+    DocumentType? DocumentType,
+    string? PrimaryPosition,
+    string? SecondaryPosition,
+    string? Icao,
+    string? Fir,
+    DateTime? EffectiveOn,
+    DateTime? ReviewOn,
+    DateTime? RetiredAt,
+    long? SupersededById,
+    bool ShowFooter,
     long? PublishedVersionId,
     DateTime? PublishedAt,
     DateTime CreatedAt,
@@ -64,6 +78,9 @@ public sealed record ContentDetailDto(
 /// by being published, which is an endpoint with its own permission, not a checkbox. And
 /// <c>templateId</c> is written once, by "new from template", so that the record of where a page
 /// came from cannot be rewritten afterwards.</para>
+/// <para>The operational fields (G14) are nullable and only a <c>Document</c> may carry them; the
+/// validator refuses them on any other kind. <c>reviewNotifiedAt</c> is not here: the job writes
+/// it, and a client that could clear it would be a client that could make the reminder ring twice.</para>
 /// </summary>
 public sealed record ContentWriteDto(
     ContentKind Kind,
@@ -81,7 +98,19 @@ public sealed record ContentWriteDto(
     bool Pinned,
     int Sort,
     long? FileMediaId,
-    DateTime RowVersion);
+    DocumentType? DocumentType,
+    string? PrimaryPosition,
+    string? SecondaryPosition,
+    string? Icao,
+    string? Fir,
+    DateTime? EffectiveOn,
+    DateTime? ReviewOn,
+    DateTime? RetiredAt,
+    long? SupersededById,
+    DateTime RowVersion,
+    // Last and defaulted: a client that never heard of the footer keeps it, rather than turning
+    // it off on every page it saves.
+    bool ShowFooter = true);
 
 /// <summary>
 /// What the public site is given: the published version and nothing about the draft behind it.
@@ -106,11 +135,28 @@ public sealed record PublicContentDto(
     long? CoverMediaId,
     long? FileMediaId,
     int Version,
-    DateTime PublishedAt);
+    DateTime PublishedAt,
+    // ---- the operational document (G14): the strip under the title, the notice, the footer ----
+    DocumentType? DocumentType,
+    string? PrimaryPosition,
+    string? SecondaryPosition,
+    string? Icao,
+    string? Fir,
+    DateTime? EffectiveOn,
+    DateTime? ReviewOn,
+    DateTime? RetiredAt,
+    // Where the reader is sent when this one was superseded: the successor's address and name.
+    string? SupersededBySlug,
+    Localized<string>? SupersededByTitle,
+    bool ShowFooter,
+    // Who published, as a name: the VID is nobody's business on the public site.
+    string? PublishedByName,
+    string? Airac);
 
 /// <summary>What publication is told, beyond which row it is about.</summary>
 /// <param name="Changelog">A line for the staff about what changed. Never shown to a visitor.</param>
-public sealed record ContentPublishRequest(string? Changelog);
+/// <param name="Airac">The AIRAC cycle of this publication (<c>2609</c>), optional, shown on the footer.</param>
+public sealed record ContentPublishRequest(string? Changelog, string? Airac = null);
 
 /// <summary>
 /// What stands between a row and the public, asked before anybody presses publish.

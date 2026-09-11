@@ -24,6 +24,14 @@ public sealed class ContentVersion
 
     public string? Changelog { get; set; }
 
+    /// <summary>
+    /// The AIRAC cycle this publication belongs to, as an optional label written beside the
+    /// changelog (<c>2609</c>). On the version and not on the row: it is a fact about <i>this</i>
+    /// publication. ⚠️ Not a release mechanism — plan section 9.3 keeps vIPI's AIRAC cycle out; this
+    /// is a word on a footer (note 2026-09-09-il-documento-dice-di-se).
+    /// </summary>
+    public string? Airac { get; set; }
+
     public DateTime PublishedAt { get; set; }
 
     public int PublishedBy { get; set; }
