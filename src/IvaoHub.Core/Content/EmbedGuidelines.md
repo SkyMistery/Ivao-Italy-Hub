@@ -203,8 +203,6 @@ which side the circuit is on, and stops when asked.
 
 ```html
 <figure style="display: flex; flex-direction: column; gap: 0.75rem">
-  <div role="group" id="choices" style="display: flex; gap: 0.5rem; flex-wrap: wrap"></div>
-
   <svg viewBox="0 0 400 240" width="100%" aria-labelledby="circuit-title">
     <title id="circuit-title"></title>
 
@@ -222,6 +220,7 @@ which side the circuit is on, and stops when asked.
       fill="none"
       stroke="var(--ocean)"
       stroke-width="2"
+      stroke-linejoin="round"
       stroke-dasharray="6 4"
     />
 
@@ -230,12 +229,15 @@ which side the circuit is on, and stops when asked.
     </g>
   </svg>
 
+  <!-- under the drawing, as the layout rule above says: the picture is the subject and the
+       controls are what you do to it -->
+  <div role="group" id="choices" style="display: flex; gap: 0.5rem; flex-wrap: wrap"></div>
+
   <p id="legend" style="margin: 0; color: var(--ink-quiet); font-size: 0.85rem"></p>
 </figure>
 
 <script>
   (function () {
-    var svg = document.querySelector('svg');
     var path = document.getElementById('circuit');
     var plane = document.getElementById('aeroplane');
     var legend = document.getElementById('legend');
@@ -260,13 +262,12 @@ which side the circuit is on, and stops when asked.
     /* The right hand circuit is the same path mirrored about the runway, which is what a mirrored
        transform on the group says — no second path to keep in step with the first. */
     function draw() {
-      svg.setAttribute('data-hand', hand);
       path.setAttribute('transform', hand === 'right' ? 'matrix(1 0 0 -1 0 314)' : '');
       title.textContent = HUB.t(words[hand]);
       legend.textContent = HUB.t(words.legend);
     }
 
-    function button(key, label, pressed, onClick) {
+    function button(label, pressed, onClick) {
       var element = document.createElement('button');
       element.type = 'button';
       element.textContent = label;
@@ -278,21 +279,26 @@ which side the circuit is on, and stops when asked.
 
     function controls() {
       choices.textContent = '';
-      button('left', HUB.t(words.left), hand === 'left', function () {
+      button(HUB.t(words.left), hand === 'left', function () {
         hand = 'left';
         draw();
         controls();
       });
-      button('right', HUB.t(words.right), hand === 'right', function () {
+      button(HUB.t(words.right), hand === 'right', function () {
         hand = 'right';
         draw();
         controls();
       });
-      button('run', HUB.t(running ? words.stop : words.play), running, function () {
+      button(HUB.t(running ? words.stop : words.play), running, function () {
         running = !running;
         controls();
         if (running) {
-          requestAnimationFrame(step);
+          // ⚠️ `last` is reset before resuming, or the first frame after a stop is given every
+          // millisecond that passed while it was stopped and the aeroplane jumps down the circuit.
+          requestAnimationFrame(function (now) {
+            last = now;
+            step(now);
+          });
         }
       });
     }

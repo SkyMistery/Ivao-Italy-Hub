@@ -10,19 +10,20 @@
     <title>{{title}}</title>
     <style>
       /*
-        The palette, written out. ⚠️ This is the one place in the product where a colour is a hex
-        rather than a token, and it cannot be otherwise: the frame's own policy is `default-src
-        'none'`, so it cannot load a stylesheet of ours — not even ours. The values are the brand's
-        (`@ivao/atmosphere-brand`), and the guidelines are generated from this file so that whoever
-        writes an animation is given these names and no others.
-      */
-      /*
-        ⚠️ No `color-scheme` anywhere in this file, and it is not an oversight: `color-scheme: dark`
-        makes the browser paint the frame's canvas its own opaque near-black, and a frame standing on
-        a section of the page must show that section through. Seen in a browser on 12 September 2026
-        — a black rectangle inside the teal ground — and the price is that the scrollbars and the
-        default look of a form control here follow the reader's system rather than the page. Nothing
-        in a frame has either: what it draws, it draws itself.
+        The palette, written out, and two things about it.
+        
+        ⚠️ This is the one place in the product where a colour is a hex rather than a token, and it
+        cannot be otherwise: the frame's own policy is `default-src 'none'`, so it cannot load a
+        stylesheet — not even one of ours. The values are the brand's (`@ivao/atmosphere-brand`), and
+        the guidelines quote this file whole, so whoever writes an animation is given these names and
+        no others.
+        
+        ⚠️ And there is no `color-scheme` anywhere below, which is not an oversight: `color-scheme:
+        dark` makes the browser paint this document's canvas its own opaque near-black, and a frame
+        standing on a section of the page must show that section through. Seen in a browser on
+        12 September 2026 — a black rectangle inside the teal ground. The price is that scrollbars and
+        the default look of a form control here follow the reader's system rather than the page, and
+        a frame has neither: what it draws, it draws itself.
       */
       :root {
         --ink: #21212e;
