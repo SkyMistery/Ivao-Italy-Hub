@@ -107,3 +107,20 @@ test('a file over the ceiling is refused here rather than by the server', async 
   ).toBeInTheDocument();
   expect(onEnvelope).not.toHaveBeenCalled();
 });
+
+test('and a whole page pasted into the box is refused the same way', async () => {
+  const user = userEvent.setup();
+  const onEnvelope = vi.fn();
+  draw(onEnvelope);
+
+  // ⚠️ The same content, the other road in. The file had this check and the box did not, so an
+  // assistant's fragment was refused when chosen and accepted when pasted — and a page pasted that
+  // way reached the frame, which drew nothing and said nothing about why.
+  const box = screen.getByLabelText(words.source);
+  await user.click(box);
+  await user.paste('<!doctype html><html><body><svg /></body></html>');
+  await user.tab();
+
+  expect(await screen.findByText(words.fileIsAPage)).toBeInTheDocument();
+  expect(onEnvelope).not.toHaveBeenCalled();
+});

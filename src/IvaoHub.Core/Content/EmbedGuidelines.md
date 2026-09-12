@@ -107,16 +107,20 @@ controller who cannot tell your green from your orange still has to be able to u
 
 ### Lines, shapes and size
 
-- Draw in an **SVG with a `viewBox`** and no width or height in pixels. 400 × 240 is a good default:
-  it fills a reading column and still reads on a phone.
-- **Stroke 2** for the subject, **1.5** for structure, **1** for hairlines — in `viewBox` units, on a
-  400-wide canvas. Below 1 a line disappears when the frame is scaled down.
+- Draw in an **SVG with a `viewBox`** and no width or height in pixels. **Choose the `viewBox` for
+  what is in the drawing**, not the other way round: 400 × 240 suits a circuit on its own, and a
+  circuit with three miles of final beside it wants something like 600 × 260 — squeezing it into 400
+  makes a runway 40 units long that nobody can read. What must not change with the canvas is the
+  **proportions** below, so they are given as a share of the width.
+- **Stroke**: the subject **0.5 %** of the `viewBox` width, structure 0.35 %, hairlines 0.25 % — that
+  is 2, 1.5 and 1 on a 400-wide canvas. Thinner than that and a line disappears when the frame is
+  scaled down on a phone.
 - **Dashes mean "not a thing, a path"**: `stroke-dasharray="6 4"` for a route or an intention, solid
   for something that physically exists.
-- **Text inside the drawing is 11 to 14 units** on that same canvas, never smaller, and it is
-  **the reader's system font** — the frame cannot load ours. So: few words, short words, no
-  sentences. Prose belongs to the document above the block, which is written in the site's own type
-  and is the part that reaches search and paper.
+- **Text inside the drawing is at least 2.75 % of the width** — 11 units on a 400-wide canvas, 17 on
+  a 600-wide one — and it is **the reader's system font**, because the frame cannot load ours. So:
+  few words, short words, no sentences. Prose belongs to the document above the block, which is
+  written in the site's own type and is the part that reaches search and paper.
 - **Rounded joins** (`stroke-linejoin="round"`), because an aviation drawing is full of corners and
   square joins read as noise at small sizes.
 
@@ -129,6 +133,11 @@ controller who cannot tell your green from your orange still has to be able to u
   wider, not the frame taller.
 - **A legend only when a symbol is not obvious**, and then as text beside the drawing rather than
   floating on it.
+- **A strip of read-outs is welcome** where the procedure has values that change as the thing moves —
+  the phase it is in, an altitude, a distance from the threshold. Put it **above or below the
+  drawing** as plain text in the same tokens, bilingual like everything else, and keep it to three or
+  four numbers: what it is worth is telling a reader *where in the procedure* they are looking, which
+  a moving dot alone does not say.
 
 ### Movement
 
@@ -160,6 +169,14 @@ thing two ways:
 Gradients, shadows, glows, 3D, drop caps, photographs, textures, more than four colours, text under
 11 units, a hairline under 1, an animation that is the only place some information appears.
 
+### When the request contradicts itself
+
+It happens — "a left hand circuit, turning right after the threshold" asks for two opposite drawings,
+and somebody has to choose. **Draw the one the document says**, offer the other as a choice if it is
+one a reader might want, and **say in the legend which one is being drawn**. Never split the
+difference: half of each is a picture that is true of nothing, and on a procedure that is worse than
+either.
+
 ### Before you hand it over
 
 - [ ] Every word goes through `HUB.t` and exists in both languages.
@@ -169,7 +186,8 @@ Gradients, shadows, glows, 3D, drop caps, photographs, textures, more than four 
 - [ ] Four colours at most, each doing the job the table above gives it.
 - [ ] Nothing in it fetches anything.
 - [ ] Under 64 KB.
-- [ ] The drawing agrees with the text above it.
+- [ ] The drawing agrees with the text above it, and the legend says which case it draws.
+- [ ] Everything the request asked for is either drawn or named as not drawn.
 
 ## What you must not do
 

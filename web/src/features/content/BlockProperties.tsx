@@ -192,6 +192,27 @@ function SourceField({
    * file in the media library was option (B) of the note, which Carmine ruled out first. What the
    * page keeps is what is in the box, the same as if it had been pasted there.
    */
+  /**
+   * A whole page instead of a fragment. The hub wraps what it is given in a document of its own, so
+   * a second document inside it draws nothing and says nothing about why — a blank frame and no
+   * clue. One sentence here instead.
+   *
+   * ⚠️ Asked of **both** roads in, and it was not at first: the file had this check and the box did
+   * not, so the very same content was refused when chosen and accepted when pasted. Found reading a
+   * fragment an assistant had written (12 September 2026).
+   */
+  const isAWholePage = (text: string) => /<!doctype\s+html|<html[\s>]/i.test(text);
+
+  const apply = (text: string) => {
+    if (isAWholePage(text)) {
+      setRefused(t('blocks.interactive.fileIsAPage'));
+      return;
+    }
+
+    setRefused(null);
+    onEnvelope({ source: text });
+  };
+
   const readFile = async (file: File) => {
     if (file.size > MAX_SOURCE_BYTES) {
       setRefused(t('blocks.interactive.fileTooLarge', { max: MAX_SOURCE_BYTES }));
@@ -199,21 +220,11 @@ function SourceField({
     }
 
     const text = await file.text();
-
-    // A whole page instead of a fragment: the hub wraps what it is given in a document of its own,
-    // so a second document inside it draws nothing and says nothing about why. Caught here, where
-    // the answer is one sentence, rather than in a frame that comes up blank.
-    if (/<!doctype\s+html|<html[\s>]/i.test(text)) {
-      setRefused(t('blocks.interactive.fileIsAPage'));
-      return;
-    }
-
-    setRefused(null);
     setDraft(text);
 
     // Applied at once, unlike typing: choosing a file is a finished act, not a keystroke in the
     // middle of a script.
-    onEnvelope({ source: text });
+    apply(text);
   };
 
   return (
@@ -227,7 +238,7 @@ function SourceField({
         onChange={(event) => setDraft(event.target.value)}
         onBlur={() => {
           if (!tooLong && draft !== (block.source ?? '')) {
-            onEnvelope({ source: draft });
+            apply(draft);
           }
         }}
         className="border-input bg-background scroll-thin w-full rounded-md border p-2 font-mono text-xs"
