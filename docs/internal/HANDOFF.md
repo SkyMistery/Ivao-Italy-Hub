@@ -15,7 +15,8 @@
 >    aggiungono una migrazione EF e due snapshot da `main` avrebbero litigato.
 > 3. **PR #61 `m1/site-colour` → `m1/media-dedupe`**: il sito ha un colore (il paragrafo dopo
 >    ancora). Sopra la #60 perché tocca il piano, `blocks.tsx` e `schemas.ts`, che le altre due hanno
->    già mosso. Nessuna migrazione.
+>    già mosso. Nessuna migrazione. CI **verde** (6m44s), comprese le 172 di integrazione che qui non
+>    erano state eseguite.
 >
 > **Ordine di merge** (memoria `stacked-pr-base-deletion`): mergiare la #59, ritargettare la #60 su
 > `main` (`gh pr edit 60 --base main`), mergiare la #60, ritargettare la #61 su `main`, mergiare la
@@ -105,7 +106,7 @@ nome) + **58 smoke Playwright** (due nuovi: i titoli del sito nel tema chiaro, i
 azzurro) + **17 del giro pieno**, non rieseguito dopo il colore. ⚠️ Le **172 di integrazione** non
 sono state eseguite in locale il 12 settembre pomeriggio (Docker spento): sulla `m1/media-dedupe`
 erano verdi, e l'unica riga di C# che il colore tocca è un valore in più in
-`BlockDocumentWalker.Backgrounds`. Le fa la CI.
+`BlockDocumentWalker.Backgrounds`. Le ha fatte la CI sulla #61, verdi.
 ⚠️ Nel giro pieno compaiono a volte, nel log del server, errori di **connessione al DB** su
 `/api/blocks/data/*` (500 su `newsList` e `linkList`) senza che nessun test cada: visti due volte l'11
 settembre, la prima al primo giro della giornata. Non indagati; da guardare se un test dei blocchi
