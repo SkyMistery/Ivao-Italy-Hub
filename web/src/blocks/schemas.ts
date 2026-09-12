@@ -265,6 +265,25 @@ export const iconGridSchema = z.object({
   ),
 });
 
+/**
+ * The interactive block (12 September 2026, `decisions/2026-09-12-il-blocco-interattivo.md`).
+ *
+ * ⚠️ **The code is not here.** It lives on the envelope, as `source`, because the server has to read
+ * it to serve the frame and the server never reads inside `props` (plan §16.5). What is here is what
+ * the page around the frame needs: a name for it, a line of prose, and how tall to leave room before
+ * the frame says how tall it really is.
+ *
+ * `title` is not optional, and for the reason `embed` gives: a frame with no name is a box that
+ * somebody reading with a keyboard cannot tell from any other box. `description` is the only
+ * translated field, which makes it the only part the search index sees — and the part that stays on
+ * paper when printing folds the frame away.
+ */
+export const interactiveSchema = z.object({
+  title: localized(),
+  description: localized().optional().meta({ multiline: true }),
+  minHeight: z.number().int().default(320),
+});
+
 export const gallerySchema = z.object({
   // One object per picture, for the same reason the table's rows are: a list of bare numbers is
   // not something the generator draws, and a media is never a number anyway.

@@ -1,4 +1,5 @@
 import { Label, Select } from '@ivao/atmosphere-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
@@ -14,6 +15,13 @@ import { emptyLocalized } from '../../shared/i18n/localized';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
 import { defaultProps } from './body';
+/**
+ * What the server refuses, said here first (`BlockDocumentWalker.MaxBlockSourceBytes`). The two
+ * agree by hand, like the layouts and the grounds do, and the integration test that posts a source
+ * one byte too long is what keeps them agreeing.
+ */
+const MAX_SOURCE_BYTES = 64 * 1024;
+
 import { SectionFrame } from './SectionFrame';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
 import type { SectionRule } from './templateRules';
@@ -146,6 +154,66 @@ export function SectionProperties({
   );
 }
 
+/**
+ * The code of an interactive block: the one field of this panel the form generator does not draw,
+ * and a declared exception rather than a second editor (12 September 2026,
+ * `decisions/2026-09-12-il-blocco-interattivo.md`).
+ *
+ * It is not a property. The server reads this string to serve the frame, and the server never reads
+ * inside `props` — so it lives on the envelope, beside `renderMode` and `column`, and is written
+ * through the same `onEnvelope` those two use.
+ *
+ * ⚠️ Applied on **blur** and not as it is typed, which is the opposite of everything else in this
+ * panel since G15. Two reasons, and both are about what this field holds: a keystroke in the middle
+ * of a script is almost always a document that does not run, and every change reloads a frame — so
+ * "write and look" would mean a frame reloading on every character.
+ */
+function SourceField({
+  block,
+  onEnvelope,
+}: {
+  block: BlockEnvelope;
+  onEnvelope: (patch: Partial<BlockEnvelope>) => void;
+}) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState(block.source ?? '');
+
+  // The page counts what the server counts: bytes of UTF-8, not characters. A line of Italian prose
+  // in a comment is longer than it looks, and the refusal on save would be the first anybody heard.
+  const bytes = new TextEncoder().encode(draft).length;
+  const tooLong = bytes > MAX_SOURCE_BYTES;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor="source">{t('blocks.interactive.source')}</Label>
+      <textarea
+        id="source"
+        value={draft}
+        spellCheck={false}
+        rows={10}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => {
+          if (!tooLong && draft !== (block.source ?? '')) {
+            onEnvelope({ source: draft });
+          }
+        }}
+        className="border-input bg-background scroll-thin w-full rounded-md border p-2 font-mono text-xs"
+      />
+      <p className={`text-sm ${tooLong ? 'text-destructive' : 'text-muted-foreground'}`}>
+        {t('blocks.interactive.sourceCount', { bytes, max: MAX_SOURCE_BYTES })}
+      </p>
+      <p className="text-muted-foreground text-sm">{t('blocks.interactive.sourceHint')}</p>
+      <a
+        href="/embed/guidelines"
+        download="interactive-blocks.md"
+        className="text-primary text-sm underline underline-offset-2"
+      >
+        {t('blocks.interactive.guidelines')}
+      </a>
+    </div>
+  );
+}
+
 export function BlockProperties({
   block,
   section,
@@ -220,6 +288,8 @@ export function BlockProperties({
           <p className="text-muted-foreground text-sm">{t('content.editor.renderModeHint')}</p>
         </div>
       ) : null}
+
+      {registration.carriesSource === true ? <SourceField block={block} onEnvelope={onEnvelope} /> : null}
 
       {columns > 1 ? (
         <div className="flex flex-col gap-1">

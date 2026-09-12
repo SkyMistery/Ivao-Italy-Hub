@@ -19,11 +19,18 @@
 >    erano state eseguite.
 > 4. **PR #62 `m1/demo-card` → `m1/site-colour`**: la scheda della demo rimessa in pari (Parte 7
 >    riscritta, il documento operativo nella Parte 2, i conti della Parte 3) e il **tag che cambia
->    significato**. Solo documentazione.
+>    significato**. Solo documentazione. CI **verde**.
+> 5. **PR #63 `m1/security-headers` → `m1/demo-card`**: gli header di sicurezza e la CSP, che l'hub
+>    non aveva affatto. CI **verde**. È il primo dei due pezzi del blocco interattivo.
+> 6. **PR #64 `m1/interactive-block` → `m1/security-headers`**: il blocco interattivo, il secondo
+>    pezzo. ⚠️ **Non finito**: i passi 1, 2 e 3 dell'ordine di lavoro della nota sono fatti (il campo
+>    `source` sull'envelope, l'endpoint con il guscio, il blocco con il permesso e la textarea), il
+>    **4 e il 5 no** — la stampa che chiude la sezione è scritta nel componente ma **non provata a
+>    occhio**, e nessuno ha ancora aperto una pagina con un'animazione dentro in un browser vero.
 >
 > **Ordine di merge** (memoria `stacked-pr-base-deletion`): una alla volta dal basso — mergiare la
-> #59, ritargettare la #60 su `main` (`gh pr edit 60 --base main`), mergiare la #60, e così la #61 e
-> la #62, **solo dopo** cancellare i quattro branch remoti. Cancellare il branch base insieme alla PR che ci
+> #59, ritargettare la #60 su `main` (`gh pr edit 60 --base main`), mergiare la #60, e così la #61,
+> la #62, la #63 e la #64, **solo dopo** cancellare i sei branch remoti. Cancellare il branch base insieme alla PR che ci
 > sta sopra chiuderebbe quest'ultima per sempre. Carmine mergia da sé; se delega, è questa sequenza.
 >
 > **Sulla macchina di Carmine**: l'API su `:5000` gira con il codice della #60 e le due migrazioni
@@ -110,7 +117,8 @@ prima su `main`, la seconda sulla PR #59 — il tag viene dopo che Carmine ha ri
 unit** + **375 Vitest** (quattro nuovi: i quattro accenti, e la striscia che offre ogni fondo con un
 nome) + **58 smoke Playwright** (due nuovi: i titoli del sito nel tema chiaro, il testo sul fondo
 azzurro), **62 dal pomeriggio** con i quattro degli header, + **17 del giro pieno**, non rieseguito
-dopo il colore. ⚠️ Da qui in poi **la suite smoke gira sotto la CSP vera**: la preview di Vite manda
+dopo il colore. Con il blocco interattivo: **383 Vitest** e **308 .NET unit**, più quattro di
+integrazione che solo la CI esegue. ⚠️ Da qui in poi **la suite smoke gira sotto la CSP vera**: la preview di Vite manda
 gli stessi header del backend, letti dallo stesso `config/security.json`. ⚠️ Le **172 di
 integrazione** non sono state eseguite in locale il 12 settembre pomeriggio (Docker spento): sulla
 `m1/media-dedupe` erano verdi, il colore tocca una riga di C# (un valore in più in
@@ -267,6 +275,22 @@ cadere nessuna asserzione. ⚠️ Interruttore nel file: la produzione si raggiu
 shell. **Quello che apre**: l'endpoint del blocco interattivo sovrascriverà questi header sulla sua
 risposta (`default-src 'none'`, `frame-ancestors 'self'`), ed è per questo che il middleware sta
 prima degli endpoint.
+
+**Il blocco interattivo — il 12 settembre 2026**, branch `m1/interactive-block`, PR #64 (piano 0.70,
+`decisions/2026-09-12-il-blocco-interattivo.md`). Il caso d'uso di Carmine, per intero: creo un
+documento, scarico le linee guida, le do a Claude Code — «un'animazione che mostri una pista 09/27 e
+un traffico VFR in circuito sinistro» —, incollo il codice, e chi legge il documento la vede. **Il
+codice sta nell'envelope** (`source`), non in `props`, perché il server deve leggerlo per servirlo e
+dentro `props` non guarda mai; **un endpoint** `/embed/{contenuto}/{versione}/{blocco}` lo serve
+dentro un **guscio** compilato nell'assembly, con i **suoi** header — `default-src 'none'`,
+`sandbox allow-scripts`, `frame-ancestors 'self'` invece del `DENY` di tutte le altre risposte — e
+due cache: un anno sul pubblicato (una versione non cambia mai), `no-store` sulla bozza, che passa
+dall'**unico** authorization handler. Le **linee guida** (`/embed/guidelines`, dietro
+`Content.EmbedCode`) **citano il guscio dentro di sé**, quindi non possono divergere da ciò che
+descrivono, e portano l'esempio del circuito già scritto. La barra dei componenti **non elenca** il
+blocco a chi non ha il permesso. ⚠️ **Che cosa manca**: i passi 4 e 5 della nota — la stampa provata
+a occhio e il giro in un browser vero con un'animazione dentro. E il confine da ricordare: il widget
+è interattivo **dentro la sua scatola**, non cambia il testo intorno e non ricorda niente.
 
 **Da decidere prima di scrivere codice:**
 

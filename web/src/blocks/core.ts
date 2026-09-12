@@ -14,6 +14,7 @@ import {
   Link2,
   Milestone,
   Minus,
+  MonitorPlay,
   MousePointerClick,
   MoveVertical,
   Newspaper,
@@ -49,6 +50,7 @@ import {
   HeroBlock,
   IconGridBlock,
   ImageBlock,
+  InteractiveBlock,
   LinkListBlock,
   LogoGridBlock,
   NetworkStatsBlock,
@@ -80,6 +82,7 @@ import {
   heroSchema,
   iconGridSchema,
   imageSchema,
+  interactiveSchema,
   linkListSchema,
   logoGridSchema,
   networkStatsSchema,
@@ -119,6 +122,7 @@ export const CORE_BLOCK_TYPES = {
   image: 'image',
   video: 'video',
   embed: 'embed',
+  interactive: 'interactive',
   timeline: 'timeline',
   table: 'table',
   cardGrid: 'cardGrid',
@@ -307,6 +311,35 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'media',
     icon: Frame,
+  },
+  {
+    type: CORE_BLOCK_TYPES.interactive,
+    version: 1,
+    kind: 'Content',
+    schema: interactiveSchema,
+    component: InteractiveBlock,
+    // ⚠️ No `source` here, and the gallery shows what that means: with nothing to frame and no page
+    // to ask, the block draws the line that says so. The example is the properties, because the
+    // properties are all this block has — the code is a field of the envelope
+    // (`decisions/2026-09-12-il-blocco-interattivo.md`).
+    example: {
+      title: { en: 'A left hand circuit', it: 'Un circuito sinistro' },
+      description: {
+        en: 'What the traffic does, drawn rather than described.',
+        it: 'Quello che fa il traffico, disegnato invece che descritto.',
+      },
+      minHeight: 320,
+    },
+    editorLabelKey: 'blocks.interactive.label',
+    group: 'content',
+    subgroup: 'media',
+    icon: MonitorPlay,
+    // Adding one is a different act from adding a heading: the source is code, and whoever
+    // publishes it answers for what it says about a procedure.
+    permission: 'Content.EmbedCode',
+    // The panel draws a text area for the source, because the source is the envelope's and not a
+    // property; `onEnvelope` is the same road `renderMode` and `column` already take.
+    carriesSource: true,
   },
   {
     type: CORE_BLOCK_TYPES.timeline,

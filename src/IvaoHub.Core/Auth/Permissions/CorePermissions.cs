@@ -24,6 +24,15 @@ public static class CorePermissions
     public const string ContentPublish = "Content.Publish";
     public const string ContentManageTemplates = "Content.ManageTemplates";
 
+    /// <summary>
+    /// Putting an interactive block on a page, whose source is code somebody wrote
+    /// (12 September 2026, <c>decisions/2026-09-12-il-blocco-interattivo.md</c>). Separate from
+    /// <c>Content.Edit</c> because it is a different kind of act: the frame it lands in can do
+    /// nothing to the hub — no origin, no network, no cookies — but what it draws is a statement
+    /// about a procedure, and whoever publishes one answers for it.
+    /// </summary>
+    public const string ContentEmbedCode = "Content.EmbedCode";
+
     /// <summary>The area the CRUD engine derives <c>Links.View</c> and <c>Links.Edit</c> from.</summary>
     public const string LinksArea = "Links";
 
@@ -79,6 +88,7 @@ public static class CorePermissions
         new(ContentEdit, IsGlobal: false),
         new(ContentPublish, IsGlobal: false),
         new(ContentManageTemplates, IsGlobal: false),
+        new(ContentEmbedCode, IsGlobal: false),
         new(LinksView, IsGlobal: false),
         new(LinksEdit, IsGlobal: false),
         new(MediaView, IsGlobal: false),

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="{{lang}}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+    />
+    <title>{{title}}</title>
+    <style>
+      /*
+        The palette, written out. ⚠️ This is the one place in the product where a colour is a hex
+        rather than a token, and it cannot be otherwise: the frame's own policy is `default-src
+        'none'`, so it cannot load a stylesheet of ours — not even ours. The values are the brand's
+        (`@ivao/atmosphere-brand`), and the guidelines are generated from this file so that whoever
+        writes an animation is given these names and no others.
+      */
+      :root {
+        color-scheme: light;
+        --ink: #21212e;
+        --ink-quiet: #606282;
+        --line: #e0e1ec;
+        --brand: #0d2c99;
+        --ocean: #3c55ac;
+        --aurora: #315b5a;
+        --artifice: #a86700;
+        --ok: #23984b;
+        --warn: #e6b507;
+        --stop: #cf1616;
+      }
+
+      /*
+        The ground of a section shows through — the frame paints none of its own — so what is left to
+        decide is the ink. Before the page has spoken, the reader's own setting decides; the page
+        then says which of the two it actually is, because a section can be dark inside a light page.
+      */
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light) {
+          color-scheme: dark;
+          --ink: #eeeff5;
+          --ink-quiet: #8b8ca9;
+          --line: #2c2d3c;
+          --brand: #7e98f4;
+          --ocean: #8c9cd7;
+          --aurora: #4b7f7e;
+          --artifice: #ea984e;
+          --ok: #48d578;
+          --warn: #fad654;
+          --stop: #ed5959;
+        }
+      }
+
+      html.dark {
+        color-scheme: dark;
+        --ink: #eeeff5;
+        --ink-quiet: #8b8ca9;
+        --line: #2c2d3c;
+        --brand: #7e98f4;
+        --ocean: #8c9cd7;
+        --aurora: #4b7f7e;
+        --artifice: #ea984e;
+        --ok: #48d578;
+        --warn: #fad654;
+        --stop: #ed5959;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        /* Transparent on purpose: the section behind the frame is what a reader sees around it. */
+        background: transparent;
+        color: var(--ink);
+        font-family: 'Nunito Sans', system-ui, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      /* The frame is as wide as the page gives it and as tall as its content: the height travels. */
+      body > * {
+        max-width: 100%;
+      }
+
+      svg {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+
+      button {
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0.35rem 0.8rem;
+        cursor: pointer;
+      }
+
+      button[aria-pressed='true'] {
+        border-color: currentColor;
+        font-weight: 600;
+      }
+
+      button:focus-visible,
+      [tabindex]:focus-visible {
+        outline: 2px solid var(--ocean);
+        outline-offset: 2px;
+      }
+
+      /*
+        Somebody who asked their system not to move things gets no movement. The rule is here and
+        not left to whoever writes an animation, so that forgetting it is not possible for anything
+        declared in CSS; what runs on a timer in JavaScript still has to ask, and the guidelines say
+        how (`HUB.reducedMotion`).
+      */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      /*
+        What an animation is given, so that it never writes plumbing: the language it is being read
+        in, whether the reader asked for less movement, and nothing else. No network, no storage, no
+        way back to the page around it — the sandbox sees to that; this is only the part that is
+        useful.
+      */
+      window.HUB = {
+        locale: document.documentElement.lang || 'en',
+        reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+        t: function (strings) {
+          return (strings && (strings[window.HUB.locale] ?? strings.en)) || '';
+        },
+      };
+
+      /*
+        The one thing the page tells the frame: which of the two it is being drawn on. A section can
+        carry a dark ground inside a light page, and the frame has no way of seeing that from in
+        here. Nothing else is read out of the message, and nothing it says can reach anything but
+        this class.
+      */
+      window.addEventListener('message', function (event) {
+        if (!event.data || event.data.hub !== 'embed-theme') {
+          return;
+        }
+
+        var dark = event.data.dark === true;
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.classList.toggle('light', !dark);
+        window.HUB.dark = dark;
+        window.dispatchEvent(new CustomEvent('hub:theme', { detail: { dark: dark } }));
+      });
+
+      /*
+        The height, and it is the only thing that ever leaves this frame: one number, to the page
+        that framed it. The page accepts it only from this frame and clamps it, so nothing here can
+        make a document taller than a document.
+      */
+      (function () {
+        var last = 0;
+        var tell = function () {
+          var height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+          if (height !== last && height > 0) {
+            last = height;
+            parent.postMessage({ hub: 'embed-height', height: height }, '*');
+          }
+        };
+
+        new ResizeObserver(tell).observe(document.documentElement);
+        window.addEventListener('load', tell);
+      })();
+    </script>
+
+    {{source}}
+  </body>
+</html>

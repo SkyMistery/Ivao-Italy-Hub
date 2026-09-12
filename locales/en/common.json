@@ -850,6 +850,19 @@
         "title": "Read out in place of the frame, which is why it is not optional."
       }
     },
+    "interactive": {
+      "label": "Interactive drawing",
+      "unavailable": "This interactive block has nothing to show here yet. Save the page and it will draw itself.",
+      "fields": {
+        "title": "Name",
+        "description": "Description",
+        "minHeight": "Height to start with"
+      },
+      "source": "Code",
+      "sourceHint": "Paste what the guidelines produced. It runs in a frame of its own: no network, no access to this site.",
+      "sourceCount": "{{bytes}} of {{max}} bytes",
+      "guidelines": "Download the guidelines"
+    },
     "timeline": {
       "label": "Steps",
       "fields": {

@@ -33,6 +33,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
   return {
+    id: 1,
     kind: 'Document',
     slug: 'lirf-twr-sop',
     ownerDepartment: 'AOD',

@@ -20,7 +20,9 @@ import { registry } from '../../app/registry';
 import {
   allSections,
   columnsOf,
+  frameAddress,
   readBody,
+  EmbeddingContext,
   PickingContext,
   type BlockEnvelope,
   type Body,
@@ -112,6 +114,7 @@ export function ContentEditor({
   mediaLibrary,
   uploadMedia,
   canManageTemplates,
+  holds,
   onSave,
   onPublish,
   onDelete,
@@ -155,6 +158,13 @@ export function ContentEditor({
    * — and which department that is, only the loaded template knows.
    */
   canManageTemplates: (department: Department) => boolean;
+  /**
+   * Whether this member holds a permission **in the department this row belongs to**. Asked as a
+   * question for the same reason as the one above: what the editor needs is an answer, not a
+   * bootstrap to interrogate. One block asks it today — the interactive one, which the palette
+   * leaves out of the list for whoever may not add code.
+   */
+  holds: (permission: string) => boolean;
   /** `autosave` marks a save the editor made by itself: no toast, and audited without the body. */
   onSave: (values: ContentFormValues, body: Body, options?: { autosave?: boolean }) => Promise<unknown>;
   /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
@@ -328,6 +338,16 @@ export function ContentEditor({
   // The draft, as one string: what the autosave compares, so that a change undone before the pause
   // ends is not a save.
   const snapshot = useMemo(() => JSON.stringify({ metadata, body }), [metadata, body]);
+
+  // A row that has never been saved has no frame to show: there is nothing on the server to build
+  // one from, and the block says so rather than drawing an empty box (`blocks/embedding.ts`).
+  const embedding = useMemo(
+    () => ({
+      frameUrl: (blockId: string) =>
+        content === null ? null : frameAddress(content.id, 'draft', blockId, previewLocale),
+    }),
+    [content, previewLocale],
+  );
 
   const autosave = useAutosave({
     // Never before the first press on "save draft": a row that does not exist is not saved by
@@ -834,10 +854,14 @@ export function ContentEditor({
 
   return (
     // The language the page is drawn in, for every translated value read inside the editor and for
-    // the tab every translated field opens on.
+    // the tab every translated field opens on. Inside it, where the frame of an interactive block
+    // lives while a page is being written: the **draft** of this row, which only somebody who may
+    // edit it is served. ⚠️ And it is the draft as **saved** — the frame is a document the server
+    // builds, so what it shows is the last save and not the keystroke before last.
     <PreviewLocaleContext.Provider value={previewLocale}>
-      <div className="flex flex-col gap-8">
-        {/* ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
+      <EmbeddingContext.Provider value={embedding}>
+        <div className="flex flex-col gap-8">
+          {/* ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
           measured 1182 pixels in a window of 950, so the page being composed and the buttons that
           save it were both below the fold. Measured, not guessed (road A1 of
           `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
@@ -845,122 +869,122 @@ export function ContentEditor({
           `Save draft` submits by `form=`, which is how HTML has always let a button live outside the
           form it belongs to: the form is in the panel on the right, where the page's own properties
           are edited. */}
-        {/* ⚠️ And since 11 September 2026 on the frame's own line, beside the title, rather than on a
+          {/* ⚠️ And since 11 September 2026 on the frame's own line, beside the title, rather than on a
           line of its own under it (Carmine: stop wasting the space at the top). `PageActions` draws
           it up there while its state stays here, and that line is the sticky one now. */}
-        <PageActions>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" form={METADATA_FORM} disabled={busy}>
-              {t('content.editor.saveDraft')}
-            </Button>
+          <PageActions>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit" form={METADATA_FORM} disabled={busy}>
+                {t('content.editor.saveDraft')}
+              </Button>
 
-            <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
-              {preview ? (
-                <List aria-hidden className="mr-2 size-4" />
-              ) : (
-                <Eye aria-hidden className="mr-2 size-4" />
-              )}
-              {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
-            </Button>
+              <Button type="button" variant="ghost" onClick={() => setPreview((shown) => !shown)}>
+                {preview ? (
+                  <List aria-hidden className="mr-2 size-4" />
+                ) : (
+                  <Eye aria-hidden className="mr-2 size-4" />
+                )}
+                {preview ? t('content.editor.outline') : t('content.editor.onThePage')}
+              </Button>
 
-            {/* Also ⌘Z and ⌘⇧Z, outside a field (`useHistoryShortcuts`); the buttons are what says
+              {/* Also ⌘Z and ⌘⇧Z, outside a field (`useHistoryShortcuts`); the buttons are what says
               the two exist, and the road for anybody who does not know the keys. */}
-            <Button type="button" variant="ghost" disabled={!history.canUndo} onClick={undo}>
-              <Undo2 aria-hidden className="mr-2 size-4" />
-              {t('content.editor.undo')}
-            </Button>
+              <Button type="button" variant="ghost" disabled={!history.canUndo} onClick={undo}>
+                <Undo2 aria-hidden className="mr-2 size-4" />
+                {t('content.editor.undo')}
+              </Button>
 
-            <Button type="button" variant="ghost" disabled={!history.canRedo} onClick={redo}>
-              <Redo2 aria-hidden className="mr-2 size-4" />
-              {t('content.editor.redo')}
-            </Button>
+              <Button type="button" variant="ghost" disabled={!history.canRedo} onClick={redo}>
+                <Redo2 aria-hidden className="mr-2 size-4" />
+                {t('content.editor.redo')}
+              </Button>
 
-            {onPublish === null ? null : (
-              // A question on the way: what changed, for the staff, and — on a document — which
-              // AIRAC cycle this edition belongs to (G14). What is on screen is stored first, then
-              // published: one press, and never a page that says something nobody saved. A store
-              // that fails leaves the draft where it is, and the line under the toolbar says why.
-              <ConfirmDialog
-                triggerText={t('content.editor.publish')}
-                triggerVariant="secondary"
-                title={t('content.editor.publishDialog.title')}
-                description={t('content.editor.publishDialog.description')}
-                confirmText={t('content.editor.publishDialog.confirm')}
-                confirmVariant="primary"
-                disabled={busy || autosave.stopped}
-                onConfirm={() => {
-                  void (async () => {
-                    if (autosave.dirty && !(await autosave.flush())) {
-                      return;
-                    }
-                    onPublish(publishRequest);
-                  })();
-                }}
-              >
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="publish-changelog">{t('content.editor.publishDialog.changelog')}</Label>
-                  <Input
-                    id="publish-changelog"
-                    maxLength={512}
-                    value={publishRequest.changelog}
-                    onChange={(event) =>
-                      setPublishRequest({ ...publishRequest, changelog: event.target.value })
-                    }
-                  />
-                </div>
-                {kind === 'Document' ? (
+              {onPublish === null ? null : (
+                // A question on the way: what changed, for the staff, and — on a document — which
+                // AIRAC cycle this edition belongs to (G14). What is on screen is stored first, then
+                // published: one press, and never a page that says something nobody saved. A store
+                // that fails leaves the draft where it is, and the line under the toolbar says why.
+                <ConfirmDialog
+                  triggerText={t('content.editor.publish')}
+                  triggerVariant="secondary"
+                  title={t('content.editor.publishDialog.title')}
+                  description={t('content.editor.publishDialog.description')}
+                  confirmText={t('content.editor.publishDialog.confirm')}
+                  confirmVariant="primary"
+                  disabled={busy || autosave.stopped}
+                  onConfirm={() => {
+                    void (async () => {
+                      if (autosave.dirty && !(await autosave.flush())) {
+                        return;
+                      }
+                      onPublish(publishRequest);
+                    })();
+                  }}
+                >
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="publish-airac">{t('content.editor.publishDialog.airac')}</Label>
+                    <Label htmlFor="publish-changelog">{t('content.editor.publishDialog.changelog')}</Label>
                     <Input
-                      id="publish-airac"
-                      className="max-w-32"
-                      inputMode="numeric"
-                      maxLength={4}
-                      placeholder="2609"
-                      value={publishRequest.airac}
+                      id="publish-changelog"
+                      maxLength={512}
+                      value={publishRequest.changelog}
                       onChange={(event) =>
-                        setPublishRequest({ ...publishRequest, airac: event.target.value })
+                        setPublishRequest({ ...publishRequest, changelog: event.target.value })
                       }
                     />
                   </div>
-                ) : null}
-              </ConfirmDialog>
-            )}
+                  {kind === 'Document' ? (
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="publish-airac">{t('content.editor.publishDialog.airac')}</Label>
+                      <Input
+                        id="publish-airac"
+                        className="max-w-32"
+                        inputMode="numeric"
+                        maxLength={4}
+                        placeholder="2609"
+                        value={publishRequest.airac}
+                        onChange={(event) =>
+                          setPublishRequest({ ...publishRequest, airac: event.target.value })
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </ConfirmDialog>
+              )}
 
-            {onDelete === null ? null : (
-              <ConfirmDialog
-                triggerText={t('common.delete')}
-                title={t('content.delete.title')}
-                description={t('content.delete.description')}
-                confirmText={t('common.delete')}
-                disabled={busy}
-                onConfirm={onDelete}
-              />
-            )}
-          </div>
-        </PageActions>
+              {onDelete === null ? null : (
+                <ConfirmDialog
+                  triggerText={t('common.delete')}
+                  title={t('content.delete.title')}
+                  description={t('content.delete.description')}
+                  confirmText={t('common.delete')}
+                  disabled={busy}
+                  onConfirm={onDelete}
+                />
+              )}
+            </div>
+          </PageActions>
 
-        <PublishProblems body={body} problems={publishProblems} />
+          <PublishProblems body={body} problems={publishProblems} />
 
-        {draftStatus === null ? null : (
-          // Named, because the drag and drop context draws a live region of its own for its
-          // announcements, and "the status" would otherwise be two things on this screen.
-          <p
-            role="status"
-            aria-label={t('content.editor.autosave.title')}
-            className="text-muted-foreground text-sm"
-          >
-            {draftStatus}
-          </p>
-        )}
+          {draftStatus === null ? null : (
+            // Named, because the drag and drop context draws a live region of its own for its
+            // announcements, and "the status" would otherwise be two things on this screen.
+            <p
+              role="status"
+              aria-label={t('content.editor.autosave.title')}
+              className="text-muted-foreground text-sm"
+            >
+              {draftStatus}
+            </p>
+          )}
 
-        <TemplateDifferences
-          body={body}
-          differences={differences}
-          onAlign={(difference) => change(applyDifference(body, templateBody, difference))}
-        />
+          <TemplateDifferences
+            body={body}
+            differences={differences}
+            onAlign={(difference) => change(applyDifference(body, templateBody, difference))}
+          />
 
-        {/* ⚠️ Three columns, asked for by Carmine on 10 September 2026: the components on the left,
+          {/* ⚠️ Three columns, asked for by Carmine on 10 September 2026: the components on the left,
           the page in the middle, the properties of whatever is selected on the right. What used to
           be a two-column screen that swapped its left half between an outline and a preview is now
           a fixed frame whose **middle** swaps — so the palette and the properties stay exactly
@@ -969,82 +993,84 @@ export function ContentEditor({
           The outline is not a mode you leave behind: it is the keyboard road (`blocks/picking.ts`),
           and clicking the page is the pointer one. Both put the same thing in the panel on the
           right, which is the property that made road (A) work in the first place. */}
-        <DndContext
-          sensors={sensors}
-          // The slots are hidden until a drag begins, so they have to be measured once it has.
-          measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-          collisionDetection={collisions}
-          onDragStart={({ active }) => {
-            const started = active.data.current as PaletteDrag | BlockDrag | SectionDrag | undefined;
-            setDragging(started?.kind === 'palette' || started?.kind === 'block' ? started : null);
-          }}
-          onDragCancel={() => setDragging(null)}
-          onDragEnd={onDragEnd}
-        >
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
-            <BlockPalette
-              target={paletteTarget}
-              rule={paletteRule}
-              draggable={preview}
-              onAdd={(type) => {
-                if (paletteTarget !== null) {
-                  addBlockTo(paletteTarget.id, type, targetColumn);
-                }
-              }}
-            />
+          <DndContext
+            sensors={sensors}
+            // The slots are hidden until a drag begins, so they have to be measured once it has.
+            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+            collisionDetection={collisions}
+            onDragStart={({ active }) => {
+              const started = active.data.current as PaletteDrag | BlockDrag | SectionDrag | undefined;
+              setDragging(started?.kind === 'palette' || started?.kind === 'block' ? started : null);
+            }}
+            onDragCancel={() => setDragging(null)}
+            onDragEnd={onDragEnd}
+          >
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
+              <BlockPalette
+                target={paletteTarget}
+                rule={paletteRule}
+                draggable={preview}
+                holds={holds}
+                onAdd={(type) => {
+                  if (paletteTarget !== null) {
+                    addBlockTo(paletteTarget.id, type, targetColumn);
+                  }
+                }}
+              />
 
-            {preview ? (
-              // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
-              // ways of composing — the page itself — and it keeps the same panel beside it, so a block
-              // clicked here and the same block clicked in the outline lead to exactly the same fields
-              // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
-              <PickingContext.Provider value={picking}>
-                <PreviewFrame
-                  body={body}
-                  locales={locales}
-                  locale={previewLocale}
-                  onLocale={setPreviewLocale}
-                  published={published}
-                  comparing={comparing}
-                  onCompare={setComparing}
-                />
-              </PickingContext.Provider>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <SectionHeader title={t('content.editor.structure')} />
-                <SectionTree
-                  body={body}
-                  rules={rules}
-                  selection={selection}
-                  onSelect={setSelection}
-                  onAddSection={addSectionAt}
-                  onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
-                  onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
-                  onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
-                  onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
-                  onDuplicateBlock={duplicateBlockById}
-                  onDuplicateSection={duplicateSectionById}
-                  onRemoveSection={removeSectionById}
-                  onRemoveBlock={removeBlockById}
-                />
-              </div>
-            )}
+              {preview ? (
+                // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
+                // ways of composing — the page itself — and it keeps the same panel beside it, so a block
+                // clicked here and the same block clicked in the outline lead to exactly the same fields
+                // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
+                <PickingContext.Provider value={picking}>
+                  <PreviewFrame
+                    body={body}
+                    locales={locales}
+                    locale={previewLocale}
+                    onLocale={setPreviewLocale}
+                    published={published}
+                    comparing={comparing}
+                    onCompare={setComparing}
+                  />
+                </PickingContext.Provider>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  <SectionHeader title={t('content.editor.structure')} />
+                  <SectionTree
+                    body={body}
+                    rules={rules}
+                    selection={selection}
+                    onSelect={setSelection}
+                    onAddSection={addSectionAt}
+                    onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
+                    onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
+                    onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
+                    onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
+                    onDuplicateBlock={duplicateBlockById}
+                    onDuplicateSection={duplicateSectionById}
+                    onRemoveSection={removeSectionById}
+                    onRemoveBlock={removeBlockById}
+                  />
+                </div>
+              )}
 
-            {properties}
-          </div>
+              {properties}
+            </div>
 
-          {/* What travels under the pointer: a copy of the entry, not the entry itself, which sits in a
+            {/* What travels under the pointer: a copy of the entry, not the entry itself, which sits in a
           panel that scrolls and would clip it. */}
-          <DragOverlay dropAnimation={null}>
-            {draggedRegistration === undefined ? null : (
-              <div className="bg-body text-foreground border-border flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm shadow-md">
-                <draggedRegistration.icon aria-hidden className="size-4 shrink-0" />
-                {t(draggedRegistration.editorLabelKey)}
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
-      </div>
+            <DragOverlay dropAnimation={null}>
+              {draggedRegistration === undefined ? null : (
+                <div className="bg-body text-foreground border-border flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm shadow-md">
+                  <draggedRegistration.icon aria-hidden className="size-4 shrink-0" />
+                  {t(draggedRegistration.editorLabelKey)}
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      </EmbeddingContext.Provider>
     </PreviewLocaleContext.Provider>
   );
 }

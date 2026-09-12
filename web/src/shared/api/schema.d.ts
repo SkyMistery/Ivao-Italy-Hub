@@ -1892,6 +1892,8 @@ export interface components {
          *     not what somebody wrote in it.
          */
         PublicContentDto: {
+            /** Format: int64 */
+            id: number;
             kind: components["schemas"]["ContentKind"];
             slug: string;
             ownerDepartment: components["schemas"]["Department"];

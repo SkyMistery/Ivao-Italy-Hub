@@ -1,9 +1,35 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.69 — 12 settembre 2026 (**gli header di sicurezza**: l'hub non ne mandava nessuno, ora manda quattro header e una CSP che la suite smoke esegue davvero)
+**Versione documento:** 0.70 — 12 settembre 2026 (**il blocco interattivo**: un'animazione scritta da Claude, servita da un endpoint in un frame che non può fare niente, con le linee guida generate dal guscio che le mantiene)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.70** (12 set 2026): **il blocco interattivo**
+(`decisions/2026-09-12-il-blocco-interattivo.md`), chiesto da Carmine con il caso d'uso scritto per
+intero — creo un documento, scarico le linee guida, le do a Claude, incollo il codice, e chi legge
+vede l'animazione — e deciso da lui su tre domande: **(C)** un endpoint che serve il frame e non un
+`srcdoc`, la sezione che **si chiude** in stampa («un banner non serve a nulla»), un **permesso
+dedicato**. I due casi d'uso che definiscono il perimetro sono «si legge e sotto si vede» e «si vede
+che cosa succede secondo le scelte»; il confine è che il widget è interattivo **dentro la sua
+scatola** — non cambia il testo intorno, non ricorda niente, non ha un indirizzo che porti a una
+scelta. Cinque decisioni: **(1)** il codice sta nell'**envelope** (`source`, accanto a `renderMode` e
+`frozen`) e non in `props`, perché con (C) il server deve leggerlo e dentro `props` non guarda mai —
+tetti di 64 KB a blocco e 256 KB a pagina, controllati dal walker che non sa che cosa sia; **(2)** un
+endpoint solo, `/embed/{contenuto}/{versione}/{blocco}`, immutabile e cacheato per un anno sul
+pubblicato e `no-store` sulla bozza, che passa dall'**unico** authorization handler; la risposta
+porta i **suoi** header (`default-src 'none'`, `sandbox allow-scripts`, `frame-ancestors 'self'` al
+posto del `DENY` della pagina); **(3)** il **guscio è il contratto**, una risorsa compilata
+nell'assembly, e le linee guida — `/embed/guidelines`, dietro il permesso — lo **citano dentro di
+sé**, così il documento e ciò che descrive non possono divergere; **(4)** le linee guida impongono
+due lingue, tastiera, `prefers-reduced-motion`, 360 px, niente rete, e portano l'esempio della
+**pista 09/27 con il circuito sinistro**; **(5)** `Content.EmbedCode`, e la barra dei componenti
+**non elenca** un blocco che chi compone non può usare — mentre un blocco che il template vieta
+resta visibile e disabilitato, perché è un fatto della sezione e non del lettore. Due cose emerse
+disegnando: l'editor scrive un campo che non è una proprietà (una `textarea` sotto il form, via lo
+stesso `onEnvelope` di `renderMode` e `column`), e il renderer non sa in che pagina sta, quindi
+l'indirizzo del frame arriva da un **contesto** che la schermata fornisce, come già fa per il chrome
+dell'editor. Il registry passa a **30** blocchi. Branch `m1/interactive-block`.
 
 **Changelog 0.69** (12 set 2026): **gli header di sicurezza**
 (`decisions/2026-09-12-gli-header-di-sicurezza.md`), nati dalla scelta di Carmine sul blocco

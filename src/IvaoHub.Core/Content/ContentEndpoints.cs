@@ -395,6 +395,7 @@ public static class ContentEndpoints
             : null;
 
         return TypedResults.Ok(new PublicContentDto(
+            content.Id,
             content.Kind,
             content.Slug,
             content.OwnerDepartment,

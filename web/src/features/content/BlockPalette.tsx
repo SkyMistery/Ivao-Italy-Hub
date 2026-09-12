@@ -40,6 +40,7 @@ export function BlockPalette({
   rule,
   onAdd,
   draggable = false,
+  holds,
 }: {
   /** The section a component would be added to, and what to call it; `null` when none is chosen. */
   target: { id: string; name: string } | null;
@@ -52,10 +53,25 @@ export function BlockPalette({
    * is the road from a keyboard.
    */
   draggable?: boolean;
+  /**
+   * Whether whoever is composing holds a permission, asked for the department this row belongs to.
+   * A block that declares one and is not held is **not in the list at all** — unlike a block a
+   * template forbids, which is shown disabled with the reason on it (see `Entries` below).
+   *
+   * ⚠️ The difference is deliberate: a template refusing a block is a fact about *this section*,
+   * and somebody composing needs to know it exists and why it is closed. A permission is a fact
+   * about the reader, and an entry they can never use is noise in a list they scan all day. One
+   * block declares one today: `interactive`, whose source is code (`Content.EmbedCode`).
+   */
+  holds?: (permission: string) => boolean;
 }) {
   const { t } = useTranslation();
 
-  const arranged = groupsOf(registry.blocks);
+  const offered = registry.blocks.filter(
+    (block) => block.permission === undefined || holds === undefined || holds(block.permission),
+  );
+
+  const arranged = groupsOf(offered);
 
   // A word typed to find a component by its name (Carmine, 11 September 2026: "a field to search
   // for a certain one would be very handy"). Folded the way the site's search folds, so "citta"

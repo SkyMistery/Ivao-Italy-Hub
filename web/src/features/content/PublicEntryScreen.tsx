@@ -1,9 +1,10 @@
 import { Button, H1, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, PrintContext, readBody } from '../../blocks';
+import { ContentRenderer, EmbeddingContext, PrintContext, frameAddress, readBody } from '../../blocks';
 import { mediaFileUrl } from '../../shared/api/mediaUrl';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
@@ -35,6 +36,15 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
   const read = useLocalized();
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const printing = usePrintMode();
+
+  // The frame of an interactive block, addressed by the version being read: a published version
+  // never changes, so what comes back is cacheable for a year (`EmbedEndpoints`).
+  const embedding = useMemo(
+    () => ({
+      frameUrl: (blockId: string) => frameAddress(content.id, content.version, blockId, i18n.language),
+    }),
+    [content.id, content.version, i18n.language],
+  );
 
   const operational = content.kind === 'Document' && isOperational(content);
   const summary = read(content.summary);
@@ -104,8 +114,14 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
         </div>
       )}
 
+      {/* The two things the page around a body grants it: whether it is being printed, and where the
+          frame of an interactive block lives. The second is the version being read, which only this
+          screen knows — a block knows neither the row it is on nor which version of it
+          (`blocks/embedding.ts`). */}
       <PrintContext.Provider value={printing}>
-        <ContentRenderer body={readBody(content.body)} />
+        <EmbeddingContext.Provider value={embedding}>
+          <ContentRenderer body={readBody(content.body)} />
+        </EmbeddingContext.Provider>
       </PrintContext.Provider>
 
       {/* The footer is the document's own, switched off on the row when it is not wanted; a news

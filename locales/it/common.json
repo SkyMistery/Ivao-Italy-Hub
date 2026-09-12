@@ -850,6 +850,19 @@
         "title": "Viene letto al posto del riquadro, per questo non e' facoltativo."
       }
     },
+    "interactive": {
+      "label": "Disegno interattivo",
+      "unavailable": "Questo blocco interattivo non ha ancora niente da mostrare qui. Salva la pagina e si disegnera' da se'.",
+      "fields": {
+        "title": "Nome",
+        "description": "Descrizione",
+        "minHeight": "Altezza di partenza"
+      },
+      "source": "Codice",
+      "sourceHint": "Incolla quello che le linee guida hanno prodotto. Gira in un frame suo: niente rete, nessun accesso a questo sito.",
+      "sourceCount": "{{bytes}} byte su {{max}}",
+      "guidelines": "Scarica le linee guida"
+    },
     "timeline": {
       "label": "Passi",
       "fields": {
