@@ -152,6 +152,26 @@ l'unica parte che la ricerca indicizza, essendo l'unico campo tradotto.
   l'altezza che cresce, il fondo scuro che entra, la stampa che chiude, e le due che contano — il
   frame **non** riesce a leggere la pagina che lo incornicia, e `localStorage` gli tira un'eccezione.
 
+## Le regole vietate si denunciano da sole (12 settembre, sera)
+
+Carmine: «se qualcuno dovesse fare le cose vietate — rete, storage, byte — ce ne accorgeremo?».
+Controllato invece che ricordato, ed erano **tre risposte diverse**: i **byte** sì (il walker
+rifiuta il salvataggio e la textarea conta mentre si scrive), **rete** e **storage** no — il browser
+li impedisce, ma il rifiuto finisce nella console di quel frame e muore lì. Chi ha scritto
+l'animazione vede «disegna storto» e non sa perché; chi pubblica non lo sa affatto.
+
+Ora il guscio ascolta **`securitypolicyviolation`** — che è il browser a dire «ho rifiutato questo»,
+quindi niente euristiche sul codice e nessun falso allarme su un `fetch` dentro un commento — e
+**`window.onerror`**, per il caso più comune di tutti: l'animazione che si rompe. Li manda alla pagina
+sullo stesso canale dell'altezza (una volta per tipo, mai in loop), e la pagina disegna una riga
+**solo allo staff**, come già fa per il blocco di tipo sconosciuto e per il distintivo di un blocco
+Data catturato. Un visitatore non vede niente: non è la sua animazione da riparare.
+
+⚠️ **Scartato, e scritto perché non si riproponga**: cercare `fetch(`, `localStorage`, `https://`
+nel codice al salvataggio. Prenderebbe l'errore onesto prima che qualcuno guardi, ma è un'euristica
+su del codice — si aggira con due stringhe concatenate e grida al lupo su un commento. Un avviso che
+grida al lupo è un avviso che si impara a ignorare. Si riapre solo se vediamo che succede davvero.
+
 ## Che cosa **non** si fa
 
 Nessun `postMessage` oltre l'altezza (un numero, dal frame giusto, limitato); nessuno stato salvato;

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { stubThePublishedPage } from './fixtures';
+import { oneTemplate, stubTheApiAsStaff, stubThePublishedPage } from './fixtures';
 
 /**
  * An interactive block in a browser: what the frame does, and what it cannot do
@@ -81,14 +81,14 @@ function section(id: string, background: string, blockId: string) {
 }
 
 /** The endpoint, stood in for: the same shell, the same three substitutions, no server. */
-async function stubTheFrame(page: Page) {
+async function stubTheFrame(page: Page, source = SOURCE) {
   await page.route('**/embed/**', (route) => {
     const lang = new URL(route.request().url()).searchParams.get('lang') ?? 'en';
 
     void route.fulfill({
       status: 200,
       contentType: 'text/html; charset=utf-8',
-      body: shell.replace('{{lang}}', lang).replace('{{title}}', 'a-page').replace('{{source}}', SOURCE),
+      body: shell.replace('{{lang}}', lang).replace('{{title}}', 'a-page').replace('{{source}}', source),
     });
   });
 }
@@ -200,4 +200,77 @@ test('on paper the frame folds away and the prose stays', async ({ page }) => {
 
   await expect(page.locator('iframe')).toBeHidden();
   await expect(page.getByText('What the traffic does, drawn.').first()).toBeVisible();
+});
+
+/**
+ * An animation that does one of the forbidden things, and whether anybody is told.
+ *
+ * ⚠️ This is the question Carmine asked on 12 September — «se qualcuno dovesse fare le cose vietate,
+ * ce ne accorgeremo?» — and before this the answer was no for two of the three. Size is refused at
+ * save with a message on the field; the network and storage are refused **by the browser**, which
+ * writes it in the frame's own console and nowhere else. So the frame now says what it was refused,
+ * and the page draws that where only the staff sees it.
+ */
+const NAUGHTY = `
+  <p id="ink">tries to fetch</p>
+  <script>
+    fetch('https://example.org/nothing').catch(function () {});
+  </script>
+`;
+
+test('an animation that tries to open the network says so, to the staff and to nobody else', async ({
+  page,
+}) => {
+  await stubTheFrame(page, NAUGHTY);
+
+  // The editor, because that is where `staff` is true and where whoever wrote the animation is
+  // standing. A visitor is told nothing: it is not their animation to fix.
+  await stubTheApiAsStaff(page);
+  await page.route('**/api/content/*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...oneTemplate,
+        isTemplate: false,
+        body: {
+          schemaVersion: 1,
+          sections: [section('s_light', 'none', 'b_light')],
+        },
+      }),
+    }),
+  );
+  await page.route('**/api/content/*/publish-problems', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ errors: {}, localized: {} }),
+    }),
+  );
+
+  await page.goto('/staff/ed/content/1');
+
+  // The browser refuses the request — `default-src 'none'` — and the refusal, which used to die in a
+  // console nobody reads, arrives here as a line naming the directive.
+  const told = page.getByText(/the browser refused this animation/i);
+  await expect(told.first()).toBeVisible({ timeout: 10000 });
+  await expect(told.first()).toContainText(/connect-src|default-src/);
+});
+
+test('and a visitor reading the same page is told nothing', async ({ page }) => {
+  await stubTheFrame(page, NAUGHTY);
+  await stubThePublishedPage(page, 'animated', {
+    schemaVersion: 1,
+    sections: [section('s_light', 'none', 'b_light')],
+  });
+
+  await page.goto('/animated');
+  await expect(page.locator('iframe')).toBeVisible();
+
+  // The frame still sends the message — it does not know who is reading — and the page still hears
+  // it. What decides is who is being drawn for: a reader came here to read, and an animation that
+  // needs fixing is not their business. Waited for rather than asserted instantly, so that "not
+  // shown" cannot mean "not drawn yet".
+  await page.waitForTimeout(1500);
+  await expect(page.getByText(/the browser refused this animation/i)).toHaveCount(0);
 });

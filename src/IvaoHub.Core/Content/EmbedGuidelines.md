@@ -158,6 +158,15 @@ Gradients, shadows, glows, 3D, drop caps, photographs, textures, more than four 
 - Nothing larger than **64 KB**. If your fragment is bigger than that, it is doing too much: an
   animation that explains a procedure is 5 to 15 KB.
 
+⚠️ **And none of the three fails quietly.** The size is refused when the page is saved, with the
+message on the field and a count of bytes beside the box while you type. The other two are refused by
+the browser — there is no network here and no storage, whatever the code asks for — and the frame
+**reports the refusal to the page**, which draws it under the animation **for the staff only**: "the
+browser refused this animation something it asked for (connect-src)". An animation that throws says
+that too. So a fragment that ignores this section does not produce a mystery; it produces a line
+naming what it tried, in the editor, where whoever pasted it is standing. A reader is told nothing:
+it is not their animation to fix.
+
 ## And the part no mechanism can check
 
 An animation that contradicts the text above it is worse than no animation: a circuit drawn to the

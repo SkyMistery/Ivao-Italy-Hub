@@ -50,6 +50,12 @@ export interface BlockComponentProps {
    * nothing it did not already sit inside.
    */
   readonly id?: string;
+  /**
+   * Whether whoever is reading this page is a member of staff. Two blocks' worth of things are only
+   * ever said to them — a capture rather than a live answer, and an interactive block that the
+   * browser had to refuse something to. A visitor is told none of it.
+   */
+  readonly staff?: boolean;
   /** The properties an editor wrote. Already checked against the block's own schema. */
   readonly props: Record<string, unknown>;
   /**

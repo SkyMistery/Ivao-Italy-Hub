@@ -178,6 +178,45 @@
       });
 
       /*
+        What the browser refused, and what broke — said out loud, because otherwise neither is said
+        at all (Carmine, 12 September 2026: «se qualcuno dovesse fare le cose vietate, ce ne
+        accorgeremo?»).
+        
+        A frame that tries to open the network or to remember something is stopped — that is what the
+        policy and the opaque origin are for — but the refusal lands in this document's own console
+        and dies there: whoever wrote the animation sees "it draws wrong" and has no idea why, and
+        whoever publishes it never knows at all. So the frame tells the page, and the page tells the
+        **staff** and nobody else.
+        
+        ⚠️ `securitypolicyviolation` is the browser saying "I refused this", so there is nothing
+        heuristic about it: no guesswork over somebody's code, no false positive on the word `fetch`
+        inside a comment. And `onerror` for the commonest fault of all, which is an animation that
+        simply throws.
+      */
+      (function () {
+        var said = {};
+
+        var tell = function (kind, detail) {
+          // Once per kind: a drawing that redraws sixty times a second would otherwise send sixty
+          // messages a second, and the second one says nothing the first did not.
+          if (said[kind + detail]) {
+            return;
+          }
+
+          said[kind + detail] = true;
+          parent.postMessage({ hub: 'embed-refused', kind: kind, detail: String(detail).slice(0, 120) }, '*');
+        };
+
+        document.addEventListener('securitypolicyviolation', function (event) {
+          tell('policy', event.violatedDirective || 'unknown');
+        });
+
+        window.addEventListener('error', function (event) {
+          tell('error', (event.message || 'error').slice(0, 120));
+        });
+      })();
+
+      /*
         The height, and it is the only thing that ever leaves this frame: one number, to the page
         that framed it. The page accepts it only from this frame and clamps it, so nothing here can
         make a document taller than a document.

@@ -545,13 +545,14 @@ export function EmbedBlock({ props }: BlockComponentProps) {
  * — the description stays, the frame folds away, because a rectangle nobody can touch is not worth
  * the paper (Carmine, 12 September: "un banner non serve a nulla").
  */
-export function InteractiveBlock({ id, props }: BlockComponentProps) {
+export function InteractiveBlock({ id, staff = false, props }: BlockComponentProps) {
   const { t } = useTranslation();
   const read = useLocalized();
   const embedding = useEmbedding();
   const printing = usePrinting();
   const frame = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(() => count(props, 'minHeight', 320));
+  const [refused, setRefused] = useState<{ kind: string; detail: string } | null>(null);
 
   const title = read(text(props, 'title'));
   const description = read(text(props, 'description'));
@@ -580,7 +581,24 @@ export function InteractiveBlock({ id, props }: BlockComponentProps) {
         return;
       }
 
-      const message = event.data as { hub?: string; height?: unknown };
+      const message = event.data as {
+        hub?: string;
+        height?: unknown;
+        kind?: unknown;
+        detail?: unknown;
+      };
+
+      // What the browser refused inside the frame, or what threw in there. Neither reaches this page
+      // on its own — a refusal lands in the frame's own console and dies — so the frame says it, and
+      // this is where it is heard. Two strings, drawn as text and never run.
+      if (message?.hub === 'embed-refused' && typeof message.kind === 'string') {
+        setRefused({
+          kind: message.kind,
+          detail: typeof message.detail === 'string' ? message.detail.slice(0, 120) : '',
+        });
+        return;
+      }
+
       if (message?.hub !== 'embed-height' || typeof message.height !== 'number') {
         return;
       }
@@ -603,6 +621,21 @@ export function InteractiveBlock({ id, props }: BlockComponentProps) {
   }, [address]);
 
   const caption = description === '' ? null : <p className="text-muted-foreground text-sm">{description}</p>;
+
+  /**
+   * ⚠️ Only the staff, like the badge on a captured data block and the notice on a block of a type
+   * nobody registered. A visitor reading an operational document is not the person who can fix an
+   * animation that tried to open the network, and telling them would be noise on a page they came to
+   * read. Whoever composes sees it in the editor, which is the moment it is worth knowing.
+   */
+  const refusal =
+    !staff || refused === null ? null : (
+      <p className="text-destructive text-sm">
+        {t(refused.kind === 'policy' ? 'blocks.interactive.refused' : 'blocks.interactive.threw', {
+          detail: refused.detail,
+        })}
+      </p>
+    );
 
   // On paper the frame is a white rectangle nobody can press, so it goes; what the author wrote
   // about it is prose of the document and stays.
@@ -641,6 +674,7 @@ export function InteractiveBlock({ id, props }: BlockComponentProps) {
         style={{ height: `${height}px` }}
       />
       {caption}
+      {refusal}
     </figure>
   );
 }

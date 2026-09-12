@@ -363,7 +363,7 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
     ) : registration.kind === 'Data' ? (
       <DataBlockView block={block} registration={registration} staff={staff} />
     ) : (
-      <registration.component id={block.id} props={block.props} />
+      <registration.component id={block.id} staff={staff} props={block.props} />
     );
 
   if (picking === null || drawn === null) {
