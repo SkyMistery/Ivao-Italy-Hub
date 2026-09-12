@@ -862,6 +862,9 @@
       },
       "source": "Codice",
       "sourceHint": "Incolla quello che le linee guida hanno prodotto. Gira in un frame suo: niente rete, nessun accesso a questo sito.",
+      "fromFile": "Oppure scegli un file dal computer",
+      "fileTooLarge": "Quel file supera {{max}} byte. Un'animazione che spiega una procedura sta in 5-15 KB.",
+      "fileIsAPage": "Quel file e' una pagina web intera. Qui va solo il frammento — niente doctype, niente <html>, niente <head>. Le linee guida dicono che cosa deve contenere.",
       "sourceCount": "{{bytes}} byte su {{max}}",
       "guidelines": "Scarica le linee guida"
     },

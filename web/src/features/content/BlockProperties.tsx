@@ -177,11 +177,44 @@ function SourceField({
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(block.source ?? '');
+  const [refused, setRefused] = useState<string | null>(null);
 
   // The page counts what the server counts: bytes of UTF-8, not characters. A line of Italian prose
   // in a comment is longer than it looks, and the refusal on save would be the first anybody heard.
   const bytes = new TextEncoder().encode(draft).length;
   const tooLong = bytes > MAX_SOURCE_BYTES;
+
+  /**
+   * A file from the machine of whoever is composing, read **in the browser** and put in the box.
+   *
+   * ⚠️ Nothing is uploaded, and that is the point: the fragment is a field of the row, so a file that
+   * travelled to the server and lived somewhere would be a second place for the same text — and a
+   * file in the media library was option (B) of the note, which Carmine ruled out first. What the
+   * page keeps is what is in the box, the same as if it had been pasted there.
+   */
+  const readFile = async (file: File) => {
+    if (file.size > MAX_SOURCE_BYTES) {
+      setRefused(t('blocks.interactive.fileTooLarge', { max: MAX_SOURCE_BYTES }));
+      return;
+    }
+
+    const text = await file.text();
+
+    // A whole page instead of a fragment: the hub wraps what it is given in a document of its own,
+    // so a second document inside it draws nothing and says nothing about why. Caught here, where
+    // the answer is one sentence, rather than in a frame that comes up blank.
+    if (/<!doctype\s+html|<html[\s>]/i.test(text)) {
+      setRefused(t('blocks.interactive.fileIsAPage'));
+      return;
+    }
+
+    setRefused(null);
+    setDraft(text);
+
+    // Applied at once, unlike typing: choosing a file is a finished act, not a keystroke in the
+    // middle of a script.
+    onEnvelope({ source: text });
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -202,6 +235,29 @@ function SourceField({
       <p className={`text-sm ${tooLong ? 'text-destructive' : 'text-muted-foreground'}`}>
         {t('blocks.interactive.sourceCount', { bytes, max: MAX_SOURCE_BYTES })}
       </p>
+      {refused === null ? null : <p className="text-destructive text-sm">{refused}</p>}
+
+      {/* A file input and not a button that opens one: the browser's own control is the one a
+          keyboard and a screen reader already know, and this panel is not the place to reinvent it.
+          The label is what is read out; `sr-only` only hides the word, never the control. */}
+      <label className="text-primary w-fit cursor-pointer text-sm underline underline-offset-2">
+        {t('blocks.interactive.fromFile')}
+        <input
+          type="file"
+          accept=".html,.htm,.svg,.txt,text/html,image/svg+xml,text/plain"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // The same file chosen twice in a row fires no change unless the value is cleared, and
+            // "I fixed it and chose it again" is exactly what somebody does here.
+            event.target.value = '';
+            if (file !== undefined) {
+              void readFile(file);
+            }
+          }}
+        />
+      </label>
+
       <p className="text-muted-foreground text-sm">{t('blocks.interactive.sourceHint')}</p>
       <a
         href="/embed/guidelines"

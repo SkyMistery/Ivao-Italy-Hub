@@ -20,6 +20,28 @@ contract: what your fragment is given, what it may not do, and what it will be j
 - **Canvas only when many things move at once** — twenty aircraft on a radar scope. For a runway and
   a circuit, SVG.
 
+## The file, when you hand one over
+
+The **Code** field takes a paste, and beside it there is **"choose a file from your computer"**. The
+two are the same thing: the file is read **in the browser** and its text becomes the field. Nothing is
+uploaded, nothing is stored anywhere else, and there is no file to keep in step with the page
+afterwards — what the page holds is the text.
+
+So the file is simply your fragment, saved:
+
+- **One file, `.html`** (`.svg` and `.txt` are taken too). Not a folder, not a zip, no second file
+  beside it: a fragment cannot reference anything, so there is nothing for a second file to be.
+- **UTF-8**, and no byte order mark. Accents and the degree sign belong in it; a BOM ends up in the
+  page as an invisible character.
+- **A fragment and not a page.** No `<!doctype>`, no `<html>`, no `<head>`, no `<body>` — the hub
+  wraps what you give it in the shell at the end of this file, and a document inside a document draws
+  nothing. The editor refuses a file that begins like a page and says so.
+- ⚠️ **An `.svg` saved by a drawing program is usually a page in this sense**: it starts with an XML
+  prolog (`<?xml …?>`) and often carries a `<!DOCTYPE svg …>`. Delete both lines and keep the
+  `<svg>` element itself, which is what an HTML fragment wants.
+- **Under 64 KB.** The editor counts the bytes as you type and refuses a bigger file with the number.
+- The name of the file is not kept. Call it what you like.
+
 ## What the frame gives you
 
 ```js
