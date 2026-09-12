@@ -27,6 +27,12 @@ test('the uploads are among the paths handed to the backend, and not only the ca
   // The two the server produces rather than serves. They are as easy to forget for the same reason.
   expect(BACKEND_PATHS).toContain('/sitemap.xml');
   expect(BACKEND_PATHS).toContain('/robots.txt');
+
+  // ⚠️ And the one this cost twice: `/embed/…` is the frame of an interactive block, and
+  // `/embed/guidelines` the file an editor downloads. Both read like pages, both are the backend's,
+  // and in development both came back as `index.html` — the frame drawing the hub inside itself and
+  // the guidelines arriving as nineteen lines of Vite. Found by Carmine, downloading them.
+  expect(BACKEND_PATHS).toContain('/embed');
 });
 
 test('the proxy is built from that list and never written out beside it', async () => {
