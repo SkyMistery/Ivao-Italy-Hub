@@ -1,9 +1,10 @@
 # Demonstrating M1
 
-> Updated to **G13** (8 September 2026), so it also covers the twelve requests the first run of
-> this sheet produced. A working translation lives in `docs/internal/demo-m1.md`; this one is the
-> official version, and it is in English because whoever forks the hub has to be able to read it
-> (CLAUDE.md section 1). If one of the two changes, the other changes in the same commit.
+> Updated to **12 September 2026** — so it covers G13 and the twelve requests the first run of this
+> sheet produced, then G15 (the editor that answers), G14 (the operational document), and the colour.
+> A working translation lives in `docs/internal/demo-m1.md`; this one is the official version, and it
+> is in English because whoever forks the hub has to be able to read it (CLAUDE.md section 1). If one
+> of the two changes, the other changes in the same commit.
 
 M0 built a backbone and proved it on one boring entity. M1 is what that backbone was for: a public
 site nobody had to program, an editor a coordinator can use, and five modules' worth of screens that
@@ -97,6 +98,16 @@ the closing report has to say so. It did not.
 write one yourself, and saving now **answers** — a toast in the corner. A row that already has an
 address never moves it.
 
+**New in G14: the operational document, which is the hardest thing this claim has been asked to
+carry.** On `/staff/aod/documents` make one and give it a **type** — SOP or LoA — an airport and a
+FIR **chosen from a list** (the validator refuses an ICAO the division's airspace does not hold), the
+positions it is about, the day it comes into force and the day it is to be reviewed by. Publish it
+and read it: a strip under the title says what it is about, a notice at the top appears when it is no
+longer in force and names what replaced it, and **Print** puts it on paper with the tabs and
+accordions unfolded. ⚠️ Then look at what it is **not**: no new table, no new entity, no second
+editor, no third `kind`. Six nullable columns, two blocks and a footer — and
+`NoSecondContentEntity` is still green, which is the test that would have said otherwise.
+
 - [ ] **Point 2** — two kinds, not two tables.
 
 ---
@@ -104,19 +115,23 @@ address never moves it.
 ## Part 3 — The block set, and the gallery that builds itself
 
 Open `/staff/admin/ui-kit`. Every block the registry declares is there, drawn from the registration
-itself: nobody adds a section to that page when a block is added. Count them — **27**, of which 7 are
-Data blocks that ask the server for their content.
+itself: nobody adds a section to that page when a block is added. Count them — **29**, of which 7 are
+Data blocks that ask the server for their content and two are G14's, the frequency table and the
+coordination table of an operational document.
 
 On the same page, among the components, is what G13 added: **`Notice`**, the four-state alert, in
 both of its shapes — the panel that stays and the confirmation that appears in a corner and then
 goes. It is the **fifth** component of the closed list.
 
 Then read `docs/UI-GUIDELINES.md`. The block conventions are decided and written there: the spacing
-and the ground belong to the **section** and never to a block, four grounds, four widths, no block
-contains blocks, and no string inside `props` that is not prose.
+and the ground belong to the **section** and never to a block, **eight** grounds, four widths, no
+block contains blocks, and the prose of a block is what is translated.
 
-⚠️ That last rule is currently broken by one block, and the visual round caught it — see
-`decisions/2026-09-07-giro-visivo-m1.md`.
+⚠️ That last one used to be a rule somebody had to remember — "no string inside `props` that is not
+prose" — and it was broken by a block of the first set, which the visual round caught
+(`decisions/2026-09-07-giro-visivo-m1.md`). Since 9 September it is a property of the mechanism: the
+extractor keeps a string only if the walk reached it through a `Localized` map. The corollary is the
+price, and it is written there too — a searchable name that nobody translates is not indexed.
 
 - [ ] **Point 3** — the block set of §1, every block in the gallery, conventions written down.
 
@@ -193,39 +208,75 @@ nothing, which was one of the three questions M0 left open.
 
 ## Part 7 — The editor, and what the template still says
 
-This is the part M1 exists for. On any page of `/staff/wd/content`:
+This is the part M1 exists for, and the part that changed most after the first run of this sheet: G15
+rebuilt how it answers, G14 gave it a publication window, and the colour of 12 September reaches it
+through the same renderer the public site uses. On any page of `/staff/wd/content`:
 
-1. **The outline.** Drag a section by its handle, then move one with the arrows. Both work, and the
-   arrows are not decoration: they are the whole of this panel that works from a keyboard.
-   ⚠️ **New in G13**: move one by mistake and there is **Undo**, beside Save. Twenty steps back,
-   and deliberately not ⌘Z — inside a text field ⌘Z means something else.
-2. **A locked section** shows its fields and not its structure, with a line naming **which template**
-   fixes it and who may change that.
-3. **The preview**, at three widths. It is a `max-width` on the very same renderer the public site
-   uses — not an emulator.
-4. **The differences from the template.** Open a template — `/staff/wd/templates`, **new in G13**:
-   until then they had no screen at all, and the only way in was to type a filter — add a section to
-   it, then reopen a page made from it: the editor says a section was added,
-   and offers to add it — **one difference at a time**, never all at once. ⚠️ And the page a visitor
-   reads has not changed, and does not change even after you accept the difference into the draft.
-   Only publishing moves what the public sees.
-5. **Writing a template.** On a template row, a section carries four more fields — `key`, whether
+1. **Moving things.** A section moves three ways: dragged by its handle in the outline, with the
+   arrows beside it, and **from the page itself** — pick one and it carries a plate with the commands
+   its template allows. A block does the same and can be dropped on **any slot of the page, another
+   section's included**; a component dragged out of the palette lands **between** two blocks instead
+   of at the end. The arrows, and the "Section" select in a block's properties, are the keyboard road,
+   and they are not decoration: they are the whole of what works without a mouse.
+   ⚠️ **Undo and Redo**, fifty steps, `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z` and `Ctrl+Y` — and a sentence typed
+   into a block is **one** step to undo rather than twenty, because consecutive changes to the same
+   thing collapse into one. The shortcuts do nothing **inside** a field, deliberately: there ⌘Z still
+   means "undo what I just typed", which is the browser's job and not ours.
+2. **The properties apply while you write.** There is no "Apply" button left: type, and the page
+   redraws about a fifth of a second after you stop — measured at ~180 ms. A value the schema refuses
+   changes nothing and says so in its own field, so a title emptied halfway through a rewrite does
+   not empty the block. The one button still under a form is **"Fix the key"** on a template's
+   section, because a key is fixed once and typing would otherwise make "in" the key of "intro".
+3. **Nothing is lost.** The draft saves itself **ten seconds** after you stop, and again when you
+   leave the page; the line beside the buttons says "Saved at 14:32" / "Saving…" / "Unsaved changes".
+   "Publish" flushes the pending save first, so it stays one gesture. A row that does not exist yet is
+   never created by an autosave — only "Save draft" creates one — and a 409 stops the autosave and
+   says why, because somebody else saved that row and the way on is to reload rather than to
+   overwrite every ten seconds. ⚠️ What it costs the shared database is the thing to look at: an
+   autosave leaves an `autosaved` audit row with the list of fields that moved and **no body** — about
+   200 bytes instead of two copies of the page.
+4. **The preview tells the truth.** Three widths, a language, and Draft | Published. It is a
+   `max-width` on the very same renderer the public site uses — not an emulator — and at "Phone" a
+   two-column section really becomes **one** column, because every width that decides a layout under
+   `blocks/` is a container query on the page rather than a media query on the window. Before G15 it
+   drew two columns of 167 px inside a frame 390 px wide, and the test that measured the frame passed
+   while the preview lied.
+5. **A locked section** shows its fields and not its structure, with a line naming **which template**
+   fixes it and who may change that. The palette above it says the same rather than offering an
+   impossible "Adds to: Welcome" over buttons that are disabled for a good reason.
+6. **The differences from the template.** Open a template — `/staff/wd/templates` — add a section to
+   it, then reopen a page made from it: the editor says a section was added, and offers to add it —
+   **one difference at a time**, never all at once. ⚠️ And the page a visitor reads has not changed,
+   and does not change even after you accept the difference into the draft. Only publishing moves
+   what the public sees.
+7. **Writing a template.** On a template row, a section carries four more fields — `key`, whether
    pages may delete it, whether they may restructure it, and which blocks it allows. Tick one block
-   type, save, make a page from that template: its palette offers that block and no other.
-   ⚠️ **New in G13**: a template is **made from a button** on that screen — choose which kind it is
-   for, and the editor opens on a row that is already a template. Opening an existing one says **how
-   many rows were made from it**, which is the sentence that stops a careless edit. The screen is
-   behind `Content.ManageTemplates`: every staff member *reads* templates, so that "new from a
-   template" works across departments, and only whoever may change them sees the screen.
+   type, save, make a page from that template: its palette offers that block and no other. A template
+   is **made from a button** on that screen — choose which kind it is for, and the editor opens on a
+   row that is already a template. Opening an existing one says **how many rows were made from it**,
+   which is the sentence that stops a careless edit. The screen is behind `Content.ManageTemplates`:
+   every staff member *reads* templates, so that "new from a template" works across departments, and
+   only whoever may change them sees the screen.
+8. **Publishing asks** (new in G14). "Publish" opens a window with **what changed** — the changelog
+   line every version could carry since M0 and had never had a box for — and, on a document, the
+   **AIRAC cycle** it belongs to. It is `ConfirmDialog`, extended with fields rather than written
+   beside as a fifth dialog of its own.
 
-**The other things G13 added, all visible here:**
+**The comforts, added between 10 and 12 September while Carmine used it:** double-click a block or a
+section to pick it and land in the first field of its panel; `Canc` deletes, `⌘D` duplicates, `Esc`
+lets go; whatever you pick is scrolled into view; a section duplicates itself, new identifiers and
+all; sections nest **four** levels deep; a block with nothing written in it draws a dashed placeholder
+with its name, which a visitor never sees; the palette has a search box and the side panels have thin
+scrollbars; the file picker uploads into the department's library and links to it; the preview
+follows the language you chose; and two identical images uploaded twice are **one** file, answered
+with the row that was already there.
 
-- **what is missing to publish** sits at the top of the editor **before** you press publish, in a
-  warning tone, and empties itself when the last thing is fixed and saved;
-- every action **answers**: saved, published, deleted, and a refused publication too;
-- the **properties panel stays put** while the outline scrolls;
-- a **heading block is born at level 2**, not 1 — the page already has its `h1`;
-- in the sidebar a department is its **code**, not one of nine identical shields.
+**And the colour, 12 September.** A section stands on one of **eight** grounds: `accent` is the
+brand's pale blue rather than the fourth grey it used to be, and `aurora` is a fourth dark one beside
+`brand`, `deep` and `dark`. `hero`, `cardGrid`, `iconGrid` and `timeline` each take one of four brand
+accents, drawn on an icon, on the rule above a card, on the bar above a hero — and never on a word,
+because a graphic needs 3 : 1 of its ground and a word needs 4.5 : 1. Headings are no longer the pale
+grey Atmosphere paints them.
 
 - [ ] **Point 7a** — a template never rewrites a page by itself, and the editor says so.
       Asserted by `e2e/full/template.spec.ts`.

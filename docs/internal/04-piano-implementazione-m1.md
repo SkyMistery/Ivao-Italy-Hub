@@ -9,7 +9,10 @@
 > che sia finita. L'ordine è quello di design §12 (G0–G12); qui ogni fase diventa un perimetro, una
 > lista di task e dei criteri di accettazione che sono test.
 
-**Versione:** 2.21 — 12 settembre 2026 (**G14 costruita in una notte**, il resoconto in fondo alla sua
+**Versione:** 2.22 — 12 settembre 2026 (**il tag `v0.2.0-m1` vuol dire «editor di documenti e news
+pronto»** e non «M1 costruita»: deciso da Carmine dopo la riscrittura della Parte 7 della scheda,
+piano 0.68, dove sta anche l'elenco — da confermare — di che cosa manchi. Il passo 6 di G12 qui sotto
+resta il **come** si mette un tag, non il **quando**.) Prima, 2.21 — 12 settembre 2026 (**G14 costruita in una notte**, il resoconto in fondo alla sua
 sezione: la finestra di pubblicazione, i giorni letti come giorni, il job attraverso il change
 tracker, la guardia che fermava una riga nuova). Prima, 2.20 — 11 settembre 2026 (**G15, l'editor che risponde**, decisa da Carmine e messa
 **prima di G14**: proprietà applicate mentre si scrive, annulla e ripeti da tastiera con coalescenza,
@@ -1097,7 +1100,9 @@ Task:
    PR (§A.11) si sommano, non si ricostruiscono.
 5. Revisione della checklist §16.E su tutto il codice di M1; aggiornamento del piano 00 (versione +
    changelog) e di `HANDOFF.md`; `docs/UI-GUIDELINES.md` finale.
-6. Tag `v0.2.0-m1`, release CI con artefatto. ⚠️ Il tag si spinge **dopo** il merge e si verifica
+6. Tag `v0.2.0-m1`, release CI con artefatto. ⚠️ **Quando** si mette non lo decide più questa fase:
+   dal 12 settembre 2026 quel tag vuol dire «editor di documenti e news pronto» (piano 0.68), e M1
+   può essere finita senza di lui. Quello che resta qui è il **come**: il tag si spinge **dopo** il merge e si verifica
    **sull'artefatto**, non sul commit: in M0 ci sono voluti cinque tentativi, il server di prova deve
    fare il fallback SPA, e un grep su un bundle minificato non è una verifica — la verifica è
    comportamentale o non è.
