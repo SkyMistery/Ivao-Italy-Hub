@@ -19,6 +19,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Content\EmbedShell.html" />
     <EmbeddedResource Include="Content\EmbedGuidelines.md" />
+    <EmbeddedResource Include="Content\EmbedPreview.html" />
   </ItemGroup>
 
   <ItemGroup>

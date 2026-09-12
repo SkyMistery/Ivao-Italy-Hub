@@ -866,7 +866,8 @@
       "fileTooLarge": "Quel file supera {{max}} byte. Un'animazione che spiega una procedura sta in 5-15 KB.",
       "fileIsAPage": "Quel file e' una pagina web intera. Qui va solo il frammento — niente doctype, niente <html>, niente <head>. Le linee guida dicono che cosa deve contenere.",
       "sourceCount": "{{bytes}} byte su {{max}}",
-      "guidelines": "Scarica le linee guida"
+      "guidelines": "Scarica le linee guida",
+      "preview": "Scarica l'anteprima locale"
     },
     "timeline": {
       "label": "Passi",

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
@@ -46,6 +47,9 @@ public static class EmbedEndpoints
     /// <summary>Where the editor's "download the guidelines" link points.</summary>
     public const string GuidelinesPattern = "/embed/guidelines";
 
+    /// <summary>Where the editor's "download the local preview" link points.</summary>
+    public const string PreviewPattern = "/embed/preview";
+
     private static readonly string Shell = Read("EmbedShell.html");
 
     /// <summary>
@@ -56,6 +60,17 @@ public static class EmbedEndpoints
     /// </summary>
     private static readonly string Guidelines = Read("EmbedGuidelines.md")
         .Replace("{{shell}}", Read("EmbedShell.html"), StringComparison.Ordinal);
+
+    /// <summary>
+    /// The local preview, with the shell put inside it — for whoever writes an animation on their own
+    /// computer, before it goes into a draft (12 September 2026). The shell goes in as a **JSON
+    /// string**, whose default encoding escapes <c>&lt;</c>, <c>&gt;</c> and <c>&amp;</c>: the shell
+    /// carries script elements of its own, and a closing tag of one of them written raw into the
+    /// preview's script would end that script halfway through.
+    /// </summary>
+    private static readonly byte[] Preview = System.Text.Encoding.UTF8.GetBytes(
+        Read("EmbedPreview.html")
+            .Replace("{{shellJson}}", JsonSerializer.Serialize(Shell), StringComparison.Ordinal));
 
     public static void MapEmbedEndpoints(this IEndpointRouteBuilder app)
     {
@@ -72,6 +87,17 @@ public static class EmbedEndpoints
         // site either.
         app.MapGet(GuidelinesPattern, () => Results.Text(Guidelines, "text/markdown; charset=utf-8"))
             .WithName("EmbedGuidelines")
+            .WithTags(CorePermissions.ContentArea)
+            .ExcludeFromDescription()
+            .RequireAuthorization(CorePermissions.ContentEmbedCode);
+
+        // ⚠️ A **download** and never a page of this site: `Results.File` with a name sends it as an
+        // attachment, and if somebody opened it here anyway the site's own policy (`script-src
+        // 'self'`) would refuse its inline script. It is meant to be opened from a disk, where it
+        // runs a pasted fragment in a sandboxed frame with the shell's own policy — which is the only
+        // place running a pasted fragment is harmless.
+        app.MapGet(PreviewPattern, () => Results.File(Preview, "text/html; charset=utf-8", "interactive-preview.html"))
+            .WithName("EmbedPreview")
             .WithTags(CorePermissions.ContentArea)
             .ExcludeFromDescription()
             .RequireAuthorization(CorePermissions.ContentEmbedCode);

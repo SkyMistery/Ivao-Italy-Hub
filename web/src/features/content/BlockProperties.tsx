@@ -277,6 +277,16 @@ function SourceField({
       >
         {t('blocks.interactive.guidelines')}
       </a>
+      {/* The preview for somebody writing on their own computer: the shell of the hub with the
+          fragment inside a sandboxed frame, opened from a disk with a double click. Inside the hub a
+          draft already is the preview — only editors see it — and the guidelines say both. */}
+      <a
+        href="/embed/preview"
+        download="interactive-preview.html"
+        className="text-primary text-sm underline underline-offset-2"
+      >
+        {t('blocks.interactive.preview')}
+      </a>
     </div>
   );
 }

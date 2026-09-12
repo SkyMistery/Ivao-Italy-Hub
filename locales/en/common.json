@@ -866,7 +866,8 @@
       "fileTooLarge": "That file is larger than {{max}} bytes. An animation that explains a procedure is 5 to 15 KB.",
       "fileIsAPage": "That file is a whole web page. This field takes only the fragment — no doctype, no <html>, no <head>. The guidelines say what it should contain.",
       "sourceCount": "{{bytes}} of {{max}} bytes",
-      "guidelines": "Download the guidelines"
+      "guidelines": "Download the guidelines",
+      "preview": "Download the local preview"
     },
     "timeline": {
       "label": "Steps",

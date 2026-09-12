@@ -26,8 +26,14 @@ namespace IvaoHub.IntegrationTests;
 [Collection(MariaDbCollection.Name)]
 public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
-    private const int WebCoordinatorVid = 640001;
-    private const int OtherDepartmentVid = 640002;
+    // ⚠️ A range of its own, and not 640001: that VID is the **superadmin** of
+    // `DataBlockEndToEndTests`, and the integration tests share one database. In CI that class ran
+    // first, so the "web coordinator" here was already a superadmin and every assertion about who may
+    // see a draft passed for the wrong reason — including with a position that does not exist
+    // (`IT-WC`, where the web coordinator is `IT-WM`). Run on its own, the class failed three tests
+    // out of five, which is what found it (12 September 2026).
+    private const int WebCoordinatorVid = 740001;
+    private const int OtherDepartmentVid = 740002;
 
     private const string Source = "<svg viewBox=\"0 0 10 10\"><title>A circuit</title></svg>";
 
@@ -119,7 +125,7 @@ public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
     public async Task TheGuidelinesAreForWhoeverMayAddOne()
     {
         var token = TestContext.Current.CancellationToken;
-        await SeedUserAsync(WebCoordinatorVid, "IT-WC", token);
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", token);
 
         using var anonymous = _factory.CreateClient();
         using var refused = await anonymous.GetAsync(EmbedEndpoints.GuidelinesPattern, token);
@@ -139,6 +145,39 @@ public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Contains("<!doctype html>", markdown, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task TheLocalPreviewIsADownloadWithTheShellSafelyInsideIt()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", token);
+
+        using var anonymous = _factory.CreateClient();
+        using var refused = await anonymous.GetAsync(EmbedEndpoints.PreviewPattern, token);
+        Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, WebCoordinatorVid, token);
+        using var served = await client.GetAsync(EmbedEndpoints.PreviewPattern, token);
+
+        Assert.Equal(HttpStatusCode.OK, served.StatusCode);
+
+        // A download and never a page of this site: whoever opens it does so from a disk, which is
+        // the only place running a pasted fragment is harmless.
+        Assert.Equal("attachment", served.Content.Headers.ContentDisposition?.DispositionType);
+
+        var html = await served.Content.ReadAsStringAsync(token);
+
+        // The shell is inside it, and is the shell — `window.HUB` is the contract.
+        Assert.Contains("window.HUB", html, StringComparison.Ordinal);
+
+        // ⚠️ And inside it **safely**. The shell carries script elements of its own; written raw into
+        // the preview's script, the first of its closing tags would end that script halfway through
+        // and the preview would be a page of broken text. As a JSON string with `<` escaped there is
+        // exactly one closing script tag in the whole file — the preview's own.
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "</script>"));
+        Assert.DoesNotContain("{{shellJson}}", html, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// A page of the web department with two interactive blocks — one carrying a source, one not —
     /// written straight into the database: what is being tested is the endpoint, and going through
@@ -146,7 +185,7 @@ public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// </summary>
     private async Task<long> SeedAsync(bool publish, CancellationToken cancellationToken)
     {
-        await SeedUserAsync(WebCoordinatorVid, "IT-WC", cancellationToken);
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", cancellationToken);
         await SeedUserAsync(OtherDepartmentVid, "IT-EC", cancellationToken);
 
         await using var scope = _factory.Services.CreateAsyncScope();

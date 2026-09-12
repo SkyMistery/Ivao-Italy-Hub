@@ -60,6 +60,40 @@ sees around your drawing, so never paint a ground of your own.
 The height is measured for you: the frame tells the page how tall your fragment is and the page
 gives it that room. Do not set a height on `body`.
 
+## Seeing it before you publish
+
+⚠️ **Your fragment does not run on its own, and it is not supposed to.** `HUB` is not part of it: the
+shell the hub wraps it in defines it, in the script just before your code. Open the fragment's file
+directly in a browser and it stops at the first line that asks `HUB` anything — that is the contract
+working, not a fault in the fragment.
+
+There are two ways to see it, and neither of them is to build something of your own:
+
+1. **Inside the hub, in a draft.** Paste the fragment into the block, save, and look. The frame is
+   served from the draft, which only editors of that page can open; nobody else sees anything until
+   somebody presses Publish. This is the most faithful preview there is — the real shell, the real
+   policy, the real ground of the section — and it costs nothing, because a draft is private by
+   construction.
+2. **On your own computer**, before it goes near the hub: download **the local preview** — the link is
+   beside the guidelines in the editor, under the Code field. Open that file with a double click,
+   paste the fragment or choose its file, and press Show. It is generated from the same shell as the
+   hub, so it runs the fragment in the same sandboxed frame under the same policy, and it lets you
+   switch what the hub would switch for you: **Italian or English**, a **light page, a dark page or a
+   dark section**, a reader who asked for **reduced movement**, and a **360 px** phone. Anything the
+   browser refuses, and any error the fragment throws, is listed underneath — the same lines the hub
+   shows the staff.
+
+If you are an assistant writing a fragment for somebody: produce the fragment only, and tell them to
+open it in the local preview or in a draft. Do not make a second, standalone page that recreates the
+shell by hand; it will be wrong in some detail the moment the shell changes, and the preview already
+exists.
+
+⚠️ **Never give the fragment a `HUB` of its own** — a line such as `var HUB = window.HUB || { … }` to
+make the file open by itself. It is a second definition of the contract, copied into every animation,
+and it goes stale the day the shell grows a field. Worse, it hides the one fault worth seeing: a
+fragment that ended up somewhere the shell is not wrapping it would quietly "work" instead of failing
+and saying so.
+
 ## What is required, not suggested
 
 1. **Both languages.** Every word you draw goes through `HUB.t({ en: …, it: … })`. A reader of the
