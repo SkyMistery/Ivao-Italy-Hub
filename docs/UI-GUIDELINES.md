@@ -424,6 +424,18 @@ already. So a hero's overline stays the secondary grey and the colour becomes a 
 family is a light/dark pair (`text-… dark:text-…`), which is what makes an accent work inside a dark
 ground without a second decision.
 
+**The interactive block is the one block whose content is somebody's code**, and its rules are
+different in kind rather than in degree. The code lives on the block's **envelope** (`source`), never
+in `props`, because the server reads it to serve the frame and the server never reads inside `props`.
+It runs in a frame served by `/embed/{content}/{version}/{block}` with a policy of its own —
+`default-src 'none'`, `sandbox allow-scripts`, an opaque origin — so it can draw and answer clicks
+and can do nothing else: no network, no storage, no access to the page around it. Whatever it tries
+and is refused, and any error it throws, is drawn under it **for the staff only**. The rules an
+author follows — what to write, how it should look, how to see it before publishing — are not in this
+file: they are served by the hub at `/embed/guidelines`, generated from the very shell that wraps
+the code, beside a local preview at `/embed/preview`. If you fork this and change the shell, those
+two change with it; that is the point of generating them.
+
 While a page is being composed, every column of a section is drawn with a dashed outline and an
 empty one says where a component would go; choosing it sends the next component of the palette
 there. None of it exists for a visitor — it is the picking context of `blocks/picking.ts`, which the

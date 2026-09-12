@@ -3,52 +3,53 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 12 settembre 2026, mattina — scritto per chi apre una chat nuova.
+**Ultimo aggiornamento:** 12 settembre 2026, sera — scritto per chi apre una chat nuova (Carmine ha
+svuotato la chat qui).
 
-> **Per chi apre adesso — tre PR aperte, impilate, tutte verdi in locale:**
+> **Per chi apre adesso — sei PR aperte, impilate una sull'altra, tutte e sei verdi in CI.** Nessuna
+> è mergiata; `main` è ancora a G15.
 >
-> 1. **PR #59 `m1/g14-operational-document` → `main`**: G14, il documento operativo (il paragrafo
->    «G14» più sotto). CI **verde** dopo un fix di isolamento dei test (un secondo coordinatore ATC
->    nel DB condiviso rompeva `ContactsAndNotificationsTests`; ora il test del job usa Special Ops).
-> 2. **PR #60 `m1/media-dedupe` → `m1/g14-operational-document`**: due immagini identiche sono un
->    file (il paragrafo subito dopo G14). **Sopra la #59 e non da `main`** perché tutte e due
->    aggiungono una migrazione EF e due snapshot da `main` avrebbero litigato.
-> 3. **PR #61 `m1/site-colour` → `m1/media-dedupe`**: il sito ha un colore (il paragrafo dopo
->    ancora). Sopra la #60 perché tocca il piano, `blocks.tsx` e `schemas.ts`, che le altre due hanno
->    già mosso. Nessuna migrazione. CI **verde** (6m44s), comprese le 172 di integrazione che qui non
->    erano state eseguite.
-> 4. **PR #62 `m1/demo-card` → `m1/site-colour`**: la scheda della demo rimessa in pari (Parte 7
->    riscritta, il documento operativo nella Parte 2, i conti della Parte 3) e il **tag che cambia
->    significato**. Solo documentazione. CI **verde**.
-> 5. **PR #63 `m1/security-headers` → `m1/demo-card`**: gli header di sicurezza e la CSP, che l'hub
->    non aveva affatto. CI **verde**. È il primo dei due pezzi del blocco interattivo.
-> 6. **PR #64 `m1/interactive-block` → `m1/security-headers`**: il blocco interattivo, **tutti e
->    cinque i passi**. Guardarlo ha trovato due cose che i test non vedevano: quattro schermate su
->    cinque non fornivano il contesto (una pagina qualunque non disegnava nessun frame) e il frame si
->    dipingeva un fondo nero sopra le sezioni scure. Il giro contro l'**API vera**
->    (`e2e/full/interactive.spec.ts`) non è stato eseguito qui — Docker non si avvia su questa
->    macchina — ma **la CI l'ha eseguito, verde**. CI verde in tutto: **487 .NET**, 66 smoke, **18 del
->    giro pieno**.
+> | PR | Branch → base | Che cosa porta | Paragrafo qui sotto |
+> |---|---|---|---|
+> | **#59** | `m1/g14-operational-document` → `main` | G14, il documento operativo (LoA/SOP), migrazione `AddOperationalDocument` | «G14» |
+> | **#60** | `m1/media-dedupe` → #59 | due immagini identiche sono un file, migrazione `AddMediaSha256` | subito dopo G14 |
+> | **#61** | `m1/site-colour` → #60 | il sito ha un colore: titoli, fondo azzurro, `aurora`, accento dei blocchi | «Il sito ha un colore» |
+> | **#62** | `m1/demo-card` → #61 | la scheda della demo rimessa in pari, e **il tag cambia significato** | — (solo documenti) |
+> | **#63** | `m1/security-headers` → #62 | **header di sicurezza e CSP** — l'hub non ne mandava nessuno | «Gli header di sicurezza» |
+> | **#64** | `m1/interactive-block` → #63 | **il blocco interattivo**, finito, più tutto quello che è emerso usandolo | «Il blocco interattivo» |
 >
-> **Ordine di merge** (memoria `stacked-pr-base-deletion`): una alla volta dal basso — mergiare la
-> #59, ritargettare la #60 su `main` (`gh pr edit 60 --base main`), mergiare la #60, e così la #61,
-> la #62, la #63 e la #64, **solo dopo** cancellare i sei branch remoti. Cancellare il branch base insieme alla PR che ci
-> sta sopra chiuderebbe quest'ultima per sempre. Carmine mergia da sé; se delega, è questa sequenza.
+> Impilate e non da `main` perché si toccano: #59 e #60 aggiungono tutte e due una migrazione EF (due
+> snapshot da `main` avrebbero litigato), e dalla #61 in su ognuna tocca il piano e `blocks.tsx`.
 >
-> **Sulla macchina di Carmine**: l'API su `:5000` gira con il codice della #60 e le due migrazioni
-> (`AddOperationalDocument`, `AddMediaSha256`) sono applicate al DB di sviluppo; il DB ha un
-> documento di prova `lirf-twr-sop-test` (id 19, AOD, pubblicato con AIRAC 2609) da cancellare
-> quando si vuole. Il tag **`v0.2.0-m1` non è messo, e ha cambiato significato** (Carmine, 12
-> settembre: «vorrei che la 0.2 significasse editor di documenti e news pronto»): non è più «M1
-> costruita», è l'editor pronto — piano 0.68, e l'elenco di che cosa manca sta lì, da confermare.
-> La scheda `tools/demo-m1.md` è **aggiornata al 12 settembre** (Parte 7 rifatta, il documento
-> operativo nella Parte 2): resta da rieseguirla.
+> **Ordine di merge** (memoria `stacked-pr-base-deletion`): una alla volta **dal basso** — mergiare la
+> #59; `gh pr edit 60 --base main`; mergiare la #60; e così via fino alla #64. **Solo alla fine**
+> cancellare i sei branch remoti: cancellare un branch base mentre una PR ci sta sopra la chiude per
+> sempre. Carmine mergia da sé; se delega, è questa sequenza.
 >
-> **Piccole cose lasciate indietro, tutte scritte nel piano**: l'interruttore «da rivedere» nella
-> lista dei documenti (il filtro `filter[reviewDue]` c'è, la schermata non lo chiede); la stampa
-> verificata dal test e non a occhio su carta; le righe della libreria caricate prima del 12
-> settembre non hanno impronta (mezz'ora di job, se serve); il METAR sull'API IVAO
-> (`/v2/airports/{icao}/metar`) non è stato guardato.
+> **Sulla macchina di Carmine, adesso**: Docker Desktop acceso (container `ivaohub-mariadb` e
+> `ivaohub-mailpit`), l'**API su `:5000`** (`dotnet run --project src/IvaoHub.Web`) e la **SPA su
+> `:5173`** (`pnpm dev`), tutte e due sul codice di `m1/interactive-block`. Il DB di sviluppo ha le due
+> migrazioni applicate e un documento di prova `lirf-twr-sop-test` (id 19, AOD, AIRAC 2609) da
+> cancellare quando si vuole. ⚠️ Due cose che costano mezz'ora se non si sanno: **l'API in
+> esecuzione blocca le DLL**, quindi va fermata prima di `dotnet build` (`Stop-Process -Name
+> IvaoHub.Web`); e il **guscio, le linee guida e l'anteprima** del blocco interattivo sono **risorse
+> compilate nell'assembly**, quindi dopo averli cambiati serve ricompilare **e riavviare** l'API per
+> vederli. Docker da questa sessione **non si avvia**: serve il clic di Carmine su Docker Desktop.
+>
+> **Il tag `v0.2.0-m1` non è messo, e ha cambiato significato** (piano 0.68): vuol dire **«editor di
+> documenti e news pronto»**, non «M1 costruita». **L'elenco di che cosa manca l'ha confermato
+> Carmine** («l'elenco mi torna»): la scheda riseguita da capo; l'interruttore «da rivedere» nella
+> lista dei documenti; il **gruppo richiudibile** nel generatore di form; la stampa guardata su carta
+> e la tipografia delle schermate dense a occhio. **Restano da decidere se dentro o fuori**: la
+> pubblicazione programmata (nota del 9 settembre, tre domande aperte) e **il blocco interattivo**
+> — che ora è costruito, quindi la domanda è solo se il tag lo aspetta. ⚠️ La scheda
+> `tools/demo-m1.md` è in pari al 12 settembre mattina ma **non nomina ancora il blocco interattivo**
+> né gli header di sicurezza: da aggiungere prima di rieseguirla.
+>
+> **Piccole cose lasciate indietro, tutte scritte nel piano**: la stampa del documento operativo
+> verificata dal test e non su carta; le righe della libreria caricate prima del 12 settembre non
+> hanno impronta (mezz'ora di job, se serve); il METAR sull'API IVAO (`/v2/airports/{icao}/metar`)
+> non è stato guardato.
 
 **G14 e la deduplica, il 12 settembre**: G14 è costruita sul branch `m1/g14-operational-document`
 (cinque commit, PR #59), e **due immagini identiche sono un file** sul branch `m1/media-dedupe`
@@ -115,18 +116,14 @@ riaperto e cambiato). **Design M1:** v1.15
 G0–G15): **da G0 a G12 sono chiuse** (§14–§27); **G13** (§28) raccoglie le rifiniture del collaudo,
 tutte fatte; **G15** (l'editor che risponde) e **G14** (il documento operativo) sono costruite, la
 prima su `main`, la seconda sulla PR #59 — il tag viene dopo che Carmine ha rieseguito la scheda.
-**Test, misurati il 12 settembre su `m1/site-colour` (sopra la deduplica, sopra G14):** **306 .NET
-unit** + **375 Vitest** (quattro nuovi: i quattro accenti, e la striscia che offre ogni fondo con un
-nome) + **58 smoke Playwright** (due nuovi: i titoli del sito nel tema chiaro, il testo sul fondo
-azzurro), **62 dal pomeriggio** con i quattro degli header, + **17 del giro pieno**, non rieseguito
-dopo il colore. Con il blocco interattivo, misurati in CI il 12 settembre sera: **487 .NET**
-(309 unit + 178 integrazione), **383 Vitest**, **66 smoke**, **18 del giro pieno** — e quel giro ora
-contiene l'animazione servita dall'endpoint vero. ⚠️ Da qui in poi **la suite smoke gira sotto la CSP vera**: la preview di Vite manda
-gli stessi header del backend, letti dallo stesso `config/security.json`. ⚠️ Le **172 di
-integrazione** non sono state eseguite in locale il 12 settembre pomeriggio (Docker spento): sulla
-`m1/media-dedupe` erano verdi, il colore tocca una riga di C# (un valore in più in
-`BlockDocumentWalker.Backgrounds`) e gli header ne aggiungono **due** (`SecurityHeadersTests`). Le fa
-la CI: verde sulla #61 e sulla #62.
+**Test, misurati il 12 settembre sera su `m1/interactive-block` (in cima alla pila), tutti in locale
+con Docker acceso e di nuovo in CI:** **488 .NET** (309 unit + **179 integrazione, la suite intera e
+non un filtro**) + **387 Vitest** + **70 smoke Playwright** + **18 del giro pieno**. ⚠️ Da G14 in poi
+**la suite smoke gira sotto la CSP vera**: la preview di Vite manda gli stessi header del backend,
+letti dallo stesso `config/security.json`. ⚠️ **Una classe di integrazione nuova va eseguita anche
+da sola**, oltre che con tutte le altre (memoria `integration-tests-share-one-database`): il 12 sera
+`EmbedFrameTests` era verde in CI **per la ragione sbagliata** — usava un VID che un'altra classe
+crea come superadmin — e da sola falliva tre test su cinque.
 ⚠️ Nel giro pieno compaiono a volte, nel log del server, errori di **connessione al DB** su
 `/api/blocks/data/*` (500 su `newsList` e `linkList`) senza che nessun test cada: visti due volte l'11
 settembre, la prima al primo giro della giornata. Non indagati; da guardare se un test dei blocchi
@@ -303,6 +300,34 @@ non lo vedevano perché scrivono i corpi direttamente nel database. Ora `CoreBlo
 test di architettura legge `CORE_BLOCK_TYPES` dal TypeScript e lo confronta con la lista del server:
 fallisce in un secondo dove il banco ci metteva sei minuti. E il confine da ricordare: il
 widget è interattivo **dentro la sua scatola**, non cambia il testo intorno e non ricorda niente.
+
+**Poi, la sera, Carmine l'ha usato davvero** — ha scaricato le linee guida, le ha date a un altro
+agente con un suo prompt, e ha portato indietro i risultati. Tutto quello che è emerso è costruito,
+sulla stessa PR #64:
+
+- **le linee guida hanno una sezione di stile** («How it should look»): che mestiere ha ogni variabile
+  di colore (`--ocean` la rotta, `--artifice` ciò che si muove…) e **quattro colori al massimo**,
+  tratti e testo **in proporzione alla larghezza del `viewBox`** (non più «400 × 240» fisso: un
+  circuito con tre miglia di finale non ci sta), una figura per blocco, i controlli sotto, **8–15
+  secondi** per un circuito, e le **convenzioni di un disegno d'aeroporto** (pista orizzontale con le
+  sigle agli estremi, nord in alto altrove, quote con l'unità, una posizione è il suo callsign). Una
+  **striscia di valori** (fase, quota, distanza) è ammessa e utile; e che cosa fare quando la richiesta
+  **si contraddice** («circuito sinistro» e «vira a destra»): si disegna quello del documento e la
+  legenda lo dice. L'esempio della 09/27 è stato corretto perché **violava le regole del file stesso**;
+- **le cose vietate si denunciano da sole**: il guscio ascolta `securitypolicyviolation` e
+  `window.onerror` e li manda alla pagina, che li scrive sotto l'animazione **solo per lo staff**.
+  Scartato, con la ragione nella nota: cercare `fetch(` nel codice al salvataggio — un'euristica che
+  grida al lupo;
+- **il codice arriva anche da un file**, letto nel browser e **mai caricato**; una pagina intera
+  (`<!doctype`) è rifiutata **sia scelta sia incollata** — incollata all'inizio passava;
+- **l'anteprima locale**: `/embed/preview` scarica un HTML **generato dallo stesso guscio** che fa
+  girare un frammento in un frame sandbox da disco, con lingua, tre fondi, movimento ridotto, 360 px e
+  l'elenco dei rifiuti. Le linee guida dicono le **due** strade (una bozza, o questo file) e **vietano
+  il ripiego `var HUB = window.HUB || {…}`** nel frammento;
+- ⚠️ **in sviluppo `/embed` tornava `index.html`**: mancava da `BACKEND_PATHS`, la lista dei percorsi
+  che Vite passa al backend — **la stessa trappola di `/media`**, trovata allo stesso modo da Carmine
+  (scaricando le linee guida). Aggiunto, e `devProxy.test.ts` lo nomina. **Ogni percorso nuovo del
+  backend che non sta sotto `/api` va in quella lista.**
 
 **Da decidere prima di scrivere codice:**
 

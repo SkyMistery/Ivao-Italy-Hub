@@ -9,7 +9,9 @@ l'animazione.
 **Stato:** **deciso da Carmine il 12 settembre**, sulle tre domande che gli ho messo davanti:
 **(C)** un endpoint che serve il frame, non un `srcdoc`; in **stampa** la sezione si chiude e non
 occupa spazio («un banner non serve a nulla»); **permesso dedicato**. Piano 0.70. Viene **dopo**
-`2026-09-12-gli-header-di-sicurezza.md`, che è il pezzo su cui poggia.
+`2026-09-12-gli-header-di-sicurezza.md`, che è il pezzo su cui poggia. **Costruito per intero lo
+stesso giorno** (PR #64), e **la sera usato davvero** da Carmine con un altro agente: quello che è
+emerso è in fondo, «Usato davvero», e nel piano 0.71.
 
 ## I due casi d'uso, che sono il perimetro
 
@@ -171,6 +173,70 @@ Data catturato. Un visitatore non vede niente: non è la sua animazione da ripar
 nel codice al salvataggio. Prenderebbe l'errore onesto prima che qualcuno guardi, ma è un'euristica
 su del codice — si aggira con due stringhe concatenate e grida al lupo su un commento. Un avviso che
 grida al lupo è un avviso che si impara a ignorare. Si riapre solo se vediamo che succede davvero.
+
+## Usato davvero (12 settembre, sera)
+
+Carmine ha scaricato le linee guida e le ha date a un altro agente con un prompt suo: una pista
+09/27, un pallino con accanto il nominativo IIVAO, circuito sinistro per la 09, finale a 3 NM con una
+linea graduata a tacche di un miglio. Ha portato indietro il frammento, e **anche quello uscito dallo
+stesso prompt senza le nostre istruzioni**, chiedendo se il risultato deludente fosse colpa nostra.
+
+**Non lo era.** Il frammento scritto con le linee guida **le rispettava tutte** — quattro colori, i
+tratti, i controlli sotto, due lingue, dodici secondi, e il finale rollato esattamente sulla tacca dei
+3 NM. Le due cose che mancavano venivano dal prompt e dall'agente: il prompt chiedeva insieme un
+circuito **sinistro** e una virata **a destra** dopo la soglia (due circuiti opposti — l'agente ha
+tenuto quello esplicito e offerto l'altro come pulsante), e la **partenza** non era disegnata come
+fase. Quello libero era più ricco — striscia con fase/quota/distanza, frecce, velocità, cursore — e
+**nell'hub non sarebbe entrato**: pagina intera, font da Google, una tavolozza sua, una lingua sola.
+
+Da lì, tutto costruito sulla stessa PR:
+
+- **Una sezione di stile nelle linee guida.** Mancava del tutto: dicevano cosa non fare e non come
+  disegnare, e venti animazioni scritte in due anni da persone diverse divergono lì. Ogni variabile di
+  colore ha un mestiere, quattro colori al massimo, mai il colore da solo; tratti e testo **in
+  proporzione alla larghezza** del `viewBox` (la prima versione diceva «400 × 240», e un circuito con
+  tre miglia di finale lì dentro ha una pista lunga 40 unità); una figura per blocco, controlli sotto,
+  niente scorrimento; 8–15 secondi per un circuito, una cosa che si muove per volta; le **convenzioni
+  di un disegno d'aeroporto** — pista orizzontale con 09 a sinistra, nord in alto altrove, quote con
+  l'unità, prue a tre cifre, una posizione è il suo callsign. Una **striscia di valori** è ammessa, ed
+  è la cosa che il frammento libero faceva meglio. E **una richiesta che si contraddice** si risolve
+  disegnando quello del documento e dicendolo nella legenda, mai metà e metà. ⚠️ **L'esempio della
+  09/27 violava le regole scritte due sezioni sopra** (controlli sopra il disegno, giunzioni non
+  arrotondate, codice morto, e un salto dell'aeroplano ripartendo dopo una pausa): corretto, perché è
+  la parte che viene copiata.
+- **Il guscio non promette più un font che non può avere.** `default-src 'none'` blocca il file di un
+  font, anche nostro: «Nunito Sans» era vero solo dove è installato. Ora `system-ui`, e le linee guida
+  ne traggono la conseguenza — poche parole dentro il disegno, la prosa nel documento.
+- **Le cose vietate si denunciano da sole.** Alla domanda «ce ne accorgeremo?» le risposte erano tre:
+  i byte sì, rete e storage no — il browser li ferma e il rifiuto muore nella console del frame. Il
+  guscio ascolta `securitypolicyviolation` (un fatto, non un'ipotesi sul codice) e `window.onerror`, e
+  la pagina li scrive **solo allo staff**. ⚠️ **Scartato**, e scritto qui perché non si riproponga:
+  cercare `fetch(`, `localStorage`, `https://` nel codice al salvataggio — si aggira con due stringhe
+  concatenate e scatta su un commento, e un allarme che grida al lupo si impara a ignorare.
+- **Il codice da un file del computer**, letto nel browser e mai caricato: il frammento resta un campo
+  della riga, e un file sul server sarebbe l'opzione (B), scartata per prima. ⚠️ Una pagina intera
+  (`<!doctype`, `<html>`) era rifiutata **scelta** e accettata **incollata**: ora da tutte e due.
+- **Vederlo prima di pubblicarlo.** L'altro agente non poteva: `HUB` è del guscio, quindi il frammento
+  aperto da solo si ferma alla prima riga — ed è giusto. Si era costruito una pagina che copiava il
+  guscio a mano, e proponeva un `HUB` di ripiego nel frammento. Le linee guida ora dicono le **due**
+  strade — **una bozza**, che è privata per costruzione ed è l'anteprima più fedele, oppure
+  **l'anteprima locale** `/embed/preview`, un HTML generato dallo stesso guscio che gira da disco con
+  lingua, tre fondi, movimento ridotto, 360 px e i rifiuti elencati — e **vietano il ripiego**: una
+  seconda copia del contratto che invecchia e nasconde proprio l'errore di un guscio assente.
+  L'anteprima è un **download e mai una pagina del sito**, e il guscio ci entra come stringa JSON con
+  i `<` escapati, perché i suoi `</script>` scritti crudi chiuderebbero a metà lo script dell'anteprima.
+
+Trovati per strada:
+
+- ⚠️ **In sviluppo `/embed` tornava `index.html`**: mancava da `BACKEND_PATHS`, e Vite rispondeva con
+  la SPA — un 200 della cosa sbagliata, per le linee guida e, in silenzio, per ogni frame. **La stessa
+  trappola di `/media`**, trovata allo stesso modo da Carmine. Un percorso del backend che si legge
+  come una pagina è quello che ci si dimentica.
+- ⚠️ **Un test d'integrazione verde per la ragione sbagliata.** `EmbedFrameTests` usava il VID 640001,
+  che `DataBlockEndToEndTests` crea come **superadmin** nel database condiviso; in CI quella classe
+  girava prima, e ogni verifica su chi può vedere una bozza passava a prescindere — perfino con una
+  posizione inesistente (`IT-WC`; il coordinatore web è `IT-WM`). Da sola, la classe falliva tre test
+  su cinque.
 
 ## Che cosa **non** si fa
 

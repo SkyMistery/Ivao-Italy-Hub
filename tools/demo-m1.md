@@ -1,6 +1,6 @@
 # Demonstrating M1
 
-> Updated to **12 September 2026** — so it covers G13 and the twelve requests the first run of this
+> Updated to **12 September 2026, evening** — so it covers G13 and the twelve requests the first run of this
 > sheet produced, then G15 (the editor that answers), G14 (the operational document), and the colour.
 > A working translation lives in `docs/internal/demo-m1.md`; this one is the official version, and it
 > is in English because whoever forks the hub has to be able to read it (CLAUDE.md section 1). If one
@@ -278,6 +278,22 @@ accents, drawn on an icon, on the rule above a card, on the bar above a hero —
 because a graphic needs 3 : 1 of its ground and a word needs 4.5 : 1. Headings are no longer the pale
 grey Atmosphere paints them.
 
+**And the interactive block, 12 September** — the one block whose content is somebody's code. Sign
+in again first (its permission, `Content.EmbedCode`, is new and permissions are computed at sign
+in), then find **Interactive drawing** under Content → Media.
+
+1. Under the generated form there is a **Code** box, a byte count, **choose a file from your
+   computer** (read in the browser, never uploaded), and two downloads: **the guidelines** you hand
+   to whoever writes the animation, and **the local preview**, which runs a fragment from your own
+   disk in the same sandboxed frame. Both are generated from the shell the hub wraps the code in.
+2. Paste the worked example out of the guidelines and save: the frame shows the **saved draft**, which
+   only editors of the page can see. Put the section on a dark ground — the frame stays transparent
+   and its ink turns light — then switch the theme, narrow the window to a phone, and print: the
+   frame folds away and the description stays.
+3. ⚠️ Now paste a line that calls `fetch(...)` and save. The browser refuses it, and **a line under
+   the animation names what was refused** — shown to the staff and to nobody else. Paste a whole web
+   page instead of a fragment: refused, with the reason, whether pasted or chosen as a file.
+
 - [ ] **Point 7a** — a template never rewrites a page by itself, and the editor says so.
       Asserted by `e2e/full/template.spec.ts`.
 
@@ -321,8 +337,14 @@ pnpm e2e                                    # Chromium against the production bu
 pnpm e2e:full                               # the published application, real API, real database
 ```
 
-Expect **471 .NET tests** (306 unit, 165 integration against a real MariaDB 11.4.10), **279
-Vitest**, **52 Playwright smokes** and **12 of the full round**. None is skipped.
+Expect **488 .NET tests** (309 unit, 179 integration against a real MariaDB 11.4.10), **387
+Vitest**, **70 Playwright smokes** and **18 of the full round** (counted on 12 September 2026). None
+is skipped.
+
+⚠️ **The smoke suite runs under the real content security policy.** `config/security.json` is read by
+the backend *and* by Vite's preview server, so every one of those tests would fail on a directive the
+application cannot live with; `e2e/security.spec.ts` also watches the console and fails on a single
+refusal, because a blocked stylesheet fails no other assertion.
 
 ⚠️ `dotnet test --solution` has been seen on Windows to report "Zero tests ran" with exit code 5
 **in both configurations** — Release does not avoid it — while the very same binaries pass

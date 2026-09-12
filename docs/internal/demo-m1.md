@@ -292,6 +292,23 @@ disegnato su un'icona, sul filetto sopra una scheda, sulla barretta sopra un her
 parola, perché un grafico deve stare a 3 : 1 dal suo fondo e una parola a 4,5 : 1. E i titoli non sono
 più il grigio pallido che Atmosphere gli dà.
 
+**E il blocco interattivo, 12 settembre** — l'unico blocco il cui contenuto è codice scritto da
+qualcuno. Prima rifai il login (il suo permesso, `Content.EmbedCode`, è nuovo e i permessi si
+calcolano all'accesso), poi trovi **Disegno interattivo** in Content → Media.
+
+1. Sotto il form generato c'è la casella **Codice**, il conto dei byte, **scegli un file dal
+   computer** (letto nel browser, mai caricato), e due download: **le linee guida** da dare a chi
+   scrive l'animazione, e **l'anteprima locale**, che fa girare un frammento dal tuo disco nello stesso
+   frame sandbox. Tutte e due sono generate dal guscio in cui l'hub avvolge il codice.
+2. Incolla l'esempio delle linee guida e salva: il frame mostra la **bozza salvata**, che vedono solo
+   gli editor di quella pagina. Metti la sezione su un fondo scuro — il frame resta trasparente e
+   l'inchiostro diventa chiaro — poi cambia tema, stringi la finestra a telefono, e stampa: il frame
+   sparisce e la descrizione resta.
+3. ⚠️ Adesso incolla una riga che chiama `fetch(...)` e salva. Il browser la rifiuta, e **una riga
+   sotto l'animazione nomina quello che è stato rifiutato** — la vede lo staff e nessun altro. Incolla
+   una pagina web intera invece di un frammento: rifiutata, con la ragione, sia incollata sia scelta
+   come file.
+
 - [ ] **Punto 7a** — un template non riscrive mai una pagina da solo, e l'editor lo dice.
       Asserito da `e2e/full/template.spec.ts`.
 
@@ -350,8 +367,14 @@ cd web && pnpm e2e
 cd web && pnpm e2e:full
 ```
 
-Aspettati **471 test .NET** (306 unit, 165 di integrazione contro una MariaDB 11.4.10 vera), **279
-Vitest**, **52 smoke Playwright** e **12 del giro pieno**. Nessuno skippato.
+Aspettati **488 test .NET** (309 unit, 179 di integrazione contro una MariaDB 11.4.10 vera), **387
+Vitest**, **70 smoke Playwright** e **18 del giro pieno** (contati il 12 settembre 2026). Nessuno è
+saltato.
+
+⚠️ **La suite smoke gira sotto la content security policy vera.** `config/security.json` lo legge il
+backend *e* il server di preview di Vite, quindi ognuno di quei test cadrebbe su una direttiva con cui
+l'applicazione non può vivere; e `e2e/security.spec.ts` guarda anche la console e fallisce a un solo
+rifiuto, perché un foglio di stile bloccato non fa cadere nessun'altra asserzione.
 
 ⚠️ **Correzione:** `dotnet test --solution` su questa macchina dice «Zero tests ran» con uscita 5
 **in tutte e due le configurazioni** — Release non lo evita, come questa scheda diceva prima — mentre
