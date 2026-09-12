@@ -55,6 +55,100 @@ gives it that room. Do not set a height on `body`.
    paper: **printing folds the frame away**, so a document whose meaning depends on the animation
    must say that meaning in the description or in the text above it.
 
+## How it should look
+
+These are not suggestions about taste. Twenty of these will be written over the years by different
+people, and they have to read as one family — the way every other part of this hub does, because it
+is all drawn from one design system. A frame cannot use that design system (it has no stylesheet of
+ours and no network), so the rules it would have given you are written out here.
+
+### Colour means something
+
+Nine variables, and each has a job. Using them for anything else is how two animations end up
+disagreeing about what orange means.
+
+| Variable | What it is for |
+| --- | --- |
+| `--ink` | Anything a reader reads: labels, numbers, the outline of a fixed thing |
+| `--ink-quiet` | Structure that is context rather than subject — a runway, a coastline, a grid |
+| `--line` | Hairlines, ticks, the edge of a box |
+| `--ocean` | The **route**: a path, a circuit, a track, the thing being explained |
+| `--artifice` | The **moving** thing, and only it: an aircraft, a vehicle, the token that travels |
+| `--aurora` | A second route or a second party, when one drawing holds two |
+| `--brand` | Rarely, and never as decoration: something that **is** the division — a mark, the title of the figure. A drawing of a procedure is not a place for a brand colour |
+| `--ok` `--warn` `--stop` | Only where the colour **is** the meaning: cleared, caution, refused. Never decoration |
+
+⚠️ **At most four colours in one drawing**, counting the ink. More than that and nobody reads the
+legend; they guess, and on a procedure a guess is the fault this block exists to avoid. And never
+colour alone: whatever a colour tells a reader, a label or a shape has to tell them too — a
+controller who cannot tell your green from your orange still has to be able to use the picture.
+
+### Lines, shapes and size
+
+- Draw in an **SVG with a `viewBox`** and no width or height in pixels. 400 × 240 is a good default:
+  it fills a reading column and still reads on a phone.
+- **Stroke 2** for the subject, **1.5** for structure, **1** for hairlines — in `viewBox` units, on a
+  400-wide canvas. Below 1 a line disappears when the frame is scaled down.
+- **Dashes mean "not a thing, a path"**: `stroke-dasharray="6 4"` for a route or an intention, solid
+  for something that physically exists.
+- **Text inside the drawing is 11 to 14 units** on that same canvas, never smaller, and it is
+  **the reader's system font** — the frame cannot load ours. So: few words, short words, no
+  sentences. Prose belongs to the document above the block, which is written in the site's own type
+  and is the part that reaches search and paper.
+- **Rounded joins** (`stroke-linejoin="round"`), because an aviation drawing is full of corners and
+  square joins read as noise at small sizes.
+
+### Layout
+
+- **One figure per block.** Two ideas are two blocks; the page is what puts them in order.
+- **Controls under the drawing**, in a row, wrapping on a narrow screen. A control is a `<button>`,
+  at least 44 px tall including its padding, with `aria-pressed` when it is a choice among several.
+- **Nothing scrolls inside a frame.** If it does not fit, the drawing is too big: make the `viewBox`
+  wider, not the frame taller.
+- **A legend only when a symbol is not obvious**, and then as text beside the drawing rather than
+  floating on it.
+
+### Movement
+
+- **Slow.** A circuit takes 8 to 15 seconds to fly; anything faster reads as a flicker and teaches
+  nothing. Loop it, and give a **stop** control when it loops.
+- **One thing moves at a time.** Two aircraft moving together are a diagram of chaos unless the
+  point *is* the two of them.
+- `HUB.reducedMotion` is not a preference to honour when convenient: when it is true, draw the end
+  state — the aeroplane on the downwind leg, the traffic where the text is talking about — and stop.
+- No easing tricks, no bounce, no fade-in of the whole picture. What moves is what the document is
+  explaining.
+
+### What a picture of an airfield says
+
+These conventions come from the documents this block lives in, so that two SOPs never draw the same
+thing two ways:
+
+- **The runway is horizontal** in a circuit drawing, with its designators at both ends (`09` on the
+  left, `27` on the right). Do not rotate it to true north: the reader is following a procedure, not
+  navigating.
+- **North up** in anything that is not a circuit — an airspace, a sector, a taxi route — with a small
+  north mark.
+- **Altitudes carry their unit** (`1500 ft`), headings are three digits (`090`), frequencies carry
+  three decimals (`118.700`). The same as the document says them, word for word.
+- **A position is its callsign** as the document writes it (`LIRF_TWR`), never "the tower".
+
+### Never
+
+Gradients, shadows, glows, 3D, drop caps, photographs, textures, more than four colours, text under
+11 units, a hairline under 1, an animation that is the only place some information appears.
+
+### Before you hand it over
+
+- [ ] Every word goes through `HUB.t` and exists in both languages.
+- [ ] Every choice is a `<button>`, reachable by tab, marked with `aria-pressed`.
+- [ ] `HUB.reducedMotion` draws a still picture that still makes the point.
+- [ ] It reads at 360 px wide and in the dark (try `HUB.dark`).
+- [ ] Four colours at most, each doing the job the table above gives it.
+- [ ] Nothing in it fetches anything.
+- [ ] Under 64 KB.
+- [ ] The drawing agrees with the text above it.
+
 ## What you must not do
 
 - No network of any kind — no fonts, no images from elsewhere, no analytics, no `fetch`.

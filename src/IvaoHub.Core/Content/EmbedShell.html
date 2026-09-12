@@ -81,7 +81,14 @@
         /* Transparent on purpose: the section behind the frame is what a reader sees around it. */
         background: transparent;
         color: var(--ink);
-        font-family: 'Nunito Sans', system-ui, sans-serif;
+        /*
+          ⚠️ The reader's own font, and not the division's. `default-src 'none'` means this document
+          cannot fetch a font file — not even one of ours — so naming Nunito Sans here would have
+          been true on the machines that happen to have it installed and a lie on every other. The
+          guidelines say the consequence out loud: words inside an animation are few and short, and
+          prose belongs to the document around it.
+        */
+        font-family: system-ui, sans-serif;
         font-size: 16px;
         line-height: 1.5;
       }
