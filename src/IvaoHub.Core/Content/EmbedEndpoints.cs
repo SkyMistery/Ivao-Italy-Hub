@@ -85,10 +85,21 @@ public static class EmbedEndpoints
         IAuthorizationService authorization,
         HttpContext http)
     {
-        // The row first, through the context: the global query filter has already decided whether
-        // whoever is asking may see this page at all, so a members-only page cannot leak its
-        // animation to somebody who could not read the page it belongs to.
-        var content = await database.Contents
+        var draft = string.Equals(version, DraftVersion, StringComparison.Ordinal);
+
+        // ⚠️ Two reads, and the difference is the whole of who may see what.
+        //
+        // **Published**: through the context, so the global query filter answers first — it hides a
+        // row that is not published and a row whose visibility excludes whoever is asking, which is
+        // why a members-only page cannot leak its animation to somebody who could not read the page.
+        //
+        // **Draft**: `IgnoreQueryFilters`, because that same filter hides every unpublished row from
+        // everybody, editors included — a page being written for the first time has no published
+        // version at all, and its author has to see the frame they are composing. What takes the
+        // filter's place is the authorization handler below, asked the question the back office asks
+        // of every row, and it is the only thing standing there. Measured by `EmbedFrameTests`: a
+        // signed in member of another department gets a 403 and not a document.
+        var content = await (draft ? database.Contents.IgnoreQueryFilters() : database.Contents)
             .AsNoTracking()
             .FirstOrDefaultAsync(row => row.Id == contentId, http.RequestAborted);
 
@@ -98,7 +109,6 @@ public static class EmbedEndpoints
         }
 
         string? body;
-        var draft = string.Equals(version, DraftVersion, StringComparison.Ordinal);
 
         if (draft)
         {

@@ -76,6 +76,12 @@ public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var token = TestContext.Current.CancellationToken;
         var content = await SeedAsync(publish: false, cancellationToken: token);
 
+        // ⚠️ The row of this test is a **draft that has never been published**, which is the case the
+        // first version of this endpoint got wrong: the global query filter hides an unpublished row
+        // from everybody, its own author included, so reading a draft has to go past the filter and
+        // lean on the handler alone. CI said so — the stranger was getting a 404 because nobody could
+        // see the row at all, which would have meant an author cannot see the frame they are writing.
+
         // Somebody of another department: signed in, staff, and none of this is theirs.
         using var stranger = _factory.CreateApiClient();
         await _factory.SignInAsync(stranger, OtherDepartmentVid, token);
