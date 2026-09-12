@@ -109,10 +109,13 @@ prima su `main`, la seconda sulla PR #59 — il tag viene dopo che Carmine ha ri
 **Test, misurati il 12 settembre su `m1/site-colour` (sopra la deduplica, sopra G14):** **306 .NET
 unit** + **375 Vitest** (quattro nuovi: i quattro accenti, e la striscia che offre ogni fondo con un
 nome) + **58 smoke Playwright** (due nuovi: i titoli del sito nel tema chiaro, il testo sul fondo
-azzurro) + **17 del giro pieno**, non rieseguito dopo il colore. ⚠️ Le **172 di integrazione** non
-sono state eseguite in locale il 12 settembre pomeriggio (Docker spento): sulla `m1/media-dedupe`
-erano verdi, e l'unica riga di C# che il colore tocca è un valore in più in
-`BlockDocumentWalker.Backgrounds`. Le ha fatte la CI sulla #61, verdi.
+azzurro), **62 dal pomeriggio** con i quattro degli header, + **17 del giro pieno**, non rieseguito
+dopo il colore. ⚠️ Da qui in poi **la suite smoke gira sotto la CSP vera**: la preview di Vite manda
+gli stessi header del backend, letti dallo stesso `config/security.json`. ⚠️ Le **172 di
+integrazione** non sono state eseguite in locale il 12 settembre pomeriggio (Docker spento): sulla
+`m1/media-dedupe` erano verdi, il colore tocca una riga di C# (un valore in più in
+`BlockDocumentWalker.Backgrounds`) e gli header ne aggiungono **due** (`SecurityHeadersTests`). Le fa
+la CI: verde sulla #61 e sulla #62.
 ⚠️ Nel giro pieno compaiono a volte, nel log del server, errori di **connessione al DB** su
 `/api/blocks/data/*` (500 su `newsList` e `linkList`) senza che nessun test cada: visti due volte l'11
 settembre, la prima al primo giro della giornata. Non indagati; da guardare se un test dei blocchi
@@ -246,6 +249,24 @@ scheda in un contorno colorato (ora `border-t-*`), e il **numero di un passo** m
 un fondo scuro — falliva anche prima di oggi, ora è del colore del testo e `contrast.spec.ts` porta
 un `timeline` per dirlo da sé. Non fatte, e scritte nella nota: il distintivo che dice qualcosa,
 pagina e scheda invertite, la famiglia d'accento in `division.json`, il colore sui dati vivi.
+
+**Gli header di sicurezza e la CSP — il 12 settembre 2026**, branch `m1/security-headers`, PR #63
+(piano 0.69, `decisions/2026-09-12-gli-header-di-sicurezza.md`). Nasce dal blocco interattivo che
+Carmine ha chiesto — «ti direi C, e prepara un piano per mettere una CSP» — e viene **prima** di
+quello: il motivo per cui il frame di quel blocco sarà servito da un endpoint invece che da un
+`srcdoc` è la CSP di questa pagina. **Il fatto di partenza: l'hub non mandava un solo header di
+sicurezza.** Ora `config/security.json` — un file, **due lettori**: ASP.NET in produzione e la
+preview di Vite, che è ciò contro cui gira la suite smoke, così quei 62 test girano sotto la policy
+vera. Misurato e non deciso a tavolino: `script-src 'self'` basta (l'`index.html` costruito non ha un
+solo script inline), `style-src` vuole `'unsafe-inline'` (con `'self'` il browser blocca tre
+applicazioni di stile dai bundle di React e Atmosphere, e `style-src-attr` non aiuta perché Chrome
+attribuisce a `style-src` anche quello che React scrive via CSSOM). Sviluppo più largo di produzione,
+scritto accanto con il perché; nessun nonce, nessun hash, nessun `report-uri` — al loro posto un e2e
+che **guarda la console** e fallisce su una violazione, perché un foglio di stile bloccato non fa
+cadere nessuna asserzione. ⚠️ Interruttore nel file: la produzione si raggiunge via FTP e non c'è una
+shell. **Quello che apre**: l'endpoint del blocco interattivo sovrascriverà questi header sulla sua
+risposta (`default-src 'none'`, `frame-ancestors 'self'`), ed è per questo che il middleware sta
+prima degli endpoint.
 
 **Da decidere prima di scrivere codice:**
 

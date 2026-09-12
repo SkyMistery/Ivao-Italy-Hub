@@ -175,6 +175,7 @@ jobs:
           test -f artifacts/publish/seed/content-templates/section-page.json
           test -f artifacts/publish/config/division.example.json
           test -f artifacts/publish/config/ivao-oauth.example.json
+          test -f artifacts/publish/config/security.json
           test -f artifacts/publish/LICENSE
           test -f artifacts/publish/NOTICE
 

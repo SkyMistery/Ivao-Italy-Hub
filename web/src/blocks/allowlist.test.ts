@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest';
 
-import { embedSource, hostOf } from './allowlist';
+import security from '../../../config/security.json';
+
+import { EMBED_HOSTS, embedSource, hostOf } from './allowlist';
 
 /**
  * The allow list is the only thing standing between "an editor typed an address" and "this hub
@@ -55,4 +57,33 @@ test('nothing of what was typed is echoed into the address that gets framed', ()
 test('an allowed host with nothing recognisable in the address is refused, not guessed', () => {
   expect(embedSource('https://www.youtube.com/')).toBeNull();
   expect(embedSource('https://vimeo.com/')).toBeNull();
+});
+
+/**
+ * The half of the allow list that lives outside this file: `frame-src` in `config/security.json`.
+ *
+ * ⚠️ A host added here and not there is a block that says "allowed" and a frame the browser refuses
+ * — and it fails **silently**, because a refused frame is an empty box and no assertion anywhere
+ * mentions it. So the two are checked against each other, the way the backgrounds of a section are
+ * checked against the list the server keeps: one sample address per host, and a host with no sample
+ * fails rather than being skipped.
+ */
+const SAMPLES: Record<string, string> = {
+  youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  vimeo: 'https://vimeo.com/76979871',
+  twitch: 'https://www.twitch.tv/videos/123456789',
+};
+
+test('every host the allow list can frame is allowed by the content security policy', () => {
+  const frameSrc: readonly string[] = security.contentSecurityPolicy.directives['frame-src'] ?? [];
+
+  for (const host of EMBED_HOSTS) {
+    const sample = SAMPLES[host.key];
+    expect(sample, `no sample address for the "${host.key}" host`).toBeTruthy();
+
+    const framed = embedSource(sample!);
+    expect(framed, `the sample for "${host.key}" is not framed at all`).toBeTruthy();
+
+    expect(frameSrc, `frame-src does not allow ${host.key}`).toContain(new URL(framed!).origin);
+  }
 });

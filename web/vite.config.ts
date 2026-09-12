@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,58 @@ import { BACKEND_PATHS } from './backendPaths';
 
 /** The backend during development; Vite proxies the host endpoints to it. */
 const KESTREL_ORIGIN = 'http://localhost:5000';
+
+/**
+ * The security headers, read from the one file the backend also reads (`config/security.json`).
+ *
+ * In production it is ASP.NET that serves both the SPA and the API, so it is ASP.NET that sends
+ * these. Here they exist for the two servers Vite runs -- `dev` and `preview` -- and `preview` is
+ * the one that matters: the smoke suite runs against it, so every one of those tests runs under the
+ * real policy and a screen that a directive would break fails there rather than in production.
+ *
+ * ⚠️ The policy is **not** written twice. This reads the same file, and `SecurityHeadersTests`
+ * asserts that what the backend sends is what this file says.
+ */
+interface SecurityConfiguration {
+  readonly headers: Record<string, string>;
+  readonly contentSecurityPolicy: {
+    readonly enabled: boolean;
+    readonly directives: Record<string, readonly string[]>;
+  };
+}
+
+const security = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../config/security.json', import.meta.url)), 'utf8'),
+) as SecurityConfiguration;
+
+function policyOf(directives: Record<string, readonly string[]>): string {
+  return Object.entries(directives)
+    .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+    .join('; ');
+}
+
+const securityHeaders = (extra: Record<string, readonly string[]> = {}) => ({
+  ...security.headers,
+  ...(security.contentSecurityPolicy.enabled
+    ? {
+        'Content-Security-Policy': policyOf({
+          ...security.contentSecurityPolicy.directives,
+          ...extra,
+        }),
+      }
+    : {}),
+});
+
+/**
+ * ⚠️ Development is looser, and the reason is written here rather than discovered again: Vite's
+ * client injects a module of its own and talks to itself over a web socket, so `script-src` takes
+ * `'unsafe-inline'` and `connect-src` takes the socket. Neither reaches a built package, which is
+ * why `preview` -- the build -- runs under the strict policy.
+ */
+const DEVELOPMENT_RELAXATIONS: Record<string, readonly string[]> = {
+  'script-src': ["'self'", "'unsafe-inline'"],
+  'connect-src': ["'self'", 'ws:', 'wss:'],
+};
 
 /** The framework itself: matched by package folder, so `react-markdown` is not one of them. */
 const REACT_CORE = ['react', 'react-dom', 'scheduler'];
@@ -76,6 +129,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: Object.fromEntries(BACKEND_PATHS.map((path) => [path, KESTREL_ORIGIN])),
+    headers: securityHeaders(DEVELOPMENT_RELAXATIONS),
+  },
+  preview: {
+    headers: securityHeaders(),
   },
   build: {
     outDir: 'dist',

@@ -209,6 +209,17 @@ environment variables, and the application refuses to start in production withou
   what the audit log records. Behind Cloudflare, use the ranges Cloudflare publishes; behind a
   reverse proxy on the same machine, `127.0.0.1/32`.
 
+A third file is about your server too, but it ships filled in and enabled: **`config/security.json`**,
+the headers every response carries — a content security policy plus `nosniff`, `Referrer-Policy`,
+`X-Frame-Options` and `Cross-Origin-Opener-Policy`. Two reasons to touch it, and only two. If your
+division frames a host this repository does not know — you added one to the embed allow list in
+`web/src/blocks/allowlist.ts` — add its player origin to `frame-src`, or the block will say "allowed"
+and the browser will show an empty box; a Vitest fails when those two disagree. And if a policy turns
+out to break something on your installation, `contentSecurityPolicy.enabled: false` switches it off by
+editing a file, because production is reached by FTP and there is no shell there. Everything else in
+it is measured against this application: `web/e2e/security.spec.ts` walks the screens under the real
+policy and fails on a single refusal, which is the test to run if you change a directive.
+
 One more thing to change before the first start, and it is easy to miss because it is not a secret:
 **`superAdmins` in `config/division.json` still holds the VIDs of the division this repository was
 written for**. That list is read once, when the database holds no super administrator at all — so
