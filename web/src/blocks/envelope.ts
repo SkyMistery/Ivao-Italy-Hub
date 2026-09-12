@@ -63,6 +63,19 @@ export const blockEnvelopeSchema = z.object({
   /** What the provider answered when the page was published. Never written by the editor. */
   frozen: z.unknown().nullish().default(null),
   column: z.number().int().nullish().default(null),
+  /**
+   * The source of an interactive block (12 September 2026,
+   * `decisions/2026-09-12-il-blocco-interattivo.md`).
+   *
+   * ⚠️ On the **envelope** and not in `props`, and that is the whole design rather than a detail:
+   * the frame is served by an endpoint, so the server has to read this string — and the server never
+   * reads inside `props` (plan §16.5). Beside `renderMode` and `frozen`, which are the other two
+   * fields the backend knows on any block, it can read it without learning what a block is.
+   *
+   * Opaque here as it is there: this says it is a string, `BlockDocumentWalker` says how long it may
+   * be (64 KB a block, 256 KB a page), and neither of them ever looks at what it says.
+   */
+  source: z.string().nullish().default(null),
 });
 
 export type BlockEnvelope = z.output<typeof blockEnvelopeSchema>;

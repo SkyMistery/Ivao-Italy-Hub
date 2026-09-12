@@ -64,6 +64,21 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     public const int SupportedSchemaVersion = 1;
 
     /// <summary>
+    /// How much source an interactive block may carry, and how much of it a whole page may
+    /// (12 September 2026, <c>decisions/2026-09-12-il-blocco-interattivo.md</c>).
+    /// <para>⚠️ The server knows the field and not what is in it: <c>source</c> lives on the
+    /// envelope, beside <c>renderMode</c> and <c>frozen</c>, precisely so that reading it is not
+    /// reading inside <c>props</c> — which stays opaque (plan section 16.5). What is checked here is
+    /// that it is a string and that it is not enormous; what it means is the browser's business.</para>
+    /// <para>The numbers are a choice and not physics: a runway drawn in SVG is 5 to 15 KB and a
+    /// widget with four scenes fits inside 64. They are here, in one place, so that raising them is
+    /// a line rather than an archaeology.</para>
+    /// </summary>
+    public const int MaxBlockSourceBytes = 64 * 1024;
+
+    public const int MaxBodySourceBytes = 256 * 1024;
+
+    /// <summary>
     /// How a section arranges its blocks. A closed set: with <c>stacked</c> the blocks follow one
     /// another, with any other layout each block says which column it is in.
     /// </summary>
@@ -259,6 +274,8 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
             CheckBackground(section, errors);
         }
 
+        var sourceBytes = 0;
+
         foreach (var (section, block) in EnumerateBlocksBySection(root))
         {
             CheckIdentifier(block, identifiers, errors);
@@ -274,6 +291,12 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
 
             CheckRenderMode(block, errors);
             CheckColumn(section, block, errors);
+            sourceBytes += CheckSource(block, errors);
+        }
+
+        if (sourceBytes > MaxBodySourceBytes)
+        {
+            errors.Add(new BlockDocumentError("errors.body.sourceTooLarge", "$"));
         }
 
         return errors.Count == 0 ? BlockDocumentValidation.Valid : new BlockDocumentValidation(errors);
@@ -472,6 +495,35 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
         {
             errors.Add(new BlockDocumentError("errors.body.renderModeUnknown", $"{block.Path}.renderMode"));
         }
+    }
+
+    /// <summary>
+    /// The source of an interactive block: a string, and a small one. Returns how many bytes it
+    /// added, because the page has a budget of its own.
+    /// <para>A block that carries something other than a string is refused rather than ignored: the
+    /// endpoint that serves the frame would have nothing to serve, and an empty frame in a published
+    /// document is the kind of fault nobody reports because it looks like a missing picture.</para>
+    /// </summary>
+    private static int CheckSource(BlockDocumentNode block, List<BlockDocumentError> errors)
+    {
+        if (block.Node["source"] is not JsonNode node)
+        {
+            return 0;
+        }
+
+        if (node is not JsonValue value || !value.TryGetValue<string>(out var source))
+        {
+            errors.Add(new BlockDocumentError("errors.body.sourceNotText", $"{block.Path}.source"));
+            return 0;
+        }
+
+        var bytes = Encoding.UTF8.GetByteCount(source);
+        if (bytes > MaxBlockSourceBytes)
+        {
+            errors.Add(new BlockDocumentError("errors.body.sourceTooLarge", $"{block.Path}.source"));
+        }
+
+        return bytes;
     }
 
     /// <summary>

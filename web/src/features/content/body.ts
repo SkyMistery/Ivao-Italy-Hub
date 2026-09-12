@@ -262,7 +262,16 @@ export function addBlock(
   at?: number,
 ): { body: Body; id: string } {
   const id = newId('b');
-  const block: BlockEnvelope = { id, type, version: 1, props, renderMode, frozen: null, column };
+  const block: BlockEnvelope = {
+    id,
+    type,
+    version: 1,
+    props,
+    renderMode,
+    frozen: null,
+    column,
+    source: null,
+  };
 
   return {
     body: {

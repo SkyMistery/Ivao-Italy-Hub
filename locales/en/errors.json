@@ -51,7 +51,9 @@
       "layoutUnknown": "This section asks for a layout that does not exist.",
       "renderModeUnknown": "This block asks to be drawn in a way that does not exist.",
       "backgroundUnknown": "This section asks for a background that does not exist.",
-      "columnOutOfRange": "This block is in a column its section does not have."
+      "columnOutOfRange": "This block is in a column its section does not have.",
+      "sourceNotText": "The code of this block is not text.",
+      "sourceTooLarge": "The code of this block is too long. Keep an animation small: it travels with the page."
     },
     "content": {
       "templateNotPublishable": "A template is not published: make a page from it and publish that.",

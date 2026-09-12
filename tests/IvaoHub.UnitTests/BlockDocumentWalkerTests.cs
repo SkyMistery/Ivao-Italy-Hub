@@ -238,6 +238,52 @@ public sealed class BlockDocumentWalkerTests
         Assert.All(asPage.Errors, error => Assert.Equal("errors.body.templateOnlyKey", error.Key));
     }
 
+    /// <summary>
+    /// The source of an interactive block: the one field of the envelope whose <b>content</b> the
+    /// server will read, because an endpoint serves it into a sandboxed frame
+    /// (<c>decisions/2026-09-12-il-blocco-interattivo.md</c>). What the walker owes it is what it
+    /// owes every other field: that it is a string and that it is not enormous. What it says is the
+    /// browser's business, here as everywhere else.
+    /// </summary>
+    [Fact]
+    public void SourceIsAStringAndOnlyPassesIfItIsSmall()
+    {
+        Assert.True(Walker.ValidateEnvelope(WithSource("\"<svg />\"")).IsValid);
+
+        var notText = Walker.ValidateEnvelope(WithSource("42"));
+        Assert.False(notText.IsValid);
+        Assert.Equal("errors.body.sourceNotText", notText.Errors[0].Key);
+        Assert.Equal("sections[0].blocks[0].source", notText.Errors[0].Path);
+
+        var tooLong = Walker.ValidateEnvelope(
+            WithSource("\"" + new string('x', BlockDocumentWalker.MaxBlockSourceBytes + 1) + "\""));
+        Assert.False(tooLong.IsValid);
+        Assert.Equal("errors.body.sourceTooLarge", tooLong.Errors[0].Key);
+    }
+
+    [Fact]
+    public void APageHasABudgetOfSourceOfItsOwn()
+    {
+        // Five blocks just under the ceiling each: every one of them passes on its own, and the page
+        // they sit on does not. Without this a body could carry a megabyte of animations one legal
+        // block at a time, and the page would be a download rather than a page.
+        var source = new string('x', BlockDocumentWalker.MaxBlockSourceBytes - 10);
+        var blocks = string.Join(
+            ",",
+            Enumerable.Range(0, 5).Select(index =>
+                $"{{ \"id\": \"b{index}\", \"type\": \"interactive\", \"source\": \"{source}\" }}"));
+
+        var result = Walker.ValidateEnvelope(JsonNode.Parse(
+            $"{{ \"schemaVersion\": 1, \"sections\": [ {{ \"id\": \"s\", \"blocks\": [ {blocks} ] }} ] }}"));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.Key == "errors.body.sourceTooLarge" && error.Path == "$");
+    }
+
+    private static JsonNode? WithSource(string source) => JsonNode.Parse(
+        "{ \"schemaVersion\": 1, \"sections\": [ { \"id\": \"s\", \"blocks\": [ "
+        + "{ \"id\": \"b\", \"type\": \"interactive\", \"source\": " + source + " } ] } ] }");
+
     [Fact]
     public void RefusesABodyThatIsNotAnObject()
     {
