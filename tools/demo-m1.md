@@ -1,7 +1,8 @@
 # Demonstrating M1
 
 > Updated to **12 September 2026, evening** — so it covers G13 and the twelve requests the first run of this
-> sheet produced, then G15 (the editor that answers), G14 (the operational document), and the colour.
+> sheet produced, then G15 (the editor that answers), G14 (the operational document), the colour, the
+> security headers and the interactive block.
 > A working translation lives in `docs/internal/demo-m1.md`; this one is the official version, and it
 > is in English because whoever forks the hub has to be able to read it (CLAUDE.md section 1). If one
 > of the two changes, the other changes in the same commit.

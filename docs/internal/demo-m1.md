@@ -4,7 +4,8 @@
 > inglese perché chi forka deve poterla leggere (CLAUDE.md §1). Le due dicono la stessa cosa: se una
 > cambia, cambia anche l'altra nello stesso commit. Questa è aggiornata al **12 settembre 2026**:
 > contiene G13 con le dodici richieste della prima esecuzione, poi G15 (l'editor che risponde), G14
-> (il documento operativo) e il colore.
+> (il documento operativo), il colore, gli header di sicurezza e il blocco interattivo — aggiornata la
+> sera del 12.
 
 M0 ha costruito una spina dorsale e l'ha provata su un'entità noiosa. M1 è ciò per cui quella spina
 dorsale esisteva: un sito pubblico che nessuno ha dovuto programmare, un editor che un coordinatore
