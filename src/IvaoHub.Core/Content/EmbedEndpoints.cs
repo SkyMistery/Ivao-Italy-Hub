@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -93,13 +94,16 @@ public static class EmbedEndpoints
         // row that is not published and a row whose visibility excludes whoever is asking, which is
         // why a members-only page cannot leak its animation to somebody who could not read the page.
         //
-        // **Draft**: `IgnoreQueryFilters`, because that same filter hides every unpublished row from
-        // everybody, editors included — a page being written for the first time has no published
-        // version at all, and its author has to see the frame they are composing. What takes the
-        // filter's place is the authorization handler below, asked the question the back office asks
-        // of every row, and it is the only thing standing there. Measured by `EmbedFrameTests`: a
-        // signed in member of another department gets a 403 and not a document.
-        var content = await (draft ? database.Contents.IgnoreQueryFilters() : database.Contents)
+        // **Draft**: `CrudSource.BackOffice`, which is how everything in this hub reads a row the way
+        // the back office reads it. The filter hides every unpublished row from everybody, editors
+        // included — a page being written for the first time has no published version at all, and its
+        // author has to see the frame they are composing. What takes the filter's place is the
+        // authorization handler below, asked the question the back office asks of every row.
+        //
+        // ⚠️ And it is `CrudSource` rather than an `IgnoreQueryFilters` written here, because an
+        // architecture test says that call belongs to one folder — which is how a public endpoint
+        // never gets written with the filters quietly switched off. CI said so, and it was right to.
+        var content = await (draft ? CrudSource.BackOffice<ContentEntry>(database) : database.Contents)
             .AsNoTracking()
             .FirstOrDefaultAsync(row => row.Id == contentId, http.RequestAborted);
 
