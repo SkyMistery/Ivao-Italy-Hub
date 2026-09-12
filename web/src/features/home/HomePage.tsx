@@ -2,7 +2,13 @@ import { Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, readBody, startsWithPageTitle } from '../../blocks';
+import {
+  ContentRenderer,
+  EmbeddingContext,
+  readBody,
+  startsWithPageTitle,
+  usePublishedEmbedding,
+} from '../../blocks';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
@@ -31,6 +37,10 @@ export function HomePage() {
   // failure here is a page to draw rather than an error boundary to hit.
   const home = useQuery({ ...publicContentQuery('Page', HOME_SLUG), retry: false });
 
+  // Above the early return, because a hook is: the home may not be published yet, and this screen
+  // draws a line instead — but the order of the hooks cannot depend on that.
+  const embedding = usePublishedEmbedding(home.data);
+
   if (!home.data) {
     return home.isPending ? null : <Lead>{t('home.empty')}</Lead>;
   }
@@ -58,7 +68,9 @@ export function HomePage() {
           4). Same two lines as `_public/$slug.tsx`, because it is the same page seen through a
           different address. */}
       {startsWithPageTitle(body) ? null : <h1 className="sr-only">{read(home.data.title)}</h1>}
-      <ContentRenderer body={body} />
+      <EmbeddingContext.Provider value={embedding}>
+        <ContentRenderer body={body} />
+      </EmbeddingContext.Provider>
     </article>
   );
 }

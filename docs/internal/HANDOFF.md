@@ -22,11 +22,12 @@
 >    significato**. Solo documentazione. CI **verde**.
 > 5. **PR #63 `m1/security-headers` → `m1/demo-card`**: gli header di sicurezza e la CSP, che l'hub
 >    non aveva affatto. CI **verde**. È il primo dei due pezzi del blocco interattivo.
-> 6. **PR #64 `m1/interactive-block` → `m1/security-headers`**: il blocco interattivo, il secondo
->    pezzo. ⚠️ **Non finito**: i passi 1, 2 e 3 dell'ordine di lavoro della nota sono fatti (il campo
->    `source` sull'envelope, l'endpoint con il guscio, il blocco con il permesso e la textarea), il
->    **4 e il 5 no** — la stampa che chiude la sezione è scritta nel componente ma **non provata a
->    occhio**, e nessuno ha ancora aperto una pagina con un'animazione dentro in un browser vero.
+> 6. **PR #64 `m1/interactive-block` → `m1/security-headers`**: il blocco interattivo, **tutti e
+>    cinque i passi**. Guardarlo ha trovato due cose che i test non vedevano: quattro schermate su
+>    cinque non fornivano il contesto (una pagina qualunque non disegnava nessun frame) e il frame si
+>    dipingeva un fondo nero sopra le sezioni scure. ⚠️ Il giro contro l'**API vera**
+>    (`e2e/full/interactive.spec.ts`) è scritto ma **non eseguito qui**: Docker non si avvia su questa
+>    macchina. Lo esegue la CI.
 >
 > **Ordine di merge** (memoria `stacked-pr-base-deletion`): una alla volta dal basso — mergiare la
 > #59, ritargettare la #60 su `main` (`gh pr edit 60 --base main`), mergiare la #60, e così la #61,
@@ -277,7 +278,8 @@ risposta (`default-src 'none'`, `frame-ancestors 'self'`), ed è per questo che 
 prima degli endpoint.
 
 **Il blocco interattivo — il 12 settembre 2026**, branch `m1/interactive-block`, PR #64 (piano 0.70,
-`decisions/2026-09-12-il-blocco-interattivo.md`). Il caso d'uso di Carmine, per intero: creo un
+`decisions/2026-09-12-il-blocco-interattivo.md`; i passi 4 e 5 lo stesso giorno). Il caso d'uso di
+Carmine, per intero: creo un
 documento, scarico le linee guida, le do a Claude Code — «un'animazione che mostri una pista 09/27 e
 un traffico VFR in circuito sinistro» —, incollo il codice, e chi legge il documento la vede. **Il
 codice sta nell'envelope** (`source`), non in `props`, perché il server deve leggerlo per servirlo e
@@ -288,9 +290,12 @@ due cache: un anno sul pubblicato (una versione non cambia mai), `no-store` sull
 dall'**unico** authorization handler. Le **linee guida** (`/embed/guidelines`, dietro
 `Content.EmbedCode`) **citano il guscio dentro di sé**, quindi non possono divergere da ciò che
 descrivono, e portano l'esempio del circuito già scritto. La barra dei componenti **non elenca** il
-blocco a chi non ha il permesso. ⚠️ **Che cosa manca**: i passi 4 e 5 della nota — la stampa provata
-a occhio e il giro in un browser vero con un'animazione dentro. E il confine da ricordare: il widget
-è interattivo **dentro la sua scatola**, non cambia il testo intorno e non ricorda niente.
+blocco a chi non ha il permesso. **Guardato in un browser** (passi 4 e 5), e guardare ha trovato le
+due cose che i test non vedevano: il contesto lo forniva **una sola schermata** su cinque — quindi
+una pagina qualunque non disegnava niente — e il frame si dipingeva **un fondo nero** sopra una
+sezione scura (`color-scheme: dark` fa dipingere la tela al browser). Corretti tutti e due; il
+secondo è il motivo per cui nel guscio non c'è nessun `color-scheme`. E il confine da ricordare: il
+widget è interattivo **dentro la sua scatola**, non cambia il testo intorno e non ricorda niente.
 
 **Da decidere prima di scrivere codice:**
 

@@ -16,8 +16,15 @@
         (`@ivao/atmosphere-brand`), and the guidelines are generated from this file so that whoever
         writes an animation is given these names and no others.
       */
+      /*
+        ⚠️ No `color-scheme` anywhere in this file, and it is not an oversight: `color-scheme: dark`
+        makes the browser paint the frame's canvas its own opaque near-black, and a frame standing on
+        a section of the page must show that section through. Seen in a browser on 12 September 2026
+        — a black rectangle inside the teal ground — and the price is that the scrollbars and the
+        default look of a form control here follow the reader's system rather than the page. Nothing
+        in a frame has either: what it draws, it draws itself.
+      */
       :root {
-        color-scheme: light;
         --ink: #21212e;
         --ink-quiet: #606282;
         --line: #e0e1ec;
@@ -37,7 +44,6 @@
       */
       @media (prefers-color-scheme: dark) {
         :root:not(.light) {
-          color-scheme: dark;
           --ink: #eeeff5;
           --ink-quiet: #8b8ca9;
           --line: #2c2d3c;
@@ -52,7 +58,6 @@
       }
 
       html.dark {
-        color-scheme: dark;
         --ink: #eeeff5;
         --ink-quiet: #8b8ca9;
         --line: #2c2d3c;

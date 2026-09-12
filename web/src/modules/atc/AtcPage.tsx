@@ -2,7 +2,7 @@ import { Card, H2, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, readBody } from '../../blocks';
+import { ContentRenderer, EmbeddingContext, readBody, usePublishedEmbedding } from '../../blocks';
 import { publicContentQuery } from '../../features/content/queries';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 
@@ -38,13 +38,16 @@ export function AtcPage() {
   const read = useLocalized();
 
   const page = useQuery({ ...publicContentQuery('Page', PAGE_SLUG), retry: false });
+  const embedding = usePublishedEmbedding(page.data);
 
   return (
     <div className="flex flex-col gap-8">
       {page.data ? (
         <article className="flex flex-col">
           <h1 className="sr-only">{read(page.data.title)}</h1>
-          <ContentRenderer body={readBody(page.data.body)} />
+          <EmbeddingContext.Provider value={embedding}>
+            <ContentRenderer body={readBody(page.data.body)} />
+          </EmbeddingContext.Provider>
         </article>
       ) : (
         // The module still draws its own half when the page has not been written yet: what belongs

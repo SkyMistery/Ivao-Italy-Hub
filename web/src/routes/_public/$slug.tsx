@@ -1,7 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, readBody, startsWithPageTitle } from '../../blocks';
+import {
+  ContentRenderer,
+  EmbeddingContext,
+  readBody,
+  startsWithPageTitle,
+  usePublishedEmbedding,
+} from '../../blocks';
 import { publicContentQuery } from '../../features/content/queries';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
@@ -33,6 +39,7 @@ function PublicContentPage() {
   const { bootstrap } = Route.useRouteContext();
 
   const body = readBody(content.body);
+  const embedding = usePublishedEmbedding(content);
 
   return (
     <article className="flex flex-col">
@@ -55,7 +62,10 @@ function PublicContentPage() {
           The row's title still reaches a tab and a search result — `PageMetadata` writes it — and a
           page that opens with a paragraph still gets a name here. */}
       {startsWithPageTitle(body) ? null : <h1 className="sr-only">{read(content.title)}</h1>}
-      <ContentRenderer body={body} />
+      {/* Where the frame of an interactive block lives: this row, at the version being read. */}
+      <EmbeddingContext.Provider value={embedding}>
+        <ContentRenderer body={body} />
+      </EmbeddingContext.Provider>
     </article>
   );
 }

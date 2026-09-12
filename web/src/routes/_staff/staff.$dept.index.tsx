@@ -4,7 +4,7 @@ import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, readBody } from '../../blocks';
+import { ContentRenderer, EmbeddingContext, readBody, usePublishedEmbedding } from '../../blocks';
 import { contentListQuery, publicContentQuery } from '../../features/content/queries';
 import { holdsPermission, reachableDepartments } from '../../shared/api/bootstrap';
 import { deptParam } from '../../shared/api/department';
@@ -57,6 +57,7 @@ function DepartmentDashboard() {
   const { dept } = Route.useParams();
 
   const dashboard = useQuery({ ...dashboardQuery(dept), retry: false });
+  const embedding = usePublishedEmbedding(dashboard.data);
 
   // Where the "edit" button leads. A department has exactly one dashboard row, so the ordinary back
   // office list of that kind is the answer, and only asked of somebody who could act on it: a button
@@ -86,7 +87,9 @@ function DepartmentDashboard() {
       }
     >
       {dashboard.data ? (
-        <ContentRenderer body={readBody(dashboard.data.body)} />
+        <EmbeddingContext.Provider value={embedding}>
+          <ContentRenderer body={readBody(dashboard.data.body)} />
+        </EmbeddingContext.Provider>
       ) : (
         // An honest empty state rather than a blank page: a department whose dashboard was deleted,
         // or one added to the division since the last start, has nothing to show and is told why.

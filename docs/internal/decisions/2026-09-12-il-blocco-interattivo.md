@@ -128,6 +128,30 @@ l'unica parte che la ricerca indicizza, essendo l'unico campo tradotto.
 5. La stampa che chiude la sezione, e i test che guardano un frame da fuori (niente `allow-same-origin`,
    la pagina non si tocca).
 
+## Costruito il 12 settembre — quello che il disegno non diceva
+
+- **Quattro schermate su cinque non fornivano il contesto.** Il primo giro l'aveva messo solo sulla
+  schermata di news e documenti, quindi una **pagina** — il caso più comune — non disegnava nessun
+  frame. Lo ha detto un e2e in un browser, non un test unitario: nel piccolo nessuno dei due lati
+  sbagliava. Ora il contesto lo dà un hook solo, `usePublishedEmbedding`, che le cinque schermate
+  chiamano con una riga.
+- **Il frame si dipingeva un fondo suo, e sul verde petrolio era un rettangolo nero.** `color-scheme:
+  dark` fa disegnare al browser la tela del documento con il suo nero opaco, e un frame che sta su
+  una sezione deve lasciarla vedere. Via `color-scheme`, ovunque nel guscio; il prezzo è che le barre
+  di scorrimento e l'aspetto di default di un controllo dentro il frame seguono il sistema del
+  lettore e non la pagina — e dentro un frame non c'è né l'uno né l'altro. **Visto guardando**: è
+  esattamente quello che i passi 4 e 5 servivano a trovare.
+- **La stampa vuole anche il CSS.** `PrintContext` toglie il frame dal documento, ma lo monta solo
+  la schermata di un **documento** (G14) e si accende su `beforeprint`: una pagina qualunque stampata
+  dal menu del browser teneva il suo rettangolo vuoto. Ora il frame porta anche `print:hidden`, che
+  è la strada che un'anteprima di stampa rispetta comunque.
+- **Il banco contro l'API vera** (`e2e/full/interactive.spec.ts`) è scritto e **non è stato eseguito
+  su questa macchina**: Docker non si avvia da qui, e senza database non c'è banco. Lo esegue la CI,
+  che quel giro lo fa. Quello che si poteva provare senza server è provato in un browser vero
+  (`e2e/embed.spec.ts`, quattro prove con **il guscio vero**): il disegno, la scelta da tastiera,
+  l'altezza che cresce, il fondo scuro che entra, la stampa che chiude, e le due che contano — il
+  frame **non** riesce a leggere la pagina che lo incornicia, e `localStorage` gli tira un'eccezione.
+
 ## Che cosa **non** si fa
 
 Nessun `postMessage` oltre l'altezza (un numero, dal frame giusto, limitato); nessuno stato salvato;

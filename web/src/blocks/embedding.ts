@@ -1,4 +1,5 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * How a block of the page finds the address of its own frame (12 September 2026,
@@ -46,4 +47,31 @@ export function frameAddress(
   locale: string,
 ): string {
   return `/embed/${contentId}/${version}/${encodeURIComponent(blockId)}?lang=${encodeURIComponent(locale)}`;
+}
+
+/**
+ * The embedding a **published** row grants its own body: the frame of each of its blocks, at the
+ * version being read.
+ *
+ * Every screen that draws a published body says this one line — the page, the home, a module's page,
+ * a department's dashboard — and that is why it is a hook rather than four `useMemo`s. ⚠️ The four
+ * were also how this was got wrong the first time: only the news-and-documents screen had it, so a
+ * plain page drew no frame at all, and an end to end test in a browser is what said so.
+ *
+ * `null` in, `null` out: a screen whose row has not loaded yet grants nothing, and the block draws
+ * the line that says it cannot show a frame rather than pointing one at `undefined`.
+ */
+export function usePublishedEmbedding(
+  content: { readonly id: number; readonly version: number } | null | undefined,
+): Embedding | null {
+  const { i18n } = useTranslation();
+  const locale = i18n.language;
+
+  return useMemo(
+    () =>
+      content === null || content === undefined
+        ? null
+        : { frameUrl: (blockId: string) => frameAddress(content.id, content.version, blockId, locale) },
+    [content, locale],
+  );
 }

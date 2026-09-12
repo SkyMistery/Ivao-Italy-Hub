@@ -632,7 +632,12 @@ export function InteractiveBlock({ id, props }: BlockComponentProps) {
         // line that the whole design rests on, and `blocks.test.tsx` fails if it changes.
         sandbox="allow-scripts"
         loading="lazy"
-        className="w-full border-0"
+        // ⚠️ `print:hidden` as well as the context above, and the two are not the same thing. The
+        // context is how a **document** prints — `PrintContext` takes the frame out of the page
+        // before the paper is drawn, the way it unfolds tabs and accordions (G14). This class is for
+        // everywhere else: a page printed from a browser's own menu fires no event this application
+        // hears, and a rectangle nobody can press is not worth the paper wherever it appears.
+        className="w-full border-0 print:hidden"
         style={{ height: `${height}px` }}
       />
       {caption}
