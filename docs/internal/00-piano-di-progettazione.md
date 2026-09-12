@@ -1,9 +1,38 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.66 — 12 settembre 2026 (**due immagini identiche sono un file**: l'impronta SHA-256 sulla riga della libreria, calcolata mentre i byte vanno su disco; G14 costruita in una notte sul branch `m1/g14-operational-document`)
+**Versione documento:** 0.67 — 12 settembre 2026 (**il sito ha un colore**: i titoli non sono più grigi, il fondo `accent` è azzurro invece che un quarto grigio, `aurora` è l'ottavo fondo di sezione e quattro blocchi portano un accento del brand sui propri grafici)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.67** (12 set 2026): **il sito ha un colore**
+(`decisions/2026-09-12-il-sito-ha-un-colore.md`, quattro idee su otto proposte, decise da Carmine:
+«fai 1–4»). Il censimento che le ha fatte nascere: il pacchetto `@ivao/atmosphere-brand` porta
+**dieci famiglie di colore** e l'hub ne usava **due** — `atmos` sulla barra, sul piè di pagina e su
+due fondi, `fuselage` per tutto il resto. (1) **I titoli tornano del colore del testo**: la regola
+base di Atmosphere dipinge h2–h6 in `fuselage-400`, cioè ogni titolo di sezione del sito e ogni
+intestazione del back-office a ≈ 3,2 : 1 su bianco — basta per h2 e h3 come testo grande, **non
+basta** per h5 e h6. È il **terzo** override di Atmosphere, e le linee guida dicono che un terzo
+override è una decisione: una riga (`color: var(--foreground)`), fuori da ogni layer perché una
+regola senza layer batte `@layer base`, contro una passata su 72 schermate. (2) **Il fondo `accent`
+smette di essere grigio** — `ocean-50` nel chiaro, `ocean-900` nello scuro: era `fuselage-250`, e nel
+tema scuro era `fuselage-700`, **lo stesso colore di `muted`**. (3) **`aurora` è l'ottavo fondo di
+sezione** (`product-aurora-dark`), costruito come i tre scuri dell'11 settembre — porta `.dark`,
+quindi ciò che gli sta sopra legge chiaro per costruzione; `aurora-mid`, più verde, lascerebbe il
+testo secondario a 2,3 : 1 e non si prende. **§16.C cambia di nuovo**: i fondi sono otto. (4)
+**L'accento sta sui grafici e mai sotto una parola**: un insieme chiuso di quattro famiglie
+(`brand`, `ocean`, `aurora`, `artifice`) e una proprietà `accent` su `hero`, `cardGrid`, `iconGrid` e
+`timeline`, disegnata sull'icona, su un filetto e su una barretta, con `brand` come valore
+predefinito — nessuna pagina già scritta cambia. La regola non è prudenza: un grafico deve stare a
+3 : 1, una parola a 4,5 : 1, e l'arancio del brand non ci arriva sul nuovo fondo azzurro. **Nessun
+colore libero**, di nuovo, e nessun posto dove scrivere un tricolore. **Trovato sulla strada e
+corretto**: il numero di un passo di `timeline`, 12 px nella pastiglia, misurava **4,15 : 1** su un
+fondo scuro e 3,96 : 1 su quello azzurro — falliva AA anche prima di oggi, su ogni fondo scuro e su
+`muted`; ora è del colore del testo, perché quel numero è il segnaposto del passo e non testo
+secondario, e `contrast.spec.ts` porta un `timeline` così che lo dica da sé la prossima volta. Non
+fatte, e scritte nella nota: il distintivo che dice qualcosa, pagina e scheda invertite, la famiglia
+d'accento in `division.json`, il colore sui dati vivi. Branch `m1/site-colour`, sopra
+`m1/media-dedupe`; **375 Vitest, 58 smoke, 306 .NET unit**, le 172 di integrazione alla CI.
 
 **Changelog 0.66** (12 set 2026): **due immagini identiche caricate nella stessa libreria sono un
 file solo** (`decisions/2026-09-12-due-immagini-identiche.md`, decisa da Carmine: «procediamo con le
@@ -1735,7 +1764,7 @@ Criterio di Carmine: **quanto meno codice possibile; un pezzo usato in due punti
 
 **C. Convenzioni UI — da trattare nel design di M0, prima della prima schermata** (concordato il 2 set 2026)
 
-Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti. ✅ **Chiuso il 6 settembre 2026 con G3 di M1**: i 21 blocchi esistono e le convenzioni sono scritte in `docs/UI-GUIDELINES.md`, sezione «The conventions every block follows» — la spaziatura e lo sfondo sono della sezione e mai del blocco, quattro sfondi (`none`, `muted`, `accent`, `image` con `mediaId`) — **sette dall'11 settembre 2026**, con i tre fondi scuri `brand`, `deep`, `dark` disegnati nel tema scuro e ancora nessun colore libero (changelog 0.58) —, quattro larghezze, la resa di una sezione `locked`, il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che non sia prosa dentro `props`, nessun blocco che contiene blocchi, e l'allowlist degli host per i riquadri.
+Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto della pagina) si risolve prima di tutto **per costruzione**: ogni schermata di back-office passa dal motore lista+form (punto 6) e ogni contenuto dal renderer dei blocchi (punto 5), quindi un design divergente non ha dove entrare. Le convenzioni coprono il residuo. Nel design di M0 si fissano: (a) il **set di icone** unico — **`lucide-react`, confermato** il 2 set 2026: è già una dipendenza di `@ivao/atmosphere-react` 3.1.0 — con la regola «se manca un'icona si cerca prima nel set; se proprio non c'è si aggiunge in `web/src/shared/icons/` nello stesso stile, mai inline nella schermata»; (b) l'**elenco chiuso dei componenti custom** oltre Atmosphere (§8.3): un pezzo nuovo si compone da quelli, non si scrive da zero, e aggiungerne uno è una decisione esplicita; (c) una pagina **`/staff/admin/ui-kit`** che mostra tutti i componenti e i blocchi in uso: riferimento vivo e test visivo quando si aggiunge qualcosa. Le regole finiscono in `docs/UI-GUIDELINES.md` (inglese, valgono anche per chi forka). Le convenzioni **dei blocchi** (spaziature tra sezioni, varianti di sfondo, resa di una sezione `locked` nell'editor) si discutono in **M1**, con il set di blocchi davanti. ✅ **Chiuso il 6 settembre 2026 con G3 di M1**: i 21 blocchi esistono e le convenzioni sono scritte in `docs/UI-GUIDELINES.md`, sezione «The conventions every block follows» — la spaziatura e lo sfondo sono della sezione e mai del blocco, quattro sfondi (`none`, `muted`, `accent`, `image` con `mediaId`) — **sette dall'11 settembre 2026**, con i tre fondi scuri `brand`, `deep`, `dark` disegnati nel tema scuro e ancora nessun colore libero (changelog 0.58), e **otto dal 12 settembre** con `aurora`, mentre `accent` è diventato l'azzurro `ocean-50` invece del quarto grigio che era (changelog 0.67) —, quattro larghezze, l'**accento di un blocco** su un insieme chiuso di quattro famiglie del brand, disegnato sui grafici (un'icona, un filetto, una barretta) e mai sotto una parola, la resa di una sezione `locked`, il blocco sconosciuto visibile solo allo staff, l'icona dichiarata dal tipo, nessuna stringa che non sia prosa dentro `props`, nessun blocco che contiene blocchi, e l'allowlist degli host per i riquadri.
 
 **D. Buchi chiusi**
 
