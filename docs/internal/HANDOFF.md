@@ -5,7 +5,7 @@
 
 **Ultimo aggiornamento:** 12 settembre 2026, mattina — scritto per chi apre una chat nuova.
 
-> **Per chi apre adesso — due PR aperte, impilate, tutte e due verdi in locale:**
+> **Per chi apre adesso — tre PR aperte, impilate, tutte verdi in locale:**
 >
 > 1. **PR #59 `m1/g14-operational-document` → `main`**: G14, il documento operativo (il paragrafo
 >    «G14» più sotto). CI **verde** dopo un fix di isolamento dei test (un secondo coordinatore ATC
@@ -13,11 +13,14 @@
 > 2. **PR #60 `m1/media-dedupe` → `m1/g14-operational-document`**: due immagini identiche sono un
 >    file (il paragrafo subito dopo G14). **Sopra la #59 e non da `main`** perché tutte e due
 >    aggiungono una migrazione EF e due snapshot da `main` avrebbero litigato.
+> 3. **PR #61 `m1/site-colour` → `m1/media-dedupe`**: il sito ha un colore (il paragrafo dopo
+>    ancora). Sopra la #60 perché tocca il piano, `blocks.tsx` e `schemas.ts`, che le altre due hanno
+>    già mosso. Nessuna migrazione.
 >
 > **Ordine di merge** (memoria `stacked-pr-base-deletion`): mergiare la #59, ritargettare la #60 su
-> `main` (`gh pr edit 60 --base main`), mergiare la #60, **solo dopo** cancellare i due branch remoti.
-> Cancellare il branch base con la #59 chiuderebbe la #60 per sempre. Carmine mergia da sé; se
-> delega, è questa sequenza.
+> `main` (`gh pr edit 60 --base main`), mergiare la #60, ritargettare la #61 su `main`, mergiare la
+> #61, **solo dopo** cancellare i tre branch remoti. Cancellare il branch base insieme alla PR che ci
+> sta sopra chiuderebbe quest'ultima per sempre. Carmine mergia da sé; se delega, è questa sequenza.
 >
 > **Sulla macchina di Carmine**: l'API su `:5000` gira con il codice della #60 e le due migrazioni
 > (`AddOperationalDocument`, `AddMediaSha256`) sono applicate al DB di sviluppo; il DB ha un
@@ -82,7 +85,8 @@ che è esattamente ciò che §16.15 del piano chiedeva.
 `git log v0.1.0-m0..main --merges --oneline`, che è sempre giusto — un numero scritto qui sarebbe
 sbagliato dal merge dopo, ed è già successo due volte.
 **Design M0:** v2.1. **Piano di implementazione M0:** v1.6.
-**Piano:** **v0.66** (12 set: due immagini identiche sono un file; v0.65 G14 costruita, con le
+**Piano:** **v0.67** (12 set: il sito ha un colore — titoli, fondo azzurro, `aurora`, l'accento dei
+blocchi; v0.66 due immagini identiche sono un file; v0.65 G14 costruita, con le
 quattro cose decise strada facendo; v0.64 G14 aperta e disegnata prima del codice; v0.63, 11 set,
 notte: sette comodità dell'editor — lingua dell'anteprima, doppio
 clic, tasti, scorrimento, duplica sezione, upload dal selettore, bozza | pubblicato; v0.62 quattro livelli di sezioni, il selettore di file
@@ -95,10 +99,13 @@ riaperto e cambiato). **Design M1:** v1.15
 G0–G15): **da G0 a G12 sono chiuse** (§14–§27); **G13** (§28) raccoglie le rifiniture del collaudo,
 tutte fatte; **G15** (l'editor che risponde) e **G14** (il documento operativo) sono costruite, la
 prima su `main`, la seconda sulla PR #59 — il tag viene dopo che Carmine ha rieseguito la scheda.
-**Test, misurati il 12 settembre su `m1/media-dedupe` (sopra G14):** **478 .NET** (306 unit +
-172 integrazione, **tutta la suite eseguita in locale**, verde in 80 s) + **371 Vitest** + **56
-smoke Playwright** + **17 del giro pieno** (`pnpm e2e:full`, rieseguito dopo G14: il giro preme ora
-il pulsante della finestra di pubblicazione).
+**Test, misurati il 12 settembre su `m1/site-colour` (sopra la deduplica, sopra G14):** **306 .NET
+unit** + **375 Vitest** (quattro nuovi: i quattro accenti, e la striscia che offre ogni fondo con un
+nome) + **58 smoke Playwright** (due nuovi: i titoli del sito nel tema chiaro, il testo sul fondo
+azzurro) + **17 del giro pieno**, non rieseguito dopo il colore. ⚠️ Le **172 di integrazione** non
+sono state eseguite in locale il 12 settembre pomeriggio (Docker spento): sulla `m1/media-dedupe`
+erano verdi, e l'unica riga di C# che il colore tocca è un valore in più in
+`BlockDocumentWalker.Backgrounds`. Le fa la CI.
 ⚠️ Nel giro pieno compaiono a volte, nel log del server, errori di **connessione al DB** su
 `/api/blocks/data/*` (500 su `newsList` e `linkList`) senza che nessun test cada: visti due volte l'11
 settembre, la prima al primo giro della giornata. Non indagati; da guardare se un test dei blocchi
@@ -211,6 +218,23 @@ libreria va alla scheda che c'era e lo dice, il selettore dell'editor sceglie e 
 i dipartimenti, mai due righe su un file. ⚠️ **Il PNG finto dei test della libreria porta sedici
 byte casuali** (`MediaEndToEndTests.Png`): un 10×10 identico caricato da due test era diventato una
 riga sola il cui file il primo test aveva già cancellato. Conto: 478 .NET (uno nuovo).
+
+**Il sito ha un colore — il 12 settembre 2026**, branch `m1/site-colour` sopra la deduplica, PR #61
+(piano 0.67, `decisions/2026-09-12-il-sito-ha-un-colore.md`; Carmine: «possiamo renderla più colorata
+e accattivante?», poi «fai 1–4»). Il censimento che le ha fatte nascere: il pacchetto del brand porta
+**dieci famiglie di colore**, l'hub ne usava **due**. Quattro cose su otto proposte. (1) **I titoli
+non sono più grigi**: la regola base di Atmosphere dipinge h2–h6 in `fuselage-400`, ≈ 3,2 : 1 su
+bianco, che non basta per h5 e h6 — è il **terzo** override, una riga, e vince perché sta fuori da
+ogni layer mentre la loro sta in `@layer base`. (2) Il fondo **`accent` è l'azzurro `ocean-50`** e non
+più il quarto grigio (nel tema scuro era **lo stesso colore di `muted`**). (3) **`aurora` è l'ottavo
+fondo**, quarto dei fondi scuri, costruito come gli altri tre. (4) **L'accento di un blocco** —
+`brand`, `ocean`, `aurora`, `artifice` su `hero`, `cardGrid`, `iconGrid`, `timeline` — sta sui
+grafici e **mai sotto una parola**, con `brand` come valore predefinito: nessuna pagina già scritta
+cambia. ⚠️ Due cose che solo il browser ha detto: il colore su tutti e quattro i lati trasformava una
+scheda in un contorno colorato (ora `border-t-*`), e il **numero di un passo** misurava 4,15 : 1 su
+un fondo scuro — falliva anche prima di oggi, ora è del colore del testo e `contrast.spec.ts` porta
+un `timeline` per dirlo da sé. Non fatte, e scritte nella nota: il distintivo che dice qualcosa,
+pagina e scheda invertite, la famiglia d'accento in `division.json`, il colore sui dati vivi.
 
 **Da decidere prima di scrivere codice:**
 

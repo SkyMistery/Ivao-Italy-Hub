@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 
 import englishCommon from '../../../../locales/en/common.json';
+import { BACKGROUNDS } from '../../blocks';
 import { renderWithProviders } from '../../test/harness';
 
 import { SectionFrame } from './SectionFrame';
@@ -55,4 +56,20 @@ test('a layout is a picture, and choosing one applies it', async () => {
   await user.click(screen.getByRole('button', { name: words.options.layout['1/3+2/3'] }));
 
   expect(onLayout).toHaveBeenCalledWith('1/3+2/3');
+});
+
+test('every ground the envelope allows is in the strip, with a name', () => {
+  renderWithProviders(
+    <SectionFrame background="none" layout="stacked" onBackground={vi.fn()} onLayout={vi.fn()} />,
+  );
+
+  // Eight since 12 September 2026, and the test is the list itself rather than the number: adding a
+  // value to `BACKGROUNDS` without a label leaves a swatch whose only name is the key, which a
+  // sighted editor never notices and a screen reader reads out loud. `SWATCH` is a `Record`, so the
+  // colour is the compiler's problem; the name is this one's.
+  for (const value of BACKGROUNDS) {
+    const label: string | undefined = words.options.background[value];
+    expect(label, `no name for the "${value}" ground`).toBeTruthy();
+    expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+  }
 });

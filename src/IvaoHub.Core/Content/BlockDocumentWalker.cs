@@ -85,7 +85,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// keeps them agreeing.</para>
     /// </summary>
     public static readonly IReadOnlyList<string> Backgrounds =
-        ["none", "muted", "accent", "brand", "deep", "dark", "image"];
+        ["none", "muted", "accent", "brand", "deep", "dark", "aurora", "image"];
 
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 

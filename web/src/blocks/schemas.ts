@@ -73,6 +73,20 @@ export const ALIGNMENTS = ['left', 'center'] as const;
 /** The three grounds a block that owns its background may stand on (docs/UI-GUIDELINES.md). */
 export const TONES = ['plain', 'muted', 'accent'] as const;
 
+/**
+ * The four accents a block may be drawn with (12 September 2026,
+ * `decisions/2026-09-12-il-sito-ha-un-colore.md`). Four families of the brand's own palette, a closed
+ * set like the grounds and for the same reason: there is no free colour anywhere in this hub.
+ *
+ * ⚠️ An accent colours **graphics** — an icon, a rule above a card, a bar above a hero — and never a
+ * word. WCAG asks 3 : 1 of a graphic and 4.5 : 1 of text, and the brand's orange does not reach the
+ * second on every ground it can stand on. `blocks.tsx` holds the pairs and says the numbers.
+ *
+ * `brand` first because it is the default, and the default is what those blocks already looked like:
+ * no page written before today changes when it is read after it.
+ */
+export const ACCENTS = ['brand', 'ocean', 'aurora', 'artifice'] as const;
+
 /** How many columns a grid has. Numbers, so the count never reads as text of the page. */
 export const GRID_COLUMNS = [2, 3, 4];
 
@@ -116,6 +130,7 @@ export const heroSchema = z.object({
   // A hero is one of the three blocks whose identity *is* its ground (docs/UI-GUIDELINES.md), so
   // it carries a tone of its own where an ordinary block leaves that to its section.
   tone: z.enum(TONES).default('muted'),
+  accent: z.enum(ACCENTS).default('brand'),
   primary: z.object(linkFields).optional(),
   secondary: z.object(linkFields).optional(),
 });
@@ -151,6 +166,7 @@ export const embedSchema = z.object({
 
 export const timelineSchema = z.object({
   variant: z.enum(TIMELINE_VARIANTS).default('steps'),
+  accent: z.enum(ACCENTS).default('brand'),
   items: z.array(
     z.object({
       title: localized(),
@@ -225,6 +241,7 @@ export const coordinationSchema = z.object({
 
 export const cardGridSchema = z.object({
   columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
+  accent: z.enum(ACCENTS).default('brand'),
   cards: z.array(
     z.object({
       title: localized(),
@@ -238,6 +255,7 @@ export const cardGridSchema = z.object({
 
 export const iconGridSchema = z.object({
   columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
+  accent: z.enum(ACCENTS).default('brand'),
   items: z.array(
     z.object({
       icon: z.string().meta({ icon: true }),

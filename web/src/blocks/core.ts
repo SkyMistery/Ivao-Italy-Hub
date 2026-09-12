@@ -251,7 +251,11 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       title: sample.title,
       text: sample.lead,
       align: 'left',
-      tone: 'muted',
+      tone: 'accent',
+      // ⚠️ The four examples of this file each choose a different accent on purpose: the gallery
+      // mounts what the registry declares, so `/staff/admin/ui-kit` shows all four of them without
+      // anybody adding a section to it (12 September 2026).
+      accent: 'ocean',
       primary: { label: { en: 'Start here', it: 'Comincia da qui' }, href: '/start' },
     },
     editorLabelKey: 'blocks.hero.label',
@@ -312,6 +316,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: TimelineBlock,
     example: {
       variant: 'steps',
+      accent: 'artifice',
       items: [
         {
           title: { en: 'Sign up', it: 'Iscriviti' },
@@ -363,6 +368,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: CardGridBlock,
     example: {
       columns: 3,
+      accent: 'ocean',
       cards: [
         { title: { en: 'Fly', it: 'Vola' }, text: sample.lead, icon: 'plane' },
         { title: { en: 'Control', it: 'Controlla' }, text: sample.lead, icon: 'towerControl' },
@@ -382,6 +388,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     component: IconGridBlock,
     example: {
       columns: 3,
+      accent: 'aurora',
       items: [
         { icon: 'radar', title: { en: 'Radar', it: 'Radar' }, text: sample.lead },
         { icon: 'headphones', title: { en: 'Support', it: 'Supporto' }, text: sample.lead },

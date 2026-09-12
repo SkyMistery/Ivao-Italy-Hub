@@ -459,10 +459,11 @@
         "background": {
           "none": "Nessuno",
           "muted": "Tenue",
-          "accent": "Accento",
+          "accent": "Azzurro",
           "brand": "Blu del marchio",
           "deep": "Blu profondo",
           "dark": "Scuro",
+          "aurora": "Petrolio scuro",
           "image": "Immagine"
         },
         "padding": {
@@ -771,6 +772,7 @@
         "mediaId": "Immagine",
         "align": "Allineamento",
         "tone": "Sfondo",
+        "accent": "Colore d'accento",
         "primary": "Pulsante principale",
         "primary.label": "Etichetta",
         "primary.href": "Indirizzo",
@@ -786,7 +788,13 @@
         "tone": {
           "plain": "Neutro",
           "muted": "Tenue",
-          "accent": "Accento"
+          "accent": "Azzurro"
+        },
+        "accent": {
+          "brand": "Blu del marchio",
+          "ocean": "Blu",
+          "aurora": "Verde petrolio",
+          "artifice": "Arancio"
         }
       }
     },
@@ -846,6 +854,7 @@
       "label": "Passi",
       "fields": {
         "variant": "Disegnato come",
+        "accent": "Colore d'accento",
         "items": "Passi",
         "items.title": "Titolo",
         "items.text": "Testo",
@@ -856,6 +865,12 @@
         "variant": {
           "steps": "Una fila di passi",
           "timeline": "Una linea del tempo"
+        },
+        "accent": {
+          "brand": "Blu del marchio",
+          "ocean": "Blu",
+          "aurora": "Verde petrolio",
+          "artifice": "Arancio"
         }
       }
     },
@@ -882,6 +897,7 @@
       "label": "Schede",
       "fields": {
         "columns": "Colonne",
+        "accent": "Colore d'accento",
         "cards": "Schede",
         "cards.title": "Titolo",
         "cards.text": "Testo",
@@ -894,6 +910,12 @@
           "2": "Due",
           "3": "Tre",
           "4": "Quattro"
+        },
+        "accent": {
+          "brand": "Blu del marchio",
+          "ocean": "Blu",
+          "aurora": "Verde petrolio",
+          "artifice": "Arancio"
         }
       }
     },
@@ -901,6 +923,7 @@
       "label": "Icone",
       "fields": {
         "columns": "Colonne",
+        "accent": "Colore d'accento",
         "items": "Voci",
         "items.icon": "Icona",
         "items.title": "Titolo",
@@ -911,6 +934,12 @@
           "2": "Due",
           "3": "Tre",
           "4": "Quattro"
+        },
+        "accent": {
+          "brand": "Blu del marchio",
+          "ocean": "Blu",
+          "aurora": "Verde petrolio",
+          "artifice": "Arancio"
         }
       }
     },

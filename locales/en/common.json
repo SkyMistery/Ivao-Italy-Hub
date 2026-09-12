@@ -459,10 +459,11 @@
         "background": {
           "none": "None",
           "muted": "Muted",
-          "accent": "Accent",
+          "accent": "Pale blue",
           "brand": "Brand blue",
           "deep": "Deep blue",
           "dark": "Dark",
+          "aurora": "Dark teal",
           "image": "Picture"
         },
         "padding": {
@@ -771,6 +772,7 @@
         "mediaId": "Picture",
         "align": "Alignment",
         "tone": "Ground",
+        "accent": "Accent colour",
         "primary": "Main button",
         "primary.label": "Label",
         "primary.href": "Address",
@@ -786,7 +788,13 @@
         "tone": {
           "plain": "Plain",
           "muted": "Muted",
-          "accent": "Accent"
+          "accent": "Pale blue"
+        },
+        "accent": {
+          "brand": "Brand blue",
+          "ocean": "Blue",
+          "aurora": "Teal",
+          "artifice": "Orange"
         }
       }
     },
@@ -846,6 +854,7 @@
       "label": "Steps",
       "fields": {
         "variant": "Drawn as",
+        "accent": "Accent colour",
         "items": "Steps",
         "items.title": "Title",
         "items.text": "Text",
@@ -856,6 +865,12 @@
         "variant": {
           "steps": "A row of steps",
           "timeline": "A timeline"
+        },
+        "accent": {
+          "brand": "Brand blue",
+          "ocean": "Blue",
+          "aurora": "Teal",
+          "artifice": "Orange"
         }
       }
     },
@@ -882,6 +897,7 @@
       "label": "Cards",
       "fields": {
         "columns": "Columns",
+        "accent": "Accent colour",
         "cards": "Cards",
         "cards.title": "Title",
         "cards.text": "Text",
@@ -894,6 +910,12 @@
           "2": "Two",
           "3": "Three",
           "4": "Four"
+        },
+        "accent": {
+          "brand": "Brand blue",
+          "ocean": "Blue",
+          "aurora": "Teal",
+          "artifice": "Orange"
         }
       }
     },
@@ -901,6 +923,7 @@
       "label": "Icons",
       "fields": {
         "columns": "Columns",
+        "accent": "Accent colour",
         "items": "Entries",
         "items.icon": "Icon",
         "items.title": "Title",
@@ -911,6 +934,12 @@
           "2": "Two",
           "3": "Three",
           "4": "Four"
+        },
+        "accent": {
+          "brand": "Brand blue",
+          "ocean": "Blue",
+          "aurora": "Teal",
+          "artifice": "Orange"
         }
       }
     },
