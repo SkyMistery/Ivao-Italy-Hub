@@ -25,9 +25,10 @@
 > 6. **PR #64 `m1/interactive-block` → `m1/security-headers`**: il blocco interattivo, **tutti e
 >    cinque i passi**. Guardarlo ha trovato due cose che i test non vedevano: quattro schermate su
 >    cinque non fornivano il contesto (una pagina qualunque non disegnava nessun frame) e il frame si
->    dipingeva un fondo nero sopra le sezioni scure. ⚠️ Il giro contro l'**API vera**
->    (`e2e/full/interactive.spec.ts`) è scritto ma **non eseguito qui**: Docker non si avvia su questa
->    macchina. Lo esegue la CI.
+>    dipingeva un fondo nero sopra le sezioni scure. Il giro contro l'**API vera**
+>    (`e2e/full/interactive.spec.ts`) non è stato eseguito qui — Docker non si avvia su questa
+>    macchina — ma **la CI l'ha eseguito, verde**. CI verde in tutto: **487 .NET**, 66 smoke, **18 del
+>    giro pieno**.
 >
 > **Ordine di merge** (memoria `stacked-pr-base-deletion`): una alla volta dal basso — mergiare la
 > #59, ritargettare la #60 su `main` (`gh pr edit 60 --base main`), mergiare la #60, e così la #61,
@@ -118,8 +119,9 @@ prima su `main`, la seconda sulla PR #59 — il tag viene dopo che Carmine ha ri
 unit** + **375 Vitest** (quattro nuovi: i quattro accenti, e la striscia che offre ogni fondo con un
 nome) + **58 smoke Playwright** (due nuovi: i titoli del sito nel tema chiaro, il testo sul fondo
 azzurro), **62 dal pomeriggio** con i quattro degli header, + **17 del giro pieno**, non rieseguito
-dopo il colore. Con il blocco interattivo: **383 Vitest** e **308 .NET unit**, più quattro di
-integrazione che solo la CI esegue. ⚠️ Da qui in poi **la suite smoke gira sotto la CSP vera**: la preview di Vite manda
+dopo il colore. Con il blocco interattivo, misurati in CI il 12 settembre sera: **487 .NET**
+(309 unit + 178 integrazione), **383 Vitest**, **66 smoke**, **18 del giro pieno** — e quel giro ora
+contiene l'animazione servita dall'endpoint vero. ⚠️ Da qui in poi **la suite smoke gira sotto la CSP vera**: la preview di Vite manda
 gli stessi header del backend, letti dallo stesso `config/security.json`. ⚠️ Le **172 di
 integrazione** non sono state eseguite in locale il 12 settembre pomeriggio (Docker spento): sulla
 `m1/media-dedupe` erano verdi, il colore tocca una riga di C# (un valore in più in
@@ -294,7 +296,12 @@ blocco a chi non ha il permesso. **Guardato in un browser** (passi 4 e 5), e gua
 due cose che i test non vedevano: il contesto lo forniva **una sola schermata** su cinque — quindi
 una pagina qualunque non disegnava niente — e il frame si dipingeva **un fondo nero** sopra una
 sezione scura (`color-scheme: dark` fa dipingere la tela al browser). Corretti tutti e due; il
-secondo è il motivo per cui nel guscio non c'è nessun `color-scheme`. E il confine da ricordare: il
+secondo è il motivo per cui nel guscio non c'è nessun `color-scheme`. ⚠️ E una terza, trovata dal
+**banco** e non da un test locale: il blocco era registrato **solo in TypeScript**, e il server
+rifiutava la prima pagina che lo conteneva (`errors.body.blockTypeUnknown`) — i test di integrazione
+non lo vedevano perché scrivono i corpi direttamente nel database. Ora `CoreBlocks` lo conosce, e un
+test di architettura legge `CORE_BLOCK_TYPES` dal TypeScript e lo confronta con la lista del server:
+fallisce in un secondo dove il banco ci metteva sei minuti. E il confine da ricordare: il
 widget è interattivo **dentro la sua scatola**, non cambia il testo intorno e non ricorda niente.
 
 **Da decidere prima di scrivere codice:**
