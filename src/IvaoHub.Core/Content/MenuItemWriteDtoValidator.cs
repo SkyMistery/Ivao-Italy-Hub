@@ -127,11 +127,14 @@ public sealed class MenuItemWriteDtoValidator : AbstractValidator<MenuItemWriteD
 
         if (path.StartsWith('/'))
         {
-            var slug = path[1..];
+            // The whole address, since pages sit under pages (note 2026-09-13-contenuti-centralizzati).
+            var address = path[1..];
 
             return await CrudSource.BackOffice<ContentEntry>(database)
                 .AnyAsync(
-                    row => !row.IsTemplate && row.Kind == ContentKind.Page && row.Slug == slug,
+                    row => !row.IsTemplate
+                        && row.Kind == ContentKind.Page
+                        && EF.Property<string>(row, ContentAddresses.StoredPath) == address,
                     cancellationToken);
         }
 

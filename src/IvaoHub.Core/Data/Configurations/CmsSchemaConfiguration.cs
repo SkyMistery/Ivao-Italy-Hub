@@ -32,9 +32,20 @@ internal sealed class ContentEntryConfiguration : IEntityTypeConfiguration<Conte
         builder.Property(content => content.ShowFooter).HasDefaultValue(true);
         builder.HasIndex(content => new { content.Kind, content.ReviewOn });
 
-        // MariaDB has no filtered indexes, so a template and a page may share a slug but two pages
-        // may not (design M0 section 5.1).
-        builder.HasIndex(content => new { content.Kind, content.Slug, content.IsTemplate }).IsUnique();
+        // The address of a page is its parent's address and its own slug (note
+        // 2026-09-13-contenuti-centralizzati, 3.7). The database computes it into a stored column so
+        // that it can be unique and looked up in one step; `Path` on the entity is the same
+        // expression, for the code. MariaDB has no filtered indexes, so a template and a page may
+        // share an address but two pages may not (design M0 section 5.1). The unique index on the
+        // slug alone goes: two pages may share a slug under two different parents.
+        builder.Ignore(content => content.Path);
+        builder.Property(content => content.ParentPath).HasMaxLength(ContentAddresses.MaxParentPathLength);
+        builder.Property(content => content.PreviousPathsJson).HasColumnType("json");
+        builder.Property<string>(ContentAddresses.StoredPath)
+            .HasMaxLength(ContentAddresses.MaxPathLength)
+            .HasComputedColumnSql("concat_ws('/', `parent_path`, `slug`)", stored: true);
+        builder.HasIndex(nameof(ContentEntry.Kind), ContentAddresses.StoredPath, nameof(ContentEntry.IsTemplate)).IsUnique();
+        builder.HasIndex(content => content.ParentId);
         builder.HasIndex(content => new { content.Kind, content.Status });
         builder.HasIndex(content => new { content.OwnerDepartment, content.Status });
         builder.HasIndex(content => content.TemplateId);

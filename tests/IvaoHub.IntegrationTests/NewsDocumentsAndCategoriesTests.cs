@@ -36,10 +36,13 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
 
     private HubWebApplicationFactory _factory = null!;
 
-    public ValueTask InitializeAsync()
+    /// <summary>The page this class writes its pages under (<see cref="TestShelf"/>).</summary>
+    private long _shelf;
+
+    public async ValueTask InitializeAsync()
     {
         _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
-        return ValueTask.CompletedTask;
+        _shelf = await TestShelf.SeedAsync(_factory, "test-shelf-news", TestContext.Current.CancellationToken);
     }
 
     public ValueTask DisposeAsync() => _factory.DisposeAsync();
@@ -87,7 +90,7 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
             events,
             HttpMethod.Post,
             $"{ContentEndpoints.Pattern}/from-template/{templateId}",
-            new { ownerDepartment = nameof(Department.ED), slug = Slug("from-wd") },
+            new { ownerDepartment = nameof(Department.ED), slug = Slug("from-wd"), parentId = _shelf },
             token);
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);

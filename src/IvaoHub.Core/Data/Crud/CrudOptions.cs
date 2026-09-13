@@ -163,6 +163,18 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     /// </summary>
     public Func<TEntity, string?>? ExtraWritePolicy { get; set; }
 
+    /// <summary>
+    /// What a write of this resource does to the database beyond its own row, and what it may
+    /// refuse only by looking there — run after the payload is applied and the permissions checked,
+    /// before the save, in the same unit of work. Returning errors, one or more i18n keys per field,
+    /// refuses the write with the same <c>ProblemDetails</c> a validator would give.
+    /// <para>The address of a page is the reason it exists (note 2026-09-13-contenuti-centralizzati,
+    /// 3.7): whether the address is free and not reserved, whether the page may sit where it was put,
+    /// and moving the pages under it along with it are facts of other rows, which a validator of one
+    /// payload cannot see and an interceptor that knows no entity must not decide.</para>
+    /// </summary>
+    public Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? BeforeSave { get; set; }
+
     internal string EffectiveName =>
         string.IsNullOrWhiteSpace(Name) ? PermissionArea : Name;
 
@@ -208,3 +220,16 @@ public sealed class CrudSearchFields<TEntity> : IEnumerable<CrudSearchField<TEnt
 public sealed record CrudSearchField<TEntity>(
     Func<string, Expression<Func<TEntity, string?>>> Selector,
     bool IsLocalized);
+
+/// <summary>What <see cref="CrudOptions{TEntity, TListDto, TDetailDto, TWriteDto}.BeforeSave"/> is handed.</summary>
+/// <param name="Database">The context the row is about to be saved through.</param>
+/// <param name="Services">The services of the request.</param>
+/// <param name="CurrentUser">Who is writing.</param>
+/// <param name="IsNew">True on a create, false on an update.</param>
+/// <param name="CancellationToken">The request's.</param>
+public sealed record CrudSaving(
+    DbContext Database,
+    IServiceProvider Services,
+    Auth.ICurrentUser CurrentUser,
+    bool IsNew,
+    CancellationToken CancellationToken);

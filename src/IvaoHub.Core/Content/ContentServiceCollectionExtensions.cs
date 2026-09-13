@@ -46,6 +46,7 @@ public static class ContentServiceCollectionExtensions
         services.TryAddSingleton<MediaStorage>();
 
         services.TryAddScoped<ContentPublishService>();
+        services.TryAddScoped<ContentAddresses>();
         services.TryAddScoped<ContentSeeder>();
 
         // The review reminder of an operational document (G14), once a day at night in the

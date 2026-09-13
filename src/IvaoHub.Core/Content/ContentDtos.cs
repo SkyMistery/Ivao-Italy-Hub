@@ -13,6 +13,8 @@ public sealed record ContentListDto(
     long Id,
     ContentKind Kind,
     string Slug,
+    long? ParentId,
+    string Path,
     Department OwnerDepartment,
     Visibility Visibility,
     PublishStatus Status,
@@ -37,6 +39,8 @@ public sealed record ContentDetailDto(
     long Id,
     ContentKind Kind,
     string Slug,
+    long? ParentId,
+    string Path,
     Department OwnerDepartment,
     Visibility Visibility,
     PublishStatus Status,
@@ -99,7 +103,9 @@ public sealed record ContentWriteDto(
     DateTime RowVersion,
     // Last and defaulted: a client that never heard of the footer keeps it, rather than turning
     // it off on every page it saves.
-    bool ShowFooter = true);
+    bool ShowFooter = true,
+    // The page this one sits under (note 2026-09-13-contenuti-centralizzati, 3.7); null at the top.
+    long? ParentId = null);
 
 /// <summary>
 /// What the public site is given: the published version and nothing about the draft behind it.
@@ -119,6 +125,7 @@ public sealed record PublicContentDto(
     long Id,
     ContentKind Kind,
     string Slug,
+    string Path,
     Department OwnerDepartment,
     Localized<string> Title,
     Localized<string>? Summary,

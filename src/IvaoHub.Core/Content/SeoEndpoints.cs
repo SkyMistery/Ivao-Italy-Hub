@@ -62,7 +62,7 @@ public static class SeoEndpoints
             .AsNoTracking()
             .Where(content => !content.IsTemplate)
             .OrderBy(content => content.Slug)
-            .Select(content => new { content.Kind, content.Slug, content.OwnerDepartment, content.PublishedAt })
+            .Select(content => new { content.Kind, content.Slug, content.ParentPath, content.OwnerDepartment, content.PublishedAt })
             .ToListAsync(http.RequestAborted);
 
         var origin = $"https://{division.Value.Domain}";
@@ -90,6 +90,7 @@ public static class SeoEndpoints
                 {
                     Kind = row.Kind,
                     Slug = row.Slug,
+                    ParentPath = row.ParentPath,
                     OwnerDepartment = row.OwnerDepartment,
                 }.Url;
 
