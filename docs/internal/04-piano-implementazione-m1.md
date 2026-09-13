@@ -1563,8 +1563,11 @@ diceva:
 - **La striscia sotto il titolo** ora si disegna per ogni documento e sparisce da sola se non ha
   «in vigore dal»: `isOperational` non aveva più niente da decidere. `operational.ts` è
   `documentDays.ts`; `positions.ts` e il suo test non ci sono più.
-- **Non verificato in locale**: i test d'integrazione e il giro e2e, perché Docker Desktop era spento;
-  li esegue la CI su MariaDB vera. Unit (309), Vitest (382), lint, typecheck, formato e i18n verdi.
+- **Non verificato in locale**: i test d'integrazione e il giro e2e, perché Docker Desktop era spento.
+  In locale: unit (309), Vitest (382), lint, typecheck, formato e i18n verdi. **In CI, su MariaDB
+  vera, tutto verde** al secondo giro; il primo ha trovato un rosso vero e utile —
+  `ASuperAdministratorHoldsTheWholeCatalogueThroughApiMe` contava `CorePermissions.All` e il
+  superadmin ora tiene anche `Sample.Read`: il test confronta con il catalogo dell'host.
 
 #### G17 — Una schermata per oggetto
 

@@ -27,7 +27,9 @@
 > settimane.**
 >
 > ⚠️ **Per G16 i test d'integrazione e il giro e2e non sono stati eseguiti in locale** (Docker
-> Desktop spento): li esegue la CI, su MariaDB vera. Una macchina con un DB di sviluppo già seminato **non** ha la
+> Desktop spento): li ha eseguiti la CI su MariaDB vera, **verdi** — integrazione, smoke e giro (PR #66).
+> Il primo giro aveva un rosso vero: il superadmin contava i permessi del solo nucleo, e ora tiene
+> anche quello del modulo, come deve. Una macchina con un DB di sviluppo già seminato **non** ha la
 > voce di menu `/atc`, che ora arriva dal seed e non più dal modulo: si aggiunge da `/staff/wd/menu`,
 > insieme al link ad `atc.it.ivao.aero` (nessun seed lo può nominare).
 >
