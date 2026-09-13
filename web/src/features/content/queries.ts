@@ -20,7 +20,11 @@ export type ContentPublishProblemsDto = components['schemas']['ContentPublishPro
 
 export const contentKey = ['content'] as const;
 
-export function contentListKey(department: Department, search: ListSearch, kind: ContentKind | null) {
+export function contentListKey(
+  department: Department | undefined,
+  search: ListSearch,
+  kind: ContentKind | null,
+) {
   return [...contentKey, 'list', department, kind, search] as const;
 }
 
@@ -28,7 +32,7 @@ export function contentDetailKey(id: number) {
   return [...contentKey, 'detail', id] as const;
 }
 
-export function templateListKey(department: Department, search: ListSearch) {
+export function templateListKey(department: Department | undefined, search: ListSearch) {
   return [...contentKey, 'template-list', department, search] as const;
 }
 
@@ -57,11 +61,14 @@ export function publicContentKey(kind: ContentKind, slug: string) {
 }
 
 /**
- * One page of the content of a department. Templates are not in it: the server keeps them out
- * unless a caller asks, which is what the template picker does through `templatesQuery`.
+ * One page of content: of one department when it is given, of every department the reader reaches
+ * when it is not — the server narrows the list to those either way, so leaving the department out
+ * is the screen of the whole back office and not a leak (note 2026-09-13-contenuti-centralizzati).
+ * Templates are not in it: the server keeps them out unless a caller asks, which is what the
+ * template picker does through `templatesQuery`.
  */
 export function contentListQuery(
-  department: Department,
+  department: Department | undefined,
   search: ListSearch,
   kind: ContentKind | null = null,
 ) {
@@ -72,7 +79,7 @@ export function contentListQuery(
         await api.GET('/api/content', {
           params: { query: toQuery(search) },
           querySerializer: listQuerySerializer({
-            ownerDepartment: department,
+            ...(department === undefined ? {} : { ownerDepartment: department }),
             ...(kind === null ? {} : { kind }),
           }),
         }),
@@ -81,21 +88,24 @@ export function contentListQuery(
 }
 
 /**
- * The templates **of one department**, as its own screen lists them: every kind together, because a
- * department has a handful and splitting them into three lists would be three screens for nine rows.
+ * The templates, of one department or of every one the reader reaches: every kind together, because
+ * a department has a handful and splitting them into three lists would be three screens for nine rows.
  *
  * It is the same list endpoint as everything else with the default filter turned round — the server
  * keeps templates out unless a caller asks — so paging, sorting and searching are the ordinary ones
  * and there is nothing new behind this.
  */
-export function templateListQuery(department: Department, search: ListSearch) {
+export function templateListQuery(department: Department | undefined, search: ListSearch) {
   return queryOptions({
     queryKey: templateListKey(department, search),
     queryFn: async (): Promise<ContentPage> =>
       unwrap(
         await api.GET('/api/content', {
           params: { query: toQuery(search) },
-          querySerializer: listQuerySerializer({ ownerDepartment: department, isTemplate: 'true' }),
+          querySerializer: listQuerySerializer({
+            ...(department === undefined ? {} : { ownerDepartment: department }),
+            isTemplate: 'true',
+          }),
         }),
       ),
   });

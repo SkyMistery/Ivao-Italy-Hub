@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router';
 import type { ComponentProps } from 'react';
 
+import { linkTarget } from '../../shared/ui/linkTarget';
+
 /**
  * An anchor that navigates without reloading the page.
  *
@@ -29,11 +31,22 @@ export function RouterAnchor({ href, ...rest }: ComponentProps<'a'>) {
   // And `includeSearch: false` with it, or exact matching finds nothing at all: a list puts its
   // paging and its sorting in the address, and `/staff/ed/documents?page=1` is not, to an exact
   // comparison that counts the query, the page `/staff/ed/documents` links to.
+  //
+  // ⚠️ Unless the address carries a query of its own. Since 13 September 2026 the back office has
+  // one screen per object and says which kind and which department in the query
+  // (`/staff/content?kind=News&department=TD`), and `to` is a path: a query written into it is not
+  // parsed, it becomes part of the path and matches no route. So it travels as `search`, and it is
+  // compared — against what the address bar holds, not against the defaults a route fills in — so
+  // that the pages of Training and the pages of every department are not both "the current page".
+  const target = linkTarget(href);
+
   return (
     <Link
-      {...({ activeOptions: { exact: true, includeSearch: false }, ...rest, to: href } as ComponentProps<
-        typeof Link
-      >)}
+      {...({
+        activeOptions: { exact: true, includeSearch: target.search !== undefined },
+        ...rest,
+        ...target,
+      } as unknown as ComponentProps<typeof Link>)}
     />
   );
 }

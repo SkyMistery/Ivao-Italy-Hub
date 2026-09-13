@@ -60,12 +60,6 @@ export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boo
 }
 
 /**
- * The departments a staff member may work in: their own, or every one of them when the role
- * reaches everywhere. `hasAllDepartments` is a fact of the role, stated by the server; it is not
- * read off the shape of the permission list, for the same reason the server does not read it that
- * way (design M0 §3.3).
- */
-/**
  * The department the site itself belongs to: its menu, its templates and the pages the installation
  * was born with. It comes from the bootstrap and is never written here — a client that knew which
  * department that is would be a client that knows which division it is running for.
@@ -75,6 +69,12 @@ export function menuDepartment(bootstrap: Bootstrap): Department | null {
   return isDepartment(code) ? code : null;
 }
 
+/**
+ * The departments a staff member may work in: their own, or every one of them when the role
+ * reaches everywhere. `hasAllDepartments` is a fact of the role, stated by the server; it is not
+ * read off the shape of the permission list, for the same reason the server does not read it that
+ * way (design M0 §3.3).
+ */
 export function reachableDepartments(bootstrap: Bootstrap): Department[] {
   const user = bootstrap.user;
   if (!user) {
@@ -82,4 +82,16 @@ export function reachableDepartments(bootstrap: Bootstrap): Department[] {
   }
 
   return user.hasAllDepartments ? [...DEPARTMENTS] : user.departments.filter(isDepartment);
+}
+
+/**
+ * The departments this person may **create** a row of something in: those they reach and hold the
+ * permission on. It is what a "new" button of a screen that is not about one department asks
+ * (note 2026-09-13-contenuti-centralizzati): one answer, and the button goes there; several, and
+ * the screen asks which. The server refuses any other department anyway.
+ */
+export function writableDepartments(bootstrap: Bootstrap, permission: string): Department[] {
+  return reachableDepartments(bootstrap).filter((department) =>
+    holdsPermission(bootstrap, permission, department),
+  );
 }

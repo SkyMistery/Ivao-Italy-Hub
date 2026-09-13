@@ -1,12 +1,12 @@
-import { H1, Label, Lead, Select } from '@ivao/atmosphere-react';
+import { H1, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { BlockView, blockDataQuery, newId, type ContentListData } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
-import { NO_CHOICE } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { ListFilter } from '../../shared/list';
 
 /**
  * A public list of one kind of content: `/news` and `/documents`.
@@ -74,7 +74,7 @@ export function PublicListScreen({
       </header>
 
       <div className="flex flex-wrap items-end gap-4">
-        <Filter
+        <ListFilter
           id="category"
           label={t(`${titles}.public.filters.category`)}
           none={t(`${titles}.public.filters.allCategories`)}
@@ -86,7 +86,7 @@ export function PublicListScreen({
           }))}
         />
 
-        <Filter
+        <ListFilter
           id="department"
           label={t(`${titles}.public.filters.department`)}
           none={t(`${titles}.public.filters.allDepartments`)}
@@ -119,40 +119,3 @@ export function PublicListScreen({
  * saved: this block belongs to a screen, not to a body somebody wrote.
  */
 const LIST_BLOCK_ID = newId('b');
-
-/**
- * One filter. A select with a way back to "everything", the same gesture an optional field of the
- * form generator has, because a filter you cannot clear is a filter that traps a visitor.
- */
-function Filter({
-  id,
-  label,
-  none,
-  value,
-  onChange,
-  items,
-}: {
-  id: string;
-  label: string;
-  none: string;
-  value: string | undefined;
-  onChange: (value: string | undefined) => void;
-  items: readonly { value: string; label: string }[];
-}) {
-  return (
-    <div className="flex min-w-48 flex-col gap-1">
-      <Label htmlFor={id}>{label}</Label>
-      <Select
-        // Measured, not assumed: Atmosphere's `Select` forwards `id` to the trigger, which is what
-        // makes the label above actually name it. Without it the label points at nothing and the
-        // control is a button a screen reader reads as "Every category" and nothing else — the
-        // fifth contract of that library worth checking in a browser rather than reading.
-        id={id}
-        {...(value === undefined ? {} : { value })}
-        onValueChange={(chosen) => onChange(chosen === NO_CHOICE ? undefined : chosen)}
-        placeholder={none}
-        items={[{ value: NO_CHOICE, label: none }, ...items]}
-      />
-    </div>
-  );
-}

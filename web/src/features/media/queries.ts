@@ -2,7 +2,6 @@ import { queryOptions } from '@tanstack/react-query';
 
 import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap } from '../../shared/api/client';
-import { deptParam } from '../../shared/api/department';
 import type { components } from '../../shared/api/schema';
 import { listQuerySerializer, toQuery, listSearchSchema, type ListSearch } from '../../shared/list';
 import type { MediaLibraryQuery, MediaPage, PickableMedia } from '../../shared/ui';
@@ -20,7 +19,7 @@ export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
 
 export const mediaKey = ['media'] as const;
 
-export function mediaListKey(department: Department, search: ListSearch) {
+export function mediaListKey(department: Department | undefined, search: ListSearch) {
   return [...mediaKey, 'list', department, search] as const;
 }
 
@@ -32,15 +31,20 @@ export function mediaUsageKey(mediaId: number) {
   return [...mediaKey, 'usage', mediaId] as const;
 }
 
-/** One page of the library of a department. */
-export function mediaListQuery(department: Department, search: ListSearch) {
+/**
+ * One page of the library: of one department when it is given, otherwise every file the reader may
+ * read — their departments' and the public ones of the others (note 2026-09-13-contenuti-centralizzati).
+ */
+export function mediaListQuery(department: Department | undefined, search: ListSearch) {
   return queryOptions({
     queryKey: mediaListKey(department, search),
     queryFn: async (): Promise<MediaListPage> =>
       unwrap(
         await api.GET('/api/media', {
           params: { query: toQuery(search) },
-          querySerializer: listQuerySerializer({ ownerDepartment: department }),
+          querySerializer: listQuerySerializer(
+            department === undefined ? {} : { ownerDepartment: department },
+          ),
         }),
       ),
   });
@@ -58,7 +62,10 @@ export function mediaQuery(id: number) {
 const PICKER_PAGE_SIZE = 24;
 
 /**
- * What `MediaPicker` chooses from: the newest files of one department. It is the same resource and
+ * What `MediaPicker` chooses from: the newest files this person may use — their departments' and
+ * every public one of the others, which is the point of sharing them (note
+ * 2026-09-13-contenuti-centralizzati, 3.4). The department is only where "the library" link leads:
+ * the one the row being edited belongs to. It is the same resource and
  * the same list engine as the back office screen, asked for a smaller page and narrowed to what a
  * picker actually draws — which is also what lets the form generator carry it without knowing that
  * `/api/media` exists.
@@ -69,24 +76,19 @@ export function mediaPickerQuery(department: Department): MediaLibraryQuery {
   // Typed as the loose key the generator's prop declares: a picker is carried around by a
   // component that cannot know which resource it came from, so the key has to stop being specific
   // right here rather than at every place that passes it on.
-  const queryKey: readonly unknown[] = [...mediaKey, 'picker', department, PICKER_PAGE_SIZE];
+  const queryKey: readonly unknown[] = [...mediaKey, 'picker', PICKER_PAGE_SIZE];
 
   return queryOptions({
     queryKey,
     queryFn: async (): Promise<MediaPage<PickableMedia>> => {
-      const page = unwrap(
-        await api.GET('/api/media', {
-          params: { query: toQuery(search) },
-          querySerializer: listQuerySerializer({ ownerDepartment: department }),
-        }),
-      );
+      const page = unwrap(await api.GET('/api/media', { params: { query: toQuery(search) } }));
 
       return { items: page.items, total: page.total };
     },
     // Where this library lives, for the picker to point at (Carmine, 11 September 2026: "a link to
     // the page where the files are uploaded"). Carried on the query, because the query is the one
     // thing about the library that reaches the picker through the form generator.
-    meta: { libraryHref: `/staff/${deptParam.format(department)}/media` },
+    meta: { libraryHref: `/staff/media?department=${department}` },
   });
 }
 

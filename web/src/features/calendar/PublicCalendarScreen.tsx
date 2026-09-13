@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { blockDataQuery } from '../../blocks';
 import type { CalendarKind, Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
-import { NO_CHOICE } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { ListFilter } from '../../shared/list';
 import {
   CALENDAR_SCREEN_VIEWS,
   CalendarView,
@@ -95,7 +95,8 @@ export function PublicCalendarScreen({
           />
         </div>
 
-        <Filter
+        <ListFilter
+          className="min-w-40"
           id="department"
           label={t('calendar.public.filters.department')}
           none={t('calendar.public.filters.allDepartments')}
@@ -104,7 +105,8 @@ export function PublicCalendarScreen({
           items={DEPARTMENTS.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
         />
 
-        <Filter
+        <ListFilter
+          className="min-w-40"
           id="kind"
           label={t('calendar.public.filters.kind')}
           none={t('calendar.public.filters.allKinds')}
@@ -147,34 +149,4 @@ function readAnchor(on: string | undefined): Date {
 
   const parsed = new Date(`${on}T00:00:00Z`);
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-}
-
-/** One filter, with a way back to "everything": a filter you cannot clear traps a visitor. */
-function Filter({
-  id,
-  label,
-  none,
-  value,
-  onChange,
-  items,
-}: {
-  id: string;
-  label: string;
-  none: string;
-  value: string | undefined;
-  onChange: (value: string | undefined) => void;
-  items: readonly { value: string; label: string }[];
-}) {
-  return (
-    <div className="flex min-w-40 flex-col gap-1">
-      <Label htmlFor={id}>{label}</Label>
-      <Select
-        id={id}
-        {...(value === undefined ? {} : { value })}
-        onValueChange={(chosen) => onChange(chosen === NO_CHOICE ? undefined : chosen)}
-        placeholder={none}
-        items={[{ value: NO_CHOICE, label: none }, ...items]}
-      />
-    </div>
-  );
 }

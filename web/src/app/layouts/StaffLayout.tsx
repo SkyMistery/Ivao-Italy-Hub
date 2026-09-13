@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SearchPalette } from '../../features/search/SearchPalette';
 import type { Bootstrap } from '../../shared/api/bootstrap';
 import { CompactPageShells, StaffSidebar, type StaffSidebarGroup } from '../../shared/ui';
+import { linkTarget } from '../../shared/ui/linkTarget';
 
 import { AppFooter, AppHeader } from './Chrome';
 import { RouterAnchor } from './RouterAnchor';
@@ -50,7 +51,22 @@ export function StaffLayout({ bootstrap }: { bootstrap: Bootstrap }) {
         <StaffSidebar
           groups={groups}
           asLink={RouterAnchor}
-          isActiveCheck={(href) => location.pathname === href || location.pathname.startsWith(`${href}/`)}
+          isActiveCheck={(href) => {
+            // Since 13 September 2026 an entry may carry a query (`/staff/content?kind=News`): it is
+            // this page when the path is its path and the address holds every parameter it names.
+            // The list of one department holds the parameters of the list of all of them as well,
+            // and the sidebar lights the longer of the two, which is the one that says more.
+            const { to, search } = linkTarget(href);
+            if (search === undefined) {
+              return location.pathname === to || location.pathname.startsWith(`${to}/`);
+            }
+
+            const current = location.search as Record<string, unknown>;
+            return (
+              location.pathname === to &&
+              Object.entries(search).every(([key, value]) => String(current[key]) === value)
+            );
+          }}
           // ⚠️ In the sidebar and no longer above the content (Carmine, 11 September 2026). It could not
           // go there while the sidebar was Atmosphere's, which had no slot; it can now that the sidebar
           // is ours, and it sits beside the collapse button. It is still everywhere in the back office,

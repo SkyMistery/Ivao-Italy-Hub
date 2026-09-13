@@ -1541,5 +1541,20 @@
       "title": "Delete this kind?",
       "description": "The entries already filed under it keep the key they were written with, and nothing rewrites them. To stop anybody filing new ones under it, take \"in use\" off instead."
     }
+  },
+  "backOffice": {
+    "content": "Content",
+    "createIn": "In the department",
+    "filters": {
+      "kind": "Show",
+      "department": "Department",
+      "allDepartments": "Every department"
+    },
+    "kinds": {
+      "Page": "Pages",
+      "News": "News",
+      "Document": "Documents",
+      "Template": "Templates"
+    }
   }
 }

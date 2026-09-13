@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { toFormValues, useDeleteMedia, useUpdateMedia } from '../../features/media/mutations';
 import { mediaQuery, mediaUsageQuery, type MediaDetailDto } from '../../features/media/queries';
 import { mediaSchema, type MediaFormValues } from '../../features/media/schema';
-import { deptParam } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { ConfirmDialog, PageShell } from '../../shared/ui';
@@ -19,7 +18,7 @@ import { ConfirmDialog, PageShell } from '../../shared/ui';
  * two things that are not fields are the preview and the answer to "where is this used?", which is
  * what somebody about to delete a file needs to see first (design M1 §2).
  */
-export const Route = createFileRoute('/_staff/staff/$dept/media/$id')({
+export const Route = createFileRoute('/_staff/staff/media/$id')({
   loader: ({ context, params }): Promise<MediaDetailDto> =>
     context.queryClient.ensureQueryData(mediaQuery(Number(params.id))),
   component: MediaForm,
@@ -28,7 +27,7 @@ export const Route = createFileRoute('/_staff/staff/$dept/media/$id')({
 function MediaForm() {
   const { t, i18n } = useTranslation();
   const { bootstrap } = Route.useRouteContext();
-  const { dept, id } = Route.useParams();
+  const { id } = Route.useParams();
   const navigate = useNavigate();
 
   const locales = bootstrap.division.locales;
@@ -52,7 +51,8 @@ function MediaForm() {
     return null;
   }
 
-  const backToLibrary = () => void navigate({ to: '/staff/$dept/media', params: { dept } });
+  const department = media.ownerDepartment;
+  const backToLibrary = () => void navigate({ to: '/staff/media', search: { department } });
 
   const submit = async (values: MediaFormValues) => {
     await update.mutateAsync(values);
@@ -64,8 +64,8 @@ function MediaForm() {
       title={media.fileName}
       description={t('media.description')}
       breadcrumb={[
-        { label: dept },
-        { label: t('media.title'), to: `/staff/${deptParam.format(dept)}/media` },
+        { label: t(`departments.${department}`) },
+        { label: t('media.title'), to: `/staff/media?department=${department}` },
         { label: media.fileName },
       ]}
       actions={
@@ -92,11 +92,7 @@ function MediaForm() {
             <ul className="flex flex-col gap-1 text-sm">
               {usedBy.map((content) => (
                 <li key={content.id}>
-                  <Link
-                    to="/staff/$dept/content/$id"
-                    params={{ dept: content.ownerDepartment, id: String(content.id) }}
-                    className="underline"
-                  >
+                  <Link to="/staff/content/$id" params={{ id: String(content.id) }} className="underline">
                     {resolveLocalized(content.title, i18n.language, bootstrap.division.defaultLocale)}
                   </Link>
                 </li>
@@ -114,7 +110,7 @@ function MediaForm() {
           submitLabel={t('common.save')}
           secondaryAction={
             <Button asChild variant="ghost">
-              <Link to="/staff/$dept/media" params={{ dept }}>
+              <Link to="/staff/media" search={{ department }}>
                 {t('common.cancel')}
               </Link>
             </Button>
