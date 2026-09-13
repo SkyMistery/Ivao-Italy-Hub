@@ -25,7 +25,7 @@ const heading = {
   ],
 };
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(({ page }) => {
   page.on('pageerror', (error) => {
     throw new Error(`The page threw: ${error.message}`);
   });
