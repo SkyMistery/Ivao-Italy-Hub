@@ -248,7 +248,7 @@ test('an animation that tries to open the network says so, to the staff and to n
     }),
   );
 
-  await page.goto('/staff/ed/content/1');
+  await page.goto('/staff/content/1');
 
   // The browser refuses the request — `default-src 'none'` — and the refusal, which used to die in a
   // console nobody reads, arrives here as a line naming the directive.

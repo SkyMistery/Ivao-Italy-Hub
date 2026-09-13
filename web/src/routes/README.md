@@ -48,18 +48,13 @@ identity provider that will happily sign them in again.
 
 ## Recipe 2 — a list with typed search parameters
 
-`_staff/staff.$dept.links.tsx`.
+`_staff/staff.links.index.tsx`.
 
 ```tsx
-export const Route = createFileRoute('/_staff/staff/$dept/links')({
-  params: {
-    parse: ({ dept }) => ({ dept: deptParam.parse(dept) }),
-    stringify: ({ dept }) => ({ dept: deptParam.format(dept) }),
-  },
-  validateSearch: listSearchSchema,
+export const Route = createFileRoute('/_staff/staff/links/')({
+  validateSearch: departmentListSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps, params }) =>
-    context.queryClient.ensureQueryData(linksListQuery(params.dept, deps)),
+  loader: ({ context, deps }) => context.queryClient.ensureQueryData(linksListQuery(deps.department, deps)),
   component: LinksPage,
 });
 ```
@@ -67,11 +62,19 @@ export const Route = createFileRoute('/_staff/staff/$dept/links')({
 `listSearchSchema` (`shared/list/search.ts`) is the five parameters of `CrudListRequest`, and a
 compile time check in that file keeps it equal to the generated contract. Paging, sorting and
 searching are therefore the URL: a reload, a back button and a link somebody pasted into Discord all
-land on the same page.
+land on the same page. `departmentListSearchSchema` adds the department as an optional filter.
 
-`deptParam` (`shared/api/department.ts`) is the only place that converts `ed` in the address bar to
-`ED` in the contract. Params are handled as the parsed value everywhere else — `params={{ dept }}`
-on a `<Link>` takes the enum, and `stringify` writes the URL.
+**The department is a filter, not a segment, on the screens of content** — pages, news, documents,
+templates, links, media — since 13 September 2026 (note `2026-09-13-contenuti-centralizzati`): one
+screen per object, holding every department the reader reaches. The screens that still belong to one
+department — its dashboard, calendar, categories, contacts, and the menu of the site — keep
+`/staff/$dept/...`, and there `deptParam` (`shared/api/department.ts`) is the only place that
+converts `ed` in the address bar to `ED` in the contract: `params={{ dept }}` on a `<Link>` takes the
+enum, and `stringify` writes the URL.
+
+An address handed around as data with a query in it — the sidebar, the palette, a breadcrumb —
+goes through `linkTarget` (`shared/ui/linkTarget.ts`): a `Link`'s `to` is a path, and a query
+written into it matches no route.
 
 `filter[ownerDepartment]` is not a search parameter. It is not in the contract either, because its
 names are the properties of the entity; `listQuerySerializer` is the one place that spells it, and
@@ -124,8 +127,8 @@ editor creates cannot take an address the application already owns.
 | `_member.tsx` + `_member/` | Signed in: `/me`                                             |
 | `_staff.tsx` + `_staff/`   | Back office: `/staff/*`, with the department sidebar         |
 
-A layout route is pathless (`_public`), so the addresses stay `/`, `/me`, `/staff/ed/links`. Under
-`_staff/`, a file named `staff.$dept.links.tsx` is the route `/staff/$dept/links`.
+A layout route is pathless (`_public`), so the addresses stay `/`, `/me`, `/staff/links`. Under
+`_staff/`, a file named `staff.$dept.calendar.tsx` is the route `/staff/$dept/calendar`.
 
 Guards are the only authorisation in the client, and they are convenience, not security: every one
 of them is answered again by the server, which is what actually decides.

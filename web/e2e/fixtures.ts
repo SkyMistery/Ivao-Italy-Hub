@@ -201,8 +201,8 @@ export async function stubTheApi(page: Page): Promise<void> {
 }
 
 /**
- * A staff member who may work on the links of ED: enough to open `/staff/ed/links` and the form
- * behind its "new" button, and nothing more.
+ * A staff member who may work on the content, links and media of ED: enough to open `/staff/links`
+ * and the form behind its "new" button, and the content screens, and nothing more.
  *
  * `hasAllDepartments` is false and `departments` holds one entry on purpose: that is the identity
  * the department guard on the route actually examines, so a smoke run under a superadmin would not
@@ -223,6 +223,11 @@ export const staffBootstrap = {
     firs: [],
   },
   permissions: [
+    // Since 13 September 2026 the screens of content are not under a department in the address, so
+    // their guard asks for the permission rather than for the department (note
+    // 2026-09-13-contenuti-centralizzati).
+    { name: 'Content.View', department: 'ED' },
+    { name: 'Content.Edit', department: 'ED' },
     { name: 'Links.View', department: 'ED' },
     { name: 'Links.Edit', department: 'ED' },
     { name: 'Media.View', department: 'ED' },
@@ -255,6 +260,8 @@ export const siteStaffBootstrap = {
     ...staffBootstrap.permissions.filter((permission) => permission.department !== 'ED'),
     { name: 'Menu.View', department: 'WD' },
     { name: 'Menu.Edit', department: 'WD' },
+    { name: 'Content.View', department: 'WD' },
+    { name: 'Content.Edit', department: 'WD' },
     // ⚠️ Held here and **not** by the ordinary staff fixture, which is what makes the pair useful:
     // every staff member may read a template, and only this one may open the screen that changes
     // them. The events coordinator is the other half of that test.

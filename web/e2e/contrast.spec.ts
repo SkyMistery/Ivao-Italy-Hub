@@ -127,7 +127,7 @@ test.describe('the dark theme', () => {
     // a hint under a field.
     await stubTheApiAsStaff(page, siteStaffBootstrap);
 
-    for (const path of ['/staff/wd', '/staff/wd/menu', '/staff/wd/menu/3', '/staff/wd/links']) {
+    for (const path of ['/staff/wd', '/staff/wd/menu', '/staff/wd/menu/3', '/staff/links']) {
       await page.goto(path);
       readable(path, await secondaryTextOf(page));
     }
@@ -222,7 +222,7 @@ async function openOnGrounds(page: Page, grounds: string[]) {
     }),
   );
 
-  await page.goto('/staff/ed/content/1');
+  await page.goto('/staff/content/1');
 }
 
 test('text on the dark grounds of a section meets AA', async ({ page }) => {

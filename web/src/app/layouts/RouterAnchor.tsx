@@ -29,8 +29,8 @@ export function RouterAnchor({ href, ...rest }: ComponentProps<'a'>) {
   // to the eye. "The current page" is one page.
   //
   // And `includeSearch: false` with it, or exact matching finds nothing at all: a list puts its
-  // paging and its sorting in the address, and `/staff/ed/documents?page=1` is not, to an exact
-  // comparison that counts the query, the page `/staff/ed/documents` links to.
+  // paging and its sorting in the address, and `/staff/ed/calendar?page=1` is not, to an exact
+  // comparison that counts the query, the page `/staff/ed/calendar` links to.
   //
   // ⚠️ Unless the address carries a query of its own. Since 13 September 2026 the back office has
   // one screen per object and says which kind and which department in the query

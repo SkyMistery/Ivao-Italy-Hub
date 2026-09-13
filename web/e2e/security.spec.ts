@@ -92,7 +92,7 @@ test('the back office and the editor draw themselves without a single refusal', 
   const refused = watchForViolations(page);
   await stubTheApiAsStaff(page, siteStaffBootstrap);
 
-  for (const path of ['/staff/wd', '/staff/wd/menu', '/staff/wd/links', '/staff/wd/content']) {
+  for (const path of ['/staff/wd', '/staff/wd/menu', '/staff/links', '/staff/content']) {
     await page.goto(path);
     await page.locator('h1').first().waitFor({ state: 'visible' });
   }

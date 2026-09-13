@@ -104,7 +104,7 @@ test.describe('the palette of the back office', () => {
   });
 
   test('control and K opens it, and it offers the screens of the back office', async ({ page }) => {
-    await page.goto('/staff/ed/links');
+    await page.goto('/staff/links');
 
     // ⚠️ Waited for on purpose. A key pressed before React has attached its listener is a key
     // nobody hears, and the test then waits five seconds for a dialog that was never asked for —
@@ -131,7 +131,7 @@ test.describe('the palette of the back office', () => {
     // against what has been typed, and this row says "aerodrome" only in its snippet — so with the
     // filtering left on it would vanish, and the search would look broken for exactly the results a
     // FULLTEXT index is for.
-    await page.goto('/staff/ed/links');
+    await page.goto('/staff/links');
     await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
     await page.keyboard.press('Control+k');
 

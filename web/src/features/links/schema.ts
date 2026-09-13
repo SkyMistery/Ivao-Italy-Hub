@@ -16,8 +16,9 @@ import { localized } from '../../shared/forms';
  * the API expects, in one place.
  */
 export const linkSchema = z.object({
-  // Fixed by the route: the list is `/staff/<dept>/links`, so the department is not a choice on
-  // this form. It travels with the payload because the server needs it, and the server checks it
+  // Fixed before the form opens: the department of a new link is chosen on the list and carried by
+  // the address (`/staff/links/new?department=ED`), and an existing link keeps its own, so it is not
+  // a choice on this form. It travels with the payload because the server needs it, and the server checks it
   // twice — on the row as stored and on the row as it would become.
   ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
   visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),

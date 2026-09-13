@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('the links list opens for a coordinator of that department', async ({ page }) => {
-  await page.goto('/staff/ed/links');
+  await page.goto('/staff/links');
 
   await expect(page.getByText('Something went wrong!')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
@@ -37,10 +37,11 @@ test('the links list opens for a coordinator of that department', async ({ page 
 });
 
 test('new link reaches the form, and not just the address bar', async ({ page }) => {
-  await page.goto('/staff/ed/links');
+  await page.goto('/staff/links');
   await page.getByRole('link', { name: englishCommon.links.create }).first().click();
 
-  await expect(page).toHaveURL(/\/staff\/ed\/links\/new/);
+  // In the one department this coordinator writes in, said by the address rather than asked.
+  await expect(page).toHaveURL(/\/staff\/links\/new\?department=ED/);
 
   // The half that was missing. The address changed all along; what never happened was the form
   // appearing, because the list route had no outlet to draw its child into.
@@ -52,22 +53,24 @@ test('new link reaches the form, and not just the address bar', async ({ page })
 });
 
 test('edit reaches the form of that row', async ({ page }) => {
-  await page.goto('/staff/ed/links');
+  await page.goto('/staff/links');
   await page.getByRole('link', { name: englishCommon.common.edit }).first().click();
 
-  await expect(page).toHaveURL(/\/staff\/ed\/links\/7/);
+  await expect(page).toHaveURL(/\/staff\/links\/7/);
   await expect(page.getByLabel(englishCommon.links.fields.url)).toBeVisible();
 });
 
-test('a department the member does not reach is a refusal, not an empty table', async ({ page }) => {
-  await page.goto('/staff/fod/links');
+test('a new row in a department the member does not write in is a refusal, not a form', async ({ page }) => {
+  // The department left the address of the list on 13 September 2026; what is left to guard is the
+  // department a new row is written in, which the address of the form still carries.
+  await page.goto('/staff/links/new?department=FOD');
 
   await expect(page).toHaveURL(/\/forbidden/);
 });
 
 test('the content sits beside the sidebar, not underneath it in a narrow column', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/staff/ed/links');
+  await page.goto('/staff/links');
   await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
 
   const main = await page.locator('main').first().boundingBox();
@@ -92,7 +95,7 @@ test('the content sits beside the sidebar, not underneath it in a narrow column'
 
 test('a translated field is as wide as a plain one', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/staff/ed/links/new');
+  await page.goto('/staff/links/new?department=ED');
   await expect(page.getByLabel(englishCommon.links.fields.url)).toBeVisible();
 
   // Geometry again, and again because nothing else can see it. Atmosphere's `Tabs` pins itself to
@@ -109,7 +112,7 @@ test('a translated field is as wide as a plain one', async ({ page }) => {
 test('the media library opens and offers the one control the form generator has no notion of', async ({
   page,
 }) => {
-  await page.goto('/staff/ed/media');
+  await page.goto('/staff/media');
 
   await expect(page.getByText('Something went wrong!')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: englishCommon.media.title })).toBeVisible();
@@ -125,7 +128,7 @@ test('the preview of a file is a picture with a real size, inside the column it 
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/staff/ed/media/9');
+  await page.goto('/staff/media/9');
 
   await expect(page.getByLabel(englishCommon.media.fields.category)).toBeVisible();
 
@@ -167,7 +170,7 @@ test('the calendar vocabulary is a screen of the administration, with no departm
   // And it is offered where every back office screen is offered, rather than only by typing the
   // address. The palette reads `staffDestinations`, which the sidebar draws from too — asserting on
   // the sidebar itself would be asserting that Atmosphere's group happens to be open.
-  await page.goto('/staff/ed/links');
+  await page.goto('/staff/links');
 
   // ⚠️ Waited for: a key pressed before React has attached its listener is a key nobody hears, and
   // the wait that follows looks exactly like a broken shortcut (`search.spec.ts` says the same).
@@ -302,8 +305,8 @@ test('the gallery draws every kind of field the generator learned, and they are 
  */
 test('the news, the documents and the vocabulary each open on their own address', async ({ page }) => {
   for (const [path, heading] of [
-    ['/staff/ed/news', englishCommon.news.title],
-    ['/staff/ed/documents', englishCommon.documents.title],
+    ['/staff/content?kind=News', englishCommon.news.title],
+    ['/staff/content?kind=Document', englishCommon.documents.title],
     ['/staff/ed/categories', englishCommon.categories.title],
   ] as const) {
     await page.goto(path);
@@ -314,10 +317,10 @@ test('the news, the documents and the vocabulary each open on their own address'
 });
 
 test('new news reaches the editor, and it is the editor of a news item', async ({ page }) => {
-  await page.goto('/staff/ed/news');
+  await page.goto('/staff/content?kind=News');
   await page.getByRole('link', { name: englishCommon.news.create }).first().click();
 
-  await expect(page).toHaveURL(/\/staff\/ed\/news\/new/);
+  await expect(page).toHaveURL(/\/staff\/content\/new\?kind=News/);
 
   // The metadata form is there — the half that was missing the day no form in the hub was
   // reachable — and it carries the field only a news item has, which is what says the `kind`
@@ -327,7 +330,7 @@ test('new news reaches the editor, and it is the editor of a news item', async (
 });
 
 test('the documents list says which rows have a file, and which do not', async ({ page }) => {
-  await page.goto('/staff/ed/documents');
+  await page.goto('/staff/content?kind=Document');
 
   const withFile = page.getByRole('row', { name: /Joining procedure/ });
   const withoutFile = page.getByRole('row', { name: /Read in the browser/ });
@@ -385,7 +388,7 @@ test('the templates of a department have a screen, a button, and a count behind 
   // on purpose, offered by the picker only to make a page from, and the one way to open one was to
   // type its address.
   await stubTheApiAsStaff(page, siteStaffBootstrap);
-  await page.goto('/staff/wd/templates');
+  await page.goto('/staff/content?kind=Template');
 
   await expect(page.getByRole('heading', { name: englishCommon.templates.title })).toBeVisible();
 
@@ -397,29 +400,36 @@ test('the templates of a department have a screen, a button, and a count behind 
 
   // Opening one says how many rows were made from it — the sentence that stops a careless edit.
   await page.getByRole('link', { name: englishCommon.common.edit }).first().click();
-  await expect(page).toHaveURL(/\/staff\/wd\/templates\/5/);
+  await expect(page).toHaveURL(/\/staff\/content\/5/);
   await expect(page.getByText('4 rows were made from this template.')).toBeVisible();
 });
 
 test('a new template is made from a button, and carries the kind that was chosen', async ({ page }) => {
   await stubTheApiAsStaff(page, siteStaffBootstrap);
-  await page.goto('/staff/wd/templates');
+  await page.goto('/staff/content?kind=Template');
 
   // The kind is chosen before the editor opens, because it decides which fields the form draws and
   // a form redrawing itself under the hands of whoever is filling it in would be worse.
   await page.getByRole('link', { name: englishCommon.templates.create }).first().click();
 
-  await expect(page).toHaveURL(/\/staff\/wd\/templates\/new\?kind=Page/);
+  await expect(page).toHaveURL(/\/staff\/content\/new\?kind=Page&template=true&department=WD/);
   await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toBeVisible();
 });
 
-test('the templates screen is not for a coordinator who may not change one', async ({ page }) => {
+test('a coordinator who may not change a template reads them and is offered no way to make one', async ({
+  page,
+}) => {
   // Every staff member *reads* templates — that is what makes "new from a template" work across
-  // departments — and only `Content.ManageTemplates` opens the screen that changes them. The
-  // ordinary fixture is an events coordinator, who holds neither that nor the department.
+  // departments — and only `Content.ManageTemplates` makes one. The ordinary fixture is an events
+  // coordinator, who does not hold it. Since 13 September 2026 the templates are a kind of the one
+  // content screen, so what is refused is the button and the address of a new one, not the list.
   await stubTheApiAsStaff(page);
-  await page.goto('/staff/ed/templates');
+  await page.goto('/staff/content?kind=Template');
 
+  await expect(page.getByRole('heading', { name: englishCommon.templates.title })).toBeVisible();
+  await expect(page.getByRole('link', { name: englishCommon.templates.create })).toHaveCount(0);
+
+  await page.goto('/staff/content/new?kind=Page&template=true&department=ED');
   await expect(page).toHaveURL(/\/forbidden/);
 });
 
