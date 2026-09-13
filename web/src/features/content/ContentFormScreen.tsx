@@ -167,6 +167,8 @@ export function ContentFormScreen({
         // Asked of the template's department and not of this page's: a page of one department can
         // be made from the template of another (design M1 §9.4).
         canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}
+        // Of this page's department, which is the one a block would be added to.
+        holds={(permission) => holdsPermission(bootstrap, permission, department)}
         busy={create.isPending || update.isPending || publish.isPending || remove.isPending}
         publishProblems={problems.data}
         onSave={async (values: ContentFormValues, body, options) => {

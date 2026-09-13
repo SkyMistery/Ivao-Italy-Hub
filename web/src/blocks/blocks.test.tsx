@@ -4,6 +4,9 @@ import { describe, expect, test } from 'vitest';
 import englishCommon from '../../../locales/en/common.json';
 import { renderWithProviders } from '../test/harness';
 
+import { EmbeddingContext } from './embedding';
+import { PrintContext } from './print';
+
 import {
   AccordionBlock,
   ButtonGroupBlock,
@@ -15,6 +18,7 @@ import {
   HeroBlock,
   IconGridBlock,
   ImageBlock,
+  InteractiveBlock,
   LogoGridBlock,
   NetworkStatsBlock,
   SpacerBlock,
@@ -232,6 +236,51 @@ describe('layout and containers', () => {
 
     expect(screen.getByRole('button', { name: 'How do I join?' })).toBeInTheDocument();
     expect(screen.queryByText('From the network itself.')).not.toBeInTheDocument();
+  });
+});
+
+describe('the interactive block', () => {
+  const embedding = { frameUrl: (blockId: string) => `/embed/7/3/${blockId}?lang=en` };
+
+  function drawInteractive(context: { frameUrl: (id: string) => string | null } | null, printing = false) {
+    return renderWithProviders(
+      <PrintContext.Provider value={printing}>
+        <EmbeddingContext.Provider value={context}>
+          <InteractiveBlock
+            id="b_1"
+            props={{ title: en('A left hand circuit'), description: en('What the traffic does.') }}
+          />
+        </EmbeddingContext.Provider>
+      </PrintContext.Provider>,
+    );
+  }
+
+  test('the frame is sandboxed, and that is the line everything else rests on', () => {
+    drawInteractive(embedding);
+
+    const frame = screen.getByTitle('A left hand circuit');
+    // ⚠️ Exactly this, and never `allow-same-origin` beside it: with that word the frame is back in
+    // our own origin and a pasted script has the reader's session. Asserted as an equality and not
+    // as a "contains" for that reason — a test that allowed more would allow that.
+    expect(frame).toHaveAttribute('sandbox', 'allow-scripts');
+    expect(frame).toHaveAttribute('src', '/embed/7/3/b_1?lang=en');
+  });
+
+  test('with no page to ask, it says so instead of drawing an empty box', () => {
+    // The gallery, and a body that has never been saved: there is no row for the server to build a
+    // frame from, and a silent gap would read as a broken picture.
+    drawInteractive(null);
+
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(screen.getByText(englishCommon.blocks.interactive.unavailable)).toBeInTheDocument();
+  });
+
+  test('on paper the frame folds away and the description stays', () => {
+    // Carmine, 12 September: "un banner non serve a nulla". What is worth the paper is the prose.
+    drawInteractive(embedding, true);
+
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(screen.getByText('What the traffic does.')).toBeInTheDocument();
   });
 });
 

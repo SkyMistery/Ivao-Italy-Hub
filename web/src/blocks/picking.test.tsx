@@ -50,6 +50,7 @@ const body: Body = {
           renderMode: null,
           frozen: null,
           column: 0,
+          source: null,
           props: {
             title: { en: 'Join us', it: 'Unisciti' },
             text: { en: 'Come and fly', it: 'Vieni a volare' },

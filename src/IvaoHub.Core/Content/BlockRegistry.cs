@@ -110,6 +110,14 @@ public static class CoreBlocks
     public const string Image = "image";
     public const string Video = "video";
     public const string Embed = "embed";
+
+    /// <summary>
+    /// An animation or a small interactive drawing, written by somebody and run in a frame that can
+    /// do nothing (12 September 2026, <c>decisions/2026-09-12-il-blocco-interattivo.md</c>). The one
+    /// block whose <c>source</c> the server reads — off the envelope, never out of <c>props</c> —
+    /// because <see cref="EmbedEndpoints"/> serves it into that frame.
+    /// </summary>
+    public const string Interactive = "interactive";
     public const string Timeline = "timeline";
     public const string Table = "table";
 
@@ -146,6 +154,7 @@ public static class CoreBlocks
         new BlockDescriptor(Image, Version: 1, BlockKind.Content),
         new BlockDescriptor(Video, Version: 1, BlockKind.Content),
         new BlockDescriptor(Embed, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Interactive, Version: 1, BlockKind.Content),
         new BlockDescriptor(Timeline, Version: 1, BlockKind.Content),
         new BlockDescriptor(Table, Version: 1, BlockKind.Content),
         new BlockDescriptor(FrequencyTable, Version: 1, BlockKind.Content),

@@ -19,7 +19,7 @@ import {
 } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { CircleCheck, Info, OctagonAlert, TriangleAlert } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { bootstrapQuery } from '../features/me/queries';
@@ -33,6 +33,7 @@ import { CALENDAR_VIEWS, CalendarView, MarkdownContent, type CalendarItem } from
 
 import { embedSource } from './allowlist';
 import { categoryLabel, type ContentListData } from './data';
+import { useEmbedding } from './embedding';
 import { usePrinting } from './print';
 import { ACCENTS, CALLOUT_TONES, COORDINATION_DIRECTIONS, STATION_KINDS } from './schemas';
 
@@ -523,6 +524,158 @@ export function EmbedBlock({ props }: BlockComponentProps) {
       style={{ height: `${Math.max(120, Math.min(count(props, 'height', 480), 2000))}px` }}
       className="w-full rounded-lg border-0"
     />
+  );
+}
+
+// ---- interactive -----------------------------------------------------------------------------
+
+/**
+ * An animation, or a small thing with choices in it, written by somebody and run **in a frame that
+ * can do nothing** (12 September 2026, `decisions/2026-09-12-il-blocco-interattivo.md`).
+ *
+ * What makes it safe is not this component: it is the frame's own origin. `sandbox` without
+ * `allow-same-origin` puts the document in an opaque origin — no cookies, no access to this page,
+ * no request to our API that carries anybody's session — and the endpoint that serves it sends
+ * `default-src 'none'`, so it has no network at all. This component only draws the box.
+ *
+ * ⚠️ Three things it is careful about, and each has a reason a test would not find on its own:
+ * the address comes from the **embedding context**, because a block does not know which page or
+ * which version it is part of; the height arrives as a message from that one frame and is clamped,
+ * because a frame is allowed to say how tall it is and nothing else; and printing draws **nothing**
+ * — the description stays, the frame folds away, because a rectangle nobody can touch is not worth
+ * the paper (Carmine, 12 September: "un banner non serve a nulla").
+ */
+export function InteractiveBlock({ id, staff = false, props }: BlockComponentProps) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const embedding = useEmbedding();
+  const printing = usePrinting();
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(() => count(props, 'minHeight', 320));
+  const [refused, setRefused] = useState<{ kind: string; detail: string } | null>(null);
+
+  const title = read(text(props, 'title'));
+  const description = read(text(props, 'description'));
+  const address = id === undefined || embedding === null ? null : embedding.frameUrl(id);
+
+  // The height, and the theme, which are the only two things that cross the boundary. Both are
+  // written here rather than in the frame: what arrives is one number from one window, and what
+  // leaves is one flag.
+  useEffect(() => {
+    const element = frame.current;
+    if (element === null) {
+      return;
+    }
+
+    const tellTheTheme = () =>
+      element.contentWindow?.postMessage(
+        { hub: 'embed-theme', dark: element.closest('.dark') !== null },
+        '*',
+      );
+
+    const onMessage = (event: MessageEvent) => {
+      // ⚠️ From **this** frame and nothing else: `event.source` is the window that sent it, and a
+      // message from any other one is somebody else's business. Then a number, clamped: the frame
+      // says how tall it is, and cannot say anything that makes a page scroll for ever.
+      if (event.source !== element.contentWindow) {
+        return;
+      }
+
+      const message = event.data as {
+        hub?: string;
+        height?: unknown;
+        kind?: unknown;
+        detail?: unknown;
+      };
+
+      // What the browser refused inside the frame, or what threw in there. Neither reaches this page
+      // on its own — a refusal lands in the frame's own console and dies — so the frame says it, and
+      // this is where it is heard. Two strings, drawn as text and never run.
+      if (message?.hub === 'embed-refused' && typeof message.kind === 'string') {
+        setRefused({
+          kind: message.kind,
+          detail: typeof message.detail === 'string' ? message.detail.slice(0, 120) : '',
+        });
+        return;
+      }
+
+      if (message?.hub !== 'embed-height' || typeof message.height !== 'number') {
+        return;
+      }
+
+      setHeight(Math.min(Math.max(Math.round(message.height), 80), 2000));
+    };
+
+    window.addEventListener('message', onMessage);
+    element.addEventListener('load', tellTheTheme);
+
+    // The theme can change under a frame that is already there, and a dark section can hold one.
+    const theme = new MutationObserver(tellTheTheme);
+    theme.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    return () => {
+      window.removeEventListener('message', onMessage);
+      element.removeEventListener('load', tellTheTheme);
+      theme.disconnect();
+    };
+  }, [address]);
+
+  const caption = description === '' ? null : <p className="text-muted-foreground text-sm">{description}</p>;
+
+  /**
+   * ⚠️ Only the staff, like the badge on a captured data block and the notice on a block of a type
+   * nobody registered. A visitor reading an operational document is not the person who can fix an
+   * animation that tried to open the network, and telling them would be noise on a page they came to
+   * read. Whoever composes sees it in the editor, which is the moment it is worth knowing.
+   */
+  const refusal =
+    !staff || refused === null ? null : (
+      <p className="text-destructive text-sm">
+        {t(refused.kind === 'policy' ? 'blocks.interactive.refused' : 'blocks.interactive.threw', {
+          detail: refused.detail,
+        })}
+      </p>
+    );
+
+  // On paper the frame is a white rectangle nobody can press, so it goes; what the author wrote
+  // about it is prose of the document and stays.
+  if (printing) {
+    return caption;
+  }
+
+  if (address === null) {
+    // The same discipline as an unknown block: a visitor is shown nothing, and whoever is composing
+    // is told why rather than left looking at a gap. It happens in the gallery, and on a preview of
+    // a body that has never been saved — there is no row to ask the server about yet.
+    return (
+      <p className="border-border text-muted-foreground rounded-md border border-dashed p-4 text-sm">
+        {t('blocks.interactive.unavailable')}
+      </p>
+    );
+  }
+
+  return (
+    <figure className="flex flex-col gap-2">
+      <iframe
+        ref={frame}
+        src={address}
+        title={title === '' ? t('blocks.interactive.label') : title}
+        // ⚠️ `allow-scripts` and **nothing else**. Adding `allow-same-origin` here would put the
+        // frame back in our origin and hand a pasted script the reader's session: it is the single
+        // line that the whole design rests on, and `blocks.test.tsx` fails if it changes.
+        sandbox="allow-scripts"
+        loading="lazy"
+        // ⚠️ `print:hidden` as well as the context above, and the two are not the same thing. The
+        // context is how a **document** prints — `PrintContext` takes the frame out of the page
+        // before the paper is drawn, the way it unfolds tabs and accordions (G14). This class is for
+        // everywhere else: a page printed from a browser's own menu fires no event this application
+        // hears, and a rectangle nobody can press is not worth the paper wherever it appears.
+        className="w-full border-0 print:hidden"
+        style={{ height: `${height}px` }}
+      />
+      {caption}
+      {refusal}
+    </figure>
   );
 }
 

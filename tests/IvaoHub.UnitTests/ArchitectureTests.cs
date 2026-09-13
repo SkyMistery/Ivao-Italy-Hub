@@ -1,5 +1,7 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Modules.Atc;
 using Microsoft.AspNetCore.Authorization;
@@ -233,6 +235,44 @@ public sealed class ArchitectureTests
             .Select(reference => Path.GetFileNameWithoutExtension(
                 reference.Attribute("Include")!.Value.Replace('\\', '/')))
             .Order(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// The two halves of the block registry say the same names.
+    ///
+    /// <para>The browser holds the schema, the component and the icon; the server holds the type and
+    /// its kind, and nothing else (plan section 16.5). A type in one and not the other is a block
+    /// that draws in the editor and is **refused on save**, with <c>errors.body.blockTypeUnknown</c>
+    /// — which is how this test came to exist on 12 September 2026: the interactive block was
+    /// registered in TypeScript only, every unit and integration test stayed green (they write bodies
+    /// straight into the database), and the bench against the real API found it six minutes later.
+    /// </para>
+    ///
+    /// <para>⚠️ It reads the TypeScript rather than asking it, because C# cannot ask. That makes it a
+    /// test about a file's shape, and the shape it depends on is one line per entry in
+    /// <c>CORE_BLOCK_TYPES</c>: if that object is ever written differently this fails loudly rather
+    /// than quietly passing, which is the right way round.</para>
+    /// </summary>
+    [Fact]
+    public void TheServerKnowsEveryBlockTypeTheBrowserRegisters()
+    {
+        var source = File.ReadAllText(Path.Combine(RepositoryRoot("web"), "src", "blocks", "core.ts"));
+        var start = source.IndexOf("export const CORE_BLOCK_TYPES", StringComparison.Ordinal);
+        Assert.True(start > 0, "CORE_BLOCK_TYPES is not where this test expects it");
+
+        var end = source.IndexOf("} as const;", start, StringComparison.Ordinal);
+        Assert.True(end > start, "CORE_BLOCK_TYPES does not end where this test expects it");
+
+        var inTheBrowser = Regex
+            .Matches(source[start..end], @"^\s*\w+:\s*'([^']+)',", RegexOptions.Multiline)
+            .Select(match => match.Groups[1].Value)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        var onTheServer = CoreBlocks.All.Select(block => block.Type).Order(StringComparer.Ordinal).ToArray();
+
+        Assert.NotEmpty(inTheBrowser);
+        Assert.Equal(onTheServer, inTheBrowser);
     }
 
     private static IEnumerable<string> SourceFiles() =>

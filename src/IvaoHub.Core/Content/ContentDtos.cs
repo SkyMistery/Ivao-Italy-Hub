@@ -123,6 +123,11 @@ public sealed record ContentWriteDto(
 /// not what somebody wrote in it.</para>
 /// </summary>
 public sealed record PublicContentDto(
+    // The row itself, which a visitor's browser needs for exactly one thing: the address of the
+    // frame of an interactive block, /embed/{id}/{version}/{block} (12 September 2026). Not a secret
+    // -- the back office addresses every row by it -- and the alternative, addressing a frame by
+    // kind and slug, would have meant a second shape for the draft the editor shows.
+    long Id,
     ContentKind Kind,
     string Slug,
     Department OwnerDepartment,

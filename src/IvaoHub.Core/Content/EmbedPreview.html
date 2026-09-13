@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Interactive block — local preview</title>
+    <!--
+      A preview of an interactive block on your own computer, before it goes into the hub.
+
+      Open this file with a double click. It needs no network and no server: the shell the hub wraps
+      a fragment in is inside this file already — generated from the very file the hub serves, so
+      what you see here is what the hub will draw — and the fragment runs in a sandboxed frame like
+      the real one, with the same content security policy.
+
+      It is a tool for whoever writes an animation, and nothing else. It is never a page of the hub:
+      the hub hands it out as a download, and its own policy would refuse to run this script if
+      anybody opened it there.
+    -->
+    <style>
+      :root {
+        --ink: #21212e;
+        --quiet: #606282;
+        --line: #d2d3e0;
+        --paper: #fafaff;
+        --accent: #0d2c99;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: system-ui, sans-serif;
+        font-size: 15px;
+        color: var(--ink);
+        background: var(--paper);
+      }
+
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      p {
+        margin: 0;
+        color: var(--quiet);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 180px;
+        padding: 8px;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .row + .row {
+        margin-top: 4px;
+      }
+
+      .label {
+        min-width: 120px;
+        color: var(--quiet);
+      }
+
+      button {
+        font: inherit;
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      button[aria-pressed='true'] {
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      /* The three grounds the hub can put a block on, as the hub paints them. */
+      .stage {
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .stage[data-ground='dark-page'] {
+        background: #191a23;
+      }
+
+      .stage[data-ground='dark-section'] {
+        background: #082628;
+      }
+
+      iframe {
+        display: block;
+        width: 100%;
+        height: 160px;
+        border: 0;
+      }
+
+      .refusals {
+        margin: 0;
+        padding: 12px 12px 12px 28px;
+        border: 1px solid #f5a2a2;
+        border-radius: 6px;
+        background: #fbdada;
+        color: #690b0b;
+      }
+
+      .refusals:empty {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Interactive block — local preview</h1>
+      <p>
+        Paste the fragment, or choose its file, and press Show. The frame below is sandboxed and has
+        the same policy as in the hub: what does not work here will not work there.
+      </p>
+
+      <textarea id="fragment" spellcheck="false" aria-label="The fragment"></textarea>
+
+      <div class="row">
+        <button type="button" class="primary" id="show">Show</button>
+        <label>
+          <input type="file" id="file" accept=".html,.htm,.svg,.txt" />
+        </label>
+        <span id="size"></span>
+      </div>
+
+      <div>
+        <div class="row" role="group" aria-label="Language">
+          <span class="label">Language</span>
+          <button type="button" data-lang="it" aria-pressed="true">Italiano</button>
+          <button type="button" data-lang="en" aria-pressed="false">English</button>
+        </div>
+        <div class="row" role="group" aria-label="Ground">
+          <span class="label">Ground</span>
+          <button type="button" data-ground="light" aria-pressed="true">Light page</button>
+          <button type="button" data-ground="dark-page" aria-pressed="false">Dark page</button>
+          <button type="button" data-ground="dark-section" aria-pressed="false">Dark section</button>
+        </div>
+        <div class="row" role="group" aria-label="Movement">
+          <span class="label">Movement</span>
+          <button type="button" data-motion="full" aria-pressed="true">As usual</button>
+          <button type="button" data-motion="reduced" aria-pressed="false">Reduced</button>
+        </div>
+        <div class="row" role="group" aria-label="Width">
+          <span class="label">Width</span>
+          <button type="button" data-width="full" aria-pressed="true">Reading column</button>
+          <button type="button" data-width="360" aria-pressed="false">Phone, 360 px</button>
+        </div>
+      </div>
+
+      <div class="stage" id="stage" data-ground="light">
+        <iframe id="frame" sandbox="allow-scripts" title="The animation"></iframe>
+      </div>
+
+      <ul class="refusals" id="refusals" aria-live="polite"></ul>
+    </main>
+
+    <script>
+      (function () {
+        /*
+          The shell, exactly as the hub serves it, put here when this file was downloaded. It is a
+          JSON string so that nothing inside it — its own script elements, its closing tags — can end
+          this script early.
+        */
+        var SHELL = {{shellJson}};
+
+        var MAX_BYTES = 64 * 1024;
+        var state = { lang: 'it', ground: 'light', motion: 'full', width: 'full' };
+
+        var fragment = document.getElementById('fragment');
+        var frame = document.getElementById('frame');
+        var stage = document.getElementById('stage');
+        var refusals = document.getElementById('refusals');
+        var size = document.getElementById('size');
+
+        function isAWholePage(text) {
+          return /<!doctype\s+html|<html[\s>]/i.test(text);
+        }
+
+        function report(line) {
+          var item = document.createElement('li');
+          item.textContent = line;
+          refusals.appendChild(item);
+        }
+
+        /*
+          The document the hub would serve, composed the way the hub composes it — the same three
+          substitutions. The one addition is the reader's movement setting, which a browser will not
+          let a page pretend on another page's behalf: when "Reduced" is chosen, the preview says so
+          before the fragment runs, in `HUB.reducedMotion` and in CSS, exactly as a reader who asked
+          for it would be seen.
+        */
+        function compose(source) {
+          var reduced =
+            state.motion === 'reduced'
+              ? '<style>*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}</style>' +
+                '<script>window.HUB.reducedMotion = true;<\/script>'
+              : '';
+
+          return SHELL.replace('{{lang}}', state.lang)
+            .replace('{{title}}', 'preview')
+            .replace('{{source}}', reduced + source);
+        }
+
+        function show() {
+          var source = fragment.value;
+          var bytes = new TextEncoder().encode(source).length;
+
+          refusals.textContent = '';
+          size.textContent = bytes + ' of ' + MAX_BYTES + ' bytes';
+
+          if (bytes > MAX_BYTES) {
+            report('Too large: the hub refuses a fragment over ' + MAX_BYTES + ' bytes.');
+          }
+
+          if (isAWholePage(source)) {
+            report('This is a whole page, not a fragment: remove the doctype, <html>, <head> and <body>. The hub refuses it.');
+            return;
+          }
+
+          frame.style.height = '160px';
+          frame.style.width = state.width === '360' ? '360px' : '100%';
+          stage.setAttribute('data-ground', state.ground);
+          frame.srcdoc = compose(source);
+        }
+
+        // What the page tells the frame, as the hub tells it: which ground it stands on.
+        frame.addEventListener('load', function () {
+          frame.contentWindow.postMessage({ hub: 'embed-theme', dark: state.ground !== 'light' }, '*');
+        });
+
+        // What the frame tells the page, heard only from this frame.
+        window.addEventListener('message', function (event) {
+          if (event.source !== frame.contentWindow || !event.data) {
+            return;
+          }
+
+          if (event.data.hub === 'embed-height' && typeof event.data.height === 'number') {
+            frame.style.height = Math.min(Math.max(Math.round(event.data.height), 80), 2000) + 'px';
+          }
+
+          if (event.data.hub === 'embed-refused') {
+            report(
+              event.data.kind === 'policy'
+                ? 'The browser refused something the fragment asked for (' + event.data.detail + '). A frame in the hub has no network and no storage.'
+                : 'The fragment stopped with an error: ' + event.data.detail,
+            );
+          }
+        });
+
+        function choose(attribute, key) {
+          document.querySelectorAll('[' + attribute + ']').forEach(function (button) {
+            button.addEventListener('click', function () {
+              state[key] = button.getAttribute(attribute);
+              document.querySelectorAll('[' + attribute + ']').forEach(function (other) {
+                other.setAttribute('aria-pressed', String(other === button));
+              });
+              show();
+            });
+          });
+        }
+
+        choose('data-lang', 'lang');
+        choose('data-ground', 'ground');
+        choose('data-motion', 'motion');
+        choose('data-width', 'width');
+
+        document.getElementById('show').addEventListener('click', show);
+
+        document.getElementById('file').addEventListener('change', function (event) {
+          var file = event.target.files && event.target.files[0];
+          event.target.value = '';
+          if (!file) {
+            return;
+          }
+
+          file.text().then(function (text) {
+            fragment.value = text;
+            show();
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -28,9 +28,11 @@ const target = { id: 's1', name: 'Intro' };
 function render(props: Partial<Parameters<typeof BlockPalette>[0]> = {}) {
   const onAdd = vi.fn();
 
-  renderWithProviders(<BlockPalette target={target} rule={FREE} onAdd={onAdd} {...props} />);
+  const { unmount } = renderWithProviders(
+    <BlockPalette target={target} rule={FREE} onAdd={onAdd} {...props} />,
+  );
 
-  return { onAdd };
+  return { onAdd, unmount };
 }
 
 test('every registered block is reachable from the palette', () => {
@@ -174,8 +176,29 @@ test('the drawers hold what the blocks say they hold', () => {
 
   const media = content?.subgroups.find((subgroup) => subgroup.subgroup === 'media');
 
-  expect(media?.blocks.map((block) => block.type)).toEqual(['hero', 'image', 'video', 'embed']);
+  expect(media?.blocks.map((block) => block.type)).toEqual([
+    'hero',
+    'image',
+    'video',
+    'embed',
+    'interactive',
+  ]);
 
   const data = arranged.find((group) => group.group === 'data');
   expect(data?.blocks.map((block) => block.type)).toContain('networkStats');
+});
+
+test('a block behind a permission is in the list only for somebody who holds it', () => {
+  const interactive = englishCommon.blocks.interactive.label;
+
+  // ⚠️ Not in the list — where a block a *template* forbids is shown disabled with the reason on it.
+  // The two are different facts: the template's refusal is about this section and worth saying, and
+  // a permission is about the reader, so an entry they can never use is noise in a list they scan
+  // all day (`BlockPalette.tsx`).
+  const { unmount } = render({ holds: () => false });
+  expect(screen.queryByRole('button', { name: interactive })).toBeNull();
+  unmount();
+
+  render({ holds: () => true });
+  expect(screen.getByRole('button', { name: interactive })).toBeVisible();
 });

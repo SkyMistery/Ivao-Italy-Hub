@@ -97,7 +97,16 @@ export function PublicListScreen({
       </div>
 
       <BlockView
-        block={{ id: LIST_BLOCK_ID, type, version: 1, props, renderMode: 'live', frozen: null, column: null }}
+        block={{
+          id: LIST_BLOCK_ID,
+          type,
+          version: 1,
+          props,
+          renderMode: 'live',
+          frozen: null,
+          column: null,
+          source: null,
+        }}
         staff={false}
       />
     </div>

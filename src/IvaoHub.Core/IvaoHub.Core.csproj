@@ -11,6 +11,17 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!--
+    The shell of an interactive block's frame, compiled into the assembly rather than shipped as a
+    file: there is then no way to deploy the application without it, and no way for an installation
+    to hold a shell that does not match the code that fills it in (EmbedEndpoints).
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Content\EmbedShell.html" />
+    <EmbeddedResource Include="Content\EmbedGuidelines.md" />
+    <EmbeddedResource Include="Content\EmbedPreview.html" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="FluentValidation" />

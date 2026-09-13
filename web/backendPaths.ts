@@ -14,7 +14,14 @@
  * suite runs the built bundle, and the full round runs the published package where one server
  * serves both. Found by Carmine running the demo.
  *
+ * ⚠️ And it happened a second time, on 12 September 2026, in exactly the same shape: `/embed/…` is
+ * the frame of an interactive block and `/embed/guidelines` the file an editor downloads — addresses
+ * of the site, not calls under `/api`. Carmine downloaded the guidelines from the editor and got
+ * `index.html`: nineteen lines of Vite's own client instead of the document. The same three suites
+ * were blind to it for the same three reasons, and the same person found it the same way. A path
+ * this list does not know is a 200 of the wrong thing.
+ *
  * It lives in a file of its own because two things read it — `vite.config.ts` builds the proxy from
  * it, and `src/test/devProxy.test.ts` checks it — and a list written twice is a list that drifts.
  */
-export const BACKEND_PATHS = ['/api', '/auth', '/health', '/media', '/sitemap.xml', '/robots.txt'];
+export const BACKEND_PATHS = ['/api', '/auth', '/health', '/media', '/embed', '/sitemap.xml', '/robots.txt'];

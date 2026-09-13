@@ -1,4 +1,5 @@
 import { Label, Select } from '@ivao/atmosphere-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
@@ -14,6 +15,13 @@ import { emptyLocalized } from '../../shared/i18n/localized';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
 import { defaultProps } from './body';
+/**
+ * What the server refuses, said here first (`BlockDocumentWalker.MaxBlockSourceBytes`). The two
+ * agree by hand, like the layouts and the grounds do, and the integration test that posts a source
+ * one byte too long is what keeps them agreeing.
+ */
+const MAX_SOURCE_BYTES = 64 * 1024;
+
 import { SectionFrame } from './SectionFrame';
 import { sectionSettingsSchema, type SectionFormValues } from './schema';
 import type { SectionRule } from './templateRules';
@@ -146,6 +154,143 @@ export function SectionProperties({
   );
 }
 
+/**
+ * The code of an interactive block: the one field of this panel the form generator does not draw,
+ * and a declared exception rather than a second editor (12 September 2026,
+ * `decisions/2026-09-12-il-blocco-interattivo.md`).
+ *
+ * It is not a property. The server reads this string to serve the frame, and the server never reads
+ * inside `props` — so it lives on the envelope, beside `renderMode` and `column`, and is written
+ * through the same `onEnvelope` those two use.
+ *
+ * ⚠️ Applied on **blur** and not as it is typed, which is the opposite of everything else in this
+ * panel since G15. Two reasons, and both are about what this field holds: a keystroke in the middle
+ * of a script is almost always a document that does not run, and every change reloads a frame — so
+ * "write and look" would mean a frame reloading on every character.
+ */
+function SourceField({
+  block,
+  onEnvelope,
+}: {
+  block: BlockEnvelope;
+  onEnvelope: (patch: Partial<BlockEnvelope>) => void;
+}) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState(block.source ?? '');
+  const [refused, setRefused] = useState<string | null>(null);
+
+  // The page counts what the server counts: bytes of UTF-8, not characters. A line of Italian prose
+  // in a comment is longer than it looks, and the refusal on save would be the first anybody heard.
+  const bytes = new TextEncoder().encode(draft).length;
+  const tooLong = bytes > MAX_SOURCE_BYTES;
+
+  /**
+   * A file from the machine of whoever is composing, read **in the browser** and put in the box.
+   *
+   * ⚠️ Nothing is uploaded, and that is the point: the fragment is a field of the row, so a file that
+   * travelled to the server and lived somewhere would be a second place for the same text — and a
+   * file in the media library was option (B) of the note, which Carmine ruled out first. What the
+   * page keeps is what is in the box, the same as if it had been pasted there.
+   */
+  /**
+   * A whole page instead of a fragment. The hub wraps what it is given in a document of its own, so
+   * a second document inside it draws nothing and says nothing about why — a blank frame and no
+   * clue. One sentence here instead.
+   *
+   * ⚠️ Asked of **both** roads in, and it was not at first: the file had this check and the box did
+   * not, so the very same content was refused when chosen and accepted when pasted. Found reading a
+   * fragment an assistant had written (12 September 2026).
+   */
+  const isAWholePage = (text: string) => /<!doctype\s+html|<html[\s>]/i.test(text);
+
+  const apply = (text: string) => {
+    if (isAWholePage(text)) {
+      setRefused(t('blocks.interactive.fileIsAPage'));
+      return;
+    }
+
+    setRefused(null);
+    onEnvelope({ source: text });
+  };
+
+  const readFile = async (file: File) => {
+    if (file.size > MAX_SOURCE_BYTES) {
+      setRefused(t('blocks.interactive.fileTooLarge', { max: MAX_SOURCE_BYTES }));
+      return;
+    }
+
+    const text = await file.text();
+    setDraft(text);
+
+    // Applied at once, unlike typing: choosing a file is a finished act, not a keystroke in the
+    // middle of a script.
+    apply(text);
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor="source">{t('blocks.interactive.source')}</Label>
+      <textarea
+        id="source"
+        value={draft}
+        spellCheck={false}
+        rows={10}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => {
+          if (!tooLong && draft !== (block.source ?? '')) {
+            apply(draft);
+          }
+        }}
+        className="border-input bg-background scroll-thin w-full rounded-md border p-2 font-mono text-xs"
+      />
+      <p className={`text-sm ${tooLong ? 'text-destructive' : 'text-muted-foreground'}`}>
+        {t('blocks.interactive.sourceCount', { bytes, max: MAX_SOURCE_BYTES })}
+      </p>
+      {refused === null ? null : <p className="text-destructive text-sm">{refused}</p>}
+
+      {/* A file input and not a button that opens one: the browser's own control is the one a
+          keyboard and a screen reader already know, and this panel is not the place to reinvent it.
+          The label is what is read out; `sr-only` only hides the word, never the control. */}
+      <label className="text-primary w-fit cursor-pointer text-sm underline underline-offset-2">
+        {t('blocks.interactive.fromFile')}
+        <input
+          type="file"
+          accept=".html,.htm,.svg,.txt,text/html,image/svg+xml,text/plain"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // The same file chosen twice in a row fires no change unless the value is cleared, and
+            // "I fixed it and chose it again" is exactly what somebody does here.
+            event.target.value = '';
+            if (file !== undefined) {
+              void readFile(file);
+            }
+          }}
+        />
+      </label>
+
+      <p className="text-muted-foreground text-sm">{t('blocks.interactive.sourceHint')}</p>
+      <a
+        href="/embed/guidelines"
+        download="interactive-blocks.md"
+        className="text-primary text-sm underline underline-offset-2"
+      >
+        {t('blocks.interactive.guidelines')}
+      </a>
+      {/* The preview for somebody writing on their own computer: the shell of the hub with the
+          fragment inside a sandboxed frame, opened from a disk with a double click. Inside the hub a
+          draft already is the preview — only editors see it — and the guidelines say both. */}
+      <a
+        href="/embed/preview"
+        download="interactive-preview.html"
+        className="text-primary text-sm underline underline-offset-2"
+      >
+        {t('blocks.interactive.preview')}
+      </a>
+    </div>
+  );
+}
+
 export function BlockProperties({
   block,
   section,
@@ -220,6 +365,8 @@ export function BlockProperties({
           <p className="text-muted-foreground text-sm">{t('content.editor.renderModeHint')}</p>
         </div>
       ) : null}
+
+      {registration.carriesSource === true ? <SourceField block={block} onEnvelope={onEnvelope} /> : null}
 
       {columns > 1 ? (
         <div className="flex flex-col gap-1">

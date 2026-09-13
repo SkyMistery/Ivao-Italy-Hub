@@ -43,6 +43,19 @@ export type BlockSubgroup = (typeof BLOCK_SUBGROUPS)[number];
 
 /** What every block component is handed. */
 export interface BlockComponentProps {
+  /**
+   * The identifier the block carries in the body. Every component is given it, and one uses it: an
+   * interactive block asks for the address of **its own** frame, which contains this
+   * (`blocks/embedding.ts`). It is the envelope's own field, so handing it over teaches a component
+   * nothing it did not already sit inside.
+   */
+  readonly id?: string;
+  /**
+   * Whether whoever is reading this page is a member of staff. Two blocks' worth of things are only
+   * ever said to them — a capture rather than a live answer, and an interactive block that the
+   * browser had to refuse something to. A visitor is told none of it.
+   */
+  readonly staff?: boolean;
   /** The properties an editor wrote. Already checked against the block's own schema. */
   readonly props: Record<string, unknown>;
   /**
@@ -85,6 +98,26 @@ export interface BlockRegistration {
   readonly subgroup?: BlockSubgroup;
   /** From `lucide-react`, like every other icon of the hub (docs/UI-GUIDELINES.md). */
   readonly icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+  /**
+   * A permission whoever adds this block must hold, when adding it is more than adding a heading.
+   * The palette hides an entry nobody may use rather than offering it and refusing afterwards.
+   *
+   * ⚠️ It gates the **palette**, not the renderer: a block already in a body is drawn for whoever
+   * may read the page, because the person who put it there was the one who needed the right. One
+   * block declares it today — `interactive`, whose source is code (`Content.EmbedCode`).
+   */
+  readonly permission?: string;
+  /**
+   * Whether the block carries a `source` on its envelope, and therefore a field in the properties
+   * panel that the form generator does not draw.
+   *
+   * ⚠️ A declared exception and not a second editor. The generator draws `props`, and the source of
+   * an interactive block is deliberately **not** a property: the server has to read it to serve the
+   * frame, and the server never reads inside `props` (plan §16.5). So the panel puts one text area
+   * under the generated form, through the same `onEnvelope` that already writes `renderMode` and
+   * `column` — which are the envelope too.
+   */
+  readonly carriesSource?: boolean;
 }
 
 /** A tile on a dashboard. Registered in M0, drawn from M1. */

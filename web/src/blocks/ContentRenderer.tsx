@@ -363,7 +363,7 @@ export function BlockView({ block, staff }: { block: BlockEnvelope; staff: boole
     ) : registration.kind === 'Data' ? (
       <DataBlockView block={block} registration={registration} staff={staff} />
     ) : (
-      <registration.component props={block.props} />
+      <registration.component id={block.id} staff={staff} props={block.props} />
     );
 
   if (picking === null || drawn === null) {
@@ -560,7 +560,7 @@ function DataBlockView({
           <Badge variant="flat" color="gray" text={badge} />
         </div>
       ) : null}
-      <Component props={block.props} data={data} />
+      <Component id={block.id} props={block.props} data={data} />
     </div>
   );
 }
