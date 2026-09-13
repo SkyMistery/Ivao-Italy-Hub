@@ -35,13 +35,13 @@ interface ServerModule {
   readonly widgets: string[];
 }
 
-/** `public const string ModuleKey = "atc";` */
+/** `public const string ModuleKey = "events";` */
 const KEY = /ModuleKey\s*=\s*"([^"]+)"/;
 
-/** `new BlockDescriptor("atc.roster", …)` — a module names its blocks after itself. */
+/** `new BlockDescriptor("events.upcoming", …)` — a module names its blocks after itself. */
 const BLOCK = /new BlockDescriptor\(\s*"([^"]+)"/g;
 
-/** `new WidgetDescriptor("atc.online", …)` */
+/** `new WidgetDescriptor("events.mine", …)` */
 const WIDGET = /new WidgetDescriptor\(\s*"([^"]+)"/g;
 
 function readServerModules(): ServerModule[] {
@@ -119,7 +119,6 @@ describe('the third side, the gallery', () => {
       })),
       registry.widgets.map((widget) => ({
         key: widget.key,
-        department: null,
         titleKey: `widgets.${widget.key}.title`,
         sizes: ['full'],
       })),
@@ -132,12 +131,12 @@ describe('the third side, the gallery', () => {
 
   test('a block the server knows and this build cannot draw is reported', () => {
     const difference = compareRegistries(
-      bootstrapWith([{ type: 'atc.roster', version: 1, kind: 'Data', alwaysLive: true }], []),
+      bootstrapWith([{ type: 'events.upcoming', version: 1, kind: 'Data', alwaysLive: true }], []),
       registry.blocks,
       registry.widgets,
     );
 
-    expect(difference.blocksMissingInBrowser).toEqual(['atc.roster']);
+    expect(difference.blocksMissingInBrowser).toEqual(['events.upcoming']);
     expect(difference.blocksMissingOnServer).toEqual(registry.blocks.map((block) => block.type));
     expect(difference.widgetsMissingOnServer).toEqual(registry.widgets.map((widget) => widget.key));
   });

@@ -5,11 +5,10 @@ import { expect, test, vi } from 'vitest';
 import { renderWithProviders } from '../../test/harness';
 
 import { DocumentFooter, DocumentNotice, DocumentStrip } from './DocumentFrame';
-import { isOperational } from './operational';
 import type { PublicContentDto } from './queries';
 
 /**
- * What the public screen says around an operational document (G14): the facts under the title,
+ * What the public screen says around a document (G14): the facts under the title,
  * the notice when it is not the one to follow, and the edition on the footer.
  */
 
@@ -35,9 +34,9 @@ function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
   return {
     id: 1,
     kind: 'Document',
-    slug: 'lirf-twr-sop',
+    slug: 'code-of-conduct',
     ownerDepartment: 'AOD',
-    title: { en: 'Fiumicino Tower SOP', it: 'SOP Torre Fiumicino' },
+    title: { en: 'Code of conduct', it: 'Codice di condotta' },
     summary: null,
     seo: null,
     body: { schemaVersion: 1, sections: [] },
@@ -47,11 +46,6 @@ function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
     fileMediaId: null,
     version: 3,
     publishedAt: '2026-09-12T10:00:00Z',
-    documentType: 'Sop',
-    primaryPosition: 'LIRF_TWR',
-    secondaryPosition: null,
-    icao: 'LIRF',
-    fir: 'LIRR',
     effectiveOn: '2026-10-01T00:00:00',
     reviewOn: null,
     retiredAt: null,
@@ -59,29 +53,19 @@ function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
     supersededByTitle: null,
     showFooter: true,
     publishedByName: 'Test User',
-    airac: '2609',
     ...overrides,
   };
 }
 
-test('a guide filed among the documents is not operational, a SOP is', () => {
-  expect(
-    isOperational(
-      document({ documentType: null, primaryPosition: null, icao: null, fir: null, effectiveOn: null }),
-    ),
-  ).toBe(false);
-  expect(isOperational(document())).toBe(true);
-});
+test('the strip says when the document comes into force, and nothing when it does not say', () => {
+  const { unmount } = renderWithProviders(<DocumentStrip content={document()} />);
 
-test('the strip says what the document is about, as words and not stored names', () => {
-  renderWithProviders(<DocumentStrip content={document()} />);
-
-  expect(screen.getByText('SOP')).toBeInTheDocument();
-  expect(screen.getByText('LIRF_TWR')).toBeInTheDocument();
-  expect(screen.getByText('LIRR')).toBeInTheDocument();
   // The date, in the language on screen, and no time beside it: a document comes into force on a day.
   expect(screen.getByText('Oct 1, 2026')).toBeInTheDocument();
-  expect(screen.queryByText('Counterpart')).not.toBeInTheDocument();
+  unmount();
+
+  const { container } = renderWithProviders(<DocumentStrip content={document({ effectiveOn: null })} />);
+  expect(container).toBeEmptyDOMElement();
 });
 
 test('a document not yet in force says so, and one retired says what replaced it', () => {
@@ -95,25 +79,24 @@ test('a document not yet in force says so, and one retired says what replaced it
     <DocumentNotice
       content={document({
         retiredAt: '2026-11-01T00:00:00',
-        supersededBySlug: 'lirf-twr-sop-v2',
-        supersededByTitle: { en: 'Fiumicino Tower SOP, second edition' },
+        supersededBySlug: 'code-of-conduct-2027',
+        supersededByTitle: { en: 'Code of conduct, 2027 edition' },
       })}
     />,
   );
 
   expect(screen.getByText('No longer in force since Nov 1, 2026.')).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Fiumicino Tower SOP, second edition' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: 'Code of conduct, 2027 edition' })).toHaveAttribute(
     'href',
-    '/documents/lirf-twr-sop-v2',
+    '/documents/code-of-conduct-2027',
   );
 });
 
-test('the footer is the edition: version, date, a name and the cycle, and a way to paper', () => {
+test('the footer is the edition: version, date and a name, and a way to paper', () => {
   renderWithProviders(<DocumentFooter content={document()} />);
 
   expect(screen.getByText('3')).toBeInTheDocument();
   expect(screen.getByText('Sep 12, 2026')).toBeInTheDocument();
   expect(screen.getByText('Test User')).toBeInTheDocument();
-  expect(screen.getByText('2609')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Print' })).toBeInTheDocument();
 });

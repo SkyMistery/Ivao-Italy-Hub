@@ -5,8 +5,8 @@ import type { BlockRegistration, WidgetRegistration } from '../../shared/modules
  * The third side of "registry ⇄ ui-kit": what the **server** declares in `/api/me`, against what
  * this build of the front end registered (design M0 §6.5).
  *
- * The two halves of a module are two projects that are compiled separately — `IvaoHub.Modules.Atc`
- * and `web/src/modules/atc/` — so they can disagree, and the way they disagree is quiet: a block
+ * The two halves of a module are two projects that are compiled separately — `IvaoHub.Modules.<Name>`
+ * and `web/src/modules/<key>/` — so they can disagree, and the way they disagree is quiet: a block
  * only the server knows draws "unknown block" on a page somebody already published, and a block
  * only the browser knows is offered in the editor and then refused on save, with a message about an
  * envelope. Saying it here, in one place a coordinator can be pointed at, is cheaper than either.

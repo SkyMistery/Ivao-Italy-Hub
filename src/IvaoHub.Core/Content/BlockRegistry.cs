@@ -18,7 +18,7 @@ public enum BlockKind
 /// </summary>
 public interface IBlockDescriptor
 {
-    /// <summary>The type as it appears in a body, for example <c>text</c> or <c>atc.roster</c>.</summary>
+    /// <summary>The type as it appears in a body, for example <c>text</c> or <c>events.upcoming</c>.</summary>
     string Type { get; }
 
     int Version { get; }

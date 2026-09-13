@@ -1,7 +1,6 @@
 using System.Reflection;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
-using IvaoHub.Modules.Atc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -40,7 +39,7 @@ public sealed class PolicyNamesTests
     [Fact]
     public async Task EveryPolicyTheCodeAsksForExistsInTheCatalogue()
     {
-        var used = new[] { typeof(HubDbContext).Assembly, typeof(AtcModule).Assembly }
+        var used = new[] { typeof(HubDbContext).Assembly }
             .SelectMany(assembly => assembly.GetTypes())
             .SelectMany(type => type.GetCustomAttributes<AuthorizeAttribute>()
                 .Concat(type.GetMethods().SelectMany(method => method.GetCustomAttributes<AuthorizeAttribute>())))

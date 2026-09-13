@@ -3,12 +3,13 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 13 settembre 2026 — il piano rivisto dopo il confronto con lo staff di IVAO.
+**Ultimo aggiornamento:** 13 settembre 2026, pomeriggio — la pila mergiata, il piano 0.72, G16 fatta.
 
-> **Per chi apre adesso — il 13 settembre il piano è cambiato, e la pila è diventata di sette PR.**
-> Carmine ha portato tre richieste emerse con lo staff di IVAO e le ha decise con Claude domanda per
-> domanda; sono in tre note e nel piano **0.72**, sulla **PR #65** (`plan/centralised-content` →
-> `m1/interactive-block`, **solo documenti**):
+> **Per chi apre adesso.** `main` ha tutto fino alla **PR #65**: la pila #59–#64 (G14, deduplica dei
+> media, colore del sito, scheda della demo, header di sicurezza, blocco interattivo) e il **piano
+> 0.72**, mergiati da Claude su delega di Carmine il 13 settembre, dal basso, con i branch cancellati
+> solo alla fine. Il piano è cambiato dopo il confronto di Carmine con lo staff di IVAO; le tre
+> decisioni sono in tre note:
 >
 > | Nota | In una riga |
 > |---|---|
@@ -16,15 +17,23 @@
 > | `decisions/2026-09-13-contenuti-centralizzati.md` | **una schermata per oggetto** (`/staff/content`, `/staff/links`, `/staff/media`); le **pagine si approvano** da WD e HQ; news e documenti nelle pagine **per raccolta**; media e link letti da tutti; l'**indirizzo composto** a tre livelli; il menu passa da WD e HQ |
 > | `decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md` | eventi, tour e training **sezioni a sé**; grant anche **a una posizione**; «a cura di» multiplo che decide i permessi, con un **dipartimento di base** sempre presente (ED, FOD, TD) |
 >
-> **Il lavoro che ne segue è scritto** come fasi **G16–G20** in `04-piano-implementazione-m1.md`
-> («Le fasi del 13 settembre»), da fare **dopo il merge della pila #59–#65**, da `main`, una per
-> sessione. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento di base) si
-> fanno **all'apertura di M2**. Ordine di merge invariato: dal basso, una alla volta, cancellando i
-> branch solo alla fine; la #65 va dopo la #64. **Il sito non è online e non lo sarà per almeno due
+> **Il lavoro è in fasi G16–G20** in `04-piano-implementazione-m1.md` («Le fasi del 13 settembre»),
+> una per sessione, una PR per fase, da `main`. **G16 è fatta** (branch `m1/g16-without-vipi`): il
+> modulo `atc` non c'è più e la composizione la prova `SampleModule` nei test d'integrazione; la metà
+> ATC della G14 è uscita dal codice e le sue colonne restano nel database come proprietà shadow
+> (`RetiredColumns`) fino a una migrazione di contract dopo la prima release. **Prossima: G17**, una
+> schermata per oggetto. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >
-> **Il resto di questo blocco, sotto, è lo stato del 12 settembre sera**, ancora vero per le PR
-> #59–#64.
+> ⚠️ **Per G16 i test d'integrazione e il giro e2e non sono stati eseguiti in locale** (Docker
+> Desktop spento): li ha eseguiti la CI su MariaDB vera, **verdi** — integrazione, smoke e giro (PR #66).
+> Il primo giro aveva un rosso vero: il superadmin contava i permessi del solo nucleo, e ora tiene
+> anche quello del modulo, come deve. Una macchina con un DB di sviluppo già seminato **non** ha la
+> voce di menu `/atc`, che ora arriva dal seed e non più dal modulo: si aggiunge da `/staff/wd/menu`,
+> insieme al link ad `atc.it.ivao.aero` (nessun seed lo può nominare).
+>
+> **Sotto, lo stato del 12 settembre sera**, che racconta la pila ora mergiata.
 
 > **Per chi apre adesso (12 settembre) — sei PR aperte, impilate una sull'altra, tutte e sei verdi in CI.** Nessuna
 > è mergiata; `main` è ancora a G15.

@@ -69,8 +69,8 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.Equal("Menu entry", editorial.GetProperty("label").GetProperty("en").GetString());
 
         // And the module's, which is the other kind and has to survive the composition.
-        var fromModule = entries.Single(entry => entry.GetProperty("path").GetString() == "/atc");
-        Assert.Equal("nav.atc", fromModule.GetProperty("key").GetString());
+        var fromModule = entries.Single(entry => entry.GetProperty("path").GetString() == SampleModule.NavigationPath);
+        Assert.Equal(SampleModule.NavigationKey, fromModule.GetProperty("key").GetString());
         Assert.Equal(JsonValueKind.Null, fromModule.GetProperty("label").ValueKind);
 
         // Ordered by what the staff decided, so an entry moved in the back office moves on the site.
@@ -85,21 +85,21 @@ public sealed class SiteMenuAndDashboardTests(MariaDbFixture mariaDb) : IAsyncLi
     {
         // Both halves may name one address, and only one of them can be drawn. The editorial row
         // wins because somebody chose its wording and its place; without this the day a division
-        // puts /atc in its own menu is the day /atc appears twice.
+        // puts a module's address in its own menu is the day that address appears twice.
         var token = TestContext.Current.CancellationToken;
-        var id = await SeedMenuItemAsync("atc-shadow", sort: 950, path: "/atc", cancellationToken: token);
+        var id = await SeedMenuItemAsync("sample-shadow", sort: 950, path: SampleModule.NavigationPath, cancellationToken: token);
 
         try
         {
             using var anonymous = _factory.CreateApiClient();
             var bootstrap = await anonymous.GetFromJsonAsync<JsonElement>("/api/me", token);
 
-            var atc = bootstrap.GetProperty("navigation").GetProperty("public").EnumerateArray()
-                .Where(entry => entry.GetProperty("path").GetString() == "/atc")
+            var sample = bootstrap.GetProperty("navigation").GetProperty("public").EnumerateArray()
+                .Where(entry => entry.GetProperty("path").GetString() == SampleModule.NavigationPath)
                 .ToArray();
 
-            Assert.Single(atc);
-            Assert.Equal(JsonValueKind.Null, atc[0].GetProperty("key").ValueKind);
+            Assert.Single(sample);
+            Assert.Equal(JsonValueKind.Null, sample[0].GetProperty("key").ValueKind);
         }
         finally
         {

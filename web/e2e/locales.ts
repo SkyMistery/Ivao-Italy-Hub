@@ -14,6 +14,7 @@ interface CommonStrings {
   readonly theme: { readonly toggle: string };
   readonly nav: {
     readonly staff: string;
+    readonly modules: string;
     readonly sidebar: { readonly collapse: string; readonly expand: string };
   };
   readonly auth: { readonly login: string };
@@ -92,7 +93,6 @@ interface CommonStrings {
       readonly publish: string;
       readonly publishDialog: {
         readonly changelog: string;
-        readonly airac: string;
         readonly confirm: string;
       };
       readonly page: string;
@@ -183,19 +183,6 @@ interface SeedStrings {
 export const englishCommon = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/common.json', import.meta.url)), 'utf8'),
 ) as CommonStrings;
-
-/**
- * The words of the ATC module, which live in the module's own namespace and are copied into
- * `locales/` by `pnpm i18n:sync`. A module's menu entry is a translation key, so a spec that wants
- * to read that entry has to resolve it the way the browser does.
- */
-interface AtcStrings {
-  readonly nav: { readonly atc: string };
-}
-
-export const englishAtc = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../../locales/en/atc.json', import.meta.url)), 'utf8'),
-) as AtcStrings;
 
 export const englishSeed = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/seed.json', import.meta.url)), 'utf8'),

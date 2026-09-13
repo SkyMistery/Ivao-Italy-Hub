@@ -49,28 +49,11 @@ public static class ModuleServiceCollectionExtensions
         // The maintenance flags are cached in it, and so is the security stamp.
         services.AddMemoryCache();
 
-        foreach (var module in modules)
-        {
-            services.AddSingleton(module);
-        }
-
         services.TryAddSingleton<ModuleRegistry>();
 
-        var enabled = Enabled(modules, division);
-
-        foreach (var module in enabled)
+        foreach (var module in modules)
         {
-            foreach (var block in module.Blocks)
-            {
-                services.AddSingleton<IBlockDescriptor>(block);
-            }
-
-            foreach (var widget in module.Widgets)
-            {
-                services.AddSingleton(widget);
-            }
-
-            module.ConfigureServices(services, configuration);
+            services.AddHubModule(module, configuration, division);
         }
 
         foreach (var widget in CoreWidgets.All)
@@ -81,11 +64,54 @@ public static class ModuleServiceCollectionExtensions
         services.TryAddSingleton<WidgetRegistry>();
 
         // The catalogue that the policy provider, the calculator of effective permissions and the
-        // validator of a grant all read. Composed here because this is the one place holding both
-        // halves of it.
-        services.TryAddSingleton(new PermissionCatalog(
-            [.. CorePermissions.All, .. enabled.SelectMany(module => module.Permissions)]));
+        // validator of a grant all read. Read from the registry when it is first asked for rather
+        // than from the list above, so that it holds exactly the modules the registry holds -- which
+        // is also what lets a test host add a module of its own after the application composed its
+        // list, and find its permissions in the catalogue like any other.
+        services.TryAddSingleton(provider => new PermissionCatalog(
+        [
+            .. CorePermissions.All,
+            .. provider.GetRequiredService<ModuleRegistry>().Enabled.SelectMany(module => module.Permissions),
+        ]));
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers one module and what it contributes. <see cref="AddHubModules"/> calls it for every
+    /// module of the explicit list; the integration tests call it once more, from their own host,
+    /// for the module that proves the composition now that the build has none of its own
+    /// (note 2026-09-13-staccarsi-da-vipi). It is the same code in both cases, which is the point.
+    /// </summary>
+    public static IServiceCollection AddHubModule(
+        this IServiceCollection services,
+        IModule module,
+        IConfiguration configuration,
+        DivisionOptions division)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(module);
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(division);
+
+        services.AddSingleton(module);
+
+        if (!IsEnabled(module, division))
+        {
+            return services;
+        }
+
+        foreach (var block in module.Blocks)
+        {
+            services.AddSingleton<IBlockDescriptor>(block);
+        }
+
+        foreach (var widget in module.Widgets)
+        {
+            services.AddSingleton(widget);
+        }
+
+        module.ConfigureServices(services, configuration);
         return services;
     }
 
@@ -109,10 +135,8 @@ public static class ModuleServiceCollectionExtensions
     /// <c>ModuleRegistryComposesNavAndExclusions</c>, which asserts on the registry the running
     /// application actually built.
     /// </summary>
-    private static IReadOnlyList<IModule> Enabled(IReadOnlyList<IModule> modules, DivisionOptions division) =>
-    [
-        .. modules.Where(module => !module.IsOptional
-            || !division.Modules.TryGetValue(module.Key, out var enabled)
-            || enabled),
-    ];
+    private static bool IsEnabled(IModule module, DivisionOptions division) =>
+        !module.IsOptional
+        || !division.Modules.TryGetValue(module.Key, out var enabled)
+        || enabled;
 }

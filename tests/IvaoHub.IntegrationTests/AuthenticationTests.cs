@@ -332,6 +332,10 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var body = await client.GetFromJsonAsync<JsonElement>("/api/me", token);
 
         Assert.True(body.GetProperty("user").GetProperty("isSuperadmin").GetBoolean());
-        Assert.Equal(CorePermissions.All.Count, body.GetProperty("permissions").GetArrayLength());
+        // The whole catalogue of this host, the modules' permissions included: the core's alone would
+        // be a superadmin that cannot see the section of a module (SampleModule brings one).
+        var catalogue = _factory.Services.GetRequiredService<PermissionCatalog>();
+        Assert.Equal(catalogue.All.Count, body.GetProperty("permissions").GetArrayLength());
+        Assert.True(catalogue.All.Count > CorePermissions.All.Count);
     }
 }

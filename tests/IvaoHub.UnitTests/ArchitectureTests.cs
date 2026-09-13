@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
-using IvaoHub.Modules.Atc;
 using Microsoft.AspNetCore.Authorization;
 using Xunit;
 
@@ -17,7 +16,6 @@ namespace IvaoHub.UnitTests;
 public sealed class ArchitectureTests
 {
     private static readonly Assembly Core = typeof(HubDbContext).Assembly;
-    private static readonly Assembly Atc = typeof(AtcModule).Assembly;
 
     [Fact]
     public void TheCoreDependsOnNoHostAndOnNoModule()
@@ -39,7 +37,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void ThereIsExactlyOneAuthorizationHandlerInTheAssembliesThisProjectSees()
     {
-        var handlers = new[] { Core, Atc }
+        var handlers = new[] { Core }
             .SelectMany(assembly => assembly.GetTypes())
             .Where(type => typeof(IAuthorizationHandler).IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false })
             .ToArray();
@@ -49,7 +47,7 @@ public sealed class ArchitectureTests
 
     /// <summary>
     /// The same rule over the whole of <c>src/</c>, read from the sources.
-    /// <para>The reflection test above only sees the two assemblies this project references, so it
+    /// <para>The reflection test above only sees the assemblies this project references, so it
     /// is blind to <c>IvaoHub.Web</c> — which is exactly where writing "just one handler for this
     /// case" is most tempting. Reading the sources also catches a handler that is declared but
     /// never registered, which no container can see. The integration test
@@ -153,7 +151,6 @@ public sealed class ArchitectureTests
         // Read from the model rather than from the sources: what makes an entity a second content
         // is a column of the database holding a document, and a property nothing maps is not one.
         var withABody = Core.GetTypes()
-            .Concat(Atc.GetTypes())
             .Where(type => type is { IsClass: true, IsAbstract: false })
             .Where(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Any(property => property.Name is "BodyJson" or "Body"
@@ -208,7 +205,6 @@ public sealed class ArchitectureTests
     public void NoDtoCarriesAnEmailAddress()
     {
         var offenders = Core.GetTypes()
-            .Concat(Atc.GetTypes())
             .Where(type => type is { IsClass: true, IsAbstract: false })
             .Where(type => type.Name.EndsWith("Dto", StringComparison.Ordinal)
                 || type.Name.StartsWith("Bootstrap", StringComparison.Ordinal))

@@ -1,4 +1,6 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Division;
+using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -53,6 +55,11 @@ public sealed class HubWebApplicationFactory(
                 ["Media:MaxBytes"] = TestMediaMaxBytes.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["Media:Directory"] = mediaDirectory ?? string.Empty,
             }));
+
+        // The module that proves the composition, added through the application's own call after the
+        // application has registered its list -- which is empty until M2 (SampleModule).
+        builder.ConfigureServices((context, services) =>
+            services.AddHubModule(new SampleModule(), context.Configuration, new DivisionOptions()));
 
         builder.ConfigureTestServices(services =>
         {

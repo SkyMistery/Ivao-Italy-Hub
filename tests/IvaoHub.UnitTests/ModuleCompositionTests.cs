@@ -13,9 +13,9 @@ namespace IvaoHub.UnitTests;
 /// What the core does with the modules it is handed: composes their menus, their path exclusions,
 /// their blocks and their permissions, and leaves out the ones a division switched off
 /// (design M0 section 6.1).
-/// <para>The real module of M0, <c>atc</c>, contributes a menu entry and four exclusions and
-/// nothing else, which is exactly what it was written to prove. The rest of the contract is
-/// exercised here with modules invented for the purpose: a mechanism that only ever sees one
+/// <para>The build has no module of its own since the ATC module left (note
+/// 2026-09-13-staccarsi-da-vipi); the integration tests prove the composition end to end with a
+/// module their host adds, and the contract is exercised here with modules invented for the purpose: a mechanism that only ever sees one
 /// implementation is a mechanism nobody has checked is general.</para>
 /// </summary>
 public sealed class ModuleCompositionTests
@@ -80,15 +80,15 @@ public sealed class ModuleCompositionTests
     }
 
     [Theory]
-    [InlineData("/api/atc", "atc")]
-    [InlineData("/api/atc/ping", "atc")]
-    [InlineData("/API/ATC/ping", "atc")]
-    [InlineData("/api/atcetera/ping", null)]
+    [InlineData("/api/events", "events")]
+    [InlineData("/api/events/ping", "events")]
+    [InlineData("/API/EVENTS/ping", "events")]
+    [InlineData("/api/eventsful/ping", null)]
     [InlineData("/api/links", null)]
     [InlineData("/health", null)]
     public void TheModuleOfARequestIsReadFromItsPath(string path, string? expected)
     {
-        var registry = Compose(NoSwitches, new TestModule("atc"));
+        var registry = Compose(NoSwitches, new TestModule("events"));
 
         Assert.Equal(expected, registry.ForApiPath(path)?.Key);
     }
@@ -144,10 +144,10 @@ public sealed class ModuleCompositionTests
         var registry = new WidgetRegistry(
         [
             .. CoreWidgets.All,
-            new WidgetDescriptor("atc.online", Department.AOD, "widgets.atc.online.title", ["half"]),
+            new WidgetDescriptor("events.mine", "widgets.events.mine.title", ["half"]),
         ]);
 
-        Assert.Equal(["atc.online", CoreWidgets.Welcome], registry.All.Select(widget => widget.Key));
+        Assert.Equal(["events.mine", CoreWidgets.Welcome], registry.All.Select(widget => widget.Key));
 
         Assert.Throws<InvalidOperationException>(() => new WidgetRegistry(
             [.. CoreWidgets.All, .. CoreWidgets.All]));

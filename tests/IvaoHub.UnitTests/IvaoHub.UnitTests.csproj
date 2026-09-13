@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\IvaoHub.Core\IvaoHub.Core.csproj" />
-    <ProjectReference Include="..\..\src\IvaoHub.Modules.Atc\IvaoHub.Modules.Atc.csproj" />
   </ItemGroup>
 
 </Project>

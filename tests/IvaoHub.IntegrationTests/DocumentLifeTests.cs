@@ -6,7 +6,6 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
-using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +15,14 @@ using Xunit;
 namespace IvaoHub.IntegrationTests;
 
 /// <summary>
-/// The operational document over the wire (G14, note
-/// 2026-09-10-il-documento-operativo-come-va-ivao-aero): the six facts a SOP or a LoA carries
-/// beside its body, checked against the division's own airspace when written, and what the public
-/// page is told about them once published — including the way on when the document was replaced.
+/// The life of a document over the wire (G14): when it comes into force, when it is to be reviewed,
+/// when it stopped being in force and what replaced it — and what the public page is told about
+/// each. Until 13 September 2026 this was the operational document, with a type, two positions, an
+/// ICAO, a FIR and an AIRAC cycle besides; that half left with vIPI (note
+/// 2026-09-13-staccarsi-da-vipi), and a document of the hub is now a document of any kind.
 /// </summary>
 [Collection(MariaDbCollection.Name)]
-public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLifetime
+public sealed class DocumentLifeTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
     private const int SuperadminVid = 660001;
     private const int SpecialOpsCoordinatorVid = 660002;
@@ -38,142 +38,78 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
     public ValueTask DisposeAsync() => _factory.DisposeAsync();
 
     [Fact]
-    public async Task TheAirspaceIsListedWithNamesToWhoeverIsSignedIn()
+    public async Task TheDatesOfADocumentBelongToADocumentAndNothingOfAControllerIsLeft()
     {
         var token = TestContext.Current.CancellationToken;
         await SeedUserAsync(SuperadminVid, token);
-        await SeedSnapshotAsync(token);
-
-        using var client = _factory.CreateApiClient();
-
-        // A visitor has no document to write, and the list is not theirs to read: they are sent
-        // to sign in, which is what a challenge is to a browser without the hub's own header.
-        using var anonymous = await client.GetAsync(new Uri(AirspaceEndpoints.Pattern, UriKind.Relative), token);
-        Assert.Equal(HttpStatusCode.Found, anonymous.StatusCode);
-
-        await _factory.SignInAsync(client, SuperadminVid, token);
-
-        var listing = await client.GetFromJsonAsync<JsonElement>(AirspaceEndpoints.Pattern, token);
-
-        var airports = listing.GetProperty("airports").EnumerateArray().ToList();
-        var centers = listing.GetProperty("centers").EnumerateArray().ToList();
-
-        Assert.Contains(airports, airport => airport.GetProperty("code").GetString() == "LIRF"
-            && airport.GetProperty("name").GetString() == "Roma Fiumicino");
-        Assert.Contains(centers, center => center.GetProperty("code").GetString() == "LIRR"
-            && center.GetProperty("name").GetString() == "Roma");
-    }
-
-    [Fact]
-    public async Task ADocumentIsHeldToTheAirspaceAndAPageMayNotCarryItsFields()
-    {
-        var token = TestContext.Current.CancellationToken;
-        await SeedUserAsync(SuperadminVid, token);
-        await SeedSnapshotAsync(token);
 
         using var client = _factory.CreateApiClient();
         await _factory.SignInAsync(client, SuperadminVid, token);
 
-        // An airport the division does not have, a FIR it does not have, and a position written
-        // the way nobody on the network writes one: three typing mistakes, refused where they sit.
-        using var refused = await SendAsync(
-            client,
-            HttpMethod.Post,
-            ContentEndpoints.Pattern,
-            Payload(
-                $"sop-{Guid.NewGuid():N}"[..20],
-                icao: "EGLL",
-                fir: "EGTT",
-                primaryPosition: "lirf tower"),
-            token);
-
-        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
-
-        var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
-        Assert.Equal("errors.content.icaoUnknown", errors.GetProperty("icao")[0].GetString());
-        Assert.Equal("errors.content.firUnknown", errors.GetProperty("fir")[0].GetString());
-        Assert.Equal("errors.content.positionInvalid", errors.GetProperty("primaryPosition")[0].GetString());
-
-        // The same facts on a page are not a mistake of spelling but of kind.
+        // A page with a review date would be a page the reminder job writes to: refused where it sits.
         using var page = await SendAsync(
             client,
             HttpMethod.Post,
             ContentEndpoints.Pattern,
-            Payload($"pg-{Guid.NewGuid():N}"[..20], kind: ContentKind.Page, icao: "LIRF", documentType: "Sop"),
+            Payload($"pg-{Guid.NewGuid():N}"[..20], kind: ContentKind.Page, reviewOn: "2027-10-01"),
             token);
 
         Assert.Equal(HttpStatusCode.BadRequest, page.StatusCode);
-
         var pageErrors = (await page.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
-        Assert.Equal("errors.content.notADocument", pageErrors.GetProperty("icao")[0].GetString());
-        Assert.Equal("errors.content.notADocument", pageErrors.GetProperty("documentType")[0].GetString());
+        Assert.Equal("errors.content.notADocument", pageErrors.GetProperty("reviewOn")[0].GetString());
 
-        // And the real thing goes through with everything it said, the footer on by default.
+        // A document goes through with its dates and the footer on by default. A client that still
+        // sends the fields of the operational document is not refused -- an unknown member of the
+        // JSON is ignored, as everywhere -- and nothing of them comes back.
         using var created = await SendAsync(
             client,
             HttpMethod.Post,
             ContentEndpoints.Pattern,
             Payload(
-                $"sop-{Guid.NewGuid():N}"[..20],
-                icao: "LIRF",
-                fir: "LIRR",
-                primaryPosition: "LIRF_TWR",
-                secondaryPosition: "LIRR_CTR",
+                $"doc-{Guid.NewGuid():N}"[..20],
                 effectiveOn: "2026-10-01",
-                reviewOn: "2027-10-01"),
+                reviewOn: "2027-10-01",
+                retired: new { documentType = "Sop", icao = "LIRF", fir = "LIRR", primaryPosition = "LIRF_TWR" }),
             token);
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
 
         var document = await created.Content.ReadFromJsonAsync<JsonElement>(token);
-        Assert.Equal("Sop", document.GetProperty("documentType").GetString());
-        Assert.Equal("LIRF", document.GetProperty("icao").GetString());
-        Assert.Equal("LIRR", document.GetProperty("fir").GetString());
-        Assert.Equal("LIRF_TWR", document.GetProperty("primaryPosition").GetString());
         Assert.StartsWith("2026-10-01", document.GetProperty("effectiveOn").GetString(), StringComparison.Ordinal);
+        Assert.StartsWith("2027-10-01", document.GetProperty("reviewOn").GetString(), StringComparison.Ordinal);
         Assert.True(document.GetProperty("showFooter").GetBoolean());
+
+        foreach (var gone in new[] { "documentType", "icao", "fir", "primaryPosition", "secondaryPosition" })
+        {
+            Assert.False(document.TryGetProperty(gone, out _), $"the detail still carries '{gone}'");
+        }
     }
 
     [Fact]
-    public async Task ThePublicPageSaysWhoPublishedWhichCycleAndWhereToGoNext()
+    public async Task ThePublicPageSaysWhoPublishedAndWhereToGoNext()
     {
         var token = TestContext.Current.CancellationToken;
         await SeedUserAsync(SuperadminVid, token);
-        await SeedSnapshotAsync(token);
 
         using var client = _factory.CreateApiClient();
         await _factory.SignInAsync(client, SuperadminVid, token);
 
-        var oldSlug = $"loa-{Guid.NewGuid():N}"[..20];
-        var newSlug = $"loa-{Guid.NewGuid():N}"[..20];
+        var oldSlug = $"reg-{Guid.NewGuid():N}"[..20];
+        var newSlug = $"reg-{Guid.NewGuid():N}"[..20];
 
-        var old = await CreateAsync(client, Payload(oldSlug, documentType: "Loa", icao: "LIRF", fir: "LIRR"), token);
-        var successor = await CreateAsync(client, Payload(newSlug, documentType: "Loa", icao: "LIRF", fir: "LIRR"), token);
+        var old = await CreateAsync(client, Payload(oldSlug), token);
+        var successor = await CreateAsync(client, Payload(newSlug), token);
 
-        // A cycle that is not four digits is refused by publication, on the field of the dialog.
-        using var badCycle = await SendAsync(
-            client,
-            HttpMethod.Post,
-            $"{ContentEndpoints.Pattern}/{old.Id}/publish",
-            new { changelog = (string?)null, airac = "26-09" },
-            token);
-
-        Assert.Equal(HttpStatusCode.BadRequest, badCycle.StatusCode);
-        Assert.Equal(
-            "errors.content.airacInvalid",
-            (await badCycle.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors").GetProperty("airac")[0].GetString());
-
-        await PublishAsync(client, old.Id, "2609", token);
-        await PublishAsync(client, successor.Id, "2610", token);
+        await PublishAsync(client, old.Id, token);
+        await PublishAsync(client, successor.Id, token);
 
         var read = await client.GetFromJsonAsync<JsonElement>(
             $"{ContentEndpoints.Pattern}/public/{nameof(ContentKind.Document)}/{oldSlug}",
             token);
 
-        // The footer: the version, the cycle and a name — never the VID.
-        Assert.Equal("2609", read.GetProperty("airac").GetString());
+        // The footer: the version and a name -- never the VID, and no cycle any more.
         Assert.Equal("Test User", read.GetProperty("publishedByName").GetString());
-        Assert.Equal("Loa", read.GetProperty("documentType").GetString());
+        Assert.False(read.TryGetProperty("airac", out _));
         Assert.Equal(JsonValueKind.Null, read.GetProperty("supersededBySlug").ValueKind);
 
         // A successor without a retirement date is half a notice, and refused.
@@ -181,7 +117,7 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
             client,
             HttpMethod.Put,
             $"{ContentEndpoints.Pattern}/{old.Id}",
-            Payload(oldSlug, documentType: "Loa", icao: "LIRF", fir: "LIRR", supersededById: successor.Id, rowVersion: old.RowVersion),
+            Payload(oldSlug, supersededById: successor.Id, rowVersion: old.RowVersion),
             token);
 
         Assert.Equal(HttpStatusCode.BadRequest, half.StatusCode);
@@ -198,9 +134,6 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
             $"{ContentEndpoints.Pattern}/{old.Id}",
             Payload(
                 oldSlug,
-                documentType: "Loa",
-                icao: "LIRF",
-                fir: "LIRR",
                 supersededById: successor.Id,
                 retiredAt: "2026-11-01T00:00:00",
                 rowVersion: reloaded.GetProperty("rowVersion").GetString()),
@@ -214,7 +147,7 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
 
         Assert.StartsWith("2026-11-01", after.GetProperty("retiredAt").GetString(), StringComparison.Ordinal);
         Assert.Equal(newSlug, after.GetProperty("supersededBySlug").GetString());
-        Assert.Equal("LoA di prova", after.GetProperty("supersededByTitle").GetProperty("it").GetString());
+        Assert.Equal("Regolamento di prova", after.GetProperty("supersededByTitle").GetProperty("it").GetString());
     }
 
     [Fact]
@@ -226,7 +159,6 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         // of people who hear about a message to the ATC department, and every class of this
         // assembly writes into the same database — a second ATC coordinator here was a red CI there.
         await SeedUserAsync(SpecialOpsCoordinatorVid, token, position: "IT-SOC", email: "soc@example.org");
-        await SeedSnapshotAsync(token);
 
         using var client = _factory.CreateApiClient();
         await _factory.SignInAsync(client, SuperadminVid, token);
@@ -291,20 +223,22 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         return [.. all.Where(row => row.DataJson.Contains($"/documents/{id}\"", StringComparison.Ordinal))];
     }
 
-    private static object Payload(
+    /// <summary>
+    /// A write of a content row. <paramref name="retired"/> merges in members the API no longer
+    /// has, as an old client would still send them.
+    /// </summary>
+    private static JsonObject Payload(
         string slug,
         ContentKind kind = ContentKind.Document,
         Department department = Department.AOD,
-        string? documentType = "Sop",
-        string? icao = null,
-        string? fir = null,
-        string? primaryPosition = null,
-        string? secondaryPosition = null,
         string? effectiveOn = null,
         string? reviewOn = null,
         string? retiredAt = null,
         long? supersededById = null,
-        string? rowVersion = null) => new
+        string? rowVersion = null,
+        object? retired = null)
+    {
+        var payload = JsonSerializer.SerializeToNode(new
         {
             kind = kind.ToString(),
             slug,
@@ -313,24 +247,30 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
             isTemplate = false,
             title = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["it"] = documentType == "Loa" ? "LoA di prova" : "SOP di prova",
-                ["en"] = documentType == "Loa" ? "Test LoA" : "Test SOP",
+                ["it"] = "Regolamento di prova",
+                ["en"] = "Test regulation",
             },
             summary = (Dictionary<string, string>?)null,
             seo = (Dictionary<string, object>?)null,
             body = Body(),
             schemaVersion = 1,
-            documentType = kind == ContentKind.Document || documentType is not null ? documentType : null,
-            icao,
-            fir,
-            primaryPosition,
-            secondaryPosition,
             effectiveOn,
             reviewOn,
             retiredAt,
             supersededById,
             rowVersion = rowVersion ?? "0001-01-01T00:00:00",
-        };
+        })!.AsObject();
+
+        if (retired is not null)
+        {
+            foreach (var (name, value) in JsonSerializer.SerializeToNode(retired)!.AsObject().ToList())
+            {
+                payload[name] = value?.DeepClone();
+            }
+        }
+
+        return payload;
+    }
 
     private static JsonNode Body() => JsonNode.Parse("""
         {
@@ -341,7 +281,7 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
               "layout": "stacked",
               "blocks": [
                 { "id": "b_heading", "type": "heading", "version": 1,
-                  "props": { "level": 1, "text": { "it": "Procedure", "en": "Procedures" } } }
+                  "props": { "level": 1, "text": { "it": "Regole", "en": "Rules" } } }
               ]
             }
           ]
@@ -360,13 +300,13 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         return (created.GetProperty("id").GetInt64(), created.GetProperty("rowVersion").GetString());
     }
 
-    private static async Task PublishAsync(HttpClient client, long id, string airac, CancellationToken cancellationToken)
+    private static async Task PublishAsync(HttpClient client, long id, CancellationToken cancellationToken)
     {
         using var response = await SendAsync(
             client,
             HttpMethod.Post,
             $"{ContentEndpoints.Pattern}/{id}/publish",
-            new { changelog = "First edition", airac },
+            new { changelog = "First edition" },
             cancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -380,7 +320,7 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
-        request.Content = JsonContent.Create(payload);
+        request.Content = JsonContent.Create(payload, payload.GetType());
         request.Headers.Add("X-Requested-With", "hub");
         return await client.SendAsync(request, cancellationToken);
     }
@@ -428,35 +368,5 @@ public sealed class OperationalDocumentTests(MariaDbFixture mariaDb) : IAsyncLif
         }
 
         await database.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// The snapshot a division would have taken from the network, written straight in: one FIR
-    /// and one airport are all the airspace this test needs to tell a real code from a made up one.
-    /// </summary>
-    private async Task SeedSnapshotAsync(CancellationToken cancellationToken)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
-        var clock = scope.ServiceProvider.GetRequiredService<IClock>();
-
-        if (!await database.IvaoCenters.AnyAsync(center => center.Id == "LIRR", cancellationToken))
-        {
-            database.IvaoCenters.Add(new IvaoCenter { Id = "LIRR", Name = "Roma", CountryId = "IT", SyncedAt = clock.UtcNow });
-        }
-
-        var airport = await database.IvaoAirports.FirstOrDefaultAsync(row => row.Icao == "LIRF", cancellationToken);
-        if (airport is null)
-        {
-            airport = new IvaoAirport { Icao = "LIRF", CountryId = "IT", SyncedAt = clock.UtcNow };
-            database.IvaoAirports.Add(airport);
-        }
-
-        // Another test seeds the same airport with its code for a name; the listing test wants the
-        // name, so it is set either way.
-        airport.Name = "Roma Fiumicino";
-
-        await database.SaveChangesAsync(cancellationToken);
-        scope.ServiceProvider.GetRequiredService<IFirDirectory>().Invalidate();
     }
 }

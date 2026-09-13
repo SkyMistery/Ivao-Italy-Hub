@@ -62,13 +62,11 @@ import {
   updateSection,
 } from './body';
 import { emptyContent, toFormValues, type PublishRequest } from './mutations';
-import { suggestedPositions } from './positions';
 import { PreviewFrame, type PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
   contentQuery,
   publicContentQuery,
-  type AirspaceListingDto,
   type ContentDetailDto,
   type ContentKind,
   type ContentPublishProblemsDto,
@@ -106,7 +104,6 @@ export function ContentEditor({
   kind,
   startsAsTemplate = false,
   categories,
-  airspace,
   successors = [],
   department,
   locales,
@@ -133,11 +130,6 @@ export function ContentEditor({
   startsAsTemplate?: boolean;
   /** The shelves of this department, already resolved into the language on screen. */
   categories: readonly ChoiceOption[];
-  /**
-   * The airspace of the division, for a document (G14): what its ICAO and its FIR are chosen from.
-   * Undefined on every other kind, and while it is still being read.
-   */
-  airspace?: AirspaceListingDto | undefined;
   /** The published documents this one may say it was replaced by, already labelled. */
   successors?: readonly ChoiceOption[];
   department: Department;
@@ -221,25 +213,12 @@ export function ContentEditor({
       : toFormValues(content, locales),
   );
 
-  // What the form of a document offers, out of what it already says: the positions follow the
-  // airport and the FIR as they are chosen, which is why they are read from the shadow and not
-  // handed in once (`suggestedPositions`).
-  const documentChoices: DocumentChoices = {
-    airports: (airspace?.airports ?? []).map((entry) => ({
-      value: entry.code,
-      label: `${entry.code} — ${entry.name}`,
-    })),
-    centers: (airspace?.centers ?? []).map((entry) => ({
-      value: entry.code,
-      label: `${entry.code} — ${entry.name}`,
-    })),
-    positions: suggestedPositions(metadata.icao, metadata.fir),
-    successors,
-  };
+  // What the form of a document offers beyond its own row.
+  const documentChoices: DocumentChoices = { successors };
 
   // What the publish dialog is told, kept across its openings: a changelog half written and a
   // dialog closed by mistake should not be a changelog written twice.
-  const [publishRequest, setPublishRequest] = useState<PublishRequest>({ changelog: '', airac: '' });
+  const [publishRequest, setPublishRequest] = useState<PublishRequest>({ changelog: '' });
 
   const [selection, setSelection] = useState<Selection | null>(null);
   // The column an empty "add here" on the page chose. Only meaningful while its section is the one
@@ -900,8 +879,7 @@ export function ContentEditor({
               </Button>
 
               {onPublish === null ? null : (
-                // A question on the way: what changed, for the staff, and — on a document — which
-                // AIRAC cycle this edition belongs to (G14). What is on screen is stored first, then
+                // A question on the way: what changed, for the staff. What is on screen is stored first, then
                 // published: one press, and never a page that says something nobody saved. A store
                 // that fails leaves the draft where it is, and the line under the toolbar says why.
                 <ConfirmDialog
@@ -932,22 +910,6 @@ export function ContentEditor({
                       }
                     />
                   </div>
-                  {kind === 'Document' ? (
-                    <div className="flex flex-col gap-1">
-                      <Label htmlFor="publish-airac">{t('content.editor.publishDialog.airac')}</Label>
-                      <Input
-                        id="publish-airac"
-                        className="max-w-32"
-                        inputMode="numeric"
-                        maxLength={4}
-                        placeholder="2609"
-                        value={publishRequest.airac}
-                        onChange={(event) =>
-                          setPublishRequest({ ...publishRequest, airac: event.target.value })
-                        }
-                      />
-                    </div>
-                  ) : null}
                 </ConfirmDialog>
               )}
 

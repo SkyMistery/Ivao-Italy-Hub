@@ -60,12 +60,8 @@
       "mediaMissing": "This picture is no longer in the media library. Choose another one.",
       "mediaNotVisible": "This picture is not visible to the readers of this page. Make it public in the media library, or choose another one.",
       "notADocument": "Only a document carries this. Leave it empty on a page or a news item.",
-      "positionInvalid": "Write the position as a callsign: upper case letters, digits and underscores, like LIRF_TWR.",
-      "icaoUnknown": "This is not an airport of the division. Pick one from the list.",
-      "firUnknown": "This is not a FIR of the division. Pick one from the list.",
       "successorUnknown": "The document that replaces this one does not exist. Pick one from the list.",
-      "successorWithoutRetirement": "A document with a successor is no longer in force: say since when.",
-      "airacInvalid": "Write the AIRAC cycle as four digits, like 2609."
+      "successorWithoutRetirement": "A document with a successor is no longer in force: say since when."
     },
     "maintenance": {
       "title": "This part of the site is closed for changes right now"

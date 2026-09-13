@@ -106,7 +106,7 @@ ivao-division-hub/
 │   │   ├── Modules/                    # IModule, ModuleRegistry, contributi (nav, permessi, widget, blocchi, fallback SPA)
 │   │   └── Services/                   # Quartz host, clock, audit, version
 │   ├── IvaoHub.Web/                    # Program.cs, endpoint mapping, /api/me, /api/version, /health, SPA fallback, wwwroot
-│   └── IvaoHub.Modules.Atc/            # IModule minimo (§6.4)
+│   └── IvaoHub.Modules.Atc/            # IModule minimo (§6.4) — tolto in G16, 13 set 2026
 ├── tests/
 │   ├── IvaoHub.UnitTests/
 │   └── IvaoHub.IntegrationTests/       # Testcontainers MariaDB 11.4.10, WebApplicationFactory
@@ -467,9 +467,9 @@ pagina che leggerà qualcun altro». Nota:
 ```csharp
 public interface IModule
 {
-    string Key { get; }                              // "atc", "events"… (chiave in division.modules per gli opzionali)
-    Department? Department { get; }
-    bool IsOptional { get; }                         // false per i quattro obbligatori
+    string Key { get; }                              // "events", "tours"… (chiave in division.modules per gli opzionali)
+    // Department? Department — tolto in G16 (13 set 2026): un modulo non appartiene a un dipartimento
+    bool IsOptional { get; }                         // false per gli obbligatori (tre dal 13 set 2026)
     IReadOnlyList<PermissionDescriptor> Permissions { get; }
     IReadOnlyList<NavItemDescriptor> PublicNavigation { get; }
     IReadOnlyList<NavItemDescriptor> StaffNavigation { get; }
@@ -492,9 +492,14 @@ public interface IModule
 
 ### 6.3 Widget
 
-`WidgetDescriptor(key, department?, titleKey, sizes)`; `WidgetRegistry` è composto dal container da ogni `WidgetDescriptor` registrato, esattamente come `BlockRegistry`, quindi un modulo ne aggiunge uno e nient'altro deve saperne il nome. In M0 il nucleo registra `welcome` e la dashboard `/me` compone i widget presenti in `registries.widgets` (componenti in `web/src/features/me/widgets/`, elencati in `coreWidgets`). Nessun widget di modulo in M0. Un widget che il server dichiara e il browser non sa disegnare viene detto allo staff — stessa regola dei blocchi, stessa ragione.
+`WidgetDescriptor(key, titleKey, sizes)` (il `department?` è stato tolto in G16); `WidgetRegistry` è composto dal container da ogni `WidgetDescriptor` registrato, esattamente come `BlockRegistry`, quindi un modulo ne aggiunge uno e nient'altro deve saperne il nome. In M0 il nucleo registra `welcome` e la dashboard `/me` compone i widget presenti in `registries.widgets` (componenti in `web/src/features/me/widgets/`, elencati in `coreWidgets`). Nessun widget di modulo in M0. Un widget che il server dichiara e il browser non sa disegnare viene detto allo staff — stessa regola dei blocchi, stessa ragione.
 
 ### 6.4 `IvaoHub.Modules.Atc` in M0
+
+> **Tolto in G16 (13 settembre 2026)**, insieme a vIPI (`decisions/2026-09-13-staccarsi-da-vipi.md`).
+> La build non ha moduli fino a M2; la composizione la prova `SampleModule`, che esiste solo nel
+> progetto dei test d'integrazione e si aggiunge all'host con la stessa `AddHubModule` che
+> l'applicazione usa per ogni modulo del suo elenco. Il testo qui sotto resta come storia di M0.
 
 `Key = "atc"`, `Department = AOD`, `IsOptional = false`, `SpaFallbackExclusions = ["/services/vsop", "/vsop", "/_content", "/_framework"]` (aggiunte a quelle del nucleo, §4 punto 5), `PublicNavigation = [{ key: "nav.atc", path: "/atc" }]`, un endpoint `GET /api/atc/ping`. Nessuna tabella. Frontend: `web/src/modules/atc/` con manifest, una route `/atc` (pagina segnaposto tradotta) e namespace i18n `atc`. Serve a provare `IModule`, la composizione del menu e l'esclusione dal fallback.
 

@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="..\IvaoHub.Core\IvaoHub.Core.csproj" />
-  </ItemGroup>
-
-</Project>

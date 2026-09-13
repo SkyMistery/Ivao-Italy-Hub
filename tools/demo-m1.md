@@ -56,7 +56,11 @@ Now the menu, which is the part that usually is code:
 
 1. go to `/staff/wd/menu` and delete the **Pilots** entry;
 2. reload the public site. It is gone from the header, with nothing recompiled;
-3. put it back.
+3. put it back;
+4. add an entry that leads **outside** the hub — the division's controller tools, for Italy
+   `https://atc.it.ivao.aero` — and see it in the header. It is the only way the hub reaches vIPI
+   since 13 September 2026 (G16), and it is a row: no seed carries it, because a seed of the
+   repository cannot name one division's address.
 
 ⚠️ The menu is a table **owned by the web department**, not a screen every department has. Try
 `/staff/ed/menu`: it is not there.
@@ -99,15 +103,15 @@ the closing report has to say so. It did not.
 write one yourself, and saving now **answers** — a toast in the corner. A row that already has an
 address never moves it.
 
-**New in G14: the operational document, which is the hardest thing this claim has been asked to
-carry.** On `/staff/aod/documents` make one and give it a **type** — SOP or LoA — an airport and a
-FIR **chosen from a list** (the validator refuses an ICAO the division's airspace does not hold), the
-positions it is about, the day it comes into force and the day it is to be reviewed by. Publish it
-and read it: a strip under the title says what it is about, a notice at the top appears when it is no
-longer in force and names what replaced it, and **Print** puts it on paper with the tabs and
-accordions unfolded. ⚠️ Then look at what it is **not**: no new table, no new entity, no second
-editor, no third `kind`. Six nullable columns, two blocks and a footer — and
-`NoSecondContentEntity` is still green, which is the test that would have said otherwise.
+**New in G14, trimmed in G16: the life of a document.** On `/staff/aod/documents` make one and give
+it the day it comes into force and the day it is to be reviewed by. Publish it and read it: a strip
+under the title says from when it applies, a notice at the top appears when it is not in force yet or
+no longer is, and names what replaced it, and **Print** puts it on paper with the tabs and accordions
+unfolded. Until 13 September the same document also had a type (SOP or LoA), two positions, an
+airport, a FIR and an AIRAC cycle; that half left with vIPI, and a document of the hub is now a
+document of any kind. ⚠️ Then look at what it is **not**: no new table, no new entity, no second
+editor, no third `kind` — and `NoSecondContentEntity` is still green, which is the test that would
+have said otherwise.
 
 - [ ] **Point 2** — two kinds, not two tables.
 
@@ -259,8 +263,7 @@ through the same renderer the public site uses. On any page of `/staff/wd/conten
    every staff member *reads* templates, so that "new from a template" works across departments, and
    only whoever may change them sees the screen.
 8. **Publishing asks** (new in G14). "Publish" opens a window with **what changed** — the changelog
-   line every version could carry since M0 and had never had a box for — and, on a document, the
-   **AIRAC cycle** it belongs to. It is `ConfirmDialog`, extended with fields rather than written
+   line every version could carry since M0 and had never had a box for. It is `ConfirmDialog`, extended with fields rather than written
    beside as a fifth dialog of its own.
 
 **The comforts, added between 10 and 12 September while Carmine used it:** double-click a block or a

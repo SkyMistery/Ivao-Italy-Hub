@@ -17,7 +17,6 @@ import { PageMetadata } from '../../shared/seo/PageMetadata';
 import { bootstrapQuery } from '../me/queries';
 
 import { DocumentFooter, DocumentNotice, DocumentStrip } from './DocumentFrame';
-import { isOperational } from './operational';
 import type { PublicContentDto } from './queries';
 import { usePrintMode } from './usePrintMode';
 
@@ -46,7 +45,7 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
   // never changes, so what comes back is cacheable for a year (`EmbedEndpoints`).
   const embedding = usePublishedEmbedding(content);
 
-  const operational = content.kind === 'Document' && isOperational(content);
+  const isDocument = content.kind === 'Document';
   const summary = read(content.summary);
   const published = new Intl.DateTimeFormat(i18n.language, {
     dateStyle: 'long',
@@ -82,7 +81,7 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
         {summary === '' ? null : <Lead>{summary}</Lead>}
       </header>
 
-      {operational ? (
+      {isDocument ? (
         <>
           <DocumentNotice content={content} />
           <DocumentStrip content={content} />

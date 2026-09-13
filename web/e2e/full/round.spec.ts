@@ -108,7 +108,7 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   });
 
   // Exact, since the frame has a "Published" toggle beside the draft, and "Publish" is in it. The
-  // button asks first — what changed, and on a document the AIRAC cycle (G14) — so the press that
+  // button asks first — what changed — so the press that
   // publishes is the dialog's own.
   const publish = page.getByRole('button', { name: content.editor.publish, exact: true });
   await expect(publish).toBeEnabled();

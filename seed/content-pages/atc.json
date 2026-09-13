@@ -9,6 +9,10 @@
   "summary": {
     "$t": "seed.pages.atc.summary"
   },
+  "menu": {
+    "scope": "Public",
+    "sort": 40
+  },
   "body": {
     "schemaVersion": 1,
     "sections": [

@@ -1,20 +1,7 @@
-import type { PublicContentDto } from './queries';
-
 /**
- * What the public screen needs to know about an operational document (G14) before it draws
- * anything: whether the row is one, and how to read the days it carries.
+ * How the public screen reads the days a document carries (G14): in force from, review by, retired
+ * since.
  */
-
-/** Whether the row carries anything the strip would show. */
-export function isOperational(content: PublicContentDto): boolean {
-  return (
-    content.documentType !== null ||
-    content.primaryPosition !== null ||
-    content.icao !== null ||
-    content.fir !== null ||
-    content.effectiveOn !== null
-  );
-}
 
 /**
  * A day of the row — in force from, review by, retired since — as `YYYY-MM-DD`, whatever the

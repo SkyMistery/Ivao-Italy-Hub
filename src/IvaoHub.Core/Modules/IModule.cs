@@ -1,6 +1,5 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
-using IvaoHub.Core.Division;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +10,7 @@ namespace IvaoHub.Core.Modules;
 /// One entry of a menu, as the server declares it: a translation key and a path, never a phrase.
 /// The server does not know which language the browser is showing (plan section 16.7).
 /// </summary>
-/// <param name="Key">Translation key, for example <c>nav.atc</c>.</param>
+/// <param name="Key">Translation key, for example <c>nav.events</c>.</param>
 /// <param name="Path">Where it goes, inside this application.</param>
 /// <param name="Permission">
 /// The permission the entry is behind, or null when anybody may follow it. A menu entry that leads
@@ -24,12 +23,10 @@ public sealed record NavItemDescriptor(string Key, string Path, string? Permissi
 /// dashboard composes whatever it is handed, so no screen holds a list of tiles (design M0 section 6.3).
 /// </summary>
 /// <param name="Key">Identifier, matched by the client to the component that draws it.</param>
-/// <param name="Department">The department the tile is about, or null when it is about everyone.</param>
 /// <param name="TitleKey">Translation key of its heading.</param>
 /// <param name="Sizes">The widths it can be drawn at, as the dashboard understands them.</param>
 public sealed record WidgetDescriptor(
     string Key,
-    Department? Department,
     string TitleKey,
     IReadOnlyList<string> Sizes);
 
@@ -41,22 +38,22 @@ public sealed record WidgetDescriptor(
 /// <para>A module references <c>IvaoHub.Core</c> and nothing else — never another module — and the
 /// core never references a module: <c>IvaoHub.Web/Modules.cs</c> holds the one explicit list, and
 /// an architecture test fails if either rule is broken (design M0 section 6.2).</para>
+/// <para>A module does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti):
+/// events, tours and training are sections of their own, and which departments act on a row of
+/// theirs is a fact of the row and of the grants, never of the module.</para>
 /// </summary>
 public interface IModule
 {
     /// <summary>
-    /// The key: <c>atc</c>, <c>events</c>. It is the prefix of the module's endpoints
+    /// The key: <c>events</c>, <c>tours</c>. It is the prefix of the module's endpoints
     /// (<c>/api/{key}</c>), the name of its migration history table, and the key an optional module
     /// is switched off by in <c>division.modules</c>.
     /// </summary>
     string Key { get; }
 
-    /// <summary>The department the module belongs to, or null when it belongs to none.</summary>
-    Department? Department { get; }
-
     /// <summary>
-    /// True when a division may switch it off in <c>division.json</c>. The four department modules
-    /// and the editorial core are not optional.
+    /// True when a division may switch it off in <c>division.json</c>. The mandatory modules
+    /// (plan section 9.2) and the editorial core are not optional.
     /// </summary>
     bool IsOptional { get; }
 
@@ -109,8 +106,6 @@ public interface IModule
 public abstract class ModuleBase : IModule
 {
     public abstract string Key { get; }
-
-    public virtual Department? Department => null;
 
     public virtual bool IsOptional => false;
 

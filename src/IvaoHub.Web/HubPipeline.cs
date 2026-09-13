@@ -162,7 +162,7 @@ internal static class HubPipeline
         var applied = await initializer.MigrateAsync(app.Lifetime.ApplicationStopping);
 
         // Then the contexts of the modules, each with its own migration history table. A module
-        // with no table of its own -- atc, in M0 -- declares none and nothing happens here.
+        // with no table of its own -- the module the integration tests add -- declares none and nothing happens here.
         var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
         foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes))
         {

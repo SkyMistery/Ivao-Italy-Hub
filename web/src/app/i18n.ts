@@ -39,7 +39,7 @@ export function createI18n(namespaces: readonly string[]): I18n {
       // A namespace is where a file is, never part of a key: the server proves it, because it
       // sends the keys of a refusal with no namespace in front (`errors.localized.missing`) and
       // its own catalogue has none. So everything that is not the default is a fallback, and a key
-      // is written the same wherever it lives -- including `nav.atc`, which belongs to a module.
+      // is written the same wherever it lives -- including a module's own `nav.<key>`.
       fallbackNS: namespaces.filter((namespace) => namespace !== 'common'),
       backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' },
       detection: {

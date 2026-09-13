@@ -274,7 +274,6 @@ app.MapMediaEndpoints();
 app.MapMediaFileEndpoint();
 app.MapContentEndpoints();
 app.MapEmbedEndpoints();
-app.MapAirspaceEndpoints();
 app.MapCategoriesEndpoints();
 app.MapMenuEndpoints();
 app.MapCalendarEndpoints();

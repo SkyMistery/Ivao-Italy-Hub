@@ -21,8 +21,8 @@ import { useTranslation } from 'react-i18next';
  * of the confirmation are the same everywhere — a dialog whose destructive button moves around is
  * a dialog people learn to dismiss without reading.
  *
- * Since G14 it can also carry a **question**: publishing a document asks for the changelog and the
- * AIRAC cycle on the way, and those are two fields between the title and the buttons (`children`).
+ * Since G14 it can also carry a **question**: publishing asks what changed on the way, and that is a
+ * field between the title and the buttons (`children`).
  * The same dialog, extended rather than a second one written beside it (plan §16.E, rule (b)); and
  * a confirmation that is not destructive says so with `confirmVariant`, because a blue "publish"
  * and a red "delete" must never look alike.
