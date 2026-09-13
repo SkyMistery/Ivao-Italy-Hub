@@ -334,6 +334,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentReviewSummary"];
+        put?: never;
+        post: operations["ContentReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/content/{id}/publish-problems": {
         parameters: {
             query?: never;
@@ -1256,6 +1272,49 @@ export interface components {
             changelog: null | string;
         };
         /**
+         * @description What the review of a page may be asked to do.
+         * @enum {unknown}
+         */
+        ContentReviewAction: "Ready" | "Withdraw" | "SendBack" | "Approve";
+        /** @description What the approver of a page is shown before deciding (note 2026-09-13-contenuti-centralizzati, 3.2). */
+        ContentReviewDto: {
+            /** @description True when nothing of this page is online yet. */
+            firstPublication: boolean;
+            /** @description True when the title is not the one online. */
+            titleChanged: boolean;
+            /** @description The address the page will be published at. */
+            path: string;
+            /** @description Every section, in the order of the page, the removed ones after. */
+            sections: components["schemas"]["SectionChangeDto"][];
+            menu: null | components["schemas"]["ProposedMenuEntry"];
+            /** @description The last word of the review. */
+            note: null | string;
+            /**
+             * Format: date-time
+             * @description When it was marked ready.
+             */
+            readyAt: null | string;
+            /** @description Who marked it ready, as a name. */
+            readyByName: null | string;
+        };
+        /** @description One request to the review of a page. */
+        ContentReviewRequest: {
+            /** @description What to do. */
+            action: components["schemas"]["ContentReviewAction"];
+            /** @description What the author says marking it ready, or what the approver says sending it back. */
+            note?: null | string;
+            menu?: null | components["schemas"]["ProposedMenuEntry"];
+            /** @description Approving: a line for the staff about what changed. */
+            changelog?: null | string;
+            /** @description Approving: the last segment of the address, corrected. */
+            slug?: null | string;
+            /**
+             * Format: int64
+             * @description Approving: the page it goes under, corrected; null at the top.
+             */
+            parentId?: null | number;
+        };
+        /**
          * @description What a client may set on a content row.
          *     Four things are missing on purpose. The audit columns and publishedAt are filled by
          *     the interceptor and by publication. status is not a field either: a page becomes public
@@ -1905,6 +1964,16 @@ export interface components {
              */
             total: number;
         };
+        /** @description The menu entry an author proposes with a page: under which entry, and in which words. */
+        ProposedMenuEntry: {
+            /**
+             * Format: int64
+             * @description The public menu entry it goes under; null at the top of the menu.
+             */
+            parentId: null | number;
+            /** @description The words, in every language. */
+            label: components["schemas"]["LocalizedOfstring"];
+        };
         /**
          * @description What the public site is given: the published version and nothing about the draft behind it.
          *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
@@ -1960,7 +2029,7 @@ export interface components {
          * @description Editorial state. The public site only ever reads published rows.
          * @enum {unknown}
          */
-        PublishStatus: "Draft" | "Published";
+        PublishStatus: "Draft" | "Published" | "Ready";
         /** @description One hit. What it is and where it lives; the page itself is fetched by following it. */
         SearchHitDto: {
             /** @description `core` for the editorial core, otherwise the module key. */
@@ -1996,6 +2065,19 @@ export interface components {
              *     query rather than of the page, and every other list of the hub would have carried a null.
              */
             notice: null | string;
+        };
+        /**
+         * @description How one section of a page changed between what is online and what is ready.
+         * @enum {unknown}
+         */
+        SectionChange: "Added" | "Removed" | "Changed" | "Unchanged";
+        /** @description One section in the summary an approver reads. */
+        SectionChangeDto: {
+            /** @description The key of the section, or its identifier when it has none. */
+            key: string;
+            title: null | components["schemas"]["LocalizedOfstring"];
+            /** @description What happened to it. */
+            change: components["schemas"]["SectionChange"];
         };
         /** @description What was deployed. Anonymous, and never cached, so a report can quote a build. */
         VersionResponse: {
@@ -2692,6 +2774,77 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": null | components["schemas"]["ContentPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentReviewSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentReviewDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentReviewRequest"];
             };
         };
         responses: {

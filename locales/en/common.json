@@ -414,7 +414,8 @@
       },
       "status": {
         "Draft": "Draft",
-        "Published": "Published"
+        "Published": "Published",
+        "Ready": "Waiting for approval"
       },
       "visibility": {
         "Public": "Everybody",
