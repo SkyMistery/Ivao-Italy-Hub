@@ -393,7 +393,17 @@
       "coverMediaId": "Cover picture",
       "pinned": "Pinned to the top",
       "sort": "Order",
-      "fileMediaId": "File"
+      "fileMediaId": "File",
+      "documentType": "Document type",
+      "icao": "Airport",
+      "fir": "FIR",
+      "primaryPosition": "Position",
+      "secondaryPosition": "Counterpart",
+      "effectiveOn": "In force from",
+      "reviewOn": "Review by",
+      "retiredAt": "No longer in force since",
+      "supersededById": "Replaced by",
+      "showFooter": "Show the footer (version, date, publisher, print)"
     },
     "options": {
       "kind": {
@@ -401,6 +411,14 @@
         "News": "News",
         "Document": "Document",
         "Dashboard": "Department home"
+      },
+      "documentType": {
+        "none": "Not an operational document",
+        "Sop": "SOP",
+        "Loa": "LoA"
+      },
+      "supersededById": {
+        "none": "Nothing"
       },
       "status": {
         "Draft": "Draft",
@@ -507,6 +525,13 @@
         "leave": "Leave this page? The changes since the last save will be lost."
       },
       "publishRefused": "This page cannot be published yet",
+      "publishDialog": {
+        "title": "Publish this version?",
+        "description": "What is on screen is saved first, then shown to its readers. A line about what changed stays with the version, for the staff.",
+        "changelog": "What changed",
+        "airac": "AIRAC cycle",
+        "confirm": "Publish"
+      },
       "renderMode": "What this block shows",
       "renderModes": {
         "live": "The answer of the moment it is read",
@@ -569,7 +594,11 @@
     "slugPlaceholder": "my-new-page",
     "hints": {
       "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used.",
-      "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved."
+      "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved.",
+      "primaryPosition": "As a callsign, like LIRF_TWR. The list proposes the positions of the airport and the FIR chosen above; any other can be typed.",
+      "secondaryPosition": "The other side of a letter of agreement, or the position handed over to.",
+      "reviewOn": "Past this day, the department is told once that the document is due for a look.",
+      "retiredAt": "A document no longer in force stays readable with a notice on top, so that an old link finds the way on. Choose what replaced it below, when something did."
     }
   },
   "templates": {
@@ -598,7 +627,71 @@
       "media": "Media",
       "tables": "Tables and steps",
       "grids": "Grids",
-      "containers": "Containers"
+      "containers": "Containers",
+      "atc": "Air traffic control"
+    },
+    "frequencyTable": {
+      "label": "Frequency table",
+      "fields": {
+        "caption": "Caption",
+        "stations": "Stations",
+        "stations.callsign": "Callsign",
+        "stations.frequency": "Frequency",
+        "stations.kind": "Kind",
+        "stations.cpdlc": "CPDLC",
+        "stations.minimumRating": "Minimum rating",
+        "stations.note": "Note"
+      },
+      "options": {
+        "stations.kind": {
+          "DEL": "Delivery",
+          "GND": "Ground",
+          "TWR": "Tower",
+          "APP": "Approach",
+          "DEP": "Departure",
+          "CTR": "Centre",
+          "FSS": "Flight service",
+          "ATIS": "ATIS"
+        }
+      },
+      "columns": {
+        "callsign": "Callsign",
+        "frequency": "Frequency",
+        "kind": "Kind",
+        "cpdlc": "CPDLC",
+        "minimumRating": "Min. rating",
+        "note": "Note"
+      },
+      "yes": "Yes",
+      "no": "No"
+    },
+    "coordination": {
+      "label": "Coordination",
+      "fields": {
+        "caption": "Caption",
+        "agreements": "Agreements",
+        "agreements.from": "From",
+        "agreements.to": "To",
+        "agreements.point": "Point",
+        "agreements.level": "Level",
+        "agreements.direction": "Direction",
+        "agreements.note": "Note"
+      },
+      "options": {
+        "agreements.direction": {
+          "inbound": "Inbound",
+          "outbound": "Outbound",
+          "both": "Both ways"
+        }
+      },
+      "columns": {
+        "from": "From",
+        "to": "To",
+        "point": "Point",
+        "level": "Level",
+        "direction": "Direction",
+        "note": "Note"
+      }
     },
     "heading": {
       "label": "Heading",
@@ -1232,6 +1325,20 @@
       "description": "Rules, guides and forms, filed by the department that keeps them.",
       "download": "Download",
       "fileHint": "This document is a file.",
+      "documentType": "Type",
+      "primaryPosition": "Position",
+      "secondaryPosition": "Counterpart",
+      "icao": "Airport",
+      "fir": "FIR",
+      "effectiveOn": "In force from",
+      "notYetInForce": "Not in force yet: it applies from {{date}}.",
+      "retired": "No longer in force since {{date}}.",
+      "supersededBy": "Replaced by",
+      "version": "Version",
+      "publishedOn": "Published on",
+      "publishedBy": "by",
+      "airac": "AIRAC",
+      "print": "Print",
       "filters": {
         "category": "Category",
         "allCategories": "Every category",
@@ -1366,6 +1473,10 @@
       "contact.received": {
         "title": "Messages to my department",
         "description": "An email when a member writes to a department you are staff of."
+      },
+      "document.reviewDue": {
+        "title": "Documents due for review",
+        "description": "An email, once, when a document of a department you are staff of passes its review date."
       }
     }
   },

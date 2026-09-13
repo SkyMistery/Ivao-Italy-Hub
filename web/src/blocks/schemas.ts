@@ -176,6 +176,53 @@ export const tableSchema = z.object({
   rows: z.array(z.object({ cells: z.array(z.object({ text: localized() })) })),
 });
 
+// ---- the operational document (G14) --------------------------------------------------------
+
+/** What a station is, as the network suffixes a callsign. */
+export const STATION_KINDS = ['DEL', 'GND', 'TWR', 'APP', 'DEP', 'CTR', 'FSS', 'ATIS'] as const;
+
+/**
+ * The frequencies of a SOP: one row per station, callsign and frequency as they are written on
+ * the network, whether the position takes CPDLC, the rating asked of whoever opens it, and a note.
+ * Callsigns and frequencies are not prose and are not translated — and, by the rule of 9 September
+ * 2026, not indexed for search either; the note is the one thing that is.
+ */
+export const frequencyTableSchema = z.object({
+  caption: localized().optional(),
+  stations: z.array(
+    z.object({
+      callsign: z.string(),
+      frequency: z.string(),
+      kind: z.enum(STATION_KINDS).default('TWR'),
+      cpdlc: z.boolean().default(false),
+      // Free text rather than a list of ratings: a division writes "AS3" where another writes
+      // "ADC", and a rating that is not required is simply left empty.
+      minimumRating: z.string().optional(),
+      note: localized().optional(),
+    }),
+  ),
+});
+
+export const COORDINATION_DIRECTIONS = ['inbound', 'outbound', 'both'] as const;
+
+/**
+ * The agreements of a LoA: who hands what to whom, where and at which level. One row per
+ * agreement; the note is where the prose goes, and it is the one translated thing in the row.
+ */
+export const coordinationSchema = z.object({
+  caption: localized().optional(),
+  agreements: z.array(
+    z.object({
+      from: z.string(),
+      to: z.string(),
+      point: z.string().optional(),
+      level: z.string().optional(),
+      direction: z.enum(COORDINATION_DIRECTIONS).default('both'),
+      note: localized().optional().meta({ multiline: true }),
+    }),
+  ),
+});
+
 export const cardGridSchema = z.object({
   columns: z.number().int().default(3).meta({ choices: GRID_COLUMNS }),
   cards: z.array(

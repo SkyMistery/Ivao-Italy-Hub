@@ -95,3 +95,16 @@
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
+
+/*
+ * Paper (G14: an operational document prints from its own footer). The bar at the top and the
+ * footer of the site hide themselves (`print:hidden` in `Chrome.tsx`): navigation on paper is a
+ * picture of a menu. What stays is the article, full width — and the blocks that fold, unfolded
+ * by `PrintContext` rather than by a rule here.
+ */
+@media print {
+  main {
+    max-width: none;
+    padding: 0;
+  }
+}

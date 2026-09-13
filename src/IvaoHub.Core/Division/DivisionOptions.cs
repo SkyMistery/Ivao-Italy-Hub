@@ -36,6 +36,23 @@ public sealed record DivisionOptions
     public string Timezone { get; init; } = string.Empty;
 
     /// <summary>
+    /// The time zone as the runtime knows it, for a schedule that says "at night, here". The
+    /// validator already refuses an unknown zone at start up; UTC is only so that a schedule can
+    /// never be the thing that stops the site.
+    /// </summary>
+    public TimeZoneInfo ResolveTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(Timezone);
+        }
+        catch (Exception exception) when (exception is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.Utc;
+        }
+    }
+
+    /// <summary>
     /// Where the mark of the division is served from, or null for a division that has none.
     /// <para>⚠️ It is configuration and not code, and that is the whole point: the hub draws the
     /// mark of whatever division it is running for, and knows nothing about which one that is. A

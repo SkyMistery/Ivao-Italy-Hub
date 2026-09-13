@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { PADDINGS, WIDTHS } from '../../blocks';
 import { DEPARTMENTS } from '../../shared/api/department';
-import { localized, localizedObject, type ChoiceOption } from '../../shared/forms';
+import { localized, localizedObject, type ChoiceOption, type Suggestion } from '../../shared/forms';
 
-import type { ContentKind } from './queries';
+import type { ContentKind, DocumentType } from './queries';
 
 /**
  * The metadata of a content row, as a zod schema mirroring `ContentWriteDto`. Types and what is
@@ -24,7 +24,25 @@ import type { ContentKind } from './queries';
  * document an order and a file — and the categories of the department are a set only the server
  * knows. Neither is a second form: it is one schema that says what this row is (design M1 §3.2).
  */
-export function contentMetadataSchema(kind: ContentKind, categories: readonly ChoiceOption[] = []) {
+/**
+ * What the form of an operational document offers (G14): the airports and the centres of the
+ * division for the two fields that **choose**, the positions proposed from the ones chosen for the
+ * two that **suggest**, and the published documents that may have replaced this one.
+ */
+export interface DocumentChoices {
+  airports: readonly Suggestion[];
+  centers: readonly Suggestion[];
+  positions: readonly Suggestion[];
+  successors: readonly ChoiceOption[];
+}
+
+const NO_DOCUMENT_CHOICES: DocumentChoices = { airports: [], centers: [], positions: [], successors: [] };
+
+export function contentMetadataSchema(
+  kind: ContentKind,
+  categories: readonly ChoiceOption[] = [],
+  document: DocumentChoices = NO_DOCUMENT_CHOICES,
+) {
   const common = {
     // Fixed by the list this row was opened from, exactly as the department is: `/staff/x/news`
     // edits news. A select here would let a page become a document with the fields of a page still
@@ -73,6 +91,25 @@ export function contentMetadataSchema(kind: ContentKind, categories: readonly Ch
       // any other page (design M1 §3.3).
       fileMediaId: z.number().int().optional().meta({ media: true }),
       sort: z.number().int(),
+      // ---- the operational document (G14) ----
+      // What va.ivao.aero asks for in five free boxes, asked here as what each one is: a kind out
+      // of two, an airport and a FIR out of the division's own snapshot (closed, and the server
+      // refuses the rest), two positions proposed from those and held to the shape of a callsign,
+      // and the dates. All optional: a guide filed among the documents has none of them.
+      documentType: z.enum(['Sop', 'Loa']).optional(),
+      icao: z.string().optional().meta({ suggestions: document.airports, suggestionsOnly: true }),
+      fir: z.string().optional().meta({ suggestions: document.centers, suggestionsOnly: true }),
+      primaryPosition: z.string().optional().meta({ suggestions: document.positions }),
+      secondaryPosition: z.string().optional().meta({ suggestions: document.positions }),
+      effectiveOn: z.string().optional().meta({ date: true }),
+      reviewOn: z.string().optional().meta({ date: true }),
+      // Archived and superseded are a date and a successor, not a status (implementation plan,
+      // G14): a retired document stays published so that an old link finds the notice and the way
+      // on. The successor is carried as text for the reason a category is: a select whose labels
+      // are not its values is a text field with choices.
+      retiredAt: z.string().optional().meta({ date: true }),
+      supersededById: z.string().optional().meta({ choices: document.successors }),
+      showFooter: z.boolean(),
     });
   }
 
@@ -90,6 +127,18 @@ export type ContentFormValues = z.output<ReturnType<typeof contentMetadataSchema
   pinned?: boolean;
   fileMediaId?: number;
   sort?: number;
+  // The operational document (G14): what a SOP or a LoA says about itself beside its body. All
+  // optional here for the reason the five above are; a kind that has none of them sends null.
+  documentType?: DocumentType;
+  primaryPosition?: string;
+  secondaryPosition?: string;
+  icao?: string;
+  fir?: string;
+  effectiveOn?: string;
+  reviewOn?: string;
+  retiredAt?: string;
+  supersededById?: string;
+  showFooter?: boolean;
 };
 
 /**

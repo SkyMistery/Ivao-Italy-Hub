@@ -56,7 +56,14 @@
     "content": {
       "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella.",
       "mediaMissing": "Questa immagine non è più nella libreria. Scegline un'altra.",
-      "mediaNotVisible": "Questa immagine non è visibile a chi legge questa pagina. Rendila pubblica nella libreria oppure scegline un'altra."
+      "mediaNotVisible": "Questa immagine non è visibile a chi legge questa pagina. Rendila pubblica nella libreria oppure scegline un'altra.",
+      "notADocument": "Solo un documento ha questo campo. Lascialo vuoto su una pagina o una notizia.",
+      "positionInvalid": "Scrivi la posizione come un nominativo: maiuscole, cifre e trattini bassi, tipo LIRF_TWR.",
+      "icaoUnknown": "Non è un aeroporto della divisione. Scegline uno dall'elenco.",
+      "firUnknown": "Non è una FIR della divisione. Scegline una dall'elenco.",
+      "successorUnknown": "Il documento che sostituisce questo non esiste. Scegline uno dall'elenco.",
+      "successorWithoutRetirement": "Un documento con un successore non è più in vigore: di' da quando.",
+      "airacInvalid": "Scrivi il ciclo AIRAC con quattro cifre, tipo 2609."
     },
     "maintenance": {
       "title": "Questa parte del sito al momento non accetta modifiche"

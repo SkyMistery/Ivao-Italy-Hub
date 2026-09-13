@@ -393,7 +393,17 @@
       "coverMediaId": "Immagine di copertina",
       "pinned": "In cima all'elenco",
       "sort": "Ordine",
-      "fileMediaId": "File"
+      "fileMediaId": "File",
+      "documentType": "Tipo di documento",
+      "icao": "Aeroporto",
+      "fir": "FIR",
+      "primaryPosition": "Posizione",
+      "secondaryPosition": "Controparte",
+      "effectiveOn": "In vigore dal",
+      "reviewOn": "Da rivedere entro",
+      "retiredAt": "Non più in vigore dal",
+      "supersededById": "Sostituito da",
+      "showFooter": "Mostra il piè di pagina (versione, data, chi ha pubblicato, stampa)"
     },
     "options": {
       "kind": {
@@ -401,6 +411,14 @@
         "News": "Notizia",
         "Document": "Documento",
         "Dashboard": "Home di dipartimento"
+      },
+      "documentType": {
+        "none": "Non è un documento operativo",
+        "Sop": "SOP",
+        "Loa": "LoA"
+      },
+      "supersededById": {
+        "none": "Niente"
       },
       "status": {
         "Draft": "Bozza",
@@ -507,6 +525,13 @@
         "leave": "Lasciare questa pagina? Le modifiche dall'ultimo salvataggio andranno perse."
       },
       "publishRefused": "Questa pagina non si puo' ancora pubblicare",
+      "publishDialog": {
+        "title": "Pubblicare questa versione?",
+        "description": "Prima si salva ciò che è sullo schermo, poi lo vedono i lettori. Una riga su che cosa è cambiato resta con la versione, per lo staff.",
+        "changelog": "Che cosa è cambiato",
+        "airac": "Ciclo AIRAC",
+        "confirm": "Pubblica"
+      },
       "renderMode": "Cosa mostra questo blocco",
       "renderModes": {
         "live": "La risposta del momento in cui si legge",
@@ -569,7 +594,11 @@
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {
       "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina.",
-      "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più."
+      "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più.",
+      "primaryPosition": "Come nominativo, tipo LIRF_TWR. L'elenco propone le posizioni dell'aeroporto e della FIR scelti sopra; se ne può scrivere un'altra.",
+      "secondaryPosition": "L'altra parte di una lettera di accordo, o la posizione a cui si passa il traffico.",
+      "reviewOn": "Passato questo giorno, il dipartimento riceve una volta l'avviso che il documento va rivisto.",
+      "retiredAt": "Un documento non più in vigore resta leggibile con un avviso in cima, così un vecchio link trova la strada. Scegli qui sotto che cosa lo ha sostituito, se qualcosa lo ha fatto."
     }
   },
   "templates": {
@@ -598,7 +627,71 @@
       "media": "Media",
       "tables": "Tabelle e passaggi",
       "grids": "Griglie",
-      "containers": "Contenitori"
+      "containers": "Contenitori",
+      "atc": "Controllo del traffico aereo"
+    },
+    "frequencyTable": {
+      "label": "Tabella delle frequenze",
+      "fields": {
+        "caption": "Didascalia",
+        "stations": "Postazioni",
+        "stations.callsign": "Nominativo",
+        "stations.frequency": "Frequenza",
+        "stations.kind": "Tipo",
+        "stations.cpdlc": "CPDLC",
+        "stations.minimumRating": "Rating minimo",
+        "stations.note": "Nota"
+      },
+      "options": {
+        "stations.kind": {
+          "DEL": "Delivery",
+          "GND": "Ground",
+          "TWR": "Torre",
+          "APP": "Avvicinamento",
+          "DEP": "Partenze",
+          "CTR": "Centro",
+          "FSS": "Servizio informazioni volo",
+          "ATIS": "ATIS"
+        }
+      },
+      "columns": {
+        "callsign": "Nominativo",
+        "frequency": "Frequenza",
+        "kind": "Tipo",
+        "cpdlc": "CPDLC",
+        "minimumRating": "Rating min.",
+        "note": "Nota"
+      },
+      "yes": "Sì",
+      "no": "No"
+    },
+    "coordination": {
+      "label": "Coordinamento",
+      "fields": {
+        "caption": "Didascalia",
+        "agreements": "Accordi",
+        "agreements.from": "Da",
+        "agreements.to": "A",
+        "agreements.point": "Punto",
+        "agreements.level": "Livello",
+        "agreements.direction": "Direzione",
+        "agreements.note": "Nota"
+      },
+      "options": {
+        "agreements.direction": {
+          "inbound": "In arrivo",
+          "outbound": "In partenza",
+          "both": "Entrambe"
+        }
+      },
+      "columns": {
+        "from": "Da",
+        "to": "A",
+        "point": "Punto",
+        "level": "Livello",
+        "direction": "Direzione",
+        "note": "Nota"
+      }
     },
     "heading": {
       "label": "Titolo",
@@ -1232,6 +1325,20 @@
       "description": "Regolamenti, guide e moduli, ordinati per il dipartimento che li tiene.",
       "download": "Scarica",
       "fileHint": "Questo documento è un file.",
+      "documentType": "Tipo",
+      "primaryPosition": "Posizione",
+      "secondaryPosition": "Controparte",
+      "icao": "Aeroporto",
+      "fir": "FIR",
+      "effectiveOn": "In vigore dal",
+      "notYetInForce": "Non ancora in vigore: vale dal {{date}}.",
+      "retired": "Non più in vigore dal {{date}}.",
+      "supersededBy": "Sostituito da",
+      "version": "Versione",
+      "publishedOn": "Pubblicato il",
+      "publishedBy": "da",
+      "airac": "AIRAC",
+      "print": "Stampa",
       "filters": {
         "category": "Categoria",
         "allCategories": "Tutte le categorie",
@@ -1366,6 +1473,10 @@
       "contact.received": {
         "title": "Messaggi al mio dipartimento",
         "description": "Una mail quando un membro scrive a un dipartimento di cui fai parte."
+      },
+      "document.reviewDue": {
+        "title": "Documenti da rivedere",
+        "description": "Una mail, una volta sola, quando un documento di un dipartimento di cui fai parte supera la data di revisione."
       }
     }
   },

@@ -37,7 +37,7 @@ export type BlockGroup = (typeof BLOCK_GROUPS)[number];
  * one reason: every entry needs a label in every language, and `pnpm i18n:check` can only prove
  * that for a list it can enumerate.
  */
-export const BLOCK_SUBGROUPS = ['text', 'media', 'tables', 'grids', 'containers'] as const;
+export const BLOCK_SUBGROUPS = ['text', 'media', 'tables', 'grids', 'containers', 'atc'] as const;
 
 export type BlockSubgroup = (typeof BLOCK_SUBGROUPS)[number];
 

@@ -5,6 +5,12 @@
         "subject": "[{{department}}] {{subject}}",
         "body": "Un membro ha scritto al dipartimento {{department}}.\n\nDa: VID {{vid}}\nOggetto: {{subject}}\n\n{{body}}\n\n---\nLeggi il messaggio e cambia il suo stato qui: {{url}}\nRicevi questa mail perché fai parte dello staff {{department}}. Puoi disattivarle dalla pagina del tuo profilo."
       }
+    },
+    "document": {
+      "reviewDue": {
+        "subject": "[{{department}}] Da rivedere: {{title}}",
+        "body": "Il documento \"{{title}}\" del dipartimento {{department}} andava rivisto entro il {{reviewOn}}.\n\nAprilo, controlla che dica ancora quello che deve, e pubblica una nuova versione oppure sposta la data di revisione: {{url}}\n\n---\nRicevi questa mail una volta sola, perché fai parte dello staff {{department}}. Puoi disattivarle dalla pagina del tuo profilo."
+      }
     }
   }
 }

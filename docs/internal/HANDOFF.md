@@ -3,8 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 11 settembre 2026 — **il 10 e l'11 settembre Carmine ha collaudato l'hub a
-occhio e ha chiesto una lunga serie di rifiniture, tutte fatte e tutte sulla PR #57**: l'editor a tre
+**Ultimo aggiornamento:** 12 settembre 2026, notte — **G14, il documento operativo, è costruita**
+sul branch `m1/g14-operational-document` (cinque commit, il paragrafo «G14» più sotto). Prima: **il
+10 e l'11 settembre Carmine ha collaudato l'hub a occhio e ha chiesto una lunga serie di
+rifiniture, tutte fatte e tutte sulla PR #57**: l'editor a tre
 colonne con la barra dei componenti, la cornice del sito (barra a una riga, footer a colonne dal menu,
 marchio della divisione, caratteri di IVAO), la barra laterale dello staff nostra, la testata a una riga
 delle schermate staff, le colonne visibili mentre si compone e tre fondi scuri per le sezioni. Il
@@ -62,10 +64,10 @@ riaperto e cambiato). **Design M1:** v1.15
 (`03-design-m1.md`). **Piano di implementazione M1:** v2.19 (`04-piano-implementazione-m1.md`, fasi
 G0–G13): **da G0 a G12 sono chiuse** (§14–§27); **G13 è aperta** (§28) e raccoglie le rifiniture del
 collaudo, tutte fatte — il tag viene dopo che Carmine ha rieseguito la scheda.
-**Test, misurati l'11 settembre su `m1/g15-editor-live` (le tre sessioni di G15):** **473 .NET**
-(306 unit + 167 integrazione — la sessione 2 ne aggiunge uno sull'audit dell'autosalvataggio; ⚠️
-della suite di integrazione sono stati eseguiti in locale solo i due test dell'audit, il resto lo
-verifica la CI) + **352 Vitest** + **56 smoke Playwright** + **17 del giro pieno** (`pnpm e2e:full`).
+**Test, misurati il 12 settembre su `m1/g14-operational-document`:** **477 .NET** (306 unit +
+171 integrazione, **tutta la suite eseguita in locale**, verde in 90 s) + **371 Vitest** + **56
+smoke Playwright** + **17 del giro pieno** (`pnpm e2e:full`, rieseguito dopo G14: il giro preme ora
+il pulsante della finestra di pubblicazione).
 ⚠️ Nel giro pieno compaiono a volte, nel log del server, errori di **connessione al DB** su
 `/api/blocks/data/*` (500 su `newsList` e `linkList`) senza che nessun test cada: visti due volte l'11
 settembre, la prima al primo giro della giornata. Non indagati; da guardare se un test dei blocchi
@@ -146,13 +148,25 @@ barra dei componenti, le barre di scorrimento sottili, e il **segnaposto di un b
 di regione, due colonne da 167 px — perché il renderer decide con breakpoint di finestra; il test
 e2e misurava la regione e non le colonne.
 
-**Poi G14 — il documento operativo** (`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`).
-Prima passata decisa: tipo SOP/LoA, sei campi operativi (posizione primaria e secondaria, ICAO, FIR,
-efficacia, revisione, scelti da elenchi `ref_` e non digitati), `Archived` e `Superseded` **col
-successore**, i blocchi **Frequency Table** e **Coordination**, il **piè di pagina con la stampa**. Il
-METAR c'è sull'API IVAO (`/v2/airports/{icao}/metar`), ma la forma della risposta non è stata vista.
-**Il primo atto di G14 è scrivere**: la sezione §30 di `04-piano-implementazione-m1.md` e il design del
-documento operativo, prima del codice.
+**G14 — il documento operativo — aperta e costruita nella notte fra l'11 e il 12 settembre 2026**
+sul branch `m1/g14-operational-document`, da `main` con le PR #57 e #58 mergiate (Carmine: «mergia
+e poi vai di G14»; il tag `v0.2.0-m1` aspetta ancora la scheda). Il design è la sezione G14 di
+`04-piano-implementazione-m1.md` (piano 0.64, scritto prima del codice), il resoconto è in fondo
+alla stessa sezione (piano 0.65); la nota:
+`decisions/2026-09-10-il-documento-operativo-come-va-ivao-aero.md`. **Cinque commit, uno per passo:**
+(1) sei colonne su `cms_contents` + `airac` sulla versione, migrazione `AddOperationalDocument`,
+validatore contro l'airspace della divisione, `GET /api/ref/airspace` (scritto a mano, dentro
+`Core/Ivao`); (2) il form del documento: tipo, aeroporto e FIR **da elenco**, posizioni suggerite
+dall'aeroporto e dalla FIR scelti, date, successore, piè di pagina; (3) la pagina pubblica —
+striscia, avviso «non ancora / non più in vigore» col successore, piè di pagina con versione, data,
+nome, AIRAC e **Stampa** (`PrintContext` apre `tabs` e `accordion` su carta) — e **la finestra di
+pubblicazione** (changelog + AIRAC, `ConfirmDialog` esteso); (4) i blocchi `frequencyTable` e
+`coordination`, cassetto Data, sottogruppo `atc`, registry a **29**; (5) `DocumentReviewJob` alle
+03:30, tipo `document.reviewDue`, `filter[reviewDue]`. ⚠️ Corretto sulla strada: **una riga nuova
+salvata con «Salva bozza» veniva fermata dalla guardia** di G15 («lasciare la pagina?»). Da fare
+dopo: la scheda `tools/demo-m1.md` non nomina il documento operativo; l'interruttore «da rivedere»
+nella lista; la stampa vista su carta a occhio. Il METAR c'è sull'API IVAO
+(`/v2/airports/{icao}/metar`), ma la forma della risposta non è stata vista.
 
 **Da decidere prima di scrivere codice:**
 

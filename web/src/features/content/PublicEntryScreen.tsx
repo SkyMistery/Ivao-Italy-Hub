@@ -3,14 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, readBody } from '../../blocks';
+import { ContentRenderer, PrintContext, readBody } from '../../blocks';
 import { mediaFileUrl } from '../../shared/api/mediaUrl';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
 import { bootstrapQuery } from '../me/queries';
 
+import { DocumentFooter, DocumentNotice, DocumentStrip } from './DocumentFrame';
+import { isOperational } from './operational';
 import type { PublicContentDto } from './queries';
+import { usePrintMode } from './usePrintMode';
 
 /**
  * One news item or one document, as a visitor reads it. What arrives is the published version and
@@ -21,12 +24,19 @@ import type { PublicContentDto } from './queries';
  * more columns (design M1 §3.1). What this screen adds is the header those three columns make: a
  * cover, a date, and — for a document that has a file — the download that makes it a card rather
  * than something to read.
+ *
+ * An **operational** document (G14) adds three pieces around the same body: the strip of what it
+ * is about under the title, the notice when it is not the one to follow, and the footer that says
+ * which edition this is. All three are this screen's, none the renderer's (`DocumentFrame`). And
+ * while it is being printed the blocks are told so, which is what unfolds the tabs on paper.
  */
 export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
   const { data: bootstrap } = useQuery(bootstrapQuery);
+  const printing = usePrintMode();
 
+  const operational = content.kind === 'Document' && isOperational(content);
   const summary = read(content.summary);
   const published = new Intl.DateTimeFormat(i18n.language, {
     dateStyle: 'long',
@@ -62,6 +72,13 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
         {summary === '' ? null : <Lead>{summary}</Lead>}
       </header>
 
+      {operational ? (
+        <>
+          <DocumentNotice content={content} />
+          <DocumentStrip content={content} />
+        </>
+      ) : null}
+
       {/* The cover, and no alternative text of its own: the headline right above says what the
           picture illustrates, and repeating it is what a screen reader hears twice (design M1 §1.2). */}
       {content.coverMediaId === null ? null : (
@@ -87,7 +104,13 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
         </div>
       )}
 
-      <ContentRenderer body={readBody(content.body)} />
+      <PrintContext.Provider value={printing}>
+        <ContentRenderer body={readBody(content.body)} />
+      </PrintContext.Provider>
+
+      {/* The footer is the document's own, switched off on the row when it is not wanted; a news
+          item never has one, its date is at the top. */}
+      {content.kind === 'Document' && content.showFooter ? <DocumentFooter content={content} /> : null}
     </article>
   );
 }

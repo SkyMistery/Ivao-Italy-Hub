@@ -9,10 +9,10 @@ import {
   type CollisionDetection,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Button } from '@ivao/atmosphere-react';
+import { Button, Input, Label } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
-import { ChevronLeft, Eye, List, Redo2, Send, Undo2 } from 'lucide-react';
+import { ChevronLeft, Eye, List, Redo2, Undo2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -59,17 +59,19 @@ import {
   updateBlock,
   updateSection,
 } from './body';
-import { emptyContent, toFormValues } from './mutations';
+import { emptyContent, toFormValues, type PublishRequest } from './mutations';
+import { suggestedPositions } from './positions';
 import { PreviewFrame, type PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
   contentQuery,
   publicContentQuery,
+  type AirspaceListingDto,
   type ContentDetailDto,
   type ContentKind,
   type ContentPublishProblemsDto,
 } from './queries';
-import { contentMetadataSchema, type ContentFormValues } from './schema';
+import { contentMetadataSchema, type ContentFormValues, type DocumentChoices } from './schema';
 import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
 import { useAutosave, type SaveOutcome } from './useAutosave';
 import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
@@ -102,6 +104,8 @@ export function ContentEditor({
   kind,
   startsAsTemplate = false,
   categories,
+  airspace,
+  successors = [],
   department,
   locales,
   division,
@@ -126,6 +130,13 @@ export function ContentEditor({
   startsAsTemplate?: boolean;
   /** The shelves of this department, already resolved into the language on screen. */
   categories: readonly ChoiceOption[];
+  /**
+   * The airspace of the division, for a document (G14): what its ICAO and its FIR are chosen from.
+   * Undefined on every other kind, and while it is still being read.
+   */
+  airspace?: AirspaceListingDto | undefined;
+  /** The published documents this one may say it was replaced by, already labelled. */
+  successors?: readonly ChoiceOption[];
   department: Department;
   locales: readonly string[];
   /** The two facts the `seo` field needs: which language is the fallback, and where the division is. */
@@ -147,7 +158,7 @@ export function ContentEditor({
   /** `autosave` marks a save the editor made by itself: no toast, and audited without the body. */
   onSave: (values: ContentFormValues, body: Body, options?: { autosave?: boolean }) => Promise<unknown>;
   /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
-  onPublish: (() => void) | null;
+  onPublish: ((request: PublishRequest) => void) | null;
   onDelete: (() => void) | null;
   /**
    * What the server says stands between this row and the public, asked before anybody presses
@@ -199,6 +210,26 @@ export function ContentEditor({
       ? emptyContent(department, locales, kind, startsAsTemplate)
       : toFormValues(content, locales),
   );
+
+  // What the form of a document offers, out of what it already says: the positions follow the
+  // airport and the FIR as they are chosen, which is why they are read from the shadow and not
+  // handed in once (`suggestedPositions`).
+  const documentChoices: DocumentChoices = {
+    airports: (airspace?.airports ?? []).map((entry) => ({
+      value: entry.code,
+      label: `${entry.code} — ${entry.name}`,
+    })),
+    centers: (airspace?.centers ?? []).map((entry) => ({
+      value: entry.code,
+      label: `${entry.code} — ${entry.name}`,
+    })),
+    positions: suggestedPositions(metadata.icao, metadata.fir),
+    successors,
+  };
+
+  // What the publish dialog is told, kept across its openings: a changelog half written and a
+  // dialog closed by mistake should not be a changelog written twice.
+  const [publishRequest, setPublishRequest] = useState<PublishRequest>({ changelog: '', airac: '' });
 
   const [selection, setSelection] = useState<Selection | null>(null);
   // The column an empty "add here" on the page chose. Only meaningful while its section is the one
@@ -517,7 +548,7 @@ export function ContentEditor({
         <SchemaForm
           id={METADATA_FORM}
           actionsElsewhere
-          schema={contentMetadataSchema(kind, categories)}
+          schema={contentMetadataSchema(kind, categories, documentChoices)}
           defaults={
             content === null
               ? emptyContent(department, locales, kind, startsAsTemplate)
@@ -532,9 +563,27 @@ export function ContentEditor({
           onChange={setMetadata}
           onSubmit={async (values) => {
             setMetadata(values);
-            await onSave(withVersion(values), body);
+            const stored = JSON.stringify({ metadata: values, body });
+
+            // ⚠️ A new row leaves this screen for its own address from **inside** `onSave`, and the
+            // blocker on the way out asked "leave? the changes will be lost" about a draft that
+            // was being stored that very moment (found while making the first document of G14).
+            // So a new row is settled before the store, and unsettled again if the store fails.
+            if (content === null) {
+              autosave.settle(stored);
+            }
+
+            try {
+              await onSave(withVersion(values), body);
+            } catch (error) {
+              if (content === null) {
+                autosave.settle('');
+              }
+              throw error;
+            }
+
             // Stored by a press, so the draft as it stands is not dirty any more.
-            autosave.settle(JSON.stringify({ metadata: values, body }));
+            autosave.settle(stored);
           }}
           submitLabel={t('content.editor.saveDraft')}
         />
@@ -827,25 +876,55 @@ export function ContentEditor({
             </Button>
 
             {onPublish === null ? null : (
-              <Button
-                type="button"
-                variant="secondary"
+              // A question on the way: what changed, for the staff, and — on a document — which
+              // AIRAC cycle this edition belongs to (G14). What is on screen is stored first, then
+              // published: one press, and never a page that says something nobody saved. A store
+              // that fails leaves the draft where it is, and the line under the toolbar says why.
+              <ConfirmDialog
+                triggerText={t('content.editor.publish')}
+                triggerVariant="secondary"
+                title={t('content.editor.publishDialog.title')}
+                description={t('content.editor.publishDialog.description')}
+                confirmText={t('content.editor.publishDialog.confirm')}
+                confirmVariant="primary"
                 disabled={busy || autosave.stopped}
-                // What is on screen is stored first, then published: one press, and never a page
-                // that says something nobody saved. A store that fails leaves the draft where it is,
-                // and the line under the toolbar says why.
-                onClick={() => {
+                onConfirm={() => {
                   void (async () => {
                     if (autosave.dirty && !(await autosave.flush())) {
                       return;
                     }
-                    onPublish();
+                    onPublish(publishRequest);
                   })();
                 }}
               >
-                <Send aria-hidden className="mr-2 size-4" />
-                {t('content.editor.publish')}
-              </Button>
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="publish-changelog">{t('content.editor.publishDialog.changelog')}</Label>
+                  <Input
+                    id="publish-changelog"
+                    maxLength={512}
+                    value={publishRequest.changelog}
+                    onChange={(event) =>
+                      setPublishRequest({ ...publishRequest, changelog: event.target.value })
+                    }
+                  />
+                </div>
+                {kind === 'Document' ? (
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="publish-airac">{t('content.editor.publishDialog.airac')}</Label>
+                    <Input
+                      id="publish-airac"
+                      className="max-w-32"
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder="2609"
+                      value={publishRequest.airac}
+                      onChange={(event) =>
+                        setPublishRequest({ ...publishRequest, airac: event.target.value })
+                      }
+                    />
+                  </div>
+                ) : null}
+              </ConfirmDialog>
             )}
 
             {onDelete === null ? null : (

@@ -90,6 +90,11 @@ interface CommonStrings {
     readonly editor: {
       readonly saveDraft: string;
       readonly publish: string;
+      readonly publishDialog: {
+        readonly changelog: string;
+        readonly airac: string;
+        readonly confirm: string;
+      };
       readonly page: string;
       readonly setKey: string;
       readonly addBlock: string;

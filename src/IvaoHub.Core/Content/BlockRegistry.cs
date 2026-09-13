@@ -112,6 +112,10 @@ public static class CoreBlocks
     public const string Embed = "embed";
     public const string Timeline = "timeline";
     public const string Table = "table";
+
+    /// <summary>The two tables of an operational document (G14): frequencies, and coordination.</summary>
+    public const string FrequencyTable = "frequencyTable";
+    public const string Coordination = "coordination";
     public const string CardGrid = "cardGrid";
     public const string IconGrid = "iconGrid";
     public const string Gallery = "gallery";
@@ -144,6 +148,8 @@ public static class CoreBlocks
         new BlockDescriptor(Embed, Version: 1, BlockKind.Content),
         new BlockDescriptor(Timeline, Version: 1, BlockKind.Content),
         new BlockDescriptor(Table, Version: 1, BlockKind.Content),
+        new BlockDescriptor(FrequencyTable, Version: 1, BlockKind.Content),
+        new BlockDescriptor(Coordination, Version: 1, BlockKind.Content),
         new BlockDescriptor(CardGrid, Version: 1, BlockKind.Content),
         new BlockDescriptor(IconGrid, Version: 1, BlockKind.Content),
         new BlockDescriptor(Gallery, Version: 1, BlockKind.Content),

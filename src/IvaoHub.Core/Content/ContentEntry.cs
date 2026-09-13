@@ -24,6 +24,20 @@ public enum ContentKind
 }
 
 /// <summary>
+/// What an operational document is, when it is one (G14, note
+/// 2026-09-10-il-documento-operativo-come-va-ivao-aero). Orthogonal to the category: a Tower SOP
+/// and a Tower LoA are both filed under "Tower". Stored as its name; a new one is additive.
+/// </summary>
+public enum DocumentType
+{
+    /// <summary>Standard operating procedures of a position.</summary>
+    Sop,
+
+    /// <summary>A letter of agreement between two positions or units.</summary>
+    Loa,
+}
+
+/// <summary>
 /// Any editorial content: a page, a news item, a document, or the template one of them was created
 /// from. The body is an opaque tree of sections and blocks; the backend only ever checks the
 /// envelope and its size, never the properties of a block (plan section 16.5).
@@ -96,6 +110,49 @@ public sealed class ContentEntry
 
     /// <summary>Documents only: the attached file, when the document is a file rather than a page.</summary>
     public long? FileMediaId { get; set; }
+
+    // ---- the operational document (G14) --------------------------------------------------------
+    // Six facts a controller's document carries and a page does not, all nullable: a document that
+    // is a guide rather than a SOP simply has none of them. Columns of `cms_contents`, not a table
+    // of their own, for the reason the news columns are (plan section 9.3).
+
+    /// <summary>SOP or LoA. Null for a document that is neither.</summary>
+    public DocumentType? DocumentType { get; set; }
+
+    /// <summary>The position the document is about, as a callsign (<c>LIRF_TWR</c>).</summary>
+    public string? PrimaryPosition { get; set; }
+
+    /// <summary>The other side of a letter of agreement, or the position handed over to.</summary>
+    public string? SecondaryPosition { get; set; }
+
+    /// <summary>An airport of the division's snapshot; the validator refuses any other.</summary>
+    public string? Icao { get; set; }
+
+    /// <summary>A centre of the division's snapshot; the validator refuses any other.</summary>
+    public string? Fir { get; set; }
+
+    /// <summary>In force from this day; in the future, the reader is told so.</summary>
+    public DateTime? EffectiveOn { get; set; }
+
+    /// <summary>To be reviewed by this day; past it, the owning department is told once.</summary>
+    public DateTime? ReviewOn { get; set; }
+
+    /// <summary>
+    /// When the document stopped being in force. Set, it is <b>archived</b>; with a successor too,
+    /// <b>superseded</b>. Not a value of <see cref="PublishStatus"/>: a retired document stays
+    /// published and readable, with the notice on top — somebody arriving from an old link needs
+    /// the way on, not a 404 (implementation plan, G14).
+    /// </summary>
+    public DateTime? RetiredAt { get; set; }
+
+    /// <summary>The document that replaced this one, when it was replaced rather than dropped.</summary>
+    public long? SupersededById { get; set; }
+
+    /// <summary>When the owning department was told the review date had passed, so it is told once.</summary>
+    public DateTime? ReviewNotifiedAt { get; set; }
+
+    /// <summary>Whether the footer — version, date, publisher, AIRAC, print — is drawn at the end.</summary>
+    public bool ShowFooter { get; set; } = true;
 
     public DateTime CreatedAt { get; set; }
 

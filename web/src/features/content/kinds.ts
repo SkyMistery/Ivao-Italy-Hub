@@ -73,6 +73,11 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindConfig> = {
     columns: [
       ...identity,
       col.text('category', { sortable: true }),
+      // SOP or LoA, and when it is due for a look (G14). Empty on a guide, which is what the column
+      // says about it. The retirement is not a column: a retired document reads as one in the
+      // public list, and the back office has the row itself for that.
+      col.badge('documentType', 'content'),
+      col.date('reviewOn', { sortable: true }),
       col.number('sort'),
       col.file('fileMediaId'),
       ...state,

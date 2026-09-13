@@ -21,6 +21,12 @@ public interface IFirDirectory
     /// </summary>
     Task<IvaoAirspace> GetAirspaceAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The same snapshot with the names, for a list somebody chooses from (G14: the ICAO and the
+    /// FIR of an operational document). Cached like the rest, and dropped with the rest.
+    /// </summary>
+    Task<AirspaceListingDto> GetListingAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Called by the synchronisation when the snapshot changes.</summary>
     void Invalidate();
 }
@@ -29,6 +35,7 @@ public sealed class FirDirectory(HubDbContext database, IMemoryCache cache) : IF
 {
     private const string CacheKey = "ivao:fir-ids";
     private const string AirspaceCacheKey = "ivao:airspace";
+    private const string ListingCacheKey = "ivao:airspace-listing";
 
     /// <summary>
     /// Long, because the set only moves when the daily synchronisation runs, and that one clears
@@ -71,9 +78,34 @@ public sealed class FirDirectory(HubDbContext database, IMemoryCache cache) : IF
         return airspace;
     }
 
+    public async Task<AirspaceListingDto> GetListingAsync(CancellationToken cancellationToken = default)
+    {
+        if (cache.TryGetValue(ListingCacheKey, out AirspaceListingDto? cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        var airports = await database.IvaoAirports
+            .AsNoTracking()
+            .OrderBy(airport => airport.Icao)
+            .Select(airport => new AirspaceEntryDto(airport.Icao, airport.Name))
+            .ToListAsync(cancellationToken);
+
+        var centers = await database.IvaoCenters
+            .AsNoTracking()
+            .OrderBy(center => center.Id)
+            .Select(center => new AirspaceEntryDto(center.Id, center.Name))
+            .ToListAsync(cancellationToken);
+
+        var listing = new AirspaceListingDto(airports, centers);
+        cache.Set(ListingCacheKey, listing, Lifetime);
+        return listing;
+    }
+
     public void Invalidate()
     {
         cache.Remove(CacheKey);
         cache.Remove(AirspaceCacheKey);
+        cache.Remove(ListingCacheKey);
     }
 }
