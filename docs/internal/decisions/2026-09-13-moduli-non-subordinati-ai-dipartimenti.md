@@ -64,12 +64,12 @@ degli eventi» non ha dove essere scritto se non come grant a ogni VID, uno per 
   la grammatica di piano §16.3 — lo scope è implicito dalla risorsa — con la risorsa che porta un
   insieme invece di un valore.
 - **Ogni modulo ha un dipartimento di base, sempre presente** (Carmine, lo stesso giorno): gli
-  eventi sono **sempre a cura dell'ED**, i tour **sempre del FOD**; gli altri dipartimenti si
+  eventi sono **sempre a cura dell'ED**, i tour **sempre del FOD**, i training **sempre del TD**; gli altri dipartimenti si
   **aggiungono** in collaborazione e il dipartimento di base non si toglie. Un evento creato dal SOD
   è quindi «ED + SOD» da solo, e l'ED lo gestisce con il permesso sul **proprio** dipartimento,
   senza bisogno di un permesso su tutti.
 - **Il dipartimento di base è configurazione, non codice**: `division.json → modules.events.baseDepartment: "ED"`,
-  `modules.tours.baseDepartment: "FOD"`. Il modulo non lo nomina (resta vero che `IModule` non
+  `modules.tours.baseDepartment: "FOD"`, `modules.training.baseDepartment: "TD"`. Il modulo non lo nomina (resta vero che `IModule` non
   dichiara un dipartimento), e una divisione che forka con un'altra organizzazione cambia una riga.
 - **Chi crea una riga deve metterci almeno un dipartimento su cui ha il permesso** (oltre a quello di
   base, che c'è sempre): il SOD crea eventi «ED + SOD»; chi ha il permesso solo sull'ED crea eventi
@@ -114,7 +114,13 @@ degli eventi» non ha dove essere scritto se non come grant a ogni VID, uno per 
 - **Piano**: §6.3 (i grant per posizione), §8.2 (sitemap staff), §9.0 (il principio), §9.2 (la
   colonna «Dipartimento» diventa «a cura di, di solito»), §9.5 (visibilità delle voci dei moduli),
   §9.7 (contratto `IModule`, widget come blocchi Data), §16.2–16.3.
-- **Codice**, fasi dopo il merge della pila: `IModule` senza `Department`; soggetto «posizione» nei
-  grant, la schermata e il seed da `division.json`; `IOwnedByDepartment` a insieme con filtro,
-  handler e test della spina dorsale; il modulo finto nei test al posto di `AtcModule`.
+- **Codice, in due tempi** (scritto il 13 settembre con le fasi G16–G20 di
+  `04-piano-implementazione-m1.md`):
+  - **in G16**, subito dopo il merge della pila: `IModule` senza `Department` e il modulo finto nei
+    test al posto di `AtcModule` — tolgono codice e non ne aggiungono;
+  - **all'apertura di M2**, prima del modulo Events: il soggetto «posizione» nei grant con la
+    schermata e il seed da `division.json`, `IOwnedByDepartment` a insieme con filtro, handler e test
+    della spina dorsale, `modules.<key>.baseDepartment`, la sezione «Eventi» nella barra dello staff.
+    Farli adesso vorrebbe dire costruire per un consumatore che non esiste: un grant di posizione su
+    un permesso di modulo senza moduli, un insieme di dipartimenti senza righe che ne abbiano due.
 - **`CLAUDE.md`** §2 (la riga «proprietà di dipartimento») e §8.

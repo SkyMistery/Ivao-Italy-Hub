@@ -3,10 +3,30 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 12 settembre 2026, sera — scritto per chi apre una chat nuova (Carmine ha
-svuotato la chat qui).
+**Ultimo aggiornamento:** 13 settembre 2026 — il piano rivisto dopo il confronto con lo staff di IVAO.
 
-> **Per chi apre adesso — sei PR aperte, impilate una sull'altra, tutte e sei verdi in CI.** Nessuna
+> **Per chi apre adesso — il 13 settembre il piano è cambiato, e la pila è diventata di sette PR.**
+> Carmine ha portato tre richieste emerse con lo staff di IVAO e le ha decise con Claude domanda per
+> domanda; sono in tre note e nel piano **0.72**, sulla **PR #65** (`plan/centralised-content` →
+> `m1/interactive-block`, **solo documenti**):
+>
+> | Nota | In una riga |
+> |---|---|
+> | `decisions/2026-09-13-staccarsi-da-vipi.md` | l'hub **linka** `atc.it.ivao.aero` e non monta né consuma vIPI; M5 sospeso; `atc` non è più un modulo obbligatorio; della G14 resta la metà generica |
+> | `decisions/2026-09-13-contenuti-centralizzati.md` | **una schermata per oggetto** (`/staff/content`, `/staff/links`, `/staff/media`); le **pagine si approvano** da WD e HQ; news e documenti nelle pagine **per raccolta**; media e link letti da tutti; l'**indirizzo composto** a tre livelli; il menu passa da WD e HQ |
+> | `decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md` | eventi, tour e training **sezioni a sé**; grant anche **a una posizione**; «a cura di» multiplo che decide i permessi, con un **dipartimento di base** sempre presente (ED, FOD, TD) |
+>
+> **Il lavoro che ne segue è scritto** come fasi **G16–G20** in `04-piano-implementazione-m1.md`
+> («Le fasi del 13 settembre»), da fare **dopo il merge della pila #59–#65**, da `main`, una per
+> sessione. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento di base) si
+> fanno **all'apertura di M2**. Ordine di merge invariato: dal basso, una alla volta, cancellando i
+> branch solo alla fine; la #65 va dopo la #64. **Il sito non è online e non lo sarà per almeno due
+> settimane.**
+>
+> **Il resto di questo blocco, sotto, è lo stato del 12 settembre sera**, ancora vero per le PR
+> #59–#64.
+
+> **Per chi apre adesso (12 settembre) — sei PR aperte, impilate una sull'altra, tutte e sei verdi in CI.** Nessuna
 > è mergiata; `main` è ancora a G15.
 >
 > | PR | Branch → base | Che cosa porta | Paragrafo qui sotto |
