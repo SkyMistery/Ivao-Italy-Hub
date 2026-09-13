@@ -41,6 +41,13 @@ public sealed class HubPaths
     public string DivisionFile => Path.Combine(Config, "division.json");
     public string OAuthFile => Path.Combine(Config, "ivao-oauth.json");
 
+    /// <summary>
+    /// The headers every response carries. Read by the host **and** by Vite's preview server, so
+    /// that the smoke suite runs under the real policy; it is in the repository because it is not a
+    /// secret and an installation that edits it is making a decision, not filling in a blank.
+    /// </summary>
+    public string SecurityFile => Path.Combine(Config, "security.json");
+
     public static HubPaths Resolve(string contentRoot)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(contentRoot);

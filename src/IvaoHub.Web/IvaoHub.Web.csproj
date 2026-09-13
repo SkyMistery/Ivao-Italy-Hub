@@ -72,6 +72,7 @@
       <HubLocaleFile Include="$(RepositoryRoot)locales\**\*.json" />
       <HubSeedFile Include="$(RepositoryRoot)seed\**\*.json" />
       <HubExampleConfig Include="$(RepositoryRoot)config\*.example.json" />
+      <HubSecurityConfig Include="$(RepositoryRoot)config\security.json" />
       <HubLegalFile Include="$(RepositoryRoot)LICENSE;$(RepositoryRoot)NOTICE" />
 
       <ResolvedFileToPublish Include="@(HubLocaleFile)"
@@ -81,6 +82,9 @@
                              RelativePath="seed\%(RecursiveDir)%(Filename)%(Extension)"
                              CopyToPublishDirectory="PreserveNewest" />
       <ResolvedFileToPublish Include="@(HubExampleConfig)"
+                             RelativePath="config\%(Filename)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+      <ResolvedFileToPublish Include="@(HubSecurityConfig)"
                              RelativePath="config\%(Filename)%(Extension)"
                              CopyToPublishDirectory="PreserveNewest" />
       <ResolvedFileToPublish Include="@(HubLegalFile)"

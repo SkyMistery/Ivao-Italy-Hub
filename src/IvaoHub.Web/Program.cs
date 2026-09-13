@@ -50,6 +50,12 @@ builder.Services.AddSerilog((services, logger) => logger
 // the application, and a key of one can never shadow a key of the other.
 builder.Services.AddSingleton(paths);
 
+// The headers of every response, from their own file for the same reason the division has one: it
+// is a decision of an installation, not a setting of the application, and Vite's preview server
+// reads the very same file so that the smoke suite runs under the real policy.
+builder.Services.AddOptions<SecurityHeadersOptions>()
+    .Bind(new ConfigurationBuilder().AddJsonFile(paths.SecurityFile, optional: true).Build());
+
 var divisionConfiguration = HubConfiguration.DivisionFile(paths);
 builder.Services.AddOptions<DivisionOptions>()
     .Bind(divisionConfiguration)
@@ -227,6 +233,9 @@ if (app.Environment.IsProduction())
         app.UseHttpsRedirection();
     }
 }
+
+// Before everything it can reach: a static file, an error page and an API answer all carry them.
+app.UseSecurityHeaders();
 
 app.UseCorrelationId();
 app.UseSerilogRequestLogging();

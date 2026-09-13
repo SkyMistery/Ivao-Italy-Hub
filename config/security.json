@@ -1,0 +1,30 @@
+{
+  "headers": {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+    "Cross-Origin-Opener-Policy": "same-origin"
+  },
+  "contentSecurityPolicy": {
+    "enabled": true,
+    "directives": {
+      "default-src": ["'self'"],
+      "script-src": ["'self'"],
+      "style-src": ["'self'", "'unsafe-inline'"],
+      "img-src": ["'self'", "data:"],
+      "font-src": ["'self'"],
+      "media-src": ["'self'"],
+      "connect-src": ["'self'"],
+      "frame-src": [
+        "'self'",
+        "https://www.youtube-nocookie.com",
+        "https://player.vimeo.com",
+        "https://player.twitch.tv"
+      ],
+      "frame-ancestors": ["'none'"],
+      "form-action": ["'self'"],
+      "base-uri": ["'none'"],
+      "object-src": ["'none'"]
+    }
+  }
+}

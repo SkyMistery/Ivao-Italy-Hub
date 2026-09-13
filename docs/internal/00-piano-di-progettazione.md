@@ -1,9 +1,33 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.68 — 12 settembre 2026 (**il tag `v0.2.0-m1` vuol dire «editor di documenti e news pronto»**, non «M1 costruita»; la scheda della demo è aggiornata alla stessa data)
+**Versione documento:** 0.69 — 12 settembre 2026 (**gli header di sicurezza**: l'hub non ne mandava nessuno, ora manda quattro header e una CSP che la suite smoke esegue davvero)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.69** (12 set 2026): **gli header di sicurezza**
+(`decisions/2026-09-12-gli-header-di-sicurezza.md`), nati dalla scelta di Carmine sul blocco
+interattivo — «ti direi C, e prepara un piano per mettere una CSP» — e fatti **prima** del blocco,
+perché il motivo per cui quel frame sarà servito da un endpoint è proprio la CSP di questa pagina, e
+costruire prima l'endpoint avrebbe voluto dire scoprire dopo se la CSP era possibile. **Il fatto da
+cui parte tutto: l'hub non mandava nessun header di sicurezza** — nessuna CSP, nessun `nosniff`,
+nessun `Referrer-Policy`, nessun `X-Frame-Options`. Non un difetto introdotto: una cosa mai passata
+per nessuna fase, mentre M0 aveva costruito CSRF, proxy fidati e HSTS. Ora **un file solo**,
+`config/security.json`, letto da **due** server: ASP.NET in produzione (`SecurityHeaders.cs`, un
+`Use` calcolato all'avvio) e la **preview di Vite**, che è ciò contro cui gira la suite smoke — così
+tutti e 62 quei test girano sotto la policy vera invece che sotto niente. Due cose **misurate** e non
+decise a tavolino: `script-src 'self'` basta, perché l'`index.html` costruito non ha un solo script
+inline; e `style-src` ha bisogno di `'unsafe-inline'`, perché con `'self'` il browser blocca tre
+applicazioni di stile dai bundle di React e di Atmosphere — `style-src-attr` non aiuta, Chrome
+attribuisce a `style-src` anche gli stili scritti via CSSOM, ed è così che React ne scrive uno. Lo
+sviluppo ha una policy più larga (Vite inietta un modulo e apre un web socket), scritta accanto a
+quella stretta con il perché. Niente nonce, niente hash, niente `report-uri`: al posto dei rapporti
+c'è `e2e/security.spec.ts`, che **guarda la console** e fallisce su una violazione — l'unico modo in
+cui quel guasto si denuncia, perché un foglio di stile bloccato non fa fallire nessuna asserzione.
+⚠️ C'è un interruttore nel file, e la ragione è il piano §2.5: la produzione si raggiunge via FTP e
+non c'è una shell, quindi una direttiva che rompe un'installazione vera deve potersi togliere senza
+ricompilare. Sette test nuovi (quattro e2e, due di integrazione, un Vitest che tiene insieme
+l'allowlist degli `embed` e `frame-src`). Branch `m1/security-headers`.
 
 **Changelog 0.68** (12 set 2026): **il tag `v0.2.0-m1` cambia significato** — Carmine, dopo aver
 chiuso la Parte 7 della scheda: «il tag non lo rilasciamo ancora, vorrei che la 0.2 significasse
