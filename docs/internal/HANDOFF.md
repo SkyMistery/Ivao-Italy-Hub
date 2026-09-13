@@ -3,7 +3,22 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 13 settembre 2026, sera — G16–G20 mergiate (PR #66–#70), M2 aperta: H1 fatta.
+**Ultimo aggiornamento:** 13 settembre 2026, notte — la parte B di M2 (le dashboard a tutto schermo) è chiusa: D1 e D2 mergiate (#75, #76), D3 in PR.
+
+> ## ⚠️ Prima di tutto, per la chat che riprende
+>
+> 1. **Carmine vuole fermarsi prima dei moduli**: ha cose da dire, discusse con lo staff di IVAO,
+>    che possono cambiare il piano di Events (e oltre). **Non si apre `05-design-m2.md` né si scrive
+>    codice di un modulo prima di averlo ascoltato.** Chiedere a lui.
+> 2. **D3 (`/me` e `/staff`) è fatta**, branch `m2/d3-personal-dashboards`, PR #77 da mergiare (Carmine
+>    mergia le sue PR). Il dettaglio e gli scostamenti dalla nota sono in `06-piano-implementazione-m2.md`,
+>    sezione «D3»: il template nuovo `personal-dashboard`, `myDepartments` come booleano del calendario,
+>    «Modifica» che porta alla riga che si legge e non alla prima della lista.
+>
+> ⚠️ **Ultimo stato verificato** (su `m2/d3-personal-dashboards`): unit .NET 332, integrazione 203
+> (MariaDB vera), Vitest 405, smoke 80, giro completo 19, lint, typecheck, formato, i18n. **Non
+> guardata a occhio** nel browser: il back office chiede il login IVAO. Un DB di sviluppo già seminato
+> riceve il template e le righe `me` e `staff` al prossimo avvio (il seeder applica ogni file una volta).
 
 > **Per chi apre adesso.** `main` ha tutto fino alla **PR #65**: la pila #59–#64 (G14, deduplica dei
 > media, colore del sito, scheda della demo, header di sicurezza, blocco interattivo) e il **piano
@@ -66,8 +81,8 @@
 > `/staff/{dept}` a tessere. **La pila #71–#75 è mergiata** (da Claude su richiesta di Carmine, 13 set).
 > **D2 è fatta** (branch `m2/d2-grid-editor`): l'editor di una dashboard è la griglia, le tessere si
 > spostano sugli slot e si ridimensionano con la maniglia (e da tastiera) o dal selettore; un test del
-> giro completo lo prova. **Prossima: D3** (`/me`, `/staff`, via i widget), poi `05-design-m2.md` ed Events. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
-> di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
+> giro completo lo prova (PR #76, mergiata). **D3 è fatta** (vedi il riquadro in cima), poi
+> **ci si ferma per ascoltare Carmine** prima di `05-design-m2.md` ed Events. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >
 > ⚠️ **Per G16 i test d'integrazione e il giro e2e non sono stati eseguiti in locale** (Docker

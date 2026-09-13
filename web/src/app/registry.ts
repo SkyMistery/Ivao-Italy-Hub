@@ -1,7 +1,6 @@
 import { coreBlocks } from '../blocks/registry';
-import { coreWidgets } from '../features/me/widgets';
 import { moduleManifests } from '../modules';
-import type { BlockRegistration, RouteDefinition, WidgetRegistration } from '../shared/modules';
+import type { BlockRegistration, RouteDefinition } from '../shared/modules';
 
 /**
  * The loader of the module manifests. This file, and only this file, reads
@@ -14,14 +13,12 @@ import type { BlockRegistration, RouteDefinition, WidgetRegistration } from '../
 
 export interface Registry {
   readonly blocks: readonly BlockRegistration[];
-  readonly widgets: readonly WidgetRegistration[];
   readonly routes: readonly RouteDefinition[];
   readonly i18nNamespaces: readonly string[];
 }
 
 export function composeRegistry(): Registry {
   const blocks: BlockRegistration[] = [...coreBlocks];
-  const widgets: WidgetRegistration[] = [...coreWidgets];
   const routes: RouteDefinition[] = [];
   const namespaces = new Set<string>(['common', 'errors']);
 
@@ -35,20 +32,13 @@ export function composeRegistry(): Registry {
       blocks.push(block);
     }
 
-    for (const widget of manifest.widgets) {
-      if (widgets.some((existing) => existing.key === widget.key)) {
-        throw new Error(`Widget "${widget.key}" is registered twice; module "${manifest.key}" is one.`);
-      }
-      widgets.push(widget);
-    }
-
     routes.push(...manifest.routes);
     for (const namespace of manifest.i18nNamespaces) {
       namespaces.add(namespace);
     }
   }
 
-  return { blocks, widgets, routes, i18nNamespaces: [...namespaces] };
+  return { blocks, routes, i18nNamespaces: [...namespaces] };
 }
 
 /** Composed once: the list is static, so recomposing it per render would only cost renders. */

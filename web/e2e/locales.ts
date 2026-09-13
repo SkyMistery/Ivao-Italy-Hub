@@ -160,6 +160,11 @@ interface CommonStrings {
       readonly captions: { readonly divisionAtc: string; readonly divisionPilots: string };
     };
     readonly staffList: { readonly rosterNote: string };
+    readonly myWork: {
+      readonly sentBack: string;
+      readonly titles: { readonly drafts: string };
+      readonly empty: { readonly drafts: string };
+    };
     readonly heading: {
       readonly label: string;
       readonly fields: { readonly text: string; readonly level: string };

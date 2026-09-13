@@ -402,6 +402,9 @@ export const calendarSchema = z.object({
   // uses. Naming none asks for every kind.
   kinds: z.array(z.object({ kind: z.string() })),
   department: z.enum(DEPARTMENTS).optional(),
+  // The departments of whoever is looking, for a dashboard every member of the staff reads (note
+  // 2026-09-13-le-dashboard-a-tutto-schermo §3.5). A department named above wins over it.
+  myDepartments: z.boolean().default(false),
   range: z.enum(CALENDAR_RANGES).default('upcoming'),
   // Born in G6 with `CalendarView`, exactly as design M1 §1.2 said it would: in G4 the block was
   // the agenda and only the agenda, and a select with one option is a control that does nothing.
@@ -431,4 +434,23 @@ export const staffListSchema = z.object({
   department: z.enum(DEPARTMENTS).optional(),
   includeFirStaff: z.boolean().default(true),
   layout: z.enum(LIST_LAYOUTS).default('cards'),
+});
+
+// --- the blocks of the personal dashboards (D3) ------------------------------------------------
+//
+// Each draws what belongs to whoever is looking (note 2026-09-13-le-dashboard-a-tutto-schermo §3.5).
+
+/** The four answers to "what is mine to do?", in the order the block offers them. The server's
+ * `MyWorkProvider.Kinds` holds the same list. */
+export const MY_WORK_KINDS = ['approvals', 'contacts', 'reviews', 'drafts'] as const;
+
+export const welcomeSchema = z.object({
+  message: localized().optional().meta({ multiline: true }),
+});
+
+export const myDepartmentsSchema = z.object({});
+
+export const myWorkSchema = z.object({
+  what: z.enum(MY_WORK_KINDS).default('drafts'),
+  limit: z.number().int().default(5),
 });

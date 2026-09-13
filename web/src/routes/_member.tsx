@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
+import { Outlet, createFileRoute, redirect, useMatches } from '@tanstack/react-router';
 
 import { Shell } from '../app/layouts/Chrome';
 
@@ -21,9 +21,12 @@ export const Route = createFileRoute('/_member')({
 
 function MemberLayout() {
   const { bootstrap } = Route.useRouteContext();
+  // A route below says whether it wants the whole width (`/me`, a dashboard): the layout owns the
+  // frame, the route knows what it draws in it.
+  const wide = useMatches({ select: (matches) => matches.some((match) => match.staticData.wide === true) });
 
   return (
-    <Shell bootstrap={bootstrap}>
+    <Shell bootstrap={bootstrap} wide={wide}>
       <Outlet />
     </Shell>
   );

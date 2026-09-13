@@ -136,22 +136,7 @@ public sealed class ModuleCompositionTests
             PermissionCatalog.Core.All.Select(permission => permission.Name).Order(StringComparer.Ordinal));
     }
 
-    // --- the widget registry -------------------------------------------------------------------
-
-    [Fact]
-    public void TheWidgetRegistryIsComposedAndRefusesADuplicate()
-    {
-        var registry = new WidgetRegistry(
-        [
-            .. CoreWidgets.All,
-            new WidgetDescriptor("events.mine", "widgets.events.mine.title", ["half"]),
-        ]);
-
-        Assert.Equal(["events.mine", CoreWidgets.Welcome], registry.All.Select(widget => widget.Key));
-
-        Assert.Throws<InvalidOperationException>(() => new WidgetRegistry(
-            [.. CoreWidgets.All, .. CoreWidgets.All]));
-    }
+    // --- helpers ------------------------------------------------------------------------------
 
     /// <summary>A division that says nothing about any module, which is the ordinary case.</summary>
     private static Dictionary<string, bool> NoSwitches => [];

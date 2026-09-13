@@ -69,6 +69,13 @@
         "notes": {
           "section": "Note"
         }
+      },
+      "personalDashboard": {
+        "title": "Dashboard personale",
+        "summary": "Una griglia di tessere che rispondono per chi guarda: il punto di partenza di /me e /staff.",
+        "tiles": {
+          "section": "Tessere"
+        }
       }
     },
     "pages": {
@@ -171,6 +178,17 @@
       "dashboard": {
         "title": "Dashboard di dipartimento",
         "summary": "Quello che questo dipartimento vede aprendo il back office."
+      },
+      "me": {
+        "title": "La mia dashboard",
+        "summary": "Quello che un membro vede entrando: quello che è suo da fare oggi.",
+        "section": "Oggi",
+        "welcome": "Qui trovi quello che è tuo: le tue prenotazioni, i tuoi training, gli eventi a cui ti sei iscritto. Si riempie man mano che usi l’hub."
+      },
+      "staff": {
+        "title": "Dashboard dello staff",
+        "summary": "Quello che uno staffista vede entrando: quello che lo aspetta, e i suoi dipartimenti.",
+        "section": "Il mio lavoro"
       }
     },
     "calendarKinds": {

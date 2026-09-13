@@ -907,7 +907,6 @@ export interface components {
         };
         BootstrapRegistries: {
             blocks: components["schemas"]["BootstrapBlock"][];
-            widgets: components["schemas"]["BootstrapWidget"][];
             permissions: components["schemas"]["BootstrapPermissionName"][];
         };
         /**
@@ -936,12 +935,6 @@ export interface components {
             locale: string;
             departments: string[];
             firs: string[];
-        };
-        /** @description One dashboard tile, on the same terms as a block: the envelope, never the drawing. */
-        BootstrapWidget: {
-            key: string;
-            titleKey: string;
-            sizes: string[];
         };
         /**
          * @description The same entry as the form loads it, with the audit trail.

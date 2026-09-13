@@ -164,7 +164,7 @@ dettaglio all'inizio di ognuna con il codice davanti.
 |---|---|---|---|
 | D1 | La griglia a tessere — **fatta il 13 set 2026** | parte A | layout `grid` e `span` nell'envelope (walker, validazione, TypeScript); resa a tessera alta uguale per riga; resa a tutto schermo e barra compatta per `ContentKind.Dashboard`; le dashboard dei dipartimenti convertite |
 | D2 | L'editor della griglia — **fatta il 13 set 2026** | D1 | spostare le tessere, ridimensionarle con la maniglia e con il selettore; il giro e2e che lo prova |
-| D3 | `/me` e `/staff` | D1 | righe `me` e `staff` seminate; `/staff` smette di reindirizzare; i blocchi del nucleo (ciò che aspetta me, le mie bozze, calendario dei miei dipartimenti, i miei dipartimenti, il saluto); via il registro dei widget |
+| D3 | `/me` e `/staff` — **fatta il 13 set 2026** | D1 | righe `me` e `staff` seminate; `/staff` smette di reindirizzare; i blocchi del nucleo (ciò che aspetta me, le mie bozze, calendario dei miei dipartimenti, i miei dipartimenti, il saluto); via il registro dei widget |
 
 ### D1 — La griglia a tessere
 
@@ -216,7 +216,52 @@ Branch `m2/d2-grid-editor`, da `main` dopo il merge della pila #71–#75. **Fatt
 - **Verificato in locale**: Vitest (394), smoke (77), giro completo (19, MariaDB vera), lint,
   typecheck, formato, i18n.
 
+### D3 — `/me` e `/staff`
+
+Branch `m2/d3-personal-dashboards`, da `main` dopo il merge di D2 (#76). **Fatta il 13 settembre 2026.**
+
+- **Via il registro dei widget**, nei due lati: `IModule.Widgets`, `WidgetDescriptor`, `WidgetRegistry`,
+  `registries.widgets` di `/api/me`, i widget dei manifest, `features/me/widgets/`, la voce nella galleria
+  e le chiavi `widgets.*`. Un modulo registra blocchi e basta.
+- **Tre blocchi del nucleo** (`blocks/personal.tsx`, `CoreBlocks`): `welcome` (il saluto, con un messaggio
+  che scrive il web team), `myDepartments` (i link alle dashboard dei miei dipartimenti) — tutti e due
+  Content, perché il browser sa già chi guarda — e `myWork` (Data, `AlwaysLive`, provider
+  `MyWorkProvider`) con `what` = `approvals` | `contacts` | `reviews` | `drafts`: un blocco con una scelta
+  e non quattro blocchi, perché è una domanda sola con quattro risposte. Legge oltre il filtro (una bozza
+  non passa il filtro) e restringe con gli stessi permessi delle schermate dietro i link
+  (`Content.Approve`, `Contacts.View`, `Content.Edit`, autore). In palette stanno sotto Dati, sottogruppo
+  nuovo **«Per chi guarda»** (`personal`).
+- **Il calendario**: `myDepartments: true` mostra i dipartimenti di chi guarda. ⚠️ **Scostamento dalla nota
+  §3.5.4**: un booleano accanto a `department` e non un valore di `department`, perché `department` è
+  l'enum dei nove e un valore in più sarebbe stato un caso speciale nel selettore. E se il blocco viene
+  **catturato** alla pubblicazione, «chi guarda» non c'è ancora: si usa il dipartimento della pagina, non
+  quelli di chi ha premuto «pubblica».
+- **Le righe**: `seed/content-pages/me.json` (Members, il saluto) e `staff.json` (Staff: quattro `myWork`
+  da ¼, calendario e dipartimenti da ½), del dipartimento del sito. ⚠️ **Scostamento**: nascono da un
+  **template nuovo**, `personal-dashboard` (una sezione libera `tiles`), e non da `dashboard`, che ha
+  la sezione `welcome` obbligatoria e bloccata con il titolo del dipartimento: `seeds.test.ts` lo diceva.
+- **Le schermate**: `DashboardScreen` (`features/content/`) è la schermata di `/staff/{dept}`, `/staff` e
+  `/me`, cambia solo lo slug. «Modifica» porta alla riga che si sta leggendo, trovata dall'`id` della
+  versione pubblicata. ⚠️ **Trovato qui**: prima la rotta del dipartimento prendeva la prima dashboard del
+  dipartimento dalla lista, e da D3 il WD ne ha tre (`wd`, `me`, `staff`). L'editor torna dove la
+  dashboard si legge (`dashboardAddress`). `/staff` smette di reindirizzare. `/me` chiede la larghezza
+  intera con `staticData: { wide: true }`, che il layout dei membri legge e passa a `Shell`; le
+  preferenze delle notifiche restano sotto. La barra di `/me` è il `PageShell` pubblico, con titolo e
+  «Modifica» su una riga: il compatto è tarato sui margini del back office.
+- **I test**: `MyWorkTests` (integrazione: pagina da approvare solo a chi approva, contatto al suo
+  dipartimento e non a un altro, documento da rivedere a chi lo modifica, bozza al suo autore e non al
+  direttore, niente a un visitatore), i conteggi dei blocchi Data (8) e della galleria (33), le dashboard
+  del fork XX (nove + due), `seeds.test.ts` con il template nuovo, smoke `e2e/dashboards.spec.ts`
+  (`/staff` con `myWork` e i dipartimenti, «Modifica» solo al WD, `/me` più largo della colonna).
+- ⚠️ **Trovato dai test d'integrazione**: i VID 690001–690003 erano già di `SiteMenuAndDashboardTests`
+  (690003 è il loro director), e le posizioni si **aggiungono** a quelle che un VID ha già nel DB
+  condiviso: `MyWorkTests` usa 770001–770003.
+- **Verificato in locale**: unit .NET (332), integrazione (203, MariaDB vera), Vitest (405), smoke (80),
+  giro completo (19), lint, typecheck, formato, i18n. **Non guardata a occhio** nel browser: il back
+  office chiede il login IVAO.
+
 ## C. Il modulo Events
 
-Si scrive dopo `05-design-m2.md`.
+Si scrive dopo `05-design-m2.md`. ⚠️ **Non prima di aver sentito Carmine** (13 settembre 2026, notte):
+ha cose discusse con lo staff di IVAO che riguardano i moduli.
 

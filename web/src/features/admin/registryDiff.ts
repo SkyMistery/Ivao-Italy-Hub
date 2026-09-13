@@ -1,5 +1,5 @@
 import type { Bootstrap } from '../../shared/api/bootstrap';
-import type { BlockRegistration, WidgetRegistration } from '../../shared/modules';
+import type { BlockRegistration } from '../../shared/modules';
 
 /**
  * The third side of "registry ⇄ ui-kit": what the **server** declares in `/api/me`, against what
@@ -20,22 +20,16 @@ export interface RegistryDifference {
   readonly blocksMissingOnServer: string[];
   /** Known to both, at different versions: the same name meaning two things. */
   readonly blockVersionMismatches: string[];
-  readonly widgetsMissingInBrowser: string[];
-  readonly widgetsMissingOnServer: string[];
 }
 
 export function compareRegistries(
   bootstrap: Bootstrap,
   blocks: readonly BlockRegistration[],
-  widgets: readonly WidgetRegistration[],
 ): RegistryDifference {
   const server = bootstrap.registries;
 
   const serverBlocks = new Map(server.blocks.map((block) => [block.type, block.version]));
   const clientBlocks = new Map(blocks.map((block) => [block.type, block.version]));
-
-  const serverWidgets = new Set(server.widgets.map((widget) => widget.key));
-  const clientWidgets = new Set(widgets.map((widget) => widget.key));
 
   return {
     blocksMissingInBrowser: [...serverBlocks.keys()].filter((type) => !clientBlocks.has(type)),
@@ -43,8 +37,6 @@ export function compareRegistries(
     blockVersionMismatches: [...serverBlocks.entries()]
       .filter(([type, version]) => clientBlocks.has(type) && clientBlocks.get(type) !== version)
       .map(([type, version]) => `${type} (server ${version}, browser ${clientBlocks.get(type)})`),
-    widgetsMissingInBrowser: [...serverWidgets].filter((key) => !clientWidgets.has(key)),
-    widgetsMissingOnServer: [...clientWidgets].filter((key) => !serverWidgets.has(key)),
   };
 }
 
@@ -55,8 +47,6 @@ export function registriesAgree(difference: RegistryDifference): boolean {
   return (
     difference.blocksMissingInBrowser.length === 0 &&
     difference.blocksMissingOnServer.length === 0 &&
-    difference.blockVersionMismatches.length === 0 &&
-    difference.widgetsMissingInBrowser.length === 0 &&
-    difference.widgetsMissingOnServer.length === 0
+    difference.blockVersionMismatches.length === 0
   );
 }

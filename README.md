@@ -32,7 +32,7 @@ snapshots, and every piece of editorial content from the database.
 >
 > And the core now composes modules. A module is a project and a folder — `IvaoHub.Modules.<Name>`
 > and `web/src/modules/<key>/` — named in one explicit list on each side; it contributes its
-> endpoints, its menu entries, its blocks, its dashboard tiles, its permissions and the addresses the
+> endpoints, its menu entries, its blocks (a dashboard tile is one of them), its permissions and the addresses the
 > single page application must not answer for, and nothing in the core ever names one. Each can be
 > closed for maintenance on its own: reads keep working, writes answer 503. The administration
 > screens are there too — who holds which permission, who administers the system, what happened —

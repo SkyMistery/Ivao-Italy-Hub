@@ -36,9 +36,9 @@ test('the gallery shows the whole set of blocks the milestone declares', () => {
   // agree just as happily about nineteen blocks. M0 registered five; G3 added the sixteen Content,
   // Layout, Interactive and Structure ones and G4 the six Data ones (design M1 §1.2), which is the
   // whole set the milestone declared; G14 added the two tables of an operational document, and the
-  // interactive block of 12 September is the thirtieth — losing one has to be something CI says out
-  // loud.
-  expect(registry.blocks).toHaveLength(30);
+  // interactive block of 12 September is the thirtieth; D3 added the three of the personal
+  // dashboards — losing one has to be something CI says out loud.
+  expect(registry.blocks).toHaveLength(33);
 });
 
 test('a block registers example props that its own schema accepts', () => {

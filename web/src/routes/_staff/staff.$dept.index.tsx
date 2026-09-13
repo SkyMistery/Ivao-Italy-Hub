@@ -1,15 +1,10 @@
-import { Button } from '@ivao/atmosphere-react';
-import { useQuery } from '@tanstack/react-query';
-import { Link, createFileRoute, redirect } from '@tanstack/react-router';
-import { Pencil } from 'lucide-react';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
-import { ContentRenderer, EmbeddingContext, readBody, usePublishedEmbedding } from '../../blocks';
-import { contentListQuery, publicContentQuery } from '../../features/content/queries';
-import { holdsPermission, reachableDepartments } from '../../shared/api/bootstrap';
+import { DashboardScreen } from '../../features/content/DashboardScreen';
+import { dashboardQuery } from '../../features/content/dashboards';
+import { reachableDepartments } from '../../shared/api/bootstrap';
 import { deptParam } from '../../shared/api/department';
-import { listSearchSchema } from '../../shared/list';
-import { PageShell } from '../../shared/ui';
 
 /**
  * The home of a department: what somebody sees arriving at `/staff/<dept>` (design M1 §14, note
@@ -24,7 +19,7 @@ import { PageShell } from '../../shared/ui';
  * the coordinator is working on, and their colleagues keep seeing the last thing that was
  * published. The row is `Visibility.Department`, so the query filter is what decides who may read
  * it — including the people a grant reached, which is what `HubClaims.BuildIdentity` was corrected
- * for in this phase.
+ * for in this phase. The screen is the one `/staff` and `/me` use (`DashboardScreen`).
  */
 export const Route = createFileRoute('/_staff/staff/$dept/')({
   params: {
@@ -37,64 +32,25 @@ export const Route = createFileRoute('/_staff/staff/$dept/')({
     }
   },
   loader: ({ context, params }) =>
-    // Not `ensureQueryData`: a department whose dashboard has never been published has no page to
-    // read, and that is a state to draw rather than an error to throw.
-    context.queryClient.ensureQueryData(dashboardQuery(params.dept)).catch(() => null),
+    // Not `ensureQueryData` alone: a department whose dashboard has never been published has no
+    // page to read, and that is a state to draw rather than an error to throw.
+    // The slug is the department's own code, in lower case.
+    context.queryClient.ensureQueryData(dashboardQuery(params.dept.toLowerCase())).catch(() => null),
   component: DepartmentDashboard,
 });
-
-/** What editing a dashboard needs; it is `Content.Edit`, because a dashboard is content. */
-const CONTENT_EDIT = 'Content.Edit';
-
-/** The dashboard of one department. Its slug is the department's own code, in lower case. */
-function dashboardQuery(department: string) {
-  return publicContentQuery('Dashboard', department.toLowerCase());
-}
 
 function DepartmentDashboard() {
   const { t } = useTranslation();
   const { bootstrap } = Route.useRouteContext();
   const { dept } = Route.useParams();
 
-  const dashboard = useQuery({ ...dashboardQuery(dept), retry: false });
-  const embedding = usePublishedEmbedding(dashboard.data);
-
-  // Where the "edit" button leads. A department has exactly one dashboard row, so the ordinary back
-  // office list of that kind is the answer, and only asked of somebody who could act on it: a button
-  // that leads to a 403 is a button that teaches people to distrust buttons.
-  const mayEdit = holdsPermission(bootstrap, CONTENT_EDIT, dept);
-  const row = useQuery({
-    ...contentListQuery(dept, listSearchSchema.parse({ pageSize: 1 }), 'Dashboard'),
-    enabled: mayEdit,
-  });
-
-  const editable = row.data?.items[0];
-
   return (
-    <PageShell
+    <DashboardScreen
+      bootstrap={bootstrap}
+      slug={dept.toLowerCase()}
       title={t('dashboard.title', { department: t(`departments.${dept}`) })}
       description={t('dashboard.description')}
-      breadcrumb={[{ label: dept }]}
-      actions={
-        editable === undefined ? undefined : (
-          <Button asChild variant="secondary">
-            <Link to="/staff/$dept/dashboard/$id" params={{ dept, id: String(editable.id) }}>
-              <Pencil aria-hidden className="mr-2 size-4" />
-              {t('dashboard.edit')}
-            </Link>
-          </Button>
-        )
-      }
-    >
-      {dashboard.data ? (
-        <EmbeddingContext.Provider value={embedding}>
-          <ContentRenderer body={readBody(dashboard.data.body)} media={dashboard.data.media} dashboard />
-        </EmbeddingContext.Provider>
-      ) : (
-        // An honest empty state rather than a blank page: a department whose dashboard was deleted,
-        // or one added to the division since the last start, has nothing to show and is told why.
-        <p className="text-muted-foreground text-sm">{t('dashboard.missing')}</p>
-      )}
-    </PageShell>
+      missing={t('dashboard.missing')}
+    />
   );
 }

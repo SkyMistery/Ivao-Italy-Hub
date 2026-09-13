@@ -6,8 +6,10 @@ import {
   ChevronsUpDown,
   FileText,
   Frame,
+  Hand,
   Heading,
   Image,
+  ListTodo,
   Images,
   Info,
   LayoutGrid,
@@ -17,6 +19,7 @@ import {
   MonitorPlay,
   MousePointerClick,
   MoveVertical,
+  Network,
   Newspaper,
   PanelTop,
   PanelsTopLeft,
@@ -65,6 +68,7 @@ import {
   TimelineBlock,
   VideoBlock,
 } from './blocks';
+import { MyDepartmentsBlock, MyWorkBlock, WelcomeBlock } from './personal';
 import {
   accordionSchema,
   buttonGroupSchema,
@@ -85,6 +89,8 @@ import {
   interactiveSchema,
   linkListSchema,
   logoGridSchema,
+  myDepartmentsSchema,
+  myWorkSchema,
   networkStatsSchema,
   newsListSchema,
   spacerSchema,
@@ -96,6 +102,7 @@ import {
   textSchema,
   timelineSchema,
   videoSchema,
+  welcomeSchema,
 } from './schemas';
 
 /**
@@ -143,6 +150,9 @@ export const CORE_BLOCK_TYPES = {
   staffList: 'staffList',
   frequencyTable: 'frequencyTable',
   coordination: 'coordination',
+  welcome: 'welcome',
+  myDepartments: 'myDepartments',
+  myWork: 'myWork',
 } as const;
 
 /** Two languages of prose, written once and read by the examples below. */
@@ -780,5 +790,67 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'data',
     subgroup: 'operational',
     icon: ArrowLeftRight,
+  },
+
+  // --- The personal dashboards (D3) ------------------------------------------------------------
+  // Three blocks that draw what belongs to whoever is looking (note
+  // 2026-09-13-le-dashboard-a-tutto-schermo §3.5). The greeting and the departments are content by
+  // kind — the browser already knows who is looking — and `myWork` is answered by the server for
+  // them, always live: a capture of somebody's work would be somebody else's by the time it is read.
+
+  {
+    type: CORE_BLOCK_TYPES.welcome,
+    version: 1,
+    kind: 'Content',
+    schema: welcomeSchema,
+    component: WelcomeBlock,
+    example: {
+      message: {
+        en: 'What is yours to do today, as the hub fills up.',
+        it: 'Quello che hai da fare oggi, man mano che il portale si riempie.',
+      },
+    },
+    editorLabelKey: 'blocks.welcome.label',
+    group: 'data',
+    subgroup: 'personal',
+    icon: Hand,
+  },
+  {
+    type: CORE_BLOCK_TYPES.myDepartments,
+    version: 1,
+    kind: 'Content',
+    schema: myDepartmentsSchema,
+    component: MyDepartmentsBlock,
+    example: {},
+    editorLabelKey: 'blocks.myDepartments.label',
+    group: 'data',
+    subgroup: 'personal',
+    icon: Network,
+  },
+  {
+    type: CORE_BLOCK_TYPES.myWork,
+    version: 1,
+    kind: 'Data',
+    alwaysLive: true,
+    schema: myWorkSchema,
+    component: MyWorkBlock,
+    example: { what: 'drafts', limit: 5 },
+    exampleData: {
+      what: 'drafts',
+      items: [
+        {
+          title: { en: 'Local procedures', it: 'Procedure locali' },
+          url: '/staff/content/1',
+          department: 'WD',
+          at: '2026-09-12T18:00:00.000Z',
+          status: 'Draft',
+          sentBack: true,
+        },
+      ],
+    },
+    editorLabelKey: 'blocks.myWork.label',
+    group: 'data',
+    subgroup: 'personal',
+    icon: ListTodo,
   },
 ];

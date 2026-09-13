@@ -142,6 +142,11 @@ public static class CoreBlocks
     public const string DocumentList = "documentList";
     public const string StaffList = "staffList";
 
+    // The blocks of the personal dashboards (note 2026-09-13-le-dashboard-a-tutto-schermo §3.5).
+    public const string Welcome = "welcome";
+    public const string MyDepartments = "myDepartments";
+    public const string MyWork = "myWork";
+
     public static readonly IReadOnlyList<IBlockDescriptor> All =
     [
         new BlockDescriptor(Heading, Version: 1, BlockKind.Content),
@@ -183,5 +188,13 @@ public static class CoreBlocks
         new BlockDescriptor(NewsList, Version: 1, BlockKind.Data),
         new BlockDescriptor(DocumentList, Version: 1, BlockKind.Data),
         new BlockDescriptor(StaffList, Version: 1, BlockKind.Data),
+
+        // The personal dashboards. The greeting and the departments are drawn from what the browser
+        // already knows of whoever is looking, so they are content; what waits for them is answered
+        // for them by the server, and is always live — a capture of somebody's work, kept from the
+        // day the dashboard was published, would be somebody else's work by the time it is read.
+        new BlockDescriptor(Welcome, Version: 1, BlockKind.Content),
+        new BlockDescriptor(MyDepartments, Version: 1, BlockKind.Content),
+        new BlockDescriptor(MyWork, Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 }

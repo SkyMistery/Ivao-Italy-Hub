@@ -34,6 +34,7 @@ public static class ContentServiceCollectionExtensions
         services.AddScoped<IDataBlockProvider, NewsListProvider>();
         services.AddScoped<IDataBlockProvider, DocumentListProvider>();
         services.AddScoped<IDataBlockProvider, StaffListProvider>();
+        services.AddScoped<IDataBlockProvider, MyWorkProvider>();
         services.TryAddScoped<DataBlockProviders>();
 
         // Where the uploaded files live. A singleton because it holds one path and no state; the

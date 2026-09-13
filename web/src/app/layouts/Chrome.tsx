@@ -461,14 +461,20 @@ function FooterEntry({ path, label, icon = null }: { path: string; label: string
  * belongs to the whole window rather than to the reading column goes, and today that is the live
  * strip of the public site. It is a slot and not a component of its own because the frame decides
  * *where*, and the layout decides *what* — the back office has no banner and asks for none.
+ *
+ * `wide` lets the content take the whole width between header and footer instead of the reading
+ * column: a dashboard is not a page (note 2026-09-13-le-dashboard-a-tutto-schermo §3.2). A route asks
+ * for it with `staticData: { wide: true }`.
  */
 export function Shell({
   bootstrap,
   banner,
+  wide = false,
   children,
 }: {
   bootstrap: Bootstrap;
   banner?: ReactNode;
+  wide?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -479,7 +485,9 @@ export function Shell({
           (`styles/index.css`). A block drawn on a screen of its own — the news list, the gallery —
           has no renderer around it to measure, and without a container here it would never fold
           or unfold at all. */}
-      <main className="@container mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main className={`@container mx-auto w-full flex-1 px-4 py-8 ${wide ? '' : 'max-w-6xl'}`}>
+        {children}
+      </main>
       <AppFooter bootstrap={bootstrap} />
     </div>
   );

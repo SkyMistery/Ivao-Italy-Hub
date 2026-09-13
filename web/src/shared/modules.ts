@@ -37,7 +37,15 @@ export type BlockGroup = (typeof BLOCK_GROUPS)[number];
  * one reason: every entry needs a label in every language, and `pnpm i18n:check` can only prove
  * that for a list it can enumerate.
  */
-export const BLOCK_SUBGROUPS = ['text', 'media', 'tables', 'grids', 'containers', 'operational'] as const;
+export const BLOCK_SUBGROUPS = [
+  'text',
+  'media',
+  'tables',
+  'grids',
+  'containers',
+  'operational',
+  'personal',
+] as const;
 
 export type BlockSubgroup = (typeof BLOCK_SUBGROUPS)[number];
 
@@ -120,12 +128,6 @@ export interface BlockRegistration {
   readonly carriesSource?: boolean;
 }
 
-/** A tile on a dashboard. Registered in M0, drawn from M1. */
-export interface WidgetRegistration {
-  readonly key: string;
-  readonly component: ComponentType;
-}
-
 /**
  * A route a module adds. TanStack generates the tree from files, so a module's own route files are
  * what normally appear; this is the escape hatch for a route a manifest would rather register.
@@ -137,8 +139,12 @@ export interface RouteDefinition {
 
 export interface ModuleManifest {
   readonly key: string;
+  /**
+   * Its blocks, the Data ones included. There are no dashboard tiles apart from them since
+   * 13 September 2026: a module's tile is a Data block that answers for whoever is looking, placed on
+   * a dashboard with the editor (note 2026-09-13-le-dashboard-a-tutto-schermo).
+   */
   readonly blocks: readonly BlockRegistration[];
-  readonly widgets: readonly WidgetRegistration[];
   readonly routes: readonly RouteDefinition[];
   /** Namespaces of `locales/{lng}/<ns>.json` the module brings with it. */
   readonly i18nNamespaces: readonly string[];
