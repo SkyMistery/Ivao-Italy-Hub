@@ -471,8 +471,48 @@ public sealed class ContentReviewService(
         return values.Count == 0 ? null : new Localized<string>(values);
     }
 
-    private static string Hash(JsonNode node) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(node.ToJsonString())));
+    /// <summary>
+    /// A section as its author wrote it: without the <c>frozen</c> answer publication writes on every
+    /// block envelope (<c>null</c> for a live block), which is the publisher's and not a change.
+    /// Found by CI: every section of a page published once read "changed".
+    /// </summary>
+    private static string Hash(JsonNode node)
+    {
+        var written = node.DeepClone();
+        Unfreeze(written);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(written.ToJsonString())));
+    }
+
+    private static void Unfreeze(JsonNode? node)
+    {
+        switch (node)
+        {
+            case JsonObject envelope:
+                if (envelope.ContainsKey("type"))
+                {
+                    envelope.Remove("frozen");
+                }
+
+                foreach (var (name, child) in envelope.ToList())
+                {
+                    // The properties are the editor's and are never read (plan section 16.5).
+                    if (!string.Equals(name, "props", StringComparison.Ordinal))
+                    {
+                        Unfreeze(child);
+                    }
+                }
+
+                break;
+
+            case JsonArray items:
+                foreach (var item in items)
+                {
+                    Unfreeze(item);
+                }
+
+                break;
+        }
+    }
 
     private static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
