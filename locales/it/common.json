@@ -253,8 +253,8 @@
     "delete": {
       "title": "Cancellare questo file?",
       "description": "Il file viene rimosso. Nessuna pagina del sito lo sta mostrando.",
-      "inUse_one": "Una pagina pubblicata sta mostrando questo file, quindi il file resta e esce solo dalla libreria.",
-      "inUse_other": "{{count}} pagine pubblicate stanno mostrando questo file, quindi il file resta e esce solo dalla libreria."
+      "inUse_one": "Una pagina usa questo file. Se lo mostra una pagina pubblicata non si può cancellare: archivialo.",
+      "inUse_other": "{{count}} pagine usano questo file. Se lo mostra una pagina pubblicata non si può cancellare: archivialo."
     },
     "picker": {
       "label": "File di questo dipartimento",
@@ -290,6 +290,22 @@
         "Staff": "Staff",
         "Department": "Dipartimento"
       }
+    },
+    "replace": {
+      "action": "Sostituisci il file",
+      "done": "File sostituito. Le pagine che lo mostrano mostrano quello nuovo."
+    },
+    "archive": {
+      "filter": "Archivio",
+      "library": "Nella libreria",
+      "archived": "Archiviati",
+      "action": "Archivia",
+      "title": "Archiviare questo file?",
+      "description": "Esce dalla libreria e dal selettore. Le pagine che lo mostrano già continuano a mostrarlo.",
+      "done": "Archiviato.",
+      "notice": "Questo file è archiviato: non viene proposto nel selettore, e le pagine che lo mostrano continuano a mostrarlo.",
+      "restore": "Rimetti nella libreria",
+      "restored": "Di nuovo nella libreria."
     }
   },
   "uiKit": {
@@ -400,7 +416,8 @@
       "retiredAt": "Non più in vigore dal",
       "supersededById": "Sostituito da",
       "showFooter": "Mostra il piè di pagina (versione, data, chi ha pubblicato, stampa)",
-      "parentId": "Sotto la pagina"
+      "parentId": "Sotto la pagina",
+      "collections": "Raccolte"
     },
     "options": {
       "kind": {
@@ -661,7 +678,8 @@
         "title": "Da approvare",
         "description": "Le pagine in attesa di approvazione."
       }
-    }
+    },
+    "appearsIn": "Compare in: {{pages}}"
   },
   "templates": {
     "title": "Template",
@@ -1238,7 +1256,7 @@
       "empty": "Nessuna news da mostrare.",
       "pinned": "In evidenza",
       "fields": {
-        "category": "Categoria",
+        "category": "Raccolta",
         "department": "Dipartimento",
         "limit": "Quante al massimo",
         "layout": "Disposte come",
@@ -1268,10 +1286,10 @@
       "empty": "Nessun documento da mostrare.",
       "download": "Scarica",
       "fields": {
-        "category": "Categoria",
+        "category": "Raccolta",
         "department": "Dipartimento",
         "limit": "Quanti al massimo",
-        "groupByCategory": "Raggruppa per categoria"
+        "groupByCategory": "Raggruppa per raccolta"
       },
       "options": {
         "department": {
@@ -1451,13 +1469,15 @@
     }
   },
   "categories": {
-    "title": "Categorie",
-    "description": "Gli scaffali su cui questo dipartimento sistema news e documenti.",
-    "create": "Nuova categoria",
-    "edit": "Modifica categoria",
+    "title": "Raccolte",
+    "description": "Le raccolte in cui questo dipartimento sistema news e documenti. Una pagina elenca una raccolta, e una riga può stare in più raccolte.",
+    "create": "Nuova raccolta",
+    "edit": "Modifica raccolta",
     "delete": {
-      "title": "Eliminare questa categoria?",
-      "description": "Le news e i documenti sistemati qui tengono la chiave con cui sono stati archiviati, e restano dove sono."
+      "title": "Eliminare questa raccolta?",
+      "description": "Le news e i documenti sistemati qui tengono la chiave con cui sono stati archiviati, e restano dove sono.",
+      "used_one": "Una pagina pubblicata elenca questa raccolta, e non elencherà più niente:",
+      "used_other": "{{count}} pagine pubblicate elencano questa raccolta, e non elencheranno più niente:"
     },
     "fields": {
       "key": "Chiave",
@@ -1469,14 +1489,16 @@
       "updatedAt": "Ultima modifica"
     },
     "hints": {
-      "key": "Il nome stabile con cui una news o un documento viene archiviato. Non lo vede mai un visitatore, e cambiarlo lascia dov'è quello che era già archiviato con il vecchio."
+      "key": "Il nome stabile della raccolta in cui una news o un documento viene sistemato. Non lo vede mai un visitatore, e cambiarlo lascia dov'è quello che era già nella vecchia."
     },
     "options": {
       "kind": {
         "News": "News",
         "Document": "Documenti"
       }
-    }
+    },
+    "usedIn_one": "Elencata da una pagina pubblicata.",
+    "usedIn_other": "Elencata da {{count}} pagine pubblicate."
   },
   "calendar": {
     "title": "Calendario",

@@ -1,5 +1,6 @@
 import { Label, Select } from '@ivao/atmosphere-react';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
@@ -10,7 +11,9 @@ import {
   type Layout,
   type SectionEnvelope,
 } from '../../blocks';
-import { SchemaForm, writtenValues } from '../../shared/forms';
+import { SchemaForm, collectionKindOf, suggestCollections, writtenValues } from '../../shared/forms';
+import { useLocalized } from '../../shared/i18n/useLocalized';
+import { collectionsOfKindQuery } from '../categories/queries';
 import { emptyLocalized } from '../../shared/i18n/localized';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
@@ -326,9 +329,32 @@ export function BlockProperties({
   onMoveTo: (sectionId: string) => void;
 }) {
   const { t } = useTranslation();
+  const read = useLocalized();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
-  if (registration === undefined) {
+  // The collections a list block may name, of every department, grouped by the department that
+  // wrote them (G20). Asked only by a block that has such a property.
+  const collectionKind = collectionKindOf(registration?.schema);
+  const collections = useQuery({
+    ...collectionsOfKindQuery(collectionKind ?? 'News'),
+    enabled: collectionKind !== null,
+  });
+  const schema = useMemo(
+    () =>
+      registration === undefined || collections.data === undefined
+        ? registration?.schema
+        : suggestCollections(
+            registration.schema,
+            collections.data.items.map((collection) => ({
+              value: collection.key,
+              label: read(collection.label) || collection.key,
+              group: t(`departments.${collection.ownerDepartment}`),
+            })),
+          ),
+    [registration, collections.data, read, t],
+  );
+
+  if (registration === undefined || schema === undefined) {
     return <p className="text-muted-foreground text-sm">{t('blocks.unknown', { type: block.type })}</p>;
   }
 
@@ -383,7 +409,7 @@ export function BlockProperties({
       ) : null}
 
       <SchemaForm
-        schema={registration.schema}
+        schema={schema}
         defaults={withDefaults(registration.schema, block.props, locales)}
         locales={locales}
         labels={`blocks.${block.type}`}

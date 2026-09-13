@@ -90,6 +90,15 @@ export interface FieldMeta {
    * rather than a habit of one screen.
    */
   suggestionsOnly?: boolean;
+  /**
+   * A key of the collections of this kind (G20, note 2026-09-13-contenuti-centralizzati §4): the
+   * property of a list block that names which collection it lists. A block schema is code and the
+   * collections are rows, so the annotation says only *what* the field holds; whoever draws the
+   * form turns it into `suggestions` with `suggestCollections` — the collections of every
+   * department, because a page of Training lists the guides of ATC. Still free text: a collection
+   * deleted since keeps its key on the body, and the list shows the rows as they are.
+   */
+  collectionOf?: 'News' | 'Document';
   slugFrom?: string;
   /**
    * What the proposal starts with, for a field that is a **path** rather than a slug: the menu
@@ -391,6 +400,43 @@ function definition(schema: unknown): ZodInternals {
 function annotation(schema: unknown): FieldMeta {
   const read = (schema as { meta?: () => FieldMeta | undefined }).meta;
   return typeof read === 'function' ? (read.call(schema) ?? {}) : {};
+}
+
+/** The kind of collection a property of this object schema names (`collectionOf`), or null. */
+export function collectionKindOf(schema: unknown): 'News' | 'Document' | null {
+  if (!(schema instanceof z.ZodObject)) {
+    return null;
+  }
+
+  for (const field of Object.values(schema.shape)) {
+    const kind = unwrap(field).meta.collectionOf;
+    if (kind !== undefined) {
+      return kind;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * The same schema, with every `collectionOf` property offering these suggestions. A new schema and
+ * not a changed one: the registry's schemas are shared by every form that draws a block.
+ */
+export function suggestCollections<T>(schema: T, suggestions: readonly Suggestion[]): T {
+  if (!(schema instanceof z.ZodObject)) {
+    return schema;
+  }
+
+  const patched = Object.fromEntries(
+    Object.entries(schema.shape)
+      .filter(([, field]) => unwrap(field).meta.collectionOf !== undefined)
+      .map(([name, field]) => [
+        name,
+        (field as z.ZodType).meta({ ...annotation(field), suggestions: [...suggestions] }),
+      ]),
+  );
+
+  return schema.extend(patched) as unknown as T;
 }
 
 /**

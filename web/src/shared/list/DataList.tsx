@@ -332,6 +332,8 @@ function Cell<TRow>({
 
     case 'text':
       return <>{typeof value === 'string' ? value : ''}</>;
+    case 'list':
+      return <>{Array.isArray(value) ? value.join(', ') : ''}</>;
   }
 }
 

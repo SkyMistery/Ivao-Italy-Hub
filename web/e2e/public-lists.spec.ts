@@ -184,7 +184,7 @@ test('a document whose slug is a department code is still reachable', async ({ p
         seo: null,
         body: { schemaVersion: 1, sections: [] },
         schemaVersion: 1,
-        category: null,
+        collections: [],
         coverMediaId: null,
         fileMediaId: null,
         version: 1,
@@ -197,6 +197,7 @@ test('a document whose slug is a department code is still reachable', async ({ p
         supersededByTitle: null,
         showFooter: false,
         publishedByName: null,
+        media: {},
       }),
     }),
   );

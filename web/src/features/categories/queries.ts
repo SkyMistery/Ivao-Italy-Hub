@@ -44,6 +44,15 @@ export function categoryListQuery(department: Department, search: ListSearch) {
   });
 }
 
+/** The published pages that list a collection (G20), for "used in N pages" and a delete that names them. */
+export function collectionUsesQuery(id: number) {
+  return queryOptions({
+    queryKey: [...categoryKey, 'uses', id] as const,
+    queryFn: async (): Promise<components['schemas']['ContentAppearanceDto'][]> =>
+      unwrap(await api.GET('/api/categories/{id}/uses', { params: { path: { id } } })),
+  });
+}
+
 export function categoryQuery(id: number) {
   return queryOptions({
     queryKey: categoryDetailKey(id),
@@ -60,6 +69,25 @@ const VOCABULARY_PAGE_SIZE = 100;
  * ones only: retiring a category means nothing new goes on that shelf, while the rows already
  * there keep their key (design M1 §3.4).
  */
+/**
+ * The collections of one kind across every department, for the property of a list block that names
+ * one (G20): a page of Training lists the guides of ATC. Every department reads every collection.
+ */
+export function collectionsOfKindQuery(kind: ContentKind) {
+  const search = listSearchSchema.parse({ pageSize: VOCABULARY_PAGE_SIZE, sort: 'sort' });
+
+  return queryOptions({
+    queryKey: [...categoryKey, 'everywhere', kind] as const,
+    queryFn: async (): Promise<CategoryPage> =>
+      unwrap(
+        await api.GET('/api/categories', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ kind, isActive: 'true' }),
+        }),
+      ),
+  });
+}
+
 export function categoriesOfKindQuery(department: Department, kind: ContentKind) {
   const search = listSearchSchema.parse({ pageSize: VOCABULARY_PAGE_SIZE, sort: 'sort' });
 

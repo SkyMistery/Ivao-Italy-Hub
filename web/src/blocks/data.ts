@@ -53,6 +53,9 @@ export interface ContentListData {
     title?: LocalizedString;
     summary?: LocalizedString | null;
     url?: string;
+    /** The collections the row is filed in (G20). */
+    collections?: string[];
+    /** What a list captured before G20 carries instead: its one category. */
     category?: string | null;
     publishedAt?: string | null;
     coverMediaId?: number | null;
@@ -65,6 +68,23 @@ export interface ContentListData {
    * key on its own is not something to show a reader (design M1 §3.4).
    */
   categories?: { key?: string; label?: LocalizedString }[];
+}
+
+/**
+ * The collection a row is shown under in a list: the one the block lists, when it names one; the
+ * first the row is filed in otherwise; and the category a list captured before G20 carries.
+ */
+export function shelfOf(
+  item: NonNullable<ContentListData['items']>[number],
+  listed: string | undefined,
+): string {
+  const collections = item.collections ?? [];
+
+  if (listed !== undefined && listed !== '' && collections.includes(listed)) {
+    return listed;
+  }
+
+  return collections[0] ?? item.category ?? '';
 }
 
 /**

@@ -74,7 +74,9 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
             {published}
           </time>
           <span>{t(`departments.${content.ownerDepartment}`)}</span>
-          {content.category === null ? null : <span>{content.category}</span>}
+          {content.collections.map((collection) => (
+            <span key={collection}>{collection}</span>
+          ))}
         </div>
 
         <H1>{read(content.title)}</H1>
@@ -92,7 +94,7 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
           picture illustrates, and repeating it is what a screen reader hears twice (design M1 §1.2). */}
       {content.coverMediaId === null ? null : (
         <img
-          src={mediaFileUrl(content.coverMediaId)}
+          src={mediaFileUrl(content.coverMediaId, content.media[String(content.coverMediaId)])}
           alt=""
           className="bg-muted w-full rounded-lg object-cover"
         />
@@ -105,7 +107,7 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
         <div className="border-border flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4">
           <span className="text-muted-foreground text-sm">{t('documents.public.fileHint')}</span>
           <Button asChild>
-            <a href={mediaFileUrl(content.fileMediaId)} download>
+            <a href={mediaFileUrl(content.fileMediaId, content.media[String(content.fileMediaId)])} download>
               <Download aria-hidden className="mr-2 size-4" />
               {t('documents.public.download')}
             </a>
@@ -119,7 +121,7 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
           (`blocks/embedding.ts`). */}
       <PrintContext.Provider value={printing}>
         <EmbeddingContext.Provider value={embedding}>
-          <ContentRenderer body={readBody(content.body)} />
+          <ContentRenderer body={readBody(content.body)} media={content.media} />
         </EmbeddingContext.Provider>
       </PrintContext.Provider>
 

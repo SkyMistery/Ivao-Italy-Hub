@@ -14,6 +14,7 @@ import { ReviewPanel } from './ReviewPanel';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
 import {
+  appearsInQuery,
   pageTreeQuery,
   publishProblemsKey,
   publishProblemsQuery,
@@ -160,12 +161,28 @@ export function ContentFormScreen({
   const waiting = content?.status === 'Ready';
   const mayPublish = !isNew && !waiting && (!reviewed || mayApprove);
 
+  // Where a news item or a document appears (G20): the published pages that list one of its
+  // collections, named by title and address. Said under the title, where the templates screen says
+  // how many rows were made from a template: the sentence that stops a careless change.
+  const listsIt =
+    !isNew && (config.kind === 'News' || config.kind === 'Document') && content?.isTemplate !== true;
+  const appearances = useQuery({ ...appearsInQuery(Number(id)), enabled: listsIt });
+  const appearsIn =
+    appearances.data === undefined || appearances.data.length === 0
+      ? undefined
+      : t('content.appearsIn', {
+          pages: appearances.data
+            .map((page) => `${read(page.title) || page.path} (/${page.path})`)
+            .join(', '),
+        });
+  const shownNote = note ?? appearsIn;
+
   const title = isNew ? t(`${config.titles}.create`) : t(`${config.titles}.edit`);
 
   return (
     <PageShell
       title={title}
-      {...(note === undefined ? {} : { note })}
+      {...(shownNote === undefined ? {} : { note: shownNote })}
       breadcrumb={[
         { label: department },
         // The department goes in for the one kind whose title is the department's name — the

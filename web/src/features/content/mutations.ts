@@ -62,7 +62,7 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
     // They are columns of `cms_contents` and not a table, which is the whole point of design M1 §3.
     // Text on the form, a number on the row; empty is the top of the site.
     parentId: values.parentId === undefined || values.parentId === '' ? null : Number(values.parentId),
-    category: values.category === undefined || values.category === '' ? null : values.category,
+    collections: values.collections ?? [],
     coverMediaId: values.coverMediaId ?? null,
     pinned: values.pinned ?? false,
     sort: values.sort ?? 0,
@@ -113,7 +113,7 @@ export function emptyContent(
     title: emptyLocalized(locales),
     summary: emptyLocalized(locales),
     seo: emptySeo(locales),
-    category: '',
+    collections: [],
     pinned: false,
     sort: 0,
     // On by default: a document that says nothing about its footer has one (G14).
@@ -137,9 +137,7 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     title: spread(content.title),
     summary: spread(content.summary),
     seo: spreadSeo(content.seo, locales),
-    // An absent shelf is the empty string and not `undefined`: a select that starts at `undefined`
-    // is an uncontrolled field that React complains about the moment somebody chooses one.
-    category: content.category ?? '',
+    collections: [...content.collections],
     ...(content.coverMediaId === null ? {} : { coverMediaId: content.coverMediaId }),
     pinned: content.pinned,
     sort: content.sort,

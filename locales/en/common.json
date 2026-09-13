@@ -253,8 +253,8 @@
     "delete": {
       "title": "Delete this file?",
       "description": "The file is removed. Nothing on the site is showing it.",
-      "inUse_one": "One published page is showing this file, so the file itself is kept and only leaves the library.",
-      "inUse_other": "{{count}} published pages are showing this file, so the file itself is kept and only leaves the library."
+      "inUse_one": "One page uses this file. If a published page shows it, it cannot be deleted: archive it instead.",
+      "inUse_other": "{{count}} pages use this file. If a published page shows it, it cannot be deleted: archive it instead."
     },
     "picker": {
       "label": "Files of this department",
@@ -290,6 +290,22 @@
         "Staff": "Staff",
         "Department": "Department"
       }
+    },
+    "replace": {
+      "action": "Replace the file",
+      "done": "File replaced. The pages that show it show the new one."
+    },
+    "archive": {
+      "filter": "Archive",
+      "library": "In the library",
+      "archived": "Archived",
+      "action": "Archive",
+      "title": "Archive this file?",
+      "description": "It leaves the library and the picker. The pages that already show it keep showing it.",
+      "done": "Archived.",
+      "notice": "This file is archived: it is not offered in the picker, and the pages that show it still do.",
+      "restore": "Back into the library",
+      "restored": "Back in the library."
     }
   },
   "uiKit": {
@@ -400,7 +416,8 @@
       "retiredAt": "No longer in force since",
       "supersededById": "Replaced by",
       "showFooter": "Show the footer (version, date, publisher, print)",
-      "parentId": "Under the page"
+      "parentId": "Under the page",
+      "collections": "Collections"
     },
     "options": {
       "kind": {
@@ -661,7 +678,8 @@
         "title": "To approve",
         "description": "The pages waiting for approval."
       }
-    }
+    },
+    "appearsIn": "Appears in: {{pages}}"
   },
   "templates": {
     "title": "Templates",
@@ -1238,7 +1256,7 @@
       "empty": "No news to show.",
       "pinned": "Pinned",
       "fields": {
-        "category": "Category",
+        "category": "Collection",
         "department": "Department",
         "limit": "How many at most",
         "layout": "Set out as",
@@ -1268,10 +1286,10 @@
       "empty": "No document to show.",
       "download": "Download",
       "fields": {
-        "category": "Category",
+        "category": "Collection",
         "department": "Department",
         "limit": "How many at most",
-        "groupByCategory": "Group by category"
+        "groupByCategory": "Group by collection"
       },
       "options": {
         "department": {
@@ -1451,13 +1469,15 @@
     }
   },
   "categories": {
-    "title": "Categories",
-    "description": "The shelves this department files its news and documents under.",
-    "create": "New category",
-    "edit": "Edit category",
+    "title": "Collections",
+    "description": "The collections this department files its news and documents in. A page lists a collection, and a row may be in several.",
+    "create": "New collection",
+    "edit": "Edit collection",
     "delete": {
-      "title": "Delete this category?",
-      "description": "The news and documents filed under it keep the key they were filed with, and stay where they are."
+      "title": "Delete this collection?",
+      "description": "The news and documents filed in it keep the key they were filed with, and stay where they are.",
+      "used_one": "One published page lists this collection, and will list nothing from it:",
+      "used_other": "{{count}} published pages list this collection, and will list nothing from it:"
     },
     "fields": {
       "key": "Key",
@@ -1469,14 +1489,16 @@
       "updatedAt": "Last change"
     },
     "hints": {
-      "key": "The stable name a news item or a document is filed under. It is never shown to a visitor, and changing it leaves whatever was already filed under the old one where it is."
+      "key": "The stable name a news item or a document is filed in. It is never shown to a visitor, and changing it leaves whatever was already filed in the old one where it is."
     },
     "options": {
       "kind": {
         "News": "News",
         "Document": "Documents"
       }
-    }
+    },
+    "usedIn_one": "Listed by one published page.",
+    "usedIn_other": "Listed by {{count}} published pages."
   },
   "calendar": {
     "title": "Calendar",

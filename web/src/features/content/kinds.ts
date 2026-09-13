@@ -48,7 +48,7 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindConfig> = {
     // Category, cover and pin: the three facts that decide where a news item lands in a list.
     columns: [
       ...identity,
-      col.text('category', { sortable: true }),
+      col.list('collections'),
       col.media('coverMediaId'),
       col.boolean('pinned'),
       ...state,
@@ -72,7 +72,7 @@ export const CONTENT_KINDS: Record<ContentKind, ContentKindConfig> = {
     // is as often a PDF as a picture, and a list row does not carry the type of what it points at.
     columns: [
       ...identity,
-      col.text('category', { sortable: true }),
+      col.list('collections'),
       // When it is due for a look (G14). The retirement is not a column: a retired document reads
       // as one in the public list, and the back office has the row itself for that.
       col.date('reviewOn', { sortable: true }),

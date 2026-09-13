@@ -10,6 +10,7 @@
 /** The kinds of cell M0 needs. A new one is a line here, never a renderer in a screen. */
 export type ColumnSpec<TRow> =
   | { kind: 'text'; field: TextKey<TRow>; sortable: boolean }
+  | { kind: 'list'; field: ListKey<TRow>; sortable: false }
   | { kind: 'localized'; field: LocalizedKey<TRow>; sortable: boolean }
   | { kind: 'number'; field: NumberKey<TRow>; sortable: boolean; editable: boolean }
   | { kind: 'boolean'; field: BooleanKey<TRow>; sortable: boolean }
@@ -25,6 +26,7 @@ type KeysOfType<TRow, TValue> = {
 
 type TextKey<TRow> = KeysOfType<TRow, string | null>;
 type NumberKey<TRow> = KeysOfType<TRow, number | null>;
+type ListKey<TRow> = KeysOfType<TRow, readonly string[] | null>;
 type BooleanKey<TRow> = KeysOfType<TRow, boolean | null>;
 type LocalizedKey<TRow> = KeysOfType<TRow, Record<string, string> | null>;
 
@@ -48,6 +50,11 @@ export const col = {
   /** A plain column, as it is written. */
   text<TRow>(field: TextKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
     return { kind: 'text', field, sortable: options.sortable ?? false };
+  },
+
+  /** Several words, as they are written, one after the other: the collections of a row (G20). */
+  list<TRow>(field: ListKey<TRow>): ColumnSpec<TRow> {
+    return { kind: 'list', field, sortable: false };
   },
 
   /** A translated column, read in the language on screen. */

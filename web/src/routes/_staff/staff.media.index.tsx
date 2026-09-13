@@ -3,6 +3,7 @@ import { Link, createFileRoute } from '@tanstack/react-router';
 import { Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 
 import { mediaColumns } from '../../features/media/list';
 import { useUploadMedia } from '../../features/media/mutations';
@@ -31,9 +32,11 @@ const MEDIA_EDIT = 'Media.Edit';
  * that reason: a picture nobody can hear is not finished.
  */
 export const Route = createFileRoute('/_staff/staff/media/')({
-  validateSearch: departmentListSearchSchema,
+  // The archive is asked for in the address (G20), like the department.
+  validateSearch: departmentListSearchSchema.extend({ archived: z.boolean().optional() }),
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) => context.queryClient.ensureQueryData(mediaListQuery(deps.department, deps)),
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(mediaListQuery(deps.department, deps, deps.archived === true)),
   component: MediaLibraryPage,
 });
 
@@ -135,7 +138,7 @@ function MediaLibraryPage() {
               ]
             : mediaColumns
         }
-        query={mediaListQuery(search.department, search)}
+        query={mediaListQuery(search.department, search, search.archived === true)}
         labels="media"
         locale={i18n.language}
         defaultLocale={division.defaultLocale}
@@ -143,24 +146,42 @@ function MediaLibraryPage() {
         search={search}
         onSearchChange={(patch) => void navigate({ search: (previous) => ({ ...previous, ...patch }) })}
         toolbar={
-          reachable.length > 1 ? (
+          <div className="flex flex-wrap items-end gap-4">
+            {reachable.length > 1 ? (
+              <ListFilter
+                id="mediaDepartment"
+                label={t('backOffice.filters.department')}
+                none={t('backOffice.filters.allDepartments')}
+                value={search.department}
+                onChange={(value) =>
+                  void navigate({
+                    search: (previous) => ({
+                      ...previous,
+                      department: value as Department | undefined,
+                      page: 1,
+                    }),
+                  })
+                }
+                items={reachable.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
+              />
+            ) : null}
             <ListFilter
-              id="mediaDepartment"
-              label={t('backOffice.filters.department')}
-              none={t('backOffice.filters.allDepartments')}
-              value={search.department}
+              id="mediaArchive"
+              label={t('media.archive.filter')}
+              none={t('media.archive.library')}
+              value={search.archived === true ? 'archived' : undefined}
               onChange={(value) =>
                 void navigate({
                   search: (previous) => ({
                     ...previous,
-                    department: value as Department | undefined,
+                    archived: value === 'archived' ? true : undefined,
                     page: 1,
                   }),
                 })
               }
-              items={reachable.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
+              items={[{ value: 'archived', label: t('media.archive.archived') }]}
             />
-          ) : undefined
+          </div>
         }
         // A public file of another department is here to be used, not changed: no "edit" on it.
         actions={(row) =>

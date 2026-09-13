@@ -79,10 +79,11 @@ export function contentMetadataSchema(
     rowVersion: z.string().meta({ hidden: true }),
   };
 
-  // The shelf this row is filed under. A key stored on the row and a translated name shown in the
-  // select: the vocabulary is rows a coordinator writes, so neither a `z.enum` nor an i18n key
-  // could carry it (design M1 §3.4).
-  const category = { category: z.string().optional().meta({ choices: categories }) };
+  // The collections this row is filed in: none, one or several (G20, note
+  // 2026-09-13-contenuti-centralizzati §3.3). Keys stored on the row and translated names shown
+  // beside the checkboxes: the vocabulary is rows a coordinator writes, so neither a `z.enum` nor an
+  // i18n key could carry it (design M1 §3.4).
+  const category = { collections: z.array(z.string()).meta({ multi: true, choices: categories }) };
 
   if (kind === 'Page') {
     return z.object({
@@ -139,7 +140,7 @@ export function contentMetadataSchema(
 export type ContentFormValues = z.output<ReturnType<typeof contentMetadataSchema>> & {
   // The page this one sits under, as the id in text; empty at the top of the site. Pages only.
   parentId?: string;
-  category?: string;
+  collections?: string[];
   coverMediaId?: number;
   pinned?: boolean;
   fileMediaId?: number;

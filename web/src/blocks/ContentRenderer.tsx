@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
-import { mediaFileUrl } from '../shared/api/mediaUrl';
+import { MediaFingerprints, useMediaFileUrl } from '../shared/api/mediaUrl';
 import { useLocalized } from '../shared/i18n/useLocalized';
 import type { BlockRegistration } from '../shared/modules';
 
@@ -113,11 +113,17 @@ export function ContentRenderer({
    * a block that is showing a capture rather than the live answer. A visitor sees neither.
    */
   staff = false,
+  /**
+   * The fingerprints of the files the page shows, when the answer carries them (G20): a published
+   * page read by a visitor. They make every picture's address one a cache may keep for a year.
+   */
+  media,
 }: {
   body: Body;
   staff?: boolean;
+  media?: Readonly<Record<string, string>> | undefined;
 }) {
-  return (
+  const page = (
     // The container the sections measure themselves against: as wide as the page is given, which
     // on the public site is the window and in the editor's preview is the width that was chosen.
     <div className="@container flex flex-col">
@@ -125,6 +131,12 @@ export function ContentRenderer({
 
       <AddSectionInvitation />
     </div>
+  );
+
+  return media === undefined ? (
+    page
+  ) : (
+    <MediaFingerprints.Provider value={media}>{page}</MediaFingerprints.Provider>
   );
 }
 
@@ -166,6 +178,7 @@ function AddSectionInvitation() {
 }
 
 function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
+  const mediaFileUrl = useMediaFileUrl();
   const picking = usePicking();
   const { t } = useTranslation();
   const read = useLocalized();

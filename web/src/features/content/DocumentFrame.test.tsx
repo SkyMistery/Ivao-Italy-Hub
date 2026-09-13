@@ -42,7 +42,7 @@ function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
     seo: null,
     body: { schemaVersion: 1, sections: [] },
     schemaVersion: 1,
-    category: null,
+    collections: [],
     coverMediaId: null,
     fileMediaId: null,
     version: 3,
@@ -54,6 +54,7 @@ function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
     supersededByTitle: null,
     showFooter: true,
     publishedByName: 'Test User',
+    media: {},
     ...overrides,
   };
 }

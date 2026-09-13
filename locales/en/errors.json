@@ -31,7 +31,8 @@
     },
     "media": {
       "tooLarge": "This file is larger than this hub accepts.",
-      "typeNotAllowed": "This hub does not accept files of that kind."
+      "typeNotAllowed": "This hub does not accept files of that kind.",
+      "inUse": "A published page shows this file, so it cannot be deleted. Archive it instead."
     },
     "unknown": "Something went wrong. Try again.",
     "title": "That did not work",
@@ -77,7 +78,9 @@
         "notReady": "This page is not waiting for approval.",
         "inReview": "This page is waiting for approval and cannot be changed. Withdraw it from the review to change it.",
         "menuParent": "A menu entry goes under an entry at the top of the menu."
-      }
+      },
+      "tooManyCollections": "A row may be filed in twenty collections at most.",
+      "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes."
     },
     "maintenance": {
       "title": "This part of the site is closed for changes right now"
