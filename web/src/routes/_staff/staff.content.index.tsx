@@ -44,7 +44,11 @@ function ContentPage() {
       onCreatedFromTemplate={open}
       createLink={({ department, kind, template }) => (
         <Button asChild>
-          <Link to="/staff/content/$id" params={{ id: 'new' }} search={{ kind, template, department }}>
+          <Link
+            to="/staff/content/$id"
+            params={{ id: 'new' }}
+            search={{ kind, department, ...(template ? { template } : {}) }}
+          >
             <CreateLabel titles={template ? 'templates' : CONTENT_KINDS[kind].titles} />
           </Link>
         </Button>

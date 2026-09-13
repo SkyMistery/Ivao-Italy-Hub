@@ -412,7 +412,7 @@ test('a new template is made from a button, and carries the kind that was chosen
   // a form redrawing itself under the hands of whoever is filling it in would be worse.
   await page.getByRole('link', { name: englishCommon.templates.create }).first().click();
 
-  await expect(page).toHaveURL(/\/staff\/content\/new\?kind=Page&template=true&department=WD/);
+  await expect(page).toHaveURL(/\/staff\/content\/new\?kind=Page&department=WD&template=true$/);
   await expect(page.getByLabel(englishCommon.content.fields.slug, { exact: true })).toBeVisible();
 });
 

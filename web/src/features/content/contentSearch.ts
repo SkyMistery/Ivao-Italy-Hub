@@ -33,8 +33,12 @@ export type RowKind = (typeof ROW_KINDS)[number];
  * will be, and where. An existing row says both about itself.
  */
 export const contentEditorSearchSchema = z.object({
-  kind: z.enum(ROW_KINDS).default('Page'),
-  template: z.boolean().default(false),
+  // All three optional and none defaulted: a default is written back into the address, and the
+  // address of a row that exists would then read `/staff/content/20?kind=Page&template=false` —
+  // three facts the row states about itself, repeated in a URL that could contradict them. The
+  // reader of the search supplies the defaults (found by the round in CI, 13 September 2026).
+  kind: z.enum(ROW_KINDS).optional(),
+  template: z.boolean().optional(),
   department: z.enum(DEPARTMENTS).optional(),
 });
 

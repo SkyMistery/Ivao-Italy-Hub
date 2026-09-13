@@ -30,7 +30,7 @@ export const Route = createFileRoute('/_staff/staff/content/$id')({
 
     const writable = writableDepartments(
       context.bootstrap,
-      search.template ? MANAGE_TEMPLATES : CONTENT_EDIT,
+      search.template === true ? MANAGE_TEMPLATES : CONTENT_EDIT,
     );
     if (search.department === undefined ? writable.length === 0 : !writable.includes(search.department)) {
       throw redirect({ to: '/forbidden' });
@@ -56,7 +56,7 @@ function ContentForm() {
   // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
   const row = useQuery({ ...contentQuery(Number(id)), enabled: !isNew }).data ?? null;
 
-  const isTemplate = row?.isTemplate ?? search.template;
+  const isTemplate = row?.isTemplate ?? search.template ?? false;
 
   // How many rows were made from a template. Asked only of a template that exists, and read as the
   // total of a page of one — no endpoint of its own, and no column on the list either.
@@ -78,7 +78,7 @@ function ContentForm() {
     return null;
   }
 
-  const kind = row?.kind ?? search.kind;
+  const kind = row?.kind ?? search.kind ?? 'Page';
   const config = isTemplate ? { ...CONTENT_KINDS[kind], titles: 'templates' } : CONTENT_KINDS[kind];
 
   // Where the list this row belongs to is: its kind, in its department. A department's home is not
