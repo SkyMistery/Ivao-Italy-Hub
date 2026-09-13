@@ -1,9 +1,28 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.67 — 12 settembre 2026 (**il sito ha un colore**: i titoli non sono più grigi, il fondo `accent` è azzurro invece che un quarto grigio, `aurora` è l'ottavo fondo di sezione e quattro blocchi portano un accento del brand sui propri grafici)
+**Versione documento:** 0.68 — 12 settembre 2026 (**il tag `v0.2.0-m1` vuol dire «editor di documenti e news pronto»**, non «M1 costruita»; la scheda della demo è aggiornata alla stessa data)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.68** (12 set 2026): **il tag `v0.2.0-m1` cambia significato** — Carmine, dopo aver
+chiuso la Parte 7 della scheda: «il tag non lo rilasciamo ancora, vorrei che la 0.2 significasse
+editor di documenti e news pronto». Non è più «M1 è costruita e la scheda è stata riseguita»: è una
+soglia di prodotto, e ciò che la milestone ha costruito resta comunque scritto in §13 e nel piano di
+implementazione. **La scheda `tools/demo-m1.md` e la sua gemella italiana sono aggiornate al 12
+settembre**: la Parte 7 è riscritta sull'editor di oggi — annulla e ripeti da tastiera, proprietà
+applicate mentre si scrive, autosalvataggio, anteprima che dice la verità, trascinamento fra sezioni,
+finestra di pubblicazione con changelog e AIRAC, le comodità del 10–12 settembre e l'otto-fondi del
+colore — il documento operativo entra nella Parte 2 (dove serve, perché la sua tesi è «nessuna entità
+nuova»), e la Parte 3 conta **29** blocchi e otto sfondi. ⚠️ **Che cosa manchi perché l'editor sia
+«pronto» è una proposta, non una decisione**, e va confermata da Carmine: (1) la scheda riseguita da
+capo; (2) l'interruttore «da rivedere» nella lista dei documenti, che oggi ha il filtro e non il
+comando; (3) il **gruppo richiudibile** nel generatore di form (decima estensione), perché lo stato
+vuoto di un campo opzionale occupa più spazio del campo — è la cosa che si vede di più aprendo un
+form lungo; (4) la stampa guardata su carta e la tipografia delle schermate dense guardata a occhio;
+(5) **da decidere se dentro o fuori**: la pubblicazione programmata (nota del 9 settembre, tre
+domande aperte) e il blocco di codice interattivo chiesto il 12 settembre. Fuori di sicuro: le righe
+della libreria senza impronta.
 
 **Changelog 0.67** (12 set 2026): **il sito ha un colore**
 (`decisions/2026-09-12-il-sito-ha-un-colore.md`, quattro idee su otto proposte, decise da Carmine:

@@ -2,8 +2,9 @@
 
 > **Copia di lavoro in italiano di `tools/demo-m1.md`**, che resta la versione ufficiale ed è in
 > inglese perché chi forka deve poterla leggere (CLAUDE.md §1). Le due dicono la stessa cosa: se una
-> cambia, cambia anche l'altra nello stesso commit. Questa è aggiornata a **G13** (8 settembre 2026),
-> quindi contiene anche le dodici richieste della prima esecuzione.
+> cambia, cambia anche l'altra nello stesso commit. Questa è aggiornata al **12 settembre 2026**:
+> contiene G13 con le dodici richieste della prima esecuzione, poi G15 (l'editor che risponde), G14
+> (il documento operativo) e il colore.
 
 M0 ha costruito una spina dorsale e l'ha provata su un'entità noiosa. M1 è ciò per cui quella spina
 dorsale esisteva: un sito pubblico che nessuno ha dovuto programmare, un editor che un coordinatore
@@ -104,6 +105,16 @@ non avrebbe tenuto e il rapporto di chiusura dovrebbe dirlo. Ha tenuto.
 non lo scrivi tu, e salvare ora **risponde** — un toast in un angolo. Una riga che ha già un
 indirizzo non lo sposta mai.
 
+**Novità di G14: il documento operativo, che è la cosa più pesante che questa affermazione abbia
+dovuto reggere.** Su `/staff/aod/documents` creane uno e dagli un **tipo** — SOP o LoA — un aeroporto
+e una FIR **scelti da un elenco** (il validatore rifiuta un ICAO che non sta nello spazio aereo della
+divisione), le posizioni di cui parla, il giorno in cui entra in vigore e quello entro cui va
+rivisto. Pubblicalo e leggilo: una striscia sotto il titolo dice di che cosa parla, un avviso in cima
+compare quando non è più in vigore e nomina chi lo sostituisce, e **Stampa** lo mette su carta con
+schede e fisarmoniche aperte. ⚠️ Poi guarda quello che **non** è: nessuna tabella nuova, nessuna
+entità nuova, nessun secondo editor, nessun terzo `kind`. Sei colonne nullable, due blocchi e un piè
+di pagina — e `NoSecondContentEntity` è ancora verde, che è il test che avrebbe detto il contrario.
+
 - [ ] **Punto 2** — due `kind`, non due tabelle.
 
 ---
@@ -111,16 +122,23 @@ indirizzo non lo sposta mai.
 ## Parte 3 — Il set dei blocchi, e la galleria che si costruisce da sé
 
 Apri `/staff/admin/ui-kit`. Ogni blocco che il registry dichiara è lì, disegnato dalla registrazione
-stessa: nessuno aggiunge una sezione a quella pagina quando si aggiunge un blocco. Contali — **27**,
-di cui **7** sono blocchi Data, che chiedono al server il proprio contenuto.
+stessa: nessuno aggiunge una sezione a quella pagina quando si aggiunge un blocco. Contali — **29**,
+di cui **7** sono blocchi Data, che chiedono al server il proprio contenuto, e due sono quelli di G14:
+la tabella delle frequenze e la tabella di coordinamento di un documento operativo.
 
 Nella stessa pagina, in fondo ai componenti, c'è la novità di G13: **`Notice`**, l'avviso a quattro
 stati (errore, avviso, successo, informazione) nelle sue due forme — il riquadro che resta e la
 conferma che compare in un angolo e se ne va. È il **quinto** componente dell'elenco chiuso.
 
 Poi leggi `docs/UI-GUIDELINES.md`. Le convenzioni dei blocchi sono decise e scritte lì: la spaziatura
-e lo sfondo sono della **sezione** e mai del blocco, quattro sfondi, quattro larghezze, nessun blocco
-contiene blocchi, e nessuna stringa dentro `props` che non sia prosa.
+e lo sfondo sono della **sezione** e mai del blocco, **otto** sfondi, quattro larghezze, nessun blocco
+contiene blocchi, e la prosa di un blocco è quella tradotta.
+
+⚠️ Quest'ultima era una regola da ricordare — «nessuna stringa dentro `props` che non sia prosa» — ed
+era rotta da un blocco del primo set, che il giro visivo aveva trovato
+(`decisions/2026-09-07-giro-visivo-m1.md`). Dal 9 settembre è una proprietà del meccanismo:
+l'estrattore tiene una stringa solo se ci è arrivato attraverso una mappa `Localized`. Il corollario è
+il prezzo, ed è scritto lì accanto: un nome cercabile che nessuno traduce non si trova.
 
 - [ ] **Punto 3** — il set dei blocchi di §1, ogni blocco in galleria, convenzioni scritte.
 
@@ -200,39 +218,79 @@ il nulla, che era una delle tre domande lasciate aperte da M0.
 
 ## Parte 7 — L'editor, e quello che il template continua a dire
 
-È la parte per cui M1 esiste. Su una pagina qualunque di `/staff/wd/content`:
+È la parte per cui M1 esiste, ed è quella che è cambiata di più dopo la prima esecuzione di questa
+scheda: G15 ha rifatto il modo in cui risponde, G14 gli ha dato una finestra di pubblicazione, e il
+colore del 12 settembre gli arriva attraverso lo stesso renderer del sito pubblico. Su una pagina
+qualunque di `/staff/wd/content`:
 
-1. **La struttura.** Trascina una sezione dalla maniglia, poi spostane una con le frecce. Funzionano
-   tutte e due, e le frecce non sono decorazione: sono l'unica strada da tastiera di questo pannello.
-   ⚠️ **Novità di G13**: se la sposti per sbaglio c'è **Annulla**, accanto a Salva. Torna indietro
-   fino a venti mosse, e non è ⌘Z di proposito — dentro un campo di testo ⌘Z vuol dire un'altra cosa.
-2. **Una sezione bloccata** mostra i suoi campi e non la sua struttura, con una riga che dice **quale
-   template** la fissa e chi può cambiarlo.
-3. **L'anteprima**, a tre larghezze. È un `max-width` sullo stesso identico renderer del sito
-   pubblico — non un emulatore.
-4. **Le differenze dal template.** Apri un template — `/staff/wd/templates`, **nuovo in G13**:
-   prima non avevano nessuna schermata e l'unico modo di aprirne uno era scrivere un filtro a mano.
-   Aggiungici una sezione, poi riapri una pagina nata da quel template: l'editor dice che
-   una sezione è stata aggiunta e si offre di aggiungerla — **una differenza alla volta**, mai tutte
-   insieme. ⚠️ E la pagina che legge un visitatore non è cambiata, e non cambia nemmeno dopo che hai
-   accettato la differenza nella bozza. Solo la pubblicazione muove quello che vede il pubblico.
-5. **Scrivere un template.** Su una riga template una sezione ha quattro campi in più — `key`, se le
+1. **Spostare le cose.** Una sezione si sposta in tre modi: trascinata dalla maniglia nell'outline,
+   con le frecce accanto, e **dalla pagina stessa** — sceglila e porta una targhetta con i comandi che
+   il suo template permette. Un blocco fa lo stesso e si può lasciare su **qualunque slot della
+   pagina, anche di un'altra sezione**; un componente trascinato dalla barra atterra **fra** due
+   blocchi invece che in fondo. Le frecce, e il selettore «Sezione» nelle proprietà di un blocco, sono
+   la strada da tastiera, e non sono decorazione: sono tutto ciò che funziona senza mouse.
+   ⚠️ **Annulla e Ripeti**, cinquanta passi, `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z` e `Ctrl+Y` — e una frase
+   scritta dentro un blocco è **un** passo da annullare invece di venti, perché modifiche consecutive
+   alla stessa cosa si accorpano. Le scorciatoie non fanno niente **dentro** un campo, di proposito:
+   lì ⌘Z vuol dire ancora «annulla quello che ho appena scritto», che è mestiere del browser e non
+   nostro.
+2. **Le proprietà si applicano mentre scrivi.** Non c'è più nessun pulsante «Applica»: scrivi, e la
+   pagina si ridisegna un quinto di secondo dopo che ti fermi — misurato a ~180 ms. Un valore che lo
+   schema rifiuta non cambia niente e lo dice nel suo campo, così un titolo svuotato a metà di una
+   riscrittura non svuota il blocco. L'unico pulsante rimasto sotto un form è **«Fissa la chiave»** su
+   una sezione di template, perché una chiave si fissa una volta sola e scrivendo «in» diventerebbe la
+   chiave di «intro».
+3. **Non si perde niente.** La bozza si salva da sola **dieci secondi** dopo che ti fermi, e di nuovo
+   quando lasci la pagina; la riga accanto ai pulsanti dice «Salvato alle 14:32» / «Salvataggio…» /
+   «Modifiche non salvate». «Pubblica» prima svuota il salvataggio in sospeso, così resta un gesto
+   solo. Una riga che non esiste ancora non la crea mai un autosalvataggio — la crea solo «Salva
+   bozza» — e un 409 lo ferma e dice perché: qualcun altro ha salvato quella riga, e la strada giusta
+   è ricaricare, non sovrascrivere ogni dieci secondi. ⚠️ Quello che costa al database condiviso è la
+   cosa da guardare: un autosalvataggio lascia una riga di audit `autosaved` con l'elenco dei campi
+   mossi e **senza corpo** — circa 200 byte invece di due copie della pagina.
+4. **L'anteprima dice la verità.** Tre larghezze, una lingua, e Bozza | Pubblicato. È un `max-width`
+   sullo stesso identico renderer del sito pubblico — non un emulatore — e a «Phone» una sezione a due
+   colonne diventa davvero **una** colonna, perché ogni larghezza che decide un layout sotto `blocks/`
+   è una container query sulla pagina e non una media query sulla finestra. Prima di G15 disegnava due
+   colonne da 167 px dentro una cornice larga 390, e il test che misurava la cornice passava mentre
+   l'anteprima mentiva.
+5. **Una sezione bloccata** mostra i suoi campi e non la sua struttura, con una riga che dice **quale
+   template** la fissa e chi può cambiarlo. La barra sopra dice la stessa cosa invece di promettere un
+   impossibile «Aggiunge a: Welcome» sopra pulsanti disabilitati a ragione.
+6. **Le differenze dal template.** Apri un template — `/staff/wd/templates` — aggiungici una sezione,
+   poi riapri una pagina nata da quel template: l'editor dice che una sezione è stata aggiunta e si
+   offre di aggiungerla — **una differenza alla volta**, mai tutte insieme. ⚠️ E la pagina che legge
+   un visitatore non è cambiata, e non cambia nemmeno dopo che hai accettato la differenza nella
+   bozza. Solo la pubblicazione muove quello che vede il pubblico.
+7. **Scrivere un template.** Su una riga template una sezione ha quattro campi in più — `key`, se le
    pagine possono cancellarla, se possono ristrutturarla, e quali blocchi ammette. Spunta un tipo di
-   blocco, salva, fai una pagina da quel template: la sua palette offre quel blocco e nessun altro.
-   ⚠️ **Nuovo in G13**: un template si crea **da un pulsante** su quella schermata — scegli per che
-   cosa vale, e l'editor si apre su una riga che è già un template. Aprendone uno esistente ti dice
-   **quante righe sono nate da lui**, che è la frase che ferma una modifica distratta. La schermata è
-   dietro `Content.ManageTemplates`: ogni membro dello staff *legge* i template, così «nuovo da
-   template» funziona fra dipartimenti, e la vede solo chi può cambiarli.
+   blocco, salva, fai una pagina da quel template: la sua palette offre quel blocco e nessun altro. Un
+   template si crea **da un pulsante** su quella schermata — scegli per che cosa vale, e l'editor si
+   apre su una riga che è già un template. Aprendone uno esistente ti dice **quante righe sono nate da
+   lui**, che è la frase che ferma una modifica distratta. La schermata è dietro
+   `Content.ManageTemplates`: ogni membro dello staff *legge* i template, così «nuovo da template»
+   funziona fra dipartimenti, e la vede solo chi può cambiarli.
+8. **La pubblicazione chiede** (nuovo in G14). «Pubblica» apre una finestra con **che cosa è
+   cambiato** — la riga di changelog che ogni versione poteva portare da M0 e non aveva mai avuto una
+   casella — e, su un documento, il **ciclo AIRAC** a cui appartiene. È `ConfirmDialog`, esteso con dei
+   campi invece che scritto accanto come quinto dialogo suo.
 
-**Le altre novità di G13 che si vedono qui:**
+**Le comodità, aggiunte fra il 10 e il 12 settembre mentre Carmine lo usava:** doppio clic su un
+blocco o una sezione per sceglierlo e finire nel primo campo del pannello; `Canc` elimina, `⌘D`
+duplica, `Esc` lascia; l'oggetto scelto viene portato in vista; una sezione si duplica da sé,
+identificatori nuovi compresi; le sezioni si annidano fino a **quattro** livelli; un blocco in cui non
+è scritto niente disegna un segnaposto tratteggiato col suo nome, che un visitatore non vede mai; la
+barra dei componenti ha un campo di ricerca e i pannelli laterali barre di scorrimento sottili; il
+selettore di file carica nella libreria del dipartimento e ci porta; l'anteprima segue la lingua che
+hai scelto; e due immagini identiche caricate due volte sono **un** file, con la risposta che è la
+riga che c'era già.
 
-- **«Cosa manca per pubblicare»** sta in cima all'editor **prima** che tu prema pubblica, in tono
-  giallo, e si svuota da sola quando l'ultima cosa è sistemata e salvata;
-- ogni azione **risponde**: salvato, pubblicato, eliminato, e anche una pubblicazione rifiutata;
-- il **pannello delle proprietà resta fermo** mentre l'albero scorre;
-- un blocco **Titolo nasce a livello 2**, non 1 — la pagina ha già il suo `h1`;
-- nella sidebar i dipartimenti sono la loro **sigla** e non nove scudi identici.
+**E il colore, 12 settembre.** Una sezione sta su uno di **otto** fondi: `accent` è l'azzurro del
+marchio invece del quarto grigio che era, e `aurora` è un quarto fondo scuro accanto a `brand`, `deep`
+e `dark`. `hero`, `cardGrid`, `iconGrid` e `timeline` prendono uno di quattro accenti del marchio,
+disegnato su un'icona, sul filetto sopra una scheda, sulla barretta sopra un hero — e mai sotto una
+parola, perché un grafico deve stare a 3 : 1 dal suo fondo e una parola a 4,5 : 1. E i titoli non sono
+più il grigio pallido che Atmosphere gli dà.
 
 - [ ] **Punto 7a** — un template non riscrive mai una pagina da solo, e l'editor lo dice.
       Asserito da `e2e/full/template.spec.ts`.

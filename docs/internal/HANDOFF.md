@@ -17,17 +17,23 @@
 >    ancora). Sopra la #60 perché tocca il piano, `blocks.tsx` e `schemas.ts`, che le altre due hanno
 >    già mosso. Nessuna migrazione. CI **verde** (6m44s), comprese le 172 di integrazione che qui non
 >    erano state eseguite.
+> 4. **PR #62 `m1/demo-card` → `m1/site-colour`**: la scheda della demo rimessa in pari (Parte 7
+>    riscritta, il documento operativo nella Parte 2, i conti della Parte 3) e il **tag che cambia
+>    significato**. Solo documentazione.
 >
-> **Ordine di merge** (memoria `stacked-pr-base-deletion`): mergiare la #59, ritargettare la #60 su
-> `main` (`gh pr edit 60 --base main`), mergiare la #60, ritargettare la #61 su `main`, mergiare la
-> #61, **solo dopo** cancellare i tre branch remoti. Cancellare il branch base insieme alla PR che ci
+> **Ordine di merge** (memoria `stacked-pr-base-deletion`): una alla volta dal basso — mergiare la
+> #59, ritargettare la #60 su `main` (`gh pr edit 60 --base main`), mergiare la #60, e così la #61 e
+> la #62, **solo dopo** cancellare i quattro branch remoti. Cancellare il branch base insieme alla PR che ci
 > sta sopra chiuderebbe quest'ultima per sempre. Carmine mergia da sé; se delega, è questa sequenza.
 >
 > **Sulla macchina di Carmine**: l'API su `:5000` gira con il codice della #60 e le due migrazioni
 > (`AddOperationalDocument`, `AddMediaSha256`) sono applicate al DB di sviluppo; il DB ha un
 > documento di prova `lirf-twr-sop-test` (id 19, AOD, pubblicato con AIRAC 2609) da cancellare
-> quando si vuole. Il tag **`v0.2.0-m1` non è messo**: aspetta la scheda `tools/demo-m1.md`
-> riseguita da Carmine — e la scheda **non nomina ancora il documento operativo** (da aggiungere).
+> quando si vuole. Il tag **`v0.2.0-m1` non è messo, e ha cambiato significato** (Carmine, 12
+> settembre: «vorrei che la 0.2 significasse editor di documenti e news pronto»): non è più «M1
+> costruita», è l'editor pronto — piano 0.68, e l'elenco di che cosa manca sta lì, da confermare.
+> La scheda `tools/demo-m1.md` è **aggiornata al 12 settembre** (Parte 7 rifatta, il documento
+> operativo nella Parte 2): resta da rieseguirla.
 >
 > **Piccole cose lasciate indietro, tutte scritte nel piano**: l'interruttore «da rivedere» nella
 > lista dei documenti (il filtro `filter[reviewDue]` c'è, la schermata non lo chiede); la stampa
@@ -155,12 +161,16 @@ com'è fatto l'hub oggi:
 
 **A Carmine, e chiude M1:**
 
-1. rieseguire `tools/demo-m1.md` da capo — ⚠️ la scheda è stata scritta prima di queste due giornate:
-   dove descrive la barra, la barra laterale o la testata delle schermate staff, l'hub ora è diverso;
-2. mergiare la **PR #57** (verde, ultimo commit verificato in CI `40d81a7`);
-3. il tag **`v0.2.0-m1`**, che si verifica **sull'artefatto** e non sul commit — in M0 ci vollero
-   cinque tentativi, il server di prova deve fare il fallback SPA, e un grep su un bundle minificato
-   non è una verifica.
+1. rieseguire `tools/demo-m1.md` da capo — la scheda è **aggiornata al 12 settembre**: la Parte 7 è
+   riscritta sull'editor di oggi (annulla e ripeti, proprietà che si applicano scrivendo,
+   autosalvataggio, anteprima vera, trascinamento, finestra di pubblicazione, comodità, colore) e il
+   documento operativo è nella Parte 2. ⚠️ Dove descrive la barra, la barra laterale o la testata
+   delle schermate staff non è stata ricontrollata riga per riga;
+2. mergiare le PR aperte (#59, #60, #61, in quest'ordine e con i ritarget: vedi il riquadro in cima);
+3. il tag **`v0.2.0-m1`**, che ora vuol dire **editor di documenti e news pronto** e non «M1
+   costruita» (piano 0.68). Si verifica **sull'artefatto** e non sul commit — in M0 ci vollero cinque
+   tentativi, il server di prova deve fare il fallback SPA, e un grep su un bundle minificato non è
+   una verifica.
 
 **G15 — l'editor che risponde** (`decisions/2026-09-11-l-editor-che-risponde.md`, piano 0.60,
 `04-piano-implementazione-m1.md` fase G15), **decisa l'11 settembre e messa prima di G14**. Tre
