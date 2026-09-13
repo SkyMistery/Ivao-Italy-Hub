@@ -42,12 +42,25 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
             .Must(value => !catalogue.IsGlobal(value)).WithMessage("errors.grant.globalPermission")
             .When(grant => !string.IsNullOrWhiteSpace(grant.Value));
 
+        // A member or a position, and exactly one of them (M2, note
+        // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2).
         RuleFor(grant => grant.Vid)
-            .GreaterThan(0).WithMessage("errors.required")
+            .Must((grant, vid) => (vid is > 0) != (grant.PositionDepartment is not null))
+            .WithMessage("errors.grant.subject");
+
+        RuleFor(grant => grant.Vid)
             .MustAsync(async (vid, cancellationToken) => await database.Users
                 .AsNoTracking()
                 .AnyAsync(user => user.Vid == vid && (user.IsStaff || user.IsSuperadmin), cancellationToken))
-            .WithMessage("errors.grant.notStaff");
+            .WithMessage("errors.grant.notStaff")
+            .When(grant => grant.Vid is > 0 && grant.PositionDepartment is null);
+
+        // A position is a department at one or more levels: a department alone would be everybody in
+        // it, which is a decision the staff positions already make.
+        RuleFor(grant => grant.PositionLevels)
+            .Must(levels => levels is { Count: > 0 })
+            .WithMessage("errors.grant.levelsRequired")
+            .When(grant => grant.PositionDepartment is not null);
 
         // A grant that expired before it was written is a row nobody will ever notice is doing
         // nothing. It is refused now rather than debugged in six months.

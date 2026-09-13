@@ -47,6 +47,15 @@
   "$comment.superAdmins": "Bootstrap only: read once, when no super administrator exists yet. After that the database is the truth.",
   "superAdmins": [],
 
+  "$comment.positionGrants": [
+    "Optional. Permissions your division gives to a position rather than to a person: a department",
+    "at one or more levels (Coordinator, Assistant, Advisor, Member). Whoever holds that position",
+    "holds the permission. scope is the department the permission is held on; leave it out for every",
+    "department. Read once, at the first start that finds it; after that the permissions screen is",
+    "the truth. A global permission is never given this way."
+  ],
+  "positionGrants": [],
+
   "$comment.firStaffScope": "all = FIR teams work on every FIR (default). own = each FIR team only sees its own FIR.",
   "firStaffScope": "all"
 }

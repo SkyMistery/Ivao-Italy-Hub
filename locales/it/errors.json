@@ -89,7 +89,9 @@
       "unknownPermission": "Questa installazione non ha un permesso con questo nome.",
       "globalPermission": "Un permesso che non è legato a un dipartimento non si assegna a mano.",
       "notStaff": "Quel VID non è staff di questa divisione, o non ha mai fatto login.",
-      "alreadyExpired": "Scegli una data futura, oppure lasciala vuota per un permesso che non scade."
+      "alreadyExpired": "Scegli una data futura, oppure lasciala vuota per un permesso che non scade.",
+      "subject": "Un permesso si dà a un membro o a una posizione: compila uno dei due.",
+      "levelsRequired": "Una posizione ha bisogno di almeno un livello."
     },
     "superadmin": {
       "neverLoggedIn": "Quel VID non ha mai fatto login, quindi l’hub non sa ancora nulla di lui.",

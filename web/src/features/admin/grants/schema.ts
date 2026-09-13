@@ -14,7 +14,10 @@ import { DEPARTMENTS } from '../../../shared/api/department';
  * `.meta({ choices })` string and not a `z.enum`: a `z.enum` is a compile time set, and this one is
  * not knowable until the server says what it has.
  */
-export function grantSchema(bootstrap: Bootstrap) {
+/** The levels of a staff position, in the order a department reads them. */
+export const STAFF_LEVELS = ['Coordinator', 'Assistant', 'Advisor', 'Member'] as const;
+
+export function grantSchema(bootstrap: Bootstrap, levelLabel: (level: string) => string = (level) => level) {
   // Only the departmental ones. A global permission is refused by the server, and offering one in
   // a select would be offering a choice whose only outcome is a refusal.
   const grantable = bootstrap.registries.permissions
@@ -22,7 +25,15 @@ export function grantSchema(bootstrap: Bootstrap) {
     .map((permission) => permission.name);
 
   return z.object({
-    vid: z.number().int(),
+    // Who the grant is for: a member by VID, **or** a position — a department at one or more levels
+    // (M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2). One of the two and never
+    // both; the server says so on the field when a form has neither or both.
+    vid: z.number().int().optional(),
+    positionDepartment: z.enum(DEPARTMENTS).optional(),
+    positionLevels: z.array(z.string()).meta({
+      multi: true,
+      choices: STAFF_LEVELS.map((level) => ({ value: level, label: levelLabel(level) })),
+    }),
     // One kind today. It travels because the contract has it, and it is hidden because there is
     // nothing to choose: a select with one option is a question with one answer.
     kind: z.enum(['Permission']).meta({ hidden: true }),

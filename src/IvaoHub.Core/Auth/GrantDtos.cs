@@ -10,7 +10,9 @@ namespace IvaoHub.Core.Auth;
 /// </summary>
 public sealed record GrantListDto(
     long Id,
-    int Vid,
+    int? Vid,
+    Department? PositionDepartment,
+    IReadOnlyList<StaffLevel> PositionLevels,
     string Value,
     Department? Department,
     GrantEffect Effect,
@@ -22,7 +24,9 @@ public sealed record GrantListDto(
 /// <summary>A grant as the form loads it, with the audit trail and the version to write back.</summary>
 public sealed record GrantDetailDto(
     long Id,
-    int Vid,
+    int? Vid,
+    Department? PositionDepartment,
+    IReadOnlyList<StaffLevel> PositionLevels,
     GrantKind Kind,
     string Value,
     Department? Department,
@@ -43,15 +47,20 @@ public sealed record GrantDetailDto(
 /// on its own if the position does. Letting a form set it would make the two meanings of "this
 /// grant is asleep" indistinguishable.</para>
 /// </summary>
+/// <para>The subject is a member (<c>vid</c>) <b>or</b> a position (<c>positionDepartment</c> with
+/// <c>positionLevels</c>), never both (M2). The two position fields are last and optional, so a client
+/// that only knows grants to a person keeps writing them unchanged.</para>
 public sealed record GrantWriteDto(
-    int Vid,
+    int? Vid,
     GrantKind Kind,
     string Value,
     Department? Department,
     GrantEffect Effect,
     DateTime? ExpiresAt,
     string? Reason,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    Department? PositionDepartment = null,
+    IReadOnlyList<StaffLevel>? PositionLevels = null);
 
 /// <summary>Entity to payload and back. Generated, like every other mapping of the hub.</summary>
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]

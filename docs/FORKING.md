@@ -65,7 +65,8 @@ cd web && pnpm install && pnpm dev      # the single page application
 4. **Sign in for the first time**, at <http://localhost:5173>. Your VID becomes a row in `hub_users`,
    your IVAO positions become departments and levels, and if the table held no super administrator
    at all, the VIDs in `superAdmins` become one. That list is read **once**: after that the database
-   is the truth and editing the file achieves nothing.
+   is the truth and editing the file achieves nothing. `positionGrants` — permissions your division
+   gives to a department at some of its levels — is read the same way: once, at the first start.
 5. **Translate the seeded templates and pages, or replace them.** `seed/content-templates/*.json`
    and `seed/content-pages/*.json` carry `{ "$t": "seed…" }` rather than sentences, resolved at seed
    time into the languages you listed — so a division that publishes only in Polish gets no English

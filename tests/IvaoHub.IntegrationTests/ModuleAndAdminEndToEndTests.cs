@@ -28,6 +28,9 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
     private const int MemberVid = 620003;
     private const int SuperadminVid = 620004;
 
+    /// <summary>An advisor of Membership: a position nothing else in the suite gives a grant to.</summary>
+    private const int MembershipAdvisorVid = 620005;
+
     private HubWebApplicationFactory _factory = null!;
 
     public ValueTask InitializeAsync()
@@ -303,6 +306,163 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
             new Uri($"{LinksEndpoints.Pattern}/{flightOpsLink}", UriKind.Relative),
             token);
         Assert.Equal(HttpStatusCode.Forbidden, revoked.StatusCode);
+    }
+
+    [Fact]
+    public async Task AGrantToAPositionReachesWhoeverHoldsItAtTheNextRequest()
+    {
+        // M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti 3.2: the subject is a department
+        // and its levels, and whoever holds it holds the grant, without anybody naming them.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(DirectorVid, position: "IT-DIR", cancellationToken: token);
+        await SeedUserAsync(MembershipAdvisorVid, position: "IT-MA7", cancellationToken: token);
+
+        var flightOpsLink = await SeedLinkAsync(Department.FOD, "position-target", token, Visibility.Department);
+
+        using var advisor = WritingClient();
+        await _factory.SignInAsync(advisor, MembershipAdvisorVid, token);
+
+        using var before = await advisor.GetAsync(new Uri($"{LinksEndpoints.Pattern}/{flightOpsLink}", UriKind.Relative), token);
+        Assert.Equal(HttpStatusCode.Forbidden, before.StatusCode);
+
+        using var director = WritingClient();
+        await _factory.SignInAsync(director, DirectorVid, token);
+
+        using var granting = await director.PostAsJsonAsync(
+            GrantEndpoints.Pattern,
+            new
+            {
+                vid = (int?)null,
+                positionDepartment = nameof(Department.MD),
+                positionLevels = new[] { nameof(StaffLevel.Advisor) },
+                kind = nameof(GrantKind.Permission),
+                value = "Links.Edit",
+                department = nameof(Department.FOD),
+                effect = nameof(GrantEffect.Grant),
+                expiresAt = (string?)null,
+                reason = "test",
+                rowVersion = "0001-01-01T00:00:00",
+            },
+            token);
+        Assert.Equal(HttpStatusCode.Created, granting.StatusCode);
+        var grantId = (await granting.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+
+        try
+        {
+            // The holder's cookie stops being believed at once, as for a grant to them by name.
+            using var stale = await advisor.GetAsync(new Uri($"{LinksEndpoints.Pattern}/{flightOpsLink}", UriKind.Relative), token);
+            Assert.Equal(HttpStatusCode.Unauthorized, stale.StatusCode);
+
+            await _factory.SignInAsync(advisor, MembershipAdvisorVid, token);
+            using var after = await advisor.GetAsync(new Uri($"{LinksEndpoints.Pattern}/{flightOpsLink}", UriKind.Relative), token);
+            Assert.Equal(HttpStatusCode.OK, after.StatusCode);
+        }
+        finally
+        {
+            using var revoking = await director.DeleteAsync(new Uri($"{GrantEndpoints.Pattern}/{grantId}", UriKind.Relative), token);
+            Assert.Equal(HttpStatusCode.NoContent, revoking.StatusCode);
+        }
+
+        await _factory.SignInAsync(advisor, MembershipAdvisorVid, token);
+        using var revoked = await advisor.GetAsync(new Uri($"{LinksEndpoints.Pattern}/{flightOpsLink}", UriKind.Relative), token);
+        Assert.Equal(HttpStatusCode.Forbidden, revoked.StatusCode);
+    }
+
+    [Fact]
+    public async Task AGrantHasOneSubjectExactly()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(DirectorVid, position: "IT-DIR", cancellationToken: token);
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        using var director = WritingClient();
+        await _factory.SignInAsync(director, DirectorVid, token);
+
+        using var both = await director.PostAsJsonAsync(
+            GrantEndpoints.Pattern,
+            new
+            {
+                vid = EventsCoordinatorVid,
+                positionDepartment = nameof(Department.MD),
+                positionLevels = new[] { nameof(StaffLevel.Advisor) },
+                kind = nameof(GrantKind.Permission),
+                value = "Links.Edit",
+                department = nameof(Department.FOD),
+                effect = nameof(GrantEffect.Grant),
+                rowVersion = "0001-01-01T00:00:00",
+            },
+            token);
+        Assert.Equal(HttpStatusCode.BadRequest, both.StatusCode);
+        Assert.Equal("errors.grant.subject", await FirstErrorAsync(both, "vid", token));
+
+        using var noLevel = await director.PostAsJsonAsync(
+            GrantEndpoints.Pattern,
+            new
+            {
+                vid = (int?)null,
+                positionDepartment = nameof(Department.MD),
+                positionLevels = Array.Empty<string>(),
+                kind = nameof(GrantKind.Permission),
+                value = "Links.Edit",
+                department = nameof(Department.FOD),
+                effect = nameof(GrantEffect.Grant),
+                rowVersion = "0001-01-01T00:00:00",
+            },
+            token);
+        Assert.Equal(HttpStatusCode.BadRequest, noLevel.StatusCode);
+        Assert.Equal("errors.grant.levelsRequired", await FirstErrorAsync(noLevel, "positionLevels", token));
+    }
+
+    [Fact]
+    public async Task TheGrantsToPositionsOfDivisionJsonAreAppliedOnce()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        // The start of this test host already applied the (empty) seed; this is the first start of an
+        // installation that has one.
+        await database.DivisionSettings
+            .Where(row => row.Key == PositionGrantSeeder.AppliedSettingKey)
+            .ExecuteDeleteAsync(token);
+
+        var options = Microsoft.Extensions.Options.Options.Create(new DivisionOptions
+        {
+            PositionGrants =
+            [
+                new PositionGrantSeed
+                {
+                    Department = Department.PRD,
+                    Levels = [StaffLevel.Advisor],
+                    Permission = "Links.Edit",
+                    Scope = Department.FOD,
+                },
+                // Never applied: a grant does not hand out a global permission, from a file either.
+                new PositionGrantSeed { Department = Department.PRD, Levels = [StaffLevel.Advisor], Permission = "Permissions.Manage" },
+            ],
+        });
+
+        var seeder = new PositionGrantSeeder(
+            database,
+            options,
+            scope.ServiceProvider.GetRequiredService<IvaoHub.Core.Auth.Permissions.PermissionCatalog>(),
+            scope.ServiceProvider.GetRequiredService<IClock>(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<PositionGrantSeeder>.Instance);
+
+        Assert.Equal(1, await seeder.SeedAsync(token));
+
+        var seeded = await database.UserGrants
+            .Where(grant => grant.PositionDepartment == Department.PRD && grant.Reason == "division.json")
+            .ToListAsync(token);
+        var grant = Assert.Single(seeded);
+        Assert.Equal([StaffLevel.Advisor], grant.PositionLevels);
+
+        // Deleted from the screen, and the next start does not bring it back.
+        database.UserGrants.Remove(grant);
+        await database.SaveChangesAsync(token);
+
+        Assert.Equal(0, await seeder.SeedAsync(token));
+        Assert.False(await database.UserGrants.AnyAsync(row => row.PositionDepartment == Department.PRD && row.Reason == "division.json", token));
     }
 
     [Fact]

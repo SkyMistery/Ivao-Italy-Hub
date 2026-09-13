@@ -114,6 +114,23 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
             }
         }
 
+        // A grant to a position with no level would be a grant to nobody, and one with no permission
+        // is a typo: both are refused at start rather than found missing later (M2).
+        for (var index = 0; index < options.PositionGrants.Length; index++)
+        {
+            var seed = options.PositionGrants[index];
+
+            if (seed.Levels.Length == 0)
+            {
+                failures.Add($"division.json: 'positionGrants[{index}]' names no level. Use \"Coordinator\", \"Assistant\", \"Advisor\" or \"Member\".");
+            }
+
+            if (string.IsNullOrWhiteSpace(seed.Permission))
+            {
+                failures.Add($"division.json: 'positionGrants[{index}]' names no permission.");
+            }
+        }
+
         // Reported, not remembered. This object is a singleton and validation can run more than
         // once, so a property holding the result of the last call is a field that means nothing to
         // whoever reads it and is unsafe for whoever reads it from another thread.

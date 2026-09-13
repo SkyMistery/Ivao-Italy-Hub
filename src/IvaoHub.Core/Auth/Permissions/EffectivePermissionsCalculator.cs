@@ -102,8 +102,14 @@ public static class EffectivePermissionsCalculator
             AddDerived(effective, position, catalogue);
         }
 
+
+        var held = positions as IReadOnlyCollection<StaffPosition> ?? [.. positions];
+
         var active = grants
             .Where(grant => grant.Kind == GrantKind.Permission)
+            // A grant to a position counts for somebody who holds it; a grant to a person has
+            // already been chosen by its VID (M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti).
+            .Where(grant => grant.Vid is not null || grant.IsHeldThrough(held))
             .Where(grant => grant.SuspendedAt is null)
             .Where(grant => grant.ExpiresAt is null || grant.ExpiresAt > nowUtc)
             .Where(grant => catalogue.IsKnown(grant.Value))

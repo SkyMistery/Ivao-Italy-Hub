@@ -23,7 +23,13 @@ function orNull(value: string | undefined): string | null {
 
 export function toWriteDto(values: GrantFormValues): GrantWriteDto {
   return {
-    vid: values.vid,
+    // A member or a position (M2): the one left empty travels as nothing.
+    vid: values.vid === undefined || values.vid === 0 ? null : values.vid,
+    positionDepartment: values.positionDepartment ?? null,
+    positionLevels:
+      values.positionDepartment === undefined
+        ? []
+        : (values.positionLevels as NonNullable<GrantWriteDto['positionLevels']>),
     kind: values.kind,
     value: values.value,
     // No department at all means the permission is held on every one of them.
@@ -38,7 +44,9 @@ export function toWriteDto(values: GrantFormValues): GrantWriteDto {
 /** The form as a new grant starts it. */
 export function emptyGrant(): GrantFormValues {
   return {
-    vid: 0,
+    vid: undefined,
+    positionDepartment: undefined,
+    positionLevels: [],
     kind: 'Permission',
     value: '',
     department: undefined,
@@ -53,7 +61,9 @@ export function emptyGrant(): GrantFormValues {
 
 export function toFormValues(grant: GrantDetailDto): GrantFormValues {
   return {
-    vid: grant.vid,
+    vid: grant.vid ?? undefined,
+    positionDepartment: grant.positionDepartment ?? undefined,
+    positionLevels: [...grant.positionLevels],
     kind: grant.kind,
     value: grant.value,
     department: grant.department ?? undefined,

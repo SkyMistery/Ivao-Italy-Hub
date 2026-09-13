@@ -1344,10 +1344,10 @@
   },
   "grants": {
     "title": "Permissions",
-    "description": "Permissions given to a single member by name, on top of what their staff positions already give them.",
+    "description": "Permissions given to a member by name, or to a position — a department at some of its levels — on top of what the staff positions already give.",
     "create": "New permission",
     "edit": "Edit permission",
-    "formHint": "A permission scoped to no department is held on every one of them. A deny always wins over a grant.",
+    "formHint": "Fill in a VID for one member, or a department and its levels for whoever holds that position: never both. A permission scoped to no department is held on every one of them. A deny always wins over a grant.",
     "delete": {
       "title": "Delete this permission?",
       "description": "The member loses it on their very next request, and this cannot be undone."
@@ -1361,7 +1361,9 @@
       "expiresAt": "Expires",
       "suspendedAt": "Suspended",
       "reason": "Reason",
-      "updatedAt": "Last change"
+      "updatedAt": "Last change",
+      "positionDepartment": "Position: department",
+      "positionLevels": "Position: levels"
     },
     "options": {
       "effect": {
@@ -1370,10 +1372,21 @@
       },
       "department": {
         "none": "Every department"
+      },
+      "positionLevels": {
+        "Coordinator": "Coordinator",
+        "Assistant": "Assistant coordinator",
+        "Advisor": "Advisor",
+        "Member": "Member"
+      },
+      "positionDepartment": {
+        "none": "No position — a member, by VID"
       }
     },
     "hints": {
-      "expiresAt": "Empty means the grant never expires."
+      "expiresAt": "Empty means the grant never expires.",
+      "vid": "For one member. Leave it empty to give the permission to a position.",
+      "positionLevels": "Whoever holds a position of this department at one of these levels holds the permission, and stops holding it with the position."
     }
   },
   "superadmins": {
