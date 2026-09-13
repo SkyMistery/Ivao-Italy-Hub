@@ -1,7 +1,7 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.72 — 13 settembre 2026 (**staccarsi da vIPI e centralizzare i contenuti**: M5 fuori dalla roadmap, `atc` opzionale, la G14 senza la metà ATC; una schermata per tutto lo staff, le pagine approvate da WD e HQ, i documenti nelle pagine per raccolta, media e link letti da tutti)
+**Versione documento:** 0.72 — 13 settembre 2026 (**staccarsi da vIPI, centralizzare i contenuti, moduli non subordinati ai dipartimenti**: M5 fuori dalla roadmap, `atc` opzionale, la G14 senza la metà ATC; una schermata per tutto lo staff, le pagine approvate da WD e HQ, i documenti nelle pagine per raccolta, media e link letti da tutti)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
 
@@ -43,7 +43,18 @@ un albero più l'ultimo pezzo generato dal titolo nella lingua principale, antep
 di occupato e di parola riservata, un indirizzo per pagina e non per lingua; **il primo livello lo
 creano solo WD e HQ**; chi approva **corregge** indirizzo e voce di menu invece di rimandare
 indietro; un indirizzo cambiato dopo la pubblicazione lascia un **301 automatico**; news e documenti
-hanno l'indirizzo generato. Nessun codice ancora: le fasi si scrivono
+hanno l'indirizzo generato. **(3) I moduli non appartengono ai dipartimenti**
+(`decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md`): eventi, tour e training sono
+**sezioni a sé** anche nel back-office (`/staff/events`, `/staff/tours`, `/staff/training`), e
+`IModule` non dichiara più un dipartimento. **Chi può fare che cosa** si stabilisce **estendendo i
+grant**: il soggetto è un VID **oppure una posizione** (dipartimento + livello), con i valori
+iniziali da `division.json` e le modifiche da `/staff/admin/permissions`. Una riga di modulo ha
+**«a cura di» obbligatorio e multiplo** — l'ED coordina, un altro dipartimento collabora — e quel
+campo **decide i permessi**: il SOD non tocca gli eventi degli altri, l'ED li tocca tutti perché
+tiene il permesso su ogni dipartimento. Si estende **l'unica** `IOwnedByDepartment` a un insieme,
+senza un secondo ramo nel handler. Le **widget delle dashboard di dipartimento sono blocchi Data dei
+moduli**, sempre live e filtrati su chi guarda. Eventi e **sessioni di training sono pubblici** nel
+calendario. `AtcModule` lascia il posto a un **modulo finto nei soli test**. Nessun codice ancora: le fasi si scrivono
 dopo il merge della pila.
 
 **Changelog 0.71** (12 set 2026, sera): **il blocco interattivo usato davvero.** Carmine ha scaricato
@@ -1527,7 +1538,7 @@ Un `IvaoApiClient` con `client_credentials` (scope in `ApiScopes`, separati da q
   - un cambio "fuori banda" resta possibile solo scrivendo nel DB o sostituendo il binario: azioni più grosse, più rumorose e più facili da attribuire di una riga di JSON — e la notifica all'avvio le fa emergere comunque;
   - in staging/sviluppo il superadmin può **impersonare** un altro VID in sola lettura (`/staff/impersonate`), spento in produzione salvo esplicita abilitazione.
   Se in futuro si volesse alzare ancora l'asticella: firma dell'elenco superadmin con una chiave privata di Carmine e verifica con la chiave pubblica compilata nel binario — costringe a ricompilare per manomettere. Non è previsto in M0.
-- **Grant manuali per VID** (tabella `user_grants`): ruoli o singoli permessi concessi o revocati a un VID specifico da chi ha `Permissions.Manage` (Director, coordinatori per il proprio dipartimento), con `granted_by`, `granted_at`, `expires_at`, motivo, audit. Casi d'uso: uno staffista che aiuta un altro dipartimento (`IT-AOA1` → `Events.Manage`), un permesso temporaneo per un evento. Permessi effettivi = derivati dai claim ∪ grant − revoche; ricalcolati a ogni login e cacheati nella sessione.
+- **Grant manuali per VID** (tabella `user_grants`): ruoli o singoli permessi concessi o revocati a un VID specifico da chi ha `Permissions.Manage` (Director, coordinatori per il proprio dipartimento), con `granted_by`, `granted_at`, `expires_at`, motivo, audit. Casi d'uso: uno staffista che aiuta un altro dipartimento (`IT-AOA1` → `Events.Manage`), un permesso temporaneo per un evento. **Dal 13 set 2026 il soggetto di un grant è un VID oppure una posizione** (dipartimento + livello): è così che una divisione dice chi, da ogni dipartimento, può fare che cosa nei moduli, con i valori iniziali da `division.json` (nota `2026-09-13-moduli-non-subordinati-ai-dipartimenti`). Permessi effettivi = derivati dai claim ∪ grant − revoche; ricalcolati a ogni login e cacheati nella sessione.
   **Salvagente**: un grant si può concedere **solo a chi ha già almeno una posizione staff** derivata dai claim IVAO (divisionale o FIR). L'interfaccia non propone nemmeno gli altri VID, e il server lo verifica comunque. Se l'utente perde tutte le posizioni staff (rilevato al login o dal sync giornaliero del roster), i suoi grant vengono **sospesi** automaticamente (non cancellati: tornano attivi se rientra nello staff) e i superadmin ricevono una notifica. Un grant non può mai conferire `Permissions.Manage` né lo stato di superadmin. Così nessuno può "aprire" il sistema a un VID qualsiasi: il perimetro dello staff lo decide sempre IVAO.
 - Policy ASP.NET Core (`[Authorize(Policy = "Training.Manage")]`) + le stesse policy esposte alla SPA in `/api/me` per nascondere menu e pulsanti (la sicurezza vera è sempre lato server).
 - Tabella `audit_log` per ogni azione di staff (chi, cosa, quando, prima/dopo).
@@ -1617,7 +1628,8 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /staff/{dept}              Dashboard del dipartimento: seminata alla nascita, poi modificata dal dipartimento nell'editor dei contenuti (riga di `cms_contents` con visibilità `department`)
 /staff/content             Pagine, news, documenti e template di tutti i dipartimenti che raggiungo, filtrati per `kind` e `department` (13 set 2026, §9.3); «Pagine» nel menu del dipartimento porta qui già filtrata
 /staff/links, /staff/media Stessa forma: si vedono e si scelgono tutti, si gestiscono i propri (§9.1)
-/staff/{dept}/**           Spazio del dipartimento: voci di calendario, contatti + le schermate del suo modulo (es. /staff/ev/events, /staff/tr/requests, /staff/fo/tours)
+/staff/events, /staff/tours, /staff/training  I moduli, sezioni a sé e non di un dipartimento (13 set 2026, nota moduli-non-subordinati)
+/staff/{dept}/**           Spazio del dipartimento: dashboard, voci di calendario interne, contatti
 /staff/admin/**            Solo Director/WM/superadmin: utenti e grant, moduli/maintenance, impostazioni divisione, audit
 /{locale}/...              prefisso lingua opzionale per SEO delle pagine pubbliche
 ```
@@ -1649,6 +1661,7 @@ L'idea di partenza di Carmine era "un modulo per dipartimento, e dentro ciò che
 - **Ogni contenuto appartiene a un dipartimento.** Pagine, news, documenti, voci di calendario, messaggi di contatto, eventi, tour, sessioni di training: tutti hanno `owner_department` obbligatorio (§7). Quel campo decide tre cose, senza regole aggiuntive: *chi può modificarlo* (lo staff del dipartimento, più Director e Web; gli altri via grant per VID, §6.3), *dove compare nel back-office* e *come si filtra sul sito pubblico* (`/training` mostra automaticamente news, documenti ed eventi del Training).
 - **Il back-office è organizzato per dipartimento.** Uno staff Events entra in `/staff` e trova "Events Department": i suoi eventi, le sue news, i suoi documenti, le sue voci di calendario, i contatti ricevuti. **Non vede** gli altri dipartimenti (deciso: nessuna lettura trasversale; chi aiuta un altro dipartimento riceve un grant). Director, Assistant Director e Web vedono tutto; il superadmin anche.
 - **I servizi comuni si scrivono una volta sola** e stanno nel *nucleo editoriale* (cartella `Content` di `IvaoHub.Core`): non sono un modulo, non si spengono, portano l'etichetta del dipartimento su ogni riga.
+- **Rivisto il 13 set 2026 — i moduli non appartengono ai dipartimenti** (`decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md`): eventi, tour e training sono sezioni a sé, pubbliche e nel back-office (`/staff/events`, `/staff/tours`, `/staff/training`); i permessi di un modulo si danno a posizioni e VID con i grant; una riga di modulo appartiene a **uno o più** dipartimenti («a cura di»), e quell'insieme decide chi la modifica; le dashboard di dipartimento mostrano i moduli con blocchi Data. Dove il testo qui sotto dice «il modulo del dipartimento X», va letto «il modulo di cui X è di solito a cura».
 - **Un modulo di codice esiste solo dove un dipartimento ha logica che nessun altro ha**: Events (slot e prenotazioni), Flight Operations (tour, leg, award, validatore), Training (richieste, trainer, sessioni, esiti). ATC Operations ha perso il suo modulo il 13 set 2026 insieme al montaggio di vIPI: `/atc` è una pagina di sistema. Membership, PR e Web usano i servizi comuni e hanno il loro spazio nel back-office, ma nessun modulo di codice finché non serve qualcosa di specifico (allora nasce un modulo **opzionale**, §9.6).
 - **La navigazione pubblica non segue l'organigramma**: un nuovo membro cerca "Piloti / ATC / Eventi / Training", non "Flight Operations Department". La sitemap (§8.2) resta per pubblico; il dipartimento è visibile solo come etichetta e filtro.
 

@@ -66,5 +66,7 @@ documenti (§9.4), i contratti tra moduli (§9.7) e la roadmap (§13).
   §9.3, §9.4, §9.6, §9.7, §12 punto 6, §13 (M5), §14, §15 punti 1 e 2.
 - **`CLAUDE.md`** §8 (la catena dei milestone).
 - **Codice**, nella fase che applica la nota: rimozione di `IvaoHub.Modules.Atc` e di
-  `web/src/modules/atc/`; rimozione dei campi ATC della G14 dal DTO, dal form, dal validatore e dal
+  `web/src/modules/atc/`, con un **modulo finto nel solo progetto dei test** al suo posto, perché è
+  l'unico modulo su cui i test di M0 provano la composizione (nota
+  `2026-09-13-moduli-non-subordinati-ai-dipartimenti`, §3.6); rimozione dei campi ATC della G14 dal DTO, dal form, dal validatore e dal
   piè di pagina; migrazione di contract nella release successiva.
