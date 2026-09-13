@@ -58,9 +58,14 @@ public sealed class ModuleRegistry
         Enabled =
         [
             .. All.Where(module => !module.IsOptional
-                || !settings.TryGetValue(module.Key, out var enabled)
-                || enabled),
+                || !settings.TryGetValue(module.Key, out var setting)
+                || setting.Enabled),
         ];
+
+        _baseDepartments = Enabled
+            .Where(module => settings.TryGetValue(module.Key, out var setting) && setting.BaseDepartment is not null)
+            .SelectMany(module => module.DbContextTypes.Select(context => (context, settings[module.Key].BaseDepartment!.Value)))
+            .ToDictionary(pair => pair.context, pair => pair.Value);
 
         Keys = [.. All.Select(module => module.Key)];
         EnabledKeys = [.. Enabled.Select(module => module.Key)];
@@ -79,6 +84,19 @@ public sealed class ModuleRegistry
 
     /// <summary>Every module that was compiled in, the ones switched off included.</summary>
     public IReadOnlyList<IModule> All { get; }
+
+    private readonly Dictionary<Type, Department> _baseDepartments;
+
+    /// <summary>
+    /// The department every row of a module is always in the care of, found by the module's database
+    /// context: <c>division.json → modules.{key}.baseDepartment</c> (M2). Null for the hub's own
+    /// context and for a module the division gives no base department.
+    /// </summary>
+    public Department? BaseDepartmentOf(Type contextType)
+    {
+        ArgumentNullException.ThrowIfNull(contextType);
+        return _baseDepartments.TryGetValue(contextType, out var department) ? department : null;
+    }
 
     /// <summary>The ones this division actually runs.</summary>
     public IReadOnlyList<IModule> Enabled { get; }

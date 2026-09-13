@@ -81,8 +81,13 @@ public sealed record DivisionOptions
     /// </summary>
     public string[] IcaoPrefixes { get; init; } = [];
 
-    /// <summary>Optional modules only. Department modules and the editorial core are always on.</summary>
-    public Dictionary<string, bool> Modules { get; init; } = [];
+    /// <summary>
+    /// What the division says about each module, by key: whether an optional one is on, and which
+    /// department every row of it is always in the care of (M2, note
+    /// 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.3). A module the division does not name is
+    /// on and has no base department.
+    /// </summary>
+    public Dictionary<string, ModuleSettings> Modules { get; init; } = [];
 
     /// <summary>
     /// The shared inbox of each department, by department code, for the notifications the hub
@@ -141,4 +146,22 @@ public sealed class PositionGrantSeed
 
     /// <summary>True takes the permission away from the position instead of giving it.</summary>
     public bool Deny { get; init; }
+}
+
+/// <summary>One module, as <c>division.json → modules.{key}</c> writes it.</summary>
+public sealed class ModuleSettings
+{
+    /// <summary>
+    /// Only an optional module can be switched off, and only by saying false: a module the division
+    /// does not name, or names without this, is on.
+    /// </summary>
+    public bool Enabled { get; init; } = true;
+
+    /// <summary>
+    /// The department every row of the module is always in the care of — events are always the
+    /// Events department's, whoever else collaborates (Carmine, 13 September 2026). Configuration and
+    /// not code: the module never names a department, and a division organised otherwise changes a
+    /// line. Absent for a module whose rows have no base department.
+    /// </summary>
+    public Department? BaseDepartment { get; init; }
 }

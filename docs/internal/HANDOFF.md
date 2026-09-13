@@ -49,8 +49,11 @@
 > **H1 è fatta** (branch `m2/h1-position-grants`) — un grant si dà a un membro **oppure** a una
 > posizione, indicata come dipartimento + livelli (deciso con Carmine), con il seed una volta da
 > `division.json → positionGrants` e le sessioni di chi ha la posizione rinfrescate alla scrittura.
-> **Prossime: H2** (righe di più dipartimenti, `modules.<key>.baseDepartment`) e **H3** (le sezioni dei
-> moduli nella barra dello staff). Piano 0.74. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> **H2 è fatta** (branch `m2/h2-owned-by-several`, impilato su H1): una riga di modulo è in cura a più
+> dipartimenti con una maschera di bit (`OwnerDepartmentMask`), l'unico handler e il filtro chiedono
+> «uno in comune», i moduli derivano da `ModuleDbContext` e hanno anche loro il filtro globale,
+> `division.json → modules` è un oggetto per modulo con `baseDepartment`. **Prossima: H3** (le sezioni
+> dei moduli nella barra dello staff). Piano 0.75. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
 > di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >

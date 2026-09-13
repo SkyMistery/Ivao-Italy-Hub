@@ -38,7 +38,16 @@ public static class DataBlockScope
 
         var row = Expression.Parameter(typeof(TEntity), "row");
         var visibility = Expression.Property(row, nameof(IVisible.Visibility));
-        var department = Expression.Property(row, nameof(IOwnedByDepartment.OwnerDepartment));
+        // A row of the page's department: one of its departments, for a row in the care of several (M2).
+        Expression ofThisDepartment = DepartmentMask.IsStoredOn(typeof(TEntity))
+            ? Expression.NotEqual(
+                Expression.And(
+                    Expression.Property(row, DepartmentMask.PropertyName),
+                    Expression.Constant(DepartmentMask.Of(page.Department))),
+                Expression.Constant(0))
+            : Expression.Equal(
+                Expression.Property(row, nameof(IOwnedByDepartment.OwnerDepartment)),
+                Expression.Constant(page.Department, typeof(Department)));
 
         var allowed = Expression.Call(
             Expression.Constant(embeddable),
@@ -47,12 +56,12 @@ public static class DataBlockScope
 
         // "Visible to a department" means a different set of people for each one, so a row of one
         // may not travel into a page of another even though the two share a visibility.
-        var ofThisDepartment = Expression.OrElse(
+        var readableHere = Expression.OrElse(
             Expression.NotEqual(visibility, Expression.Constant(Visibility.Department, visibility.Type)),
-            Expression.Equal(department, Expression.Constant(page.Department, department.Type)));
+            ofThisDepartment);
 
         return query.Where(Expression.Lambda<Func<TEntity, bool>>(
-            Expression.AndAlso(allowed, ofThisDepartment),
+            Expression.AndAlso(allowed, readableHere),
             row));
     }
 

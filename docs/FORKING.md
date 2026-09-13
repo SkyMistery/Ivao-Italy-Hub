@@ -137,7 +137,6 @@ Four things, and the first two are where all of the module's own code lives:
        public const string ModuleKey = "roster";
 
        public override string Key => ModuleKey;
-       public override Department? Department => IvaoHub.Core.Division.Department.AOD;
 
        public override IReadOnlyList<PermissionDescriptor> Permissions =>
            [new("Roster.View", IsGlobal: false), new("Roster.Edit", IsGlobal: false)];
@@ -159,11 +158,18 @@ Four things, and the first two are where all of the module's own code lives:
 
    Its permissions join the one catalogue and become policies like the core's; its blocks join the
    one block registry; its widgets join the one widget registry; its endpoints live under
-   `/api/{Key}` and nowhere else. A context of its own is registered with `AddModuleDbContext<T>`,
-   which gives it its own `__EFMigrationsHistory_<key>` table and attaches the save changes
-   interceptor — audit, the department write guard and the projections are not something a module
-   opts into. There is never a foreign key between two contexts, and never a second authorization
-   handler.
+   `/api/{Key}` and nowhere else. A context of its own derives from `ModuleDbContext` and is
+   registered with `AddModuleDbContext<T>`, which gives it its own `__EFMigrationsHistory_<key>` table
+   and attaches the save changes interceptor — audit, the department write guard, the projections and
+   the global query filter of who reads what are not something a module opts into. There is never a
+   foreign key between two contexts, and never a second authorization handler.
+
+   A module does not belong to a department. A row of it can be **in the care of several**: it
+   implements `IOwnedByDepartment` and declares `public int OwnerDepartmentMask { get; set; }`, which
+   becomes its column (`DepartmentMask` turns departments into bits). A permission held on any one of
+   those departments is held on the row — to read it, change it, find it in a list — and whoever
+   creates one has to include a department they hold the permission on. The division can name a
+   **base department** every row of the module always has (below).
 
 2. **`web/src/modules/<key>/`** — all of the module's React code, and no other folder holds any of
    it. `index.ts` exports exactly one `ModuleManifest`: its blocks, its widgets, its routes and the
@@ -175,10 +181,12 @@ Four things, and the first two are where all of the module's own code lives:
    lists are the only places a module is named. Nothing is scanned: which modules a build has is a
    question you answer by opening a file.
 
-4. **`config/division.json`** if the module is optional (`IsOptional => true`): a division switches
-   one off with `"modules": { "roster": false }`. Silence means on, so a release that adds a module
-   works without every division editing its configuration first. A department module is not
-   optional and cannot be switched off.
+4. **`config/division.json`**, when there is something to say: an optional module
+   (`IsOptional => true`) is switched off with `"modules": { "roster": { "enabled": false } }`, and
+   `"baseDepartment": "AOD"` makes every row of the module always in the care of that department,
+   whoever else collaborates on it. Silence means on and no base department, so a release that adds
+   a module works without every division editing its configuration first. A department module is
+   not optional and cannot be switched off.
 
 ESLint keeps the boundary drawn on the front end: nothing under `blocks/`, `features/`, `routes/` or
 `shared/` may import from `src/modules`, `app/` may read the list of manifests but not a module's own

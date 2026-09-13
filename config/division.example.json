@@ -33,8 +33,18 @@
   "$comment.icaoPrefixes": "Safety net for filters and validation; FIRs and airports themselves come from the IVAO API.",
   "icaoPrefixes": ["XX"],
 
-  "$comment.modules": "Optional modules only. The department modules and the editorial core are always on.",
-  "modules": { "specialops": false },
+  "$comment.modules": [
+    "One entry per module you want to say something about. enabled: false switches an optional module off",
+    "(the department modules and the editorial core are always on). baseDepartment is the department every",
+    "row of that module is always in the care of, whoever else collaborates on it: events are always the",
+    "Events department's. Leave a module out entirely to take the defaults."
+  ],
+  "modules": {
+    "specialops": { "enabled": false },
+    "events": { "baseDepartment": "ED" },
+    "flightops": { "baseDepartment": "FOD" },
+    "training": { "baseDepartment": "TD" }
+  },
 
   "$comment.departmentMailboxes": [
     "Optional. The shared inbox of a department, by department code: where the hub sends the",

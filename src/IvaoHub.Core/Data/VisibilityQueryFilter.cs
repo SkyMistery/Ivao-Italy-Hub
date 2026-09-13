@@ -26,7 +26,8 @@ public static class VisibilityQueryFilter
     /// department. An entity with only one of the two is not filtered: a visibility without an
     /// owner has no department to compare against.
     /// </summary>
-    public static void ApplyToModel(ModelBuilder modelBuilder, HubDbContext context)
+    public static void ApplyToModel<TContext>(ModelBuilder modelBuilder, TContext context)
+        where TContext : DbContext, IVisibilityScope
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         ArgumentNullException.ThrowIfNull(context);
@@ -42,24 +43,24 @@ public static class VisibilityQueryFilter
                 continue;
             }
 
-            ApplyMethod.MakeGenericMethod(clrType).Invoke(null, [modelBuilder, context]);
+            ApplyMethod.MakeGenericMethod(clrType).Invoke(null, [modelBuilder, context, context.GetType()]);
         }
     }
 
-    private static void Apply<TEntity>(ModelBuilder modelBuilder, HubDbContext context)
+    private static void Apply<TEntity>(ModelBuilder modelBuilder, DbContext context, Type contextType)
         where TEntity : class
     {
         var entity = Expression.Parameter(typeof(TEntity), "entity");
         var visibility = Expression.Property(entity, nameof(IVisible.Visibility));
-        var department = Expression.Property(entity, nameof(IOwnedByDepartment.OwnerDepartment));
 
         // The context is a constant here and the current instance at query time: EF Core replaces
-        // a reference to the context inside a query filter with the one running the query.
-        var self = Expression.Constant(context, typeof(HubDbContext));
-        var all = Expression.Property(self, nameof(HubDbContext.SeesEveryDepartment));
-        var members = Expression.Property(self, nameof(HubDbContext.SeesMemberRows));
-        var staff = Expression.Property(self, nameof(HubDbContext.SeesStaffRows));
-        var departments = Expression.Property(self, nameof(HubDbContext.VisibleDepartments));
+        // a reference to the context inside a query filter with the one running the query. Typed as
+        // the context itself, the hub's or a module's (M2), for that replacement to recognise it.
+        var self = Expression.Constant(context, contextType);
+        var all = Expression.Property(self, nameof(IVisibilityScope.SeesEveryDepartment));
+        var members = Expression.Property(self, nameof(IVisibilityScope.SeesMemberRows));
+        var staff = Expression.Property(self, nameof(IVisibilityScope.SeesStaffRows));
+        var ofTheirDepartments = OfTheirDepartments(entity, self);
 
         var body = Expression.OrElse(
             all,
@@ -69,9 +70,7 @@ public static class VisibilityQueryFilter
                     Expression.AndAlso(members, Is(visibility, Visibility.Members)),
                     Expression.OrElse(
                         Expression.AndAlso(staff, Is(visibility, Visibility.Staff)),
-                        Expression.AndAlso(
-                            Is(visibility, Visibility.Department),
-                            Expression.Call(departments, ContainsOf(departments.Type), department))))));
+                        Expression.AndAlso(Is(visibility, Visibility.Department), ofTheirDepartments)))));
 
         if (typeof(IPublishable).IsAssignableFrom(typeof(TEntity)))
         {
@@ -85,9 +84,55 @@ public static class VisibilityQueryFilter
         modelBuilder.Entity<TEntity>().HasQueryFilter(Expression.Lambda<Func<TEntity, bool>>(body, entity));
     }
 
+    /// <summary>
+    /// "One of the departments of this row is one of the reader's." A row of one department asks
+    /// whether its department is in the reader's list; a row in the care of several (M2) asks whether
+    /// its mask and the reader's have a bit in common.
+    /// </summary>
+    private static Expression OfTheirDepartments(ParameterExpression entity, Expression scope)
+    {
+        if (DepartmentMask.IsStoredOn(entity.Type))
+        {
+            return Expression.NotEqual(
+                Expression.And(
+                    Expression.Property(entity, DepartmentMask.PropertyName),
+                    Expression.Property(scope, nameof(IVisibilityScope.VisibleDepartmentMask))),
+                Expression.Constant(0));
+        }
+
+        var departments = Expression.Property(scope, nameof(IVisibilityScope.VisibleDepartments));
+        return Expression.Call(
+            departments,
+            ContainsOf(departments.Type),
+            Expression.Property(entity, nameof(IOwnedByDepartment.OwnerDepartment)));
+    }
+
     private static BinaryExpression Is(Expression property, object value) =>
         Expression.Equal(property, Expression.Constant(value, property.Type));
 
     private static MethodInfo ContainsOf(Type listType) =>
         listType.GetMethod(nameof(List<int>.Contains), [listType.GetGenericArguments()[0]])!;
+}
+
+/// <summary>
+/// What the global query filter reads about the person running a query, as properties of the context
+/// running it: EF Core can translate a property of the context, not a call to a service (design M0
+/// section 3.5). The hub's context has them, and so does every module's (<see cref="ModuleDbContext"/>).
+/// </summary>
+public interface IVisibilityScope
+{
+    /// <summary>Director, web team and super administrators read every row, whoever owns it.</summary>
+    bool SeesEveryDepartment { get; }
+
+    /// <summary>Whether rows restricted to members are readable.</summary>
+    bool SeesMemberRows { get; }
+
+    /// <summary>Whether rows restricted to the staff are readable.</summary>
+    bool SeesStaffRows { get; }
+
+    /// <summary>The departments whose own rows are readable.</summary>
+    List<Department> VisibleDepartments { get; }
+
+    /// <summary>The same departments as a <see cref="DepartmentMask"/>, for rows in the care of several.</summary>
+    int VisibleDepartmentMask { get; }
 }

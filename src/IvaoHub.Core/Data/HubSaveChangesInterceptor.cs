@@ -6,6 +6,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -38,7 +39,8 @@ public sealed class HubSaveChangesInterceptor(
     ProjectionWriter projections,
     ProjectionContext projectionContext,
     IMemoryCache cache,
-    IHttpContextAccessor? httpContext = null) : SaveChangesInterceptor
+    IHttpContextAccessor? httpContext = null,
+    ModuleRegistry? modules = null) : SaveChangesInterceptor
 {
     private static readonly JsonSerializerOptions AuditJson = BuildAuditJsonOptions();
 
@@ -226,6 +228,11 @@ public sealed class HubSaveChangesInterceptor(
             }
 
             Stamp(entry, vid, now);
+            if (entry.State is EntityState.Added or EntityState.Modified)
+            {
+                ModuleBaseDepartment.Keep(modules, entry);
+            }
+
             EnsureWriteIsAllowed(context, entry);
             CollectAudit(entry, pending, vid, now);
 
@@ -311,27 +318,42 @@ public sealed class HubSaveChangesInterceptor(
         }
 
         var permission = ResolvePermissionArea(context, entry.Metadata.ClrType) + ".Edit";
-        Require(permission, owned.OwnerDepartment);
+
+        // Held on one of the departments of the row: whoever creates a row of a module has to put in
+        // at least one department they hold the permission on (M2, note
+        // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.3). A row of one department has one.
+        RequireAny(permission, owned.OwnerDepartments);
 
         if (entry.State == EntityState.Modified
-            && entry.Property(nameof(IOwnedByDepartment.OwnerDepartment)).OriginalValue is Department original
-            && original != owned.OwnerDepartment)
+            && OriginalDepartments(entry) is var original
+            && !original.SequenceEqual(owned.OwnerDepartments))
         {
             // Moving a row between departments needs the permission on both sides, or it would be
             // a way of taking rows away from a department one row at a time.
-            Require(permission, original);
+            RequireAny(permission, original);
         }
     }
 
-    private void Require(string permission, Department department)
+    /// <summary>The departments the row had before this write, read from the original values.</summary>
+    private static IReadOnlyList<Department> OriginalDepartments(EntityEntry entry)
     {
-        if (currentUser.Has(permission, department))
+        var owner = (Department)entry.Property(nameof(IOwnedByDepartment.OwnerDepartment)).OriginalValue!;
+        var mask = DepartmentMask.IsStoredOn(entry.Metadata.ClrType)
+            ? (int)entry.Property(DepartmentMask.PropertyName).OriginalValue! | DepartmentMask.Of(owner)
+            : DepartmentMask.Of(owner);
+
+        return DepartmentMask.Departments(mask);
+    }
+
+    private void RequireAny(string permission, IReadOnlyList<Department> departments)
+    {
+        if (departments.Any(department => currentUser.Has(permission, department)))
         {
             return;
         }
 
         throw new ForbiddenDomainException(
-            $"VID {currentUser.Vid} does not hold {permission} on {department}.")
+            $"VID {currentUser.Vid} does not hold {permission} on any of {string.Join(", ", departments)}.")
         {
             Permission = permission,
         };

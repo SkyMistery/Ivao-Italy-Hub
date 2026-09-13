@@ -137,6 +137,6 @@ public static class ModuleServiceCollectionExtensions
     /// </summary>
     private static bool IsEnabled(IModule module, DivisionOptions division) =>
         !module.IsOptional
-        || !division.Modules.TryGetValue(module.Key, out var enabled)
-        || enabled;
+        || !division.Modules.TryGetValue(module.Key, out var setting)
+        || setting.Enabled;
 }

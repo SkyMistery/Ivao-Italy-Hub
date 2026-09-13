@@ -16,7 +16,7 @@ namespace IvaoHub.Core.Data;
 /// table; there is never a foreign key between two contexts, only unconstrained <c>vid</c> and
 /// <c>icao</c> columns (plan section 16.12).
 /// </summary>
-public class HubDbContext : DbContext
+public class HubDbContext : DbContext, IVisibilityScope
 {
     /// <summary>The MariaDB version of production. Never auto detected: a build must be reproducible.</summary>
     public static readonly Version ServerVersion = new(11, 4, 10);
@@ -47,6 +47,9 @@ public class HubDbContext : DbContext
 
     /// <summary>The departments whose own rows are readable.</summary>
     public List<Department> VisibleDepartments => _currentUser is null ? [] : [.. _currentUser.Departments];
+
+    /// <summary>The same departments as a mask, for rows in the care of several (M2).</summary>
+    public int VisibleDepartmentMask => _currentUser is null ? 0 : DepartmentMask.Of(_currentUser.Departments);
 
     public DbSet<HubUser> Users => Set<HubUser>();
     public DbSet<UserStaffPosition> UserStaffPositions => Set<UserStaffPosition>();

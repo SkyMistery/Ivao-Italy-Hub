@@ -9,7 +9,12 @@
   "logoUrl": "/branding/division.svg",
   "faviconUrl": "/branding/favicon.svg",
   "icaoPrefixes": ["LI"],
-  "modules": { "specialops": true },
+  "modules": {
+    "specialops": { "enabled": true },
+    "events": { "baseDepartment": "ED" },
+    "flightops": { "baseDepartment": "FOD" },
+    "training": { "baseDepartment": "TD" }
+  },
   "superAdmins": [704798],
   "firStaffScope": "all",
   "contentApproval": ["Page"]

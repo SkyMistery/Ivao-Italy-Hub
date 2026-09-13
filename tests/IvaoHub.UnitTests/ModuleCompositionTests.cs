@@ -160,7 +160,7 @@ public sealed class ModuleCompositionTests
     {
         var division = Options.Create(new DivisionOptions
         {
-            Modules = new Dictionary<string, bool>(switches),
+            Modules = switches.ToDictionary(pair => pair.Key, pair => new ModuleSettings { Enabled = pair.Value }),
         });
 
         // The registry only reaches for a scope when it is asked whether a module is closed for

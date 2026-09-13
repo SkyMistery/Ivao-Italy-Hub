@@ -4,6 +4,7 @@ using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Modules;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -247,6 +248,7 @@ public static class MapCrudExtensions
 
         var entity = (TEntity)Activator.CreateInstance(typeof(TEntity), nonPublic: true)!;
         options.Apply!(body, entity);
+        KeepTheBaseDepartment(scope, entity);
 
         if (await DeniesWrite(scope, entity, options))
         {
@@ -299,6 +301,7 @@ public static class MapCrudExtensions
         }
 
         options.Apply!(body, entity);
+        KeepTheBaseDepartment(scope, entity);
 
         if (await DeniesWrite(scope, entity, options))
         {
@@ -354,6 +357,20 @@ public static class MapCrudExtensions
 
     // ---- the pieces the endpoints share -------------------------------------------------------
 
+    /// <summary>
+    /// The base department of the module, put back on a row the payload has just been applied to, so
+    /// that the permission is checked on the row as it will be stored (M2). The interceptor applies the
+    /// same rule to every other road into the database.
+    /// </summary>
+    private static void KeepTheBaseDepartment<TEntity>(CrudScope<TEntity> scope, TEntity entity)
+        where TEntity : class
+    {
+        if (entity is IOwnedByDepartment && DepartmentMask.IsStoredOn(typeof(TEntity)))
+        {
+            ModuleBaseDepartment.Keep(scope.Services.GetService<ModuleRegistry>(), scope.Database.Entry(entity));
+        }
+    }
+
     private static IQueryable<TEntity> Source<TEntity, TListDto, TDetailDto, TWriteDto>(
         DbContext database,
         CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options)
@@ -388,12 +405,19 @@ public static class MapCrudExtensions
 
         var departments = currentUser.Departments.ToList();
         var entity = Expression.Parameter(typeof(TEntity), "entity");
-        var owner = Expression.Property(entity, nameof(IOwnedByDepartment.OwnerDepartment));
 
-        Expression readable = Expression.Call(
-            Expression.Constant(departments),
-            typeof(List<Department>).GetMethod(nameof(List<Department>.Contains), [typeof(Department)])!,
-            owner);
+        // One of theirs: the row's department in their list, or — for a row in the care of several
+        // departments (M2) — a bit in common between the row's mask and theirs.
+        Expression readable = DepartmentMask.IsStoredOn(typeof(TEntity))
+            ? Expression.NotEqual(
+                Expression.And(
+                    Expression.Property(entity, DepartmentMask.PropertyName),
+                    Expression.Constant(DepartmentMask.Of(departments))),
+                Expression.Constant(0))
+            : Expression.Call(
+                Expression.Constant(departments),
+                typeof(List<Department>).GetMethod(nameof(List<Department>.Contains), [typeof(Department)])!,
+                Expression.Property(entity, nameof(IOwnedByDepartment.OwnerDepartment)));
 
         // "Mine, or one of the ones this resource shares." The engine is not told what makes a row
         // shared, only that some are: a template is a template to `ContentEntry` and to nobody else
