@@ -86,6 +86,33 @@
 }
 
 /*
+ * The third thing this hub overrides in Atmosphere, and the one a reader notices first (12 September
+ * 2026, `decisions/2026-09-12-il-sito-ha-un-colore.md`).
+ *
+ * Their base rules paint `h2`-`h6` in fuselage-400 while the body of the text is fuselage-800, so
+ * every section heading of the public site — and every heading of the back office — is a pale grey.
+ * Calculated on white: ≈ 3.2 : 1, which is enough for a large heading and **not** enough for AA at
+ * `h5` and `h6`, and it is the single largest reason a page here read washed out. `H1`…`H4` declare no
+ * colour of their own, so this one rule is every heading the application will ever draw.
+ *
+ * `var(--foreground)` and not a colour: the same token the text takes, so a heading follows the dark
+ * theme and the four dark grounds of a section without a second value to keep in step.
+ *
+ * ⚠️ No `!important` and no `.dark` twin, for one reason: Atmosphere's base rules (`h2 {}` **and**
+ * `.dark h2 {}`) live in `@layer base`, this rule is unlayered, and in the cascade an unlayered rule
+ * beats a layered one whatever its specificity — the same road already verified in a browser for the
+ * `Select` above. Asserted by `e2e/contrast.spec.ts`, which measures the headings of the public site
+ * in the **light** theme: the case that was missing, because the old check looked at the dark one.
+ */
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--foreground);
+}
+
+/*
  * A panel that scrolls on its own — the bar of components and the properties of the editor — with
  * a scrollbar that does not shout (Carmine, 11 September 2026, with a screenshot: two wide, pale
  * bars framing the page being composed). The two standard properties, in the theme's own colours,

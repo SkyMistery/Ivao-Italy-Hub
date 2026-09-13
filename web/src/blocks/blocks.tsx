@@ -34,7 +34,7 @@ import { CALENDAR_VIEWS, CalendarView, MarkdownContent, type CalendarItem } from
 import { embedSource } from './allowlist';
 import { categoryLabel, type ContentListData } from './data';
 import { usePrinting } from './print';
-import { CALLOUT_TONES, COORDINATION_DIRECTIONS, STATION_KINDS } from './schemas';
+import { ACCENTS, CALLOUT_TONES, COORDINATION_DIRECTIONS, STATION_KINDS } from './schemas';
 
 /**
  * How the blocks of the core are drawn (design M0 §5.4, design M1 §1). All but one draw what an
@@ -138,6 +138,64 @@ const GRID_OF: Record<number, string> = {
 
 function gridOf(columns: number): string {
   return GRID_OF[columns] ?? GRID_OF[3]!;
+}
+
+// ---- the accent of a block -------------------------------------------------------------------
+
+/**
+ * The four accents (`schemas.ts`, `ACCENTS`), as a pair of classes each: one for a glyph, one for a
+ * rule (12 September 2026, `decisions/2026-09-12-il-sito-ha-un-colore.md`).
+ *
+ * Every pair is `light dark:dark`, and that is what makes an accent work inside a **dark ground**
+ * without a second decision anywhere: a section on `brand`, `deep`, `dark` or `aurora` carries the
+ * class `dark`, so the dark half of the pair is the one that applies in there — on a light page and
+ * in a dark one alike.
+ *
+ * ⚠️ **Graphics only, never a word.** WCAG asks 3 : 1 of a graphic and 4.5 : 1 of text, and the
+ * brand's orange does not reach the second everywhere these can stand: `product-artifice-low` is
+ * 4.5 : 1 on white but **3.7 : 1** on the `accent` ground, and `artifice-dark` is 3.2 : 1 on white
+ * already. So an accent draws an icon, the rule above a card and the bar above a hero — and a hero's
+ * overline stays the secondary grey it was. Calculated, lightest case of each pair: ocean-600 6.8 : 1
+ * on white and 5.6 : 1 on `ocean-50`, aurora-mid 7.6 : 1, artifice-low 4.5 : 1; and on the darkest
+ * ground of the four, aurora-light 3.8 : 1 and artifice-light 7.5 : 1.
+ *
+ * `brand` is `text-primary`, which is exactly what these blocks drew before there was a choice.
+ */
+const ACCENT_GLYPH: Record<(typeof ACCENTS)[number], string> = {
+  brand: 'text-primary',
+  ocean: 'text-ocean-600 dark:text-ocean-300',
+  aurora: 'text-product-aurora-mid dark:text-product-aurora-light',
+  artifice: 'text-product-artifice-low dark:text-product-artifice-light',
+};
+
+/**
+ * The same four as the colour of a **whole** border, for an element whose only border has a width on
+ * one side: the spine of a timeline is `border-l`, so colouring four sides paints one.
+ */
+const ACCENT_EDGE: Record<(typeof ACCENTS)[number], string> = {
+  brand: 'border-primary',
+  ocean: 'border-ocean-600 dark:border-ocean-300',
+  aurora: 'border-product-aurora-mid dark:border-product-aurora-light',
+  artifice: 'border-product-artifice-low dark:border-product-artifice-light',
+};
+
+/**
+ * And the same four on the **top** edge alone, for an element that already has a border on every
+ * side. ⚠️ Seen in a browser and not deduced: a card of Atmosphere draws a hairline all the way
+ * round, so `border-t-2` with a colour for every side turned the whole card into an outline in that
+ * colour — handsome, and not what a rule above a card is. `border-t-*` leaves the other three to the
+ * theme, which is what keeps a grid of cards quiet enough to have four accents in the catalogue.
+ */
+const ACCENT_TOP: Record<(typeof ACCENTS)[number], string> = {
+  brand: 'border-t-primary',
+  ocean: 'border-t-ocean-600 dark:border-t-ocean-300',
+  aurora: 'border-t-product-aurora-mid dark:border-t-product-aurora-light',
+  artifice: 'border-t-product-artifice-low dark:border-t-product-artifice-light',
+};
+
+/** Which accent a block was given, or the one it always had. */
+function accentOf(props: Record<string, unknown>): (typeof ACCENTS)[number] {
+  return choice(props, 'accent', ACCENTS, 'brand');
 }
 
 // ---- heading ---------------------------------------------------------------------------------
@@ -286,7 +344,11 @@ export function LinkListBlock({ data }: BlockComponentProps) {
 const HERO_TONE = {
   plain: 'bg-card text-card-foreground border-border border',
   muted: 'bg-muted text-foreground',
-  accent: 'bg-accent text-accent-foreground',
+  // The same pale blue the `accent` ground of a section became on 12 September, and `text-foreground`
+  // instead of `--accent-foreground`: that token is fuselage-500, so the body of a hero on this tone
+  // was a grey on a grey at 3.6 : 1 — enough for the title, which is large, and not for the line
+  // under it. Calculated, and the reason this line changed rather than only the section's ground.
+  accent: 'bg-ocean-50 text-foreground dark:bg-ocean-900',
 } as const;
 
 export function HeroBlock({ props }: BlockComponentProps) {
@@ -296,6 +358,7 @@ export function HeroBlock({ props }: BlockComponentProps) {
   const picture = media(props, 'mediaId');
   const eyebrow = read(text(props, 'eyebrow'));
   const body = read(text(props, 'text'));
+  const accent = accentOf(props);
 
   // The picture stands beside the words rather than behind them. Behind, it would need a veil to
   // keep the text readable, and a veil is a colour that is not a token of the theme.
@@ -303,6 +366,10 @@ export function HeroBlock({ props }: BlockComponentProps) {
     <div
       className={`flex flex-col gap-4 ${align === 'center' && picture === null ? 'items-center text-center' : ''}`}
     >
+      {/* The accent of a hero is this bar and not the overline beside it: an overline is a word, and
+          an accent never colours a word (`ACCENT_GLYPH`). `bg-current` takes the colour the pair
+          sets on the text, so the bar and an icon elsewhere cannot drift apart. */}
+      <span className={`h-1 w-12 rounded-full ${ACCENT_GLYPH[accent]} bg-current`} aria-hidden />
       {eyebrow === '' ? null : (
         <span className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">{eyebrow}</span>
       )}
@@ -466,6 +533,7 @@ export function TimelineBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
   const steps = choice(props, 'variant', ['steps', 'timeline'] as const, 'steps') === 'steps';
   const items = entries(props, 'items');
+  const accent = accentOf(props);
 
   const day = (value: unknown): string => {
     if (typeof value !== 'string' || value === '') {
@@ -490,16 +558,26 @@ export function TimelineBlock({ props }: BlockComponentProps) {
           <li
             key={index}
             className={
-              steps ? 'flex flex-col gap-2' : 'border-border flex flex-col gap-2 border-l pb-6 pl-6 last:pb-0'
+              steps
+                ? 'flex flex-col gap-2'
+                : // The spine of a timeline is a graphic, so it takes the accent; on `steps` there is
+                  // no line to take it and the icon carries it alone.
+                  `flex flex-col gap-2 border-l pb-6 pl-6 last:pb-0 ${ACCENT_EDGE[accent]}`
             }
           >
             <div className="text-muted-foreground flex items-center gap-2 text-sm">
               {typeof item.icon === 'string' ? (
-                <ChosenIcon name={item.icon} className="size-4" />
+                <ChosenIcon name={item.icon} className={`size-4 ${ACCENT_GLYPH[accent]}`} />
               ) : (
                 // The number is what says "step three of five" when no icon was chosen; on a
                 // timeline it is the marker on the line.
-                <span className="bg-muted text-muted-foreground flex size-6 items-center justify-center rounded-full text-xs tabular-nums">
+                //
+                // ⚠️ `text-foreground` and not the secondary grey it was until 12 September 2026:
+                // 12px on the pill's own ground measured **4.15 : 1** on a dark ground and 3.96 : 1
+                // on the tinted one, where AA asks 4.5. Found by adding a timeline to the grounds
+                // that `e2e/contrast.spec.ts` measures, which is the only reason anybody looked: the
+                // number was never secondary text, it is the marker of the step.
+                <span className="bg-muted text-foreground flex size-6 items-center justify-center rounded-full text-xs tabular-nums">
                   {index + 1}
                 </span>
               )}
@@ -641,6 +719,7 @@ export function CoordinationBlock({ props }: BlockComponentProps) {
 
 export function CardGridBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
+  const accent = accentOf(props);
 
   return (
     <div className={`grid grid-cols-1 gap-6 ${gridOf(count(props, 'columns', 3))}`}>
@@ -650,13 +729,15 @@ export function CardGridBlock({ props }: BlockComponentProps) {
         const href = plain(card, 'href');
 
         const inside = (
-          <CardRoot className="flex h-full flex-col overflow-hidden">
+          // The rule above a card is the accent of this grid: a card of `bg-card` on a page of
+          // `bg-body` is two greys one step apart, so the edge is what gives it an edge.
+          <CardRoot className={`flex h-full flex-col overflow-hidden border-t-2 ${ACCENT_TOP[accent]}`}>
             {picture === null ? null : (
               <img src={mediaFileUrl(picture)} alt="" className="h-40 w-full object-cover" loading="lazy" />
             )}
             <CardContent className="flex flex-col gap-2 p-5">
               {typeof card.icon === 'string' ? (
-                <ChosenIcon name={card.icon} className="text-muted-foreground size-6" />
+                <ChosenIcon name={card.icon} className={`size-6 ${ACCENT_GLYPH[accent]}`} />
               ) : null}
               <H4>{read(text(card, 'title'))}</H4>
               {body === '' ? null : <p className="text-muted-foreground">{body}</p>}
@@ -687,6 +768,7 @@ export function CardGridBlock({ props }: BlockComponentProps) {
 
 export function IconGridBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
+  const accent = accentOf(props);
 
   return (
     <div className={`grid grid-cols-1 gap-6 ${gridOf(count(props, 'columns', 3))}`}>
@@ -695,7 +777,9 @@ export function IconGridBlock({ props }: BlockComponentProps) {
 
         return (
           <div key={index} className="flex flex-col gap-2">
-            <ChosenIcon name={plain(item, 'icon')} className="text-primary size-8" />
+            {/* `text-primary` was the only colour any of these blocks had; now it is one of four,
+                and it is still the one they start with. */}
+            <ChosenIcon name={plain(item, 'icon')} className={`size-8 ${ACCENT_GLYPH[accent]}`} />
             <H4>{read(text(item, 'title'))}</H4>
             {body === '' ? null : <p className="text-muted-foreground">{body}</p>}
           </div>

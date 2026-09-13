@@ -157,8 +157,9 @@ is no light-only screen and no dark-only screen.
 
 `DarkModeToggle` sits in the header of every layout; `ThemeProvider` in `main.tsx` is what decides.
 
-**Two things are overridden in Atmosphere, and they are the only two.** Both live at the bottom of
-`src/styles/index.css`, both are measured, and both have a test that fails if the line goes away.
+**Three things are overridden in Atmosphere, and they are the only three.** All of them live at the
+bottom of `src/styles/index.css`, all are measured, and each has a test that fails if the line goes
+away.
 
 The first is a **colour**. Atmosphere flips every foreground for the dark theme except
 `--muted-foreground`, which stays fuselage-500 in both — a grey that reads well on white and comes
@@ -174,16 +175,37 @@ second. The rule gives the popup the height of its own list, capped by what Radi
 on screen, so a long list still scrolls. `e2e/select.spec.ts` asserts the geometry, which is the only
 thing that would have caught it.
 
-Both have to sit **after** the Atmosphere imports, because that stylesheet is loaded after
-Tailwind's utilities and where a rule goes decides whether it wins — neither needs `!important`, and
-that was verified in a browser rather than assumed. `e2e/contrast.spec.ts` measures every visible
-piece of secondary text on nine screens in the dark theme and fails if the colour goes back; the
-colours are read out of a canvas, because some arrive as `oklab()` and a regular expression over one
-of those returns something close to black.
+The third is a **colour** again, and it is the one a reader notices first: Atmosphere's base rules
+paint `h2`–`h6` in fuselage-400 while body text is fuselage-800, so every section heading of the
+public site — and every heading in the back office — is a pale grey at about 3.2 : 1 on white. That
+is enough for a large heading and **not** enough for AA at `h5` and `h6`, and it is why a page of
+this hub read washed out. Headings take `var(--foreground)`, the same token the body of the text
+takes, so they follow the theme and the dark grounds without a second value. One rule instead of a
+pass over 72 screens: `H1`…`H4` declare no colour of their own, so the base rule is the only thing
+deciding. ⚠️ The price is that an `H3` or `H4` used as a quiet label is now as dark as the text
+beside it; the fix for one of those is to say what it is (`text-muted-foreground`), not to give every
+heading its grey back.
+
+All three have to sit **after** the Atmosphere imports, because that stylesheet is loaded after
+Tailwind's utilities and where a rule goes decides whether it wins — none of the three needs
+`!important`: Atmosphere's base rules live in `@layer base` and these are unlayered, and in the
+cascade an unlayered rule beats a layered one whatever its specificity. That was verified in a
+browser rather than assumed. `e2e/contrast.spec.ts` measures every visible piece of secondary text on
+nine screens in the dark theme, and the headings of the public site in the light theme, and fails if
+either colour goes back; the colours are read out of a canvas, because some arrive as `oklab()` and a
+regular expression over one of those returns something close to black.
 
 If you fork this and change the palette, that is the test that tells you whether your greys are
-readable. **Adding a third override is a decision, not a tweak**: the point of keeping the list short
+readable. **Adding a fourth override is a decision, not a tweak**: the point of keeping the list short
 is that "Atmosphere as it is" stays true enough to be worth saying.
+
+**The palette is wider than the theme's semantic tokens, and all of it is IVAO's.**
+`@ivao/atmosphere-brand` ships ten families — `atmos`, `ocean`, `fuselage`, the four semantic ones and
+the `product` accents (`aurora`, `artifice`, `altitude`, `creators`) — and Tailwind makes a utility of
+every stop (`bg-ocean-50`, `text-product-aurora-mid`). Reaching for one of those is not leaving the
+design system; writing a hex is. Where a colour is what a reader is meant to notice — a section's
+ground, a block's accent — it comes from a **closed named set** in the code, never from a picker, for
+the reason the grounds give below: a colour chosen by hand can promise nothing about the text on it.
 
 ## Screens are configuration, not markup
 
@@ -369,20 +391,38 @@ their own, the distance between them would depend on *which two they are*, and n
 where to change it. `spacer` exists for the declared exception — air between two blocks that belong
 together and two that do not — and not to make up for margins that disagree.
 
-**The background belongs to the section too, and there are seven**: `none`, `muted`, `accent`, the
-three dark grounds `brand`, `deep` and `dark`, and `image`, which carries a `mediaId` of the library.
-A block has no ground of its own, with three exceptions whose identity *is* their ground — `hero`,
-`callout`, `testimonial` — and even those use the semantic tokens of the theme and never a colour
-written by hand. Two `muted` sections one after the other simply merge, and that is fine:
+**The background belongs to the section too, and there are eight**: `none`, `muted`, `accent`, the
+four dark grounds `brand`, `deep`, `dark` and `aurora`, and `image`, which carries a `mediaId` of the
+library. A block has no ground of its own, with three exceptions whose identity *is* their ground —
+`hero`, `callout`, `testimonial` — and even those use the semantic tokens of the theme and never a
+colour written by hand. Two `muted` sections one after the other simply merge, and that is fine:
 alternating is the editor's choice, not a rule.
 
-⚠️ **A dark ground is a piece of the page in the dark theme.** `brand`, `deep` and `dark` carry the
-class `dark` as well as their colour, so every token inside them — foreground, secondary text,
-borders — takes its dark-theme value, and whatever a block draws there reads light by construction.
-That is what made them safe to add, and it is why there is still **no free colour**: a colour chosen
-by hand can promise nothing about the text on it. They are Atmosphere's own tokens (`atmos-700`,
-`atmos-800`, `fuselage-900`), measured by `e2e/contrast.spec.ts`; the brand blue needed a lighter
-secondary grey to reach AA, which `.on-brand-ground` gives it.
+`accent` is the one ground that is a **colour rather than a grey**: `ocean-50` in the light theme,
+`ocean-900` in the dark one. It used to be the theme's `--accent`, which is fuselage-250 — a fourth
+grey, and in the dark theme the very same value as `muted`, so two swatches in the strip drew one
+colour on the screen. Secondary text on it measures 4.8 : 1, so it needs no grey of its own.
+
+⚠️ **A dark ground is a piece of the page in the dark theme.** `brand`, `deep`, `dark` and `aurora`
+carry the class `dark` as well as their colour, so every token inside them — foreground, secondary
+text, borders — takes its dark-theme value, and whatever a block draws there reads light by
+construction. That is what made them safe to add, and it is why there is still **no free colour**: a
+colour chosen by hand can promise nothing about the text on it. They are Atmosphere's own tokens
+(`atmos-700`, `atmos-800`, `fuselage-900`, `product-aurora-dark`), measured by
+`e2e/contrast.spec.ts`; the brand blue needed a lighter secondary grey to reach AA, which
+`.on-brand-ground` gives it. `aurora` is the **dark** stop of that family and not the mid one for the
+same reason in reverse: on `aurora-mid` secondary text measures 2.3 : 1 and no grey light enough to
+fix it would still read as secondary.
+
+**A block's accent is four names, and it colours graphics only.** `hero`, `cardGrid`, `iconGrid` and
+`timeline` carry an `accent` property — `brand`, `ocean`, `aurora`, `artifice` — which draws the icon
+of an item, the 2px rule above a card and the short bar above a hero. The default is `brand`, which is
+what those blocks already looked like, so no page changes by itself. ⚠️ **Never a word.** WCAG asks
+3 : 1 of a graphic and 4.5 : 1 of text, and the brand's orange does not reach the second: `artifice-low`
+is 4.5 : 1 on white but 3.7 : 1 on the `accent` ground, and `artifice-dark` is 3.2 : 1 on white
+already. So a hero's overline stays the secondary grey and the colour becomes a bar beside it. Each
+family is a light/dark pair (`text-… dark:text-…`), which is what makes an accent work inside a dark
+ground without a second decision.
 
 While a page is being composed, every column of a section is drawn with a dashed outline and an
 empty one says where a component would go; choosing it sends the next component of the palette

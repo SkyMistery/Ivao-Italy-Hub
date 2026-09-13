@@ -40,7 +40,13 @@ import { usePicking, type PickAction, type Picking, type SortableBinding } from 
 const BACKGROUND = {
   none: '',
   muted: 'bg-muted',
-  accent: 'bg-accent',
+  // ⚠️ `ocean-50` and not the theme's `--accent` (12 September 2026): that token is fuselage-250, so
+  // this ground was a fourth grey — and in the dark theme it is fuselage-700, the very same value as
+  // `muted` above, which made two swatches of the strip draw one colour. The brand's own pale blue
+  // instead, one of the ten families the palette ships and the hub had never used. Measured by
+  // `e2e/contrast.spec.ts` like the dark grounds: secondary text on it is 4.8 : 1, so it needs no
+  // grey of its own the way the brand blue did.
+  accent: 'bg-ocean-50 dark:bg-ocean-900',
   // ⚠️ The three dark grounds (Carmine, 11 September 2026: the palette of va.ivao.aero's page
   // builder, less its free colour picker). Each carries the class `dark` as well as its colour, and
   // that is what makes them safe: Atmosphere defines the dark theme's tokens on `.dark` and Tailwind's
@@ -54,6 +60,10 @@ const BACKGROUND = {
   brand: 'dark on-brand-ground bg-atmos-700 text-foreground',
   deep: 'dark bg-atmos-800 text-foreground',
   dark: 'dark bg-fuselage-900 text-foreground',
+  // The fourth dark ground, and the first that is not blue or grey (12 September 2026): the **dark**
+  // stop of the brand's `aurora`, and not the mid one that would read greener — on `aurora-mid`
+  // secondary text measures 2.3 : 1, and no grey light enough to fix that still reads as secondary.
+  aurora: 'dark bg-product-aurora-dark text-foreground',
   image: 'bg-muted bg-cover bg-center',
 } as const;
 

@@ -20,17 +20,20 @@ import { BACKGROUNDS, LAYOUTS, columnsOf, type Background, type Layout } from '.
 
 /**
  * What each background looks like in the strip. The renderer's own classes, so they cannot drift.
- * Two of the seven are not a colour and say so with a glyph (Carmine, 11 September 2026, with a
+ * Two of the eight are not a colour and say so with a glyph (Carmine, 11 September 2026, with a
  * screenshot: the picture used to be a diagonal stripe that read as "forbidden", and "none" was a
  * white dot on a white panel): "none" is a struck circle, the picture is a picture.
  */
 const SWATCH: Record<Background, string> = {
   none: 'bg-body border-border text-muted-foreground',
   muted: 'bg-muted border-muted',
-  accent: 'bg-accent border-accent',
+  // The two that changed on 12 September: `accent` is the brand's pale blue rather than the theme's
+  // fourth grey, and `aurora` is the fourth dark ground. Both spelled as the renderer spells them.
+  accent: 'bg-ocean-50 border-ocean-50 dark:bg-ocean-900 dark:border-ocean-900',
   brand: 'bg-atmos-700 border-atmos-700',
   deep: 'bg-atmos-800 border-atmos-800',
   dark: 'bg-fuselage-900 border-fuselage-900',
+  aurora: 'bg-product-aurora-dark border-product-aurora-dark',
   // A picture is chosen in the form below — this only says which of the grounds is on.
   image: 'bg-muted border-border text-muted-foreground',
 };

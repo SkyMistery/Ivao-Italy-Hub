@@ -235,6 +235,53 @@ describe('layout and containers', () => {
   });
 });
 
+describe('the accent of a block', () => {
+  /**
+   * The four accents of 12 September 2026, asserted as the pair of classes a block asked for.
+   *
+   * ⚠️ Classes and not colours, and deliberately: jsdom computes no colour, so a test here can only
+   * say which accent was chosen. Whether that accent can be *read* is a different question, answered
+   * where colours exist — `e2e/contrast.spec.ts` measures the text on the grounds these stand on, and
+   * `blocks.tsx` carries the calculated numbers for the graphics themselves.
+   */
+  const classesOf = (selector: string) => document.querySelector(selector)?.getAttribute('class') ?? '';
+
+  test('a hero draws its accent on a bar and never on its overline', () => {
+    draw(<HeroBlock props={{ eyebrow: en('The division'), title: en('A hero'), accent: 'artifice' }} />);
+
+    expect(classesOf('.bg-current')).toContain('text-product-artifice-low');
+    // The overline is a word, and an accent never colours a word: the orange of the brand does not
+    // reach 4.5 : 1 on every ground this block can stand on, so the colour is the bar beside it.
+    expect(screen.getByText('The division')).toHaveClass('text-muted-foreground');
+  });
+
+  test('a grid of icons colours the glyph, a grid of cards the rule above the card', () => {
+    const { unmount } = draw(
+      <IconGridBlock
+        props={{ columns: 3, accent: 'aurora', items: [{ icon: 'plane', title: en('Fly') }] }}
+      />,
+    );
+    expect(classesOf('svg')).toContain('text-product-aurora-mid');
+    unmount();
+
+    draw(<CardGridBlock props={{ columns: 3, accent: 'ocean', cards: [{ title: en('Fly') }] }} />);
+    expect(classesOf('.border-t-2')).toContain('border-t-ocean-600');
+  });
+
+  test('a timeline colours its spine, and a block given no accent draws the one it always had', () => {
+    const { unmount } = draw(
+      <TimelineBlock props={{ variant: 'timeline', accent: 'aurora', items: [{ title: en('First') }] }} />,
+    );
+    expect(classesOf('li')).toContain('border-product-aurora-mid');
+    unmount();
+
+    // Nothing in the properties: `brand`, which is `text-primary` — exactly what these blocks drew
+    // before there was a choice, so no page written before today looks different when read after it.
+    draw(<IconGridBlock props={{ columns: 3, items: [{ icon: 'plane', title: en('Fly') }] }} />);
+    expect(classesOf('svg')).toContain('text-primary');
+  });
+});
+
 describe('interactive and structure', () => {
   test('a quotation carries who said it and what they do', () => {
     draw(
