@@ -57,7 +57,11 @@
 > modulo è, e la barra ha una sezione per modulo fra Contenuti e Dipartimenti (titolo `<modulo>:nav.section`).
 > **La parte A di M2 è chiusa.** Le tre PR sono impilate: **#71 → #72 → #73**, da mergiare in
 > quest'ordine ritargettando la successiva su `main` prima di cancellare il branch precedente.
-> **Prossimo**: la nota sulle due dashboard personali (`/me`, `/staff`), poi `05-design-m2.md`. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> **La nota sulle dashboard è scritta e decisa** (`decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`,
+> piano 0.76): `/me` e `/staff` fatte di blocchi Data come le dashboard dei dipartimenti, **a tutto
+> schermo** con una barra compatta, su una **griglia a tessere libere** (sei larghezze, maniglia e
+> selettore nell'editor), tessere alte uguali per riga; via il registro dei widget. **Prossime: le fasi
+> D1–D3** (parte B di `06-piano-implementazione-m2.md`), poi `05-design-m2.md` ed Events. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
 > di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >

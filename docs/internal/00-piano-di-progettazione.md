@@ -1,9 +1,23 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.75 — 13 settembre 2026 (**le righe dei moduli in cura a più dipartimenti**: una maschera di bit, un'interfaccia sola, il filtro anche nei contesti dei moduli, `modules.<key>.baseDepartment`)
+**Versione documento:** 0.76 — 13 settembre 2026 (**le dashboard a tutto schermo**: /me e /staff fatte di blocchi Data come quelle dei dipartimenti, una griglia a tessere libere, via il registro dei widget)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.76** (13 set 2026, notte): **le due dashboard personali**, la nota che il piano 0.59
+metteva all'apertura di M2: `decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`, decisa con Carmine.
+**(1) Un meccanismo solo**: `/me` e `/staff` sono righe `Dashboard` di blocchi Data, come le dashboard
+dei dipartimenti; i blocchi rispondono per chi guarda; **il registro dei widget sparisce** (§9.7: i
+moduli registrano blocchi Data e basta). Le compone il web team e valgono per tutti: nessuna scelta per
+persona. **(2) Una dashboard occupa tutto lo schermo**, con una barra compatta al posto di titolo,
+descrizione e breadcrumb, e vale per tutte, dipartimenti compresi. **(3) Una griglia a tessere libere**:
+la larghezza di un blocco (`span`, sei misure su 12 colonne) sta nell'envelope accanto a `column`;
+l'editor sposta le tessere e le ridimensiona **con una maniglia e con un selettore**, tutti e due subito.
+**(4) Tessere alte uguali per riga**, con un massimo e il contenuto che scorre. **(5) `/staff`** mostra ciò
+che aspetta me (pagine da approvare, contatti, documenti da rivedere), le mie bozze, il calendario interno,
+i miei dipartimenti e poi i riquadri dei moduli; **`/me`** parte con il solo saluto. Le fasi stanno nella
+parte B di `06-piano-implementazione-m2.md`, prima del modulo Events. Toccate §8.1, §8.2, §9.7, §13.
 
 **Changelog 0.75** (13 set 2026, notte): **H2**, la forma in codice di «a cura di» multiplo che la
 nota `moduli-non-subordinati-ai-dipartimenti` §3.3 lasciava «da confermare nel design di M2»: l'insieme
@@ -1643,7 +1657,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 
 - **Atmosphere così com'è**: stessa navbar (logo IVAO + divisore + titolo "Italy"), stessi radius, stesse card. La personalità divisionale sta nei contenuti e nelle foto, non nei colori.
 - **Due mondi, una navigazione**: area pubblica editoriale (chi siamo, come iniziare, eventi, news) e area riservata operativa (dashboard personale, moduli). Il login non è un muro: le pagine pubbliche sono davvero pubbliche (oggi non lo sono), l'accesso sblocca i servizi.
-- **Dashboard personale come home post-login**: "cosa posso fare oggi" — prossimi eventi a cui sono iscritto, richieste training in corso, mie prenotazioni, ATC online in Italia adesso, avvisi staff. La sua forma, insieme a quella della dashboard personale da staffista su `/staff`, la decide la nota di design che **apre M2** (§13, piano 0.59).
+- **Dashboard personale come home post-login**: "cosa posso fare oggi" — prossimi eventi a cui sono iscritto, richieste training in corso, mie prenotazioni, ATC online in Italia adesso, avvisi staff. **Decisa il 13 set 2026** (`decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`): una riga `Dashboard` di blocchi Data che rispondono per chi guarda, a tutto schermo, a tessere.
 - **Dark mode** di serie (Atmosphere la fornisce), preferenza salvata nel profilo.
 - **Mobile-first per la consultazione**, desktop per la gestione (data-table, back-office).
 
@@ -1663,7 +1677,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /{a}[/{b}[/{c}]]           Le pagine, in gerarchia fino a tre livelli; il primo livello lo creano WD e HQ, l'ultimo pezzo si genera dal titolo (13 set 2026, nota contenuti-centralizzati §3.7)
 /about                     Divisione, staff directory (da claim IVAO), partner, contatti
 /me                        Dashboard personale; /me/profile, /me/bookings, /me/training, /me/tours
-/staff                     Back-office: entri e vedi SOLO il tuo dipartimento (§9.0); DIR/ADIR/WM vedono tutti. Oggi porta alla dashboard del primo dipartimento; diventa la dashboard personale da staffista, progettata all'apertura di M2 (§13)
+/staff                     Back-office. La dashboard personale da staffista (decisa il 13 set 2026): ciò che aspetta me, le mie bozze, il calendario interno, i miei dipartimenti, i riquadri dei moduli
 /staff/{dept}              Dashboard del dipartimento: seminata alla nascita, poi modificata dal dipartimento nell'editor dei contenuti (riga di `cms_contents` con visibilità `department`)
 /staff/content             Pagine, news, documenti e template di tutti i dipartimenti che raggiungo, filtrati per `kind` e `department` (13 set 2026, §9.3); «Pagine» nel menu del dipartimento porta qui già filtrata
 /staff/links, /staff/media Stessa forma: si vedono e si scelgono tutti, si gestiscono i propri (§9.1)
@@ -1794,7 +1808,7 @@ Regola per il futuro: **tutto ciò che si aggiunge dopo questo catalogo è opzio
 Regole che valgono per **ogni** modulo, presente e futuro — si scrivono una volta nel nucleo e si dettagliano nel documento di design di M0:
 
 - **Maintenance**: con il modulo in manutenzione, i contenuti già pubblicati restano **visibili in sola lettura** (voci di calendario incluse); le *azioni* (prenotare, iscriversi, inviare un PIREP) rispondono 503 con pagina cortese e tradotta; i job del modulo vanno in pausa. Implementato nel nucleo, uguale per tutti.
-- **Widget di dashboard**: ogni modulo **registra** i propri widget ("le mie prenotazioni", "le mie richieste training", "i miei tour in corso"); `/me` — e in prospettiva le pagine — li compongono liberamente. Stesso principio del registry dei blocchi: più il sito è flessibile, più è general purpose. I blocchi *Data* che dipendono da un modulo (`eventList`…) sono anch'essi registrati dal modulo, non cablati nel nucleo.
+- **Widget di dashboard** ~~ogni modulo registra i propri widget~~ **dal 13 set 2026 sono blocchi Data** (`decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`): «le mie prenotazioni», «le mie richieste training», «i miei tour in corso» sono blocchi Data del modulo che rispondono per chi guarda, e `/me`, `/staff`, le dashboard dei dipartimenti e le pagine li compongono con l'editor; il registro dei widget sparisce. Stesso principio del registry dei blocchi: più il sito è flessibile, più è general purpose. I blocchi *Data* che dipendono da un modulo (`eventList`…) sono anch'essi registrati dal modulo, non cablati nel nucleo.
 - **Notifiche**: servizio unico nel **nucleo** (mail ora, Discord in M6): i moduli pubblicano *intenti* di notifica, mai SMTP diretto — un cambiamento al servizio si fa in un punto solo. Preferenze per tipo di notifica in `/me/profile`.
 - **Privacy dei membri**: l'hub **non ha un profilo utente pubblico**. L'unico profilo pubblico è quello ufficiale IVAO (`https://www.ivao.aero/Member.aspx?Id={VID}`): ovunque compaia un membro (classifiche tour, staff directory, partecipanti) si mostra il minimo necessario e si linka lì. Nessuna funzione di export dei dati utente (IVAO non la prevede); per il GDPR ci si allinea alle norme e alla privacy policy IVAO, e ogni modulo documenta nel proprio design cosa conserva di personale e per quanto (così una richiesta di cancellazione ha un percorso noto).
 - **Ricerca globale**: indice centrale `search_index` nel **nucleo** (titolo, testo, tipo, url, dipartimento, visibilità), alimentato dai moduli via `IProjectable` con `source_module`+`source_id` — lo stesso pattern del calendario (§16.4). Matching, ranking e UI (⌘K e ricerca pubblica) vivono solo nel nucleo: un fix alla ricerca **non tocca i moduli**; un modulo si limita a dire "indicizza questo".
