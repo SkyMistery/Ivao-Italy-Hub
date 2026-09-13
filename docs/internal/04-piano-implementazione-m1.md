@@ -1841,6 +1841,10 @@ ritira dal sito la sua pagina senza approvazione; Mailpit riceve le tre mail.
   della barra laterale.
 - **Verificato in locale**: Vitest (387), smoke (77), lint, typecheck, formato, build .NET. **Non in
   locale**: integrazione e giro completo (Docker spento), che esegue la CI.
+- **In CI il primo giro ha trovato un difetto vero**: il riepilogo diceva «cambiata» anche della
+  sezione non toccata, perché la pubblicazione scrive `frozen` (nullo per un blocco vivo) su ogni
+  blocco della versione e la bozza non ce l'ha. Il confronto ora toglie `frozen` dagli envelope prima
+  dell'hash, senza entrare nelle `props`.
 
 #### G20 — Le raccolte, l'indice derivato, i media aggiornati sul posto
 
