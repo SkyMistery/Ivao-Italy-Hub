@@ -3,19 +3,23 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 13 settembre 2026, notte — la parte B di M2 (le dashboard a tutto schermo) è chiusa: D1 e D2 mergiate (#75, #76), D3 in PR.
+**Ultimo aggiornamento:** 13 settembre 2026, notte — le parti A e B di M2 sono mergiate (D3 con la PR #77); Carmine ha portato il riscontro dello staff di IVAO: **il primo modulo è Tours** (piano 0.77).
 
 > ## ⚠️ Prima di tutto, per la chat che riprende
 >
-> 1. **Carmine vuole fermarsi prima dei moduli**: ha cose da dire, discusse con lo staff di IVAO,
->    che possono cambiare il piano di Events (e oltre). **Non si apre `05-design-m2.md` né si scrive
->    codice di un modulo prima di averlo ascoltato.** Chiedere a lui.
-> 2. **D3 (`/me` e `/staff`) è fatta**, branch `m2/d3-personal-dashboards`, PR #77 da mergiare (Carmine
->    mergia le sue PR). Il dettaglio e gli scostamenti dalla nota sono in `06-piano-implementazione-m2.md`,
->    sezione «D3»: il template nuovo `personal-dashboard`, `myDepartments` come booleano del calendario,
->    «Modifica» che porta alla riga che si legge e non alla prima della lista.
+> 1. **L'ordine dei moduli è cambiato** (`decisions/2026-09-13-ordine-dei-moduli.md`, piano 0.77):
+>    **M2 Tour (`flightops`) → M3 Training → M4 Eventi**, nessun altro modulo per ora. Coordinator e
+>    assistant del dipartimento di base hanno tutte le funzioni del modulo (grant a una posizione da
+>    `division.json → positionGrants`); gli advisor li decide il design di ogni modulo. Chi collabora a
+>    una riga non la cancella (da precisare nel design degli eventi).
+> 2. **Il passo dopo è il design dei tour**: `05-design-m2.md`, poi la parte C di
+>    `06-piano-implementazione-m2.md`. La base è il progetto `Ivao Italy Toursystem` (piano §9.2, riga 2).
+>    Si discute con Carmine **prima** di scriverlo.
+> 3. **Due agenti su due PC** (Tours qui, Training da un altro staffista): la nota §3.5 ha una
+>    **proposta non ancora decisa**. Punto chiave: le regole di `CLAUDE.md` sono private e fuori dal
+>    repository, quindi un secondo agente non le vedrebbe.
 >
-> ⚠️ **Ultimo stato verificato** (su `m2/d3-personal-dashboards`): unit .NET 332, integrazione 203
+> ⚠️ **Ultimo stato verificato** (su `m2/d3-personal-dashboards`, poi mergiato): unit .NET 332, integrazione 203
 > (MariaDB vera), Vitest 405, smoke 80, giro completo 19, lint, typecheck, formato, i18n. **Non
 > guardata a occhio** nel browser: il back office chiede il login IVAO. Un DB di sviluppo già seminato
 > riceve il template e le righe `me` e `staff` al prossimo avvio (il seeder applica ogni file una volta).
