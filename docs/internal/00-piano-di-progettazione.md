@@ -36,7 +36,14 @@ l'ha approvata; **togliere una pagina non si approva**; un **indice derivato all
 dice quali pagine elencano quale raccolta e quali media usano, così un media usato altrove **si
 archivia e non si cancella**; media e link **si aggiornano sul posto** (lo stesso logo con l'SVG
 nuovo), con l'indirizzo che cambia insieme al file perché `/media` è `immutable`; **il menu passa
-da WD e HQ**. Le vecchie rotte `/staff/{dept}/…` si tolgono senza redirect: il sito non è online. Nessun codice ancora: le fasi si scrivono
+da WD e HQ**, con la posizione proposta dal dipartimento e confermata da chi approva. Le vecchie
+rotte `/staff/{dept}/…` si tolgono senza redirect: il sito non è online. **L'indirizzo di una pagina
+si compone e non si scrive** (nota §3.7): gerarchia fino a **tre livelli**, «sotto quale pagina» da
+un albero più l'ultimo pezzo generato dal titolo nella lingua principale, anteprima con il controllo
+di occupato e di parola riservata, un indirizzo per pagina e non per lingua; **il primo livello lo
+creano solo WD e HQ**; chi approva **corregge** indirizzo e voce di menu invece di rimandare
+indietro; un indirizzo cambiato dopo la pubblicazione lascia un **301 automatico**; news e documenti
+hanno l'indirizzo generato. Nessun codice ancora: le fasi si scrivono
 dopo il merge della pila.
 
 **Changelog 0.71** (12 set 2026, sera): **il blocco interattivo usato davvero.** Carmine ha scaricato
@@ -1603,6 +1610,7 @@ Convenzioni MariaDB: `utf8mb4_unicode_ci`, InnoDB, `datetime(6)` UTC, soft delet
 /calendar                  Calendario unico (eventi, RFE, training, esami, tour; voci interne solo per staff)
 /documents, /documents/{dept}  Indice generale dei documenti (visibilità per ruolo); /documents/{slug} il singolo documento; nelle pagine per raccolta (§9.4)
 /news, /news/{slug}        Indice generale delle news; nelle pagine per raccolta (§9.4)
+/{a}[/{b}[/{c}]]           Le pagine, in gerarchia fino a tre livelli; il primo livello lo creano WD e HQ, l'ultimo pezzo si genera dal titolo (13 set 2026, nota contenuti-centralizzati §3.7)
 /about                     Divisione, staff directory (da claim IVAO), partner, contatti
 /me                        Dashboard personale; /me/profile, /me/bookings, /me/training, /me/tours
 /staff                     Back-office: entri e vedi SOLO il tuo dipartimento (§9.0); DIR/ADIR/WM vedono tutti. Oggi porta alla dashboard del primo dipartimento; diventa la dashboard personale da staffista, progettata all'apertura di M2 (§13)

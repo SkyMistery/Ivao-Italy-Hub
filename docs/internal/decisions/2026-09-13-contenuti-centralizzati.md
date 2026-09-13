@@ -148,10 +148,37 @@
 - Una pagina approvata senza una voce di menu non la trova nessuno, e il menu è la struttura del sito
   quanto le pagine: **anche il menu passa da WD e HQ** (Carmine, 13 settembre). `Menu.Edit` esce
   dalla matrice dei livelli di dipartimento e resta a Director, Web e ai grant.
-- **Proposta, da decidere con la forma dell'indirizzo** (vedi la discussione aperta sull'indirizzo
-  della pagina): il dipartimento **propone** la posizione nel menu insieme alla pagina, quando la
-  segna pronta, e chi approva la conferma insieme alla pagina. Così un dipartimento non ha bisogno
-  del permesso sul menu per portare una pagina nel sito.
+- **Il dipartimento propone** la posizione nel menu insieme alla pagina, quando la segna pronta, e
+  chi approva la conferma o la corregge insieme alla pagina (§3.7). Così un dipartimento non ha
+  bisogno del permesso sul menu per portare una pagina nel sito.
+
+### 3.7 L'indirizzo di una pagina si compone, non si scrive
+
+Chiesto da Carmine («proposto dal dipartimento sì, ma non un campo libero»), deciso lo stesso giorno.
+
+- **Gerarchia, fino a tre livelli**: `/training`, `/training/guide`, `/training/guide/iniziare`.
+  La rotta pubblica passa da un segmento a un percorso; costa poco adesso, perché non c'è niente
+  online.
+- **Due pezzi, nessun campo libero.** «Sotto quale pagina» si sceglie da un albero delle pagine; l'
+  **ultimo pezzo** si genera dal titolo nella **lingua principale della divisione**
+  (`division.json`): minuscole, senza accenti, parole unite da trattini. «Modifica» permette di
+  correggerlo, ma passa dalla stessa pulizia: un indirizzo sbagliato non si può scrivere.
+- **Anteprima dal vivo** (`it.ivao.aero/training/guida-per-iniziare`) con il controllo mentre si
+  scrive: occupato → propone `-2`; **parola riservata** → lo dice. Le parole riservate si ricavano
+  dalle rotte che esistono (`BACKEND_PATHS` e le rotte della SPA), non da un elenco scritto a mano.
+- **Un indirizzo per pagina, non per lingua**: resta «niente lingua negli URL».
+- **Il primo livello lo creano solo WD e HQ.** È la navigazione pubblica, che per piano §9.0 non segue
+  l'organigramma; un dipartimento sceglie sotto quale pagina mettersi.
+- **Indirizzo e menu si propongono insieme**: scegliere «sotto Training» propone la voce di menu
+  sotto Training. I due alberi restano distinti — il menu ha voci esterne e pagine che non ci sono —
+  ma di solito uno suggerisce l'altro.
+- **Chi approva può correggere l'indirizzo e la voce di menu** e pubblicare, invece di rimandare
+  indietro: una sciocchezza non deve rimbalzare fra dipartimenti per settimane.
+- **Cambiare l'indirizzo dopo la pubblicazione** passa dall'approvazione, e il vecchio diventa un
+  **301 automatico**: gli indirizzi precedenti stanno in una colonna JSON sulla riga, niente tabella.
+  Spostare una pagina sposta le figlie, e i redirect coprono anche quelle.
+- **News e documenti non scelgono**: l'indirizzo è generato dal titolo sotto `/news/` e
+  `/documents/`, visibile solo come anteprima.
 
 ## 4. Il dubbio di Carmine: un documento AOD in una pagina TD
 
