@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 
@@ -9,8 +10,23 @@ namespace IvaoHub.Core.Content;
 /// somebody, audited, exposed by the generic CRUD engine and projected into the search index.
 /// </summary>
 [Audited]
-public sealed class Link : IOwnedByDepartment, IVisible, IAuditable, IProjectable
+public sealed class Link : IOwnedByDepartment, IVisible, IAuditable, IProjectable, ISharedForReading
 {
+    /// <summary>
+    /// Which links every department may read: the public ones. The Discord of the division is one link, whichever department wrote it down, and every department puts it on its pages (note
+    /// 2026-09-13-contenuti-centralizzati, section 3.4). Changing and deleting one stays with the
+    /// department that owns it; a link with visibility <c>Department</c> stays that department's.
+    /// <para>Declared once, as an expression, for the same reason as the templates of
+    /// <see cref="ContentEntry"/>: the CRUD engine puts it in the <c>WHERE</c> of the list, and the
+    /// single authorization handler asks the row itself with the same expression compiled.</para>
+    /// </summary>
+    public static readonly Expression<Func<Link, bool>> SharedForReading =
+        link => link.Visibility == Visibility.Public;
+
+    private static readonly Func<Link, bool> SharedForReadingInMemory = SharedForReading.Compile();
+
+    bool ISharedForReading.IsSharedForReading => SharedForReadingInMemory(this);
+
     public long Id { get; set; }
 
     public Department OwnerDepartment { get; set; }

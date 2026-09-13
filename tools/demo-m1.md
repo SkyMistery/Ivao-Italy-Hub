@@ -77,7 +77,7 @@ back. And opening one entry, the **Address** is a **closed** list:
 Type something that is not one of them and it is gone the moment you leave the field, and the server
 refuses it too — the field is a convenience, the rule is the server's. **The point is not the menu**:
 it is that every address leaving this site lives in one table, so moving the forum is one row of
-`/staff/wd/links` and the menu follows.
+`/staff/links` and the menu follows.
 
 - [ ] **Point 1** — the public site exists and the code does not draw it, and a menu entry cannot
       point anywhere the site does not own.
@@ -215,7 +215,7 @@ nothing, which was one of the three questions M0 left open.
 
 This is the part M1 exists for, and the part that changed most after the first run of this sheet: G15
 rebuilt how it answers, G14 gave it a publication window, and the colour of 12 September reaches it
-through the same renderer the public site uses. On any page of `/staff/wd/content`:
+through the same renderer the public site uses. On any page of `/staff/content`:
 
 1. **Moving things.** A section moves three ways: dragged by its handle in the outline, with the
    arrows beside it, and **from the page itself** — pick one and it carries a plate with the commands
@@ -249,7 +249,7 @@ through the same renderer the public site uses. On any page of `/staff/wd/conten
 5. **A locked section** shows its fields and not its structure, with a line naming **which template**
    fixes it and who may change that. The palette above it says the same rather than offering an
    impossible "Adds to: Welcome" over buttons that are disabled for a good reason.
-6. **The differences from the template.** Open a template — `/staff/wd/templates` — add a section to
+6. **The differences from the template.** Open a template — `/staff/content?kind=Template` — add a section to
    it, then reopen a page made from it: the editor says a section was added, and offers to add it —
    **one difference at a time**, never all at once. ⚠️ And the page a visitor reads has not changed,
    and does not change even after you accept the difference into the draft. Only publishing moves

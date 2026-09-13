@@ -65,3 +65,61 @@ test('a department is marked by its own code and not by an icon every one of the
     unmount();
   }
 });
+
+test('the content of every department is one group, and a department opens the same screens filtered', () => {
+  // Note 2026-09-13-contenuti-centralizzati: one screen per object, not one per department. The
+  // first group opens them on every department; under a department they carry its code.
+  const groups = staffDestinations(
+    {
+      ...bootstrap,
+      permissions: [
+        { name: 'Content.View', department: 'ED' },
+        { name: 'Content.View', department: 'WD' },
+        { name: 'Content.ManageTemplates', department: 'WD' },
+        { name: 'Links.View', department: 'ED' },
+        { name: 'Media.View', department: 'ED' },
+      ],
+    },
+    (key) => key,
+  );
+
+  const content = groups.find((group) => group.title === 'backOffice.content');
+  expect(content?.items.map((item) => item.href)).toEqual([
+    '/staff/content?kind=Page',
+    '/staff/content?kind=News',
+    '/staff/content?kind=Document',
+    '/staff/content?kind=Template',
+    '/staff/links',
+    '/staff/media',
+  ]);
+
+  const events = groups.find((group) => group.code === 'ED');
+  const hrefs = events?.items.map((item) => item.href) ?? [];
+  expect(hrefs).toContain('/staff/content?kind=News&department=ED');
+  expect(hrefs).toContain('/staff/links?department=ED');
+  // Templates only where they may be changed: Web yes, Events no.
+  expect(hrefs).not.toContain('/staff/content?kind=Template&department=ED');
+  expect(groups.find((group) => group.code === 'WD')?.items.map((item) => item.href)).toContain(
+    '/staff/content?kind=Template&department=WD',
+  );
+  // Nothing of the old addresses is left.
+  expect(hrefs.some((href) => /\/staff\/ed\/(content|news|documents|templates|links|media)/.test(href))).toBe(
+    false,
+  );
+});
+
+test('somebody who works in one department is not offered the same entries twice', () => {
+  const groups = staffDestinations(
+    {
+      ...bootstrap,
+      user: { ...bootstrap.user, departments: ['ED'] },
+      permissions: [{ name: 'Content.View', department: 'ED' }],
+    },
+    (key) => key,
+  );
+
+  expect(groups.find((group) => group.title === 'backOffice.content')).toBeUndefined();
+  expect(groups.find((group) => group.code === 'ED')?.items.map((item) => item.href)).toContain(
+    '/staff/content?kind=Page&department=ED',
+  );
+});

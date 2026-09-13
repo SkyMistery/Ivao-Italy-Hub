@@ -60,6 +60,9 @@ public static class MediaEndpoints
                 options.SearchFields.Add(media => media.FileName);
                 options.SearchFields.Add(media => media.Alt);
 
+                // Every department picks from every public file; the handler asks the row the same.
+                options.SharedForReading = MediaAsset.SharedForReading;
+
                 // A deleted file is out of the library and out of the picker; the row survives the
                 // deletion, because a page that was already published names the identifier.
                 options.Source = database => CrudSource.BackOffice<MediaAsset>(database)

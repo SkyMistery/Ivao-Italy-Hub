@@ -38,7 +38,7 @@ E2E_SKIP_PUBLISH=1 pnpm e2e:full
 ## What the bench is
 
 - **The published application**, one origin for the API and the SPA, so a deep address such as
-  `/staff/wd/content` is served by `MapFallbackToFile` exactly as in production. This is not a
+  `/staff/content` is served by `MapFallbackToFile` exactly as in production. This is not a
   detail: verifying the M0 package by hand produced four red tests against a perfectly healthy
   build, because the static server used to serve it answered 404 to every deep address. One of the
   specs here asserts that 200 first, so a failing run says which side the problem is on.

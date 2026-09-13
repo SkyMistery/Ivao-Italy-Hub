@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { DEPARTMENTS } from '../api/department';
 import type { operations } from '../api/schema';
 
 /**
@@ -20,6 +21,18 @@ export const listSearchSchema = z.object({
 });
 
 export type ListSearch = z.output<typeof listSearchSchema>;
+
+/**
+ * A list of the back office that is not about one department: the five of every list, and the
+ * department as a filter rather than a segment of the address (note
+ * 2026-09-13-contenuti-centralizzati). Left out, the list holds every department the reader
+ * reaches; the server narrows it to those either way.
+ */
+export const departmentListSearchSchema = listSearchSchema.extend({
+  department: z.enum(DEPARTMENTS).optional(),
+});
+
+export type DepartmentListSearch = z.output<typeof departmentListSearchSchema>;
 
 /** The query the generated client sends. It is what the route's search parameters become. */
 type ContractQuery = NonNullable<operations['LinksList']['parameters']['query']>;

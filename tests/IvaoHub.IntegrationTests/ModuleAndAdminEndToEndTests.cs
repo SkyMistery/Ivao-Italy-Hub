@@ -247,7 +247,7 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         await SeedUserAsync(DirectorVid, position: "IT-DIR", cancellationToken: token);
         await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
 
-        var flightOpsLink = await SeedLinkAsync(Department.FOD, "grant-target", token);
+        var flightOpsLink = await SeedLinkAsync(Department.FOD, "grant-target", token, Visibility.Department);
 
         using var coordinator = WritingClient();
         await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
@@ -303,6 +303,51 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
             new Uri($"{LinksEndpoints.Pattern}/{flightOpsLink}", UriKind.Relative),
             token);
         Assert.Equal(HttpStatusCode.Forbidden, revoked.StatusCode);
+    }
+
+    [Fact]
+    public async Task AGrantOnEveryDepartmentOpensTheListOfEveryDepartment()
+    {
+        // "The permission to see and handle them all" (note 2026-09-13-contenuti-centralizzati,
+        // 3.1). A grant with no department used to give the permission everywhere and reach no
+        // department at all, so the list held the grantee's own rows and nothing of the others.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(DirectorVid, position: "IT-DIR", cancellationToken: token);
+        await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
+
+        var slug = $"everywhere-{Guid.NewGuid():N}"[..24];
+        var hidden = await SeedLinkAsync(Department.MD, slug, token, Visibility.Department);
+
+        using var director = WritingClient();
+        await _factory.SignInAsync(director, DirectorVid, token);
+
+        using var granting = await director.PostAsJsonAsync(
+            GrantEndpoints.Pattern,
+            Grant(EventsCoordinatorVid, "Links.Edit", department: null),
+            token);
+        Assert.Equal(HttpStatusCode.Created, granting.StatusCode);
+        var grantId = (await granting.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+
+        try
+        {
+            using var coordinator = WritingClient();
+            await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
+
+            var listed = await coordinator.GetFromJsonAsync<JsonElement>(
+                $"{LinksEndpoints.Pattern}?q={slug}&pageSize=100",
+                token);
+
+            Assert.Contains(
+                listed.GetProperty("items").EnumerateArray(),
+                item => item.GetProperty("id").GetInt64() == hidden);
+        }
+        finally
+        {
+            // Taken back: the suite shares one database, and a grant everywhere left on this VID
+            // would open every list of every class that signs it in afterwards.
+            using var revoking = await director.DeleteAsync(new Uri($"{GrantEndpoints.Pattern}/{grantId}", UriKind.Relative), token);
+            Assert.Equal(HttpStatusCode.NoContent, revoking.StatusCode);
+        }
     }
 
     [Fact]
@@ -427,7 +472,11 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         return problem.GetProperty("errors").GetProperty(field).EnumerateArray().First().GetString();
     }
 
-    private async Task<long> SeedLinkAsync(Department department, string slug, CancellationToken cancellationToken)
+    private async Task<long> SeedLinkAsync(
+        Department department,
+        string slug,
+        CancellationToken cancellationToken,
+        Visibility visibility = Visibility.Public)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
@@ -435,7 +484,7 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         var link = new Link
         {
             OwnerDepartment = department,
-            Visibility = Visibility.Public,
+            Visibility = visibility,
             Title = slug.L(slug),
             Url = $"https://example.org/{slug}",
             IsActive = true,

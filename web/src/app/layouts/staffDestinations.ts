@@ -20,6 +20,7 @@ import type { ComponentType } from 'react';
 
 import {
   type Bootstrap,
+  type Department,
   holdsPermission,
   holdsPermissionAnywhere,
   menuDepartment,
@@ -29,8 +30,14 @@ import { deptParam } from '../../shared/api/department';
 import { DEPARTMENT_MARKS } from '../../shared/icons/departmentMark';
 
 /**
- * Everywhere a member of staff may go, grouped the way the back office is: one group per department
- * they may work in, then the modules, then the administration.
+ * Everywhere a member of staff may go, grouped the way the back office is: the content of every
+ * department first, then one group per department they may work in, then the modules, then the
+ * administration.
+ *
+ * Since 13 September 2026 pages, news, documents, templates, links and media are **one screen per
+ * object**, not one per department (note 2026-09-13-contenuti-centralizzati): the first group opens
+ * them on every department this person reaches, and the entries under a department open the same
+ * screens with that department already chosen.
  *
  * It lives on its own because **two** things need it and neither may hold its own copy: the sidebar
  * draws it, and the ⌘K palette offers it next to the search results (design M1 §7). A second list
@@ -72,12 +79,96 @@ const MODULES_MANAGE = 'Modules.Manage';
 const CALENDAR_MANAGE_KINDS = 'Calendar.ManageKinds';
 /** Departmental, unlike the four above: templates belong to the department that wrote them. */
 const CONTENT_MANAGE_TEMPLATES = 'Content.ManageTemplates';
+/** What each screen of the content group is behind, anywhere. */
+const CONTENT_VIEW = 'Content.View';
+const LINKS_VIEW = 'Links.View';
+const MEDIA_VIEW = 'Media.View';
 const AUDIT_VIEW = 'Audit.View';
 
 export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => string): StaffDestinationGroup[] {
   const siteOwner = menuDepartment(bootstrap);
 
-  const groups: StaffDestinationGroup[] = reachableDepartments(bootstrap).map((department) => {
+  /**
+   * The content screens, of every department (`department` absent) or of one. One list, used by
+   * both groups, so the two cannot offer different screens.
+   */
+  const content = (department?: Department): StaffDestination[] => {
+    const of = department === undefined ? '' : `&department=${department}`;
+    const only = department === undefined ? '' : `department=${department}`;
+
+    return [
+      ...(holdsPermissionAnywhere(bootstrap, CONTENT_VIEW)
+        ? [
+            {
+              title: t('content.title'),
+              description: t('content.description'),
+              Icon: FileText,
+              href: `/staff/content?kind=Page${of}`,
+            },
+            {
+              title: t('news.title'),
+              description: t('news.description'),
+              Icon: Newspaper,
+              href: `/staff/content?kind=News${of}`,
+            },
+            {
+              title: t('documents.title'),
+              description: t('documents.description'),
+              Icon: FileArchive,
+              href: `/staff/content?kind=Document${of}`,
+            },
+          ]
+        : []),
+      // Templates are offered only to whoever may change them: every staff member *reads* them —
+      // that is what makes "new from a template" work across departments — but a menu entry leading
+      // to a screen with nothing to do on it would be a menu teaching people to ignore the menu.
+      ...((
+        department === undefined
+          ? holdsPermissionAnywhere(bootstrap, CONTENT_MANAGE_TEMPLATES)
+          : holdsPermission(bootstrap, CONTENT_MANAGE_TEMPLATES, department)
+      )
+        ? [
+            {
+              title: t('templates.title'),
+              description: t('templates.description'),
+              Icon: LayoutTemplate,
+              href: `/staff/content?kind=Template${of}`,
+            },
+          ]
+        : []),
+      ...(holdsPermissionAnywhere(bootstrap, LINKS_VIEW)
+        ? [
+            {
+              title: t('links.title'),
+              description: t('links.description'),
+              Icon: Link2,
+              href: only === '' ? '/staff/links' : `/staff/links?${only}`,
+            },
+          ]
+        : []),
+      ...(holdsPermissionAnywhere(bootstrap, MEDIA_VIEW)
+        ? [
+            {
+              title: t('media.title'),
+              description: t('media.description'),
+              Icon: Images,
+              href: only === '' ? '/staff/media' : `/staff/media?${only}`,
+            },
+          ]
+        : []),
+    ];
+  };
+
+  const groups: StaffDestinationGroup[] = [];
+
+  // Only for somebody who works in more than one department: for everybody else it would be the
+  // entries of their department, twice.
+  const everyDepartment = reachableDepartments(bootstrap).length > 1 ? content() : [];
+  if (everyDepartment.length > 0) {
+    groups.push({ title: t('backOffice.content'), Icon: FileText, items: everyDepartment });
+  }
+
+  const departments: StaffDestinationGroup[] = reachableDepartments(bootstrap).map((department) => {
     const at = (resource: string) => `/staff/${deptParam.format(department)}${resource}`;
 
     return {
@@ -97,19 +188,8 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
           Icon: LayoutDashboard,
           href: at(''),
         },
-        {
-          title: t('content.title'),
-          description: t('content.description'),
-          Icon: FileText,
-          href: at('/content'),
-        },
-        { title: t('news.title'), description: t('news.description'), Icon: Newspaper, href: at('/news') },
-        {
-          title: t('documents.title'),
-          description: t('documents.description'),
-          Icon: FileArchive,
-          href: at('/documents'),
-        },
+        // The content screens of this department: the same screens as the group above, filtered.
+        ...content(department),
         {
           title: t('calendar.title'),
           description: t('calendar.description'),
@@ -128,23 +208,6 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
           Icon: Mail,
           href: at('/contacts'),
         },
-        // Templates are of this department and only whoever may change them is offered them: every
-        // staff member *reads* them — that is what makes "new from a template" work across
-        // departments — but the screen that changes them is behind the permission, so putting the
-        // entry in front of somebody who would be turned away would be a menu teaching people to
-        // ignore the menu.
-        ...(holdsPermission(bootstrap, CONTENT_MANAGE_TEMPLATES, department)
-          ? [
-              {
-                title: t('templates.title'),
-                description: t('templates.description'),
-                Icon: LayoutTemplate,
-                href: at('/templates'),
-              },
-            ]
-          : []),
-        { title: t('links.title'), description: t('links.description'), Icon: Link2, href: at('/links') },
-        { title: t('media.title'), description: t('media.description'), Icon: Images, href: at('/media') },
         // The menu of the site belongs to one department, so the entry exists under that one and
         // nowhere else. Which department it is comes from the bootstrap and never from here.
         ...(department === siteOwner
@@ -160,6 +223,8 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
       ],
     };
   });
+
+  groups.push(...departments);
 
   // What the modules add to the back office. The server has already dropped the entries this person
   // may not follow, so there is nothing to filter here.

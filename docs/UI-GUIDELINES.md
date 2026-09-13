@@ -235,6 +235,19 @@ different set of columns, so what tells them apart is a configuration object and
 owns the address (`features/content/kinds.ts`). If telling two lists apart ever needs a second
 screen, that is worth saying out loud in the pull request.
 
+The same holds for **who** a list is about. The pages of Events and the pages of Training are one
+screen, not two: a list of the back office holds every department its reader reaches — the server
+narrows it to those — and the department is a **filter** in the address, not a segment of it
+(`/staff/content?kind=News&department=ED`). A filter is a `ListFilter` in the `toolbar` of
+`DataList`: a select with a way back to "everything", because a filter nobody can clear traps
+whoever set it. It belongs to `DataList` and is not a component of its own. The screens that are
+about one department by nature — its home, its calendar, its contacts — keep it in the address.
+
+A "new" button on a screen of every department has to know where the row goes. It goes to the
+department of the filter when the reader may write there, to the only department they write in when
+there is one, and otherwise the screen asks, beside the button — never inside the form, which would
+redraw itself around a choice somebody made halfway through filling it in.
+
 A form is a zod schema in `features/<x>/schema.ts` mirroring the write DTO, handed to `SchemaForm`.
 The schema carries types and what is required, and nothing else: every real rule belongs to the
 server, which answers with it anyway.

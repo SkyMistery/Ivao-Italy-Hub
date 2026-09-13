@@ -25,7 +25,7 @@ const editor = englishCommon.content.editor;
 
 test('the three panels are side by side, in order, at a desktop width', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/staff/ed/content/1');
+  await page.goto('/staff/content/1');
 
   const palette = page.getByRole('heading', { name: editor.components });
   // The middle column opens on the page itself, not on the outline: composing by looking at it was
@@ -56,7 +56,7 @@ test('the three panels are side by side, in order, at a desktop width', async ({
 
 test('the outline swaps the middle column and leaves the other two where they are', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/staff/ed/content/1');
+  await page.goto('/staff/content/1');
 
   const palette = page.getByRole('heading', { name: editor.components });
   const before = await palette.boundingBox();
@@ -74,7 +74,7 @@ test('the outline swaps the middle column and leaves the other two where they ar
 });
 
 test('a component from the palette lands in the section that was selected', async ({ page }) => {
-  await page.goto('/staff/ed/content/1');
+  await page.goto('/staff/content/1');
 
   // Nothing selected to begin with, and the palette says so rather than doing nothing when clicked.
   await expect(page.getByText(editor.componentsHint)).toBeVisible();

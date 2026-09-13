@@ -87,35 +87,46 @@ public sealed class MapCrudLinksEndToEndTests(MariaDbFixture mariaDb) : IAsyncLi
     }
 
     [Fact]
-    public async Task TheListIsNarrowedToTheDepartmentsOfTheUser()
+    public async Task TheListHoldsTheDepartmentsOfTheUserAndThePublicRowsOfTheOthers()
     {
         var token = TestContext.Current.CancellationToken;
         await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
         await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
 
-        await SeedLinkAsync(Department.ED, "https://events.example.org/one", token: token);
-        await SeedLinkAsync(Department.FOD, "https://flightops.example.org/one", token: token);
+        // One stem for the three, so the list is asked about these rows and nobody else's.
+        var stem = $"narrow{Guid.NewGuid():N}"[..18];
+        await SeedLinkAsync(Department.ED, $"https://events.example.org/{stem}", visibility: Visibility.Department, token: token);
+        await SeedLinkAsync(Department.FOD, $"https://flightops.example.org/{stem}-public", token: token);
+        var kept = await SeedLinkAsync(
+            Department.FOD,
+            $"https://flightops.example.org/{stem}-kept",
+            visibility: Visibility.Department,
+            token: token);
 
         using var coordinator = _factory.CreateApiClient();
         await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
-        var mine = await ListAsync(coordinator, string.Empty, token);
+        var mine = await ListAsync(coordinator, $"?q={stem}&pageSize=100", token);
 
-        // The coordinator of one department never sees the rows of another, filter or no filter.
+        // The coordinator of one department sees every row of theirs, and of the others only what is
+        // public: a link is there to be used, and the Discord of the division is on every page
+        // whichever department wrote it down (note 2026-09-13-contenuti-centralizzati, 3.4).
         Assert.All(
             mine.GetProperty("items").EnumerateArray(),
-            item => Assert.Equal("ED", item.GetProperty("ownerDepartment").GetString()));
-        Assert.NotEmpty(mine.GetProperty("items").EnumerateArray());
+            item => Assert.True(
+                item.GetProperty("ownerDepartment").GetString() == "ED"
+                || item.GetProperty("visibility").GetString() == nameof(Visibility.Public),
+                $"a row of {item.GetProperty("ownerDepartment").GetString()} that is not public was listed"));
+        Assert.Contains(mine.GetProperty("items").EnumerateArray(), item => item.GetProperty("ownerDepartment").GetString() == "ED");
+        Assert.Contains(mine.GetProperty("items").EnumerateArray(), item => item.GetProperty("ownerDepartment").GetString() == "FOD");
+        Assert.DoesNotContain(mine.GetProperty("items").EnumerateArray(), item => item.GetProperty("id").GetInt64() == kept);
 
         using var superadmin = _factory.CreateApiClient();
         await _factory.SignInAsync(superadmin, SuperadminVid, token);
-        var everything = await ListAsync(superadmin, string.Empty, token);
+        var everything = await ListAsync(superadmin, $"?q={stem}&pageSize=100", token);
 
-        var departments = everything.GetProperty("items").EnumerateArray()
-            .Select(item => item.GetProperty("ownerDepartment").GetString())
-            .ToHashSet(StringComparer.Ordinal);
-
-        Assert.Contains("ED", departments);
-        Assert.Contains("FOD", departments);
+        // Whoever reaches every department sees the three, the one kept to its department included.
+        Assert.Equal(3, everything.GetProperty("items").GetArrayLength());
+        Assert.Contains(everything.GetProperty("items").EnumerateArray(), item => item.GetProperty("id").GetInt64() == kept);
     }
 
     [Fact]
@@ -307,7 +318,12 @@ public sealed class MapCrudLinksEndToEndTests(MariaDbFixture mariaDb) : IAsyncLi
         await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
         await SeedUserAsync(FlightOpsAdvisorVid, position: "IT-FOA1", cancellationToken: token);
 
-        var foreignId = await SeedLinkAsync(Department.FOD, $"https://flightops.example.org/{Guid.NewGuid():N}", token: token);
+        var foreignId = await SeedLinkAsync(
+            Department.FOD,
+            $"https://flightops.example.org/{Guid.NewGuid():N}",
+            visibility: Visibility.Department,
+            token: token);
+        var sharedId = await SeedLinkAsync(Department.FOD, $"https://flightops.example.org/{Guid.NewGuid():N}", token: token);
 
         using var coordinator = _factory.CreateApiClient();
         await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
@@ -316,6 +332,21 @@ public sealed class MapCrudLinksEndToEndTests(MariaDbFixture mariaDb) : IAsyncLi
             new Uri($"{LinksEndpoints.Pattern}/{foreignId}", UriKind.Relative),
             token);
         Assert.Equal(HttpStatusCode.Forbidden, read.StatusCode);
+
+        // A public link of theirs is read, and only read: sharing widens reading and nothing else.
+        var shared = await coordinator.GetFromJsonAsync<JsonElement>($"{LinksEndpoints.Pattern}/{sharedId}", token);
+        using var sharedWrite = await PutAsync(
+            coordinator,
+            sharedId,
+            Payload(
+                Department.FOD,
+                "https://flightops.example.org/hijacked",
+                rowVersion: shared.GetProperty("rowVersion").GetString()),
+            token);
+        Assert.Equal(HttpStatusCode.Forbidden, sharedWrite.StatusCode);
+
+        using var sharedRemove = await DeleteAsync(coordinator, sharedId, token);
+        Assert.Equal(HttpStatusCode.Forbidden, sharedRemove.StatusCode);
 
         using var write = await PutAsync(
             coordinator,
@@ -549,6 +580,7 @@ public sealed class MapCrudLinksEndToEndTests(MariaDbFixture mariaDb) : IAsyncLi
         string? category = null,
         int sort = 0,
         Localized<string>? title = null,
+        Visibility visibility = Visibility.Public,
         CancellationToken token = default)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
@@ -557,7 +589,7 @@ public sealed class MapCrudLinksEndToEndTests(MariaDbFixture mariaDb) : IAsyncLi
         var link = new Link
         {
             OwnerDepartment = department,
-            Visibility = Visibility.Public,
+            Visibility = visibility,
             Title = title ?? new Localized<string>(
             [
                 new KeyValuePair<string, string>("it", "Invito Discord"),

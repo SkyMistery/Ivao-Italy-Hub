@@ -56,7 +56,7 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   });
 
   // ---------------------------------------------------------------- create from a template
-  await page.goto(`/staff/${department}/content`);
+  await page.goto(`/staff/content?kind=Page&department=${department.toUpperCase()}`);
 
   await choose(page, content.fields.template, englishSeed.seed.templates.sectionPage!.title);
   await page.getByPlaceholder(content.slugPlaceholder).fill(slug);
@@ -67,7 +67,7 @@ test('from a template to a page a visitor can read, and a draft that stays priva
     await page.getByRole('button', { name: content.create, exact: true }).click();
   });
 
-  await expect(page).toHaveURL(new RegExp(`/staff/${department}/content/\\d+$`));
+  await expect(page).toHaveURL(new RegExp(`/staff/content/\\d+$`));
 
   // ---------------------------------------------------------------- make it public
   // A page born from a template is visible to staff only until somebody decides otherwise, which
@@ -167,13 +167,13 @@ test('a draft nobody published is not there for a visitor', async ({ page, conte
 
   const draftSlug = `bench-draft-${Date.now().toString(36)}`;
 
-  await page.goto(`/staff/${department}/content`);
+  await page.goto(`/staff/content?kind=Page&department=${department.toUpperCase()}`);
   await choose(page, content.fields.template, englishSeed.seed.templates.sectionPage!.title);
   await page.getByPlaceholder(content.slugPlaceholder).fill(draftSlug);
   await whileWaitingFor(page, 'POST', '/api/content/from-template/', async () => {
     await page.getByRole('button', { name: content.create, exact: true }).click();
   });
-  await expect(page).toHaveURL(new RegExp(`/staff/${department}/content/\\d+$`));
+  await expect(page).toHaveURL(new RegExp(`/staff/content/\\d+$`));
 
   await choose(page, content.fields.visibility, content.options.visibility.Public, metadata(page));
   await whileWaitingFor(page, 'PUT', '/api/content/', async () => {
@@ -234,7 +234,7 @@ test('the draft saves itself after a pause, and on the way out', async ({ page, 
     },
   });
 
-  await page.goto(`/staff/${department}/content/${row.id}`);
+  await page.goto(`/staff/content/${row.id}`);
   const onThePage = page.getByRole('region', { name: content.editor.preview });
 
   // Picking the heading on the page opens its fields; writing in them applies at once (session 1)
@@ -265,7 +265,7 @@ test('the draft saves itself after a pause, and on the way out', async ({ page, 
     await page.getByRole('link', { name: content.title, exact: true }).first().click();
   });
 
-  await expect(page).toHaveURL(new RegExp(`/staff/${department}/content(\\?.*)?$`));
+  await expect(page).toHaveURL(new RegExp(`/staff/content(\\?.*)?$`));
   expect(JSON.stringify((await readContent(context, row.id)).body)).toContain(left.en);
 });
 
@@ -273,7 +273,7 @@ test('the application serves its own deep addresses, which no static server does
   // The check that says at once which side a failure is on. Serving the published package with
   // something that only knows files answers 404 here, and every back office test then fails for a
   // reason that has nothing to do with the build (handoff, "Il tag").
-  const deep = await request.get(`/staff/${department}/content`);
+  const deep = await request.get('/staff/content');
 
   expect(deep.status()).toBe(200);
   expect(deep.headers()['content-type']).toContain('text/html');
@@ -292,7 +292,7 @@ test('a page is saved twice from one page load, with no reload in between', asyn
     body: { schemaVersion: 1, sections: [] },
   });
 
-  await page.goto(`/staff/${department}/content/${row.id}`);
+  await page.goto(`/staff/content/${row.id}`);
   const save = saveDraft(page, content.editor.saveDraft);
 
   // The slug rather than a translated field: one plain input, no language tabs, and still a real

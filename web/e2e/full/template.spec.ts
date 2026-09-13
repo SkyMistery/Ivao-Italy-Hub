@@ -4,7 +4,6 @@ import { englishCommon } from '../locales';
 import {
   createContent,
   deleteContent,
-  department,
   pageFromTemplate,
   properties,
   publishContent,
@@ -97,7 +96,7 @@ test('a template that moves on is said in the editor, and changes nothing a visi
     });
 
     // ---------------------------------------------------------------- the editor says so
-    await page.goto(`/staff/${department}/content/${born.id}`);
+    await page.goto(`/staff/content/${born.id}`);
 
     await expect(page.getByText(words.template.differences)).toBeVisible();
     await expect(page.getByText(words.template.added.replace('{{section}}', 'Closing'))).toBeVisible();
@@ -167,7 +166,7 @@ test('the preview is three widths of the same page, and the narrow one is really
     body: { schemaVersion: 1, sections: [twoColumns] },
   });
 
-  await page.goto(`/staff/${department}/content/${born.id}`);
+  await page.goto(`/staff/content/${born.id}`);
   // No press to get here any more: the middle column opens on the page itself.
 
   const frame = page.getByRole('region', { name: words.preview });
@@ -222,7 +221,7 @@ test('a template written in the editor is obeyed by the pages made from it', asy
   let born: ContentRow | null = null;
 
   try {
-    await page.goto(`/staff/${department}/content/${template.id}`);
+    await page.goto(`/staff/content/${template.id}`);
     // The outline is where a section is added; the middle column opens on the page.
     await page.getByRole('button', { name: words.outline, exact: true }).click();
     await page.getByRole('button', { name: words.addSection }).click();
@@ -253,7 +252,7 @@ test('a template written in the editor is obeyed by the pages made from it', asy
 
     // ---------------------------------------------------------------- and a page obeys it
     born = await pageFromTemplate(context, template.id, `bench-obeys-${stamp}`);
-    await page.goto(`/staff/${department}/content/${born.id}`);
+    await page.goto(`/staff/content/${born.id}`);
 
     // The assertion the four fields exist for: with that section selected, the bar of components
     // offers the one block the template allows and refuses the twenty-six others. Nothing of this
@@ -301,7 +300,7 @@ test('the preview is where a page is composed: a block picked there opens its ow
     body: { schemaVersion: 1, sections: [section('opening', 'Opening', first)] },
   });
 
-  await page.goto(`/staff/${department}/content/${born.id}`);
+  await page.goto(`/staff/content/${born.id}`);
   // Nothing to press: since 10 September 2026 the middle column *is* the page, which is the second
   // half of the same decision — the road chosen on 9 September was behind a button, so it was the
   // road nobody took.
@@ -365,7 +364,7 @@ test('a component dragged from the palette lands between two blocks', async ({ p
     body: { schemaVersion: 1, sections: [pair] },
   });
 
-  await page.goto(`/staff/${department}/content/${born.id}`);
+  await page.goto(`/staff/content/${born.id}`);
 
   const frame = page.getByRole('region', { name: words.preview });
   await expect(frame.getByRole('heading', { name: later.en })).toBeVisible();
@@ -432,7 +431,7 @@ test('a section is dragged above another on the page itself', async ({ page, con
     },
   });
 
-  await page.goto(`/staff/${department}/content/${born.id}`);
+  await page.goto(`/staff/content/${born.id}`);
 
   const frame = page.getByRole('region', { name: words.preview });
   await expect(frame.locator('h2')).toHaveText([first.en, later.en]);
@@ -478,7 +477,7 @@ test('a block is dragged from one section into another on the page itself', asyn
     },
   });
 
-  await page.goto(`/staff/${department}/content/${born.id}`);
+  await page.goto(`/staff/content/${born.id}`);
 
   const frame = page.getByRole('region', { name: words.preview });
   await expect(frame.locator('h2')).toHaveText([first.en, later.en]);

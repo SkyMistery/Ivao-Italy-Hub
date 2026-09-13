@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { staffDestinations } from '../../app/layouts/staffDestinations';
 import type { Bootstrap } from '../../shared/api/bootstrap';
 import { fold } from '../../shared/search/highlight';
+import { linkTarget } from '../../shared/ui/linkTarget';
 
 import { searchQuery } from './queries';
 
@@ -80,7 +81,7 @@ export function SearchPalette({
     setQuery('');
     // A path built from data: `RouterAnchor` is the one place that widens a string into a `to`, and
     // this is the same widening for a navigation nobody clicked.
-    void navigate({ to: href as never });
+    void navigate(linkTarget(href) as never);
   };
 
   return (

@@ -2,7 +2,7 @@ import type { Department } from './bootstrap';
 
 /**
  * The one place that converts a department between the way a URL spells it and the way the API
- * does. `/staff/ed/links` reads well and `ED` is what the contract carries; without a single
+ * does. `/staff/ed/calendar` reads well and `ED` is what the contract carries; without a single
  * converter the two spellings drift apart in a route here and a filter there (design M0 §7.3).
  *
  * The routes, the staff sidebar and `filter[ownerDepartment]` all go through this object.

@@ -10,7 +10,8 @@ import { localized } from '../../shared/forms';
  * (design M0 §7.5).
  */
 export const mediaSchema = z.object({
-  // Fixed by the route, exactly as it is on a link: the list is `/staff/<dept>/media`.
+  // Fixed before the form opens, exactly as it is on a link: a file keeps the department it was
+  // uploaded into.
   ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
   visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
   // The alternative text is written once, next to the file, and inherited by every block that

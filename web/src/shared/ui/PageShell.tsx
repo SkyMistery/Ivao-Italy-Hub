@@ -5,6 +5,8 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import { linkTarget } from './linkTarget';
+
 /**
  * The frame of a page: where you are, what the page is called, and what you can do on it. Every
  * screen of `/staff` uses it, so the title and the actions never drift from one page to the next —
@@ -113,7 +115,10 @@ export function PageShell({
                   {crumb.to === undefined ? (
                     <span>{crumb.label}</span>
                   ) : (
-                    <Link to={crumb.to} className="hover:text-foreground underline-offset-2 hover:underline">
+                    <Link
+                      {...(linkTarget(crumb.to) as { to: string })}
+                      className="hover:text-foreground underline-offset-2 hover:underline"
+                    >
                       {crumb.label}
                     </Link>
                   )}
@@ -159,7 +164,10 @@ export function PageShell({
                 {crumb.to === undefined ? (
                   <span aria-current="page">{crumb.label}</span>
                 ) : (
-                  <Link to={crumb.to} className="hover:text-foreground underline-offset-2 hover:underline">
+                  <Link
+                    {...(linkTarget(crumb.to) as { to: string })}
+                    className="hover:text-foreground underline-offset-2 hover:underline"
+                  >
                     {crumb.label}
                   </Link>
                 )}

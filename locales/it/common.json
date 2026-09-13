@@ -1541,5 +1541,20 @@
       "title": "Eliminare questo tipo?",
       "description": "Le voci già archiviate sotto questo tipo mantengono la chiave con cui sono state scritte, e nessuno le riscrive. Per impedire che se ne archivino di nuove, togli invece «in uso»."
     }
+  },
+  "backOffice": {
+    "content": "Contenuti",
+    "createIn": "Nel dipartimento",
+    "filters": {
+      "kind": "Mostra",
+      "department": "Dipartimento",
+      "allDepartments": "Tutti i dipartimenti"
+    },
+    "kinds": {
+      "Page": "Pagine",
+      "News": "News",
+      "Document": "Documenti",
+      "Template": "Template"
+    }
   }
 }

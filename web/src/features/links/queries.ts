@@ -17,7 +17,7 @@ export type LinkPage = components['schemas']['PagedResultOfLinkListDto'];
 
 export const linksKey = ['links'] as const;
 
-export function linksListKey(department: Department, search: ListSearch) {
+export function linksListKey(department: Department | undefined, search: ListSearch) {
   return [...linksKey, 'list', department, search] as const;
 }
 
@@ -26,18 +26,21 @@ export function linkKey(id: number) {
 }
 
 /**
- * One page of the links of a department. The department is a filter and not a path segment because
- * the resource is `/api/links` — one CRUD engine, one route — and the back office narrows it
- * (`CrudOptions.Filterable`).
+ * One page of links: of one department when it is given, otherwise every link the reader may read —
+ * the rows of their departments and the public rows of the others (note
+ * 2026-09-13-contenuti-centralizzati, 3.4). The department is a filter and not a path segment
+ * because the resource is `/api/links` — one CRUD engine, one route (`CrudOptions.Filterable`).
  */
-export function linksListQuery(department: Department, search: ListSearch) {
+export function linksListQuery(department: Department | undefined, search: ListSearch) {
   return queryOptions({
     queryKey: linksListKey(department, search),
     queryFn: async (): Promise<LinkPage> =>
       unwrap(
         await api.GET('/api/links', {
           params: { query: toQuery(search) },
-          querySerializer: listQuerySerializer({ ownerDepartment: department }),
+          querySerializer: listQuerySerializer(
+            department === undefined ? {} : { ownerDepartment: department },
+          ),
         }),
       ),
   });
