@@ -32,6 +32,7 @@ const block: BlockEnvelope = {
   frozen: null,
   column: 0,
   source: null,
+  span: null,
 };
 
 const section = {

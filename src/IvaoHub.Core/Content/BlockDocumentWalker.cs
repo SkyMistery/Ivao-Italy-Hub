@@ -291,6 +291,7 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
 
             CheckRenderMode(block, errors);
             CheckColumn(section, block, errors);
+            CheckSpan(block, errors);
             sourceBytes += CheckSource(block, errors);
         }
 
@@ -530,6 +531,26 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// With columns, a block says which one it is in; the number has to be one the layout of its
     /// own section actually has, or the block would be drawn nowhere.
     /// </summary>
+    /// <summary>
+    /// The widths a block may take on a dashboard, in columns of twelve: ¼, ⅓, ½, ⅔, ¾ and the whole
+    /// row (note 2026-09-13-le-dashboard-a-tutto-schermo §3.5). On the envelope, like the column.
+    /// </summary>
+    public static readonly IReadOnlyList<int> Spans = [3, 4, 6, 8, 9, 12];
+
+    /// <summary>A width that is not one of <see cref="Spans"/> would be a tile the grid cannot draw.</summary>
+    private static void CheckSpan(BlockDocumentNode block, List<BlockDocumentError> errors)
+    {
+        if (block.Node["span"] is not JsonValue value)
+        {
+            return;
+        }
+
+        if (!value.TryGetValue<int>(out var span) || !Spans.Contains(span))
+        {
+            errors.Add(new BlockDocumentError("errors.body.spanUnknown", $"{block.Path}.span"));
+        }
+    }
+
     private static void CheckColumn(
         BlockDocumentNode section,
         BlockDocumentNode block,

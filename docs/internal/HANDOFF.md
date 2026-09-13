@@ -60,8 +60,11 @@
 > **La nota sulle dashboard è scritta e decisa** (`decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`,
 > piano 0.76): `/me` e `/staff` fatte di blocchi Data come le dashboard dei dipartimenti, **a tutto
 > schermo** con una barra compatta, su una **griglia a tessere libere** (sei larghezze, maniglia e
-> selettore nell'editor), tessere alte uguali per riga; via il registro dei widget. **Prossime: le fasi
-> D1–D3** (parte B di `06-piano-implementazione-m2.md`), poi `05-design-m2.md` ed Events. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> selettore nell'editor), tessere alte uguali per riga; via il registro dei widget.
+> **D1 è fatta** (branch `m2/d1-tile-grid`): `span` nell'envelope, ogni sezione di una dashboard a
+> tessere (senza layout nuovo né conversione: un blocco senza `span` prende la quota della sua colonna),
+> `/staff/{dept}` a tessere. **Prossime: D2** (l'editor della griglia) e **D3** (`/me`, `/staff`, via i
+> widget), poi `05-design-m2.md` ed Events. ⚠️ **Pila di PR**: #71 → #72 → #73 → #74 → #75. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
 > di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >

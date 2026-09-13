@@ -54,7 +54,8 @@
       "backgroundUnknown": "This section asks for a background that does not exist.",
       "columnOutOfRange": "This block is in a column its section does not have.",
       "sourceNotText": "The code of this block is not text.",
-      "sourceTooLarge": "The code of this block is too long. Keep an animation small: it travels with the page."
+      "sourceTooLarge": "The code of this block is too long. Keep an animation small: it travels with the page.",
+      "spanUnknown": "This block has a width a dashboard does not have."
     },
     "content": {
       "templateNotPublishable": "A template is not published: make a page from it and publish that.",

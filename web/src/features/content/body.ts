@@ -271,6 +271,7 @@ export function addBlock(
     frozen: null,
     column,
     source: null,
+    span: null,
   };
 
   return {

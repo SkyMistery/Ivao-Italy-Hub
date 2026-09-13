@@ -546,6 +546,15 @@ it carries the fingerprint of the file (`/media/{id}/{fingerprint}/file`), which
 year and changes when somebody replaces the file on the same row; elsewhere it is the address of the
 identifier alone, which is always right and checked again at each read.
 
+### How a block sits on a dashboard
+
+A dashboard (`ContentKind.Dashboard`) is drawn across the whole width it is given, and every block
+of it is a **tile** of a grid of twelve columns: a border, and content that scrolls inside the tile
+once it is taller than two fifths of the window, so that the tiles of a row stay the same height. The
+width is `span` on the block's envelope — 3, 4, 6, 8, 9 or 12 — and a block that names none takes the
+share of the row its column had. A block does nothing special to be a tile; it should simply read
+well at a quarter of the row, and say something useful when it has nothing to show.
+
 ### How a list block names a collection
 
 `newsList` and `documentList` list one collection of one department. The property is still called

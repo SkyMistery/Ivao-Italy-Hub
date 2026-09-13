@@ -1,7 +1,7 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
@@ -10,7 +10,14 @@ import { useLocalized } from '../shared/i18n/useLocalized';
 import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
-import { columnsOf, type BlockEnvelope, type Body, type SectionEnvelope } from './envelope';
+import {
+  columnsOf,
+  spanOf,
+  type BlockEnvelope,
+  type Body,
+  type SectionEnvelope,
+  type Span,
+} from './envelope';
 import { usePicking, type PickAction, type Picking, type SortableBinding } from './picking';
 
 /**
@@ -99,6 +106,27 @@ const COLUMN_SPAN: Record<string, readonly string[]> = {
   '3x1/3': ['@view-md:col-span-1', '@view-md:col-span-1', '@view-md:col-span-1'],
 };
 
+/**
+ * The width of a tile, per span of twelve. Literal classes, for the reason the ones above are; and a
+ * container query, so that under the width of a tablet every tile takes the whole row (note
+ * 2026-09-13-le-dashboard-a-tutto-schermo §3.5).
+ */
+const TILE_SPAN: Record<Span, string> = {
+  3: '@view-md:col-span-3',
+  4: '@view-md:col-span-4',
+  6: '@view-md:col-span-6',
+  8: '@view-md:col-span-8',
+  9: '@view-md:col-span-9',
+  12: '@view-md:col-span-12',
+};
+
+/**
+ * Whether what is being drawn is a dashboard: sections across the whole width, blocks as tiles of a
+ * grid (note 2026-09-13-le-dashboard-a-tutto-schermo). A context and not a prop threaded through
+ * every section, because it is a fact of the page and every section of it asks the same question.
+ */
+const DashboardContext = createContext(false);
+
 const GRID: Record<string, string> = {
   '1/2+1/2': '@view-md:grid-cols-2',
   '1/3+2/3': '@view-md:grid-cols-3',
@@ -118,19 +146,27 @@ export function ContentRenderer({
    * page read by a visitor. They make every picture's address one a cache may keep for a year.
    */
   media,
+  /**
+   * Draws it as a dashboard: every section across the whole width it is given, every block a tile of
+   * a grid of twelve (note 2026-09-13-le-dashboard-a-tutto-schermo).
+   */
+  dashboard = false,
 }: {
   body: Body;
   staff?: boolean;
   media?: Readonly<Record<string, string>> | undefined;
+  dashboard?: boolean;
 }) {
   const page = (
     // The container the sections measure themselves against: as wide as the page is given, which
     // on the public site is the window and in the editor's preview is the width that was chosen.
-    <div className="@container flex flex-col">
-      <Siblings sections={body.sections} staff={staff} />
+    <DashboardContext.Provider value={dashboard}>
+      <div className="@container flex flex-col">
+        <Siblings sections={body.sections} staff={staff} />
 
-      <AddSectionInvitation />
-    </div>
+        <AddSectionInvitation />
+      </div>
+    </DashboardContext.Provider>
   );
 
   return media === undefined ? (
@@ -178,6 +214,7 @@ function AddSectionInvitation() {
 }
 
 function SectionView({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
+  const dashboard = useContext(DashboardContext);
   const mediaFileUrl = useMediaFileUrl();
   const picking = usePicking();
   const { t } = useTranslation();
@@ -231,7 +268,7 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
         />
       ) : null}
 
-      <div className={`${WIDTH[section.width]} flex flex-col gap-6`}>
+      <div className={`${dashboard ? WIDTH.full : WIDTH[section.width]} flex flex-col gap-6`}>
         <SectionBlocks section={section} staff={staff} />
 
         <Siblings sections={section.sections} staff={staff} />
@@ -244,6 +281,10 @@ function SectionView({ section, staff }: { section: SectionEnvelope; staff: bool
 }
 
 function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
+  if (useContext(DashboardContext)) {
+    return <Tiles section={section} staff={staff} />;
+  }
+
   if (section.layout === 'stacked') {
     return (
       <Column section={section} column={0}>
@@ -269,6 +310,38 @@ function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: bo
               <BlockView key={block.id} block={block} staff={staff} />
             ))}
         </Column>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The blocks of a section of a dashboard, as tiles of a grid of twelve (note
+ * 2026-09-13-le-dashboard-a-tutto-schermo §3.3–3.4). Each takes its `span`, and they wrap on their
+ * own; the ones of a visual row stretch to the same height, and the content of a tile that would be
+ * taller than two fifths of the window scrolls inside it.
+ *
+ * In the order of the columns they were written in, and in their order inside a column: a dashboard
+ * seeded in two columns reads left to right as it did.
+ */
+function Tiles({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
+  const ordered = section.blocks
+    .map((block, index) => ({ block, index }))
+    .sort((one, other) => (one.block.column ?? 0) - (other.block.column ?? 0) || one.index - other.index)
+    .map(({ block }) => block);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 @view-md:grid-cols-12" data-tiles="">
+      {ordered.map((block) => (
+        <div
+          key={block.id}
+          data-tile={block.id}
+          className={`${TILE_SPAN[spanOf(block, section.layout)]} border-border bg-body flex min-h-0 flex-col rounded-lg border`}
+        >
+          <div className="max-h-[40vh] min-h-0 overflow-auto p-4">
+            <BlockView block={block} staff={staff} />
+          </div>
+        </div>
       ))}
     </div>
   );

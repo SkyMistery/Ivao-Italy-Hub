@@ -51,6 +51,7 @@ const body: Body = {
           frozen: null,
           column: 0,
           source: null,
+          span: null,
           props: {
             title: { en: 'Join us', it: 'Unisciti' },
             text: { en: 'Come and fly', it: 'Vieni a volare' },

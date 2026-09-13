@@ -45,6 +45,36 @@ export const PADDINGS = ['none', 'sm', 'md', 'lg'] as const;
  */
 export const WIDTHS = ['narrow', 'default', 'wide', 'full'] as const;
 
+/**
+ * The widths of a tile on a dashboard, in columns of twelve: ¼, ⅓, ½, ⅔, ¾ and the whole row (note
+ * 2026-09-13-le-dashboard-a-tutto-schermo §3.5). The server holds the same six in
+ * `BlockDocumentWalker.Spans`.
+ */
+export const SPANS = [3, 4, 6, 8, 9, 12] as const;
+export type Span = (typeof SPANS)[number];
+
+/** What each column of a layout is worth in twelfths, for a block on a dashboard that names no span. */
+const COLUMN_TWELFTHS: Record<Layout, readonly Span[]> = {
+  stacked: [12],
+  '1/2+1/2': [6, 6],
+  '1/3+2/3': [4, 8],
+  '2/3+1/3': [8, 4],
+  '3x1/3': [4, 4, 4],
+};
+
+/**
+ * The width of a block drawn as a tile: its own `span`, or — for a block written before dashboards
+ * were grids, or into a section with columns — the share of the row its column had. So a dashboard
+ * seeded in two columns reads as two tiles side by side without anybody rewriting it.
+ */
+export function spanOf(block: { span?: number | null; column?: number | null }, layout: Layout): Span {
+  if (SPANS.includes(block.span as Span)) {
+    return block.span as Span;
+  }
+
+  return COLUMN_TWELFTHS[layout][block.column ?? 0] ?? 12;
+}
+
 /** How many columns a layout has; a block may only claim one of them. */
 export function columnsOf(layout: Layout | null | undefined): number {
   if (layout === undefined || layout === null || layout === 'stacked') {
@@ -63,6 +93,8 @@ export const blockEnvelopeSchema = z.object({
   /** What the provider answered when the page was published. Never written by the editor. */
   frozen: z.unknown().nullish().default(null),
   column: z.number().int().nullish().default(null),
+  /** Its width on a dashboard, one of `SPANS`; absent everywhere else. */
+  span: z.number().int().nullish().default(null),
   /**
    * The source of an interactive block (12 September 2026,
    * `decisions/2026-09-12-il-blocco-interattivo.md`).
