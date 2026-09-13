@@ -555,6 +555,14 @@ width is `span` on the block's envelope — 3, 4, 6, 8, 9 or 12 — and a block 
 share of the row its column had. A block does nothing special to be a tile; it should simply read
 well at a quarter of the row, and say something useful when it has nothing to show.
 
+The two personal dashboards, `/me` and `/staff`, are rows like any other (slugs `me` and `staff`,
+seeded from the `personal-dashboard` template) and read the same for everybody: what differs is the
+answer. A tile that is about **whoever is looking** — "my drafts", "my bookings" — is a Data block
+whose provider reads the current user, is declared `AlwaysLive` (a capture of somebody's work would
+be somebody else's by the time it is read), and draws an empty state that says what to do next. There
+is no registry of dashboard widgets: a module's tile is a block of its manifest, filed in the palette
+under Data, "For whoever is looking".
+
 ### How a list block names a collection
 
 `newsList` and `documentList` list one collection of one department. The property is still called

@@ -1,22 +1,31 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
-import { reachableDepartments } from '../../shared/api/bootstrap';
+import { DashboardScreen } from '../../features/content/DashboardScreen';
+import { PERSONAL_DASHBOARDS, dashboardQuery } from '../../features/content/dashboards';
 
 /**
- * `/staff` is a door, not a page. It opens on the first department the member may work in — on its
- * dashboard, which since M1 G8 is the home of a department rather than the first list in its
- * sidebar. A staff member with no department at all is told so rather than shown an empty shell.
+ * `/staff` is the dashboard of whoever is looking (note 2026-09-13-le-dashboard-a-tutto-schermo
+ * §3.5.6): the seeded row `staff`, which the web team composes and which reads the same for
+ * everybody — each block on it answers for the person asking. Until D3 it was a door that opened on
+ * the first department; the departments are now one of its tiles, and the sidebar still leads to
+ * each of them.
  */
 export const Route = createFileRoute('/_staff/staff/')({
-  beforeLoad: ({ context }) => {
-    const first = reachableDepartments(context.bootstrap)[0];
-
-    if (first === undefined) {
-      throw redirect({ to: '/forbidden' });
-    }
-
-    // The department travels as the enum the API uses; the route's own `stringify` is what
-    // turns it into the lowercase segment of the URL (`shared/api/department.ts`).
-    throw redirect({ to: '/staff/$dept', params: { dept: first } });
-  },
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData(dashboardQuery(PERSONAL_DASHBOARDS.staff)).catch(() => null),
+  component: StaffDashboard,
 });
+
+function StaffDashboard() {
+  const { t } = useTranslation();
+  const { bootstrap } = Route.useRouteContext();
+
+  return (
+    <DashboardScreen
+      bootstrap={bootstrap}
+      slug={PERSONAL_DASHBOARDS.staff}
+      missing={t('dashboard.personalMissing')}
+    />
+  );
+}

@@ -136,7 +136,7 @@ public sealed class ModuleCompositionTests
             PermissionCatalog.Core.All.Select(permission => permission.Name).Order(StringComparer.Ordinal));
     }
 
-    // --- the widget registry -------------------------------------------------------------------
+    // --- helpers ------------------------------------------------------------------------------
 
     /// <summary>A division that says nothing about any module, which is the ordinary case.</summary>
     private static Dictionary<string, bool> NoSwitches => [];

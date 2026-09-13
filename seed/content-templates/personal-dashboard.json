@@ -1,0 +1,29 @@
+{
+  "slug": "personal-dashboard",
+  "kind": "Dashboard",
+  "title": {
+    "$t": "seed.templates.personalDashboard.title"
+  },
+  "summary": {
+    "$t": "seed.templates.personalDashboard.summary"
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_tiles",
+        "key": "tiles",
+        "title": {
+          "$t": "seed.templates.personalDashboard.tiles.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "sm",
+        "width": "full",
+        "required": true,
+        "locked": false,
+        "blocks": []
+      }
+    ]
+  }
+}

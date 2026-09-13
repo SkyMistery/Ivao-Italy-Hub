@@ -104,7 +104,7 @@ builder.Services.AddHubDbContext();
 builder.Services.AddHubCrud();
 
 // The modules of this build, and everything they contribute: permissions into the one catalogue,
-// blocks into the one block registry, widgets into the one widget registry, their own services.
+// blocks (dashboard tiles included) into the one block registry, their own services.
 // It comes before the pieces that read those registries, and it is the only place the core is told
 // that modules exist at all (design M0 section 6.1).
 builder.Services.AddHubModules(

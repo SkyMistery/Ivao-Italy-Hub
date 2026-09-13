@@ -19,7 +19,7 @@ import { initReactI18next } from 'react-i18next';
  * Which namespaces to load is the composed registry's answer, not a list written here: a module
  * declares its own in its manifest and `pnpm i18n:sync` puts the files where this can fetch them.
  * They are passed in rather than read from `app/registry` directly, because the registry pulls in
- * every block and widget component of the application and half of those reach back here — the
+ * every block component of the application and half of those reach back here — the
  * composition root is where the two meet, and it is the one place with no cycle to make.
  */
 export const DEFAULT_LOCALE = 'en';

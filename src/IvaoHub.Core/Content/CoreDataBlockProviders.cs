@@ -295,6 +295,13 @@ public sealed class CalendarBlockProvider(HubDbContext database, IClock clock, I
         {
             query = query.Where(entry => entry.OwnerDepartment == owner);
         }
+        else if (BlockProps.Flag(props, "myDepartments") && context.Page is { } audience)
+        {
+            // ⚠️ Captured, "whoever is looking" is nobody yet: the departments of whoever pressed
+            // publish would be frozen into a page other people read. The page's own department is
+            // the only answer that holds for all of them.
+            query = query.Where(entry => entry.OwnerDepartment == audience.Department);
+        }
         else if (BlockProps.Flag(props, "myDepartments"))
         {
             // The calendar of the departments of whoever is looking (note

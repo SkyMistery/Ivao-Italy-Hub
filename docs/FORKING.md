@@ -157,7 +157,9 @@ Four things, and the first two are where all of the module's own code lives:
    ```
 
    Its permissions join the one catalogue and become policies like the core's; its blocks join the
-   one block registry; its widgets join the one widget registry; its endpoints live under
+   one block registry — there is no separate registry of dashboard tiles: a tile of a module is a
+   Data block that answers for whoever is looking, placed on `/me`, `/staff` or a department's
+   dashboard with the editor; its endpoints live under
    `/api/{Key}` and nowhere else. A context of its own derives from `ModuleDbContext` and is
    registered with `AddModuleDbContext<T>`, which gives it its own `__EFMigrationsHistory_<key>` table
    and attaches the save changes interceptor — audit, the department write guard, the projections and
@@ -172,7 +174,7 @@ Four things, and the first two are where all of the module's own code lives:
    **base department** every row of the module always has (below).
 
 2. **`web/src/modules/<key>/`** — all of the module's React code, and no other folder holds any of
-   it. `index.ts` exports exactly one `ModuleManifest`: its blocks, its widgets, its routes and the
+   it. `index.ts` exports exactly one `ModuleManifest`: its blocks, its routes and the
    i18n namespaces it brings. Its language files live in `web/src/modules/<key>/locales/{lang}/`;
    `pnpm i18n:sync` copies them into `locales/`, which is the one set the browser, the back end and
    `pnpm i18n:check` all read, and CI fails if the copies are stale.

@@ -27,7 +27,11 @@ export function WelcomeBlock({ props }: BlockComponentProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <H3>{user === null ? t('blocks.welcome.anonymous') : t('blocks.welcome.greeting', { name: user.firstName || user.vid })}</H3>
+      <H3>
+        {user === null
+          ? t('blocks.welcome.anonymous')
+          : t('blocks.welcome.greeting', { name: user.firstName || user.vid })}
+      </H3>
       {user === null ? null : (
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="filled" text={`${t('me.vid')}: ${user.vid}`} />
@@ -37,7 +41,7 @@ export function WelcomeBlock({ props }: BlockComponentProps) {
           ))}
         </div>
       )}
-      {message === '' ? null : <MarkdownContent markdown={message} />}
+      {message === '' ? null : <MarkdownContent source={message} />}
     </div>
   );
 }

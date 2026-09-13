@@ -241,7 +241,8 @@
     "description": "The home of this department, and its own to arrange.",
     "create": "New dashboard",
     "edit": "Edit this dashboard",
-    "missing": "This department has no dashboard yet. One is created on the next start of the application, from the system template."
+    "missing": "This department has no dashboard yet. One is created on the next start of the application, from the system template.",
+    "personalMissing": "This dashboard has not been published yet."
   },
   "media": {
     "title": "Media library",
@@ -370,12 +371,10 @@
     "registry": {
       "title": "Registries",
       "description": "What the server declares, against what this build of the front end registered. The two halves of a module are compiled separately, so they can disagree.",
-      "agree": "The two sides agree: {{blocks}} block(s) and {{widgets}} tile(s).",
+      "agree": "The two sides agree: {{blocks}} block(s).",
       "blockMissingHere": "The server declares the block \"{{type}}\" and this build cannot draw it. The front end was probably not rebuilt with the module.",
       "blockMissingOnServer": "This build registers the block \"{{type}}\" and the server does not know it. A page using it would be refused on save.",
-      "blockVersion": "The block {{detail}} is known to both sides at different versions.",
-      "widgetMissingHere": "The server declares the dashboard tile \"{{key}}\" and this build cannot draw it.",
-      "widgetMissingOnServer": "This build registers the dashboard tile \"{{key}}\" and the server does not declare it, so nothing will ask for it."
+      "blockVersion": "The block {{detail}} is known to both sides at different versions."
     }
   },
   "content": {
@@ -720,7 +719,8 @@
       "tables": "Tables and steps",
       "grids": "Grids",
       "containers": "Containers",
-      "operational": "Operational tables"
+      "operational": "Operational tables",
+      "personal": "For whoever is looking"
     },
     "frequencyTable": {
       "label": "Frequency table",
@@ -1232,6 +1232,7 @@
         "kinds": "Kinds",
         "kinds.kind": "Kind",
         "department": "Department",
+        "myDepartments": "Only the departments of whoever is looking",
         "range": "How far ahead",
         "limit": "How many at most",
         "view": "View"
@@ -1346,13 +1347,48 @@
           "cards": "Cards"
         }
       }
-    }
-  },
-  "widgets": {
-    "welcome": {
-      "title": "Your account"
     },
-    "unknown": "This installation declares a dashboard tile this browser cannot draw: {{keys}}. It is probably a module the front end was not rebuilt for."
+    "welcome": {
+      "label": "Greeting",
+      "greeting": "Hello, {{name}}",
+      "anonymous": "Welcome",
+      "fields": {
+        "message": "Message under the greeting"
+      }
+    },
+    "myDepartments": {
+      "label": "My departments",
+      "title": "My departments",
+      "empty": "You do not work in any department yet."
+    },
+    "myWork": {
+      "label": "What waits for me",
+      "sentBack": "Sent back",
+      "fields": {
+        "what": "What it shows",
+        "limit": "How many at most"
+      },
+      "options": {
+        "what": {
+          "approvals": "Pages to approve",
+          "contacts": "Contacts arrived",
+          "reviews": "Documents to review",
+          "drafts": "My drafts"
+        }
+      },
+      "titles": {
+        "approvals": "Pages to approve",
+        "contacts": "Contacts arrived",
+        "reviews": "Documents to review",
+        "drafts": "My drafts"
+      },
+      "empty": {
+        "approvals": "No page is waiting for your approval.",
+        "contacts": "No new message in your departments.",
+        "reviews": "No document is due for a review.",
+        "drafts": "You have no drafts pending."
+      }
+    }
   },
   "grants": {
     "title": "Permissions",

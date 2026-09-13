@@ -148,9 +148,10 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
         }
 
         // And one per department, in a division whose departments are the same nine: a fork opens
-        // its back office on a dashboard of its own without anybody seeding one by hand.
+        // its back office on a dashboard of its own without anybody seeding one by hand — and the two
+        // personal ones, `/me` and `/staff`, since D3.
         Assert.Equal(
-            Enum.GetValues<Department>().Length,
+            Enum.GetValues<Department>().Length + 2,
             pages.Count(page => page.Kind == ContentKind.Dashboard));
 
         // The menu that leads to those pages. It is a table, so it is the one part of the

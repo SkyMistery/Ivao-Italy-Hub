@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 
 import { ContentFormScreen } from '../../features/content/ContentFormScreen';
+import { dashboardAddress } from '../../features/content/dashboards';
 import { CONTENT_KINDS } from '../../features/content/kinds';
 import { contentQuery, type ContentDetailDto } from '../../features/content/queries';
 import { reachableDepartments } from '../../shared/api/bootstrap';
@@ -45,7 +46,12 @@ function DashboardForm() {
   // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
   const row = useQuery({ ...contentQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
 
-  const backToDashboard = () => void navigate({ to: '/staff/$dept', params: { dept } });
+  // Back to where the dashboard is read: `/staff/<dept>` for a department's, `/staff` or `/me` for
+  // the two personal ones, which the site's department owns.
+  const backToDashboard = () =>
+    void navigate({
+      href: row === null ? `/staff/${deptParam.format(dept)}` : dashboardAddress(row.slug, dept),
+    });
 
   return (
     <ContentFormScreen
@@ -54,7 +60,7 @@ function DashboardForm() {
       department={dept}
       id={id}
       content={row}
-      breadcrumbTo={`/staff/${deptParam.format(dept)}`}
+      breadcrumbTo={row === null ? `/staff/${deptParam.format(dept)}` : dashboardAddress(row.slug, dept)}
       onCreated={async (created) => {
         await navigate({ to: '/staff/$dept/dashboard/$id', params: { dept, id: String(created) } });
       }}

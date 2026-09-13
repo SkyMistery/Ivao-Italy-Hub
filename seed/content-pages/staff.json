@@ -1,7 +1,7 @@
 {
   "slug": "staff",
   "kind": "Dashboard",
-  "template": "dashboard",
+  "template": "personal-dashboard",
   "visibility": "Staff",
   "title": {
     "$t": "seed.pages.staff.title"
@@ -14,7 +14,7 @@
     "sections": [
       {
         "id": "s_staff",
-        "key": "staff",
+        "key": "tiles",
         "title": {
           "$t": "seed.pages.staff.section"
         },

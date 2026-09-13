@@ -49,6 +49,11 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
+
+  interface StaticDataRouteOption {
+    /** The route draws on the whole width of the public frame, not in its reading column (`Shell`). */
+    wide?: boolean;
+  }
 }
 
 const container = document.getElementById('root');

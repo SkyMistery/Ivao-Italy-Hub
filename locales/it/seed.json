@@ -69,6 +69,13 @@
         "notes": {
           "section": "Note"
         }
+      },
+      "personalDashboard": {
+        "title": "Dashboard personale",
+        "summary": "Una griglia di tessere che rispondono per chi guarda: il punto di partenza di /me e /staff.",
+        "tiles": {
+          "section": "Tessere"
+        }
       }
     },
     "pages": {

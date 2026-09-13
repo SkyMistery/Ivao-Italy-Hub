@@ -1,7 +1,7 @@
 {
   "slug": "me",
   "kind": "Dashboard",
-  "template": "dashboard",
+  "template": "personal-dashboard",
   "visibility": "Members",
   "title": {
     "$t": "seed.pages.me.title"
@@ -14,7 +14,7 @@
     "sections": [
       {
         "id": "s_me",
-        "key": "me",
+        "key": "tiles",
         "title": {
           "$t": "seed.pages.me.section"
         },

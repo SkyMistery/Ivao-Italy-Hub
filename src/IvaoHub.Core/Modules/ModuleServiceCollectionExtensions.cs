@@ -17,8 +17,8 @@ public static class ModuleServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the modules and everything they contribute: their permissions into the one
-    /// catalogue, their blocks into the one block registry, their widgets into the one widget
-    /// registry, and their own services through <c>ConfigureServices</c>.
+    /// catalogue, their blocks — dashboard tiles included — into the one block registry, and their
+    /// own services through <c>ConfigureServices</c>.
     /// <para>Contributions are only taken from the modules this division actually runs. An optional
     /// module switched off in <c>division.modules</c> is compiled in and silent: its blocks are not
     /// registered, so a page naming one is refused exactly as it would be on an installation that

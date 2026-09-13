@@ -241,7 +241,8 @@
     "description": "La pagina d'ingresso di questo dipartimento, che il dipartimento sistema come vuole.",
     "create": "Nuova dashboard",
     "edit": "Modifica questa dashboard",
-    "missing": "Questo dipartimento non ha ancora una dashboard. Ne nasce una al prossimo avvio dell'applicazione, dal template di sistema."
+    "missing": "Questo dipartimento non ha ancora una dashboard. Ne nasce una al prossimo avvio dell'applicazione, dal template di sistema.",
+    "personalMissing": "Questa dashboard non è ancora stata pubblicata."
   },
   "media": {
     "title": "Libreria media",
@@ -370,12 +371,10 @@
     "registry": {
       "title": "Registri",
       "description": "Quello che dichiara il server, accanto a quello che questa build del front end ha registrato. Le due metà di un modulo si compilano separatamente, quindi possono non coincidere.",
-      "agree": "Le due parti coincidono: {{blocks}} blocco/blocchi e {{widgets}} riquadro/riquadri.",
+      "agree": "Le due parti coincidono: {{blocks}} blocco/blocchi.",
       "blockMissingHere": "Il server dichiara il blocco «{{type}}» e questa build non sa disegnarlo. Probabilmente il front end non è stato ricompilato con il modulo.",
       "blockMissingOnServer": "Questa build registra il blocco «{{type}}» e il server non lo conosce. Una pagina che lo usasse verrebbe rifiutata al salvataggio.",
-      "blockVersion": "Il blocco {{detail}} è noto a tutte e due le parti con versioni diverse.",
-      "widgetMissingHere": "Il server dichiara il riquadro «{{key}}» e questa build non sa disegnarlo.",
-      "widgetMissingOnServer": "Questa build registra il riquadro «{{key}}» e il server non lo dichiara, quindi nessuno lo chiederà."
+      "blockVersion": "Il blocco {{detail}} è noto a tutte e due le parti con versioni diverse."
     }
   },
   "content": {
@@ -720,7 +719,8 @@
       "tables": "Tabelle e passaggi",
       "grids": "Griglie",
       "containers": "Contenitori",
-      "operational": "Tabelle operative"
+      "operational": "Tabelle operative",
+      "personal": "Per chi guarda"
     },
     "frequencyTable": {
       "label": "Tabella delle frequenze",
@@ -1232,6 +1232,7 @@
         "kinds": "Tipi",
         "kinds.kind": "Tipo",
         "department": "Dipartimento",
+        "myDepartments": "Solo i dipartimenti di chi guarda",
         "range": "Quanto in avanti",
         "limit": "Quante al massimo",
         "view": "Vista"
@@ -1346,13 +1347,48 @@
           "cards": "Schede"
         }
       }
-    }
-  },
-  "widgets": {
-    "welcome": {
-      "title": "Il tuo account"
     },
-    "unknown": "Questa installazione dichiara un riquadro che questo browser non sa disegnare: {{keys}}. Probabilmente è un modulo per cui il front end non è stato ricompilato."
+    "welcome": {
+      "label": "Saluto",
+      "greeting": "Ciao, {{name}}",
+      "anonymous": "Benvenuto",
+      "fields": {
+        "message": "Messaggio sotto il saluto"
+      }
+    },
+    "myDepartments": {
+      "label": "I miei dipartimenti",
+      "title": "I miei dipartimenti",
+      "empty": "Non lavori ancora in nessun dipartimento."
+    },
+    "myWork": {
+      "label": "Cose da fare",
+      "sentBack": "Rimandata indietro",
+      "fields": {
+        "what": "Che cosa mostra",
+        "limit": "Quante al massimo"
+      },
+      "options": {
+        "what": {
+          "approvals": "Pagine da approvare",
+          "contacts": "Contatti arrivati",
+          "reviews": "Documenti da rivedere",
+          "drafts": "Le mie bozze"
+        }
+      },
+      "titles": {
+        "approvals": "Pagine da approvare",
+        "contacts": "Contatti arrivati",
+        "reviews": "Documenti da rivedere",
+        "drafts": "Le mie bozze"
+      },
+      "empty": {
+        "approvals": "Nessuna pagina aspetta la tua approvazione.",
+        "contacts": "Nessun messaggio nuovo nei tuoi dipartimenti.",
+        "reviews": "Nessun documento da rivedere.",
+        "drafts": "Non hai bozze in sospeso."
+      }
+    }
   },
   "grants": {
     "title": "Permessi",
