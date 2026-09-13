@@ -284,6 +284,11 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G13 | I difetti trovati usando, e le rifiniture del collaudo — **fatta**, PR #57 | G12 | i quattro difetti e le dodici richieste della demo, poi le due giornate di collaudo a occhio |
 | G15 | L'editor che risponde — **dopo il tag, prima di G14** | G13 | proprietà applicate scrivendo, annulla/ripeti da tastiera, autosalvataggio a 10 s con audit senza corpo, trascinamento dalla barra, anteprima «Phone» che accorpa davvero le colonne |
 | G14 | Il documento operativo (LoA/SOP) | G15 | tipo SOP/LoA, sei campi operativi da `ref_`, `Archived`/`Superseded`, Frequency Table e Coordination, piè di pagina con la stampa |
+| G16 | Via vIPI: il modulo `atc` e la metà ATC della G14 — **scritta il 13 set 2026** | merge della pila #59–#65 | nessun `IvaoHub.Modules.Atc`, composizione provata da un modulo finto nei test, un documento senza tipo/posizioni/ICAO/FIR/AIRAC, `/atc` ancora servita come pagina |
+| G17 | Una schermata per oggetto — **scritta il 13 set 2026** | G16 | `/staff/content`, `/staff/links`, `/staff/media` con filtri; nessuna rotta `/staff/{dept}/content…`; media e link scelti da ogni dipartimento; un grant «ogni dipartimento» allarga la lista |
+| G18 | L'indirizzo composto — **scritta il 13 set 2026** | G17 | pagine fino a tre livelli, nessun campo libero, parole riservate ricavate dalle rotte, 301 dal vecchio indirizzo, primo livello solo WD e HQ |
+| G19 | L'approvazione delle pagine — **scritta il 13 set 2026** | G18 | `Ready` in sola lettura, versione candidata, `Content.Approve`, riepilogo per sezione, coda, proposta di indirizzo e menu corretta da chi approva, `Menu.Edit` solo WD e HQ |
+| G20 | Le raccolte, l'indice derivato, i media aggiornati sul posto — **scritta il 13 set 2026** | G19 | un documento in più pagine per raccolta, «compare in», un media usato altrove archiviato e non cancellato, l'SVG nuovo sotto un indirizzo nuovo |
 
 **Parallelismo.** G5 e G6 non si toccano (tabelle, rotte e schermate diverse) e possono girare in
 sessioni parallele **se** si rispetta la regola 2 di §A. G7 dipende solo da G2 e può anticipare G5/G6
@@ -1469,6 +1474,217 @@ i rifiuti e l'accettazione, la pagina pubblica dopo pubblicazione e sostituzione
 una volta). Verificato in Chrome: l'elenco «LIRF — Roma Fiumicino» nel campo Aeroporto, le posizioni
 che seguono l'aeroporto scelto, la pagina pubblica con avviso «Not in force yet», striscia, piè di
 pagina «Version 2 · Published on · by Carmine Granato · AIRAC 2609 · Print».
+
+---
+
+### Le fasi del 13 settembre — G16–G20
+
+**Da dove vengono.** Il 13 settembre Carmine ha portato tre richieste emerse con lo staff di IVAO, e
+le ha decise domanda per domanda: `decisions/2026-09-13-staccarsi-da-vipi.md`,
+`decisions/2026-09-13-contenuti-centralizzati.md`,
+`decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md` (piano 0.72, PR #65). **Le note
+sono la specifica**: ogni fase qui sotto rimanda al paragrafo, e se una fase e la sua nota non
+coincidono vince la nota e la fase si corregge.
+
+**Quando.** Dopo il merge della pila #59–#65, da `main`, una fase per sessione e una PR per fase.
+Il sito **non è online** e non lo sarà per almeno due settimane (Carmine, 13 settembre): nessuna
+fase scrive redirect per indirizzi del back-office che nessuno ha salvato. Le **migrazioni restano
+additive** lo stesso (piano §11.3): la CI applica la catena intera, e la regola non ha un'eccezione
+«tanto non è online».
+
+**Che cosa non c'è.** I grant a una posizione, `IOwnedByDepartment` a insieme e il dipartimento di
+base dei moduli si fanno **all'apertura di M2** (nota moduli §4): senza un modulo che li usi
+sarebbero codice speculativo.
+
+**Il conto previsto** (da confrontare in ogni PR): **una** tabella nuova in tutto — l'indice derivato
+di G20 —; **zero** authorization handler; **zero** componenti fuori dall'elenco chiuso, con due
+candidati da decidere se servono davvero (il selettore ad albero di G18 e il riepilogo delle
+differenze di G19: prima si prova con `Tree`/`List` di Atmosphere e i componenti che ci sono);
+**un** permesso nuovo, `Content.Approve`.
+
+#### G16 — Via vIPI: il modulo `atc` e la metà ATC della G14
+
+Nota: `staccarsi-da-vipi` §3. Branch `m1/g16-without-vipi`.
+
+1. **Il modulo `atc` se ne va.** Via `src/IvaoHub.Modules.Atc`, `web/src/modules/atc/`, le righe in
+   `IvaoHub.Web/Modules.cs` e `web/src/modules/index.ts`, le esclusioni `/services/vsop`, `/vsop`,
+   `/_content`, `/_framework` dal fallback della SPA. **Prima** di togliere: cercare ogni test che
+   nomina `AtcModule`, `atc` o `/api/atc/ping` e scrivere al suo posto un **modulo finto nel solo
+   progetto dei test** (chiave `sample`, un endpoint, una voce di menu, un'esclusione, un permesso),
+   in modo che la composizione — menu, rotte, esclusioni, maintenance, bootstrap `/api/me` — resti
+   provata. Un test di architettura che conta i moduli si aggiorna, non si cancella.
+2. **`IModule.Department` esce dal contratto** (nota moduli §3.1), con `ModuleBase` e
+   `WidgetDescriptor.Department` se nessuno lo legge più. Design M0 §6 aggiornato nella stessa PR.
+3. **`/atc` resta**: è una riga di `cms_contents` seminata; verificare che la rotta pubblica la serva
+   ancora senza il modulo. Il link ad `atc.it.ivao.aero` **non si semina**: è un indirizzo della
+   divisione italiana, e un seed del repository non lo può nominare (`CLAUDE.md` §3). Carmine lo
+   aggiunge dal menu; la scheda della demo lo dice.
+4. **La metà ATC della G14 esce dal codice, le colonne restano.** Via `DocumentType` e i campi
+   `PrimaryPosition`, `SecondaryPosition`, `Icao`, `Fir` da entità, DTO, validatore, form e schermata
+   pubblica (la striscia operativa perde tipo, posizioni, ICAO e FIR, e tiene «in vigore dal» e «da
+   rivedere entro»); via «Ciclo AIRAC» dalla finestra di pubblicazione e dal piè di pagina; via
+   `GET /api/ref/airspace` (`Core/Ivao/AirspaceEndpoints.cs`), che serviva solo quei campi — ed era
+   l'endpoint scritto a mano di G14, che il conto ora restituisce. Le proprietà EF si tolgono dal
+   modello **senza** migrazione di `DROP`: le colonne restano nel database fino a una fase di
+   contract dopo la prima release (piano §11.3). Se EF genera una migrazione che le toglie, non la
+   si committa: le colonne si mappano come ignorate o shadow finché non arriva il contract.
+5. **Restano e si verificano**: `RetiredAt`/`SupersededById`, `EffectiveOn`, `ReviewOn` e
+   `DocumentReviewJob`, `ShowFooter` e la stampa, i blocchi `frequencyTable` e `coordination`
+   (il sottogruppo `atc` della barra dei componenti si chiama come il resto dei gruppi: se il nome
+   nomina l'ATC, lo si rinomina per ciò che i blocchi sono — tabelle operative).
+
+**Criteri**: build e test verdi senza `IvaoHub.Modules.Atc`; il test della divisione fittizia «XX»
+verde; il giro e2e pubblica un documento con «in vigore dal» e lo legge; nessuna occorrenza di
+`Sop`, `Loa`, `Airac`, `PrimaryPosition` fuori dalle migrazioni e dai loro snapshot.
+
+#### G17 — Una schermata per oggetto
+
+Nota: `contenuti-centralizzati` §3.1, §3.4, §3.5. Branch `m1/g17-one-screen-per-object`.
+
+1. **Il motore di lista senza `{dept}`.** `MapCrud` e la lista generica servono le righe di **tutti**
+   i dipartimenti che l'utente raggiunge; `department` diventa un filtro come gli altri
+   (`filter[department]=…`), e `kind` già lo è. Nessuna lista scritta a mano: si estende il motore
+   (§E). La colonna «Dipartimento» compare quando l'utente ne raggiunge più di uno.
+2. **Un grant «ogni dipartimento» allarga la lista.** Il punto marcato ⚠️ nella nota: oggi il filtro
+   della lista poggia su `ReachesEveryDepartment`, un fatto del ruolo (nota del 3 settembre). Un
+   grant con `Department = null` deve dare la stessa lista, e un deny su un dipartimento deve
+   toglierlo **anche dalla lista**. Test di integrazione per i tre casi, prima del codice.
+3. **Le rotte.** `/staff/content` (pagine, news, documenti, template: `validateSearch` con `kind` e
+   `department`), `/staff/content/$id`; `/staff/links`, `/staff/media` con i loro `$id`. **Si
+   tolgono** `/staff/$dept/content|news|documents|templates|links|media` e le loro voci: il sito non
+   è online. `/staff/$dept` resta con dashboard, calendario, contatti.
+4. **La barra laterale dello staff**: **Contenuti** (Pagine, News, Documenti, Template, Link, Media:
+   ognuna è `/staff/content?kind=…`) · **Dipartimenti** (le dashboard, poi calendario e contatti del
+   dipartimento). Le voci del menu del dipartimento che portano a un tipo di contenuto aprono la
+   schermata con `department` già scelto.
+5. **Creare.** Il form chiede il dipartimento fra quelli in cui si ha `Content.Edit` (per un template
+   `Content.ManageTemplates`), nascosto se è uno. Il server rifiuta un dipartimento in cui non si
+   scrive, con `ProblemDetails` sul campo.
+6. **Media e link condivisi in lettura.** `MediaAsset` e `Link` dichiarano `ISharedForReading`: la
+   lettura di tutto lo staff, **solo per i media pubblici** (un media `department` resta del suo
+   dipartimento). La lista li mostra tutti; modifica e cancellazione restano del proprietario — il
+   pulsante non compare sulle righe altrui, e il server risponde 403 comunque. Il `MediaPicker` di un
+   blocco li offre tutti, con il filtro per dipartimento.
+
+**Criteri**: uno staffista TD vede in `/staff/content` solo righe TD e crea solo in TD; un
+coordinator TD + advisor AOD vede le due e sceglie; WD vede tutto; un VID con grant `Content.Edit`
+su ogni dipartimento vede tutto; il picker di una pagina TD offre il logo caricato dal WD e il
+server rifiuta al TD di modificarlo. Giro e2e aggiornato alle rotte nuove.
+
+#### G18 — L'indirizzo composto
+
+Nota: `contenuti-centralizzati` §3.7. Branch `m1/g18-composed-address`.
+
+1. **Il modello.** Su `cms_contents`, per le pagine: `parent_id` (un'altra pagina, nullable = primo
+   livello) e `previous_paths` (JSON, gli indirizzi che la pagina ha avuto dopo la sua prima
+   pubblicazione). `slug` resta l'**ultimo pezzo**; il percorso intero si calcola risalendo i
+   genitori, al massimo **tre livelli** — il validatore rifiuta il quarto e un ciclo. Unicità: lo
+   slug è unico **fra i fratelli**, non più in tutta la tabella. Migrazione additiva, e la vecchia
+   unicità si allenta nella stessa migrazione solo se è un indice (non è un `DROP` di colonna).
+2. **La rotta pubblica** passa da `/_public/$slug` a un percorso di uno, due o tre segmenti, che il
+   server risolve in una pagina (`GET /api/public/pages/by-path?path=…`, esteso sull'endpoint di
+   oggi e non accanto). Un indirizzo che è in `previous_paths` risponde con il **301** verso quello
+   attuale: lo decide il server, e la SPA segue il redirect nel loader.
+3. **Le parole riservate si ricavano, non si elencano**: il primo segmento non può essere un
+   percorso che l'applicazione già possiede — `BACKEND_PATHS` (`web/backendPaths.ts`), le rotte
+   statiche di `_public`, `_member` e `_staff`. Un test confronta l'elenco del server con quello del
+   router, così una rotta nuova diventa riservata da sola.
+4. **Il form**: al posto del campo slug, «Sotto quale pagina» (albero delle pagine che si possono
+   usare come genitore; **«in cima al sito» solo per chi ha `Content.Approve`**, cioè WD, HQ e grant)
+   e l'ultimo pezzo generato dal titolo nella lingua di default della divisione (minuscole, senza
+   diacritici, trattini, lunghezza massima), con «modifica» che passa dalla stessa pulizia.
+   **Anteprima** dell'indirizzo intero con l'esito del controllo mentre si scrive (libero · occupato,
+   propone `-2` · riservato). Il controllo è un endpoint del motore, non un fetch a mano.
+5. **News e documenti** non mostrano la scelta: slug generato dal titolo, anteprima in sola lettura.
+6. **Cambiare indirizzo a una pagina pubblicata** aggiunge il vecchio a `previous_paths` di lei **e
+   delle figlie**, nella stessa transazione. In G18 lo può fare chi pubblica; in G19 passerà
+   dall'approvazione.
+
+**Criteri**: `/training/guide/iniziare` risponde; `/training/guide/iniziare/altro` è rifiutato alla
+creazione; una pagina chiamata `news` in cima è rifiutata con il messaggio sul campo; spostare
+`/training/guide` sotto `/pilots` fa rispondere 301 a `/training/guide/iniziare` verso
+`/pilots/guide/iniziare`; uno staffista TD non vede «in cima al sito».
+
+#### G19 — L'approvazione delle pagine
+
+Nota: `contenuti-centralizzati` §3.2, §3.6, §3.7. Branch `m1/g19-page-approval`.
+
+1. **Il permesso e la configurazione.** `Content.Approve` nel catalogo del nucleo, tenuto da Director
+   e Web ovunque (`ReachesEveryDepartment`) e da nessun livello di dipartimento: la matrice ha la
+   riga di test. `division.json → contentApproval: ["Page"]`; vuoto = il flusso di oggi. Il test
+   della divisione «XX» gira con l'elenco vuoto **e** pieno.
+2. **Lo stato.** `PublishStatus.Ready`, additivo. Su `cms_content_versions`: `is_candidate` (o uno
+   stato della versione), `approved_by`, `approved_at`, `review_note`. **Segna pronta** crea la
+   versione candidata; **ritira dalla revisione** la scarta; **approva** pubblica la candidata così
+   com'è; **rimanda indietro** la scarta con la nota. Tutto nel servizio di pubblicazione
+   (`ContentPublishService`), che chiede `Content.Approve` invece di `Content.Publish` quando il
+   `kind` è in `contentApproval` e chi agisce non ha già `Content.Approve`: **una** condizione nel
+   servizio, nessun handler.
+3. **Pronta = sola lettura.** L'editor apre una pagina `Ready` senza campi attivi e con «Ritira dalla
+   revisione»; l'autosalvataggio di G15 non parte; il server rifiuta una scrittura su una riga
+   `Ready` (409 con `ProblemDetails`), così il blocco non dipende dalla SPA.
+4. **Togliere dal sito non si approva**: «Ritira dal sito» resta di chi ha `Content.Publish` sul
+   dipartimento, anche per i `kind` in `contentApproval`.
+5. **Il riepilogo per chi approva**: fra la candidata e la versione pubblicata, per `key` di sezione:
+   aggiunte, tolte, cambiate (confronto dell'envelope e dell'hash del contenuto della sezione, senza
+   interpretare le `props`), più titolo, indirizzo e voce di menu proposti. Una pagina mai pubblicata
+   mostra «prima pubblicazione». Anteprima della candidata con il renderer di sempre.
+6. **La coda**: `/staff/content?status=ready` è la coda (un filtro, non una schermata); la dashboard
+   dello staff di chi ha `Content.Approve` ha un blocco Data «da approvare» con il conteggio.
+7. **Indirizzo e menu proposti.** «Segna pronta» chiede, oltre alla nota facoltativa, la **voce di
+   menu proposta** (sotto quale voce, etichetta tradotta, o «nessuna»), salvata sulla candidata.
+   Chi approva vede indirizzo e voce proposti **modificabili**, e «approva» pubblica la pagina e
+   crea la voce. `Menu.Edit` esce dai livelli di dipartimento della matrice (le righe del menu sono
+   già di `SiteOwnership.Department`: verificare che il cambio non tolga niente al WD).
+8. **Le notifiche**: tre intenti del servizio del nucleo — `content.readyForApproval` a chi ha
+   `Content.Approve` sul dipartimento, `content.approved` e `content.sentBack` all'autore — con le
+   chiavi i18n in `locales/*/mail.json`.
+
+**Criteri**: un coordinator TD segna pronta e **non** può pubblicare (403); dopo «pronta» il suo
+editor è in sola lettura e il server rifiuta un salvataggio; WD vede la coda con 1, il riepilogo
+«cambiata: Hero», corregge l'indirizzo e pubblica; online va la candidata anche se nel frattempo
+qualcuno ha provato a scrivere; una news TD si pubblica dal coordinator TD senza coda; il TD
+ritira dal sito la sua pagina senza approvazione; Mailpit riceve le tre mail.
+
+#### G20 — Le raccolte, l'indice derivato, i media aggiornati sul posto
+
+Nota: `contenuti-centralizzati` §3.3, §3.4. Branch `m1/g20-collections`.
+
+1. **Le raccolte** allargano le categorie di G5 (`cms_categories`): il vocabolario per dipartimento
+   resta quello, rinominato nell'interfaccia; sul contenuto, accanto a `category`, una colonna JSON
+   `collections` (elenco di chiavi). Migrazione additiva che **copia** `category` in `collections`;
+   `category` smette di essere scritta e si toglie in un contract futuro. News e documenti scelgono
+   **più** raccolte, anche nessuna (allora stanno solo negli indici `/news` e `/documents`).
+2. **I blocchi** `documentList` e `newsList`: `department` + `collection` (sostituisce `category`,
+   con `schema_version` e una migrazione dello schema zod per i corpi salvati). Il picker offre le
+   raccolte di **qualsiasi** dipartimento: una pagina TD elenca le guide AOD (nota §4).
+3. **L'indice derivato** — l'unica tabella nuova di queste fasi: `cms_content_references`
+   (`content_id`, `version_id`, `kind`: `collection` | `media`, `target`). Si riempie **alla
+   pubblicazione**, nella stessa transazione, per la versione pubblicata: le raccolte le dichiara il
+   provider di `documentList`/`newsList` (legge le sue `props`, come fa già per rispondere); i media
+   li trova il walker generico dell'envelope, estendendolo a riconoscere un `mediaId` — **una**
+   convenzione di nome nelle proprietà, già usata dal generatore di form per `.meta({ media: true })`:
+   verificarlo prima di contarci. Ritirare una pagina dal sito cancella le sue righe.
+4. **«Compare in»** nell'editor di un documento o di una news: le pagine pubblicate che elencano una
+   delle sue raccolte, con il titolo e l'indirizzo. Nella schermata delle raccolte: «usata in N
+   pagine», e togliere una raccolta usata chiede conferma elencandole.
+5. **Un media usato non si cancella: si archivia.** `MediaAsset.archived_at`; archiviato esce dal
+   picker e continua a essere servito. La cancellazione resta solo per un media che l'indice non
+   nomina (e nessuna versione pubblicata lo nomina).
+6. **Aggiornare un media sul posto.** «Sostituisci il file» sulla stessa riga: un file nuovo su disco
+   — **mai** sovrascrivere, perché con la deduplica (piano 0.66) un file può essere di due righe — e
+   l'**indirizzo cambia con il file**, perché `/media/{id}/{name}` pubblico è `immutable` per un
+   anno. Forma da decidere nella fase guardando `MediaUrl`: una versione o l'impronta corta nel
+   percorso. Gli schemi dei blocchi salvano `mediaId` (`.meta({ media: true })`, visto il 13
+   settembre in `blocks/schemas.ts`); **da verificare prima** che nessun altro posto — la copertina
+   di una news, `frozen_json`, il markdown — tenga l'indirizzo: se lo tiene, la fase lo dice e si
+   ferma (§16.E). Un **link** si aggiorna già
+   modificandolo: verificare che i blocchi che lo usano leggano la riga e non una copia.
+
+**Criteri**: un documento AOD in due raccolte compare in due pagine, una TD e una AOD; l'editor del
+documento dice «compare in: Training › Guide, ATC › Procedure»; il WD non riesce a cancellare il
+logo usato dalla pagina TD e lo archivia; sostituito l'SVG, la pagina TD pubblicata mostra il file
+nuovo con un indirizzo diverso e la risposta è ancora `immutable`.
 
 ---
 
