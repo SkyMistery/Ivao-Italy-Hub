@@ -602,7 +602,19 @@
       "untitledRow": "Untitled row",
       "addHere": "+ Add here",
       "blankBlock": "{{block}} — nothing written yet. Fill it in on the right.",
-      "dropHere": "Drop here"
+      "dropHere": "Drop here",
+      "tileWidth": {
+        "label": "Tile width",
+        "handle": "Tile width: {{width}}. Drag, or use the left and right arrows.",
+        "options": {
+          "3": "A quarter",
+          "4": "A third",
+          "6": "Half",
+          "8": "Two thirds",
+          "9": "Three quarters",
+          "12": "The whole row"
+        }
+      }
     },
     "slugPlaceholder": "my-new-page",
     "hints": {

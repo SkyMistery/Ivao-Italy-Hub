@@ -108,6 +108,7 @@ interface CommonStrings {
     };
     readonly editor: {
       readonly saveDraft: string;
+      readonly tileWidth: { readonly label: string; readonly options: { readonly '6': string } };
       readonly publish: string;
       readonly publishDialog: {
         readonly changelog: string;

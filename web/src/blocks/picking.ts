@@ -1,6 +1,6 @@
 import { createContext, useContext, type CSSProperties, type ComponentType, type ReactNode } from 'react';
 
-import type { BlockEnvelope } from './envelope';
+import type { BlockEnvelope, Span } from './envelope';
 
 /**
  * Composing a page **on the page**, instead of in an outline beside a preview.
@@ -86,6 +86,11 @@ export interface Picking {
    * section's (Carmine, 11 September 2026). The same binding a section gets; the grip is on the
    * picked block's bar, and a block the editor answers no commands for gets no grip.
    */
+  /**
+   * The width of a tile of a dashboard, changed from the handle on its edge or from the keyboard (D2,
+   * note 2026-09-13-le-dashboard-a-tutto-schermo §3.5). Absent for a page, whose blocks have no width.
+   */
+  readonly onSpan?: (id: string, span: Span) => void;
   readonly BlockDraggable?: ComponentType<{
     id: string;
     type: string;

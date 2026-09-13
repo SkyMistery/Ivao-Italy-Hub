@@ -6,6 +6,7 @@ import { calloutSchema, headingSchema, linkListSchema } from '../../blocks/schem
 import {
   addBlock,
   addSection,
+  asTiles,
   clampColumns,
   defaultProps,
   duplicateBlock,
@@ -16,6 +17,7 @@ import {
   moveSection,
   removeSection,
   reorderBlocks,
+  setSpan,
   updateBlock,
 } from './body';
 
@@ -245,4 +247,36 @@ test('a choice that is optional starts at nothing chosen, and leaves the payload
 
   // And what starts there is valid: a block added to a page must not be born refused.
   expect(linkListSchema.safeParse(props).success).toBe(true);
+});
+
+// ---- the tiles of a dashboard (D2) ------------------------------------------------------------
+
+test('a section of a dashboard is written as the tiles it is drawn as', () => {
+  const seeded = readBody({
+    schemaVersion: 1,
+    sections: [
+      {
+        id: 's_board',
+        layout: '1/3+2/3',
+        blocks: [
+          { id: 'b_wide', type: 'text', props: {}, column: 1 },
+          { id: 'b_narrow', type: 'text', props: {}, column: 0 },
+          { id: 'b_named', type: 'text', props: {}, column: 0, span: 12 },
+        ],
+      },
+    ],
+  });
+
+  const tiled = asTiles(seeded, 's_board').sections[0];
+
+  // In the order of the grid, each at the width it was shown at, all in one column.
+  expect(tiled?.layout).toBe('stacked');
+  expect(tiled?.blocks.map((block) => [block.id, block.span, block.column])).toEqual([
+    ['b_narrow', 4, 0],
+    ['b_named', 12, 0],
+    ['b_wide', 8, 0],
+  ]);
+
+  const narrower = setSpan(asTiles(seeded, 's_board'), 'b_wide', 6);
+  expect(findBlock(narrower, 'b_wide')?.block.span).toBe(6);
 });

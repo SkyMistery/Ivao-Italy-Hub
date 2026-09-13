@@ -26,6 +26,7 @@ import {
   PickingContext,
   type BlockEnvelope,
   type Body,
+  type Span,
 } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { ApiError } from '../../shared/api/problem';
@@ -44,6 +45,7 @@ import { SectionSortable, SectionSortableGroup, type SectionDrag } from './Secti
 import { AddressPreview } from './AddressPreview';
 import {
   addBlock,
+  asTiles,
   addSection,
   clampColumns,
   defaultProps,
@@ -57,6 +59,7 @@ import {
   moveSection,
   removeBlock,
   removeSection,
+  setSpan,
   reorderBlocks,
   reorderSections,
   updateBlock,
@@ -193,6 +196,9 @@ export function ContentEditor({
   const { t, i18n } = useTranslation();
   const read = useLocalized();
   const moment = useMoment();
+
+  // A dashboard is composed as a grid of tiles (D2, note 2026-09-13-le-dashboard-a-tutto-schermo).
+  const isDashboard = kind === 'Dashboard';
 
   // The body, and the way back from the last thing that happened to it. A section moved by mistake
   // was one of the frictions the hand copy of `/about` recorded (HANDOFF §27).
@@ -419,8 +425,10 @@ export function ContentEditor({
       return;
     }
 
+    // On a dashboard the section is first written as its tiles, so that where the component lands is
+    // a place in the grid (D2).
     const added = addBlock(
-      body,
+      isDashboard ? asTiles(body, sectionId) : body,
       sectionId,
       type,
       // The blank properties, minus the optional ones nobody has written into: a block
@@ -430,7 +438,7 @@ export function ContentEditor({
       // A data block starts live: capturing is a decision somebody makes, and one that
       // only means anything once the page is published.
       registration.kind === 'Data' ? 'live' : null,
-      column,
+      isDashboard ? 0 : column,
       at,
     );
 
@@ -477,7 +485,11 @@ export function ContentEditor({
     // A block of the page, dropped on a slot anywhere on it: its own column, another, another
     // section's. It stays picked, so the panel keeps showing it wherever it landed.
     if (dragged?.kind === 'block' && target?.kind === 'slot') {
-      change(moveBlockTo(body, dragged.id, target.section, target.column, target.index));
+      change(
+        isDashboard
+          ? moveBlockTo(asTiles(body, target.section), dragged.id, target.section, 0, target.index)
+          : moveBlockTo(body, dragged.id, target.section, target.column, target.index),
+      );
       return;
     }
 
@@ -690,6 +702,7 @@ export function ContentEditor({
       ) : block !== undefined ? (
         <BlockProperties
           key={block.block.id}
+          dashboard={isDashboard}
           block={block.block}
           section={block.section}
           // Where it may be moved to from the keyboard: every section the template does not lock,
@@ -863,6 +876,10 @@ export function ContentEditor({
     accepts: (sectionId: string) => !ruleFor(rules, findSection(body, sectionId)?.key).locked,
     // Where a dragged component may land, drawn by the renderer, known to dnd-kit only here.
     DropZone,
+    // The width of a tile of a dashboard, from its handle; one step of the history per gesture.
+    ...(isDashboard
+      ? { onSpan: (id: string, span: Span) => change(setSpan(body, id, span), { coalesce: `span:${id}` }) }
+      : {}),
   };
 
   return (
@@ -1026,6 +1043,7 @@ export function ContentEditor({
                   // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
                   <PickingContext.Provider value={picking}>
                     <PreviewFrame
+                      dashboard={isDashboard}
                       body={body}
                       locales={locales}
                       locale={previewLocale}

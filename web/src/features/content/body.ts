@@ -1,6 +1,14 @@
 import type { z } from 'zod';
 
-import { newId, type BlockEnvelope, type Body, type Layout, type SectionEnvelope } from '../../blocks';
+import {
+  newId,
+  spanOf,
+  type BlockEnvelope,
+  type Body,
+  type Layout,
+  type SectionEnvelope,
+  type Span,
+} from '../../blocks';
 import { blankValues } from '../../shared/forms';
 import { emptyLocalized } from '../../shared/i18n/localized';
 
@@ -331,6 +339,42 @@ export function moveBlockTo(body: Body, id: string, sectionId: string, column: n
 
       return { ...section, blocks: section.blocks.toSpliced(position, 0, moved) };
     }),
+  };
+}
+
+/**
+ * A section of a dashboard, written the way its tiles are drawn (D2, note
+ * 2026-09-13-le-dashboard-a-tutto-schermo): every block with the width it is shown at, all in one
+ * column, in the order the grid shows them. A dashboard seeded in columns reads as tiles already
+ * (`spanOf`); the first time somebody adds or moves a tile the section is made to say so, so that
+ * "before the third tile" means the third tile and not the third block of the first column.
+ */
+export function asTiles(body: Body, sectionId: string): Body {
+  return {
+    ...body,
+    sections: mapSections(body.sections, (section) => {
+      if (section.id !== sectionId) {
+        return section;
+      }
+
+      const ordered = section.blocks
+        .map((block, index) => ({ block, index }))
+        .sort((one, other) => (one.block.column ?? 0) - (other.block.column ?? 0) || one.index - other.index)
+        .map(({ block }) => ({ ...block, span: spanOf(block, section.layout), column: 0 }));
+
+      return { ...section, layout: 'stacked', blocks: ordered };
+    }),
+  };
+}
+
+/** The width of one tile of a dashboard. */
+export function setSpan(body: Body, id: string, span: Span): Body {
+  return {
+    ...body,
+    sections: mapSections(body.sections, (section) => ({
+      ...section,
+      blocks: section.blocks.map((block) => (block.id === id ? { ...block, span } : block)),
+    })),
   };
 }
 

@@ -1,9 +1,11 @@
-import { expect, test } from 'vitest';
+import { fireEvent } from '@testing-library/react';
+import { expect, test, vi } from 'vitest';
 
 import { renderWithProviders } from '../test/harness';
 
 import { ContentRenderer } from './ContentRenderer';
 import type { Body } from './envelope';
+import { PickingContext, type Picking } from './picking';
 
 /**
  * A dashboard is a grid of tiles and not a page of sections (note
@@ -64,4 +66,34 @@ test('a page is not a dashboard', () => {
 
   expect(container.querySelector('[data-tile]')).toBeNull();
   expect(container.querySelector('.max-w-5xl')).not.toBeNull();
+});
+
+test('the picked tile has a handle that makes it narrower or wider from the keyboard', () => {
+  const onSpan = vi.fn();
+  const picking: Picking = {
+    selected: 'b_narrow',
+    onPick: vi.fn(),
+    target: null,
+    onPickColumn: vi.fn(),
+    accepts: () => true,
+    onSpan,
+    DropZone: ({ index }) => <div data-drop-index={index} />,
+  };
+
+  const { container } = renderWithProviders(
+    <PickingContext.Provider value={picking}>
+      <ContentRenderer body={body} dashboard staff />
+    </PickingContext.Provider>,
+  );
+
+  // One handle, on the picked tile, and a slot before every tile and after the last.
+  const handles = container.querySelectorAll('[data-span-handle]');
+  expect(handles).toHaveLength(1);
+  expect(container.querySelectorAll('[data-drop-index]')).toHaveLength(4);
+
+  fireEvent.keyDown(handles[0]!, { key: 'ArrowRight' });
+  expect(onSpan).toHaveBeenLastCalledWith('b_narrow', 6);
+
+  fireEvent.keyDown(handles[0]!, { key: 'ArrowLeft' });
+  expect(onSpan).toHaveBeenLastCalledWith('b_narrow', 3);
 });

@@ -602,7 +602,19 @@
       "untitledRow": "Riga senza titolo",
       "addHere": "+ Aggiungi qui",
       "blankBlock": "{{block}}: ancora vuoto. Compilalo nel pannello a destra.",
-      "dropHere": "Lascia qui"
+      "dropHere": "Lascia qui",
+      "tileWidth": {
+        "label": "Larghezza della tessera",
+        "handle": "Larghezza della tessera: {{width}}. Trascina, o usa le frecce destra e sinistra.",
+        "options": {
+          "3": "Un quarto",
+          "4": "Un terzo",
+          "6": "Metà",
+          "8": "Due terzi",
+          "9": "Tre quarti",
+          "12": "Tutta la riga"
+        }
+      }
     },
     "slugPlaceholder": "la-mia-nuova-pagina",
     "hints": {

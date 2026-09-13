@@ -1,7 +1,14 @@
 import { Badge } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
-import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../app/registry';
@@ -11,6 +18,7 @@ import type { BlockRegistration } from '../shared/modules';
 
 import { blockDataQuery } from './data';
 import {
+  SPANS,
   columnsOf,
   spanOf,
   type BlockEnvelope,
@@ -325,25 +333,136 @@ function SectionBlocks({ section, staff }: { section: SectionEnvelope; staff: bo
  * seeded in two columns reads left to right as it did.
  */
 function Tiles({ section, staff }: { section: SectionEnvelope; staff: boolean }) {
+  const picking = usePicking();
   const ordered = section.blocks
     .map((block, index) => ({ block, index }))
     .sort((one, other) => (one.block.column ?? 0) - (other.block.column ?? 0) || one.index - other.index)
     .map(({ block }) => block);
 
+  // While a dashboard is composed (D2): a slot before every tile and after the last, where a tile
+  // or a component from the palette lands. The indexes are those of the grid, which is the order
+  // `asTiles` writes the section in before anything lands.
+  const DropZone = picking !== null && picking.accepts(section.id) ? picking.DropZone : undefined;
+  const slot = (index: number) =>
+    DropZone === undefined ? null : (
+      <DropZone key={`slot-${index}`} section={section.id} column={0} index={index} />
+    );
+
   return (
-    <div className="grid grid-cols-1 gap-4 @view-md:grid-cols-12" data-tiles="">
-      {ordered.map((block) => (
-        <div
-          key={block.id}
-          data-tile={block.id}
-          className={`${TILE_SPAN[spanOf(block, section.layout)]} border-border bg-body flex min-h-0 flex-col rounded-lg border`}
-        >
-          <div className="max-h-[40vh] min-h-0 overflow-auto p-4">
-            <BlockView block={block} staff={staff} />
-          </div>
-        </div>
-      ))}
+    // A slot, when one is drawn at all, takes a whole row of the grid.
+    <div
+      className="grid grid-cols-1 gap-4 @view-md:grid-cols-12 [&>[data-drop-index]]:col-span-full"
+      data-tiles=""
+    >
+      {ordered.flatMap((block, index) => {
+        const span = spanOf(block, section.layout);
+
+        return [
+          slot(index),
+          <div
+            key={block.id}
+            data-tile={block.id}
+            data-span={span}
+            className={`${TILE_SPAN[span]} border-border bg-body relative flex min-h-0 flex-col rounded-lg border`}
+          >
+            <div className="max-h-[40vh] min-h-0 overflow-auto p-4">
+              <BlockView block={block} staff={staff} />
+            </div>
+            {picking?.onSpan !== undefined && picking.selected === block.id ? (
+              <SpanHandle span={span} onSpan={(next) => picking.onSpan?.(block.id, next)} />
+            ) : null}
+          </div>,
+        ];
+      })}
+      {slot(ordered.length)}
     </div>
+  );
+}
+
+/**
+ * The handle on the right edge of the picked tile (D2, note 2026-09-13-le-dashboard-a-tutto-schermo
+ * §3.5): dragged, the tile snaps to the nearest of the six widths as the pointer moves; focused, the
+ * arrows make it one width narrower or wider. The panel on the right offers the same six from a select.
+ *
+ * Plain pointer events and not the drag and drop library, which the renderer does not import: this
+ * moves nothing, it measures how far the pointer is from the tile's left edge in columns of the grid.
+ */
+function SpanHandle({ span, onSpan }: { span: Span; onSpan: (span: Span) => void }) {
+  const { t } = useTranslation();
+
+  const nearest = (columns: number): Span =>
+    SPANS.reduce((best, candidate) =>
+      Math.abs(candidate - columns) < Math.abs(best - columns) ? candidate : best,
+    );
+
+  const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    const tile = event.currentTarget.closest('[data-tile]');
+    const grid = tile?.parentElement;
+    if (!(tile instanceof HTMLElement) || !(grid instanceof HTMLElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const left = tile.getBoundingClientRect().left;
+    const column = grid.getBoundingClientRect().width / 12;
+    let current = span;
+
+    const move = (moving: globalThis.PointerEvent) => {
+      const next = nearest((moving.clientX - left) / column);
+      if (next !== current) {
+        current = next;
+        onSpan(next);
+      }
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+
+      // ⚠️ The click that ends the gesture lands on whatever is under the pointer — the section
+      // around the tile — and picked the section, taking the handle and the width off the panel
+      // (found by the full round). The one click the gesture makes is swallowed, and only that one.
+      const swallow = (click: MouseEvent) => {
+        click.stopPropagation();
+        click.preventDefault();
+      };
+      window.addEventListener('click', swallow, { capture: true, once: true });
+      window.setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
+    };
+
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const index = SPANS.indexOf(span);
+    const next =
+      event.key === 'ArrowRight'
+        ? SPANS[index + 1]
+        : event.key === 'ArrowLeft'
+          ? SPANS[index - 1]
+          : undefined;
+
+    if (next !== undefined) {
+      event.preventDefault();
+      onSpan(next);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      data-chrome=""
+      data-span-handle=""
+      aria-label={t('content.editor.tileWidth.handle', {
+        width: t(`content.editor.tileWidth.options.${span}`),
+      })}
+      onPointerDown={onPointerDown}
+      onKeyDown={onKeyDown}
+      onClick={(event) => event.stopPropagation()}
+      className="bg-primary absolute top-1/2 -right-1.5 h-10 w-3 -translate-y-1/2 cursor-ew-resize touch-none rounded-sm"
+    />
   );
 }
 

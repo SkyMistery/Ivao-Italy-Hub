@@ -38,6 +38,7 @@ export function PreviewFrame({
   published,
   comparing = false,
   onCompare,
+  dashboard = false,
 }: {
   body: Body;
   /** The languages of the division and the one the page is drawn in (Carmine, 11 September 2026). */
@@ -51,6 +52,8 @@ export function PreviewFrame({
   published?: PublishedView | undefined;
   comparing?: boolean;
   onCompare?: ((comparing: boolean) => void) | undefined;
+  /** A dashboard is composed as the grid of tiles it is read as (D2). */
+  dashboard?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const [width, setWidth] = useState<PreviewWidth>('desktop');
@@ -163,11 +166,11 @@ export function PreviewFrame({
           {comparing && published !== undefined ? (
             published.state === 'ready' ? (
               <PickingContext.Provider value={null}>
-                <ContentRenderer body={published.body} staff />
+                <ContentRenderer body={published.body} staff dashboard={dashboard} />
               </PickingContext.Provider>
             ) : null
           ) : (
-            <ContentRenderer body={body} staff />
+            <ContentRenderer body={body} staff dashboard={dashboard} />
           )}
         </div>
       </div>
