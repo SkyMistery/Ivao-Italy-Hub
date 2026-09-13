@@ -287,7 +287,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G16 | Via vIPI: il modulo `atc` e la metà ATC della G14 — **fatta il 13 set 2026** | merge della pila #59–#65 | nessun `IvaoHub.Modules.Atc`, composizione provata da un modulo finto nei test, un documento senza tipo/posizioni/ICAO/FIR/AIRAC, `/atc` ancora servita come pagina |
 | G17 | Una schermata per oggetto — **fatta il 13 set 2026** | G16 | `/staff/content`, `/staff/links`, `/staff/media` con filtri; nessuna rotta `/staff/{dept}/content…`; media e link scelti da ogni dipartimento; un grant «ogni dipartimento» allarga la lista |
 | G18 | L'indirizzo composto — **fatta il 13 set 2026** | G17 | pagine fino a tre livelli, nessun campo libero, parole riservate ricavate dalle rotte, 301 dal vecchio indirizzo, primo livello solo WD e HQ |
-| G19 | L'approvazione delle pagine — **scritta il 13 set 2026** | G18 | `Ready` in sola lettura, versione candidata, `Content.Approve`, riepilogo per sezione, coda, proposta di indirizzo e menu corretta da chi approva, `Menu.Edit` solo WD e HQ |
+| G19 | L'approvazione delle pagine — **fatta il 13 set 2026** | G18 | `Ready` in sola lettura, la riga come candidata, `Content.Approve`, riepilogo per sezione, coda, proposta di indirizzo e menu corretta da chi approva, `Menu.Edit` solo WD e HQ |
 | G20 | Le raccolte, l'indice derivato, i media aggiornati sul posto — **scritta il 13 set 2026** | G19 | un documento in più pagine per raccolta, «compare in», un media usato altrove archiviato e non cancellato, l'SVG nuovo sotto un indirizzo nuovo |
 
 **Parallelismo.** G5 e G6 non si toccano (tabelle, rotte e schermate diverse) e possono girare in
@@ -1789,6 +1789,58 @@ editor è in sola lettura e il server rifiuta un salvataggio; WD vede la coda co
 «cambiata: Hero», corregge l'indirizzo e pubblica; online va la candidata anche se nel frattempo
 qualcuno ha provato a scrivere; una news TD si pubblica dal coordinator TD senza coda; il TD
 ritira dal sito la sua pagina senza approvazione; Mailpit riceve le tre mail.
+
+**Fatta il 13 settembre 2026** (branch `m1/g19-page-approval`). Com'è andata, e dove si è scostata:
+
+- ⚠️ **Nessuna versione candidata: la riga è la candidata di sé stessa.** Il punto 2 chiedeva una
+  copia in `cms_content_versions` con `is_candidate`. Serviva solo a garantire che vada online ciò
+  che è stato segnato pronto, e lo garantisce già il blocco del punto 3: mentre una pagina è `Ready`
+  il motore CRUD rifiuta ogni scrittura (`BeforeSave` guarda lo stato **originale** della riga), quindi
+  il corpo che si approva è per costruzione quello segnato pronto. Una copia del corpo in più e una
+  versione che non è pubblicata ma sta fra le versioni pubblicate sarebbero state due cose da tenere
+  in pari. Sulla riga: `ready_at`, `ready_by`, `review_note`, `proposed_menu_json`; sulla versione solo
+  `approved_by` (quando, lo dice già `published_at`). Migrazione `AddPageReview`, additiva.
+- **Il rifiuto di una scrittura su una pagina in attesa è un 400 di validazione**
+  (`errors.content.review.inReview` sul campo `status`) e non un 409: il 409 nel client significa «ha
+  salvato qualcun altro» e l'autosalvataggio lo tratta come tale, cosa che qui non è.
+- **Un indirizzo solo per le quattro azioni**, `POST /api/content/{id}/review` con `action`
+  (`Ready`, `Withdraw`, `SendBack`, `Approve`), e `GET /api/content/{id}/review` per il riepilogo: una
+  macchina a stati, e il permesso lo decide l'azione (`Content.Edit` per le due dell'autore,
+  `Content.Approve` per le due di chi approva). `ContentReviewService` fa tutto; il servizio di
+  pubblicazione riceve solo `approvedBy`. **Pubblica** su un `kind` in approvazione chiede
+  `Content.Approve` e rifiuta una riga `Ready`: si approva, non si pubblica scavalcando la revisione.
+- **Il riepilogo** confronta per `key` di sezione il JSON della sezione della bozza con quello della
+  versione pubblicata (aggiunta, tolta, cambiata, invariata), senza leggere le `props`; più titolo,
+  indirizzo e voce di menu proposta. Mai pubblicata = «prima pubblicazione». L'anteprima è l'editor
+  stesso, in sola lettura, col renderer di sempre.
+- **Approva** applica l'indirizzo corretto da chi approva con `ContentAddresses` (stesse regole del
+  form, cima compresa), crea la voce di menu proposta o corretta — solo sotto una voce in cima o in
+  cima — e pubblica, nella stessa unità di lavoro.
+- ⚠️ **Il punto 6 a metà: la coda c'è, il blocco Data della dashboard no.** La coda è
+  `/staff/content?kind=Page&status=Ready`, un filtro di stato sulla lista (serviva comunque) e una voce
+  «Da approvare» nella barra laterale per chi ha `Content.Approve`. Il blocco col conteggio aspetta
+  l'apertura di M2, dove i widget di dashboard diventano blocchi Data dei moduli: scriverlo adesso voleva dire
+  scriverlo due volte.
+- ⚠️ **Il punto 4 non aveva niente da cambiare**: il prodotto non ha ancora «ritira dal sito» (una
+  pagina esce dal sito cancellandola o cambiandone la visibilità, ed entrambe restano senza
+  approvazione). Resta un criterio da provare quando l'azione esisterà.
+- **`Menu.Edit` esce da tutti i livelli di dipartimento** della matrice: resta a Director e Web per il
+  catalogo intero. `RolePermissionMatrixTests` aggiornato.
+- **Il bootstrap** porta `division.contentApproval`: la SPA offre «Segna pronta» al posto di «Pubblica»
+  a chi non approva, e a una pagina in attesa il pannello della revisione sopra l'editor (in sola
+  lettura: `fieldset` disabilitato, autosalvataggio spento, «Salva bozza» spento). Segnare pronta
+  salva prima ciò che è a schermo.
+- **Le notifiche**: `content.readyForApproval` a chi ha una posizione che raggiunge tutti i dipartimenti
+  e ai grant vivi di `Content.Approve`; `content.approved` e `content.sentBack` (con la nota) a chi ha
+  segnato pronta. Chiavi in `mail.json` e nelle preferenze di `common.json`.
+- **Non fatto**: il test della divisione «XX» con l'elenco vuoto e pieno. Il caso vuoto (e un `kind`
+  fuori elenco) lo copre `PageReviewTests` con la notizia pubblicata direttamente.
+- **I test**: `PageReviewTests` (pronta e bloccata, approvazione con indirizzo corretto e voce di menu,
+  rimanda indietro e ritira, riepilogo per sezione, notizia senza coda); tre test di
+  `ContentEndToEndTests` pubblicano ora come superadmin; due smoke (`e2e/review.spec.ts`) e un test
+  della barra laterale.
+- **Verificato in locale**: Vitest (387), smoke (77), lint, typecheck, formato, build .NET. **Non in
+  locale**: integrazione e giro completo (Docker spento), che esegue la CI.
 
 #### G20 — Le raccolte, l'indice derivato, i media aggiornati sul posto
 
