@@ -596,7 +596,7 @@
     },
     "chooseParent": "Choose the page it goes under",
     "address": {
-      "label": "Address",
+      "label": "Where it will be",
       "state": {
         "Free": "This address is free.",
         "Taken": "Another page already has this address. {{suggestion}} is free.",

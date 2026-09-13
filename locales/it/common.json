@@ -596,7 +596,7 @@
     },
     "chooseParent": "Scegli la pagina sotto cui metterla",
     "address": {
-      "label": "Indirizzo",
+      "label": "Dove sarà",
       "state": {
         "Free": "Questo indirizzo è libero.",
         "Taken": "Un'altra pagina ha già questo indirizzo. {{suggestion}} è libero.",
