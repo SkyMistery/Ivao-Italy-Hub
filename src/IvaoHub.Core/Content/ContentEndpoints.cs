@@ -20,7 +20,23 @@ using Microsoft.Extensions.DependencyInjection;
 namespace IvaoHub.Core.Content;
 
 /// <summary>What "new from template" needs to know that the template does not say.</summary>
-public sealed record ContentFromTemplateRequest(Department OwnerDepartment, string Slug);
+/// <param name="OwnerDepartment">The department the page belongs to.</param>
+/// <param name="Slug">The last segment of its address.</param>
+/// <param name="ParentId">The page it sits under; null at the top of the site (note
+/// 2026-09-13-contenuti-centralizzati, 3.7).</param>
+public sealed record ContentFromTemplateRequest(Department OwnerDepartment, string Slug, long? ParentId = null);
+
+/// <summary>
+/// What a visitor asking for an address is given: the page that has it, or — when a published page
+/// had it before it moved — where that page is now. Exactly one of the two is set.
+/// </summary>
+public sealed record PublicPageDto(PublicContentDto? Page, string? MovedTo);
+
+/// <summary>
+/// One page of the site as the tree a new page is put into sees it: where it is, and what it is
+/// called. No body, no status, no department's business: an address is a public fact.
+/// </summary>
+public sealed record ContentPageNodeDto(long Id, string Path, Localized<string> Title, int Depth);
 
 /// <summary>
 /// Editorial content: the generic CRUD engine for the back office, plus the three things a page can
@@ -106,6 +122,13 @@ public static class ContentEndpoints
                 options.ToList = mapper.ToList;
                 options.ToDetail = mapper.ToDetail;
                 options.Apply = mapper.Apply;
+
+                // Where a page sits in the site, which only other rows can say (note
+                // 2026-09-13-contenuti-centralizzati, 3.7): free, not reserved, not too deep, at the
+                // top only for whoever may put it there — and the pages under it moved along.
+                options.BeforeSave = (content, saving) => saving.Services
+                    .GetRequiredService<ContentAddresses>()
+                    .PrepareAsync(content, saving.IsNew, saving.CancellationToken);
             });
 
         group.MapPost("/from-template/{templateId:long}", CreateFromTemplateAsync)
@@ -137,6 +160,33 @@ public static class ContentEndpoints
             .Produces<PublicContentDto>()
             .Produces(StatusCodes.Status404NotFound)
             .AllowAnonymous();
+
+        // A page by its whole address, which since 13 September 2026 is up to three segments
+        // (note 2026-09-13-contenuti-centralizzati, 3.7). The same read as the one above, found by
+        // another key — plus the one thing an address can be that a slug cannot: an old one.
+        group.MapGet("/public/page", ReadPublicPageAsync)
+            .WithName("ContentPublicPage")
+            .Produces<PublicPageDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .AllowAnonymous();
+
+        // ⚠️ A hand written read, counted: what the form of a page asks while somebody composes its
+        // address — whether it is free, and the first free one when it is not. It is the check the
+        // save runs (`ContentAddresses`), asked earlier, so the two cannot answer differently.
+        group.MapGet("/address", DescribeAddressAsync)
+            .WithName("ContentAddress")
+            .Produces<ContentAddressDto>()
+            .RequireAuthorization(CorePermissions.ContentEdit);
+
+        // ⚠️ The second hand written read of G18, counted: the pages a page may be put under. Not
+        // the content list, which holds the reader's own departments — a coordinator of Training
+        // puts a page under `/training`, which the web team owns — and not a share of the rows,
+        // which would hand every department the drafts of every other. What crosses is the address
+        // and the title, which the site already shows to anybody.
+        group.MapGet("/pages", PageTreeAsync)
+            .WithName("ContentPageTree")
+            .Produces<IReadOnlyList<ContentPageNodeDto>>()
+            .RequireAuthorization(CorePermissions.ContentEdit);
 
         return group;
     }
@@ -193,6 +243,7 @@ public static class ContentEndpoints
         long templateId,
         ContentFromTemplateRequest request,
         HubDbContext database,
+        ContentAddresses addresses,
         ContentPublishService content,
         BlockDocumentWalker walker,
         IValidator<ContentWriteDto> validator,
@@ -243,7 +294,8 @@ public static class ContentEndpoints
             ReviewOn: null,
             RetiredAt: null,
             SupersededById: null,
-            RowVersion: default);
+            RowVersion: default,
+            ParentId: request.ParentId);
 
         var validation = await validator.ValidateAsync(payload, http.RequestAborted);
         if (!validation.IsValid)
@@ -267,6 +319,18 @@ public static class ContentEndpoints
         }
 
         database.Contents.Add(page);
+
+        // The same check of the address a page written by hand gets, before the same save.
+        var refused = await addresses.PrepareAsync(page, isNew: true, http.RequestAborted);
+        if (refused is not null)
+        {
+            return CrudProblems.Validation(
+                refused,
+                new Dictionary<string, string[]>(StringComparer.Ordinal),
+                catalog,
+                currentUser.Locale);
+        }
+
         await database.SaveChangesAsync(http.RequestAborted);
 
         return Results.Created($"{Pattern}/{page.Id}", new ContentMapper().ToDetail(page));
@@ -356,6 +420,9 @@ public static class ContentEndpoints
         ContentPublishService publish,
         HttpContext http)
     {
+        // ⚠️ For a page, two may share a slug under two parents since 13 September 2026, and the
+        // site reads a page by its whole address (`/public/page`). This read stays for the kinds whose
+        // address is a slug of their own; for a page it answers the first with that slug.
         var content = await database.Contents
             .AsNoTracking()
             .FirstOrDefaultAsync(
@@ -367,10 +434,100 @@ public static class ContentEndpoints
             return TypedResults.NotFound();
         }
 
-        var version = await publish.PublishedVersionAsync(content, http.RequestAborted);
-        if (version is null)
+        var answer = await PublicAsync(content, database, publish, http.RequestAborted);
+        return answer is null ? TypedResults.NotFound() : TypedResults.Ok(answer);
+    }
+
+    /// <summary>
+    /// A page by its address. Found live first: an address a page has now always wins over one a
+    /// page used to have. The query filter is on, as for every public read.
+    /// </summary>
+    private static async Task<Results<Ok<PublicPageDto>, NotFound>> ReadPublicPageAsync(
+        string path,
+        HubDbContext database,
+        ContentPublishService publish,
+        HttpContext http)
+    {
+        var wanted = (path ?? string.Empty).Trim('/');
+        if (wanted.Length == 0 || wanted.Length > ContentAddresses.MaxPathLength)
         {
             return TypedResults.NotFound();
+        }
+
+        var content = await database.Contents
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                row => row.Kind == ContentKind.Page
+                    && !row.IsTemplate
+                    && EF.Property<string>(row, ContentAddresses.StoredPath) == wanted,
+                http.RequestAborted);
+
+        if (content is not null)
+        {
+            var page = await PublicAsync(content, database, publish, http.RequestAborted);
+            return page is null ? TypedResults.NotFound() : TypedResults.Ok(new PublicPageDto(page, null));
+        }
+
+        // An old address: the JSON array holds it as a string, quotes and all. Few pages ever move,
+        // so the rows with any history at all are few, and the match is exact once read.
+        var quoted = $"\"{wanted}\"";
+        var moved = await database.Contents
+            .AsNoTracking()
+            .Where(row => row.Kind == ContentKind.Page
+                && !row.IsTemplate
+                && row.PublishedVersionId != null
+                && row.PreviousPathsJson != null
+                && row.PreviousPathsJson.Contains(quoted))
+            .ToListAsync(http.RequestAborted);
+
+        var target = moved.FirstOrDefault(row =>
+            (System.Text.Json.JsonSerializer.Deserialize<List<string>>(row.PreviousPathsJson!) ?? [])
+                .Contains(wanted, StringComparer.Ordinal));
+
+        return target is null ? TypedResults.NotFound() : TypedResults.Ok(new PublicPageDto(null, target.Url));
+    }
+
+    private static async Task<IReadOnlyList<ContentPageNodeDto>> PageTreeAsync(HubDbContext database, HttpContext http)
+    {
+        var rows = await CrudSource.BackOffice<ContentEntry>(database)
+            .AsNoTracking()
+            .Where(row => row.Kind == ContentKind.Page && !row.IsTemplate)
+            .Select(row => new { row.Id, row.Slug, row.ParentPath, row.Title })
+            .ToListAsync(http.RequestAborted);
+
+        return
+        [
+            .. rows
+                .Select(row =>
+                {
+                    var path = row.ParentPath is null ? row.Slug : $"{row.ParentPath}/{row.Slug}";
+                    return new ContentPageNodeDto(row.Id, path, row.Title, path.Count(character => character == '/') + 1);
+                })
+                .OrderBy(node => node.Path, StringComparer.Ordinal),
+        ];
+    }
+
+    private static async Task<ContentAddressDto> DescribeAddressAsync(
+        ContentKind kind,
+        string slug,
+        Department department,
+        long? parentId,
+        long? id,
+        ContentAddresses addresses,
+        HttpContext http) =>
+        await addresses.DescribeAsync(kind, parentId, slug ?? string.Empty, id, department, http.RequestAborted);
+
+    /// <summary>What a visitor is given about one row: its published version, and nothing of the draft.</summary>
+    private static async Task<PublicContentDto?> PublicAsync(
+        ContentEntry content,
+        HubDbContext database,
+        ContentPublishService publish,
+        CancellationToken cancellationToken)
+    {
+        var version = await publish.PublishedVersionAsync(content, cancellationToken);
+        if (version is null)
+        {
+            return null;
         }
 
         // What the footer and the notice of a document say about people and other rows, read here
@@ -379,20 +536,21 @@ public static class ContentEndpoints
             .AsNoTracking()
             .Where(user => user.Vid == version.PublishedBy)
             .Select(user => user.FirstName + " " + user.LastName)
-            .FirstOrDefaultAsync(http.RequestAborted);
+            .FirstOrDefaultAsync(cancellationToken);
 
         var successor = content.SupersededById is { } successorId
             ? await database.Contents
                 .AsNoTracking()
                 .Where(row => row.Id == successorId && row.PublishedVersionId != null)
                 .Select(row => new { row.Slug, row.Title })
-                .FirstOrDefaultAsync(http.RequestAborted)
+                .FirstOrDefaultAsync(cancellationToken)
             : null;
 
-        return TypedResults.Ok(new PublicContentDto(
+        return new PublicContentDto(
             content.Id,
             content.Kind,
             content.Slug,
+            content.Path,
             content.OwnerDepartment,
             version.Title,
             content.Summary,
@@ -410,7 +568,7 @@ public static class ContentEndpoints
             successor?.Slug,
             successor?.Title,
             content.ShowFooter,
-            string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim()));
+            string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim());
     }
 
     /// <summary>

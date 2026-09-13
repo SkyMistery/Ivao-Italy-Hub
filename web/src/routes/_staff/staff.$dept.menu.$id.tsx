@@ -97,7 +97,7 @@ function MenuItemForm() {
     // The pages, grouped by the department that wrote them. A draft says so: the entry can be
     // written now and switched on when the page goes out.
     ...(pages.data?.items ?? []).map((page) => ({
-      value: `/${page.slug}`,
+      value: `/${page.path}`,
       label:
         page.status === 'Draft'
           ? t('menu.draftSuffix', { title: read(page.title) || page.slug })

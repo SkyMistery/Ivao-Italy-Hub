@@ -53,8 +53,36 @@ public sealed class ContentEntry
 
     public ContentKind Kind { get; set; }
 
-    /// <summary>Unique per <c>(kind, slug, is_template)</c>: MariaDB has no filtered indexes.</summary>
+    /// <summary>
+    /// The last segment of the address. Unique per <c>(kind, address, is_template)</c>, where the
+    /// address is <see cref="Path"/>: two pages may share a slug under two different parents.
+    /// </summary>
     public string Slug { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The page this one sits under, or null at the top of the site. Pages only (note
+    /// 2026-09-13-contenuti-centralizzati, 3.7): news and documents have an address of their kind.
+    /// </summary>
+    public long? ParentId { get; set; }
+
+    /// <summary>
+    /// The address of the parent, kept on the row so that the address of this one is a column the
+    /// database can index and look up in one step, rather than a walk up the parents on every read.
+    /// Written only by <see cref="ContentAddresses"/>, which moves the rows under a page with it.
+    /// </summary>
+    public string? ParentPath { get; set; }
+
+    /// <summary>
+    /// The address, without the leading slash: <c>training/guide/start</c>. The same expression the
+    /// database computes into the indexed column <c>path</c> (<c>concat_ws</c> skips a null).
+    /// </summary>
+    public string Path => ParentPath is null ? Slug : $"{ParentPath}/{Slug}";
+
+    /// <summary>
+    /// The addresses a published page had before it moved, as a JSON array of paths. A visitor
+    /// arriving at one is sent to <see cref="Path"/> (note 2026-09-13-contenuti-centralizzati).
+    /// </summary>
+    public string? PreviousPathsJson { get; set; }
 
     public Department OwnerDepartment { get; set; }
 
@@ -148,7 +176,7 @@ public sealed class ContentEntry
         ContentKind.News => $"/news/{Slug}",
         ContentKind.Document => $"/documents/{Slug}",
         ContentKind.Dashboard => $"/staff/{OwnerDepartment.ToString().ToLowerInvariant()}",
-        _ => $"/{Slug}",
+        _ => $"/{Path}",
     };
 
     bool ISharedForReading.IsSharedForReading => SharedForReadingInMemory(this);

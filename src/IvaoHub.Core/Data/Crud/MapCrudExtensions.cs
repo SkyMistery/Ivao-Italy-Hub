@@ -254,6 +254,12 @@ public static class MapCrudExtensions
         }
 
         scope.Database.Add(entity);
+
+        if (await BeforeSaveAsync(scope, options, entity, isNew: true, http.RequestAborted) is { } refused)
+        {
+            return refused;
+        }
+
         await scope.Database.SaveChangesAsync(http.RequestAborted);
 
         var key = scope.Key.PropertyInfo is null
@@ -300,6 +306,11 @@ public static class MapCrudExtensions
         }
 
         CarryConcurrencyToken(scope.Database.Entry(entity));
+
+        if (await BeforeSaveAsync(scope, options, entity, isNew: false, http.RequestAborted) is { } refused)
+        {
+            return refused;
+        }
 
         await scope.Database.SaveChangesAsync(http.RequestAborted);
 
@@ -631,6 +642,36 @@ public static class MapCrudExtensions
 
         var result = await validator.ValidateAsync(body, cancellationToken);
         return result.IsValid ? null : CrudProblems.Validation(result, scope.Catalog, scope.CurrentUser.Locale);
+    }
+
+    /// <summary>
+    /// The one extension of a write that looks at other rows (<c>CrudOptions.BeforeSave</c>). A
+    /// refusal is answered like a validator's, so the form puts it under the field it names.
+    /// </summary>
+    private static async Task<IResult?> BeforeSaveAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
+        CrudScope<TEntity> scope,
+        CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options,
+        TEntity entity,
+        bool isNew,
+        CancellationToken cancellationToken)
+        where TEntity : class
+    {
+        if (options.BeforeSave is null)
+        {
+            return null;
+        }
+
+        var errors = await options.BeforeSave(
+            entity,
+            new CrudSaving(scope.Database, scope.Services, scope.CurrentUser, isNew, cancellationToken));
+
+        return errors is null || errors.Count == 0
+            ? null
+            : CrudProblems.Validation(
+                errors,
+                new Dictionary<string, string[]>(StringComparer.Ordinal),
+                scope.Catalog,
+                scope.CurrentUser.Locale);
     }
 
     /// <summary>

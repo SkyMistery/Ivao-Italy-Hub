@@ -15,7 +15,7 @@ import { Route as StaffRouteImport } from './routes/_staff'
 import { Route as MemberContactRouteImport } from './routes/_member/contact'
 import { Route as MemberMeRouteImport } from './routes/_member/me'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
-import { Route as PublicSlugRouteImport } from './routes/_public/$slug'
+import { Route as PublicSplatRouteImport } from './routes/_public/$'
 import { Route as PublicCalendarRouteImport } from './routes/_public/calendar'
 import { Route as PublicForbiddenRouteImport } from './routes/_public/forbidden'
 import { Route as PublicLoginErrorRouteImport } from './routes/_public/login-error'
@@ -84,9 +84,9 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PublicRoute,
 } as any)
-const PublicSlugRoute = PublicSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
+const PublicSplatRoute = PublicSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicCalendarRoute = PublicCalendarRouteImport.update({
@@ -307,7 +307,7 @@ export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/contact': typeof MemberContactRoute
   '/me': typeof MemberMeRoute
-  '/$slug': typeof PublicSlugRoute
+  '/$': typeof PublicSplatRoute
   '/calendar': typeof PublicCalendarRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
@@ -353,7 +353,7 @@ export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/contact': typeof MemberContactRoute
   '/me': typeof MemberMeRoute
-  '/$slug': typeof PublicSlugRoute
+  '/$': typeof PublicSplatRoute
   '/calendar': typeof PublicCalendarRoute
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
@@ -394,7 +394,7 @@ export interface FileRoutesById {
   '/_staff': typeof StaffRouteWithChildren
   '/_member/contact': typeof MemberContactRoute
   '/_member/me': typeof MemberMeRoute
-  '/_public/$slug': typeof PublicSlugRoute
+  '/_public/$': typeof PublicSplatRoute
   '/_public/calendar': typeof PublicCalendarRoute
   '/_public/forbidden': typeof PublicForbiddenRoute
   '/_public/login-error': typeof PublicLoginErrorRoute
@@ -443,7 +443,7 @@ export interface FileRouteTypes {
     | '/'
     | '/contact'
     | '/me'
-    | '/$slug'
+    | '/$'
     | '/calendar'
     | '/forbidden'
     | '/login-error'
@@ -489,7 +489,7 @@ export interface FileRouteTypes {
     | '/'
     | '/contact'
     | '/me'
-    | '/$slug'
+    | '/$'
     | '/calendar'
     | '/forbidden'
     | '/login-error'
@@ -529,7 +529,7 @@ export interface FileRouteTypes {
     | '/_staff'
     | '/_member/contact'
     | '/_member/me'
-    | '/_public/$slug'
+    | '/_public/$'
     | '/_public/calendar'
     | '/_public/forbidden'
     | '/_public/login-error'
@@ -623,11 +623,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicIndexRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_public/$slug': {
-      id: '/_public/$slug'
-      path: '/$slug'
-      fullPath: '/$slug'
-      preLoaderRoute: typeof PublicSlugRouteImport
+    '/_public/$': {
+      id: '/_public/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof PublicSplatRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/calendar': {
@@ -927,7 +927,7 @@ const MemberRouteWithChildren =
   MemberRoute._addFileChildren(MemberRouteChildren)
 
 interface PublicRouteChildren {
-  PublicSlugRoute: typeof PublicSlugRoute
+  PublicSplatRoute: typeof PublicSplatRoute
   PublicCalendarRoute: typeof PublicCalendarRoute
   PublicForbiddenRoute: typeof PublicForbiddenRoute
   PublicLoginErrorRoute: typeof PublicLoginErrorRoute
@@ -940,7 +940,7 @@ interface PublicRouteChildren {
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
-  PublicSlugRoute: PublicSlugRoute,
+  PublicSplatRoute: PublicSplatRoute,
   PublicCalendarRoute: PublicCalendarRoute,
   PublicForbiddenRoute: PublicForbiddenRoute,
   PublicLoginErrorRoute: PublicLoginErrorRoute,

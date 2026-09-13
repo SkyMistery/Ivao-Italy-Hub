@@ -32,10 +32,13 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
 
     private HubWebApplicationFactory _factory = null!;
 
-    public ValueTask InitializeAsync()
+    /// <summary>The page this class writes its pages under (<see cref="TestShelf"/>).</summary>
+    private static long s_shelf;
+
+    public async ValueTask InitializeAsync()
     {
         _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
-        return ValueTask.CompletedTask;
+        s_shelf = await TestShelf.SeedAsync(_factory, "test-shelf-content", TestContext.Current.CancellationToken);
     }
 
     public ValueTask DisposeAsync() => _factory.DisposeAsync();
@@ -848,6 +851,8 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             body = body ?? Body(),
             schemaVersion = 1,
             rowVersion = rowVersion ?? "0001-01-01T00:00:00",
+            // Under the shelf: the top of the site is not a coordinator's to write in (TestShelf).
+            parentId = isTemplate ? (long?)null : s_shelf,
         };
     }
 
@@ -893,7 +898,7 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
             client,
             HttpMethod.Post,
             $"{ContentEndpoints.Pattern}/from-template/{templateId}",
-            new { ownerDepartment = department.ToString(), slug },
+            new { ownerDepartment = department.ToString(), slug, parentId = s_shelf },
             cancellationToken);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);

@@ -61,7 +61,15 @@
       "mediaNotVisible": "This picture is not visible to the readers of this page. Make it public in the media library, or choose another one.",
       "notADocument": "Only a document carries this. Leave it empty on a page or a news item.",
       "successorUnknown": "The document that replaces this one does not exist. Pick one from the list.",
-      "successorWithoutRetirement": "A document with a successor is no longer in force: say since when."
+      "successorWithoutRetirement": "A document with a successor is no longer in force: say since when.",
+      "address": {
+        "reserved": "The site already uses this address for one of its own screens. Choose another.",
+        "topLevel": "Only the director and the web team put a page at the top of the site. Choose a page to put it under.",
+        "tooDeep": "A page goes three levels deep at most, counting the pages under it.",
+        "invalidParent": "A page cannot go under this one: it is not a page, or it is this page or one under it.",
+        "notAPage": "Only a page sits under another page.",
+        "taken": "Another page already has this address."
+      }
     },
     "maintenance": {
       "title": "This part of the site is closed for changes right now"

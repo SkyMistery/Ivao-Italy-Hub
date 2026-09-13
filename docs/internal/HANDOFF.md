@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 13 settembre 2026, sera — G16 mergiata (PR #66), G17 fatta.
+**Ultimo aggiornamento:** 13 settembre 2026, notte — G16 e G17 mergiate (PR #66, #67), G18 fatta.
 
 > **Per chi apre adesso.** `main` ha tutto fino alla **PR #65**: la pila #59–#64 (G14, deduplica dei
 > media, colore del sito, scheda della demo, header di sicurezza, blocco interattivo) e il **piano
@@ -26,7 +26,12 @@
 > `/staff/media` con tipo e dipartimento come filtri, un grant «ogni dipartimento» che allarga
 > davvero la lista, media e link pubblici letti da tutti; due scostamenti dal testo della fase
 > scritti in `04-piano-implementazione-m1.md` (il dipartimento si sceglie accanto al pulsante e non
-> nel form; il server risponde 403 e non sul campo). **Prossima: G18**, l'indirizzo composto. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> nel form; il server risponde 403 e non sul campo). PR #67, mergiata.
+> **G18 è fatta** (branch `m1/g18-composed-address`): una pagina sta sotto una pagina fino a tre
+> livelli, l'indirizzo è una colonna generata dal database (`parent_path` + slug), la cima del sito
+> chiede `Content.Approve` (nato qui), una pagina pubblicata che si sposta lascia gli indirizzi vecchi
+> e il sito ci arriva col router. Migrazione `AddPageAddress`. Gli scostamenti sono in
+> `04-piano-implementazione-m1.md`. **Prossima: G19**, l'approvazione delle pagine. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
 > di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >

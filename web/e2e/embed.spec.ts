@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { oneTemplate, stubTheApiAsStaff, stubThePublishedPage } from './fixtures';
+import { oneTemplate, stubTheAddressOfAPage, stubTheApiAsStaff, stubThePublishedPage } from './fixtures';
 
 /**
  * An interactive block in a browser: what the frame does, and what it cannot do
@@ -247,6 +247,7 @@ test('an animation that tries to open the network says so, to the staff and to n
       body: JSON.stringify({ errors: {}, localized: {} }),
     }),
   );
+  await stubTheAddressOfAPage(page);
 
   await page.goto('/staff/content/1');
 

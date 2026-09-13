@@ -41,6 +41,7 @@ import { BlockProperties, SectionProperties } from './BlockProperties';
 import { BlockDraggable } from './BlockDraggable';
 import { DropZone, type BlockDrag, type PaletteDrag, type SlotDrop } from './DropZone';
 import { SectionSortable, SectionSortableGroup, type SectionDrag } from './SectionSortable';
+import { AddressPreview } from './AddressPreview';
 import {
   addBlock,
   addSection,
@@ -66,12 +67,17 @@ import { PreviewFrame, type PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
   contentQuery,
-  publicContentQuery,
+  publishedContentQuery,
   type ContentDetailDto,
   type ContentKind,
   type ContentPublishProblemsDto,
 } from './queries';
-import { contentMetadataSchema, type ContentFormValues, type DocumentChoices } from './schema';
+import {
+  contentMetadataSchema,
+  type ContentFormValues,
+  type DocumentChoices,
+  type PageChoices,
+} from './schema';
 import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
 import { useAutosave, type SaveOutcome } from './useAutosave';
 import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
@@ -105,6 +111,7 @@ export function ContentEditor({
   startsAsTemplate = false,
   categories,
   successors = [],
+  pageChoices,
   department,
   locales,
   division,
@@ -132,6 +139,8 @@ export function ContentEditor({
   categories: readonly ChoiceOption[];
   /** The published documents this one may say it was replaced by, already labelled. */
   successors?: readonly ChoiceOption[];
+  /** Where a page may be put, and whether at the top (note 2026-09-13-contenuti-centralizzati). */
+  pageChoices?: PageChoices;
   department: Department;
   locales: readonly string[];
   /** The two facts the `seo` field needs: which language is the fallback, and where the division is. */
@@ -190,7 +199,7 @@ export function ContentEditor({
   // not exist yet has nothing published to show.
   const [comparing, setComparing] = useState(false);
   const publishedQuery = useQuery({
-    ...publicContentQuery(kind, content?.slug ?? ''),
+    ...publishedContentQuery(kind, content?.slug ?? '', content?.path ?? ''),
     enabled: content !== null && comparing,
     retry: false,
   });
@@ -547,7 +556,7 @@ export function ContentEditor({
         <SchemaForm
           id={METADATA_FORM}
           actionsElsewhere
-          schema={contentMetadataSchema(kind, categories, documentChoices)}
+          schema={contentMetadataSchema(kind, categories, documentChoices, pageChoices)}
           defaults={
             content === null
               ? emptyContent(department, locales, kind, startsAsTemplate)
@@ -586,6 +595,19 @@ export function ContentEditor({
           }}
           submitLabel={t('content.editor.saveDraft')}
         />
+        {/* The address the fields above make, and whether it may be had. Not for a template, which
+            has no address on the site. */}
+        {startsAsTemplate || content?.isTemplate === true ? null : (
+          <AddressPreview
+            kind={kind}
+            department={metadata.ownerDepartment}
+            slug={metadata.slug}
+            parentId={
+              metadata.parentId === undefined || metadata.parentId === '' ? null : Number(metadata.parentId)
+            }
+            id={content?.id ?? null}
+          />
+        )}
       </div>
 
       {section !== undefined ? (

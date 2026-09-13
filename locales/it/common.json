@@ -399,7 +399,8 @@
       "reviewOn": "Da rivedere entro",
       "retiredAt": "Non più in vigore dal",
       "supersededById": "Sostituito da",
-      "showFooter": "Mostra il piè di pagina (versione, data, chi ha pubblicato, stampa)"
+      "showFooter": "Mostra il piè di pagina (versione, data, chi ha pubblicato, stampa)",
+      "parentId": "Sotto la pagina"
     },
     "options": {
       "kind": {
@@ -423,6 +424,9 @@
       },
       "category": {
         "none": "Nessuna categoria"
+      },
+      "parentId": {
+        "none": "In cima al sito"
       }
     },
     "section": {
@@ -587,7 +591,20 @@
       "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina.",
       "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più.",
       "reviewOn": "Passato questo giorno, il dipartimento riceve una volta l'avviso che il documento va rivisto.",
-      "retiredAt": "Un documento non più in vigore resta leggibile con un avviso in cima, così un vecchio link trova la strada. Scegli qui sotto che cosa lo ha sostituito, se qualcosa lo ha fatto."
+      "retiredAt": "Un documento non più in vigore resta leggibile con un avviso in cima, così un vecchio link trova la strada. Scegli qui sotto che cosa lo ha sostituito, se qualcosa lo ha fatto.",
+      "parentId": "Dove sta la pagina nel sito: il suo indirizzo è quello di questa pagina più il suo. Al massimo tre livelli. La cima del sito è del direttore e del team web."
+    },
+    "chooseParent": "Scegli la pagina sotto cui metterla",
+    "address": {
+      "label": "Dove sarà",
+      "state": {
+        "Free": "Questo indirizzo è libero.",
+        "Taken": "Un'altra pagina ha già questo indirizzo. {{suggestion}} è libero.",
+        "Reserved": "Il sito usa già questo indirizzo per una sua schermata. Scegline un altro.",
+        "TooDeep": "Sarebbe un quarto livello. Una pagina scende al massimo di tre livelli, contando quelle sotto di lei.",
+        "InvalidParent": "Una pagina non può stare sotto questa.",
+        "TopLevelNotAllowed": "Solo il direttore e il team web mettono una pagina in cima al sito. Scegli la pagina sotto cui metterla."
+      }
     }
   },
   "templates": {

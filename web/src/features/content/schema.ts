@@ -34,10 +34,24 @@ export interface DocumentChoices {
 
 const NO_DOCUMENT_CHOICES: DocumentChoices = { successors: [] };
 
+/**
+ * Where a page may be put (note 2026-09-13-contenuti-centralizzati, 3.7): the pages of the site it
+ * can sit under, already labelled with their address, and whether this person may leave it at the
+ * top of the site — which is what `Content.Approve` is for. Without it the field is required: a page
+ * of a department sits under a page of the site.
+ */
+export interface PageChoices {
+  parents: readonly ChoiceOption[];
+  mayBeAtTheTop: boolean;
+}
+
+const NO_PAGE_CHOICES: PageChoices = { parents: [], mayBeAtTheTop: true };
+
 export function contentMetadataSchema(
   kind: ContentKind,
   categories: readonly ChoiceOption[] = [],
   document: DocumentChoices = NO_DOCUMENT_CHOICES,
+  page: PageChoices = NO_PAGE_CHOICES,
 ) {
   const common = {
     // Fixed by the list this row was opened from, exactly as the department is: `/staff/x/news`
@@ -69,6 +83,18 @@ export function contentMetadataSchema(
   // select: the vocabulary is rows a coordinator writes, so neither a `z.enum` nor an i18n key
   // could carry it (design M1 §3.4).
   const category = { category: z.string().optional().meta({ choices: categories }) };
+
+  if (kind === 'Page') {
+    return z.object({
+      ...common,
+      // Carried as text for the reason a category is: a select whose labels are not its values is a
+      // text field with choices. Optional — "at the top of the site" — only for whoever may put a
+      // page there; the server refuses the top to anybody else anyway.
+      parentId: page.mayBeAtTheTop
+        ? z.string().optional().meta({ choices: page.parents })
+        : z.string().min(1).meta({ choices: page.parents }),
+    });
+  }
 
   if (kind === 'News') {
     return z.object({
@@ -111,6 +137,8 @@ export function contentMetadataSchema(
  * payload builder is what decides what a kind that has none of them sends.
  */
 export type ContentFormValues = z.output<ReturnType<typeof contentMetadataSchema>> & {
+  // The page this one sits under, as the id in text; empty at the top of the site. Pages only.
+  parentId?: string;
   category?: string;
   coverMediaId?: number;
   pinned?: boolean;

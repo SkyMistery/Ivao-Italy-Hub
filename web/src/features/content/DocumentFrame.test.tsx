@@ -35,6 +35,7 @@ function document(overrides: Partial<PublicContentDto> = {}): PublicContentDto {
     id: 1,
     kind: 'Document',
     slug: 'code-of-conduct',
+    path: 'code-of-conduct',
     ownerDepartment: 'AOD',
     title: { en: 'Code of conduct', it: 'Codice di condotta' },
     summary: null,

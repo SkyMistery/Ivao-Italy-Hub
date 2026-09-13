@@ -366,6 +366,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentPublicPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/address": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentAddress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentPageTree"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/categories": {
         parameters: {
             query?: never;
@@ -1049,6 +1097,20 @@ export interface components {
             /** Format: int64 */
             id: number;
         };
+        /** @description The answer to "where would this page be, and may it be there?". */
+        ContentAddressDto: {
+            /** @description The whole address, with its leading slash. */
+            path: string;
+            /** @description Whether it may be used. */
+            state: components["schemas"]["ContentAddressState"];
+            /** @description The first free slug, when the one asked is taken. */
+            suggestion: null | string;
+        };
+        /**
+         * @description What an address looks like to the form that is composing it.
+         * @enum {unknown}
+         */
+        ContentAddressState: "Free" | "Taken" | "Reserved" | "TooDeep" | "InvalidParent" | "TopLevelNotAllowed";
         /**
          * @description A content row in full, as the editor loads it. JsonNode ContentDetailDto.Body travels as the JSON it is:
          *     the backend never learned what a block means and it is not going to start here.
@@ -1058,6 +1120,9 @@ export interface components {
             id: number;
             kind: components["schemas"]["ContentKind"];
             slug: string;
+            /** Format: int64 */
+            parentId: null | number;
+            path: string;
             ownerDepartment: components["schemas"]["Department"];
             visibility: components["schemas"]["Visibility"];
             status: components["schemas"]["PublishStatus"];
@@ -1104,8 +1169,16 @@ export interface components {
         };
         /** @description What "new from template" needs to know that the template does not say. */
         ContentFromTemplateRequest: {
+            /** @description The department the page belongs to. */
             ownerDepartment: components["schemas"]["Department"];
+            /** @description The last segment of its address. */
             slug: string;
+            /**
+             * Format: int64
+             * @description The page it sits under; null at the top of the site (note
+             *                 2026-09-13-contenuti-centralizzati, 3.7).
+             */
+            parentId?: null | number;
         };
         /**
          * @description What an editorial row is. One table for all three (plan section 9.3).
@@ -1121,6 +1194,9 @@ export interface components {
             id: number;
             kind: components["schemas"]["ContentKind"];
             slug: string;
+            /** Format: int64 */
+            parentId: null | number;
+            path: string;
             ownerDepartment: components["schemas"]["Department"];
             visibility: components["schemas"]["Visibility"];
             status: components["schemas"]["PublishStatus"];
@@ -1144,6 +1220,18 @@ export interface components {
             publishedAt: null | string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /**
+         * @description One page of the site as the tree a new page is put into sees it: where it is, and what it is
+         *     called. No body, no status, no department's business: an address is a public fact.
+         */
+        ContentPageNodeDto: {
+            /** Format: int64 */
+            id: number;
+            path: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            depth: number;
         };
         /**
          * @description What stands between a row and the public, asked before anybody presses publish.
@@ -1209,6 +1297,8 @@ export interface components {
             rowVersion: string;
             /** @default true */
             showFooter: boolean;
+            /** Format: int64 */
+            parentId?: null | number;
         };
         /**
          * @description Owner of a row. These are the department codes IVAO itself uses, so a staff position maps onto a
@@ -1830,6 +1920,7 @@ export interface components {
             id: number;
             kind: components["schemas"]["ContentKind"];
             slug: string;
+            path: string;
             ownerDepartment: components["schemas"]["Department"];
             title: components["schemas"]["LocalizedOfstring"];
             summary: null | components["schemas"]["LocalizedOfstring"];
@@ -1856,6 +1947,14 @@ export interface components {
             supersededByTitle: null | components["schemas"]["LocalizedOfstring"];
             showFooter: boolean;
             publishedByName: null | string;
+        };
+        /**
+         * @description What a visitor asking for an address is given: the page that has it, or — when a published page
+         *     had it before it moved — where that page is now. Exactly one of the two is set.
+         */
+        PublicPageDto: {
+            page: null | components["schemas"]["PublicContentDto"];
+            movedTo: null | string;
         };
         /**
          * @description Editorial state. The public site only ever reads published rows.
@@ -2679,6 +2778,81 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ContentPublicPage: {
+        parameters: {
+            query: {
+                path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPageDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentAddress: {
+        parameters: {
+            query: {
+                kind: components["schemas"]["ContentKind"];
+                slug: string;
+                department: components["schemas"]["Department"];
+                parentId?: number;
+                id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAddressDto"];
+                };
+            };
+        };
+    };
+    ContentPageTree: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentPageNodeDto"][];
+                };
             };
         };
     };

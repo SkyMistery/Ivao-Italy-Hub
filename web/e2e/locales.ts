@@ -80,8 +80,14 @@ interface CommonStrings {
       readonly slug: string;
       readonly visibility: string;
       readonly pinned: string;
+      readonly parentId: string;
+    };
+    readonly address: {
+      readonly label: string;
+      readonly state: { readonly Free: string };
     };
     readonly options: {
+      readonly parentId: { readonly none: string };
       readonly visibility: { readonly Public: string };
       readonly kind: { readonly Page: string; readonly Document: string };
     };

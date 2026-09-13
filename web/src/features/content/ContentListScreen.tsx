@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+  holdsPermission,
   reachableDepartments,
   writableDepartments,
   type Bootstrap,
@@ -20,6 +21,9 @@ import { TemplatePicker } from './TemplatePicker';
 
 /** Written by a coordinator of the department; read by the permission the server asks for a write. */
 const CONTENT_EDIT = 'Content.Edit';
+
+/** Who may leave a page at the top of the site (note 2026-09-13-contenuti-centralizzati, 3.7). */
+const CONTENT_APPROVE = 'Content.Approve';
 
 /**
  * `/staff/content`: the pages, the news, the documents and the templates of every department a
@@ -173,7 +177,12 @@ export function ContentListScreen({
             outside the web team as well (design M1 §9.4). The page it makes is of the department a
             new row would go to. */}
         {rowKind === null || target === undefined ? null : (
-          <TemplatePicker department={target} kind={rowKind} onCreated={onCreatedFromTemplate} />
+          <TemplatePicker
+            department={target}
+            kind={rowKind}
+            mayBeAtTheTop={holdsPermission(bootstrap, CONTENT_APPROVE, target)}
+            onCreated={onCreatedFromTemplate}
+          />
         )}
 
         {/* Two lists and not one with a branch inside the query, because a template list and a list

@@ -17,6 +17,9 @@ export type PublicContentDto = components['schemas']['PublicContentDto'];
 export type ContentKind = components['schemas']['ContentKind'];
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
 export type ContentPublishProblemsDto = components['schemas']['ContentPublishProblemsDto'];
+export type PublicPageDto = components['schemas']['PublicPageDto'];
+export type ContentAddressDto = components['schemas']['ContentAddressDto'];
+export type ContentPageNodeDto = components['schemas']['ContentPageNodeDto'];
 
 export const contentKey = ['content'] as const;
 
@@ -246,5 +249,81 @@ export function publicContentQuery(kind: ContentKind, slug: string) {
           params: { path: { kind, slug } },
         }),
       ),
+  });
+}
+
+/**
+ * A page by its whole address, which since 13 September 2026 is up to three segments (note
+ * 2026-09-13-contenuti-centralizzati, 3.7): the page, or where it moved. `publicContentQuery` stays
+ * for the kinds whose address is a slug of their own.
+ */
+export function publicPageQuery(path: string) {
+  return queryOptions({
+    queryKey: [...contentKey, 'public-page', path] as const,
+    queryFn: async (): Promise<PublicPageDto> =>
+      unwrap(await api.GET('/api/content/public/page', { params: { query: { path } } })),
+  });
+}
+
+/**
+ * What visitors read of one row now, whatever its kind: a page by its address, anything else by its
+ * slug. One question for the editor's "what is published", so it does not branch on the kind twice.
+ */
+export function publishedContentQuery(kind: ContentKind, slug: string, path: string) {
+  return queryOptions({
+    queryKey: publicContentKey(kind, kind === 'Page' ? path : slug),
+    queryFn: async (): Promise<PublicContentDto> => {
+      if (kind !== 'Page') {
+        return unwrap(
+          await api.GET('/api/content/public/{kind}/{slug}', { params: { path: { kind, slug } } }),
+        );
+      }
+
+      const answer = unwrap(await api.GET('/api/content/public/page', { params: { query: { path } } }));
+      if (answer.page === null) {
+        // Moved since it was published: this row's own address answers for it now.
+        throw new Error(`The published page at ${path} has moved to ${answer.movedTo ?? 'nowhere'}.`);
+      }
+
+      return answer.page;
+    },
+  });
+}
+
+/**
+ * Where a page would be, and whether it may be there: what the form asks while somebody composes the
+ * address. The check the save runs, asked earlier (`ContentAddresses`), so the two agree.
+ */
+export function contentAddressQuery(target: {
+  kind: ContentKind;
+  department: Department;
+  slug: string;
+  parentId: number | null;
+  id: number | null;
+}) {
+  return queryOptions({
+    queryKey: [...contentKey, 'address', target] as const,
+    queryFn: async (): Promise<ContentAddressDto> =>
+      unwrap(
+        await api.GET('/api/content/address', {
+          params: {
+            query: {
+              kind: target.kind,
+              department: target.department,
+              slug: target.slug,
+              ...(target.parentId === null ? {} : { parentId: target.parentId }),
+              ...(target.id === null ? {} : { id: target.id }),
+            },
+          },
+        }),
+      ),
+  });
+}
+
+/** The pages of the site, every department's, as the tree a page is put into sees them. */
+export function pageTreeQuery() {
+  return queryOptions({
+    queryKey: [...contentKey, 'page-tree'] as const,
+    queryFn: async (): Promise<ContentPageNodeDto[]> => unwrap(await api.GET('/api/content/pages')),
   });
 }

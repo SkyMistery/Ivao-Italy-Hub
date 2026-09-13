@@ -33,6 +33,14 @@ public static class CorePermissions
     /// </summary>
     public const string ContentEmbedCode = "Content.EmbedCode";
 
+    /// <summary>
+    /// Taking a page to the site on the division's behalf (note 2026-09-13-contenuti-centralizzati):
+    /// putting a page at the top of the site, where the navigation of the public lives, and — from
+    /// G19 — approving a page for publication. Held by nobody's level: the director and the web team
+    /// reach it because they reach every permission, and anybody else only by a grant.
+    /// </summary>
+    public const string ContentApprove = "Content.Approve";
+
     /// <summary>The area the CRUD engine derives <c>Links.View</c> and <c>Links.Edit</c> from.</summary>
     public const string LinksArea = "Links";
 
@@ -89,6 +97,7 @@ public static class CorePermissions
         new(ContentPublish, IsGlobal: false),
         new(ContentManageTemplates, IsGlobal: false),
         new(ContentEmbedCode, IsGlobal: false),
+        new(ContentApprove, IsGlobal: false),
         new(LinksView, IsGlobal: false),
         new(LinksEdit, IsGlobal: false),
         new(MediaView, IsGlobal: false),
