@@ -59,12 +59,21 @@ degli eventi» non ha dove essere scritto se non come grant a ogni VID, uno per 
   un evento può essere organizzato **in collaborazione** con un altro dipartimento (Carmine).
 - **E decide i permessi**, non è solo un'etichetta: **il SOD non tocca gli eventi degli altri**.
   Un permesso di modulo tenuto su un dipartimento vale sulle righe che hanno quel dipartimento fra
-  i propri: `Events.Manage` sul SOD gestisce gli eventi a cui il SOD partecipa; l'ED lo tiene su
-  **ogni dipartimento** (grant di posizione con dipartimento `null`) e gestisce tutti gli eventi. È
+  i propri: `Events.Manage` sul SOD gestisce gli eventi a cui il SOD partecipa; l'ED, che è in
+  tutti gli eventi come dipartimento di base (sotto), li gestisce tutti. È
   la grammatica di piano §16.3 — lo scope è implicito dalla risorsa — con la risorsa che porta un
   insieme invece di un valore.
-- **Chi crea una riga deve metterci almeno un dipartimento su cui ha il permesso**: il SOD crea
-  eventi del SOD, eventualmente con altri; non crea un evento solo dell'ED.
+- **Ogni modulo ha un dipartimento di base, sempre presente** (Carmine, lo stesso giorno): gli
+  eventi sono **sempre a cura dell'ED**, i tour **sempre del FOD**; gli altri dipartimenti si
+  **aggiungono** in collaborazione e il dipartimento di base non si toglie. Un evento creato dal SOD
+  è quindi «ED + SOD» da solo, e l'ED lo gestisce con il permesso sul **proprio** dipartimento,
+  senza bisogno di un permesso su tutti.
+- **Il dipartimento di base è configurazione, non codice**: `division.json → modules.events.baseDepartment: "ED"`,
+  `modules.tours.baseDepartment: "FOD"`. Il modulo non lo nomina (resta vero che `IModule` non
+  dichiara un dipartimento), e una divisione che forka con un'altra organizzazione cambia una riga.
+- **Chi crea una riga deve metterci almeno un dipartimento su cui ha il permesso** (oltre a quello di
+  base, che c'è sempre): il SOD crea eventi «ED + SOD»; chi ha il permesso solo sull'ED crea eventi
+  dell'ED.
 - **Come nel codice — da confermare nel design di M2**: si **estende l'unica interfaccia** di
   proprietà invece di aggiungerne una seconda. `IOwnedByDepartment` espone l'insieme dei
   dipartimenti; una riga editoriale ne ha uno solo e continua a comportarsi com'è. Il global query

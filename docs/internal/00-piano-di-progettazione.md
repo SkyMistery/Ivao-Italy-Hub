@@ -50,8 +50,11 @@ hanno l'indirizzo generato. **(3) I moduli non appartengono ai dipartimenti**
 grant**: il soggetto è un VID **oppure una posizione** (dipartimento + livello), con i valori
 iniziali da `division.json` e le modifiche da `/staff/admin/permissions`. Una riga di modulo ha
 **«a cura di» obbligatorio e multiplo** — l'ED coordina, un altro dipartimento collabora — e quel
-campo **decide i permessi**: il SOD non tocca gli eventi degli altri, l'ED li tocca tutti perché
-tiene il permesso su ogni dipartimento. Si estende **l'unica** `IOwnedByDepartment` a un insieme,
+campo **decide i permessi**: il SOD non tocca gli eventi degli altri. Ogni modulo ha un
+**dipartimento di base sempre presente** — gli eventi sempre dell'ED, i tour sempre del FOD —, gli
+altri si aggiungono in collaborazione, e l'ED gestisce tutti gli eventi con il permesso sul proprio
+dipartimento; il dipartimento di base sta in `division.json` (`modules.<key>.baseDepartment`), non
+nel codice. Si estende **l'unica** `IOwnedByDepartment` a un insieme,
 senza un secondo ramo nel handler. Le **widget delle dashboard di dipartimento sono blocchi Data dei
 moduli**, sempre live e filtrati su chi guarda. Eventi e **sessioni di training sono pubblici** nel
 calendario. `AtcModule` lascia il posto a un **modulo finto nei soli test**. Nessun codice ancora: le fasi si scrivono
