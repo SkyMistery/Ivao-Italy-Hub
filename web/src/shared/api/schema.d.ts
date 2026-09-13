@@ -1805,6 +1805,11 @@ export interface components {
             icon: null | string;
             /** @description Sub entries, one level deep and never more. */
             children: components["schemas"]["NavItem"][];
+            /**
+             * @description The module a staff entry belongs to, which is the section it is drawn in;
+             *         null for an entry of the core or of the editorial menu.
+             */
+            module?: null | string;
         };
         /** @description One kind of notification, and whether this member wants it. */
         NotificationPreferenceDto: {

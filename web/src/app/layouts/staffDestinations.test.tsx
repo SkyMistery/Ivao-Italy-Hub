@@ -148,3 +148,53 @@ test('the pages waiting for approval are offered to whoever may approve them, an
 
   expect(toApprove({ ...approver, division: { ...approver.division, contentApproval: [] } })).toEqual([]);
 });
+
+test('each module is a section of its own, between the content and the departments', () => {
+  // M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti 3.1: events, tours and training are
+  // areas of their own, not pieces of a department, and the back office says so.
+  const groups = staffDestinations(
+    {
+      ...bootstrap,
+      permissions: [{ name: 'Content.View', department: 'ED' }],
+      navigation: {
+        ...bootstrap.navigation,
+        staff: [
+          { key: 'nav.staff', path: '/staff', label: null, icon: null, children: [] },
+          {
+            key: 'events.nav.list',
+            path: '/staff/events',
+            label: null,
+            icon: null,
+            children: [],
+            module: 'events',
+          },
+          {
+            key: 'tours.nav.list',
+            path: '/staff/tours',
+            label: null,
+            icon: null,
+            children: [],
+            module: 'tours',
+          },
+          {
+            key: 'events.nav.bookings',
+            path: '/staff/events/bookings',
+            label: null,
+            icon: null,
+            children: [],
+            module: 'events',
+          },
+        ],
+      },
+    },
+    (key) => key,
+  );
+
+  const titles = groups.map((group) => group.title);
+  expect(titles.indexOf('events:nav.section')).toBeGreaterThan(titles.indexOf('backOffice.content'));
+  expect(titles.indexOf('events:nav.section')).toBeLessThan(titles.indexOf('departments.WD'));
+  expect(titles.indexOf('tours:nav.section')).toBeLessThan(titles.indexOf('departments.WD'));
+
+  const events = groups.find((group) => group.title === 'events:nav.section');
+  expect(events?.items.map((item) => item.href)).toEqual(['/staff/events', '/staff/events/bookings']);
+});

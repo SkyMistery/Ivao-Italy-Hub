@@ -65,6 +65,14 @@ public sealed class SampleModule : ModuleBase
     public override IReadOnlyList<NavItemDescriptor> PublicNavigation =>
         [new NavItemDescriptor(NavigationKey, NavigationPath)];
 
+    /// <summary>An entry of the back office, behind a permission of the module (M2: its own section).</summary>
+    public const string StaffNavigationKey = "sample.nav.items";
+
+    public const string StaffNavigationPath = "/staff/sample";
+
+    public override IReadOnlyList<NavItemDescriptor> StaffNavigation =>
+        [new NavItemDescriptor(StaffNavigationKey, StaffNavigationPath, ViewPermission)];
+
     public override IReadOnlyList<string> SpaFallbackExclusions => [Exclusion];
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
