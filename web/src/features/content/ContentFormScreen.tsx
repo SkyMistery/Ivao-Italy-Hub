@@ -12,12 +12,7 @@ import { mediaPickerQuery } from '../media/queries';
 import { ContentEditor } from './ContentEditor';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
-import {
-  publishProblemsKey,
-  publishProblemsQuery,
-  successorsQuery,
-  type ContentDetailDto,
-} from './queries';
+import { publishProblemsKey, publishProblemsQuery, successorsQuery, type ContentDetailDto } from './queries';
 import type { ContentFormValues } from './schema';
 import { MANAGE_TEMPLATES } from './templateRules';
 
