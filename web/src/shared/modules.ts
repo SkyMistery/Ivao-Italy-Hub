@@ -12,7 +12,7 @@ import type { z } from 'zod';
  *
  * `BlockRegistration` is the shape the blocks of the core already use, which is the point: a
  * module's blocks and the core's are the same thing, and the shape was decided before there was a
- * module to bend it. `atc` is the first module, and in M0 the only one.
+ * module to bend it. The build has none until events opens M2.
  */
 
 /** What a block is made of, spelled the way the server declares it in `/api/me`. */
@@ -37,7 +37,7 @@ export type BlockGroup = (typeof BLOCK_GROUPS)[number];
  * one reason: every entry needs a label in every language, and `pnpm i18n:check` can only prove
  * that for a list it can enumerate.
  */
-export const BLOCK_SUBGROUPS = ['text', 'media', 'tables', 'grids', 'containers', 'atc'] as const;
+export const BLOCK_SUBGROUPS = ['text', 'media', 'tables', 'grids', 'containers', 'operational'] as const;
 
 export type BlockSubgroup = (typeof BLOCK_SUBGROUPS)[number];
 
@@ -68,7 +68,7 @@ export interface BlockComponentProps {
 
 /** A block an editor can put on a page: its schema, how it is drawn, its example for the ui-kit. */
 export interface BlockRegistration {
-  /** The type as it appears in `body_json`, for example `text` or `atc.roster`. */
+  /** The type as it appears in `body_json`, for example `text` or `events.upcoming`. */
   readonly type: string;
   /** Matches the descriptor the server publishes; a mismatch is a block drawn from stale code. */
   readonly version: number;

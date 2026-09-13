@@ -154,12 +154,7 @@ export const publishedHome = {
   fileMediaId: null,
   version: 1,
   publishedAt: '2026-09-06T10:00:00Z',
-  // A page carries the operational columns of a document (G14) empty, like the row does.
-  documentType: null,
-  primaryPosition: null,
-  secondaryPosition: null,
-  icao: null,
-  fir: null,
+  // A page carries the columns of a document's life (G14) empty, like the row does.
   effectiveOn: null,
   reviewOn: null,
   retiredAt: null,
@@ -167,7 +162,6 @@ export const publishedHome = {
   supersededByTitle: null,
   showFooter: true,
   publishedByName: null,
-  airac: null,
 };
 
 /**

@@ -754,7 +754,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     },
     editorLabelKey: 'blocks.frequencyTable.label',
     group: 'data',
-    subgroup: 'atc',
+    subgroup: 'operational',
     icon: RadioTower,
   },
   {
@@ -778,7 +778,7 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     },
     editorLabelKey: 'blocks.coordination.label',
     group: 'data',
-    subgroup: 'atc',
+    subgroup: 'operational',
     icon: ArrowLeftRight,
   },
 ];

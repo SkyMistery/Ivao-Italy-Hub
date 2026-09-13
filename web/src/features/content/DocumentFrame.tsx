@@ -7,21 +7,20 @@ import { useLocalized } from '../../shared/i18n/useLocalized';
 import { useMoment } from '../../shared/i18n/useMoment';
 import { Notice } from '../../shared/ui';
 
-import { dayInstant, dayOf } from './operational';
+import { dayInstant, dayOf } from './documentDays';
 import type { PublicContentDto } from './queries';
 
 /**
- * What the public screen draws around the body of an operational document (G14, note
- * `2026-09-10-il-documento-operativo-come-va-ivao-aero.md`): a strip of facts under the title, a
- * notice when the document is not — or not yet — in force, and a footer that says which edition
- * this is. Three pieces of the **screen**, and none of the renderer: the renderer draws sections
- * and blocks, and a document is a row with columns around the same body (design M1 §3.1).
+ * What the public screen draws around the body of a document (G14): a strip of facts under the
+ * title, a notice when the document is not — or not yet — in force, and a footer that says which
+ * edition this is. Three pieces of the **screen**, and none of the renderer: the renderer draws
+ * sections and blocks, and a document is a row with columns around the same body (design M1 §3.1).
  *
- * Nothing here is drawn for a document that is not operational (`isOperational`): a guide filed
- * among the documents has no position and no cycle, and a strip of dashes would say so at length.
+ * Until 13 September 2026 the strip also carried a type, two positions, an airport and a FIR, and
+ * the footer an AIRAC cycle: that half left with vIPI (note `2026-09-13-staccarsi-da-vipi`).
  */
 
-/** The facts under the title: type, position, counterpart, airport, FIR, in force from. */
+/** The facts under the title: in force from. Nothing at all when the document says nothing. */
 export function DocumentStrip({ content }: { content: PublicContentDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
@@ -34,15 +33,6 @@ export function DocumentStrip({ content }: { content: PublicContentDto }) {
     }
   };
 
-  // The type reads as the word the form uses for it — SOP, LoA — never as the stored name.
-  push(
-    'documentType',
-    content.documentType === null ? null : t(`content.options.documentType.${content.documentType}`),
-  );
-  push('primaryPosition', content.primaryPosition);
-  push('secondaryPosition', content.secondaryPosition);
-  push('icao', content.icao);
-  push('fir', content.fir);
   push(
     'effectiveOn',
     content.effectiveOn === null ? null : moment(dayInstant(content.effectiveOn), { time: false }),
@@ -115,7 +105,7 @@ export function DocumentNotice({ content, now = new Date() }: { content: PublicC
   return null;
 }
 
-/** The edition: version, date, who, cycle — and the way to paper. */
+/** The edition: version, date, who — and the way to paper. */
 export function DocumentFooter({ content }: { content: PublicContentDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
@@ -135,12 +125,6 @@ export function DocumentFooter({ content }: { content: PublicContentDto }) {
           <div className="flex gap-1">
             <dt>{t('documents.public.publishedBy')}</dt>
             <dd className="text-foreground font-medium">{content.publishedByName}</dd>
-          </div>
-        )}
-        {content.airac === null ? null : (
-          <div className="flex gap-1">
-            <dt>{t('documents.public.airac')}</dt>
-            <dd className="text-foreground font-medium tabular-nums">{content.airac}</dd>
           </div>
         )}
       </dl>

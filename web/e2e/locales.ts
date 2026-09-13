@@ -93,7 +93,6 @@ interface CommonStrings {
       readonly publish: string;
       readonly publishDialog: {
         readonly changelog: string;
-        readonly airac: string;
         readonly confirm: string;
       };
       readonly page: string;

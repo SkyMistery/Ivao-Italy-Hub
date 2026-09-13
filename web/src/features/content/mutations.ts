@@ -64,13 +64,8 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
     pinned: values.pinned ?? false,
     sort: values.sort ?? 0,
     fileMediaId: values.fileMediaId ?? null,
-    // The operational document (G14). The same rule: a kind whose form does not draw them sends
+    // The life of a document (G14). The same rule: a kind whose form does not draw them sends
     // nothing, and the server refuses them on anything but a document anyway.
-    documentType: values.documentType ?? null,
-    primaryPosition: blankToNull(values.primaryPosition),
-    secondaryPosition: blankToNull(values.secondaryPosition),
-    icao: blankToNull(values.icao),
-    fir: blankToNull(values.fir),
     effectiveOn: blankToNull(values.effectiveOn),
     reviewOn: blankToNull(values.reviewOn),
     retiredAt: blankToNull(values.retiredAt),
@@ -144,13 +139,8 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     pinned: content.pinned,
     sort: content.sort,
     ...(content.fileMediaId === null ? {} : { fileMediaId: content.fileMediaId }),
-    // The operational document (G14), carried whether or not this kind's form draws them: a save
+    // The life of a document (G14), carried whether or not this kind's form draws them: a save
     // from the editor must never wipe what the row already says about itself.
-    ...(content.documentType === null ? {} : { documentType: content.documentType }),
-    ...(content.primaryPosition === null ? {} : { primaryPosition: content.primaryPosition }),
-    ...(content.secondaryPosition === null ? {} : { secondaryPosition: content.secondaryPosition }),
-    ...(content.icao === null ? {} : { icao: content.icao }),
-    ...(content.fir === null ? {} : { fir: content.fir }),
     ...(content.effectiveOn === null ? {} : { effectiveOn: content.effectiveOn }),
     ...(content.reviewOn === null ? {} : { reviewOn: content.reviewOn }),
     ...(content.retiredAt === null ? {} : { retiredAt: content.retiredAt }),
@@ -248,13 +238,11 @@ export function useDeleteContent() {
 }
 
 /**
- * What publication is told beside which row: a line for the staff about what changed, and — for an
- * operational document (G14) — the AIRAC cycle written on its footer. Both optional, both asked in
- * the dialog the Publish button opens.
+ * What publication is told beside which row: a line for the staff about what changed, optional,
+ * asked in the dialog the Publish button opens.
  */
 export interface PublishRequest {
   changelog: string;
-  airac: string;
 }
 
 /**
@@ -271,7 +259,7 @@ export function usePublishContent(id: number) {
           // A number, not a string: the route constrains it to a long, so the contract says
           // integer -- unlike `/api/content/{id}`, which the CRUD engine addresses as text.
           params: { path: { id } },
-          body: { changelog: blankToNull(request.changelog), airac: blankToNull(request.airac) },
+          body: { changelog: blankToNull(request.changelog) },
         }),
       ),
     onSuccess: async (content) => {

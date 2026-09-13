@@ -395,11 +395,6 @@
       "pinned": "In cima all'elenco",
       "sort": "Ordine",
       "fileMediaId": "File",
-      "documentType": "Tipo di documento",
-      "icao": "Aeroporto",
-      "fir": "FIR",
-      "primaryPosition": "Posizione",
-      "secondaryPosition": "Controparte",
       "effectiveOn": "In vigore dal",
       "reviewOn": "Da rivedere entro",
       "retiredAt": "Non più in vigore dal",
@@ -412,11 +407,6 @@
         "News": "Notizia",
         "Document": "Documento",
         "Dashboard": "Home di dipartimento"
-      },
-      "documentType": {
-        "none": "Non è un documento operativo",
-        "Sop": "SOP",
-        "Loa": "LoA"
       },
       "supersededById": {
         "none": "Niente"
@@ -531,7 +521,6 @@
         "title": "Pubblicare questa versione?",
         "description": "Prima si salva ciò che è sullo schermo, poi lo vedono i lettori. Una riga su che cosa è cambiato resta con la versione, per lo staff.",
         "changelog": "Che cosa è cambiato",
-        "airac": "Ciclo AIRAC",
         "confirm": "Pubblica"
       },
       "renderMode": "Cosa mostra questo blocco",
@@ -597,8 +586,6 @@
     "hints": {
       "seo": "Che cosa mostra un motore di ricerca, e che cosa compare quando qualcuno condivide la pagina. Se resta vuoto valgono il titolo e il sommario della pagina.",
       "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più.",
-      "primaryPosition": "Come nominativo, tipo LIRF_TWR. L'elenco propone le posizioni dell'aeroporto e della FIR scelti sopra; se ne può scrivere un'altra.",
-      "secondaryPosition": "L'altra parte di una lettera di accordo, o la posizione a cui si passa il traffico.",
       "reviewOn": "Passato questo giorno, il dipartimento riceve una volta l'avviso che il documento va rivisto.",
       "retiredAt": "Un documento non più in vigore resta leggibile con un avviso in cima, così un vecchio link trova la strada. Scegli qui sotto che cosa lo ha sostituito, se qualcosa lo ha fatto."
     }
@@ -630,7 +617,7 @@
       "tables": "Tabelle e passaggi",
       "grids": "Griglie",
       "containers": "Contenitori",
-      "atc": "Controllo del traffico aereo"
+      "operational": "Tabelle operative"
     },
     "frequencyTable": {
       "label": "Tabella delle frequenze",
@@ -1374,11 +1361,6 @@
       "description": "Regolamenti, guide e moduli, ordinati per il dipartimento che li tiene.",
       "download": "Scarica",
       "fileHint": "Questo documento è un file.",
-      "documentType": "Tipo",
-      "primaryPosition": "Posizione",
-      "secondaryPosition": "Controparte",
-      "icao": "Aeroporto",
-      "fir": "FIR",
       "effectiveOn": "In vigore dal",
       "notYetInForce": "Non ancora in vigore: vale dal {{date}}.",
       "retired": "Non più in vigore dal {{date}}.",
@@ -1386,7 +1368,6 @@
       "version": "Versione",
       "publishedOn": "Pubblicato il",
       "publishedBy": "da",
-      "airac": "AIRAC",
       "print": "Stampa",
       "filters": {
         "category": "Categoria",

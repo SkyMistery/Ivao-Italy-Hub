@@ -24,20 +24,6 @@ public enum ContentKind
 }
 
 /// <summary>
-/// What an operational document is, when it is one (G14, note
-/// 2026-09-10-il-documento-operativo-come-va-ivao-aero). Orthogonal to the category: a Tower SOP
-/// and a Tower LoA are both filed under "Tower". Stored as its name; a new one is additive.
-/// </summary>
-public enum DocumentType
-{
-    /// <summary>Standard operating procedures of a position.</summary>
-    Sop,
-
-    /// <summary>A letter of agreement between two positions or units.</summary>
-    Loa,
-}
-
-/// <summary>
 /// Any editorial content: a page, a news item, a document, or the template one of them was created
 /// from. The body is an opaque tree of sections and blocks; the backend only ever checks the
 /// envelope and its size, never the properties of a block (plan section 16.5).
@@ -111,25 +97,11 @@ public sealed class ContentEntry
     /// <summary>Documents only: the attached file, when the document is a file rather than a page.</summary>
     public long? FileMediaId { get; set; }
 
-    // ---- the operational document (G14) --------------------------------------------------------
-    // Six facts a controller's document carries and a page does not, all nullable: a document that
-    // is a guide rather than a SOP simply has none of them. Columns of `cms_contents`, not a table
-    // of their own, for the reason the news columns are (plan section 9.3).
-
-    /// <summary>SOP or LoA. Null for a document that is neither.</summary>
-    public DocumentType? DocumentType { get; set; }
-
-    /// <summary>The position the document is about, as a callsign (<c>LIRF_TWR</c>).</summary>
-    public string? PrimaryPosition { get; set; }
-
-    /// <summary>The other side of a letter of agreement, or the position handed over to.</summary>
-    public string? SecondaryPosition { get; set; }
-
-    /// <summary>An airport of the division's snapshot; the validator refuses any other.</summary>
-    public string? Icao { get; set; }
-
-    /// <summary>A centre of the division's snapshot; the validator refuses any other.</summary>
-    public string? Fir { get; set; }
+    // ---- the life of a document (G14) ---------------------------------------------------------
+    // What a regulation, a policy or a guide carries and a page does not, all nullable. The half of
+    // G14 that described a controller's document -- its type, positions, ICAO and FIR -- left the
+    // model on 13 September 2026 (note 2026-09-13-staccarsi-da-vipi); its columns stay in the
+    // database as shadow properties until a contract migration drops them (plan section 11.3).
 
     /// <summary>In force from this day; in the future, the reader is told so.</summary>
     public DateTime? EffectiveOn { get; set; }
@@ -151,7 +123,7 @@ public sealed class ContentEntry
     /// <summary>When the owning department was told the review date had passed, so it is told once.</summary>
     public DateTime? ReviewNotifiedAt { get; set; }
 
-    /// <summary>Whether the footer — version, date, publisher, AIRAC, print — is drawn at the end.</summary>
+    /// <summary>Whether the footer — version, date, publisher, print — is drawn at the end.</summary>
     public bool ShowFooter { get; set; } = true;
 
     public DateTime CreatedAt { get; set; }

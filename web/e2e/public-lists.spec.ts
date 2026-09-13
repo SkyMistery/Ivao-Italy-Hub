@@ -189,12 +189,7 @@ test('a document whose slug is a department code is still reachable', async ({ p
         fileMediaId: null,
         version: 1,
         publishedAt: '2026-09-04T12:00:00Z',
-        // A guide, not a SOP: none of the operational fields (G14), and no footer asked for.
-        documentType: null,
-        primaryPosition: null,
-        secondaryPosition: null,
-        icao: null,
-        fir: null,
+        // A guide with none of the dates of a document's life (G14), and no footer asked for.
         effectiveOn: null,
         reviewOn: null,
         retiredAt: null,
@@ -202,7 +197,6 @@ test('a document whose slug is a department code is still reachable', async ({ p
         supersededByTitle: null,
         showFooter: false,
         publishedByName: null,
-        airac: null,
       }),
     }),
   );

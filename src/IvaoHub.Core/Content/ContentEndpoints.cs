@@ -233,17 +233,12 @@ public static class ContentEndpoints
             template.SchemaVersion,
             // A template carries structure, never the editorial facts of one row: a page born from
             // one starts with no category, no cover, unpinned, first in order and no file — and a
-            // document with none of what makes it operational, which the form asks for next.
+            // document with none of its dates, which the form asks for next.
             Category: null,
             CoverMediaId: null,
             Pinned: false,
             Sort: 0,
             FileMediaId: null,
-            DocumentType: null,
-            PrimaryPosition: null,
-            SecondaryPosition: null,
-            Icao: null,
-            Fir: null,
             EffectiveOn: null,
             ReviewOn: null,
             RetiredAt: null,
@@ -301,7 +296,7 @@ public static class ContentEndpoints
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
         }
 
-        var failure = await publish.PublishAsync(content, request?.Changelog, http.RequestAborted, request?.Airac);
+        var failure = await publish.PublishAsync(content, request?.Changelog, http.RequestAborted);
         if (failure is not null)
         {
             return CrudProblems.Validation(failure.Errors, failure.MissingLocales, catalog, currentUser.Locale);
@@ -409,19 +404,13 @@ public static class ContentEndpoints
             content.FileMediaId,
             version.Version,
             version.PublishedAt,
-            content.DocumentType,
-            content.PrimaryPosition,
-            content.SecondaryPosition,
-            content.Icao,
-            content.Fir,
             content.EffectiveOn,
             content.ReviewOn,
             content.RetiredAt,
             successor?.Slug,
             successor?.Title,
             content.ShowFooter,
-            string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim(),
-            version.Airac));
+            string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim()));
     }
 
     /// <summary>

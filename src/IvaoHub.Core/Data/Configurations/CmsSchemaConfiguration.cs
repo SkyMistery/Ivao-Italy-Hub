@@ -16,12 +16,16 @@ internal sealed class ContentEntryConfiguration : IEntityTypeConfiguration<Conte
         builder.Property(content => content.Category).HasMaxLength(64);
         builder.HasRowVersion(content => content.RowVersion);
 
-        // The operational document (G14). Stored as names and short codes; sized to what they are.
-        builder.Property(content => content.DocumentType).HasConversion<string>().HasMaxLength(8);
-        builder.Property(content => content.PrimaryPosition).HasMaxLength(ContentWriteDtoValidator.MaxPositionLength);
-        builder.Property(content => content.SecondaryPosition).HasMaxLength(ContentWriteDtoValidator.MaxPositionLength);
-        builder.Property(content => content.Icao).HasMaxLength(4);
-        builder.Property(content => content.Fir).HasMaxLength(4);
+        // The half of G14 that described a controller's document left the model on 13 September 2026
+        // (note 2026-09-13-staccarsi-da-vipi). Its columns do not leave the database in the same
+        // package: migrations are additive, and a DROP ships in a later release (plan section 11.3).
+        // Mapped as shadow properties, exactly as they were, so the model still matches the snapshot
+        // and no migration is generated -- nothing reads or writes them.
+        builder.Property<string>(RetiredColumns.DocumentType).HasMaxLength(8);
+        builder.Property<string>(RetiredColumns.PrimaryPosition).HasMaxLength(16);
+        builder.Property<string>(RetiredColumns.SecondaryPosition).HasMaxLength(16);
+        builder.Property<string>(RetiredColumns.Icao).HasMaxLength(4);
+        builder.Property<string>(RetiredColumns.Fir).HasMaxLength(4);
         // Days, not instants: a document comes into force on a date, whatever the time zone.
         builder.Property(content => content.EffectiveOn).HasColumnType("date");
         builder.Property(content => content.ReviewOn).HasColumnType("date");
@@ -45,7 +49,7 @@ internal sealed class ContentVersionConfiguration : IEntityTypeConfiguration<Con
         builder.HasKey(version => version.Id);
         builder.Property(version => version.BodyJson).HasColumnType("json").IsRequired();
         builder.Property(version => version.Changelog).HasMaxLength(512);
-        builder.Property(version => version.Airac).HasMaxLength(4);
+        builder.Property<string>(RetiredColumns.Airac).HasMaxLength(4);
         builder.HasOne(version => version.Content)
             .WithMany()
             .HasForeignKey(version => version.ContentId)
@@ -219,4 +223,18 @@ internal sealed class ContactMessageConfiguration : IEntityTypeConfiguration<Con
         // The queue of one department, newest first, is the only way this table is ever read.
         builder.HasIndex(message => new { message.OwnerDepartment, message.Status, message.CreatedAt });
     }
+}
+
+/// <summary>
+/// The columns of G14 that nothing reads any more, by the property name the snapshot knows them by.
+/// One list, so that the contract migration that drops them knows exactly what to drop.
+/// </summary>
+internal static class RetiredColumns
+{
+    public const string DocumentType = "DocumentType";
+    public const string PrimaryPosition = "PrimaryPosition";
+    public const string SecondaryPosition = "SecondaryPosition";
+    public const string Icao = "Icao";
+    public const string Fir = "Fir";
+    public const string Airac = "Airac";
 }
