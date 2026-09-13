@@ -1744,6 +1744,10 @@ e gli scostamenti detti apertamente:
 - **Verificato in locale**: unit .NET (309), Vitest (386), smoke (73), lint, typecheck, formato,
   i18n; `has-pending-model-changes` dopo la migrazione. **Non in locale**: integrazione e giro completo
   (Docker spento), che esegue la CI.
+- **In CI, verde al secondo giro**, migrazione su MariaDB compresa (la colonna generata e il nuovo
+  indice unico sono passati al primo). Il primo giro ha trovato un difetto vero nel giro completo:
+  l'anteprima dell'indirizzo si chiamava «Address» per i lettori di schermo, come il campo dello slug,
+  e un'etichetta trovava due controlli. Ora si chiama «Where it will be» / «Dove sarà».
 
 #### G19 — L'approvazione delle pagine
 
