@@ -29,7 +29,14 @@ dipartimento che allarga la categoria: un documento sta in più raccolte e quind
 senza una tabella di collocazioni che costringerebbe il server a leggere le `props`. **Media e link
 dichiarano `ISharedForReading`**: si scelgono da tutti, si gestiscono dal proprietario. Confermato
 da Carmine anche l'ultimo punto: un documento AOD entra in una pagina TD **perché la pagina TD elenca
-la raccolta AOD**, e non perché l'AOD lo infila (§4 della nota). Nessun codice ancora: le fasi si scrivono
+la raccolta AOD**, e non perché l'AOD lo infila (§4 della nota). **Seconda passata**, lo stesso giorno: una pagina
+**pronta è in sola lettura** finché non la si ritira dalla revisione (l'editor salva da solo); chi
+approva vede un **riepilogo per sezione** e una coda con il conteggio, e la versione ricorda chi
+l'ha approvata; **togliere una pagina non si approva**; un **indice derivato alla pubblicazione**
+dice quali pagine elencano quale raccolta e quali media usano, così un media usato altrove **si
+archivia e non si cancella**; media e link **si aggiornano sul posto** (lo stesso logo con l'SVG
+nuovo), con l'indirizzo che cambia insieme al file perché `/media` è `immutable`; **il menu passa
+da WD e HQ**. Le vecchie rotte `/staff/{dept}/…` si tolgono senza redirect: il sito non è online. Nessun codice ancora: le fasi si scrivono
 dopo il merge della pila.
 
 **Changelog 0.71** (12 set 2026, sera): **il blocco interattivo usato davvero.** Carmine ha scaricato
