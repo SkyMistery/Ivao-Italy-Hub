@@ -2,7 +2,9 @@
 
 **Data:** 7 settembre 2026 — chiesta da Carmine («il servizio attuale delle vIPI lo dovremo portare
 dentro questo sito, organizziamoci»)
-**Stato:** **decisa** (Carmine, 7 settembre 2026) — §«La decisione»
+**Stato:** ~~decisa (Carmine, 7 settembre 2026)~~ **sospesa il 13 settembre 2026** da
+`2026-09-13-staccarsi-da-vipi.md`: l'hub linka `atc.it.ivao.aero` e non monta né consuma vIPI. La
+lettura dei due repository qui sotto resta valida per il giorno in cui la domanda tornasse.
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**. Non è una funzione dell'hub: è un secondo
 prodotto che entra nel processo dell'hub, e tocca runtime, database, autenticazione e deploy.
 
