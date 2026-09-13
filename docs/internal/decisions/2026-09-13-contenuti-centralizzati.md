@@ -2,7 +2,7 @@
 
 **Data:** 13 settembre 2026 — portata da Carmine dopo essersi confrontato con lo staff di IVAO
 («dobbiamo centralizzare la creazione di documenti, news e pagine»)
-**Stato:** **decisa** (Carmine, 13 settembre 2026) sulle domande di §3; un punto da confermare in §5
+**Stato:** **decisa** (Carmine, 13 settembre 2026) sulle domande di §3, e confermato lo stesso giorno il comportamento di §4
 **Regola applicata:** `CLAUDE.md` §5. La schermata unica e la lettura condivisa di media e link sono
 **(b)**, estensioni del motore di lista e di `ISharedForReading`; l'**approvazione delle pagine** è
 **(c)**, un meccanismo nuovo.
@@ -123,7 +123,7 @@ Con §3.3 **non serve essere WD o HQ**, e la risposta segue il proprietario di c
   compare.
 - **WD e HQ** possono fare tutte e due le cose.
 
-⚠️ **Da confermare con Carmine** che sia il comportamento voluto.
+**Confermato da Carmine** il 13 settembre 2026.
 
 ## 5. Che cosa si tocca
 
