@@ -40,7 +40,7 @@ posizioni.
    posizione** adesso, nella stessa transazione; e un grant modificato rinfresca anche chi aveva il
    soggetto di prima. `IAffectsUserSession` si allarga alla posizione invece di aggiungere un secondo
    meccanismo.
-4. **Il seed.** `division.json → positionGrants: [{ department, levels, permission, scope, effect }]`,
+4. **Il seed.** `division.json → positionGrants: [{ department, levels, permission, scope, deny }]`,
    letto **una volta** (una riga in `hub_division_settings` ricorda che è stato applicato), poi la verità
    è la tabella e si cambia dalla schermata. Validato all'avvio come il resto di `division.json`.
 5. **La schermata.** `/staff/admin/permissions`: il form chiede prima «a chi» (un VID o una posizione)
