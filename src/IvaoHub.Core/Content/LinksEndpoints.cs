@@ -42,6 +42,9 @@ public static class LinksEndpoints
             options.SearchFields.Add(link => link.Title);
             options.SearchFields.Add(link => link.Url);
 
+            // Every department reads every public link; the handler asks the row the same.
+            options.SharedForReading = Link.SharedForReading;
+
             options.ToList = mapper.ToList;
             options.ToDetail = mapper.ToDetail;
             options.Apply = mapper.Apply;

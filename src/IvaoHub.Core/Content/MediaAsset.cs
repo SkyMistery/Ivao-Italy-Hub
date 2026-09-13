@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq.Expressions;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 
@@ -12,8 +13,23 @@ namespace IvaoHub.Core.Content;
 /// that uses it is.</para>
 /// </summary>
 [Audited]
-public sealed class MediaAsset : IOwnedByDepartment, IVisible, IAuditable
+public sealed class MediaAsset : IOwnedByDepartment, IVisible, IAuditable, ISharedForReading
 {
+    /// <summary>
+    /// Which files every department may read: the public ones. A logo the web team uploaded is used on a page of Training, and a picker that could not offer it would send somebody to upload it a second time (note
+    /// 2026-09-13-contenuti-centralizzati, section 3.4). Changing and deleting one stays with the
+    /// department that owns it; a file with visibility <c>Department</c> stays that department's.
+    /// <para>Declared once, as an expression, for the same reason as the templates of
+    /// <see cref="ContentEntry"/>: the CRUD engine puts it in the <c>WHERE</c> of the list, and the
+    /// single authorization handler asks the row itself with the same expression compiled.</para>
+    /// </summary>
+    public static readonly Expression<Func<MediaAsset, bool>> SharedForReading =
+        media => media.Visibility == Visibility.Public;
+
+    private static readonly Func<MediaAsset, bool> SharedForReadingInMemory = SharedForReading.Compile();
+
+    bool ISharedForReading.IsSharedForReading => SharedForReadingInMemory(this);
+
     public long Id { get; set; }
 
     public Department OwnerDepartment { get; set; }

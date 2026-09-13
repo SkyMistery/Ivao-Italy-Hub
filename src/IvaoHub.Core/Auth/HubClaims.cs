@@ -153,15 +153,24 @@ public static class HubClaims
         // they were given nothing on. That is the right reading of "authorised to reach that
         // department" and it is what makes a department dashboard visible to the people helping
         // out — but whoever hands a grant out has to know it.
+        //
+        // ⚠️ And a grant with no department is a grant on **every** department, so it reaches all of
+        // them (note 2026-09-13-contenuti-centralizzati, section 3.1: "the permission to see and handle
+        // them all"). It used to be dropped here, which gave the permission everywhere and a list
+        // of nobody's rows -- the same bug as above, one level up.
+        var granted = materialisedPermissions
+            .Where(permission => permission.Source.StartsWith(
+                EffectivePermissionsCalculator.GrantSourcePrefix,
+                StringComparison.Ordinal))
+            .ToArray();
+
         var reached = materialised
             .Select(position => position.Department)
             .OfType<Division.Department>()
-            .Concat(materialisedPermissions
-                .Where(permission => permission.Source.StartsWith(
-                    EffectivePermissionsCalculator.GrantSourcePrefix,
-                    StringComparison.Ordinal))
-                .Select(permission => permission.Department)
-                .OfType<Division.Department>())
+            .Concat(granted.Select(permission => permission.Department).OfType<Division.Department>())
+            .Concat(granted.Any(permission => permission.Department is null)
+                ? RolePermissionMatrix.AllDepartments
+                : [])
             .Distinct();
 
         foreach (var department in reached)

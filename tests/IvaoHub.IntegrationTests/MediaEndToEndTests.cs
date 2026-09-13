@@ -156,6 +156,43 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task APublicFileIsReadByEveryDepartmentAndChangedOnlyByItsOwn()
+    {
+        // Note 2026-09-13-contenuti-centralizzati, 3.4: the logo the web team uploaded is picked on a
+        // page of Events without being uploaded twice, and Events cannot change it or throw it away.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", token);
+        await SeedUserAsync(EventsCoordinatorVid, "IT-EC", token);
+
+        using var web = await SignedInAsync(WebCoordinatorVid, token);
+        using var events = await SignedInAsync(EventsCoordinatorVid, token);
+
+        // Sizes of this test's own, so the deduplication of another test never answers for these.
+        var shared = await UploadedAsync(web, Department.WD, Png(47, 23, padding: 11), "shared.png", token);
+        var kept = await UploadedAsync(web, Department.WD, Png(23, 47, padding: 11), "kept.png", token);
+        await MakePublicAsync(web, shared, token);
+
+        var listed = await events.GetFromJsonAsync<JsonElement>(
+            $"{MediaEndpoints.Pattern}?filter[ownerDepartment]={nameof(Department.WD)}&pageSize=100",
+            token);
+        var ids = listed.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetInt64()).ToList();
+
+        Assert.Contains(shared, ids);
+        Assert.DoesNotContain(kept, ids);
+
+        using var read = await events.GetAsync(new Uri($"{MediaEndpoints.Pattern}/{kept}", UriKind.Relative), token);
+        Assert.Equal(HttpStatusCode.Forbidden, read.StatusCode);
+
+        // Read, and only read.
+        await Assert.ThrowsAsync<HttpRequestException>(() => MakePublicAsync(events, shared, token));
+
+        using var removal = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{MediaEndpoints.Pattern}/{shared}", UriKind.Relative));
+        removal.Headers.Add("X-Requested-With", "hub");
+        using var removed = await events.SendAsync(removal, token);
+        Assert.Equal(HttpStatusCode.Forbidden, removed.StatusCode);
+    }
+
+    [Fact]
     public async Task ANameThatIsAPathDoesNotBecomeOne()
     {
         var token = TestContext.Current.CancellationToken;
