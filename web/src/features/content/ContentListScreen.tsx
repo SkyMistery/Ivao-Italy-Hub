@@ -13,9 +13,15 @@ import {
 import { DataList, ListFilter, col, type ColumnSpec } from '../../shared/list';
 import { PageShell } from '../../shared/ui';
 
-import { CONTENT_SCREEN_KINDS, ROW_KINDS, type ContentSearch, type RowKind } from './contentSearch';
+import {
+  CONTENT_SCREEN_KINDS,
+  CONTENT_STATUSES,
+  ROW_KINDS,
+  type ContentSearch,
+  type RowKind,
+} from './contentSearch';
 import { CONTENT_KINDS, TEMPLATE_COLUMNS } from './kinds';
-import { contentListQuery, templateListQuery, type ContentListDto } from './queries';
+import { contentListQuery, templateListQuery, type ContentListDto, type ContentStatus } from './queries';
 import { MANAGE_TEMPLATES } from './templateRules';
 import { TemplatePicker } from './TemplatePicker';
 
@@ -154,6 +160,16 @@ export function ContentListScreen({
             items={reachable.map((code) => ({ value: code, label: t(`departments.${code}`) }))}
           />
         ) : null}
+        {rowKind === null ? null : (
+          <ListFilter
+            id="contentStatus"
+            label={t('backOffice.filters.status')}
+            none={t('backOffice.filters.allStatuses')}
+            value={search.status}
+            onChange={(value) => onSearchChange({ status: value as ContentStatus | undefined, page: 1 })}
+            items={CONTENT_STATUSES.map((value) => ({ value, label: t(`content.options.status.${value}`) }))}
+          />
+        )}
       </div>
     ),
     // The button alone: the choices beside it are already at the top, and two controls with one id
@@ -191,7 +207,11 @@ export function ContentListScreen({
         {rowKind === null ? (
           <DataList key="templates" query={templateListQuery(search.department, search)} {...list} />
         ) : (
-          <DataList key="rows" query={contentListQuery(search.department, search, rowKind)} {...list} />
+          <DataList
+            key="rows"
+            query={contentListQuery(search.department, search, rowKind, search.status)}
+            {...list}
+          />
         )}
       </div>
     </PageShell>

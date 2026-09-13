@@ -42,6 +42,7 @@ const bootstrap = {
     faviconUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
+    contentApproval: ['Page'],
   },
   modules: [],
   navigation: { public: [], footer: [], staff: [] },
@@ -122,4 +123,28 @@ test('somebody who works in one department is not offered the same entries twice
   expect(groups.find((group) => group.code === 'ED')?.items.map((item) => item.href)).toContain(
     '/staff/content?kind=Page&department=ED',
   );
+});
+
+test('the pages waiting for approval are offered to whoever may approve them, and to nobody else', () => {
+  // G19: once, at the top of the content of every department, and only while the division
+  // publishes some kind by approval.
+  const permissions = [
+    { name: 'Content.View', department: 'ED' },
+    { name: 'Content.View', department: 'WD' },
+  ];
+  const toApprove = (value: Bootstrap) =>
+    staffDestinations(value, (key) => key)
+      .flatMap((group) => group.items)
+      .filter((item) => item.href.includes('status=Ready'))
+      .map((item) => item.href);
+
+  expect(toApprove({ ...bootstrap, permissions })).toEqual([]);
+
+  const approver = {
+    ...bootstrap,
+    permissions: [...permissions, { name: 'Content.Approve', department: null }],
+  };
+  expect(toApprove(approver)).toEqual(['/staff/content?kind=Page&status=Ready']);
+
+  expect(toApprove({ ...approver, division: { ...approver.division, contentApproval: [] } })).toEqual([]);
 });

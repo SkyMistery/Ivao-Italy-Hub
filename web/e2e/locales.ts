@@ -82,6 +82,16 @@ interface CommonStrings {
       readonly pinned: string;
       readonly parentId: string;
     };
+    readonly review: {
+      readonly ready: string;
+      readonly readyDialog: { readonly confirm: string };
+      readonly note: string;
+      readonly withdraw: string;
+      readonly sections: string;
+      readonly change: { readonly Changed: string; readonly Unchanged: string };
+      readonly approve: string;
+      readonly approveDialog: { readonly confirm: string };
+    };
     readonly address: {
       readonly label: string;
       readonly state: { readonly Free: string };

@@ -606,6 +606,61 @@
         "InvalidParent": "A page cannot go under this one.",
         "TopLevelNotAllowed": "Only the director and the web team put a page at the top of the site. Choose a page to put it under."
       }
+    },
+    "review": {
+      "title": "Approval",
+      "ready": "Mark ready",
+      "readyDialog": {
+        "title": "Send this page for approval?",
+        "description": "What is on screen is saved and sent for approval. Until it is approved or sent back, nobody can change it.",
+        "confirm": "Mark ready"
+      },
+      "readyDone": "Sent for approval.",
+      "note": "A note for whoever reads it",
+      "sentBack": "Sent back",
+      "waiting": "Waiting for approval",
+      "waitingSince": "Waiting for approval since {{date}}, marked ready by {{name}}",
+      "address": "Where it will be:",
+      "firstPublication": "First publication: the whole page is new.",
+      "sections": "What changed",
+      "change": {
+        "Added": "Added",
+        "Removed": "Removed",
+        "Changed": "Changed",
+        "Unchanged": "Unchanged"
+      },
+      "menu": {
+        "title": "Menu entry",
+        "label": "Label ({{locale}})",
+        "parent": "Under",
+        "top": "At the top of the menu",
+        "proposed": "Proposed menu entry:"
+      },
+      "approve": "Approve",
+      "approveDialog": {
+        "title": "Approve and publish this page?",
+        "description": "The address and the menu entry can be corrected here before it goes online.",
+        "confirm": "Approve and publish"
+      },
+      "approveDone": "Approved and published.",
+      "sendBack": "Send back",
+      "sendBackDialog": {
+        "title": "Send this page back?",
+        "description": "It becomes a draft again, and whoever marked it ready receives the note.",
+        "confirm": "Send back"
+      },
+      "sendBackDone": "Sent back.",
+      "withdraw": "Withdraw from approval",
+      "withdrawDialog": {
+        "title": "Withdraw this page from approval?",
+        "description": "It becomes a draft again, and it can be changed and marked ready once more.",
+        "confirm": "Withdraw"
+      },
+      "withdrawDone": "Withdrawn: it is a draft again.",
+      "list": {
+        "title": "To approve",
+        "description": "The pages waiting for approval."
+      }
     }
   },
   "templates": {
@@ -1578,7 +1633,9 @@
     "filters": {
       "kind": "Show",
       "department": "Department",
-      "allDepartments": "Every department"
+      "allDepartments": "Every department",
+      "status": "State",
+      "allStatuses": "Every state"
     },
     "kinds": {
       "Page": "Pages",

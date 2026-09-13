@@ -792,6 +792,7 @@ export interface components {
             faviconUrl: null | string;
             firStaffScope: string;
             siteDepartment: string;
+            contentApproval: string[];
         };
         /**
          * @description One module of this build. Enabled is false for an optional module the
@@ -1142,6 +1143,7 @@ export interface components {
             ownerDepartment: components["schemas"]["Department"];
             visibility: components["schemas"]["Visibility"];
             status: components["schemas"]["PublishStatus"];
+            reviewNote: null | string;
             /** Format: int64 */
             templateId: null | number;
             isTemplate: boolean;

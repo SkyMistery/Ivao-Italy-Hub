@@ -4,6 +4,7 @@ import { emptyBody, type Body } from '../../blocks';
 import type { Department, LocalizedString } from '../../shared/api/bootstrap';
 import { AUTOSAVE_HEADER, api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
+import type { components } from '../../shared/api/schema';
 import { emptyLocalized } from '../../shared/i18n/localized';
 
 import {
@@ -266,6 +267,27 @@ export function usePublishContent(id: number) {
           body: { changelog: blankToNull(request.changelog) },
         }),
       ),
+    onSuccess: async (content) => {
+      queryClient.setQueryData(contentDetailKey(id), content);
+      await queryClient.invalidateQueries({ queryKey: contentKey });
+    },
+  });
+}
+
+/** One request to the review of a page (G19): ready, withdraw, send back, approve. */
+export type ContentReviewRequest = components['schemas']['ContentReviewRequest'];
+
+/**
+ * The review of a page (note 2026-09-13-contenuti-centralizzati, 3.2). One mutation for the four
+ * actions, because the server has one address for them; a refusal reaches the screen as an
+ * `ApiError` like any other, so the note or the address it names is shown where it belongs.
+ */
+export function useReviewContent(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: ContentReviewRequest): Promise<ContentDetailDto> =>
+      unwrap(await api.POST('/api/content/{id}/review', { params: { path: { id } }, body: request })),
     onSuccess: async (content) => {
       queryClient.setQueryData(contentDetailKey(id), content);
       await queryClient.invalidateQueries({ queryKey: contentKey });

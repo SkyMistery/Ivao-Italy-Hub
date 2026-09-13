@@ -44,6 +44,7 @@ public sealed record ContentDetailDto(
     Department OwnerDepartment,
     Visibility Visibility,
     PublishStatus Status,
+    string? ReviewNote,
     long? TemplateId,
     bool IsTemplate,
     Localized<string> Title,

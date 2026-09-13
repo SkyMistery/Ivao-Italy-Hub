@@ -55,6 +55,7 @@ const bootstrap: Bootstrap = {
     faviconUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
+    contentApproval: ['Page'],
   },
   modules: [],
   // Both kinds of entry, because the header has to draw both: a module's, which carries a

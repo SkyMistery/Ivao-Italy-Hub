@@ -10,6 +10,7 @@ import { useUploadMedia } from '../media/mutations';
 import { mediaPickerQuery } from '../media/queries';
 
 import { ContentEditor } from './ContentEditor';
+import { ReviewPanel } from './ReviewPanel';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
 import {
@@ -147,6 +148,18 @@ export function ContentFormScreen({
     label: read(category.label) || category.key,
   }));
 
+  // Whether this row goes online by approval (G19, note 2026-09-13-contenuti-centralizzati §3.2): a
+  // kind the division lists, never a template. Whoever may approve publishes it directly; anybody else
+  // marks it ready, and a row already waiting is published by being approved, not past its review.
+  const mayApprove = holdsPermission(bootstrap, CONTENT_APPROVE, department);
+  const reviewed =
+    !isNew &&
+    content !== null &&
+    !content.isTemplate &&
+    bootstrap.division.contentApproval.includes(content.kind);
+  const waiting = content?.status === 'Ready';
+  const mayPublish = !isNew && !waiting && (!reviewed || mayApprove);
+
   const title = isNew ? t(`${config.titles}.create`) : t(`${config.titles}.edit`);
 
   return (
@@ -167,6 +180,20 @@ export function ContentFormScreen({
     >
       <ContentEditor
         content={content}
+        locked={waiting}
+        {...(reviewed
+          ? {
+              review: (flush: () => Promise<boolean>) => (
+                <ReviewPanel
+                  content={content}
+                  locales={locales}
+                  mayApprove={mayApprove}
+                  flush={flush}
+                  onChanged={askAgain}
+                />
+              ),
+            }
+          : {})}
         kind={config.kind}
         startsAsTemplate={startsAsTemplate}
         categories={categories}
@@ -212,7 +239,7 @@ export function ContentFormScreen({
           return saved;
         }}
         onPublish={
-          isNew
+          !mayPublish
             ? null
             : (request) =>
                 publish.mutate(request, {

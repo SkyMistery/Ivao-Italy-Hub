@@ -13,7 +13,7 @@ import { Button, Input, Label } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
 import { ChevronLeft, Eye, List, Redo2, Undo2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
@@ -124,6 +124,8 @@ export function ContentEditor({
   onDelete,
   publishProblems,
   busy,
+  locked = false,
+  review,
 }: {
   content: ContentDetailDto | null;
   /** Which kind this row is. Fixed by the list it was opened from, never a field on the form. */
@@ -177,6 +179,16 @@ export function ContentEditor({
    */
   publishProblems: ContentPublishProblemsDto | undefined;
   busy: boolean;
+  /**
+   * A page waiting for approval (G19): read, not written. Nothing is saved by itself and nothing can
+   * be pressed that would change it; the server refuses a write anyway (`errors.content.review.inReview`).
+   */
+  locked?: boolean;
+  /**
+   * The review of this page, drawn under the toolbar. Handed the way to store what is on screen, so
+   * that marking a page ready never sends for approval a draft that was not saved.
+   */
+  review?: (flush: () => Promise<boolean>) => ReactNode;
 }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
@@ -340,7 +352,7 @@ export function ContentEditor({
   const autosave = useAutosave({
     // Never before the first press on "save draft": a row that does not exist is not saved by
     // itself, or every "new page" somebody opened and left would be a page.
-    enabled: content !== null,
+    enabled: content !== null && !locked,
     snapshot,
     busy,
     save: async (): Promise<SaveOutcome> => {
@@ -875,7 +887,7 @@ export function ContentEditor({
           it up there while its state stays here, and that line is the sticky one now. */}
           <PageActions>
             <div className="flex flex-wrap items-center gap-2">
-              <Button type="submit" form={METADATA_FORM} disabled={busy}>
+              <Button type="submit" form={METADATA_FORM} disabled={busy || locked}>
                 {t('content.editor.saveDraft')}
               </Button>
 
@@ -948,6 +960,8 @@ export function ContentEditor({
             </div>
           </PageActions>
 
+          {review?.(async () => !autosave.dirty || (await autosave.flush()))}
+
           <PublishProblems body={body} problems={publishProblems} />
 
           {draftStatus === null ? null : (
@@ -977,82 +991,88 @@ export function ContentEditor({
           The outline is not a mode you leave behind: it is the keyboard road (`blocks/picking.ts`),
           and clicking the page is the pointer one. Both put the same thing in the panel on the
           right, which is the property that made road (A) work in the first place. */}
-          <DndContext
-            sensors={sensors}
-            // The slots are hidden until a drag begins, so they have to be measured once it has.
-            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-            collisionDetection={collisions}
-            onDragStart={({ active }) => {
-              const started = active.data.current as PaletteDrag | BlockDrag | SectionDrag | undefined;
-              setDragging(started?.kind === 'palette' || started?.kind === 'block' ? started : null);
-            }}
-            onDragCancel={() => setDragging(null)}
-            onDragEnd={onDragEnd}
-          >
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
-              <BlockPalette
-                target={paletteTarget}
-                rule={paletteRule}
-                draggable={preview}
-                holds={holds}
-                onAdd={(type) => {
-                  if (paletteTarget !== null) {
-                    addBlockTo(paletteTarget.id, type, targetColumn);
-                  }
-                }}
-              />
+          {/* A page waiting for approval is read here, not written: every field and every button of
+              the frame is switched off at once, which is what a disabled fieldset is for. */}
+          <fieldset disabled={locked} className="m-0 min-w-0 border-0 p-0">
+            <DndContext
+              sensors={sensors}
+              // The slots are hidden until a drag begins, so they have to be measured once it has.
+              measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+              collisionDetection={collisions}
+              onDragStart={({ active }) => {
+                const started = active.data.current as PaletteDrag | BlockDrag | SectionDrag | undefined;
+                setDragging(started?.kind === 'palette' || started?.kind === 'block' ? started : null);
+              }}
+              onDragCancel={() => setDragging(null)}
+              onDragEnd={onDragEnd}
+            >
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-[13rem_minmax(0,1fr)_19rem]">
+                <BlockPalette
+                  target={paletteTarget}
+                  rule={paletteRule}
+                  draggable={preview}
+                  holds={holds}
+                  onAdd={(type) => {
+                    if (paletteTarget !== null) {
+                      addBlockTo(paletteTarget.id, type, targetColumn);
+                    }
+                  }}
+                />
 
-              {preview ? (
-                // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
-                // ways of composing — the page itself — and it keeps the same panel beside it, so a block
-                // clicked here and the same block clicked in the outline lead to exactly the same fields
-                // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
-                <PickingContext.Provider value={picking}>
-                  <PreviewFrame
-                    body={body}
-                    locales={locales}
-                    locale={previewLocale}
-                    onLocale={setPreviewLocale}
-                    published={published}
-                    comparing={comparing}
-                    onCompare={setComparing}
-                  />
-                </PickingContext.Provider>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  <SectionHeader title={t('content.editor.structure')} />
-                  <SectionTree
-                    body={body}
-                    rules={rules}
-                    selection={selection}
-                    onSelect={setSelection}
-                    onAddSection={addSectionAt}
-                    onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
-                    onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
-                    onReorderSections={(activeId, overId) => change(reorderSections(body, activeId, overId))}
-                    onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
-                    onDuplicateBlock={duplicateBlockById}
-                    onDuplicateSection={duplicateSectionById}
-                    onRemoveSection={removeSectionById}
-                    onRemoveBlock={removeBlockById}
-                  />
-                </div>
-              )}
+                {preview ? (
+                  // ⚠️ The preview is not a place you go to and come back from any more. It is one of the two
+                  // ways of composing — the page itself — and it keeps the same panel beside it, so a block
+                  // clicked here and the same block clicked in the outline lead to exactly the same fields
+                  // (decided 9 Sep 2026, `decisions/2026-09-09-comporre-una-pagina-guardandola.md`).
+                  <PickingContext.Provider value={picking}>
+                    <PreviewFrame
+                      body={body}
+                      locales={locales}
+                      locale={previewLocale}
+                      onLocale={setPreviewLocale}
+                      published={published}
+                      comparing={comparing}
+                      onCompare={setComparing}
+                    />
+                  </PickingContext.Provider>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <SectionHeader title={t('content.editor.structure')} />
+                    <SectionTree
+                      body={body}
+                      rules={rules}
+                      selection={selection}
+                      onSelect={setSelection}
+                      onAddSection={addSectionAt}
+                      onMoveSection={(id, delta) => change(moveSection(body, id, delta))}
+                      onMoveBlock={(id, delta) => change(moveBlock(body, id, delta))}
+                      onReorderSections={(activeId, overId) =>
+                        change(reorderSections(body, activeId, overId))
+                      }
+                      onReorderBlocks={(activeId, overId) => change(reorderBlocks(body, activeId, overId))}
+                      onDuplicateBlock={duplicateBlockById}
+                      onDuplicateSection={duplicateSectionById}
+                      onRemoveSection={removeSectionById}
+                      onRemoveBlock={removeBlockById}
+                    />
+                  </div>
+                )}
 
-              {properties}
-            </div>
+                {properties}
+              </div>
 
-            {/* What travels under the pointer: a copy of the entry, not the entry itself, which sits in a
+              {/* What travels under the pointer: a copy of the entry, not the entry itself, which sits in a
           panel that scrolls and would clip it. */}
-            <DragOverlay dropAnimation={null}>
-              {draggedRegistration === undefined ? null : (
-                <div className="bg-body text-foreground border-border flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm shadow-md">
-                  <draggedRegistration.icon aria-hidden className="size-4 shrink-0" />
-                  {t(draggedRegistration.editorLabelKey)}
-                </div>
-              )}
-            </DragOverlay>
-          </DndContext>
+              <DragOverlay dropAnimation={null}>
+                {draggedRegistration === undefined ? null : (
+                  <div className="bg-body text-foreground border-border flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm shadow-md">
+                    <draggedRegistration.icon aria-hidden className="size-4 shrink-0" />
+                    {t(draggedRegistration.editorLabelKey)}
+                  </div>
+                )}
+              </DragOverlay>
+            </DndContext>
+          </fieldset>
         </div>
       </EmbeddingContext.Provider>
     </PreviewLocaleContext.Provider>
