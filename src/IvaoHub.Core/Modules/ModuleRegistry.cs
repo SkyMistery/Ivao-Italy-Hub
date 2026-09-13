@@ -15,7 +15,7 @@ namespace IvaoHub.Core.Modules;
 /// nothing scans "whatever Web happens to reference". A scan reads the same as a list on the day it
 /// is written and differently on the day a transitive reference appears (design M0 section 6.5).</para>
 /// <para>An optional module a division switched off in <c>division.modules</c> is not in
-/// <see cref="Enabled"/> and contributes nothing: no endpoints, no menu, no blocks. The department
+/// <see cref="Enabled"/> and contributes nothing: no endpoints, no menu, no blocks. The mandatory
 /// modules and the editorial core are not optional and cannot be switched off.</para>
 /// </summary>
 public sealed class ModuleRegistry
@@ -101,7 +101,7 @@ public sealed class ModuleRegistry
         : Enabled.FirstOrDefault(module => string.Equals(module.Key, key, StringComparison.Ordinal));
 
     /// <summary>
-    /// The module a request belongs to, read from its path: <c>/api/atc/anything</c> is the atc
+    /// The module a request belongs to, read from its path: <c>/api/events/anything</c> is the events
     /// module. Null for everything else, which is most requests.
     /// </summary>
     public IModule? ForApiPath(string path)

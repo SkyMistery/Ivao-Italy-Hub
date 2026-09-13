@@ -8,7 +8,6 @@ using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
-using IvaoHub.Modules.Atc;
 using IvaoHub.Web;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,10 +48,11 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         using var client = WritingClient();
         var body = await client.GetFromJsonAsync<JsonElement>("/api/me", token);
 
-        // The module is listed, with its department, enabled and open.
+        // The module is listed, enabled and open, and with no department: a module belongs to none
+        // (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti).
         var module = body.GetProperty("modules").EnumerateArray().Single();
-        Assert.Equal(AtcModule.ModuleKey, module.GetProperty("key").GetString());
-        Assert.Equal(nameof(Department.AOD), module.GetProperty("department").GetString());
+        Assert.Equal(SampleModule.ModuleKey, module.GetProperty("key").GetString());
+        Assert.False(module.TryGetProperty("department", out _));
         Assert.True(module.GetProperty("enabled").GetBoolean());
         Assert.False(module.GetProperty("maintenance").GetBoolean());
 
@@ -68,11 +68,17 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
             .ToArray();
 
         Assert.Equal((null, "/"), publicNavigation[0]);
-        Assert.Contains(("nav.atc", "/atc"), publicNavigation);
+        Assert.Contains((SampleModule.NavigationKey, SampleModule.NavigationPath), publicNavigation);
+
+        // Its permissions are in the one catalogue, which is composed from the registry and so sees a
+        // module added after the application registered its own list.
+        Assert.Contains(
+            body.GetProperty("registries").GetProperty("permissions").EnumerateArray(),
+            permission => permission.GetProperty("name").GetString() == SampleModule.ReadPermission);
 
         // And its endpoints are mapped, under its own prefix and nowhere else.
-        var ping = await client.GetFromJsonAsync<JsonElement>($"/api/{AtcModule.ModuleKey}/ping", token);
-        Assert.Equal(AtcModule.ModuleKey, ping.GetProperty("module").GetString());
+        var ping = await client.GetFromJsonAsync<JsonElement>($"/api/{SampleModule.ModuleKey}/ping", token);
+        Assert.Equal(SampleModule.ModuleKey, ping.GetProperty("module").GetString());
     }
 
     [Fact]
@@ -81,18 +87,16 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         var token = TestContext.Current.CancellationToken;
         using var client = WritingClient();
 
-        // The atc module declares /services/vsop: while vIPI still answers for it behind the same
-        // host, the single page application must hand it back rather than draw its own 404 over
-        // something that exists.
-        using var excluded = await client.GetAsync(new Uri("/services/vsop/whatever", UriKind.Relative), token);
+        // The module declares an address that something else behind the same host answers for: the
+        // single page application must hand it back rather than draw its own 404 over it.
+        using var excluded = await client.GetAsync(new Uri($"{SampleModule.Exclusion}/whatever", UriKind.Relative), token);
         Assert.Equal(HttpStatusCode.NotFound, excluded.StatusCode);
 
         // An address the SPA does own reaches the fallback, which in a test host has no index.html
         // to serve and answers 404 as well -- what is being fixed here is that the two paths take
         // different branches, so the assertion is on the exclusion list itself.
         var registry = _factory.Services.GetRequiredService<ModuleRegistry>();
-        Assert.Contains("/services/vsop", registry.SpaFallbackExclusions);
-        Assert.Contains("/vsop", registry.SpaFallbackExclusions);
+        Assert.Contains(SampleModule.Exclusion, registry.SpaFallbackExclusions);
     }
 
     // --- maintenance --------------------------------------------------------------------------
@@ -108,32 +112,32 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
 
         // Open: a write to an address the module does not have is a 404 or a 405, never a 503.
         using var beforeWrite = await client.PostAsync(
-            new Uri($"/api/{AtcModule.ModuleKey}/ping", UriKind.Relative),
+            new Uri($"/api/{SampleModule.ModuleKey}/ping", UriKind.Relative),
             content: null,
             token);
         Assert.NotEqual(HttpStatusCode.ServiceUnavailable, beforeWrite.StatusCode);
 
         using var closing = await client.PutAsJsonAsync(
-            $"{ModuleAdminEndpoints.Pattern}/{AtcModule.ModuleKey}/maintenance",
+            $"{ModuleAdminEndpoints.Pattern}/{SampleModule.ModuleKey}/maintenance",
             new { maintenance = true },
             token);
         Assert.Equal(HttpStatusCode.NoContent, closing.StatusCode);
 
         // Reads still work: a department reorganising its data wants nobody to change anything,
         // not its pages to go blank.
-        using var read = await client.GetAsync(new Uri($"/api/{AtcModule.ModuleKey}/ping", UriKind.Relative), token);
+        using var read = await client.GetAsync(new Uri($"/api/{SampleModule.ModuleKey}/ping", UriKind.Relative), token);
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
 
         // Writes do not, and the refusal names the module and carries an i18n key resolved into a
         // sentence in the language of the caller.
         using var write = await client.PostAsync(
-            new Uri($"/api/{AtcModule.ModuleKey}/ping", UriKind.Relative),
+            new Uri($"/api/{SampleModule.ModuleKey}/ping", UriKind.Relative),
             content: null,
             token);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, write.StatusCode);
 
         var problem = await write.Content.ReadFromJsonAsync<JsonElement>(token);
-        Assert.Equal(AtcModule.ModuleKey, problem.GetProperty("module").GetString());
+        Assert.Equal(SampleModule.ModuleKey, problem.GetProperty("module").GetString());
         Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("title").GetString()));
 
         // The core is untouched: maintenance is per module, not a switch on the whole site.
@@ -145,7 +149,7 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
-            var key = ModuleRegistry.MaintenanceKey(AtcModule.ModuleKey);
+            var key = ModuleRegistry.MaintenanceKey(SampleModule.ModuleKey);
 
             Assert.True(await database.AuditLog.AnyAsync(
                 entry => entry.Entity == "hub_division_settings" && entry.EntityId == key && entry.Vid == DirectorVid,
@@ -154,7 +158,7 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
 
         // Reopened, so the rest of the suite is not left looking at a closed module.
         using var reopening = await client.PutAsJsonAsync(
-            $"{ModuleAdminEndpoints.Pattern}/{AtcModule.ModuleKey}/maintenance",
+            $"{ModuleAdminEndpoints.Pattern}/{SampleModule.ModuleKey}/maintenance",
             new { maintenance = false },
             token);
         Assert.Equal(HttpStatusCode.NoContent, reopening.StatusCode);
@@ -170,7 +174,7 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         await _factory.SignInAsync(client, EventsCoordinatorVid, token);
 
         using var response = await client.PutAsJsonAsync(
-            $"{ModuleAdminEndpoints.Pattern}/{AtcModule.ModuleKey}/maintenance",
+            $"{ModuleAdminEndpoints.Pattern}/{SampleModule.ModuleKey}/maintenance",
             new { maintenance = true },
             token);
 

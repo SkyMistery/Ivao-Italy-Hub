@@ -654,22 +654,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/atc/ping": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["AtcPing"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -683,13 +667,6 @@ export interface components {
         AirspaceListingDto: {
             airports: components["schemas"]["AirspaceEntryDto"][];
             centers: components["schemas"]["AirspaceEntryDto"][];
-        };
-        /**
-         * @description What `GET /api/atc/ping` answers. Typed, so that it reaches the OpenAPI document
-         *                 and from there the generated client, like every other response of the hub.
-         */
-        AtcPing: {
-            module: string;
         };
         /**
          * @description One row in full. `BeforeJson` and `AfterJson` are the scalar columns as they were and
@@ -785,7 +762,6 @@ export interface components {
          */
         BootstrapModule: {
             key: string;
-            department: null | string;
             enabled: boolean;
             maintenance: boolean;
         };
@@ -845,7 +821,6 @@ export interface components {
         /** @description One dashboard tile, on the same terms as a block: the envelope, never the drawing. */
         BootstrapWidget: {
             key: string;
-            department: null | string;
             titleKey: string;
             sizes: string[];
         };
@@ -3850,26 +3825,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    AtcPing: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AtcPing"];
-                };
             };
         };
     };

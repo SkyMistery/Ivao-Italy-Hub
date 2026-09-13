@@ -42,6 +42,6 @@ public static class CoreWidgets
 
     public static readonly IReadOnlyList<WidgetDescriptor> All =
     [
-        new(Welcome, Department: null, TitleKey: "widgets.welcome.title", Sizes: ["full"]),
+        new(Welcome, TitleKey: "widgets.welcome.title", Sizes: ["full"]),
     ];
 }

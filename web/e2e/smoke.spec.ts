@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { measureContrast } from './contrast';
 import { stubTheApi } from './fixtures';
-import { englishAtc, englishCommon } from './locales';
+import { englishCommon } from './locales';
 
 /**
  * The application comes up in a browser.
@@ -61,7 +61,7 @@ test('the menu is what the bootstrap says, one level deep, and the footer carrie
   // half of the header.
   const navigation = page.getByRole('navigation', { name: 'Main' });
   await expect(navigation.getByText('Home', { exact: true })).toBeVisible();
-  await expect(navigation.getByText(englishAtc.nav.atc, { exact: true })).toBeVisible();
+  await expect(navigation.getByText(englishCommon.nav.modules, { exact: true })).toBeVisible();
 
   // A parent with children is a drop down, and it holds itself first so its own address stays
   // reachable: a heading that leads nowhere is what the alternative would be.

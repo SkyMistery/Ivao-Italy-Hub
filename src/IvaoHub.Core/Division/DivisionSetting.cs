@@ -12,7 +12,7 @@ namespace IvaoHub.Core.Division;
 [Audited]
 public sealed class DivisionSetting
 {
-    /// <summary>Dotted key, for example <c>modules.atc.maintenance</c>.</summary>
+    /// <summary>Dotted key, for example <c>modules.events.maintenance</c>.</summary>
     public string Key { get; set; } = string.Empty;
 
     public string ValueJson { get; set; } = "null";

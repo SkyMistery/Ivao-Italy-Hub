@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useSetModuleMaintenance } from '../../features/admin/modules/mutations';
 import { holdsPermissionAnywhere } from '../../shared/api/bootstrap';
-import { DepartmentBadge, EmptyState, PageShell } from '../../shared/ui';
+import { EmptyState, PageShell } from '../../shared/ui';
 
 /**
  * The modules of this build, and the one switch there is on each: closed for changes, or open.
@@ -52,8 +52,6 @@ function ModulesPage() {
               className="bg-card text-card-foreground border-border flex flex-wrap items-center gap-3 rounded-lg border p-4"
             >
               <span className="font-medium">{module.key}</span>
-
-              {module.department === null ? null : <DepartmentBadge department={module.department} />}
 
               {module.enabled ? null : <Badge variant="flat" text={t('modules.disabled')} />}
 

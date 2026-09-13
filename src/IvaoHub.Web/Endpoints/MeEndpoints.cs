@@ -47,7 +47,6 @@ internal static class MeEndpoints
 
                 moduleStates.Add(new BootstrapModule(
                     module.Key,
-                    module.Department?.ToString(),
                     enabled,
                     enabled && await modules.IsInMaintenanceAsync(module.Key, cancellationToken)));
             }
@@ -98,7 +97,6 @@ internal static class MeEndpoints
                         block.AlwaysLive))],
                     [.. widgets.All.Select(widget => new BootstrapWidget(
                         widget.Key,
-                        widget.Department?.ToString(),
                         widget.TitleKey,
                         widget.Sizes))],
                     [.. catalogue.All.Select(permission =>
@@ -251,7 +249,7 @@ internal sealed record BootstrapDivision(
 /// division switched off: it is compiled in and silent, and saying so is what lets the
 /// administration screen show it as something that can be switched back on.
 /// </summary>
-internal sealed record BootstrapModule(string Key, string? Department, bool Enabled, bool Maintenance);
+internal sealed record BootstrapModule(string Key, bool Enabled, bool Maintenance);
 
 internal sealed record BootstrapNavigation(
     IReadOnlyList<NavItem> Public,
@@ -301,6 +299,5 @@ internal sealed record BootstrapBlock(string Type, int Version, BlockKind Kind, 
 /// <summary>One dashboard tile, on the same terms as a block: the envelope, never the drawing.</summary>
 internal sealed record BootstrapWidget(
     string Key,
-    string? Department,
     string TitleKey,
     IReadOnlyList<string> Sizes);

@@ -43,7 +43,9 @@ export const anonymousBootstrap = {
         label: { en: 'About', it: 'Chi siamo' },
         children: [{ key: null, path: '/about/team', label: { en: 'Team', it: 'Squadra' }, children: [] }],
       },
-      { key: 'nav.atc', path: '/atc', label: null, children: [] },
+      // A key rather than words, the way a module's entry arrives; the build has no module until M2,
+      // so the key is one of the core's own.
+      { key: 'nav.modules', path: '/modules-entry', label: null, children: [] },
     ],
     // The three shapes the footer has to draw, since it became columns on 10 September 2026: a
     // heading that leads nowhere with its links under it, a column whose links all carry a mark —

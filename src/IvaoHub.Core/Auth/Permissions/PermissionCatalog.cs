@@ -28,7 +28,7 @@ public sealed class PermissionCatalog
                 // the two was scoped to a department would depend on the order of a list.
                 throw new InvalidOperationException(
                     $"The permission '{descriptor.Name}' is declared twice. A module names its "
-                    + "permissions after itself, for example 'Atc.View'.");
+                    + "permissions after itself, for example 'Events.Manage'.");
             }
         }
 
