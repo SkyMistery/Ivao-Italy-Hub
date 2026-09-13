@@ -47,7 +47,7 @@ const bootstrap = {
   },
   modules: [],
   navigation: { public: [], footer: [], staff: [] },
-  registries: { blocks: [], widgets: [], permissions: [] },
+  registries: { blocks: [], permissions: [] },
   calendarKinds: [],
   version: '0.0.0-test',
 };

@@ -251,7 +251,7 @@ public sealed class NetworkStatsProvider(IIvaoApiClient network, IFirDirectory a
 /// by the staff and entries projected by a module are the same rows and are read the same way:
 /// which module wrote one is not something a page has to care about.
 /// </summary>
-public sealed class CalendarBlockProvider(HubDbContext database, IClock clock) : IDataBlockProvider
+public sealed class CalendarBlockProvider(HubDbContext database, IClock clock, ICurrentUser currentUser) : IDataBlockProvider
 {
     /// <summary>From now on, however far.</summary>
     public const string Upcoming = "upcoming";
@@ -294,6 +294,16 @@ public sealed class CalendarBlockProvider(HubDbContext database, IClock clock) :
         if (department is { } owner)
         {
             query = query.Where(entry => entry.OwnerDepartment == owner);
+        }
+        else if (BlockProps.Flag(props, "myDepartments"))
+        {
+            // The calendar of the departments of whoever is looking (note
+            // 2026-09-13-le-dashboard-a-tutto-schermo §3.5): a dashboard is read by each person.
+            var mine = currentUser.Departments.ToList();
+            if (!currentUser.HasAllDepartments)
+            {
+                query = query.Where(entry => mine.Contains(entry.OwnerDepartment));
+            }
         }
 
         // A block that names no kind asks for every kind. The kinds are free strings — the staff

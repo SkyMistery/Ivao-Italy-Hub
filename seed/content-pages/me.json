@@ -1,0 +1,42 @@
+{
+  "slug": "me",
+  "kind": "Dashboard",
+  "template": "dashboard",
+  "visibility": "Members",
+  "title": {
+    "$t": "seed.pages.me.title"
+  },
+  "summary": {
+    "$t": "seed.pages.me.summary"
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_me",
+        "key": "me",
+        "title": {
+          "$t": "seed.pages.me.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "sm",
+        "width": "full",
+        "blocks": [
+          {
+            "id": "b_me_welcome",
+            "type": "welcome",
+            "version": 1,
+            "props": {
+              "message": {
+                "$t": "seed.pages.me.welcome"
+              }
+            },
+            "span": 12
+          }
+        ],
+        "sections": []
+      }
+    ]
+  }
+}

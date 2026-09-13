@@ -32,7 +32,6 @@ interface ServerModule {
   readonly project: string;
   readonly key: string;
   readonly blocks: string[];
-  readonly widgets: string[];
 }
 
 /** `public const string ModuleKey = "events";` */
@@ -40,9 +39,6 @@ const KEY = /ModuleKey\s*=\s*"([^"]+)"/;
 
 /** `new BlockDescriptor("events.upcoming", …)` — a module names its blocks after itself. */
 const BLOCK = /new BlockDescriptor\(\s*"([^"]+)"/g;
-
-/** `new WidgetDescriptor("events.mine", …)` */
-const WIDGET = /new WidgetDescriptor\(\s*"([^"]+)"/g;
 
 function readServerModules(): ServerModule[] {
   const projects = readdirSync(modulesRoot, { withFileTypes: true })
@@ -66,7 +62,6 @@ function readServerModules(): ServerModule[] {
       project,
       key: key!,
       blocks: [...source.matchAll(BLOCK)].map((match) => match[1]!),
-      widgets: [...source.matchAll(WIDGET)].map((match) => match[1]!),
     };
   });
 }
@@ -80,12 +75,11 @@ describe('the two halves of every module', () => {
     );
   });
 
-  test.each(serverModules)('$key declares the same blocks and tiles on both sides', (module) => {
+  test.each(serverModules)('$key declares the same blocks on both sides', (module) => {
     const manifest = moduleManifests.find((candidate) => candidate.key === module.key);
     expect(manifest, `no manifest under web/src/modules/${module.key}/`).toBeDefined();
 
     expect(manifest!.blocks.map((block) => block.type).sort()).toEqual([...module.blocks].sort());
-    expect(manifest!.widgets.map((widget) => widget.key).sort()).toEqual([...module.widgets].sort());
   });
 
   test.each(serverModules)('$key brings a language file for every language of the division', (module) => {
@@ -117,35 +111,23 @@ describe('the third side, the gallery', () => {
         kind: block.kind,
         alwaysLive: block.alwaysLive ?? false,
       })),
-      registry.widgets.map((widget) => ({
-        key: widget.key,
-        titleKey: `widgets.${widget.key}.title`,
-        sizes: ['full'],
-      })),
     );
 
-    expect(registriesAgree(compareRegistries(asServerWouldSay, registry.blocks, registry.widgets))).toBe(
-      true,
-    );
+    expect(registriesAgree(compareRegistries(asServerWouldSay, registry.blocks))).toBe(true);
   });
 
   test('a block the server knows and this build cannot draw is reported', () => {
     const difference = compareRegistries(
-      bootstrapWith([{ type: 'events.upcoming', version: 1, kind: 'Data', alwaysLive: true }], []),
+      bootstrapWith([{ type: 'events.upcoming', version: 1, kind: 'Data', alwaysLive: true }]),
       registry.blocks,
-      registry.widgets,
     );
 
     expect(difference.blocksMissingInBrowser).toEqual(['events.upcoming']);
     expect(difference.blocksMissingOnServer).toEqual(registry.blocks.map((block) => block.type));
-    expect(difference.widgetsMissingOnServer).toEqual(registry.widgets.map((widget) => widget.key));
   });
 });
 
 /** Only the part of the bootstrap the comparison reads; the rest is not this test's business. */
-function bootstrapWith(
-  blocks: Bootstrap['registries']['blocks'],
-  widgets: Bootstrap['registries']['widgets'],
-): Bootstrap {
-  return { registries: { blocks, widgets, permissions: [] } } as unknown as Bootstrap;
+function bootstrapWith(blocks: Bootstrap['registries']['blocks']): Bootstrap {
+  return { registries: { blocks, permissions: [] } } as unknown as Bootstrap;
 }

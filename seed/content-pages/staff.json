@@ -1,0 +1,96 @@
+{
+  "slug": "staff",
+  "kind": "Dashboard",
+  "template": "dashboard",
+  "visibility": "Staff",
+  "title": {
+    "$t": "seed.pages.staff.title"
+  },
+  "summary": {
+    "$t": "seed.pages.staff.summary"
+  },
+  "body": {
+    "schemaVersion": 1,
+    "sections": [
+      {
+        "id": "s_staff",
+        "key": "staff",
+        "title": {
+          "$t": "seed.pages.staff.section"
+        },
+        "layout": "stacked",
+        "background": "none",
+        "padding": "sm",
+        "width": "full",
+        "blocks": [
+          {
+            "id": "b_staff_approvals",
+            "type": "myWork",
+            "version": 1,
+            "props": {
+              "what": "approvals",
+              "limit": 5
+            },
+            "span": 3,
+            "renderMode": "live"
+          },
+          {
+            "id": "b_staff_contacts",
+            "type": "myWork",
+            "version": 1,
+            "props": {
+              "what": "contacts",
+              "limit": 5
+            },
+            "span": 3,
+            "renderMode": "live"
+          },
+          {
+            "id": "b_staff_reviews",
+            "type": "myWork",
+            "version": 1,
+            "props": {
+              "what": "reviews",
+              "limit": 5
+            },
+            "span": 3,
+            "renderMode": "live"
+          },
+          {
+            "id": "b_staff_drafts",
+            "type": "myWork",
+            "version": 1,
+            "props": {
+              "what": "drafts",
+              "limit": 5
+            },
+            "span": 3,
+            "renderMode": "live"
+          },
+          {
+            "id": "b_staff_calendar",
+            "type": "calendar",
+            "version": 1,
+            "props": {
+              "kinds": [],
+              "myDepartments": true,
+              "range": "month",
+              "view": "agenda",
+              "limit": 8
+            },
+            "span": 6,
+            "renderMode": "live"
+          },
+          {
+            "id": "b_staff_departments",
+            "type": "myDepartments",
+            "version": 1,
+            "props": {},
+            "span": 6
+          }
+        ],
+        "sections": []
+      }
+    ]
+  }
+}

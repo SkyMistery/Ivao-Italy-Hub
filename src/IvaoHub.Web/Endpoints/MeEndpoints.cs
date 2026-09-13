@@ -32,7 +32,6 @@ internal static class MeEndpoints
             IOptions<DivisionOptions> division,
             ModuleRegistry modules,
             BlockRegistry blocks,
-            WidgetRegistry widgets,
             PermissionCatalog catalogue,
             HubDbContext database,
             BuildInfo build,
@@ -100,10 +99,6 @@ internal static class MeEndpoints
                         block.Version,
                         block.Kind,
                         block.AlwaysLive))],
-                    [.. widgets.All.Select(widget => new BootstrapWidget(
-                        widget.Key,
-                        widget.TitleKey,
-                        widget.Sizes))],
                     [.. catalogue.All.Select(permission =>
                         new BootstrapPermissionName(permission.Name, permission.IsGlobal))]),
                 // The one vocabulary the division decides centrally, and the only one so far. It
@@ -289,7 +284,6 @@ internal sealed record NavItem(
 
 internal sealed record BootstrapRegistries(
     IReadOnlyList<BootstrapBlock> Blocks,
-    IReadOnlyList<BootstrapWidget> Widgets,
     IReadOnlyList<BootstrapPermissionName> Permissions);
 
 /// <summary>
@@ -307,8 +301,3 @@ internal sealed record BootstrapPermissionName(string Name, bool IsGlobal);
 /// </summary>
 internal sealed record BootstrapBlock(string Type, int Version, BlockKind Kind, bool AlwaysLive);
 
-/// <summary>One dashboard tile, on the same terms as a block: the envelope, never the drawing.</summary>
-internal sealed record BootstrapWidget(
-    string Key,
-    string TitleKey,
-    IReadOnlyList<string> Sizes);

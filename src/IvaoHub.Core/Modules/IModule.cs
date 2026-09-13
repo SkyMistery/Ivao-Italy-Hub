@@ -19,18 +19,6 @@ namespace IvaoHub.Core.Modules;
 public sealed record NavItemDescriptor(string Key, string Path, string? Permission = null);
 
 /// <summary>
-/// A tile of a dashboard. The core registers <c>welcome</c>; a module registers its own and the
-/// dashboard composes whatever it is handed, so no screen holds a list of tiles (design M0 section 6.3).
-/// </summary>
-/// <param name="Key">Identifier, matched by the client to the component that draws it.</param>
-/// <param name="TitleKey">Translation key of its heading.</param>
-/// <param name="Sizes">The widths it can be drawn at, as the dashboard understands them.</param>
-public sealed record WidgetDescriptor(
-    string Key,
-    string TitleKey,
-    IReadOnlyList<string> Sizes);
-
-/// <summary>
 /// What a module is, and the whole of what the core knows about one (design M0 section 6.1).
 /// <para>A module is <b>not</b> a plugin loaded at runtime: it is added to the monorepo and the
 /// application is recompiled. The boundary is drawn as if it were one anyway, at no cost, so that
@@ -75,9 +63,6 @@ public interface IModule
     /// </summary>
     IReadOnlyList<BlockDescriptor> Blocks { get; }
 
-    /// <summary>The dashboard tiles the module contributes.</summary>
-    IReadOnlyList<WidgetDescriptor> Widgets { get; }
-
     /// <summary>
     /// Path prefixes the single page application must not answer for. A module that puts something
     /// else behind the same host — a legacy service, a static bundle — says so here, and the
@@ -116,8 +101,6 @@ public abstract class ModuleBase : IModule
     public virtual IReadOnlyList<NavItemDescriptor> StaffNavigation => [];
 
     public virtual IReadOnlyList<BlockDescriptor> Blocks => [];
-
-    public virtual IReadOnlyList<WidgetDescriptor> Widgets => [];
 
     public virtual IReadOnlyList<string> SpaFallbackExclusions => [];
 

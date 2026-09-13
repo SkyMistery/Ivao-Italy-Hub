@@ -35,14 +35,12 @@ export function UiKitPage({ bootstrap }: { bootstrap: Bootstrap }) {
 /** What the server says it knows, next to what this build can draw. */
 function RegistrySection({ bootstrap }: { bootstrap: Bootstrap }) {
   const { t } = useTranslation();
-  const difference = compareRegistries(bootstrap, registry.blocks, registry.widgets);
+  const difference = compareRegistries(bootstrap, registry.blocks);
 
   const lines: string[] = [
     ...difference.blocksMissingInBrowser.map((type) => t('uiKit.registry.blockMissingHere', { type })),
     ...difference.blocksMissingOnServer.map((type) => t('uiKit.registry.blockMissingOnServer', { type })),
     ...difference.blockVersionMismatches.map((detail) => t('uiKit.registry.blockVersion', { detail })),
-    ...difference.widgetsMissingInBrowser.map((key) => t('uiKit.registry.widgetMissingHere', { key })),
-    ...difference.widgetsMissingOnServer.map((key) => t('uiKit.registry.widgetMissingOnServer', { key })),
   ];
 
   return (
@@ -52,7 +50,6 @@ function RegistrySection({ bootstrap }: { bootstrap: Bootstrap }) {
         <p className="text-muted-foreground text-sm">
           {t('uiKit.registry.agree', {
             blocks: bootstrap.registries.blocks.length,
-            widgets: bootstrap.registries.widgets.length,
           })}
         </p>
       ) : (

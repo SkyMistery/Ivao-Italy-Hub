@@ -95,7 +95,7 @@ export const anonymousBootstrap = {
     ],
     staff: [],
   },
-  registries: { blocks: [], widgets: [], permissions: [] },
+  registries: { blocks: [], permissions: [] },
   // The division's calendar vocabulary, which a visitor gets too: a chip on a public calendar says
   // the word and takes the colour somebody chose (decided 8 Sep 2026).
   calendarKinds: [

@@ -164,7 +164,7 @@ dettaglio all'inizio di ognuna con il codice davanti.
 |---|---|---|---|
 | D1 | La griglia a tessere — **fatta il 13 set 2026** | parte A | layout `grid` e `span` nell'envelope (walker, validazione, TypeScript); resa a tessera alta uguale per riga; resa a tutto schermo e barra compatta per `ContentKind.Dashboard`; le dashboard dei dipartimenti convertite |
 | D2 | L'editor della griglia — **fatta il 13 set 2026** | D1 | spostare le tessere, ridimensionarle con la maniglia e con il selettore; il giro e2e che lo prova |
-| D3 | `/me` e `/staff` | D1 | righe `me` e `staff` seminate; `/staff` smette di reindirizzare; i blocchi del nucleo (ciò che aspetta me, le mie bozze, calendario dei miei dipartimenti, i miei dipartimenti, il saluto); via il registro dei widget |
+| D3 | `/me` e `/staff` — **in corso** (branch `m2/d3-personal-dashboards`, lo stato in `HANDOFF.md`) | D1 | righe `me` e `staff` seminate; `/staff` smette di reindirizzare; i blocchi del nucleo (ciò che aspetta me, le mie bozze, calendario dei miei dipartimenti, i miei dipartimenti, il saluto); via il registro dei widget |
 
 ### D1 — La griglia a tessere
 
@@ -218,5 +218,6 @@ Branch `m2/d2-grid-editor`, da `main` dopo il merge della pila #71–#75. **Fatt
 
 ## C. Il modulo Events
 
-Si scrive dopo `05-design-m2.md`.
+Si scrive dopo `05-design-m2.md`. ⚠️ **Non prima di aver sentito Carmine** (13 settembre 2026, notte):
+ha cose discusse con lo staff di IVAO che riguardano i moduli.
 

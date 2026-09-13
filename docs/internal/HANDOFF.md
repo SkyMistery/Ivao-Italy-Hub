@@ -3,7 +3,55 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 13 settembre 2026, sera — G16–G20 mergiate (PR #66–#70), M2 aperta: H1 fatta.
+**Ultimo aggiornamento:** 13 settembre 2026, notte — G16–G20 e la parte A di M2 mergiate (PR #66–#75), D2 in PR (#76), D3 a metà.
+
+> ## ⚠️ Prima di tutto, per la chat che riprende
+>
+> 1. **Carmine vuole fermarsi prima dei moduli**: ha cose da dire, discusse con lo staff di IVAO,
+>    che possono cambiare il piano di Events (e oltre). **Non si apre `05-design-m2.md` né si scrive
+>    codice di un modulo prima di averlo ascoltato.**
+> 2. **PR #76 (D2, l'editor della griglia)**: verde in CI, da mergiare (Carmine mergia le sue PR).
+> 3. **D3 è a metà**, sul branch **`m2/d3-personal-dashboards`**, **impilato su D2** (#76): un commit
+>    «wip» spinto, **senza PR**, che **non compila lato web** (vedi sotto). Si finisce e si apre la PR
+>    dopo il merge di #76, ritargettata su `main`.
+>
+> **Che cosa c'è già in D3** (nota `decisions/2026-09-13-le-dashboard-a-tutto-schermo.md` §3.1, §3.5):
+> - **server**: via il registro dei widget (`IModule.Widgets`, `WidgetDescriptor`, `WidgetRegistry`,
+>   `registries.widgets` di `/api/me`, il test in `ModuleCompositionTests`); tre blocchi nuovi in
+>   `CoreBlocks` — `welcome` e `myDepartments` (Content: si disegnano da ciò che il browser sa di chi
+>   guarda) e `myWork` (Data, `AlwaysLive`, provider `MyWorkProvider` con `what` = `approvals` |
+>   `contacts` | `reviews` | `drafts`, risposto per chi guarda); il blocco `calendar` accetta
+>   `myDepartments: true` (i dipartimenti di chi guarda); i seed `seed/content-pages/me.json`
+>   (Members, il solo saluto) e `staff.json` (Staff: quattro `myWork` da ¼, calendario e dipartimenti
+>   da ½), con le parole in `locales/*/seed.json`. Il server compila.
+> - **web**: via i widget da `registry.ts`, `shared/modules.ts`, `registryDiff.ts`, `UiKitPage`,
+>   `manifest.test.ts` e dalle fixture; `features/me/widgets/` cancellata; i componenti dei tre blocchi
+>   in `web/src/blocks/personal.tsx`.
+>
+> **Che cosa manca in D3:**
+> - `pnpm gen:api` (lo `schema.d.ts` ha ancora `registries.widgets`: è l'errore di typecheck di adesso);
+> - gli **schemi zod** dei tre blocchi e `myDepartments` nello schema di `calendar`
+>   (`blocks/schemas.ts`), le **registrazioni** in `blocks/core.ts` (icona, gruppo: serve un gruppo
+>   nuovo della palette, per esempio `personal`, con la sua etichetta in `blocks.groups`), le **chiavi
+>   i18n** `blocks.welcome.*`, `blocks.myDepartments.*`, `blocks.myWork.*` (titoli ed empty per ogni
+>   `what`, `sentBack`) e togliere `widgets.*`, `uiKit.registry.widget*` (e il conteggio dei widget in
+>   `uiKit.registry.agree`);
+> - **`/staff`** (`routes/_staff/staff.index.tsx`) smette di reindirizzare e disegna la riga `Dashboard`
+>   con slug `staff`, come `/staff/{dept}` (conviene estrarre un `DashboardScreen` comune dalla rotta
+>   del dipartimento, con «Modifica» per chi ha `Content.Edit` sul WD);
+> - **`/me`** (`features/me/MePage.tsx`) disegna la riga `me` con `ContentRenderer dashboard`, **a tutta
+>   larghezza**: la cornice pubblica (`Shell` in `app/layouts/Chrome.tsx`) limita il `<main>` a
+>   `max-w-6xl`, quindi le serve un'opzione per una pagina larga; `NotificationPreferences` resta sotto;
+> - i **test**: `MyWorkProvider` (integrazione: bozze mie sì e d'altri no, da approvare solo con
+>   `Content.Approve`, contatti solo con `Contacts.View`), lo smoke di `/staff` e di `/me`, `seeds.test.ts`
+>   con i due seed nuovi, `ContentSeedTests`;
+> - i **documenti**: la sezione «Fatta» di D3 in `06-piano-implementazione-m2.md`, questo blocco,
+>   `docs/UI-GUIDELINES.md` (una tessera di un modulo è un blocco Data che risponde per chi guarda) e
+>   `FORKING.md` (un modulo non registra più widget).
+>
+> ⚠️ **Ultimo stato verificato** (su `m2/d2-grid-editor`): Vitest 394, smoke 77, giro completo 19,
+> CI verde. Docker Desktop era acceso, quindi i test d'integrazione e il giro completo si possono
+> girare in locale.
 
 > **Per chi apre adesso.** `main` ha tutto fino alla **PR #65**: la pila #59–#64 (G14, deduplica dei
 > media, colore del sito, scheda della demo, header di sicurezza, blocco interattivo) e il **piano
@@ -66,8 +114,8 @@
 > `/staff/{dept}` a tessere. **La pila #71–#75 è mergiata** (da Claude su richiesta di Carmine, 13 set).
 > **D2 è fatta** (branch `m2/d2-grid-editor`): l'editor di una dashboard è la griglia, le tessere si
 > spostano sugli slot e si ridimensionano con la maniglia (e da tastiera) o dal selettore; un test del
-> giro completo lo prova. **Prossima: D3** (`/me`, `/staff`, via i widget), poi `05-design-m2.md` ed Events. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
-> di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
+> giro completo lo prova (PR #76, verde, da mergiare). **D3 è a metà** (vedi il riquadro in cima), poi
+> **ci si ferma per ascoltare Carmine** prima di `05-design-m2.md` ed Events. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >
 > ⚠️ **Per G16 i test d'integrazione e il giro e2e non sono stati eseguiti in locale** (Docker

@@ -171,6 +171,17 @@
       "dashboard": {
         "title": "Department dashboard",
         "summary": "What this department sees when it opens the back office."
+      },
+      "me": {
+        "title": "My dashboard",
+        "summary": "What a member sees on arriving: what is theirs to do today.",
+        "section": "Today",
+        "welcome": "Here you will find what is yours: your bookings, your training, the events you signed up for. It fills up as you use the hub."
+      },
+      "staff": {
+        "title": "Staff dashboard",
+        "summary": "What a member of the staff sees on arriving: what waits for them, and their departments.",
+        "section": "My work"
       }
     },
     "calendarKinds": {

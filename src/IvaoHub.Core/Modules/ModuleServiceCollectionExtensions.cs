@@ -56,13 +56,6 @@ public static class ModuleServiceCollectionExtensions
             services.AddHubModule(module, configuration, division);
         }
 
-        foreach (var widget in CoreWidgets.All)
-        {
-            services.AddSingleton(widget);
-        }
-
-        services.TryAddSingleton<WidgetRegistry>();
-
         // The catalogue that the policy provider, the calculator of effective permissions and the
         // validator of a grant all read. Read from the registry when it is first asked for rather
         // than from the list above, so that it holds exactly the modules the registry holds -- which
@@ -104,11 +97,6 @@ public static class ModuleServiceCollectionExtensions
         foreach (var block in module.Blocks)
         {
             services.AddSingleton<IBlockDescriptor>(block);
-        }
-
-        foreach (var widget in module.Widgets)
-        {
-            services.AddSingleton(widget);
         }
 
         module.ConfigureServices(services, configuration);
