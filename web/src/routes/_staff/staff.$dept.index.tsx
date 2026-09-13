@@ -88,7 +88,7 @@ function DepartmentDashboard() {
     >
       {dashboard.data ? (
         <EmbeddingContext.Provider value={embedding}>
-          <ContentRenderer body={readBody(dashboard.data.body)} />
+          <ContentRenderer body={readBody(dashboard.data.body)} media={dashboard.data.media} dashboard />
         </EmbeddingContext.Provider>
       ) : (
         // An honest empty state rather than a blank page: a department whose dashboard was deleted,

@@ -31,6 +31,7 @@ const block = (id: string, type: string): BlockEnvelope => ({
   frozen: null,
   column: 0,
   source: null,
+  span: null,
 });
 
 const section = (id: string, extra: Partial<SectionEnvelope> = {}): SectionEnvelope => ({

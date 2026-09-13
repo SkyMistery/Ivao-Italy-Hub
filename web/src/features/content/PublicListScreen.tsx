@@ -106,6 +106,7 @@ export function PublicListScreen({
           frozen: null,
           column: null,
           source: null,
+          span: null,
         }}
         staff={false}
       />

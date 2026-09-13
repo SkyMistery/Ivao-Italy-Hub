@@ -54,7 +54,8 @@
       "backgroundUnknown": "Questa sezione chiede uno sfondo che non esiste.",
       "columnOutOfRange": "Questo blocco e' in una colonna che la sua sezione non ha.",
       "sourceNotText": "Il codice di questo blocco non e' testo.",
-      "sourceTooLarge": "Il codice di questo blocco e' troppo lungo. Un'animazione va tenuta piccola: viaggia con la pagina."
+      "sourceTooLarge": "Il codice di questo blocco e' troppo lungo. Un'animazione va tenuta piccola: viaggia con la pagina.",
+      "spanUnknown": "Questo blocco ha una larghezza che una dashboard non ha."
     },
     "content": {
       "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella.",

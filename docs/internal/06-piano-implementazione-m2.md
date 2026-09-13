@@ -162,9 +162,34 @@ dettaglio all'inizio di ognuna con il codice davanti.
 
 | Fase | Titolo | Dipende da | In una riga |
 |---|---|---|---|
-| D1 | La griglia a tessere | parte A | layout `grid` e `span` nell'envelope (walker, validazione, TypeScript); resa a tessera alta uguale per riga; resa a tutto schermo e barra compatta per `ContentKind.Dashboard`; le dashboard dei dipartimenti convertite |
+| D1 | La griglia a tessere — **fatta il 13 set 2026** | parte A | layout `grid` e `span` nell'envelope (walker, validazione, TypeScript); resa a tessera alta uguale per riga; resa a tutto schermo e barra compatta per `ContentKind.Dashboard`; le dashboard dei dipartimenti convertite |
 | D2 | L'editor della griglia | D1 | spostare le tessere, ridimensionarle con la maniglia e con il selettore; il giro e2e che lo prova |
 | D3 | `/me` e `/staff` | D1 | righe `me` e `staff` seminate; `/staff` smette di reindirizzare; i blocchi del nucleo (ciò che aspetta me, le mie bozze, calendario dei miei dipartimenti, i miei dipartimenti, il saluto); via il registro dei widget |
+
+### D1 — La griglia a tessere
+
+Branch `m2/d1-tile-grid`, impilato sulla nota (#74). **Fatta il 13 settembre 2026.**
+
+- ⚠️ **Scostamento dalla nota §3.3: niente layout `grid`.** Una dashboard non ha bisogno di un layout
+  nuovo: **ogni sezione di una riga `Dashboard` si disegna a tessere**, e la larghezza di un blocco è
+  `span` nell'envelope (sei valori, validati dal walker come `column`, `errors.body.spanUnknown`). Un
+  blocco senza `span` prende la **quota della sua colonna** (`spanOf`: ½ in una sezione a due colonne,
+  ⅓ e ⅔ nelle altre), quindi le dashboard dei dipartimenti già seminate diventano tessere **senza
+  convertire niente** — la nota prevedeva una conversione con il seeder, che non serve più.
+- **La resa**: `ContentRenderer` con `dashboard` mette ogni sezione a tutta larghezza e ne disegna i
+  blocchi in una griglia di 12 colonne (sotto `@view-md` una tessera per riga); ogni tessera ha bordo,
+  e il contenuto oltre il 40% dell'altezza della finestra scorre dentro; le tessere di una stessa riga
+  si allungano alla stessa altezza (è il comportamento della griglia). L'ordine è quello delle colonne,
+  e dentro una colonna quello di scrittura.
+- **Tutto schermo nel back office c'era già**: la cornice di `/staff` è una riga sola (`PageShell`
+  compatto, 11 settembre) e il `<main>` è largo quanto lo spazio accanto alla barra; a stringere erano
+  le larghezze delle sezioni, che una dashboard ora ignora. `/staff/{dept}` passa `dashboard`. `/me`,
+  che sta nella cornice pubblica larga al massimo 1152 px, è di D3.
+- **Non in D1**: l'editor di una dashboard mostra ancora la dashboard come una pagina (D2).
+- **I test**: otto casi del walker su `span`; due Vitest sulla resa a tessere (larghezza dichiarata o
+  della colonna, ordine, contenuto che scorre, niente larghezza di sezione; e una pagina che resta una
+  pagina). **Verificato in locale**: unit .NET (324), Vitest (392), smoke (77), lint, typecheck, formato,
+  i18n. Non guardata a occhio: nel browser integrato non si entra nel back office senza il login IVAO.
 
 ## C. Il modulo Events
 

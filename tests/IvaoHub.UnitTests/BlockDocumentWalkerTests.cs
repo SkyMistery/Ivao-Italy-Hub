@@ -389,6 +389,36 @@ public sealed class BlockDocumentWalkerTests
         Assert.Empty(Walker.MissingLocales(JsonNode.Parse(Body)));
     }
 
+    [Theory]
+    [InlineData(3, true)]
+    [InlineData(4, true)]
+    [InlineData(6, true)]
+    [InlineData(8, true)]
+    [InlineData(9, true)]
+    [InlineData(12, true)]
+    [InlineData(5, false)]
+    [InlineData(0, false)]
+    public void ATileTakesOneOfTheSixWidthsOfADashboard(int span, bool valid)
+    {
+        // Note 2026-09-13-le-dashboard-a-tutto-schermo: a quarter, a third, a half, two thirds, three
+        // quarters or the whole row of twelve columns, and nothing else.
+        var body = JsonNode.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s", "layout": "stacked", "blocks": [
+            { "id": "b", "type": "text", "span": {{span}} } ] } ]
+        }
+        """);
+
+        var result = Walker.ValidateEnvelope(body, ["text"]);
+
+        Assert.Equal(valid, result.IsValid);
+        if (!valid)
+        {
+            Assert.Contains(result.Errors, error => error is { Key: "errors.body.spanUnknown", Path: "sections[0].blocks[0].span" });
+        }
+    }
+
     private static JsonNode? Column(string layout, int column) => JsonNode.Parse($$"""
     {
       "schemaVersion": 1,
