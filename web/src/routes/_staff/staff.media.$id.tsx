@@ -1,14 +1,22 @@
 import { Button, Subtle } from '@ivao/atmosphere-react';
+import { RefreshCw } from 'lucide-react';
+import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
-import { toFormValues, useDeleteMedia, useUpdateMedia } from '../../features/media/mutations';
+import {
+  toFormValues,
+  useArchiveMedia,
+  useDeleteMedia,
+  useReplaceMediaFile,
+  useUpdateMedia,
+} from '../../features/media/mutations';
 import { mediaQuery, mediaUsageQuery, type MediaDetailDto } from '../../features/media/queries';
 import { mediaSchema, type MediaFormValues } from '../../features/media/schema';
-import { SchemaForm } from '../../shared/forms';
+import { ProblemAlert, SchemaForm, describeProblem } from '../../shared/forms';
 import { resolveLocalized } from '../../shared/i18n/localized';
-import { ConfirmDialog, PageShell } from '../../shared/ui';
+import { ConfirmDialog, Notice, PageShell, useNotice } from '../../shared/ui';
 
 /**
  * The metadata of one file. There is no `new` here and there is no create: a media is born from an
@@ -39,6 +47,11 @@ function MediaForm() {
 
   const update = useUpdateMedia(Number(id));
   const remove = useDeleteMedia();
+  const replace = useReplaceMediaFile(Number(id));
+  const archive = useArchiveMedia(Number(id));
+  const notice = useNotice();
+  const chooser = useRef<HTMLInputElement>(null);
+  const refusal = describeProblem(replace.error ?? remove.error ?? archive.error, t, i18n.language);
 
   // Asked as the screen opens rather than when the delete button is pressed: a confirmation dialog
   // that has to fetch before it can warn is a dialog people click through.
@@ -69,21 +82,82 @@ function MediaForm() {
         { label: media.fileName },
       ]}
       actions={
-        <ConfirmDialog
-          triggerText={t('common.delete')}
-          title={t('media.delete.title')}
-          description={
-            usedBy.length === 0
-              ? t('media.delete.description')
-              : t('media.delete.inUse', { count: usedBy.length })
-          }
-          confirmText={t('common.delete')}
-          disabled={remove.isPending}
-          onConfirm={() => remove.mutate(Number(id), { onSuccess: backToLibrary })}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {/* The same row, a newer file (G20): the pages that show it show the new one. */}
+          <Button variant="secondary" disabled={replace.isPending} onClick={() => chooser.current?.click()}>
+            <RefreshCw aria-hidden className="mr-2 size-4" />
+            {t('media.replace.action')}
+          </Button>
+          {media.archivedAt === null ? (
+            <ConfirmDialog
+              triggerText={t('media.archive.action')}
+              triggerVariant="secondary"
+              title={t('media.archive.title')}
+              description={t('media.archive.description')}
+              confirmText={t('media.archive.action')}
+              confirmVariant="primary"
+              disabled={archive.isPending}
+              onConfirm={() =>
+                archive.mutate(true, {
+                  onSuccess: () => notice({ tone: 'success', title: t('media.archive.done') }),
+                })
+              }
+            />
+          ) : null}
+          <ConfirmDialog
+            triggerText={t('common.delete')}
+            title={t('media.delete.title')}
+            description={
+              usedBy.length === 0
+                ? t('media.delete.description')
+                : t('media.delete.inUse', { count: usedBy.length })
+            }
+            confirmText={t('common.delete')}
+            disabled={remove.isPending}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToLibrary })}
+          />
+        </div>
       }
     >
+      <input
+        ref={chooser}
+        type="file"
+        className="hidden"
+        aria-label={t('media.replace.action')}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file !== undefined) {
+            replace.mutate(file, {
+              onSuccess: () => notice({ tone: 'success', title: t('media.replace.done') }),
+            });
+          }
+        }}
+      />
       <div className="flex flex-col gap-6">
+        {refusal === null ? null : <ProblemAlert summary={refusal} />}
+
+        {media.archivedAt === null ? null : (
+          <Notice
+            tone="info"
+            title={t('media.archive.notice')}
+            description={
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={archive.isPending}
+                onClick={() =>
+                  archive.mutate(false, {
+                    onSuccess: () => notice({ tone: 'success', title: t('media.archive.restored') }),
+                  })
+                }
+              >
+                {t('media.archive.restore')}
+              </Button>
+            }
+          />
+        )}
+
         <MediaPreview media={media} locale={i18n.language} defaultLocale={bootstrap.division.defaultLocale} />
 
         {usedBy.length === 0 ? null : (

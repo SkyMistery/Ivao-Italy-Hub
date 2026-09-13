@@ -10,10 +10,15 @@ import {
   useDeleteCategory,
   useUpdateCategory,
 } from '../../features/categories/mutations';
-import { categoryQuery, type CategoryDetailDto } from '../../features/categories/queries';
+import {
+  categoryQuery,
+  collectionUsesQuery,
+  type CategoryDetailDto,
+} from '../../features/categories/queries';
 import { categorySchema, type CategoryFormValues } from '../../features/categories/schema';
 import { deptParam } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
+import { useLocalized } from '../../shared/i18n/useLocalized';
 import { ConfirmDialog, PageShell } from '../../shared/ui';
 
 /**
@@ -30,6 +35,7 @@ export const Route = createFileRoute('/_staff/staff/$dept/categories/$id')({
 
 function CategoryForm() {
   const { t } = useTranslation();
+  const read = useLocalized();
   const { bootstrap } = Route.useRouteContext();
   const { dept, id } = Route.useParams();
   const navigate = useNavigate();
@@ -41,6 +47,10 @@ function CategoryForm() {
   // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
   // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
   const category = useQuery({ ...categoryQuery(Number(id)), enabled: id !== 'new' }).data ?? null;
+
+  // The published pages that list this collection (G20): said under the title, and named again by
+  // the question before deleting it, so that taking one away is done knowing where it shows.
+  const uses = useQuery({ ...collectionUsesQuery(Number(id)), enabled: id !== 'new' }).data ?? [];
 
   const create = useCreateCategory();
   const update = useUpdateCategory(Number(id));
@@ -60,6 +70,7 @@ function CategoryForm() {
   return (
     <PageShell
       title={isNew ? t('categories.create') : t('categories.edit')}
+      {...(uses.length === 0 ? {} : { note: t('categories.usedIn', { count: uses.length }) })}
       breadcrumb={[
         { label: dept },
         { label: t('categories.title'), to: `/staff/${deptParam.format(dept)}/categories` },
@@ -74,7 +85,20 @@ function CategoryForm() {
             confirmText={t('common.delete')}
             disabled={remove.isPending}
             onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
-          />
+          >
+            {uses.length === 0 ? null : (
+              <div className="flex flex-col gap-1 text-sm">
+                <p>{t('categories.delete.used', { count: uses.length })}</p>
+                <ul className="list-disc pl-5">
+                  {uses.map((page) => (
+                    <li key={page.id}>
+                      {read(page.title) || page.path} <span className="font-mono">/{page.path}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </ConfirmDialog>
         )
       }
     >

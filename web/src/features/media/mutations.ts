@@ -94,6 +94,52 @@ export function useUploadMedia() {
   });
 }
 
+/**
+ * A new file for the same row (G20): the logo is the same logo, the SVG is newer. The identifier
+ * stays, so every page that shows it shows the new file; the address changes with the bytes.
+ */
+export function useReplaceMediaFile(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File): Promise<MediaDetailDto> => {
+      const body = new FormData();
+      body.set('file', file);
+
+      return unwrap(
+        await api.POST('/api/media/{id}/file', {
+          params: { path: { id } },
+          // As for the upload: the contract types a multipart part as a string.
+          body: body as unknown as { file: string },
+          bodySerializer: () => body,
+        }),
+      );
+    },
+    onSuccess: async (media) => {
+      queryClient.setQueryData(mediaItemKey(id), media);
+      await queryClient.invalidateQueries({ queryKey: mediaKey });
+    },
+  });
+}
+
+/** Into the archive, or back out of it (G20): a file a published page shows is archived, not deleted. */
+export function useArchiveMedia(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (archived: boolean): Promise<MediaDetailDto> =>
+      unwrap(
+        archived
+          ? await api.POST('/api/media/{id}/archive', { params: { path: { id } } })
+          : await api.POST('/api/media/{id}/restore', { params: { path: { id } } }),
+      ),
+    onSuccess: async (media) => {
+      queryClient.setQueryData(mediaItemKey(id), media);
+      await queryClient.invalidateQueries({ queryKey: mediaKey });
+    },
+  });
+}
+
 export function useUpdateMedia(id: number) {
   const queryClient = useQueryClient();
 

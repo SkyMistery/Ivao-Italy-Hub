@@ -128,6 +128,32 @@ public static class JsonQuery
             || Mentions(version.BodyJson, ManyKeyPath, candidate));
     }
 
+    /// <summary>
+    /// The rows filed in a collection (G20): the key as one element of <see cref="ContentEntry.CollectionsJson"/>.
+    /// <para>A <c>LIKE</c> on the quoted key rather than <c>JSON_CONTAINS</c>: the column is always
+    /// written by the entity as a compact array of keys, and a key is letters, digits and dashes —
+    /// nothing a pattern or a quote could read as anything but itself. A key that is not one answers
+    /// <c>null</c>, which the list engine reads as a filter it cannot apply.</para>
+    /// </summary>
+    public static IQueryable<ContentEntry>? InCollection(this IQueryable<ContentEntry> contents, string? key)
+    {
+        ArgumentNullException.ThrowIfNull(contents);
+
+        if (!IsCollectionKey(key))
+        {
+            return null;
+        }
+
+        var pattern = $"%\"{key}\"%";
+        return contents.Where(content => EF.Functions.Like(content.CollectionsJson, pattern));
+    }
+
+    /// <summary>What a collection key may be: the shape a category key has always been held to.</summary>
+    public static bool IsCollectionKey(string? key) =>
+        !string.IsNullOrEmpty(key)
+        && key.Length <= 64
+        && key.All(character => char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-');
+
     /// <summary>The property a block writes one media identifier into.</summary>
     public const string MediaKey = "mediaId";
 

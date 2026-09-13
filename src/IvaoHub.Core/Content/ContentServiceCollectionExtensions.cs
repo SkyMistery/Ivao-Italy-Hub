@@ -46,6 +46,7 @@ public static class ContentServiceCollectionExtensions
         services.TryAddSingleton<MediaStorage>();
 
         services.TryAddScoped<ContentPublishService>();
+        services.TryAddScoped<ContentReferenceIndex>();
         services.TryAddScoped<ContentAddresses>();
         services.TryAddScoped<ContentReviewService>();
         services.TryAddScoped<ContentSeeder>();

@@ -541,6 +541,20 @@ the same query and is what an older body may carry.)
 Never draw such a property as a number field. `MediaPicker` is what fills it in, and the reason is
 plain: a free numeric field produces pages pointing at files that were deleted years ago.
 
+A component builds the address of a file with `useMediaFileUrl()`, never by hand. On a published page
+it carries the fingerprint of the file (`/media/{id}/{fingerprint}/file`), which may be cached for a
+year and changes when somebody replaces the file on the same row; elsewhere it is the address of the
+identifier alone, which is always right and checked again at each read.
+
+### How a list block names a collection
+
+`newsList` and `documentList` list one collection of one department. The property is still called
+`category` — it was a category before a row could be filed in several, and saved bodies are never
+rewritten — and it is annotated `.meta({ collectionOf: 'News' | 'Document' })`, which the properties
+panel turns into suggestions from the collections of every department. A module block that lists a
+collection follows the same convention, and its provider declares the collection through
+`IDataBlockProvider.Collections` so that "where does this document appear?" can answer.
+
 The alternative text is a property of the **block**, and empty means the picture is decoration: it
 renders as `alt=""`, which is what makes a screen reader skip it. It is *not* inherited from the
 library — the public renderer is handed a published body and nothing else, and a server that filled

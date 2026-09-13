@@ -35,16 +35,18 @@ export function mediaUsageKey(mediaId: number) {
  * One page of the library: of one department when it is given, otherwise every file the reader may
  * read — their departments' and the public ones of the others (note 2026-09-13-contenuti-centralizzati).
  */
-export function mediaListQuery(department: Department | undefined, search: ListSearch) {
+export function mediaListQuery(department: Department | undefined, search: ListSearch, archived = false) {
   return queryOptions({
-    queryKey: mediaListKey(department, search),
+    queryKey: [...mediaListKey(department, search), archived] as const,
     queryFn: async (): Promise<MediaListPage> =>
       unwrap(
         await api.GET('/api/media', {
           params: { query: toQuery(search) },
-          querySerializer: listQuerySerializer(
-            department === undefined ? {} : { ownerDepartment: department },
-          ),
+          // The archive is a filter like the department (G20): out of the library unless asked for.
+          querySerializer: listQuerySerializer({
+            ...(department === undefined ? {} : { ownerDepartment: department }),
+            ...(archived ? { archived: 'true' } : {}),
+          }),
         }),
       ),
   });

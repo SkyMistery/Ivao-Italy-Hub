@@ -274,6 +274,15 @@ through the same renderer the public site uses. On any page of `/staff/content`:
    the menu entry in the same window that publishes it, or "Send back" returns it with a note. News
    and documents are still published by their department. Which kinds need approval is
    `division.json → contentApproval`.
+10. **Collections, and files that are used** (new in G20). A news item or a document is filed in
+   **several collections** of its department — tick them on the form. A page lists a collection with a
+   News list or a Document list block, whose collection field suggests the collections of **every**
+   department: a Training page can list the ATC guides. Publish the page, open the document: under its
+   title it says **"Appears in: …"**. The collection's own screen says how many published pages list it,
+   and deleting it names them first. In the library, try to delete a file a published page shows: it is
+   refused, and **Archive** takes it out of the library and the picker while the page keeps showing it
+   (the **Archive** filter finds it again). **Replace the file** on the same row: the published page shows
+   the new picture at once, at a new address.
 
 **The comforts, added between 10 and 12 September while Carmine used it:** double-click a block or a
 section to pick it and land in the first field of its panel; `Canc` deletes, `⌘D` duplicates, `Esc`

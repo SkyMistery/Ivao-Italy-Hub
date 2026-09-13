@@ -31,7 +31,8 @@
     },
     "media": {
       "tooLarge": "Questo file supera la dimensione che l'hub accetta.",
-      "typeNotAllowed": "L'hub non accetta file di questo tipo."
+      "typeNotAllowed": "L'hub non accetta file di questo tipo.",
+      "inUse": "Una pagina pubblicata mostra questo file, quindi non si può cancellare. Archivialo."
     },
     "unknown": "Qualcosa è andato storto. Riprova.",
     "title": "Non ha funzionato",
@@ -77,7 +78,9 @@
         "notReady": "Questa pagina non è in attesa di approvazione.",
         "inReview": "Questa pagina è in attesa di approvazione e non si può cambiare. Ritirala dalla revisione per cambiarla.",
         "menuParent": "Una voce di menu va sotto una voce in cima al menu."
-      }
+      },
+      "tooManyCollections": "Una riga può stare al massimo in venti raccolte.",
+      "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini."
     },
     "maintenance": {
       "title": "Questa parte del sito al momento non accetta modifiche"

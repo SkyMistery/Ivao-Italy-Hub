@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 
 import { bootstrapQuery } from '../features/me/queries';
 import type { LocalizedString } from '../shared/api/bootstrap';
-import { mediaFileUrl } from '../shared/api/mediaUrl';
+import { useMediaFileUrl } from '../shared/api/mediaUrl';
 import { ICONS } from '../shared/icons';
 import { useLocalized } from '../shared/i18n/useLocalized';
 import { useMoment } from '../shared/i18n/useMoment';
@@ -32,7 +32,7 @@ import type { BlockComponentProps } from '../shared/modules';
 import { CALENDAR_VIEWS, CalendarView, MarkdownContent, type CalendarItem } from '../shared/ui';
 
 import { embedSource } from './allowlist';
-import { categoryLabel, type ContentListData } from './data';
+import { categoryLabel, shelfOf, type ContentListData } from './data';
 import { useEmbedding } from './embedding';
 import { usePrinting } from './print';
 import { ACCENTS, CALLOUT_TONES, COORDINATION_DIRECTIONS, STATION_KINDS } from './schemas';
@@ -353,6 +353,7 @@ const HERO_TONE = {
 } as const;
 
 export function HeroBlock({ props }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const read = useLocalized();
   const tone = choice(props, 'tone', ['plain', 'muted', 'accent'] as const, 'muted');
   const align = choice(props, 'align', ['left', 'center'] as const, 'left');
@@ -429,6 +430,7 @@ const IMAGE_WIDTH = {
 } as const;
 
 export function ImageBlock({ props }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const read = useLocalized();
   const id = media(props, 'mediaId');
   const caption = read(text(props, 'caption'));
@@ -463,6 +465,7 @@ const ASPECT = {
 } as const;
 
 export function VideoBlock({ props }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const { t } = useTranslation();
   const read = useLocalized();
   const aspect = ASPECT[choice(props, 'aspect', ['16x9', '4x3', '1x1'] as const, '16x9')];
@@ -871,6 +874,7 @@ export function CoordinationBlock({ props }: BlockComponentProps) {
 // ---- cardGrid --------------------------------------------------------------------------------
 
 export function CardGridBlock({ props }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const read = useLocalized();
   const accent = accentOf(props);
 
@@ -945,6 +949,7 @@ export function IconGridBlock({ props }: BlockComponentProps) {
 // ---- gallery ---------------------------------------------------------------------------------
 
 export function GalleryBlock({ props }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const lightbox = flag(props, 'lightbox', true);
 
   return (
@@ -979,6 +984,7 @@ export function GalleryBlock({ props }: BlockComponentProps) {
 // ---- logoGrid --------------------------------------------------------------------------------
 
 export function LogoGridBlock({ props }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   return (
     <ul className={`grid grid-cols-2 items-center gap-6 ${gridOf(count(props, 'columns', 4))}`}>
       {entries(props, 'items').map((item, index) => {
@@ -1095,6 +1101,7 @@ export function AccordionBlock({ props }: BlockComponentProps) {
 // ---- testimonial -----------------------------------------------------------------------------
 
 export function TestimonialBlock({ props }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const read = useLocalized();
   const portrait = media(props, 'mediaId');
   const role = read(text(props, 'role'));
@@ -1339,6 +1346,7 @@ export function CalendarBlock({ props, data }: BlockComponentProps) {
 // ---- newsList and documentList (data) --------------------------------------------------------
 
 export function NewsListBlock({ props, data }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const { t } = useTranslation();
   const read = useLocalized();
   const moment = useMoment();
@@ -1355,7 +1363,11 @@ export function NewsListBlock({ props, data }: BlockComponentProps) {
       {items.map((item) => {
         const summary = read(item.summary);
         const when = moment(item.publishedAt, { time: false });
-        const shelf = categoryLabel(data as ContentListData | null | undefined, item.category, read);
+        const shelf = categoryLabel(
+          data as ContentListData | null | undefined,
+          shelfOf(item, plain(props, 'category')),
+          read,
+        );
         const title = <H4>{read(item.title)}</H4>;
 
         const inside = (
@@ -1399,6 +1411,7 @@ export function NewsListBlock({ props, data }: BlockComponentProps) {
 }
 
 export function DocumentListBlock({ props, data }: BlockComponentProps) {
+  const mediaFileUrl = useMediaFileUrl();
   const { t } = useTranslation();
   const read = useLocalized();
   const items = (data as ContentListData | null | undefined)?.items;
@@ -1407,12 +1420,14 @@ export function DocumentListBlock({ props, data }: BlockComponentProps) {
     return <NoRows pending={items === undefined} empty={t('blocks.documentList.empty')} />;
   }
 
-  // The provider hands them back already sorted by category; grouping is a drawing and stays here.
+  // Grouped by the collection each row is shown under (G20): a row filed in several appears once,
+  // under the one the block lists or its first. Grouping is a drawing and stays here.
   const grouped = flag(props, 'groupByCategory', true);
-  const categories = grouped ? [...new Set(items.map((item) => item.category ?? ''))] : [''];
+  const listed = plain(props, 'category');
+  const categories = grouped ? [...new Set(items.map((item) => shelfOf(item, listed)))] : [''];
   const groups = categories.map((category) => ({
     category,
-    rows: grouped ? items.filter((item) => (item.category ?? '') === category) : items,
+    rows: grouped ? items.filter((item) => shelfOf(item, listed) === category) : items,
   }));
 
   return (

@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
@@ -110,8 +111,20 @@ public sealed class ContentEntry
 
     public DateTime? PublishedAt { get; set; }
 
-    /// <summary>News only: editorial category.</summary>
-    public string? Category { get; set; }
+    /// <summary>
+    /// The collections of its department a news item or a document is filed in, as a JSON array of
+    /// keys: none, one or several (note 2026-09-13-contenuti-centralizzati, 3.3). A page lists a
+    /// collection, and a document in two collections appears on two pages. The column replaced the
+    /// single <c>category</c> in G20, which stays in the database until a later contract.
+    /// </summary>
+    public string CollectionsJson { get; set; } = "[]";
+
+    /// <summary><see cref="CollectionsJson"/>, read and written as the list it is.</summary>
+    public IReadOnlyList<string> Collections
+    {
+        get => JsonSerializer.Deserialize<string[]>(CollectionsJson) ?? [];
+        set => CollectionsJson = JsonSerializer.Serialize(value ?? []);
+    }
 
     /// <summary>News only: cover image.</summary>
     public long? CoverMediaId { get; set; }
@@ -119,7 +132,7 @@ public sealed class ContentEntry
     /// <summary>News only: pinned to the top of the list.</summary>
     public bool Pinned { get; set; }
 
-    /// <summary>Documents only: manual ordering inside a category.</summary>
+    /// <summary>Documents only: manual ordering inside a collection.</summary>
     public int Sort { get; set; }
 
     /// <summary>Documents only: the attached file, when the document is a file rather than a page.</summary>

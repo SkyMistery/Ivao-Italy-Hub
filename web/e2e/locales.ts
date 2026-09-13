@@ -62,6 +62,8 @@ interface CommonStrings {
     readonly title: string;
     readonly upload: string;
     readonly fields: { readonly category: string };
+    readonly replace: { readonly action: string };
+    readonly archive: { readonly notice: string; readonly restore: string };
   };
   readonly notFound: { readonly title: string };
   readonly news: { readonly title: string; readonly create: string };

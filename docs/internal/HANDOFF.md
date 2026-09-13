@@ -3,7 +3,7 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 13 settembre 2026 — G16, G17 e G18 mergiate (PR #66, #67, #68), G19 fatta.
+**Ultimo aggiornamento:** 13 settembre 2026 — G16–G19 mergiate (PR #66–#69), G20 fatta.
 
 > **Per chi apre adesso.** `main` ha tutto fino alla **PR #65**: la pila #59–#64 (G14, deduplica dei
 > media, colore del sito, scheda della demo, header di sicurezza, blocco interattivo) e il **piano
@@ -37,7 +37,15 @@
 > in attesa è in sola lettura, bloccata dal server. La riga è la candidata di sé stessa (niente copia
 > in `cms_content_versions`); la coda è un filtro della lista con una voce nella barra laterale, il
 > blocco Data col conteggio aspetta M2. `Menu.Edit` solo a Director e Web. Migrazione `AddPageReview`.
-> **Prossima: G20**, raccolte, indice derivato, media aggiornati sul posto. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> PR #69, mergiata.
+> **G20 è fatta** (branch `m1/g20-collections-and-media`): news e documenti stanno in più **raccolte**
+> (la vecchia categoria, lette da tutti i dipartimenti), la pubblicazione scrive l'**indice**
+> `cms_content_references` di raccolte e file, l'editor di un documento dice **dove compare**, un file
+> usato si **archivia** invece di cancellarsi, e un file si **sostituisce sulla stessa riga** con
+> l'impronta nell'indirizzo (`/media/{id}/{impronta}/{nome}`, `immutable`). Nei corpi dei blocchi la
+> proprietà resta `category`. Le pagine pubblicate prima di G20 entrano nell'indice alla prossima
+> pubblicazione. Piano 0.73. **Le fasi G16–G20 sono chiuse**; il prossimo passo sono i prerequisiti di M2
+> (grant a posizione, proprietà a insieme, dipartimento di base). I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
 > di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >

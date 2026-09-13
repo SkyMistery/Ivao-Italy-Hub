@@ -50,6 +50,14 @@ public interface IDataBlockProvider
     /// travel whole: only the browser knows which language it is showing.
     /// </summary>
     Task<JsonNode> ResolveAsync(JsonNode? props, DataBlockContext context, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The collections a block with these properties lists, for the index publication writes
+    /// (<see cref="ContentReferenceIndex"/>, G20). The provider already reads its own properties to
+    /// answer; this is the same reading, said once more for the index, so that the server still never
+    /// learns the shape of a block. Most blocks list none.
+    /// </summary>
+    IEnumerable<string> Collections(JsonNode? props) => [];
 }
 
 /// <summary>The providers, by key. One lookup, so the two callers cannot disagree.</summary>

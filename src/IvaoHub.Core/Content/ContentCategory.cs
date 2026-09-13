@@ -1,11 +1,13 @@
+using System.Linq.Expressions;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 
 namespace IvaoHub.Core.Content;
 
 /// <summary>
-/// One word of the vocabulary a department files its news and its documents under. It exists so
-/// that <see cref="ContentEntry.Category"/> is not free text: without it two editors write "Guides"
+/// One collection of the vocabulary a department files its news and its documents under — a
+/// "category" until G20, when a row could be filed in several (<see cref="ContentEntry.Collections"/>,
+/// note 2026-09-13-contenuti-centralizzati §3.3). It exists so that a collection is not free text: without it two editors write "Guides"
 /// and "guides" and the public list shows two categories where there is one (design M1 section 3.4).
 /// <para>⚠️ There is <b>no foreign key</b> from a content row to one of these, and there never will
 /// be. It is the rule that holds between two modules applied to a vocabulary that can change under
@@ -17,8 +19,18 @@ namespace IvaoHub.Core.Content;
 /// </summary>
 [Audited]
 [PermissionArea("Content")]
-public sealed class ContentCategory : IOwnedByDepartment, IAuditable
+public sealed class ContentCategory : IOwnedByDepartment, IAuditable, ISharedForReading
 {
+    /// <summary>
+    /// Every collection is read by every department (G20, note 2026-09-13-contenuti-centralizzati §4):
+    /// a page of Training lists the guides of ATC, and whoever writes it chooses the collection by
+    /// its name. A collection is a word, not content. Changing and deleting one stays with its
+    /// department.
+    /// </summary>
+    public static readonly Expression<Func<ContentCategory, bool>> SharedForReading = _ => true;
+
+    bool ISharedForReading.IsSharedForReading => true;
+
     public long Id { get; set; }
 
     /// <summary>Which list this word belongs to. A news category is not a document category.</summary>

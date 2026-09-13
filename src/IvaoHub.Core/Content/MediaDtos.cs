@@ -20,6 +20,7 @@ public sealed record MediaListDto(
     Localized<string> Alt,
     string? Category,
     string Url,
+    DateTime? ArchivedAt,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
@@ -38,6 +39,7 @@ public sealed record MediaDetailDto(
     string? Category,
     string Url,
     bool HasFile,
+    DateTime? ArchivedAt,
     DateTime? DeletedAt,
     DateTime CreatedAt,
     int CreatedBy,

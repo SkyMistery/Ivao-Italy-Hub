@@ -270,6 +270,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MediaReplaceFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MediaArchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MediaRestore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/content": {
         parameters: {
             query?: never;
@@ -430,6 +478,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/{id}/appears-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentAppearsIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/categories": {
         parameters: {
             query?: never;
@@ -457,6 +521,22 @@ export interface paths {
         put: operations["CategoriesUpdate"];
         post?: never;
         delete: operations["CategoriesDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/categories/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CategoriesUses"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1128,6 +1208,14 @@ export interface components {
          * @enum {unknown}
          */
         ContentAddressState: "Free" | "Taken" | "Reserved" | "TooDeep" | "InvalidParent" | "TopLevelNotAllowed";
+        /** @description A published page, as a list of where something appears names it. */
+        ContentAppearanceDto: {
+            /** Format: int64 */
+            id: number;
+            path: string;
+            ownerDepartment: components["schemas"]["Department"];
+            title: components["schemas"]["LocalizedOfstring"];
+        };
         /**
          * @description A content row in full, as the editor loads it. JsonNode ContentDetailDto.Body travels as the JSON it is:
          *     the backend never learned what a block means and it is not going to start here.
@@ -1153,7 +1241,7 @@ export interface components {
             body: components["schemas"]["JsonNode"];
             /** Format: int32 */
             schemaVersion: number;
-            category: null | string;
+            collections: string[];
             /** Format: int64 */
             coverMediaId: null | number;
             pinned: boolean;
@@ -1220,7 +1308,7 @@ export interface components {
             status: components["schemas"]["PublishStatus"];
             isTemplate: boolean;
             title: components["schemas"]["LocalizedOfstring"];
-            category: null | string;
+            collections: string[];
             /** Format: int64 */
             coverMediaId: null | number;
             pinned: boolean;
@@ -1338,7 +1426,7 @@ export interface components {
             body: components["schemas"]["JsonNode"];
             /** Format: int32 */
             schemaVersion: number;
-            category: null | string;
+            collections: string[];
             /** Format: int64 */
             coverMediaId: null | number;
             pinned: boolean;
@@ -1565,6 +1653,8 @@ export interface components {
             url: string;
             hasFile: boolean;
             /** Format: date-time */
+            archivedAt: null | string;
+            /** Format: date-time */
             deletedAt: null | string;
             /** Format: date-time */
             createdAt: string;
@@ -1597,6 +1687,8 @@ export interface components {
             alt: components["schemas"]["LocalizedOfstring"];
             category: null | string;
             url: string;
+            /** Format: date-time */
+            archivedAt: null | string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1981,7 +2073,7 @@ export interface components {
          *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
          *     any of them.
          *     The three that belong to a kind travel because the page around the body needs them:
-         *     a news item shows its cover and its category above the blocks, and a document with a file is a
+         *     a news item shows its cover and its collections above the blocks, and a document with a file is a
          *     card with a download rather than something to read (design M1 section 3.3). They are read from
          *     the row and not from the version, like the summary next to them: they are what the row is,
          *     not what somebody wrote in it.
@@ -1999,7 +2091,7 @@ export interface components {
             body: components["schemas"]["JsonNode"];
             /** Format: int32 */
             schemaVersion: number;
-            category: null | string;
+            collections: string[];
             /** Format: int64 */
             coverMediaId: null | number;
             /** Format: int64 */
@@ -2018,6 +2110,9 @@ export interface components {
             supersededByTitle: null | components["schemas"]["LocalizedOfstring"];
             showFooter: boolean;
             publishedByName: null | string;
+            media: {
+                [key: string]: string;
+            };
         };
         /**
          * @description What a visitor asking for an address is given: the page that has it, or — when a published page
@@ -2565,6 +2660,108 @@ export interface operations {
             };
         };
     };
+    MediaReplaceFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MediaArchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MediaRestore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ContentList: {
         parameters: {
             query?: {
@@ -3011,6 +3208,35 @@ export interface operations {
             };
         };
     };
+    ContentAppearsIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAppearanceDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CategoriesList: {
         parameters: {
             query?: {
@@ -3158,6 +3384,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriesUses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAppearanceDto"][];
+                };
             };
             /** @description Not Found */
             404: {

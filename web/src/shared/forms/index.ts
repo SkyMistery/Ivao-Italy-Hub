@@ -6,6 +6,8 @@ export {
   localized,
   localizedObject,
   readFields,
+  collectionKindOf,
+  suggestCollections,
   blankValue,
   blankValues,
   writtenValues,

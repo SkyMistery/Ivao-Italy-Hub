@@ -82,6 +82,13 @@ public sealed class MediaAsset : IOwnedByDepartment, IVisible, IAuditable, IShar
     /// </summary>
     public DateTime? DeletedAt { get; set; }
 
+    /// <summary>
+    /// When somebody archived it (G20, note 2026-09-13-contenuti-centralizzati §3.4). A file a
+    /// published page shows is not deleted but archived: it leaves the library's list and the picker,
+    /// and it is still served, so the page that shows it does not break.
+    /// </summary>
+    public DateTime? ArchivedAt { get; set; }
+
     /// <summary>False once the file itself is gone from disk, so a serve can answer honestly.</summary>
     public bool HasFile { get; set; } = true;
 

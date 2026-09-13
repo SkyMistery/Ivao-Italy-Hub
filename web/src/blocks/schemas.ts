@@ -411,7 +411,9 @@ export const calendarSchema = z.object({
 });
 
 export const newsListSchema = z.object({
-  category: z.string(),
+  // The collection the list shows — still called `category` in a saved body, so that no body had
+  // to be rewritten when a row could be filed in several (G20).
+  category: z.string().meta({ collectionOf: 'News' }),
   department: z.enum(DEPARTMENTS).optional(),
   limit: z.number().int().default(3),
   layout: z.enum(LIST_LAYOUTS).default('cards'),
@@ -419,7 +421,7 @@ export const newsListSchema = z.object({
 });
 
 export const documentListSchema = z.object({
-  category: z.string(),
+  category: z.string().meta({ collectionOf: 'Document' }),
   department: z.enum(DEPARTMENTS).optional(),
   limit: z.number().int().default(10),
   groupByCategory: z.boolean().default(true),

@@ -1,9 +1,27 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.72 — 13 settembre 2026 (**staccarsi da vIPI, centralizzare i contenuti, moduli non subordinati ai dipartimenti**: M5 fuori dalla roadmap, `atc` opzionale, la G14 senza la metà ATC; una schermata per tutto lo staff, le pagine approvate da WD e HQ, i documenti nelle pagine per raccolta, media e link letti da tutti)
+**Versione documento:** 0.73 — 13 settembre 2026 (**le fasi G19 e G20 fatte, e le decisioni prese scrivendole**: la pagina in attesa è la candidata di sé stessa, le raccolte lette da tutti, un file sostituito sulla stessa riga con l'impronta nell'indirizzo)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.73** (13 set 2026, sera): **le decisioni prese scrivendo G19 e G20**, dove il testo
+della 0.72 e il codice si sono scostati; i dettagli sono nelle sezioni «Fatta» di
+`04-piano-implementazione-m1.md`. **(1) Approvazione (G19)**: nessuna versione candidata separata — una
+pagina `Ready` è la **candidata di sé stessa**, perché il server rifiuta ogni scrittura finché aspetta;
+la coda è un filtro della lista con una voce «Da approvare» nella barra laterale, e il blocco Data col
+conteggio aspetta M2. **(2) Raccolte (G20)**: la raccolta è la vecchia categoria con un **elenco** sul
+contenuto (`collections_json`, la colonna `category` resta fino a un contract); **tutte le raccolte sono
+lette da tutti i dipartimenti** (`ISharedForReading`, come media e link), perché una pagina TD sceglie
+le guide AOD per nome; nei corpi dei blocchi la proprietà **resta `category`**, così nessun corpo
+salvato o pubblicato va riscritto, e le schermate la chiamano raccolta. **(3) L'indice derivato**
+`cms_content_references` si scrive alla pubblicazione; le pagine pubblicate **prima** di G20 non ci
+sono finché qualcuno non le ripubblica (il sito non è online, e la cancellazione di un file continua a
+guardare anche le versioni pubblicate). **(4) Un file sostituito** (deciso con Carmine): l'indirizzo è
+`/media/{id}/{impronta}/{nome}`, `immutable` per un anno; la risposta pubblica di una pagina porta
+l'impronta di ogni file che mostra, così dopo la sostituzione la pagina mostra subito il file nuovo
+senza ripubblicarla; l'indirizzo senza impronta, o con un'impronta vecchia, resta valido e si rivalida
+(ETag), quindi niente di già stampato si rompe e niente resta vecchio.
 
 **Changelog 0.72** (13 set 2026): **staccarsi da vIPI e centralizzare i contenuti**, due richieste
 che Carmine ha portato dopo essersi confrontato con lo staff di IVAO, decise con lui domanda per

@@ -22,6 +22,7 @@ export type PublicPageDto = components['schemas']['PublicPageDto'];
 export type ContentAddressDto = components['schemas']['ContentAddressDto'];
 export type ContentPageNodeDto = components['schemas']['ContentPageNodeDto'];
 export type ContentReviewDto = components['schemas']['ContentReviewDto'];
+export type ContentAppearanceDto = components['schemas']['ContentAppearanceDto'];
 
 export const contentKey = ['content'] as const;
 
@@ -334,6 +335,18 @@ export function pageTreeQuery() {
 }
 
 /** What the approver of a page reads before deciding: the sections that changed, the address, the menu entry. */
+/**
+ * The published pages a news item or a document appears on, through the collections it is filed in
+ * (G20). Answered from the index publication writes, so a page appears here once it is published.
+ */
+export function appearsInQuery(id: number) {
+  return queryOptions({
+    queryKey: [...contentKey, 'appears-in', id] as const,
+    queryFn: async (): Promise<ContentAppearanceDto[]> =>
+      unwrap(await api.GET('/api/content/{id}/appears-in', { params: { path: { id } } })),
+  });
+}
+
 export function contentReviewQuery(id: number) {
   return queryOptions({
     queryKey: [...contentKey, 'review', id] as const,

@@ -183,7 +183,7 @@ export interface ContentRow {
   readonly seo: unknown;
   readonly body: { schemaVersion: number; sections: unknown[] };
   readonly schemaVersion: number;
-  readonly category: string | null;
+  readonly collections: readonly string[];
   readonly coverMediaId: number | null;
   readonly pinned: boolean;
   readonly sort: number;
@@ -203,7 +203,7 @@ function writeOf(row: ContentRow): Record<string, unknown> {
     seo: row.seo,
     body: row.body,
     schemaVersion: row.schemaVersion,
-    category: row.category,
+    collections: row.collections,
     coverMediaId: row.coverMediaId,
     pinned: row.pinned,
     sort: row.sort,
@@ -242,7 +242,7 @@ export function createContent(
         summary: null,
         seo: null,
         schemaVersion: 1,
-        category: null,
+        collections: [],
         coverMediaId: null,
         pinned: false,
         sort: 0,

@@ -288,7 +288,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G17 | Una schermata per oggetto — **fatta il 13 set 2026** | G16 | `/staff/content`, `/staff/links`, `/staff/media` con filtri; nessuna rotta `/staff/{dept}/content…`; media e link scelti da ogni dipartimento; un grant «ogni dipartimento» allarga la lista |
 | G18 | L'indirizzo composto — **fatta il 13 set 2026** | G17 | pagine fino a tre livelli, nessun campo libero, parole riservate ricavate dalle rotte, 301 dal vecchio indirizzo, primo livello solo WD e HQ |
 | G19 | L'approvazione delle pagine — **fatta il 13 set 2026** | G18 | `Ready` in sola lettura, la riga come candidata, `Content.Approve`, riepilogo per sezione, coda, proposta di indirizzo e menu corretta da chi approva, `Menu.Edit` solo WD e HQ |
-| G20 | Le raccolte, l'indice derivato, i media aggiornati sul posto — **scritta il 13 set 2026** | G19 | un documento in più pagine per raccolta, «compare in», un media usato altrove archiviato e non cancellato, l'SVG nuovo sotto un indirizzo nuovo |
+| G20 | Le raccolte, l'indice derivato, i media aggiornati sul posto — **fatta il 13 set 2026** | G19 | un documento in più pagine per raccolta, «compare in», un media usato altrove archiviato e non cancellato, l'SVG nuovo sotto un indirizzo nuovo |
 
 **Parallelismo.** G5 e G6 non si toccano (tabelle, rotte e schermate diverse) e possono girare in
 sessioni parallele **se** si rispetta la regola 2 di §A. G7 dipende solo da G2 e può anticipare G5/G6
@@ -1885,6 +1885,61 @@ Nota: `contenuti-centralizzati` §3.3, §3.4. Branch `m1/g20-collections`.
 documento dice «compare in: Training › Guide, ATC › Procedure»; il WD non riesce a cancellare il
 logo usato dalla pagina TD e lo archivia; sostituito l'SVG, la pagina TD pubblicata mostra il file
 nuovo con un indirizzo diverso e la risposta è ancora `immutable`.
+
+**Fatta il 13 settembre 2026** (branch `m1/g20-collections-and-media`). Com'è andata, e dove si è
+scostata (le decisioni sono nel changelog 0.73 del piano):
+
+- **Le raccolte**: `collections_json` su `cms_contents`, letta e scritta dall'entità come elenco;
+  migrazione `AddCollectionsReferencesAndArchive`, additiva, che copia `category` nella prima raccolta
+  (la colonna vecchia resta come proprietà shadow, `RetiredColumns.Category`). Il filtro della lista è
+  `filter[collection]=`; il validatore tiene le chiavi alla forma di sempre (minuscole, cifre, trattini)
+  e al massimo venti. Nel form, una casella per raccolta del dipartimento; nella lista, la colonna
+  `col.list` (un tipo di cella in più, una riga in `columns.ts`).
+- ⚠️ **Scostamento sul punto 2: niente `schema_version` e niente migrazione dei corpi.** Nei blocchi
+  `newsList` e `documentList` la proprietà **resta `category`**: rinominarla voleva dire riscrivere ogni
+  corpo salvato e ogni versione pubblicata (che non si riscrive mai), e nel frontend non esiste un
+  meccanismo di migrazione dei blocchi — costruirlo sarebbe stato un meccanismo nuovo (§16.E c) per una
+  parola che vedono solo le schermate, che ora dicono «raccolta». Il campo propone le raccolte di
+  **tutti** i dipartimenti, raggruppate per dipartimento: `.meta({ collectionOf })` nello schema del
+  blocco, trasformato in `suggestions` da `BlockProperties` con `suggestCollections` (l'ottava estensione
+  del generatore). Resta testo libero, come la categoria di prima.
+- ⚠️ **Le raccolte sono lette da tutti** (`ContentCategory` è `ISharedForReading`): senza, il campo non
+  poteva proporre le guide AOD a chi scrive una pagina TD. `CategoriesAreScopedToDepartment` ora prova
+  che le si legge e che scriverne una di un altro dipartimento è ancora rifiutato.
+- **L'indice derivato** `cms_content_references` (`content_id`, `version_id`, `kind`, `target`) si
+  riscrive alla pubblicazione, nella stessa transazione, con `ContentReferenceIndex`: le raccolte le
+  dichiara il provider (`IDataBlockProvider.Collections`, un metodo di default che i due provider di
+  lista sovrascrivono: `Document:AOD:guides`, `*` per un blocco senza dipartimento); i media li trova il
+  walker (`MediaReferences`, già usato dalla pubblicazione per la visibilità) più copertina e file della
+  riga. Cancellare la riga porta via le sue righe (FK in cascata). Non c'è «ritira dal sito» da gestire.
+- ⚠️ **Le pagine pubblicate prima di G20 non sono nell'indice** finché qualcuno non le ripubblica: nessun
+  job di ricostruzione (il sito non è online). La cancellazione di un file continua comunque a guardare
+  anche le versioni pubblicate prima di togliere il file dal disco.
+- **«Compare in»**: `GET /api/content/{id}/appears-in`, mostrato sotto il titolo dell'editor di una news
+  o di un documento («Compare in: Guide (/training/guide)»). **«Usata in N pagine»**: `GET
+  /api/categories/{id}/uses`, sotto il titolo della raccolta, e la domanda prima di eliminarla elenca le
+  pagine.
+- **Un media usato si archivia**: `archived_at`; `POST /api/media/{id}/archive` e `/restore`; la lista
+  e il selettore escludono gli archiviati per default (`filter[archived]=false`, `true` per l'archivio,
+  `any`); `DELETE` su un file che l'indice nomina risponde 400 `errors.media.inUse`. Nella libreria un
+  filtro «Archivio», nella scheda del file l'avviso e «Rimetti nella libreria».
+- **Sostituire il file**: `POST /api/media/{id}/file`, stessa riga, file nuovo su disco (il vecchio si
+  toglie solo se nessun'altra riga lo nomina); il ricevimento del file (dimensione, formato, pixel,
+  scrittura) è stato estratto dall'upload e serve a entrambi. **L'indirizzo** (deciso con Carmine):
+  `/media/{id}/{impronta}/{nome}`, dove l'impronta sono i primi 12 caratteri dello SHA-256 (del nome su
+  disco per le righe senza hash); `immutable` se l'impronta è quella attuale, `no-cache` con ETag
+  altrimenti e sull'indirizzo senza impronta. La risposta pubblica porta `media: { id: impronta }` e il
+  renderer lo usa (`MediaFingerprints`, `useMediaFileUrl`); l'editor e le liste usano l'indirizzo senza
+  impronta, sempre corretto.
+- **Verificato sui link** (punto 6): il blocco `linkList` legge le righe di `cms_links` quando risponde, quindi un link modificato si vede subito; un blocco congelato mostra quello che ha catturato alla pubblicazione, come ogni blocco Data.
+- **Tre indirizzi scritti a mano per i media e due letture** (compare in, usi di una raccolta), contati
+  nei commenti degli endpoint.
+- **I test**: `CollectionsAndMediaTests` (i tre criteri: documento in due raccolte e due pagine, file
+  archiviato e non cancellato, file sostituito con impronta nuova e `immutable`); i test di G5 aggiornati
+  alle raccolte; due smoke (`e2e/collections.spec.ts`).
+- **Verificato in locale**: unit .NET (309), Vitest (387), smoke (77), lint, typecheck, formato, i18n,
+  `has-pending-model-changes`. **Non in locale**: integrazione e giro completo (Docker spento), che
+  esegue la CI.
 
 ---
 

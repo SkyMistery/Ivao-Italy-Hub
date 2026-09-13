@@ -83,7 +83,7 @@ function PublicContentPage() {
       {startsWithPageTitle(body) ? null : <h1 className="sr-only">{read(content.title)}</h1>}
       {/* Where the frame of an interactive block lives: this row, at the version being read. */}
       <EmbeddingContext.Provider value={embedding}>
-        <ContentRenderer body={body} />
+        <ContentRenderer body={body} media={content.media} />
       </EmbeddingContext.Provider>
     </article>
   );

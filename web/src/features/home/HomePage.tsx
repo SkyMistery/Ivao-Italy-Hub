@@ -69,7 +69,7 @@ export function HomePage() {
           different address. */}
       {startsWithPageTitle(body) ? null : <h1 className="sr-only">{read(home.data.title)}</h1>}
       <EmbeddingContext.Provider value={embedding}>
-        <ContentRenderer body={body} />
+        <ContentRenderer body={body} media={home.data.media} />
       </EmbeddingContext.Provider>
     </article>
   );

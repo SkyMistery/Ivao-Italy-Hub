@@ -80,7 +80,6 @@ public static class ContentEndpoints
                 options.Filterable.Add(nameof(ContentEntry.Status));
                 options.Filterable.Add(nameof(ContentEntry.IsTemplate));
                 options.Filterable.Add(nameof(ContentEntry.TemplateId));
-                options.Filterable.Add(nameof(ContentEntry.Category));
 
                 // A template is a tool, not a page: it stays out of the list of what a department
                 // publishes, and `filter[isTemplate]=true` is how the template picker asks for it.
@@ -90,6 +89,10 @@ public static class ContentEndpoints
                 // than through an endpoint of its own. It is not an equality on a column — the
                 // identifier is somewhere inside an opaque body — so it is a function, and the
                 // function is the one helper of Core/Data that knows how to ask a JSON column.
+                // "Which rows are filed in this collection?" (G20): a key inside a JSON array, which
+                // no equality filter can say. A key is letters, digits and dashes, or nothing matches.
+                options.CustomFilters[CollectionFilter] = (query, raw) => query.InCollection(raw);
+
                 options.CustomFilters[UsesMediaFilter] = (query, raw) =>
                     long.TryParse(raw, CultureInfo.InvariantCulture, out var mediaId)
                         ? query.UsingMedia(mediaId)
@@ -217,6 +220,15 @@ public static class ContentEndpoints
             .Produces<IReadOnlyList<ContentPageNodeDto>>()
             .RequireAuthorization(CorePermissions.ContentEdit);
 
+        // ⚠️ One more hand written read of G20, counted: the published pages a news item or a
+        // document appears on, through the collections it is filed in (note
+        // 2026-09-13-contenuti-centralizzati, 3.3). Answered from the index publication writes.
+        group.MapGet("/{id:long}/appears-in", AppearsInAsync)
+            .WithName("ContentAppearsIn")
+            .Produces<IReadOnlyList<ContentAppearanceDto>>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.ContentView);
+
         return group;
     }
 
@@ -264,6 +276,9 @@ public static class ContentEndpoints
     /// writes it too, and a filter name spelled twice is a filter name that drifts.
     /// </summary>
     public const string UsesMediaFilter = "usesMedia";
+
+    /// <summary>The custom filter that narrows the list to one collection: <c>filter[collection]=guides</c>.</summary>
+    public const string CollectionFilter = "collection";
 
     /// <summary><c>filter[reviewDue]=true</c>: the documents whose review date has passed (G14).</summary>
     public const string ReviewDueFilter = "reviewDue";
@@ -314,7 +329,7 @@ public static class ContentEndpoints
             // A template carries structure, never the editorial facts of one row: a page born from
             // one starts with no category, no cover, unpinned, first in order and no file — and a
             // document with none of its dates, which the form asks for next.
-            Category: null,
+            Collections: [],
             CoverMediaId: null,
             Pinned: false,
             Sort: 0,
@@ -399,6 +414,33 @@ public static class ContentEndpoints
         return failure is null
             ? Results.Ok(new ContentMapper().ToDetail(content))
             : CrudProblems.Validation(failure.Errors, failure.MissingLocales, catalog, currentUser.Locale);
+    }
+
+    private static async Task<IResult> AppearsInAsync(
+        long id,
+        ContentPublishService publish,
+        ContentReferenceIndex references,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var content = await publish.FindAsync(id, http.RequestAborted);
+        if (content is null)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey));
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, content, CorePermissions.ContentView)).Succeeded)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        return Results.Ok(await references.AppearancesAsync(content, http.RequestAborted));
     }
 
     private static async Task<IResult> DescribeReviewAsync(
@@ -661,6 +703,25 @@ public static class ContentEndpoints
                 .FirstOrDefaultAsync(cancellationToken)
             : null;
 
+        // The files this version shows, with the fingerprint of the file each row holds now. Read
+        // through the query filter: a file the reader may not be served gets no fingerprint, and the
+        // renderer's address for it answers 404 either way.
+        var shown = await database.ContentReferences
+            .AsNoTracking()
+            .Where(reference => reference.VersionId == version.Id && reference.Kind == ContentReferenceKind.Media)
+            .Select(reference => reference.Target)
+            .ToListAsync(cancellationToken);
+
+        var shownIds = shown
+            .Select(target => long.TryParse(target, CultureInfo.InvariantCulture, out var mediaId) ? mediaId : 0)
+            .Where(mediaId => mediaId > 0)
+            .ToList();
+
+        var files = await database.Media
+            .AsNoTracking()
+            .Where(media => shownIds.Contains(media.Id) && media.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+
         return new PublicContentDto(
             content.Id,
             content.Kind,
@@ -672,7 +733,7 @@ public static class ContentEndpoints
             content.Seo,
             JsonNode.Parse(version.BodyJson) ?? new JsonObject(),
             version.SchemaVersion,
-            content.Category,
+            content.Collections,
             content.CoverMediaId,
             content.FileMediaId,
             version.Version,
@@ -683,7 +744,11 @@ public static class ContentEndpoints
             successor?.Slug,
             successor?.Title,
             content.ShowFooter,
-            string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim());
+            string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim(),
+            files.ToDictionary(
+                media => media.Id.ToString(CultureInfo.InvariantCulture),
+                MediaUrl.Fingerprint,
+                StringComparer.Ordinal));
     }
 
     /// <summary>

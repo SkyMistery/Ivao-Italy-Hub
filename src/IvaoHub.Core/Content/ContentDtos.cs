@@ -20,7 +20,7 @@ public sealed record ContentListDto(
     PublishStatus Status,
     bool IsTemplate,
     Localized<string> Title,
-    string? Category,
+    IReadOnlyList<string> Collections,
     long? CoverMediaId,
     bool Pinned,
     int Sort,
@@ -52,7 +52,7 @@ public sealed record ContentDetailDto(
     Localized<JsonNode>? Seo,
     JsonNode Body,
     int SchemaVersion,
-    string? Category,
+    IReadOnlyList<string> Collections,
     long? CoverMediaId,
     bool Pinned,
     int Sort,
@@ -92,7 +92,7 @@ public sealed record ContentWriteDto(
     Localized<JsonNode>? Seo,
     JsonNode Body,
     int SchemaVersion,
-    string? Category,
+    IReadOnlyList<string> Collections,
     long? CoverMediaId,
     bool Pinned,
     int Sort,
@@ -113,7 +113,7 @@ public sealed record ContentWriteDto(
 /// There is no row version, no audit trail and no status, because a visitor has nothing to do with
 /// any of them.
 /// <para>The three that belong to a <c>kind</c> travel because the page around the body needs them:
-/// a news item shows its cover and its category above the blocks, and a document with a file is a
+/// a news item shows its cover and its collections above the blocks, and a document with a file is a
 /// card with a download rather than something to read (design M1 section 3.3). They are read from
 /// the row and not from the version, like the summary next to them: they are what the row <i>is</i>,
 /// not what somebody wrote in it.</para>
@@ -133,7 +133,7 @@ public sealed record PublicContentDto(
     Localized<JsonNode>? Seo,
     JsonNode Body,
     int SchemaVersion,
-    string? Category,
+    IReadOnlyList<string> Collections,
     long? CoverMediaId,
     long? FileMediaId,
     int Version,
@@ -147,7 +147,12 @@ public sealed record PublicContentDto(
     Localized<string>? SupersededByTitle,
     bool ShowFooter,
     // Who published, as a name: the VID is nobody's business on the public site.
-    string? PublishedByName);
+    string? PublishedByName,
+    // The fingerprint of every file the page shows, by identifier (G20): what lets the renderer ask
+    // for /media/{id}/{fingerprint}/file, which may be cached for a year, instead of the address of
+    // the identifier alone, which is checked again at every read. A file replaced after publication
+    // has a new fingerprint here at once, without publishing again.
+    IReadOnlyDictionary<string, string> Media);
 
 /// <summary>What publication is told, beyond which row it is about.</summary>
 /// <param name="Changelog">A line for the staff about what changed. Never shown to a visitor.</param>
