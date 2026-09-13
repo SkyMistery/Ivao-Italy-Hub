@@ -163,7 +163,7 @@ dettaglio all'inizio di ognuna con il codice davanti.
 | Fase | Titolo | Dipende da | In una riga |
 |---|---|---|---|
 | D1 | La griglia a tessere — **fatta il 13 set 2026** | parte A | layout `grid` e `span` nell'envelope (walker, validazione, TypeScript); resa a tessera alta uguale per riga; resa a tutto schermo e barra compatta per `ContentKind.Dashboard`; le dashboard dei dipartimenti convertite |
-| D2 | L'editor della griglia | D1 | spostare le tessere, ridimensionarle con la maniglia e con il selettore; il giro e2e che lo prova |
+| D2 | L'editor della griglia — **fatta il 13 set 2026** | D1 | spostare le tessere, ridimensionarle con la maniglia e con il selettore; il giro e2e che lo prova |
 | D3 | `/me` e `/staff` | D1 | righe `me` e `staff` seminate; `/staff` smette di reindirizzare; i blocchi del nucleo (ciò che aspetta me, le mie bozze, calendario dei miei dipartimenti, i miei dipartimenti, il saluto); via il registro dei widget |
 
 ### D1 — La griglia a tessere
@@ -190,6 +190,31 @@ Branch `m2/d1-tile-grid`, impilato sulla nota (#74). **Fatta il 13 settembre 202
   della colonna, ordine, contenuto che scorre, niente larghezza di sezione; e una pagina che resta una
   pagina). **Verificato in locale**: unit .NET (324), Vitest (392), smoke (77), lint, typecheck, formato,
   i18n. Non guardata a occhio: nel browser integrato non si entra nel back office senza il login IVAO.
+
+### D2 — L'editor della griglia
+
+Branch `m2/d2-grid-editor`, da `main` dopo il merge della pila #71–#75. **Fatta il 13 settembre 2026.**
+
+- **L'anteprima di una riga `Dashboard` è la griglia**: `PreviewFrame` passa `dashboard` al renderer, e
+  si compone sulle tessere come sulle pagine — si clicca per scegliere, la barra e la maniglia di
+  trascinamento sono quelle dei blocchi.
+- **Spostare una tessera**: gli slot compaiono prima di ogni tessera e dopo l'ultima, ciascuno su una
+  riga intera della griglia, per un blocco trascinato e per un componente dalla palette. La prima volta
+  che si aggiunge o si sposta una tessera la sezione viene riscritta **come le sue tessere**
+  (`asTiles`: ogni blocco con la larghezza con cui è mostrato, tutti nella stessa colonna, nell'ordine
+  della griglia), così «prima della terza tessera» vuol dire la terza tessera.
+- **La maniglia**: sul bordo destro della tessera scelta; trascinata misura in colonne la distanza dal
+  bordo sinistro della tessera e scatta sulla più vicina delle sei larghezze; con il fuoco, le frecce
+  destra e sinistra la allargano e la stringono. Eventi del puntatore, non dnd-kit, che il renderer non
+  importa. Un gesto è un passo solo della cronologia (`coalesce`).
+- **Il selettore**: «Larghezza della tessera» nel pannello del blocco, al posto della colonna.
+- ⚠️ **Trovato dal giro completo**: il click con cui finisce il trascinamento cadeva sulla sezione e la
+  sceglieva, togliendo la maniglia e il selettore; la maniglia ora ingoia quel click e solo quello.
+- **I test**: Vitest su `asTiles`/`setSpan` e sulla maniglia da tastiera e gli slot; **un test del giro
+  completo** (`e2e/full/dashboard.spec.ts`) che trascina la maniglia fino a un quarto, allarga dal
+  selettore a metà e trova la larghezza salvata — come chiedeva la nota.
+- **Verificato in locale**: Vitest (394), smoke (77), giro completo (19, MariaDB vera), lint,
+  typecheck, formato, i18n.
 
 ## C. Il modulo Events
 

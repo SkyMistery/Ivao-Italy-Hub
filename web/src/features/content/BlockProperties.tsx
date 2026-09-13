@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import {
+  SPANS,
   columnsOf,
+  spanOf,
   type Background,
   type BlockEnvelope,
   type Layout,
@@ -305,6 +307,7 @@ export function BlockProperties({
   onApplyProps,
   onEnvelope,
   onMoveTo,
+  dashboard = false,
 }: {
   block: BlockEnvelope;
   section: SectionEnvelope;
@@ -327,6 +330,8 @@ export function BlockProperties({
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
   /** Moves the block to the end of the first column of that section. */
   onMoveTo: (sectionId: string) => void;
+  /** A tile of a dashboard: its width instead of a column (D2). */
+  dashboard?: boolean;
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
@@ -394,7 +399,21 @@ export function BlockProperties({
 
       {registration.carriesSource === true ? <SourceField block={block} onEnvelope={onEnvelope} /> : null}
 
-      {columns > 1 ? (
+      {dashboard ? (
+        // The width of the tile: the same six the handle on its edge snaps to (D2).
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="span">{t('content.editor.tileWidth.label')}</Label>
+          <Select
+            id="span"
+            value={String(spanOf(block, section.layout))}
+            onValueChange={(span) => onEnvelope({ span: Number(span) })}
+            items={SPANS.map((span) => ({
+              value: String(span),
+              label: t(`content.editor.tileWidth.options.${span}`),
+            }))}
+          />
+        </div>
+      ) : columns > 1 ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="column">{t('content.editor.column')}</Label>
           <Select

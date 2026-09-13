@@ -16,6 +16,7 @@ export {
   PADDINGS,
   RENDER_MODES,
   SCHEMA_VERSION,
+  SPANS,
   WIDTHS,
   allBlocks,
   allSections,
@@ -26,12 +27,14 @@ export {
   newId,
   readBody,
   sectionSchema,
+  spanOf,
   type Background,
   type BlockEnvelope,
   type Body,
   type Layout,
   type RenderMode,
   type SectionEnvelope,
+  type Span,
 } from './envelope';
 export { CORE_BLOCK_TYPES } from './core';
 export { startsWithPageTitle } from './envelope';

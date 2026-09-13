@@ -63,8 +63,10 @@
 > selettore nell'editor), tessere alte uguali per riga; via il registro dei widget.
 > **D1 è fatta** (branch `m2/d1-tile-grid`): `span` nell'envelope, ogni sezione di una dashboard a
 > tessere (senza layout nuovo né conversione: un blocco senza `span` prende la quota della sua colonna),
-> `/staff/{dept}` a tessere. **Prossime: D2** (l'editor della griglia) e **D3** (`/me`, `/staff`, via i
-> widget), poi `05-design-m2.md` ed Events. ⚠️ **Pila di PR**: #71 → #72 → #73 → #74 → #75. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> `/staff/{dept}` a tessere. **La pila #71–#75 è mergiata** (da Claude su richiesta di Carmine, 13 set).
+> **D2 è fatta** (branch `m2/d2-grid-editor`): l'editor di una dashboard è la griglia, le tessere si
+> spostano sugli slot e si ridimensionano con la maniglia (e da tastiera) o dal selettore; un test del
+> giro completo lo prova. **Prossima: D3** (`/me`, `/staff`, via i widget), poi `05-design-m2.md` ed Events. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
 > di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >
