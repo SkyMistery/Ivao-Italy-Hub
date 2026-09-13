@@ -1,8 +1,13 @@
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IvaoHub.IntegrationTests;
 
@@ -20,6 +25,19 @@ public sealed class SampleModule : ModuleBase
 {
     public const string ModuleKey = "sample";
 
+    /// <summary>The permission area of the module's table (M2): <c>Sample.View</c> and <c>Sample.Edit</c>.</summary>
+    public const string PermissionArea = "Sample";
+
+    public const string ViewPermission = "Sample.View";
+
+    public const string EditPermission = "Sample.Edit";
+
+    /// <summary>The rows in the care of several departments, through the generic CRUD engine.</summary>
+    public const string ItemsPattern = "/api/sample/items";
+
+    /// <summary>The same rows read through the global query filter, as a public page of the module would.</summary>
+    public const string VisiblePattern = "/api/sample/visible";
+
     /// <summary>A permission of the module, so that the catalogue is seen to compose it.</summary>
     public const string ReadPermission = "Sample.Read";
 
@@ -33,7 +51,16 @@ public sealed class SampleModule : ModuleBase
     public override string Key => ModuleKey;
 
     public override IReadOnlyList<PermissionDescriptor> Permissions =>
-        [new PermissionDescriptor(ReadPermission, IsGlobal: true)];
+    [
+        new PermissionDescriptor(ReadPermission, IsGlobal: true),
+        new PermissionDescriptor(ViewPermission, IsGlobal: false),
+        new PermissionDescriptor(EditPermission, IsGlobal: false),
+    ];
+
+    public override IEnumerable<Type> DbContextTypes => [typeof(SampleDbContext)];
+
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+        services.AddModuleDbContext<SampleDbContext>(ModuleKey);
 
     public override IReadOnlyList<NavItemDescriptor> PublicNavigation =>
         [new NavItemDescriptor(NavigationKey, NavigationPath)];
@@ -48,6 +75,22 @@ public sealed class SampleModule : ModuleBase
         // open, and a POST to the same address that maintenance closes.
         endpoints.MapGroup($"/api/{ModuleKey}")
             .MapGet("/ping", () => TypedResults.Ok(new SamplePing(ModuleKey)));
+
+        // A table of the module through the generic engine, exactly as a real module maps one.
+        endpoints.MapCrud<SampleItem, SampleItemDto, SampleItemDto, SampleItemWriteDto>(ItemsPattern, options =>
+        {
+            options.PermissionArea = PermissionArea;
+            options.ContextType = typeof(SampleDbContext);
+            options.DefaultOrder = item => item.Id;
+            options.ToList = SampleItemMapping.ToDto;
+            options.ToDetail = SampleItemMapping.ToDto;
+            options.Apply = SampleItemMapping.Apply;
+        });
+
+        // And through the filter: what an anonymous page of the module would list.
+        endpoints.MapGet(VisiblePattern, async (SampleDbContext database, CancellationToken cancellationToken) =>
+                TypedResults.Ok(await database.Items.Select(item => item.Id).ToListAsync(cancellationToken)))
+            .AllowAnonymous();
     }
 }
 

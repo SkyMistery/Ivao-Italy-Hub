@@ -124,7 +124,10 @@ public sealed class DepartmentAuthorizationHandler(
             return currentUser.HasAny(permission);
         }
 
-        if (!currentUser.Has(permission, owned.OwnerDepartment))
+        // Held on one of the departments of the row is held on the row: a row of one department has
+        // one, and a row of a module organised together with others has them all (M2, note
+        // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.3). One rule, not a branch.
+        if (!owned.OwnerDepartments.Any(department => currentUser.Has(permission, department)))
         {
             return false;
         }

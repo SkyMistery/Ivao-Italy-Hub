@@ -14,7 +14,7 @@ una news, un documento restano di un dipartimento solo (nota §3.3).
 | Fase | Titolo | Dipende da | In una riga |
 |---|---|---|---|
 | H1 | I grant a una posizione — **fatta il 13 set 2026** | — | il soggetto di un grant è un VID **oppure** un dipartimento con uno o più livelli; seed una volta da `division.json` |
-| H2 | Le righe di più dipartimenti | H1 | `IOwnedByDepartment` a insieme nel filtro, nel handler, nell'interceptor e nelle liste; `modules.<key>.baseDepartment`; un modulo di prova con una tabella nei test |
+| H2 | Le righe di più dipartimenti — **fatta il 13 set 2026** | H1 | `IOwnedByDepartment` a insieme nel filtro, nel handler, nell'interceptor e nelle liste; `modules.<key>.baseDepartment`; un modulo di prova con una tabella nei test |
 | H3 | Le sezioni dei moduli nella barra dello staff | H2 | Contenuti · un gruppo per modulo · Dipartimenti · Amministrazione |
 
 ### H1 — I grant a una posizione
@@ -89,10 +89,48 @@ le si è cancellate.
 
 ### H2 — Le righe di più dipartimenti
 
-Nota §3.3. Branch `m2/h2-owned-by-several`. Da scrivere in dettaglio all'inizio della fase, con il
-codice davanti: la forma in cui una tabella di modulo tiene l'insieme (colonna o tabella di collegamento),
-come il filtro globale e la narrowing delle liste dicono «almeno uno in comune», e la forma nuova di
-`modules` in `division.json` (oggi solo acceso/spento) con `baseDepartment`.
+Nota §3.3. Branch `m2/h2-owned-by-several`, **impilato su H1** (usa i grant di posizione nei test).
+
+**Fatta il 13 settembre 2026.** Le decisioni tecniche, prese con il codice davanti:
+
+- **L'insieme è una maschera di bit** in una colonna della riga (`owner_department_mask`), non una
+  tabella di collegamento né un elenco JSON: «almeno uno in comune» diventa `(riga & lettore) != 0`,
+  che il filtro globale scrive su una colonna e un parametro, mentre una tabella vorrebbe un join che un
+  query filter non sa scrivere. ⚠️ **Il bit di ogni dipartimento è scritto a mano** in
+  `DepartmentMask` e non dipende dall'ordine dell'enum, perché è un valore salvato: un dipartimento
+  nuovo va in fondo, e un test fissa i bit.
+- **Una interfaccia sola**, come chiedeva la nota: `IOwnedByDepartment` ha due membri con un default,
+  `OwnerDepartmentMask` (per una riga editoriale è il bit del suo dipartimento) e `OwnerDepartments`.
+  Una riga di modulo in cura a più dipartimenti **dichiara** `OwnerDepartmentMask` come proprietà
+  scrivibile, che diventa la sua colonna; `OwnerDepartment` resta, ed è il dipartimento di base.
+- **L'unico handler** chiede «tenuto su uno dei dipartimenti della riga», senza rami. **Il filtro
+  globale, la narrowing delle liste e `DataBlockScope`** costruiscono l'espressione giusta per il tipo:
+  `Contains` sul dipartimento per una riga editoriale, la maschera per una riga di modulo.
+- **L'interceptor** chiede il permesso su almeno uno dei dipartimenti della riga — «chi crea ci mette
+  un dipartimento su cui ha il permesso» — e, se l'insieme cambia, anche su uno di quelli di prima.
+- **Il dipartimento di base** (`ModuleBaseDepartment`) si rimette sulla riga in due punti: nel motore
+  CRUD subito dopo l'applicazione del payload, così il permesso si controlla sulla riga com'è
+  davvero, e nell'interceptor, per ogni altra strada. Trovato leggendo il motore prima della CI: il
+  controllo dopo l'applicazione avrebbe rifiutato all'ED un evento «SOD» dal payload.
+- ⚠️ **I contesti dei moduli non avevano il filtro globale**: stava solo in `HubDbContext`. Adesso un
+  modulo deriva da **`ModuleDbContext`**, che applica lo stesso filtro sulle stesse proprietà
+  (`IVisibilityScope`) e non lascia dimenticarlo (`OnModelCreating` è sigillato, il modulo scrive
+  `ConfigureModel`).
+- **`division.json → modules`** cambia forma: da `{ "specialops": true }` a
+  `{ "specialops": { "enabled": true }, "events": { "baseDepartment": "ED" } }`. IT ha già eventi ED,
+  tour FOD e training TD; `division.example.json` e `FORKING.md` lo spiegano (e `FORKING.md` perde
+  l'esempio con `Department`, rimasto da prima di G16).
+- **Il modulo di prova ha una tabella**: `SampleDbContext` con `smp_items`, migrazione generata da
+  `dotnet ef` nel progetto dei test (che per questo referenzia `Microsoft.EntityFrameworkCore.Design`),
+  gli endpoint CRUD e una lettura attraverso il filtro. Il test host dice `modules.sample.baseDepartment:
+  ED`.
+- **I test**: quattro unit su `DepartmentMask` (un bit per dipartimento, i bit fissati, andata e
+  ritorno, riga editoriale e riga di modulo) e tre d'integrazione sulla spina dorsale a due dipartimenti
+  (la base aggiunta e i due dipartimenti che gestiscono, il terzo fuori da lista e scrittura; chi crea
+  mette un dipartimento suo; il filtro di un contesto di modulo legge l'insieme), con i permessi del
+  modulo dati a posizioni come farà una divisione.
+- **Verificato in locale**: unit .NET (316), build, `has-pending-model-changes` sui due contesti.
+  **Non in locale**: integrazione (Docker spento), che esegue la CI.
 
 ### H3 — Le sezioni dei moduli nella barra dello staff
 

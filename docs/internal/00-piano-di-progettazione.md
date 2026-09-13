@@ -1,9 +1,19 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.74 — 13 settembre 2026 (**M2 si apre con i prerequisiti**: i grant a una posizione, indicata come dipartimento e livelli; le fasi H1–H3 in `06-piano-implementazione-m2.md`)
+**Versione documento:** 0.75 — 13 settembre 2026 (**le righe dei moduli in cura a più dipartimenti**: una maschera di bit, un'interfaccia sola, il filtro anche nei contesti dei moduli, `modules.<key>.baseDepartment`)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.75** (13 set 2026, notte): **H2**, la forma in codice di «a cura di» multiplo che la
+nota `moduli-non-subordinati-ai-dipartimenti` §3.3 lasciava «da confermare nel design di M2»: l'insieme
+dei dipartimenti di una riga di modulo è una **maschera di bit** in una colonna, con il bit di ogni
+dipartimento scritto a mano e mai derivato dall'ordine dell'enum; **`IOwnedByDepartment` resta
+l'unica interfaccia** (due membri con un default) e l'unico handler chiede «uno dei dipartimenti della
+riga»; i **contesti dei moduli derivano da `ModuleDbContext`**, che applica lo stesso filtro globale di
+`HubDbContext` (prima i moduli non ne avevano); **`division.json → modules`** passa da acceso/spento a
+un oggetto per modulo con `enabled` e `baseDepartment`, e il dipartimento di base lo rimettono sulla
+riga il motore CRUD e l'interceptor. Dettagli in `06-piano-implementazione-m2.md`.
 
 **Changelog 0.74** (13 set 2026, sera): **M2 si apre con i prerequisiti** della nota
 `moduli-non-subordinati-ai-dipartimenti` (§13), in tre fasi H1–H3 scritte nella parte A di

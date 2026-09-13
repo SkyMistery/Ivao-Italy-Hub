@@ -8,7 +8,22 @@ namespace IvaoHub.Core.Division;
 /// </summary>
 public interface IOwnedByDepartment
 {
+    /// <summary>
+    /// The department the row belongs to. For a row in the care of several departments (a row of a
+    /// module), the one it always has: the base department of the module when the division names one.
+    /// </summary>
     Department OwnerDepartment { get; }
+
+    /// <summary>
+    /// Every department the row is in the care of, as a <see cref="DepartmentMask"/>. An editorial row
+    /// has one and inherits this; a row of a module that may be organised together with other
+    /// departments declares a settable property of this name, which is its column (M2, note
+    /// 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.3). Held on one of them is held on the row.
+    /// </summary>
+    int OwnerDepartmentMask => DepartmentMask.Of(OwnerDepartment);
+
+    /// <summary>The same set, as departments.</summary>
+    IReadOnlyList<Department> OwnerDepartments => DepartmentMask.Departments(OwnerDepartmentMask | DepartmentMask.Of(OwnerDepartment));
 }
 
 /// <summary>A row that is not necessarily readable by everybody. Enforced by the global query filter.</summary>

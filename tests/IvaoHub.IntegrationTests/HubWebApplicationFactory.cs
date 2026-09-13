@@ -93,6 +93,11 @@ public sealed class HubWebApplicationFactory(
                             : StartUpUser);
             }
 
+            // The test module's rows are always in the care of Events, as a division says of its
+            // events in division.json (M2): what the interceptor adds to every row of the module.
+            services.PostConfigure<DivisionOptions>(options =>
+                options.Modules[SampleModule.ModuleKey] = new ModuleSettings { BaseDepartment = Department.ED });
+
             // The endpoints of the identity provider are pinned instead of discovered: a test must
             // not depend on IVAO being reachable. What is still exercised is our own override of
             // the redirect URI, which is the part that can actually be got wrong.
