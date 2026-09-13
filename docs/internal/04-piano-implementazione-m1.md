@@ -284,7 +284,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G13 | I difetti trovati usando, e le rifiniture del collaudo — **fatta**, PR #57 | G12 | i quattro difetti e le dodici richieste della demo, poi le due giornate di collaudo a occhio |
 | G15 | L'editor che risponde — **dopo il tag, prima di G14** | G13 | proprietà applicate scrivendo, annulla/ripeti da tastiera, autosalvataggio a 10 s con audit senza corpo, trascinamento dalla barra, anteprima «Phone» che accorpa davvero le colonne |
 | G14 | Il documento operativo (LoA/SOP) | G15 | tipo SOP/LoA, sei campi operativi da `ref_`, `Archived`/`Superseded`, Frequency Table e Coordination, piè di pagina con la stampa |
-| G16 | Via vIPI: il modulo `atc` e la metà ATC della G14 — **scritta il 13 set 2026** | merge della pila #59–#65 | nessun `IvaoHub.Modules.Atc`, composizione provata da un modulo finto nei test, un documento senza tipo/posizioni/ICAO/FIR/AIRAC, `/atc` ancora servita come pagina |
+| G16 | Via vIPI: il modulo `atc` e la metà ATC della G14 — **fatta il 13 set 2026** | merge della pila #59–#65 | nessun `IvaoHub.Modules.Atc`, composizione provata da un modulo finto nei test, un documento senza tipo/posizioni/ICAO/FIR/AIRAC, `/atc` ancora servita come pagina |
 | G17 | Una schermata per oggetto — **scritta il 13 set 2026** | G16 | `/staff/content`, `/staff/links`, `/staff/media` con filtri; nessuna rotta `/staff/{dept}/content…`; media e link scelti da ogni dipartimento; un grant «ogni dipartimento» allarga la lista |
 | G18 | L'indirizzo composto — **scritta il 13 set 2026** | G17 | pagine fino a tre livelli, nessun campo libero, parole riservate ricavate dalle rotte, 301 dal vecchio indirizzo, primo livello solo WD e HQ |
 | G19 | L'approvazione delle pagine — **scritta il 13 set 2026** | G18 | `Ready` in sola lettura, versione candidata, `Content.Approve`, riepilogo per sezione, coda, proposta di indirizzo e menu corretta da chi approva, `Menu.Edit` solo WD e HQ |
@@ -1536,6 +1536,35 @@ Nota: `staccarsi-da-vipi` §3. Branch `m1/g16-without-vipi`.
 **Criteri**: build e test verdi senza `IvaoHub.Modules.Atc`; il test della divisione fittizia «XX»
 verde; il giro e2e pubblica un documento con «in vigore dal» e lo legge; nessuna occorrenza di
 `Sop`, `Loa`, `Airac`, `PrimaryPosition` fuori dalle migrazioni e dai loro snapshot.
+
+**Fatta il 13 settembre 2026**, branch `m1/g16-without-vipi`, tre commit. Quello che il disegno non
+diceva:
+
+- **Come il modulo finto entra nell'host.** `Modules.All` è una lista statica letta da `Program`
+  prima che la factory dei test possa toccare niente. Si è estratta
+  `AddHubModule(module, configuration, division)` dal ciclo di `AddHubModules` — lo stesso codice
+  per l'applicazione e per i test — e il **catalogo dei permessi** si costruisce **dal registry**
+  quando lo si chiede la prima volta, non dall'elenco passato a `AddHubModules`: altrimenti un modulo
+  aggiunto dopo avrebbe menu ed endpoint ma non i suoi permessi. `SampleModule` (chiave `sample`, un
+  `GET /api/sample/ping`, `nav.sample`, l'esclusione `/sample-legacy`, il permesso globale
+  `Sample.Read`) è in **ogni** host d'integrazione: una build con un modulo è il caso normale da M2,
+  e `ModuleRegistryComposesNavAndExclusions` ora verifica anche che il permesso sia nel catalogo.
+- **`/atc` ha una riga di menu nel seed** (`sort: 40`): prima la voce la portava il modulo. Solo le
+  installazioni nuove la ricevono; una già seminata la aggiunge dal menu.
+- **Anche `WidgetDescriptor.Department` e `BootstrapModule.department` se ne sono andati**: nessuno
+  li leggeva se non il badge della schermata dei moduli, che non ha più niente da dire.
+- **Le sei colonne sono proprietà shadow** con i nomi e le lunghezze dello snapshot, raccolte in
+  `RetiredColumns` (che è l'unico posto dove `Airac`, `Icao`, `Fir`, `PrimaryPosition` sopravvivono,
+  e dice alla fase di contract che cosa togliere). `dotnet ef migrations
+  has-pending-model-changes` risponde «nessun cambiamento».
+- **Un client vecchio che manda ancora `icao` o `documentType` non è rifiutato**: un membro JSON
+  sconosciuto si ignora, come ovunque. Il test lo prova e verifica che nel dettaglio non torni niente.
+- **Il sottogruppo `atc` della barra dei componenti** è diventato `operational`, «Tabelle operative».
+- **La striscia sotto il titolo** ora si disegna per ogni documento e sparisce da sola se non ha
+  «in vigore dal»: `isOperational` non aveva più niente da decidere. `operational.ts` è
+  `documentDays.ts`; `positions.ts` e il suo test non ci sono più.
+- **Non verificato in locale**: i test d'integrazione e il giro e2e, perché Docker Desktop era spento;
+  li esegue la CI su MariaDB vera. Unit (309), Vitest (382), lint, typecheck, formato e i18n verdi.
 
 #### G17 — Una schermata per oggetto
 
