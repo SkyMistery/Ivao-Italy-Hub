@@ -2,7 +2,7 @@
 
 **Data:** 13 settembre 2026, sera — la nota che il piano 0.59 mette all'apertura di M2, prima di
 `05-design-m2.md`
-**Stato:** **decisa** (Carmine, 13 settembre 2026): §3.1–3.4 e i primi tre punti di §3.5 con domande
+**Stato:** **decisa** (Carmine, 13 settembre 2026): §3.1–3.4 e i punti 1, 2 e 5 di §3.5 con domande
 dirette; gli altri punti di §3.5 sono proposte che valgono finché l'uso non dice altro
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: una schermata nuova (`/staff` personale) e un modo
 nuovo di disporre i blocchi (la griglia a tessere). Ci si ferma, si scrive, si decide, poi si codifica.
