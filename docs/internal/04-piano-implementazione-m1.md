@@ -286,7 +286,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G14 | Il documento operativo (LoA/SOP) | G15 | tipo SOP/LoA, sei campi operativi da `ref_`, `Archived`/`Superseded`, Frequency Table e Coordination, piè di pagina con la stampa |
 | G16 | Via vIPI: il modulo `atc` e la metà ATC della G14 — **fatta il 13 set 2026** | merge della pila #59–#65 | nessun `IvaoHub.Modules.Atc`, composizione provata da un modulo finto nei test, un documento senza tipo/posizioni/ICAO/FIR/AIRAC, `/atc` ancora servita come pagina |
 | G17 | Una schermata per oggetto — **fatta il 13 set 2026** | G16 | `/staff/content`, `/staff/links`, `/staff/media` con filtri; nessuna rotta `/staff/{dept}/content…`; media e link scelti da ogni dipartimento; un grant «ogni dipartimento» allarga la lista |
-| G18 | L'indirizzo composto — **scritta il 13 set 2026** | G17 | pagine fino a tre livelli, nessun campo libero, parole riservate ricavate dalle rotte, 301 dal vecchio indirizzo, primo livello solo WD e HQ |
+| G18 | L'indirizzo composto — **fatta il 13 set 2026** | G17 | pagine fino a tre livelli, nessun campo libero, parole riservate ricavate dalle rotte, 301 dal vecchio indirizzo, primo livello solo WD e HQ |
 | G19 | L'approvazione delle pagine — **scritta il 13 set 2026** | G18 | `Ready` in sola lettura, versione candidata, `Content.Approve`, riepilogo per sezione, coda, proposta di indirizzo e menu corretta da chi approva, `Menu.Edit` solo WD e HQ |
 | G20 | Le raccolte, l'indice derivato, i media aggiornati sul posto — **scritta il 13 set 2026** | G19 | un documento in più pagine per raccolta, «compare in», un media usato altrove archiviato e non cancellato, l'SVG nuovo sotto un indirizzo nuovo |
 
@@ -1688,6 +1688,62 @@ Nota: `contenuti-centralizzati` §3.7. Branch `m1/g18-composed-address`.
 creazione; una pagina chiamata `news` in cima è rifiutata con il messaggio sul campo; spostare
 `/training/guide` sotto `/pilots` fa rispondere 301 a `/training/guide/iniziare` verso
 `/pilots/guide/iniziare`; uno staffista TD non vede «in cima al sito».
+
+**Fatta il 13 settembre 2026**, branch `m1/g18-composed-address`. Quello che il disegno non diceva,
+e gli scostamenti detti apertamente:
+
+- ⚠️ **L'indirizzo è una colonna, non un calcolo sui genitori.** Il testo diceva «il percorso intero si
+  calcola risalendo i genitori»: vorrebbe dire una passeggiata sui genitori a ogni lettura pubblica,
+  a ogni riga dell'indice di ricerca e della sitemap, e un'unicità «fra i fratelli» che MariaDB non sa
+  imporre con `parent_id` nullo (due `NULL` non si scontrano in un indice unico). Allora la riga tiene
+  **`parent_path`**, l'indirizzo del genitore, e il database calcola in una **colonna generata
+  `STORED`** `concat_ws('/', parent_path, slug)` l'indirizzo intero, con l'indice unico
+  `(kind, indirizzo, is_template)` al posto di quello sullo slug. `ContentEntry.Path` è la stessa
+  espressione in C#, per il codice. Una notizia, un documento, una pagina in cima hanno `parent_path`
+  nullo e l'indirizzo è lo slug: le righe scritte da seeder e test senza sapere niente di indirizzi
+  restano giuste da sole. Migrazione `AddPageAddress`, additiva (un indice cambiato, nessuna colonna
+  tolta); lo script SQL generato è stato letto, non eseguito in locale.
+- **Un solo controllo, `ContentAddresses`**: libero, non riservato, al massimo tre livelli contando le
+  pagine sotto, non sotto sé stessa, la cima solo con `Content.Approve`; e se una pagina pubblicata si
+  sposta, le pagine sotto si spostano con lei e gli indirizzi vecchi delle pubblicate finiscono in
+  `previous_paths_json`. Lo chiamano il motore CRUD, «nuovo da template» e il controllo del form.
+- **Il motore CRUD ha un'estensione in più, `BeforeSave`** (caso b): la sola cosa di una scrittura
+  che guarda altre righe, dopo l'applicazione del payload e i permessi, prima del salvataggio, nella
+  stessa unità di lavoro, con i rifiuti restituiti come quelli di un validatore.
+- **`Content.Approve` nasce qui e non in G19**: la cima del sito lo chiede già. Nessun livello di
+  dipartimento lo tiene; Director e Web lo hanno perché hanno tutto il catalogo.
+- ⚠️ **Il «301» è un reindirizzamento del router, non una risposta HTTP.** La SPA chiede
+  `GET /api/content/public/page?path=…`, che risponde con la pagina o con `movedTo`, e il loader va
+  al nuovo indirizzo sostituendo la voce della cronologia. Un 301 vero vorrebbe il server che
+  risponde sugli indirizzi HTML, cioè una forma di prerender che il piano esclude (§16.11); il
+  visitatore arriva comunque dove deve.
+- **Tre indirizzi scritti a mano, contati**: la lettura per indirizzo (`/public/page`), il controllo
+  dell'indirizzo (`/address`) e l'albero delle pagine (`/pages`). L'albero esiste perché un
+  coordinator del TD mette una pagina sotto `/training`, che è del WD e che la lista dei contenuti
+  non gli mostra; condividere le righe avrebbe dato a ogni dipartimento le bozze degli altri, mentre
+  qui passano solo indirizzo e titolo.
+- **La vecchia lettura `/public/{kind}/{slug}` resta** per notizie e documenti; per una pagina
+  risponde la prima con quello slug, e il sito non la usa più.
+- **Le parole riservate** stanno in `ContentAddresses.ReservedSegments`; `web/src/routes/-reserved.test.ts`
+  le confronta con le rotte di `_public`, `_member`, `_staff` e con `BACKEND_PATHS`.
+- **Il form**: «Sotto la pagina» è una select dell'albero, obbligatoria per chi non ha
+  `Content.Approve` (una pagina già in cima ci resta senza chiedere); sotto i campi l'indirizzo che
+  compongono e il suo stato. L'anteprima compare quando il form è intero, cioè dopo aver scelto la
+  pagina: il form riferisce i valori solo quando sono validi. Il selettore di «nuovo da template»
+  chiede anche lui dove va la pagina.
+- ⚠️ **Scostamento sul punto 5**: lo slug di notizie e documenti **resta modificabile** (proposto dal
+  titolo come prima); in più mostrano l'anteprima `/news/…`. Nascondere il campo toglieva a chi
+  scrive l'unico modo di correggere un indirizzo proposto male, e il punto non era nei criteri.
+- **Spostare una pagina non aggiorna le voci di menu**: quella che portava al vecchio indirizzo ci
+  arriva col reindirizzamento. Aggiornarle vorrebbe `Menu.Edit` a chi sposta; ci pensa G19, dove il
+  menu passa da WD e HQ.
+- **I test d'integrazione** che scrivono pagine da coordinator le mettono sotto uno «scaffale»
+  (`TestShelf`), seminato senza nessuno autenticato come fa l'installazione; `PageAddressTests` prova
+  i criteri; tre smoke (`e2e/address.spec.ts`) provano la rotta a tre livelli, il reindirizzamento e
+  l'editor.
+- **Verificato in locale**: unit .NET (309), Vitest (386), smoke (73), lint, typecheck, formato,
+  i18n; `has-pending-model-changes` dopo la migrazione. **Non in locale**: integrazione e giro completo
+  (Docker spento), che esegue la CI.
 
 #### G19 — L'approvazione delle pagine
 
