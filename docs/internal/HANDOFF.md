@@ -10,7 +10,7 @@
 > 1. **Carmine vuole fermarsi prima dei moduli**: ha cose da dire, discusse con lo staff di IVAO,
 >    che possono cambiare il piano di Events (e oltre). **Non si apre `05-design-m2.md` né si scrive
 >    codice di un modulo prima di averlo ascoltato.** Chiedere a lui.
-> 2. **D3 (`/me` e `/staff`) è fatta**, branch `m2/d3-personal-dashboards`, PR da mergiare (Carmine
+> 2. **D3 (`/me` e `/staff`) è fatta**, branch `m2/d3-personal-dashboards`, PR #77 da mergiare (Carmine
 >    mergia le sue PR). Il dettaglio e gli scostamenti dalla nota sono in `06-piano-implementazione-m2.md`,
 >    sezione «D3»: il template nuovo `personal-dashboard`, `myDepartments` come booleano del calendario,
 >    «Modifica» che porta alla riga che si legge e non alla prima della lista.
