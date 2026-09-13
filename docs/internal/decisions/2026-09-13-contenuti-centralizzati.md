@@ -45,8 +45,9 @@
 - **Alla creazione** il dipartimento è una select con i soli dipartimenti in cui si ha il permesso di
   scrittura; se è uno solo è già scelto e non si mostra.
 - **Stessa estensione, stesso giorno, per `/staff/links` e `/staff/media`.** Le rotte
-  `/staff/{dept}/content|news|documents|templates|links|media` diventano redirect alla schermata
-  filtrata e poi spariscono.
+  `/staff/{dept}/content|news|documents|templates|links|media` **si tolgono e basta**: il sito non
+  è online e non lo sarà per almeno due settimane (Carmine, 13 settembre), quindi non c'è un
+  segnalibro da salvare.
 - **Chi vede tutto**: Director e Web (coordinator e assistant: `ReachesEveryDepartment`), il
   superadmin, e **chi riceve un grant** sul permesso con dipartimento `null` («ogni dipartimento»),
   che `hub_user_grants` sa già esprimere. ⚠️ Da verificare nella fase: che un grant `null` allarghi
@@ -57,8 +58,19 @@
 
 - **Un terzo stato, `Ready`**, additivo in `PublishStatus`.
 - **Segnare «pronta» fotografa una versione candidata** in `cms_content_versions`; chi approva
-  pubblica **esattamente quella**, così non si approva una pagina e ne va online un'altra. Se l'autore
-  modifica dopo averla segnata pronta, torna in bozza e la candidata decade.
+  pubblica **esattamente quella**, così non si approva una pagina e ne va online un'altra.
+- **Una pagina pronta è in sola lettura** (seconda passata, 13 settembre). Per cambiarla l'autore
+  preme **«ritira dalla revisione»**: torna in bozza e la candidata decade. Non basta modificarla,
+  perché l'editor salva da solo (G15) e un tasto per sbaglio la toglierebbe dalla coda senza che
+  nessuno se ne accorga.
+- **Chi approva vede che cosa è cambiato**: un riepilogo per sezione fra la candidata e la versione
+  online («cambiate: Hero, Contatti; aggiunta: FAQ; tolta: Orari»), per `key` di sezione, che è
+  stabile. È un confronto di due `body_json` sull'envelope delle sezioni, senza guardare le `props`
+  se non per dire «cambiata». In più una **coda «da approvare»** con il conteggio nella dashboard
+  dello staff di chi ha `Content.Approve`, e **chi ha approvato** salvato sulla versione
+  (`approved_by`, `approved_at` in `cms_content_versions`).
+- **Togliere una pagina dal sito non si approva**: un dipartimento deve poter ritirare subito una
+  pagina sbagliata. Mettere online passa da WD e HQ, togliere no.
 - **Chi approva può rimandare indietro** con una nota. Tutti e due i passaggi — «c'è una pagina da
   approvare», «la tua pagina è stata rimandata / pubblicata» — sono intenti del servizio notifiche del
   nucleo.
@@ -88,8 +100,16 @@
   dello stesso dipartimento e un documento può comparire in tutte e due. Si scarta una tabella di
   collocazioni documento↔(pagina, sezione): per sapere quali pagine hanno una sezione documenti il
   server dovrebbe leggere le `props` dei blocchi, che per §16.5 non legge mai.
-- **Nell'editor del documento** si mostra, in sola lettura, «compare in: Training › Guide», calcolato
-  dalle raccolte scelte.
+- **Nell'editor del documento** si mostra, in sola lettura, «compare in: Training › Guide». Per
+  saperlo bisogna sapere quali pagine pubblicate elencano quale raccolta, e il server non legge le
+  `props` delle pagine. Decisione della seconda passata (13 settembre): **un indice derivato**
+  (pagina ↔ raccolta), riempito **alla pubblicazione** dal provider del blocco `documentList` /
+  `newsList` — che le sue `props` le legge già per rispondere — nella stessa transazione, come
+  l'indice di ricerca. Nessuno lo scrive a mano: non è la tabella di collocazioni scartata sopra, è
+  una proiezione. Serve anche prima di rinominare o togliere una raccolta: dice quali pagine
+  resterebbero con una sezione vuota.
+- **Lo stesso indice conta i media usati** (§3.4): alla pubblicazione si registra quali media una
+  versione mostra.
 - **Un documento aggiunto a una pagina già approvata non ripassa dall'approvazione**: si approva la
   pagina, non ciò che la pagina elenca.
 
@@ -101,6 +121,19 @@
   «dipartimento» e le azioni di modifica solo sulle righe proprie.
 - Solo i media **pubblici** (quelli che una pagina pubblicata può mostrare) entrano nel picker di un
   altro dipartimento; un media con visibilità `department` resta del suo dipartimento.
+- **Un media usato altrove non si cancella: si archivia** (seconda passata). Sparisce dal picker e
+  continua a servire chi lo usa già; l'indice derivato di §3.3 dice dove è usato. Senza questo, il
+  WD che cancella il logo romperebbe la pagina TD senza passare da nessuna approvazione.
+- **Un media e un link si aggiornano sul posto** (chiesto da Carmine): lo stesso logo, con l'SVG
+  nuovo, resta **la stessa riga** e ogni pagina che lo usa mostra il file nuovo; lo stesso per
+  l'indirizzo di un link. Due vincoli che il codice di oggi rende non ovvi, da rispettare nella fase:
+  - **la cache**: `/media/{id}/{name}` pubblico esce con `max-age=31536000, immutable`, quindi un
+    file sostituito sotto lo stesso indirizzo resterebbe vecchio per un anno nei browser e in
+    Cloudflare. L'indirizzo deve cambiare con il file (per esempio una versione o l'impronta corta
+    nel percorso), e le pagine devono costruirlo dall'**id** al momento della resa, non averlo
+    salvato dentro le `props` — da verificare;
+  - **la deduplica** (piano 0.66): due media identici condividono un file su disco, quindi sostituire
+    il file di uno **scrive un file nuovo** e non sovrascrive quello condiviso.
 
 ### 3.5 I template nella stessa schermata
 
@@ -109,6 +142,16 @@
   HQ** ovunque, e i **grant** — e **non** passano dall'approvazione. La lettura resta comune a tutto
   lo staff, come deciso il 5 settembre. Nessun cambio alla matrice: gli advisor già non hanno
   `Content.ManageTemplates`.
+
+### 3.6 Il menu passa da WD e HQ
+
+- Una pagina approvata senza una voce di menu non la trova nessuno, e il menu è la struttura del sito
+  quanto le pagine: **anche il menu passa da WD e HQ** (Carmine, 13 settembre). `Menu.Edit` esce
+  dalla matrice dei livelli di dipartimento e resta a Director, Web e ai grant.
+- **Proposta, da decidere con la forma dell'indirizzo** (vedi la discussione aperta sull'indirizzo
+  della pagina): il dipartimento **propone** la posizione nel menu insieme alla pagina, quando la
+  segna pronta, e chi approva la conferma insieme alla pagina. Così un dipartimento non ha bisogno
+  del permesso sul menu per portare una pagina nel sito.
 
 ## 4. Il dubbio di Carmine: un documento AOD in una pagina TD
 
