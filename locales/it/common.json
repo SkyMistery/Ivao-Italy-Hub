@@ -247,6 +247,7 @@
     "title": "Libreria media",
     "description": "File caricati una volta e usati ovunque",
     "upload": "Carica un file",
+    "alreadyHere": "Questo file era già in libreria: eccolo, caricato una volta sola.",
     "usedBy_one": "Usato da una pagina",
     "usedBy_other": "Usato da {{count}} pagine",
     "delete": {

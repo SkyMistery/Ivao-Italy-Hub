@@ -120,6 +120,42 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TheSameBytesUploadedTwiceAreOneFileInADepartmentAndTwoAcrossDepartments()
+    {
+        // Carmine, 11 September 2026: "what happens if I upload two identical images?" Two rows
+        // and two files, was the answer; decided on the 12th (decision note): the same bytes in the
+        // same library answer the row that exists, 200 and not 201, and the second file goes.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", token);
+        await SeedUserAsync(EventsCoordinatorVid, "IT-EC", token);
+
+        using var web = await SignedInAsync(WebCoordinatorVid, token);
+        using var events = await SignedInAsync(EventsCoordinatorVid, token);
+
+        var bytes = Png(30, 30, padding: 7);
+
+        using var first = await UploadAsync(web, Department.WD, bytes, "logo.png", "image/png", token);
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        var firstId = (await first.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+
+        // The name the browser gave it is decoration: the bytes are what is compared.
+        using var again = await UploadAsync(web, Department.WD, bytes, "logo-copy.png", "image/png", token);
+        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
+        Assert.Equal(firstId, (await again.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64());
+        Assert.Single(FilesOnDisk());
+
+        // Another department is another library: its own row, its own file, its own alt text.
+        using var elsewhere = await UploadAsync(events, Department.ED, bytes, "logo.png", "image/png", token);
+        Assert.Equal(HttpStatusCode.Created, elsewhere.StatusCode);
+        Assert.Equal(2, FilesOnDisk().Length);
+
+        // A different picture is a different file, however it is called.
+        using var other = await UploadAsync(web, Department.WD, Png(31, 30, padding: 7), "logo.png", "image/png", token);
+        Assert.Equal(HttpStatusCode.Created, other.StatusCode);
+        Assert.Equal(3, FilesOnDisk().Length);
+    }
+
+    [Fact]
     public async Task ANameThatIsAPathDoesNotBecomeOne()
     {
         var token = TestContext.Current.CancellationToken;
@@ -653,9 +689,17 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>A PNG of the given size, optionally padded so that it is over a size limit.</summary>
+    /// <summary>
+    /// A PNG header the parser reads, followed by sixteen random bytes: two calls never make the
+    /// same file. ⚠️ Since the same bytes in the same library answer the row that exists (decision
+    /// note of 12 September 2026), and every test of this class writes into one database while
+    /// each keeps a directory of its own, a fixed 10×10 picture uploaded by two tests would be one
+    /// row whose file the first test has already deleted. A test that wants the same file twice
+    /// keeps the array.
+    /// </summary>
     private static byte[] Png(int width, int height, int padding = 0)
     {
-        var bytes = new byte[33 + padding];
+        var bytes = new byte[33 + 16 + padding];
         ReadOnlySpan<byte> signature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         signature.CopyTo(bytes);
 
@@ -663,6 +707,7 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Encoding.ASCII.GetBytes("IHDR").CopyTo(bytes, 12);
         BinaryPrimitives.WriteInt32BigEndian(bytes.AsSpan(16), width);
         BinaryPrimitives.WriteInt32BigEndian(bytes.AsSpan(20), height);
+        Guid.NewGuid().ToByteArray().CopyTo(bytes, 33);
 
         return bytes;
     }

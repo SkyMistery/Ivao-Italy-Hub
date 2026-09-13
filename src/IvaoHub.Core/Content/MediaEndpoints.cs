@@ -164,11 +164,35 @@ public static class MediaEndpoints
 
         // The bytes first and the row second: a row whose file is missing is a broken page, while
         // a file no row names is a few bytes nobody reads.
-        entity.StoredName = await storage.SaveAsync(
+        var stored = await storage.SaveAsync(
             new HeadThenRestStream(head.AsMemory(0, read), content),
             format,
             clock.UtcNow,
             http.RequestAborted);
+
+        // The same bytes, already in this department's library and still there: the file just
+        // written goes, and the answer is the row that exists — 200 and not 201, which is how the
+        // client tells the two apart (decision note of 12 September 2026). Per department and never
+        // across: another department's file has its own visibility and its own alternative text.
+        // Read past the query filter on purpose, so that a row this member happens not to see is
+        // still not written twice.
+        var existing = await CrudSource.BackOffice<MediaAsset>(database)
+            .AsNoTracking()
+            .Where(media => media.OwnerDepartment == ownerDepartment
+                && media.Sha256 == stored.Sha256
+                && media.DeletedAt == null
+                && media.HasFile)
+            .OrderBy(media => media.Id)
+            .FirstOrDefaultAsync(http.RequestAborted);
+
+        if (existing is not null)
+        {
+            storage.Delete(stored.StoredName);
+            return Results.Ok(new MediaMapper().ToDetail(existing));
+        }
+
+        entity.StoredName = stored.StoredName;
+        entity.Sha256 = stored.Sha256;
 
         database.Media.Add(entity);
         await database.SaveChangesAsync(http.RequestAborted);

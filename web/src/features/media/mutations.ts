@@ -60,23 +60,33 @@ export interface MediaUpload {
  * browser write the boundary itself. Setting `Content-Type` by hand here is the classic way of
  * producing a multipart request nobody can parse.
  */
+/**
+ * What an upload answers: the row, and whether it was already there. The server says so with the
+ * status — 201 for a file it wrote, 200 for the same bytes it already had in this department's
+ * library (decision note of 12 September 2026) — and the row is the same shape either way.
+ */
+export interface MediaUploaded {
+  media: MediaDetailDto;
+  alreadyHere: boolean;
+}
+
 export function useUploadMedia() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ file, ownerDepartment }: MediaUpload): Promise<MediaDetailDto> => {
+    mutationFn: async ({ file, ownerDepartment }: MediaUpload): Promise<MediaUploaded> => {
       const body = new FormData();
       body.set('file', file);
       body.set('ownerDepartment', ownerDepartment);
 
-      return unwrap(
-        await api.POST('/api/media', {
-          // The contract types a multipart part as a string, which a `File` is not; the serializer
-          // below is what actually leaves the browser, and it is handed the values unchanged.
-          body: body as unknown as { file: string; ownerDepartment: Department },
-          bodySerializer: () => body,
-        }),
-      );
+      const result = await api.POST('/api/media', {
+        // The contract types a multipart part as a string, which a `File` is not; the serializer
+        // below is what actually leaves the browser, and it is handed the values unchanged.
+        body: body as unknown as { file: string; ownerDepartment: Department },
+        bodySerializer: () => body,
+      });
+
+      return { media: unwrap(result), alreadyHere: result.response.status === 200 };
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: mediaKey });

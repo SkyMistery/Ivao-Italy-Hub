@@ -1,9 +1,21 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.65 — 12 settembre 2026 (**G14 costruita in una notte**, prima passata completa sul branch `m1/g14-operational-document`: sei colonne, l'elenco dell'airspace, il form da elenchi, la schermata pubblica con striscia/avviso/piè di pagina/stampa, i due blocchi ATC, il job di revisione; la finestra di pubblicazione con changelog e AIRAC)
+**Versione documento:** 0.66 — 12 settembre 2026 (**due immagini identiche sono un file**: l'impronta SHA-256 sulla riga della libreria, calcolata mentre i byte vanno su disco; G14 costruita in una notte sul branch `m1/g14-operational-document`)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.66** (12 set 2026): **due immagini identiche caricate nella stessa libreria sono un
+file solo** (`decisions/2026-09-12-due-immagini-identiche.md`, decisa da Carmine: «procediamo con le
+immagini identiche»). Era **(c)**: nessuna colonna diceva che cosa c'è dentro un file. Ora
+`cms_media.sha256` — calcolata da `MediaStorage.SaveAsync` nello stesso passaggio della copia —
+con un indice per dipartimento; un caricamento che trova nel **suo** dipartimento una riga viva
+con la stessa impronta risponde **quella riga, `200` invece di `201`**, e il file appena scritto
+viene tolto. La libreria lo dice con un avviso; il selettore dell'editor sceglie il file e tace.
+Mai attraverso i dipartimenti (visibilità e `alt` sono loro), mai due righe su un file solo (la
+cancellazione conta chi lo nomina). Le righe di prima non hanno impronta e non la ricevono.
+Migrazione additiva `AddMediaSha256`; nessun componente e nessun endpoint nuovo. Branch
+`m1/media-dedupe`, sopra G14 per non far litigare due snapshot EF.
 
 **Changelog 0.65** (12 set 2026, notte): **G14 costruita**, i cinque passi dell'ordine di lavoro in
 cinque commit sullo stesso branch, tutto come la sezione G14 di `04-piano-implementazione-m1.md`

@@ -159,7 +159,11 @@ export function ContentFormScreen({
         // The library of this department: a row picks its pictures out of its own files, and may
         // put a new one there from the picker.
         mediaLibrary={mediaPickerQuery(department)}
-        uploadMedia={async (file) => (await upload.mutateAsync({ file, ownerDepartment: department })).id}
+        // A file already in the library is the file chosen, and the picker says nothing about it:
+        // that is exactly what whoever uploaded it was after.
+        uploadMedia={async (file) =>
+          (await upload.mutateAsync({ file, ownerDepartment: department })).media.id
+        }
         // Asked of the template's department and not of this page's: a page of one department can
         // be made from the template of another (design M1 §9.4).
         canManageTemplates={(owner) => holdsPermission(bootstrap, MANAGE_TEMPLATES, owner)}

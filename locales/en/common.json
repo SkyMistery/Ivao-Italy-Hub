@@ -247,6 +247,7 @@
     "title": "Media library",
     "description": "Files uploaded once and used anywhere",
     "upload": "Upload a file",
+    "alreadyHere": "This file was already in the library: here it is, uploaded once.",
     "usedBy_one": "Used by one page",
     "usedBy_other": "Used by {{count}} pages",
     "delete": {
