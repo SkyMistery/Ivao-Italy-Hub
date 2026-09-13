@@ -103,6 +103,14 @@ public sealed record DivisionOptions
     public string[] ContentApproval { get; init; } = [];
 
     /// <summary>
+    /// Grants to positions the division starts with (M2, note
+    /// 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2): "the coordinator and the assistant of
+    /// ATC manage the ATC positions of events". Read <b>once</b>, at the first start that finds them;
+    /// after that <c>hub_user_grants</c> is the truth and they are changed from the permissions screen.
+    /// </summary>
+    public PositionGrantSeed[] PositionGrants { get; init; } = [];
+
+    /// <summary>
     /// Bootstrap only: read once, when no super administrator exists yet. After that
     /// <c>hub_users.is_superadmin</c> is the truth and this list is ignored (plan section 4.1).
     /// </summary>
@@ -114,4 +122,23 @@ public sealed record DivisionOptions
     // There is deliberately no ResolveName here. Falling back from one language to another is a
     // rule the hub already has, in Localized<T>.Resolve, and a second copy of it on this type had
     // no caller and would have been the copy that drifted.
+}
+
+/// <summary>One grant to a position, as <c>division.json</c> writes it.</summary>
+public sealed class PositionGrantSeed
+{
+    /// <summary>The department of the position.</summary>
+    public Department Department { get; init; }
+
+    /// <summary>The levels of it that hold the grant.</summary>
+    public StaffLevel[] Levels { get; init; } = [];
+
+    /// <summary>The permission, for example <c>Events.ManageAtcPositions</c>.</summary>
+    public string Permission { get; init; } = string.Empty;
+
+    /// <summary>The department the permission is held on; absent means every department.</summary>
+    public Department? Scope { get; init; }
+
+    /// <summary>True takes the permission away from the position instead of giving it.</summary>
+    public bool Deny { get; init; }
 }

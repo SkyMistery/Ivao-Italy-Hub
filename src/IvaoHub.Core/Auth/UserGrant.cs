@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using IvaoHub.Core.Division;
 
 namespace IvaoHub.Core.Auth;
@@ -16,7 +18,9 @@ public enum GrantKind
 }
 
 /// <summary>
-/// A permission given to (or taken from) a single VID on top of what the staff positions derive.
+/// A permission given to (or taken from) a single VID — or, since M2, to a <b>position</b>: a
+/// department and one or more levels (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2) —
+/// on top of what the staff positions derive. A grant has exactly one of the two subjects.
 /// Effective permissions are derived, union grants, minus denies (design M0 section 3.7).
 /// Who granted it and when are the audit columns: <c>created_by</c> and <c>created_at</c>, not a
 /// second pair of columns saying the same thing.
@@ -26,7 +30,34 @@ public sealed class UserGrant : IAuditable, IAffectsUserSession
 {
     public long Id { get; set; }
 
-    public int Vid { get; set; }
+    /// <summary>The member the grant is for, when its subject is a person.</summary>
+    public int? Vid { get; set; }
+
+    /// <summary>
+    /// The department of the position the grant is for, when its subject is a position: whoever holds
+    /// a position of this department at one of <see cref="PositionLevels"/> holds the grant, and
+    /// stops holding it with the position (decided with Carmine, 13 September 2026).
+    /// </summary>
+    public Department? PositionDepartment { get; set; }
+
+    /// <summary>The levels of that position, as a JSON array of names. Null for a grant to a person.</summary>
+    public string? PositionLevelsJson { get; set; }
+
+    /// <summary><see cref="PositionLevelsJson"/>, read and written as the list it is.</summary>
+    public IReadOnlyList<StaffLevel> PositionLevels
+    {
+        get => PositionLevelsJson is null ? [] : JsonSerializer.Deserialize<StaffLevel[]>(PositionLevelsJson, LevelsJson) ?? [];
+        set => PositionLevelsJson = value is null || value.Count == 0 ? null : JsonSerializer.Serialize(value.Distinct().Order().ToArray(), LevelsJson);
+    }
+
+    /// <summary>Whether a member holding these positions is who this grant is for, when it is for a position.</summary>
+    public bool IsHeldThrough(IEnumerable<StaffPosition> positions)
+    {
+        ArgumentNullException.ThrowIfNull(positions);
+
+        return PositionDepartment is { } department
+            && positions.Any(position => position.Department == department && PositionLevels.Contains(position.Level));
+    }
 
     public GrantKind Kind { get; set; }
 
@@ -62,5 +93,13 @@ public sealed class UserGrant : IAuditable, IAffectsUserSession
     /// at once rather than at their next login. The interceptor does it, for whoever writes the row
     /// (design M0 section 3.3).
     /// </summary>
-    int IAffectsUserSession.AffectedVid => Vid;
+    int IAffectsUserSession.AffectedVid => Vid ?? 0;
+
+    /// <summary>A grant to a position decides the session of everybody who holds it now.</summary>
+    StaffPositionSubject? IAffectsUserSession.AffectedPosition =>
+        PositionDepartment is { } department && PositionLevels.Count > 0
+            ? new StaffPositionSubject(department, PositionLevels)
+            : null;
+
+    private static readonly JsonSerializerOptions LevelsJson = new() { Converters = { new JsonStringEnumConverter() } };
 }

@@ -62,8 +62,15 @@ internal sealed class UserGrantConfiguration : IEntityTypeConfiguration<UserGran
         builder.HasOne(grant => grant.User)
             .WithMany()
             .HasForeignKey(grant => grant.Vid)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasIndex(grant => new { grant.Vid, grant.Effect });
+
+        // A grant to a position (M2): no foreign key, because a position is not a row — it is
+        // whoever IVAO lists at that department and level today.
+        builder.Ignore(grant => grant.PositionLevels);
+        builder.Property(grant => grant.PositionLevelsJson).HasColumnType("json");
+        builder.HasIndex(grant => grant.PositionDepartment);
     }
 }
 

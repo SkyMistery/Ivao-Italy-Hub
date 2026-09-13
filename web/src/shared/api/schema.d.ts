@@ -1462,7 +1462,9 @@ export interface components {
             /** Format: int64 */
             id: number;
             /** Format: int32 */
-            vid: number;
+            vid: null | number;
+            positionDepartment: null | components["schemas"]["Department"];
+            positionLevels: components["schemas"]["StaffLevel"][];
             kind: components["schemas"]["GrantKind"];
             value: string;
             department: null | components["schemas"]["Department"];
@@ -1502,7 +1504,9 @@ export interface components {
             /** Format: int64 */
             id: number;
             /** Format: int32 */
-            vid: number;
+            vid: null | number;
+            positionDepartment: null | components["schemas"]["Department"];
+            positionLevels: components["schemas"]["StaffLevel"][];
             value: string;
             department: null | components["schemas"]["Department"];
             effect: components["schemas"]["GrantEffect"];
@@ -1523,7 +1527,7 @@ export interface components {
          */
         GrantWriteDto: {
             /** Format: int32 */
-            vid: number;
+            vid: null | number;
             kind: components["schemas"]["GrantKind"];
             value: string;
             department: null | components["schemas"]["Department"];
@@ -1533,6 +1537,8 @@ export interface components {
             reason: null | string;
             /** Format: date-time */
             rowVersion: string;
+            positionDepartment?: null | components["schemas"]["Department"];
+            positionLevels?: null | components["schemas"]["StaffLevel"][];
         };
         HttpValidationProblemDetails: {
             type?: null | string;
@@ -2176,6 +2182,12 @@ export interface components {
             /** @description What happened to it. */
             change: components["schemas"]["SectionChange"];
         };
+        /**
+         * @description Seniority of a staff position inside its department. The vocabulary lives here because the
+         *     column needs it; `StaffRoleMap`, which produces it from a raw IVAO position, arrives in F2.
+         * @enum {unknown}
+         */
+        StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
         /** @description What was deployed. Anonymous, and never cached, so a report can quote a build. */
         VersionResponse: {
             version: string;

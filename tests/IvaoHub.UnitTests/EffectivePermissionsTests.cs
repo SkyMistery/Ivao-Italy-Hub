@@ -267,4 +267,57 @@ public sealed class EffectivePermissionsTests
         Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.AOD));
         Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.AOD));
     }
+
+    // ---- grants to a position (M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti 3.2) ----
+
+    private static StaffPosition Atc(StaffLevel level) =>
+        new("IT-AOC", Department.AOD, level, null, StaffRole.AtcOps);
+
+    private static UserGrant PositionGrant(
+        string value,
+        Department? scope,
+        GrantEffect effect = GrantEffect.Grant,
+        params StaffLevel[] levels) =>
+        new()
+        {
+            Id = 40,
+            PositionDepartment = Department.AOD,
+            PositionLevels = levels,
+            Kind = GrantKind.Permission,
+            Value = value,
+            Department = scope,
+            Effect = effect,
+        };
+
+    [Fact]
+    public void AGrantToAPositionCountsForWhoeverHoldsItAtOneOfItsLevels()
+    {
+        var grant = PositionGrant(CorePermissions.LinksEdit, Department.TD, GrantEffect.Grant, StaffLevel.Coordinator, StaffLevel.Assistant);
+
+        Assert.True(Holds(Calculate([Atc(StaffLevel.Coordinator)], [grant]), CorePermissions.LinksEdit, Department.TD));
+        Assert.True(Holds(Calculate([Atc(StaffLevel.Assistant)], [grant]), CorePermissions.LinksEdit, Department.TD));
+
+        // Not another level of the same department, and not a coordinator of another department.
+        Assert.False(Holds(Calculate([Atc(StaffLevel.Advisor)], [grant]), CorePermissions.LinksEdit, Department.TD));
+        Assert.False(Holds(Calculate([Events()], [grant]), CorePermissions.LinksEdit, Department.TD));
+    }
+
+    [Fact]
+    public void AGrantToAPositionCanNeverConferAGlobalPermission()
+    {
+        var grant = PositionGrant(CorePermissions.PermissionsManage, scope: null, GrantEffect.Grant, StaffLevel.Coordinator);
+
+        Assert.False(Holds(Calculate([Atc(StaffLevel.Coordinator)], [grant]), CorePermissions.PermissionsManage, null));
+    }
+
+    [Fact]
+    public void ADenyToAPositionBitesWhatThePositionDerives()
+    {
+        var deny = PositionGrant(CorePermissions.ContentPublish, Department.AOD, GrantEffect.Deny, StaffLevel.Coordinator);
+
+        var permissions = Calculate([Atc(StaffLevel.Coordinator)], [deny]);
+
+        Assert.False(Holds(permissions, CorePermissions.ContentPublish, Department.AOD));
+        Assert.True(Holds(permissions, CorePermissions.ContentEdit, Department.AOD));
+    }
 }

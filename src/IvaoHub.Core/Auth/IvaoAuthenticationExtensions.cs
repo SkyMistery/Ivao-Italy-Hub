@@ -41,6 +41,7 @@ public static class IvaoAuthenticationExtensions
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
         services.AddScoped<UserSyncService>();
         services.AddScoped<SuperadminService>();
+        services.AddScoped<PositionGrantSeeder>();
         services.AddScoped<IvaoUserTokenStore>();
         // Scoped, because it reads through the request context; the cache behind it is a singleton.
         services.AddScoped<ISecurityStampCache, SecurityStampCache>();

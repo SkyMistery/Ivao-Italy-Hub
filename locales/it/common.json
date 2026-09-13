@@ -1344,10 +1344,10 @@
   },
   "grants": {
     "title": "Permessi",
-    "description": "Permessi dati a un singolo membro per nome, in aggiunta a quelli che le sue posizioni di staff gli danno già.",
+    "description": "Permessi dati a un membro per nome, o a una posizione — un dipartimento a certi livelli — oltre a quelli che danno già le posizioni dello staff.",
     "create": "Nuovo permesso",
     "edit": "Modifica permesso",
-    "formHint": "Un permesso senza dipartimento vale su tutti. Un divieto vince sempre su una concessione.",
+    "formHint": "Scrivi un VID per un membro, oppure un dipartimento e i suoi livelli per chi ha quella posizione: mai tutti e due. Un permesso senza dipartimento vale su tutti. Un divieto vince sempre su un permesso.",
     "delete": {
       "title": "Eliminare questo permesso?",
       "description": "Il membro lo perde alla richiesta successiva, e non si può annullare."
@@ -1361,7 +1361,9 @@
       "expiresAt": "Scadenza",
       "suspendedAt": "Sospeso",
       "reason": "Motivo",
-      "updatedAt": "Ultima modifica"
+      "updatedAt": "Ultima modifica",
+      "positionDepartment": "Posizione: dipartimento",
+      "positionLevels": "Posizione: livelli"
     },
     "options": {
       "effect": {
@@ -1370,10 +1372,21 @@
       },
       "department": {
         "none": "Tutti i dipartimenti"
+      },
+      "positionLevels": {
+        "Coordinator": "Coordinator",
+        "Assistant": "Assistant coordinator",
+        "Advisor": "Advisor",
+        "Member": "Membro"
+      },
+      "positionDepartment": {
+        "none": "Nessuna posizione — un membro, per VID"
       }
     },
     "hints": {
-      "expiresAt": "Vuoto significa che il permesso non scade."
+      "expiresAt": "Vuoto significa che il permesso non scade.",
+      "vid": "Per un solo membro. Lascialo vuoto per dare il permesso a una posizione.",
+      "positionLevels": "Chi ha una posizione di questo dipartimento a uno di questi livelli ha il permesso, e lo perde con la posizione."
     }
   },
   "superadmins": {

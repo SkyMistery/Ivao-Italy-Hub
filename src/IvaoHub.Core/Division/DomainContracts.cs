@@ -57,7 +57,17 @@ public interface IAffectsUserSession
 {
     /// <summary>The VID whose session this row decides. Zero means nobody, and nothing happens.</summary>
     int AffectedVid { get; }
+
+    /// <summary>
+    /// The position whose holders' sessions this row decides, when it decides a position rather than a
+    /// person: a grant to a department and its levels (M2). The interceptor looks up who holds it at
+    /// the moment of the write.
+    /// </summary>
+    StaffPositionSubject? AffectedPosition => null;
 }
+
+/// <summary>A position as a subject: a department and the levels of it that count.</summary>
+public sealed record StaffPositionSubject(Department Department, IReadOnlyList<StaffLevel> Levels);
 
 /// <summary>
 /// A row that belongs to a FIR. Used when the division sets <c>firStaffScope = own</c>; no entity

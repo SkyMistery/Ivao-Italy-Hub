@@ -373,13 +373,17 @@ public sealed class ContentReviewService(
             .Select(position => new { position.Vid, position.Position })
             .ToListAsync(cancellationToken);
 
-        var byRole = positions
-            .Where(position => StaffRoleMap.Parse(position.Position, settings.Code, firs) is { } parsed
-                && RolePermissionMatrix.ReachesEveryDepartment(parsed))
+        var parsed = positions
+            .Select(position => (position.Vid, Parsed: StaffRoleMap.Parse(position.Position, settings.Code, firs)))
+            .Where(position => position.Parsed is not null)
+            .ToList();
+
+        var byRole = parsed
+            .Where(position => RolePermissionMatrix.ReachesEveryDepartment(position.Parsed!))
             .Select(position => position.Vid);
 
         var now = clock.UtcNow;
-        var byGrant = await database.UserGrants
+        var grants = await database.UserGrants
             .AsNoTracking()
             .Where(grant => grant.Kind == GrantKind.Permission
                 && grant.Value == CorePermissions.ContentApprove
@@ -387,10 +391,15 @@ public sealed class ContentReviewService(
                 && grant.SuspendedAt == null
                 && (grant.ExpiresAt == null || grant.ExpiresAt > now)
                 && (grant.Department == null || grant.Department == department))
-            .Select(grant => grant.Vid)
             .ToListAsync(cancellationToken);
 
-        return [.. byRole.Concat(byGrant).Distinct()];
+        // A grant to a person names them; a grant to a position names whoever holds it (M2).
+        var byGrant = grants.Where(grant => grant.Vid is not null).Select(grant => grant.Vid!.Value);
+        var byPosition = parsed
+            .Where(position => grants.Any(grant => grant.IsHeldThrough([position.Parsed!])))
+            .Select(position => position.Vid);
+
+        return [.. byRole.Concat(byGrant).Concat(byPosition).Distinct()];
     }
 
     private Dictionary<string, string> MailData(ContentEntry content) => new(StringComparer.Ordinal)

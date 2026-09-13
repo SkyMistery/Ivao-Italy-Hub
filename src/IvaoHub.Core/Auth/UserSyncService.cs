@@ -114,12 +114,13 @@ public sealed class UserSyncService(
         await ReplacePositionsAsync(profile.Vid, parsed, cancellationToken);
 
         var grants = await database.UserGrants
-            .Where(grant => grant.Vid == profile.Vid)
+            .Where(grant => grant.Vid == profile.Vid || grant.PositionDepartment != null)
             .ToListAsync(cancellationToken);
 
         // A grant only survives while the person is staff: losing every position suspends them,
-        // it never deletes them, so they come back if the person returns (plan section 6.3).
-        foreach (var grant in grants)
+        // it never deletes them, so they come back if the person returns (plan section 6.3). A grant
+        // to a position has nobody to suspend: it stops counting when nobody holds the position.
+        foreach (var grant in grants.Where(grant => grant.Vid == profile.Vid))
         {
             var shouldBeSuspended = !user.IsStaff;
             if (shouldBeSuspended && grant.SuspendedAt is null)
@@ -171,7 +172,9 @@ public sealed class UserSyncService(
             .OfType<StaffPosition>()
             .ToArray();
 
-        var grants = await database.UserGrants.Where(grant => grant.Vid == vid).ToListAsync(cancellationToken);
+        var grants = await database.UserGrants
+            .Where(grant => grant.Vid == vid || grant.PositionDepartment != null)
+            .ToListAsync(cancellationToken);
 
         return new SignedInUser(
             user,

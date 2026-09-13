@@ -77,7 +77,7 @@ function GrantForm() {
       }
     >
       <SchemaForm
-        schema={grantSchema(bootstrap)}
+        schema={grantSchema(bootstrap, (level) => t(`grants.options.positionLevels.${level}`))}
         division={{
           defaultLocale: bootstrap.division.defaultLocale,
           timezone: bootstrap.division.timezone,

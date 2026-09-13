@@ -234,13 +234,23 @@ public sealed class HubSaveChangesInterceptor(
                 pending.Projections.Add(new PendingProjection(projectable, entry.State == EntityState.Deleted));
             }
 
-            if (entry.Entity is IAffectsUserSession { AffectedVid: > 0 } session && CanReachUsers(context))
+            if (entry.Entity is IAffectsUserSession session && CanReachUsers(context))
             {
-                pending.StaleSessions.Add(session.AffectedVid);
+                CollectStaleSession(pending, session);
+
+                // A row that changed its subject decides the session of whoever it was about before,
+                // too: a grant moved from one member, or one position, to another.
+                if (entry.State == EntityState.Modified && entry.OriginalValues.ToObject() is IAffectsUserSession before)
+                {
+                    CollectStaleSession(pending, before);
+                }
             }
         }
 
-        if (pending.Audits.Count == 0 && pending.Projections.Count == 0 && pending.StaleSessions.Count == 0)
+        if (pending.Audits.Count == 0
+            && pending.Projections.Count == 0
+            && pending.StaleSessions.Count == 0
+            && pending.StalePositions.Count == 0)
         {
             return null;
         }
@@ -382,8 +392,47 @@ public sealed class HubSaveChangesInterceptor(
     /// transaction as the write, so a rollback takes it back with everything else: a stamp that
     /// survived a failed grant would sign every one of that member's devices out for nothing.
     /// </summary>
+    private static void CollectStaleSession(Pending pending, IAffectsUserSession session)
+    {
+        if (session.AffectedVid > 0)
+        {
+            pending.StaleSessions.Add(session.AffectedVid);
+        }
+
+        if (session.AffectedPosition is { } position)
+        {
+            pending.StalePositions.Add(position);
+        }
+    }
+
+    /// <summary>The members who hold, now, a position a written row decides: their VIDs join the rest.</summary>
+    private static void ResolveStalePositions(Pending pending)
+    {
+        foreach (var position in pending.StalePositions)
+        {
+            var levels = position.Levels.Cast<StaffLevel?>().ToArray();
+            pending.StaleSessions.UnionWith(pending.Context.Set<UserStaffPosition>()
+                .Where(held => held.Department == position.Department && levels.Contains(held.Level))
+                .Select(held => held.Vid));
+        }
+    }
+
+    private static async Task ResolveStalePositionsAsync(Pending pending, CancellationToken cancellationToken)
+    {
+        foreach (var position in pending.StalePositions)
+        {
+            var levels = position.Levels.Cast<StaffLevel?>().ToArray();
+            pending.StaleSessions.UnionWith(await pending.Context.Set<UserStaffPosition>()
+                .Where(held => held.Department == position.Department && levels.Contains(held.Level))
+                .Select(held => held.Vid)
+                .ToListAsync(cancellationToken));
+        }
+    }
+
     private static void RefreshStaleSessions(Pending pending)
     {
+        ResolveStalePositions(pending);
+
         foreach (var user in LoadStaleUsers(pending))
         {
             user.SecurityStamp = SuperadminService.NewStamp();
@@ -392,6 +441,8 @@ public sealed class HubSaveChangesInterceptor(
 
     private static async Task RefreshStaleSessionsAsync(Pending pending, CancellationToken cancellationToken)
     {
+        await ResolveStalePositionsAsync(pending, cancellationToken);
+
         if (pending.StaleSessions.Count == 0)
         {
             return;
@@ -587,6 +638,9 @@ public sealed class HubSaveChangesInterceptor(
 
         /// <summary>VIDs whose cookie has to stop being believed once this write is committed.</summary>
         public HashSet<int> StaleSessions { get; } = [];
+
+        /// <summary>Positions whose holders' cookies have to stop being believed, resolved into VIDs after the write.</summary>
+        public HashSet<StaffPositionSubject> StalePositions { get; } = [];
 
         /// <summary>
         /// The second pass has to land in the same transaction as the write. When the caller opened

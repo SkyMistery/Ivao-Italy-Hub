@@ -175,6 +175,10 @@ internal static class HubPipeline
         await scope.ServiceProvider.GetRequiredService<SuperadminService>()
             .BootstrapAsync(app.Lifetime.ApplicationStopping);
 
+        // The grants to positions the division starts with, applied once and then the table's (M2).
+        await scope.ServiceProvider.GetRequiredService<PositionGrantSeeder>()
+            .SeedAsync(app.Lifetime.ApplicationStopping);
+
         // The system templates and the pages built from them, each applied once and never again:
         // a release may add one without undoing what the staff has done to the ones already there
         // (design M0 section 5.6, design M1 section 8.2).

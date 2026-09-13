@@ -1,9 +1,17 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.73 — 13 settembre 2026 (**le fasi G19 e G20 fatte, e le decisioni prese scrivendole**: la pagina in attesa è la candidata di sé stessa, le raccolte lette da tutti, un file sostituito sulla stessa riga con l'impronta nell'indirizzo)
+**Versione documento:** 0.74 — 13 settembre 2026 (**M2 si apre con i prerequisiti**: i grant a una posizione, indicata come dipartimento e livelli; le fasi H1–H3 in `06-piano-implementazione-m2.md`)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.74** (13 set 2026, sera): **M2 si apre con i prerequisiti** della nota
+`moduli-non-subordinati-ai-dipartimenti` (§13), in tre fasi H1–H3 scritte nella parte A di
+`06-piano-implementazione-m2.md`; la parte B (il modulo Events) segue la nota sulle due dashboard e
+`05-design-m2.md`. **Deciso con Carmine**: il soggetto «posizione» di un grant (§6.3) si indica con
+**dipartimento + uno o più livelli** (coordinator, assistant, advisor, membro), non con il codice della
+posizione — regge quando IVAO rinumera le posizioni, e chi lascia il ruolo perde il permesso da solo.
+Il seed è `division.json → positionGrants`, applicato una volta.
 
 **Changelog 0.73** (13 set 2026, sera): **le decisioni prese scrivendo G19 e G20**, dove il testo
 della 0.72 e il codice si sono scostati; i dettagli sono nelle sezioni «Fatta» di
