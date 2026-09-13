@@ -1650,6 +1650,10 @@ disegno non diceva, e due scostamenti da esso detti apertamente:
 - **Verificato**: unit .NET (309), Vitest (385), smoke Playwright in locale (70), lint, typecheck,
   formato, i18n. **Non verificato in locale**: integrazione e giro completo (Docker spento), che
   esegue la CI; e **nessun giro a occhio** contro l'API vera.
+- **In CI, verde al secondo giro.** Il primo ha trovato un difetto vero, solo nel giro contro l'API:
+  i valori di default dei search params dell'editor (`kind`, `template`) venivano scritti
+  nell'indirizzo, e una riga esistente si apriva su `/staff/content/20?kind=Page&template=false`.
+  Ora sono facoltativi e i default li mette chi li legge.
 
 #### G18 — L'indirizzo composto
 
