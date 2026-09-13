@@ -1524,6 +1524,18 @@
       "document.reviewDue": {
         "title": "Documenti da rivedere",
         "description": "Una mail, una volta sola, quando un documento di un dipartimento di cui fai parte supera la data di revisione."
+      },
+      "content.readyForApproval": {
+        "title": "Pagine da approvare",
+        "description": "Una mail quando una pagina di un dipartimento che puoi approvare viene segnata pronta."
+      },
+      "content.approved": {
+        "title": "Le mie pagine approvate",
+        "description": "Una mail quando una pagina che hai segnato pronta va online."
+      },
+      "content.sentBack": {
+        "title": "Le mie pagine rimandate indietro",
+        "description": "Una mail, con la nota, quando una pagina che hai segnato pronta viene rimandata indietro."
       }
     }
   },

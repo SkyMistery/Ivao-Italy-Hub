@@ -62,6 +62,13 @@ public enum PublishStatus
 {
     Draft,
     Published,
+
+    /// <summary>
+    /// Waiting for somebody who holds <c>Content.Approve</c> (note
+    /// 2026-09-13-contenuti-centralizzati, 3.2). Nobody writes the row while it waits, so what is
+    /// approved is what was marked ready. Last, because the values are stored as their names.
+    /// </summary>
+    Ready,
 }
 
 /// <summary>

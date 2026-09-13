@@ -1524,6 +1524,18 @@
       "document.reviewDue": {
         "title": "Documents due for review",
         "description": "An email, once, when a document of a department you are staff of passes its review date."
+      },
+      "content.readyForApproval": {
+        "title": "Pages waiting for approval",
+        "description": "An email when a page of a department you may approve is marked ready."
+      },
+      "content.approved": {
+        "title": "My pages approved",
+        "description": "An email when a page you marked ready goes online."
+      },
+      "content.sentBack": {
+        "title": "My pages sent back",
+        "description": "An email, with the note, when a page you marked ready is sent back."
       }
     }
   },

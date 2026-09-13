@@ -28,5 +28,11 @@ public sealed class ContentVersion
 
     public int PublishedBy { get; set; }
 
+    /// <summary>
+    /// Who approved this version, when the kind goes through approval (G19): the publisher of an
+    /// approved page, said apart from the person who wrote it. Null for a version nobody had to approve.
+    /// </summary>
+    public int? ApprovedBy { get; set; }
+
     public ContentEntry? Content { get; set; }
 }

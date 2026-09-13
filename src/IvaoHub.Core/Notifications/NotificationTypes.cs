@@ -18,8 +18,21 @@ public static class NotificationTypes
     /// </summary>
     public const string DocumentReviewDue = "document.reviewDue";
 
+    /// <summary>
+    /// A page is waiting for approval (G19). Its audience is whoever may approve a page of that
+    /// department: the director and the web team, and anybody granted <c>Content.Approve</c>.
+    /// </summary>
+    public const string ContentReadyForApproval = "content.readyForApproval";
+
+    /// <summary>A page the reader marked ready has been published. Its audience is that person.</summary>
+    public const string ContentApproved = "content.approved";
+
+    /// <summary>A page the reader marked ready has been sent back, with a note. Its audience is that person.</summary>
+    public const string ContentSentBack = "content.sentBack";
+
     /// <summary>In the order the profile screen lists them.</summary>
-    public static readonly IReadOnlyList<string> All = [ContactReceived, DocumentReviewDue];
+    public static readonly IReadOnlyList<string> All =
+        [ContactReceived, DocumentReviewDue, ContentReadyForApproval, ContentApproved, ContentSentBack];
 
     /// <summary>The key of the subject line of a type, in <c>locales/{lang}/mail.json</c>.</summary>
     public static string SubjectKey(string type) => $"mail.{type}.subject";

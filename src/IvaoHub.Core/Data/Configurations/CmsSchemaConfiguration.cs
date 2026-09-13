@@ -41,6 +41,8 @@ internal sealed class ContentEntryConfiguration : IEntityTypeConfiguration<Conte
         builder.Ignore(content => content.Path);
         builder.Property(content => content.ParentPath).HasMaxLength(ContentAddresses.MaxParentPathLength);
         builder.Property(content => content.PreviousPathsJson).HasColumnType("json");
+        builder.Property(content => content.ReviewNote).HasMaxLength(ContentReviewService.MaxNoteLength);
+        builder.Property(content => content.ProposedMenuJson).HasColumnType("json");
         builder.Property<string>(ContentAddresses.StoredPath)
             .HasMaxLength(ContentAddresses.MaxPathLength)
             .HasComputedColumnSql("concat_ws('/', `parent_path`, `slug`)", stored: true);

@@ -126,9 +126,20 @@ public static class ContentEndpoints
                 // Where a page sits in the site, which only other rows can say (note
                 // 2026-09-13-contenuti-centralizzati, 3.7): free, not reserved, not too deep, at the
                 // top only for whoever may put it there — and the pages under it moved along.
-                options.BeforeSave = (content, saving) => saving.Services
-                    .GetRequiredService<ContentAddresses>()
-                    .PrepareAsync(content, saving.IsNew, saving.CancellationToken);
+                options.BeforeSave = (content, saving) =>
+                    !saving.IsNew
+                        && saving.Database.Entry(content).Property(row => row.Status).OriginalValue == PublishStatus.Ready
+                        // A page waiting for approval is written by nobody (note
+                        // 2026-09-13-contenuti-centralizzati, 3.2): what is approved is what was
+                        // marked ready. Withdrawing it from the review is how it is changed again.
+                        ? Task.FromResult<IReadOnlyDictionary<string, string[]>?>(
+                            new Dictionary<string, string[]>(StringComparer.Ordinal)
+                            {
+                                ["status"] = ["errors.content.review.inReview"],
+                            })
+                        : saving.Services
+                            .GetRequiredService<ContentAddresses>()
+                            .PrepareAsync(content, saving.IsNew, saving.CancellationToken);
             });
 
         group.MapPost("/from-template/{templateId:long}", CreateFromTemplateAsync)
@@ -144,6 +155,24 @@ public static class ContentEndpoints
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(CorePermissions.ContentPublish);
+
+        // ⚠️ Two hand written verbs of G19, counted: the review of a page — mark it ready, withdraw
+        // it, send it back, approve it — and what an approver reads before deciding. One address
+        // for the four actions rather than four addresses, because they are one state machine and
+        // the permission each one asks is decided by the action (note
+        // 2026-09-13-contenuti-centralizzati, 3.2).
+        group.MapPost("/{id:long}/review", ReviewAsync)
+            .WithName("ContentReview")
+            .Produces<ContentDetailDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.ContentEdit);
+
+        group.MapGet("/{id:long}/review", DescribeReviewAsync)
+            .WithName("ContentReviewSummary")
+            .Produces<ContentReviewDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.ContentView);
 
         // ⚠️ A hand written verb hanging off the CRUD group, and the fourth of M1 — the plan asks
         // for each of them to be justified. This one exists because the alternative was the client
@@ -336,10 +365,74 @@ public static class ContentEndpoints
         return Results.Created($"{Pattern}/{page.Id}", new ContentMapper().ToDetail(page));
     }
 
+    private static async Task<IResult> ReviewAsync(
+        long id,
+        ContentReviewRequest request,
+        ContentPublishService publish,
+        ContentReviewService review,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var content = await publish.FindAsync(id, http.RequestAborted);
+        if (content is null)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey));
+        }
+
+        // The author's two actions ask to write in the department; the approver's two ask to approve.
+        var permission = request.Action is ContentReviewAction.Approve or ContentReviewAction.SendBack
+            ? CorePermissions.ContentApprove
+            : CorePermissions.ContentEdit;
+
+        if (!(await authorization.AuthorizeAsync(http.User, content, permission)).Succeeded)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        var failure = await review.ActAsync(content, request, http.RequestAborted);
+        return failure is null
+            ? Results.Ok(new ContentMapper().ToDetail(content))
+            : CrudProblems.Validation(failure.Errors, failure.MissingLocales, catalog, currentUser.Locale);
+    }
+
+    private static async Task<IResult> DescribeReviewAsync(
+        long id,
+        ContentPublishService publish,
+        ContentReviewService review,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var content = await publish.FindAsync(id, http.RequestAborted);
+        if (content is null)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey));
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, content, CorePermissions.ContentView)).Succeeded)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        return Results.Ok(await review.DescribeAsync(content, http.RequestAborted));
+    }
+
     private static async Task<IResult> PublishAsync(
         long id,
         ContentPublishRequest? request,
         ContentPublishService publish,
+        ContentReviewService review,
         IAuthorizationService authorization,
         ICurrentUser currentUser,
         LocaleCatalog catalog,
@@ -358,6 +451,28 @@ public static class ContentEndpoints
             return Results.Problem(
                 statusCode: StatusCodes.Status403Forbidden,
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        // A kind the division publishes by approval is published directly only by whoever may
+        // approve it; anybody else marks it ready. And a page already waiting is approved, not
+        // published past its review.
+        if (review.RequiresApproval(content))
+        {
+            if (!(await authorization.AuthorizeAsync(http.User, content, CorePermissions.ContentApprove)).Succeeded)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status403Forbidden,
+                    title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+            }
+
+            if (content.Status == PublishStatus.Ready)
+            {
+                return CrudProblems.Validation(
+                    new Dictionary<string, string[]>(StringComparer.Ordinal) { ["status"] = ["errors.content.review.inReview"] },
+                    new Dictionary<string, string[]>(StringComparer.Ordinal),
+                    catalog,
+                    currentUser.Locale);
+            }
         }
 
         var failure = await publish.PublishAsync(content, request?.Changelog, http.RequestAborted);

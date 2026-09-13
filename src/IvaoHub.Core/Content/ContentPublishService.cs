@@ -87,7 +87,8 @@ public sealed class ContentPublishService(
     public async Task<ContentPublishFailure?> PublishAsync(
         ContentEntry content,
         string? changelog,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int? approvedBy = null)
     {
         ArgumentNullException.ThrowIfNull(content);
 
@@ -111,6 +112,7 @@ public sealed class ContentPublishService(
             Changelog = changelog,
             PublishedAt = now,
             PublishedBy = currentUser.Vid,
+            ApprovedBy = approvedBy,
         };
 
         // One transaction for both saves. The interceptor joins the one it finds rather than

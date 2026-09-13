@@ -69,6 +69,14 @@
         "invalidParent": "Una pagina non può stare qui sotto: non è una pagina, oppure è questa stessa o una sotto di lei.",
         "notAPage": "Solo una pagina sta sotto un'altra pagina.",
         "taken": "Un'altra pagina ha già questo indirizzo."
+      },
+      "review": {
+        "notReviewed": "Questo tipo di contenuto si pubblica direttamente, senza approvazione.",
+        "unknownAction": "Questa non è una cosa che una revisione sa fare.",
+        "alreadyReady": "Questa pagina è già in attesa di approvazione.",
+        "notReady": "Questa pagina non è in attesa di approvazione.",
+        "inReview": "Questa pagina è in attesa di approvazione e non si può cambiare. Ritirala dalla revisione per cambiarla.",
+        "menuParent": "Una voce di menu va sotto una voce in cima al menu."
       }
     },
     "maintenance": {

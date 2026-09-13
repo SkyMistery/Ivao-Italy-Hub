@@ -95,6 +95,14 @@ public sealed record DivisionOptions
     public Dictionary<string, string> DepartmentMailboxes { get; init; } = [];
 
     /// <summary>
+    /// The kinds of content a department marks ready and somebody with <c>Content.Approve</c>
+    /// publishes, by name: <c>["Page"]</c> for a division whose pages go through its web team and
+    /// its direction (note 2026-09-13-contenuti-centralizzati, 3.2). Empty — the default — is a
+    /// division where whoever may publish, publishes.
+    /// </summary>
+    public string[] ContentApproval { get; init; } = [];
+
+    /// <summary>
     /// Bootstrap only: read once, when no super administrator exists yet. After that
     /// <c>hub_users.is_superadmin</c> is the truth and this list is ignored (plan section 4.1).
     /// </summary>

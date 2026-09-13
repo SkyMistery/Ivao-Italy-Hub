@@ -69,6 +69,14 @@
         "invalidParent": "A page cannot go under this one: it is not a page, or it is this page or one under it.",
         "notAPage": "Only a page sits under another page.",
         "taken": "Another page already has this address."
+      },
+      "review": {
+        "notReviewed": "This kind of content is published directly, without approval.",
+        "unknownAction": "This is not something a review can do.",
+        "alreadyReady": "This page is already waiting for approval.",
+        "notReady": "This page is not waiting for approval.",
+        "inReview": "This page is waiting for approval and cannot be changed. Withdraw it from the review to change it.",
+        "menuParent": "A menu entry goes under an entry at the top of the menu."
       }
     },
     "maintenance": {
