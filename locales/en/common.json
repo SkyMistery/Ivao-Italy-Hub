@@ -399,7 +399,8 @@
       "reviewOn": "Review by",
       "retiredAt": "No longer in force since",
       "supersededById": "Replaced by",
-      "showFooter": "Show the footer (version, date, publisher, print)"
+      "showFooter": "Show the footer (version, date, publisher, print)",
+      "parentId": "Under the page"
     },
     "options": {
       "kind": {
@@ -423,6 +424,9 @@
       },
       "category": {
         "none": "No category"
+      },
+      "parentId": {
+        "none": "At the top of the site"
       }
     },
     "section": {
@@ -587,7 +591,20 @@
       "seo": "What a search engine shows, and what appears when somebody shares the page. Left empty, the title and the summary of the page are used.",
       "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved.",
       "reviewOn": "Past this day, the department is told once that the document is due for a look.",
-      "retiredAt": "A document no longer in force stays readable with a notice on top, so that an old link finds the way on. Choose what replaced it below, when something did."
+      "retiredAt": "A document no longer in force stays readable with a notice on top, so that an old link finds the way on. Choose what replaced it below, when something did.",
+      "parentId": "Where the page sits in the site: its address is the address of this page and its own. Three levels at most. The top of the site is for the director and the web team."
+    },
+    "chooseParent": "Choose the page it goes under",
+    "address": {
+      "label": "Address",
+      "state": {
+        "Free": "This address is free.",
+        "Taken": "Another page already has this address. {{suggestion}} is free.",
+        "Reserved": "The site already uses this address for one of its own screens. Choose another.",
+        "TooDeep": "This would be a fourth level. A page goes three levels deep at most, counting the pages under it.",
+        "InvalidParent": "A page cannot go under this one.",
+        "TopLevelNotAllowed": "Only the director and the web team put a page at the top of the site. Choose a page to put it under."
+      }
     }
   },
   "templates": {

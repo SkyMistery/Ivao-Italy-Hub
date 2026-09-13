@@ -111,6 +111,7 @@ export const anonymousBootstrap = {
 export const publishedHome = {
   kind: 'Page',
   slug: 'home',
+  path: 'home',
   ownerDepartment: 'WD',
   title: { en: 'Home', it: 'Home' },
   summary: { en: 'The front page.', it: 'La pagina d ingresso.' },
@@ -285,6 +286,8 @@ export const thePageBeyondTheHundredth = {
       id: 909,
       kind: 'Page',
       slug: 'oltre-la-centesima',
+      parentId: null,
+      path: 'oltre-la-centesima',
       ownerDepartment: 'WD',
       visibility: 'Public',
       status: 'Published',
@@ -311,6 +314,8 @@ export const twoTemplates = {
       id: 5,
       kind: 'Page',
       slug: 'section-page',
+      parentId: null,
+      path: 'section-page',
       ownerDepartment: 'WD',
       visibility: 'Staff',
       status: 'Draft',
@@ -328,6 +333,8 @@ export const twoTemplates = {
       id: 6,
       kind: 'Document',
       slug: 'policy',
+      parentId: null,
+      path: 'policy',
       ownerDepartment: 'WD',
       visibility: 'Staff',
       status: 'Draft',
@@ -513,6 +520,8 @@ export const twoDocuments = {
       id: 21,
       kind: 'Document',
       slug: 'joining-procedure',
+      parentId: null,
+      path: 'joining-procedure',
       ownerDepartment: 'ED',
       visibility: 'Public',
       status: 'Published',
@@ -530,6 +539,8 @@ export const twoDocuments = {
       id: 22,
       kind: 'Document',
       slug: 'read-in-the-browser',
+      parentId: null,
+      path: 'read-in-the-browser',
       ownerDepartment: 'ED',
       visibility: 'Public',
       status: 'Published',
@@ -567,22 +578,30 @@ const RED_8X8_PNG = Buffer.from(
 export async function stubThePublishedPage(page: Page, slug: string, body: unknown): Promise<void> {
   await stubTheApi(page);
 
-  await page.route(`**/api/content/public/Page/${slug}`, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        kind: 'Page',
-        slug,
-        title: { en: 'A page of blocks', it: 'Una pagina di blocchi' },
-        summary: null,
-        seo: null,
-        body,
-        schemaVersion: 1,
-        version: 1,
-        publishedAt: '2026-09-06T10:00:00Z',
+  // By its address, since pages sit under pages (note 2026-09-13-contenuti-centralizzati): the
+  // answer is the page, or where it moved.
+  await page.route(
+    (url) => url.pathname.endsWith('/api/content/public/page') && url.searchParams.get('path') === slug,
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          page: {
+            kind: 'Page',
+            slug,
+            path: slug,
+            title: { en: 'A page of blocks', it: 'Una pagina di blocchi' },
+            summary: null,
+            seo: null,
+            body,
+            schemaVersion: 1,
+            version: 1,
+            publishedAt: '2026-09-06T10:00:00Z',
+          },
+          movedTo: null,
+        }),
       }),
-    }),
   );
 
   // The pictures a block asks for. Served the way Kestrel serves them, at `/media/{id}/{name}`.
@@ -684,6 +703,8 @@ export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBo
     }),
   );
 
+  await stubTheAddressOfAPage(page);
+
   // The vocabulary a department files its news and documents under. Empty: a division decides its
   // own shelves and a fresh one has none, which is the state the screens have to survive.
   await page.route('**/api/calendar**', (route) =>
@@ -756,4 +777,33 @@ export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBo
       body: JSON.stringify({ title: `Unexpected call in the smoke suite: ${url}` }),
     });
   });
+}
+
+/**
+ * The two questions the editor of a page asks about its address (note
+ * 2026-09-13-contenuti-centralizzati, 3.7): the pages it may go under, and whether the address it
+ * composes is free. ⚠️ Registered **after** any route of a spec for a single content row, which would otherwise
+ * answer both with a row — and a tree that is an object is a screen that throws.
+ */
+export async function stubTheAddressOfAPage(page: Page): Promise<void> {
+  await page.route('**/api/content/pages', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        { id: 1, path: 'about', title: { en: 'About', it: 'Chi siamo' }, depth: 1 },
+        { id: 2, path: 'about/team', title: { en: 'Team', it: 'Squadra' }, depth: 2 },
+      ]),
+    }),
+  );
+
+  await page.route(
+    (url) => url.pathname.endsWith('/api/content/address'),
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ path: '/about/section-page', state: 'Free', suggestion: null }),
+      }),
+  );
 }

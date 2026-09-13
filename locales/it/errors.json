@@ -61,7 +61,15 @@
       "mediaNotVisible": "Questa immagine non è visibile a chi legge questa pagina. Rendila pubblica nella libreria oppure scegline un'altra.",
       "notADocument": "Solo un documento ha questo campo. Lascialo vuoto su una pagina o una notizia.",
       "successorUnknown": "Il documento che sostituisce questo non esiste. Scegline uno dall'elenco.",
-      "successorWithoutRetirement": "Un documento con un successore non è più in vigore: di' da quando."
+      "successorWithoutRetirement": "Un documento con un successore non è più in vigore: di' da quando.",
+      "address": {
+        "reserved": "Il sito usa già questo indirizzo per una sua schermata. Scegline un altro.",
+        "topLevel": "Solo il direttore e il team web mettono una pagina in cima al sito. Scegli la pagina sotto cui metterla.",
+        "tooDeep": "Una pagina scende al massimo di tre livelli, contando quelle sotto di lei.",
+        "invalidParent": "Una pagina non può stare qui sotto: non è una pagina, oppure è questa stessa o una sotto di lei.",
+        "notAPage": "Solo una pagina sta sotto un'altra pagina.",
+        "taken": "Un'altra pagina ha già questo indirizzo."
+      }
     },
     "maintenance": {
       "title": "Questa parte del sito al momento non accetta modifiche"

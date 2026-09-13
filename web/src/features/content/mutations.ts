@@ -59,6 +59,8 @@ export function toWriteDto(values: ContentFormValues, body: Body): ContentWriteD
     // The five that belong to one kind each. A kind whose form does not draw them sends what the
     // column already holds for a row that has none: no shelf, no picture, unpinned, first, no file.
     // They are columns of `cms_contents` and not a table, which is the whole point of design M1 §3.
+    // Text on the form, a number on the row; empty is the top of the site.
+    parentId: values.parentId === undefined || values.parentId === '' ? null : Number(values.parentId),
     category: values.category === undefined || values.category === '' ? null : values.category,
     coverMediaId: values.coverMediaId ?? null,
     pinned: values.pinned ?? false,
@@ -106,6 +108,7 @@ export function emptyContent(
     // that only takes effect when somebody publishes.
     visibility: 'Staff',
     isTemplate,
+    parentId: '',
     title: emptyLocalized(locales),
     summary: emptyLocalized(locales),
     seo: emptySeo(locales),
@@ -129,6 +132,7 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     ownerDepartment: content.ownerDepartment,
     visibility: content.visibility,
     isTemplate: content.isTemplate,
+    parentId: content.parentId === null ? '' : String(content.parentId),
     title: spread(content.title),
     summary: spread(content.summary),
     seo: spreadSeo(content.seo, locales),
@@ -278,11 +282,13 @@ export function useCreateFromTemplate() {
       templateId: number;
       ownerDepartment: Department;
       slug: string;
+      /** The page it sits under; null at the top of the site. */
+      parentId: number | null;
     }): Promise<ContentDetailDto> =>
       unwrap(
         await api.POST('/api/content/from-template/{templateId}', {
           params: { path: { templateId: request.templateId } },
-          body: { ownerDepartment: request.ownerDepartment, slug: request.slug },
+          body: { ownerDepartment: request.ownerDepartment, slug: request.slug, parentId: request.parentId },
         }),
       ),
     onSuccess: async () => {

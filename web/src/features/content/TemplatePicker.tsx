@@ -5,11 +5,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Department } from '../../shared/api/bootstrap';
-import { ProblemAlert } from '../../shared/forms';
+import { NO_CHOICE, ProblemAlert } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 
 import { useCreateFromTemplate } from './mutations';
-import { templatesQuery, type ContentKind } from './queries';
+import { pageTreeQuery, templatesQuery, type ContentKind } from './queries';
 
 /**
  * "New from template". The copy is made by the server — new identifiers for every section and
@@ -22,11 +22,17 @@ import { templatesQuery, type ContentKind } from './queries';
 export function TemplatePicker({
   department,
   kind,
+  mayBeAtTheTop,
   onCreated,
 }: {
   department: Department;
   /** Which list this picker sits on: a news list offers the templates of a news item, and no other. */
   kind: ContentKind;
+  /**
+   * Whether the page may be left at the top of the site (note 2026-09-13-contenuti-centralizzati,
+   * 3.7). When it may not, the page it makes has to be put under one, and the button waits for it.
+   */
+  mayBeAtTheTop: boolean;
   onCreated: (id: number) => void;
 }) {
   const { t } = useTranslation();
@@ -34,8 +40,15 @@ export function TemplatePicker({
 
   const [templateId, setTemplateId] = useState<string>('');
   const [slug, setSlug] = useState('');
+  const [parentId, setParentId] = useState<string>('');
 
   const templates = useQuery(templatesQuery(kind));
+  // Where the new page goes, for a page; a news item and a document have an address of their kind.
+  const isPage = kind === 'Page';
+  const tree = useQuery({ ...pageTreeQuery(), enabled: isPage });
+  const parents = (tree.data ?? [])
+    .filter((node) => node.depth < 3)
+    .map((node) => ({ value: String(node.id), label: `/${node.path} — ${read(node.title) || node.path}` }));
   const create = useCreateFromTemplate();
 
   const items = (templates.data?.items ?? []).map((template) => ({
@@ -49,7 +62,12 @@ export function TemplatePicker({
 
   const submit = () => {
     create.mutate(
-      { templateId: Number(templateId), ownerDepartment: department, slug: slug.trim() },
+      {
+        templateId: Number(templateId),
+        ownerDepartment: department,
+        slug: slug.trim(),
+        parentId: isPage && parentId !== '' ? Number(parentId) : null,
+      },
       { onSuccess: (content) => onCreated(content.id) },
     );
   };
@@ -74,6 +92,22 @@ export function TemplatePicker({
           />
         </div>
 
+        {isPage ? (
+          <div className="flex min-w-56 flex-col gap-1">
+            <Label htmlFor="newParent">{t('content.fields.parentId')}</Label>
+            <Select
+              id="newParent"
+              {...(parentId === '' ? {} : { value: parentId })}
+              onValueChange={(chosen) => setParentId(chosen === NO_CHOICE ? '' : chosen)}
+              placeholder={mayBeAtTheTop ? t('content.options.parentId.none') : t('content.chooseParent')}
+              items={[
+                ...(mayBeAtTheTop ? [{ value: NO_CHOICE, label: t('content.options.parentId.none') }] : []),
+                ...parents,
+              ]}
+            />
+          </div>
+        ) : null}
+
         <div className="flex min-w-56 flex-col gap-1">
           <Label htmlFor="newSlug">{t('content.fields.slug')}</Label>
           <Input
@@ -86,7 +120,12 @@ export function TemplatePicker({
 
         <Button
           type="button"
-          disabled={templateId === '' || slug.trim() === '' || create.isPending}
+          disabled={
+            templateId === '' ||
+            slug.trim() === '' ||
+            (isPage && !mayBeAtTheTop && parentId === '') ||
+            create.isPending
+          }
           isLoading={create.isPending}
           onClick={submit}
         >

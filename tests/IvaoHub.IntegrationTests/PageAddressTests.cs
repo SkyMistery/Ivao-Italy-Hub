@@ -112,6 +112,10 @@ public sealed class PageAddressTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var coordinator = _factory.CreateApiClient();
         await _factory.SignInAsync(coordinator, EventsCoordinatorVid, token);
 
+        // The page of the web team is offered to go under, although its row is not theirs to read.
+        var tree = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/pages", token);
+        Assert.Contains(tree.EnumerateArray(), node => node.GetProperty("id").GetInt64() == shelf.Id);
+
         // At the top: refused on the field that chose it.
         using var top = await SendAsync(
             coordinator,

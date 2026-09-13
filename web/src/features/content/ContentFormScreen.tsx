@@ -12,9 +12,18 @@ import { mediaPickerQuery } from '../media/queries';
 import { ContentEditor } from './ContentEditor';
 import type { ContentKindConfig } from './kinds';
 import { useCreateContent, useDeleteContent, usePublishContent, useUpdateContent } from './mutations';
-import { publishProblemsKey, publishProblemsQuery, successorsQuery, type ContentDetailDto } from './queries';
+import {
+  pageTreeQuery,
+  publishProblemsKey,
+  publishProblemsQuery,
+  successorsQuery,
+  type ContentDetailDto,
+} from './queries';
 import type { ContentFormValues } from './schema';
 import { MANAGE_TEMPLATES } from './templateRules';
+
+/** Who may leave a page at the top of the site (note 2026-09-13-contenuti-centralizzati, 3.7). */
+const CONTENT_APPROVE = 'Content.Approve';
 
 /**
  * One row of content in the editor, whichever kind it is. `new` is a row that does not exist yet:
@@ -104,6 +113,26 @@ export function ContentFormScreen({
   // may have replaced this one. Not asked for on any other kind, for the reason the shelves are not
   // asked for on a page.
   const isDocument = config.kind === 'Document';
+
+  // Where a page may be put (note 2026-09-13-contenuti-centralizzati, 3.7): every page of the site,
+  // whoever wrote it, except itself and the pages under it, and none that is already at the third
+  // level. Labelled by address, because that is what is being chosen.
+  const isPage = config.kind === 'Page' && !startsAsTemplate && content?.isTemplate !== true;
+  const tree = useQuery({ ...pageTreeQuery(), enabled: isPage });
+  const ownPath = content?.path;
+  const parents: ChoiceOption[] = (tree.data ?? [])
+    .filter((node) => node.depth < 3)
+    .filter(
+      (node) => ownPath === undefined || (node.path !== ownPath && !node.path.startsWith(`${ownPath}/`)),
+    )
+    .map((node) => ({ value: String(node.id), label: `/${node.path} — ${read(node.title) || node.path}` }));
+  // A page already at the top stays there without anybody's leave: only putting one there asks.
+  const pageChoices = {
+    parents,
+    mayBeAtTheTop:
+      holdsPermission(bootstrap, CONTENT_APPROVE, department) ||
+      (content !== null && content.parentId === null),
+  };
   const successors = useQuery({ ...successorsQuery(department), enabled: isDocument });
 
   const successorChoices: ChoiceOption[] = (successors.data?.items ?? [])
@@ -142,6 +171,7 @@ export function ContentFormScreen({
         startsAsTemplate={startsAsTemplate}
         categories={categories}
         successors={successorChoices}
+        {...(isPage ? { pageChoices } : {})}
         department={department}
         locales={locales}
         division={{

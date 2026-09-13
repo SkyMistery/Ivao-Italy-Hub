@@ -33,6 +33,12 @@ public sealed record ContentFromTemplateRequest(Department OwnerDepartment, stri
 public sealed record PublicPageDto(PublicContentDto? Page, string? MovedTo);
 
 /// <summary>
+/// One page of the site as the tree a new page is put into sees it: where it is, and what it is
+/// called. No body, no status, no department's business: an address is a public fact.
+/// </summary>
+public sealed record ContentPageNodeDto(long Id, string Path, Localized<string> Title, int Depth);
+
+/// <summary>
 /// Editorial content: the generic CRUD engine for the back office, plus the three things a page can
 /// do that a link cannot — be born from a template, be published, and be read by a visitor.
 /// <para>Everything about paging, filtering, department narrowing and row level authorisation is
@@ -170,6 +176,16 @@ public static class ContentEndpoints
         group.MapGet("/address", DescribeAddressAsync)
             .WithName("ContentAddress")
             .Produces<ContentAddressDto>()
+            .RequireAuthorization(CorePermissions.ContentEdit);
+
+        // ⚠️ The second hand written read of G18, counted: the pages a page may be put under. Not
+        // the content list, which holds the reader's own departments — a coordinator of Training
+        // puts a page under `/training`, which the web team owns — and not a share of the rows,
+        // which would hand every department the drafts of every other. What crosses is the address
+        // and the title, which the site already shows to anybody.
+        group.MapGet("/pages", PageTreeAsync)
+            .WithName("ContentPageTree")
+            .Produces<IReadOnlyList<ContentPageNodeDto>>()
             .RequireAuthorization(CorePermissions.ContentEdit);
 
         return group;
@@ -469,6 +485,26 @@ public static class ContentEndpoints
                 .Contains(wanted, StringComparer.Ordinal));
 
         return target is null ? TypedResults.NotFound() : TypedResults.Ok(new PublicPageDto(null, target.Url));
+    }
+
+    private static async Task<IReadOnlyList<ContentPageNodeDto>> PageTreeAsync(HubDbContext database, HttpContext http)
+    {
+        var rows = await CrudSource.BackOffice<ContentEntry>(database)
+            .AsNoTracking()
+            .Where(row => row.Kind == ContentKind.Page && !row.IsTemplate)
+            .Select(row => new { row.Id, row.Slug, row.ParentPath, row.Title })
+            .ToListAsync(http.RequestAborted);
+
+        return
+        [
+            .. rows
+                .Select(row =>
+                {
+                    var path = row.ParentPath is null ? row.Slug : $"{row.ParentPath}/{row.Slug}";
+                    return new ContentPageNodeDto(row.Id, path, row.Title, path.Count(character => character == '/') + 1);
+                })
+                .OrderBy(node => node.Path, StringComparer.Ordinal),
+        ];
     }
 
     private static async Task<ContentAddressDto> DescribeAddressAsync(

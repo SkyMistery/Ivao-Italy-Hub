@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -8,7 +8,7 @@ import {
   startsWithPageTitle,
   usePublishedEmbedding,
 } from '../../blocks';
-import { publicContentQuery } from '../../features/content/queries';
+import { publicPageQuery } from '../../features/content/queries';
 import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
@@ -22,11 +22,30 @@ import { NotFound } from '../../shared/ui';
  * office changes nothing here until somebody publishes.
  *
  * The static routes of `_public` win over this one, so `/forbidden` stays `/forbidden`: a page
- * cannot take an address the application already owns.
+ * cannot take an address the application already owns — and the server refuses to give a page one
+ * of those addresses in the first place (`ContentAddresses.ReservedSegments`).
+ *
+ * The address is the whole rest of the path since 13 September 2026, because a page sits under a
+ * page up to three levels (note 2026-09-13-contenuti-centralizzati, 3.7): `/training/guide/start`.
+ * An address a published page used to have is answered with where it is now, and the router goes
+ * there, replacing the old address in the history so the back button does not bounce.
  */
-export const Route = createFileRoute('/_public/$slug')({
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(publicContentQuery('Page', params.slug)),
+export const Route = createFileRoute('/_public/$')({
+  loader: async ({ context, params }) => {
+    const answer = await context.queryClient.ensureQueryData(publicPageQuery(params._splat ?? ''));
+
+    if (answer.movedTo !== null) {
+      throw redirect({ to: '/$', params: { _splat: answer.movedTo.replace(/^\//, '') }, replace: true });
+    }
+
+    if (answer.page === null) {
+      // Not reached: the server answers 404 rather than an empty answer. Said anyway, the way every
+      // other loader of this site says "nothing here" — an error the route draws as `NotFound`.
+      throw new Error(`No page at /${params._splat ?? ''}.`);
+    }
+
+    return answer.page;
+  },
   notFoundComponent: NotFound,
   errorComponent: NotFound,
   component: PublicContentPage,

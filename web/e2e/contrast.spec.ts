@@ -1,7 +1,13 @@
 import { type Page, expect, test } from '@playwright/test';
 
 import { measureContrast, type Measured } from './contrast';
-import { oneTemplate, siteStaffBootstrap, stubTheApi, stubTheApiAsStaff } from './fixtures';
+import {
+  oneTemplate,
+  siteStaffBootstrap,
+  stubTheApi,
+  stubTheAddressOfAPage,
+  stubTheApiAsStaff,
+} from './fixtures';
 
 /**
  * The secondary text is readable in the dark theme, measured rather than looked at.
@@ -221,6 +227,7 @@ async function openOnGrounds(page: Page, grounds: string[]) {
       body: JSON.stringify({ errors: {}, localized: {} }),
     }),
   );
+  await stubTheAddressOfAPage(page);
 
   await page.goto('/staff/content/1');
 }
