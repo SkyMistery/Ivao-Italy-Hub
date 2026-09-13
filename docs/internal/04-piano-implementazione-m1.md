@@ -285,7 +285,7 @@ L'ordine è quello di design §12, con le dipendenze rese esplicite.
 | G15 | L'editor che risponde — **dopo il tag, prima di G14** | G13 | proprietà applicate scrivendo, annulla/ripeti da tastiera, autosalvataggio a 10 s con audit senza corpo, trascinamento dalla barra, anteprima «Phone» che accorpa davvero le colonne |
 | G14 | Il documento operativo (LoA/SOP) | G15 | tipo SOP/LoA, sei campi operativi da `ref_`, `Archived`/`Superseded`, Frequency Table e Coordination, piè di pagina con la stampa |
 | G16 | Via vIPI: il modulo `atc` e la metà ATC della G14 — **fatta il 13 set 2026** | merge della pila #59–#65 | nessun `IvaoHub.Modules.Atc`, composizione provata da un modulo finto nei test, un documento senza tipo/posizioni/ICAO/FIR/AIRAC, `/atc` ancora servita come pagina |
-| G17 | Una schermata per oggetto — **scritta il 13 set 2026** | G16 | `/staff/content`, `/staff/links`, `/staff/media` con filtri; nessuna rotta `/staff/{dept}/content…`; media e link scelti da ogni dipartimento; un grant «ogni dipartimento» allarga la lista |
+| G17 | Una schermata per oggetto — **fatta il 13 set 2026** | G16 | `/staff/content`, `/staff/links`, `/staff/media` con filtri; nessuna rotta `/staff/{dept}/content…`; media e link scelti da ogni dipartimento; un grant «ogni dipartimento» allarga la lista |
 | G18 | L'indirizzo composto — **scritta il 13 set 2026** | G17 | pagine fino a tre livelli, nessun campo libero, parole riservate ricavate dalle rotte, 301 dal vecchio indirizzo, primo livello solo WD e HQ |
 | G19 | L'approvazione delle pagine — **scritta il 13 set 2026** | G18 | `Ready` in sola lettura, versione candidata, `Content.Approve`, riepilogo per sezione, coda, proposta di indirizzo e menu corretta da chi approva, `Menu.Edit` solo WD e HQ |
 | G20 | Le raccolte, l'indice derivato, i media aggiornati sul posto — **scritta il 13 set 2026** | G19 | un documento in più pagine per raccolta, «compare in», un media usato altrove archiviato e non cancellato, l'SVG nuovo sotto un indirizzo nuovo |
@@ -1602,6 +1602,54 @@ Nota: `contenuti-centralizzati` §3.1, §3.4, §3.5. Branch `m1/g17-one-screen-p
 coordinator TD + advisor AOD vede le due e sceglie; WD vede tutto; un VID con grant `Content.Edit`
 su ogni dipartimento vede tutto; il picker di una pagina TD offre il logo caricato dal WD e il
 server rifiuta al TD di modificarlo. Giro e2e aggiornato alle rotte nuove.
+
+**Fatta il 13 settembre 2026**, branch `m1/g17-one-screen-per-object`, tre commit. Quello che il
+disegno non diceva, e due scostamenti da esso detti apertamente:
+
+- **Il motore di lista era già senza `{dept}`.** `/api/content`, `/api/links`, `/api/media` hanno
+  sempre elencato l'unione dei dipartimenti del lettore: il `{dept}` stava solo nel frontend, che
+  aggiungeva `filter[ownerDepartment]`. Il punto 1 si è ridotto a rendere il filtro facoltativo.
+- **Il grant «ogni dipartimento» era scartato davvero** (il ⚠️ del punto 2): `HubClaims` componeva i
+  dipartimenti raggiunti con `.OfType<Department>()`, che butta il `null`. Ora un grant senza
+  dipartimento raggiunge tutti i dipartimenti, e un test d'integrazione lo prova sulla lista.
+- **Le rotte**: `/staff/content` (con `kind` = `Page` | `News` | `Document` | `Template` e
+  `department` nei search params), `/staff/content/$id` (per `new`: `kind`, `template`,
+  `department`), `/staff/links`, `/staff/media` con i loro `$id`. Tolte le diciotto rotte
+  `/staff/$dept/{content,news,documents,templates,links,media}…`, senza redirect.
+- **I template sono un `kind` della schermata**, non una schermata a sé: chi non ha
+  `Content.ManageTemplates` **li legge** (come deciso il 5 settembre) e non trova il pulsante; il
+  test smoke che si aspettava `/forbidden` sulla schermata ora si aspetta il pulsante assente e
+  `/forbidden` sull'indirizzo di un template nuovo.
+- ⚠️ **Scostamento 1 — dove si sceglie il dipartimento.** Non nel form ma **accanto al pulsante
+  «nuovo»**, e solo se chi scrive ne ha più di uno e il filtro non ne ha già scelto uno dove può
+  scrivere. Il form si ridisegna secondo il dipartimento (categorie, libreria, successori): chiederlo
+  dentro vorrebbe dire un form che cambia sotto le mani, lo stesso motivo per cui il `kind` di un
+  template si sceglie prima. L'indirizzo dell'editor lo porta, e la rotta rifiuta un dipartimento
+  in cui non si scrive. Scritto in `docs/UI-GUIDELINES.md`.
+- ⚠️ **Scostamento 2 — il server risponde 403, non `ProblemDetails` sul campo**, a una creazione in un
+  dipartimento dove non si scrive: è la risposta che il motore dà da M0 (`DeniesWrite`) e che il test
+  `AnotherDepartmentIsRefusedOnEveryVerb` fissa. Con il campo fuori dal form non c'è un campo su cui
+  mettere il messaggio; da riconsiderare se il dipartimento tornasse un campo.
+- **La barra laterale** ha il gruppo **Contenuti** solo per chi raggiunge **più di un** dipartimento:
+  per gli altri sarebbero le voci del loro dipartimento due volte. Sotto ogni dipartimento, le stesse
+  schermate con il dipartimento già scelto.
+- **Indirizzi con una query** (`/staff/content?kind=News&department=ED`): il `to` di un `Link` è un
+  path, e una query scritta dentro non corrisponde a nessuna rotta. `linkTarget`
+  (`shared/ui/linkTarget.ts`) la separa per `RouterAnchor`, per il breadcrumb e per la palette ⌘K; la
+  barra laterale accende la voce il cui path coincide e i cui parametri stanno tutti nell'indirizzo,
+  la più lunga. Una pagina dell'editor non accende nessuna voce: il suo indirizzo non dice il `kind`.
+- **`ListFilter`** (`shared/list/ListFilter.tsx`) è la select-con-«tutto» che la lista pubblica e il
+  calendario pubblico avevano **in due copie**; il back office ne voleva una terza. Estratta e usata da
+  tutti e quattro. Appartiene a `DataList` (va nel suo `toolbar`) e non entra nell'elenco chiuso come
+  ventiduesimo componente: se Carmine lo vuole contato, è una riga in `catalog.ts`.
+- **Media e link condivisi**: la regola è `Visibility == Public`, dichiarata una volta come
+  espressione sull'entità, e l'azione «modifica» non compare sulle righe di un altro dipartimento.
+  Il `MediaPicker` offre ora i 24 file più recenti **di tutti** quelli leggibili, senza filtro: il
+  link «libreria» porta a `/staff/media?department=…`.
+- **Le categorie restano per dipartimento** (`/staff/$dept/categories`): diventano raccolte in G20.
+- **Verificato**: unit .NET (309), Vitest (385), smoke Playwright in locale (70), lint, typecheck,
+  formato, i18n. **Non verificato in locale**: integrazione e giro completo (Docker spento), che
+  esegue la CI; e **nessun giro a occhio** contro l'API vera.
 
 #### G18 — L'indirizzo composto
 
