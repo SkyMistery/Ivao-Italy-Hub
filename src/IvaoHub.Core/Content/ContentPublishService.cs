@@ -35,6 +35,7 @@ public sealed class ContentPublishService(
     BlockDocumentWalker walker,
     BlockRegistry blocks,
     DataBlockProviders providers,
+    ContentReferenceIndex references,
     ICurrentUser currentUser,
     IClock clock,
     IOptions<DivisionOptions> division)
@@ -123,6 +124,9 @@ public sealed class ContentPublishService(
         content.Status = PublishStatus.Published;
         content.PublishedAt = now;
         database.ContentVersions.Add(version);
+
+        // What the version points at, for "where does this appear" and "may this file go" (G20).
+        await references.RecordAsync(content, version, body, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
         // Only now does the version have an identifier to point at.

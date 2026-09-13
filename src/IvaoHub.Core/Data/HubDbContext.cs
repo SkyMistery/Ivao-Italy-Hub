@@ -63,6 +63,7 @@ public class HubDbContext : DbContext
 
     public DbSet<ContentEntry> Contents => Set<ContentEntry>();
     public DbSet<ContentVersion> ContentVersions => Set<ContentVersion>();
+    public DbSet<ContentReference> ContentReferences => Set<ContentReference>();
     public DbSet<ContentCategory> ContentCategories => Set<ContentCategory>();
     public DbSet<MenuItem> MenuItems => Set<MenuItem>();
     public DbSet<Link> Links => Set<Link>();

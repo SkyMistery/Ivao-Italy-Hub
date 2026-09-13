@@ -13,7 +13,12 @@ internal sealed class ContentEntryConfiguration : IEntityTypeConfiguration<Conte
         builder.HasKey(content => content.Id);
         builder.Property(content => content.Slug).HasMaxLength(160).IsRequired();
         builder.Property(content => content.BodyJson).HasColumnType("json").IsRequired();
-        builder.Property(content => content.Category).HasMaxLength(64);
+        // The single category gave way to the collections in G20 (note
+        // 2026-09-13-contenuti-centralizzati, 3.3). The migration copied it; it stays as a shadow
+        // property, like the columns below, until a contract release drops it.
+        builder.Property<string>(RetiredColumns.Category).HasMaxLength(64);
+        builder.Ignore(content => content.Collections);
+        builder.Property(content => content.CollectionsJson).HasColumnType("json").IsRequired();
         builder.HasRowVersion(content => content.RowVersion);
 
         // The half of G14 that described a controller's document left the model on 13 September 2026
@@ -68,6 +73,26 @@ internal sealed class ContentVersionConfiguration : IEntityTypeConfiguration<Con
             .HasForeignKey(version => version.ContentId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasIndex(version => new { version.ContentId, version.Version }).IsUnique();
+    }
+}
+
+/// <summary>The index of what published pages point at (G20). The only table the phases of 13 September add.</summary>
+internal sealed class ContentReferenceConfiguration : IEntityTypeConfiguration<ContentReference>
+{
+    public void Configure(EntityTypeBuilder<ContentReference> builder)
+    {
+        builder.ToTable("cms_content_references");
+        builder.HasKey(reference => reference.Id);
+        builder.Property(reference => reference.Target).HasMaxLength(ContentReferenceIndex.MaxTargetLength).IsRequired();
+        builder.HasOne<ContentEntry>()
+            .WithMany()
+            .HasForeignKey(reference => reference.ContentId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(reference => reference.Version)
+            .WithMany()
+            .HasForeignKey(reference => reference.VersionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(reference => new { reference.Kind, reference.Target });
     }
 }
 
@@ -250,4 +275,5 @@ internal static class RetiredColumns
     public const string Icao = "Icao";
     public const string Fir = "Fir";
     public const string Airac = "Airac";
+    public const string Category = "Category";
 }

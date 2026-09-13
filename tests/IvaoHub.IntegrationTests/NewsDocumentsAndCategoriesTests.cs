@@ -306,15 +306,14 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
         var eventsKey = Slug("events-shelf");
         await CreateCategoryAsync(events, Department.ED, ContentKind.News, eventsKey, token);
 
-        // A shelf is not shared for reading the way a template is: it is an ordinary departmental
-        // resource, and the list is narrowed to the departments of whoever asks.
-        var listed = await events.GetFromJsonAsync<JsonElement>(CategoriesEndpoints.Pattern, token);
+        // Since G20 every department reads every collection: a page of one lists the collection of
+        // another (note 2026-09-13-contenuti-centralizzati §4). What stays departmental is writing.
+        var listed = await events.GetFromJsonAsync<JsonElement>($"{CategoriesEndpoints.Pattern}?pageSize=100&q={webKey}", token);
         var keys = listed.GetProperty("items").EnumerateArray()
             .Select(item => item.GetProperty("key").GetString())
             .ToArray();
 
-        Assert.Contains(eventsKey, keys);
-        Assert.DoesNotContain(webKey, keys);
+        Assert.Contains(webKey, keys);
 
         // And writing one of another department is refused by the single handler, as any other row.
         var target = await web.GetFromJsonAsync<JsonElement>(
@@ -373,7 +372,7 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
 
         // The row is untouched: nothing cascaded, nothing was rewritten.
         var kept = await staff.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{newsId}", token);
-        Assert.Equal(shelf, kept.GetProperty("category").GetString());
+        Assert.Equal(shelf, kept.GetProperty("collections")[0].GetString());
 
         // And the list still carries the row, now with a key the vocabulary no longer explains —
         // which is what the client draws as the key itself.
@@ -384,7 +383,7 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
         var filed = after.GetProperty("items").EnumerateArray()
             .Single(item => item.GetProperty("url").GetString() == $"/news/{slug}");
 
-        Assert.Equal(shelf, filed.GetProperty("category").GetString());
+        Assert.Equal(shelf, filed.GetProperty("collections")[0].GetString());
         Assert.DoesNotContain(shelf, Vocabulary(after));
     }
 
@@ -450,7 +449,7 @@ public sealed class NewsDocumentsAndCategoriesTests(MariaDbFixture mariaDb) : IA
             seo = (Dictionary<string, object>?)null,
             body = Body(),
             schemaVersion = 1,
-            category,
+            collections = category is null ? Array.Empty<string>() : [category],
             coverMediaId = (long?)null,
             pinned,
             sort = 0,

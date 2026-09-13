@@ -1,6 +1,13 @@
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Data;
+using IvaoHub.Core.Localization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Core.Content;
 
@@ -24,7 +31,7 @@ public static class CategoriesEndpoints
 
         var mapper = new CategoryMapper();
 
-        return app.MapCrud<ContentCategory, CategoryListDto, CategoryDetailDto, CategoryWriteDto>(
+        var group = app.MapCrud<ContentCategory, CategoryListDto, CategoryDetailDto, CategoryWriteDto>(
             Pattern,
             options =>
             {
@@ -47,6 +54,9 @@ public static class CategoriesEndpoints
                 options.Filterable.Add(nameof(ContentCategory.OwnerDepartment));
                 options.Filterable.Add(nameof(ContentCategory.IsActive));
 
+                // Read by every department, written by its own (G20).
+                options.SharedForReading = ContentCategory.SharedForReading;
+
                 options.SearchFields.Add(category => category.Key);
                 options.SearchFields.Add(category => category.Label);
 
@@ -54,5 +64,45 @@ public static class CategoriesEndpoints
                 options.ToDetail = mapper.ToDetail;
                 options.Apply = mapper.Apply;
             });
+
+        // ⚠️ One hand written read, counted (G20): the published pages that list this collection, so
+        // that the screen says "used in N pages" and taking one away names them first.
+        group.MapGet("/{id:long}/uses", UsesAsync)
+            .WithName("CategoriesUses")
+            .Produces<IReadOnlyList<ContentAppearanceDto>>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.ContentView);
+
+        return group;
+    }
+
+    private static async Task<IResult> UsesAsync(
+        long id,
+        HubDbContext database,
+        ContentReferenceIndex references,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var collection = await database.ContentCategories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(row => row.Id == id, http.RequestAborted);
+
+        if (collection is null)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey));
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, collection, CorePermissions.ContentView)).Succeeded)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        return Results.Ok(await references.UsesOfCollectionAsync(collection, http.RequestAborted));
     }
 }

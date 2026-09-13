@@ -401,9 +401,9 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
             query = query.Where(content => content.OwnerDepartment == owner);
         }
 
-        if (BlockProps.Text(props, "category") is { } category)
+        if (CollectionOf(props) is { } collection)
         {
-            query = query.Where(content => content.Category == category);
+            query = query.InCollection(collection) ?? query.Where(_ => false);
         }
 
         var rows = await Order(query, props)
@@ -422,7 +422,7 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
                 // The one place that decides where a row lives is the row itself, so a list and
                 // the search index cannot point at two different addresses.
                 ["url"] = row.Url,
-                ["category"] = row.Category,
+                ["collections"] = new JsonArray([.. row.Collections.Select(key => (JsonNode?)JsonValue.Create(key))]),
                 ["department"] = row.OwnerDepartment.ToString(),
                 ["publishedAt"] = row.PublishedAt is { } published ? BlockProps.Instant(published) : null,
             };
@@ -437,6 +437,28 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
             ["categories"] = await VocabularyAsync(kind, department, cancellationToken),
         };
     }
+
+    /// <summary>
+    /// The collection this block lists, as the index names it: the kind, the department (<c>*</c> for
+    /// a block that names none) and the key — <c>Document:AOD:guides</c> (G20).
+    /// </summary>
+    public IEnumerable<string> Collections(JsonNode? props)
+    {
+        if (CollectionOf(props) is not { } collection
+            || !BlockProps.TryDepartment(props, "department", out var department))
+        {
+            return [];
+        }
+
+        return [ContentReferenceIndex.CollectionTarget(Kind, department, collection)];
+    }
+
+    /// <summary>
+    /// The collection the block names. The property is still called <c>category</c>: renaming it
+    /// would have meant rewriting every saved body, and published versions are never rewritten, for
+    /// a word only the screens show — and they say "collection" (G20).
+    /// </summary>
+    private static string? CollectionOf(JsonNode? props) => BlockProps.Text(props, "category");
 
     /// <summary>
     /// The words this kind is filed under, so that a list can show a shelf by its translated name
@@ -520,8 +542,7 @@ public sealed class DocumentListProvider(HubDbContext database) : ContentListPro
 
     protected override IQueryable<ContentEntry> Order(IQueryable<ContentEntry> query, JsonNode? props) =>
         query
-            .OrderBy(content => content.Category)
-            .ThenBy(content => content.Sort)
+            .OrderBy(content => content.Sort)
             .ThenBy(content => content.Id);
 
     protected override void Describe(ContentEntry entry, JsonObject item)

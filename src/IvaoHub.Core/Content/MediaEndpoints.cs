@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 
 namespace IvaoHub.Core.Content;
 
@@ -68,6 +69,17 @@ public static class MediaEndpoints
                 options.Source = database => CrudSource.BackOffice<MediaAsset>(database)
                     .Where(media => media.DeletedAt == null);
 
+                // An archived file is out of the list and out of the picker unless somebody asks for
+                // it (G20): `filter[archived]=true` for the archive, `any` for both.
+                options.CustomFilters[ArchivedFilter] = (query, raw) => raw switch
+                {
+                    "false" => query.Where(media => media.ArchivedAt == null),
+                    "true" => query.Where(media => media.ArchivedAt != null),
+                    "any" => query,
+                    _ => null,
+                };
+                options.DefaultFilters[ArchivedFilter] = "false";
+
                 // No JSON create: a media is born from an upload, with its file already on disk.
                 options.MapCreate = false;
 
@@ -88,8 +100,35 @@ public static class MediaEndpoints
             // this hub talks to itself.
             .DisableAntiforgery();
 
+        // ⚠️ Three hand written writes of G20, counted (note 2026-09-13-contenuti-centralizzati §3.4):
+        // a new file for the same row — the address changes with it, the identifier does not — and
+        // archiving a file, and taking it out of the archive. Archiving is not a field of the JSON
+        // payload because it is not something a form edits; it is what a refused delete offers.
+        group.MapPost("/{id:long}/file", ReplaceFileAsync)
+            .WithName("MediaReplaceFile")
+            .Produces<MediaDetailDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.MediaEdit)
+            .DisableAntiforgery();
+
+        group.MapPost("/{id:long}/archive", ArchiveAsync)
+            .WithName("MediaArchive")
+            .Produces<MediaDetailDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.MediaEdit);
+
+        group.MapPost("/{id:long}/restore", RestoreAsync)
+            .WithName("MediaRestore")
+            .Produces<MediaDetailDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.MediaEdit);
+
         return group;
     }
+
+    /// <summary>The custom filter of the archive: <c>false</c> by default, <c>true</c>, or <c>any</c>.</summary>
+    public const string ArchivedFilter = "archived";
 
     /// <summary>
     /// The file itself, straight from Kestrel. Anonymous, because most of a public site is, and the
@@ -100,8 +139,15 @@ public static class MediaEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapGet(MediaUrl.Pattern, ServeAsync)
+        app.MapGet(MediaUrl.Pattern, ServeCurrentAsync)
             .WithName("MediaFile")
+            .WithTags(CorePermissions.MediaArea)
+            .ExcludeFromDescription()
+            .AllowAnonymous();
+
+        // What a page body builds from the identifier alone, and every address printed before G20.
+        app.MapGet(MediaUrl.UnversionedPattern, ServeUnversionedAsync)
+            .WithName("MediaFileUnversioned")
             .WithTags(CorePermissions.MediaArea)
             .ExcludeFromDescription()
             .AllowAnonymous();
@@ -122,34 +168,12 @@ public static class MediaEndpoints
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        var limits = media.Value;
-
-        if (file.Length <= 0 || file.Length > limits.MaxBytes)
-        {
-            return Refused(catalog, currentUser, "errors.media.tooLarge");
-        }
-
-        // What the browser called it is decoration. What the first bytes say it is decides both
-        // whether it is allowed in and what it will be served as: a part of a multipart request
-        // carries whatever content type its sender wrote.
-        await using var content = file.OpenReadStream();
-        var head = new byte[ImageHeader.ProbeBytes];
-        var read = await ReadAsMuchAsPossibleAsync(content, head, http.RequestAborted);
-
-        var format = MediaFormats.Detect(head.AsSpan(0, read));
-        if (format is null || !limits.AllowedContentTypes.Contains(format.ContentType, StringComparer.OrdinalIgnoreCase))
-        {
-            return Refused(catalog, currentUser, "errors.media.typeNotAllowed");
-        }
-
         var entity = new MediaAsset
         {
             OwnerDepartment = ownerDepartment,
             // Staff by default: a file becomes public because somebody said so, never by arriving.
             Visibility = visibility ?? Visibility.Staff,
             FileName = Path.GetFileName(file.FileName ?? string.Empty),
-            ContentType = format.ContentType,
-            ByteSize = file.Length,
         };
 
         if (!(await authorization.AuthorizeAsync(http.User, entity, CorePermissions.MediaEdit)).Succeeded)
@@ -159,19 +183,14 @@ public static class MediaEndpoints
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
         }
 
-        if (format.IsImage && ImageHeader.Read(head.AsSpan(0, read)) is { } size)
+        var received = await ReceiveAsync(file, media.Value, storage, clock, http.RequestAborted);
+        if (received.RefusalKey is { } refusal)
         {
-            entity.Width = size.Width;
-            entity.Height = size.Height;
+            return Refused(catalog, currentUser, refusal);
         }
 
-        // The bytes first and the row second: a row whose file is missing is a broken page, while
-        // a file no row names is a few bytes nobody reads.
-        var stored = await storage.SaveAsync(
-            new HeadThenRestStream(head.AsMemory(0, read), content),
-            format,
-            clock.UtcNow,
-            http.RequestAborted);
+        var stored = received.Stored!;
+        Describe(entity, received);
 
         // The same bytes, already in this department's library and still there: the file just
         // written goes, and the answer is the row that exists — 200 and not 201, which is how the
@@ -194,13 +213,194 @@ public static class MediaEndpoints
             return Results.Ok(new MediaMapper().ToDetail(existing));
         }
 
-        entity.StoredName = stored.StoredName;
-        entity.Sha256 = stored.Sha256;
-
         database.Media.Add(entity);
         await database.SaveChangesAsync(http.RequestAborted);
 
         return Results.Created($"{Pattern}/{entity.Id}", new MediaMapper().ToDetail(entity));
+    }
+
+    /// <summary>What an upload measured, or why it was refused.</summary>
+    private sealed record ReceivedFile(
+        string? RefusalKey,
+        MediaFormat? Format,
+        long ByteSize,
+        int? Width,
+        int? Height,
+        StoredFile? Stored);
+
+    /// <summary>
+    /// The part of an upload that is about the bytes and not the row: the size, what the first bytes
+    /// say the file is, its pixels, and the file written to disk. One place, for a new file and for
+    /// a file replaced on the same row (G20).
+    /// </summary>
+    private static async Task<ReceivedFile> ReceiveAsync(
+        IFormFile file,
+        MediaOptions limits,
+        MediaStorage storage,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        if (file.Length <= 0 || file.Length > limits.MaxBytes)
+        {
+            return new ReceivedFile("errors.media.tooLarge", null, 0, null, null, null);
+        }
+
+        // What the browser called it is decoration. What the first bytes say it is decides both
+        // whether it is allowed in and what it will be served as: a part of a multipart request
+        // carries whatever content type its sender wrote.
+        await using var content = file.OpenReadStream();
+        var head = new byte[ImageHeader.ProbeBytes];
+        var read = await ReadAsMuchAsPossibleAsync(content, head, cancellationToken);
+
+        var format = MediaFormats.Detect(head.AsSpan(0, read));
+        if (format is null || !limits.AllowedContentTypes.Contains(format.ContentType, StringComparer.OrdinalIgnoreCase))
+        {
+            return new ReceivedFile("errors.media.typeNotAllowed", null, 0, null, null, null);
+        }
+
+        var size = format.IsImage ? ImageHeader.Read(head.AsSpan(0, read)) : null;
+
+        // The bytes first and the row second: a row whose file is missing is a broken page, while
+        // a file no row names is a few bytes nobody reads.
+        var stored = await storage.SaveAsync(
+            new HeadThenRestStream(head.AsMemory(0, read), content),
+            format,
+            clock.UtcNow,
+            cancellationToken);
+
+        return new ReceivedFile(null, format, file.Length, size?.Width, size?.Height, stored);
+    }
+
+    /// <summary>Writes what was received onto the row.</summary>
+    private static void Describe(MediaAsset entity, ReceivedFile received)
+    {
+        entity.ContentType = received.Format!.ContentType;
+        entity.ByteSize = received.ByteSize;
+        entity.Width = received.Width;
+        entity.Height = received.Height;
+        entity.StoredName = received.Stored!.StoredName;
+        entity.Sha256 = received.Stored.Sha256;
+        entity.HasFile = true;
+    }
+
+    /// <summary>
+    /// A new file for the same row: the logo is the same logo, the SVG is newer (G20). Written as a
+    /// new file and never over the old one, because a file on disk is somebody's printed page until
+    /// the row stops naming it. The identifier stays, so every page that shows it shows the new file;
+    /// the address changes with the fingerprint, so no cache keeps the old one.
+    /// </summary>
+    private static async Task<IResult> ReplaceFileAsync(
+        long id,
+        [FromForm] IFormFile file,
+        HubDbContext database,
+        MediaStorage storage,
+        IOptions<MediaOptions> media,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        IClock clock,
+        HttpContext http)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+
+        var (entity, denied) = await WritableAsync(id, database, authorization, currentUser, catalog, http);
+        if (entity is null)
+        {
+            return denied!;
+        }
+
+        var received = await ReceiveAsync(file, media.Value, storage, clock, http.RequestAborted);
+        if (received.RefusalKey is { } refusal)
+        {
+            return Refused(catalog, currentUser, refusal);
+        }
+
+        var previous = entity.StoredName;
+
+        Describe(entity, received);
+        entity.FileName = Path.GetFileName(file.FileName ?? entity.FileName);
+        await database.SaveChangesAsync(http.RequestAborted);
+
+        // The old file goes once no other row names it: nothing serves it any more, since a file is
+        // served through its row.
+        var shared = await CrudSource.BackOffice<MediaAsset>(database)
+            .AnyAsync(row => row.StoredName == previous, http.RequestAborted);
+
+        if (!shared && !string.Equals(previous, entity.StoredName, StringComparison.Ordinal))
+        {
+            storage.Delete(previous);
+        }
+
+        return Results.Ok(new MediaMapper().ToDetail(entity));
+    }
+
+    private static Task<IResult> ArchiveAsync(
+        long id,
+        HubDbContext database,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        IClock clock,
+        HttpContext http) =>
+        SetArchivedAsync(id, clock.UtcNow, database, authorization, currentUser, catalog, http);
+
+    private static Task<IResult> RestoreAsync(
+        long id,
+        HubDbContext database,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http) =>
+        SetArchivedAsync(id, archivedAt: null, database, authorization, currentUser, catalog, http);
+
+    private static async Task<IResult> SetArchivedAsync(
+        long id,
+        DateTime? archivedAt,
+        HubDbContext database,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var (entity, denied) = await WritableAsync(id, database, authorization, currentUser, catalog, http);
+        if (entity is null)
+        {
+            return denied!;
+        }
+
+        entity.ArchivedAt = archivedAt;
+        await database.SaveChangesAsync(http.RequestAborted);
+
+        return Results.Ok(new MediaMapper().ToDetail(entity));
+    }
+
+    /// <summary>The row, when it exists and this member may change it; otherwise the answer that says why not.</summary>
+    private static async Task<(MediaAsset? Entity, IResult? Denied)> WritableAsync(
+        long id,
+        HubDbContext database,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var entity = await CrudSource.BackOffice<MediaAsset>(database)
+            .FirstOrDefaultAsync(row => row.Id == id && row.DeletedAt == null, http.RequestAborted);
+
+        if (entity is null)
+        {
+            return (null, Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey)));
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, entity, CorePermissions.MediaEdit)).Succeeded)
+        {
+            return (null, Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey)));
+        }
+
+        return (entity, null);
     }
 
     /// <summary>
@@ -212,6 +412,15 @@ public static class MediaEndpoints
     {
         var database = services.GetRequiredService<HubDbContext>();
         var storage = services.GetRequiredService<MediaStorage>();
+
+        // A file a published page shows is archived, not deleted (G20, note
+        // 2026-09-13-contenuti-centralizzati §3.4). The index says which pages; the screen offers the
+        // archive instead.
+        var uses = await services.GetRequiredService<ContentReferenceIndex>().UsesOfMediaAsync(media.Id, cancellationToken);
+        if (uses.Count > 0)
+        {
+            throw new DomainRefusalException("id", "errors.media.inUse");
+        }
 
         media.DeletedAt = services.GetRequiredService<IClock>().UtcNow;
 
@@ -225,9 +434,24 @@ public static class MediaEndpoints
         }
     }
 
+    private static Task<IResult> ServeCurrentAsync(
+        long id,
+        string fingerprint,
+        HubDbContext database,
+        MediaStorage storage,
+        HttpContext http) =>
+        ServeAsync(id, fingerprint, database, storage, http);
+
+    private static Task<IResult> ServeUnversionedAsync(
+        long id,
+        HubDbContext database,
+        MediaStorage storage,
+        HttpContext http) =>
+        ServeAsync(id, fingerprint: null, database, storage, http);
+
     private static async Task<IResult> ServeAsync(
         long id,
-        string name,
+        string? fingerprint,
         HubDbContext database,
         MediaStorage storage,
         HttpContext http)
@@ -243,14 +467,22 @@ public static class MediaEndpoints
             return Results.NotFound();
         }
 
-        // The address carries the identifier and a file never changes its bytes — a replacement is
-        // a new upload — so it may be cached for a long time. Only a public file may be kept by
-        // anything other than the browser that asked for it.
-        http.Response.Headers.CacheControl = media.Visibility == Visibility.Public
-            ? "public, max-age=31536000, immutable"
-            : "private, max-age=3600";
+        // An address with the current fingerprint names these bytes and no others, so it may be kept
+        // for a year. Any other address of the row — none, or the fingerprint of a file since
+        // replaced — may be kept too, but checked again each time: the tag answers 304 when nothing
+        // changed. Only a public file may be kept by anything other than the browser that asked.
+        var current = MediaUrl.Fingerprint(media);
+        var isPublic = media.Visibility == Visibility.Public;
 
-        return Results.File(file.FullName, media.ContentType, enableRangeProcessing: true);
+        http.Response.Headers.CacheControl = string.Equals(fingerprint, current, StringComparison.Ordinal)
+            ? isPublic ? "public, max-age=31536000, immutable" : "private, max-age=3600"
+            : isPublic ? "public, no-cache" : "private, no-cache";
+
+        return Results.File(
+            file.FullName,
+            media.ContentType,
+            entityTag: new EntityTagHeaderValue($"\"{current}\""),
+            enableRangeProcessing: true);
     }
 
     /// <summary>

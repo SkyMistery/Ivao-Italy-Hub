@@ -419,7 +419,7 @@ public sealed class DataBlockEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifet
             PublishedAt = clock.UtcNow,
             Title = Both($"Notizia {slug}", $"News {slug}"),
             BodyJson = """{ "schemaVersion": 1, "sections": [] }""",
-            Category = category,
+            Collections = [category],
         });
 
         await database.SaveChangesAsync(cancellationToken);

@@ -18,6 +18,9 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
     /// <summary>Longest slug the unique index holds.</summary>
     public const int MaxSlugLength = 160;
 
+    /// <summary>How many collections one row may be filed in.</summary>
+    public const int MaxCollections = 20;
+
     /// <summary>The fields only a document carries, by the name the form uses.</summary>
     private static readonly IReadOnlyList<(string Field, Func<ContentWriteDto, bool> IsSet)> DocumentOnly =
     [
@@ -40,6 +43,15 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
         RuleFor(content => content.Title)
             .Must(title => title.Values.Any(text => !string.IsNullOrWhiteSpace(text)))
             .WithMessage("errors.required");
+
+        // The collections a row is filed in (G20): keys of the vocabulary, a handful at most. That
+        // the key is one the department wrote is not checked, as it never was for a category: a
+        // collection deleted later leaves its key on the rows, and the lists show them as they are.
+        RuleFor(content => content.Collections)
+            .Must(collections => collections is null || collections.Count <= MaxCollections)
+            .WithMessage("errors.content.tooManyCollections")
+            .Must(collections => collections is null || collections.All(JsonQuery.IsCollectionKey))
+            .WithMessage("errors.content.collectionInvalid");
 
         RuleFor(content => content.Slug)
             .NotEmpty().WithMessage("errors.required")
