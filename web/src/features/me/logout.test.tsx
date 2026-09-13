@@ -53,6 +53,7 @@ function bootstrap(user: Bootstrap['user']): Bootstrap {
       faviconUrl: null,
       firStaffScope: 'all',
       siteDepartment: 'WD',
+      contentApproval: ['Page'],
     },
     modules: [],
     navigation: { public: [], footer: [], staff: [] },

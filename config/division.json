@@ -11,5 +11,6 @@
   "icaoPrefixes": ["LI"],
   "modules": { "specialops": true },
   "superAdmins": [704798],
-  "firStaffScope": "all"
+  "firStaffScope": "all",
+  "contentApproval": ["Page"]
 }

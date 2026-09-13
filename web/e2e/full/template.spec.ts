@@ -438,6 +438,9 @@ test('a section is dragged above another on the page itself', async ({ page, con
 
   // A section is picked by its own air: a click on the section's padding, above its heading.
   const lower = frame.locator('[data-pickable="section"]').nth(1);
+  // Measured once it is there: `boundingBox` does not wait, and a render that lands between the
+  // headings and this line answered null (CI, G19).
+  await expect(lower).toBeVisible();
   const box = (await lower.boundingBox())!;
   await page.mouse.click(box.x + 8, box.y + 8);
 

@@ -468,9 +468,11 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var id = (await created.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
 
-        // A draft is allowed to be half written. Showing it to the public is not.
+        // A draft is allowed to be half written. Showing it to the public is not. Asked by whoever
+        // may publish a page, since pages go through approval (note 2026-09-13-contenuti-centralizzati).
+        using var publisher = await PublisherAsync(token);
         using var refused = await SendAsync(
-            client,
+            publisher,
             HttpMethod.Post,
             $"{ContentEndpoints.Pattern}/{id}/publish",
             new { changelog = (string?)null },
@@ -533,8 +535,9 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Equal(["en"], Strings(problems.GetProperty("localized").GetProperty("title")));
 
         // The refusal says exactly the same, which is the property this endpoint is for.
+        using var publisher = await PublisherAsync(token);
         using var refused = await SendAsync(
-            client,
+            publisher,
             HttpMethod.Post,
             $"{ContentEndpoints.Pattern}/{id}/publish",
             new { changelog = (string?)null },
@@ -564,7 +567,7 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Empty(nothingLeft.GetProperty("errors").EnumerateObject());
         Assert.Empty(nothingLeft.GetProperty("localized").EnumerateObject());
 
-        await PublishAsync(client, id, token);
+        await PublishAsync(publisher, id, token);
     }
 
     [Fact]
@@ -585,7 +588,8 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         using var beforePublishing = await anonymous.GetAsync(PublicUri(slug), token);
         Assert.Equal(HttpStatusCode.NotFound, beforePublishing.StatusCode);
 
-        await PublishAsync(client, id, token);
+        using var publisher = await PublisherAsync(token);
+        await PublishAsync(publisher, id, token);
 
         var published = await anonymous.GetFromJsonAsync<JsonElement>(PublicUri(slug), token);
         Assert.Equal(1, published.GetProperty("version").GetInt32());
@@ -611,7 +615,7 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
         var stale = await anonymous.GetFromJsonAsync<JsonElement>(PublicUri(slug), token);
         Assert.Equal("Prima stesura", Heading(stale, "it"));
 
-        await PublishAsync(client, id, token);
+        await PublishAsync(publisher, id, token);
 
         var fresh = await anonymous.GetFromJsonAsync<JsonElement>(PublicUri(slug), token);
         Assert.Equal(2, fresh.GetProperty("version").GetInt32());
@@ -742,6 +746,19 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     // ---- helpers -----------------------------------------------------------------------------
+
+    /// <summary>
+    /// Somebody who may publish a page of any department. Since G19 a coordinator marks a page ready
+    /// and the director or the web team publishes it; the tests about what publication refuses and
+    /// keeps are not about who presses, so they press as the superadministrator.
+    /// </summary>
+    private async Task<HttpClient> PublisherAsync(CancellationToken cancellationToken)
+    {
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: cancellationToken);
+        var publisher = _factory.CreateApiClient();
+        await _factory.SignInAsync(publisher, SuperadminVid, cancellationToken);
+        return publisher;
+    }
 
     private static Uri PublicUri(string slug) =>
         new($"{ContentEndpoints.Pattern}/public/{ContentKind.Page}/{slug}", UriKind.Relative);

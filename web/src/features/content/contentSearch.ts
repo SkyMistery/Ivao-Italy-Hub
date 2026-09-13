@@ -17,8 +17,13 @@ export const CONTENT_SCREEN_KINDS = ['Page', 'News', 'Document', 'Template'] as 
 
 export type ContentScreenKind = (typeof CONTENT_SCREEN_KINDS)[number];
 
+/** The three states of a row; `Ready` is a page waiting for approval (G19). */
+export const CONTENT_STATUSES = ['Draft', 'Ready', 'Published'] as const;
+
 export const contentSearchSchema = departmentListSearchSchema.extend({
   kind: z.enum(CONTENT_SCREEN_KINDS).default('Page'),
+  // Optional and not defaulted, like the department: every state unless one is asked for.
+  status: z.enum(CONTENT_STATUSES).optional(),
 });
 
 export type ContentSearch = z.output<typeof contentSearchSchema>;

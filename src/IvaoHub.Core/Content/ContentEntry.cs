@@ -151,6 +151,26 @@ public sealed class ContentEntry
     /// <summary>When the owning department was told the review date had passed, so it is told once.</summary>
     public DateTime? ReviewNotifiedAt { get; set; }
 
+    // ---- the review of a page (G19, note 2026-09-13-contenuti-centralizzati, 3.2) ---------------
+
+    /// <summary>When it was marked ready; null while it is not waiting for anybody.</summary>
+    public DateTime? ReadyAt { get; set; }
+
+    /// <summary>Who marked it ready, who is told when it is approved or sent back.</summary>
+    public int? ReadyBy { get; set; }
+
+    /// <summary>
+    /// The last word of the review: what the author said marking it ready, or what the approver said
+    /// sending it back. Shown on the row until the next one replaces it.
+    /// </summary>
+    public string? ReviewNote { get; set; }
+
+    /// <summary>
+    /// The menu entry the author proposes with the page, as JSON (<see cref="ProposedMenuEntry"/>):
+    /// under which entry, and the words. The approver corrects it and approving creates it.
+    /// </summary>
+    public string? ProposedMenuJson { get; set; }
+
     /// <summary>Whether the footer — version, date, publisher, print — is drawn at the end.</summary>
     public bool ShowFooter { get; set; } = true;
 

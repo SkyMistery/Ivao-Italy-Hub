@@ -265,6 +265,15 @@ through the same renderer the public site uses. On any page of `/staff/content`:
 8. **Publishing asks** (new in G14). "Publish" opens a window with **what changed** — the changelog
    line every version could carry since M0 and had never had a box for. It is `ConfirmDialog`, extended with fields rather than written
    beside as a fifth dialog of its own.
+9. **A page is approved, not published by its department** (new in G19). Sign in as a coordinator
+   and open one of the department's pages: there is no "Publish", there is **"Mark ready"**, which
+   asks for a note and, if you like, the menu entry the page should have. The page is now read only
+   — "Save draft" is off, nothing saves by itself, and the server refuses a write anyway — and the
+   coordinator can only withdraw it. As the director or the web team, **"To approve"** in the sidebar
+   lists it; open it and read which sections changed, then "Approve" lets you correct the address and
+   the menu entry in the same window that publishes it, or "Send back" returns it with a note. News
+   and documents are still published by their department. Which kinds need approval is
+   `division.json → contentApproval`.
 
 **The comforts, added between 10 and 12 September while Carmine used it:** double-click a block or a
 section to pick it and land in the first field of its panel; `Canc` deletes, `⌘D` duplicates, `Esc`

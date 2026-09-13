@@ -29,6 +29,7 @@ export const anonymousBootstrap = {
     // Which department owns the site, and therefore where its menu is edited. The client is told
     // rather than knowing (design M1 §8.1).
     siteDepartment: 'WD',
+    contentApproval: ['Page'],
   },
   modules: [],
   // Since M1 G8 the public menu is a table: an editorial entry carries its words in every language,

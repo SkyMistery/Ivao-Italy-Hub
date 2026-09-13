@@ -43,6 +43,7 @@ const bootstrap = {
     faviconUrl: null,
     firStaffScope: 'all',
     siteDepartment: 'WD',
+    contentApproval: ['Page'],
   },
   modules: [],
   navigation: { public: [], footer: [], staff: [] },

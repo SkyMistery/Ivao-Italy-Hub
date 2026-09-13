@@ -414,7 +414,8 @@
       },
       "status": {
         "Draft": "Bozza",
-        "Published": "Pubblicata"
+        "Published": "Pubblicata",
+        "Ready": "In attesa di approvazione"
       },
       "visibility": {
         "Public": "Tutti",
@@ -604,6 +605,61 @@
         "TooDeep": "Sarebbe un quarto livello. Una pagina scende al massimo di tre livelli, contando quelle sotto di lei.",
         "InvalidParent": "Una pagina non può stare sotto questa.",
         "TopLevelNotAllowed": "Solo il direttore e il team web mettono una pagina in cima al sito. Scegli la pagina sotto cui metterla."
+      }
+    },
+    "review": {
+      "title": "Approvazione",
+      "ready": "Segna pronta",
+      "readyDialog": {
+        "title": "Mandare questa pagina in approvazione?",
+        "description": "Quello che vedi viene salvato e mandato in approvazione. Finché non viene approvata o rimandata indietro, nessuno può cambiarla.",
+        "confirm": "Segna pronta"
+      },
+      "readyDone": "Mandata in approvazione.",
+      "note": "Una nota per chi la legge",
+      "sentBack": "Rimandata indietro",
+      "waiting": "In attesa di approvazione",
+      "waitingSince": "In attesa di approvazione dal {{date}}, segnata pronta da {{name}}",
+      "address": "Dove sarà:",
+      "firstPublication": "Prima pubblicazione: tutta la pagina è nuova.",
+      "sections": "Che cosa è cambiato",
+      "change": {
+        "Added": "Aggiunta",
+        "Removed": "Tolta",
+        "Changed": "Cambiata",
+        "Unchanged": "Invariata"
+      },
+      "menu": {
+        "title": "Voce di menu",
+        "label": "Etichetta ({{locale}})",
+        "parent": "Sotto",
+        "top": "In cima al menu",
+        "proposed": "Voce di menu proposta:"
+      },
+      "approve": "Approva",
+      "approveDialog": {
+        "title": "Approvare e pubblicare questa pagina?",
+        "description": "Prima che vada online puoi correggere qui l’indirizzo e la voce di menu.",
+        "confirm": "Approva e pubblica"
+      },
+      "approveDone": "Approvata e pubblicata.",
+      "sendBack": "Rimanda indietro",
+      "sendBackDialog": {
+        "title": "Rimandare indietro questa pagina?",
+        "description": "Torna una bozza, e chi l’ha segnata pronta riceve la nota.",
+        "confirm": "Rimanda indietro"
+      },
+      "sendBackDone": "Rimandata indietro.",
+      "withdraw": "Ritira dall’approvazione",
+      "withdrawDialog": {
+        "title": "Ritirare questa pagina dall’approvazione?",
+        "description": "Torna una bozza, e si può cambiare e segnare pronta di nuovo.",
+        "confirm": "Ritira"
+      },
+      "withdrawDone": "Ritirata: è di nuovo una bozza.",
+      "list": {
+        "title": "Da approvare",
+        "description": "Le pagine in attesa di approvazione."
       }
     }
   },
@@ -1524,6 +1580,18 @@
       "document.reviewDue": {
         "title": "Documenti da rivedere",
         "description": "Una mail, una volta sola, quando un documento di un dipartimento di cui fai parte supera la data di revisione."
+      },
+      "content.readyForApproval": {
+        "title": "Pagine da approvare",
+        "description": "Una mail quando una pagina di un dipartimento che puoi approvare viene segnata pronta."
+      },
+      "content.approved": {
+        "title": "Le mie pagine approvate",
+        "description": "Una mail quando una pagina che hai segnato pronta va online."
+      },
+      "content.sentBack": {
+        "title": "Le mie pagine rimandate indietro",
+        "description": "Una mail, con la nota, quando una pagina che hai segnato pronta viene rimandata indietro."
       }
     }
   },
@@ -1565,7 +1633,9 @@
     "filters": {
       "kind": "Mostra",
       "department": "Dipartimento",
-      "allDepartments": "Tutti i dipartimenti"
+      "allDepartments": "Tutti i dipartimenti",
+      "status": "Stato",
+      "allStatuses": "Tutti gli stati"
     },
     "kinds": {
       "Page": "Pagine",

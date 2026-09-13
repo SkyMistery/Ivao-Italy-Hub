@@ -13,6 +13,9 @@ public static class RolePermissionMatrix
     /// Permissions a position holds on its own department, by seniority.
     /// An advisor edits but does not publish and does not touch templates; a trainer, who is a
     /// member of the training department rather than part of its staff, holds nothing of the core.
+    /// <para>No level holds <c>Menu.Edit</c> since 13 September 2026: the menu of the site passes
+    /// through the direction and the web team (note 2026-09-13-contenuti-centralizzati, 3.6), who
+    /// reach every permission, and anybody else holds it by a grant.</para>
     /// </summary>
     private static readonly Dictionary<StaffLevel, string[]> ByLevel = new()
     {
@@ -31,7 +34,6 @@ public static class RolePermissionMatrix
             CorePermissions.ContactsView,
             CorePermissions.ContactsEdit,
             CorePermissions.MenuView,
-            CorePermissions.MenuEdit,
         ],
         [StaffLevel.Assistant] =
         [
@@ -48,7 +50,6 @@ public static class RolePermissionMatrix
             CorePermissions.ContactsView,
             CorePermissions.ContactsEdit,
             CorePermissions.MenuView,
-            CorePermissions.MenuEdit,
         ],
         [StaffLevel.Advisor] =
         [
@@ -63,7 +64,6 @@ public static class RolePermissionMatrix
             CorePermissions.ContactsView,
             CorePermissions.ContactsEdit,
             CorePermissions.MenuView,
-            CorePermissions.MenuEdit,
         ],
         [StaffLevel.Member] = [],
     };

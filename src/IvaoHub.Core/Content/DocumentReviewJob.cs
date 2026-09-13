@@ -127,7 +127,8 @@ public sealed class DocumentReviewJob(
                         // one per language, and the address bar is written in that language too.
                         ["title"] = document.Title.Get(settings.DefaultLocale) ?? document.Slug,
                         ["reviewOn"] = document.ReviewOn!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                        ["url"] = $"https://{settings.Domain}/staff/{department.ToLowerInvariant()}/documents/{document.Id}",
+                        // The one screen of content since G17 (note 2026-09-13-contenuti-centralizzati).
+                        ["url"] = $"https://{settings.Domain}/staff/content/{document.Id}",
                     }),
                 cancellationToken);
 

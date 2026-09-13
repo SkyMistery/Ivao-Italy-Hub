@@ -11,6 +11,20 @@
         "subject": "[{{department}}] Due for review: {{title}}",
         "body": "The document \"{{title}}\" of the {{department}} department was to be reviewed by {{reviewOn}}.\n\nOpen it, check it still says what it should, and either publish a new version or move the review date: {{url}}\n\n---\nYou are receiving this once, because you are staff of {{department}}. You can turn these off on your profile page."
       }
+    },
+    "content": {
+      "readyForApproval": {
+        "subject": "[{{department}}] Waiting for approval: {{title}}",
+        "body": "The page \"{{title}}\" of the {{department}} department is ready to go online at {{path}}.\n\nRead what changed and approve it, or send it back with a note: {{url}}\n\n---\nYou are receiving this because you may approve the pages of the division. You can turn these off on your profile page."
+      },
+      "approved": {
+        "subject": "[{{department}}] Online: {{title}}",
+        "body": "The page \"{{title}}\" you marked ready has been approved, and it is online at {{path}}.\n\n{{url}}\n\n---\nYou can turn these off on your profile page."
+      },
+      "sentBack": {
+        "subject": "[{{department}}] Sent back: {{title}}",
+        "body": "The page \"{{title}}\" you marked ready has been sent back, and it is a draft again.\n\nWhat was said: {{note}}\n\nChange it and mark it ready again: {{url}}\n\n---\nYou can turn these off on your profile page."
+      }
     }
   }
 }

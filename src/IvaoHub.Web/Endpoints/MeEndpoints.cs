@@ -78,7 +78,8 @@ internal static class MeEndpoints
                     options.LogoUrl,
                     options.FaviconUrl,
                     options.FirStaffScope.ToString().ToLowerInvariant(),
-                    SiteOwnership.Department.ToString()),
+                    SiteOwnership.Department.ToString(),
+                    options.ContentApproval),
                 Modules: moduleStates,
                 Navigation: new BootstrapNavigation(
                     Public: await MenuAsync(database, MenuScope.Public, modules.PublicNavigation, user, cancellationToken),
@@ -242,7 +243,10 @@ internal sealed record BootstrapDivision(
     string? LogoUrl,
     string? FaviconUrl,
     string FirStaffScope,
-    string SiteDepartment);
+    string SiteDepartment,
+    // The kinds a department marks ready and somebody with Content.Approve publishes (G19): the
+    // editor offers "mark ready" instead of "publish" for these, and the server decides anyway.
+    IReadOnlyList<string> ContentApproval);
 
 /// <summary>
 /// One module of this build. <paramref name="Enabled"/> is false for an optional module the

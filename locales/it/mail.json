@@ -11,6 +11,20 @@
         "subject": "[{{department}}] Da rivedere: {{title}}",
         "body": "Il documento \"{{title}}\" del dipartimento {{department}} andava rivisto entro il {{reviewOn}}.\n\nAprilo, controlla che dica ancora quello che deve, e pubblica una nuova versione oppure sposta la data di revisione: {{url}}\n\n---\nRicevi questa mail una volta sola, perché fai parte dello staff {{department}}. Puoi disattivarle dalla pagina del tuo profilo."
       }
+    },
+    "content": {
+      "readyForApproval": {
+        "subject": "[{{department}}] Da approvare: {{title}}",
+        "body": "La pagina \"{{title}}\" del dipartimento {{department}} è pronta per andare online su {{path}}.\n\nGuarda che cosa è cambiato e approvala, oppure rimandala indietro con una nota: {{url}}\n\n---\nRicevi questa mail perché puoi approvare le pagine della divisione. Puoi disattivarle dalla pagina del tuo profilo."
+      },
+      "approved": {
+        "subject": "[{{department}}] Online: {{title}}",
+        "body": "La pagina \"{{title}}\" che hai segnato pronta è stata approvata ed è online su {{path}}.\n\n{{url}}\n\n---\nPuoi disattivarle dalla pagina del tuo profilo."
+      },
+      "sentBack": {
+        "subject": "[{{department}}] Rimandata indietro: {{title}}",
+        "body": "La pagina \"{{title}}\" che hai segnato pronta è stata rimandata indietro ed è di nuovo una bozza.\n\nChe cosa è stato detto: {{note}}\n\nCorreggila e segnala di nuovo pronta: {{url}}\n\n---\nPuoi disattivarle dalla pagina del tuo profilo."
+      }
     }
   }
 }

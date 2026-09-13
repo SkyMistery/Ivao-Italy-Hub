@@ -15,11 +15,13 @@ export type ContentDetailDto = components['schemas']['ContentDetailDto'];
 export type ContentWriteDto = components['schemas']['ContentWriteDto'];
 export type PublicContentDto = components['schemas']['PublicContentDto'];
 export type ContentKind = components['schemas']['ContentKind'];
+export type ContentStatus = components['schemas']['PublishStatus'];
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
 export type ContentPublishProblemsDto = components['schemas']['ContentPublishProblemsDto'];
 export type PublicPageDto = components['schemas']['PublicPageDto'];
 export type ContentAddressDto = components['schemas']['ContentAddressDto'];
 export type ContentPageNodeDto = components['schemas']['ContentPageNodeDto'];
+export type ContentReviewDto = components['schemas']['ContentReviewDto'];
 
 export const contentKey = ['content'] as const;
 
@@ -68,15 +70,17 @@ export function publicContentKey(kind: ContentKind, slug: string) {
  * when it is not — the server narrows the list to those either way, so leaving the department out
  * is the screen of the whole back office and not a leak (note 2026-09-13-contenuti-centralizzati).
  * Templates are not in it: the server keeps them out unless a caller asks, which is what the
- * template picker does through `templatesQuery`.
+ * template picker does through `templatesQuery`. `status` narrows it to one state: the pages waiting
+ * for approval are this list with `Ready` (G19).
  */
 export function contentListQuery(
   department: Department | undefined,
   search: ListSearch,
   kind: ContentKind | null = null,
+  status?: ContentStatus,
 ) {
   return queryOptions({
-    queryKey: contentListKey(department, search, kind),
+    queryKey: [...contentListKey(department, search, kind), status ?? null] as const,
     queryFn: async (): Promise<ContentPage> =>
       unwrap(
         await api.GET('/api/content', {
@@ -84,6 +88,7 @@ export function contentListQuery(
           querySerializer: listQuerySerializer({
             ...(department === undefined ? {} : { ownerDepartment: department }),
             ...(kind === null ? {} : { kind }),
+            ...(status === undefined ? {} : { status }),
           }),
         }),
       ),
@@ -325,5 +330,14 @@ export function pageTreeQuery() {
   return queryOptions({
     queryKey: [...contentKey, 'page-tree'] as const,
     queryFn: async (): Promise<ContentPageNodeDto[]> => unwrap(await api.GET('/api/content/pages')),
+  });
+}
+
+/** What the approver of a page reads before deciding: the sections that changed, the address, the menu entry. */
+export function contentReviewQuery(id: number) {
+  return queryOptions({
+    queryKey: [...contentKey, 'review', id] as const,
+    queryFn: async (): Promise<ContentReviewDto> =>
+      unwrap(await api.GET('/api/content/{id}/review', { params: { path: { id } } })),
   });
 }

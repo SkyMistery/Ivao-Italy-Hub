@@ -1,6 +1,7 @@
 import {
   Boxes,
   CalendarDays,
+  ClipboardCheck,
   FileArchive,
   FileText,
   Images,
@@ -81,6 +82,8 @@ const CALENDAR_MANAGE_KINDS = 'Calendar.ManageKinds';
 const CONTENT_MANAGE_TEMPLATES = 'Content.ManageTemplates';
 /** What each screen of the content group is behind, anywhere. */
 const CONTENT_VIEW = 'Content.View';
+/** Who approves the pages the division publishes by approval (G19). */
+const CONTENT_APPROVE = 'Content.Approve';
 const LINKS_VIEW = 'Links.View';
 const MEDIA_VIEW = 'Media.View';
 const AUDIT_VIEW = 'Audit.View';
@@ -97,6 +100,26 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
     const only = department === undefined ? '' : `department=${department}`;
 
     return [
+      // The pages waiting for somebody who may approve them (G19). Once, in the group of every
+      // department — where the director and the web team find it — or under the one department of
+      // somebody granted the approval of that department alone.
+      ...((
+        department === undefined
+          ? holdsPermissionAnywhere(bootstrap, CONTENT_APPROVE) &&
+            bootstrap.division.contentApproval.length > 0
+          : reachableDepartments(bootstrap).length === 1 &&
+            holdsPermission(bootstrap, CONTENT_APPROVE, department) &&
+            bootstrap.division.contentApproval.length > 0
+      )
+        ? [
+            {
+              title: t('content.review.list.title'),
+              description: t('content.review.list.description'),
+              Icon: ClipboardCheck,
+              href: `/staff/content?kind=Page&status=Ready${of}`,
+            },
+          ]
+        : []),
       ...(holdsPermissionAnywhere(bootstrap, CONTENT_VIEW)
         ? [
             {

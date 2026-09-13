@@ -220,7 +220,7 @@ public sealed class DocumentLifeTests(MariaDbFixture mariaDb) : IAsyncLifetime
             .Where(row => row.Type == NotificationTypes.DocumentReviewDue)
             .ToListAsync(cancellationToken);
 
-        return [.. all.Where(row => row.DataJson.Contains($"/documents/{id}\"", StringComparison.Ordinal))];
+        return [.. all.Where(row => row.DataJson.Contains($"/staff/content/{id}\"", StringComparison.Ordinal))];
     }
 
     /// <summary>
