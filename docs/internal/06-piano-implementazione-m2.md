@@ -15,7 +15,7 @@ una news, un documento restano di un dipartimento solo (nota §3.3).
 |---|---|---|---|
 | H1 | I grant a una posizione — **fatta il 13 set 2026** | — | il soggetto di un grant è un VID **oppure** un dipartimento con uno o più livelli; seed una volta da `division.json` |
 | H2 | Le righe di più dipartimenti — **fatta il 13 set 2026** | H1 | `IOwnedByDepartment` a insieme nel filtro, nel handler, nell'interceptor e nelle liste; `modules.<key>.baseDepartment`; un modulo di prova con una tabella nei test |
-| H3 | Le sezioni dei moduli nella barra dello staff | H2 | Contenuti · un gruppo per modulo · Dipartimenti · Amministrazione |
+| H3 | Le sezioni dei moduli nella barra dello staff — **fatta il 13 set 2026** | H2 | Contenuti · un gruppo per modulo · Dipartimenti · Amministrazione |
 
 ### H1 — I grant a una posizione
 
@@ -134,4 +134,23 @@ Nota §3.3. Branch `m2/h2-owned-by-several`, **impilato su H1** (usa i grant di 
 
 ### H3 — Le sezioni dei moduli nella barra dello staff
 
-Nota §3.1. Branch `m2/h3-module-sections`. Da scrivere all'inizio della fase.
+Nota §3.1. Branch `m2/h3-module-sections`, impilato su H2.
+
+**Fatta il 13 settembre 2026.**
+
+- **Il bootstrap dice di che modulo è ogni voce dello staff**: `NavItem.Module`, riempito da `/api/me`
+  componendo le voci modulo per modulo invece che dalla lista già appiattita del registry. Le voci del
+  nucleo e del menu editoriale non ne hanno.
+- **La barra**: Contenuti · **una sezione per modulo** · Dipartimenti · Amministrazione, come dice la
+  nota. Il titolo di una sezione è la chiave `nav.section` nel namespace del modulo
+  (`events:nav.section`), che il modulo porta nei suoi file di lingua; una voce senza modulo finisce
+  sotto «Moduli», come prima. Lo stesso elenco serve la barra e la palette ⌘K.
+- **Il modulo di prova** ha una voce dello staff dietro `Sample.View`; un test d'integrazione prova che
+  il bootstrap la dà con `module: "sample"`, e un test Vitest l'ordine delle sezioni e le voci di ciascuna.
+- ⚠️ **Da ricordare in M2**: un modulo che apre la sua sezione deve avere `nav.section` nel suo
+  namespace, altrimenti la barra mostra la chiave.
+- **Verificato in locale**: Vitest (390), smoke (77), lint, typecheck, formato, build .NET. **Non in
+  locale**: integrazione (Docker spento), che esegue la CI.
+
+Con H3 **la parte A è chiusa**. Il passo dopo, per il piano (§13), è la **nota sulle due dashboard
+personali** (`/me` e `/staff`), poi `05-design-m2.md` e la parte B di questo documento.

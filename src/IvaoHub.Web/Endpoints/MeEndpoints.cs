@@ -84,8 +84,12 @@ internal static class MeEndpoints
                 Navigation: new BootstrapNavigation(
                     Public: await MenuAsync(database, MenuScope.Public, modules.PublicNavigation, user, cancellationToken),
                     Footer: await MenuAsync(database, MenuScope.Footer, [], user, cancellationToken),
+                    // Each module's entries say which module they are, so that the back office draws a
+                    // section per module rather than one pile (M2, note
+                    // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.1).
                     Staff: user.IsStaff || user.IsSuperadmin
-                        ? [Staff, .. Visible(modules.StaffNavigation, user)]
+                        ? [Staff, .. modules.Enabled.SelectMany(module =>
+                            Visible(module.StaffNavigation, user).Select(entry => entry with { Module = module.Key }))]
                         : []),
                 // What the server knows how to talk about. The client checks it has a component for
                 // each one and warns the staff in the ui-kit when it does not: a page built on a
@@ -273,12 +277,15 @@ internal sealed record BootstrapNavigation(
 /// <param name="Icon">Name of an icon from the client's allow list, or null for an entry drawn as
 /// words. The server carries the name and never resolves it.</param>
 /// <param name="Children">Sub entries, one level deep and never more.</param>
+/// <param name="Module">The module a staff entry belongs to, which is the section it is drawn in;
+/// null for an entry of the core or of the editorial menu.</param>
 internal sealed record NavItem(
     string? Key,
     string Path,
     Localized<string>? Label,
     string? Icon,
-    IReadOnlyList<NavItem> Children);
+    IReadOnlyList<NavItem> Children,
+    string? Module = null);
 
 internal sealed record BootstrapRegistries(
     IReadOnlyList<BootstrapBlock> Blocks,

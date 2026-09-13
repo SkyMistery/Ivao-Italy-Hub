@@ -369,6 +369,25 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
     }
 
     [Fact]
+    public async Task AModuleEntryOfTheBackOfficeSaysWhichModuleItIs()
+    {
+        // M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti 3.1: the back office draws a
+        // section per module, so the bootstrap names the module of each entry it composes.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
+
+        using var superadmin = WritingClient();
+        await _factory.SignInAsync(superadmin, SuperadminVid, token);
+
+        var body = await superadmin.GetFromJsonAsync<JsonElement>("/api/me", token);
+        var entry = body.GetProperty("navigation").GetProperty("staff").EnumerateArray()
+            .Single(item => item.GetProperty("path").GetString() == SampleModule.StaffNavigationPath);
+
+        Assert.Equal(SampleModule.ModuleKey, entry.GetProperty("module").GetString());
+        Assert.Equal(SampleModule.StaffNavigationKey, entry.GetProperty("key").GetString());
+    }
+
+    [Fact]
     public async Task AGrantHasOneSubjectExactly()
     {
         var token = TestContext.Current.CancellationToken;

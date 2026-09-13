@@ -52,8 +52,12 @@
 > **H2 è fatta** (branch `m2/h2-owned-by-several`, impilato su H1): una riga di modulo è in cura a più
 > dipartimenti con una maschera di bit (`OwnerDepartmentMask`), l'unico handler e il filtro chiedono
 > «uno in comune», i moduli derivano da `ModuleDbContext` e hanno anche loro il filtro globale,
-> `division.json → modules` è un oggetto per modulo con `baseDepartment`. **Prossima: H3** (le sezioni
-> dei moduli nella barra dello staff). Piano 0.75. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
+> `division.json → modules` è un oggetto per modulo con `baseDepartment`. Piano 0.75.
+> **H3 è fatta** (branch `m2/h3-module-sections`, impilato su H2): ogni voce dello staff dice di che
+> modulo è, e la barra ha una sezione per modulo fra Contenuti e Dipartimenti (titolo `<modulo>:nav.section`).
+> **La parte A di M2 è chiusa.** Le tre PR sono impilate: **#71 → #72 → #73**, da mergiare in
+> quest'ordine ritargettando la successiva su `main` prima di cancellare il branch precedente.
+> **Prossimo**: la nota sulle due dashboard personali (`/me`, `/staff`), poi `05-design-m2.md`. I pezzi per i moduli (grant a posizione, proprietà a insieme, dipartimento
 > di base) si fanno **all'apertura di M2**. **Il sito non è online e non lo sarà per almeno due
 > settimane.**
 >

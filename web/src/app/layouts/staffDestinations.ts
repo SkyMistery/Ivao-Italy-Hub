@@ -191,6 +191,28 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
     groups.push({ title: t('backOffice.content'), Icon: FileText, items: everyDepartment });
   }
 
+  // A section per module, between the content and the departments (M2, note
+  // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.1): events, tours and training are areas of
+  // their own and not pieces of a department. Each is there for whoever may follow one of its entries
+  // — the server has already dropped the others — and is named by the module's own namespace.
+  const moduleEntries = bootstrap.navigation.staff.filter((entry) => entry.path !== '/staff');
+  const moduleKeys = [...new Set(moduleEntries.map((entry) => entry.module ?? ''))];
+
+  for (const key of moduleKeys) {
+    groups.push({
+      title: key === '' ? t('nav.modules') : t(`${key}:nav.section`),
+      Icon: Boxes,
+      items: moduleEntries
+        .filter((entry) => (entry.module ?? '') === key)
+        .map((entry) => ({
+          title: entry.key === null ? entry.path : t(entry.key),
+          description: '',
+          Icon: Boxes,
+          href: entry.path,
+        })),
+    });
+  }
+
   const departments: StaffDestinationGroup[] = reachableDepartments(bootstrap).map((department) => {
     const at = (resource: string) => `/staff/${deptParam.format(department)}${resource}`;
 
@@ -248,21 +270,6 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
   });
 
   groups.push(...departments);
-
-  // What the modules add to the back office. The server has already dropped the entries this person
-  // may not follow, so there is nothing to filter here.
-  const modules = bootstrap.navigation.staff
-    .filter((entry) => entry.path !== '/staff')
-    .map((entry) => ({
-      title: entry.key === null ? entry.path : t(entry.key),
-      description: '',
-      Icon: Boxes,
-      href: entry.path,
-    }));
-
-  if (modules.length > 0) {
-    groups.push({ title: t('nav.modules'), Icon: Boxes, items: modules });
-  }
 
   if (holdsPermissionAnywhere(bootstrap, ADMIN_ACCESS)) {
     const administration: StaffDestination[] = [];
