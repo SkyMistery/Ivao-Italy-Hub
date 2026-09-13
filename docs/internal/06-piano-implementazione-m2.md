@@ -3,8 +3,8 @@
 > Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (§13, M2).
 > Si scrive in due parti. La **parte A** sono i prerequisiti che il piano mette «prima di tutto»:
 > i moduli fuori dai dipartimenti (`decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md`
-> §4). La **parte B** — il modulo Events — si scrive dopo la nota sulle due dashboard personali e
-> `05-design-m2.md`, come dice il piano, e non c'è ancora.
+> §4). La **parte B** sono le dashboard, decise nella nota `2026-09-13-le-dashboard-a-tutto-schermo`.
+> La **parte C** — il modulo Events — si scrive dopo `05-design-m2.md`, e non c'è ancora.
 
 ## A. I prerequisiti: i moduli fuori dai dipartimenti
 
@@ -154,3 +154,19 @@ Nota §3.1. Branch `m2/h3-module-sections`, impilato su H2.
 
 Con H3 **la parte A è chiusa**. Il passo dopo, per il piano (§13), è la **nota sulle due dashboard
 personali** (`/me` e `/staff`), poi `05-design-m2.md` e la parte B di questo documento.
+
+## B. Le dashboard a tutto schermo
+
+Nota `decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`. Tre fasi, una PR ciascuna, da scrivere in
+dettaglio all'inizio di ognuna con il codice davanti.
+
+| Fase | Titolo | Dipende da | In una riga |
+|---|---|---|---|
+| D1 | La griglia a tessere | parte A | layout `grid` e `span` nell'envelope (walker, validazione, TypeScript); resa a tessera alta uguale per riga; resa a tutto schermo e barra compatta per `ContentKind.Dashboard`; le dashboard dei dipartimenti convertite |
+| D2 | L'editor della griglia | D1 | spostare le tessere, ridimensionarle con la maniglia e con il selettore; il giro e2e che lo prova |
+| D3 | `/me` e `/staff` | D1 | righe `me` e `staff` seminate; `/staff` smette di reindirizzare; i blocchi del nucleo (ciò che aspetta me, le mie bozze, calendario dei miei dipartimenti, i miei dipartimenti, il saluto); via il registro dei widget |
+
+## C. Il modulo Events
+
+Si scrive dopo `05-design-m2.md`.
+
