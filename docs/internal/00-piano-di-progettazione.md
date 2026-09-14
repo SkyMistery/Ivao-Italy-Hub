@@ -1,9 +1,21 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.77 — 13 settembre 2026 (**l'ordine dei moduli**: Tours, Training, Eventi; coordinator e assistant del dipartimento di base gestiscono il modulo)
+**Versione documento:** 0.78 — 14 settembre 2026 (**i dati condivisi con vIPI**: due database, un padrone per ogni dato, viste di sola lettura)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.78** (14 set 2026): **vIPI è l'estensione ATC dell'hub e i due condividono i dati senza
+copiarli**: `decisions/2026-09-14-dati-condivisi-con-vipi.md`, decisa con Carmine. **(1) Due database, non
+uno**: un database unico esporrebbe i dati di un'app a una falla dell'altra e legherebbe i rilasci di due
+app con versioni diverse di EF. **(2) Un padrone per ogni dato**, che è l'unico a scriverlo: l'hub per
+persone, permessi, contenuti e moduli; vIPI per aeroporti curati, settori, SOP e archivio delle sessioni
+ATC. **(3) Letture attraverso viste `v_share_`** con un utente MariaDB dedicato di sola lettura; mai
+scritture incrociate; l'API HTTP resta il ripiego. **(4) Integrazione opzionale del nucleo**, accesa da
+`division.json`: nessun modulo nomina vIPI e l'hub funziona senza. **(5)** Il primo consumatore è il
+controllo della copertura ATC dei tour, che legge l'archivio delle sessioni ATC di vIPI. Riapre in parte
+`2026-09-13-staccarsi-da-vipi.md` (l'hub legge dati di vIPI); M5 resta sospeso. Toccate §2.5, §9.7,
+§15 punto 2.
 
 **Changelog 0.77** (13 set 2026, notte): **l'ordine dei moduli cambia**, dopo il confronto di Carmine
 con lo staff di IVAO: `decisions/2026-09-13-ordine-dei-moduli.md`. **(1) Tours, Training, Eventi**:
@@ -1328,6 +1340,7 @@ Il server di produzione è lo stesso su cui gira oggi `atc.it.ivao.aero`, quindi
 | Data Protection: le chiavi devono stare in una cartella **scrivibile e persistente dentro l'app** (`vipi-keys/`), da non cancellare a ogni upload | Stessa soluzione: `hub-keys/` + avviso in grassetto nel foglio di aggiornamento. Perderla slogga tutti. |
 | MariaDB **11.4.10** condivisa: `max_user_connections` ~25–50, pool limitato a 20, `max_allowed_packet` non confermato, **backup non confermato** (A9), utente creato dal pannello con privilegi non verificati | Pool ≤ 15 per l'hub (condivide il tetto con vIPI!), upload file su disco e non in `longblob`, migrazioni che non richiedono `DROP`, e la domanda backup va chiusa **prima** del primo dato reale. |
 | WebSocket passano dal proxy (Blazor Server funziona in produzione) | Se un giorno servisse SignalR nell'hub, è fattibile. |
+| I due database (hub e vIPI) si leggono a vicenda **solo attraverso viste `v_share_`** con un utente MariaDB dedicato di sola lettura (14 set 2026, §9.7) | ⚠️ Da verificare con chi amministra il server: che si possa creare quell'utente con `SELECT` sulle sole viste. Se no, ripiego su un'API HTTP di sola lettura. |
 | Un pacchetto consegnato in una "finestra cieca" (nessuno che possa ripristinare) è un rischio reale | Finestre di consegna concordate; ogni pacchetto porta un **timbro di versione** visibile (`/api/version`) e una sonda di verifica post-deploy. |
 
 Note residue:
@@ -1821,6 +1834,7 @@ Regole che valgono per **ogni** modulo, presente e futuro — si scrivono una vo
 
 - **Maintenance**: con il modulo in manutenzione, i contenuti già pubblicati restano **visibili in sola lettura** (voci di calendario incluse); le *azioni* (prenotare, iscriversi, inviare un PIREP) rispondono 503 con pagina cortese e tradotta; i job del modulo vanno in pausa. Implementato nel nucleo, uguale per tutti.
 - **Widget di dashboard** ~~ogni modulo registra i propri widget~~ **dal 13 set 2026 sono blocchi Data** (`decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`): «le mie prenotazioni», «le mie richieste training», «i miei tour in corso» sono blocchi Data del modulo che rispondono per chi guarda, e `/me`, `/staff`, le dashboard dei dipartimenti e le pagine li compongono con l'editor; il registro dei widget sparisce. Stesso principio del registry dei blocchi: più il sito è flessibile, più è general purpose. I blocchi *Data* che dipendono da un modulo (`eventList`…) sono anch'essi registrati dal modulo, non cablati nel nucleo.
+- **Dati di vIPI** (deciso il 14 set 2026, `decisions/2026-09-14-dati-condivisi-con-vipi.md`): due database sullo stesso server, **ogni dato ha un solo padrone** che lo scrive (l'hub: persone, permessi, contenuti, moduli; vIPI: aeroporti curati, settori, SOP, archivio delle sessioni ATC), e l'altro **legge viste `v_share_` di sola lettura** con un utente MariaDB dedicato, mai scritture incrociate. Nell'hub è un'**integrazione opzionale del nucleo** accesa da `division.json`: nessun modulo nomina vIPI, e senza vIPI il nucleo risponde con i dati IVAO o dichiara il dato non disponibile.
 - **Notifiche**: servizio unico nel **nucleo** (mail ora, Discord in M6): i moduli pubblicano *intenti* di notifica, mai SMTP diretto — un cambiamento al servizio si fa in un punto solo. Preferenze per tipo di notifica in `/me/profile`.
 - **Privacy dei membri**: l'hub **non ha un profilo utente pubblico**. L'unico profilo pubblico è quello ufficiale IVAO (`https://www.ivao.aero/Member.aspx?Id={VID}`): ovunque compaia un membro (classifiche tour, staff directory, partecipanti) si mostra il minimo necessario e si linka lì. Nessuna funzione di export dei dati utente (IVAO non la prevede); per il GDPR ci si allinea alle norme e alla privacy policy IVAO, e ogni modulo documenta nel proprio design cosa conserva di personale e per quanto (così una richiesta di cancellazione ha un percorso noto).
 - **Ricerca globale**: indice centrale `search_index` nel **nucleo** (titolo, testo, tipo, url, dipartimento, visibilità), alimentato dai moduli via `IProjectable` con `source_module`+`source_id` — lo stesso pattern del calendario (§16.4). Matching, ranking e UI (⌘K e ricerca pubblica) vivono solo nel nucleo: un fix alla ricerca **non tocca i moduli**; un modulo si limita a dire "indicizza questo".
@@ -1940,7 +1954,7 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 ## 15. Decisioni aperte ⚠️
 
 1. ~~Quali moduli inglobare e in che ordine~~ **Deciso il 1° set 2026** (§9, §13): nucleo editoriale + `events`, `flightops`, `training` (`atc` tolto il 13 set 2026); ordine Events → Tour → Training; ~~vIPI montato appena il TFM lo consente~~ vIPI sospeso, raggiunto con un link (13 set 2026); test system sospeso.
-2. ~~**vIPI nell'hub — quando e come**~~ **Sospesa il 13 set 2026** (`decisions/2026-09-13-staccarsi-da-vipi.md`): l'hub linka `atc.it.ivao.aero` e non monta né consuma vIPI; la domanda torna solo se Carmine la ripropone. Testo di prima: il montaggio in-process è la destinazione (§9 riga 7b), il nodo è il TFM. Da verificare in vIPI: può il ramo `net10.0` di `Vipi.Infrastructure` usare EF Core 9 + Pomelo 9 invece di EF Core 10 (le 65+ migrazioni sono generate con EF 10 ma applicate anche da EF 8 — con EF 9 dovrebbero passare)? Se sì, si sblocca insieme l'EOL di net8 e il montaggio. Decidere anche il dominio finale della parte ATC (`it.ivao.aero/services/vsop` con redirect da `atc.it.ivao.aero`, o viceversa proxy).
+2. ~~**vIPI nell'hub — quando e come**~~ **Sospesa il 13 set 2026** (`decisions/2026-09-13-staccarsi-da-vipi.md`): l'hub linka `atc.it.ivao.aero` e non monta vIPI; la domanda torna solo se Carmine la ripropone. **Dal 14 set 2026 i due siti condividono i dati senza copiarli** (`decisions/2026-09-14-dati-condivisi-con-vipi.md`): due database, un padrone per ogni dato, viste di sola lettura; da verificare sul server l'utente MariaDB dedicato. Testo di prima: il montaggio in-process è la destinazione (§9 riga 7b), il nodo è il TFM. Da verificare in vIPI: può il ramo `net10.0` di `Vipi.Infrastructure` usare EF Core 9 + Pomelo 9 invece di EF Core 10 (le 65+ migrazioni sono generate con EF 10 ma applicate anche da EF 8 — con EF 9 dovrebbero passare)? Se sì, si sblocca insieme l'EOL di net8 e il montaggio. Decidere anche il dominio finale della parte ATC (`it.ivao.aero/services/vsop` con redirect da `atc.it.ivao.aero`, o viceversa proxy).
 2b. ~~Tour system e test system~~ **Deciso**: il tour system è il modulo `flightops` nel monorepo dell'hub (repo separato chiuso, design confluisce). Il test system è sospeso; se tornerà, sarà app separata (auth estratta in libreria solo allora).
 2d. **Storico tour**: importare i leg validati da `tours.th.ivao.aero` per le classifiche, o partire da zero come per gli eventi?
 2c. **Hosting dell'hub** (blocca **la seconda metà di M2**, il deploy, non il modulo Events: diviso

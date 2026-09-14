@@ -14,7 +14,11 @@
 >    una riga non la cancella (da precisare nel design degli eventi).
 > 2. **Il passo dopo è il design dei tour**: `05-design-m2.md`, poi la parte C di
 >    `06-piano-implementazione-m2.md`. La base è il progetto `Ivao Italy Toursystem` (piano §9.2, riga 2).
->    Si discute con Carmine **prima** di scriverlo.
+>    **I requisiti sono raccolti** in `decisions/2026-09-14-requisiti-dei-tour.md` (le conclusioni di Carmine
+>    e dello staff FOD e le 43 risposte del 14 settembre): il design li trasforma, non li ridiscute.
+> 2-bis. **vIPI**: i due siti condividono i dati senza copiarli (`decisions/2026-09-14-dati-condivisi-con-vipi.md`,
+>    piano 0.78); i tour leggono l'archivio delle sessioni ATC di vIPI da una vista. Da verificare sul server
+>    l'utente MariaDB dedicato.
 > 3. **Due agenti su due PC** (Tours qui, Training da un altro staffista): la nota §3.5 ha una
 >    **proposta non ancora decisa**. Punto chiave: le regole di `CLAUDE.md` sono private e fuori dal
 >    repository, quindi un secondo agente non le vedrebbe.
