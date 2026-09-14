@@ -5,6 +5,9 @@
 **Stato:** **decisa** (Carmine, 13 settembre 2026), sulle due domande di §3
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: toglie un milestone, cambia il catalogo dei moduli
 obbligatori e smonta metà di una fase costruita (G14).
+**In parte riaperta il 14 settembre 2026** da `2026-09-14-dati-condivisi-con-vipi.md`: l'hub continua a
+non montare vIPI e a non usarne le API, ma **legge dati di vIPI** (l'archivio delle sessioni ATC, poi i
+settori) attraverso viste di sola lettura del database, come integrazione opzionale del nucleo.
 **Sostituisce:** `2026-09-07-vipi-dentro-l-hub.md`, che passa a **sospesa**; la regola «confine netto
 con vIPI» di piano §9.4.
 
