@@ -12,7 +12,8 @@
 >    assistant del dipartimento di base hanno tutte le funzioni del modulo (grant a una posizione da
 >    `division.json → positionGrants`); gli advisor li decide il design di ogni modulo. Chi collabora a
 >    una riga non la cancella (da precisare nel design degli eventi).
-> 2. **Il passo dopo è il design dei tour**: `05-design-m2.md`, poi la parte C di
+> 2. **Il design dei tour è scritto in bozza** (`05-design-m2.md`, 14 set 2026): va rivisto con Carmine, che
+>    risponde alle 25 domande di §15; poi le tre note di §11 (fase T0) e la parte C di
 >    `06-piano-implementazione-m2.md`. La base è il progetto `Ivao Italy Toursystem` (piano §9.2, riga 2).
 >    **I requisiti sono raccolti** in `decisions/2026-09-14-requisiti-dei-tour.md` (le conclusioni di Carmine
 >    e dello staff FOD e le 43 risposte del 14 settembre): il design li trasforma, non li ridiscute.
