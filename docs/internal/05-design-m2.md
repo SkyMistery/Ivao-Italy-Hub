@@ -147,9 +147,10 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 | `hub_rotation_order` | enum? | solo `Hub`: `Fixed` (rotazioni nell'ordine del tour) o `Free` (a scelta dentro l'hub) (risposta 10) |
 | `requires_procedures` | bool | SID, STAR e IAP obbligatori nel PIREP (risposta 4, §3.2) |
 | `daily_leg_limit` | int? | obbligatorio se il limite di divisione è spento (§3.7) |
-| `allowed_aircraft_json` | string[] | tipi ICAO consentiti; vuoto = tutti |
+| `allowed_aircraft_json` | json | aerei consentiti: tipi ICAO, ciascuno con «anche le varianti» sì/no, e gruppi di aerei (§1.5); vuoto = tutti |
+| `min_pilot_rating` | int? | rating pilota minimo per inviare PIREP (§3.2); vuoto = nessuno |
 | `reference_aircraft_icao` | string? | l'aereo di riferimento per il tempo stimato (§1.5) |
-| `award_id` | long? | solo su un tour senza padre (un sottotour non ha award, risposta 13) |
+| `award_id` | long? | **un solo award per tour, sempre** (Carmine, 15 settembre); solo su un tour senza padre. Gli award a più livelli sono di eventi e training |
 | `row_version`, audit, `owner_department_mask` | | |
 
 #### 1.2.1 Lo stato si calcola dalle date
@@ -169,6 +170,9 @@ pubblicazione: titolo e riassunto in tutte le lingue della divisione, almeno una
 `Open`), aeroporti noti in `ref_`, `release_at < close_at`, date delle leg dentro il periodo,
 vincoli di tipo (§2), limite giornaliero se quello di divisione è spento (§3.7), un profilo per l'aereo di
 riferimento **se il tour ne indica uno** (non è obbligatorio, §1.5), un `Container` con almeno due sottotour e `required_subtours` non oltre il loro numero.
+
+**Il tipo si blocca appena il tour è pubblico** (Carmine, 15 settembre): dal momento in cui è visibile (rilascio, o anteprima
+con `show_preview`), `kind` non si cambia più, anche senza PIREP. Prima del rilascio, tornando in bozza, si può cambiare.
 
 #### 1.2.2 Cancellare, nascondere, spostare la chiusura (risposta 16)
 
@@ -248,6 +252,12 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
   equipaggiamento e dei transponder, e il controllo `equipment` (§6.4) li legge da lì invece di tenerne un elenco suo.
 - **Le prestazioni le inserisce il FOD**: `fo_aircraft_profiles` (`icao_type`, `cruise_tas_kt`, `note`), una lista
   e un form generati. Un profilo vale per tutti i tour.
+- **Tipi e varianti** (Carmine, 15 settembre): il tour sceglie per ogni tipo se valgono **anche le varianti** (le varianti vengono da
+  `/v2/aircrafts/{aircraftId}/variants`). Esempio: un tour Volotea ammette A319 e A320 senza varianti (niente neo), un tour easyJet
+  ammette A320 **con** le varianti (A20N compreso). Il controllo `aircraft` e il blocco all'invio leggono lo stesso elenco.
+- **Gruppi di aerei**: `fo_aircraft_groups` (`name` tradotto, tipi ICAO), definiti dal FOD — «Bizjet», «Airliner», «Turboelica»,
+  «Aerei storici» — e usabili dovunque si scelgono aerei: aerei consentiti di un tour o di una leg, filtro `AircraftTypes` dei tour
+  `Open`. Cambiare un gruppo cambia tutti i tour che lo usano ⚖️ (come per le velocità: si calcola a ogni lettura).
 - **L'aereo di riferimento è facoltativo** (`reference_aircraft_icao`, Carmine, 15 settembre): si indica **solo se si
   vogliono dare ai piloti le durate indicative**. Con l'aereo, ogni leg mostra il suo **tempo stimato** e la pagina del
   tour mostra il **totale** («la somma degli air-time è stimata in xx ore xx minuti»), così un pilota sa quanto dovrà
@@ -571,7 +581,7 @@ all'obiettivo e ai vincoli «al completamento».
 | `Queued` | invio, reinvio, riapertura | leg **in attesa** |
 | `InReview` | un validatore | in attesa |
 | `Accepted` | il validatore | leg fatta |
-| `ToModify` | il validatore | in attesa: il pilota continua a volare (con `FlyAhead`), corregge **tutto** — anche la sessione del tracker — e reinvia; torna in coda **a chiunque** |
+| `ToModify` | il validatore | in attesa; il pilota corregge **tutto** — anche la sessione del tracker — e reinvia; torna in coda **a chiunque**. **Finché non corregge non può riportare altre leg** (Carmine, 15 settembre): così è sicuro che lo faccia. Se non corregge entro `report_window_days`, il PIREP **si ritira da solo** e la leg torna da volare |
 | `Rejected` | il validatore | leg da rivolare; blocca le successive (§2.5) **finché non è contestata** |
 | `Withdrawn` | il pilota, solo da `Queued` | leg volabile; sessione libera |
 
@@ -596,8 +606,13 @@ all'obiettivo e ai vincoli «al completamento».
    - **callsign consentito** e **aereo consentito** (risposta 5);
    - **limiti giornalieri**, del tour e di divisione (§3.7);
    - filtri e regole di sequenza di un tour `Open` (§2.6.1); rotta non già volata;
-   - pilota non bannato.
-6. Il PIREP nasce `Queued`, con `rules_snapshot_json`; il primo del pilota nel tour crea l'iscrizione. Partono in un job
+   - pilota non bannato;
+   - **rating pilota** almeno `min_pilot_rating` del tour (dal profilo IVAO letto al login, `hub_users.rating_pilot`; ⚠️ è
+     aggiornato all'ultimo login, quindi un pilota appena promosso rifà il login);
+   - **volo non prima del rilascio** del tour e della leg (date in **UTC**, sempre, Carmine, 15 settembre);
+   - nessun suo PIREP «da modificare» in attesa di correzione in quel tour (§3.1).
+6. Il PIREP nasce `Queued`, con `rules_snapshot_json` e **i dati della leg com'erano all'invio** (partenza, arrivo, aerei,
+   callsign: se la leg cambia dopo, il PIREP si giudica su quella inviata, Carmine, 15 settembre); il primo del pilota nel tour crea l'iscrizione. Partono in un job
    i controlli automatici (§6) e lo scarico del meteo mancante (§1.13).
 
 ### 3.3 Gli ATC contattati e le esenzioni
@@ -615,7 +630,8 @@ all'obiettivo e ai vincoli «al completamento».
 
 ### 3.4 Il volo del tracker e le deviazioni
 
-- **Una sessione vale per un solo PIREP**. Si libera se il PIREP è ritirato o se il pilota la sostituisce correggendo.
+- **Una sessione vale per un solo PIREP, quindi per un solo tour** (Carmine, 15 settembre): lo stesso volo non conta per due tour.
+  Si libera se il PIREP è ritirato o se il pilota la sostituisce correggendo.
 - **Deviazione**: il pilota indica che il volo è finito altrove, sceglie il **volo di riposizionamento**
   dall'aeroporto di deviazione alla destinazione della leg, e sceglie il **motivo** (strutturato più testo). Il server
   verifica che il secondo parta da dove il primo è atterrato. Con motivo `Weather` la pagina di validazione mostra in
@@ -626,6 +642,12 @@ all'obiettivo e ai vincoli «al completamento».
 Intenti al servizio del nucleo: `flightops.pirepAccepted`, `flightops.pirepToModify`, `flightops.pirepRejected`. Al
 pilota, nella sua lingua: tour, leg, esito, `note_to_pilot`, **le regole violate**, il link. **Nessuna mail di tour
 completato** (risposta 21).
+
+**Il pilota non vede il nome del validatore** (Carmine, 15 settembre): né nella pagina né nella mail, dove la decisione è «del
+FOD». Il nome resta visibile allo staff.
+
+**Il completamento non si toglie mai**: se a un tour aperto si aggiunge una leg, chi l'aveva già completato resta completato (e la
+segnalazione dell'award è già partita).
 
 ### 3.6 I limiti giornalieri — bloccano
 
@@ -704,6 +726,18 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
 
 `InReview` con `assigned_to_vid` e `lease_until = now + leaseMinutes`; alla scadenza chiunque abilitato lo può
 prendere (nessun job). Due prese insieme: vince la prima (`row_version`).
+
+### 4.2.1 Correggere una decisione
+
+Una decisione presa si **riapre** (il PIREP torna `InReview` con una riga in `fo_pirep_events` e una motivazione obbligatoria) da:
+il **validatore che l'ha presa** e **FOC e FOAC**, **senza limiti di tempo** (Carmine, 15 settembre). La nuova decisione sostituisce
+la vecchia nei contatori e manda di nuovo la mail al pilota.
+
+### 4.2.2 Il riepilogo giornaliero
+
+Una mail al giorno a **tutti i validatori** (chi ha `Tours.Validate`), con la coda dei tour che ciascuno può validare: quanti PIREP per
+tour e da quanto aspetta il più vecchio (Carmine, 15 settembre: «magari qualcuno si fa lo scrupolo e butta l'occhio»). Tipo di
+notifica `flightops.reviewDigest`, con la preferenza del membro per spegnerla; non parte se la coda è vuota.
 
 ### 4.3 La pagina di validazione (schermata dedicata)
 
@@ -907,7 +941,9 @@ l'hub, l'agente del validatore per `atcCoverage` (§6.6).
 | `Tours.ManageSettings` | ✓ | ✓ | — | |
 | rispondere a contestazioni e chiarimenti | ✓ | ✓ | ✓ | ✓ sui propri PIREP decisi |
 
-HQ e superadmin tutto. **I validatori si abilitano solo dalla pagina delle statistiche** (risposta 18).
+HQ e superadmin tutto. **I validatori si abilitano solo dalla pagina delle statistiche** (risposta 18). **Un validatore che non è
+più staff perde l'abilitazione da solo**: il suo grant viene sospeso dalla sincronizzazione dello staff, come ogni grant del nucleo
+(Carmine, 15 settembre).
 
 ### 7.3 Le due estensioni del meccanismo dei permessi (estensione del nucleo n.1)
 
@@ -939,7 +975,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 | Blocco | Dove | Che cosa |
 |---|---|---|
 | `flightops.tourCards` | pagine pubbliche, `/me` | i riquadri, per chi guarda |
-| `flightops.myTours` | `/me` | tour iniziati, avanzamento, prossima leg, PIREP da correggere, chiarimenti con risposta |
+| `flightops.myTours` | `/me` | tour iniziati, avanzamento, prossima leg, PIREP da correggere, chiarimenti con risposta; **il riepilogo del pilota** (leg volate, ore stimate, tour completati), senza contatori degli errori. **Nessun elenco pubblico** di chi ha completato un tour: ognuno vede i suoi |
 | `flightops.reviewQueue` | dashboard FOD, `/staff` | PIREP in coda sui tour che chi guarda può validare |
 | `flightops.openIssues` | dashboard FOD | segnalazioni aperte, contestazioni e chiarimenti senza risposta |
 | `flightops.errorCatalog` | pagine, documenti | gli errori pubblici |
@@ -1011,6 +1047,13 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   foto (se non usata altrove), regole del tour, hub, rotazioni, vincoli, iscrizioni.
 - **Meteo**: §1.13.
 - Job mensile del modulo, con una riga nel log dei job.
+
+### 10.0 La richiesta di cancellazione dei dati
+
+Alla richiesta di un pilota (GDPR) si cancellano i suoi PIREP e i suoi dati personali del modulo; **il registro disciplinare resta,
+anonimizzato** (esiti ed errori senza il VID), perché serve alle statistiche e ai contatori aggregati (Carmine, 15 settembre). ⚠️ È
+una regola che conferma la **direzione**, perché è una questione legale; e va coordinata con come il nucleo tratta la stessa richiesta
+per gli altri dati dell'utente (oggi l'export dei dati utente è scartato, la cancellazione non è descritta).
 
 ### 10.1 Il problema: il registro disciplinare punta al tour
 
