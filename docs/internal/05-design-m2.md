@@ -236,9 +236,12 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
 ### 1.5 Aerei, prestazioni e tempo stimato
 
 - **I tipi di aereo vengono da IVAO** (estensione del nucleo n.11): una tabella di riferimento del nucleo
-  `ref_ivao_aircraft` (codice ICAO, costruttore, modello, categoria di scia), sincronizzata come gli aeroporti.
-  ⚠️ **L'endpoint non è verificato**: `api.ivao.aero/docs` risponde 403 e nessun progetto locale lo usa. Se non
-  esiste, la tabella si carica da un file (per esempio l'elenco ICAO Doc 8643) una volta, e il FOD la integra.
+  `ref_ivao_aircraft` (codice ICAO, costruttore, modello, categoria di scia, varianti), sincronizzata come gli aeroporti
+  da **`GET /v2/aircrafts/all`**, con `/v2/aircrafts/{icaoCode}`, `/v2/aircrafts/{aircraftId}/variants` e
+  `/v2/aircrafts/manufacturers` (endpoint mostrati da Carmine dalla documentazione IVAO il 15 settembre; la forma delle
+  risposte va misurata con il token vero nella fase che li usa). Gli stessi endpoint danno
+  **`/v2/aircrafts/equipments`** e **`/v2/aircrafts/transponderTypes`**: sono il vocabolario delle lettere di
+  equipaggiamento e dei transponder, e il controllo `equipment` (§6.4) li legge da lì invece di tenerne un elenco suo.
 - **Le prestazioni le inserisce il FOD**: `fo_aircraft_profiles` (`icao_type`, `cruise_tas_kt`, `note`), una lista
   e un form generati. Un profilo vale per tutti i tour.
 - **Ogni tour ha un aereo di riferimento** (`reference_aircraft_icao`) e ogni leg il suo **tempo stimato**:
@@ -560,8 +563,9 @@ risposta 6).
 - **Contano** i PIREP del pilota non rifiutati e non ritirati, per **giorno UTC del decollo**.
 - **Limite del tour** (`daily_leg_limit`): i PIREP del tour. **Limite di divisione** (`dailyLegLimit`): i PIREP di tutti
   i tour. Superato l'uno o l'altro, il form rifiuta l'invio dicendo quale limite e quando si libera.
-- ⚠️ Il limite conta i **voli di quel giorno**, non gli invii: un pilota che vola 12 leg in un giorno e le riporta in
-  tre giorni diversi viene fermato alla undicesima **quando la riporta**, perché il giorno del decollo è lo stesso.
+- ⚠️ Il limite conta i **voli di quel giorno**, non gli invii. Con un limite di 12, un pilota può inviare **12**
+  PIREP di voli decollati lo stesso giorno UTC anche se li riporta in tre giorni diversi; il **tredicesimo** volo di quel
+  giorno non si può inviare, in qualunque giorno lo riporti (Carmine, 15 settembre).
 
 ### 3.7 Spegnere il limite di divisione
 
@@ -713,11 +717,18 @@ Note sui controlli delicati:
 
 - **`semicircularLevels`**: la regola vale **solo nello spazio aereo a rotte libere (FRA)**. La direzione normale è
   **est–ovest**; alcuni paesi (Italia compresa) usano **nord–sud**. I paesi con nord–sud stanno nelle impostazioni
-  (`northSouthLevelCountries`, §1.11): non c'è una fonte da cui ricavarli in modo affidabile. ⚠️ **I confini della FRA** non
-  sono in nessun dato che l'hub abbia oggi (né IVAO né `ref_`): serve una fonte (vIPI, se i volumi dello spazio aereo li
-  contengono, o un file caricato dal FOD). Senza, il controllo risponde `Unavailable`.
-- **`alternate` e `ZZZZ`**: `ZZZZ` è sia un aeroporto reale in Cina sia il codice «aeroporto senza ICAO» (con il nome nel
-  campo 18). ⚠️ **La frase di Carmine si è interrotta** («`ZZZZ` dà errore solo se …»): va completata (§15).
+  (`northSouthLevelCountries`, §1.11): non c'è una fonte da cui ricavarli in modo affidabile.
+  **I confini della FRA** (cercati il 15 settembre): **non esiste un file aperto** con i volumi FRA d'Europa. EUROCONTROL
+  pubblica l'elenco dei punti FRA, i riferimenti AIP e le carte di implementazione, non una geometria scaricabile. Quello
+  che esiste aperto sono i **confini dei FIR/UIR** (`FirUir_EAD` nel repository `euctrl-pru/eurocontrol-atlas`, licenza
+  da verificare). Proposta: la FRA è una tabella `fo_fra_areas` che il FOD compila **per FIR** (codice del FIR, livello
+  inferiore e superiore, eventuale orario), con la **geometria del FIR** presa da quel file una volta; la tabella è piccola
+  (una riga per FIR interessato) e cambia di rado, con l'AIRAC. Un volo è «in FRA» nei tratti delle tracce dentro un FIR
+  della tabella e fra i due livelli. Senza la riga del FIR, il controllo risponde `Unavailable` su quel tratto.
+- **`alternate` e `ZZZZ`** (Carmine, 15 settembre): `ZZZZ` è sia un aeroporto reale in Cina sia il codice «aeroporto
+  senza ICAO», molto usato nei VFR. Il controllo **non supera** solo se `ZZZZ` è l'**alternato** e nelle remarks del piano
+  **manca `ALTN/`**; con `ALTN/` presente l'alternato è un campo volo senza ICAO, ed è valido. Un piano senza alternato
+  resta un errore dove la regola lo chiede.
 - **`takeoffFromThreshold`**: dall'ultimo punto fermo prima della corsa di decollo nelle tracce, la distanza dalla testata
   della pista usata (quella con la prua più vicina alla prua di decollo). Oltre `thresholdToleranceMeters` il controllo non
   «fallisce»: segnala al validatore il **decollo da un'intersezione**, e il validatore verifica se da quel punto c'è una TORA
@@ -751,7 +762,7 @@ Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`);
 | `Tours.ManageValidators` | abilitare e togliere validatori |
 | `Tours.ViewPilots` | pagina del pilota, statistiche dei validatori |
 | `Tours.Ban` | bannare un pilota da un tour o da tutti |
-| `Tours.ManageSettings` | impostazioni della divisione |
+| `Tours.ManageSettings` | impostazioni della divisione, aree FRA |
 
 ### 7.2 Chi li ha (`division.json → positionGrants`)
 
@@ -892,7 +903,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 | 8 | `IAtcActivitySource` sulla vista di vIPI | coperta da piano 0.78 | §6.5 |
 | 9 | Selezione multipla e parametri da schema nel generatore di form; aggregati nella lista | da verificare con il codice | §5.1, §8.7 |
 | 10 | Più voci di calendario per riga in `IProjectable` | no (estensione piccola) | §9 |
-| 11 | Tipi di aereo IVAO (`ref_ivao_aircraft`) — endpoint da verificare | no | §1.5 |
+| 11 | Tipi di aereo IVAO (`ref_ivao_aircraft`) da `/v2/aircrafts/all`, con equipaggiamenti e transponder | no | §1.5 |
 | 12 | `IWeatherSource` (NOAA → IVAO → VATSIM), come vIPI | sì, breve (una fonte esterna nuova) | §1.13 |
 
 ---
@@ -905,7 +916,8 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 
 **Modulo** (`Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`, `fo_callsign_rules`, `fo_tour_constraints`,
 `fo_aircraft_profiles`, `fo_rules`, `fo_errors`, `fo_rule_errors`, `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`,
-`fo_pirep_events`, `fo_check_results`, `fo_enrolments`, `fo_bans`, `fo_leg_issues`, `fo_weather_reports`.
+`fo_pirep_events`, `fo_check_results`, `fo_enrolments`, `fo_bans`, `fo_leg_issues`, `fo_weather_reports`, `fo_fra_areas`
+(con la geometria dei FIR caricata una volta, §6.4).
 
 **vIPI** (nel suo repository): `v_share_atc_sessions` e l'utente di sola lettura.
 
@@ -974,8 +986,9 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 
 ### 15.2 Ancora da decidere
 
-1. **`ZZZZ`**: la frase si è interrotta — «`ZZZZ` dà errore solo se …» (per esempio: se il campo 18 non ha `DEST/` o `ALTN/` con
-   nome o coordinate?).
+1. ~~**`ZZZZ`**~~ **deciso il 15 settembre**: errore solo se `ZZZZ` è l'alternato e manca `ALTN/` nelle remarks (§6.4).
+   **FRA**: non esiste un file aperto; proposta la tabella per FIR compilata dal FOD con la geometria dei FIR di EUROCONTROL
+   (§6.4) — da confermare, e da verificare la licenza del file. **Tipi di aereo**: dagli endpoint `/v2/aircrafts` (§1.5).
 2. **Tour nascosto**: chi l'aveva iniziato lo vede ancora nella sua pagina, senza poter inviare? I PIREP in coda si validano?
 3. **Eliminare una leg senza PIREP**: le leg dopo **non** si rinumerano (buco nel numero)?
 4. **Leg ritirata dentro una rotazione**: il FOD deve sistemare la rotazione (aggiungere o ritirare la rotazione intera)?
@@ -989,7 +1002,8 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 11. **Richiedi chiarimenti**: solo sui PIREP decisi, o anche su una leg o una regola dalla pagina del tour?
 12. **Meteo**: un job ogni 30 minuti sugli aeroporti delle leg dei tour aperti, più lo scarico all'invio per gli altri: va bene?
 13. **Soglie VMC** per il controllo `vmc`: quelle standard (5 km, nubi a 1500 ft) come parametri della regola generale?
-14. **Confini della FRA** per i livelli semicircolari: da dove li prendiamo (vIPI, un file del FOD)?
+14. **FRA per FIR**: va bene che il FOD compili una riga per FIR (livelli e orario) e la geometria venga dai confini dei FIR
+    di EUROCONTROL? Chi la mantiene quando cambia l'AIRAC?
 15. **Decollo dalla testata**: 150 m di tolleranza come partenza, da tarare?
 16. **ATC contattati, prima versione**: aeroporti e FIR attraversati dalle tracce, e la geometria dei settori più avanti?
 17. **Ordine della coda memorizzato**: nel browser del validatore o come preferenza del suo utente (lo segue su più computer)?
