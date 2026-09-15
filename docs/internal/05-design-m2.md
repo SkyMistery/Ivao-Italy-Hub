@@ -135,7 +135,8 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 | `open_goal`, `open_goal_json` | enum?, json | solo `Open`: obiettivo e parametri (§2.6.1) |
 | `title`, `summary` | `Localized<string>` | |
 | `briefing_json` | BlockDocument | testo ricco, stesso editor e renderer |
-| `cover_media_id` | long? | foto di sfondo |
+| `cover_media_id` | long? | foto di sfondo del riquadro, dalla media library (§1.14) |
+| `banner_media_id` | long? | banner della pagina del tour, dalla media library (§1.14) |
 | `status` | enum | `Draft`, `Ready` |
 | `is_hidden` | bool | nascosto (§1.2.2) |
 | `show_preview` | bool | un tour pronto è visibile al pubblico **prima** del rilascio, come anteprima (risposta 1) |
@@ -380,6 +381,29 @@ si accorge che non vanno, li cambia senza una release.
 - ⚠️ `FirDirectory` e `networkStats` oggi deducono «gli aeroporti della divisione» dalla tabella: con tutto il mondo
   dentro devono filtrare per paese. Da verificare nella fase che lo fa.
 
+### 1.14 Banner e immagini dei tour nella media library (estensione del nucleo n.16)
+
+**Che cosa serve** (Carmine, 15 settembre): banner e immagini dei tour li prepara e **li carica il PRD** nella media library, e
+vengono **collegati a un tour**; **quando il tour finisce si possono eliminare** per risparmiare spazio.
+
+**Che cosa c'è già**: la media library del nucleo (G20). Un file appartiene al dipartimento che lo carica (qui il PRD) ed è
+**letto da tutti i dipartimenti**, quindi il FOD lo sceglie senza permessi in più. Un file **usato** non si cancella: si
+archivia. «Dove è usato» lo sa l'indice `cms_content_references`, ma **solo per le pagine pubblicate**: oggi un tour che usa un
+file non lo dice a nessuno, e la media library lascerebbe cancellare il banner di un tour aperto.
+
+**Che cosa si tocca**:
+
+- **L'indice degli usi si allarga alle righe dei moduli**: una riga che mostra un file lo dichiara con `IProjectable`, come fa
+  già per ricerca, calendario e award (`MediaReferences` nel `ProjectionSnapshot`), e l'interceptor scrive l'uso nella stessa
+  transazione. Nessun controllo scritto a mano nella media library: continua a chiedere all'indice.
+- **Il tour dichiara i suoi file** (foto, banner, immagini del briefing) **finché non è chiuso**. Da chiuso smette di
+  dichiararli: nella media library quei file risultano **«usati solo da tour chiusi»**, con un filtro dedicato, e il PRD li
+  elimina quando vuole (la cancellazione passa dalle regole di sempre).
+- **Il tour senza immagine** (perché il file è stato eliminato) mostra un fondo neutro: nessun errore, nessun link rotto.
+- ⚖️ L'eliminazione è **manuale** (il PRD decide), non un job: «si possono eliminare», non «si eliminano».
+- **Il collegamento al tour** lo fa chi modifica il tour (`Tours.Edit`) scegliendo dal selettore della media library ⚖️ (oppure lo
+  fa il PRD, e allora serve un permesso sul tour che oggi il PRD non ha).
+
 ### 1.13 METAR e TAF salvati (estensione del nucleo n.12)
 
 **Perché**: il validatore deve poter verificare una deviazione motivata dal meteo, e i tour VFR chiedono le VMC
@@ -507,9 +531,9 @@ callsign e aereo).
 - **Hub di Fiumicino**: `FlightCount` 30, `TouchesAirport` LIRF, `NoRepeatedRoute`.
 - **La scala**: `FlightCount` 10, `IncreasingDistance`, `Chained`.
 
-⚖️ Da scegliere con Carmine quali obiettivi, filtri e regole entrano in M2: l'insieme sopra è una proposta, e tutti usano
-dati che l'hub avrà già (GCD, paesi e FIR, piste e quote degli aeroporti, tipi di aereo). La pagina del tour mostra
-**quanto manca** all'obiettivo e ai vincoli «al completamento».
+**Entrano tutti in M2** (Carmine, 15 settembre): obiettivi, filtri e regole di sequenza delle tre tabelle. Usano dati che
+l'hub avrà già (GCD, paesi e FIR, piste e quote degli aeroporti, tipi di aereo). La pagina del tour mostra **quanto manca**
+all'obiettivo e ai vincoli «al completamento».
 
 ### 2.7 `Container` — con sottotour
 
@@ -810,6 +834,26 @@ secondo prodotto, fuori da questo repository, con il suo rilascio; il contratto 
 aggiornano separatamente. **Proposta**: in M2 l'hub espone il contratto con i token e i test; l'adattamento dell'app Python è un
 lavoro a parte, nel suo repository ⚖️.
 
+**Vale per tutti i controlli che hanno bisogno del programma** (domanda di Carmine, 15 settembre): sì. Il contratto non conosce i
+controlli: porta una `check_key`, un esito e un'evidenza. Aderenza alla rotta, SID e STAR, spazi aerei attraversati, qualunque
+controllo che richieda Navigraph o un browser (Eurocontrol) si aggiunge **nel programma**, con una chiave nuova e l'errore
+collegato nel catalogo; l'hub non cambia.
+
+**Perché passare dall'hub, se il programma sul PC vede già fix e rotta** (l'altra metà della domanda). Il programma è gli
+**occhi** del validatore sulla geometria, ed è giusto che mostri mappa, fix e rotta **in locale**. Ma la **decisione** sta
+nell'hub, e deve starci: lì ci sono gli errori del catalogo con i contatori del pilota, la soglia che suggerisce il rifiuto,
+«nessuno valida i propri PIREP», la presa in carico, l'audit, la mail, le statistiche. Mandare all'hub **anche** l'esito del
+programma costa poco e dà tre cose:
+
+1. il **suggerimento** compare nella pagina di validazione accanto agli altri, invece che su un'altra finestra da ricopiare;
+2. l'esito resta **scritto** sul PIREP: una contestazione o un ban si motivano anche con quello;
+3. si **misura** quanto il controllo sbaglia (quante volte il validatore conferma l'errore suggerito), cioè il modo per sapere se
+   la regola del `DCT` regge davvero al 90 %.
+
+L'alternativa — il programma solo in locale, senza scrivere niente nell'hub — è possibile e più semplice all'inizio, ma perde
+queste tre cose. **Proposta**: il programma mostra tutto in locale **e** manda gli esiti; la prima versione può anche solo
+mostrare, e mandare dopo ⚖️.
+
 **La proposta degli ATC contattati al pilota resta sul server** (§3.3): il pilota non ha Navigraph. È la versione leggera —
 aeroporti e FIR attraversati dai punti delle tracce (i FIR da OpenAIP, estensione n.13), incrociati con l'archivio ATC — e al
 validatore basta come punto di partenza.
@@ -985,8 +1029,9 @@ tour all'anno sono **decine di kilobyte all'anno**. Quello che occupa spazio son
 punti per volo per circa 7000 PIREP all'anno, **centinaia di megabyte o più**, ed è esattamente ciò che la conservazione cancella
 comunque.
 
-**Proposta: B.** Lo spirito della decisione («non occupiamo spazio nel DB che non serve») è rispettato, perché lo spazio lo
-occupano le tracce e non i nomi dei tour; e il registro disciplinare resta leggibile per sempre senza codice di copia ⚖️.
+**Decisa: B** (Carmine, 15 settembre). Tour e leg restano come righe archiviate; **quando il tour scade** (cioè quando passa
+il periodo di conservazione, 13 o 25 mesi dalla chiusura ⚖️) vanno via tracce, piani e tutto ciò che pesa. Il registro
+disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del tour seguono §1.14.
 
 ---
 
@@ -1009,6 +1054,7 @@ occupano le tracce e non i nomi dei tour; e il registro disciplinare resta leggi
 | 13 | Confini dei FIR da **OpenAIP** (`ref_firs`: codice, paese, poligono), sincronizzati da un job con la chiave API nei segreti, per la proposta degli ATC contattati; licenza e attribuzione dei dati OpenAIP da verificare | sì, breve (una fonte esterna nuova) | §3.3 |
 | 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore | sì | §6.6 |
 | 15 | **Preferenze dell'utente** generiche (chiave e valore per utente), per l'ordine della coda del validatore | no, piccola (come le preferenze delle notifiche) | §4.1 |
+| 16 | **Usi dei file dalle righe dei moduli** nell'indice della media library (`MediaReferences` in `IProjectable`), e il filtro «usati solo da righe chiuse» | no, estende un meccanismo (G20) | §1.14 |
 
 ---
 
@@ -1101,7 +1147,7 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 5. ~~**Tempo stimato**~~ **deciso**: 5 % + 20 minuti configurabili dal FOD, solo un'informazione per il pilota.
 6. ~~**Aereo di riferimento**~~ **deciso**: facoltativo; se c'è, stime per leg e totale del tour, ricalcolate a ogni lettura.
 7. ~~**Tour a distanza**~~ **deciso**: A→B e B→A sono rotte diverse.
-8. **Tour `Open`**: quali obiettivi, filtri e regole di sequenza di §2.6.1 entrano in M2?
+8. ~~**Tour `Open`**~~ **deciso**: tutti gli obiettivi, filtri e regole di §2.6.1 in M2.
 9. ~~**Contestazione respinta**~~ **deciso**: la leg torna a bloccare, con la tolleranza contata da quel momento.
 10. ~~**Ban**~~ **deciso**: HQ, superadmin, FOC, FOAC; mail al pilota con il motivo; i PIREP già inviati si validano.
 11. ~~**Richiedi chiarimenti**~~ **deciso**: su PIREP, leg e regole, anche più spiegazioni in un messaggio (§3.10).
@@ -1115,7 +1161,10 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
     validatore con Navigraph (§6.6). Restano da decidere: chi adatta l'app Python, e la licenza di Navigraph sulle evidenze.
 17. ~~**Ordine della coda**~~ **deciso**: preferenza dell'utente.
 18. ~~**Advisor**~~ **deciso**: gestiscono i profili degli aerei; le stime dei tour pubblicati cambiano con le velocità.
-19. **Registro disciplinare dopo la conservazione**: strada B di §10.1 (tenere tour e leg come righe archiviate, cancellare solo
-    ciò che pesa)?
+19. ~~**Registro disciplinare**~~ **deciso**: strada B (§10.1). Da confermare solo che «quando scade il tour» vuol dire alla fine
+    della conservazione (13 o 25 mesi dalla chiusura), non alla chiusura.
+21. **Immagini dei tour** (§1.14): eliminazione manuale del PRD (non un job)? E il collegamento al tour lo fa chi modifica il tour,
+    scegliendo dalla media library?
+22. **Agente del validatore**: prima versione che mostra solo in locale, o che manda subito gli esiti all'hub (§6.6)?
 20. **I voli di test**: in arrivo fra il 16 e il 17 settembre, con un esito dettagliato. ⚠️ Oggi la validazione è soggettiva: gli
     esiti attesi vanno scritti secondo lo **standard** che il sistema vuole fissare, non secondo com'è stato deciso allora.
