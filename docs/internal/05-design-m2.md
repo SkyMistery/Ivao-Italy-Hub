@@ -128,11 +128,11 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 |---|---|---|
 | `id`, `slug` | | `slug` unico fra i non template: `/tours/{slug}` |
 | `is_template` | bool | §1.10 |
-| `kind` | enum | `Sequential`, `Free`, `Hub`, `SequentialChosenStart`, `Distance`, `Container` (§2) |
+| `kind` | enum | `Sequential`, `Free`, `Hub`, `SequentialChosenStart`, `Distance`, `Open`, `Container` (§2) |
 | `parent_tour_id` | long? | solo per un **sottotour**; il padre è un `Container` |
 | `required_subtours` | int? | solo `Container` |
 | `required_nm` | int? | solo `Distance` |
-| `distance_mode` | enum? | solo `Distance`: `PublishedLegs` o `OpenFlying` (§2.6) |
+| `open_goal`, `open_goal_json` | enum?, json | solo `Open`: obiettivo e parametri (§2.6.1) |
 | `title`, `summary` | `Localized<string>` | |
 | `briefing_json` | BlockDocument | testo ricco, stesso editor e renderer |
 | `cover_media_id` | long? | foto di sfondo |
@@ -164,9 +164,9 @@ Nessun job pubblica o chiude un tour:
 
 Un tour su due anni è un tour con `close_at` nell'anno dopo. **Segnare «pronto»** passa dai controlli di
 pubblicazione: titolo e riassunto in tutte le lingue della divisione, almeno una leg (tranne `Container` e
-`Distance/OpenFlying`), aeroporti noti in `ref_`, `release_at < close_at`, date delle leg dentro il periodo,
-vincoli di tipo (§2), limite giornaliero se quello di divisione è spento (§3.7), aereo di riferimento con un
-profilo (§1.5) ⚖️, un `Container` con almeno due sottotour e `required_subtours` non oltre il loro numero.
+`Open`), aeroporti noti in `ref_`, `release_at < close_at`, date delle leg dentro il periodo,
+vincoli di tipo (§2), limite giornaliero se quello di divisione è spento (§3.7), un profilo per l'aereo di
+riferimento **se il tour ne indica uno** (non è obbligatorio, §1.5), un `Container` con almeno due sottotour e `required_subtours` non oltre il loro numero.
 
 #### 1.2.2 Cancellare, nascondere, spostare la chiusura (risposta 16)
 
@@ -199,7 +199,6 @@ profilo (§1.5) ⚖️, un `Container` con almeno due sottotour e `required_subt
 | `departure_icao`, `arrival_icao` | |
 | `departure_lat/lon`, `arrival_lat/lon` | **congelate alla scrittura** dagli aeroporti `ref_` (ADR-024) |
 | `distance_nm` | GCD calcolata dal server |
-| `estimated_minutes` | tempo stimato (§1.5), ricalcolato quando cambiano distanza o aereo di riferimento |
 | `real_callsign`, `flight_number` | del volo reale, se esiste (informativi; il vincolo è in §1.6) |
 | `aircraft_json` | tipi ICAO della leg; vuoto = quelli del tour |
 | `release_at` | rilascio proprio, facoltativo |
@@ -214,21 +213,23 @@ Tre casi, decisi dal server e non dall'editor:
 
 | Situazione | Che cosa succede |
 |---|---|
-| **La leg non ha PIREP** (in qualunque stato del tour) | si **elimina davvero**; le leg dopo di lei **non** si rinumerano da sole ⚖️ (un buco nel numero è meglio di numeri che cambiano sotto i piloti) |
+| **La leg non ha PIREP** (in qualunque stato del tour) | si **elimina davvero**, e **le leg dopo di lei si rinumerano** (Carmine, 15 settembre). Si può sempre: un PIREP punta alla leg per identificativo, non per numero, quindi rinumerare non tocca nessun report; la pagina del pilota mostra il numero attuale con partenza e arrivo |
 | **La leg ha PIREP** | non si elimina: si **ritira** (`retired_at`, `retired_reason` obbligatorio) |
 | **Il tour ha PIREP ma la leg no** | come il primo caso: si elimina |
 
 Una leg **ritirata**:
 
 - **non si vola più**: sparisce dalle leg volabili e il form del PIREP la rifiuta;
-- **resta visibile** nella pagina del tour, barrata, con il motivo, e sulla mappa in grigio;
+- **sparisce dalla parte pubblica** (Carmine, 15 settembre): non compare più né nella pagina del tour né sulla mappa dei
+  piloti; resta visibile solo **nell'editor del tour**, sulla sua mappa, con il motivo. Nella pagina del pilota un PIREP
+  su una leg ritirata mostra partenza e arrivo, con la dicitura «leg non più nel tour»;
 - **i PIREP già inviati restano e si validano normalmente**: un pilota che l'ha volata prima del ritiro non
   perde niente;
 - **non conta più per il completamento**: «tutte le leg» vuol dire tutte le leg **non ritirate**. Chi l'aveva già
   accettata la tiene nel suo storico, ma non gli serve;
 - **in un tour in sequenza viene saltata**: la prossima leg di chi era fermo lì è quella dopo;
-- **in una rotazione** rende la rotazione incompleta: il controllo di pubblicazione lo segnala, e il FOD deve
-  sistemare la rotazione (aggiungere una leg o ritirare la rotazione intera) ⚖️;
+- **in una rotazione non si ritira da sola** (Carmine, 15 settembre): si ritira **la rotazione intera**, con tutte le sue
+  leg, e se ne crea una nuova. Chi aveva iniziato la rotazione ritirata la trova tolta dal suo percorso e vola la nuova;
 - **si può ripristinare** (`retired_at = null`), con un motivo, finché il tour non è chiuso.
 
 Nell'**import** (§8.4) la modalità «sostituisci» applica le stesse regole: elimina le leg assenti senza PIREP e
@@ -245,7 +246,10 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
   equipaggiamento e dei transponder, e il controllo `equipment` (§6.4) li legge da lì invece di tenerne un elenco suo.
 - **Le prestazioni le inserisce il FOD**: `fo_aircraft_profiles` (`icao_type`, `cruise_tas_kt`, `note`), una lista
   e un form generati. Un profilo vale per tutti i tour.
-- **Ogni tour ha un aereo di riferimento** (`reference_aircraft_icao`) e ogni leg il suo **tempo stimato**:
+- **L'aereo di riferimento è facoltativo** (`reference_aircraft_icao`, Carmine, 15 settembre): si indica **solo se si
+  vogliono dare ai piloti le durate indicative**. Con l'aereo, ogni leg mostra il suo **tempo stimato** e la pagina del
+  tour mostra il **totale** («la somma degli air-time è stimata in xx ore xx minuti»), così un pilota sa quanto dovrà
+  volare prima di iniziare. Senza, niente stime. La formula:
 
   **minuti = 60 × GCD × (1 + k) / velocità + c**
 
@@ -271,6 +275,9 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
   sessioni del tracker e si sceglie la coppia che sbaglia meno.
 
 - Il tempo stimato si mostra nella pagina del tour e nell'editor; è **solo un'informazione per il pilota**, mai un vincolo del PIREP né un controllo (Carmine, 15 settembre).
+- **Si calcola a ogni lettura, non si memorizza**: GCD della leg, velocità del profilo dell'aereo di riferimento, `k` e `c`
+  delle impostazioni. Così, se il FOD cambia la velocità di un profilo o i due numeri, **le stime di tutti i tour, anche
+  pubblicati, cambiano da sole** (Carmine, 15 settembre), senza un job di ricalcolo.
 
 ### 1.6 Vincoli sul callsign
 
@@ -302,7 +309,7 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
 
 | Colonna | Note |
 |---|---|
-| `tour_id`, `leg_id?`, `vid` | `leg_id` è null solo in un tour `Distance/OpenFlying` (§2.6) |
+| `tour_id`, `leg_id?`, `vid` | `leg_id` è null solo in un tour `Open` (§2.6) |
 | `status`, `is_disputed` | §3.1 |
 | `submitted_at`, `resubmitted_at?` | |
 | `flight_rules` | `I`, `V`, `Y`, `Z`, dal piano al decollo |
@@ -353,10 +360,14 @@ In `hub_division_settings` sotto la chiave `flightops` (dati che il FOD cambia d
 | `durationFactor`, `durationFixedMinutes` | 0,05 e 20 (§1.5): **configurabili dal FOD**, confermati da Carmine il 15 settembre come valori di partenza |
 | `northSouthLevelCountries` | i paesi dove i livelli semicircolari vanno nord–sud (§6.4); non cambia con l'AIRAC |
 | `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
-| `thresholdToleranceMeters` | 150 ⚖️ (§6.4) |
+| `thresholdToleranceMeters` | 150 (§6.4), uno per tutto il sistema |
 | `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) |
 
 Le **soglie dei controlli** non stanno qui: sono parametri delle regole (§1.7).
+
+**Chi le cambia**: solo chi ha `Tours.ManageSettings`, cioè **FOC e FOAC** (e HQ e superadmin). Vale in particolare per la
+tolleranza del decollo dalla testata e per i due numeri del tempo stimato (Carmine, 15 settembre): se in esercizio il FOD
+si accorge che non vanno, li cambia senza una release.
 
 ### 1.12 Aeroporti e piste di tutto il mondo (estensione del nucleo n.4)
 
@@ -433,42 +444,72 @@ una leg accettata o in attesa non si rivola; una leg rifiutata si rivola; un pil
 
 ### 2.5 Il rifiuto e la tolleranza
 
-In **tutti i tipi tranne `Free` e `Distance/OpenFlying`** (risposta 14 e revisione del 15 settembre §4.4): una leg
+In **tutti i tipi tranne `Free` e `Open`** (risposta 14 e revisione del 15 settembre §4.4): una leg
 rifiutata **blocca** l'invio di PIREP sulle leg successive finché non è di nuovo in attesa o accettata, **eccetto** le
 leg il cui decollo è avvenuto entro `decided_at + rejectGraceHours`. Nei tour liberi la leg si rivola quando il pilota
 vuole, e senza non si completa.
 
-### 2.6 `Distance` — a distanza
+### 2.6 `Distance` e `Open` — i tour senza un percorso obbligato
 
-Due modalità (`distance_mode`):
-
-- **`PublishedLegs`**: leg pubblicate, volabili libere (risposta 12). **Finito**: somma delle GCD delle leg accettate
+- **`Distance`**: leg pubblicate, volabili libere (risposta 12). **Finito**: somma delle GCD delle leg accettate
   `≥ required_nm`. Il controllo di pubblicazione verifica che tutte insieme ci arrivino.
-- **`OpenFlying`**: **nessuna leg pubblicata**; ognuno vola quello che vuole, con **vincoli del tour**
-  (`fo_tour_constraints`, §2.6.1). Il PIREP non ha `leg_id`: porta partenza e arrivo del volo. **Finito**: somma delle
-  GCD dei voli accettati `≥ required_nm`.
+- **`Open`** (proposta del 15 settembre, §2.6.1): **nessuna leg pubblicata**; ognuno vola quello che vuole dentro le
+  regole del tour. Il PIREP non ha `leg_id`: porta partenza e arrivo del volo.
 
-In tutti e due si conta **la GCD**, mai la distanza volata (chi allunga non guadagna), e **non si vola due volte la
-stessa rotta** (risposta 12). **A→B e B→A sono rotte diverse** (Carmine, 15 settembre).
+In tutti e due si conta **la GCD**, mai la distanza volata, e **non si vola due volte la stessa rotta**. **A→B e B→A
+sono rotte diverse** (Carmine, 15 settembre).
 
-#### 2.6.1 I vincoli di un tour a distanza — `fo_tour_constraints`
+#### 2.6.1 Il tour `Open`: un obiettivo, dei filtri, una catena
 
-Una riga per vincolo: `tour_id`, `kind`, `parameters_json`. Un insieme **chiuso** di tipi, scritto nel codice del
-modulo, ciascuno con il suo schema di parametri e la sua verifica all'invio:
+Carmine lo trova il formato più interessante e malleabile. Proposta: un tour `Open` si compone da **tre pezzi**, tutti
+presi da **insiemi chiusi** scritti nel codice del modulo (ogni tipo ha il suo schema di parametri, la sua verifica e le
+sue chiavi i18n). Il FOD li combina nell'editor senza scrivere codice; un tipo nuovo è codice e una chiave i18n.
 
-| Tipo | Parametri | Esempio |
+**1. L'obiettivo** (uno per tour, `fo_tours.open_goal` con i parametri): che cosa bisogna accumulare per finire.
+
+| Obiettivo | Si completa quando | Esempio |
 |---|---|---|
-| `DepartureOrArrivalIn` | paesi (codici IVAO) | partire **o** arrivare in Italia |
-| `DepartureIn`, `ArrivalIn` | paesi | |
-| `MinFlightsAtAirport` | aeroporto, numero | almeno 3 voli su LIRF |
-| `MinFlightsAtAnyOf` | aeroporti, numero | |
-| `LegDistanceBetween` | minimo e massimo NM | tratte fra 200 e 1500 NM |
-| `NoRepeatedRoute` | — | sempre acceso nei tour a distanza |
-| `AircraftOfCategory` | categoria di scia | |
+| `Distance` | somma delle GCD `≥ N` NM | «10 000 miglia in un anno» |
+| `FlightCount` | `N` voli accettati | «50 voli fra aeroporti italiani» |
+| `DistinctAirports` | `N` aeroporti diversi toccati | «atterra in 30 aeroporti diversi» |
+| `DistinctCountries` | `N` paesi diversi toccati | «giro d'Europa: 20 paesi» |
+| `CollectList` | tutti (o `N` di) gli aeroporti di un **elenco** | «le 20 capitali europee», «tutti gli aeroporti della Sardegna» |
+| `CollectRegions` | tutti (o `N` di) i paesi o i FIR di un elenco | «tutti i FIR italiani» |
 
-Un vincolo **per volo** (paese, distanza) si verifica all'invio e **blocca**; un vincolo **sul tour** («almeno 3 voli su
-LIRF») si verifica al **completamento**, e la pagina del tour mostra quanto manca. Aggiungere un tipo è codice e una
-chiave i18n, non una decisione ⚖️.
+**2. I filtri per volo** (zero o più, `fo_tour_constraints`): un volo che non li rispetta **non si invia** (blocca, come
+callsign e aereo).
+
+| Filtro | Parametri | Esempio |
+|---|---|---|
+| `DepartureOrArrivalIn` / `DepartureIn` / `ArrivalIn` | paesi | parti **o** arrivi in Italia |
+| `TouchesAirport` | un aeroporto | ogni volo parte o arriva a LIRF (tour «a stella») |
+| `DistanceBetween` | minimo e massimo NM | tratte fra 200 e 1500 NM |
+| `AircraftTypes` / `AircraftCategory` | tipi ICAO / categoria di scia | solo turboelica, solo aerei storici |
+| `ArrivalRunwayMax` | lunghezza massima in metri | «piste corte»: arrivi su piste sotto i 1500 m (dalle piste `ref_`) |
+| `ArrivalElevationMin` | quota minima in piedi | «aeroporti in quota» (dall'elevazione IVAO) |
+| `FlightRules` | `I`, `V` | solo VFR |
+
+**3. Le regole di sequenza** (zero o più): legano un volo ai precedenti del pilota nel tour.
+
+| Regola | Significato | Esempio |
+|---|---|---|
+| `NoRepeatedRoute` | la stessa coppia ordinata non si ripete | sempre accesa |
+| `Chained` | la partenza è l'arrivo del volo precedente accettato o in attesa | «coast to coast» senza teletrasporti |
+| `Eastbound` / `Westbound` | ogni arrivo è a est (ovest) della partenza | «giro del mondo verso est» con `Distance` |
+| `IncreasingDistance` | ogni volo più lungo del precedente | «la scala» |
+| `MinFlightsAt` | almeno `N` voli su un aeroporto, verificato **al completamento** | «almeno 3 voli su LIRF» |
+
+**Esempi di tour componibili**, per dare un'idea di quanto è malleabile:
+
+- **Giro del mondo verso est**: `Distance` 21 600 NM, `Chained`, `Eastbound`.
+- **Le capitali d'Europa**: `CollectList` (20 aeroporti), `DistanceBetween` 150–1500 NM.
+- **Piste corte d'Italia**: `DistinctAirports` 15, `DepartureOrArrivalIn` Italia, `ArrivalRunwayMax` 1500 m, `FlightRules` V.
+- **Hub di Fiumicino**: `FlightCount` 30, `TouchesAirport` LIRF, `NoRepeatedRoute`.
+- **La scala**: `FlightCount` 10, `IncreasingDistance`, `Chained`.
+
+⚖️ Da scegliere con Carmine quali obiettivi, filtri e regole entrano in M2: l'insieme sopra è una proposta, e tutti usano
+dati che l'hub avrà già (GCD, paesi e FIR, piste e quote degli aeroporti, tipi di aereo). La pagina del tour mostra
+**quanto manca** all'obiettivo e ai vincoli «al completamento».
 
 ### 2.7 `Container` — con sottotour
 
@@ -508,10 +549,10 @@ chiave i18n, non una decisione ⚖️.
 
 ### 3.2 Il report
 
-1. **La leg** (o, in `OpenFlying`, «nuovo volo»): il server verifica che sia volabile, che il tour accetti PIREP, che il
+1. **La leg** (o, in un tour `Open`, «nuovo volo»): il server verifica che sia volabile, che il tour accetti PIREP, che il
    pilota non sia bannato.
 2. **Ricerca nel tracker** (estensione n.5): `GET /v2/tracker/sessions` con `userId`, `departureId`, `arrivalId`,
-   `from = now − report_window_days`, `to = now` (senza aeroporti in `OpenFlying`). Esclude le sessioni già rivendicate
+   `from = now − report_window_days`, `to = now` (senza aeroporti in un tour `Open`). Esclude le sessioni già rivendicate
    e quelle con decollo dopo `close_at`.
 3. **Il pilota sceglie il volo.** Il server legge **tutte** le revisioni del piano (`/flightPlans`) e le tracce
    (`/tracks`), e segna la revisione valida al decollo.
@@ -524,7 +565,7 @@ chiave i18n, non una decisione ⚖️.
    - leg volabile e tour aperto; finestra dei giorni; data del volo non oltre la chiusura; sessione non rivendicata;
    - **callsign consentito** e **aereo consentito** (risposta 5);
    - **limiti giornalieri**, del tour e di divisione (§3.7);
-   - vincoli per volo di un tour a distanza (§2.6.1); rotta non già volata;
+   - filtri e regole di sequenza di un tour `Open` (§2.6.1); rotta non già volata;
    - pilota non bannato.
 6. Il PIREP nasce `Queued`, con `rules_snapshot_json`; il primo del pilota nel tour crea l'iscrizione. Partono in un job
    i controlli automatici (§6) e lo scarico del meteo mancante (§1.13).
@@ -535,9 +576,9 @@ chiave i18n, non una decisione ⚖️.
   del controllo di copertura (§6.5): archivio ATC per l'intervallo del volo, incrociato con le tracce. Il pilota
   **toglie** quelli che non ha contattato e **aggiunge** quelli che mancano; resta scritto chi è stato proposto e chi
   aggiunto.
-- **Prima versione leggera** (per non caricare il server): le posizioni online negli aeroporti di partenza, arrivo e
-  deviazione e nei FIR attraversati, calcolati dai punti delle tracce a campione ⚖️. La geometria dei settori (vIPI) si
-  aggiunge più avanti.
+- **Versione leggera, sul server** (per non caricarlo, e perché il pilota non ha i dati di navigazione): le posizioni
+  online negli aeroporti di partenza, arrivo e deviazione e nei FIR attraversati, calcolati dai punti delle tracce a
+  campione con i confini dei FIR di OpenAIP. La verifica precisa lungo la rotta è dell'agente del validatore (§6.6).
 - **Esenzioni**: il pilota sceglie la posizione fra gli ATC contattati e il tipo (`FreeSpeed`, `DirectRouting`,
   `LevelChange`, `Other`); ogni tipo dichiara quali controlli ammorbidisce. Vale se la posizione risultava online; se il
   dato manca, «non verificabile» e decide il validatore.
@@ -621,7 +662,8 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
 - **Una coda unica** e **una coda per tour** (la stessa lista generata, con il filtro sul tour).
 - **Il validatore sceglie l'ordine** (revisione del 15 settembre): **per data** (dal PIREP che aspetta di più, risposta
   25) o **per tour** (raggruppati per tour, e dentro il tour per data), perché validare in fila le leg dello stesso tour è
-  più veloce. La scelta resta memorizzata per lui ⚖️ (nel browser, o come preferenza dell'utente).
+  più veloce. La scelta resta memorizzata **come preferenza del suo utente** (Carmine, 15 settembre), così la ritrova su
+  qualunque computer (estensione del nucleo n.15).
 - **Chi vede**: chi ha `Tours.Validate` su almeno un tour vede **tutti** i PIREP in sola lettura; «Prendi» c'è solo sui
   tour per cui è abilitato.
 - **I propri PIREP**: il validatore **li vede**, in **sola lettura**, con il loro esito e gli errori segnati (revisione del
@@ -713,30 +755,13 @@ subito il metodo). Si registra comunque se il validatore conferma l'errore sugge
 | `equipment` | equipaggiamento richiesto | piano | lettere |
 | `takeoffFromThreshold` | decollo dalla testata | tracce, `ref_ivao_runways` | `thresholdToleranceMeters` |
 | `vmc` | VMC a partenza e arrivo, **solo piani `V`** (e le metà VFR di `Y`/`Z`) | meteo salvato | visibilità e base nubi minime |
-| `atcCoverage` | ATC online lungo il volo, e verifica delle esenzioni | archivio ATC | — (informativo) |
-| `repeatedRoute` | rotta già volata nel tour a distanza (anche bloccato all'invio; A→B diversa da B→A) | PIREP | — |
-| `semicircularLevels` | livello di crociera coerente con la rotta, **solo sui voli con `DCT`** (sotto) | piano, tracce, FIR di OpenAIP | tolleranza sulla prua |
+| `repeatedRoute` | rotta già volata in un tour `Distance` o `Open` (anche bloccato all'invio; A→B diversa da B→A) | PIREP | — |
+
+**Due controlli non girano sul server ma sul PC del validatore** (§6.6, Carmine, 15 settembre): **`semicircularLevels`** e
+**`atcCoverage`**. Tutti e due hanno bisogno di sapere **dove passa la rotta**, cioè delle coordinate dei punti del piano, e
+quelle stanno nei dati di navigazione (Navigraph) che l'hub non ha e non può ridistribuire.
 
 Note sui controlli delicati:
-
-- **`semicircularLevels`: i volumi FRA no, il «trucco del `DCT`» sì** (Carmine e il FOD, 15 settembre).
-  - **Perché non la FRA**: nessuna fonte aperta ne espone i volumi (cercati SkyVector, senza API pubblica; OpenAIP, che fra i
-    tipi di spazio aereo non ha la FRA; EUROCONTROL, solo punti e carte; IVAO France, solo a parole), e una tabella a mano
-    sarebbe un'altra cosa da aggiornare al cambio di ciclo.
-  - **La regola al posto dei volumi**: dove fra due punti del piano c'è **`DCT`**, quasi sicuramente (circa 90 %) il volo è in
-    FRA; dove c'è un'**aerovia**, il livello va verificato a mano. Il FOD accetta il 10 % di errore: lì interviene
-    l'esperienza del validatore, e il controllo **suggerisce**, non decide.
-  - **Come funziona**: il controllo guarda i tratti di crociera delle **tracce** (livello stabile). Poiché l'hub non ha i
-    dati di navigazione e quindi le coordinate dei punti del piano, un tratto non si può associare con certezza a un
-    segmento `DCT` della rotta ⚠️: nella prima versione il controllo lavora sui voli la cui rotta è **fatta di `DCT`** (fra
-    SID e STAR) e dà `Unavailable` sui voli con aerovie, così il validatore sa che lì deve guardare lui. Se i voli veri
-    mostrano che l'approssimazione regge anche per le rotte miste (per esempio pesando la parte di rotta in `DCT`), si
-    allarga.
-  - **Est–ovest o nord–sud**: la direzione si calcola dalla **prua magnetica** della traccia in crociera (declinazione
-    dell'aeroporto di partenza da `ref_`, approssimata); il **paese** del tratto viene dal **FIR** in cui si trova, preso
-    dai confini dei FIR di **OpenAIP** (estensione del nucleo n.13); i paesi con la regola nord–sud stanno in
-    `northSouthLevelCountries` (§1.11), che non cambia con l'AIRAC.
-  - L'errore «livelli semicircolari» resta nel catalogo, collegato al controllo.
 - **`alternate` e `ZZZZ`** (Carmine, 15 settembre): `ZZZZ` è sia un aeroporto reale in Cina sia il codice «aeroporto
   senza ICAO», molto usato nei VFR. Il controllo **non supera** solo se `ZZZZ` è l'**alternato** e nelle remarks del piano
   **manca `ALTN/`**; con `ALTN/` presente l'alternato è un campo volo senza ICAO, ed è valido. Un piano senza alternato
@@ -751,10 +776,49 @@ Note sui controlli delicati:
 Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`); ogni controllo si prova su **voli veri**
 (§13).
 
+### 6.6 L'agente sul PC del validatore (livello B)
+
+**L'idea di Carmine** (15 settembre): i controlli che dipendono dalla geometria della rotta vanno sul PC del validatore, dove c'è
+Navigraph e quindi la posizione dei fix. **È la strada giusta**, ed è quella che Toursystem chiamava «livello B» (ADR-011): il
+server non ha i dati di navigazione, e un'approssimazione sul server (il «trucco del `DCT`» sulle tracce) sbaglierebbe proprio
+dove serve.
+
+**Che cosa fa l'agente** (l'app Python `AutomaticValidatorTour`, adattata, o una sua erede):
+
+| Controllo | Con i fix di Navigraph |
+|---|---|
+| `semicircularLevels` | ricostruisce la rotta segmento per segmento: dove il segmento è **`DCT`** assume FRA (circa 90 %, errore accettato dal FOD), dove è un'**aerovia** non giudica; per ogni tratto `DCT` calcola la **rotta magnetica** e il paese (dal FIR), e la confronta con il livello (est–ovest, o nord–sud per i paesi di `northSouthLevelCountries`) |
+| `atcCoverage` | incrocia la rotta con le posizioni ATC online nell'intervallo (dall'archivio che l'hub gli passa) e dice quali settori ha attraversato con un ATC aperto; verifica le esenzioni dichiarate |
+| più avanti | aderenza alla rotta, SID e STAR dichiarate contro quelle volate (i controlli B di Toursystem: 07, 10, 14, 16) |
+
+**Il contratto con l'hub** (estensione del nucleo n.14):
+
+- **Autenticazione**: un **token personale** del validatore, creato dalla sua pagina, revocabile, con scadenza, legato ai suoi
+  permessi (`Tours.Validate` con i suoi scope): l'agente vede solo quello che il validatore vede. Audit di ogni uso.
+- **Lettura**: `GET /api/flightops/agent/pireps/{id}` — il PIREP con tutte le revisioni del piano, le tracce, i parametri delle
+  regole congelati, la fetta di archivio ATC dell'intervallo del volo, gli aeroporti.
+- **Scrittura**: `POST /api/flightops/agent/pireps/{id}/checks` — per ogni controllo `outcome` ed `evidence`; finiscono in
+  `fo_check_results` con `ran_by = agent` e la versione dell'agente, e **suggeriscono** errori come quelli del server.
+- **Quando gira**: quando il validatore apre il PIREP (l'agente lo vede in coda e lo elabora), oppure a lotti sulla coda dei tour
+  che può validare. **Nessun dato di Navigraph va all'hub**: solo esiti ed evidenze in testo (la licenza di Navigraph è
+  personale; da verificare che anche l'evidenza testuale sia ammessa ⚠️).
+- **Senza agente**, i due controlli risultano `Unavailable` e il validatore giudica come oggi: l'hub funziona anche per una
+  divisione che non ha l'agente.
+
+**I costi, detti prima**: ogni validatore che lo vuole ha bisogno di un abbonamento Navigraph e dell'app installata; l'app è un
+secondo prodotto, fuori da questo repository, con il suo rilascio; il contratto API va **versionato** perché l'app e l'hub si
+aggiornano separatamente. **Proposta**: in M2 l'hub espone il contratto con i token e i test; l'adattamento dell'app Python è un
+lavoro a parte, nel suo repository ⚖️.
+
+**La proposta degli ATC contattati al pilota resta sul server** (§3.3): il pilota non ha Navigraph. È la versione leggera —
+aeroporti e FIR attraversati dai punti delle tracce (i FIR da OpenAIP, estensione n.13), incrociati con l'archivio ATC — e al
+validatore basta come punto di partenza.
+
 ### 6.5 L'archivio ATC
 
 `IAtcActivitySource` nel nucleo («quali posizioni erano online in questo intervallo, e dove»): la vista di vIPI
-`v_share_atc_sessions` o nessuna (`Unavailable`). Lo usano `atcCoverage` e la **proposta degli ATC contattati** (§3.3).
+`v_share_atc_sessions` o nessuna (`Unavailable`). Lo usano la **proposta degli ATC contattati** (§3.3) e, attraverso
+l'hub, l'agente del validatore per `atcCoverage` (§6.6).
 
 ---
 
@@ -785,7 +849,7 @@ Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`);
 | `Tours.Delete` | ✓ | ✓ | — (grant al singolo VID) | |
 | `Tours.ManageRules` | ✓ | ✓ | ✓ | |
 | `Tours.ManageTemplates` | ✓ | ✓ | — | |
-| `Tours.ManageAircraft` | ✓ | ✓ | ✓ ⚖️ | |
+| `Tours.ManageAircraft` | ✓ | ✓ | ✓ | |
 | `Tours.Validate` | ✓ tutti | ✓ tutti | ✓ tutti | ✓ i tour abilitati |
 | `Tours.ManageValidators` | ✓ | ✓ | — | |
 | `Tours.ViewPilots` | ✓ | ✓ | ✓ | ✓ (risposta 17) |
@@ -814,8 +878,8 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 
 - **`/tours`**: tour aperti, in chiusura, e in arrivo con anteprima, come **riquadri** (foto, titolo, riassunto; per un
   pilota barra di avanzamento e prossima leg). Anonimo: niente avanzamento.
-- **`/tours/{slug}`**: briefing, date, aerei, regole effettive con i parametri, **mappa** (blu da fare, verdi fatte, grigie
-  ritirate o non ancora rilasciate ⚖️, arancioni in attesa), elenco delle leg con distanza, **tempo stimato**, callsign reale,
+- **`/tours/{slug}`**: briefing, date, aerei, regole effettive con i parametri, **mappa** (blu da fare, verdi fatte, arancioni in
+  attesa, grigie non ancora rilasciate; le leg **ritirate non compaiono**, si vedono solo nella mappa dell'editor), elenco delle leg con distanza, **tempo stimato**, callsign reale,
   pulsante **SimBrief**; per un tour a distanza senza leg, i vincoli e quanto manca; per il pilota i suoi PIREP, «Invia il
   report», «Contesta», «Richiedi chiarimenti», «Segnala un problema».
 - **Il form del PIREP**: finestra dedicata (prima la scelta del volo, poi i campi).
@@ -892,12 +956,37 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 ## 10. Conservazione (risposta 22)
 
 - **Mai cancellati**: la decisione del PIREP, gli **errori confermati**, la storia, i ban — il **registro disciplinare**.
-- **Cancellati** dopo **13 mesi** dalla chiusura per un tour normale e **25 mesi** per un tour su più di un anno: il tour con
-  leg, regole, hub, vincoli; dei PIREP tracce, piani, esiti dei controlli, snapshot, note, ATC ed esenzioni, iscrizioni.
+- **Cancellati** dopo **13 mesi** dalla chiusura per un tour normale e **25 mesi** per un tour su più di un anno: dei PIREP
+  tracce, tutte le revisioni dei piani, esiti dei controlli, snapshot delle regole, note, ATC ed esenzioni; del tour briefing,
+  foto (se non usata altrove), regole del tour, hub, rotazioni, vincoli, iscrizioni.
 - **Meteo**: §1.13.
 - Job mensile del modulo, con una riga nel log dei job.
-- ⚖️ Il registro disciplinare, cancellato il tour, deve ancora dire **quale** tour e **quale** leg: il PIREP conserva nome del tour
-  e partenza/arrivo come testo al momento della cancellazione.
+
+### 10.1 Il problema: il registro disciplinare punta al tour
+
+**Perché la domanda** (Carmine ha chiesto di argomentarla): il registro disciplinare **non si cancella mai**, ma ogni sua riga è
+un PIREP che dice «il pilota X, sulla leg Y del tour Z, il giorno D, ha commesso gli errori E». Se dopo 13 mesi cancelliamo il
+tour e le sue leg, quelle righe restano **orfane**: sappiamo che il pilota ha preso un warning, ma non **dove**. E due cose che
+lo staff ha chiesto ne hanno bisogno:
+
+- la **pagina del pilota** mostra «tutte le leg volate con l'esito» (requisiti §6), anche degli anni passati;
+- una **contestazione** o una decisione di **ban** si motiva guardando lo storico: «il terzo warning per SID sbagliata, sulla leg
+  LIRF–LIMC del tour Alitalia 2027».
+
+**Le due strade**:
+
+| | Come | Pro | Contro |
+|---|---|---|---|
+| **A. Copiare il testo** | alla cancellazione, il PIREP si copia nome del tour, numero della leg, partenza e arrivo come testo | il tour sparisce davvero | codice di copia che gira una volta all'anno, e se si dimentica un campo lo si scopre anni dopo |
+| **B. Tenere le righe leggere** | `fo_tours` e `fo_legs` **non si cancellano**: diventano archiviate; si cancella solo ciò che pesa (sopra) | nessuna copia, lo storico resta navigabile | le righe restano nel database |
+
+**Quanto pesano davvero** (stima): una riga di tour qualche kilobyte, una leg qualche centinaio di byte. Con 20 tour e 30 leg per
+tour all'anno sono **decine di kilobyte all'anno**. Quello che occupa spazio sono **le tracce e i piani di volo**: migliaia di
+punti per volo per circa 7000 PIREP all'anno, **centinaia di megabyte o più**, ed è esattamente ciò che la conservazione cancella
+comunque.
+
+**Proposta: B.** Lo spirito della decisione («non occupiamo spazio nel DB che non serve») è rispettato, perché lo spazio lo
+occupano le tracce e non i nomi dei tour; e il registro disciplinare resta leggibile per sempre senza codice di copia ⚖️.
 
 ---
 
@@ -917,7 +1006,9 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 | 10 | Più voci di calendario per riga in `IProjectable` | no (estensione piccola) | §9 |
 | 11 | Tipi di aereo IVAO (`ref_ivao_aircraft`) da `/v2/aircrafts/all`, con equipaggiamenti e transponder | no | §1.5 |
 | 12 | `IWeatherSource` (NOAA → IVAO → VATSIM), come vIPI | sì, breve (una fonte esterna nuova) | §1.13 |
-| 13 | Confini dei FIR da **OpenAIP** (`ref_firs`: codice, paese, poligono), sincronizzati da un job con la chiave API nei segreti; licenza e attribuzione dei dati OpenAIP da verificare | sì, breve (una fonte esterna nuova) | §6.4 |
+| 13 | Confini dei FIR da **OpenAIP** (`ref_firs`: codice, paese, poligono), sincronizzati da un job con la chiave API nei segreti, per la proposta degli ATC contattati; licenza e attribuzione dei dati OpenAIP da verificare | sì, breve (una fonte esterna nuova) | §3.3 |
+| 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore | sì | §6.6 |
+| 15 | **Preferenze dell'utente** generiche (chiave e valore per utente), per l'ordine della coda del validatore | no, piccola (come le preferenze delle notifiche) | §4.1 |
 
 ---
 
@@ -962,7 +1053,7 @@ anche `ref_firs` (confini dei FIR da OpenAIP).
 
 | Fase | Contenuto |
 |---|---|
-| T0 | Note di decisione: permessi con scope e stakeholder; contatti con risposte; mappa (con le misure); fonte del meteo. Piano 0.79 |
+| T0 | Note di decisione: permessi con scope e stakeholder; contatti con risposte; mappa (con le misure); fonti esterne (meteo, FIR di OpenAIP); token e contratto dell'agente del validatore. Piano 0.79 |
 | T1 | Nucleo: aeroporti del mondo con IATA e coordinate, piste con le testate, tipi di aereo, confini dei FIR da OpenAIP |
 | T2 | Nucleo: tracker nel client IVAO (sessioni, piani, tracce) con fixture; `IWeatherSource` |
 | T3 | Nucleo: scope per risorsa e stakeholder nell'unico handler, test della spina dorsale |
@@ -980,8 +1071,9 @@ anche `ref_firs` (confini dei FIR da OpenAIP).
 | T15 | Completamento e award; statistiche dei validatori; pagina del pilota; ban |
 | T16 | Meteo salvato (job, scarico all'invio, cancellazione) |
 | T17 | Controlli automatici: motore, job, controlli sul piano |
-| T18 | Controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, livelli semicircolari sui voli in `DCT` con i FIR di OpenAIP |
-| T19 | Conservazione, calendario, ricerca, rifiniture, giro completo |
+| T18 | Controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc` |
+| T19 | Nucleo e modulo: token personali e contratto dell'agente del validatore (lettura del PIREP, scrittura degli esiti), con i test; l'adattamento dell'app Python fuori da questo repository |
+| T20 | Conservazione, calendario, ricerca, rifiniture, giro completo |
 
 ---
 
@@ -1004,13 +1096,13 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
    **FRA**: nessun volume; livelli semicircolari controllati sui voli in `DCT`, FIR da OpenAIP (§6.4). **Tipi di aereo**:
    dagli endpoint `/v2/aircrafts` (§1.5).
 2. ~~**Tour nascosto**~~ **deciso**: non lo vede più nessuno fuori dallo staff (§1.2.2).
-3. **Eliminare una leg senza PIREP**: le leg dopo **non** si rinumerano (buco nel numero)?
-4. **Leg ritirata dentro una rotazione**: il FOD deve sistemare la rotazione (aggiungere o ritirare la rotazione intera)?
+3. ~~**Eliminare una leg senza PIREP**~~ **deciso**: le successive si rinumerano (§1.4.1).
+4. ~~**Leg ritirata dentro una rotazione**~~ **deciso**: si ritira la rotazione intera e se ne crea una nuova.
 5. ~~**Tempo stimato**~~ **deciso**: 5 % + 20 minuti configurabili dal FOD, solo un'informazione per il pilota.
-6. **Aereo di riferimento obbligatorio** per segnare pronto un tour?
+6. ~~**Aereo di riferimento**~~ **deciso**: facoltativo; se c'è, stime per leg e totale del tour, ricalcolate a ogni lettura.
 7. ~~**Tour a distanza**~~ **deciso**: A→B e B→A sono rotte diverse.
-8. **Vincoli del tour a distanza**: vanno bene i tipi di §2.6.1? Ne mancano?
-9. **Contestazione respinta**: la leg torna a bloccare, con la tolleranza contata da quel momento?
+8. **Tour `Open`**: quali obiettivi, filtri e regole di sequenza di §2.6.1 entrano in M2?
+9. ~~**Contestazione respinta**~~ **deciso**: la leg torna a bloccare, con la tolleranza contata da quel momento.
 10. ~~**Ban**~~ **deciso**: HQ, superadmin, FOC, FOAC; mail al pilota con il motivo; i PIREP già inviati si validano.
 11. ~~**Richiedi chiarimenti**~~ **deciso**: su PIREP, leg e regole, anche più spiegazioni in un messaggio (§3.10).
 12. ~~**Meteo**~~ **deciso**: job ogni 30 minuti sugli aeroporti delle leg dei tour aperti, più lo scarico all'invio.
@@ -1018,9 +1110,12 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 14. ~~**FRA**~~ **decisa**: nessun volume FRA; il controllo dei livelli semicircolari lavora sui voli in `DCT` (circa 90 % in
     FRA, il resto lo valuta il validatore) e prende il paese dai FIR di OpenAIP (§6.4). Da verificare licenza e attribuzione
     dei dati OpenAIP.
-15. **Decollo dalla testata**: 150 m di tolleranza come partenza, da tarare?
-16. **ATC contattati, prima versione**: aeroporti e FIR attraversati dalle tracce, e la geometria dei settori più avanti?
-17. **Ordine della coda memorizzato**: nel browser del validatore o come preferenza del suo utente (lo segue su più computer)?
-18. **Advisor**: gestiscono anche i profili degli aerei?
-19. **Registro disciplinare dopo la cancellazione del tour**: il PIREP conserva nome del tour e aeroporti come testo?
-20. **I voli di test**: me li mandi con l'esito atteso per ogni controllo, e se possibile con la decisione reale?
+15. ~~**Decollo dalla testata**~~ **deciso**: 150 m, uno per il sistema, lo cambiano FOC e FOAC.
+16. ~~**ATC contattati**~~ **deciso**: versione leggera sul server per il pilota; `atcCoverage` e `semicircularLevels` sull'agente del
+    validatore con Navigraph (§6.6). Restano da decidere: chi adatta l'app Python, e la licenza di Navigraph sulle evidenze.
+17. ~~**Ordine della coda**~~ **deciso**: preferenza dell'utente.
+18. ~~**Advisor**~~ **deciso**: gestiscono i profili degli aerei; le stime dei tour pubblicati cambiano con le velocità.
+19. **Registro disciplinare dopo la conservazione**: strada B di §10.1 (tenere tour e leg come righe archiviate, cancellare solo
+    ciò che pesa)?
+20. **I voli di test**: in arrivo fra il 16 e il 17 settembre, con un esito dettagliato. ⚠️ Oggi la validazione è soggettiva: gli
+    esiti attesi vanno scritti secondo lo **standard** che il sistema vuole fissare, non secondo com'è stato deciso allora.
