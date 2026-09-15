@@ -3,11 +3,14 @@
 > Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 0.78).
 > Ingresso: **`decisions/2026-09-14-requisiti-dei-tour.md`** — i requisiti decisi da Carmine e dallo staff
 > FOD. Questo documento li trasforma in modello, flussi, permessi, schermate e fasi; **non li ridiscute**.
-> Dove un requisito lascia una scelta aperta, la scelta è proposta qui e segnata **⚖️ da confermare**.
-> Le fasi di implementazione si scrivono nella parte C di `06-piano-implementazione-m2.md` **dopo** che
-> Carmine ha letto questo documento.
+> Dove resta una scelta aperta è segnata **⚖️** e raccolta in §15.
+> Le fasi di implementazione si scrivono nella parte C di `06-piano-implementazione-m2.md` **dopo** la
+> revisione di Carmine.
 
-**Stato:** bozza del 14 settembre 2026, da rivedere con Carmine.
+**Stato:** seconda bozza, 15 settembre 2026. Integra la revisione di Carmine del 15 settembre (le 25 risposte
+alla prima bozza e le aggiunte: aereo di riferimento e tempo stimato, cancellazione delle leg, METAR e TAF,
+decollo dalla testata, tour a distanza senza leg, tutti i piani di volo, ATC proposti, contestazioni che non
+bloccano, ban, richiesta di chiarimenti, code per tour, parametri nelle regole, limiti che bloccano).
 
 ---
 
@@ -18,27 +21,27 @@
 M2 è fatta quando lo staff FOD può preparare la stagione 2027 nell'hub e i piloti possono volarla:
 
 - il FOD crea tour di **tutti i tipi** di §2 (anche da template), con leg inserite a mano o importate da
-  XLSX/CSV, regole generali e del tour, errori, validatori abilitati per tour;
+  XLSX/CSV, regole generali e del tour con i loro parametri, errori, validatori abilitati per tour;
 - un tour **pronto** esce da solo alla data di rilascio e si chiude da solo alla data di chiusura;
-- un pilota vede i tour, la mappa, il suo avanzamento, e invia un PIREP scegliendo il volo dal tracker;
-- un validatore abilitato prende il PIREP dalla coda, segna gli errori con i suggerimenti del sistema e
-  decide; il pilota riceve la mail; un rifiuto si contesta e il FOD risponde;
+- un pilota vede i tour, la mappa, il suo avanzamento e il tempo stimato di ogni leg, e invia un PIREP
+  scegliendo il volo dal tracker, con gli ATC contattati proposti dal sistema;
+- un validatore abilitato prende il PIREP dalla coda (unica o per tour), segna gli errori con i suggerimenti
+  del sistema — controlli automatici, METAR e TAF salvati, decollo dalla testata — e decide; il pilota riceve
+  la mail; un rifiuto si contesta, e qualunque esito permette di chiedere chiarimenti;
 - il completamento di un tour produce una **segnalazione award**, e chi ha `Awards.Assign` assegna l'award
   dal catalogo del nucleo;
-- lo staff ha le statistiche dei validatori e la pagina del pilota;
-- i **controlli automatici** con i dati IVAO girano su ogni PIREP e **suggeriscono** errori (in sola
-  informazione per la prima stagione).
+- lo staff ha le statistiche dei validatori, la pagina del pilota e i ban;
+- i **controlli automatici** girano su ogni PIREP e **suggeriscono** errori **dalla prima stagione**.
 
 ### 0.2 Fuori perimetro
 
-- **Manovre obbligatorie** (touch-and-go nei tour VFR): dopo il sistema principale (requisiti §4). Il
-  modello lascia loro il posto (§1.5), ma niente schermate né controlli in M2.
-- **Online Day** (passa all'ED, M4), **punti ed eventi**, **Discord**, **Pilot Life**, **controlli di livello
-  B/C** (rotta, procedure, Eurocontrol).
-- **Import dello stato dei tour attuali**: il sistema entra in uso nel 2027 (requisiti, intestazione).
-- **Il pacchetto e lo staging Plesk** restano nella metà (b) di M2 (piano §13): non dipendono da questo
-  modulo e non stanno in questo documento.
-- **La pagina delle Virtual Airlines**: rimandata da Carmine il 13 settembre.
+- **Manovre obbligatorie** (touch-and-go nei tour VFR): dopo il sistema principale (requisiti §4).
+- **Punti e classifiche dei tour: mai** (Carmine, 15 settembre). Esistono solo le statistiche dei validatori.
+- **Online Day** (passa all'ED, M4), **eventi**, **Discord**, **Pilot Life**, **controlli di livello B/C** (rotta,
+  procedure, Eurocontrol).
+- **Import dello stato dei tour attuali**: il sistema entra in uso nel 2027.
+- **Il pacchetto e lo staging Plesk**: metà (b) di M2 (piano §13), non in questo documento.
+- **La pagina delle Virtual Airlines**: rimandata.
 
 ### 0.3 Che cosa M2 non rimette in discussione
 
@@ -46,8 +49,7 @@ M2 è fatta quando lo staff FOD può preparare la stagione 2027 nell'hub e i pil
   handler, il filtro globale, `IOwnedByDepartment` a insieme (H2), i grant a una posizione (H1),
   `IProjectable`, il servizio notifiche, l'unico `IIvaoApiClient`, i blocchi Data, le dashboard (D1–D3).
 - **I moduli fuori dai dipartimenti**: sezione `/staff/tours`, «a cura di» con il FOD sempre presente.
-- **Chi gestisce il modulo** (piano 0.77): coordinator e assistant FOD tutto, per grant a una posizione;
-  gli advisor come decide §7.
+- **Chi gestisce il modulo** (piano 0.77): coordinator e assistant FOD tutto, per grant a una posizione.
 - **I dati condivisi con vIPI** (piano 0.78): l'archivio delle sessioni ATC si legge da una vista.
 
 ### 0.4 I nomi
@@ -58,24 +60,21 @@ M2 è fatta quando lo staff FOD può preparare la stagione 2027 nell'hub e i pil
 | Progetto .NET | `IvaoHub.Modules.FlightOps` |
 | Frontend | `web/src/modules/flightops/` |
 | Prefisso delle tabelle | `fo_` |
-| API | `/api/flightops/...` (la chiave, `IModule.MapEndpoints`) |
+| API | `/api/flightops/...` |
 | Area dei permessi | `Tours` (`Tours.Edit`, `Tours.Validate`…) |
 | Rotte pubbliche | `/tours`, `/tours/{slug}` |
 | Rotte dello staff | `/staff/tours/...` |
-| Namespace i18n | `flightops` (`locales/{lang}/flightops.json`) |
+| Namespace i18n | `flightops` |
 
-«Tours» è il nome che vedono le persone; `flightops` è il nome del codice, perché il modulo è del
-dominio Flight Operations e il piano lo chiama così dal 1° settembre.
+### 0.5 Che cosa si prende da Toursystem e da vIPI, e che cosa no
 
-### 0.5 Che cosa si prende da Toursystem, e che cosa no
-
-Toursystem (`D:\Programmazione\IVAO_Test\Ivao Italy Toursystem`) è stato letto il 13 settembre. Si
-prende il **dominio**, non l'architettura (Blazor, `schema.sql` a mano, ruoli suoi, tabelle di traduzione).
+Toursystem (`D:\Programmazione\IVAO_Test\Ivao Italy Toursystem`) è stato letto il 13 settembre; vIPI il 14 e il
+15. Si prende il **dominio** e ciò che è **misurato**, non l'architettura.
 
 | Si prende | Da | Dove qui |
 |---|---|---|
-| Chi ha un interesse non decide (PIREP) | ADR-033 | §3.6 |
-| Decisione con motivo (errori) e nota | ADR-008 | §3.5 |
+| Chi ha un interesse non decide (PIREP) | ADR-033 | §7.3 |
+| Decisione con errori e nota | ADR-008 | §4.3 |
 | Il pilota non vede i contatori | ADR-009 | §3.8 |
 | La soglia suggerisce, decide l'umano | ADR-010, ADR-035 | §4.3 |
 | Tre esiti per un controllo (superato, non superato, **non disponibile**) | ADR-011 | §6.2 |
@@ -83,292 +82,395 @@ prende il **dominio**, non l'architettura (Blazor, `schema.sql` a mano, ruoli su
 | Esenzioni che dichiarano quali controlli ammorbidiscono | ADR-014 | §3.3 |
 | Regole congelate sul PIREP | ADR-015 | §5.4 |
 | Sessione del tracker **rivendicata** da un solo PIREP | ADR-017 | §3.4 |
-| Limiti giornalieri misti con avviso | ADR-023 | §3.7 |
 | Coordinate congelate alla scrittura della leg | ADR-024 | §1.4 |
-| Sottotour come tour con un padre, profondità 1 | ADR-032 | §2.6 |
-| La macchina propone e non rifiuta | ADR-035 | §6.3 |
-| Prima stagione dei controlli in sola informazione | ADR-036 | §6.3 |
-| Segnalazione di un problema su una leg | ADR-037 | §3.10 |
+| Una tabella di prestazioni degli aerei curata dallo staff | ADR-025 | §1.5 |
+| Numeri del regolamento come parametri, default generale e override del tour | ADR-027 | §1.7 |
+| Sottotour come tour con un padre, profondità 1 | ADR-032 | §2.7 |
+| Segnalazione di un problema su una leg | ADR-037 | §3.11 |
 | Deviazione in più tratti, motivata | ADR-042 | §3.4 |
 | Import che non cancella da solo | ADR-051 | §8.4 |
-| Distanza GCD (formula di `GreatCircle.cs`, con i test) | codice F1 | §1.4 |
-| Controlli per la pubblicazione (lingue, aeroporti, finestre) | `TourPublicationChecker` | §1.2 |
-| Il catalogo dei 24 controlli, quelli di livello A | ARCHITETTURA App. A | §6.4 |
+| Distanza GCD (`GreatCircle.cs`, con i test) | codice F1 | §1.4 |
+| Controlli per la pubblicazione | `TourPublicationChecker` | §1.2 |
+| Il catalogo dei controlli di livello A | ARCHITETTURA App. A | §6.4 |
+| **Catena del meteo**: NOAA per METAR e TAF, ripiego del METAR su IVAO (`/v2/airports/{icao}/metar`, **minuscolo**) poi VATSIM; il TAF non ha ripiego | vIPI `NoaaWeatherClient`, `IvaoMetarClient`, `VatsimMetarClient` (misurati l'8 set 2026) | §1.13 |
+| Campi degli aeroporti e delle piste IVAO (IATA, coordinate; per ogni testata latitudine, longitudine, prua, lunghezza) | Toursystem `IvaoAirportMapper` | §1.12 |
 
 | Non si prende | Perché |
 |---|---|
-| Stagione e clonazione | sostituite dai **template di tour** (requisiti §4) |
-| Quattro occhi sulla pubblicazione del tour | Carmine: «se è segnato pronto viene pubblicato» |
-| Stato del tour con sette valori | lo stato vero è **derivato dalle date** (§1.2) |
+| Stagione e clonazione | sostituite dai **template di tour** (solo impostazioni e regole) |
+| Quattro occhi sulla pubblicazione del tour | «se è segnato pronto viene pubblicato» |
+| Stato del tour con sette valori | lo stato è **derivato dalle date** (§1.2) |
 | Tabelle di traduzione, `.resx` | `Localized<T>` e `locales/` |
 | Ruoli propri (tour manager, validator, award officer) | permessi `Tours.*` e grant (§7) |
-| Registro dei punti | fuori perimetro (§0.2) |
+| Registro dei punti, classifiche | mai (§0.2) |
+| Prima stagione dei controlli in sola informazione (ADR-036) | il FOD adotta i suggerimenti **dalla prima stagione** |
 | Pannello HQ, poller ATC, Online Day, eventi | fuori o altrove |
-| Parametri di tolleranza sovrascrivibili per leg | in M2 le tolleranze sono dei **controlli** (§6.4), impostate dal FOD per tutta la divisione; un tour le emenda attraverso le regole (§5.2) ⚖️ |
 
 ---
 
 ## 1. Il modello
 
-Tutte le tabelle stanno in `FlightOpsDbContext : ModuleDbContext`, con la sua
-`__EFMigrationsHistory_flightops`. Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id`
-sono colonne non vincolate (`CLAUDE.md` §2).
+Tutte le tabelle stanno in `FlightOpsDbContext : ModuleDbContext`, con la sua `__EFMigrationsHistory_flightops`.
+Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne non vincolate.
 
 ### 1.1 Chi possiede una riga
 
-- Le righe che lo staff scrive (tour, leg, regole, errori, template) implementano **`IOwnedByDepartment`**
-  con **`OwnerDepartmentMask`**: il dipartimento di base (`modules.flightops.baseDepartment: "FOD"`) c'è
-  sempre, gli altri si aggiungono in collaborazione come per ogni riga di modulo (H2). **`IAuditable`** e
-  **`[Audited]`** su tutte: l'audit registra prima e dopo di ogni scrittura, quindi **non esiste una
-  tabella delle modifiche** (requisiti §4, «con motivazione registrata»: il motivo è una colonna, §1.4).
-- Le righe che il pilota scrive (PIREP, segnalazioni) sono **`ISubmittedByMembers`**: le crea un membro
-  qualunque, dentro lo spazio del FOD; ogni scrittura successiva chiede il permesso come tutte.
-- **`IVisible`**: i tour pubblicati sono `Public` (requisiti §1: visibili a tutti); le bozze e i template
-  `Staff`. Un PIREP è `Members` e il filtro lo restringe al suo pilota o a chi ha i permessi di §7.
+- Le righe che lo staff scrive (tour, leg, regole, errori, template, profili degli aerei) implementano
+  **`IOwnedByDepartment`** con **`OwnerDepartmentMask`** (il FOD c'è sempre, H2), **`IAuditable`** e
+  **`[Audited]`**: l'audit registra prima e dopo di ogni scrittura, quindi non esiste una tabella delle modifiche.
+- Le righe che il pilota scrive (PIREP, segnalazioni) sono **`ISubmittedByMembers`**.
+- **`IVisible`**: un tour visibile al pubblico è `Public`; bozze, template e tour nascosti `Staff`; un PIREP è
+  `Members`, ristretto al suo pilota o a chi ha i permessi di §7.
 
 ### 1.2 Il tour — `fo_tours`
 
 | Colonna | Tipo | Note |
 |---|---|---|
-| `id`, `slug` | | `slug` unico fra i non template; è l'indirizzo `/tours/{slug}` |
-| `is_template` | bool | un template è una riga di questa tabella, come i template dei contenuti (§1.9) |
+| `id`, `slug` | | `slug` unico fra i non template: `/tours/{slug}` |
+| `is_template` | bool | §1.10 |
 | `kind` | enum | `Sequential`, `Free`, `Hub`, `SequentialChosenStart`, `Distance`, `Container` (§2) |
-| `parent_tour_id` | long? | valorizzato solo per un **sottotour**; il padre è un `Container` |
-| `required_subtours` | int? | solo per un `Container`: quanti sottotour completare |
-| `required_nm` | int? | solo per `Distance` |
-| `title` | `Localized<string>` | |
-| `summary` | `Localized<string>` | una riga per il riquadro |
-| `briefing_json` | BlockDocument | testo ricco (`CLAUDE.md` §2: stesso editor e renderer) |
-| `cover_media_id` | long? | foto di sfondo, dalla media library |
+| `parent_tour_id` | long? | solo per un **sottotour**; il padre è un `Container` |
+| `required_subtours` | int? | solo `Container` |
+| `required_nm` | int? | solo `Distance` |
+| `distance_mode` | enum? | solo `Distance`: `PublishedLegs` o `OpenFlying` (§2.6) |
+| `title`, `summary` | `Localized<string>` | |
+| `briefing_json` | BlockDocument | testo ricco, stesso editor e renderer |
+| `cover_media_id` | long? | foto di sfondo |
 | `status` | enum | `Draft`, `Ready` |
-| `release_at`, `close_at` | UTC | date di rilascio e chiusura |
-| `report_window_days` | int | X: giorni per inviare il PIREP **e** finestra di ricerca nel tracker (requisiti §1, risposta 38). Default dalle impostazioni (§1.11) |
-| `progression` | enum | `FlyAhead` (le successive si volano prima della validazione) o `WaitForValidation` (requisiti §4) |
-| `daily_leg_limit` | int? | leg al giorno per pilota; obbligatorio se il limite di divisione è spento (§3.7) |
-| `allowed_aircraft_json` | string[] | tipi ICAO consentiti (vuoto = tutti); una leg può restringerli |
-| `award_id` | long? | l'award del catalogo del nucleo che il completamento segnala (§3.9) |
-| `rules_version` | int | cresce a ogni modifica delle regole del tour (§5.4) |
+| `is_hidden` | bool | nascosto (§1.2.2) |
+| `show_preview` | bool | un tour pronto è visibile al pubblico **prima** del rilascio, come anteprima (risposta 1) |
+| `release_at`, `close_at` | UTC | |
+| `report_window_days` | int | X: giorni per inviare il PIREP **e** finestra di ricerca nel tracker |
+| `progression` | enum | `FlyAhead` o `WaitForValidation` |
+| `hub_rotation_order` | enum? | solo `Hub`: `Fixed` (rotazioni nell'ordine del tour) o `Free` (a scelta dentro l'hub) (risposta 10) |
+| `requires_procedures` | bool | SID, STAR e IAP obbligatori nel PIREP (risposta 4, §3.2) |
+| `daily_leg_limit` | int? | obbligatorio se il limite di divisione è spento (§3.7) |
+| `allowed_aircraft_json` | string[] | tipi ICAO consentiti; vuoto = tutti |
+| `reference_aircraft_icao` | string? | l'aereo di riferimento per il tempo stimato (§1.5) |
+| `award_id` | long? | solo su un tour senza padre (un sottotour non ha award, risposta 13) |
 | `row_version`, audit, `owner_department_mask` | | |
 
-**Lo stato pubblico non si memorizza: si calcola dalle date**, così nessun job deve «pubblicare» o
-«chiudere» un tour e non esiste un momento in cui il job non è passato:
+#### 1.2.1 Lo stato si calcola dalle date
 
-| Stato visto | Condizione |
-|---|---|
-| Bozza | `status = Draft` |
-| In arrivo | `Ready` e `now < release_at` (visibile allo staff; al pubblico ⚖️ no) |
-| Aperto | `Ready` e `release_at ≤ now ≤ close_at` |
-| In chiusura | `Ready` e `close_at < now ≤ close_at + report_window_days`: il tour risulta chiuso ma accetta PIREP di voli con decollo `≤ close_at` |
-| Chiuso | dopo |
+Nessun job pubblica o chiude un tour:
 
-Un tour su **due anni** è semplicemente un tour con `close_at` nell'anno dopo (requisiti §4).
+| Stato visto | Condizione | Chi lo vede |
+|---|---|---|
+| Bozza | `Draft` | staff |
+| In arrivo | `Ready`, `now < release_at` | staff; pubblico se `show_preview` (senza il tasto del report) |
+| Aperto | `Ready`, `release_at ≤ now ≤ close_at` | tutti |
+| In chiusura | `Ready`, `close_at < now ≤ close_at + report_window_days`: risulta chiuso, ma accetta PIREP di voli con decollo `≤ close_at` | tutti |
+| Chiuso | dopo | tutti, finché la conservazione non lo toglie (§10) |
 
-**Segnare «pronto»** passa dai **controlli di pubblicazione** (da `TourPublicationChecker`), che bloccano:
-titolo e riassunto in tutte le lingue della divisione (`LocalizedRules`), almeno una leg (tranne
-`Container`), aeroporti noti in `ref_`, date coerenti (`release_at < close_at`, date di rilascio delle leg
-dentro il periodo), vincoli di tipo (§2), limite giornaliero se quello di divisione è spento (§3.7),
-un `Container` con almeno due sottotour e `required_subtours` non più grande di quanti sono.
-Da `Ready` si torna a `Draft` finché il tour non è aperto; dopo, si modifica restando `Ready`.
+Un tour su due anni è un tour con `close_at` nell'anno dopo. **Segnare «pronto»** passa dai controlli di
+pubblicazione: titolo e riassunto in tutte le lingue della divisione, almeno una leg (tranne `Container` e
+`Distance/OpenFlying`), aeroporti noti in `ref_`, `release_at < close_at`, date delle leg dentro il periodo,
+vincoli di tipo (§2), limite giornaliero se quello di divisione è spento (§3.7), aereo di riferimento con un
+profilo (§1.5) ⚖️, un `Container` con almeno due sottotour e `required_subtours` non oltre il loro numero.
+
+#### 1.2.2 Cancellare, nascondere, spostare la chiusura (risposta 16)
+
+- **Un tour senza PIREP** si **elimina** (`Tours.Delete`), in qualunque stato: sparisce con leg, regole e hub.
+- **Un tour con almeno un PIREP non si elimina mai.** Si può solo **nascondere** (`is_hidden`, `Tours.Edit`):
+  - sparisce da `/tours`, dai blocchi, dalla ricerca e dal calendario;
+  - ⚖️ i piloti che lo hanno iniziato lo vedono ancora nella loro pagina e nei loro PIREP, ma **non** possono
+    inviarne di nuovi;
+  - i PIREP in coda si validano normalmente;
+  - il tour arriva alla sua **naturale scadenza**, e poi la conservazione (§10) lo toglie.
+- **La data di chiusura si può cambiare** anche a tour aperto, ma la nuova data dev'essere **almeno
+  `2 × report_window_days` giorni da oggi**, così nessun pilota si trova il tour chiuso sotto i piedi.
 
 ### 1.3 Hub e rotazioni — `fo_hubs`, `fo_rotations`
 
-- `fo_hubs`: `tour_id`, `icao`, `sort`. Solo per `Hub`.
-- `fo_rotations`: `tour_id`, `hub_id`, `sort`, `size` (2, 4 o 6: il controllo di pubblicazione verifica
-  che la rotazione abbia esattamente `size` leg, parta dall'hub e ci torni).
-- **Il collegamento fra hub è una leg** con `kind = HubConnection` (§1.4) che va dall'hub A all'hub B: conta
-  come una leg normale (requisiti §5). Due hub senza una leg di collegamento sono **liberi**; con la leg
-  sono **collegati**, e il pilota può passare solo a un hub collegato a quello in cui ha finito.
+- `fo_hubs`: `tour_id`, `icao`, `sort`. Solo `Hub`.
+- `fo_rotations`: `tour_id`, `hub_id`, `sort`, `size` (2, 4 o 6; il controllo di pubblicazione verifica che
+  abbia esattamente `size` leg, parta dall'hub e ci torni).
+- **Il collegamento fra hub è una leg** con `kind = HubConnection`: conta come una leg normale. Due hub con
+  una leg di collegamento sono **collegati**, senza sono **liberi**.
 
 ### 1.4 La leg — `fo_legs`
 
 | Colonna | Note |
 |---|---|
-| `tour_id`, `number` | ordine nel tour; unico per tour |
+| `tour_id`, `number` | ordine nel tour, unico per tour |
 | `kind` | `Normal` o `HubConnection` |
-| `rotation_id`, `seq_in_rotation` | per i tour `Hub` |
+| `rotation_id`, `seq_in_rotation` | per `Hub` |
 | `departure_icao`, `arrival_icao` | |
-| `departure_lat/lon`, `arrival_lat/lon` | **congelate alla scrittura** dagli aeroporti `ref_` (ADR-024): la mappa e la distanza non cambiano se IVAO sposta un aeroporto a tour in corso |
-| `distance_nm` | GCD calcolata dal server (non scritta dal FOD) |
-| `real_callsign`, `flight_number` | callsign e numero di volo reali, se esistono (informativi) |
+| `departure_lat/lon`, `arrival_lat/lon` | **congelate alla scrittura** dagli aeroporti `ref_` (ADR-024) |
+| `distance_nm` | GCD calcolata dal server |
+| `estimated_minutes` | tempo stimato (§1.5), ricalcolato quando cambiano distanza o aereo di riferimento |
+| `real_callsign`, `flight_number` | del volo reale, se esiste (informativi; il vincolo è in §1.6) |
 | `aircraft_json` | tipi ICAO della leg; vuoto = quelli del tour |
-| `release_at` | data di rilascio propria, facoltativa (requisiti §4) |
-| `retired_at`, `retired_reason` | una leg **si ritira**, non si cancella, e i suoi PIREP restano |
-| `change_reason` | obbligatorio quando si modifica una leg che ha PIREP: finisce nell'audit con prima e dopo |
+| `release_at` | rilascio proprio, facoltativo |
+| `retired_at`, `retired_reason` | §1.4.1 |
+| `change_reason` | obbligatorio quando si modifica una leg che ha PIREP: finisce nell'audit |
 
-**Le comodità dell'editor non si memorizzano**: «la successiva duplica», «la successiva segue», «chiudi
-tour» sono azioni dell'editor che compilano la leg nuova (§8.3). In tabella resta solo la leg.
+Le comodità dell'editor («duplica», «segue», «chiudi tour») non si memorizzano: compilano la leg nuova (§8.4).
 
-⚖️ **IATA**: la leg non lo memorizza; lo legge dagli aeroporti `ref_` per mostrarlo.
+#### 1.4.1 Che cosa succede quando si toglie una leg
 
-### 1.5 Vincoli sul callsign, e il posto delle manovre
+Tre casi, decisi dal server e non dall'editor:
 
-- `fo_callsign_rules`: `tour_id` (un sottotour è un tour), `leg_id?`, `mode` (`Allow`, `Deny`),
-  `match` (`Prefix`, `Exact`, `Pattern`), `value`. Il callsign **effettivo consentito** di una leg è
-  l'unione delle regole di leg, tour e tour padre; un `Deny` vince sempre (Itavia: `IHS870`, `IHS897`…).
-  Il controllo automatico `callsign` (§6.4) e il form del PIREP le leggono dallo stesso servizio.
-- **Manovre obbligatorie**: una tabella `fo_leg_manoeuvres` arriverà con la loro fase, dopo M2. Il modello
-  qui non la anticipa: aggiungere una tabella è una migrazione additiva.
+| Situazione | Che cosa succede |
+|---|---|
+| **La leg non ha PIREP** (in qualunque stato del tour) | si **elimina davvero**; le leg dopo di lei **non** si rinumerano da sole ⚖️ (un buco nel numero è meglio di numeri che cambiano sotto i piloti) |
+| **La leg ha PIREP** | non si elimina: si **ritira** (`retired_at`, `retired_reason` obbligatorio) |
+| **Il tour ha PIREP ma la leg no** | come il primo caso: si elimina |
 
-### 1.6 Regole ed errori — `fo_rules`, `fo_errors`, `fo_rule_errors`
+Una leg **ritirata**:
 
-- **`fo_rules`**: `tour_id?` (null = **generale**), `code` («GR4», «IR3»), `title` e `text`
-  (`Localized<string>`, testo in markdown), `amends_rule_id?` (una regola del tour che **emenda** una
-  generale: nel tour vale al suo posto), `sort`, `retired_at`.
-- **`fo_errors`**: il catalogo **della divisione**, uno solo per tutti i tour (i contatori del pilota sono su
-  tutti i tour, requisiti §2). Colonne: `name` (`Localized<string>`, breve), `description` e `examples`
-  (`Localized<string>`, per il validatore), `category` (`Info`, `Warning`, `Dangerous`), `yearly_max`
-  (solo `Warning`), `check_key?` (il controllo automatico collegato, §6), `is_public` ⚖️, `retired_at`.
-- **`fo_rule_errors`**: `rule_id`, `error_id`. Molti a molti.
-- **Il sistema segnala** una regola senza errori e un errore senza regole: una colonna calcolata nelle due
-  liste, con il filtro «da sistemare».
-- **Copiare le regole da un altro tour** copia le regole del tour con i loro collegamenti agli errori.
+- **non si vola più**: sparisce dalle leg volabili e il form del PIREP la rifiuta;
+- **resta visibile** nella pagina del tour, barrata, con il motivo, e sulla mappa in grigio;
+- **i PIREP già inviati restano e si validano normalmente**: un pilota che l'ha volata prima del ritiro non
+  perde niente;
+- **non conta più per il completamento**: «tutte le leg» vuol dire tutte le leg **non ritirate**. Chi l'aveva già
+  accettata la tiene nel suo storico, ma non gli serve;
+- **in un tour in sequenza viene saltata**: la prossima leg di chi era fermo lì è quella dopo;
+- **in una rotazione** rende la rotazione incompleta: il controllo di pubblicazione lo segnala, e il FOD deve
+  sistemare la rotazione (aggiungere una leg o ritirare la rotazione intera) ⚖️;
+- **si può ripristinare** (`retired_at = null`), con un motivo, finché il tour non è chiuso.
 
-### 1.7 Il PIREP — `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`, `fo_pirep_events`
+Nell'**import** (§8.4) la modalità «sostituisci» applica le stesse regole: elimina le leg assenti senza PIREP e
+ritira quelle con PIREP, mostrando la differenza prima di applicare.
+
+### 1.5 Aerei, prestazioni e tempo stimato
+
+- **I tipi di aereo vengono da IVAO** (estensione del nucleo n.11): una tabella di riferimento del nucleo
+  `ref_ivao_aircraft` (codice ICAO, costruttore, modello, categoria di scia), sincronizzata come gli aeroporti.
+  ⚠️ **L'endpoint non è verificato**: `api.ivao.aero/docs` risponde 403 e nessun progetto locale lo usa. Se non
+  esiste, la tabella si carica da un file (per esempio l'elenco ICAO Doc 8643) una volta, e il FOD la integra.
+- **Le prestazioni le inserisce il FOD**: `fo_aircraft_profiles` (`icao_type`, `cruise_tas_kt`, `note`), una lista
+  e un form generati. Un profilo vale per tutti i tour.
+- **Ogni tour ha un aereo di riferimento** (`reference_aircraft_icao`) e ogni leg il suo **tempo stimato**:
+
+  **minuti = 60 × GCD × (1 + k) / velocità + c**
+
+  con `k` e `c` nelle impostazioni (§1.11). **Proposta**: `k = 5 %`, `c = 20 minuti`.
+
+  **Perché una parte fissa e non solo una percentuale** (la domanda di Carmine: «+20 %, o proporzionale alla
+  lunghezza?»). Quello che una rotta aggiunge al volo in crociera ha due nature diverse:
+  - **salita, discesa, avvicinamento e rullaggio** costano più o meno lo stesso tempo su una rotta di 200 NM e su
+    una di 2000: sono una **parte fissa**;
+  - **vento, rotta non diritta e velocità non costante** crescono con la distanza: sono una **percentuale piccola**.
+
+  Una percentuale sola sbaglia agli estremi: il 20 % è poco su una tratta corta e troppo su una lunga. Una
+  percentuale che scende con la lunghezza approssima proprio la parte fissa, ma con un numero in più da tarare.
+  Esempio con un A320 a 450 kt:
+
+  | GCD | Solo +20 % | 5 % + 20 min | Volo tipico reale (ordine di grandezza) |
+  |---|---|---|---|
+  | 200 NM | 32 min | 48 min | 50–55 min |
+  | 800 NM | 2 h 08 | 2 h 12 | 2 h 10 |
+  | 2000 NM | 5 h 20 | 4 h 40 | 4 h 35–4 h 50 |
+
+  ⚖️ I due numeri si **tarano sui voli veri** del corpus di test (§13): si confronta la stima con la durata delle
+  sessioni del tracker e si sceglie la coppia che sbaglia meno.
+
+- Il tempo stimato si mostra nella pagina del tour e nell'editor; **non** è un vincolo del PIREP ⚖️.
+
+### 1.6 Vincoli sul callsign
+
+- `fo_callsign_rules`: `tour_id`, `leg_id?`, `mode` (`Allow`, `Deny`), `match` (`Prefix`, `Exact`, `Pattern`),
+  `value`. Si impostano **per tour, per sottotour o per leg**. Il consentito di una leg è l'unione di leg, tour e
+  tour padre; un `Deny` vince sempre.
+- **È un vincolo che blocca l'invio** (risposta 5, §3.2).
+
+### 1.7 Regole, parametri ed errori — `fo_rules`, `fo_errors`, `fo_rule_errors`
+
+- **`fo_rules`**: `tour_id?` (null = **generale**), `code` («GR4», «IR3»), `title`, `text` (`Localized<string>`,
+  markdown), `amends_rule_id?`, **`check_key?`**, **`parameters_json`**, `sort`, `retired_at`.
+- **I numeri del regolamento sono parametri delle regole** (ADR-027, e le richieste del 15 settembre: finestre di
+  disconnessione e tempo minimo di parcheggio configurabili come regola generale **e** come regola del tour).
+  Una regola generale collegata a un controllo porta i valori della divisione
+  (`{"maxSingleDisconnectMinutes": 15, "maxTotalDisconnectMinutes": 25}`); una regola del tour che la **emenda** ne
+  cambia uno o più. Il controllo legge i parametri dalle **regole effettive** della leg (§5.2), quindi **le soglie
+  non stanno nelle impostazioni**: stanno dove il FOD le scrive e il pilota le legge. Lo schema dei parametri è
+  dichiarato dal controllo (§6.2), e il form della regola lo disegna.
+- **`fo_errors`**: catalogo **della divisione**. `name` (`Localized<string>`), `description` ed `examples`
+  (`Localized<string>`), `category` (`Info`, `Warning`, `Dangerous`), `yearly_max` (solo `Warning`), `check_key?`,
+  **`is_public`** (risposta 3), `retired_at`.
+- **`fo_rule_errors`**: molti a molti. Il sistema segnala regole senza errori ed errori senza regole.
+- **«Copia le regole da un altro tour»** copia le regole del tour, con parametri e collegamenti.
+
+### 1.8 Il PIREP — `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`, `fo_pirep_events`
 
 **`fo_pireps`**
 
 | Colonna | Note |
 |---|---|
-| `tour_id`, `leg_id`, `vid` | |
-| `status` | §3.1 |
+| `tour_id`, `leg_id?`, `vid` | `leg_id` è null solo in un tour `Distance/OpenFlying` (§2.6) |
+| `status`, `is_disputed` | §3.1 |
 | `submitted_at`, `resubmitted_at?` | |
-| `sid`, `star`, `approach` | se richiesti dalle regole della leg ⚖️ (§3.2) |
-| `atc_exemptions_json` | autorizzazioni ricevute: posizione ATC, tipo (`FreeSpeed`, `DirectRouting`, `LevelChange`, `Other`), nota (§3.3) |
-| `is_diversion`, `diversion_reason` | §3.4 |
+| `flight_rules` | `I`, `V`, `Y`, `Z`, dal piano al decollo |
+| `sid`, `star`, `approach` | §3.2 |
+| `atc_contacts_json` | ATC contattati: callsign, frequenza, `proposed` (dal sistema) o `added` (dal pilota) (§3.3) |
+| `atc_exemptions_json` | autorizzazioni ricevute: posizione, tipo, nota |
+| `is_diversion`, `diversion_reason` | §3.4, con i motivi strutturati (`Weather`, `Technical`, `Medical`, `AtcInstruction`, `Other`) |
 | `pilot_remarks` | |
-| `rules_snapshot_json` | regole ed errori **effettivi** della leg al momento dell'invio (§5.4) |
-| `assigned_to_vid`, `lease_until` | presa in carico (§4.2) |
+| `rules_snapshot_json` | §5.4 |
+| `assigned_to_vid`, `lease_until` | §4.2 |
 | `decided_by_vid`, `decided_at`, `outcome` | |
-| `note_to_pilot`, `staff_note` | la prima va nella mail, la seconda resta allo staff |
-| `threshold_overridden` | il validatore ha deciso contro il suggerimento (ADR-010) |
+| `note_to_pilot`, `staff_note`, `threshold_overridden` | |
 | `row_version`, audit | |
 
-**`fo_pirep_flights`**: una riga per tratta volata. Una leg normale ne ha una; una **deviazione** ne ha due
-(la tratta deviata e il riposizionamento). Colonne: `seq`, `tracker_session_id`, `callsign`, `aircraft`,
-`departure_icao`, `arrival_icao`, `takeoff_at`, `landing_at`, `flight_plan_json` (il piano al decollo, per i
-controlli). **Vincolo unico su `tracker_session_id`**: un volo del tracker vale per un solo PIREP (§3.4).
+**`fo_pirep_flights`**: una riga per tratta (due in una deviazione). `seq`, `tracker_session_id` (**unico**: una
+sessione vale per un solo PIREP), `callsign`, `aircraft`, `departure_icao`, `arrival_icao`, `takeoff_at`,
+`landing_at`, **`flight_plans_json`** (**tutte** le revisioni del piano della sessione, come le manda IVAO),
+**`plan_at_takeoff_revision`** (quale revisione vale per i controlli). Il validatore le vede tutte (§4.3).
 
-**`fo_pirep_errors`**: `pirep_id`, `error_id`, `category` (congelata), `suggested_by_check`
-(bool), `confirmed` (bool: il validatore l'ha segnato). Da qui si contano gli errori del pilota.
+**`fo_pirep_errors`**: `pirep_id`, `error_id`, `category` (congelata), `suggested_by_check`, `confirmed`.
 
 **`fo_pirep_events`**: la storia, solo in aggiunta: `from_status`, `to_status`, `by_vid`, `at`, `note`.
-È quello che mostra la pagina del pilota e che le statistiche dei validatori contano (§9).
 
-### 1.8 L'iscrizione — `fo_enrolments`
+### 1.9 L'iscrizione — `fo_enrolments`
 
-Il **primo PIREP iscrive** il pilota (requisiti §1): la riga nasce in quella transazione.
-`vid`, `tour_id`, `started_at`, `start_leg_id?` (per `SequentialChosenStart`, scelta al primo PIREP e non più
-cambiabile, risposta 35), `hub_order_json` (per `Hub`: gli hub nell'ordine in cui il pilota li ha
-iniziati), `completed_at?`.
+Il **primo PIREP iscrive**. `vid`, `tour_id`, `started_at`, `start_leg_id?` (per `SequentialChosenStart`, fissa),
+`hub_order_json` (per `Hub`), `completed_at?`. **L'avanzamento non si memorizza**: si calcola dai PIREP.
 
-**L'avanzamento non si memorizza**: si calcola dai PIREP del pilota nel tour (pochi: al massimo qualche
-decina per tour), così non esiste una proiezione che si possa disallineare. `completed_at` invece **sì**,
-perché è un fatto con una data e fa partire la segnalazione award (§3.9).
+### 1.10 I template di tour (risposta 2)
 
-### 1.9 I template di tour
-
-- Un template è una riga di `fo_tours` con `is_template = true`, **mai visibile al pubblico**, senza date.
-- Lo creano, modificano ed eliminano **coordinator e assistant FOD** (`Tours.ManageTemplates`, §7).
-- **«Nuovo tour da template»** copia impostazioni, briefing, foto, aerei, vincoli sul callsign, regole del
-  tour con i collegamenti agli errori, hub e rotazioni ⚖️ **e le leg** ⚖️. Non copia date, PIREP, iscrizioni.
-- Un template cambiato **non tocca** i tour già creati da lui (come i template dei contenuti).
-
-### 1.10 Validatori, segnalazioni, contestazioni
-
-- **Validatori abilitati per tour**: non una tabella del modulo, ma **grant** `Tours.Validate` con uno
-  **scope per tour** (§7.2, estensione del nucleo n.1).
-- **`fo_leg_issues`**: `leg_id`, `vid`, `text`, `status` (`Open`, `Handled`, `Dismissed`), `handled_by`,
-  `handled_note`. `ISubmittedByMembers`.
-- **Contestazioni**: nel nucleo, con i contatti estesi a un filo di risposte (§3.8, estensione n.2).
+- Una riga di `fo_tours` con `is_template = true`, mai pubblica, senza date.
+- **Copia solo impostazioni e regole**: tipo, progressione, finestra, limite, `requires_procedures`, aerei, aereo di
+  riferimento, vincoli sul callsign del tour, regole del tour con parametri e collegamenti, briefing e foto ⚖️.
+  **Niente leg, hub, rotazioni, sottotour.**
+- Solo coordinator e assistant FOD (`Tours.ManageTemplates`).
 
 ### 1.11 Le impostazioni della divisione per i tour
 
-Sono dati che il FOD cambia dall'interfaccia, non configurazione da caricare via FTP: stanno in
-`hub_division_settings` (esiste già, chiave e JSON) sotto la chiave `flightops`:
+In `hub_division_settings` sotto la chiave `flightops` (dati che il FOD cambia dall'interfaccia):
 
-| Impostazione | Default proposto |
+| Impostazione | Valore proposto |
 |---|---|
 | `dailyLegLimit` | 10 (null = spento, §3.7) |
 | `defaultReportWindowDays` | 7 |
-| `rejectGraceHours` | 12 (Toursystem: 720 minuti) |
+| `disputeWindowDays` | 7 (risposta 7: uguale per tutti i tour) |
+| `rejectGraceHours` | 12 |
 | `leaseMinutes` | 30 |
-| `retentionYears` / `retentionYearsLong` | 2 / 4 (§10) ⚖️ |
-| `checksMode` | `Informational` (§6.3) |
+| `durationFactor`, `durationFixedMinutes` | 0,05 e 20 (§1.5) |
+| `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
+| `northSouthLevelCountries` | i paesi dove i livelli semicircolari vanno nord–sud (§6.4) |
+| `thresholdToleranceMeters` | 150 ⚖️ (§6.4) |
+| `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) |
 
-### 1.12 Gli aeroporti di tutto il mondo (estensione del nucleo n.4)
+Le **soglie dei controlli** non stanno qui: sono parametri delle regole (§1.7).
 
-Oggi `ref_ivao_airports` tiene solo gli aeroporti del **paese** della divisione
-(`IIvaoApiClient.GetAirportsAsync(countryId)`). I tour volano ovunque (Lufthansa, Ryanair), quindi:
+### 1.12 Aeroporti e piste di tutto il mondo (estensione del nucleo n.4)
 
-- il job di sincronizzazione legge **`/v2/airports/all`** (lo usa già Toursystem, `AirportCatalogueSynchroniser`);
-- `ref_ivao_airports` guadagna le colonne **`iata`**, **`latitude`**, **`longitude`** (migrazione additiva
-  nel nucleo), promosse dal JSON grezzo che IVAO manda già (`IvaoAirportMapper` di Toursystem ne legge i
-  campi `iata`, `latitude`, `longitude`);
-- i numeri opzionali passano da convertitori tolleranti (Toursystem ADR-049: lo stesso campo torna `null` o
-  `""` in due chiamate);
-- **⚠️ `FirDirectory` e `networkStats`** oggi deducono «gli aeroporti della divisione» dalla tabella: con
-  tutto il mondo dentro, devono filtrare per paese. Va verificato e provato nella fase che lo fa.
+- Il job di sincronizzazione legge **`/v2/airports/all`** invece degli aeroporti del paese.
+- `ref_ivao_airports` guadagna `iata`, `latitude`, `longitude` (migrazione additiva). Nuova `ref_ivao_runways`
+  (`airport_icao`, `runway`, `latitude`, `longitude` **della testata**, `bearing`, `length`, `width`), da
+  `/v2/airports/{icao}/runways` (i campi li legge già Toursystem). ⚖️ Le piste di tutto il mondo sono molte
+  chiamate: si scaricano **per gli aeroporti delle leg dei tour** e degli aeroporti toccati dai PIREP, non per tutti.
+- Numeri opzionali con convertitori tolleranti (ADR-049).
+- ⚠️ `FirDirectory` e `networkStats` oggi deducono «gli aeroporti della divisione» dalla tabella: con tutto il mondo
+  dentro devono filtrare per paese. Da verificare nella fase che lo fa.
+
+### 1.13 METAR e TAF salvati (estensione del nucleo n.12)
+
+**Perché**: il validatore deve poter verificare una deviazione motivata dal meteo, e i tour VFR chiedono le VMC
+almeno all'aeroporto di partenza e di arrivo. Il meteo di un giorno passato non si recupera sempre dopo.
+
+- **La fonte è nel nucleo**: `IWeatherSource`, con la catena **misurata in vIPI**: NOAA (`aviationweather.gov`,
+  METAR e TAF, senza chiave) → ripiego del **solo METAR** su IVAO (`/v2/airports/{icao}/metar`, **minuscolo**:
+  maiuscolo risponde 404) → VATSIM. **Il TAF non ha ripiego**: nessuna fonte gratuita e indipendente da NOAA lo dà
+  (provato da vIPI l'8 settembre). La parte IVAO passa dall'unico `IIvaoApiClient`.
+- **Che cosa si salva**: `fo_weather_reports` (`icao`, `kind` METAR/TAF, `issued_at`, `raw`, `source`,
+  `fetched_at`), una riga per bollettino, senza doppioni.
+- **Quali aeroporti** (per non scaricare il mondo):
+  1. un job ogni **30 minuti** ⚖️ salva METAR e TAF degli **aeroporti delle leg dei tour aperti o in chiusura**;
+  2. **all'invio di un PIREP**, il server scarica anche gli aeroporti **toccati dal volo** che non erano in elenco
+     (deviazione, tour a distanza senza leg), chiedendo a NOAA la **storia dei METAR** delle ore del volo ⚠️
+     (il parametro `hours` di NOAA va verificato: fin dove arriva indietro). Il TAF di un volo passato, per questi
+     aeroporti, non c'è: il validatore lo vede scritto.
+- **Quando si cancella** (la regola di Carmine): un bollettino si elimina quando è più vecchio di
+  `weatherRetentionDays` **e** tutti i PIREP con un volo in quel giorno su quell'aeroporto sono decisi. Un job
+  giornaliero.
+- **Come si usa**: nella pagina di validazione i METAR e i TAF dell'intervallo del volo per partenza, arrivo e
+  deviazione (§4.3); il controllo `vmc` (§6.4) sui tour VFR.
+- Nessun modulo nomina NOAA o VATSIM: le nomina solo l'implementazione del nucleo, come IVAO.
 
 ---
 
 ## 2. I tipi di tour
 
-Ogni tipo risponde a tre domande, scritte **una volta** in un servizio del modulo (`TourRules`) e usate
-dal riquadro, dalla pagina del tour, dal form del PIREP e dal controllo al salvataggio: **quali leg può
-volare adesso il pilota**, **qual è la prossima**, **quando ha finito**.
+Ogni tipo risponde a tre domande, scritte **una volta** in `TourRules` e usate da riquadro, pagina, form e
+salvataggio: **quali leg può volare adesso**, **qual è la prossima**, **quando ha finito**.
 
-Regole comuni a tutti: una leg ritirata non si vola; una leg con `release_at` futura non si vola (e in un
-tour in sequenza ferma il pilota alla precedente, risposta 37); una leg già **accettata** o **in attesa**
-non si rivola; una leg **rifiutata** si rivola.
+Regole comuni: una leg ritirata o con `release_at` futura non si vola (in sequenza ferma il pilota alla precedente);
+una leg accettata o in attesa non si rivola; una leg rifiutata si rivola; un pilota **bannato** (§3.9) non vola.
+**Contestata** una leg rifiutata, la leg **non blocca** più le successive (§3.8).
 
 ### 2.1 `Sequential` — in sequenza
 
-- **Volabili**: la prima leg non accettata né in attesa, se tutte le precedenti sono accettate
-  (`WaitForValidation`) o accettate o in attesa (`FlyAhead`).
-- **Prossima**: quella.
-- **Finito**: tutte le leg accettate.
+- **Volabile**: la prima leg non accettata né in attesa, se le precedenti sono accettate (`WaitForValidation`) o
+  accettate o in attesa (`FlyAhead`).
+- **Finito**: tutte le leg non ritirate accettate.
 
 ### 2.2 `Free` — libero
 
-- **Volabili**: ogni leg non accettata e non in attesa.
-- **Prossima**: nessuna (il riquadro dice «scegli una leg») ⚖️.
+- **Volabili**: tutte quelle non accettate né in attesa; **una rifiutata si rivola quando il pilota vuole**, ma serve
+  per completare.
+- **Prossima**: nessuna; il riquadro dice «scegli una leg» (risposta 9).
 - **Finito**: tutte accettate.
 
 ### 2.3 `Hub`
 
-- **All'inizio**: il pilota sceglie un hub qualunque.
-- **Dentro un hub**: le rotazioni di quell'hub, ogni rotazione **in ordine** (§2.1 applicato alla rotazione);
-  le rotazioni fra loro in qualunque ordine ⚖️.
-- **Cambio di hub**: quando tutte le rotazioni dell'hub sono accettate (o accettate e in attesa, con
-  `FlyAhead`). Se esistono leg `HubConnection` che partono dall'hub finito, il pilota sceglie uno degli hub
-  **collegati non ancora fatti** e vola la leg di collegamento; se non esistono, sceglie liberamente fra gli
-  hub non fatti.
-- **Finito**: tutti gli hub (e le leg di collegamento volate).
+- **All'inizio** il pilota sceglie un hub.
+- **Dentro l'hub**: con `hub_rotation_order = Fixed` le rotazioni nell'ordine del tour, con `Free` a scelta; **ogni
+  rotazione sempre in ordine** (risposta 10).
+- **Cambio di hub**: finite tutte le rotazioni. Con leg di collegamento, solo verso un hub collegato non fatto, volando
+  la leg; senza, a scelta fra i non fatti.
+- **Finito**: tutti gli hub.
 
 ### 2.4 `SequentialChosenStart` — in sequenza con partenza a scelta
 
-- **Primo PIREP**: su qualunque leg; diventa `start_leg_id`.
-- **Poi**: in ordine da `start_leg_id` all'ultima, poi dalla prima fino a `start_leg_id − 1`.
-- **Finito**: tutte accettate.
-- Il controllo di pubblicazione verifica che il tour sia **chiuso ad anello** (la destinazione dell'ultima è la
-  partenza della prima): senza anello, «riparte dalla prima» sarebbe un salto ⚖️.
+- Il primo PIREP fissa `start_leg_id`; poi in ordine fino all'ultima, e dalla prima fino a quella prima della partenza.
+- **Il tour dev'essere ad anello** (risposta 11): controllo di pubblicazione.
 
-### 2.5 `Distance` — a distanza
+### 2.5 Il rifiuto e la tolleranza
 
-- **Volabili**: come `Free` ⚖️.
-- **Finito**: la somma di `distance_nm` delle leg accettate raggiunge `required_nm` ⚖️ (la GCD della leg, non
-  la distanza realmente volata: un pilota che allunga non guadagna).
-- Il controllo di pubblicazione verifica che la somma di tutte le leg arrivi a `required_nm`.
+In **tutti i tipi tranne `Free` e `Distance/OpenFlying`** (risposta 14 e revisione del 15 settembre §4.4): una leg
+rifiutata **blocca** l'invio di PIREP sulle leg successive finché non è di nuovo in attesa o accettata, **eccetto** le
+leg il cui decollo è avvenuto entro `decided_at + rejectGraceHours`. Nei tour liberi la leg si rivola quando il pilota
+vuole, e senza non si completa.
 
-### 2.6 `Container` — con sottotour
+### 2.6 `Distance` — a distanza
 
-- Un `Container` **non ha leg**; ha sottotour (tour con `parent_tour_id`), **un solo livello** (ADR-032).
-- Ogni sottotour è di uno dei tipi sopra, con le sue leg e le sue regole; eredita dal padre aerei, vincoli sul
-  callsign e regole del tour **se non ne ha di sue** ⚖️.
-- Il pilota si iscrive e vola **i sottotour**, mai il padre.
-- **Finito il padre**: `required_subtours` sottotour completati.
-- ⚖️ **Gli award**: il padre ha l'award del tour intero; un sottotour può averne uno suo (Toursystem lo
-  vietava). Proposta: il campo `award_id` esiste su entrambi, e decide il FOD.
+Due modalità (`distance_mode`):
+
+- **`PublishedLegs`**: leg pubblicate, volabili libere (risposta 12). **Finito**: somma delle GCD delle leg accettate
+  `≥ required_nm`. Il controllo di pubblicazione verifica che tutte insieme ci arrivino.
+- **`OpenFlying`**: **nessuna leg pubblicata**; ognuno vola quello che vuole, con **vincoli del tour**
+  (`fo_tour_constraints`, §2.6.1). Il PIREP non ha `leg_id`: porta partenza e arrivo del volo. **Finito**: somma delle
+  GCD dei voli accettati `≥ required_nm`.
+
+In tutti e due si conta **la GCD**, mai la distanza volata (chi allunga non guadagna), e **non si vola due volte la
+stessa rotta** (risposta 12) ⚖️ (A→B e B→A sono la stessa rotta?).
+
+#### 2.6.1 I vincoli di un tour a distanza — `fo_tour_constraints`
+
+Una riga per vincolo: `tour_id`, `kind`, `parameters_json`. Un insieme **chiuso** di tipi, scritto nel codice del
+modulo, ciascuno con il suo schema di parametri e la sua verifica all'invio:
+
+| Tipo | Parametri | Esempio |
+|---|---|---|
+| `DepartureOrArrivalIn` | paesi (codici IVAO) | partire **o** arrivare in Italia |
+| `DepartureIn`, `ArrivalIn` | paesi | |
+| `MinFlightsAtAirport` | aeroporto, numero | almeno 3 voli su LIRF |
+| `MinFlightsAtAnyOf` | aeroporti, numero | |
+| `LegDistanceBetween` | minimo e massimo NM | tratte fra 200 e 1500 NM |
+| `NoRepeatedRoute` | — | sempre acceso nei tour a distanza |
+| `AircraftOfCategory` | categoria di scia | |
+
+Un vincolo **per volo** (paese, distanza) si verifica all'invio e **blocca**; un vincolo **sul tour** («almeno 3 voli su
+LIRF») si verifica al **completamento**, e la pagina del tour mostra quanto manca. Aggiungere un tipo è codice e una
+chiave i18n, non una decisione ⚖️.
+
+### 2.7 `Container` — con sottotour
+
+- Nessuna leg; sottotour di un livello. Il pilota si iscrive e vola i sottotour.
+- **Un sottotour eredita** aerei, vincoli sul callsign e regole del tour dal padre **se non ne ha di suoi** (risposta 13).
+- **Un sottotour non ha award**; l'award è del padre, segnalato con `required_subtours` sottotour completati.
 
 ---
 
@@ -377,164 +479,168 @@ non si rivola; una leg **rifiutata** si rivola.
 ### 3.1 Gli stati del PIREP
 
 ```
-               ┌───────────── (il pilota corregge) ──────────────┐
-               ▼                                                 │
-  inviato ──► in coda ──► in validazione ──► accettato           │
-                ▲             │  (lease scaduto torna in coda)   │
-                │             ├──► da modificare ────────────────┘
-                │             └──► rifiutato ──► (contestato: messaggio al FOD, §3.8)
-                │
+               ┌───────────── (il pilota corregge e reinvia) ───────────┐
+               ▼                                                       │
+  inviato ──► in coda ──► in validazione ──► accettato                 │
+                ▲             │  (lease scaduto: di nuovo libero)      │
+                │             ├──► da modificare ──────────────────────┘
+                │             └──► rifiutato ──► contestato (non blocca le successive, §3.8)
+                │                                     └──► riaperto in coda (se accolta)
   ritirato ◄────┘ (il pilota, finché nessuno l'ha preso)
+
+  «richiedi chiarimenti»: su qualunque PIREP deciso, non cambia lo stato (§3.10)
 ```
 
 | Stato | Chi lo porta lì | Effetto sul tour |
 |---|---|---|
-| `Queued` | invio, o reinvio dopo «da modificare» | la leg è **in attesa** |
-| `InReview` | un validatore lo prende (§4.2) | in attesa |
+| `Queued` | invio, reinvio, riapertura | leg **in attesa** |
+| `InReview` | un validatore | in attesa |
 | `Accepted` | il validatore | leg fatta |
-| `ToModify` | il validatore | in attesa: il pilota continua a volare (se `FlyAhead`), corregge **tutto** — anche la sessione del tracker — e reinvia; torna in coda **a chiunque** (risposta 33) |
-| `Rejected` | il validatore | la leg si **rivola**; il PIREP si può **contestare** (§3.8) |
-| `Withdrawn` | il pilota, solo da `Queued` | la leg torna volabile; la sessione del tracker si libera |
+| `ToModify` | il validatore | in attesa: il pilota continua a volare (con `FlyAhead`), corregge **tutto** — anche la sessione del tracker — e reinvia; torna in coda **a chiunque** |
+| `Rejected` | il validatore | leg da rivolare; blocca le successive (§2.5) **finché non è contestata** |
+| `Withdrawn` | il pilota, solo da `Queued` | leg volabile; sessione libera |
 
-Ogni passaggio scrive una riga in `fo_pirep_events`. **Nessuna cancellazione** di un PIREP deciso.
+`is_disputed` è una bandiera su un `Rejected`, non uno stato. Ogni passaggio scrive in `fo_pirep_events`.
 
 ### 3.2 Il report
 
-1. Il pilota apre la leg (pagina del tour, §8.1) e preme «Invia il report»: il server verifica che la leg sia
-   **volabile per lui** (§2) e che il tour accetti PIREP (aperto o in chiusura).
-2. **Ricerca nel tracker** (estensione del nucleo n.5): `GET /v2/tracker/sessions` con `userId`,
-   `departureId`, `arrivalId`, `from = now − report_window_days`, `to = now` (i parametri li usa già il
-   validatore Python di `AutomaticValidatorTour`). Il server scarta le sessioni già rivendicate da un altro
-   PIREP e quelle con decollo dopo `close_at`, e mostra le altre: callsign, aereo, decollo, atterraggio,
-   durata.
-3. Il pilota **sceglie il volo**. Il server legge i piani di volo della sessione
-   (`/v2/tracker/sessions/{id}/flightPlans`) e congela quello valido al decollo in `flight_plan_json`.
-4. **Campi del report**: SID, STAR, approccio (se le regole della leg li chiedono ⚖️: proposta, una bandiera
-   sulla regola generale RR5 e sui tour VFR spenta), esenzioni ATC (§3.3), note.
-5. **Deviazione** (§3.4), se il volo non è arrivato a destinazione.
-6. **Controlli al salvataggio**, lato server (`ProblemDetails`, campo per campo): leg volabile, finestra dei
-   giorni, data del volo non oltre la chiusura, sessione non rivendicata, **limiti giornalieri** (§3.7),
-   callsign e aereo **solo come avviso** ⚖️ (il rifiuto lo decide il validatore; li segnala il controllo
-   automatico).
-7. Il PIREP nasce `Queued`, con `rules_snapshot_json` (§5.4); se è il primo del pilota nel tour, nasce anche
-   l'iscrizione (§1.8). I controlli automatici partono in un job (§6).
+1. **La leg** (o, in `OpenFlying`, «nuovo volo»): il server verifica che sia volabile, che il tour accetti PIREP, che il
+   pilota non sia bannato.
+2. **Ricerca nel tracker** (estensione n.5): `GET /v2/tracker/sessions` con `userId`, `departureId`, `arrivalId`,
+   `from = now − report_window_days`, `to = now` (senza aeroporti in `OpenFlying`). Esclude le sessioni già rivendicate
+   e quelle con decollo dopo `close_at`.
+3. **Il pilota sceglie il volo.** Il server legge **tutte** le revisioni del piano (`/flightPlans`) e le tracce
+   (`/tracks`), e segna la revisione valida al decollo.
+4. **Campi**:
+   - **SID, STAR, IAP** obbligatori se `requires_procedures` (risposta 4), secondo le regole di volo del piano:
+     `I` tutti e tre; `Y` (IFR poi VFR) **solo la SID**; `Z` (VFR poi IFR) **solo STAR e IAP**; `V` nessuno.
+   - **ATC contattati**, proposti dal sistema (§3.3).
+   - **Esenzioni ATC**, **note**, **deviazione** (§3.4).
+5. **Controlli al salvataggio, che bloccano** (`ProblemDetails` campo per campo):
+   - leg volabile e tour aperto; finestra dei giorni; data del volo non oltre la chiusura; sessione non rivendicata;
+   - **callsign consentito** e **aereo consentito** (risposta 5);
+   - **limiti giornalieri**, del tour e di divisione (§3.7);
+   - vincoli per volo di un tour a distanza (§2.6.1); rotta non già volata;
+   - pilota non bannato.
+6. Il PIREP nasce `Queued`, con `rules_snapshot_json`; il primo del pilota nel tour crea l'iscrizione. Partono in un job
+   i controlli automatici (§6) e lo scarico del meteo mancante (§1.13).
 
-### 3.3 Le esenzioni ATC
+### 3.3 Gli ATC contattati e le esenzioni
 
-- Il pilota dichiara la posizione (`LIRF_TWR`) e l'autorizzazione ricevuta.
-- Ogni tipo di autorizzazione **dichiara quali controlli ammorbidisce** (una tabella nel codice del modulo:
-  `FreeSpeed` → `speed250` diventa informativo; `DirectRouting` → nessun controllo di rotta in M2; ecc.).
-- Vale **solo se la posizione risultava online** durante il volo: lo dice l'archivio ATC (§6.5). Se il dato non
-  è disponibile, l'esenzione è mostrata al validatore come «non verificabile» e decide lui.
+- **Mentre il pilota compila**, il sistema **propone** gli ATC che erano online lungo il volo, con lo stesso meccanismo
+  del controllo di copertura (§6.5): archivio ATC per l'intervallo del volo, incrociato con le tracce. Il pilota
+  **toglie** quelli che non ha contattato e **aggiunge** quelli che mancano; resta scritto chi è stato proposto e chi
+  aggiunto.
+- **Prima versione leggera** (per non caricare il server): le posizioni online negli aeroporti di partenza, arrivo e
+  deviazione e nei FIR attraversati, calcolati dai punti delle tracce a campione ⚖️. La geometria dei settori (vIPI) si
+  aggiunge più avanti.
+- **Esenzioni**: il pilota sceglie la posizione fra gli ATC contattati e il tipo (`FreeSpeed`, `DirectRouting`,
+  `LevelChange`, `Other`); ogni tipo dichiara quali controlli ammorbidisce. Vale se la posizione risultava online; se il
+  dato manca, «non verificabile» e decide il validatore.
 
 ### 3.4 Il volo del tracker e le deviazioni
 
-- **Una sessione del tracker vale per un solo PIREP** (vincolo unico, ADR-017). Si libera quando il PIREP è
-  ritirato, o quando il pilota la sostituisce correggendo un «da modificare».
-- **Deviazione**: il pilota indica che il volo è finito altrove e sceglie **un secondo volo** del tracker (il
-  riposizionamento) dall'aeroporto di deviazione alla destinazione della leg, entro la finestra; scrive il
-  **motivo** (obbligatorio). Il PIREP ha due `fo_pirep_flights`. Il controllo verifica che il secondo parta da
-  dove il primo è atterrato (Toursystem lo imponeva con una FK composta; qui è una regola del servizio).
+- **Una sessione vale per un solo PIREP**. Si libera se il PIREP è ritirato o se il pilota la sostituisce correggendo.
+- **Deviazione**: il pilota indica che il volo è finito altrove, sceglie il **volo di riposizionamento**
+  dall'aeroporto di deviazione alla destinazione della leg, e sceglie il **motivo** (strutturato più testo). Il server
+  verifica che il secondo parta da dove il primo è atterrato. Con motivo `Weather` la pagina di validazione mostra in
+  evidenza METAR e TAF dell'aeroporto di destinazione all'ora della deviazione (§1.13).
 
 ### 3.5 Gli esiti e le mail
 
-Tre tipi di notifica del modulo, pubblicati come **intenti** al servizio del nucleo:
-`flightops.pirepAccepted`, `flightops.pirepToModify`, `flightops.pirepRejected`. Destinatario: il pilota,
-nella sua lingua. Dati: tour, leg, esito, `note_to_pilot`, **le regole violate** (il nome degli errori
-confermati e la regola a cui sono collegati), il link. I testi in `locales/{lang}/mail.json`.
+Intenti al servizio del nucleo: `flightops.pirepAccepted`, `flightops.pirepToModify`, `flightops.pirepRejected`. Al
+pilota, nella sua lingua: tour, leg, esito, `note_to_pilot`, **le regole violate**, il link. **Nessuna mail di tour
+completato** (risposta 21).
 
-### 3.6 Nessuno valida i propri PIREP
+### 3.6 I limiti giornalieri — bloccano
 
-- Il validatore **non vede** i propri PIREP nella coda, **non può prenderli** né deciderli: il servizio lo
-  rifiuta (403) anche se un grant glielo permetterebbe.
-- ⚠️ È una regola **sulla riga** («il pilota del PIREP non è chi decide»), quindi non la può esprimere il
-  grant: va nel meccanismo come un vincolo della risorsa, **non** come un controllo scritto a mano nel
-  modulo. Proposta in §7.3.
+**Confermato**: il limite **impedisce l'invio**, non lo accetta per poi rifiutarlo (revisione del 15 settembre e
+risposta 6).
 
-### 3.7 I limiti giornalieri
+- **Contano** i PIREP del pilota non rifiutati e non ritirati, per **giorno UTC del decollo**.
+- **Limite del tour** (`daily_leg_limit`): i PIREP del tour. **Limite di divisione** (`dailyLegLimit`): i PIREP di tutti
+  i tour. Superato l'uno o l'altro, il form rifiuta l'invio dicendo quale limite e quando si libera.
+- ⚠️ Il limite conta i **voli di quel giorno**, non gli invii: un pilota che vola 12 leg in un giorno e le riporta in
+  tre giorni diversi viene fermato alla undicesima **quando la riporta**, perché il giorno del decollo è lo stesso.
 
-- **Contano i PIREP** del pilota non rifiutati e non ritirati, per **giorno UTC del decollo** del volo.
-- **Limite del tour** (`daily_leg_limit`): conta i PIREP del tour.
-- **Limite di divisione** (`dailyLegLimit` delle impostazioni): conta i PIREP di tutti i tour. Superato,
-  **avviso** e non blocco (Toursystem, «10 al giorno, warning») ⚖️; il limite del tour **blocca**.
-- **Spegnere il limite di divisione** (risposta 8): il salvataggio delle impostazioni rifiuta il cambio se
-  esiste un tour **aperto, in arrivo o in bozza con date future** senza `daily_leg_limit`, e l'errore elenca
-  quei tour. Con il limite spento, «pronto» richiede `daily_leg_limit` (§1.2).
+### 3.7 Spegnere il limite di divisione
+
+Il salvataggio delle impostazioni rifiuta `dailyLegLimit = null` se esiste un tour **aperto, in arrivo o in bozza con
+date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento, «pronto» richiede `daily_leg_limit`.
 
 ### 3.8 La contestazione (estensione del nucleo n.2)
 
-- **Solo su un `Rejected`** (risposta 34), dal pilota, ⚖️ entro `report_window_days` dalla decisione.
-- Un tasto «Contesta» apre un messaggio. Diventa un **contatto del FOD** (il meccanismo esistente:
-  `ContactMessage` di proprietà del dipartimento), **legato al PIREP** e con in più **il validatore che ha
-  deciso** fra chi può leggere e rispondere, anche se non è del FOD.
-- **Le risposte** (che oggi i contatti non hanno) vanno al pilota per mail e restano nel filo; il pilota
-  risponde dal link. Chi risponde dal FOD: chiunque abbia `Contacts.View` sul FOD (coordinator, assistant,
-  advisor) e il validatore.
-- L'esito di una contestazione accolta: un validatore con `Tours.Validate` **riapre** il PIREP (da `Rejected` a
-  `Queued`, con una riga in `fo_pirep_events`) ⚖️; il pilota lo sa dal filo.
-- **Il pilota vede quale regola ha violato, mai i contatori** (ADR-009): né nella pagina del tour né nella mail.
+- **Solo su un `Rejected`**, entro **`disputeWindowDays`** dalla decisione (risposta 7).
+- Diventa un **filo** nei contatti del FOD, legato al PIREP, con il validatore che ha deciso fra chi legge e risponde.
+  Rispondono chiunque del FOD con `Contacts.View` (advisor compresi) e il validatore; il pilota riceve le risposte per
+  mail e risponde dal link.
+- **Aperta la contestazione, la leg non blocca più le successive** (revisione del 15 settembre): il pilota continua a
+  volare mentre qualcuno riguarda il caso. Se la contestazione è **respinta**, la leg torna a bloccare con la sua
+  tolleranza calcolata da quel momento ⚖️; se è **accolta**, un validatore **riapre** il PIREP in coda.
+- **Si contano le contestazioni** di ogni pilota (aperte, accolte, respinte), nella pagina del pilota e nel pannello di
+  validazione: chi le usa per andare avanti con le leg si vede.
+- **Il pilota non vede i contatori** (ADR-009), né nella pagina né nella mail.
 
-### 3.9 Il completamento e l'award
+### 3.9 I ban — `fo_bans`
 
-- Quando un PIREP accettato completa il tour (§2), il servizio scrive `completed_at` sull'iscrizione.
-- `fo_enrolments` implementa **`IProjectable`** e, con `completed_at` e un `award_id` sul tour, proietta una
-  **`AwardSignalProjection`** (`vid`, motivo «ha completato il tour …»): l'interceptor scrive la segnalazione
-  nella stessa transazione, come già fa per il nucleo. Nessuna assegnazione automatica.
-- Un `Container` completato segnala l'award del padre; un sottotour completato quello del sottotour, se c'è.
-- **Catalogo e assegnazioni** sono del nucleo (estensione n.7, §11).
+- `vid`, `tour_id?` (null = **tutti i tour**), `starts_at`, `ends_at?` (null = **permanente**), `reason`, audit.
+- Un pilota bannato **non invia PIREP** sui tour del ban; vede i tour, i suoi PIREP, e gli esiti di quelli già inviati,
+  che si validano normalmente ⚖️.
+- Lo decide chi ha `Tours.Ban` (§7). Il pilota riceve una mail (`flightops.banned`) con motivo e durata ⚖️.
 
-### 3.10 Segnalare un problema su una leg
+### 3.10 Richiedi chiarimenti
 
-Dalla pagina del tour, «Segnala un problema»: testo libero, una riga in `fo_leg_issues`, una notifica alla
-casella del FOD (`flightops.legIssueReported`). Lo staff la chiude, o apre la leg e la modifica (con il
-`change_reason`, §1.4).
+- Su **qualunque PIREP deciso** (e ⚖️ su una leg o una regola del tour, dalla pagina del tour), il pilota chiede che gli si
+  spieghi una procedura, un meccanismo o una regola. **Non chiede di cambiare il verdetto**, non cambia lo stato e
+  **non conta** come contestazione.
+- Stesso meccanismo del filo (estensione n.2), con il tipo `Clarification`: arriva al FOD e al validatore del PIREP, se
+  c'è.
+
+### 3.11 Il completamento, l'award, le segnalazioni
+
+- Quando un PIREP accettato completa il tour, l'iscrizione scrive `completed_at` e, con `IProjectable`, proietta una
+  **`AwardSignalProjection`** nella stessa transazione. Nessuna assegnazione automatica. Un sottotour completato conta per
+  il padre, non segnala niente di suo.
+- **Segnalare un problema su una leg**: `fo_leg_issues` e una notifica alla casella del FOD
+  (`flightops.legIssueReported`).
 
 ---
 
 ## 4. La validazione
 
-### 4.1 La coda
+### 4.1 Le code
 
-- **Una lista generata** (`DataTable` con configurazione di colonne, `MapCrud` in sola lettura con i filtri):
-  tour, leg, pilota, data del volo, in coda da, stato, preso da.
-- **Chi vede**: chiunque abbia `Tours.Validate` su **almeno un** tour vede **tutti** i PIREP in sola lettura
-  (risposta 41 «può vedere le leg di tutti i tour, però solo in visione»); il tasto «Prendi» c'è solo sui tour
-  per cui è abilitato.
-- **I propri PIREP** non compaiono (§3.6).
-- Ordine: dal più vecchio ⚖️ (Toursystem aveva lasciato aperta la priorità, REVISIONE B11).
+- **Una coda unica** e **una coda per tour** (la stessa lista generata, con il filtro sul tour).
+- **Il validatore sceglie l'ordine** (revisione del 15 settembre): **per data** (dal PIREP che aspetta di più, risposta
+  25) o **per tour** (raggruppati per tour, e dentro il tour per data), perché validare in fila le leg dello stesso tour è
+  più veloce. La scelta resta memorizzata per lui ⚖️ (nel browser, o come preferenza dell'utente).
+- **Chi vede**: chi ha `Tours.Validate` su almeno un tour vede **tutti** i PIREP in sola lettura; «Prendi» c'è solo sui
+  tour per cui è abilitato.
+- **I propri PIREP**: il validatore **li vede**, in **sola lettura**, con il loro esito e gli errori segnati (revisione del
+  15 settembre); non li prende e non li decide (§7.3).
+- Colonne: tour, leg, pilota, data del volo, in coda da, stato, preso da, contestato, suggerimento dei controlli.
 
 ### 4.2 La presa in carico
 
-- «Prendi» porta il PIREP a `InReview` con `assigned_to_vid` e `lease_until = now + leaseMinutes`.
-- Riaprirlo rinnova il lease; alla scadenza chiunque abilitato può prenderlo (il PIREP resta `InReview` con un
-  lease scaduto, e la coda lo mostra come libero: **nessun job** che lo rimetta in coda).
-- Due validatori che prendono insieme: vince il primo (`row_version`), il secondo riceve un conflitto.
+`InReview` con `assigned_to_vid` e `lease_until = now + leaseMinutes`; alla scadenza chiunque abilitato lo può
+prendere (nessun job). Due prese insieme: vince la prima (`row_version`).
 
-### 4.3 La pagina di validazione
+### 4.3 La pagina di validazione (schermata dedicata)
 
-Una **schermata dedicata** (non un form generato: eccezione dichiarata come l'editor delle pagine, §8.5).
-
-- **La leg e il volo**: tour, leg, mappa della tratta, piano di volo al decollo, SID/STAR/approccio,
-  esenzioni con il loro stato (verificata / non verificabile / non valida), deviazione con il motivo, note del
-  pilota, esiti dei **controlli automatici** (§6).
-- **Il profilo del pilota**: nel tour leg volate, accettate, rifiutate.
-- **La tabella degli errori**: tutti gli errori attivi collegati alle regole **effettive** della leg (dallo
-  snapshot), con accanto per ciascuno **quante volte nell'anno solare** e **da sempre** è stato confermato al
-  pilota; quelli **suggeriti** dai controlli automatici sono già evidenziati (non segnati).
-- **Il suggerimento**, calcolato dal server sugli errori che il validatore segna:
-  - un `Dangerous` segnato → suggerisce il rifiuto;
-  - un `Warning` segnato che porta il conteggio dell'anno oltre `yearly_max` → suggerisce il rifiuto;
-  - solo `Info`, o nulla → suggerisce l'accettazione.
-- **La decisione**: accetta, da modificare, rifiuta, con `note_to_pilot` e `staff_note`. Se la decisione è
-  diversa dal suggerimento, `threshold_overridden = true` e il validatore scrive perché (ADR-010).
-- **Il conteggio «nell'anno»**: errori confermati su PIREP **decisi** con decollo nell'anno solare corrente ⚖️
-  (anno del volo, non della decisione: un volo di dicembre deciso a gennaio conta nell'anno in cui è stato fatto).
-
-### 4.4 La tolleranza sul rifiuto
-
-Con `FlyAhead`, un rifiuto rende la leg da rivolare ma **non invalida** le leg successive il cui decollo è
-avvenuto entro `decided_at + rejectGraceHours`. Dopo quel momento, un tour in sequenza **blocca** l'invio di
-PIREP sulle leg successive finché la leg rifiutata non è di nuovo in attesa o accettata ⚖️.
+- **La leg e il volo**: tour, leg, mappa della tratta con la traccia volata, **tutte le revisioni del piano di volo** con
+  quella al decollo evidenziata (revisione del 15 settembre), SID/STAR/IAP, **ATC contattati** (proposti e aggiunti),
+  esenzioni con il loro stato, deviazione con il motivo, note.
+- **Il meteo** (§1.13): METAR e TAF di partenza, arrivo e deviazione nell'intervallo del volo, con la fonte.
+- **Il decollo** (§6.4): la testata da cui è partito, o la distanza dalla testata più vicina se è partito da
+  un'intersezione, con l'avviso «verificare la TORA pubblicata da quel punto».
+- **I controlli automatici** con l'evidenza.
+- **Il profilo del pilota**: nel tour leg volate, accettate, rifiutate; **contestazioni** (aperte, accolte, respinte);
+  **ban** in corso o passati.
+- **La tabella degli errori** delle regole effettive, con il conteggio **nell'anno solare del volo** (risposta 8) e **da
+  sempre** per il pilota; i suggeriti dai controlli già segnati come suggeriti.
+- **Il suggerimento**: un `Dangerous` segnato → rifiuto dalla prima occorrenza; un `Warning` che porta l'anno oltre
+  `yearly_max` → rifiuto; altrimenti accettazione.
+- **La decisione** con `note_to_pilot` e `staff_note`; contro il suggerimento, `threshold_overridden` e il perché.
 
 ---
 
@@ -542,104 +648,110 @@ PIREP sulle leg successive finché la leg rifiutata non è di nuovo in attesa o 
 
 ### 5.1 Le schermate
 
-- **Regole generali**, **errori**: liste e form **generati** (`MapCrud`), con le colonne «senza errori» /
-  «senza regole» e i filtri. Il collegamento molti a molti è un campo del form (selezione multipla) ⚖️
-  (se il generatore non lo sa fare, è un'estensione del generatore di form, come il gruppo richiudibile).
-- **Regole del tour**: una scheda dell'editor del tour, con «copia da un altro tour» e, per ogni regola
-  generale, «emenda nel tour».
+- **Regole generali**, **errori**: liste e form generati, con le colonne «senza errori» / «senza regole». Il form della
+  regola disegna i **parametri** dallo schema del controllo collegato (§6.2) ⚖️ (estensione del generatore di form se
+  serve).
+- **Regole del tour**: una scheda dell'editor, con «copia da un altro tour» e «emenda» accanto a ogni generale.
 
-### 5.2 Le regole effettive di una leg
+### 5.2 Le regole effettive
 
-Le **generali** non ritirate, **sostituite** da quelle del tour che le emendano, **più** quelle del tour; per un
-sottotour, prima il padre poi il sottotour (il più specifico vince). Le calcola un solo servizio, usato dalla
-pagina pubblica del tour, dal PIREP (snapshot) e dalla validazione.
+Le generali non ritirate, sostituite da quelle del tour che le emendano (con i parametri del tour), più quelle del tour;
+per un sottotour, prima il padre e poi il sottotour. Un solo servizio, usato da pagina, PIREP, controlli e validazione.
 
 ### 5.3 Gli errori pubblici
 
-Un **blocco Data** del modulo, `flightops.errorCatalog`: il FOD lo mette in una pagina o in un documento quando
-vuole (risposta 42). Mostra nome, categoria, descrizione e le regole collegate; ⚖️ solo gli errori con
-`is_public`, così il FOD può tenere interni gli esempi di un errore delicato. Sempre `live`.
+Blocco Data `flightops.errorCatalog`: gli errori con `is_public`, con categoria, descrizione e regole collegate. Sempre
+`live`. Il FOD lo mette in una pagina o in un documento.
 
 ### 5.4 Le regole congelate
 
-Al **primo invio** il PIREP copia in `rules_snapshot_json` le regole effettive della leg con i loro errori
-(nome, categoria, `yearly_max`). Un **reinvio** dopo «da modificare» **non** rifà la copia ⚖️: il volo è lo
-stesso e le regole di quel giorno restano. La validazione legge lo snapshot; i **contatori** leggono gli errori
-confermati di tutti i PIREP (quelli sì con la loro categoria congelata).
+Al **primo invio** il PIREP copia le regole effettive della leg, con i **parametri** e gli errori, in
+`rules_snapshot_json`; il reinvio dopo «da modificare» non la rifà. Controlli e validazione leggono lo snapshot.
 
 ---
 
-## 6. I controlli automatici (estensione del nucleo n.5 e n.8)
+## 6. I controlli automatici (estensioni del nucleo n.5, n.8, n.12)
 
 ### 6.1 Che cosa fanno
 
-Un PIREP inviato (o reinviato) mette in coda un **job del modulo**, che esegue i controlli sul volo e scrive
-un risultato per controllo in `fo_check_results` (`pirep_id`, `check_key`, `outcome`, `evidence_json`,
-`ran_at`). Per ogni controllo **non superato**, gli errori con quel `check_key` diventano **suggeriti** in
-`fo_pirep_errors`.
+Un PIREP inviato mette in coda un job che esegue i controlli e scrive `fo_check_results` (`pirep_id`, `check_key`,
+`outcome`, `evidence_json`, `ran_at`). Per ogni controllo non superato, gli errori con quel `check_key` diventano
+**suggeriti**.
 
 ### 6.2 La forma
 
-- Un controllo è una classe del modulo `IFlightCheck` con una `Key` e un `EvaluateAsync(FlightCheckContext)`
-  che restituisce `Passed`, `Failed` (con l'evidenza) o **`Unavailable`** (i dati non ci sono: mai «fallito»,
-  ADR-011).
-- Il contesto porta il PIREP, lo snapshot delle regole, il piano di volo al decollo, **le tracce** del volo
-  (`/v2/tracker/sessions/{id}/tracks`, dal client unico) e l'archivio ATC (§6.5).
-- Le **soglie** (tolleranze) sono impostazioni della divisione per controllo (`checks.<key>`), con i valori di
-  partenza di `RULESET_PROPOSTA_IT.md` §8.
+- `IFlightCheck`: `Key`, lo **schema dei parametri** (con i default della regola generale di partenza) e
+  `EvaluateAsync(FlightCheckContext)` → `Passed`, `Failed` (con evidenza) o **`Unavailable`** (dati mancanti: mai «fallito»).
+- Il contesto porta il PIREP, lo snapshot con i parametri, tutte le revisioni del piano, le tracce, gli aeroporti e le piste
+  `ref_`, il meteo salvato e l'archivio ATC.
 
-### 6.3 La macchina propone
+### 6.3 La macchina propone, dalla prima stagione
 
-- **Nessun controllo decide.** Suggerisce errori; il validatore conferma o no.
-- **Prima stagione in sola informazione** (`checksMode = Informational`, ADR-036): i risultati si mostrano ma
-  **non** evidenziano errori; si registra se il validatore ha poi confermato l'errore del controllo, per sapere
-  quali controlli promuovere. Il FOD passa a `Suggest` quando vuole.
+**Nessun controllo decide.** I suggerimenti sono attivi **dalla prima stagione** (revisione del 15 settembre: il FOD adotta
+subito il metodo). Si registra comunque se il validatore conferma l'errore suggerito, per sapere quali controlli sbagliano.
 
-### 6.4 I controlli di M2 (livello A di Toursystem, solo dati IVAO e archivio ATC)
+### 6.4 I controlli di M2
 
-| Chiave | Controlla | Dati |
-|---|---|---|
-| `reportWindow` | PIREP entro X giorni dal volo | PIREP |
-| `callsign` | callsign consentito / vietato | piano, §1.5 |
-| `aircraft` | tipo consentito | piano |
-| `landingAtArrival` | atterrato all'arrivo (o deviazione dichiarata) | tracce |
-| `disconnections` | disconnessioni in volo (15 minuti, 25 in totale) | tracce |
-| `parking` | 3 minuti fermo prima del push e dopo l'arrivo | tracce |
-| `speed250` | 250 kt sotto FL100 (+ tolleranza) | tracce, esenzioni |
-| `semicircularLevels` | livelli semicircolari | piano, tracce |
-| `simRate` | velocità riportata coerente con quella di posizione | tracce |
-| `alternate` | alternato presente e non `ZZZZ` | piano |
-| `equipment` | equipaggiamento richiesto | piano |
-| `dailyLimit` | limiti giornalieri | PIREP |
-| `atcCoverage` | ATC online sul percorso, e verifica delle esenzioni | archivio ATC (§6.5) — informativo |
+| Chiave | Controlla | Dati | Parametri (nelle regole) |
+|---|---|---|---|
+| `callsign` | callsign consentito o vietato (anche bloccato all'invio) | piano | — |
+| `aircraft` | tipo consentito (anche bloccato all'invio) | piano | — |
+| `landingAtArrival` | atterrato all'arrivo o deviazione dichiarata | tracce | raggio |
+| `disconnections` | disconnessioni in volo | tracce | `maxSingleDisconnectMinutes`, `maxTotalDisconnectMinutes` |
+| `parking` | fermo prima del push e dopo l'arrivo | tracce | `minParkingMinutesBefore`, `minParkingMinutesAfter` |
+| `speed250` | 250 kt sotto FL100 | tracce, esenzioni | tolleranza |
+| `semicircularLevels` | livello di crociera coerente con la rotta, **solo in FRA** | piano, tracce | tolleranza |
+| `simRate` | velocità riportata coerente con quella di posizione | tracce | tolleranza |
+| `alternate` | alternato presente (e `ZZZZ` ⚖️, sotto) | piano | — |
+| `equipment` | equipaggiamento richiesto | piano | lettere |
+| `takeoffFromThreshold` | decollo dalla testata | tracce, `ref_ivao_runways` | `thresholdToleranceMeters` |
+| `vmc` | VMC a partenza e arrivo, **solo piani `V`** (e le metà VFR di `Y`/`Z`) | meteo salvato | visibilità e base nubi minime |
+| `atcCoverage` | ATC online lungo il volo, e verifica delle esenzioni | archivio ATC | — (informativo) |
+| `repeatedRoute` | rotta già volata nel tour a distanza (anche bloccato all'invio) | PIREP | — |
 
-Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`, ~13 300 righe): si porta la
-logica di questi controlli, non il programma. Ogni controllo ha i suoi test con **voli veri** (il corpus di
-39 log di Toursystem, `tests/corpus/`).
+Note sui controlli delicati:
+
+- **`semicircularLevels`**: la regola vale **solo nello spazio aereo a rotte libere (FRA)**. La direzione normale è
+  **est–ovest**; alcuni paesi (Italia compresa) usano **nord–sud**. I paesi con nord–sud stanno nelle impostazioni
+  (`northSouthLevelCountries`, §1.11): non c'è una fonte da cui ricavarli in modo affidabile. ⚠️ **I confini della FRA** non
+  sono in nessun dato che l'hub abbia oggi (né IVAO né `ref_`): serve una fonte (vIPI, se i volumi dello spazio aereo li
+  contengono, o un file caricato dal FOD). Senza, il controllo risponde `Unavailable`.
+- **`alternate` e `ZZZZ`**: `ZZZZ` è sia un aeroporto reale in Cina sia il codice «aeroporto senza ICAO» (con il nome nel
+  campo 18). ⚠️ **La frase di Carmine si è interrotta** («`ZZZZ` dà errore solo se …»): va completata (§15).
+- **`takeoffFromThreshold`**: dall'ultimo punto fermo prima della corsa di decollo nelle tracce, la distanza dalla testata
+  della pista usata (quella con la prua più vicina alla prua di decollo). Oltre `thresholdToleranceMeters` il controllo non
+  «fallisce»: segnala al validatore il **decollo da un'intersezione**, e il validatore verifica se da quel punto c'è una TORA
+  pubblicata (dato che nessuna API dà). ⚠️ Il campionamento delle tracce IVAO va misurato: se i punti a terra sono radi, la
+  posizione di inizio corsa è approssimativa, e la tolleranza va tarata sui voli veri.
+- **`vmc`**: sul METAR più vicino all'ora di decollo e di atterraggio; senza METAR salvato, `Unavailable`.
+
+Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`); ogni controllo si prova su **voli veri**
+(§13).
 
 ### 6.5 L'archivio ATC
 
-Un'interfaccia del nucleo, `IAtcActivitySource` («quali posizioni erano online in questo intervallo, e dove»),
-con due implementazioni: la **vista di vIPI** `v_share_atc_sessions` (piano 0.78) e **nessuna** (tutto
-`Unavailable`). Il modulo non nomina vIPI.
+`IAtcActivitySource` nel nucleo («quali posizioni erano online in questo intervallo, e dove»): la vista di vIPI
+`v_share_atc_sessions` o nessuna (`Unavailable`). Lo usano `atcCoverage` e la **proposta degli ATC contattati** (§3.3).
 
 ---
 
 ## 7. Permessi
 
-### 7.1 Il catalogo del modulo
+### 7.1 Il catalogo
 
 | Permesso | Che cosa permette |
 |---|---|
-| `Tours.View` | vedere nel back office tour in bozza, template, liste |
-| `Tours.Edit` | creare, modificare, riprogrammare (date) tour e leg, segnare pronto, importare leg, gestire le segnalazioni sulle leg |
-| `Tours.Delete` | eliminare un tour in bozza o ritirare un tour aperto ⚖️; ritirare una leg |
-| `Tours.ManageRules` | regole generali e del tour, errori, collegamenti |
+| `Tours.View` | vedere nel back office bozze, template, liste |
+| `Tours.Edit` | creare, modificare, riprogrammare, nascondere tour; leg (ritiro compreso); import; segnalazioni sulle leg; vincoli |
+| `Tours.Delete` | eliminare un tour **senza PIREP** |
+| `Tours.ManageRules` | regole generali e del tour, parametri, errori |
 | `Tours.ManageTemplates` | template di tour |
-| `Tours.Validate` | prendere e decidere PIREP; **con scope per tour** (§7.2) |
+| `Tours.ManageAircraft` | profili degli aerei |
+| `Tours.Validate` | prendere e decidere PIREP; **con scope per tour** (§7.3) |
 | `Tours.ManageValidators` | abilitare e togliere validatori |
 | `Tours.ViewPilots` | pagina del pilota, statistiche dei validatori |
-| `Tours.ManageSettings` | impostazioni della divisione (§1.11), soglie dei controlli |
+| `Tours.Ban` | bannare un pilota da un tour o da tutti |
+| `Tours.ManageSettings` | impostazioni della divisione |
 
 ### 7.2 Chi li ha (`division.json → positionGrants`)
 
@@ -650,31 +762,26 @@ con due implementazioni: la **vista di vIPI** `v_share_atc_sessions` (piano 0.78
 | `Tours.Delete` | ✓ | ✓ | — (grant al singolo VID) | |
 | `Tours.ManageRules` | ✓ | ✓ | ✓ | |
 | `Tours.ManageTemplates` | ✓ | ✓ | — | |
-| `Tours.Validate` | ✓ tutti i tour | ✓ tutti i tour | ✓ tutti i tour | ✓ i tour abilitati |
+| `Tours.ManageAircraft` | ✓ | ✓ | ✓ ⚖️ | |
+| `Tours.Validate` | ✓ tutti | ✓ tutti | ✓ tutti | ✓ i tour abilitati |
 | `Tours.ManageValidators` | ✓ | ✓ | — | |
-| `Tours.ViewPilots` | ✓ | ✓ | ✓ ⚖️ | ⚖️ |
+| `Tours.ViewPilots` | ✓ | ✓ | ✓ | ✓ (risposta 17) |
+| `Tours.Ban` | ✓ | ✓ | — ⚖️ | |
 | `Tours.ManageSettings` | ✓ | ✓ | — | |
-| rispondere alle contestazioni | ✓ | ✓ | ✓ | ✓ sulle proprie decisioni |
+| rispondere a contestazioni e chiarimenti | ✓ | ✓ | ✓ | ✓ sui propri PIREP decisi |
 
-HQ e superadmin tengono tutto, come oggi. Le righe di `positionGrants` si scrivono in `division.json` (e in
-`division.example.json` con il commento) nella fase del modulo.
+HQ e superadmin tutto. **I validatori si abilitano solo dalla pagina delle statistiche** (risposta 18).
 
 ### 7.3 Le due estensioni del meccanismo dei permessi (estensione del nucleo n.1)
 
-Servono **due** cose che il meccanismo di oggi non dice, e vanno nell'unico handler, non nel modulo:
+1. **Scope per risorsa**: `hub_user_grants.resource_scope` (`flightops:tour:42`); una risorsa con `IHasResourceScope`
+   dichiara il suo; l'handler conta un grant con scope solo sulla risorsa con lo stesso scope. «Aggiungi validatore» scrive
+   un grant `Tours.Validate` con lo scope del tour; audit, sospensione e sessione vengono gratis.
+2. **Stakeholder della riga**: `IHasStakeholder` (`StakeholderVid`) e i permessi che una risorsa **non** concede al suo
+   stakeholder (`Tours.Validate` sul PIREP). Vale per tutti, **superadmin compreso** (risposta 15). La lettura resta
+   concessa: il validatore vede i propri PIREP (§4.1).
 
-1. **Uno scope più stretto del dipartimento**: «`Tours.Validate` sul tour 42». Proposta: `hub_user_grants`
-   guadagna una colonna **`resource_scope`** (per esempio `flightops:tour:42`); una risorsa che implementa
-   **`IHasResourceScope`** dichiara il suo (`flightops:tour:{tour_id}` per un PIREP); l'handler conta un grant con
-   scope **solo** su una risorsa con lo stesso scope, e un grant **senza** scope come oggi. La schermata «aggiungi
-   validatore» scrive un grant; audit, sospensione e rinnovo della sessione vengono gratis.
-2. **Un vincolo della riga contro chi agisce**: «chi decide non è il pilota». Proposta: un'interfaccia
-   **`IHasStakeholder`** (`int StakeholderVid`) e un elenco di permessi che una risorsa con stakeholder **non**
-   concede allo stakeholder (dichiarato dal modulo: `Tours.Validate`). L'handler lo applica a tutti i grant,
-   superadmin compreso ⚖️.
-
-Tutte e due vogliono una **nota di decisione** prima del codice (`CLAUDE.md` §5, caso c) e i test della spina
-dorsale estesi.
+Tutte e due vogliono una **nota di decisione** e i test della spina dorsale estesi.
 
 ---
 
@@ -682,160 +789,146 @@ dorsale estesi.
 
 ### 8.1 Pubblico
 
-- **`/tours`**: i tour aperti (e in chiusura ⚖️) come **riquadri**: foto, titolo, riassunto; per un pilota con
-  login, **barra di avanzamento** e **prossima leg** (§2). Filtri per tipo ⚖️. Anonimo: niente avanzamento.
-- **`/tours/{slug}`**: briefing, date, aerei, regole effettive del tour, **mappa** (§8.6) con le leg **blu** da
-  fare e **verdi** fatte (e ⚖️ grigie non ancora rilasciate, arancioni in attesa), elenco delle leg con stato,
-  distanza, callsign reale, pulsante **SimBrief** per leg; per un pilota, «Invia il report» sulle leg volabili,
-  i suoi PIREP con esito, «Contesta» sui rifiutati, «Segnala un problema».
-- **Il form del PIREP**: una finestra dedicata (sceglie un volo da una lista, poi campi generati dallo schema
-  zod) ⚖️ dedicata perché il primo passo è una scelta, non un campo.
+- **`/tours`**: tour aperti, in chiusura, e in arrivo con anteprima, come **riquadri** (foto, titolo, riassunto; per un
+  pilota barra di avanzamento e prossima leg). Anonimo: niente avanzamento.
+- **`/tours/{slug}`**: briefing, date, aerei, regole effettive con i parametri, **mappa** (blu da fare, verdi fatte, grigie
+  ritirate o non ancora rilasciate ⚖️, arancioni in attesa), elenco delle leg con distanza, **tempo stimato**, callsign reale,
+  pulsante **SimBrief**; per un tour a distanza senza leg, i vincoli e quanto manca; per il pilota i suoi PIREP, «Invia il
+  report», «Contesta», «Richiedi chiarimenti», «Segnala un problema».
+- **Il form del PIREP**: finestra dedicata (prima la scelta del volo, poi i campi).
 
-### 8.2 Blocchi Data del modulo
+### 8.2 Blocchi Data
 
 | Blocco | Dove | Che cosa |
 |---|---|---|
-| `flightops.tourCards` | pagine pubbliche, `/me` | i riquadri di `/tours`, per chi guarda |
-| `flightops.myTours` | `/me` | i tour iniziati, avanzamento, prossima leg, PIREP da correggere |
-| `flightops.reviewQueue` | dashboard FOD, `/staff` | PIREP in coda sui tour che chi guarda può validare, i più vecchi |
-| `flightops.openIssues` | dashboard FOD | segnalazioni aperte sulle leg |
-| `flightops.errorCatalog` | pagine, documenti | gli errori pubblici (§5.3) |
+| `flightops.tourCards` | pagine pubbliche, `/me` | i riquadri, per chi guarda |
+| `flightops.myTours` | `/me` | tour iniziati, avanzamento, prossima leg, PIREP da correggere, chiarimenti con risposta |
+| `flightops.reviewQueue` | dashboard FOD, `/staff` | PIREP in coda sui tour che chi guarda può validare |
+| `flightops.openIssues` | dashboard FOD | segnalazioni aperte, contestazioni e chiarimenti senza risposta |
+| `flightops.errorCatalog` | pagine, documenti | gli errori pubblici |
 
-Tutti `AlwaysLive`, rispondono per chi guarda (nota delle dashboard §3.1).
+### 8.3 L'editor del tour
 
-### 8.3 L'editor del tour (staff)
+- **`/staff/tours`**: tutti i tour passati, presenti e futuri (stato calcolato, tipo, date, nascosto, iscritti, in coda); filtro
+  «template».
+- **`/staff/tours/{id}`**, schede: **impostazioni** (form generato, compresi aereo di riferimento, anteprima, procedure,
+  ordine delle rotazioni), **briefing** (editor dei blocchi), **hub e rotazioni**, **sottotour**, **vincoli sul callsign**,
+  **vincoli del tour a distanza**, **leg** (§8.4), **regole del tour**. Barra: «Segna pronto» con i problemi, «Nascondi»,
+  «Elimina» (solo senza PIREP), «Nuovo da template», «Salva come template».
 
-- **`/staff/tours`**: lista generata di tutti i tour passati, presenti e futuri, con stato calcolato, tipo, date,
-  iscritti, PIREP in coda; un filtro «template».
-- **`/staff/tours/{id}`**: schede.
-  - **Impostazioni**: form generato (tipo, titolo, riassunto, foto, date, finestra, progressione, limite
-    giornaliero, aerei, award, «a cura di»).
-  - **Briefing**: l'editor dei blocchi (lo stesso delle pagine).
-  - **Hub e rotazioni** (solo `Hub`), **sottotour** (solo `Container`), **vincoli sul callsign**: liste generate.
-  - **Leg**: l'**editor delle leg** (§8.4).
-  - **Regole del tour** (§5.1).
-  - **Validatori** ⚖️ (o solo nella pagina delle statistiche, risposta 41).
-  - Barra: «Segna pronto» con l'elenco dei problemi di pubblicazione, «Nuovo da template», «Salva come template».
+### 8.4 L'editor delle leg (eccezione dichiarata, estensione n.6)
 
-### 8.4 L'editor delle leg (eccezione dichiarata, estensione del nucleo n.6)
+- **Tabella modificabile**: numero, partenza, arrivo, IATA, distanza e tempo stimato calcolati al volo, callsign reale, numero
+  di volo, aerei, rotazione, rilascio, stato (con i PIREP).
+- **Azioni sulla riga**: «aggiungi dopo: duplica», «aggiungi dopo: segue», «chiudi tour», «elimina o ritira» (il server sceglie
+  secondo §1.4.1 e lo dice prima di confermare), «ripristina».
+- **Import XLSX/CSV**, letto **nel browser** (risposta 24): anteprima delle differenze dal server; «fondi» non tocca le leg
+  assenti; «sostituisci» elimina le assenti senza PIREP e ritira quelle con PIREP, con un motivo. Modello di file con le colonne.
+- Salvataggio a righe con `row_version`, errori sulla cella.
 
-- **Una tabella modificabile riga per riga** (non un form per leg): numero, partenza, arrivo, IATA e distanza
-  calcolati al volo, callsign reale, numero di volo, aerei, rotazione, data di rilascio, stato.
-- **Azioni sulla riga**: «aggiungi dopo: duplica» (copia tutto tranne gli aeroporti), «aggiungi dopo: segue» (la
-  partenza è l'arrivo di questa), «chiudi tour» (l'arrivo diventa la partenza della prima leg), «ritira».
-- **Import XLSX/CSV**: il file si legge **nel browser** ⚖️ (nessuna libreria nel server; una libreria di lettura XLSX
-  nel frontend), il server riceve le righe e risponde con l'**anteprima delle differenze** (nuove, modificate,
-  invariate, errori per riga: ICAO sconosciuti, numeri doppi). Poi «applica». Regole di ADR-051: chiave
-  `(tour, numero di leg)`; **fonde** di default e non tocca le leg assenti dal file; «sostituisci» **ritira** le
-  assenti (mai cancella) e solo con un motivo; una leg con PIREP si modifica solo con `change_reason`. Un modello
-  di file scaricabile con le colonne.
-- Salvataggio **a righe**, con `row_version` per riga e gli errori del server mappati sulla cella.
+### 8.5 La validazione
 
-### 8.5 La validazione (staff)
+- **`/staff/tours/review`**: la coda (§4.1), unica o per tour, ordinata per data o per tour.
+- **`/staff/tours/review/{pirepId}`**: la pagina di validazione (§4.3).
 
-- **`/staff/tours/review`**: la coda (§4.1).
-- **`/staff/tours/review/{pirepId}`**: la pagina di validazione (§4.3), schermata dedicata.
+### 8.6 La mappa (estensione n.3)
 
-### 8.6 La mappa (estensione del nucleo n.3)
+**Scelta proposta** (risposta 23, «scegli tu»): **MapLibre GL** con una **mappa di base vettoriale ospitata dall'hub** (un file
+**PMTiles** di Protomaps, dal livello 0 a circa il 7), servita dal nostro server.
 
-- **Un componente nuovo** nell'elenco chiuso: `RouteMap` (linee fra coppie di coordinate, colori per stato,
-  marcatori degli aeroporti). Libreria ⚖️ **Leaflet** (la più piccola, senza WebGL) oppure MapLibre.
-- **Tessere**: da un fornitore **dichiarato** in `config/security.json` (`img-src` e, se servono, `connect-src`),
-  con l'attribuzione visibile. ⚠️ Le tessere di `tile.openstreetmap.org` **non** si possono usare per un sito con
-  traffico senza rispettarne la policy di uso: la nota di decisione sceglie il fornitore (per esempio un piano
-  gratuito di un fornitore commerciale, o tessere proprie) ⚖️.
-- Le linee sono **ortodromiche** (archi di cerchio massimo), non rette sulla proiezione.
+- **Perché**: nessun fornitore esterno, nessuna chiave, nessun limite di richieste, nessun tracciamento dei visitatori, e la CSP
+  resta `'self'` per immagini e connessioni. Le tessere di `tile.openstreetmap.org` **non** sono usabili per un sito con
+  traffico (policy di uso), e un fornitore commerciale gratuito ha quote e chiavi.
+- **Linee ortodromiche** (archi di cerchio massimo), marcatori degli aeroporti, colori per stato.
+- ⚠️ **Da misurare nella nota di decisione**: il peso del file mondiale fino al livello 7 (va caricato via FTP), e la CSP di
+  MapLibre (serve la sua build «CSP», con il worker servito da noi, per non aggiungere `blob:` a `worker-src`).
+  **Ripiego** se una delle due non regge: Leaflet con tessere raster di un fornitore dichiarato in `config/security.json`.
+- Componente nuovo nell'elenco chiuso: `RouteMap`.
 
 ### 8.7 Le altre pagine dello staff
 
-- **Statistiche dei validatori** (`/staff/tours/validators`): per anno, per validatore, leg validate, accettate,
-  rifiutate; per ogni tour dell'anno corrente e del precedente, per validatore, lo stesso. Da qui «aggiungi
-  validatore» (un VID già staff della divisione, i tour per cui abilitarlo) e «togli». Liste generate su endpoint
-  di aggregazione ⚖️ (un `MapCrud` in sola lettura su una query aggregata, se il motore lo permette).
-- **Pagina del pilota** (`/staff/tours/pilots/{vid}`): riepilogo degli errori confermati per categoria e per errore
-  (anno solare e da sempre), elenco di tutte le leg volate con esito, validatore, data; i suoi tour con
-  avanzamento. La ricerca del pilota per VID o nome.
-- **Regole generali**, **errori**, **template**, **segnalazioni sulle leg**, **impostazioni**: liste e form generati.
-- **Punti e classifiche**: ⚖️ da definire — Toursystem li teneva per lo staff; requisiti §6 li vuole solo per lo staff,
-  ma non dice quali. Proposta: rimandarli dopo M2 insieme all'Online Day.
+- **Statistiche dei validatori** (`/staff/tours/validators`): per anno e per validatore leg validate, accettate, rifiutate; per ogni
+  tour dell'anno corrente e del precedente, per validatore, lo stesso. Qui «aggiungi validatore» e «togli».
+- **Pagina del pilota** (`/staff/tours/pilots/{vid}`): errori confermati per categoria e per errore (anno solare e da sempre),
+  tutte le leg volate con esito e validatore, contestazioni, chiarimenti, ban, tour con avanzamento; da qui «banna».
+- **Ban** (`/staff/tours/bans`), **regole generali**, **errori**, **template**, **profili degli aerei**, **segnalazioni**,
+  **impostazioni**: liste e form generati.
 
 ---
 
 ## 9. Proiezioni, ricerca, calendario, notifiche
 
-- **Ricerca** (`IProjectable` su `fo_tours` pubblicati): titolo e riassunto, visibilità pubblica, URL `/tours/{slug}`.
-- **Calendario**: un tour pronto proietta **due voci** ⚖️ (rilascio e chiusura) di tipo `tour`, pubbliche. Il
-  contratto di `IProjectable` oggi porta **una** `CalendarProjection` per riga: servono due voci, oppure una sola
-  voce «aperto dal … al …». Proposta: **una** voce con inizio e fine (niente estensione).
-- **Notifiche** (tipi del modulo, con preferenza del membro): `pirepAccepted`, `pirepToModify`, `pirepRejected`,
-  `disputeReplied`; alla casella del FOD: `disputeReceived`, `legIssueReported`. ⚖️ `tourCompleted` al pilota.
+- **Ricerca**: `IProjectable` su un tour visibile (titolo, riassunto, `/tours/{slug}`).
+- **Calendario**: **due voci** per tour, rilascio e chiusura (risposta 20). ⚠️ `ProjectionSnapshot` oggi porta **una**
+  `CalendarProjection`: diventa un **elenco** (estensione n.10, piccola). Un tour nascosto non proietta niente.
+- **Notifiche** del modulo: `pirepAccepted`, `pirepToModify`, `pirepRejected`, `threadReplied` (contestazione o
+  chiarimento), `banned`; alla casella del FOD: `threadOpened`, `legIssueReported`.
 
 ---
 
-## 10. Conservazione
+## 10. Conservazione (risposta 22)
 
-- **Mai cancellati**: la decisione del PIREP (`outcome`, validatore, data), gli **errori confermati**
-  (`fo_pirep_errors`), la storia (`fo_pirep_events`) — il **registro disciplinare** (requisiti §7).
-- **Cancellati** dopo `retentionYears` (2) dalla chiusura del tour, `retentionYearsLong` (4) per un tour su più di
-  un anno: tracce, piano di volo, esiti dei controlli, snapshot delle regole, note del pilota, esenzioni.
-- Un job mensile del modulo, con una riga in `hub_job_log` per esecuzione ⚖️.
+- **Mai cancellati**: la decisione del PIREP, gli **errori confermati**, la storia, i ban — il **registro disciplinare**.
+- **Cancellati** dopo **13 mesi** dalla chiusura per un tour normale e **25 mesi** per un tour su più di un anno: il tour con
+  leg, regole, hub, vincoli; dei PIREP tracce, piani, esiti dei controlli, snapshot, note, ATC ed esenzioni, iscrizioni.
+- **Meteo**: §1.13.
+- Job mensile del modulo, con una riga nel log dei job.
+- ⚖️ Il registro disciplinare, cancellato il tour, deve ancora dire **quale** tour e **quale** leg: il PIREP conserva nome del tour
+  e partenza/arrivo come testo al momento della cancellazione.
 
 ---
 
 ## 11. Che cosa chiede al nucleo
 
-Ogni voce ha una fase sua, **prima** della fase del modulo che la usa, e le prime tre una nota di decisione.
-
-| # | Estensione | Nota | Dove |
+| # | Estensione | Nota di decisione | Dove |
 |---|---|---|---|
 | 1 | Scope per risorsa nei grant e stakeholder della riga | sì | §7.3 |
-| 2 | Contatti con filo di risposte, legati a una riga di modulo, con partecipanti in più | sì | §3.8 |
-| 3 | Componente mappa e fornitore di tessere nella CSP | sì | §8.6 |
-| 4 | Aeroporti di tutto il mondo con IATA e coordinate | no (approvata, risposta C.4) | §1.12 |
-| 5 | Tracker nel client IVAO: sessioni per pilota e aeroporti, piani di volo, tracce | no (risposta C.5) | §3.2, §6 |
-| 6 | Editor a tabella e import XLSX/CSV con anteprima | eccezione da dichiarare nel piano (§8.3 dei componenti) | §8.4 |
-| 7 | Award: catalogo (`hub_awards`) e assegnazioni (`hub_award_assignments`) accanto a `hub_award_signals`, schermata di chi ha `Awards.Assign`, immagini dalla media library | no (piano §9.1, già deciso) | §3.9 |
-| 8 | `IAtcActivitySource` con l'implementazione sulla vista di vIPI | coperta da piano 0.78 | §6.5 |
-| 9 | Selezione multipla e (forse) aggregati nel generatore di form e nella lista | da verificare con il codice | §5.1, §8.7 |
-
-⚠️ **Award dall'API IVAO** (risposta C.7): la documentazione `api.ivao.aero/docs` risponde **403** (verificato
-il 14 settembre 2026, come aveva trovato Toursystem), e il catalogo award di IVAO non è documentato. Il catalogo
-del nucleo si **carica a mano** (nome, immagine, criterio); se un endpoint IVAO si trova, un job lo sincronizza
-dopo. Lo stesso catalogo terrà più avanti i badge dei rating per il training.
+| 2 | Contatti con filo di risposte (contestazioni e chiarimenti), legati a una riga di modulo, con partecipanti in più | sì | §3.8, §3.10 |
+| 3 | Mappa: MapLibre, PMTiles ospitate, CSP | sì | §8.6 |
+| 4 | Aeroporti del mondo con IATA e coordinate; piste con le testate | no (risposta C.4) | §1.12 |
+| 5 | Tracker nel client IVAO: sessioni, tutte le revisioni dei piani, tracce | no (risposta C.5) | §3.2, §6 |
+| 6 | Editor a tabella e import XLSX/CSV | eccezione da dichiarare | §8.4 |
+| 7 | Award: catalogo e assegnazioni, schermata, immagini dalla media library (IVAO: documentazione 403, caricamento a mano) | no (piano §9.1) | §3.11 |
+| 8 | `IAtcActivitySource` sulla vista di vIPI | coperta da piano 0.78 | §6.5 |
+| 9 | Selezione multipla e parametri da schema nel generatore di form; aggregati nella lista | da verificare con il codice | §5.1, §8.7 |
+| 10 | Più voci di calendario per riga in `IProjectable` | no (estensione piccola) | §9 |
+| 11 | Tipi di aereo IVAO (`ref_ivao_aircraft`) — endpoint da verificare | no | §1.5 |
+| 12 | `IWeatherSource` (NOAA → IVAO → VATSIM), come vIPI | sì, breve (una fonte esterna nuova) | §1.13 |
 
 ---
 
 ## 12. Tabelle e migrazioni
 
-**Nucleo** (migrazioni additive in `HubDbContext`):
+**Nucleo** (additive): `ref_ivao_airports` (+ `iata`, `latitude`, `longitude`), `ref_ivao_runways`, `ref_ivao_aircraft`,
+`hub_user_grants` (+ `resource_scope`), `hub_contact_messages` (+ `source_module`, `source_id`, `kind`, `participants_json`),
+`hub_contact_replies`, `hub_awards`, `hub_award_assignments`.
 
-- `ref_ivao_airports`: `iata`, `latitude`, `longitude`.
-- `hub_user_grants`: `resource_scope`.
-- `hub_contact_messages`: `source_module`, `source_id`, `participants_json`; nuova `hub_contact_replies`.
-- `hub_awards`, `hub_award_assignments`.
+**Modulo** (`Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`, `fo_callsign_rules`, `fo_tour_constraints`,
+`fo_aircraft_profiles`, `fo_rules`, `fo_errors`, `fo_rule_errors`, `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`,
+`fo_pirep_events`, `fo_check_results`, `fo_enrolments`, `fo_bans`, `fo_leg_issues`, `fo_weather_reports`.
 
-**Modulo** (`FlightOpsDbContext`, prima migrazione `Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`,
-`fo_callsign_rules`, `fo_rules`, `fo_errors`, `fo_rule_errors`, `fo_pireps`, `fo_pirep_flights`,
-`fo_pirep_errors`, `fo_pirep_events`, `fo_check_results`, `fo_enrolments`, `fo_leg_issues`.
-
-**vIPI** (nel suo repository): la vista `v_share_atc_sessions` e l'utente di sola lettura (piano 0.78 §4).
+**vIPI** (nel suo repository): `v_share_atc_sessions` e l'utente di sola lettura.
 
 ---
 
 ## 13. La rete di test
 
-- **Unità**: `TourRules` per ogni tipo (volabili, prossima, finito) con tabelle di casi; GCD (i test di Toursystem);
-  regole effettive; suggerimento con le soglie; limiti giornalieri; ogni `IFlightCheck` su **voli veri** del corpus.
-- **Integrazione** (MariaDB vera, database condiviso: VID e slug propri del modulo, per esempio `VID 780001–780099`,
-  slug `fo-test-…`): il ciclo di un PIREP con tutti gli stati; nessuno valida i propri; validatore abilitato su un
-  tour e non su un altro; la sessione rivendicata una volta; il limite di divisione che non si spegne; il
-  completamento che scrive la segnalazione award; la conservazione che non tocca il registro disciplinare.
-- **Architettura**: il modulo non nomina vIPI; il modulo non chiama IVAO se non dal client del nucleo.
-- **Smoke** (Playwright con API finta): `/tours`, `/tours/{slug}` con la mappa, il form del PIREP, la coda, la pagina
-  di validazione, l'editor delle leg con un import.
-- **Giro completo** (API vera): un tour creato da template, un PIREP inviato con un tracker finto (fixture del
-  client), preso, validato, contestato e riaperto.
-- **Divisione XX**: nessuna stringa italiana, nessun ICAO italiano nei seed del modulo.
+- **Voli veri**: Carmine ha offerto **una serie di voli** (15 settembre). Servono **con l'esito atteso** per controllo
+  («disconnessione di 18 minuti», «decollo da intersezione», «livello pari verso est»), meglio se con il PIREP e la decisione
+  reale: diventano il **corpus** dei controlli, sono la base per tarare tempo stimato e tolleranze, e si aggiungono ai 39 log di
+  Toursystem. Le tracce si salvano come fixture del client IVAO, così i test non chiamano IVAO.
+- **Unità**: `TourRules` per ogni tipo e per il ritiro delle leg; vincoli del tour a distanza; GCD e tempo stimato; regole
+  effettive con parametri; suggerimento; limiti giornalieri; ogni `IFlightCheck` sul corpus.
+- **Integrazione** (MariaDB vera, database condiviso: VID `780001–780099`, slug `fo-test-…`): ciclo del PIREP con tutti gli stati;
+  nessuno valida i propri (superadmin compreso); validatore abilitato su un tour e non su un altro; sessione rivendicata una volta;
+  limite che blocca l'invio; limite di divisione che non si spegne; contestazione che sblocca le successive; ban; tour con PIREP
+  che non si elimina e chiusura non anticipabile sotto `2 × X`; leg ritirata che non conta; completamento con segnalazione award;
+  conservazione che non tocca il registro disciplinare; meteo cancellato solo a PIREP decisi.
+- **Architettura**: il modulo non nomina vIPI, NOAA, VATSIM; non chiama IVAO se non dal client del nucleo.
+- **Smoke**: `/tours`, `/tours/{slug}` con la mappa, form del PIREP, coda unica e per tour, pagina di validazione, editor delle leg
+  con un import.
+- **Giro completo**: tour da template, PIREP con tracker finto, validato, contestato, riaperto.
+- **Divisione XX**: nessuna stringa italiana né ICAO italiano nei seed; `northSouthLevelCountries` vuoto di default.
 
 ---
 
@@ -843,54 +936,63 @@ dopo. Lo stesso catalogo terrà più avanti i badge dei rating per il training.
 
 | Fase | Contenuto |
 |---|---|
-| T0 | Note di decisione: permessi con scope e stakeholder (§7.3), contatti con risposte (§3.8), mappa e tessere (§8.6); piano 0.79 |
-| T1 | Nucleo: aeroporti del mondo con IATA e coordinate; tracker nel client IVAO (con fixture) |
-| T2 | Nucleo: scope per risorsa e stakeholder nell'unico handler, con i test della spina dorsale |
-| T3 | Nucleo: catalogo e assegnazioni award, schermata di assegnazione |
-| T4 | Modulo: scheletro `flightops` (progetto, contesto, `IModule`, sezione della barra, permessi, `positionGrants`), impostazioni |
-| T5 | Tour: modello, lista, impostazioni, briefing, stato dalle date, controlli «pronto», template |
-| T6 | Leg: editor a tabella, GCD, hub e rotazioni, sottotour, vincoli sul callsign |
-| T7 | Import XLSX/CSV con anteprima |
-| T8 | Regole ed errori: schermate, collegamenti, regole effettive, blocco `errorCatalog` |
-| T9 | Pubblico: `/tours`, `/tours/{slug}`, componente mappa, `tourCards`, `myTours` |
-| T10 | PIREP: ricerca nel tracker, form, deviazioni, esenzioni, limiti, iscrizione, `TourRules` per ogni tipo |
-| T11 | Validazione: coda, presa in carico, pagina di validazione, suggerimenti, mail, `reviewQueue` |
-| T12 | Contestazioni (nucleo: contatti con risposte) e segnalazioni sulle leg |
-| T13 | Completamento e segnalazioni award; statistiche dei validatori; pagina del pilota |
-| T14 | Controlli automatici: motore, job, primi controlli sul piano di volo |
-| T15 | Controlli sulle tracce; `IAtcActivitySource` con vIPI; `atcCoverage` ed esenzioni verificate |
-| T16 | Conservazione, calendario e ricerca, rifiniture, giro completo |
+| T0 | Note di decisione: permessi con scope e stakeholder; contatti con risposte; mappa (con le misure); fonte del meteo. Piano 0.79 |
+| T1 | Nucleo: aeroporti del mondo con IATA e coordinate, piste con le testate, tipi di aereo |
+| T2 | Nucleo: tracker nel client IVAO (sessioni, piani, tracce) con fixture; `IWeatherSource` |
+| T3 | Nucleo: scope per risorsa e stakeholder nell'unico handler, test della spina dorsale |
+| T4 | Nucleo: award (catalogo, assegnazioni, schermata); più voci di calendario per riga |
+| T5 | Modulo: scheletro, impostazioni, profili degli aerei, `positionGrants` |
+| T6 | Tour: modello, stato dalle date, nascondere/eliminare/chiusura, controlli «pronto», template |
+| T7 | Leg: editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli a distanza |
+| T8 | Import XLSX/CSV con anteprima |
+| T9 | Regole con parametri ed errori, regole effettive, blocco `errorCatalog` |
+| T10 | Pubblico: `/tours`, `/tours/{slug}`, mappa, `tourCards`, `myTours` |
+| T11 | PIREP: ricerca nel tracker, form, procedure per regole di volo, deviazioni, limiti che bloccano, ban, `TourRules` |
+| T12 | ATC contattati proposti, esenzioni; `IAtcActivitySource` con vIPI |
+| T13 | Validazione: code, presa in carico, pagina, suggerimenti, mail, `reviewQueue` |
+| T14 | Contatti con risposte: contestazioni (che sbloccano) e chiarimenti; segnalazioni sulle leg |
+| T15 | Completamento e award; statistiche dei validatori; pagina del pilota; ban |
+| T16 | Meteo salvato (job, scarico all'invio, cancellazione) |
+| T17 | Controlli automatici: motore, job, controlli sul piano |
+| T18 | Controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, livelli in FRA |
+| T19 | Conservazione, calendario, ricerca, rifiniture, giro completo |
 
 ---
 
-## 15. Da confermare con Carmine (⚖️)
+## 15. Aperte
 
-Raccolte qui per rispondere a blocchi; il resto del documento le segna dove nascono.
+### 15.1 Decise il 15 settembre (sulle 25 domande della prima bozza)
 
-1. **Tour «in arrivo»** (pronto, prima del rilascio): visibile al pubblico come anteprima, o solo allo staff?
-2. **Template**: copiano anche **le leg** e hub/rotazioni, o solo impostazioni e regole?
-3. **Errori pubblici**: una bandiera `is_public` per errore, o il blocco mostra sempre tutti gli errori attivi?
-4. **SID/STAR/approccio**: obbligatori per tutti i PIREP IFR (regola RR5), con i tour VFR che la emendano? O una
-   bandiera del tour?
-5. **Callsign e aereo sbagliati all'invio**: avviso (decide il validatore) o blocco?
-6. **Limite giornaliero di divisione superato**: avviso o blocco? (Il limite del tour blocca.)
-7. **Contestazione**: entro quanti giorni dal rifiuto? E l'accoglimento **riapre** il PIREP in coda?
-8. **Anno dei contatori**: anno del **volo** o della **decisione**?
-9. **Tour `Free`**: il riquadro senza «prossima leg» dice «scegli una leg»?
-10. **Tour `Hub`**: le rotazioni di un hub in qualunque ordine fra loro (ognuna in ordine al suo interno)?
-11. **`SequentialChosenStart`**: il tour deve essere ad anello?
-12. **`Distance`**: si conta la GCD delle leg accettate? Le leg si volano libere?
-13. **Sottotour**: ereditano aerei, callsign e regole dal padre se non ne hanno? Un sottotour può avere un award suo?
-14. **Rifiuto in un tour in sequenza**: dopo la tolleranza si blocca l'invio delle leg successive finché la leg
-    rifiutata non è rivolata?
-15. **Stakeholder**: nemmeno il superadmin può validare i propri PIREP?
-16. **`Tours.Delete`**: vale anche per ritirare un tour già aperto (con PIREP)?
-17. **Advisor e validatori**: vedono la pagina del pilota e le statistiche?
-18. **Validatori**: si abilitano anche dalla scheda del tour, o solo dalla pagina delle statistiche?
-19. **Punti e classifiche per lo staff**: rimandati dopo M2 con l'Online Day?
-20. **Calendario**: una voce «tour aperto dal … al …» o due voci (rilascio, chiusura)?
-21. **Mail di tour completato** al pilota?
-22. **Conservazione**: 2 e 4 anni dalla chiusura del tour, confermati?
-23. **Mappa**: Leaflet, e quale fornitore di tessere (da scegliere nella nota)?
-24. **Import**: lettura del file XLSX nel browser (una libreria nel frontend) invece che nel server?
-25. **Ordine della coda**: dal PIREP più vecchio?
+1 anteprima come opzione del tour · 2 template con sole impostazioni e regole · 3 `is_public` per errore · 4 procedure come
+bandiera del tour, secondo Y/Z · 5 callsign e aereo bloccano · 6 limite di divisione blocca · 7 contestazione entro X giorni,
+impostazione unica · 8 anno del volo · 9 «scegli una leg» · 10 ordine delle rotazioni fisso o libero, scelto dal tour · 11 anello
+obbligatorio · 12 GCD, leg libere, niente rotta ripetuta · 13 sottotour eredita, senza award · 14 blocco dopo la tolleranza tranne
+i liberi · 15 nemmeno il superadmin · 16 un tour con PIREP si nasconde e non si elimina, chiusura non prima di 2X giorni · 17 advisor e
+validatori vedono pilota e statistiche · 18 validatori solo dalle statistiche · 19 niente punti né classifiche, mai · 20 due voci di
+calendario · 21 niente mail di completamento · 22 13 e 25 mesi · 23 la mappa la sceglie Claude · 24 XLSX letto nel browser · 25 coda
+dal PIREP più vecchio, più code per tour e ordine a scelta.
+
+### 15.2 Ancora da decidere
+
+1. **`ZZZZ`**: la frase si è interrotta — «`ZZZZ` dà errore solo se …» (per esempio: se il campo 18 non ha `DEST/` o `ALTN/` con
+   nome o coordinate?).
+2. **Tour nascosto**: chi l'aveva iniziato lo vede ancora nella sua pagina, senza poter inviare? I PIREP in coda si validano?
+3. **Eliminare una leg senza PIREP**: le leg dopo **non** si rinumerano (buco nel numero)?
+4. **Leg ritirata dentro una rotazione**: il FOD deve sistemare la rotazione (aggiungere o ritirare la rotazione intera)?
+5. **Tempo stimato**: la formula con parte fissa (5 % + 20 minuti) al posto del solo +20 %, tarata sui voli veri? È solo
+   informativo, o un vincolo?
+6. **Aereo di riferimento obbligatorio** per segnare pronto un tour?
+7. **Tour a distanza**: A→B e B→A sono la stessa rotta?
+8. **Vincoli del tour a distanza**: vanno bene i tipi di §2.6.1? Ne mancano?
+9. **Contestazione respinta**: la leg torna a bloccare, con la tolleranza contata da quel momento?
+10. **Ban**: lo decidono solo coordinator e assistant, o anche gli advisor? Mail al pilota bannato? I PIREP già inviati si validano?
+11. **Richiedi chiarimenti**: solo sui PIREP decisi, o anche su una leg o una regola dalla pagina del tour?
+12. **Meteo**: un job ogni 30 minuti sugli aeroporti delle leg dei tour aperti, più lo scarico all'invio per gli altri: va bene?
+13. **Soglie VMC** per il controllo `vmc`: quelle standard (5 km, nubi a 1500 ft) come parametri della regola generale?
+14. **Confini della FRA** per i livelli semicircolari: da dove li prendiamo (vIPI, un file del FOD)?
+15. **Decollo dalla testata**: 150 m di tolleranza come partenza, da tarare?
+16. **ATC contattati, prima versione**: aeroporti e FIR attraversati dalle tracce, e la geometria dei settori più avanti?
+17. **Ordine della coda memorizzato**: nel browser del validatore o come preferenza del suo utente (lo segue su più computer)?
+18. **Advisor**: gestiscono anche i profili degli aerei?
+19. **Registro disciplinare dopo la cancellazione del tour**: il PIREP conserva nome del tour e aeroporti come testo?
+20. **I voli di test**: me li mandi con l'esito atteso per ogni controllo, e se possibile con la decisione reale?
