@@ -7,7 +7,8 @@
 > Le fasi di implementazione si scrivono nella parte C di `06-piano-implementazione-m2.md` **dopo** la
 > revisione di Carmine.
 
-**Stato:** seconda bozza, 15 settembre 2026. Integra la revisione di Carmine del 15 settembre (le 25 risposte
+**Stato:** seconda bozza, 15 settembre 2026, **con tutte le domande di Carmine chiuse** tranne una piccola (§15.2 n.21, chi
+collega le immagini al tour); pronta per le note di decisione della fase T0. Integra la revisione di Carmine del 15 settembre (le 25 risposte
 alla prima bozza e le aggiunte: aereo di riferimento e tempo stimato, cancellazione delle leg, METAR e TAF,
 decollo dalla testata, tour a distanza senza leg, tutti i piani di volo, ATC proposti, contestazioni che non
 bloccano, ban, richiesta di chiarimenti, code per tour, parametri nelle regole, limiti che bloccano).
@@ -384,7 +385,8 @@ si accorge che non vanno, li cambia senza una release.
 ### 1.14 Banner e immagini dei tour nella media library (estensione del nucleo n.16)
 
 **Che cosa serve** (Carmine, 15 settembre): banner e immagini dei tour li prepara e **li carica il PRD** nella media library, e
-vengono **collegati a un tour**; **quando il tour finisce si possono eliminare** per risparmiare spazio.
+vengono **collegati a un tour**; **un mese dopo la chiusura del tour un job li elimina da solo** per risparmiare spazio. **Lo
+stesso meccanismo servirà agli eventi** (M4): quindi è del nucleo, non del modulo.
 
 **Che cosa c'è già**: la media library del nucleo (G20). Un file appartiene al dipartimento che lo carica (qui il PRD) ed è
 **letto da tutti i dipartimenti**, quindi il FOD lo sceglie senza permessi in più. Un file **usato** non si cancella: si
@@ -396,11 +398,15 @@ file non lo dice a nessuno, e la media library lascerebbe cancellare il banner d
 - **L'indice degli usi si allarga alle righe dei moduli**: una riga che mostra un file lo dichiara con `IProjectable`, come fa
   già per ricerca, calendario e award (`MediaReferences` nel `ProjectionSnapshot`), e l'interceptor scrive l'uso nella stessa
   transazione. Nessun controllo scritto a mano nella media library: continua a chiedere all'indice.
-- **Il tour dichiara i suoi file** (foto, banner, immagini del briefing) **finché non è chiuso**. Da chiuso smette di
-  dichiararli: nella media library quei file risultano **«usati solo da tour chiusi»**, con un filtro dedicato, e il PRD li
-  elimina quando vuole (la cancellazione passa dalle regole di sempre).
-- **Il tour senza immagine** (perché il file è stato eliminato) mostra un fondo neutro: nessun errore, nessun link rotto.
-- ⚖️ L'eliminazione è **manuale** (il PRD decide), non un job: «si possono eliminare», non «si eliminano».
+- **Ogni uso porta una scadenza**: una riga di modulo dichiara il file **con la data fino a cui le serve**. Il tour dichiara
+  banner e foto del riquadro con scadenza `close_at + 1 mese` ⚖️ (le immagini dentro il briefing seguono la stessa regola se sono
+  file caricati per quel tour). Un evento, in M4, dichiarerà i suoi allo stesso modo.
+- **Un job del nucleo**, giornaliero, **elimina i file i cui usi sono tutti scaduti**. Un file ancora usato da qualcos'altro — una
+  pagina pubblicata, un altro tour aperto, un evento — **non si tocca**: basta un uso non scaduto per tenerlo. Ogni eliminazione
+  lascia una riga nell'audit e nel log dei job.
+- **Se il tour viene prorogato** (nuova `close_at`), la scadenza dell'uso si sposta con lui, nella stessa transazione: il file non
+  sparisce sotto un tour ancora aperto.
+- **Il tour senza immagine** (dopo l'eliminazione) mostra un fondo neutro: nessun errore, nessun link rotto.
 - **Il collegamento al tour** lo fa chi modifica il tour (`Tours.Edit`) scegliendo dal selettore della media library ⚖️ (oppure lo
   fa il PRD, e allora serve un permesso sul tour che oggi il PRD non ha).
 
@@ -851,8 +857,8 @@ programma costa poco e dà tre cose:
    la regola del `DCT` regge davvero al 90 %.
 
 L'alternativa — il programma solo in locale, senza scrivere niente nell'hub — è possibile e più semplice all'inizio, ma perde
-queste tre cose. **Proposta**: il programma mostra tutto in locale **e** manda gli esiti; la prima versione può anche solo
-mostrare, e mandare dopo ⚖️.
+queste tre cose. **Deciso** (Carmine, 15 settembre): il programma mostra tutto in locale **e manda subito gli esiti** all'hub, già dalla
+prima versione.
 
 **La proposta degli ATC contattati al pilota resta sul server** (§3.3): il pilota non ha Navigraph. È la versione leggera —
 aeroporti e FIR attraversati dai punti delle tracce (i FIR da OpenAIP, estensione n.13), incrociati con l'archivio ATC — e al
@@ -1030,7 +1036,7 @@ punti per volo per circa 7000 PIREP all'anno, **centinaia di megabyte o più**, 
 comunque.
 
 **Decisa: B** (Carmine, 15 settembre). Tour e leg restano come righe archiviate; **quando il tour scade** (cioè quando passa
-il periodo di conservazione, 13 o 25 mesi dalla chiusura ⚖️) vanno via tracce, piani e tutto ciò che pesa. Il registro
+il periodo di conservazione, 13 o 25 mesi dalla chiusura, confermato il 15 settembre) vanno via tracce, piani e tutto ciò che pesa. Il registro
 disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del tour seguono §1.14.
 
 ---
@@ -1054,7 +1060,7 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 | 13 | Confini dei FIR da **OpenAIP** (`ref_firs`: codice, paese, poligono), sincronizzati da un job con la chiave API nei segreti, per la proposta degli ATC contattati; licenza e attribuzione dei dati OpenAIP da verificare | sì, breve (una fonte esterna nuova) | §3.3 |
 | 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore | sì | §6.6 |
 | 15 | **Preferenze dell'utente** generiche (chiave e valore per utente), per l'ordine della coda del validatore | no, piccola (come le preferenze delle notifiche) | §4.1 |
-| 16 | **Usi dei file dalle righe dei moduli** nell'indice della media library (`MediaReferences` in `IProjectable`), e il filtro «usati solo da righe chiuse» | no, estende un meccanismo (G20) | §1.14 |
+| 16 | **Usi dei file con scadenza** dalle righe dei moduli nell'indice della media library (`MediaReferences` in `IProjectable`), e il **job che elimina i file con tutti gli usi scaduti** (servirà anche agli eventi) | breve (estende G20, ma elimina file da solo) | §1.14 |
 
 ---
 
@@ -1099,11 +1105,11 @@ anche `ref_firs` (confini dei FIR da OpenAIP).
 
 | Fase | Contenuto |
 |---|---|
-| T0 | Note di decisione: permessi con scope e stakeholder; contatti con risposte; mappa (con le misure); fonti esterne (meteo, FIR di OpenAIP); token e contratto dell'agente del validatore. Piano 0.79 |
+| T0 | Note di decisione: permessi con scope e stakeholder; contatti con risposte; mappa (con le misure); fonti esterne (meteo, FIR di OpenAIP); token e contratto dell'agente del validatore; file con scadenza nella media library. Piano 0.79 |
 | T1 | Nucleo: aeroporti del mondo con IATA e coordinate, piste con le testate, tipi di aereo, confini dei FIR da OpenAIP |
 | T2 | Nucleo: tracker nel client IVAO (sessioni, piani, tracce) con fixture; `IWeatherSource` |
 | T3 | Nucleo: scope per risorsa e stakeholder nell'unico handler, test della spina dorsale |
-| T4 | Nucleo: award (catalogo, assegnazioni, schermata); più voci di calendario per riga |
+| T4 | Nucleo: award (catalogo, assegnazioni, schermata); più voci di calendario per riga; usi dei file con scadenza e job di eliminazione; preferenze dell'utente |
 | T5 | Modulo: scheletro, impostazioni, profili degli aerei, `positionGrants` |
 | T6 | Tour: modello, stato dalle date, nascondere/eliminare/chiusura, controlli «pronto», template |
 | T7 | Leg: editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli a distanza |
@@ -1161,10 +1167,9 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
     validatore con Navigraph (§6.6). Restano da decidere: chi adatta l'app Python, e la licenza di Navigraph sulle evidenze.
 17. ~~**Ordine della coda**~~ **deciso**: preferenza dell'utente.
 18. ~~**Advisor**~~ **deciso**: gestiscono i profili degli aerei; le stime dei tour pubblicati cambiano con le velocità.
-19. ~~**Registro disciplinare**~~ **deciso**: strada B (§10.1). Da confermare solo che «quando scade il tour» vuol dire alla fine
-    della conservazione (13 o 25 mesi dalla chiusura), non alla chiusura.
-21. **Immagini dei tour** (§1.14): eliminazione manuale del PRD (non un job)? E il collegamento al tour lo fa chi modifica il tour,
-    scegliendo dalla media library?
-22. **Agente del validatore**: prima versione che mostra solo in locale, o che manda subito gli esiti all'hub (§6.6)?
+19. ~~**Registro disciplinare**~~ **deciso**: strada B; tracce e dati pesanti vanno via alla fine della conservazione (§10.1).
+21. ~~**Immagini dei tour**~~ **deciso**: un job del nucleo le elimina un mese dopo la chiusura, se non servono ad altro; lo stesso
+    meccanismo per gli eventi (§1.14). Resta piccolo: il collegamento al tour lo fa chi modifica il tour (proposta).
+22. ~~**Agente del validatore**~~ **deciso**: manda subito gli esiti all'hub (§6.6).
 20. **I voli di test**: in arrivo fra il 16 e il 17 settembre, con un esito dettagliato. ⚠️ Oggi la validazione è soggettiva: gli
     esiti attesi vanno scritti secondo lo **standard** che il sistema vuole fissare, non secondo com'è stato deciso allora.
