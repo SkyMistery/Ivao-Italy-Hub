@@ -351,7 +351,6 @@ In `hub_division_settings` sotto la chiave `flightops` (dati che il FOD cambia d
 | `leaseMinutes` | 30 |
 | `durationFactor`, `durationFixedMinutes` | 0,05 e 20 (§1.5) |
 | `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
-| `northSouthLevelCountries` | i paesi dove i livelli semicircolari vanno nord–sud (§6.4) |
 | `thresholdToleranceMeters` | 150 ⚖️ (§6.4) |
 | `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) |
 
@@ -704,7 +703,6 @@ subito il metodo). Si registra comunque se il validatore conferma l'errore sugge
 | `disconnections` | disconnessioni in volo | tracce | `maxSingleDisconnectMinutes`, `maxTotalDisconnectMinutes` |
 | `parking` | fermo prima del push e dopo l'arrivo | tracce | `minParkingMinutesBefore`, `minParkingMinutesAfter` |
 | `speed250` | 250 kt sotto FL100 | tracce, esenzioni | tolleranza |
-| `semicircularLevels` | livello di crociera coerente con la rotta, **solo in FRA** | piano, tracce | tolleranza |
 | `simRate` | velocità riportata coerente con quella di posizione | tracce | tolleranza |
 | `alternate` | alternato presente (e `ZZZZ` ⚖️, sotto) | piano | — |
 | `equipment` | equipaggiamento richiesto | piano | lettere |
@@ -715,16 +713,13 @@ subito il metodo). Si registra comunque se il validatore conferma l'errore sugge
 
 Note sui controlli delicati:
 
-- **`semicircularLevels`**: la regola vale **solo nello spazio aereo a rotte libere (FRA)**. La direzione normale è
-  **est–ovest**; alcuni paesi (Italia compresa) usano **nord–sud**. I paesi con nord–sud stanno nelle impostazioni
-  (`northSouthLevelCountries`, §1.11): non c'è una fonte da cui ricavarli in modo affidabile.
-  **I confini della FRA** (cercati il 15 settembre): **non esiste un file aperto** con i volumi FRA d'Europa. EUROCONTROL
-  pubblica l'elenco dei punti FRA, i riferimenti AIP e le carte di implementazione, non una geometria scaricabile. Quello
-  che esiste aperto sono i **confini dei FIR/UIR** (`FirUir_EAD` nel repository `euctrl-pru/eurocontrol-atlas`, licenza
-  da verificare). Proposta: la FRA è una tabella `fo_fra_areas` che il FOD compila **per FIR** (codice del FIR, livello
-  inferiore e superiore, eventuale orario), con la **geometria del FIR** presa da quel file una volta; la tabella è piccola
-  (una riga per FIR interessato) e cambia di rado, con l'AIRAC. Un volo è «in FRA» nei tratti delle tracce dentro un FIR
-  della tabella e fra i due livelli. Senza la riga del FIR, il controllo risponde `Unavailable` su quel tratto.
+- **Livelli semicircolari: nessun controllo automatico in M2** (Carmine, 15 settembre). La regola vale solo nello spazio
+  aereo a rotte libere (FRA), e **nessuna fonte aperta espone i volumi FRA**: cercati il 15 settembre SkyVector (nessuna
+  API pubblica), OpenAIP (API gratuita con chiave, ma fra i tipi di spazio aereo non c'è la FRA), EUROCONTROL (punti,
+  riferimenti AIP e carte, non geometrie), IVAO France (descrizione a parole). Tenere a mano una tabella della FRA vorrebbe
+  dire un'altra cosa da aggiornare al cambio di ciclo, e Carmine non la vuole. **L'errore «livelli semicircolari» resta nel
+  catalogo e lo segna il validatore.** Se una fonte aperta esporrà la FRA, il controllo si aggiunge come ogni altro
+  `IFlightCheck`, senza toccare il resto.
 - **`alternate` e `ZZZZ`** (Carmine, 15 settembre): `ZZZZ` è sia un aeroporto reale in Cina sia il codice «aeroporto
   senza ICAO», molto usato nei VFR. Il controllo **non supera** solo se `ZZZZ` è l'**alternato** e nelle remarks del piano
   **manca `ALTN/`**; con `ALTN/` presente l'alternato è un campo volo senza ICAO, ed è valido. Un piano senza alternato
@@ -762,7 +757,7 @@ Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`);
 | `Tours.ManageValidators` | abilitare e togliere validatori |
 | `Tours.ViewPilots` | pagina del pilota, statistiche dei validatori |
 | `Tours.Ban` | bannare un pilota da un tour o da tutti |
-| `Tours.ManageSettings` | impostazioni della divisione, aree FRA |
+| `Tours.ManageSettings` | impostazioni della divisione |
 
 ### 7.2 Chi li ha (`division.json → positionGrants`)
 
@@ -916,8 +911,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 
 **Modulo** (`Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`, `fo_callsign_rules`, `fo_tour_constraints`,
 `fo_aircraft_profiles`, `fo_rules`, `fo_errors`, `fo_rule_errors`, `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`,
-`fo_pirep_events`, `fo_check_results`, `fo_enrolments`, `fo_bans`, `fo_leg_issues`, `fo_weather_reports`, `fo_fra_areas`
-(con la geometria dei FIR caricata una volta, §6.4).
+`fo_pirep_events`, `fo_check_results`, `fo_enrolments`, `fo_bans`, `fo_leg_issues`, `fo_weather_reports`.
 
 **vIPI** (nel suo repository): `v_share_atc_sessions` e l'utente di sola lettura.
 
@@ -940,7 +934,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 - **Smoke**: `/tours`, `/tours/{slug}` con la mappa, form del PIREP, coda unica e per tour, pagina di validazione, editor delle leg
   con un import.
 - **Giro completo**: tour da template, PIREP con tracker finto, validato, contestato, riaperto.
-- **Divisione XX**: nessuna stringa italiana né ICAO italiano nei seed; `northSouthLevelCountries` vuoto di default.
+- **Divisione XX**: nessuna stringa italiana né ICAO italiano nei seed.
 
 ---
 
@@ -966,7 +960,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 | T15 | Completamento e award; statistiche dei validatori; pagina del pilota; ban |
 | T16 | Meteo salvato (job, scarico all'invio, cancellazione) |
 | T17 | Controlli automatici: motore, job, controlli sul piano |
-| T18 | Controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, livelli in FRA |
+| T18 | Controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc` |
 | T19 | Conservazione, calendario, ricerca, rifiniture, giro completo |
 
 ---
@@ -987,8 +981,8 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 ### 15.2 Ancora da decidere
 
 1. ~~**`ZZZZ`**~~ **deciso il 15 settembre**: errore solo se `ZZZZ` è l'alternato e manca `ALTN/` nelle remarks (§6.4).
-   **FRA**: non esiste un file aperto; proposta la tabella per FIR compilata dal FOD con la geometria dei FIR di EUROCONTROL
-   (§6.4) — da confermare, e da verificare la licenza del file. **Tipi di aereo**: dagli endpoint `/v2/aircrafts` (§1.5).
+   **FRA**: nessuna fonte aperta, niente controllo automatico dei livelli semicircolari in M2 (§6.4). **Tipi di aereo**:
+   dagli endpoint `/v2/aircrafts` (§1.5).
 2. **Tour nascosto**: chi l'aveva iniziato lo vede ancora nella sua pagina, senza poter inviare? I PIREP in coda si validano?
 3. **Eliminare una leg senza PIREP**: le leg dopo **non** si rinumerano (buco nel numero)?
 4. **Leg ritirata dentro una rotazione**: il FOD deve sistemare la rotazione (aggiungere o ritirare la rotazione intera)?
@@ -1002,8 +996,7 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 11. **Richiedi chiarimenti**: solo sui PIREP decisi, o anche su una leg o una regola dalla pagina del tour?
 12. **Meteo**: un job ogni 30 minuti sugli aeroporti delle leg dei tour aperti, più lo scarico all'invio per gli altri: va bene?
 13. **Soglie VMC** per il controllo `vmc`: quelle standard (5 km, nubi a 1500 ft) come parametri della regola generale?
-14. **FRA per FIR**: va bene che il FOD compili una riga per FIR (livelli e orario) e la geometria venga dai confini dei FIR
-    di EUROCONTROL? Chi la mantiene quando cambia l'AIRAC?
+14. ~~**FRA**~~ chiusa: niente controllo automatico dei livelli semicircolari (§6.4).
 15. **Decollo dalla testata**: 150 m di tolleranza come partenza, da tarare?
 16. **ATC contattati, prima versione**: aeroporti e FIR attraversati dalle tracce, e la geometria dei settori più avanti?
 17. **Ordine della coda memorizzato**: nel browser del validatore o come preferenza del suo utente (lo segue su più computer)?
