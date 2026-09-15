@@ -270,7 +270,7 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
   ⚖️ I due numeri si **tarano sui voli veri** del corpus di test (§13): si confronta la stima con la durata delle
   sessioni del tracker e si sceglie la coppia che sbaglia meno.
 
-- Il tempo stimato si mostra nella pagina del tour e nell'editor; **non** è un vincolo del PIREP ⚖️.
+- Il tempo stimato si mostra nella pagina del tour e nell'editor; è **solo un'informazione per il pilota**, mai un vincolo del PIREP né un controllo (Carmine, 15 settembre).
 
 ### 1.6 Vincoli sul callsign
 
@@ -381,7 +381,7 @@ almeno all'aeroporto di partenza e di arrivo. Il meteo di un giorno passato non 
 - **Che cosa si salva**: `fo_weather_reports` (`icao`, `kind` METAR/TAF, `issued_at`, `raw`, `source`,
   `fetched_at`), una riga per bollettino, senza doppioni.
 - **Quali aeroporti** (per non scaricare il mondo):
-  1. un job ogni **30 minuti** ⚖️ salva METAR e TAF degli **aeroporti delle leg dei tour aperti o in chiusura**;
+  1. un job ogni **30 minuti** (confermato il 15 settembre) salva METAR e TAF degli **aeroporti delle leg dei tour aperti o in chiusura**;
   2. **all'invio di un PIREP**, il server scarica anche gli aeroporti **toccati dal volo** che non erano in elenco
      (deviazione, tour a distanza senza leg), chiedendo a NOAA la **storia dei METAR** delle ore del volo ⚠️
      (il parametro `hours` di NOAA va verificato: fin dove arriva indietro). Il TAF di un volo passato, per questi
@@ -590,15 +590,17 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
 
 - `vid`, `tour_id?` (null = **tutti i tour**), `starts_at`, `ends_at?` (null = **permanente**), `reason`, audit.
 - Un pilota bannato **non invia PIREP** sui tour del ban; vede i tour, i suoi PIREP, e gli esiti di quelli già inviati,
-  che si validano normalmente ⚖️.
+  che **si validano normalmente** (confermato il 15 settembre).
 - Lo decide chi ha `Tours.Ban`: **HQ, superadmin, coordinator e assistant coordinator FOD** (FOC e FOAC; Carmine,
-  15 settembre). Il pilota riceve una mail (`flightops.banned`) con motivo e durata ⚖️.
+  15 settembre). Il pilota **riceve una mail** (`flightops.banned`) **con il motivo** e la durata.
 
 ### 3.10 Richiedi chiarimenti
 
-- Su **qualunque PIREP deciso** (e ⚖️ su una leg o una regola del tour, dalla pagina del tour), il pilota chiede che gli si
-  spieghi una procedura, un meccanismo o una regola. **Non chiede di cambiare il verdetto**, non cambia lo stato e
-  **non conta** come contestazione.
+- Su **qualunque PIREP deciso**, e anche su **una leg** o **una regola** del tour dalla pagina del tour (Carmine,
+  15 settembre), il pilota chiede che gli si spieghi una procedura, un meccanismo o una regola. **Non chiede di cambiare il
+  verdetto**, non cambia lo stato e **non conta** come contestazione.
+- **Un messaggio può chiedere più spiegazioni insieme**: il filo porta un elenco di riferimenti (PIREP, leg, regole),
+  non uno solo. Chi risponde vede tutti gli oggetti citati.
 - Stesso meccanismo del filo (estensione n.2), con il tipo `Clarification`: arriva al FOD e al validatore del PIREP, se
   c'è.
 
@@ -922,8 +924,8 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 ## 12. Tabelle e migrazioni
 
 **Nucleo** (additive): `ref_ivao_airports` (+ `iata`, `latitude`, `longitude`), `ref_ivao_runways`, `ref_ivao_aircraft`,
-`hub_user_grants` (+ `resource_scope`), `hub_contact_messages` (+ `source_module`, `source_id`, `kind`, `participants_json`),
-`hub_contact_replies`, `hub_awards`, `hub_award_assignments`.
+`hub_user_grants` (+ `resource_scope`), `hub_contact_messages` (+ `kind`, `participants_json`), `hub_contact_references` (un messaggio cita uno o più oggetti di
+modulo: `source_module`, `source_id`), `hub_contact_replies`, `hub_awards`, `hub_award_assignments`.
 
 **Modulo** (`Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`, `fo_callsign_rules`, `fo_tour_constraints`,
 `fo_aircraft_profiles`, `fo_rules`, `fo_errors`, `fo_rule_errors`, `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`,
@@ -1004,16 +1006,15 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 2. ~~**Tour nascosto**~~ **deciso**: non lo vede più nessuno fuori dallo staff (§1.2.2).
 3. **Eliminare una leg senza PIREP**: le leg dopo **non** si rinumerano (buco nel numero)?
 4. **Leg ritirata dentro una rotazione**: il FOD deve sistemare la rotazione (aggiungere o ritirare la rotazione intera)?
-5. **Tempo stimato**: ~~la formula~~ **decisa** (5 % + 20 minuti, configurabili dal FOD). Resta: è solo informativo, o un
-   vincolo?
+5. ~~**Tempo stimato**~~ **deciso**: 5 % + 20 minuti configurabili dal FOD, solo un'informazione per il pilota.
 6. **Aereo di riferimento obbligatorio** per segnare pronto un tour?
 7. ~~**Tour a distanza**~~ **deciso**: A→B e B→A sono rotte diverse.
 8. **Vincoli del tour a distanza**: vanno bene i tipi di §2.6.1? Ne mancano?
 9. **Contestazione respinta**: la leg torna a bloccare, con la tolleranza contata da quel momento?
-10. **Ban**: ~~chi~~ **deciso** (HQ, superadmin, FOC, FOAC). Restano: mail al pilota bannato? I PIREP già inviati si validano?
-11. **Richiedi chiarimenti**: solo sui PIREP decisi, o anche su una leg o una regola dalla pagina del tour?
-12. **Meteo**: un job ogni 30 minuti sugli aeroporti delle leg dei tour aperti, più lo scarico all'invio per gli altri: va bene?
-13. **Soglie VMC** per il controllo `vmc`: quelle standard (5 km, nubi a 1500 ft) come parametri della regola generale?
+10. ~~**Ban**~~ **deciso**: HQ, superadmin, FOC, FOAC; mail al pilota con il motivo; i PIREP già inviati si validano.
+11. ~~**Richiedi chiarimenti**~~ **deciso**: su PIREP, leg e regole, anche più spiegazioni in un messaggio (§3.10).
+12. ~~**Meteo**~~ **deciso**: job ogni 30 minuti sugli aeroporti delle leg dei tour aperti, più lo scarico all'invio.
+13. ~~**Soglie VMC**~~ **decise**: quelle standard (5 km, nubi a 1500 ft) come parametri della regola generale.
 14. ~~**FRA**~~ **decisa**: nessun volume FRA; il controllo dei livelli semicircolari lavora sui voli in `DCT` (circa 90 % in
     FRA, il resto lo valuta il validatore) e prende il paese dai FIR di OpenAIP (§6.4). Da verificare licenza e attribuzione
     dei dati OpenAIP.
