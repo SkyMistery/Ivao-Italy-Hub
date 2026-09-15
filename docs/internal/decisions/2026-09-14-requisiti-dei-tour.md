@@ -5,6 +5,9 @@ Toursystem` (letto il 13 settembre: `CLAUDE.md`, `doc/PROPOSTA.md`, `doc/ADR.md`
 `doc/RULESET_PROPOSTA_IT.md`, `data/hq/`) e con il piano dell'hub.
 **Stato:** **requisiti decisi** da Carmine; sono l'ingresso di `05-design-m2.md`, che li trasforma in
 modello dati, schermate, permessi e fasi. Le decisioni di meccanismo (§8) hanno ciascuna la sua nota.
+**Aggiornamento del 15 settembre**: le revisioni del design hanno aggiunto e precisato molte cose (aereo di riferimento, METAR
+e TAF, tour `Open`, agente del validatore, ban, chiarimenti, immagini con scadenza, GDPR…). **Dove questo documento e il design
+non coincidono, vince `05-design-m2.md`** (§15 raccoglie le decisioni con la data).
 **Il sistema entra in uso nel 2027**, quando i tour oggi su `tours.th.ivao.aero` saranno chiusi: nessun
 import dello stato attuale.
 

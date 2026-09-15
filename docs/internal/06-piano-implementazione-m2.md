@@ -5,7 +5,8 @@
 > i moduli fuori dai dipartimenti (`decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md`
 > §4). La **parte B** sono le dashboard, decise nella nota `2026-09-13-le-dashboard-a-tutto-schermo`.
 > La **parte C** — il modulo dei tour (`flightops`), che dal 13 settembre 2026 è il primo modulo
-> (`decisions/2026-09-13-ordine-dei-moduli.md`) — si scrive dopo `05-design-m2.md`, e non c'è ancora.
+> (`decisions/2026-09-13-ordine-dei-moduli.md`) — si scrive nella fase **T0**, dalle fasi T1–T20 di `05-design-m2.md` §14
+> (design chiuso il 15 settembre 2026).
 
 ## A. I prerequisiti: i moduli fuori dai dipartimenti
 
@@ -263,7 +264,7 @@ Branch `m2/d3-personal-dashboards`, da `main` dopo il merge di D2 (#76). **Fatta
 
 ## C. Il modulo dei tour (`flightops`)
 
-Si scrive dopo `05-design-m2.md`, che è il design dei tour. Carmine ha portato il riscontro dello staff
+Si scrive nella fase T0 da `05-design-m2.md` (chiuso il 15 settembre 2026, PR #80), che è il design dei tour. Carmine ha portato il riscontro dello staff
 di IVAO il 13 settembre 2026 (nota `2026-09-13-ordine-dei-moduli`): **Tours, poi Training, poi Eventi**;
 coordinator e assistant del FOD hanno tutte le funzioni del modulo, gli advisor quello che decide il
 design; niente altri moduli per ora. Events passa a M4.

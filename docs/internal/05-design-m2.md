@@ -7,8 +7,9 @@
 > Le fasi di implementazione si scrivono nella parte C di `06-piano-implementazione-m2.md` **dopo** la
 > revisione di Carmine.
 
-**Stato:** seconda bozza, 15 settembre 2026, **con tutte le domande di Carmine chiuse** tranne una piccola (§15.2 n.21, chi
-collega le immagini al tour); pronta per le note di decisione della fase T0. Integra la revisione di Carmine del 15 settembre (le 25 risposte
+**Stato:** **chiuso** il 15 settembre 2026, dopo quattro giri di revisione con Carmine. Tutte le domande sono decise tranne una
+proposta piccola (§15.2 n.21, chi collega le immagini al tour). Il passo dopo è la fase **T0** (§14): sei note di decisione, piano
+0.79, parte C di `06-piano-implementazione-m2.md`. Integra la revisione di Carmine del 15 settembre (le 25 risposte
 alla prima bozza e le aggiunte: aereo di riferimento e tempo stimato, cancellazione delle leg, METAR e TAF,
 decollo dalla testata, tour a distanza senza leg, tutti i piani di volo, ATC proposti, contestazioni che non
 bloccano, ban, richiesta di chiarimenti, code per tour, parametri nelle regole, limiti che bloccano).
