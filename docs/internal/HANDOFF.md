@@ -3,19 +3,56 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 13 settembre 2026, notte — le parti A e B di M2 sono mergiate (D3 con la PR #77); Carmine ha portato il riscontro dello staff di IVAO: **il primo modulo è Tours** (piano 0.77).
+**Ultimo aggiornamento:** 15 settembre 2026 — **il design dei tour (`05-design-m2.md`) è chiuso** dopo quattro giri di revisione con Carmine (PR #80); **il prossimo passo è la fase T0**, in una chat nuova.
 
-> ## ⚠️ Prima di tutto, per la chat che riprende
+> ## ⚠️ Prima di tutto, per la chat che riprende: la fase T0
+>
+> **Che cosa è T0** (`05-design-m2.md` §14): **niente codice**. Tre prodotti, una PR:
+>
+> 1. **Sei note di decisione** in `docs/internal/decisions/` (mezza pagina ciascuna, `CLAUDE.md` §5 caso c), una per
+>    ogni meccanismo nuovo del nucleo che il modulo chiede (design §11):
+>    - **permessi con scope per risorsa e stakeholder della riga** (§7.3: `hub_user_grants.resource_scope`,
+>      `IHasResourceScope`, `IHasStakeholder`; nessuno valida i propri PIREP, superadmin compreso);
+>    - **contatti con fili di risposte** (§3.8, §3.10: contestazioni e chiarimenti, più riferimenti per messaggio,
+>      partecipanti in più come il validatore);
+>    - **mappa** (§8.6: MapLibre con PMTiles ospitate dall'hub; **misurare** peso del file fino al livello ~7 e la CSP
+>      della build di MapLibre prima di decidere; ripiego Leaflet con un fornitore dichiarato);
+>    - **fonti esterne**: meteo NOAA → IVAO → VATSIM come vIPI (§1.13) e confini dei FIR da OpenAIP (§3.3, n.13);
+>      **verificare** licenza e attribuzione di OpenAIP e fin dove NOAA dà la storia dei METAR;
+>    - **token personali e contratto dell'agente del validatore** (§6.6: l'app sul PC con Navigraph manda subito gli esiti;
+>      contratto versionato; **verificare** la licenza di Navigraph sulle evidenze testuali; decidere chi adatta l'app Python);
+>    - **file della media library con scadenza** (§1.14: gli usi dichiarati con `IProjectable`, un job del nucleo elimina i
+>      file con tutti gli usi scaduti; servirà agli eventi).
+> 2. **Il piano 0.79**: changelog con le decisioni del design (non stanno ancora nel piano, che è a 0.78) e le sezioni
+>    toccate (§9.2 riga `flightops`, §9.7, §13 M2, §16 dove i meccanismi si estendono).
+> 3. **La parte C di `06-piano-implementazione-m2.md`**: le fasi T1–T20 di design §14, scritte in dettaglio come le fasi
+>    delle parti A e B (dipendenze, perimetro, test, «fatta quando»).
+>
+> **Da leggere prima**: `05-design-m2.md` per intero (è la fonte; §15 raccoglie cosa è deciso e quando), poi
+> `decisions/2026-09-14-requisiti-dei-tour.md` (i requisiti), `decisions/2026-09-13-ordine-dei-moduli.md` (piano 0.77) e
+> `decisions/2026-09-14-dati-condivisi-con-vipi.md` (piano 0.78). Il design **non si ridiscute**: le scelte sono di Carmine,
+> datate. Una proposta ancora aperta: chi collega banner e immagine al tour (design §15.2 n.21; proposta: chi modifica il tour).
+>
+> **Da sapere**:
+> - **Voli di test**: Carmine li manda il 16–17 settembre, con l'esito atteso per ogni controllo. Gli esiti vanno scritti secondo
+>   lo **standard** che il sistema vuole fissare, non come furono decisi (la validazione di oggi è soggettiva). Diventano il corpus
+>   dei controlli e la taratura di tempo stimato e tolleranze (design §13).
+> - **Endpoint IVAO**: `api.ivao.aero/docs` risponde 403 a chi non è autenticato; gli endpoint degli aerei (`/v2/aircrafts/all`,
+>   `/{icaoCode}`, `/{aircraftId}/variants`, `/manufacturers`, `/equipments`, `/transponderTypes`) li ha mostrati Carmine da uno
+>   screenshot della documentazione. Il tracker (`/v2/tracker/sessions`, `/{id}/flightPlans`, `/{id}/tracks`) lo usa il validatore
+>   Python. La forma delle risposte va misurata con il token vero nelle fasi che li usano.
+> - **Toursystem** (`D:\Programmazione\IVAO_Test\Ivao Italy Toursystem`) e il validatore Python
+>   (`D:\Programmazione\IVAO_Test\AutomaticValidatorTour`) sono stati letti il 13–15 settembre; il design dice che cosa si prende.
+>
+> **Il resto dello stato**, per contesto:
 >
 > 1. **L'ordine dei moduli è cambiato** (`decisions/2026-09-13-ordine-dei-moduli.md`, piano 0.77):
 >    **M2 Tour (`flightops`) → M3 Training → M4 Eventi**, nessun altro modulo per ora. Coordinator e
 >    assistant del dipartimento di base hanno tutte le funzioni del modulo (grant a una posizione da
 >    `division.json → positionGrants`); gli advisor li decide il design di ogni modulo. Chi collabora a
 >    una riga non la cancella (da precisare nel design degli eventi).
-> 2. **Il passo dopo è il design dei tour**: `05-design-m2.md`, poi la parte C di
->    `06-piano-implementazione-m2.md`. La base è il progetto `Ivao Italy Toursystem` (piano §9.2, riga 2).
->    **I requisiti sono raccolti** in `decisions/2026-09-14-requisiti-dei-tour.md` (le conclusioni di Carmine
->    e dello staff FOD e le 43 risposte del 14 settembre): il design li trasforma, non li ridiscute.
+> 2. **Il design dei tour** (`05-design-m2.md`) nasce dai requisiti di
+>    `decisions/2026-09-14-requisiti-dei-tour.md`; la base è il progetto `Ivao Italy Toursystem` (piano §9.2, riga 2).
 > 2-bis. **vIPI**: i due siti condividono i dati senza copiarli (`decisions/2026-09-14-dati-condivisi-con-vipi.md`,
 >    piano 0.78); i tour leggono l'archivio delle sessioni ATC di vIPI da una vista. Da verificare sul server
 >    l'utente MariaDB dedicato.
