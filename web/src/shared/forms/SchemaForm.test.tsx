@@ -150,6 +150,34 @@ describe('the form it draws', () => {
     expect(screen.getByLabelText('Weight')).toHaveAttribute('type', 'number');
   });
 
+  test('an optional number left empty is submitted as no number, and a typed one as a number', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((values: { limit?: number | undefined }) => Promise.resolve(values));
+    renderWithProviders(
+      <SchemaForm
+        schema={z.object({ limit: z.number().int().optional() })}
+        defaults={{}}
+        locales={LOCALES}
+        labels="test"
+        submitLabel="Save"
+        onSubmit={onSubmit}
+      />,
+      { i18n: createTestI18n({ test: { fields: { limit: 'Limit' } } }) },
+    );
+
+    // Until T6a an empty box was NaN, which the schema refuses: the form could not be saved at all.
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenLastCalledWith({ limit: undefined });
+
+    await user.type(screen.getByLabelText('Limit'), '12');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenLastCalledWith({ limit: 12 });
+
+    await user.clear(screen.getByLabelText('Limit'));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenLastCalledWith({ limit: undefined });
+  });
+
   test('a boolean is a switch, already reflecting the default', () => {
     renderForm();
 

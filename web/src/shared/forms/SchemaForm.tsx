@@ -680,7 +680,17 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
       return (
         <Row id={name} label={label} hint={hint} error={error}>
           {node.choices === null ? (
-            <Input id={name} type="number" {...register(name, { valueAsNumber: true })} />
+            <Input
+              id={name}
+              type="number"
+              // An empty box is "no number", not NaN: `valueAsNumber` turned it into NaN, which no schema accepts, so
+              // an optional number — a limit switched off, a grant to a position without a VID — could never be left
+              // empty (found by the round of the tours, T6a). A required one is still refused, as missing.
+              {...register(name, {
+                setValueAs: (value: unknown) =>
+                  value === '' || value === null || value === undefined ? undefined : Number(value),
+              })}
+            />
           ) : (
             <Controller
               control={control}

@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Modules.FlightOps.Aircraft;
+using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -16,6 +17,19 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
     public DbSet<AircraftProfile> AircraftProfiles => Set<AircraftProfile>();
 
     public DbSet<AircraftGroup> AircraftGroups => Set<AircraftGroup>();
+
+    public DbSet<Tour> Tours => Set<Tour>();
+
+    /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
+    protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        ArgumentNullException.ThrowIfNull(configurationBuilder);
+
+        configurationBuilder.Properties<TourKind>().HaveConversion<string>().HaveMaxLength(32);
+        configurationBuilder.Properties<TourProgression>().HaveConversion<string>().HaveMaxLength(32);
+        configurationBuilder.Properties<HubRotationOrder>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<OpenGoal>().HaveConversion<string>().HaveMaxLength(32);
+    }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
     {
@@ -38,6 +52,23 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             group.Ignore(row => row.IcaoTypes);
             group.Property(row => row.IcaoTypesJson).HasColumnName("icao_types_json").HasColumnType("json").IsRequired();
             group.HasRowVersion(row => row.RowVersion);
+        });
+
+        modelBuilder.Entity<Tour>(tour =>
+        {
+            tour.ToTable("fo_tours");
+            tour.HasKey(row => row.Id);
+            tour.Property(row => row.Slug).HasMaxLength(TourValidation.MaxSlugLength);
+            tour.Property(row => row.OpenGoalJson).HasColumnName("open_goal_json").HasColumnType("json");
+            tour.Property(row => row.BriefingJson).HasColumnName("briefing_json").HasColumnType("json").IsRequired();
+            tour.Ignore(row => row.AllowedAircraft);
+            tour.Property(row => row.AllowedAircraftJson).HasColumnName("allowed_aircraft_json").HasColumnType("json").IsRequired();
+            tour.Property(row => row.ReferenceAircraftIcao).HasMaxLength(4);
+            tour.HasRowVersion(row => row.RowVersion);
+
+            // Unique among tours; a template has none, and MariaDB lets several rows hold no address.
+            tour.HasIndex(row => row.Slug).IsUnique();
+            tour.HasIndex(row => new { row.IsTemplate, row.ReleaseAt });
         });
     }
 }

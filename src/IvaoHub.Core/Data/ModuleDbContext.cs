@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data.Configurations;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
 
@@ -56,6 +57,13 @@ public abstract class ModuleDbContext(DbContextOptions options, ICurrentUser? cu
         modelBuilder.HasCharSet(HubDbContext.CharSet).UseCollation(HubDbContext.Collation);
         ConfigureModel(modelBuilder);
         MapProjectionTables(modelBuilder);
+
+        // The same SQL functions the hub's context knows. Until T6 a module context lacked them, and the
+        // list of any module resource searching a translated column answered 500: the aircraft groups of
+        // T5 had one and no test searched it; the tours found it.
+        LocalizedQuery.Register(modelBuilder);
+        JsonQuery.Register(modelBuilder);
+
         VisibilityQueryFilter.ApplyToModel(modelBuilder, this);
     }
 

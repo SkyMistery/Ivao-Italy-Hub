@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { DEPARTMENTS } from '../../shared/api/department';
-import { localized, type Suggestion } from '../../shared/forms';
+import { localized, type ChoiceOption, type Suggestion } from '../../shared/forms';
 
 /**
  * The forms of the tours' skeleton (M2, T5), as zod schemas. Types and what is required; the rules — a
@@ -86,3 +86,79 @@ export function settingsFromFormValues(values: SettingsFormValues): FlightOpsSet
       .filter((code) => code !== ''),
   };
 }
+
+// ---- tours ---------------------------------------------------------------------------------------
+
+/** The kinds of a tour (design M2 §2), as `TourKind` spells them. */
+export const TOUR_KINDS = [
+  'Sequential',
+  'Free',
+  'Hub',
+  'SequentialChosenStart',
+  'Distance',
+  'Open',
+  'Container',
+] as const;
+
+/**
+ * The form of a tour, mirroring `TourWriteDto` (design M2 §1.2, §8.3). A function, because what it offers is known
+ * only at runtime — the types as they are typed, the awards of the division — and because two things are decided
+ * before it opens: a template has no address, no dates and no award (§1.10), and the kind of a tour the public
+ * already sees no longer changes (§1.2.1). Those fields are carried and not drawn. Every rule is the server's.
+ */
+export function tourSchema({
+  types = [],
+  awards = [],
+  isTemplate = false,
+  kindLocked = false,
+}: {
+  types?: readonly Suggestion[];
+  awards?: readonly ChoiceOption[];
+  isTemplate?: boolean;
+  kindLocked?: boolean;
+} = {}) {
+  return z.object({
+    ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
+    isTemplate: z.boolean().meta({ hidden: true }),
+    kind: z.enum(TOUR_KINDS).meta({ hidden: kindLocked }),
+    title: localized(),
+    slug: z.string().meta({ slugFrom: 'title', hidden: isTemplate }),
+    summary: localized().meta({ localized: true, multiline: true }),
+    releaseAt: z.string().optional().meta({ datetime: true, hidden: isTemplate }),
+    closeAt: z.string().optional().meta({ datetime: true, hidden: isTemplate }),
+    showPreview: z.boolean().meta({ hidden: isTemplate }),
+    coverMediaId: z.number().int().optional().meta({ media: true }),
+    bannerMediaId: z.number().int().optional().meta({ media: true }),
+    progression: z.enum(['FlyAhead', 'WaitForValidation']),
+    // Read only on a hub tour; the server leaves it empty on the others.
+    hubRotationOrder: z.enum(['Fixed', 'Free']).optional(),
+    reportWindowDays: z.number().int().optional(),
+    dailyLegLimit: z.number().int().optional(),
+    requiresProcedures: z.boolean(),
+    minPilotRating: z.number().int().optional(),
+    referenceAircraftIcao: z.string().meta({ suggestions: types, suggestionsOnly: true }),
+    awardId: z.string().optional().meta({ choices: awards, hidden: isTemplate }),
+    rowVersion: z.string().meta({ hidden: true }),
+  });
+}
+
+export type TourFormValues = z.output<ReturnType<typeof tourSchema>>;
+
+/** The address a tour's own screen is opened with; `?template=true` makes a new one a template. */
+export const tourEditorSearchSchema = z.object({ template: z.boolean().optional() });
+
+/** "New from a template": which one, and the name and address of the tour it makes. */
+export function tourFromTemplateSchema(templates: readonly ChoiceOption[] = []) {
+  return z.object({
+    templateId: z.string().meta({ choices: templates }),
+    title: localized(),
+    slug: z.string().meta({ slugFrom: 'title' }),
+  });
+}
+
+export type TourFromTemplateFormValues = z.output<ReturnType<typeof tourFromTemplateSchema>>;
+
+/** "Save as template": the name of the template the tour's settings become. */
+export const tourSaveAsTemplateSchema = z.object({ title: localized() });
+
+export type TourSaveAsTemplateFormValues = z.output<typeof tourSaveAsTemplateSchema>;

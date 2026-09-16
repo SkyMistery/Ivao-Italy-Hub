@@ -990,6 +990,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsToursList"];
+        put?: never;
+        post: operations["FlightOpsToursCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsToursGet"];
+        put: operations["FlightOpsToursUpdate"];
+        post?: never;
+        delete: operations["FlightOpsToursDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsTourStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{id}/ready-problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsTourReadyProblems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/from-template/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsTourFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{id}/save-as-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsTourSaveAsTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1968,6 +2064,8 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** @enum {unknown} */
+        HubRotationOrder: "Fixed" | "Free" | null;
         /** Format: binary */
         IFormFile: string;
         JsonElement: unknown;
@@ -2606,6 +2704,29 @@ export interface components {
              */
             total: number;
         };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfTourListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["TourListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
         /** @description The menu entry an author proposes with a page: under which entry, and in which words. */
         ProposedMenuEntry: {
             /**
@@ -2730,6 +2851,149 @@ export interface components {
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /**
+         * @description A tour as its editor loads it. `State` is what the dates say now (design M2 §1.2.1); `IsPublic`, whether
+         *     anybody outside the staff sees it now — from then on its kind no longer changes.
+         */
+        TourDetailDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            isTemplate: boolean;
+            slug: null | string;
+            kind: components["schemas"]["TourKind"];
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: components["schemas"]["LocalizedOfstring"];
+            briefing: components["schemas"]["JsonNode"];
+            /** Format: int64 */
+            coverMediaId: null | number;
+            /** Format: int64 */
+            bannerMediaId: null | number;
+            status: components["schemas"]["PublishStatus"];
+            /** Format: date-time */
+            publishedAt: null | string;
+            state: components["schemas"]["TourStateKind"];
+            isPublic: boolean;
+            isHidden: boolean;
+            showPreview: boolean;
+            /** Format: date-time */
+            releaseAt: null | string;
+            /** Format: date-time */
+            closeAt: null | string;
+            /** Format: int32 */
+            reportWindowDays: number;
+            progression: components["schemas"]["TourProgression"];
+            hubRotationOrder: null | components["schemas"]["HubRotationOrder"];
+            requiresProcedures: boolean;
+            /** Format: int32 */
+            dailyLegLimit: null | number;
+            /** Format: int32 */
+            minPilotRating: null | number;
+            referenceAircraftIcao: null | string;
+            /** Format: int64 */
+            awardId: null | number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A new tour out of a template: the settings come from the template, the name and address from here. */
+        TourFromTemplateRequest: {
+            title: components["schemas"]["LocalizedOfstring"];
+            slug: string;
+        };
+        /**
+         * @description The seven shapes a tour can have (design M2 §2). Stored by name.
+         * @enum {unknown}
+         */
+        TourKind: "Sequential" | "Free" | "Hub" | "SequentialChosenStart" | "Distance" | "Open" | "Container";
+        /** @description A tour as the list shows it: the state is computed, never stored (design M2 §1.2.1, §8.3). */
+        TourListDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            isTemplate: boolean;
+            slug: null | string;
+            kind: components["schemas"]["TourKind"];
+            title: components["schemas"]["LocalizedOfstring"];
+            state: components["schemas"]["TourStateKind"];
+            /** Format: date-time */
+            releaseAt: null | string;
+            /** Format: date-time */
+            closeAt: null | string;
+            isHidden: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description Whether a pilot may fly the next leg before the previous one is validated (design M2 §1.2).
+         * @enum {unknown}
+         */
+        TourProgression: "FlyAhead" | "WaitForValidation";
+        /** @description What stands between a draft and "ready", without marking it: the same checks, nothing written. */
+        TourReadyProblemsDto: {
+            errors: {
+                [key: string]: string[];
+            };
+            localized: {
+                [key: string]: string[];
+            };
+        };
+        /** @description A new template out of a tour: its settings, under this name. */
+        TourSaveAsTemplateRequest: {
+            title: components["schemas"]["LocalizedOfstring"];
+        };
+        /**
+         * @description The state of a tour as it is seen (design M2 §1.2.1). Never stored: computed from the dates.
+         * @enum {unknown}
+         */
+        TourStateKind: "Template" | "Draft" | "Upcoming" | "Open" | "Closing" | "Closed";
+        /**
+         * @description The four things that happen to a tour without its form (design M2 §8.3).
+         * @enum {unknown}
+         */
+        TourStatusAction: "Ready" | "Draft" | "Hide" | "Show";
+        TourStatusRequest: {
+            action: components["schemas"]["TourStatusAction"];
+        };
+        /**
+         * @description What a client may set on a tour. The state is not here — marking ready, back to draft, hiding and showing are
+         *     actions (TourStatusRequest) — and neither are the fields of the shape of a tour, which T7 writes.
+         *     A null `Briefing` keeps the briefing as it is; a null `ReportWindowDays` on a new tour takes the division's
+         *     default (design M2 §1.11).
+         */
+        TourWriteDto: {
+            ownerDepartment: components["schemas"]["Department"];
+            isTemplate: boolean;
+            slug: null | string;
+            kind: components["schemas"]["TourKind"];
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: components["schemas"]["LocalizedOfstring"];
+            briefing: null | components["schemas"]["JsonNode"];
+            /** Format: int64 */
+            coverMediaId: null | number;
+            /** Format: int64 */
+            bannerMediaId: null | number;
+            showPreview: boolean;
+            /** Format: date-time */
+            releaseAt: null | string;
+            /** Format: date-time */
+            closeAt: null | string;
+            /** Format: int32 */
+            reportWindowDays: null | number;
+            progression: components["schemas"]["TourProgression"];
+            hubRotationOrder: null | components["schemas"]["HubRotationOrder"];
+            requiresProcedures: boolean;
+            /** Format: int32 */
+            dailyLegLimit: null | number;
+            /** Format: int32 */
+            minPilotRating: null | number;
+            referenceAircraftIcao: null | string;
+            /** Format: int64 */
+            awardId: null | number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
             key: string;
@@ -5782,6 +6046,318 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsToursList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfTourListDto"];
+                };
+            };
+        };
+    };
+    FlightOpsToursCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsToursGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsToursUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsToursDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TourStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourReadyProblems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourReadyProblemsDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourFromTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TourFromTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourSaveAsTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TourSaveAsTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
             };
             /** @description Not Found */
             404: {

@@ -338,7 +338,8 @@ public static class MapCrudExtensions
             return NotFound(scope);
         }
 
-        if (await DeniesWrite(scope, entity, options))
+        if (await DeniesWrite(scope, entity, options)
+            || (options.DeletePolicy is { } deletePolicy && await DeniesExtra(scope, entity, deletePolicy)))
         {
             return Forbidden(scope);
         }
@@ -738,16 +739,19 @@ public static class MapCrudExtensions
             return true;
         }
 
-        if (options.ExtraWritePolicy?.Invoke(entity) is not { } extra)
-        {
-            return false;
-        }
+        return options.ExtraWritePolicy?.Invoke(entity) is { } extra && await DeniesExtra(scope, entity, extra);
+    }
 
-        // The extra policy is asked without the resource when the entity has no department, and
-        // with it otherwise: it is the same handler answering either way.
+    /// <summary>
+    /// A policy on top of the write policy — the extra one of a row, the one of a delete. Asked without the
+    /// resource when the entity has no department, and with it otherwise: the same handler answers either way.
+    /// </summary>
+    private static async Task<bool> DeniesExtra<TEntity>(CrudScope<TEntity> scope, TEntity entity, string policy)
+        where TEntity : class
+    {
         var result = entity is IOwnedByDepartment
-            ? await scope.Authorization.AuthorizeAsync(scope.Principal, entity, extra)
-            : await scope.Authorization.AuthorizeAsync(scope.Principal, extra);
+            ? await scope.Authorization.AuthorizeAsync(scope.Principal, entity, policy)
+            : await scope.Authorization.AuthorizeAsync(scope.Principal, policy);
 
         return !result.Succeeded;
     }
