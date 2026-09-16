@@ -74,11 +74,11 @@ test('the content of every department is one group, and a department opens the s
     {
       ...bootstrap,
       permissions: [
-        { name: 'Content.View', department: 'ED' },
-        { name: 'Content.View', department: 'WD' },
-        { name: 'Content.ManageTemplates', department: 'WD' },
-        { name: 'Links.View', department: 'ED' },
-        { name: 'Media.View', department: 'ED' },
+        { name: 'Content.View', department: 'ED', resourceScope: null },
+        { name: 'Content.View', department: 'WD', resourceScope: null },
+        { name: 'Content.ManageTemplates', department: 'WD', resourceScope: null },
+        { name: 'Links.View', department: 'ED', resourceScope: null },
+        { name: 'Media.View', department: 'ED', resourceScope: null },
       ],
     },
     (key) => key,
@@ -114,7 +114,7 @@ test('somebody who works in one department is not offered the same entries twice
     {
       ...bootstrap,
       user: { ...bootstrap.user, departments: ['ED'] },
-      permissions: [{ name: 'Content.View', department: 'ED' }],
+      permissions: [{ name: 'Content.View', department: 'ED', resourceScope: null }],
     },
     (key) => key,
   );
@@ -129,8 +129,8 @@ test('the pages waiting for approval are offered to whoever may approve them, an
   // G19: once, at the top of the content of every department, and only while the division
   // publishes some kind by approval.
   const permissions = [
-    { name: 'Content.View', department: 'ED' },
-    { name: 'Content.View', department: 'WD' },
+    { name: 'Content.View', department: 'ED', resourceScope: null },
+    { name: 'Content.View', department: 'WD', resourceScope: null },
   ];
   const toApprove = (value: Bootstrap) =>
     staffDestinations(value, (key) => key)
@@ -142,7 +142,7 @@ test('the pages waiting for approval are offered to whoever may approve them, an
 
   const approver = {
     ...bootstrap,
-    permissions: [...permissions, { name: 'Content.Approve', department: null }],
+    permissions: [...permissions, { name: 'Content.Approve', department: null, resourceScope: null }],
   };
   expect(toApprove(approver)).toEqual(['/staff/content?kind=Page&status=Ready']);
 
@@ -155,7 +155,7 @@ test('each module is a section of its own, between the content and the departmen
   const groups = staffDestinations(
     {
       ...bootstrap,
-      permissions: [{ name: 'Content.View', department: 'ED' }],
+      permissions: [{ name: 'Content.View', department: 'ED', resourceScope: null }],
       navigation: {
         ...bootstrap.navigation,
         staff: [

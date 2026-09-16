@@ -67,6 +67,16 @@ public sealed class UserGrant : IAuditable, IAffectsUserSession
     /// <summary>Null means every department.</summary>
     public Department? Department { get; set; }
 
+    /// <summary>
+    /// The single row this grant is about, when it is about one: <c>flightops:tour:42</c>. Null is
+    /// the ordinary grant, which reaches every row of its department.
+    /// <para>The core never interprets it — it compares it with what a row declares through
+    /// <c>IHasResourceScope</c> — and the generic permissions screen never writes it: the module
+    /// that owns the rows does, from a screen that knows which rows exist (decision note of
+    /// 15 September 2026).</para>
+    /// </summary>
+    public string? ResourceScope { get; set; }
+
     public GrantEffect Effect { get; set; }
 
     public DateTime? ExpiresAt { get; set; }

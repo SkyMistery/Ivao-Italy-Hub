@@ -1405,6 +1405,7 @@
       "kind": "Tipo",
       "value": "Permesso",
       "department": "Dipartimento",
+      "resourceScope": "Solo su",
       "effect": "Effetto",
       "expiresAt": "Scadenza",
       "suspendedAt": "Sospeso",

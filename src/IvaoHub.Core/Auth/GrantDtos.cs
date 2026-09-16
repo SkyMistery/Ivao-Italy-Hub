@@ -15,6 +15,10 @@ public sealed record GrantListDto(
     IReadOnlyList<StaffLevel> PositionLevels,
     string Value,
     Department? Department,
+    // The single row the grant is about, when it is about one. Shown, never set here: the module
+    // that owns those rows writes it from a screen that knows which of them exist, and a free text
+    // box on this form would be a typo that enables the wrong tour.
+    string? ResourceScope,
     GrantEffect Effect,
     DateTime? ExpiresAt,
     DateTime? SuspendedAt,
@@ -30,6 +34,7 @@ public sealed record GrantDetailDto(
     GrantKind Kind,
     string Value,
     Department? Department,
+    string? ResourceScope,
     GrantEffect Effect,
     DateTime? ExpiresAt,
     DateTime? SuspendedAt,

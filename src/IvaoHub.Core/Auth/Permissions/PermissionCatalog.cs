@@ -51,6 +51,13 @@ public sealed class PermissionCatalog
 
     public bool IsKnown(string? name) => name is not null && _byName.ContainsKey(name);
 
+    /// <summary>
+    /// Whether the person a row is about may not use this permission on it. Unknown names answer
+    /// false: a permission the catalogue does not know is refused earlier, by the policy provider.
+    /// </summary>
+    public bool IsDeniedToStakeholder(string name) =>
+        _byName.TryGetValue(name, out var found) && found.DeniedToStakeholder;
+
     public bool IsGlobal(string name) => _byName.TryGetValue(name, out var found) && found.IsGlobal;
 
     /// <summary>

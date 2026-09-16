@@ -38,7 +38,7 @@ public sealed class TestCurrentUser : ICurrentUser
     // Not "the same rules as" the real implementation: literally the same code. A test double that
     // reimplements the rule it is meant to exercise can keep passing while production drifts away
     // from it, which is the one failure a test suite must not have.
-    public bool Has(string permission, Department department) =>
+    public bool Has(string permission, Department department, string? resourceScope = null) =>
         PermissionSet.Has(Permissions, IsSuperadmin, permission, department);
 
     public bool HasAny(string permission) =>

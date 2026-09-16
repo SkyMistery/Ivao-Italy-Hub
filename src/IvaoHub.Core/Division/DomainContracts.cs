@@ -146,4 +146,30 @@ public interface ISharedForReading
 /// widens creating. The engine is never told what a contact message is; it is told that this
 /// resource accepts submissions.</para>
 /// </summary>
+/// <summary>
+/// A row a permission can be granted on <b>by itself</b>. The scope it declares is compared, string
+/// against string, with the scope of a grant: the core never parses it, and a module chooses its
+/// shape (<c>flightops:tour:42</c>).
+/// <para>A row of a module can answer with the scope of something above it — a report answers with
+/// the scope of its tour — so that enabling somebody on a tour enables them on its reports, without
+/// a grant per report (decision note of 15 September 2026).</para>
+/// </summary>
+public interface IHasResourceScope
+{
+    string ResourceScope { get; }
+}
+
+/// <summary>
+/// A row that is <b>about</b> a member: the pilot of a report, and later whoever a training session
+/// belongs to. The catalogue says which permissions such a person may not use on that row
+/// (<c>PermissionDescriptor.DeniedToStakeholder</c>), and the single handler refuses them there —
+/// to everybody, super administrator included.
+/// <para>Reading is never refused this way: a validator sees their own reports, they just cannot
+/// decide them (design M2 sections 4.1 and 7.3).</para>
+/// </summary>
+public interface IHasStakeholder
+{
+    int? StakeholderVid { get; }
+}
+
 public interface ISubmittedByMembers;

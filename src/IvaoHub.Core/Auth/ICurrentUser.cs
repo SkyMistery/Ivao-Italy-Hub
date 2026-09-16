@@ -50,8 +50,11 @@ public interface ICurrentUser
     /// True when the user holds the permission on that department. A permission held everywhere
     /// (stored with no department) counts, and a super administrator always holds it: that is the
     /// whole point of the role.
+    /// <para><paramref name="resourceScope"/> is the row being asked about, when the row declares
+    /// one (<c>IHasResourceScope</c>). A permission held without a scope reaches every row, as it
+    /// always did; a permission granted on one row reaches that row and no other.</para>
     /// </summary>
-    bool Has(string permission, Department department);
+    bool Has(string permission, Department department, string? resourceScope = null);
 
     /// <summary>
     /// True when the user holds the permission somewhere: on one department, on all of them, or
@@ -115,8 +118,8 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
 
     // The rule itself lives in PermissionSet, so that a test double answers with the very same
     // code rather than with a copy of it.
-    public bool Has(string permission, Department department) =>
-        PermissionSet.Has(Permissions, IsSuperadmin, permission, department);
+    public bool Has(string permission, Department department, string? resourceScope = null) =>
+        PermissionSet.Has(Permissions, IsSuperadmin, permission, department, resourceScope);
 
     public bool HasAny(string permission) =>
         PermissionSet.HasAny(Permissions, IsSuperadmin, permission);
@@ -130,7 +133,11 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
 
         var permissions = principal.FindAll(HubClaims.Permission)
             .Select(claim => HubClaims.ParsePermission(claim.Value))
-            .Select(parsed => new EffectivePermission(parsed.Name, parsed.Department, "cookie"))
+            .Select(parsed => new EffectivePermission(
+                parsed.Name,
+                parsed.Department,
+                "cookie",
+                parsed.ResourceScope))
             .ToArray();
 
         var departments = principal.FindAll(HubClaims.Department)

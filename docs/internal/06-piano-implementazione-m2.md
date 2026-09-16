@@ -292,7 +292,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T0 | Note, piano 0.79, questa parte — **fatta il 16 set 2026** | design chiuso | sei note di decisione, il piano 0.79, le fasi qui sotto |
 | T1 | Nucleo: i dati di riferimento del mondo | — | aeroporti del mondo con IATA e coordinate, piste con le testate, tipi di aereo, confini dei FIR |
 | T2 | Nucleo: il tracker e il meteo — **fatta il 16 set 2026** | — | sessioni, piani e tracce nel client IVAO con fixture di voli veri; `IWeatherSource` (NOAA → IVAO → VATSIM) |
-| T3 | Nucleo: scope per risorsa e interessato | — | l'unico handler estende i grant a una riga e nega all'interessato |
+| T3 | Nucleo: scope per risorsa e interessato — **fatta il 16 set 2026** | — | l'unico handler estende i grant a una riga e nega all'interessato |
 | T4 | Nucleo: proiezioni dei moduli, award, file con scadenza, preferenze | T3 | le righe di modulo proiettano davvero; più voci di calendario; award; `cms_media_uses` e il job; preferenze dell'utente |
 | T5 | Modulo: lo scheletro | T4 | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
 | T6 | I tour | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni |
@@ -448,6 +448,35 @@ Nota `2026-09-15-permessi-su-una-riga-e-chi-ha-interesse`. Branch `m2/t3-resourc
 
 **Test**: quelli della nota §5, fra i test della spina dorsale; più: un superadmin interessato riceve no e la lista in sola lettura sì.
 **Fatta quando**: tutti i test della spina dorsale passano, e un grant con scope dato a mano nel DB di sviluppo si vede in `/api/me`.
+
+**Fatta il 16 settembre 2026** (branch `m2/t3-resource-scope`). Com'è andata:
+
+- **Tutto come nella nota**, senza scostamenti di forma: `hub_user_grants.resource_scope` (migrazione `AddGrantResourceScope`, una
+  colonna in `Up`), `EffectivePermission.ResourceScope`, il claim `Nome:DIP@scope` con il `@` **dopo** il dipartimento così un cookie
+  scritto prima si legge uguale, `IHasResourceScope` e `IHasStakeholder` in `DomainContracts.cs`,
+  `PermissionDescriptor.DeniedToStakeholder` e `PermissionCatalog.IsDeniedToStakeholder`.
+- **La regola sta in `PermissionSet`, una volta**: un permesso senza scope raggiunge ogni riga come sempre; uno con scope raggiunge solo
+  la riga con lo stesso scope, e **non** risponde a `Has` chiesto senza riga. `HasAny` li conta tutti: è ciò che apre la coda in sola
+  lettura a un validatore abilitato su un tour solo (design §4.1).
+- **Il handler controlla l'interessato per primo**, prima di ogni permesso e quindi anche del superadmin: è l'unico no che un superadmin
+  riceve, ed è voluto. La lettura non è toccata, perché nessun permesso di lettura è segnato.
+- **Due grant sullo stesso permesso e dipartimento ma su due righe sono due permessi**: il calcolo li distingueva per (nome,
+  dipartimento) e ne avrebbe tenuto uno solo. Ora la chiave comprende lo scope, e un test lo fissa.
+- **La schermata dei permessi mostra lo scope e non lo scrive** (colonna «Solo su»): lo scrive il modulo che conosce le righe. `/api/me`
+  porta lo scope nei permessi effettivi, e i tipi generati della SPA si sono allungati di conseguenza (dieci oggetti di test di
+  `staffDestinations.test.tsx` hanno ricevuto `resourceScope: null`).
+- **Il modulo di prova** ha `Sample.Decide` (negato all'interessato), la riga `smp_items` con `stakeholder_vid` (migrazione
+  `AddSampleStakeholder` nel progetto dei test) e un endpoint `POST /api/sample/items/{id}/decide` che chiede il permesso all'unico
+  handler **con la riga in mano**: la forma che avrà «Prendi» su un PIREP.
+- **I test**: otto unit (`ResourceScopeAndStakeholderTests`: scope sì e no, `Has` senza riga, il cookie con e senza scope, due grant su due
+  righe, il handler con lo scope, nessuno decide sé stesso, nemmeno il superadmin, una riga senza interessato) e due d'integrazione
+  (`ResourceScopeTests`: il grant su una riga raggiunge quella e non la vicina e arriva in `/api/me`; il superadmin non decide la riga che
+  lo riguarda e la legge). VID `780021–780023`, titoli `fo-test-scope-…`.
+- **Non fatto, e detto**: la sospensione di un grant con scope quando il validatore lascia lo staff non ha un test suo. Non c'è codice
+  nuovo da provare — la sospensione riguarda ogni grant a un VID, con o senza scope — ma la nota la elencava fra i test: resta per T15,
+  quando «togli validatore» e la sospensione avranno la loro schermata.
+- **Verificato in locale**: unit .NET **365**, Vitest **405**, lint, typecheck, formato, i18n, build. **Non in locale**: integrazione e
+  giro e2e (Docker spento), che esegue la CI.
 
 ### T4 — Nucleo: proiezioni dei moduli, award, file con scadenza, preferenze
 

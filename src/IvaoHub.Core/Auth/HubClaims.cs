@@ -42,27 +42,48 @@ public static class HubClaims
     /// <summary>Separates a permission from the department it is scoped to: <c>Links.Edit:EV</c>.</summary>
     private const char DepartmentSeparator = ':';
 
+    /// <summary>
+    /// Separates a permission from the single row it is held on: <c>Tours.Validate:FO@flightops:tour:42</c>.
+    /// <para>After the department on purpose, so that a cookie written before scopes existed still
+    /// reads exactly as it did: no separator, no scope.</para>
+    /// </summary>
+    private const char ScopeSeparator = '@';
+
     /// <summary>Writes a permission as a single claim value; no department means every department.</summary>
-    public static string FormatPermission(EffectivePermission permission) =>
-        permission.Department is { } department
+    public static string FormatPermission(EffectivePermission permission)
+    {
+        var value = permission.Department is { } department
             ? $"{permission.Name}{DepartmentSeparator}{department}"
             : permission.Name;
 
+        return permission.ResourceScope is { Length: > 0 } scope
+            ? $"{value}{ScopeSeparator}{scope}"
+            : value;
+    }
+
     /// <summary>Reads back a permission claim value.</summary>
-    public static (string Name, Department? Department) ParsePermission(string value)
+    public static (string Name, Department? Department, string? ResourceScope) ParsePermission(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+
+        string? scope = null;
+        var at = value.IndexOf(ScopeSeparator, StringComparison.Ordinal);
+        if (at >= 0)
+        {
+            scope = value[(at + 1)..];
+            value = value[..at];
+        }
 
         var separator = value.IndexOf(DepartmentSeparator, StringComparison.Ordinal);
         if (separator < 0)
         {
-            return (value, null);
+            return (value, null, scope);
         }
 
         var name = value[..separator];
         return Enum.TryParse<Department>(value[(separator + 1)..], out var department)
-            ? (name, department)
-            : (name, null);
+            ? (name, department, scope)
+            : (name, null, scope);
     }
 
     /// <summary>

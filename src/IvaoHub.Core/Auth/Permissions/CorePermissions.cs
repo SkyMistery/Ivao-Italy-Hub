@@ -6,7 +6,14 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// </summary>
 /// <param name="Name">The name, always <c>Area.Action</c>.</param>
 /// <param name="IsGlobal">True when the permission has no department to be scoped to.</param>
-public sealed record PermissionDescriptor(string Name, bool IsGlobal);
+/// <param name="DeniedToStakeholder">
+/// True when whoever the row is <b>about</b> may not use this permission on it, however many other
+/// permissions they hold — a pilot does not validate their own report, and neither does a super
+/// administrator who happens to be that pilot (decision note of 15 September 2026).
+/// <para>It is declared here, on the permission, rather than on each entity: one line of catalogue
+/// instead of the same list copied onto every row type that has somebody at stake.</para>
+/// </param>
+public sealed record PermissionDescriptor(string Name, bool IsGlobal, bool DeniedToStakeholder = false);
 
 /// <summary>
 /// The permissions of the core. Modules add their own through <c>IModule.Permissions</c>; nobody

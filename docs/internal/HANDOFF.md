@@ -3,9 +3,9 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 16 settembre 2026, sera — **T0, T2 e T1 sono fatte**: sei note, piano 0.80, la parte C con le fasi T1–T21, e
-nel nucleo il tracker di IVAO, `IWeatherSource`, gli aeroporti del mondo con piste e tipi di aereo, e i confini dei FIR. **Il prossimo
-passo è T3** (scope per risorsa e interessato), che non dipende da niente.
+**Ultimo aggiornamento:** 16 settembre 2026, sera — **T0, T2, T1 e T3 sono fatte**: sei note, piano 0.80, la parte C con le fasi
+T1–T21, e nel nucleo il tracker di IVAO, `IWeatherSource`, gli aeroporti del mondo con piste e tipi di aereo, i confini dei FIR, e l'unico
+handler che conosce i grant su una riga e l'interessato. **Il prossimo passo è T4**, che comincia correggendo le proiezioni dei moduli.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
@@ -18,7 +18,7 @@ passo è T3** (scope per risorsa e interessato), che non dipende da niente.
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T3**, che non dipende da niente; **T4** viene dopo T3 e **comincia correggendo un buco trovato in T0**:
+> **Da dove partire**: **T4**, ora che T3 è fatta, e **comincia correggendo un buco trovato in T0**:
 > `IProjectable` non proietta le righe di un modulo (il contesto del modulo non ha le tabelle delle proiezioni, e l'interceptor salta in
 > silenzio — note `2026-09-15-contatti-con-risposte` §3.3 e `2026-09-15-file-con-scadenza` §2).
 >
