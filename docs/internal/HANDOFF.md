@@ -3,22 +3,34 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 16 settembre 2026, sera — **T0, T2, T1 e T3 sono fatte**: sei note, piano 0.80, la parte C con le fasi
-T1–T21, e nel nucleo il tracker di IVAO, `IWeatherSource`, gli aeroporti del mondo con piste e tipi di aereo, i confini dei FIR, e l'unico
-handler che conosce i grant su una riga e l'interessato. **Il prossimo passo è T4**, che comincia correggendo le proiezioni dei moduli.
+**Ultimo aggiornamento:** 16 settembre 2026, sera — **T0, T1, T2 e T3 sono fatte e tutte in `main`** (PR #80–#85, mergiate da Claude su
+delega di Carmine; nessun branch aperto oltre `main`). Piano 0.80. **Il prossimo passo è T4, in una chat nuova** (Carmine, 16 settembre).
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
-> **Dove si è arrivati**: il design dei tour è chiuso (PR #80), T0 l'ha trasformato in decisioni scritte e fasi (#81) e **T2 è
-> costruita** (#82: il tracker nel client IVAO e il meteo nel nucleo, con le fixture di voli veri). Le fasi sono in
-> **`06-piano-implementazione-m2.md` parte C**: lì c'è, per ognuna, dipendenze, perimetro, test e «fatta quando», più le regole comuni a
-> tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
+> **Per la chat che apre T4, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella e le
+> sezioni **T4** (il perimetro) e **T1–T3** («Com'è andata», che dicono che cosa esiste già); poi le note `2026-09-15-file-con-scadenza`
+> e `2026-09-15-contatti-con-risposte` §3.3. Branch `m2/t4-core-for-modules` da `main`. Docker Desktop di solito è spento: chiedere a
+> Carmine di accenderlo se servono i test d'integrazione in locale, altrimenti li esegue la CI.
+>
+> **Dove si è arrivati** (tutto in `main`):
+>
+> | PR | Che cosa |
+> |---|---|
+> | #80 | il design dei tour, `05-design-m2.md` |
+> | #81 → #83 | T0: sei note, piano 0.79, parte C con le fasi T1–T21 (la #81 era finita nel branch del design, la #83 l'ha riportata) |
+> | #82 | T2: il tracker nel client IVAO, `IWeatherSource` (NOAA → IVAO → VATSIM), fixture di voli veri |
+> | #84 | T1: aeroporti del mondo, piste su richiesta, tipi di aereo, confini dei FIR da **VATSpy** (piano 0.80) |
+> | #85 | T3: grant su una riga (`resource_scope`) e interessato (`IHasStakeholder`) nell'unico handler |
+>
+> Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
+> comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
 >
 > ⚠️ **Che cosa è andato storto nel merge, da non ripetere**: la #81 era impilata sul branch del design e **non è stata ritargettata su
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T4**, ora che T3 è fatta, e **comincia correggendo un buco trovato in T0**:
+> **Da dove partire**: **T4**, che **comincia correggendo un buco trovato in T0**:
 > `IProjectable` non proietta le righe di un modulo (il contesto del modulo non ha le tabelle delle proiezioni, e l'interceptor salta in
 > silenzio — note `2026-09-15-contatti-con-risposte` §3.3 e `2026-09-15-file-con-scadenza` §2).
 >

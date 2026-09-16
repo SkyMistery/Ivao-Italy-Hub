@@ -317,7 +317,7 @@ diversi ma tutti `FlightOpsDbContext`, quindi **in fila** per le migrazioni.
 
 ### T0 — Note, piano 0.79, parte C
 
-Branch `m2/t0-decision-notes`, impilato su `m2/tours-design` (#80). **Fatta il 16 settembre 2026.**
+Branch `m2/t0-decision-notes`, impilato su `m2/tours-design` (#80). **Fatta il 16 settembre 2026** (PR #81, entrata in `main` con la #83).
 
 - **Sei note** in `decisions/`: `2026-09-15-permessi-su-una-riga-e-chi-ha-interesse`, `…-contatti-con-risposte`, `…-la-mappa`,
   `…-meteo-e-confini-dei-fir`, `…-token-personali-e-agente-del-validatore`, `…-file-con-scadenza`.
@@ -355,7 +355,7 @@ nomina la fonte dei FIR; i test di M1 su `FirDirectory` e `networkStats` restano
 **Fatta quando**: in sviluppo, con il token vero, le tabelle si riempiono (numeri scritti nella PR), LIRF ha IATA, coordinate e le sue
 piste dopo un `EnsureAsync`, e un punto su Roma risponde LIRR.
 
-**Fatta il 16 settembre 2026** (branch `m2/t1-world-reference-data`). Com'è andata:
+**Fatta il 16 settembre 2026** (branch `m2/t1-world-reference-data`, PR #84). Com'è andata:
 
 - **Gli aeroporti sono quelli del mondo**: `/v2/airports/all` senza paese — **44 689 aeroporti di 235 paesi, 13,9 MB, tre secondi**,
   misurati con il token vero — e la riga guadagna `iata` (7732 ne hanno), `latitude`, `longitude` ed `elevation`. Il job li scrive con il
@@ -449,7 +449,7 @@ Nota `2026-09-15-permessi-su-una-riga-e-chi-ha-interesse`. Branch `m2/t3-resourc
 **Test**: quelli della nota §5, fra i test della spina dorsale; più: un superadmin interessato riceve no e la lista in sola lettura sì.
 **Fatta quando**: tutti i test della spina dorsale passano, e un grant con scope dato a mano nel DB di sviluppo si vede in `/api/me`.
 
-**Fatta il 16 settembre 2026** (branch `m2/t3-resource-scope`). Com'è andata:
+**Fatta il 16 settembre 2026** (branch `m2/t3-resource-scope`, PR #85). Com'è andata:
 
 - **Tutto come nella nota**, senza scostamenti di forma: `hub_user_grants.resource_scope` (migrazione `AddGrantResourceScope`, una
   colonna in `Up`), `EffectivePermission.ResourceScope`, il claim `Nome:DIP@scope` con il `@` **dopo** il dipartimento così un cookie
