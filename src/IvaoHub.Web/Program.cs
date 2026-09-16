@@ -292,6 +292,8 @@ app.MapCalendarKindEndpoints();
 app.MapContactsEndpoints();
 app.MapNotificationPreferenceEndpoints();
 app.MapUserPreferenceEndpoints();
+app.MapModuleSettingsEndpoints();
+app.MapAircraftTypeEndpoints();
 app.MapAwardEndpoints();
 app.MapBlockDataEndpoint();
 app.MapSeoEndpoints();

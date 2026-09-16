@@ -1,0 +1,65 @@
+{
+  "_source": "web/src/modules/flightops/locales",
+  "nav": {
+    "section": "Tour",
+    "aircraftProfiles": "Profili degli aerei",
+    "aircraftGroups": "Gruppi di aerei",
+    "settings": "Impostazioni dei tour"
+  },
+  "aircraftProfiles": {
+    "title": "Profili degli aerei",
+    "description": "Quanto va veloce ogni tipo di aereo: la velocità con cui si calcola il tempo stimato di una leg.",
+    "create": "Nuovo profilo",
+    "edit": "Modifica profilo",
+    "delete": {
+      "title": "Eliminare questo profilo?",
+      "description": "I tour con questo tipo come aereo di riferimento smettono di mostrare il tempo stimato finché non esiste di nuovo un profilo."
+    },
+    "fields": {
+      "icaoType": "Tipo di aereo",
+      "cruiseTasKt": "Velocità di crociera (TAS, kt)",
+      "note": "Nota",
+      "updatedAt": "Ultima modifica"
+    }
+  },
+  "aircraftGroups": {
+    "title": "Gruppi di aerei",
+    "description": "Insiemi con un nome di tipi di aereo, usabili dovunque un tour sceglie gli aerei.",
+    "create": "Nuovo gruppo",
+    "edit": "Modifica gruppo",
+    "delete": {
+      "title": "Eliminare questo gruppo?",
+      "description": "I tour che ammettono questo gruppo non ammettono più i suoi tipi attraverso di esso."
+    },
+    "fields": {
+      "name": "Nome",
+      "icaoTypes": "Tipi di aereo",
+      "icao": "Tipo",
+      "updatedAt": "Ultima modifica"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni dei tour",
+    "description": "Quello che il dipartimento cambia senza una release: limiti, finestre e tempo stimato.",
+    "saved": "Impostazioni salvate.",
+    "fields": {
+      "dailyLegLimit": "Leg al giorno (vuoto: nessun limite)",
+      "defaultReportWindowDays": "Giorni per inviare un volo",
+      "disputeWindowDays": "Giorni per contestare una decisione",
+      "rejectGraceHours": "Ore di tolleranza dopo un rifiuto",
+      "leaseMinutes": "Minuti in cui un report preso resta al suo validatore",
+      "durationFactor": "Tempo stimato: quota aggiunta alla distanza (0,05 = 5%)",
+      "durationFixedMinutes": "Tempo stimato: minuti fissi",
+      "northSouthLevelCountries": "Paesi con livelli di crociera nord–sud",
+      "code": "Codice del paese (due lettere)",
+      "retentionMonths": "Mesi di conservazione dei report",
+      "retentionMonthsLong": "Mesi di conservazione del registro disciplinare",
+      "thresholdToleranceMeters": "Distanza ammessa dalla testata al decollo (m)"
+    }
+  },
+  "errors": {
+    "profileExists": "Questo tipo di aereo ha già un profilo.",
+    "retentionLongShorter": "Il registro disciplinare non si può tenere meno a lungo dei report.",
+    "countryCode": "Scrivi il paese con il suo codice di due lettere."
+  }
+}

@@ -362,7 +362,8 @@ Il **primo PIREP iscrive**. `vid`, `tour_id`, `started_at`, `start_leg_id?` (per
 
 ### 1.11 Le impostazioni della divisione per i tour
 
-In `hub_division_settings` sotto la chiave `flightops` (dati che il FOD cambia dall'interfaccia):
+In `hub_division_settings` sotto la chiave `modules.flightops.settings` (dati che il FOD cambia dall'interfaccia), attraverso il meccanismo
+delle impostazioni dei moduli del nucleo (`IModule.Settings`, T5, nota `2026-09-16-impostazioni-dei-moduli`):
 
 | Impostazione | Valore proposto |
 |---|---|
@@ -375,7 +376,7 @@ In `hub_division_settings` sotto la chiave `flightops` (dati che il FOD cambia d
 | `northSouthLevelCountries` | i paesi dove i livelli semicircolari vanno nord–sud (§6.4); non cambia con l'AIRAC |
 | `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
 | `thresholdToleranceMeters` | 150 (§6.4), uno per tutto il sistema |
-| `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) |
+| `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) — **non in T5**: segue i tour aperti, e la forma la decide T16 |
 
 Le **soglie dei controlli** non stanno qui: sono parametri delle regole (§1.7).
 
@@ -947,7 +948,8 @@ l'hub, l'agente del validatore per `atcCoverage` (§6.6).
 | `Tours.ManageSettings` | ✓ | ✓ | — | |
 | rispondere a contestazioni e chiarimenti | ✓ | ✓ | ✓ | ✓ sui propri PIREP decisi |
 
-HQ e superadmin tutto. **I validatori si abilitano solo dalla pagina delle statistiche** (risposta 18). **Un validatore che non è
+Scritti in `config/division.json` e in `division.example.json` in T5, con `scope: FOD`; ogni grant del file si applica una volta anche a
+un'installazione già avviata (nota `2026-09-16-impostazioni-dei-moduli`). HQ e superadmin tutto. **I validatori si abilitano solo dalla pagina delle statistiche** (risposta 18). **Un validatore che non è
 più staff perde l'abilitazione da solo**: il suo grant viene sospeso dalla sincronizzazione dello staff, come ogni grant del nucleo
 (Carmine, 15 settembre).
 

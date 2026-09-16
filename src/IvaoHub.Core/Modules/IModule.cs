@@ -79,6 +79,13 @@ public interface IModule
     IReadOnlyList<PreferenceDescriptor> Preferences { get; }
 
     /// <summary>
+    /// The settings its department changes from the interface, or null for a module that has none. The
+    /// core keeps them in <c>hub_division_settings</c> and serves them at <c>/api/modules/{key}/settings</c>
+    /// behind the permission the descriptor names (M2, T5).
+    /// </summary>
+    ModuleSettingsDescriptor? Settings { get; }
+
+    /// <summary>
     /// Its own services: a database context through <c>AddModuleDbContext&lt;T&gt;</c>, its data
     /// block providers, its jobs. Never a second interceptor, a second handler or a second client
     /// for the IVAO API.
@@ -113,6 +120,8 @@ public abstract class ModuleBase : IModule
     public virtual IReadOnlyList<string> SpaFallbackExclusions => [];
 
     public virtual IReadOnlyList<PreferenceDescriptor> Preferences => [];
+
+    public virtual ModuleSettingsDescriptor? Settings => null;
 
     public virtual IEnumerable<Type> DbContextTypes => [];
 

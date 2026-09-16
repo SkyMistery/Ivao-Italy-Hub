@@ -66,7 +66,10 @@ cd web && pnpm install && pnpm dev      # the single page application
    your IVAO positions become departments and levels, and if the table held no super administrator
    at all, the VIDs in `superAdmins` become one. That list is read **once**: after that the database
    is the truth and editing the file achieves nothing. `positionGrants` — permissions your division
-   gives to a department at some of its levels — is read the same way: once, at the first start.
+   gives to a department at some of its levels — is read **grant by grant**: each one is applied once,
+   at the first start that finds it, and a grant you delete from the permissions screen does not come
+   back. A grant you add to the file later — because a new module expects it — is applied at the next
+   start. The example file carries the grants the tours module expects for its base department.
 5. **Translate the seeded templates and pages, or replace them.** `seed/content-templates/*.json`
    and `seed/content-pages/*.json` carry `{ "$t": "seed…" }` rather than sentences, resolved at seed
    time into the languages you listed — so a division that publishes only in Polish gets no English
@@ -184,6 +187,15 @@ Four things, and the first two are where all of the module's own code lives:
    the global query filter of who reads what are not something a module opts into. There is never a
    foreign key between two contexts, and never a second authorization handler.
 
+   A module whose department changes something from the interface — a limit, a window — declares
+   **settings**: a record with its defaults, a FluentValidation validator and the permission that
+   manages them, `Settings => ModuleSettingsDescriptor.Create<RosterSettings, RosterSettingsValidator>("Roster.ManageSettings", new())`.
+   The core keeps them in `hub_division_settings` (audited), serves them at
+   `/api/modules/{key}/settings` behind that permission on the module's base department, and the
+   module's own code reads them with `ModuleSettingsStore.GetAsync<RosterSettings>(key)`. A setting
+   added in a later release starts at its default on an installation that saved the others long ago.
+   Preferences of a member (the order of a queue) are declared the same way, in `Preferences`.
+
    A module does not belong to a department. A row of it can be **in the care of several**: it
    implements `IOwnedByDepartment` and declares `public int OwnerDepartmentMask { get; set; }`, which
    becomes its column (`DepartmentMask` turns departments into bits). A permission held on any one of
@@ -193,7 +205,9 @@ Four things, and the first two are where all of the module's own code lives:
 
 2. **`web/src/modules/<key>/`** — all of the module's React code, and no other folder holds any of
    it. `index.ts` exports exactly one `ModuleManifest`: its blocks, its routes and the
-   i18n namespaces it brings. Its language files live in `web/src/modules/<key>/locales/{lang}/`;
+   i18n namespaces it brings. A route is public by default; `area: 'staff'` hangs it inside the back
+   office, behind the staff guard and the `permission` the route names, and `validateSearch` gives a
+   list its typed search parameters. Its language files live in `web/src/modules/<key>/locales/{lang}/`;
    `pnpm i18n:sync` copies them into `locales/`, which is the one set the browser, the back end and
    `pnpm i18n:check` all read, and CI fails if the copies are stale.
 

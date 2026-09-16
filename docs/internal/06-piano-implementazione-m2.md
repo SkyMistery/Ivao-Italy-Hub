@@ -295,7 +295,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T3 | Nucleo: scope per risorsa e interessato — **fatta il 16 set 2026** | — | l'unico handler estende i grant a una riga e nega all'interessato |
 | T4a | Nucleo: proiezioni dei moduli e file con scadenza — **fatta il 16 set 2026** | T3 | le righe di modulo proiettano davvero; più voci di calendario; `cms_media_uses` e il job |
 | T4b | Nucleo: award e preferenze — **fatta il 16 set 2026** | T4a | award; preferenze dell'utente |
-| T5 | Modulo: lo scheletro | T4a | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
+| T5 | Modulo: lo scheletro — **fatta il 16 set 2026** | T4a | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
 | T6 | I tour | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni |
 | T7 | Le leg e la forma del tour | T1, T6 | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
 | T8 | L'import delle leg | T7 | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
@@ -602,6 +602,44 @@ Design §0.4, §1.5, §1.11, §7. Branch `m2/t5-flightops-skeleton`.
 **Test**: il seed dei grant di posizione crea le righe del FOD una volta; un advisor FOD modifica un profilo e non le impostazioni; il
 fork XX parte con il modulo e `northSouthLevelCountries` vuoto; architettura (il modulo referenzia solo `Core`, niente IVAO fuori dal client).
 **Fatta quando**: un coordinator FOD, entrato con il login di sviluppo, vede la sezione Tours, cambia un'impostazione e crea un profilo.
+
+**Fatta il 16 settembre 2026** (branch `m2/t5-flightops-skeleton`, subito dopo il merge di T4b). Com'è andata:
+
+- **Tre cose che il piano dava per esistenti e non c'erano**, nota `decisions/2026-09-16-impostazioni-dei-moduli.md`, piano **0.83**.
+  (1) Il seed di `positionGrants` era «una volta per installazione»: i grant del FOD non sarebbero mai arrivati a un DB già avviato.
+  **Deciso con Carmine**: ogni grant del file si ricorda con la sua impronta. (2) Non c'era un modo per le impostazioni di un modulo.
+  **Deciso con Carmine**: `IModule.Settings` nel nucleo, riga `modules.flightops.settings` (non `flightops` come diceva il design),
+  `/api/modules/{key}/settings`. (3) Le rotte di un modulo nella SPA erano solo pubbliche: `RouteDefinition.area: 'staff'`, con
+  `permission` e `validateSearch`.
+- **Il selettore dei tipi di T1 non esisteva**: `IAircraftTypeDirectory` e `GET /api/reference/aircraft-types?q=` nel nucleo; il campo è
+  una proposta chiusa che chiede al server mentre si scrive. I tipi di un gruppo sono nel form una lista di `{ icao }`, perché il
+  generatore ripete oggetti. Nessun campo nuovo del form, quindi la galleria non cambia.
+- **Il modulo**: `IvaoHub.Modules.FlightOps` referenzia solo `Core`; `FlightOpsDbContext`, migrazione `Initial` con le sole
+  `fo_aircraft_profiles` (un profilo per tipo, indice unico) e `fo_aircraft_groups` (tipi in JSON, maiuscoli, ognuno una volta);
+  undici permessi `Tours.*`, `Tours.Validate` negato all'interessato; righe `IOwnedByDepartment` con l'insieme dei dipartimenti e il
+  FOD come base; letti con `Tours.View`, scritti con `Tours.ManageAircraft`. ⚠️ La guardia dell'interceptor chiede anche
+  `Tours.Edit` sul dipartimento (l'area delle righe è `Tours`): chi ha `ManageAircraft` senza `Edit` verrebbe rifiutato. In §7.2 non
+  succede — chi ha l'uno ha l'altro — ma un grant a mano solo di `ManageAircraft` non basterebbe.
+- **Le impostazioni** sono quelle del design §1.11 con i valori proposti; `northSouthLevelCountries` parte vuoto (in IT lo scrive il
+  FOD); `weatherRetentionDays` non c'è ancora, perché segue i tour aperti e lo decide T16. Il rifiuto di `dailyLegLimit = null` con
+  tour senza limite resta per T6.
+- **`positionGrants` del FOD** (design §7.2) in `config/division.json` e in `division.example.json`, con `scope: FOD`.
+- **La SPA**: `web/src/modules/flightops/` con il manifest (cinque rotte di staff), le schermate generate di profili, gruppi e
+  impostazioni, i18n `flightops` in `it` e `en`; la sezione «Tour» nella barra dello staff arriva da `StaffNavigation` del modulo.
+- **I test**: integrazione `FlightOpsSkeletonTests` (tre: i grant del FOD arrivano una volta e raggiungono la sessione; un advisor FOD
+  scrive un profilo e non le impostazioni, il coordinator le cambia e le rilegge, un tipo sconosciuto o doppio e un valore fuori
+  limite sono rifiutati sul campo, un coordinator di un altro dipartimento no; un gruppo normalizza i tipi e il campo dei tipi
+  risponde), il test del seeder esteso (un grant aggiunto dopo arriva una volta) e il fork XX (il modulo c'è, i paesi nord–sud sono
+  vuoti); unit `FlightOpsSkeletonTests` (tre: impronta, valori di partenza, regole); e2e `tours-skeleton.spec.ts` (impostazioni
+  salvate e rilette, schermate che si aprono). L'architettura (il modulo referenzia solo `Core`) la prende il test che c'era, che
+  ora ha un progetto vero da leggere. VID `780051–780053`, nomi `fo-test-group-…`.
+- ⚠️ **Il test del seeder** cancellava la riga `positionGrants.seeded` per simulare un primo avvio: con i grant del FOD nel file, gli
+  host avviati dopo li avrebbero applicati una seconda volta. Ora la rimette com'era.
+- **Verificato in locale** (Docker acceso): unit .NET **381**, Vitest **410**, typecheck, lint, formato, i18n, build Release, giro e2e
+  completo **21** e smoke **80**, integrazione **221**. ⚠️ Un test di M0 (`ModuleRegistryComposesNavAndExclusions`) presupponeva che il
+  modulo di prova fosse l'unico del build: ora lo cerca per chiave. **Non verificato**: il «fatta quando» con il login di
+  sviluppo vero (passa da IVAO con le credenziali di Carmine): creare un profilo lo provano i test d'integrazione, perché il banco
+  e2e non ha i tipi di aereo finché il job notturno non gira.
 
 ### T6 — I tour
 

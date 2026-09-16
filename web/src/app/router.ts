@@ -1,8 +1,11 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { createRoute, createRouter, type RouteComponent } from '@tanstack/react-router';
+import { createRoute, createRouter, redirect, type RouteComponent } from '@tanstack/react-router';
 
 import { routeTree } from '../routeTree.gen';
 import { Route as PublicLayoutRoute } from '../routes/_public';
+import { Route as StaffLayoutRoute } from '../routes/_staff';
+import { holdsPermissionAnywhere } from '../shared/api/bootstrap';
+import type { RouteDefinition } from '../shared/modules';
 
 import { registry } from './registry';
 
@@ -21,23 +24,63 @@ import { registry } from './registry';
  * the core cannot have compile time knowledge of a path it is not allowed to know about.
  */
 export function createHubRouter(queryClient: QueryClient) {
-  const moduleRoutes = registry.routes.map((definition) =>
-    createRoute({
-      getParentRoute: () => PublicLayoutRoute,
-      path: definition.path,
-      // The manifest types a screen as a plain `ComponentType`, which is what a module author
-      // writes; the router wants its own alias of the same thing.
-      component: definition.component as RouteComponent,
-    }),
-  );
+  const publicRoutes = registry.routes
+    .filter((definition) => (definition.area ?? 'public') === 'public')
+    .map((definition) =>
+      createRoute({
+        getParentRoute: () => PublicLayoutRoute,
+        path: definition.path,
+        ...searchOf(definition),
+        // The manifest types a screen as a plain `ComponentType`, which is what a module author
+        // writes; the router wants its own alias of the same thing.
+        component: definition.component as RouteComponent,
+      }),
+    );
 
-  if (moduleRoutes.length > 0) {
-    // `addChildren` replaces the children of the route it is called on and returns that same
-    // object, which is the one the generated tree already holds: appending to what is there is how
-    // a module route joins the tree without the tree being rebuilt around it.
-    const existing = (PublicLayoutRoute.children ?? []) as unknown[];
-    PublicLayoutRoute.addChildren([...existing, ...moduleRoutes] as never);
+  // A module's back office (M2, T5): under the staff layout, so the staff guard runs first, and behind the
+  // permission the manifest names — the same "held anywhere" question the core's own screens ask.
+  const staffRoutes = registry.routes
+    .filter((definition) => definition.area === 'staff')
+    .map((definition) =>
+      createRoute({
+        getParentRoute: () => StaffLayoutRoute,
+        path: definition.path,
+        ...searchOf(definition),
+        beforeLoad: ({ context }) => {
+          if (
+            definition.permission !== undefined &&
+            !holdsPermissionAnywhere(context.bootstrap, definition.permission)
+          ) {
+            // eslint-disable-next-line @typescript-eslint/only-throw-error -- a redirect is how a guard stops a navigation
+            throw redirect({ to: '/forbidden' });
+          }
+        },
+        component: definition.component as RouteComponent,
+      }),
+    );
+
+  // `addChildren` replaces the children of the route it is called on and returns that same object, which
+  // is the one the generated tree already holds: appending to what is there is how a module route joins
+  // the tree without the tree being rebuilt around it.
+  for (const [layout, routes] of [
+    [PublicLayoutRoute, publicRoutes],
+    [StaffLayoutRoute, staffRoutes],
+  ] as const) {
+    if (routes.length > 0) {
+      const existing = (layout.children ?? []) as unknown[];
+      layout.addChildren([...existing, ...routes] as never);
+    }
   }
 
   return createRouter({ routeTree, context: { queryClient } });
+}
+
+/** The search parameters of a module route, when its manifest declares them. */
+function searchOf(definition: RouteDefinition) {
+  return definition.validateSearch === undefined
+    ? {}
+    : {
+        validateSearch: (search: Record<string, unknown>) =>
+          definition.validateSearch!.parse(search) as Record<string, unknown>,
+      };
 }

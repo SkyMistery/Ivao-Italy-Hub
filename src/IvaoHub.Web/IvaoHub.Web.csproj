@@ -39,6 +39,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IvaoHub.Core\IvaoHub.Core.csproj" />
+    <ProjectReference Include="..\IvaoHub.Modules.FlightOps\IvaoHub.Modules.FlightOps.csproj" />
   </ItemGroup>
 
   <!--

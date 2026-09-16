@@ -61,10 +61,23 @@
     "Optional. Permissions your division gives to a position rather than to a person: a department",
     "at one or more levels (Coordinator, Assistant, Advisor, Member). Whoever holds that position",
     "holds the permission. scope is the department the permission is held on; leave it out for every",
-    "department. Read once, at the first start that finds it; after that the permissions screen is",
-    "the truth. A global permission is never given this way."
+    "department. Each grant is applied once, at the first start that finds it; after that the permissions",
+    "screen is the truth, and a grant deleted there does not come back. A global permission is never given",
+    "this way. The grants below are the ones the tours module expects for its base department (FOD)."
   ],
-  "positionGrants": [],
+  "positionGrants": [
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.View", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.Edit", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.Delete", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.ManageRules", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageTemplates", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.ManageAircraft", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.Validate", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageValidators", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.ViewPilots", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.Ban", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageSettings", "scope": "FOD" }
+  ],
 
   "$comment.firStaffScope": "all = FIR teams work on every FIR (default). own = each FIR team only sees its own FIR.",
   "firStaffScope": "all"
