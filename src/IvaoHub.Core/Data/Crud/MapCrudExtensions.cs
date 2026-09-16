@@ -202,8 +202,12 @@ public static class MapCrudExtensions
             .Take(pageSize)
             .ToListAsync(http.RequestAborted);
 
+        var items = options.ToListPage is { } toListPage
+            ? await toListPage(rows, scope.Services, http.RequestAborted)
+            : [.. rows.Select(options.ToList!)];
+
         return Results.Ok(new PagedResult<TListDto>(
-            [.. rows.Select(options.ToList!)],
+            items,
             page,
             pageSize,
             total));

@@ -32,7 +32,8 @@
     "media": {
       "tooLarge": "Questo file supera la dimensione che l'hub accetta.",
       "typeNotAllowed": "L'hub non accetta file di questo tipo.",
-      "inUse": "Una pagina pubblicata mostra questo file, quindi non si può cancellare. Archivialo."
+      "inUse": "Una pagina pubblicata mostra questo file, quindi non si può cancellare. Archivialo.",
+      "inUseByModule": "Qualcosa nell'hub usa ancora questo file, quindi per ora non si può cancellare."
     },
     "unknown": "Qualcosa è andato storto. Riprova.",
     "title": "Non ha funzionato",

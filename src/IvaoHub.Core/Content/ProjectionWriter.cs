@@ -19,43 +19,51 @@ public sealed class ProjectionState
     /// <summary>Built only by the writer that reads it back; a caller just carries it across.</summary>
     internal ProjectionState(
         ILookup<(string Module, string Id), SearchIndexEntry> search,
-        Dictionary<(string Module, string Id), CalendarEntry> calendar,
-        ILookup<(string Module, string Id), AwardSignal> awards)
+        ILookup<(string Module, string Id), CalendarEntry> calendar,
+        ILookup<(string Module, string Id), AwardSignal> awards,
+        ILookup<(string Module, string Id), MediaUse> mediaUses)
     {
         Search = search;
         Calendar = calendar;
         Awards = awards;
+        MediaUses = mediaUses;
     }
 
     internal ILookup<(string Module, string Id), SearchIndexEntry> Search { get; }
 
-    internal Dictionary<(string Module, string Id), CalendarEntry> Calendar { get; }
+    internal ILookup<(string Module, string Id), CalendarEntry> Calendar { get; }
 
     internal ILookup<(string Module, string Id), AwardSignal> Awards { get; }
+
+    internal ILookup<(string Module, string Id), MediaUse> MediaUses { get; }
 }
 
 /// <summary>
-/// Turns snapshots into rows of <c>cms_search_index</c>, <c>cms_calendar_entries</c> and
-/// <c>cms_award_signals</c>. It only ever adds, updates and removes: a projection is rewritten in
+/// Turns snapshots into rows of <c>cms_search_index</c>, <c>cms_calendar_entries</c>,
+/// <c>cms_award_signals</c> and <c>cms_media_uses</c>. It only ever adds, updates and removes: a projection is rewritten in
 /// full for its source key, so it can never drift away from the row it mirrors.
 /// <para>Called by the save changes interceptor inside the transaction of the write itself, never
 /// by an endpoint or a job.</para>
-/// <para>Reading and writing are separate on purpose. Reading is three queries for the <b>whole</b>
-/// save, not three per row: a save that touches fifty rows used to issue a hundred and fifty
+/// <para>Reading and writing are separate on purpose. Reading is one query per table for the
+/// <b>whole</b> save, not one per table and per row: a save that touches fifty rows used to issue a hundred and fifty
 /// queries inside the write transaction, which is a lock held for as long as the round trips take.
 /// Splitting them also gives the synchronous path a real synchronous implementation instead of
 /// blocking on an asynchronous one, without duplicating any of the reasoning below.</para>
 /// </summary>
 public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
 {
-    /// <summary>True when the context of this write actually holds the projection tables.</summary>
+    /// <summary>
+    /// True when the context of this write actually holds the projection tables: the hub's context,
+    /// and since T4 every module context too (<c>ModuleDbContext</c> maps them outside its own
+    /// migrations).
+    /// </summary>
     public static bool CanProject(DbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         return context.Model.FindEntityType(typeof(SearchIndexEntry)) is not null;
     }
 
-    /// <summary>Reads what these sources have projected so far. Three queries per source module.</summary>
+    /// <summary>Reads what these sources have projected so far. One query per table and per source module.</summary>
     public static async Task<ProjectionState> LoadAsync(
         DbContext context,
         IReadOnlyList<ProjectionRequest> requests,
@@ -67,15 +75,17 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         var search = new List<SearchIndexEntry>();
         var calendar = new List<CalendarEntry>();
         var awards = new List<AwardSignal>();
+        var mediaUses = new List<MediaUse>();
 
         foreach (var (module, ids) in ByModule(requests))
         {
             search.AddRange(await SearchOf(context, module, ids).ToListAsync(cancellationToken));
             calendar.AddRange(await CalendarOf(context, module, ids).ToListAsync(cancellationToken));
             awards.AddRange(await AwardsOf(context, module, ids).ToListAsync(cancellationToken));
+            mediaUses.AddRange(await MediaUsesOf(context, module, ids).ToListAsync(cancellationToken));
         }
 
-        return Build(search, calendar, awards);
+        return Build(search, calendar, awards, mediaUses);
     }
 
     /// <summary>The same, for a caller that saved synchronously.</summary>
@@ -87,15 +97,17 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         var search = new List<SearchIndexEntry>();
         var calendar = new List<CalendarEntry>();
         var awards = new List<AwardSignal>();
+        var mediaUses = new List<MediaUse>();
 
         foreach (var (module, ids) in ByModule(requests))
         {
             search.AddRange(SearchOf(context, module, ids).ToList());
             calendar.AddRange(CalendarOf(context, module, ids).ToList());
             awards.AddRange(AwardsOf(context, module, ids).ToList());
+            mediaUses.AddRange(MediaUsesOf(context, module, ids).ToList());
         }
 
-        return Build(search, calendar, awards);
+        return Build(search, calendar, awards, mediaUses);
     }
 
     /// <summary>
@@ -121,8 +133,9 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
             var key = (request.SourceModule, request.SourceId);
 
             ApplySearch(context, request, [.. state.Search[key]], projection, clock.UtcNow);
-            ApplyCalendar(context, request, state.Calendar.GetValueOrDefault(key));
+            ApplyCalendar(context, request, [.. state.Calendar[key]]);
             ApplyAwardSignals(context, request, [.. state.Awards[key]]);
+            ApplyMediaUses(context, request, [.. state.MediaUses[key]]);
         }
     }
 
@@ -143,13 +156,19 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         context.Set<AwardSignal>()
             .Where(row => row.SourceModule == module && ids.Contains(row.SourceId));
 
+    private static IQueryable<MediaUse> MediaUsesOf(DbContext context, string module, string[] ids) =>
+        context.Set<MediaUse>()
+            .Where(row => row.SourceModule == module && ids.Contains(row.SourceId));
+
     private static ProjectionState Build(
         List<SearchIndexEntry> search,
         List<CalendarEntry> calendar,
-        List<AwardSignal> awards) => new(
+        List<AwardSignal> awards,
+        List<MediaUse> mediaUses) => new(
             search.ToLookup(row => (row.SourceModule, row.SourceId)),
-            calendar.ToDictionary(row => (row.SourceModule, row.SourceId)),
-            awards.ToLookup(row => (row.SourceModule, row.SourceId)));
+            calendar.ToLookup(row => (row.SourceModule, row.SourceId)),
+            awards.ToLookup(row => (row.SourceModule, row.SourceId)),
+            mediaUses.ToLookup(row => (row.SourceModule, row.SourceId)));
 
     private static void ApplySearch(
         DbContext context,
@@ -199,43 +218,44 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         context.Set<SearchIndexEntry>().RemoveRange(stale);
     }
 
-    private void ApplyCalendar(DbContext context, ProjectionRequest request, CalendarEntry? existing)
+    private void ApplyCalendar(DbContext context, ProjectionRequest request, List<CalendarEntry> existing)
     {
-        var calendar = request.Snapshot?.Calendar;
+        var entries = request.Snapshot?.Calendar ?? [];
 
-        if (calendar is null)
+        for (var sequence = 0; sequence < entries.Count; sequence++)
         {
-            if (existing is not null)
+            var calendar = entries[sequence];
+            var row = existing.Find(candidate => candidate.Sequence == sequence);
+
+            if (row is null)
             {
-                context.Set<CalendarEntry>().Remove(existing);
+                row = new CalendarEntry
+                {
+                    SourceModule = request.SourceModule,
+                    SourceId = request.SourceId,
+                    Sequence = sequence,
+                    CreatedAt = clock.UtcNow,
+                    CreatedBy = Author,
+                };
+                context.Set<CalendarEntry>().Add(row);
             }
 
-            return;
+            row.Kind = calendar.Kind;
+            row.StartsAtUtc = calendar.StartsAtUtc;
+            row.EndsAtUtc = calendar.EndsAtUtc;
+            row.AllDay = calendar.AllDay;
+            row.OwnerDepartment = calendar.OwnerDepartment;
+            row.Visibility = calendar.Visibility;
+            row.Url = calendar.Url;
+            row.Title = calendar.Title;
+            row.Description = calendar.Description;
+            row.UpdatedAt = clock.UtcNow;
+            row.UpdatedBy = Author;
         }
 
-        if (existing is null)
-        {
-            existing = new CalendarEntry
-            {
-                SourceModule = request.SourceModule,
-                SourceId = request.SourceId,
-                CreatedAt = clock.UtcNow,
-                CreatedBy = Author,
-            };
-            context.Set<CalendarEntry>().Add(existing);
-        }
-
-        existing.Kind = calendar.Kind;
-        existing.StartsAtUtc = calendar.StartsAtUtc;
-        existing.EndsAtUtc = calendar.EndsAtUtc;
-        existing.AllDay = calendar.AllDay;
-        existing.OwnerDepartment = calendar.OwnerDepartment;
-        existing.Visibility = calendar.Visibility;
-        existing.Url = calendar.Url;
-        existing.Title = calendar.Title;
-        existing.Description = calendar.Description;
-        existing.UpdatedAt = clock.UtcNow;
-        existing.UpdatedBy = Author;
+        // A source with fewer entries than before loses the ones at the end: the list is the whole
+        // truth for this source, as the languages of the search index are.
+        context.Set<CalendarEntry>().RemoveRange(existing.Where(row => row.Sequence >= entries.Count));
     }
 
     private void ApplyAwardSignals(DbContext context, ProjectionRequest request, List<AwardSignal> existing)
@@ -266,6 +286,38 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         var withdrawn = existing.Where(row =>
             row.Status == AwardSignalStatus.Pending && !signals.Any(signal => signal.Vid == row.Vid));
         context.Set<AwardSignal>().RemoveRange(withdrawn);
+    }
+
+    private static void ApplyMediaUses(DbContext context, ProjectionRequest request, List<MediaUse> existing)
+    {
+        var uses = (request.Snapshot?.MediaUses ?? [])
+            // A file named twice by the same row is one use, kept for the longer of the two, and no
+            // date at all is longer than any date.
+            .GroupBy(use => use.MediaId)
+            .Select(group => new MediaUseProjection(
+                group.Key,
+                group.Any(use => use.UsedUntilUtc is null) ? null : group.Max(use => use.UsedUntilUtc)))
+            .ToList();
+
+        foreach (var use in uses)
+        {
+            var row = existing.Find(candidate => candidate.MediaId == use.MediaId);
+            if (row is null)
+            {
+                row = new MediaUse
+                {
+                    SourceModule = request.SourceModule,
+                    SourceId = request.SourceId,
+                    MediaId = use.MediaId,
+                };
+                context.Set<MediaUse>().Add(row);
+            }
+
+            row.UsedUntil = use.UsedUntilUtc;
+        }
+
+        // A banner changed takes its old file out of use, which is what lets the job find it.
+        context.Set<MediaUse>().RemoveRange(existing.Where(row => !uses.Exists(use => use.MediaId == row.MediaId)));
     }
 
     /// <summary>

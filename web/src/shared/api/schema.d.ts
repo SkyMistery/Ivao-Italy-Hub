@@ -1678,6 +1678,8 @@ export interface components {
         /**
          * @description A file as a list and a picker show it. The address is part of the row because it is built the
          *     same way everywhere and nobody should assemble it twice.
+         *     DeletesOn is when the expiry job will delete the file, for a file whose every use by a
+         *     row of a module ends (M2, T4); null for a file the job does not touch.
          */
         MediaListDto: {
             /** Format: int64 */
@@ -1701,6 +1703,8 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /** Format: date-time */
+            deletesOn: null | string;
         };
         /**
          * @description What a client may set. Everything about the file itself — its name on disk, its type, its size,

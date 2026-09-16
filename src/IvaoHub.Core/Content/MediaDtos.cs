@@ -7,6 +7,8 @@ namespace IvaoHub.Core.Content;
 /// <summary>
 /// A file as a list and a picker show it. The address is part of the row because it is built the
 /// same way everywhere and nobody should assemble it twice.
+/// <para><c>DeletesOn</c> is when the expiry job will delete the file, for a file whose every use by a
+/// row of a module ends (M2, T4); <c>null</c> for a file the job does not touch.</para>
 /// </summary>
 public sealed record MediaListDto(
     long Id,
@@ -22,7 +24,8 @@ public sealed record MediaListDto(
     string Url,
     DateTime? ArchivedAt,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    DateTime? DeletesOn);
 
 /// <summary>A file as the metadata form shows it, with the version to write back.</summary>
 public sealed record MediaDetailDto(
@@ -64,6 +67,8 @@ public sealed record MediaWriteDto(
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
 internal sealed partial class MediaMapper
 {
+    // Not a column of the file: the list fills it for a whole page from the uses of the modules (T4).
+    [MapValue(nameof(MediaListDto.DeletesOn), null)]
     public partial MediaListDto ToList(MediaAsset media);
 
     public partial MediaDetailDto ToDetail(MediaAsset media);

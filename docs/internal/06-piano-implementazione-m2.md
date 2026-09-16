@@ -293,8 +293,9 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T1 | Nucleo: i dati di riferimento del mondo | — | aeroporti del mondo con IATA e coordinate, piste con le testate, tipi di aereo, confini dei FIR |
 | T2 | Nucleo: il tracker e il meteo — **fatta il 16 set 2026** | — | sessioni, piani e tracce nel client IVAO con fixture di voli veri; `IWeatherSource` (NOAA → IVAO → VATSIM) |
 | T3 | Nucleo: scope per risorsa e interessato — **fatta il 16 set 2026** | — | l'unico handler estende i grant a una riga e nega all'interessato |
-| T4 | Nucleo: proiezioni dei moduli, award, file con scadenza, preferenze | T3 | le righe di modulo proiettano davvero; più voci di calendario; award; `cms_media_uses` e il job; preferenze dell'utente |
-| T5 | Modulo: lo scheletro | T4 | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
+| T4a | Nucleo: proiezioni dei moduli e file con scadenza — **fatta il 16 set 2026** | T3 | le righe di modulo proiettano davvero; più voci di calendario; `cms_media_uses` e il job |
+| T4b | Nucleo: award e preferenze | T4a | award; preferenze dell'utente |
+| T5 | Modulo: lo scheletro | T4a | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
 | T6 | I tour | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni |
 | T7 | Le leg e la forma del tour | T1, T6 | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
 | T8 | L'import delle leg | T7 | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
@@ -303,8 +304,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
 | T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
-| T14 | Contestazioni, chiarimenti, segnalazioni | T4, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
-| T15 | Completamento, validatori, piloti, ban | T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
+| T14 | Contestazioni, chiarimenti, segnalazioni | T4a, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
+| T15 | Completamento, validatori, piloti, ban | T4b, T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
 | T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
 | T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
 | T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`; tarature |
@@ -313,7 +314,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T21 | L'app del validatore parla con l'hub | T19 | nel repository `AutomaticValidatorTour`, fuori da questo; la mail a Navigraph prima di distribuirla |
 
 **Parallelismo possibile** (se servisse): T1, T2 e T3 non si toccano; T8 e T9 nemmeno; T12, T14, T15 e T16 dopo T13 toccano pezzi
-diversi ma tutti `FlightOpsDbContext`, quindi **in fila** per le migrazioni.
+diversi ma tutti `FlightOpsDbContext`, quindi **in fila** per le migrazioni. **T4b e T5** migrano contesti diversi e possono andare in
+parallelo; l'unico punto in comune è `IModule`, se T4b gli fa dichiarare le chiavi delle preferenze.
 
 ### T0 — Note, piano 0.79, parte C
 
@@ -501,6 +503,47 @@ Se in apertura risulta troppo per una PR, si divide in **T4a** (punti 1–3) e *
 proiezioni; i test della nota dei file; un award assegnato da una segnalazione la segna gestita; una preferenza si legge da un altro
 cookie dello stesso utente e non da un altro utente.
 **Fatta quando**: i test sopra e quelli della spina dorsale passano; in sviluppo il job dei media gira e scrive la sua riga di log.
+
+**Divisa il 16 settembre 2026** in apertura (Carmine): **T4a** = punti 1–3, branch `m2/t4a-module-projections`; **T4b** = punti 4–5,
+in una chat nuova, branch `m2/t4b-awards-and-preferences`. I punti 1–3 si tengono fra loro (gli usi dei file dipendono dalla
+correzione delle proiezioni), award e preferenze no.
+
+**T4a fatta il 16 settembre 2026** (branch `m2/t4a-module-projections`). Com'è andata:
+
+- **Prima il test che fallisce**, come chiedeva la fase: `ModuleProjectionTests` su una riga nuova del modulo di prova (`SampleEvent`,
+  tabella `smp_events`, migrazione `AddSampleEvents` nel progetto dei test) è stato visto **rosso in locale** con la ricerca vuota, e
+  verde dopo la correzione.
+- **La correzione**: `ModuleDbContext` mappa le quattro tabelle delle proiezioni con le configurazioni del nucleo ed
+  `SetIsTableExcludedFromMigrations`, e le convenzioni del nucleo passano da `HubDbContext.ApplyConventions`, sigillate come
+  `OnModelCreating` (un modulo aggiunge le sue con `ConfigureModuleConventions`). La migrazione del modulo di prova contiene **solo**
+  `smp_events`: le tabelle del nucleo restano nella storia del nucleo.
+- ⚠️ **Un contesto che non mappa le tabelle ora è un errore**: l'interceptor lancia invece di saltare. Il salto silenzioso era proprio
+  il difetto, e tenerlo avrebbe nascosto il prossimo.
+- **Più voci di calendario**: `ProjectionSnapshot.Calendar` è un elenco, la posizione diventa `cms_calendar_entries.sequence` e l'indice
+  unico è `source_module, source_id, sequence`; una riga con meno voci perde quelle in fondo. Le voci dello staff restano la numero zero.
+- **Gli usi dei file**: `MediaUseProjection`, `cms_media_uses` (una migrazione sola del nucleo per la fase,
+  `AddMediaUsesAndCalendarSequence`, e non `AddMediaUses` come diceva la nota), riscritti per intero; lo stesso file nominato due volte
+  dalla stessa riga è un uso, con la scadenza più lunga.
+- ⚠️ **Trovato scrivendo**: la regola «una bozza non proietta» stava nell'interceptor e annullava **tutto** lo snapshot, quindi un tour in
+  bozza avrebbe perso il banner, contro la nota §3. Ora una riga non pubblicata tiene **solo** gli usi dei file
+  (`ProjectionSnapshot.Unpublished`).
+- **Una domanda sola**: `ContentReferenceIndex.UsesOfMediaAsync` restituisce `MediaUsage` (pagine e usi dei moduli), con la regola in un
+  posto (`IsInUse`, `DeletesOn`); `MediaDeletion` è l'eliminazione estratta da `MediaEndpoints`, usata dalla libreria e dal job. Il rifiuto
+  per un uso di modulo ha la sua chiave, `errors.media.inUseByModule`, perché quello della pagina offre l'archivio e qui l'archivio non serve.
+- **`MediaExpiryJob`** alle 04:00 della divisione, mezz'ora dopo il promemoria dei documenti: un file con tutti gli usi finiti va via con
+  la stessa eliminazione a mano (riga d'audit di nessuno, file tolto dal disco se nessuna versione lo mostra), e i suoi usi con lui. Una
+  pagina pubblicata vince anche qui: il file resta e i suoi usi pure, così si riguarda quando la pagina lo lascia.
+- **L'avviso nella libreria** è una colonna, «Sarà eliminato il», vuota per quasi tutti i file. ⚠️ **Estensione del motore della lista**
+  (piano 0.81, §16.6): `CrudOptions.ToListPage` mappa una pagina in una volta, perché la data è un fatto degli usi e non del file; due
+  query per pagina. Nessuna schermata a mano.
+- **I test**: tre d'integrazione sulle proiezioni del modulo (ricerca e due voci di calendario che si riscrivono e spariscono con un
+  `null`; il rollback della transazione del modulo che non lascia niente; la bozza che tiene solo gli usi, la proroga e il cambio di banner),
+  due sul job e sull'eliminazione (un uso vivo tiene il file, tutti finiti lo tolgono come a mano, un file mai dichiarato non si tocca;
+  l'eliminazione a mano rifiutata, la data nella lista che segue la proroga e sparisce quando la riga lascia il file), cinque unit su
+  `MediaUsage`. VID `780031–780032`, titoli `fo-test-proj-…` e `fo-test-media-…`.
+- **Verificato in locale** (Docker acceso): integrazione **213** tutte verdi, unit .NET **370**, Vitest **405**, typecheck, lint, formato,
+  i18n. **Non verificato**: il job lanciato dal suo orario nel DB di sviluppo — la riga di log la scrive il test d'integrazione, non
+  un'esecuzione alle 04:00.
 
 ### T5 — Modulo: lo scheletro
 

@@ -279,7 +279,8 @@
       "visibility": "Visibilità",
       "ownerDepartment": "Dipartimento",
       "url": "Indirizzo",
-      "createdAt": "Caricato"
+      "createdAt": "Caricato",
+      "deletesOn": "Sarà eliminato il"
     },
     "hints": {
       "alt": "Che cosa viene detto a chi non può vedere l'immagine. Ogni blocco che mostra questo file lo eredita."

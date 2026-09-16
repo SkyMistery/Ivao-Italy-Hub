@@ -48,6 +48,7 @@ public static class ContentServiceCollectionExtensions
 
         services.TryAddScoped<ContentPublishService>();
         services.TryAddScoped<ContentReferenceIndex>();
+        services.TryAddScoped<MediaDeletion>();
         services.TryAddScoped<ContentAddresses>();
         services.TryAddScoped<ContentReviewService>();
         services.TryAddScoped<ContentSeeder>();
@@ -62,8 +63,21 @@ public static class ContentServiceCollectionExtensions
                 .WithIdentity($"{DocumentReviewJob.JobName}-daily")
                 .WithCronSchedule(DailyCron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
 
+        // The files whose every use has ended (T4, note 2026-09-15-file-con-scadenza), once a day at
+        // the same hour, after the review reminder.
+        services.AddScoped<MediaExpiryJob>();
+        services.AddQuartz(quartz => quartz.AddJob<MediaExpiryJob>(job => job.WithIdentity(MediaExpiryJob.JobName)));
+        services.AddOptions<QuartzOptions>()
+            .Configure<IOptions<DivisionOptions>>((options, division) => options.AddTrigger(trigger => trigger
+                .ForJob(MediaExpiryJob.JobName)
+                .WithIdentity($"{MediaExpiryJob.JobName}-daily")
+                .WithCronSchedule(MediaExpiryCron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
+
         return services;
     }
+
+    /// <summary>04:00 in the time zone of the division: half an hour after the review reminder.</summary>
+    private const string MediaExpiryCron = "0 0 4 * * ?";
 
     /// <summary>03:30 in the time zone of the division: after the snapshot, before anybody is up.</summary>
     private const string DailyCron = "0 30 3 * * ?";

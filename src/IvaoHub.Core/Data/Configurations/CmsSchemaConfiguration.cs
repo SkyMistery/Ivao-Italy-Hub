@@ -207,7 +207,8 @@ internal sealed class CalendarEntryConfiguration : IEntityTypeConfiguration<Cale
         builder.Property(entry => entry.SourceModule).HasMaxLength(32).IsRequired();
         builder.Property(entry => entry.SourceId).HasMaxLength(64).IsRequired();
         builder.Property(entry => entry.Url).HasMaxLength(1024).IsRequired();
-        builder.HasIndex(entry => new { entry.SourceModule, entry.SourceId }).IsUnique();
+        // One source, several entries, told apart by their position (M2, T4).
+        builder.HasIndex(entry => new { entry.SourceModule, entry.SourceId, entry.Sequence }).IsUnique();
         builder.HasIndex(entry => entry.StartsAtUtc);
         builder.HasIndex(entry => new { entry.OwnerDepartment, entry.StartsAtUtc });
     }
@@ -243,6 +244,21 @@ internal sealed class AwardSignalConfiguration : IEntityTypeConfiguration<AwardS
         builder.Property(signal => signal.Reason).HasMaxLength(256).IsRequired();
         builder.HasIndex(signal => new { signal.SourceModule, signal.SourceId, signal.Vid }).IsUnique();
         builder.HasIndex(signal => new { signal.Vid, signal.Status });
+    }
+}
+
+internal sealed class MediaUseConfiguration : IEntityTypeConfiguration<MediaUse>
+{
+    public void Configure(EntityTypeBuilder<MediaUse> builder)
+    {
+        builder.ToTable("cms_media_uses");
+        builder.HasKey(use => use.Id);
+        builder.Property(use => use.SourceModule).HasMaxLength(32).IsRequired();
+        builder.Property(use => use.SourceId).HasMaxLength(64).IsRequired();
+        builder.HasIndex(use => new { use.SourceModule, use.SourceId, use.MediaId }).IsUnique();
+
+        // "Who uses this file?", asked by the library, by a delete and by the expiry job.
+        builder.HasIndex(use => new { use.MediaId, use.UsedUntil });
     }
 }
 

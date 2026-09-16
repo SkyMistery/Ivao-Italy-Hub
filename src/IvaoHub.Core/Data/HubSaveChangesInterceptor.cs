@@ -25,8 +25,8 @@ namespace IvaoHub.Core.Data;
 /// <item>the write guard: nobody writes into the department of somebody else, not even by calling
 /// <c>SaveChanges</c> directly with the policy forgotten;</item>
 /// <item>a row in <c>hub_audit_log</c> for every entity marked <see cref="AuditedAttribute"/>;</item>
-/// <item>the projections into search, calendar and award signals, inside the very transaction of
-/// the write;</item>
+/// <item>the projections into search, calendar, award signals and uses of files, inside the very
+/// transaction of the write;</item>
 /// <item>a fresh <c>security_stamp</c> for every member whose session a written row decides
 /// (<see cref="IAffectsUserSession"/>), so a permission that changed bites on the next request.</item>
 /// </list>
@@ -236,8 +236,19 @@ public sealed class HubSaveChangesInterceptor(
             EnsureWriteIsAllowed(context, entry);
             CollectAudit(entry, pending, vid, now);
 
-            if (entry.Entity is IProjectable projectable && ProjectionWriter.CanProject(context))
+            if (entry.Entity is IProjectable projectable)
             {
+                // Until T4 a context without the projection tables skipped the projection here without
+                // a word, and every row of a module went unprojected (note
+                // 2026-09-15-contatti-con-risposte §3.3). Every context of the hub maps them now, so
+                // one that does not is a mistake to be told about, not a case to be tolerated.
+                if (!ProjectionWriter.CanProject(context))
+                {
+                    throw new InvalidOperationException(
+                        $"{entry.Metadata.ClrType.Name} projects itself, but {context.GetType().Name} does not map the "
+                        + "projection tables. A module context derives from ModuleDbContext, which maps them.");
+                }
+
                 pending.Projections.Add(new PendingProjection(projectable, entry.State == EntityState.Deleted));
             }
 
@@ -403,8 +414,8 @@ public sealed class HubSaveChangesInterceptor(
 
     /// <summary>
     /// Whether this context can see <c>hub_users</c> at all. A module context has its own model
-    /// and no user table in it, so there is nothing to stamp and nothing to fail about; the same
-    /// answer <c>ProjectionWriter.CanProject</c> gives about the projection tables.
+    /// and no user table in it, so there is nothing to stamp and nothing to fail about. (The
+    /// projection tables used to be answered the same way; since T4 a module context maps them.)
     /// </summary>
     private static bool CanReachUsers(DbContext context) =>
         context.Model.FindEntityType(typeof(HubUser)) is not null;
@@ -552,20 +563,33 @@ public sealed class HubSaveChangesInterceptor(
 
     /// <summary>
     /// What every touched row wants to look like, decided in one place before anything is read: the
-    /// writer then loads what those sources have projected so far in three queries for the whole
-    /// save, instead of three for each row.
+    /// writer then loads what those sources have projected so far in one query per table for the
+    /// whole save, instead of one per table for each row.
     /// </summary>
     private List<ProjectionRequest> BuildRequests(Pending pending) =>
     [
         .. pending.Projections.Select(projection => new ProjectionRequest(
             projection.Entity.SourceModule,
             projection.Entity.SourceId,
-            // A draft has nothing public to find: the rule lives here, once, instead of in every
-            // entity that can be published.
-            projection.Removed || projection.Entity is IPublishable { Status: not PublishStatus.Published }
-                ? null
-                : projection.Entity.Project(projectionContext))),
+            Snapshot(projection))),
     ];
+
+    private ProjectionSnapshot? Snapshot(PendingProjection projection)
+    {
+        if (projection.Removed)
+        {
+            return null;
+        }
+
+        var snapshot = projection.Entity.Project(projectionContext);
+
+        // A draft has nothing public to find: the rule lives here, once, instead of in every entity
+        // that can be published. What it keeps is the files it uses — a tour being prepared needs its
+        // banner as much as an open one (note 2026-09-15-file-con-scadenza §3).
+        return projection.Entity is IPublishable { Status: not PublishStatus.Published }
+            ? snapshot?.Unpublished()
+            : snapshot;
+    }
 
     private Pending? TakeCompleted(DbContext? context)
     {

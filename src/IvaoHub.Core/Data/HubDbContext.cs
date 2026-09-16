@@ -84,8 +84,17 @@ public class HubDbContext : DbContext, IVisibilityScope
     public DbSet<CalendarKind> CalendarKinds => Set<CalendarKind>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<AwardSignal> AwardSignals => Set<AwardSignal>();
+    public DbSet<MediaUse> MediaUses => Set<MediaUse>();
 
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+        ApplyConventions(configurationBuilder);
+
+    /// <summary>
+    /// How the hub stores what it stores: translated fields, enums as text, instants as UTC, column
+    /// names. Shared with every module context (<c>ModuleDbContext</c>), which maps the projection
+    /// tables of the core and has to write them exactly as this context does (M2, T4).
+    /// </summary>
+    internal static void ApplyConventions(ModelConfigurationBuilder configurationBuilder)
     {
         ArgumentNullException.ThrowIfNull(configurationBuilder);
 
