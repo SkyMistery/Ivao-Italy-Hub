@@ -33,6 +33,10 @@ public sealed class RolePermissionMatrixTests
             // (note 2026-09-13-contenuti-centralizzati, 3.6). Nor Content.Approve, which is theirs
             // too — a coordinator marks a page ready and does not publish it.
             CorePermissions.MenuView,
+            // The awards of their own department: written by the department, assigned by whoever
+            // holds the global Awards.Assign (M2, T4b).
+            CorePermissions.AwardsView,
+            CorePermissions.AwardsEdit,
         ];
 
         Assert.Equal(expected.Order(), RolePermissionMatrix.OnOwnDepartment(StaffLevel.Coordinator).Order());

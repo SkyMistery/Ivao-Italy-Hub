@@ -113,6 +113,18 @@
     },
     "path": {
       "invalid": "An address of this site starts with a slash. Anywhere else needs its full address, http or https."
+    },
+    "awards": {
+      "assigned": "Somebody holds this award, so it cannot be deleted. Retire it instead.",
+      "unknown": "That award does not exist.",
+      "retired": "This award is retired: it cannot be assigned any more.",
+      "signalNotPending": "This line of the queue is no longer waiting: somebody has already answered it.",
+      "signalOtherMember": "The line of the queue is about another member.",
+      "handledByAssignment": "An assigned line stays assigned: revoke the assignment instead."
+    },
+    "preferences": {
+      "unknownKey": "The hub keeps no preference by that name.",
+      "invalidValue": "That is not a value this preference accepts."
     }
   }
 }

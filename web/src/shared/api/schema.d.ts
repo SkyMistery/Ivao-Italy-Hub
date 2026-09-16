@@ -71,6 +71,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/preferences/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MePreference"];
+        put: operations["MeSetPreference"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blocks/data/{type}": {
         parameters: {
             query?: never;
@@ -670,6 +686,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/awards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AwardsList"];
+        put?: never;
+        post: operations["AwardsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/awards/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AwardsGet"];
+        put: operations["AwardsUpdate"];
+        post?: never;
+        delete: operations["AwardsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/award-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AwardAssignmentsList"];
+        put?: never;
+        post: operations["AwardAssignmentsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/award-assignments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AwardAssignmentsGet"];
+        put: operations["AwardAssignmentsUpdate"];
+        post?: never;
+        delete: operations["AwardAssignmentsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/award-signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AwardSignalsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/award-signals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AwardSignalsGet"];
+        put: operations["AwardSignalsUpdate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/grants": {
         parameters: {
             query?: never;
@@ -821,6 +933,163 @@ export interface components {
             ip: null | string;
             /** Format: date-time */
             at: string;
+        };
+        /** @description An assignment as the form loads it. */
+        AwardAssignmentDetailDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            awardId: number;
+            /** Format: int32 */
+            vid: number;
+            reason: string;
+            /** Format: int64 */
+            signalId: null | number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description One line of the register. Localized&lt;string&gt;? AwardAssignmentListDto.AwardName is not a column of the assignment: the list reads
+         *     the names of a whole page at once.
+         */
+        AwardAssignmentListDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            awardId: number;
+            awardName: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            vid: number;
+            reason: string;
+            /** Format: int64 */
+            signalId: null | number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+        };
+        /**
+         * @description What a client may set on an assignment. long? AwardAssignmentWriteDto.SignalId is read on creation only — it is the
+         *     line of the queue being answered — and an update leaves the one the row has.
+         */
+        AwardAssignmentWriteDto: {
+            /** Format: int64 */
+            awardId: number;
+            /** Format: int32 */
+            vid: number;
+            reason: string;
+            /** Format: int64 */
+            signalId: null | number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description An award as the form loads it, with the version to write back. */
+        AwardDetailDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            name: components["schemas"]["LocalizedOfstring"];
+            description: null | components["schemas"]["LocalizedOfstring"];
+            criteria: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            imageMediaId: null | number;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            updatedBy: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description An award as the catalogue lists it, and as the select of an assignment offers it. */
+        AwardListDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            name: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            imageMediaId: null | number;
+            isActive: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description A signal in full, as the assignment form reads it to fill itself. */
+        AwardSignalDetailDto: {
+            /** Format: int64 */
+            id: number;
+            sourceModule: string;
+            sourceId: string;
+            /** Format: int32 */
+            vid: number;
+            reason: string;
+            /** Format: int64 */
+            awardId: null | number;
+            status: components["schemas"]["AwardSignalStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            handledAt: null | string;
+            /** Format: int32 */
+            handledBy: null | number;
+        };
+        /**
+         * @description One line of the queue: who, why, from which row of which module, and the award that row proposes
+         *     with its name, read for the whole page at once.
+         */
+        AwardSignalListDto: {
+            /** Format: int64 */
+            id: number;
+            sourceModule: string;
+            sourceId: string;
+            /** Format: int32 */
+            vid: number;
+            reason: string;
+            /** Format: int64 */
+            awardId: null | number;
+            awardName: null | components["schemas"]["LocalizedOfstring"];
+            status: components["schemas"]["AwardSignalStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            handledAt: null | string;
+            /** Format: int32 */
+            handledBy: null | number;
+        };
+        /**
+         * @description What happened to a signal. Awards are never assigned automatically (plan section 9.1).
+         * @enum {unknown}
+         */
+        AwardSignalStatus: "Pending" | "Handled" | "Dismissed";
+        /**
+         * @description The only thing a person writes on a signal: dismissing it, or putting a dismissed one back in the
+         *     queue. `Handled` is never written by hand — an assignment writes it.
+         */
+        AwardSignalWriteDto: {
+            status: components["schemas"]["AwardSignalStatus"];
+        };
+        /** @description What a client may set on an award. The audit columns are the interceptor's. */
+        AwardWriteDto: {
+            ownerDepartment: components["schemas"]["Department"];
+            name: components["schemas"]["LocalizedOfstring"];
+            description: null | components["schemas"]["LocalizedOfstring"];
+            criteria: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            imageMediaId: null | number;
+            isActive: boolean;
+            /** Format: date-time */
+            rowVersion: string;
         };
         /**
          * @description What a block is made of. A BlockKind.Content block draws what an editor typed into it; a
@@ -1555,6 +1824,7 @@ export interface components {
         };
         /** Format: binary */
         IFormFile: string;
+        JsonElement: unknown;
         JsonNode: unknown;
         /** @description A link as the form shows it, with the audit trail and the version to write back. */
         LinkDetailDto: {
@@ -1829,6 +2099,75 @@ export interface components {
         PagedResultOfAuditListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["AuditListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfAwardAssignmentListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["AwardAssignmentListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfAwardListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["AwardListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfAwardSignalListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["AwardSignalListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -2199,6 +2538,15 @@ export interface components {
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /** @description One preference of the member asking; `null` when they never chose. */
+        UserPreferenceDto: {
+            key: string;
+            value: null | components["schemas"]["JsonElement"];
+        };
+        /** @description The value to keep, whatever JSON the declaring module accepts. */
+        UserPreferenceWriteDto: {
+            value: components["schemas"]["JsonElement"];
+        };
         /** @description What was deployed. Anonymous, and never cached, so a report can quote a build. */
         VersionResponse: {
             version: string;
@@ -2294,6 +2642,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationPreferenceDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    MePreference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferenceDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    MeSetPreference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPreferenceWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferenceDto"];
                 };
             };
             /** @description Bad Request */
@@ -4027,6 +4441,417 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContactDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfAwardListDto"];
+                };
+            };
+        };
+    };
+    AwardsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AwardWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    AwardsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AwardWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardAssignmentsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfAwardAssignmentListDto"];
+                };
+            };
+        };
+    };
+    AwardAssignmentsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AwardAssignmentWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardAssignmentDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    AwardAssignmentsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardAssignmentDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardAssignmentsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AwardAssignmentWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardAssignmentDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardAssignmentsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardSignalsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfAwardSignalListDto"];
+                };
+            };
+        };
+    };
+    AwardSignalsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardSignalDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AwardSignalsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AwardSignalWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardSignalDetailDto"];
                 };
             };
             /** @description Bad Request */

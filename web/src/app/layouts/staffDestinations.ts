@@ -1,10 +1,13 @@
 import {
+  Award,
+  BadgeCheck,
   Boxes,
   CalendarDays,
   ClipboardCheck,
   FileArchive,
   FileText,
   Images,
+  Inbox,
   KeyRound,
   LayoutDashboard,
   LayoutTemplate,
@@ -87,6 +90,10 @@ const CONTENT_APPROVE = 'Content.Approve';
 const LINKS_VIEW = 'Links.View';
 const MEDIA_VIEW = 'Media.View';
 const AUDIT_VIEW = 'Audit.View';
+/** The catalogue of awards, read on any department (M2, T4b). */
+const AWARDS_VIEW = 'Awards.View';
+/** The queue and the register of awards, global. */
+const AWARDS_ASSIGN = 'Awards.Assign';
 
 export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => string): StaffDestinationGroup[] {
   const siteOwner = menuDepartment(bootstrap);
@@ -211,6 +218,41 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
           href: entry.path,
         })),
     });
+  }
+
+  // The awards (M2, T4b): one group and not an entry per department, because the catalogue is read by
+  // every department and the queue and the register belong to whoever assigns, wherever they sit.
+  const awards: StaffDestination[] = [
+    ...(holdsPermissionAnywhere(bootstrap, AWARDS_VIEW)
+      ? [
+          {
+            title: t('awards.title'),
+            description: t('awards.description'),
+            Icon: Award,
+            href: '/staff/awards',
+          },
+        ]
+      : []),
+    ...(holdsPermissionAnywhere(bootstrap, AWARDS_ASSIGN)
+      ? [
+          {
+            title: t('awardSignals.title'),
+            description: t('awardSignals.description'),
+            Icon: Inbox,
+            href: '/staff/awards/queue',
+          },
+          {
+            title: t('awardAssignments.title'),
+            description: t('awardAssignments.description'),
+            Icon: BadgeCheck,
+            href: '/staff/awards/assignments',
+          },
+        ]
+      : []),
+  ];
+
+  if (awards.length > 0) {
+    groups.push({ title: t('awards.section'), Icon: Award, items: awards });
   }
 
   const departments: StaffDestinationGroup[] = reachableDepartments(bootstrap).map((department) => {

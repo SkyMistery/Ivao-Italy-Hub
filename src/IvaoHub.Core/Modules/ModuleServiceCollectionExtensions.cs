@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Preferences;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,6 +67,10 @@ public static class ModuleServiceCollectionExtensions
             .. CorePermissions.All,
             .. provider.GetRequiredService<ModuleRegistry>().Enabled.SelectMany(module => module.Permissions),
         ]));
+
+        // The preferences, composed the same way and for the same reason (M2, T4b).
+        services.TryAddSingleton(provider => new PreferenceCatalog(
+            provider.GetRequiredService<ModuleRegistry>().Enabled.Select(module => (module.Key, module.Preferences))));
 
         return services;
     }

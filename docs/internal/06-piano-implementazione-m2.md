@@ -294,7 +294,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T2 | Nucleo: il tracker e il meteo — **fatta il 16 set 2026** | — | sessioni, piani e tracce nel client IVAO con fixture di voli veri; `IWeatherSource` (NOAA → IVAO → VATSIM) |
 | T3 | Nucleo: scope per risorsa e interessato — **fatta il 16 set 2026** | — | l'unico handler estende i grant a una riga e nega all'interessato |
 | T4a | Nucleo: proiezioni dei moduli e file con scadenza — **fatta il 16 set 2026** | T3 | le righe di modulo proiettano davvero; più voci di calendario; `cms_media_uses` e il job |
-| T4b | Nucleo: award e preferenze | T4a | award; preferenze dell'utente |
+| T4b | Nucleo: award e preferenze — **fatta il 16 set 2026** | T4a | award; preferenze dell'utente |
 | T5 | Modulo: lo scheletro | T4a | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
 | T6 | I tour | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni |
 | T7 | Le leg e la forma del tour | T1, T6 | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
@@ -544,6 +544,45 @@ correzione delle proiezioni), award e preferenze no.
 - **Verificato in locale** (Docker acceso): integrazione **213** tutte verdi, unit .NET **370**, Vitest **405**, typecheck, lint, formato,
   i18n. **Non verificato**: il job lanciato dal suo orario nel DB di sviluppo — la riga di log la scrive il test d'integrazione, non
   un'esecuzione alle 04:00.
+
+**T4b fatta il 16 settembre 2026** (branch `m2/t4b-awards-and-preferences`). Com'è andata:
+
+- **Quattro domande a Carmine in apertura**, perché il piano non le decideva: nota `decisions/2026-09-16-award-e-preferenze.md`,
+  piano **0.82**. Il catalogo è **del dipartimento** (`Awards.View`/`Awards.Edit`, nuovi, a coordinator, assistant e advisor come i
+  link) e letto da tutti; **assegna chi ha `Awards.Assign`**, globale. La segnalazione **propone l'award** (`award_id`). **Nessuna
+  mail.** Il membro **non vede mai** i suoi award nell'hub: li vede sul profilo IVAO.
+- **Tre risorse del motore CRUD, nessun endpoint scritto a mano**: `/api/awards` (dipartimentale, `ISharedForReading` su tutte le
+  righe), `/api/award-assignments` e `/api/award-signals` (globali dietro `Awards.Assign`, la forma dei grant). Assegnare da una riga
+  della coda è **creare un'assegnazione con `signalId`**: `BeforeSave` controlla che la riga sia in attesa e dello stesso VID e la
+  segna gestita nello stesso salvataggio; l'indice unico su `signal_id` chiude la corsa. Scartare è un `PUT` dello stato. I nomi degli
+  award nella coda e nel registro vengono da `ToListPage` (T4a), una query per pagina.
+- **Un award ricevuto non si elimina**, si ritira: `CrudOptions.Delete` lancia `DomainRefusalException` (`errors.awards.assigned`), e la
+  FK `hub_award_assignments.award_id` è `Restrict`. L'immagine è `MediaUseProjection(id, null)` con sorgente `core`: un uso senza fine.
+- **Le preferenze**: `hub_user_preferences`, `GET`/`PUT /api/me/preferences/{key}`, le chiavi da **`IModule.Preferences`**
+  (`PreferenceDescriptor`, `OneOf` per un insieme chiuso) composte in `PreferenceCatalog`, che rifiuta all'avvio una chiave fuori dal
+  nome del modulo o dichiarata due volte. Nessuna riga = il membro non ha scelto (200 con `value: null`, non 404). Il modulo di prova
+  dichiara `sample.order`. ⚠️ **Per T5, che va in parallelo**: `IModule` ha un membro in più, con il default vuoto in `ModuleBase`.
+- **Una migrazione del nucleo**, `AddAwardsAndUserPreferences`, solo additiva. Lo snapshot del modulo di prova si allinea alla colonna
+  nuova di `cms_award_signals` **senza migrazione** (quella generata era vuota, perché la tabella è esclusa): ogni contesto di modulo
+  generato prima di questa fase — `FlightOpsDbContext` di T5 — avrà lo stesso scarto innocuo alla sua prossima migrazione.
+- **Schermate**: `/staff/awards` (catalogo, come i link), `/staff/awards/queue` (la coda: assegna, scarta, rimetti in coda),
+  `/staff/awards/assignments` (il registro, con la revoca), un gruppo «Award» nella barra dello staff. Nessun componente nuovo.
+- ⚠️ **Trovato dal giro e2e, non dai test unitari**: il form dell'award andava in «Something went wrong» perché `SchemaForm` vuole
+  `mediaLibrary` e `division` per un campo media, e i test di schema non montano il form. Il nuovo `e2e/full/awards.spec.ts` (scrive,
+  assegna a mano, trova nel registro, revoca, elimina) l'ha preso; la coda la provano i test d'integrazione, perché solo una riga di
+  modulo la riempie.
+- **Scelte piccole, dette qui**: revocare un'assegnazione **non** rimette la riga in coda; uno stesso VID può ricevere due volte lo stesso
+  award (nessun indice unico: un tour di un anno e quello dell'anno dopo possono dare lo stesso award); il selettore degli award offre i
+  primi cento attivi.
+- **I test**: integrazione `AwardsTests` (tre: assegnare dalla coda la gestisce e non due volte, una riga gestita non si scarta e l'award
+  non si elimina; scartare e rimettere in coda, il VID sbagliato, l'award ritirato; il catalogo letto da un altro dipartimento e non
+  scritto, coda e registro chiusi a chi non assegna, l'uso dell'immagine che nasce e sparisce) e `UserPreferenceTests` (due: un altro
+  cookie dello stesso membro sì, un altro membro no; chiave sconosciuta, valore rifiutato, anonimo 401); unit `PreferenceCatalogTests`
+  (otto) e la riga del coordinator in `RolePermissionMatrixTests`; Vitest `features/awards/schema.test.ts` (tre); e2e `awards.spec.ts`.
+  VID `780041–780049`, nomi `fo-test-award-…`.
+- **Verificato in locale** (Docker acceso): integrazione **218** tutte verdi, unit .NET **378**, Vitest **408**, typecheck, lint,
+  formato, i18n, build Release, giro e2e completo **20** e smoke **80**. **Non verificato**: le schermate a mano nel browser di sviluppo
+  (il login passa da IVAO con le credenziali di Carmine); le ha guidate il giro e2e con il login del banco.
 
 ### T5 — Modulo: lo scheletro
 

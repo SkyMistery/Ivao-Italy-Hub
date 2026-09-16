@@ -86,6 +86,16 @@ public static class CorePermissions
     public const string MenuView = "Menu.View";
     public const string MenuEdit = "Menu.Edit";
 
+    /// <summary>
+    /// The area the CRUD engine derives <c>Awards.View</c> and <c>Awards.Edit</c> from: the catalogue,
+    /// written by the department an award belongs to (M2, T4b). Assigning one is
+    /// <see cref="AwardsAssign"/>, which is global.
+    /// </summary>
+    public const string AwardsArea = "Awards";
+
+    public const string AwardsView = "Awards.View";
+    public const string AwardsEdit = "Awards.Edit";
+
     public const string PermissionsManage = "Permissions.Manage";
     public const string ModulesManage = "Modules.Manage";
     public const string AuditView = "Audit.View";
@@ -116,6 +126,8 @@ public static class CorePermissions
         new(ContactsEdit, IsGlobal: false),
         new(MenuView, IsGlobal: false),
         new(MenuEdit, IsGlobal: false),
+        new(AwardsView, IsGlobal: false),
+        new(AwardsEdit, IsGlobal: false),
         new(PermissionsManage, IsGlobal: true),
         new(ModulesManage, IsGlobal: true),
         new(AuditView, IsGlobal: true),

@@ -1712,6 +1712,69 @@
       "description": "Le voci già archiviate sotto questo tipo mantengono la chiave con cui sono state scritte, e nessuno le riscrive. Per impedire che se ne archivino di nuove, togli invece «in uso»."
     }
   },
+  "awards": {
+    "section": "Award",
+    "title": "Catalogo degli award",
+    "description": "Gli award che ogni dipartimento assegna, con l'immagine e che cosa deve aver fatto un membro.",
+    "create": "Nuovo award",
+    "edit": "Modifica award",
+    "delete": {
+      "title": "Eliminare questo award?",
+      "description": "Si elimina solo un award che nessuno ha ricevuto. Uno già assegnato si ritira: togli «Attivo»."
+    },
+    "fields": {
+      "imageMediaId": "Immagine",
+      "name": "Nome",
+      "description": "Descrizione",
+      "criteria": "Criterio",
+      "isActive": "Attivo",
+      "ownerDepartment": "Dipartimento",
+      "updatedAt": "Ultima modifica"
+    }
+  },
+  "awardSignals": {
+    "title": "Coda degli award",
+    "description": "I membri che l'hub segnala per un award. Decide sempre una persona.",
+    "assign": "Assegna",
+    "dismiss": "Scarta",
+    "restore": "Rimetti in coda",
+    "fields": {
+      "vid": "VID",
+      "reason": "Perché",
+      "awardName": "Award proposto",
+      "sourceModule": "Da",
+      "status": "Stato",
+      "createdAt": "Segnalato il"
+    },
+    "options": {
+      "status": {
+        "Pending": "In attesa",
+        "Dismissed": "Scartate",
+        "Handled": "Assegnate"
+      }
+    }
+  },
+  "awardAssignments": {
+    "title": "Award assegnati",
+    "description": "Chi ha ricevuto quale award, perché, e chi l'ha deciso.",
+    "create": "Assegna un award",
+    "edit": "Modifica assegnazione",
+    "assign": "Assegna",
+    "revoke": "Revoca",
+    "formHint": "Assegna l'award anche su IVAO: il membro lo vede sul suo profilo IVAO, e questo registro tiene chi l'ha deciso e perché.",
+    "delete": {
+      "title": "Revocare questa assegnazione?",
+      "description": "Esce dal registro; il log di audit tiene com'era. Ricordati di toglierla anche su IVAO."
+    },
+    "fields": {
+      "awardId": "Award",
+      "awardName": "Award",
+      "vid": "VID",
+      "reason": "Motivazione",
+      "createdBy": "Assegnato da",
+      "createdAt": "Assegnato il"
+    }
+  },
   "backOffice": {
     "content": "Contenuti",
     "createIn": "Nel dipartimento",

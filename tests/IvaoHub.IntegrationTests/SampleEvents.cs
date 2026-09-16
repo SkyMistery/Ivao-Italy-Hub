@@ -34,6 +34,15 @@ public sealed class SampleEvent : IProjectable, IPublishable
 
     public DateTime? BannerNeededUntil { get; set; }
 
+    /// <summary>
+    /// The member the row points out for an award, and the award it proposes (T4b): what a completed
+    /// tour will signal. Not columns — the test keeps the instance and saves it again, and the
+    /// projection reads the instance, not the table.
+    /// </summary>
+    public int? AwardeeVid { get; set; }
+
+    public long? ProposedAwardId { get; set; }
+
     public string SourceModule => SampleModule.ModuleKey;
 
     public string SourceId => $"event:{Id}";
@@ -62,7 +71,7 @@ public sealed class SampleEvent : IProjectable, IPublishable
                     title,
                     Description: null)),
             ],
-            [],
+            AwardeeVid is { } awardee ? [new AwardSignalProjection(awardee, $"completed {Title}", ProposedAwardId)] : [],
             BannerMediaId is { } media ? [new MediaUseProjection(media, BannerNeededUntil)] : []);
     }
 }

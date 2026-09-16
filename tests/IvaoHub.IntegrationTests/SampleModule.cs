@@ -4,6 +4,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Preferences;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -90,6 +91,12 @@ public sealed class SampleModule : ModuleBase
         [new NavItemDescriptor(StaffNavigationKey, StaffNavigationPath, ViewPermission)];
 
     public override IReadOnlyList<string> SpaFallbackExclusions => [Exclusion];
+
+    /// <summary>A preference of the module, the shape the order of the validation queue will have (T4b).</summary>
+    public const string OrderPreference = "sample.order";
+
+    public override IReadOnlyList<PreferenceDescriptor> Preferences =>
+        [PreferenceDescriptor.OneOf(OrderPreference, "date", "tour")];
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
     {

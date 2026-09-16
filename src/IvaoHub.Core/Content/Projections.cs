@@ -86,7 +86,13 @@ public sealed record CalendarProjection(
     Localized<string>? Description);
 
 /// <summary>"This member may deserve something." A human decides; the code only points.</summary>
-public sealed record AwardSignalProjection(int Vid, string Reason);
+/// <param name="Vid">The member.</param>
+/// <param name="Reason">Why, in a sentence the queue shows.</param>
+/// <param name="AwardId">
+/// The award the row proposes, when it has one — a tour has exactly one (M2, T4b). Whoever assigns
+/// may still choose another.
+/// </param>
+public sealed record AwardSignalProjection(int Vid, string Reason, long? AwardId = null);
 
 /// <summary>
 /// "This row shows this file until then." <c>null</c> means for as long as the row says so: a use

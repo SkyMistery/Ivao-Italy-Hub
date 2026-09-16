@@ -113,6 +113,18 @@
     },
     "path": {
       "invalid": "Un indirizzo di questo sito comincia con una barra. Qualunque altro va scritto per intero, http o https."
+    },
+    "awards": {
+      "assigned": "Qualcuno ha ricevuto questo award, quindi non si può eliminare. Ritiralo.",
+      "unknown": "Questo award non esiste.",
+      "retired": "Questo award è ritirato: non si può più assegnare.",
+      "signalNotPending": "Questa riga della coda non è più in attesa: qualcuno ha già risposto.",
+      "signalOtherMember": "La riga della coda riguarda un altro membro.",
+      "handledByAssignment": "Una riga assegnata resta assegnata: revoca l'assegnazione."
+    },
+    "preferences": {
+      "unknownKey": "L'hub non tiene nessuna preferenza con questo nome.",
+      "invalidValue": "Questo non è un valore che questa preferenza accetta."
     }
   }
 }

@@ -3,21 +3,28 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 16 settembre 2026, sera tardi — **T0–T3 in `main`; T4 è stata divisa in T4a e T4b** (Carmine) e **T4a è fatta**
-sul branch `m2/t4a-module-projections`, in PR. Piano 0.81. **Il prossimo passo è T4b (award e preferenze) o T5 (lo scheletro del modulo),
-in una chat nuova**: non si toccano, e possono andare in parallelo (`06-piano-implementazione-m2.md` parte C, «Parallelismo»).
+**Ultimo aggiornamento:** 16 settembre 2026, notte — **T0–T4a in `main`; T4b è fatta** sul branch `m2/t4b-awards-and-preferences`, in PR.
+Piano 0.82. **Il prossimo passo è T5 (lo scheletro del modulo)**, in una chat nuova, se non è già partita in parallelo: controllare
+`gh pr list` prima.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
-> **Per la chat che apre T4b o T5, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella e
-> la sezione della fase (il perimetro), e **T4a** «Com'è andata» (che cosa esiste già); per T4b anche il piano §9.1 (riga Award). Branch
-> `m2/t4b-awards-and-preferences` o `m2/t5-flightops-skeleton` da `main`, **dopo** il merge di T4a. Docker Desktop di solito è spento:
+> **Per la chat che apre T5, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella e
+> la sezione della fase (il perimetro), e **T4a** e **T4b** «Com'è andata» (che cosa esiste già). Branch `m2/t5-flightops-skeleton` da
+> `main`, **dopo** il merge di T4b (o in parallelo: l'unico punto in comune è `IModule.Preferences`, con il default vuoto). Docker Desktop di solito è spento:
 > chiedere a Carmine di accenderlo se servono i test d'integrazione in locale, altrimenti li esegue la CI.
 >
 > **Che cosa ha lasciato T4a, e serve a chi arriva**: una riga di modulo **proietta davvero** (ricerca, più voci di calendario, award, usi dei
 > file) e un contesto che non mappa le tabelle **lancia**; una riga non pubblicata tiene solo gli usi dei file; il tour dichiarerà banner e
 > immagini con `MediaUseProjection(mediaId, closeAt + 1 mese)` e il job `media-expiry` farà il resto; `CrudOptions.ToListPage` esiste per una
 > lista che mostra un fatto di altre tabelle. Il modulo di prova ha `SampleEvent` (`smp_events`) per provarlo.
+>
+> **Che cosa ha lasciato T4b** (nota `2026-09-16-award-e-preferenze`): gli award nel nucleo — catalogo del dipartimento
+> (`Awards.View`/`Awards.Edit`), coda e registro dietro `Awards.Assign` globale, schermate `/staff/awards`, `/queue`, `/assignments`.
+> Il tour completato segnalerà con **`AwardSignalProjection(vid, reason, awardId)`** e l'award del tour sarà già proposto. Il membro
+> vede gli award sul profilo IVAO, mai nell'hub; nessuna mail. **Preferenze**: il modulo dichiara le chiavi in `IModule.Preferences`
+> (`PreferenceDescriptor.OneOf("flightops.reviewQueueOrder", "date", "tour")` per la coda di T13), la SPA le legge da
+> `/api/me/preferences/{key}` (nessun hook scritto ancora: lo scrive chi le usa per primo).
 >
 > **Dove si è arrivati** (tutto in `main`):
 >
@@ -28,7 +35,8 @@ in una chat nuova**: non si toccano, e possono andare in parallelo (`06-piano-im
 > | #82 | T2: il tracker nel client IVAO, `IWeatherSource` (NOAA → IVAO → VATSIM), fixture di voli veri |
 > | #84 | T1: aeroporti del mondo, piste su richiesta, tipi di aereo, confini dei FIR da **VATSpy** (piano 0.80) |
 > | #85 | T3: grant su una riga (`resource_scope`) e interessato (`IHasStakeholder`) nell'unico handler |
-> | (in PR) | T4a: le righe dei moduli proiettano, più voci di calendario, file con scadenza e `MediaExpiryJob` (piano 0.81) |
+> | #86 | T4a: le righe dei moduli proiettano, più voci di calendario, file con scadenza e `MediaExpiryJob` (piano 0.81) |
+> | (in PR) | T4b: award (catalogo, coda, registro) e preferenze dell'utente (piano 0.82) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -37,7 +45,7 @@ in una chat nuova**: non si toccano, e possono andare in parallelo (`06-piano-im
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T4b** o **T5**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T5**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Due cose che T1 lascia aperte, da portare a Carmine quando si scrive T6/T7**: le «varianti» di un aereo in IVAO sono `A320w`,
 > `A320CFM`, non `A20N`, quindi la bandiera «anche le varianti» del design §1.5 non fa quello che si voleva (lo fa un **gruppo di aerei**);
