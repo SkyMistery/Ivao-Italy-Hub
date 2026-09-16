@@ -196,6 +196,31 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
+    /// The same question as "does this name IVAO?" (plan section 4.2), asked of the two weather
+    /// providers: a module asks the core for the weather and must never learn that NOAA exists. The
+    /// names live in the two clients and in the file that wires them, and nowhere else.
+    /// </summary>
+    [Fact]
+    public void NoWeatherProviderIsNamedOutsideTheWeatherFolder()
+    {
+        var offenders = SourceFiles()
+            .Where(file =>
+            {
+                var text = File.ReadAllText(file);
+                return text.Contains("aviationweather", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("vatsim", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("NOAA", StringComparison.Ordinal);
+            })
+            .Where(file => !file.Contains(
+                $"{Path.DirectorySeparatorChar}Weather{Path.DirectorySeparatorChar}",
+                StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
     /// The address of a member leaves the database only as a mail. It is read from the IVAO profile
     /// for the notification service and for nothing else (decision note of 6 September 2026), so no
     /// payload of the API may carry it — not the bootstrap, not a list, not the staff directory that

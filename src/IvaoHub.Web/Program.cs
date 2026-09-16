@@ -9,6 +9,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
+using IvaoHub.Core.Weather;
 using IvaoHub.Web;
 using IvaoHub.Web.E2E;
 using IvaoHub.Web.Endpoints;
@@ -123,6 +124,10 @@ builder.Services.AddIvaoAuthentication();
 // nothing at this point: the time zone of the schedule and the choice between the real client and
 // the fixtures are both resolved when the objects are built.
 builder.Services.AddIvaoIntegration();
+
+// The weather, for the tours. Which providers answer, and in what order, is decided inside that
+// one folder and nowhere else, so that a module only ever asks for the weather (plan section 4.2).
+builder.Services.AddWeather();
 
 // The one notification service, and the job that empties its queue. Nothing else in the hub ever
 // talks to a mail server: a module publishes an intent (plan section 9.7).

@@ -1,0 +1,413 @@
+[
+  {
+    "id": 71787607,
+    "sessionId": 62747397,
+    "revision": 3,
+    "aircraftId": "E55P",
+    "aircraftNumber": 1,
+    "departureId": "LIRQ",
+    "arrivalId": "LXGB",
+    "alternativeId": "LEMG",
+    "alternative2Id": null,
+    "route": "BIBNO T648 BEROK DCT MIVKI DCT PIDAD DCT TALEP DCT RARQU DCT BALEN DCT SORAS DCT NOMTO N850 ADX DCT OKITI DCT IBEBA DCT BAVER M603 ALT DCT RESTU DCT TOSGA N851 MGA N869 PIMOS DCT",
+    "remarks": "PBN/A1B2D2O2S2T1 DOF/260624 REG/ICARG EET/LFFF0027 LECB0100 LECM0146 CODE/49410F PER/B RMK/TCAS IVAOVA/SPZ",
+    "speed": "N0427",
+    "level": "F410",
+    "flightRules": "I",
+    "flightType": "N",
+    "eet": 8460,
+    "endurance": 12660,
+    "departureTime": 23400,
+    "actualDepartureTime": 23933,
+    "peopleOnBoard": 7,
+    "createdAt": "2026-06-24T06:11:16.000Z",
+    "updatedAt": "2026-06-24T06:11:30.000Z",
+    "departure_id": "LIRQ",
+    "arrival_id": "LXGB",
+    "alternative_id": "LEMG",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "J1",
+        "name": "CPDLC ATN VDL Mode 2",
+        "order": 13
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "U",
+        "name": "UHF RTF",
+        "order": 31
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "H",
+        "name": "mode S (with aircraft ID, pressure altitude and enhanced surveillance capability)",
+        "type": null,
+        "order": 4
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "E55P",
+      "model": "EMB-505 Phenom 300",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIRQ",
+      "iata": "FLR",
+      "name": "Peretola",
+      "city": "Firenze",
+      "countryId": "IT",
+      "latitude": 43.8086111111,
+      "longitude": 11.2027777778
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LXGB",
+      "iata": "GIB",
+      "name": "Gibraltar",
+      "city": "Gibraltar",
+      "countryId": "GI",
+      "latitude": 36.1511666667,
+      "longitude": -5.3496666667
+    },
+    "alternative": {
+      "military": true,
+      "icao": "LEMG",
+      "iata": "AGP",
+      "name": "Malaga-Costa del Sol",
+      "city": "Malaga",
+      "countryId": "ES",
+      "latitude": 36.675,
+      "longitude": -4.4991666667
+    },
+    "alternative2": null
+  },
+  {
+    "id": 71787599,
+    "sessionId": 62747397,
+    "revision": 2,
+    "aircraftId": "E55P",
+    "aircraftNumber": 1,
+    "departureId": "LIRQ",
+    "arrivalId": "LXGB",
+    "alternativeId": "LEMG",
+    "alternative2Id": null,
+    "route": "BIBNO T648 BEROK DCT PIDAD DCT TALEP DCT RARQU DCT BALEN DCT SORAS DCT NOMTO N850 ADX DCT OKITI DCT IBEBA DCT BAVER M603 ALT DCT RESTU DCT TOSGA N851 MGA N869 PIMOS DCT",
+    "remarks": "PBN/A1B2D2O2S2T1 DOF/260624 REG/ICARG EET/LFFF0027 LECB0100 LECM0146 CODE/49410F PER/B RMK/TCAS IVAOVA/SPZ",
+    "speed": "N0427",
+    "level": "F410",
+    "flightRules": "I",
+    "flightType": "N",
+    "eet": 8460,
+    "endurance": 12660,
+    "departureTime": 23400,
+    "actualDepartureTime": 23933,
+    "peopleOnBoard": 7,
+    "createdAt": "2026-06-24T06:09:10.000Z",
+    "updatedAt": "2026-06-24T06:09:30.000Z",
+    "departure_id": "LIRQ",
+    "arrival_id": "LXGB",
+    "alternative_id": "LEMG",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "J1",
+        "name": "CPDLC ATN VDL Mode 2",
+        "order": 13
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "U",
+        "name": "UHF RTF",
+        "order": 31
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "H",
+        "name": "mode S (with aircraft ID, pressure altitude and enhanced surveillance capability)",
+        "type": null,
+        "order": 4
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "E55P",
+      "model": "EMB-505 Phenom 300",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIRQ",
+      "iata": "FLR",
+      "name": "Peretola",
+      "city": "Firenze",
+      "countryId": "IT",
+      "latitude": 43.8086111111,
+      "longitude": 11.2027777778
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LXGB",
+      "iata": "GIB",
+      "name": "Gibraltar",
+      "city": "Gibraltar",
+      "countryId": "GI",
+      "latitude": 36.1511666667,
+      "longitude": -5.3496666667
+    },
+    "alternative": {
+      "military": true,
+      "icao": "LEMG",
+      "iata": "AGP",
+      "name": "Malaga-Costa del Sol",
+      "city": "Malaga",
+      "countryId": "ES",
+      "latitude": 36.675,
+      "longitude": -4.4991666667
+    },
+    "alternative2": null
+  },
+  {
+    "id": 71787598,
+    "sessionId": 62747397,
+    "revision": 1,
+    "aircraftId": "E55P",
+    "aircraftNumber": 1,
+    "departureId": "LIRQ",
+    "arrivalId": "LXGB",
+    "alternativeId": "LEMG",
+    "alternative2Id": null,
+    "route": "BIBNO T648 BEROK DCT PIDAD DCT TALEP DCT RARQU DCT BALEN DCT SORAS DCT NOMTO N850 ADX DCT OKITI DCT IBEBA DCT BAVER M603 ALT DCT RESTU DCT TOSGA N851 MGA N869 PIMOS DCT",
+    "remarks": "PBN/A1B2D2O2S2T1 DOF/260624 REG/ICARG EET/LFFF0027 LECB0100 LECM0146 CODE/49410F PER/B RMK/TCAS IVAOVA/SPZ",
+    "speed": "N0427",
+    "level": "F410",
+    "flightRules": "I",
+    "flightType": "N",
+    "eet": 8460,
+    "endurance": 12660,
+    "departureTime": 23400,
+    "actualDepartureTime": 23933,
+    "peopleOnBoard": 7,
+    "createdAt": "2026-06-24T06:09:10.000Z",
+    "updatedAt": "2026-06-24T06:09:30.000Z",
+    "departure_id": "LIRQ",
+    "arrival_id": "LXGB",
+    "alternative_id": "LEMG",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "J1",
+        "name": "CPDLC ATN VDL Mode 2",
+        "order": 13
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "U",
+        "name": "UHF RTF",
+        "order": 31
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "H",
+        "name": "mode S (with aircraft ID, pressure altitude and enhanced surveillance capability)",
+        "type": null,
+        "order": 4
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "E55P",
+      "model": "EMB-505 Phenom 300",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIRQ",
+      "iata": "FLR",
+      "name": "Peretola",
+      "city": "Firenze",
+      "countryId": "IT",
+      "latitude": 43.8086111111,
+      "longitude": 11.2027777778
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LXGB",
+      "iata": "GIB",
+      "name": "Gibraltar",
+      "city": "Gibraltar",
+      "countryId": "GI",
+      "latitude": 36.1511666667,
+      "longitude": -5.3496666667
+    },
+    "alternative": {
+      "military": true,
+      "icao": "LEMG",
+      "iata": "AGP",
+      "name": "Malaga-Costa del Sol",
+      "city": "Malaga",
+      "countryId": "ES",
+      "latitude": 36.675,
+      "longitude": -4.4991666667
+    },
+    "alternative2": null
+  }
+]
