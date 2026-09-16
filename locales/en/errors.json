@@ -32,7 +32,8 @@
     "media": {
       "tooLarge": "This file is larger than this hub accepts.",
       "typeNotAllowed": "This hub does not accept files of that kind.",
-      "inUse": "A published page shows this file, so it cannot be deleted. Archive it instead."
+      "inUse": "A published page shows this file, so it cannot be deleted. Archive it instead.",
+      "inUseByModule": "Something on the hub still uses this file, so it cannot be deleted yet."
     },
     "unknown": "Something went wrong. Try again.",
     "title": "That did not work",

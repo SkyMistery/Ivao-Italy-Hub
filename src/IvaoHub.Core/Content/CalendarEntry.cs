@@ -37,6 +37,12 @@ public sealed class CalendarEntry : IOwnedByDepartment, IVisible, IAuditable
 
     public string SourceId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Which entry of its source this is, from zero: a tour puts one in the calendar per leg window
+    /// (M2, T4). An entry the staff writes is always the first and only one of its source.
+    /// </summary>
+    public int Sequence { get; set; }
+
     public string Url { get; set; } = string.Empty;
 
     public Localized<string> Title { get; set; } = Localized<string>.Empty;

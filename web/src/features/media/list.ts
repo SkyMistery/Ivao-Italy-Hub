@@ -17,4 +17,6 @@ export const mediaColumns: readonly ColumnSpec<MediaListDto>[] = [
   col.badge('visibility', 'media'),
   col.text('category', { sortable: true }),
   col.date('createdAt', { sortable: true }),
+  // Empty for most files: only one whose every use by a tour or an event ends has a date (M2, T4).
+  col.date('deletesOn'),
 ];

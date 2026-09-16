@@ -57,6 +57,8 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
 {
     public DbSet<SampleItem> Items => Set<SampleItem>();
 
+    public DbSet<SampleEvent> Events => Set<SampleEvent>();
+
     protected override void ConfigureModel(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SampleItem>(item =>
@@ -67,6 +69,15 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             item.Ignore(row => row.ResourceScope);
             item.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
             item.Property(row => row.Visibility).HasConversion<string>().HasMaxLength(16);
+        });
+
+        modelBuilder.Entity<SampleEvent>(sample =>
+        {
+            sample.ToTable("smp_events");
+            sample.HasKey(row => row.Id);
+            sample.Property(row => row.Title).HasMaxLength(128).IsRequired();
+            sample.Ignore(row => row.SourceModule);
+            sample.Ignore(row => row.SourceId);
         });
     }
 }

@@ -1,4 +1,6 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Content;
+using IvaoHub.Core.Data.Configurations;
 using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,8 +34,20 @@ public abstract class ModuleDbContext(DbContextOptions options, ICurrentUser? cu
     public int VisibleDepartmentMask => currentUser is null ? 0 : DepartmentMask.Of(currentUser.Departments);
 
     /// <summary>
-    /// The module's own model first, then the filter over it. A module overrides
-    /// <see cref="ConfigureModel"/> rather than this, so that the filter cannot be left out.
+    /// The conventions of the hub, then the module's own. Sealed for the same reason as
+    /// <see cref="OnModelCreating"/>: the projection tables this context maps are the core's, and
+    /// they are written with the core's conventions or not at all.
+    /// </summary>
+    protected sealed override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        HubDbContext.ApplyConventions(configurationBuilder);
+        ConfigureModuleConventions(configurationBuilder);
+    }
+
+    /// <summary>
+    /// The module's own model first, then the projection tables of the core, then the filter over all
+    /// of it. A module overrides <see cref="ConfigureModel"/> rather than this, so that neither the
+    /// tables nor the filter can be left out.
     /// </summary>
     protected sealed override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,9 +55,38 @@ public abstract class ModuleDbContext(DbContextOptions options, ICurrentUser? cu
 
         modelBuilder.HasCharSet(HubDbContext.CharSet).UseCollation(HubDbContext.Collation);
         ConfigureModel(modelBuilder);
+        MapProjectionTables(modelBuilder);
         VisibilityQueryFilter.ApplyToModel(modelBuilder, this);
     }
 
     /// <summary>The tables of the module.</summary>
     protected abstract void ConfigureModel(ModelBuilder modelBuilder);
+
+    /// <summary>Conventions of the module on top of the hub's, when it has any.</summary>
+    protected virtual void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+    }
+
+    /// <summary>
+    /// The tables a row of a module projects into (M2, T4). Until T4 a module context did not map
+    /// them, and the interceptor skipped the projection of every row of a module without a word: no
+    /// search, no calendar, no award signal (note 2026-09-15-contatti-con-risposte §3.3).
+    /// <para>Mapped with the configuration of the core, so a column cannot mean one thing here and
+    /// another there, and <b>left out of the module's migrations</b>: the tables belong to the core's
+    /// history, and a module only writes into them — on its own connection, inside the transaction of
+    /// its own row, which is the whole reason for mapping them rather than calling a service after the
+    /// save.</para>
+    /// </summary>
+    private static void MapProjectionTables(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfiguration(new SearchIndexEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new CalendarEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new AwardSignalConfiguration());
+        modelBuilder.ApplyConfiguration(new MediaUseConfiguration());
+
+        foreach (var projection in new[] { typeof(SearchIndexEntry), typeof(CalendarEntry), typeof(AwardSignal), typeof(MediaUse) })
+        {
+            modelBuilder.Entity(projection).Metadata.SetIsTableExcludedFromMigrations(true);
+        }
+    }
 }

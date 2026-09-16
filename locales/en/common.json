@@ -279,7 +279,8 @@
       "visibility": "Visibility",
       "ownerDepartment": "Department",
       "url": "Address",
-      "createdAt": "Uploaded"
+      "createdAt": "Uploaded",
+      "deletesOn": "Deleted on"
     },
     "hints": {
       "alt": "What somebody who cannot see the picture is told instead. Every block that shows this file inherits it."

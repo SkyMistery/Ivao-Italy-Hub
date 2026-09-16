@@ -86,6 +86,19 @@ public static class MediaEndpoints
                 options.Delete = DeleteAsync;
 
                 options.ToList = mapper.ToList;
+
+                // The date the expiry job will take a file, next to the file (T4): read for the whole
+                // page at once from the uses of the modules.
+                options.ToListPage = async (rows, services, cancellationToken) =>
+                {
+                    var dates = await services.GetRequiredService<ContentReferenceIndex>()
+                        .DeletionDatesAsync([.. rows.Select(row => row.Id)], cancellationToken);
+
+                    return [.. rows.Select(row => mapper.ToList(row) with
+                    {
+                        DeletesOn = dates.TryGetValue(row.Id, out var on) ? on : null,
+                    })];
+                };
                 options.ToDetail = mapper.ToDetail;
                 options.Apply = mapper.Apply;
             });
@@ -408,31 +421,11 @@ public static class MediaEndpoints
     /// names, so it is marked and stays; the file goes only when no published version still shows
     /// it, because removing it under a published page would break a page already printed.
     /// </summary>
-    private static async Task DeleteAsync(MediaAsset media, IServiceProvider services, CancellationToken cancellationToken)
-    {
-        var database = services.GetRequiredService<HubDbContext>();
-        var storage = services.GetRequiredService<MediaStorage>();
-
-        // A file a published page shows is archived, not deleted (G20, note
-        // 2026-09-13-contenuti-centralizzati §3.4). The index says which pages; the screen offers the
-        // archive instead.
-        var uses = await services.GetRequiredService<ContentReferenceIndex>().UsesOfMediaAsync(media.Id, cancellationToken);
-        if (uses.Count > 0)
-        {
-            throw new DomainRefusalException("id", "errors.media.inUse");
-        }
-
-        media.DeletedAt = services.GetRequiredService<IClock>().UtcNow;
-
-        var stillShown = await database.ContentVersions
-            .ShowingMedia(media.Id)
-            .AnyAsync(cancellationToken);
-
-        if (!stillShown && storage.Delete(media.StoredName))
-        {
-            media.HasFile = false;
-        }
-    }
+    // A file a published page shows is archived, not deleted (G20, note
+    // 2026-09-13-contenuti-centralizzati §3.4), and one a row of a module still needs is kept (T4). What
+    // deleting means is one service, shared with the expiry job.
+    private static Task DeleteAsync(MediaAsset media, IServiceProvider services, CancellationToken cancellationToken) =>
+        services.GetRequiredService<MediaDeletion>().DeleteAsync(media, cancellationToken);
 
     private static Task<IResult> ServeCurrentAsync(
         long id,
