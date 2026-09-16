@@ -264,10 +264,16 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
 
         foreach (var signal in signals)
         {
-            if (existing.Exists(row => row.Vid == signal.Vid))
+            if (existing.Find(row => row.Vid == signal.Vid) is { } known)
             {
                 // A signal somebody has already looked at is never rewritten: the queue is a record
-                // of what was decided, not a mirror of the source row.
+                // of what was decided, not a mirror of the source row. One still waiting follows the
+                // row, so a tour whose award changed proposes the new one (T4b).
+                if (known.Status == AwardSignalStatus.Pending)
+                {
+                    known.AwardId = signal.AwardId;
+                }
+
                 continue;
             }
 
@@ -277,6 +283,7 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
                 SourceId = request.SourceId,
                 Vid = signal.Vid,
                 Reason = signal.Reason,
+                AwardId = signal.AwardId,
                 Status = AwardSignalStatus.Pending,
                 CreatedAt = clock.UtcNow,
             });

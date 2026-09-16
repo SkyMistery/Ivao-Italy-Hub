@@ -78,6 +78,8 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             sample.Property(row => row.Title).HasMaxLength(128).IsRequired();
             sample.Ignore(row => row.SourceModule);
             sample.Ignore(row => row.SourceId);
+            sample.Ignore(row => row.AwardeeVid);
+            sample.Ignore(row => row.ProposedAwardId);
         });
     }
 }

@@ -1,5 +1,6 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
+using IvaoHub.Core.Preferences;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,6 +72,13 @@ public interface IModule
     IReadOnlyList<string> SpaFallbackExclusions { get; }
 
     /// <summary>
+    /// The preferences its members may keep, each named after the module (<c>flightops.…</c>). The core
+    /// stores them in one table and serves them at <c>/api/me/preferences/{key}</c>; a key nobody
+    /// declares is refused (M2, T4b).
+    /// </summary>
+    IReadOnlyList<PreferenceDescriptor> Preferences { get; }
+
+    /// <summary>
     /// Its own services: a database context through <c>AddModuleDbContext&lt;T&gt;</c>, its data
     /// block providers, its jobs. Never a second interceptor, a second handler or a second client
     /// for the IVAO API.
@@ -103,6 +111,8 @@ public abstract class ModuleBase : IModule
     public virtual IReadOnlyList<BlockDescriptor> Blocks => [];
 
     public virtual IReadOnlyList<string> SpaFallbackExclusions => [];
+
+    public virtual IReadOnlyList<PreferenceDescriptor> Preferences => [];
 
     public virtual IEnumerable<Type> DbContextTypes => [];
 

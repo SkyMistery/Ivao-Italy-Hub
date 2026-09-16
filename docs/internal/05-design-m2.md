@@ -703,7 +703,9 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
 ### 3.11 Il completamento, l'award, le segnalazioni
 
 - Quando un PIREP accettato completa il tour, l'iscrizione scrive `completed_at` e, con `IProjectable`, proietta una
-  **`AwardSignalProjection`** nella stessa transazione. Nessuna assegnazione automatica. Un sottotour completato conta per
+  **`AwardSignalProjection`** nella stessa transazione, **con l'`award_id` del tour** come proposta (T4b, nota
+  `2026-09-16-award-e-preferenze`). Nessuna assegnazione automatica: chi ha `Awards.Assign` risponde dalla coda
+  `/staff/awards/queue`, e il membro vede l'award sul suo profilo IVAO, mai nell'hub. Un sottotour completato conta per
   il padre, non segnala niente di suo.
 - **Segnalare un problema su una leg**: `fo_leg_issues` e una notifica alla casella del FOD
   (`flightops.legIssueReported`).
@@ -1100,7 +1102,7 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 | 4 | Aeroporti del mondo con IATA e coordinate; piste con le testate | no (risposta C.4) | §1.12 |
 | 5 | Tracker nel client IVAO: sessioni, tutte le revisioni dei piani, tracce | no (risposta C.5) | §3.2, §6 |
 | 6 | Editor a tabella e import XLSX/CSV | eccezione da dichiarare | §8.4 |
-| 7 | Award: catalogo e assegnazioni, schermata, immagini dalla media library (IVAO: documentazione 403, caricamento a mano) | no (piano §9.1) | §3.11 |
+| 7 | Award: catalogo e assegnazioni, schermata, immagini dalla media library (IVAO: documentazione 403, caricamento a mano) — **fatta in T4b**: catalogo del dipartimento, assegna chi ha `Awards.Assign`, la segnalazione propone l'award | sì, breve: `2026-09-16-award-e-preferenze` (piano 0.82) | §3.11 |
 | 8 | `IAtcActivitySource` sulla vista di vIPI | coperta da piano 0.78 | §6.5 |
 | 9 | Selezione multipla e parametri da schema nel generatore di form; aggregati nella lista | da verificare con il codice | §5.1, §8.7 |
 | 10 | Più voci di calendario per riga in `IProjectable` | no (estensione piccola) | §9 |
@@ -1108,7 +1110,7 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 | 12 | `IWeatherSource` (NOAA → IVAO → VATSIM), come vIPI | sì, breve (una fonte esterna nuova) | §1.13 |
 | 13 | Confini dei FIR da **OpenAIP** (`ref_firs`: codice, paese, poligono), sincronizzati da un job con la chiave API nei segreti, per la proposta degli ATC contattati; licenza e attribuzione dei dati OpenAIP da verificare | sì, breve (una fonte esterna nuova) | §3.3 |
 | 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore | sì | §6.6 |
-| 15 | **Preferenze dell'utente** generiche (chiave e valore per utente), per l'ordine della coda del validatore | no, piccola (come le preferenze delle notifiche) | §4.1 |
+| 15 | **Preferenze dell'utente** generiche (chiave e valore per utente), per l'ordine della coda del validatore — **fatta in T4b**: chiavi dichiarate da `IModule.Preferences` | nella stessa nota di T4b, §4 | §4.1 |
 | 16 | **Usi dei file con scadenza** dalle righe dei moduli nell'indice della media library (`MediaReferences` in `IProjectable`), e il **job che elimina i file con tutti gli usi scaduti** (servirà anche agli eventi) | breve (estende G20, ma elimina file da solo) | §1.14 |
 
 ---
@@ -1117,7 +1119,7 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 
 **Nucleo** (additive): `ref_ivao_airports` (+ `iata`, `latitude`, `longitude`), `ref_ivao_runways`, `ref_ivao_aircraft`,
 `hub_user_grants` (+ `resource_scope`), `cms_contact_messages` (+ `kind`, `participants_json`), `cms_contact_references` (un messaggio cita uno o più oggetti di
-modulo: `source_module`, `source_id`), `cms_contact_replies`, `hub_awards`, `hub_award_assignments`, `cms_media_uses`, `hub_user_preferences`,
+modulo: `source_module`, `source_id`), `cms_contact_replies`, `hub_awards`, `hub_award_assignments`, `cms_award_signals` (+ `award_id`, T4b), `cms_media_uses`, `hub_user_preferences`,
 `hub_personal_tokens`. (I contatti stanno in `cms_`: la prima stesura scriveva `hub_`, T0 l'ha corretto leggendo il codice.)
 
 **Modulo** (`Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`, `fo_callsign_rules`, `fo_tour_constraints`,

@@ -1,5 +1,7 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Awards;
 using IvaoHub.Core.Notifications;
+using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
@@ -156,5 +158,50 @@ internal sealed class NotificationPreferenceConfiguration : IEntityTypeConfigura
         builder.ToTable("hub_notification_preferences");
         builder.HasKey(preference => new { preference.Vid, preference.Type });
         builder.Property(preference => preference.Type).HasMaxLength(64);
+    }
+}
+
+internal sealed class AwardConfiguration : IEntityTypeConfiguration<Award>
+{
+    public void Configure(EntityTypeBuilder<Award> builder)
+    {
+        builder.ToTable("hub_awards");
+        builder.HasKey(award => award.Id);
+        builder.HasRowVersion(award => award.RowVersion);
+        builder.HasIndex(award => new { award.OwnerDepartment, award.IsActive });
+    }
+}
+
+internal sealed class AwardAssignmentConfiguration : IEntityTypeConfiguration<AwardAssignment>
+{
+    public void Configure(EntityTypeBuilder<AwardAssignment> builder)
+    {
+        builder.ToTable("hub_award_assignments");
+        builder.HasKey(assignment => assignment.Id);
+        builder.Property(assignment => assignment.Reason).HasMaxLength(AwardAssignmentWriteDtoValidator.MaxReasonLength).IsRequired();
+        builder.HasRowVersion(assignment => assignment.RowVersion);
+
+        // An award somebody holds cannot vanish from under the register: retiring it is the way.
+        builder.HasOne<Award>()
+            .WithMany()
+            .HasForeignKey(assignment => assignment.AwardId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(assignment => assignment.Vid);
+
+        // One signal is answered once. Two people pressing "assign" on the same line at the same time
+        // is the race this closes; MariaDB lets any number of rows carry no signal at all.
+        builder.HasIndex(assignment => assignment.SignalId).IsUnique();
+    }
+}
+
+internal sealed class UserPreferenceConfiguration : IEntityTypeConfiguration<UserPreference>
+{
+    public void Configure(EntityTypeBuilder<UserPreference> builder)
+    {
+        builder.ToTable("hub_user_preferences");
+        builder.HasKey(preference => new { preference.Vid, preference.Key });
+        builder.Property(preference => preference.Key).HasMaxLength(PreferenceCatalog.MaxKeyLength);
+        builder.Property(preference => preference.ValueJson).HasColumnType("json").IsRequired();
     }
 }

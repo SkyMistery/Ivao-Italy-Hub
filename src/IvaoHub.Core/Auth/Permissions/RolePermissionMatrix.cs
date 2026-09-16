@@ -34,6 +34,8 @@ public static class RolePermissionMatrix
             CorePermissions.ContactsView,
             CorePermissions.ContactsEdit,
             CorePermissions.MenuView,
+            CorePermissions.AwardsView,
+            CorePermissions.AwardsEdit,
         ],
         [StaffLevel.Assistant] =
         [
@@ -50,6 +52,8 @@ public static class RolePermissionMatrix
             CorePermissions.ContactsView,
             CorePermissions.ContactsEdit,
             CorePermissions.MenuView,
+            CorePermissions.AwardsView,
+            CorePermissions.AwardsEdit,
         ],
         [StaffLevel.Advisor] =
         [
@@ -64,6 +68,8 @@ public static class RolePermissionMatrix
             CorePermissions.ContactsView,
             CorePermissions.ContactsEdit,
             CorePermissions.MenuView,
+            CorePermissions.AwardsView,
+            CorePermissions.AwardsEdit,
         ],
         [StaffLevel.Member] = [],
     };

@@ -33,6 +33,10 @@ namespace IvaoHub.IntegrationTests.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<long?>("AwardId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("award_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");

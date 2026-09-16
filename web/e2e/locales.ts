@@ -43,6 +43,13 @@ interface CommonStrings {
     readonly screens: Readonly<Record<string, string>>;
   };
   readonly form: { readonly suggest: { readonly emptyClosed: string } };
+  readonly awards: { readonly create: string; readonly fields: { readonly name: string } };
+  readonly awardAssignments: {
+    readonly create: string;
+    readonly assign: string;
+    readonly revoke: string;
+    readonly fields: { readonly awardId: string };
+  };
   readonly dashboard: { readonly edit: string };
   readonly list: { readonly file: string };
   readonly calendar: {

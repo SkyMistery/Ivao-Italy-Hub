@@ -29,6 +29,13 @@ public sealed class AwardSignal
 
     public string Reason { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The award the source row proposes, when it knows one: a tour has exactly one (M2, T4b). It is a
+    /// proposal and nothing more — whoever assigns may choose another. Unconstrained, like every
+    /// column a module writes into the core.
+    /// </summary>
+    public long? AwardId { get; set; }
+
     /// <summary>Set once when the signal appears; a signal already handled is never overwritten.</summary>
     public AwardSignalStatus Status { get; set; } = AwardSignalStatus.Pending;
 

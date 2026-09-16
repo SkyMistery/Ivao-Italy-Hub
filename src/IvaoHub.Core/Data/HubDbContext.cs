@@ -1,12 +1,14 @@
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Awards;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Notifications;
+using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -61,6 +63,9 @@ public class HubDbContext : DbContext, IVisibilityScope
     public DbSet<JobLogEntry> JobsLog => Set<JobLogEntry>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
+    public DbSet<Award> Awards => Set<Award>();
+    public DbSet<AwardAssignment> AwardAssignments => Set<AwardAssignment>();
 
     public DbSet<IvaoCenter> IvaoCenters => Set<IvaoCenter>();
     public DbSet<IvaoAirport> IvaoAirports => Set<IvaoAirport>();

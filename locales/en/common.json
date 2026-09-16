@@ -1712,6 +1712,69 @@
       "description": "The entries already filed under it keep the key they were written with, and nothing rewrites them. To stop anybody filing new ones under it, take \"in use\" off instead."
     }
   },
+  "awards": {
+    "section": "Awards",
+    "title": "Award catalogue",
+    "description": "The awards each department gives, with the picture and what a member has to have done.",
+    "create": "New award",
+    "edit": "Edit award",
+    "delete": {
+      "title": "Delete this award?",
+      "description": "Only an award nobody has received can be deleted. One somebody holds is retired instead: untick «Active»."
+    },
+    "fields": {
+      "imageMediaId": "Picture",
+      "name": "Name",
+      "description": "Description",
+      "criteria": "Criteria",
+      "isActive": "Active",
+      "ownerDepartment": "Department",
+      "updatedAt": "Last change"
+    }
+  },
+  "awardSignals": {
+    "title": "Award queue",
+    "description": "Members the hub points out for an award. A person decides, always.",
+    "assign": "Assign",
+    "dismiss": "Dismiss",
+    "restore": "Back to the queue",
+    "fields": {
+      "vid": "VID",
+      "reason": "Why",
+      "awardName": "Proposed award",
+      "sourceModule": "From",
+      "status": "Status",
+      "createdAt": "Signalled"
+    },
+    "options": {
+      "status": {
+        "Pending": "Waiting",
+        "Dismissed": "Dismissed",
+        "Handled": "Assigned"
+      }
+    }
+  },
+  "awardAssignments": {
+    "title": "Assigned awards",
+    "description": "Who received which award, why, and who decided.",
+    "create": "Assign an award",
+    "edit": "Edit assignment",
+    "assign": "Assign",
+    "revoke": "Revoke",
+    "formHint": "Assign the award on IVAO as well: the member sees it on their IVAO profile, and this register keeps who decided and why.",
+    "delete": {
+      "title": "Revoke this assignment?",
+      "description": "It leaves the register; the audit log keeps what it was. Remember to take it back on IVAO too."
+    },
+    "fields": {
+      "awardId": "Award",
+      "awardName": "Award",
+      "vid": "VID",
+      "reason": "Reason",
+      "createdBy": "Assigned by",
+      "createdAt": "Assigned on"
+    }
+  },
   "backOffice": {
     "content": "Content",
     "createIn": "In the department",
