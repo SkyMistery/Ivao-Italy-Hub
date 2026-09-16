@@ -270,6 +270,25 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
             IvaoAirspace airspace,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(IvaoNetworkStatus.Unknown);
+
+        /// <summary>Neither is the tracker, nor the weather: unreachable is what they answer here.</summary>
+        public Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
+            IvaoSessionQuery query,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoTrackerSessionDto>?>(null);
+
+        public Task<IReadOnlyList<IvaoFlightPlanDto>?> GetFlightPlansAsync(
+            long sessionId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoFlightPlanDto>?>(null);
+
+        public Task<IReadOnlyList<IvaoTrackPointDto>?> GetTracksAsync(
+            long sessionId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoTrackPointDto>?>(null);
+
+        public Task<IvaoMetarDto?> GetMetarAsync(string icao, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IvaoMetarDto?>(null);
     }
 
     [Fact]

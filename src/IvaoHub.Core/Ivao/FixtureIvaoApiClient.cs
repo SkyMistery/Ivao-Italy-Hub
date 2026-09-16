@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Hosting;
@@ -78,6 +79,88 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     /// <summary>Not available from fixtures: a member's profile only exists behind a real login.</summary>
     public Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
         Task.FromResult<JsonElement?>(null);
+
+    /// <summary>
+    /// The recorded sessions of a member, filtered the way the API filters them, so that a test and
+    /// production disagree about nothing except where the bytes came from. The files are written by
+    /// <c>tools/record-ivao-fixtures.mjs</c> from real flights.
+    /// </summary>
+    public Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
+        IvaoSessionQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var sessions = Read($"tracker-sessions-{query.Vid}.json")
+            .Select(IvaoTrackerReader.ReadSession)
+            .OfType<IvaoTrackerSessionDto>()
+            .Where(session => session.StartedAt >= query.FromUtc && session.StartedAt <= query.ToUtc)
+            .Where(session => Matches(session.DepartureIcao, query.DepartureIcao))
+            .Where(session => Matches(session.ArrivalIcao, query.ArrivalIcao))
+            .Take(IvaoSessionQuery.MaxSessions)
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<IvaoTrackerSessionDto>?>(sessions);
+    }
+
+    public Task<IReadOnlyList<IvaoFlightPlanDto>?> GetFlightPlansAsync(
+        long sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var plans = Read($"tracker-flightplans-{sessionId}.json")
+            .Select(IvaoTrackerReader.ReadFlightPlan)
+            .OfType<IvaoFlightPlanDto>()
+            .OrderBy(plan => plan.Revision)
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<IvaoFlightPlanDto>?>(plans);
+    }
+
+    public Task<IReadOnlyList<IvaoTrackPointDto>?> GetTracksAsync(
+        long sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var points = Read($"tracker-tracks-{sessionId}.json")
+            .Select(IvaoTrackerReader.ReadTrackPoint)
+            .OfType<IvaoTrackPointDto>()
+            .OrderBy(point => point.At)
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<IvaoTrackPointDto>?>(points);
+    }
+
+    public Task<IvaoMetarDto?> GetMetarAsync(string icao, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(icao);
+
+        var wanted = icao.ToUpperInvariant();
+        foreach (var item in Read("metars.json"))
+        {
+            if (!string.Equals(Required(item, "airportIcao"), wanted, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var raw = Required(item, "metar");
+            var updated = item.TryGetProperty("updatedAt", out var moment)
+                && moment.ValueKind == JsonValueKind.String
+                && DateTime.TryParse(
+                    moment.GetString(),
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+                    out var parsed)
+                    ? parsed
+                    : (DateTime?)null;
+
+            return Task.FromResult<IvaoMetarDto?>(new IvaoMetarDto(wanted, raw, updated));
+        }
+
+        return Task.FromResult<IvaoMetarDto?>(null);
+    }
+
+    private static bool Matches(string? value, string? wanted) =>
+        string.IsNullOrWhiteSpace(wanted)
+        || string.Equals(value, wanted, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The connections of an evening that always looks the same, read through the very same rule

@@ -113,6 +113,86 @@ public sealed class IvaoApiClient(
         return document.RootElement.Clone();
     }
 
+    public async Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
+        IvaoSessionQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var sessions = new List<IvaoTrackerSessionDto>();
+        for (var page = 1; ; page++)
+        {
+            var payload = await ReadAsync(
+                $"/v2/tracker/sessions?{query.ToQueryString()}&page={page}&perPage={IvaoSessionQuery.PageSize}",
+                cancellationToken);
+
+            // A page that fails after the first one has succeeded is still a failure: half a list of
+            // flights would let a pilot conclude theirs is not there.
+            if (payload is not { } root)
+            {
+                return null;
+            }
+
+            var (rows, pages) = IvaoTrackerReader.ReadSessions(root);
+            sessions.AddRange(rows);
+
+            if (page >= pages || sessions.Count >= IvaoSessionQuery.MaxSessions || rows.Count == 0)
+            {
+                break;
+            }
+        }
+
+        logger.LogInformation("Read {Count} tracker session(s) for {Vid} from IVAO.", sessions.Count, query.Vid);
+        return sessions.Count > IvaoSessionQuery.MaxSessions
+            ? sessions[..IvaoSessionQuery.MaxSessions]
+            : sessions;
+    }
+
+    public async Task<IReadOnlyList<IvaoFlightPlanDto>?> GetFlightPlansAsync(
+        long sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var payload = await ReadAsync($"/v2/tracker/sessions/{sessionId}/flightPlans", cancellationToken);
+        return payload is { } root ? IvaoTrackerReader.ReadFlightPlans(root) : null;
+    }
+
+    public async Task<IReadOnlyList<IvaoTrackPointDto>?> GetTracksAsync(
+        long sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var payload = await ReadAsync($"/v2/tracker/sessions/{sessionId}/tracks", cancellationToken);
+        return payload is { } root ? IvaoTrackerReader.ReadTracks(root) : null;
+    }
+
+    public async Task<IvaoMetarDto?> GetMetarAsync(string icao, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(icao);
+
+        var payload = await ReadAsync(
+            $"/v2/airports/{Uri.EscapeDataString(icao.ToLowerInvariant())}/metar",
+            cancellationToken);
+
+        if (payload is not { } root || Text(root, "metar") is not { } raw)
+        {
+            return null;
+        }
+
+        var updated = root.TryGetProperty("updatedAt", out var moment)
+            && moment.ValueKind == JsonValueKind.String
+            && DateTime.TryParse(
+                moment.GetString(),
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+                out var parsed)
+                ? parsed
+                : (DateTime?)null;
+
+        return new IvaoMetarDto(
+            Text(root, "airportIcao")?.ToUpperInvariant() ?? icao.ToUpperInvariant(),
+            raw,
+            updated);
+    }
+
     public async Task<IvaoNetworkStatus> GetNetworkStatusAsync(
         IvaoAirspace airspace,
         CancellationToken cancellationToken = default)
