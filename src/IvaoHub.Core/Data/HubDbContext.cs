@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data.Crud;
@@ -63,6 +64,13 @@ public class HubDbContext : DbContext, IVisibilityScope
 
     public DbSet<IvaoCenter> IvaoCenters => Set<IvaoCenter>();
     public DbSet<IvaoAirport> IvaoAirports => Set<IvaoAirport>();
+    public DbSet<IvaoRunway> IvaoRunways => Set<IvaoRunway>();
+    public DbSet<IvaoAircraftType> IvaoAircraftTypes => Set<IvaoAircraftType>();
+    public DbSet<IvaoAircraftEquipment> IvaoAircraftEquipments => Set<IvaoAircraftEquipment>();
+    public DbSet<IvaoTransponderType> IvaoTransponderTypes => Set<IvaoTransponderType>();
+
+    /// <summary>The outlines of the FIRs. Not an IVAO snapshot, but the same kind of reference data.</summary>
+    public DbSet<FirBoundary> Firs => Set<FirBoundary>();
 
     public DbSet<ContentEntry> Contents => Set<ContentEntry>();
     public DbSet<ContentVersion> ContentVersions => Set<ContentVersion>();

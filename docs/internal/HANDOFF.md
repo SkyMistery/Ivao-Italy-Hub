@@ -3,8 +3,9 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 16 settembre 2026, sera — **T0 e T2 sono fatte** e in `main`: sei note, piano 0.79, la parte C con le fasi
-T1–T21, e nel nucleo il tracker di IVAO più `IWeatherSource`. **Il prossimo passo è T1 o T3** (non dipendono da niente e non si toccano).
+**Ultimo aggiornamento:** 16 settembre 2026, sera — **T0, T2 e T1 sono fatte**: sei note, piano 0.80, la parte C con le fasi T1–T21, e
+nel nucleo il tracker di IVAO, `IWeatherSource`, gli aeroporti del mondo con piste e tipi di aereo, e i confini dei FIR. **Il prossimo
+passo è T3** (scope per risorsa e interessato), che non dipende da niente.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
@@ -17,9 +18,13 @@ T1–T21, e nel nucleo il tracker di IVAO più `IWeatherSource`. **Il prossimo p
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T1** e **T3** non dipendono da niente e non si toccano; **T4** viene dopo T3 e **comincia correggendo
-> un buco trovato in T0**: `IProjectable` non proietta le righe di un modulo (il contesto del modulo non ha le tabelle delle proiezioni, e
-> l'interceptor salta in silenzio — note `2026-09-15-contatti-con-risposte` §3.3 e `2026-09-15-file-con-scadenza` §2).
+> **Da dove partire**: **T3**, che non dipende da niente; **T4** viene dopo T3 e **comincia correggendo un buco trovato in T0**:
+> `IProjectable` non proietta le righe di un modulo (il contesto del modulo non ha le tabelle delle proiezioni, e l'interceptor salta in
+> silenzio — note `2026-09-15-contatti-con-risposte` §3.3 e `2026-09-15-file-con-scadenza` §2).
+>
+> **Due cose che T1 lascia aperte, da portare a Carmine quando si scrive T6/T7**: le «varianti» di un aereo in IVAO sono `A320w`,
+> `A320CFM`, non `A20N`, quindi la bandiera «anche le varianti» del design §1.5 non fa quello che si voleva (lo fa un **gruppo di aerei**);
+> e l'attribuzione dei confini dei FIR (CC BY-SA 4.0) va **mostrata** dove si vede la proposta degli ATC, cioè in T12.
 >
 > **Che cosa ha lasciato T2, e serve a chi arriva**: le tracce di IVAO durano **circa novanta giorni** e sono campionate **ogni quindici
 > secondi** (misurato), quindi la tolleranza di 150 m del decollo dalla testata va tarata sul corpus in T18; la storia del meteo su NOAA

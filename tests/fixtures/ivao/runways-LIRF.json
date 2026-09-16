@@ -1,0 +1,6 @@
+[
+  { "runway": "RW07", "length": 3190, "width": 45, "bearing": 67, "latitude": 41.8006166667, "longitude": 12.2368194444, "elevation": 7 },
+  { "runway": "RW25", "length": 3190, "width": 45, "bearing": 247, "latitude": 41.8104305556, "longitude": 12.2749722222, "elevation": 11 },
+  { "runway": "RW16R", "length": 3900, "width": 60, "bearing": 163, "latitude": 41.8151944444, "longitude": 12.2402777778, "elevation": 12 },
+  { "runway": "RW34L", "length": 3900, "width": 60, "bearing": 343, "latitude": 41.7817222222, "longitude": 12.2513888889, "elevation": 9 }
+]

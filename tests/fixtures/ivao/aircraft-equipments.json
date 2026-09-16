@@ -1,0 +1,6 @@
+[
+  { "id": "S", "name": "Standard (VHF, VOR, ILS)", "order": 1 },
+  { "id": "D", "name": "DME", "order": 5 },
+  { "id": "G", "name": "GNSS", "order": 9 },
+  { "id": "J1", "name": "CPDLC ATN VDL Mode 2", "order": 14 }
+]

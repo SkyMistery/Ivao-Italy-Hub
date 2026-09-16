@@ -1,0 +1,5 @@
+[
+  { "id": "C", "name": "mode C", "order": 2 },
+  { "id": "S", "name": "mode S with altitude and identification", "order": 6 },
+  { "id": "N", "name": "none", "order": 1 }
+]

@@ -207,12 +207,33 @@ public sealed class ArchitectureTests
             .Where(file =>
             {
                 var text = File.ReadAllText(file);
+                // The weather providers by the addresses they answer at, not by their bare names:
+                // another network's dataset draws the FIR outlines, and naming it there is right.
                 return text.Contains("aviationweather", StringComparison.OrdinalIgnoreCase)
-                    || text.Contains("vatsim", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("metar.vatsim", StringComparison.OrdinalIgnoreCase)
                     || text.Contains("NOAA", StringComparison.Ordinal);
             })
             .Where(file => !file.Contains(
                 $"{Path.DirectorySeparatorChar}Weather{Path.DirectorySeparatorChar}",
+                StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
+    /// The same question again, for the outlines of the flight information regions: they come from a
+    /// dataset of another network (decision note of 16 September 2026), and the module that uses them
+    /// must not know that. One file names it, the one that fetches it.
+    /// </summary>
+    [Fact]
+    public void NoBoundaryProviderIsNamedOutsideTheAirspaceFolder()
+    {
+        var offenders = SourceFiles()
+            .Where(file => File.ReadAllText(file).Contains("vatspy", StringComparison.OrdinalIgnoreCase))
+            .Where(file => !file.Contains(
+                $"{Path.DirectorySeparatorChar}Airspace{Path.DirectorySeparatorChar}",
                 StringComparison.Ordinal))
             .Select(Path.GetFileName)
             .ToArray();

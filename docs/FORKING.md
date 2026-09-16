@@ -120,6 +120,24 @@ It needs the OAuth client of your division; while you do not have one, the fixtu
 If the API is unreachable the last snapshot is kept as it is: a snapshot a day old beats a site
 that will not come up.
 
+Since the tours module the snapshot is wider than your own country, because a tour flies anywhere:
+the airports of the **world** (about 45 000 rows, with their coordinates), the aircraft types, and
+the runways of the airports your tours and reports actually touch, fetched one airport at a time.
+Whatever means "the airspace of this division" still reads your `countryId`, so nothing else
+changes for you.
+
+Two more things are fetched from outside IVAO, both optional and both named in one folder of the
+core each:
+
+- **The weather** (`Core/Weather/`): observations and forecasts for the airports of open tours, and
+  for the airports a report touches. No key, no account.
+- **The outlines of the flight information regions** (`Core/Airspace/`): a weekly job fills
+  `ref_firs` from the VATSpy data project, which is published under **CC BY-SA 4.0**. The file is
+  never committed and never served on; what the hub publishes is an answer derived from it, and the
+  attribution has to be shown where that answer is shown. If you do not run the job, the table stays
+  empty and the feature that uses it degrades to naming airports only, which is a supported state.
+  If your fork is commercial, check the licence before switching it on.
+
 ## Adding a module
 
 A module is not a plugin loaded at run time: it is added to the monorepo and the application is
