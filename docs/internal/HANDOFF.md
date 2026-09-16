@@ -3,9 +3,44 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 15 settembre 2026 — **il design dei tour (`05-design-m2.md`) è chiuso** dopo quattro giri di revisione con Carmine (PR #80); **il prossimo passo è la fase T0**, in una chat nuova.
+**Ultimo aggiornamento:** 16 settembre 2026 — **la fase T0 è fatta** (branch `m2/t0-decision-notes`, impilato sulla PR #80 del
+design): sei note, piano 0.79, parte C di `06-piano-implementazione-m2.md` con le fasi T1–T21. **Il prossimo passo è T1**, in una chat nuova.
 
-> ## ⚠️ Prima di tutto, per la chat che riprende: la fase T0
+> ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
+>
+> **Dove si è arrivati**: il design dei tour è chiuso (PR #80) e T0 l'ha trasformato in decisioni scritte e fasi (PR di T0, sopra la #80:
+> **mergiare prima la #80**, poi ritargettare T0 su `main`, e solo alla fine cancellare i branch — memoria `stacked-pr-base-deletion`).
+> Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: lì c'è, per ognuna, dipendenze, perimetro, test e «fatta quando», più le
+> regole comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
+>
+> **Da dove partire**: **T1**, **T2** e **T3** non dipendono da niente e non si toccano; **T4** viene dopo T3 e **comincia correggendo
+> un buco trovato in T0**: `IProjectable` non proietta le righe di un modulo (il contesto del modulo non ha le tabelle delle proiezioni, e
+> l'interceptor salta in silenzio — note `2026-09-15-contatti-con-risposte` §3.3 e `2026-09-15-file-con-scadenza` §2).
+>
+> **Le sei note di T0** (`decisions/2026-09-15-*`): permessi su una riga e interessato; contatti con risposte; la mappa; meteo e confini
+> dei FIR; token personali e agente del validatore; file con scadenza. Il **che cosa** è di Carmine (design); la **forma** è di Claude e
+> va confermata nella revisione della PR di T0. Una proposta dentro va guardata apposta: il token personale vale solo se l'utente ha fatto
+> login negli ultimi 30 giorni (le posizioni si aggiornano al login).
+>
+> **Decise da Carmine il 15 settembre, in T0**: l'app Python del validatore la adatta Claude dopo T19 (nasce **T21**, fuori dal
+> repository); la mappa di base fino allo zoom 7 (179 MB misurati); le immagini del tour le collega chi modifica il tour.
+>
+> **Da fare fuori dal codice, e non li può fare Claude** (stato al 16 settembre, sera):
+> - **OpenAIP**: ✅ Carmine ha account e chiave, in `secrets/hub-local.json` (`OpenAip:ApiKey`) sulla sua macchina, fuori dal repository.
+>   **Resta** da leggere a mano termini e licenza: la pagina legale risponde 403 a una lettura automatica, lo schema dell'API dice
+>   CC BY-NC 4.0. Serve a T1.
+> - **Navigraph**: la mail la manda Carmine; il testo è pronto in `decisions/2026-09-15-token-personali-e-agente-del-validatore.md` §7.
+>   Serve prima di distribuire l'app (T21), non prima del contratto (T19).
+> - **vIPI**: la vista `v_share_atc_sessions` nel suo repository e, per la produzione, l'utente MariaDB dedicato. **Il DDL esatto**, scritto
+>   leggendo `AtcSession` di vIPI, è in `06-piano-implementazione-m2.md` §T12. Non è un'API: è una vista di sola lettura. Serve a T12.
+> - **I voli di test**: Carmine li sta preparando (16 settembre). Per ogni volo servono VID e id di sessione del tracker (o callsign più
+>   data e ora UTC), tour e leg, e **l'esito atteso per controllo secondo lo standard**, più la decisione presa davvero all'epoca se c'è.
+>   Diventano le fixture di T2 e i test di T17–T18.
+>
+> **Correzioni che T0 ha portato al design**, con le misure: NOAA dà anche i **TAF passati**; **MapLibre 6 non ha la build CSP** e vuole
+> `blob:` in `img-src`; le tabelle dei contatti sono `cms_contact_*`, non `hub_`.
+
+> ## Com'era la consegna di T0 (15 settembre), per la storia
 >
 > **Che cosa è T0** (`05-design-m2.md` §14): **niente codice**. Tre prodotti, una PR:
 >

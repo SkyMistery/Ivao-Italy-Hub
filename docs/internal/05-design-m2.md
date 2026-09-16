@@ -1,15 +1,16 @@
 # IVAO Division Hub — Design di M2 (il modulo dei tour)
 
-> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 0.78).
+> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 0.79, che porta le decisioni di questo documento).
 > Ingresso: **`decisions/2026-09-14-requisiti-dei-tour.md`** — i requisiti decisi da Carmine e dallo staff
 > FOD. Questo documento li trasforma in modello, flussi, permessi, schermate e fasi; **non li ridiscute**.
 > Dove resta una scelta aperta è segnata **⚖️** e raccolta in §15.
 > Le fasi di implementazione si scrivono nella parte C di `06-piano-implementazione-m2.md` **dopo** la
 > revisione di Carmine.
 
-**Stato:** **chiuso** il 15 settembre 2026, dopo quattro giri di revisione con Carmine. Tutte le domande sono decise tranne una
-proposta piccola (§15.2 n.21, chi collega le immagini al tour). Il passo dopo è la fase **T0** (§14): sei note di decisione, piano
-0.79, parte C di `06-piano-implementazione-m2.md`. Integra la revisione di Carmine del 15 settembre (le 25 risposte
+**Stato:** **chiuso** il 15 settembre 2026, dopo quattro giri di revisione con Carmine. **La fase T0 è fatta** (16 settembre 2026):
+sei note di decisione in `decisions/2026-09-15-*`, piano 0.79, parte C di `06-piano-implementazione-m2.md` con le fasi T1–T21. Le
+ultime proposte aperte sono decise (§15.2 n.16 e n.21), e T0 ha corretto tre punti con le misure: il TAF passato c'è (§1.13),
+MapLibre 6 non ha la build CSP (§8.6), le tabelle dei contatti sono `cms_` (§12). Integra la revisione di Carmine del 15 settembre (le 25 risposte
 alla prima bozza e le aggiunte: aereo di riferimento e tempo stimato, cancellazione delle leg, METAR e TAF,
 decollo dalla testata, tour a distanza senza leg, tutti i piani di volo, ATC proposti, contestazioni che non
 bloccano, ban, richiesta di chiarimenti, code per tour, parametri nelle regole, limiti che bloccano).
@@ -418,8 +419,8 @@ file non lo dice a nessuno, e la media library lascerebbe cancellare il banner d
 - **Se il tour viene prorogato** (nuova `close_at`), la scadenza dell'uso si sposta con lui, nella stessa transazione: il file non
   sparisce sotto un tour ancora aperto.
 - **Il tour senza immagine** (dopo l'eliminazione) mostra un fondo neutro: nessun errore, nessun link rotto.
-- **Il collegamento al tour** lo fa chi modifica il tour (`Tours.Edit`) scegliendo dal selettore della media library ⚖️ (oppure lo
-  fa il PRD, e allora serve un permesso sul tour che oggi il PRD non ha).
+- **Il collegamento al tour** lo fa chi modifica il tour (`Tours.Edit`) scegliendo dal selettore della media library (**deciso** da
+  Carmine il 15 settembre; nessun permesso nuovo per il PRD). La forma: nota `2026-09-15-file-con-scadenza`.
 
 ### 1.13 METAR e TAF salvati (estensione del nucleo n.12)
 
@@ -435,9 +436,10 @@ almeno all'aeroporto di partenza e di arrivo. Il meteo di un giorno passato non 
 - **Quali aeroporti** (per non scaricare il mondo):
   1. un job ogni **30 minuti** (confermato il 15 settembre) salva METAR e TAF degli **aeroporti delle leg dei tour aperti o in chiusura**;
   2. **all'invio di un PIREP**, il server scarica anche gli aeroporti **toccati dal volo** che non erano in elenco
-     (deviazione, tour a distanza senza leg), chiedendo a NOAA la **storia dei METAR** delle ore del volo ⚠️
-     (il parametro `hours` di NOAA va verificato: fin dove arriva indietro). Il TAF di un volo passato, per questi
-     aeroporti, non c'è: il validatore lo vede scritto.
+     (deviazione, tour a distanza senza leg), chiedendo a NOAA la **storia di METAR e TAF** delle ore del volo.
+     **Verificato in T0** (nota `2026-09-15-meteo-e-confini-dei-fir`): con `date` e `hours` NOAA dà METAR fino ad almeno
+     18 giorni indietro e **anche i TAF passati** (almeno 7 giorni; qui la prima stesura diceva che non c'erano). Oltre, il
+     validatore vede «non disponibile».
 - **Quando si cancella** (la regola di Carmine): un bollettino si elimina quando è più vecchio di
   `weatherRetentionDays` **e** tutti i PIREP con un volo in quel giorno su quell'aeroporto sono decisi. Un job
   giornaliero.
@@ -872,8 +874,9 @@ dove serve.
 
 **I costi, detti prima**: ogni validatore che lo vuole ha bisogno di un abbonamento Navigraph e dell'app installata; l'app è un
 secondo prodotto, fuori da questo repository, con il suo rilascio; il contratto API va **versionato** perché l'app e l'hub si
-aggiornano separatamente. **Proposta**: in M2 l'hub espone il contratto con i token e i test; l'adattamento dell'app Python è un
-lavoro a parte, nel suo repository ⚖️.
+aggiornano separatamente. **Deciso** (Carmine, 15 settembre): in M2 l'hub espone il contratto con i token e i test (T19), e
+l'adattamento dell'app Python lo fa **Claude**, nel suo repository, in una fase dopo (T21). La forma del contratto e la verifica della
+licenza di Navigraph: nota `2026-09-15-token-personali-e-agente-del-validatore`.
 
 **Vale per tutti i controlli che hanno bisogno del programma** (domanda di Carmine, 15 settembre): sì. Il contratto non conosce i
 controlli: porta una `check_key`, un esito e un'evidenza. Aderenza alla rotta, SID e STAR, spazi aerei attraversati, qualunque
@@ -955,7 +958,8 @@ più staff perde l'abilitazione da solo**: il suo grant viene sospeso dalla sinc
    stakeholder (`Tours.Validate` sul PIREP). Vale per tutti, **superadmin compreso** (risposta 15). La lettura resta
    concessa: il validatore vede i propri PIREP (§4.1).
 
-Tutte e due vogliono una **nota di decisione** e i test della spina dorsale estesi.
+Tutte e due vogliono una **nota di decisione** e i test della spina dorsale estesi: scritta in T0,
+`decisions/2026-09-15-permessi-su-una-riga-e-chi-ha-interesse.md`.
 
 ---
 
@@ -1014,9 +1018,10 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   resta `'self'` per immagini e connessioni. Le tessere di `tile.openstreetmap.org` **non** sono usabili per un sito con
   traffico (policy di uso), e un fornitore commerciale gratuito ha quote e chiavi.
 - **Linee ortodromiche** (archi di cerchio massimo), marcatori degli aeroporti, colori per stato.
-- ⚠️ **Da misurare nella nota di decisione**: il peso del file mondiale fino al livello 7 (va caricato via FTP), e la CSP di
-  MapLibre (serve la sua build «CSP», con il worker servito da noi, per non aggiungere `blob:` a `worker-src`).
-  **Ripiego** se una delle due non regge: Leaflet con tessere raster di un fornitore dichiarato in `config/security.json`.
+- **Misurato in T0** (nota `2026-09-15-la-mappa`): il file mondiale fino al livello 7 pesa **179 MB** (fino al 6: 43 MB), e
+  Carmine ha scelto il 7. **Correzione**: MapLibre 6 **non ha più una build «CSP»**; il worker è comunque un file servito da noi
+  (`worker-src` resta `'self'`), ma `img-src` guadagna `blob:`. Il ripiego su Leaflet è scartato (servirebbe un plugin in manutenzione
+  per le tessere vettoriali).
 - Componente nuovo nell'elenco chiuso: `RouteMap`.
 
 ### 8.7 Le altre pagine dello staff
@@ -1111,8 +1116,9 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 ## 12. Tabelle e migrazioni
 
 **Nucleo** (additive): `ref_ivao_airports` (+ `iata`, `latitude`, `longitude`), `ref_ivao_runways`, `ref_ivao_aircraft`,
-`hub_user_grants` (+ `resource_scope`), `hub_contact_messages` (+ `kind`, `participants_json`), `hub_contact_references` (un messaggio cita uno o più oggetti di
-modulo: `source_module`, `source_id`), `hub_contact_replies`, `hub_awards`, `hub_award_assignments`.
+`hub_user_grants` (+ `resource_scope`), `cms_contact_messages` (+ `kind`, `participants_json`), `cms_contact_references` (un messaggio cita uno o più oggetti di
+modulo: `source_module`, `source_id`), `cms_contact_replies`, `hub_awards`, `hub_award_assignments`, `cms_media_uses`, `hub_user_preferences`,
+`hub_personal_tokens`. (I contatti stanno in `cms_`: la prima stesura scriveva `hub_`, T0 l'ha corretto leggendo il codice.)
 
 **Modulo** (`Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`, `fo_callsign_rules`, `fo_tour_constraints`,
 `fo_aircraft_profiles`, `fo_rules`, `fo_errors`, `fo_rule_errors`, `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`,
@@ -1145,7 +1151,10 @@ anche `ref_firs` (confini dei FIR da OpenAIP).
 
 ---
 
-## 14. Ordine di lavoro proposto (da scrivere in `06` parte C dopo la revisione)
+## 14. Ordine di lavoro proposto (scritto in dettaglio in `06` parte C, fase T0)
+
+> **Dal 16 settembre 2026 le fasi vere stanno in `06-piano-implementazione-m2.md` parte C.** Tre scostamenti da questa tabella: `myTours`
+> passa da T10 a T15, `fo_bans` nasce in T11 (la schermata resta in T15), e nasce **T21** (l'app del validatore, fuori dal repository).
 
 | Fase | Contenuto |
 |---|---|
@@ -1208,12 +1217,13 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
     dei dati OpenAIP.
 15. ~~**Decollo dalla testata**~~ **deciso**: 150 m, uno per il sistema, lo cambiano FOC e FOAC.
 16. ~~**ATC contattati**~~ **deciso**: versione leggera sul server per il pilota; `atcCoverage` e `semicircularLevels` sull'agente del
-    validatore con Navigraph (§6.6). Restano da decidere: chi adatta l'app Python, e la licenza di Navigraph sulle evidenze.
+    validatore con Navigraph (§6.6). **Decisi in T0**: l'app Python la adatta Claude dopo T19 (Carmine, 15 settembre); la licenza di
+    Navigraph è verificata a metà, e la forma ammessa delle evidenze sta nella nota `2026-09-15-token-personali-e-agente-del-validatore`.
 17. ~~**Ordine della coda**~~ **deciso**: preferenza dell'utente.
 18. ~~**Advisor**~~ **deciso**: gestiscono i profili degli aerei; le stime dei tour pubblicati cambiano con le velocità.
 19. ~~**Registro disciplinare**~~ **deciso**: strada B; tracce e dati pesanti vanno via alla fine della conservazione (§10.1).
 21. ~~**Immagini dei tour**~~ **deciso**: un job del nucleo le elimina un mese dopo la chiusura, se non servono ad altro; lo stesso
-    meccanismo per gli eventi (§1.14). Resta piccolo: il collegamento al tour lo fa chi modifica il tour (proposta).
+    meccanismo per gli eventi (§1.14). Il collegamento al tour lo fa chi modifica il tour (**deciso** da Carmine il 15 settembre).
 22. ~~**Agente del validatore**~~ **deciso**: manda subito gli esiti all'hub (§6.6).
 20. **I voli di test**: in arrivo fra il 16 e il 17 settembre, con un esito dettagliato. ⚠️ Oggi la validazione è soggettiva: gli
     esiti attesi vanno scritti secondo lo **standard** che il sistema vuole fissare, non secondo com'è stato deciso allora.
