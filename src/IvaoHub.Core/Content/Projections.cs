@@ -1,5 +1,6 @@
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 
 namespace IvaoHub.Core.Content;
 
@@ -32,10 +33,18 @@ public interface IProjectable
 /// and the walker that turns a body of blocks into text. An entity cannot be injected into, and
 /// hardcoding the languages of a division is exactly what a forkable hub must not do.
 /// </summary>
+/// <param name="Locales">The languages of the division.</param>
+/// <param name="DefaultLocale">The language a row falls back to.</param>
+/// <param name="Blocks">The walker that turns a body of blocks into text.</param>
+/// <param name="Clock">
+/// What time it is, for a row whose projection depends on it: a tour is the staff's until its release
+/// and everybody's after (M2, T6). The clock of the host, so a test that moves time moves this too.
+/// </param>
 public sealed record ProjectionContext(
     IReadOnlyList<string> Locales,
     string DefaultLocale,
-    BlockDocumentWalker Blocks);
+    BlockDocumentWalker Blocks,
+    IClock Clock);
 
 /// <summary>Everything a row projects, at once. Missing pieces are simply null or empty.</summary>
 /// <param name="Search">The line of the row in the search index, one per language once written.</param>

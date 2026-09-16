@@ -2,9 +2,109 @@
   "_source": "web/src/modules/flightops/locales",
   "nav": {
     "section": "Tours",
+    "tours": "Tours",
+    "templates": "Tour templates",
     "aircraftProfiles": "Aircraft profiles",
     "aircraftGroups": "Aircraft groups",
     "settings": "Tour settings"
+  },
+  "tours": {
+    "title": "Tours",
+    "description": "Every tour, past, running and future. The state is read off the dates.",
+    "create": "New tour",
+    "edit": "Edit tour",
+    "fromTemplate": "New from template",
+    "saved": "Tour saved.",
+    "readyProblems": "Before it can be marked ready, it still needs:",
+    "actions": {
+      "ready": "Mark ready",
+      "draft": "Back to draft",
+      "hide": "Hide",
+      "show": "Make visible again",
+      "saveAsTemplate": "Save as template"
+    },
+    "delete": {
+      "title": "Delete this tour?",
+      "description": "Only a tour without reports is deleted: one with reports is hidden. This cannot be undone."
+    },
+    "fields": {
+      "title": "Title",
+      "slug": "Address (/tours/…)",
+      "kind": "Kind of tour",
+      "state": "State",
+      "summary": "Summary",
+      "briefing": "Briefing",
+      "releaseAt": "Release",
+      "closeAt": "Close",
+      "showPreview": "Visible to the public before the release, as a preview",
+      "isHidden": "Hidden",
+      "coverMediaId": "Card photo",
+      "bannerMediaId": "Page banner",
+      "progression": "Progression",
+      "hubRotationOrder": "Order of the rotations (hub tours only)",
+      "reportWindowDays": "Days to report a flight (empty: the division's)",
+      "dailyLegLimit": "Legs per day on this tour (empty: no limit of the tour)",
+      "requiresProcedures": "SID, STAR and approach required in the report",
+      "minPilotRating": "Minimum pilot rating",
+      "referenceAircraftIcao": "Reference aircraft for the estimated time",
+      "awardId": "Award",
+      "status": "State",
+      "isTemplate": "Template",
+      "updatedAt": "Last change"
+    },
+    "options": {
+      "kind": {
+        "Sequential": "Sequential",
+        "Free": "Free",
+        "Hub": "Hub",
+        "SequentialChosenStart": "Sequential with a chosen start",
+        "Distance": "Distance",
+        "Open": "Open",
+        "Container": "With subtours"
+      },
+      "state": {
+        "Template": "Template",
+        "Draft": "Draft",
+        "Upcoming": "Upcoming",
+        "Open": "Open",
+        "Closing": "Closing",
+        "Closed": "Closed"
+      },
+      "progression": {
+        "FlyAhead": "Fly ahead without waiting for validation",
+        "WaitForValidation": "Wait for the previous leg to be validated"
+      },
+      "hubRotationOrder": {
+        "none": "Not set",
+        "Fixed": "In the order of the tour",
+        "Free": "Any order within the hub"
+      },
+      "awardId": {
+        "none": "No award"
+      }
+    }
+  },
+  "tourTemplates": {
+    "title": "Tour templates",
+    "description": "Ready-made settings a tour is born from: kind, limits, aircraft, briefing and pictures. Never dates, legs or hubs.",
+    "create": "New template",
+    "edit": "Edit template"
+  },
+  "tourFromTemplate": {
+    "description": "The tour is born as a draft with the settings of the template; the dates are chosen afterwards.",
+    "none": "There are no tour templates yet.",
+    "submit": "Create the tour",
+    "fields": {
+      "templateId": "Template",
+      "title": "Title of the tour",
+      "slug": "Address (/tours/…)"
+    }
+  },
+  "tourSaveAsTemplate": {
+    "description": "The settings of this tour become a template: no dates, address or award.",
+    "fields": {
+      "title": "Name of the template"
+    }
   },
   "aircraftProfiles": {
     "title": "Aircraft profiles",
@@ -42,6 +142,7 @@
     "title": "Tour settings",
     "description": "What the department changes without a release: limits, windows and the estimated time.",
     "saved": "Settings saved.",
+    "toursInTheWay": "These tours have no daily limit of their own: give them one before switching the division's off.",
     "fields": {
       "dailyLegLimit": "Legs per day (empty: no limit)",
       "defaultReportWindowDays": "Days to report a flight",
@@ -60,6 +161,18 @@
   "errors": {
     "profileExists": "This aircraft type already has a profile.",
     "retentionLongShorter": "The disciplinary record cannot be kept for less time than the reports.",
-    "countryCode": "Write the country as its two letter code."
+    "countryCode": "Write the country as its two letter code.",
+    "closeBeforeRelease": "The close has to come after the release.",
+    "closeTooSoon": "A ready tour closes at least two report windows from today, so that no pilot finds it closed under their feet.",
+    "kindLocked": "The kind no longer changes: the tour is already visible to the public.",
+    "templateFixed": "A tour does not become a template, nor a template a tour: use \"Save as template\" or \"New from template\".",
+    "templateNeverReady": "A template is not marked ready: a tour is created from it.",
+    "releasedStaysReady": "The tour has been released and does not go back to draft: it can be hidden.",
+    "slugTaken": "This address already belongs to another tour.",
+    "awardUnknown": "This award does not exist.",
+    "dailyLimitRequired": "The division's daily limit is off: the tour needs one of its own.",
+    "referenceWithoutProfile": "This aircraft has no profile: without its speed the estimated time cannot be computed.",
+    "tourHasReports": "This tour has reports and is not deleted: it can be hidden.",
+    "toursNeedDailyLimit": "Some tours still to be flown have no daily limit of their own."
   }
 }

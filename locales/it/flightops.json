@@ -2,9 +2,109 @@
   "_source": "web/src/modules/flightops/locales",
   "nav": {
     "section": "Tour",
+    "tours": "Tour",
+    "templates": "Template dei tour",
     "aircraftProfiles": "Profili degli aerei",
     "aircraftGroups": "Gruppi di aerei",
     "settings": "Impostazioni dei tour"
+  },
+  "tours": {
+    "title": "Tour",
+    "description": "Tutti i tour, passati, in corso e futuri. Lo stato si legge dalle date.",
+    "create": "Nuovo tour",
+    "edit": "Modifica tour",
+    "fromTemplate": "Nuovo da template",
+    "saved": "Tour salvato.",
+    "readyProblems": "Prima di segnarlo pronto manca ancora:",
+    "actions": {
+      "ready": "Segna pronto",
+      "draft": "Torna in bozza",
+      "hide": "Nascondi",
+      "show": "Rendi di nuovo visibile",
+      "saveAsTemplate": "Salva come template"
+    },
+    "delete": {
+      "title": "Eliminare questo tour?",
+      "description": "Si elimina solo un tour senza report: uno con report si nasconde. L'operazione non si annulla."
+    },
+    "fields": {
+      "title": "Titolo",
+      "slug": "Indirizzo (/tours/…)",
+      "kind": "Tipo di tour",
+      "state": "Stato",
+      "summary": "Riassunto",
+      "briefing": "Briefing",
+      "releaseAt": "Rilascio",
+      "closeAt": "Chiusura",
+      "showPreview": "Visibile al pubblico prima del rilascio, come anteprima",
+      "isHidden": "Nascosto",
+      "coverMediaId": "Foto del riquadro",
+      "bannerMediaId": "Banner della pagina",
+      "progression": "Avanzamento",
+      "hubRotationOrder": "Ordine delle rotazioni (solo tour a hub)",
+      "reportWindowDays": "Giorni per inviare un volo (vuoto: quelli della divisione)",
+      "dailyLegLimit": "Leg al giorno in questo tour (vuoto: nessun limite del tour)",
+      "requiresProcedures": "SID, STAR e avvicinamento obbligatori nel report",
+      "minPilotRating": "Rating pilota minimo",
+      "referenceAircraftIcao": "Aereo di riferimento per il tempo stimato",
+      "awardId": "Award",
+      "status": "Stato",
+      "isTemplate": "Template",
+      "updatedAt": "Ultima modifica"
+    },
+    "options": {
+      "kind": {
+        "Sequential": "In sequenza",
+        "Free": "Libero",
+        "Hub": "A hub",
+        "SequentialChosenStart": "In sequenza con partenza a scelta",
+        "Distance": "A distanza",
+        "Open": "Aperto",
+        "Container": "Con sottotour"
+      },
+      "state": {
+        "Template": "Template",
+        "Draft": "Bozza",
+        "Upcoming": "In arrivo",
+        "Open": "Aperto",
+        "Closing": "In chiusura",
+        "Closed": "Chiuso"
+      },
+      "progression": {
+        "FlyAhead": "Si vola avanti senza aspettare la validazione",
+        "WaitForValidation": "Si aspetta la validazione della leg precedente"
+      },
+      "hubRotationOrder": {
+        "none": "Non indicato",
+        "Fixed": "Nell'ordine del tour",
+        "Free": "A scelta dentro l'hub"
+      },
+      "awardId": {
+        "none": "Nessun award"
+      }
+    }
+  },
+  "tourTemplates": {
+    "title": "Template dei tour",
+    "description": "Impostazioni pronte da cui nasce un tour: tipo, limiti, aerei, briefing e foto. Mai date, leg o hub.",
+    "create": "Nuovo template",
+    "edit": "Modifica template"
+  },
+  "tourFromTemplate": {
+    "description": "Il tour nasce in bozza con le impostazioni del template; le date si scelgono dopo.",
+    "none": "Non c'è ancora nessun template dei tour.",
+    "submit": "Crea il tour",
+    "fields": {
+      "templateId": "Template",
+      "title": "Titolo del tour",
+      "slug": "Indirizzo (/tours/…)"
+    }
+  },
+  "tourSaveAsTemplate": {
+    "description": "Le impostazioni di questo tour diventano un template: niente date, indirizzo o award.",
+    "fields": {
+      "title": "Nome del template"
+    }
   },
   "aircraftProfiles": {
     "title": "Profili degli aerei",
@@ -42,6 +142,7 @@
     "title": "Impostazioni dei tour",
     "description": "Quello che il dipartimento cambia senza una release: limiti, finestre e tempo stimato.",
     "saved": "Impostazioni salvate.",
+    "toursInTheWay": "Questi tour non hanno un limite giornaliero loro: dagliene uno prima di spegnere quello della divisione.",
     "fields": {
       "dailyLegLimit": "Leg al giorno (vuoto: nessun limite)",
       "defaultReportWindowDays": "Giorni per inviare un volo",
@@ -60,6 +161,18 @@
   "errors": {
     "profileExists": "Questo tipo di aereo ha già un profilo.",
     "retentionLongShorter": "Il registro disciplinare non si può tenere meno a lungo dei report.",
-    "countryCode": "Scrivi il paese con il suo codice di due lettere."
+    "countryCode": "Scrivi il paese con il suo codice di due lettere.",
+    "closeBeforeRelease": "La chiusura dev'essere dopo il rilascio.",
+    "closeTooSoon": "Un tour pronto si chiude almeno due finestre di invio da oggi, così nessun pilota se lo trova chiuso sotto i piedi.",
+    "kindLocked": "Il tipo non si cambia più: il tour è già visibile al pubblico.",
+    "templateFixed": "Un tour non diventa un template, e un template non diventa un tour: usa «Salva come template» o «Nuovo da template».",
+    "templateNeverReady": "Un template non si segna pronto: si crea un tour da questo template.",
+    "releasedStaysReady": "Il tour è già stato rilasciato e non torna in bozza: si può nascondere.",
+    "slugTaken": "Questo indirizzo è già di un altro tour.",
+    "awardUnknown": "Questo award non esiste.",
+    "dailyLimitRequired": "Il limite giornaliero della divisione è spento: il tour ne vuole uno suo.",
+    "referenceWithoutProfile": "Questo aereo non ha un profilo: senza la sua velocità il tempo stimato non si calcola.",
+    "tourHasReports": "Questo tour ha dei report e non si elimina: si può nascondere.",
+    "toursNeedDailyLimit": "Ci sono tour ancora da volare senza un limite giornaliero loro."
   }
 }

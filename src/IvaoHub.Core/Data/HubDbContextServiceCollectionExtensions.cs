@@ -1,5 +1,6 @@
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -48,11 +49,13 @@ public static class HubDbContextServiceCollectionExtensions
             return new ProjectionContext(
                 division.Locales,
                 division.DefaultLocale,
-                provider.GetRequiredService<BlockDocumentWalker>());
+                provider.GetRequiredService<BlockDocumentWalker>(),
+                provider.GetRequiredService<IClock>());
         });
 
         services.TryAddScoped<ProjectionWriter>();
         services.TryAddScoped<HubSaveChangesInterceptor>();
+        services.TryAddScoped<ProjectionRefresh>();
     }
 
     /// <summary>

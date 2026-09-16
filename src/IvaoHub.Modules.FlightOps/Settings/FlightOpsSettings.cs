@@ -1,5 +1,10 @@
 using System.Text.RegularExpressions;
 using FluentValidation;
+using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Services;
+using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Tours;
+using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.FlightOps.Settings;
 
@@ -54,7 +59,6 @@ public sealed partial class FlightOpsSettingsValidator : AbstractValidator<Fligh
 {
     public FlightOpsSettingsValidator()
     {
-        // The refusal of a null limit while some tour has none of its own comes with the tours (T6, §3.7).
         RuleFor(settings => settings.DailyLegLimit).InclusiveBetween(1, 100).When(settings => settings.DailyLegLimit is not null)
             .WithMessage("errors.number.range");
         RuleFor(settings => settings.DefaultReportWindowDays).InclusiveBetween(1, 60).WithMessage("errors.number.range");
@@ -75,4 +79,27 @@ public sealed partial class FlightOpsSettingsValidator : AbstractValidator<Fligh
 
     [GeneratedRegex("^[A-Z]{2}$")]
     private static partial Regex CountryCode();
+}
+
+/// <summary>
+/// The rules of a save of the settings: those of the values themselves, and the one that needs the tours (design M2
+/// §3.7) — the division's daily limit is not switched off while a tour that is still ahead has no limit of its own.
+/// Which tours those are, the list of tours answers with the same expression
+/// (<c>filter[needsOwnDailyLimit]=true</c>), so the screen can show them.
+/// </summary>
+public sealed class FlightOpsSettingsSaveValidator : AbstractValidator<FlightOpsSettings>
+{
+    public FlightOpsSettingsSaveValidator(FlightOpsDbContext database, IClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(clock);
+
+        Include(new FlightOpsSettingsValidator());
+
+        RuleFor(settings => settings.DailyLegLimit)
+            .MustAsync(async (limit, cancellationToken) =>
+                limit is not null
+                || !await CrudSource.BackOffice<Tour>(database).AnyAsync(TourState.NeedsOwnDailyLimit(clock.UtcNow), cancellationToken))
+            .WithMessage("flightops:errors.toursNeedDailyLimit");
+    }
 }

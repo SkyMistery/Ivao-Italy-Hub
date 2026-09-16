@@ -140,7 +140,7 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 | `briefing_json` | BlockDocument | testo ricco, stesso editor e renderer |
 | `cover_media_id` | long? | foto di sfondo del riquadro, dalla media library (§1.14) |
 | `banner_media_id` | long? | banner della pagina del tour, dalla media library (§1.14) |
-| `status` | enum | `Draft`, `Ready` |
+| `status` | enum | `Draft`, `Ready` — nel codice `PublishStatus.Draft` e `Published`, così la regola della bozza è quella dell'interceptor (T6a, nota `2026-09-16-i-tour-nel-back-office`) |
 | `is_hidden` | bool | nascosto (§1.2.2) |
 | `show_preview` | bool | un tour pronto è visibile al pubblico **prima** del rilascio, come anteprima (risposta 1) |
 | `release_at`, `close_at` | UTC | |
@@ -149,7 +149,7 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 | `hub_rotation_order` | enum? | solo `Hub`: `Fixed` (rotazioni nell'ordine del tour) o `Free` (a scelta dentro l'hub) (risposta 10) |
 | `requires_procedures` | bool | SID, STAR e IAP obbligatori nel PIREP (risposta 4, §3.2) |
 | `daily_leg_limit` | int? | obbligatorio se il limite di divisione è spento (§3.7) |
-| `allowed_aircraft_json` | json | aerei consentiti: tipi ICAO, ciascuno con «anche le varianti» sì/no, e gruppi di aerei (§1.5); vuoto = tutti |
+| `allowed_aircraft_json` | json | aerei consentiti: tipi ICAO e gruppi di aerei (§1.5), `{ types, groupIds }`; vuoto = tutti. **Senza** la spunta «anche le varianti» (Carmine, 16 settembre) |
 | `min_pilot_rating` | int? | rating pilota minimo per inviare PIREP (§3.2); vuoto = nessuno |
 | `reference_aircraft_icao` | string? | l'aereo di riferimento per il tempo stimato (§1.5) |
 | `award_id` | long? | **un solo award per tour, sempre** (Carmine, 15 settembre); solo su un tour senza padre. Gli award a più livelli sono di eventi e training |
@@ -167,7 +167,9 @@ Nessun job pubblica o chiude un tour:
 | In chiusura | `Ready`, `close_at < now ≤ close_at + report_window_days`: risulta chiuso, ma accetta PIREP di voli con decollo `≤ close_at` | tutti |
 | Chiuso | dopo | tutti, finché la conservazione non lo toglie (§10) |
 
-Un tour su due anni è un tour con `close_at` nell'anno dopo. **Segnare «pronto»** passa dai controlli di
+Un tour su due anni è un tour con `close_at` nell'anno dopo. **Ricerca e calendario** seguono lo stato: un tour pronto ma non ancora
+visibile proietta per lo staff, e al rilascio un **job del modulo lo riproietta senza scriverlo** (`TourReleaseJob`, ogni quarto d'ora;
+Carmine, 16 settembre, nota `2026-09-16-i-tour-nel-back-office`). Il job non pubblica niente: lo stato resta delle date. **Segnare «pronto»** passa dai controlli di
 pubblicazione: titolo e riassunto in tutte le lingue della divisione, almeno una leg (tranne `Container` e
 `Open`), aeroporti noti in `ref_`, `release_at < close_at`, date delle leg dentro il periodo,
 vincoli di tipo (§2), limite giornaliero se quello di divisione è spento (§3.7), un profilo per l'aereo di
@@ -254,9 +256,10 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
   equipaggiamento e dei transponder, e il controllo `equipment` (§6.4) li legge da lì invece di tenerne un elenco suo.
 - **Le prestazioni le inserisce il FOD**: `fo_aircraft_profiles` (`icao_type`, `cruise_tas_kt`, `note`), una lista
   e un form generati. Un profilo vale per tutti i tour.
-- **Tipi e varianti** (Carmine, 15 settembre): il tour sceglie per ogni tipo se valgono **anche le varianti** (le varianti vengono da
-  `/v2/aircrafts/{aircraftId}/variants`). Esempio: un tour Volotea ammette A319 e A320 senza varianti (niente neo), un tour easyJet
-  ammette A320 **con** le varianti (A20N compreso). Il controllo `aircraft` e il blocco all'invio leggono lo stesso elenco.
+- ~~**Tipi e varianti** (Carmine, 15 settembre): il tour sceglie per ogni tipo se valgono **anche le varianti**.~~ **Corretto il 16
+  settembre** (Carmine, apertura di T6; nota `2026-09-16-i-tour-nel-back-office`): misurato in T1, le varianti di IVAO sono livree e motori
+  dello **stesso** tipo (`A320w`, `A320CFM`), non i tipi imparentati. Il tour ammette **tipi e gruppi**: un tour easyJet che vuole A320 e
+  A20N usa un gruppo, un tour Volotea elenca A319 e A320. Il controllo `aircraft` e il blocco all'invio leggono lo stesso elenco.
 - **Gruppi di aerei**: `fo_aircraft_groups` (`name` tradotto, tipi ICAO), definiti dal FOD — «Bizjet», «Airliner», «Turboelica»,
   «Aerei storici» — e usabili dovunque si scelgono aerei: aerei consentiti di un tour o di una leg, filtro `AircraftTypes` dei tour
   `Open`. Cambiare un gruppo cambia tutti i tour che lo usano ⚖️ (come per le velocità: si calcola a ogni lettura).
@@ -1168,7 +1171,7 @@ anche `ref_firs` (confini dei FIR da OpenAIP).
 | T3 | Nucleo: scope per risorsa e stakeholder nell'unico handler, test della spina dorsale |
 | T4 | Nucleo: award (catalogo, assegnazioni, schermata); più voci di calendario per riga; usi dei file con scadenza e job di eliminazione; preferenze dell'utente |
 | T5 | Modulo: scheletro, impostazioni, profili degli aerei, `positionGrants` |
-| T6 | Tour: modello, stato dalle date, nascondere/eliminare/chiusura, controlli «pronto», template |
+| T6 | Tour: modello, stato dalle date, nascondere/eliminare/chiusura, controlli «pronto», template. **Divisa** il 16 settembre in T6a (server e schermate generate) e T6b (la scheda del briefing con l'editor dei blocchi) |
 | T7 | Leg: editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli a distanza |
 | T8 | Import XLSX/CSV con anteprima |
 | T9 | Regole con parametri ed errori, regole effettive, blocco `errorCatalog` |

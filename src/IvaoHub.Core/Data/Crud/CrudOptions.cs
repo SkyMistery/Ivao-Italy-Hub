@@ -42,6 +42,15 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     /// <summary>Overrides <c>{PermissionArea}.Edit</c>, for a resource with no department.</summary>
     public string? WritePolicy { get; set; }
 
+    /// <summary>
+    /// A policy deleting a row needs <b>on top of</b> the write policy, for a resource where changing a row and
+    /// removing it are held by different people. The tours are the first (M2, T6): an advisor of the department
+    /// edits a tour but does not delete one unless somebody grants it to them (design M2 §7.2).
+    /// <para>It is asked on the row, through the same handler, and it narrows only: whoever may delete still
+    /// has to be allowed to write.</para>
+    /// </summary>
+    public string? DeletePolicy { get; set; }
+
     /// <summary>Only the two reads are mapped. The audit log is the reason this exists.</summary>
     public bool ReadOnly { get; set; }
 

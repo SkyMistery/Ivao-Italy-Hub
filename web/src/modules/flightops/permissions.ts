@@ -5,3 +5,6 @@
 export const TOURS_VIEW = 'Tours.View';
 export const TOURS_MANAGE_AIRCRAFT = 'Tours.ManageAircraft';
 export const TOURS_MANAGE_SETTINGS = 'Tours.ManageSettings';
+export const TOURS_EDIT = 'Tours.Edit';
+export const TOURS_DELETE = 'Tours.Delete';
+export const TOURS_MANAGE_TEMPLATES = 'Tours.ManageTemplates';

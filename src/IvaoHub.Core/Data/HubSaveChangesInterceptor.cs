@@ -51,6 +51,28 @@ public sealed class HubSaveChangesInterceptor(
     // visible to the other.
     private readonly Dictionary<DbContext, Pending> _pending = [];
 
+    // Rows whose projection is out of date although nothing about them changed, waiting for the next
+    // save of their context (ProjectionRefresh). Keyed by context for the same reason as above.
+    private readonly Dictionary<DbContext, List<IProjectable>> _requested = [];
+
+    /// <summary>
+    /// Asks the next save of this context to project these rows again, although none of them is being
+    /// written. Only <see cref="ProjectionRefresh"/> calls it: see there for why it exists.
+    /// </summary>
+    internal void ProjectAgain(DbContext context, IEnumerable<IProjectable> rows)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(rows);
+
+        if (!_requested.TryGetValue(context, out var requested))
+        {
+            requested = [];
+            _requested[context] = requested;
+        }
+
+        requested.AddRange(rows);
+    }
+
     public override InterceptionResult<int> SavingChanges(
         DbContextEventData eventData,
         InterceptionResult<int> result)
@@ -262,6 +284,17 @@ public sealed class HubSaveChangesInterceptor(
                 {
                     CollectStaleSession(pending, before);
                 }
+            }
+        }
+
+        // Rows asked to be projected again without being written (ProjectionRefresh): projected the same
+        // way, once, and only if the save did not already project them because they changed too.
+        if (_requested.Remove(context, out var again))
+        {
+            foreach (var row in again.Where(row => !pending.Projections.Any(projection =>
+                projection.Entity.SourceModule == row.SourceModule && projection.Entity.SourceId == row.SourceId)))
+            {
+                pending.Projections.Add(new PendingProjection(row, Removed: false));
             }
         }
 

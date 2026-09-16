@@ -296,8 +296,9 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T4a | Nucleo: proiezioni dei moduli e file con scadenza — **fatta il 16 set 2026** | T3 | le righe di modulo proiettano davvero; più voci di calendario; `cms_media_uses` e il job |
 | T4b | Nucleo: award e preferenze — **fatta il 16 set 2026** | T4a | award; preferenze dell'utente |
 | T5 | Modulo: lo scheletro — **fatta il 16 set 2026** | T4a | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
-| T6 | I tour | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni |
-| T7 | Le leg e la forma del tour | T1, T6 | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
+| T6a | I tour — **fatta il 16 set 2026** | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni, il job del rilascio |
+| T6b | Il briefing | T6a | l'editor del corpo estratto dall'editor dei contenuti, montato come scheda del tour |
+| T7 | Le leg e la forma del tour | T1, T6a | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
 | T8 | L'import delle leg | T7 | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
 | T10 | Il pubblico e la mappa | T7, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
@@ -665,6 +666,80 @@ chiusura sotto `2 × X` rifiutata; il tipo non cambia da pubblico; «pronto» co
 le date; la proroga sposta la scadenza del banner; un tour nascosto sparisce da ricerca e calendario.
 **Fatta quando**: dal back office si crea un tour da template, lo si segna pronto con una data di rilascio passata e compare in ricerca e
 calendario.
+
+**Divisa il 16 settembre 2026** in apertura (Carmine, nota `decisions/2026-09-16-i-tour-nel-back-office.md`, piano **0.84**): **T6a** è
+tutto quello sopra tranne la scheda del briefing, branch `m2/t6a-tours`; **T6b** è la scheda del briefing, in una chat nuova. Nella stessa
+apertura altre due risposte: un **job del modulo riproietta i tour al rilascio**, e gli **aerei consentiti sono tipi più gruppi**, senza la
+spunta «anche le varianti».
+
+**T6a fatta il 16 settembre 2026** (branch `m2/t6a-tours`). Com'è andata:
+
+- **Tre domande a Carmine in apertura**, tutte decise come proposto (sopra). ⚠️ La prima tocca una regola del piano: §16.4 diceva «niente
+  job di riconciliazione», e `TourReleaseJob` è la prima eccezione, scritta lì. Non pubblica e non scrive il tour: chiede
+  all'interceptor di proiettarlo di nuovo.
+- **Nel nucleo, quattro estensioni** (caso b): `ProjectionRefresh` (riproiettare senza scrivere, attraverso l'interceptor: nessuna riga
+  d'audit, nessuna `row_version` nuova sotto un editor aperto); l'**orologio** in `ProjectionContext` (la proiezione di un tour dipende
+  dall'ora); `CrudOptions.DeletePolicy` (`Tours.Delete` chiesto **in più** di `Tours.Edit`, perché l'advisor modifica e non elimina);
+  e le **funzioni SQL** in `ModuleDbContext`. ⚠️ **Trovato dal test d'integrazione, c'era da T5**: la ricerca su un campo tradotto di
+  una lista di modulo rispondeva 500, perché `LocalizedQuery` era registrata solo nel contesto del nucleo; i gruppi di aerei avevano
+  quella ricerca e nessun test la usava.
+- **Il modello**: `fo_tours` con **tutte** le colonne del design §1.2 (migrazione `AddTours`, solo additiva); quelle della forma del tour
+  (`parent_tour_id`, `required_*`, `open_goal*`, `allowed_aircraft_json`) nascono ora e le scrive T7, ma il template le copia già.
+  **«Pronto» è `PublishStatus.Published`**: `Ready` nel nucleo vuol dire «in approvazione», e la regola della bozza (tiene solo i file)
+  è già dell'interceptor. `visibility` è calcolata (pronto, non nascosto, non template) e grossolana: la lettura pubblica di T10 chiede
+  anche `TourState.IsPublic`.
+- **Lo stato in un posto**: `TourState.Of`, `IsPublic` e l'espressione `NeedsOwnDailyLimit` (il validatore delle impostazioni e il
+  filtro `needsOwnDailyLimit` della lista dei tour sono la stessa regola). Le regole che guardano altre righe sono `TourSaving` (indirizzo
+  libero, tipo noto, award esistente, tipo bloccato da pubblico, chiusura a due finestre, template che non cambia natura) e quelle di
+  «pronto» sono `TourReadiness`; le usano il motore CRUD, i due verbi dei template e l'azione. **Un tour pronto resta pronto solo se
+  potrebbe esserlo**: ogni salvataggio ripassa i controlli.
+- **Quattro verbi scritti a mano**, contati: `POST /status` (pronto, bozza, nascondi, mostra — una macchina a stati), `GET /ready-problems`,
+  `POST /from-template/{id}`, `POST /{id}/save-as-template`. Torna in bozza **solo prima del rilascio**; la chiusura a due finestre vale
+  per un tour **pronto**.
+- **«Ha PIREP?»** è `ITourReports`, che risponde no finché T11 non lo sostituisce; il test lo prova **sostituendo la risposta**, non con una
+  riga scritta a mano, perché `fo_pireps` non esiste ancora.
+- **Le schermate**: `/staff/tours` e `/staff/tours/templates` (liste generate, stato calcolato), `/staff/tours/{id}` (form generato,
+  problemi di «pronto» prima di premere, barra delle azioni), `/staff/tours/from-template` e `/staff/tours/{id}/save-as-template` (form
+  generati). Banner e foto dal selettore della libreria, **senza caricamento** (li carica il PRD, design §1.14). Nelle impostazioni, il
+  rifiuto di spegnere il limite mostra sotto il form i tour che lo impediscono. Nessun componente nuovo. ⚠️ Il modulo importa due
+  query del nucleo da `features/` (`activeAwardsQuery`, `mediaPickerQuery`) invece di copiarle: la regola ESLint vieta
+  `features/ → modules/`, non il contrario.
+- **I test**: unit `TourStateTests` (cinque: lo stato a ogni soglia, pubblico da rilascio o anteprima e mai da nascosto, la colonna
+  grossolana e le proiezioni che seguono l'orologio, nascosto e template che proiettano solo le foto, la copia che non porta date,
+  indirizzo e award e rinomina i blocchi del briefing); integrazione `TourTests` (cinque: da template a pronto trovato in ricerca e
+  calendario e sparito da nascosto, con i problemi campo per campo; con report si nasconde e non si elimina, l'advisor non elimina; il tipo
+  bloccato e la chiusura a due finestre con la scadenza della foto che si sposta; il limite di divisione che resta acceso; il job che rende
+  pubblico un tour rilasciato senza cambiargli `row_version`); Vitest `schemas.test.ts` (tre); e2e `tours.spec.ts` (il «fatta quando»,
+  dal template alla ricerca anonima e al calendario, poi elimina tour e template). VID `780061–780062`, slug `fo-test-tour-…`.
+- ⚠️ **Trovato dal giro e2e, non dai test unitari** (come in T4b): il generatore dei form leggeva un campo numerico con
+  `valueAsNumber`, che trasforma una casella vuota in `NaN`, e nessuno schema accetta `NaN`. Un numero **facoltativo** non si poteva
+  lasciare vuoto: il form di un tour non si salvava, e — c'era da prima — nemmeno «spegnere il limite giornaliero» nelle impostazioni di
+  T5 né un grant a una posizione senza VID. Corretto in `SchemaForm` (vuoto = nessun numero), con un test Vitest visto rosso prima.
+  ⚠️ Il controllo sul calendario dello spec legge il **blocco calendario pubblico**: la lista di staff del calendario è per dipartimento,
+  e quello del banco non è il FOD.
+- **Verificato in locale** (Docker acceso): unit .NET **386**, Vitest **414**, typecheck, lint, formato, i18n, build Release, giro e2e
+  completo **22** e smoke **80**, integrazione **226** tutte verdi. **Non verificato**: il «fatta quando» con il login di sviluppo vero (passa da
+  IVAO con le credenziali di Carmine) — l'ha guidato il giro e2e con il login del banco; il job del rilascio lanciato dal suo orario —
+  lo lancia il test d'integrazione.
+
+### T6b — Il briefing
+
+Design §1.2 (`briefing_json`), §8.3 (la scheda «briefing»), §1.14 (le immagini del briefing). Branch `m2/t6b-briefing`, **dopo** il merge di
+T6a. Nata dalla divisione di T6 (nota `2026-09-16-i-tour-nel-back-office`).
+
+1. **L'editor del corpo estratto** da `features/content/ContentEditor.tsx`: la parte che modifica un `BlockDocument` (tavolozza, albero
+   delle sezioni, proprietà del blocco, trascinamento, annulla e ripeti, anteprima con il renderer vero) diventa un componente che riceve
+   il corpo e lo restituisce, **senza** metadati, indirizzo, template o revisione. L'editor dei contenuti lo usa com'è oggi: nessun
+   cambiamento di comportamento, e i suoi test e il giro e2e dei contenuti lo provano.
+2. **La scheda «briefing»** in `/staff/tours/{id}`: lo stesso componente, salvato con il `PUT` del tour (il server accetta già
+   `briefing`, valida l'envelope, estrae il testo per la ricerca e dichiara le immagini come usi con la scadenza del tour).
+3. **I problemi di «pronto»** con i percorsi dentro il briefing descritti come l'editor dei contenuti li descrive (`publishProblems.tsx`),
+   non come «Briefing: …».
+4. **Le schede** del tour: impostazioni e briefing ora; T7 e T9 aggiungono le loro.
+
+**Test**: Vitest sul componente estratto (un corpo entra, un corpo modificato esce); e2e: un blocco di testo nel briefing, «pronto» che
+chiede la seconda lingua del blocco, il testo trovato in ricerca. **Fatta quando**: un tour ha un briefing con un'immagine della libreria, è
+pronto, e l'editor dei contenuti fa quello che faceva.
 
 ### T7 — Le leg e la forma del tour
 

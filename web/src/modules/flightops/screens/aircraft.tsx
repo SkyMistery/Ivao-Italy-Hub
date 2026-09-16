@@ -1,18 +1,15 @@
 import { Button } from '@ivao/atmosphere-react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams, useRouteContext, useSearch } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { writableDepartments } from '../../../shared/api/bootstrap';
-import { SchemaForm, type Suggestion } from '../../../shared/forms';
+import { SchemaForm } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
-import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
+import { DataList, col, type ColumnSpec } from '../../../shared/list';
 import { ConfirmDialog, PageShell } from '../../../shared/ui';
 import {
-  aircraftTypesQuery,
   emptyGroup,
   emptyProfile,
   groupQuery,
@@ -30,6 +27,9 @@ import {
 } from '../api';
 import { TOURS_MANAGE_AIRCRAFT } from '../permissions';
 import { aircraftGroupSchema, aircraftProfileSchema } from '../schemas';
+
+import { NewButton } from './NewButton';
+import { keepingCurrent, useListSearch, useStaff, useTypeSuggestions } from './hooks';
 
 /**
  * The aircraft data of the tours (design M2 §1.5, §8.7): profiles — how fast a type flies — and groups of
@@ -52,51 +52,6 @@ const groupColumns: readonly ColumnSpec<AircraftGroupDto>[] = [
   col.list('icaoTypes'),
   col.date('updatedAt', { sortable: true }),
 ];
-
-/** The route context of the back office, where every screen of the module hangs. */
-function useStaff() {
-  return useRouteContext({ from: '/_staff' });
-}
-
-/** The search of a list, as the manifest's `validateSearch` produced it, and a way to change it. */
-function useListSearch() {
-  // Parsed again rather than cast: a module route is not in the generated tree, so its search is untyped here.
-  const search = listSearchSchema.parse(useSearch({ strict: false }));
-  const navigate = useNavigate();
-
-  return {
-    search,
-    onSearchChange: (patch: Partial<ListSearch>) =>
-      void navigate({
-        search: ((previous: ListSearch) => ({ ...previous, ...patch })) as never,
-        to: '.',
-      }),
-  };
-}
-
-/** The types a field offers, asked again as the text changes. */
-function useTypeSuggestions() {
-  const [typed, setTyped] = useState('');
-  const types = useQuery({ ...aircraftTypesQuery(typed), placeholderData: keepPreviousData });
-
-  const suggestions: Suggestion[] = (types.data ?? []).map((type) => ({
-    value: type.icaoCode,
-    label: `${type.icaoCode} — ${[type.manufacturer, type.model].filter(Boolean).join(' ')}`,
-  }));
-
-  return { suggestions, onSuggestSearch: (_field: string, text: string) => setTyped(text) };
-}
-
-function NewButton({ href, label }: { href: string; label: string }) {
-  return (
-    <Button asChild>
-      <RouterAnchor href={href}>
-        <Plus aria-hidden className="mr-2 size-4" />
-        {label}
-      </RouterAnchor>
-    </Button>
-  );
-}
 
 export function AircraftProfilesPage() {
   const { t, i18n } = useTranslation();
@@ -157,10 +112,7 @@ export function AircraftProfileForm() {
 
   const title = isNew ? t('flightops:aircraftProfiles.create') : t('flightops:aircraftProfiles.edit');
   // The type being edited is offered too, or a closed field would put back the value it opened with.
-  const offered =
-    profile === null || suggestions.some((suggestion) => suggestion.value === profile.icaoType)
-      ? suggestions
-      : [{ value: profile.icaoType, label: profile.icaoType }, ...suggestions];
+  const offered = keepingCurrent(suggestions, profile === null ? [] : [profile.icaoType]);
 
   return (
     <PageShell
@@ -266,10 +218,7 @@ export function AircraftGroupForm() {
   const title = isNew
     ? t('flightops:aircraftGroups.create')
     : read(group?.name ?? {}) || t('flightops:aircraftGroups.edit');
-  const kept = (group?.icaoTypes ?? []).filter(
-    (icao) => !suggestions.some((suggestion) => suggestion.value === icao),
-  );
-  const offered = [...kept.map((icao) => ({ value: icao, label: icao })), ...suggestions];
+  const offered = keepingCurrent(suggestions, group?.icaoTypes ?? []);
 
   return (
     <PageShell
