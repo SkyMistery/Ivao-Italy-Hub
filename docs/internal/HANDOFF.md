@@ -25,12 +25,17 @@ design): sei note, piano 0.79, parte C di `06-piano-implementazione-m2.md` con l
 > **Decise da Carmine il 15 settembre, in T0**: l'app Python del validatore la adatta Claude dopo T19 (nasce **T21**, fuori dal
 > repository); la mappa di base fino allo zoom 7 (179 MB misurati); le immagini del tour le collega chi modifica il tour.
 >
-> **Da fare fuori dal codice, e non li può fare Claude**:
-> - **OpenAIP**: creare l'account e la chiave API, e leggere a mano termini e licenza (la pagina legale risponde 403 a una lettura
->   automatica; lo schema dell'API dice CC BY-NC 4.0). Serve a T1.
-> - **Navigraph**: prima di distribuire l'app ad altri validatori (T21), una mail a `dev@navigraph.com` con la forma delle evidenze.
-> - **vIPI**: la vista `v_share_atc_sessions` nel suo repository e, per la produzione, l'utente MariaDB dedicato. Serve a T12.
-> - **I voli di test** (16–17 settembre): arrivano come corpus; diventano le fixture di T2 e i test di T17–T18.
+> **Da fare fuori dal codice, e non li può fare Claude** (stato al 16 settembre, sera):
+> - **OpenAIP**: ✅ Carmine ha account e chiave, in `secrets/hub-local.json` (`OpenAip:ApiKey`) sulla sua macchina, fuori dal repository.
+>   **Resta** da leggere a mano termini e licenza: la pagina legale risponde 403 a una lettura automatica, lo schema dell'API dice
+>   CC BY-NC 4.0. Serve a T1.
+> - **Navigraph**: la mail la manda Carmine; il testo è pronto in `decisions/2026-09-15-token-personali-e-agente-del-validatore.md` §7.
+>   Serve prima di distribuire l'app (T21), non prima del contratto (T19).
+> - **vIPI**: la vista `v_share_atc_sessions` nel suo repository e, per la produzione, l'utente MariaDB dedicato. **Il DDL esatto**, scritto
+>   leggendo `AtcSession` di vIPI, è in `06-piano-implementazione-m2.md` §T12. Non è un'API: è una vista di sola lettura. Serve a T12.
+> - **I voli di test**: Carmine li sta preparando (16 settembre). Per ogni volo servono VID e id di sessione del tracker (o callsign più
+>   data e ora UTC), tour e leg, e **l'esito atteso per controllo secondo lo standard**, più la decisione presa davvero all'epoca se c'è.
+>   Diventano le fixture di T2 e i test di T17–T18.
 >
 > **Correzioni che T0 ha portato al design**, con le misure: NOAA dà anche i **TAF passati**; **MapLibre 6 non ha la build CSP** e vuole
 > `blob:` in `img-src`; le tabelle dei contatti sono `cms_contact_*`, non `hub_`.

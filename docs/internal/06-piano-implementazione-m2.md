@@ -567,6 +567,29 @@ Design §3.3, §6.5; nota `2026-09-14-dati-condivisi-con-vipi`. Branch `m2/t12-a
 
 ⚠️ **Prerequisiti fuori da questo repository**: la vista in vIPI (una migrazione nel suo repository) e, per la produzione, l'utente MariaDB
 dedicato (nota vIPI §4). In sviluppo si prova con una vista finta nel database di sviluppo.
+
+**La vista, scritta il 16 settembre 2026 leggendo `AtcSession` di vIPI** (tabella `AtcSessions` in `itivao_atc`). L'hub fa una domanda
+sola — «quali posizioni erano online in questo intervallo» — quindi la vista porta dieci colonne e **non** traffico, piste, `ShiftKey`,
+movimenti o riepiloghi:
+
+```sql
+CREATE OR REPLACE SQL SECURITY DEFINER VIEW v_share_atc_sessions AS
+SELECT SessionId         AS session_id,
+       UserId            AS vid,
+       Callsign          AS callsign,
+       Position          AS position,
+       Frequency         AS frequency,
+       StartUtc          AS start_utc,
+       EndUtc            AS end_utc,
+       DurationSeconds   AS duration_seconds,
+       Rating            AS rating,
+       IsOutsideDivision AS is_outside_division
+FROM AtcSessions;
+```
+
+con `GRANT SELECT ON itivao_atc.v_share_atc_sessions` all'utente di sola lettura dell'hub. `end_utc` nullo vuol dire sessione ancora in
+corso. Servono anche le righe **fuori divisione** (i tour si volano nel mondo): vIPI le archivia dal 28 agosto 2026, quindi per i voli
+precedenti la copertura fuori Italia è `Unavailable`, mai «fallita».
 **Test**: unit sulla proposta con tracce del corpus e un archivio finto; integrazione: senza vIPI il form funziona e dice «non
 disponibile»; architettura: il modulo non nomina vIPI né OpenAIP.
 **Fatta quando**: un PIREP del corpus riceve una proposta plausibile da una vista finta, e senza vista il form funziona uguale.

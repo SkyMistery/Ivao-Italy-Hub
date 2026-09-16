@@ -75,7 +75,7 @@ back office. Nessun token dell'hub esiste oggi.
   - **non può** contenere: coordinate, distanze abbastanza precise da ricavare posizioni, punti che il pilota non ha scritto (quelli
     espansi da un'aerovia), la declinazione magnetica, geometrie, mappe.
 - ⚠️ **Da fare prima di distribuire l'app ad altri validatori** (T21): una mail a `dev@navigraph.com` con questa forma esatta, e la
-  risposta scritta conservata in `docs/internal/decisions/`. È un messaggio verso l'esterno: lo manda Carmine, o Claude su sua conferma.
+  risposta scritta conservata in `docs/internal/decisions/`. **La manda Carmine** (16 settembre 2026); il testo è in §7.
 
 ## 5. Alternative scartate
 
@@ -98,3 +98,30 @@ back office. Nessun token dell'hub esiste oggi.
 - **Fuori da questo repository (T21)**: l'app legge dall'hub e scrive gli esiti; la mail a Navigraph prima di distribuirla.
 - **Piano** 0.79: §6 (un secondo schema, solo per `audience`), §9.7 (il contratto con un prodotto esterno), §16.10 (l'eccezione
   dell'intestazione). **Design** `05-design-m2.md` §6.6, §15.2 n.16.
+
+## 7. Il testo della mail a Navigraph (scritto il 16 settembre 2026, la manda Carmine)
+
+In inglese, perché esce dal perimetro del progetto. Da mandare a `dev@navigraph.com` prima di distribuire l'app ad altri validatori;
+la risposta si conserva qui accanto, in `docs/internal/decisions/`.
+
+> **Subject:** Community (non-commercial) tool — sending derived check results to a club website
+>
+> Hello,
+>
+> I coordinate the Italian division of IVAO, a non-profit flight simulation network. Our volunteer validators check members'
+> flights against our tour rules. A desktop tool on a validator's own PC reads the navigation data from their own Navigraph
+> subscription (FMS Data Manager / Little Navmap database) to reconstruct the route a pilot filed, and computes two things:
+> whether the cruising level matches the semicircular rule on each direct segment, and which FIRs the route crossed.
+>
+> The tool then sends only the result to our division website, so the validator sees it next to the other checks: an outcome
+> (pass / fail / not available), the rule code, and one short line of text such as "DCT segment ABCDE to FGHIJ, magnetic track
+> 093 degrees, FL360 odd, correct".
+>
+> It never sends coordinates, distances, waypoints the pilot did not file, magnetic variation values, geometry or images, and it
+> never stores navigation data on the server. Only validators with their own Navigraph subscription can run it.
+>
+> Could you confirm this is acceptable under the subscriber terms, or tell us what we should change? We are happy to adjust the
+> content of the result text.
+>
+> Thank you,
+> Carmine Granato — IVAO Italy

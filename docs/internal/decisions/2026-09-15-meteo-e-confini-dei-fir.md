@@ -61,7 +61,9 @@ Da `aviationweather.gov/data/api/` e dal suo `openapi.yaml`, più sette chiamate
 - Lo **schema dell'API** dichiara **CC BY-NC 4.0** e chiede «un link di attribuzione a OpenAIP (https://www.openaip.net) come fonte dei
   dati» nell'applicazione. Una fonte più vecchia parla di CC BY-NC-SA.
 - ⚠️ **La pagina legale** (`openaip.net/legal`) e quella dei termini della chiave rispondono **403** a una lettura automatica: non le ha
-  lette nessuno. **Da leggere a mano da Carmine** quando crea l'account e la chiave (che Claude non può creare).
+  lette nessuno. **Da leggere a mano da Carmine**, che **il 16 settembre ha già l'account e la chiave** (in `secrets/hub-local.json`
+  sulla sua macchina, sotto `OpenAip:ApiKey`; il file non è nel repository). Se i termini dicessero qualcosa di diverso da CC BY-NC 4.0,
+  si torna qui prima di T1.
 - **Che cosa vuol dire per l'hub**, se la licenza è quella: IVAO e l'hub non sono commerciali, quindi l'uso è ammesso; la copia nel
   database e le risposte derivate («in che FIR sta questo punto») sono ammesse con l'attribuzione; i poligoni **non si ripubblicano**
   (l'hub non li mostra, li usa). **L'attribuzione** sta dove il dato derivato si vede: nel form del PIREP accanto alla proposta degli ATC
@@ -82,5 +84,6 @@ Da `aviationweather.gov/data/api/` e dal suo `openapi.yaml`, più sette chiamate
 - **Codice**: `Core/Weather/` con `IWeatherSource` e i tre client (T2); `ref_firs`, il job e `IFirLocator` (T1); la chiave nei segreti e la
   sua voce in `secrets.example`; il test di architettura.
 - **Documenti**: `FORKING.md` (la chiave OpenAIP facoltativa, la licenza non commerciale, l'attribuzione); la pagina dei crediti del sito.
-- **Da fare fuori dal codice**: Carmine crea l'account OpenAIP e la chiave, e legge termini e licenza (§3.3).
+- **Da fare fuori dal codice**: ~~Carmine crea l'account OpenAIP e la chiave~~ **fatto il 16 settembre**; resta da **leggere termini e
+  licenza** a mano (§3.3).
 - **Piano** 0.79: §9.1 (due righe), §9.7 (fonti esterne), §10. **Design** `05-design-m2.md` §1.13 (il TAF passato c'è).
