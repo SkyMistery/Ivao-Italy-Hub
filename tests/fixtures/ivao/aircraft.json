@@ -1,0 +1,6 @@
+[
+  { "icaoCode": "A320", "model": "A320", "description": "LandPlane", "wakeTurbulence": "M", "numberEngines": 2, "manufacture": { "name": "Airbus" } },
+  { "icaoCode": "A20N", "model": "A320neo", "description": "LandPlane", "wakeTurbulence": "M", "numberEngines": 2, "manufacture": { "name": "Airbus" } },
+  { "icaoCode": "E55P", "model": "EMB-505 Phenom 300", "description": "LandPlane", "wakeTurbulence": "M", "numberEngines": 2, "manufacture": { "name": "Embraer" } },
+  { "icaoCode": "C172", "model": "172 Skyhawk", "description": "LandPlane", "wakeTurbulence": "L", "numberEngines": 1, "manufacture": { "name": "Cessna" } }
+]

@@ -55,7 +55,85 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         // The whole payload is kept, so a field nobody reads today does not have to be guessed at.
         Assert.All(centers, center => Assert.Contains("centerId", center.RawJson, StringComparison.Ordinal));
-        Assert.All(airports, airport => Assert.False(string.IsNullOrWhiteSpace(airport.RunwaysJson)));
+
+        // Since T1 the snapshot is of the world: foreign airports are in it, with the coordinates a
+        // leg of a tour needs, and the IATA code where IVAO publishes one.
+        Assert.Contains(airports, airport => airport.Icao == "LFPG" && airport.CountryId == "FR");
+        Assert.Contains(airports, airport => airport.Icao == "KJFK");
+
+        var fiumicino = Assert.Single(airports, airport => airport.Icao == "LIRF");
+        Assert.Equal("FCO", fiumicino.Iata);
+        Assert.NotNull(fiumicino.Latitude);
+        Assert.NotNull(fiumicino.Longitude);
+        Assert.Equal(14, fiumicino.ElevationFeet);
+    }
+
+    [Fact]
+    public async Task TheAirspaceOfTheDivisionStaysTheDivisionsEvenWithTheWorldInTheTable()
+    {
+        // The point of the filter added in T1: before it, every airport of the world counted as
+        // ours, and the live status block would have called any flight anywhere a flight of ours.
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var airspace = await scope.ServiceProvider.GetRequiredService<IFirDirectory>().GetAirspaceAsync(token);
+
+        Assert.Contains("LIRF", airspace.Airports);
+        Assert.DoesNotContain("LFPG", airspace.Airports);
+        Assert.DoesNotContain("KJFK", airspace.Airports);
+    }
+
+    [Fact]
+    public async Task RunwaysAreFetchedOnceForTheAirportsThatAreAskedFor()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var runways = scope.ServiceProvider.GetRequiredService<IRunwayDirectory>();
+
+        var first = await runways.EnsureAsync(["LIRF", "LIMC"], token);
+        var again = await runways.EnsureAsync(["LIRF"], token);
+
+        // Four thresholds for Fiumicino in the fixture, none for Malpensa: an airport without
+        // published runways is not an error, and asking twice does not fetch twice.
+        Assert.Equal(4, first);
+        Assert.Equal(0, again);
+
+        var fiumicino = await runways.GetAsync("LIRF", token);
+        Assert.Equal(4, fiumicino.Count);
+
+        var threshold = Assert.Single(fiumicino, runway => runway.Designator == "RW16R");
+        Assert.Equal(163, threshold.Bearing);
+        Assert.Equal(3900, threshold.LengthMetres);
+        Assert.NotNull(threshold.Latitude);
+    }
+
+    [Fact]
+    public async Task TheAircraftTypesAndTheFlightPlanVocabulariesAreKept()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var types = await database.IvaoAircraftTypes.AsNoTracking().ToListAsync(token);
+        var a320 = Assert.Single(types, type => type.IcaoCode == "A320");
+        Assert.Equal("Airbus", a320.Manufacturer);
+        Assert.Equal("M", a320.WakeTurbulence);
+
+        // The neo is a type of its own, not a variant of the ceo: what a tour that wants both says
+        // is an aircraft group, and the check compares ICAO codes (design M2 section 1.5).
+        Assert.Contains(types, type => type.IcaoCode == "A20N");
+
+        Assert.Contains(
+            await database.IvaoAircraftEquipments.AsNoTracking().ToListAsync(token),
+            equipment => equipment.Id == "J1");
+
+        Assert.Contains(
+            await database.IvaoTransponderTypes.AsNoTracking().ToListAsync(token),
+            transponder => transponder.Id == "C");
     }
 
     [Fact]
@@ -257,7 +335,7 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
             ]);
 
         public Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(
-            string countryId,
+            string? countryId,
             bool includeRunways = true,
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("IVAO fell over halfway through.");
@@ -270,6 +348,20 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
             IvaoAirspace airspace,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(IvaoNetworkStatus.Unknown);
+
+        /// <summary>The reference data of T1 is not what this test is about either.</summary>
+        public Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(
+            string icao,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoRunway>?>(null);
+
+        public Task<IReadOnlyList<IvaoAircraftType>> GetAircraftTypesAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoAircraftType>>([]);
+
+        public Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)>
+            GetFlightPlanVocabulariesAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<IvaoAircraftEquipment>, IReadOnlyList<IvaoTransponderType>)>(([], []));
 
         /// <summary>Neither is the tracker, nor the weather: unreachable is what they answer here.</summary>
         public Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(

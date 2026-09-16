@@ -15,14 +15,27 @@ public sealed record IvaoCenterDto(string Id, string Name, string CountryId, str
 /// </summary>
 public sealed record IvaoMetarDto(string Icao, string Raw, DateTime? UpdatedAt);
 
-/// <summary>An airport as IVAO describes it, with its runways left as they came.</summary>
+/// <summary>
+/// An airport as IVAO describes it, with its runways left as they came. The four properties below
+/// the constructor arrived with the world snapshot of T1: they are what a leg of a tour needs
+/// (where the airport is) and what an Open tour filters on (how high it is).
+/// </summary>
 public sealed record IvaoAirportDto(
     string Icao,
     string Name,
     string CountryId,
     string? CenterId,
     string? RunwaysJson,
-    string RawJson);
+    string RawJson)
+{
+    public string? Iata { get; init; }
+
+    public double? Latitude { get; init; }
+
+    public double? Longitude { get; init; }
+
+    public int? ElevationFeet { get; init; }
+}
 
 /// <summary>
 /// The one typed client that talks to IVAO. Everything else in the hub goes through it, so that
@@ -33,11 +46,29 @@ public interface IIvaoApiClient
     /// <summary>The FIRs of a country. Empty when IVAO cannot be reached: never an exception.</summary>
     Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(string countryId, CancellationToken cancellationToken = default);
 
-    /// <summary>The airports of a country, with their runways when asked for.</summary>
+    /// <summary>
+    /// The airports of a country, with their runways when asked for — or, with
+    /// <paramref name="countryId"/> left null, <b>the airports of the world</b>, which is what a
+    /// module whose legs go anywhere needs (design M2 section 1.12).
+    /// </summary>
     Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(
-        string countryId,
+        string? countryId,
         bool includeRunways = true,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The runways of one airport, thresholds and all. One call per airport, which is why they are
+    /// fetched on demand rather than for the world (<see cref="IRunwayDirectory"/>). <c>null</c>
+    /// when IVAO could not be asked.
+    /// </summary>
+    Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(string icao, CancellationToken cancellationToken = default);
+
+    /// <summary>Every aircraft type IVAO knows, for the editor and for the "allowed aircraft" check.</summary>
+    Task<IReadOnlyList<IvaoAircraftType>> GetAircraftTypesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The equipment letters and the transponder letters of a flight plan, as vocabularies.</summary>
+    Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)>
+        GetFlightPlanVocabulariesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>The profile behind a member's access token, as raw JSON.</summary>
     Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default);

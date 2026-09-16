@@ -54,15 +54,19 @@ public sealed class IvaoApiClient(
     }
 
     public async Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(
-        string countryId,
+        string? countryId,
         bool includeRunways = true,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(countryId);
-
-        var query = string.Create(
-            CultureInfo.InvariantCulture,
-            $"/v2/airports/all?countryId={Uri.EscapeDataString(countryId)}&includeRunways={includeRunways.ToString().ToLowerInvariant()}");
+        // No country is the world: 44 689 airports and about fourteen megabytes, measured on
+        // 16 September 2026. A job asks for it once a day, never a request somebody is waiting on.
+        var query = string.IsNullOrWhiteSpace(countryId)
+            ? string.Create(
+                CultureInfo.InvariantCulture,
+                $"/v2/airports/all?includeRunways={includeRunways.ToString().ToLowerInvariant()}")
+            : string.Create(
+                CultureInfo.InvariantCulture,
+                $"/v2/airports/all?countryId={Uri.EscapeDataString(countryId)}&includeRunways={includeRunways.ToString().ToLowerInvariant()}");
 
         var payload = await ReadAsync(query, cancellationToken);
         if (payload is not { } root)
@@ -82,13 +86,22 @@ public sealed class IvaoApiClient(
             airports.Add(new IvaoAirportDto(
                 icao.ToUpperInvariant(),
                 Text(item, "name") ?? icao,
-                Text(item, "countryId") ?? countryId,
+                Text(item, "countryId") ?? countryId ?? string.Empty,
                 Text(item, "centerId")?.ToUpperInvariant(),
                 item.TryGetProperty("runways", out var runways) ? runways.GetRawText() : null,
-                item.GetRawText()));
+                item.GetRawText())
+            {
+                Iata = Text(item, "iata")?.ToUpperInvariant(),
+                Latitude = Number(item, "latitude"),
+                Longitude = Number(item, "longitude"),
+                ElevationFeet = (int?)Number(item, "elevation"),
+            });
         }
 
-        logger.LogInformation("Read {Count} airport(s) for {Country} from IVAO.", airports.Count, countryId);
+        logger.LogInformation(
+            "Read {Count} airport(s) for {Country} from IVAO.",
+            airports.Count,
+            countryId ?? "the world");
         return airports;
     }
 
@@ -111,6 +124,128 @@ public sealed class IvaoApiClient(
             cancellationToken: cancellationToken);
 
         return document.RootElement.Clone();
+    }
+
+    public async Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(
+        string icao,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(icao);
+
+        var code = icao.ToUpperInvariant();
+        var payload = await ReadAsync($"/v2/airports/{Uri.EscapeDataString(code)}/runways", cancellationToken);
+        if (payload is not { } root)
+        {
+            return null;
+        }
+
+        var runways = new List<IvaoRunway>();
+        foreach (var item in Items(root))
+        {
+            var designator = Text(item, "runway");
+            if (string.IsNullOrWhiteSpace(designator))
+            {
+                continue;
+            }
+
+            runways.Add(new IvaoRunway
+            {
+                AirportIcao = Text(item, "airportIcao")?.ToUpperInvariant() ?? code,
+                Designator = designator.ToUpperInvariant(),
+                LengthMetres = (int?)Number(item, "length"),
+                WidthMetres = (int?)Number(item, "width"),
+                Bearing = (int?)Number(item, "bearing"),
+                Latitude = Number(item, "latitude"),
+                Longitude = Number(item, "longitude"),
+                ElevationFeet = (int?)Number(item, "elevation"),
+            });
+        }
+
+        return runways;
+    }
+
+    public async Task<IReadOnlyList<IvaoAircraftType>> GetAircraftTypesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var payload = await ReadAsync("/v2/aircrafts/all", cancellationToken);
+        if (payload is not { } root)
+        {
+            return [];
+        }
+
+        var types = new List<IvaoAircraftType>();
+        foreach (var item in Items(root))
+        {
+            var code = Text(item, "icaoCode");
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                continue;
+            }
+
+            types.Add(new IvaoAircraftType
+            {
+                IcaoCode = code.ToUpperInvariant(),
+                IataCode = Text(item, "iataCode")?.ToUpperInvariant(),
+                Model = Text(item, "model") ?? code,
+                // IVAO nests the manufacturer as an object; its name is what an editor shows.
+                Manufacturer = item.TryGetProperty("manufacture", out var maker) ? Text(maker, "name") : null,
+                Description = Text(item, "description"),
+                WakeTurbulence = Text(item, "wakeTurbulence")?.ToUpperInvariant(),
+                NumberOfEngines = (int?)Number(item, "numberEngines"),
+                Military = Text(item, "military"),
+                RawJson = item.GetRawText(),
+            });
+        }
+
+        logger.LogInformation("Read {Count} aircraft type(s) from IVAO.", types.Count);
+        return types;
+    }
+
+    public async Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)>
+        GetFlightPlanVocabulariesAsync(CancellationToken cancellationToken = default)
+    {
+        var equipments = new List<IvaoAircraftEquipment>();
+        if (await ReadAsync("/v2/aircrafts/equipments", cancellationToken) is { } equipmentPayload)
+        {
+            foreach (var item in Items(equipmentPayload))
+            {
+                if (Text(item, "id") is not { } id)
+                {
+                    continue;
+                }
+
+                equipments.Add(new IvaoAircraftEquipment
+                {
+                    Id = id.ToUpperInvariant(),
+                    Name = Text(item, "name") ?? id,
+                    Order = (int)(Number(item, "order") ?? 0),
+                    IsActive = !item.TryGetProperty("isActive", out var active)
+                        || active.ValueKind != JsonValueKind.False,
+                });
+            }
+        }
+
+        var transponders = new List<IvaoTransponderType>();
+        if (await ReadAsync("/v2/aircrafts/transponderTypes", cancellationToken) is { } transponderPayload)
+        {
+            foreach (var item in Items(transponderPayload))
+            {
+                if (Text(item, "id") is not { } id)
+                {
+                    continue;
+                }
+
+                transponders.Add(new IvaoTransponderType
+                {
+                    Id = id.ToUpperInvariant(),
+                    Name = Text(item, "name") ?? id,
+                    Kind = Text(item, "type"),
+                    Order = (int)(Number(item, "order") ?? 0),
+                });
+            }
+        }
+
+        return (equipments, transponders);
     }
 
     public async Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
@@ -297,6 +432,14 @@ public sealed class IvaoApiClient(
 
         return [];
     }
+
+    private static double? Number(JsonElement element, string property) =>
+        element.ValueKind == JsonValueKind.Object
+        && element.TryGetProperty(property, out var value)
+        && value.ValueKind == JsonValueKind.Number
+        && value.TryGetDouble(out var number)
+            ? number
+            : null;
 
     private static string? Text(JsonElement element, string property)
     {

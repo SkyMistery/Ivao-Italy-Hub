@@ -58,8 +58,19 @@ public sealed class WeatherTests
         public Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(string countryId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<IvaoCenterDto>>([]);
 
-        public Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(string countryId, bool includeRunways = true, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(string? countryId, bool includeRunways = true, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<IvaoAirportDto>>([]);
+
+        public Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(string icao, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoRunway>?>(null);
+
+        public Task<IReadOnlyList<IvaoAircraftType>> GetAircraftTypesAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoAircraftType>>([]);
+
+        public Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)>
+            GetFlightPlanVocabulariesAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<IvaoAircraftEquipment>, IReadOnlyList<IvaoTransponderType>)>(([], []));
+
 
         public Task<System.Text.Json.JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
             Task.FromResult<System.Text.Json.JsonElement?>(null);

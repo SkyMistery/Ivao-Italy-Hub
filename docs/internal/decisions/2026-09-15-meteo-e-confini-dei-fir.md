@@ -45,6 +45,10 @@ Da `aviationweather.gov/data/api/` e dal suo `openapi.yaml`, più sette chiamate
 
 ### 3.2 I confini dei FIR
 
+> ⚠️ **Superata il 16 settembre 2026**, in T1, dopo aver misurato che cosa contiene davvero OpenAIP (108 «FIR» nel mondo, zero per
+> Regno Unito e Spagna, uno per gli Stati Uniti): la fonte è il dataset di **VATSpy**.
+> Vedi `2026-09-16-i-confini-dei-fir.md`. Il resto di questa nota — il meteo — resta valido.
+
 - **Da OpenAIP**, API `api.core.openaip.net`, chiave nell'intestazione `x-openaip-api-key`, nei segreti. Tipo **10** = FIR, **11** = UIR,
   filtrabili per paese (ISO a due lettere).
 - **`ref_firs`** nel nucleo (tabelle `ref_`, come gli aeroporti): `code`, `name`, `country`, `type` (FIR o UIR), il poligono in GeoJSON e
@@ -60,6 +64,8 @@ Da `aviationweather.gov/data/api/` e dal suo `openapi.yaml`, più sette chiamate
 
 - Lo **schema dell'API** dichiara **CC BY-NC 4.0** e chiede «un link di attribuzione a OpenAIP (https://www.openaip.net) come fonte dei
   dati» nell'applicazione. Una fonte più vecchia parla di CC BY-NC-SA.
+- ⚠️ **Non serve più per i FIR** (16 settembre 2026): la licenza di OpenAIP conta solo se un giorno si useranno le altre classi di
+  spazio aereo, dove OpenAIP è ricco. Il testo sotto resta per quel giorno.
 - ⚠️ **La pagina legale** (`openaip.net/legal`) e quella dei termini della chiave rispondono **403** a una lettura automatica: non le ha
   lette nessuno. **Da leggere a mano da Carmine**, che **il 16 settembre ha già l'account e la chiave** (in `secrets/hub-local.json`
   sulla sua macchina, sotto `OpenAip:ApiKey`; il file non è nel repository). Se i termini dicessero qualcosa di diverso da CC BY-NC 4.0,

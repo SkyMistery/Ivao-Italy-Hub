@@ -59,18 +59,26 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     }
 
     public Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(
-        string countryId,
+        string? countryId,
         bool includeRunways = true,
         CancellationToken cancellationToken = default)
     {
-        var airports = Read($"airports-{countryId}.json")
+        // Without a country the real client answers with the world; the file of the division is the
+        // world a bench without credentials has, and reading it keeps the two callers on one path.
+        var airports = Read($"airports-{countryId ?? "world"}.json")
             .Select(item => new IvaoAirportDto(
                 Required(item, "icao").ToUpperInvariant(),
                 Required(item, "name"),
                 Required(item, "countryId"),
                 item.TryGetProperty("centerId", out var center) ? center.GetString()?.ToUpperInvariant() : null,
                 includeRunways && item.TryGetProperty("runways", out var runways) ? runways.GetRawText() : null,
-                item.GetRawText()))
+                item.GetRawText())
+            {
+                Iata = item.TryGetProperty("iata", out var iata) ? iata.GetString()?.ToUpperInvariant() : null,
+                Latitude = Decimal(item, "latitude"),
+                Longitude = Decimal(item, "longitude"),
+                ElevationFeet = (int?)Decimal(item, "elevation"),
+            })
             .ToArray();
 
         return Task.FromResult<IReadOnlyList<IvaoAirportDto>>(airports);
@@ -79,6 +87,82 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     /// <summary>Not available from fixtures: a member's profile only exists behind a real login.</summary>
     public Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
         Task.FromResult<JsonElement?>(null);
+
+    /// <summary>
+    /// The runways of an airport the bench knows, from <c>runways-{icao}.json</c>. A bench without
+    /// the file answers with none, which is what an airport without published runways looks like.
+    /// </summary>
+    public Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(
+        string icao,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(icao);
+
+        var code = icao.ToUpperInvariant();
+        var runways = Read($"runways-{code}.json")
+            .Select(item => new IvaoRunway
+            {
+                AirportIcao = code,
+                Designator = Required(item, "runway").ToUpperInvariant(),
+                LengthMetres = (int?)Decimal(item, "length"),
+                WidthMetres = (int?)Decimal(item, "width"),
+                Bearing = (int?)Decimal(item, "bearing"),
+                Latitude = Decimal(item, "latitude"),
+                Longitude = Decimal(item, "longitude"),
+                ElevationFeet = (int?)Decimal(item, "elevation"),
+            })
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<IvaoRunway>?>(runways);
+    }
+
+    public Task<IReadOnlyList<IvaoAircraftType>> GetAircraftTypesAsync(CancellationToken cancellationToken = default)
+    {
+        var types = Read("aircraft.json")
+            .Select(item => new IvaoAircraftType
+            {
+                IcaoCode = Required(item, "icaoCode").ToUpperInvariant(),
+                Model = Required(item, "model"),
+                Manufacturer = item.TryGetProperty("manufacture", out var maker)
+                    && maker.TryGetProperty("name", out var name)
+                        ? name.GetString()
+                        : null,
+                Description = item.TryGetProperty("description", out var description) ? description.GetString() : null,
+                WakeTurbulence = item.TryGetProperty("wakeTurbulence", out var wake)
+                    ? wake.GetString()?.ToUpperInvariant()
+                    : null,
+                NumberOfEngines = (int?)Decimal(item, "numberEngines"),
+                RawJson = item.GetRawText(),
+            })
+            .ToArray();
+
+        return Task.FromResult<IReadOnlyList<IvaoAircraftType>>(types);
+    }
+
+    public Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)>
+        GetFlightPlanVocabulariesAsync(CancellationToken cancellationToken = default)
+    {
+        var equipments = Read("aircraft-equipments.json")
+            .Select(item => new IvaoAircraftEquipment
+            {
+                Id = Required(item, "id").ToUpperInvariant(),
+                Name = Required(item, "name"),
+                Order = (int)(Decimal(item, "order") ?? 0),
+            })
+            .ToArray();
+
+        var transponders = Read("transponder-types.json")
+            .Select(item => new IvaoTransponderType
+            {
+                Id = Required(item, "id").ToUpperInvariant(),
+                Name = Required(item, "name"),
+                Order = (int)(Decimal(item, "order") ?? 0),
+            })
+            .ToArray();
+
+        return Task.FromResult<(IReadOnlyList<IvaoAircraftEquipment>, IReadOnlyList<IvaoTransponderType>)>(
+            (equipments, transponders));
+    }
 
     /// <summary>
     /// The recorded sessions of a member, filtered the way the API filters them, so that a test and
@@ -194,6 +278,13 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         return [.. document.RootElement.EnumerateArray().Select(item => item.Clone())];
     }
+
+    private static double? Decimal(JsonElement item, string property) =>
+        item.TryGetProperty(property, out var value)
+        && value.ValueKind == JsonValueKind.Number
+        && value.TryGetDouble(out var number)
+            ? number
+            : null;
 
     private static string Required(JsonElement item, string property) =>
         item.TryGetProperty(property, out var value) ? value.GetString() ?? string.Empty : string.Empty;

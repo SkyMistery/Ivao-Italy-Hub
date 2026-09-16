@@ -1,6 +1,8 @@
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Core.Ivao;
 
@@ -25,7 +27,10 @@ public interface IFirDirectory
     void Invalidate();
 }
 
-public sealed class FirDirectory(HubDbContext database, IMemoryCache cache) : IFirDirectory
+public sealed class FirDirectory(
+    HubDbContext database,
+    IMemoryCache cache,
+    IOptions<DivisionOptions> division) : IFirDirectory
 {
     private const string CacheKey = "ivao:fir-ids";
     private const string AirspaceCacheKey = "ivao:airspace";
@@ -61,8 +66,14 @@ public sealed class FirDirectory(HubDbContext database, IMemoryCache cache) : IF
         }
 
         var centers = await GetFirIdsAsync(cancellationToken);
+
+        // The country, and not the whole table. Since T1 the snapshot holds the airports of the
+        // world, because a leg of a tour goes anywhere; the airspace of the division is still the
+        // division's, and without this filter every flight on the network would count as ours.
+        var country = division.Value.CountryId;
         var airports = await database.IvaoAirports
             .AsNoTracking()
+            .Where(airport => airport.CountryId == country)
             .Select(airport => airport.Icao)
             .ToListAsync(cancellationToken);
 

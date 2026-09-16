@@ -1,0 +1,62 @@
+[
+  {
+    "icao": "LIRF",
+    "name": "Roma Fiumicino",
+    "countryId": "IT",
+    "centerId": "LIRR",
+    "iata": "FCO",
+    "latitude": 41.8002777778,
+    "longitude": 12.2388888889,
+    "elevation": 14,
+    "runways": [
+      { "name": "16R/34L", "length": 3900 },
+      { "name": "16L/34R", "length": 3900 },
+      { "name": "07/25", "length": 3309 }
+    ]
+  },
+  {
+    "icao": "LIMC",
+    "name": "Milano Malpensa",
+    "countryId": "IT",
+    "centerId": "LIMM",
+    "iata": "MXP",
+    "latitude": 45.6305999756,
+    "longitude": 8.7281103134,
+    "elevation": 768,
+    "runways": [
+      { "name": "17L/35R", "length": 3920 },
+      { "name": "17R/35L", "length": 3920 }
+    ]
+  },
+  {
+    "icao": "LIBD",
+    "name": "Bari Karol Wojtyla",
+    "countryId": "IT",
+    "centerId": "LIBB",
+    "iata": "BRI",
+    "latitude": 41.1389007568,
+    "longitude": 16.7605991364,
+    "elevation": 177,
+    "runways": [{ "name": "07/25", "length": 2990 }]
+  },
+  {
+    "icao": "LFPG",
+    "name": "Paris Charles de Gaulle",
+    "countryId": "FR",
+    "centerId": "LFFF",
+    "iata": "CDG",
+    "latitude": 49.0127983093,
+    "longitude": 2.55,
+    "elevation": 392
+  },
+  {
+    "icao": "KJFK",
+    "name": "New York John F Kennedy",
+    "countryId": "US",
+    "centerId": "KZNY",
+    "iata": "JFK",
+    "latitude": 40.6398010254,
+    "longitude": -73.7789001465,
+    "elevation": 13
+  }
+]

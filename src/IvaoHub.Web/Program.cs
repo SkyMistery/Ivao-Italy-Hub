@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
@@ -128,6 +129,9 @@ builder.Services.AddIvaoIntegration();
 // The weather, for the tours. Which providers answer, and in what order, is decided inside that
 // one folder and nowhere else, so that a module only ever asks for the weather (plan section 4.2).
 builder.Services.AddWeather();
+
+// The outlines of the flight information regions, and the weekly job that keeps them.
+builder.Services.AddAirspace();
 
 // The one notification service, and the job that empties its queue. Nothing else in the hub ever
 // talks to a mail server: a module publishes an intent (plan section 9.7).

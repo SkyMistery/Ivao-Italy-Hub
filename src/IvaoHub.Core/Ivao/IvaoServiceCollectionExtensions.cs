@@ -27,6 +27,7 @@ public static class IvaoServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddScoped<IFirDirectory, FirDirectory>();
+        services.AddScoped<IRunwayDirectory, RunwayDirectory>();
         services.AddScoped<RefDataSyncJob>();
 
         // The token of the application, on its own client so a slow token endpoint cannot exhaust

@@ -351,9 +351,42 @@ Design §1.5, §1.12, §3.3; note `meteo-e-confini-dei-fir` §3.2. Branch `m2/t1
 
 **Test**: unit sui convertitori con le fixture vere; `IFirLocator` su punti dentro, fuori e sul bordo, con un poligono che attraversa
 l'antimeridiano; integrazione del job con il client fittizio (aggiunge, aggiorna, non pota su risposta vuota); architettura: solo il nucleo
-nomina OpenAIP; i test di M1 su `FirDirectory` e `networkStats` restano verdi con aeroporti di altri paesi nella tabella.
+nomina la fonte dei FIR; i test di M1 su `FirDirectory` e `networkStats` restano verdi con aeroporti di altri paesi nella tabella.
 **Fatta quando**: in sviluppo, con il token vero, le tabelle si riempiono (numeri scritti nella PR), LIRF ha IATA, coordinate e le sue
 piste dopo un `EnsureAsync`, e un punto su Roma risponde LIRR.
+
+**Fatta il 16 settembre 2026** (branch `m2/t1-world-reference-data`). Com'è andata:
+
+- **Gli aeroporti sono quelli del mondo**: `/v2/airports/all` senza paese — **44 689 aeroporti di 235 paesi, 13,9 MB, tre secondi**,
+  misurati con il token vero — e la riga guadagna `iata` (7732 ne hanno), `latitude`, `longitude` ed `elevation`. Il job li scrive con il
+  rilevamento delle modifiche **spento dentro il ciclo** (con 45 000 righe diventa quadratico) e riacceso subito dopo: `SaveChanges` passa
+  dall'interceptor come sempre.
+- ⚠️ **Il filtro per paese, che il design chiedeva di verificare**: `FirDirectory.GetAirspaceAsync` prendeva **tutta** la tabella, quindi
+  con il mondo dentro ogni volo del pianeta sarebbe risultato «della divisione». Adesso filtra su `division.countryId`, e un test
+  d'integrazione lo fissa (LIRF sì, LFPG e KJFK no).
+- **Le piste non si scaricano per il mondo**: sarebbero 45 000 chiamate per un dato che quasi nessuno legge. `IRunwayDirectory.EnsureAsync`
+  le prende per gli aeroporti che servono (le leg in T7, i PIREP in T11) e non le richiede due volte. La riga porta **la coordinata della
+  testata**, che è tutta la ragione della tabella (`takeoffFromThreshold`, T18).
+- **I tipi di aereo** (2626) con costruttore, modello, categoria di scia e numero di motori, più i due vocabolari del piano di volo
+  (36 equipaggiamenti, 17 transponder). Non si potano mai: un PIREP di tre anni fa può nominare un tipo che IVAO ha tolto, e il registro
+  disciplinare deve restare leggibile (design §10.1).
+- ⚠️ **Le «varianti» non sono quello che il design credeva** (§1.5): `/v2/aircrafts/{icao}/variants` dà le varianti **dello stesso tipo**
+  (`A320w`, `A320CFM`, `A320IAE`), non i tipi imparentati — **`A20N` non è una variante di `A320`** — e un piano di volo non porta mai
+  una variante, solo il codice ICAO. Quindi la bandiera «anche le varianti» del tour **non ha l'effetto che si voleva**: quello che serve
+  («ammetti anche i neo») lo dice un **gruppo di aerei**, che il design ha già. Da correggere in §1.5 quando si scrive T6/T7; qui le
+  varianti non si sincronizzano. In più, `/v2/aircrafts/{icao}` risponde **500** (rotto lato IVAO il 16 settembre).
+- **I confini dei FIR cambiano fonte**: OpenAIP ne ha 108 nel mondo, e la nota `2026-09-16-i-confini-dei-fir.md` racconta la misura e la
+  decisione di Carmine. `ref_firs` si riempie dal dataset di **VATSpy** (1121 confini, solo quelli interi e non i settori), con un job
+  settimanale che non svuota la tabella se la risposta è vuota, e `IFirLocator` risponde «in quali FIR sta questo punto» con il riquadro
+  come prefiltro e il ray casting sui poligoni. **Attribuzione** obbligatoria (CC BY-SA 4.0), pronta come costante: va mostrata in T12,
+  dove il dato derivato si vede.
+- **I test**: 16 unit nuovi (otto sui confini e sul punto dentro il poligono, uno di architettura sul perimetro della fonte, più quelli del
+  meteo rimasti verdi) e quattro d'integrazione (il mondo nella tabella, lo spazio aereo che resta della divisione, le piste prese una volta
+  sola, i tipi e i vocabolari). Unit **357**, verdi.
+- ⚠️ **Trovato scrivendo i test**: su una macchina italiana l'interpolazione di stringa scrive `36,5`, che in JSON non è un numero. I
+  numeri dei test di geometria passano dalla cultura invariante.
+- **Non verificato in locale**: integrazione e giro e2e (Docker spento), che esegue la CI; e **quanto ci mette davvero** il primo
+  riempimento di 44 689 righe su MariaDB vera — da guardare nel log della CI e sullo staging.
 
 ### T2 — Nucleo: il tracker e il meteo
 
