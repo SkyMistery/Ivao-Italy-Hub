@@ -1,0 +1,12 @@
+[
+  {
+    "airportIcao": "LIRF",
+    "metar": "LIRF 160720Z 05005KT CAVOK 23/14 Q1016 NOSIG",
+    "updatedAt": "2026-09-16T07:20:00.000Z"
+  },
+  {
+    "airportIcao": "LIMC",
+    "metar": "LIMC 160720Z VRB02KT CAVOK 22/16 Q1017 NOSIG",
+    "updatedAt": "2026-09-16T07:20:00.000Z"
+  }
+]

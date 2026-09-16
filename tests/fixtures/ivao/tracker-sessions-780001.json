@@ -1,0 +1,119 @@
+[
+  {
+    "time": 7363,
+    "createdAt": "2026-06-24T11:15:11.000Z",
+    "updatedAt": "2026-06-24T13:17:54.000Z",
+    "id": 62748566,
+    "userId": 780001,
+    "callsign": "ICARG",
+    "rating": 7,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-06-24T13:17:54.000Z",
+    "flightPlans": [
+      {
+        "id": 71788935,
+        "arrivalId": "LPBJ",
+        "departureId": "LPMA",
+        "aircraftId": "E55P"
+      },
+      {
+        "id": 71788936,
+        "arrivalId": "LPBJ",
+        "departureId": "LPMA",
+        "aircraftId": "E55P"
+      },
+      {
+        "id": 71788939,
+        "arrivalId": "LPBJ",
+        "departureId": "LPMA",
+        "aircraftId": "E55P"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 7941,
+    "createdAt": "2026-06-24T09:02:20.000Z",
+    "updatedAt": "2026-06-24T11:14:41.000Z",
+    "id": 62747972,
+    "userId": 780001,
+    "callsign": "ICARG",
+    "rating": 7,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-06-24T11:14:41.000Z",
+    "flightPlans": [
+      {
+        "id": 71788288,
+        "arrivalId": "LPMA",
+        "departureId": "LXGB",
+        "aircraftId": "E55P"
+      },
+      {
+        "id": 71788335,
+        "arrivalId": "LPMA",
+        "departureId": "LXGB",
+        "aircraftId": "E55P"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 10360,
+    "createdAt": "2026-06-24T06:09:30.000Z",
+    "updatedAt": "2026-06-24T09:02:10.000Z",
+    "id": 62747397,
+    "userId": 780001,
+    "callsign": "ICARG",
+    "rating": 7,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-06-24T09:02:10.000Z",
+    "flightPlans": [
+      {
+        "id": 71787598,
+        "arrivalId": "LXGB",
+        "departureId": "LIRQ",
+        "aircraftId": "E55P"
+      },
+      {
+        "id": 71787599,
+        "arrivalId": "LXGB",
+        "departureId": "LIRQ",
+        "aircraftId": "E55P"
+      },
+      {
+        "id": 71787607,
+        "arrivalId": "LXGB",
+        "departureId": "LIRQ",
+        "aircraftId": "E55P"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  }
+]

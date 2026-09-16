@@ -13,3 +13,20 @@ starts being recognised once the snapshot exists. They are **not** a copy of a r
 the other two on purpose: four controllers of which three work a station the snapshot knows, and
 four flights of which two touch an airport it knows. That is what makes it a test of the rule and
 not of the file — change an ICAO here and the figures the block draws change with it.
+
+## The tracker files, and where they differ
+
+`tracker-sessions-780001.json`, `tracker-flightplans-<id>.json` and `tracker-tracks-<id>.json` are
+the opposite choice: they are **real flights**, recorded from the live API with
+`tools/record-ivao-fixtures.mjs` and anonymised — the VID becomes 780001, the range the integration
+tests own, and the member object IVAO embeds is dropped. A parser proved against invented JSON
+proves only that the invention was parsed, and the shapes here are full of things nobody would
+invent: three revisions of one flight plan, equipment letters that carry digits (`SBDFGJ1RUWXY`),
+tracks sampled about every fifteen seconds.
+
+Two limits worth knowing before re-recording: IVAO keeps the points of a session for about **ninety
+days**, and the sessions of a member are paged fifty at a time. Both were measured on 16 September
+2026, in phase T2.
+
+`metars.json` is small and written by hand, like the first three files: it is the fallback the
+weather chain reaches for when the first source has no observation, so it only has to exist.

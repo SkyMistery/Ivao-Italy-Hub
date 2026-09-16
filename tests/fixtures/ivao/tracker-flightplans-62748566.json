@@ -1,0 +1,413 @@
+[
+  {
+    "id": 71788939,
+    "sessionId": 62748566,
+    "revision": 3,
+    "aircraftId": "E55P",
+    "aircraftNumber": 1,
+    "departureId": "LPMA",
+    "arrivalId": "LPBJ",
+    "alternativeId": "LPPT",
+    "alternative2Id": null,
+    "route": "DEGUN DCT GALPA DCT NARTA DCT ODPAK",
+    "remarks": "PBN/A1B2D2O2S2T1 DOF/260624 REG/ICARG CODE/49410F PER/B RMK/TCAS IVAOVA/SPZ",
+    "speed": "N0418",
+    "level": "F430",
+    "flightRules": "I",
+    "flightType": "N",
+    "eet": 5400,
+    "endurance": 9960,
+    "departureTime": 41100,
+    "actualDepartureTime": 42109,
+    "peopleOnBoard": 10,
+    "createdAt": "2026-06-24T11:15:01.000Z",
+    "updatedAt": "2026-06-24T11:15:11.000Z",
+    "departure_id": "LPMA",
+    "arrival_id": "LPBJ",
+    "alternative_id": "LPPT",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "J1",
+        "name": "CPDLC ATN VDL Mode 2",
+        "order": 13
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "U",
+        "name": "UHF RTF",
+        "order": 31
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "H",
+        "name": "mode S (with aircraft ID, pressure altitude and enhanced surveillance capability)",
+        "type": null,
+        "order": 4
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "E55P",
+      "model": "EMB-505 Phenom 300",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LPMA",
+      "iata": "FNC",
+      "name": "Madeira",
+      "city": "Santa Cruz",
+      "countryId": "PT",
+      "latitude": 32.6941666667,
+      "longitude": -16.7780555556
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LPBJ",
+      "iata": "BYJ",
+      "name": "Beja",
+      "city": "Beja",
+      "countryId": "PT",
+      "latitude": 38.0788888889,
+      "longitude": -7.9325
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LPPT",
+      "iata": "LIS",
+      "name": "Lisboa",
+      "city": "Lisboa",
+      "countryId": "PT",
+      "latitude": 38.7741666667,
+      "longitude": -9.1341666667
+    },
+    "alternative2": null
+  },
+  {
+    "id": 71788936,
+    "sessionId": 62748566,
+    "revision": 2,
+    "aircraftId": "E55P",
+    "aircraftNumber": 1,
+    "departureId": "LPMA",
+    "arrivalId": "LPBJ",
+    "alternativeId": "LPPT",
+    "alternative2Id": null,
+    "route": "DEGUN DCT GALPA DCT NARTA DCT ODPAK",
+    "remarks": "PBN/A1B2D2O2S2T1 DOF/260624 REG/ICARG CODE/49410F PER/B RMK/TCAS IVAOVA/SPZ",
+    "speed": "N0418",
+    "level": "F430",
+    "flightRules": "I",
+    "flightType": "N",
+    "eet": 5400,
+    "endurance": 9960,
+    "departureTime": 41100,
+    "actualDepartureTime": 42109,
+    "peopleOnBoard": 10,
+    "createdAt": "2026-06-24T11:15:01.000Z",
+    "updatedAt": "2026-06-24T11:15:11.000Z",
+    "departure_id": "LPMA",
+    "arrival_id": "LPBJ",
+    "alternative_id": "LPPT",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "J1",
+        "name": "CPDLC ATN VDL Mode 2",
+        "order": 13
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "U",
+        "name": "UHF RTF",
+        "order": 31
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "H",
+        "name": "mode S (with aircraft ID, pressure altitude and enhanced surveillance capability)",
+        "type": null,
+        "order": 4
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "E55P",
+      "model": "EMB-505 Phenom 300",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LPMA",
+      "iata": "FNC",
+      "name": "Madeira",
+      "city": "Santa Cruz",
+      "countryId": "PT",
+      "latitude": 32.6941666667,
+      "longitude": -16.7780555556
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LPBJ",
+      "iata": "BYJ",
+      "name": "Beja",
+      "city": "Beja",
+      "countryId": "PT",
+      "latitude": 38.0788888889,
+      "longitude": -7.9325
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LPPT",
+      "iata": "LIS",
+      "name": "Lisboa",
+      "city": "Lisboa",
+      "countryId": "PT",
+      "latitude": 38.7741666667,
+      "longitude": -9.1341666667
+    },
+    "alternative2": null
+  },
+  {
+    "id": 71788935,
+    "sessionId": 62748566,
+    "revision": 1,
+    "aircraftId": "E55P",
+    "aircraftNumber": 1,
+    "departureId": "LPMA",
+    "arrivalId": "LPBJ",
+    "alternativeId": "LPPT",
+    "alternative2Id": null,
+    "route": "DEGUN DCT GALPA DCT NARTA DCT ODPAK",
+    "remarks": "PBN/A1B2D2O2S2T1 DOF/260624 REG/ICARG CODE/49410F PER/B RMK/TCAS IVAOVA/SPZ",
+    "speed": "N0418",
+    "level": "F430",
+    "flightRules": "I",
+    "flightType": "N",
+    "eet": 5400,
+    "endurance": 9960,
+    "departureTime": 41100,
+    "actualDepartureTime": 42109,
+    "peopleOnBoard": 10,
+    "createdAt": "2026-06-24T11:15:01.000Z",
+    "updatedAt": "2026-06-24T11:15:11.000Z",
+    "departure_id": "LPMA",
+    "arrival_id": "LPBJ",
+    "alternative_id": "LPPT",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "J1",
+        "name": "CPDLC ATN VDL Mode 2",
+        "order": 13
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "U",
+        "name": "UHF RTF",
+        "order": 31
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "H",
+        "name": "mode S (with aircraft ID, pressure altitude and enhanced surveillance capability)",
+        "type": null,
+        "order": 4
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "E55P",
+      "model": "EMB-505 Phenom 300",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LPMA",
+      "iata": "FNC",
+      "name": "Madeira",
+      "city": "Santa Cruz",
+      "countryId": "PT",
+      "latitude": 32.6941666667,
+      "longitude": -16.7780555556
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LPBJ",
+      "iata": "BYJ",
+      "name": "Beja",
+      "city": "Beja",
+      "countryId": "PT",
+      "latitude": 38.0788888889,
+      "longitude": -7.9325
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LPPT",
+      "iata": "LIS",
+      "name": "Lisboa",
+      "city": "Lisboa",
+      "countryId": "PT",
+      "latitude": 38.7741666667,
+      "longitude": -9.1341666667
+    },
+    "alternative2": null
+  }
+]
