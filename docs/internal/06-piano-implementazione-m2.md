@@ -291,7 +291,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 |---|---|---|---|
 | T0 | Note, piano 0.79, questa parte — **fatta il 16 set 2026** | design chiuso | sei note di decisione, il piano 0.79, le fasi qui sotto |
 | T1 | Nucleo: i dati di riferimento del mondo | — | aeroporti del mondo con IATA e coordinate, piste con le testate, tipi di aereo, confini dei FIR |
-| T2 | Nucleo: il tracker e il meteo | — | sessioni, piani e tracce nel client IVAO con le fixture del corpus; `IWeatherSource` |
+| T2 | Nucleo: il tracker e il meteo — **fatta il 16 set 2026** | — | sessioni, piani e tracce nel client IVAO con fixture di voli veri; `IWeatherSource` (NOAA → IVAO → VATSIM) |
 | T3 | Nucleo: scope per risorsa e interessato | — | l'unico handler estende i grant a una riga e nega all'interessato |
 | T4 | Nucleo: proiezioni dei moduli, award, file con scadenza, preferenze | T3 | le righe di modulo proiettano davvero; più voci di calendario; award; `cms_media_uses` e il job; preferenze dell'utente |
 | T5 | Modulo: lo scheletro | T4 | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
@@ -373,6 +373,35 @@ Design §3.2, §3.4, §6.2, §1.13; nota `meteo-e-confini-dei-fir` §3.1. Branch
 la catena del meteo con fonti finte (NOAA giù → IVAO → VATSIM; TAF senza ripiego); architettura: nessun modulo nomina NOAA o VATSIM.
 **Fatta quando**: le fixture del corpus sono nel repository e i test le leggono; in sviluppo, la storia di METAR e TAF di un aeroporto
 per un volo di una settimana fa arriva da NOAA.
+
+**Fatta il 16 settembre 2026** (branch `m2/t2-tracker-and-weather`, PR #82). Com'è andata:
+
+- **Il tracker sta nell'unico client**: `SearchSessionsAsync` (paginata, cinquanta per pagina, con i filtri `departureId` e `arrivalId`
+  che l'API ha davvero), `GetFlightPlansAsync` (**tutte** le revisioni, dalla prima) e `GetTracksAsync`. **`null` vuol dire «non abbiamo
+  potuto guardare»**, e non è la stessa risposta di una lista vuota: a un pilota sicuro di aver volato non si dice «non c'è» quando
+  l'API non ha risposto. `IvaoTrackerReader` legge i payload una volta sola, per il client vero e per quello a fixture.
+- **Le fixture sono voli veri**: tre tratte (LIRQ–LXGB–LPMA–LPBJ) registrate con `tools/record-ivao-fixtures.mjs` e **anonimizzate** a
+  VID 780001, senza l'oggetto `user` che IVAO annida. Un parser provato su JSON inventato prova solo che l'invenzione è stata letta.
+- **Il meteo è `Core/Weather/`**: NOAA, poi il METAR di IVAO, poi VATSIM; il TAF senza ripiego; la storia è NOAA o niente. Un test di
+  architettura tiene il perimetro: **nessun file fuori da `Core/Weather` nomina un fornitore di meteo** (e il commento di `Program.cs`
+  è stato riscritto proprio per questo).
+- **Misurato contro i servizi veri il 16 settembre**, e quattro cose correggono il design:
+  1. **Il TAF passato c'è** (§1.13 diceva di no): si chiede con `date` da solo, perché `hours` su un TAF è un 400.
+  2. **NOAA tiene trenta giorni** di storia, e lo dice lui stesso quando gliene chiedi di più.
+  3. **Non esiste il file di cache dei TAF** (404): solo i METAR (240 KB gzip, tutto il mondo). I TAF si chiedono a blocchi di quaranta.
+  4. **`/v2/airports/{icao}/metar` risponde anche in maiuscolo**: la regola «minuscolo, il maiuscolo dà 404» non vale più.
+- **Altre due misure, che servono dopo**: IVAO tiene i **punti delle tracce circa novanta giorni** (a 90 sì, a 91 no), e il
+  **campionamento è di circa 15 secondi** su un volo lungo (minimo 4, massimo 20; 5 su uno corto).
+  ⚠️ **Per T18**: con un punto ogni quindici secondi la tolleranza di 150 m di `takeoffFromThreshold` **non è misurabile a quella
+  precisione** dalla sola traccia. Il controllo parte dall'ultimo punto **fermo** prima della corsa, e il numero si tara sul corpus.
+- **Il corpus dei voli di Carmine non c'era ancora** (arriva il 16–17): le fixture di oggi sono il ponte, e i suoi voli si aggiungono con
+  lo stesso script quando arrivano. Gli esiti attesi restano il materiale di T17–T18.
+- **Verificato in locale**: unit .NET **347** (16 nuovi), build, formato. **Non in locale**: integrazione e giro e2e (Docker spento),
+  che esegue la CI.
+- ⚠️ **Com'è andato il merge**: la PR #82 è entrata in `main` **prima** di T0, perché la PR di T0 (#81) era impilata sul branch del
+  design e il suo merge è finito **dentro quel branch** invece che in `main`. Il contenuto di T0 è tornato in `main` con la PR di
+  recupero del 16 settembre. La regola della memoria `stacked-pr-base-deletion` vale anche prima della cancellazione: **una PR impilata
+  va ritargettata sulla base nuova prima di mergiarla**, altrimenti mergia nella vecchia.
 
 ### T3 — Nucleo: scope per risorsa e interessato
 
