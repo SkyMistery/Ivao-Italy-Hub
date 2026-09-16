@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Data;
@@ -32,11 +34,24 @@ public sealed class SampleModule : ModuleBase
 
     public const string EditPermission = "Sample.Edit";
 
+    /// <summary>
+    /// What a PIREP's validation will be: a permission that can be granted on a single row, and
+    /// that the member the row is about may never use on it — super administrator included
+    /// (M2, T3).
+    /// </summary>
+    public const string DecidePermission = "Sample.Decide";
+
     /// <summary>The rows in the care of several departments, through the generic CRUD engine.</summary>
     public const string ItemsPattern = "/api/sample/items";
 
     /// <summary>The same rows read through the global query filter, as a public page of the module would.</summary>
     public const string VisiblePattern = "/api/sample/visible";
+
+    /// <summary>
+    /// Deciding one row, the way a validator decides one report: the permission is checked
+    /// <b>against the row</b>, so the scope of the row and the member it is about both count.
+    /// </summary>
+    public const string DecidePattern = "/api/sample/items/{id:long}/decide";
 
     /// <summary>A permission of the module, so that the catalogue is seen to compose it.</summary>
     public const string ReadPermission = "Sample.Read";
@@ -55,6 +70,7 @@ public sealed class SampleModule : ModuleBase
         new PermissionDescriptor(ReadPermission, IsGlobal: true),
         new PermissionDescriptor(ViewPermission, IsGlobal: false),
         new PermissionDescriptor(EditPermission, IsGlobal: false),
+        new PermissionDescriptor(DecidePermission, IsGlobal: false, DeniedToStakeholder: true),
     ];
 
     public override IEnumerable<Type> DbContextTypes => [typeof(SampleDbContext)];
@@ -99,6 +115,29 @@ public sealed class SampleModule : ModuleBase
         endpoints.MapGet(VisiblePattern, async (SampleDbContext database, CancellationToken cancellationToken) =>
                 TypedResults.Ok(await database.Items.Select(item => item.Id).ToListAsync(cancellationToken)))
             .AllowAnonymous();
+
+        // Deciding one row. The permission is asked of the single handler **with the row in hand**,
+        // which is what makes the scope of the row and the member it is about count — the shape a
+        // validator taking a PIREP will have (M2, T3).
+        endpoints.MapPost(DecidePattern, async Task<IResult> (
+            long id,
+            SampleDbContext database,
+            IAuthorizationService authorization,
+            ClaimsPrincipal principal,
+            CancellationToken cancellationToken) =>
+        {
+            var item = await database.Items
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(row => row.Id == id, cancellationToken);
+
+            if (item is null)
+            {
+                return Results.NotFound();
+            }
+
+            var allowed = await authorization.AuthorizeAsync(principal, item, DecidePermission);
+            return allowed.Succeeded ? Results.Ok(SampleItemMapping.ToDto(item)) : Results.Forbid();
+        });
     }
 }
 

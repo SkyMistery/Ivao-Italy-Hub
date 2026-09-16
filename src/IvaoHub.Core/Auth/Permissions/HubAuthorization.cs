@@ -108,6 +108,17 @@ public sealed class DepartmentAuthorizationHandler(
 
     private bool IsAllowed(object? resource, string permission)
     {
+        // First of all, and before anything anybody holds: whoever the row is about does not decide
+        // it. A pilot does not validate their own report, and a super administrator who happens to
+        // be that pilot does not either — this is the one place the role does not bypass a policy
+        // (decision note of 15 September 2026, design M2 section 7.3).
+        if (resource is IHasStakeholder { StakeholderVid: { } stakeholder }
+            && stakeholder == currentUser.Vid
+            && catalogue.IsDeniedToStakeholder(permission))
+        {
+            return false;
+        }
+
         // Without a resource the question is "may they do this at all": holding the permission on
         // any department, or globally, is enough, and the department is checked row by row later.
         // Denying here would close the list of their own department to every coordinator.
@@ -127,7 +138,12 @@ public sealed class DepartmentAuthorizationHandler(
         // Held on one of the departments of the row is held on the row: a row of one department has
         // one, and a row of a module organised together with others has them all (M2, note
         // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.3). One rule, not a branch.
-        if (!owned.OwnerDepartments.Any(department => currentUser.Has(permission, department)))
+        //
+        // The scope of the row travels with the question. A permission held without one reaches
+        // every row, as it always has; one granted on a single row reaches that row only, which is
+        // how "this validator, on this tour" is said (M2, note of 15 September 2026).
+        var scope = (resource as IHasResourceScope)?.ResourceScope;
+        if (!owned.OwnerDepartments.Any(department => currentUser.Has(permission, department, scope)))
         {
             return false;
         }

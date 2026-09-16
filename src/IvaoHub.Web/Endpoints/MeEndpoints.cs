@@ -67,7 +67,10 @@ internal static class MeEndpoints
                         [.. user.Firs])
                     : null,
                 Permissions: [.. user.Permissions.Select(permission =>
-                    new BootstrapPermission(permission.Name, permission.Department?.ToString()))],
+                    new BootstrapPermission(
+                        permission.Name,
+                        permission.Department?.ToString(),
+                        permission.ResourceScope))],
                 Division: new BootstrapDivision(
                     options.Code,
                     options.Name,
@@ -225,7 +228,13 @@ internal sealed record BootstrapUser(
     IReadOnlyList<string> Firs);
 
 /// <summary>A department of null means the permission is held on every department.</summary>
-internal sealed record BootstrapPermission(string Name, string? Department);
+/// <param name="Name">The permission, as the catalogue names it.</param>
+/// <param name="Department">The department it is held on; absent means every one of them.</param>
+/// <param name="ResourceScope">
+/// Set when the permission is held on one row only, so that the screen can offer the action there
+/// and nowhere else — "Take" on the tours a validator is enabled on (M2, T3).
+/// </param>
+internal sealed record BootstrapPermission(string Name, string? Department, string? ResourceScope);
 
 /// <summary>
 /// <paramref name="SiteDepartment"/> is the department the site itself belongs to: its menu, its

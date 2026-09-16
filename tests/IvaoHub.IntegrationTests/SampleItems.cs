@@ -14,12 +14,25 @@ namespace IvaoHub.IntegrationTests;
 /// the base department of the module — are proved against a real module context and a real table,
 /// before the first real module needs them.
 /// </summary>
+/// <para>Since T3 it also carries the two relations a row can have with a person: the scope a
+/// permission can be granted on by itself (<see cref="IHasResourceScope"/>) and the member the row
+/// is about (<see cref="IHasStakeholder"/>), so that both are proved here before the first PIREP
+/// exists.</para>
 [PermissionArea(SampleModule.PermissionArea)]
-public sealed class SampleItem : IOwnedByDepartment, IVisible, IAuditable
+public sealed class SampleItem : IOwnedByDepartment, IVisible, IAuditable, IHasResourceScope, IHasStakeholder
 {
     public long Id { get; set; }
 
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>The member this row is about, when it is about one.</summary>
+    public int? StakeholderVid { get; set; }
+
+    /// <summary>
+    /// What a grant has to name to reach this row alone. A module chooses the shape; the core only
+    /// ever compares it.
+    /// </summary>
+    public string ResourceScope => $"{SampleModule.ModuleKey}:item:{Id}";
 
     public Visibility Visibility { get; set; }
 
@@ -51,6 +64,7 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             item.ToTable("smp_items");
             item.HasKey(row => row.Id);
             item.Property(row => row.Title).HasMaxLength(128).IsRequired();
+            item.Ignore(row => row.ResourceScope);
             item.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
             item.Property(row => row.Visibility).HasConversion<string>().HasMaxLength(16);
         });
@@ -73,19 +87,34 @@ public sealed class SampleDbContextDesignTimeFactory : IDesignTimeDbContextFacto
     }
 }
 
-public sealed record SampleItemDto(long Id, string Title, Visibility Visibility, IReadOnlyList<Department> OwnerDepartments);
+public sealed record SampleItemDto(
+    long Id,
+    string Title,
+    Visibility Visibility,
+    IReadOnlyList<Department> OwnerDepartments,
+    int? StakeholderVid);
 
-public sealed record SampleItemWriteDto(string Title, Visibility Visibility, IReadOnlyList<Department> OwnerDepartments);
+public sealed record SampleItemWriteDto(
+    string Title,
+    Visibility Visibility,
+    IReadOnlyList<Department> OwnerDepartments,
+    int? StakeholderVid = null);
 
 internal static class SampleItemMapping
 {
     public static SampleItemDto ToDto(SampleItem item) =>
-        new(item.Id, item.Title, item.Visibility, ((IOwnedByDepartment)item).OwnerDepartments);
+        new(
+            item.Id,
+            item.Title,
+            item.Visibility,
+            ((IOwnedByDepartment)item).OwnerDepartments,
+            item.StakeholderVid);
 
     public static void Apply(SampleItemWriteDto payload, SampleItem item)
     {
         item.Title = payload.Title;
         item.Visibility = payload.Visibility;
+        item.StakeholderVid = payload.StakeholderVid;
         item.OwnerDepartmentMask = DepartmentMask.Of(payload.OwnerDepartments);
 
         // A module with no base department would say which department is the row's own; this one

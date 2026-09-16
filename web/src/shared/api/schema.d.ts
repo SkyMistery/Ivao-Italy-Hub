@@ -891,8 +891,15 @@ export interface components {
         };
         /** @description A department of null means the permission is held on every department. */
         BootstrapPermission: {
+            /** @description The permission, as the catalogue names it. */
             name: string;
+            /** @description The department it is held on; absent means every one of them. */
             department: null | string;
+            /**
+             * @description Set when the permission is held on one row only, so that the screen can offer the action there
+             *     and nowhere else — "Take" on the tours a validator is enabled on (M2, T3).
+             */
+            resourceScope: null | string;
         };
         /**
          * @description One permission of the catalogue: core plus whatever the installed modules declare. It is here so
@@ -1461,6 +1468,7 @@ export interface components {
             kind: components["schemas"]["GrantKind"];
             value: string;
             department: null | components["schemas"]["Department"];
+            resourceScope: null | string;
             effect: components["schemas"]["GrantEffect"];
             /** Format: date-time */
             expiresAt: null | string;
@@ -1502,6 +1510,7 @@ export interface components {
             positionLevels: components["schemas"]["StaffLevel"][];
             value: string;
             department: null | components["schemas"]["Department"];
+            resourceScope: null | string;
             effect: components["schemas"]["GrantEffect"];
             /** Format: date-time */
             expiresAt: null | string;

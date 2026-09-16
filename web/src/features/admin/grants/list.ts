@@ -17,6 +17,9 @@ export const grantColumns: readonly ColumnSpec<GrantListDto>[] = [
   col.list('positionLevels'),
   col.text('value', { sortable: true }),
   col.department('department'),
+  // The single row a grant is about, when it is about one (M2, T3). Read only: the module that owns
+  // those rows writes it, from a screen that knows which of them exist.
+  col.text('resourceScope'),
   col.badge('effect', 'grants', { sortable: true }),
   col.date('expiresAt'),
   col.date('suspendedAt'),

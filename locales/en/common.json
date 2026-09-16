@@ -1405,6 +1405,7 @@
       "kind": "Kind",
       "value": "Permission",
       "department": "Department",
+      "resourceScope": "Only on",
       "effect": "Effect",
       "expiresAt": "Expires",
       "suspendedAt": "Suspended",

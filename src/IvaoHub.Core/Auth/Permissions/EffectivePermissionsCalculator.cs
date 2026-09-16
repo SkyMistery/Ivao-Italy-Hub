@@ -10,7 +10,19 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// calculator keeps one of them, because the cookie carries one claim per entry and a permission
 /// held both by a role and by a grant would otherwise travel twice.</para>
 /// </summary>
-public readonly record struct EffectivePermission(string Name, Department? Department, string Source);
+/// <param name="Name">The permission, always <c>Area.Action</c>.</param>
+/// <param name="Department">Which department it is held on; null means every one of them.</param>
+/// <param name="Source">Where it comes from: the role, a grant, or being a super administrator.</param>
+/// <param name="ResourceScope">
+/// When set, the permission is held on <b>that row only</b> — <c>flightops:tour:42</c> — and on
+/// nothing else. It is how "this validator, on this tour" is said without a second mechanism
+/// (decision note of 15 September 2026); null is the ordinary case, held across the department.
+/// </param>
+public readonly record struct EffectivePermission(
+    string Name,
+    Department? Department,
+    string Source,
+    string? ResourceScope = null);
 
 /// <summary>
 /// Answering "does this person hold that permission?" against a set of effective permissions.
@@ -29,7 +41,8 @@ public static class PermissionSet
         IEnumerable<EffectivePermission> permissions,
         bool isSuperadmin,
         string permission,
-        Department department)
+        Department department,
+        string? resourceScope = null)
     {
         ArgumentNullException.ThrowIfNull(permissions);
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
@@ -37,8 +50,18 @@ public static class PermissionSet
         return isSuperadmin
             || permissions.Any(held =>
                 string.Equals(held.Name, permission, StringComparison.Ordinal)
-                && (held.Department is null || held.Department == department));
+                && (held.Department is null || held.Department == department)
+                && Reaches(held, resourceScope));
     }
+
+    /// <summary>
+    /// Whether a held permission reaches the row being asked about. One held without a scope reaches
+    /// everything, as it always has; one held with a scope reaches <b>only</b> the row that declares
+    /// the same scope — so a validator enabled on one tour is not thereby enabled on the next.
+    /// </summary>
+    private static bool Reaches(EffectivePermission held, string? resourceScope) =>
+        held.ResourceScope is null
+        || string.Equals(held.ResourceScope, resourceScope, StringComparison.Ordinal);
 
     /// <summary>
     /// True when the set holds the permission somewhere: on one department, on all of them, or as
@@ -123,7 +146,8 @@ public static class EffectivePermissionsCalculator
             effective.Add(new EffectivePermission(
                 grant.Value,
                 grant.Department,
-                $"{GrantSourcePrefix}{grant.Id}"));
+                $"{GrantSourcePrefix}{grant.Id}",
+                grant.ResourceScope));
         }
 
         // Edit implies View, in one place, before the denies so that an explicit deny still wins.
@@ -149,7 +173,8 @@ public static class EffectivePermissionsCalculator
             .ThenBy(permission => permission.Department)
             .ThenBy(permission => Rank(permission.Source))
             .ThenBy(permission => permission.Source, StringComparer.Ordinal)
-            .DistinctBy(permission => (permission.Name, permission.Department))];
+            .ThenBy(permission => permission.ResourceScope, StringComparer.Ordinal)
+            .DistinctBy(permission => (permission.Name, permission.Department, permission.ResourceScope))];
     }
 
     /// <summary>Which source is worth keeping when the same permission is reached more than once.</summary>
