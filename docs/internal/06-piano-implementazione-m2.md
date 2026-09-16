@@ -5,8 +5,8 @@
 > i moduli fuori dai dipartimenti (`decisions/2026-09-13-moduli-non-subordinati-ai-dipartimenti.md`
 > §4). La **parte B** sono le dashboard, decise nella nota `2026-09-13-le-dashboard-a-tutto-schermo`.
 > La **parte C** — il modulo dei tour (`flightops`), che dal 13 settembre 2026 è il primo modulo
-> (`decisions/2026-09-13-ordine-dei-moduli.md`) — si scrive nella fase **T0**, dalle fasi T1–T20 di `05-design-m2.md` §14
-> (design chiuso il 15 settembre 2026).
+> (`decisions/2026-09-13-ordine-dei-moduli.md`) — è **scritta** (fase T0, 16 settembre 2026, piano 0.79): le fasi T1–T21 dal
+> design `05-design-m2.md` §14, chiuso il 15 settembre 2026.
 
 ## A. I prerequisiti: i moduli fuori dai dipartimenti
 
@@ -264,8 +264,512 @@ Branch `m2/d3-personal-dashboards`, da `main` dopo il merge di D2 (#76). **Fatta
 
 ## C. Il modulo dei tour (`flightops`)
 
-Si scrive nella fase T0 da `05-design-m2.md` (chiuso il 15 settembre 2026, PR #80), che è il design dei tour. Carmine ha portato il riscontro dello staff
-di IVAO il 13 settembre 2026 (nota `2026-09-13-ordine-dei-moduli`): **Tours, poi Training, poi Eventi**;
-coordinator e assistant del FOD hanno tutte le funzioni del modulo, gli advisor quello che decide il
-design; niente altri moduli per ora. Events passa a M4.
+Scritta nella fase **T0** (15–16 settembre 2026, piano 0.79) da `05-design-m2.md` §14, chiuso il 15 settembre dopo quattro giri di
+revisione con Carmine (PR #80). **Il design è la fonte**: qui c'è l'ordine, il perimetro di ogni fase, i test e quando è fatta; il
+perché di ogni scelta sta nel design e nelle sei note di T0. Carmine ha portato il riscontro dello staff di IVAO il 13 settembre 2026
+(nota `2026-09-13-ordine-dei-moduli`): **Tours, poi Training, poi Eventi**; coordinator e assistant del FOD hanno tutte le funzioni.
+
+**Regole di tutte le fasi**, per non ripeterle venti volte:
+
+- Una fase per sessione, un branch `m2/t<N>-<slug>` da `main`, una PR con la checklist compilata onestamente. Due fasi che toccano
+  tutte e due una migrazione dello stesso contesto **non** partono in parallelo (memoria `parallel-worktree-sessions`).
+- **Migrazioni solo additive**, una per fase e per contesto. L'`Initial` del modulo nasce in T5 e da lì non si tocca.
+- **Test d'integrazione** sulla MariaDB condivisa con **VID `780001–780099`** e **slug `fo-test-…`** (design §13): un tour di prova si
+  crea e si toglie nel test, niente dati lasciati (memorie `integration-tests-share-one-database`, `bench-database-accumulates`).
+- **Nessuna chiamata a IVAO, NOAA, VATSIM, OpenAIP nei test**: fixture registrate. Le forme delle risposte si misurano **con il token
+  vero** in sviluppo, nella fase che usa l'endpoint, e diventano la fixture.
+- **Divisione XX**: ogni seed e ogni stringa del modulo passa il test del fork fittizio (niente ICAO italiani, niente italiano fuori da
+  `locales/it/`).
+- **Ogni scostamento dal design** si scrive nella fase, sotto «Com'è andata», come nelle parti A e B; se è una decisione, anche nel piano.
+- Prima di pushare una fase con UI: `pnpm e2e:full` (memoria `running-the-hub-locally`).
+
+**Il corpus dei voli di test** (design §13): Carmine lo manda il 16–17 settembre, con l'esito atteso per ogni controllo scritto secondo lo
+**standard** che il sistema vuole fissare. Le sessioni del tracker diventano fixture in T2; gli esiti attesi diventano i test di T17–T18 e la
+taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thresholdToleranceMeters`.
+
+| Fase | Titolo | Dipende da | In una riga |
+|---|---|---|---|
+| T0 | Note, piano 0.79, questa parte — **fatta il 16 set 2026** | design chiuso | sei note di decisione, il piano 0.79, le fasi qui sotto |
+| T1 | Nucleo: i dati di riferimento del mondo | — | aeroporti del mondo con IATA e coordinate, piste con le testate, tipi di aereo, confini dei FIR |
+| T2 | Nucleo: il tracker e il meteo — **fatta il 16 set 2026** | — | sessioni, piani e tracce nel client IVAO con fixture di voli veri; `IWeatherSource` (NOAA → IVAO → VATSIM) |
+| T3 | Nucleo: scope per risorsa e interessato | — | l'unico handler estende i grant a una riga e nega all'interessato |
+| T4 | Nucleo: proiezioni dei moduli, award, file con scadenza, preferenze | T3 | le righe di modulo proiettano davvero; più voci di calendario; award; `cms_media_uses` e il job; preferenze dell'utente |
+| T5 | Modulo: lo scheletro | T4 | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
+| T6 | I tour | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni |
+| T7 | Le leg e la forma del tour | T1, T6 | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
+| T8 | L'import delle leg | T7 | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
+| T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
+| T10 | Il pubblico e la mappa | T7, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
+| T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
+| T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
+| T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
+| T14 | Contestazioni, chiarimenti, segnalazioni | T4, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
+| T15 | Completamento, validatori, piloti, ban | T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
+| T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
+| T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
+| T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`; tarature |
+| T19 | Token personali e contratto dell'agente | T3, T17 | `hub_personal_tokens`, lo schema `Bearer` per `audience`, `/api/flightops/agent` |
+| T20 | Conservazione, rifiniture, giro completo | tutte | job mensile, cancellazione dei dati di un pilota, smoke, giro e2e, documenti |
+| T21 | L'app del validatore parla con l'hub | T19 | nel repository `AutomaticValidatorTour`, fuori da questo; la mail a Navigraph prima di distribuirla |
+
+**Parallelismo possibile** (se servisse): T1, T2 e T3 non si toccano; T8 e T9 nemmeno; T12, T14, T15 e T16 dopo T13 toccano pezzi
+diversi ma tutti `FlightOpsDbContext`, quindi **in fila** per le migrazioni.
+
+### T0 — Note, piano 0.79, parte C
+
+Branch `m2/t0-decision-notes`, impilato su `m2/tours-design` (#80). **Fatta il 16 settembre 2026.**
+
+- **Sei note** in `decisions/`: `2026-09-15-permessi-su-una-riga-e-chi-ha-interesse`, `…-contatti-con-risposte`, `…-la-mappa`,
+  `…-meteo-e-confini-dei-fir`, `…-token-personali-e-agente-del-validatore`, `…-file-con-scadenza`.
+- **Misure e verifiche**: la mappa di base misurata sul file di Protomaps (179 MB fino allo zoom 7); MapLibre 6 senza build CSP e con
+  `blob:` in `img-src`; NOAA con la storia dei METAR a 18 giorni e **anche dei TAF**; OpenAIP con licenza CC BY-NC 4.0 dallo schema
+  dell'API (pagina legale non letta, 403); Navigraph con i termini degli abbonati non letti (pagina JavaScript).
+- **Decise con Carmine il 15 settembre**, sulle tre proposte ancora aperte: l'app Python la adatta Claude dopo T19 (nasce **T21**); la
+  mappa fino allo zoom 7; le immagini le collega al tour chi modifica il tour.
+- ⚠️ **Trovato leggendo il codice**: `IProjectable` non proietta le righe di un modulo (il contesto del modulo non ha le tabelle
+  delle proiezioni, e l'interceptor salta in silenzio). Si corregge in **T4**, prima di tutto il resto.
+- **Scostamenti dall'elenco del design §14**: `myTours` passa da T10 a **T15**, perché senza PIREP non ha niente da mostrare; la tabella
+  `fo_bans` nasce in **T11** (il PIREP deve già rifiutare un pilota bannato) e la sua schermata resta in T15; nasce **T21**.
+
+### T1 — Nucleo: i dati di riferimento del mondo
+
+Design §1.5, §1.12, §3.3; note `meteo-e-confini-dei-fir` §3.2. Branch `m2/t1-world-reference-data`.
+
+1. **Aeroporti del mondo**: `RefDataSyncJob` legge `/v2/airports/all` invece degli aeroporti del paese; `ref_ivao_airports` guadagna
+   `iata`, `latitude`, `longitude` (e l'elevazione, che serve al filtro `ArrivalElevationMin`, se l'API la dà). Convertitori tolleranti
+   sui numeri facoltativi. ⚠️ **`FirDirectory` e `networkStats`** oggi deducono gli aeroporti della divisione dalla tabella intera:
+   filtrano per paese. Da verificare con i test esistenti di M1 che non cambi niente per IT.
+2. **Piste**: `ref_ivao_runways` (`airport_icao`, `runway`, latitudine e longitudine della testata, `bearing`, `length`, `width`) da
+   `/v2/airports/{icao}/runways`, **non per tutto il mondo**: `IRunwayDirectory.EnsureAsync(icaos)` le scarica per gli aeroporti che le
+   chiedono (le leg in T7, i PIREP in T11) e il job le rinfresca per gli aeroporti già presenti.
+3. **Tipi di aereo**: `ref_ivao_aircraft` (codice ICAO, costruttore, modello, categoria di scia, varianti) da `/v2/aircrafts/all` e
+   `/{aircraftId}/variants`; `ref_ivao_aircraft_equipments` e `ref_ivao_transponder_types` da `/equipments` e `/transponderTypes`. Il
+   selettore di un tipo ICAO per il form generato (un campo che cerca nella tabella), riusabile da tour, leg, profili, gruppi.
+4. **Confini dei FIR**: `ref_firs` da OpenAIP (tipi 10 e 11, paginati, chiave nei segreti), job settimanale che non cancella su
+   risposta vuota; `IFirLocator` («in quali FIR sta questo punto», poligoni in cache). Senza chiave il job non parte.
+5. **Misurare** con il token vero le forme di `/v2/airports/all`, `/runways`, `/v2/aircrafts/*` e salvarle come fixture.
+
+**Test**: unit sui convertitori con le fixture vere; `IFirLocator` su punti dentro, fuori e sul bordo, con un poligono che attraversa
+l'antimeridiano; integrazione del job con il client fittizio (aggiunge, aggiorna, non pota su risposta vuota); architettura: solo il nucleo
+nomina OpenAIP; i test di M1 su `FirDirectory` e `networkStats` restano verdi con aeroporti di altri paesi nella tabella.
+**Fatta quando**: in sviluppo, con il token vero, le tabelle si riempiono (numeri scritti nella PR), LIRF ha IATA, coordinate e le sue
+piste dopo un `EnsureAsync`, e un punto su Roma risponde LIRR.
+
+### T2 — Nucleo: il tracker e il meteo
+
+Design §3.2, §3.4, §6.2, §1.13; nota `meteo-e-confini-dei-fir` §3.1. Branch `m2/t2-tracker-and-weather`.
+
+1. **Tracker in `IIvaoApiClient`**: `SearchSessionsAsync(userId, departure?, arrival?, from, to)` su `/v2/tracker/sessions`,
+   `GetFlightPlansAsync(sessionId)` (**tutte** le revisioni) e `GetTracksAsync(sessionId)`. Tipi del nucleo, non del modulo. Il client
+   fittizio legge le fixture.
+2. **Le fixture del corpus**: le sessioni dei voli di test di Carmine (e i 39 log di Toursystem dove servono), registrate con uno script in
+   `tools/` che le scarica con il token vero e le salva anonimizzate (VID sostituiti con `780…`). Ogni fixture porta un file con l'esito
+   atteso per controllo, come l'ha scritto Carmine.
+3. **`IWeatherSource`** in `Core/Weather/`: NOAA (file di cache per «attuali», API con `date` e `hours` per la storia, METAR e TAF), IVAO
+   (`/v2/airports/{icao}/metar`, minuscolo, dal client unico), VATSIM; catena di ripiego solo per il METAR attuale; `User-Agent`; Polly.
+4. **Misurare**: il campionamento delle tracce IVAO a terra (serve a T18), e fin dove arriva la storia dei TAF su NOAA.
+
+**Test**: unit sulla lettura delle fixture (revisioni del piano in ordine, revisione al decollo individuata, tracce con disconnessioni);
+la catena del meteo con fonti finte (NOAA giù → IVAO → VATSIM; TAF senza ripiego); architettura: nessun modulo nomina NOAA o VATSIM.
+**Fatta quando**: le fixture del corpus sono nel repository e i test le leggono; in sviluppo, la storia di METAR e TAF di un aeroporto
+per un volo di una settimana fa arriva da NOAA.
+
+**Fatta il 16 settembre 2026** (branch `m2/t2-tracker-and-weather`, PR #82). Com'è andata:
+
+- **Il tracker sta nell'unico client**: `SearchSessionsAsync` (paginata, cinquanta per pagina, con i filtri `departureId` e `arrivalId`
+  che l'API ha davvero), `GetFlightPlansAsync` (**tutte** le revisioni, dalla prima) e `GetTracksAsync`. **`null` vuol dire «non abbiamo
+  potuto guardare»**, e non è la stessa risposta di una lista vuota: a un pilota sicuro di aver volato non si dice «non c'è» quando
+  l'API non ha risposto. `IvaoTrackerReader` legge i payload una volta sola, per il client vero e per quello a fixture.
+- **Le fixture sono voli veri**: tre tratte (LIRQ–LXGB–LPMA–LPBJ) registrate con `tools/record-ivao-fixtures.mjs` e **anonimizzate** a
+  VID 780001, senza l'oggetto `user` che IVAO annida. Un parser provato su JSON inventato prova solo che l'invenzione è stata letta.
+- **Il meteo è `Core/Weather/`**: NOAA, poi il METAR di IVAO, poi VATSIM; il TAF senza ripiego; la storia è NOAA o niente. Un test di
+  architettura tiene il perimetro: **nessun file fuori da `Core/Weather` nomina un fornitore di meteo** (e il commento di `Program.cs`
+  è stato riscritto proprio per questo).
+- **Misurato contro i servizi veri il 16 settembre**, e quattro cose correggono il design:
+  1. **Il TAF passato c'è** (§1.13 diceva di no): si chiede con `date` da solo, perché `hours` su un TAF è un 400.
+  2. **NOAA tiene trenta giorni** di storia, e lo dice lui stesso quando gliene chiedi di più.
+  3. **Non esiste il file di cache dei TAF** (404): solo i METAR (240 KB gzip, tutto il mondo). I TAF si chiedono a blocchi di quaranta.
+  4. **`/v2/airports/{icao}/metar` risponde anche in maiuscolo**: la regola «minuscolo, il maiuscolo dà 404» non vale più.
+- **Altre due misure, che servono dopo**: IVAO tiene i **punti delle tracce circa novanta giorni** (a 90 sì, a 91 no), e il
+  **campionamento è di circa 15 secondi** su un volo lungo (minimo 4, massimo 20; 5 su uno corto).
+  ⚠️ **Per T18**: con un punto ogni quindici secondi la tolleranza di 150 m di `takeoffFromThreshold` **non è misurabile a quella
+  precisione** dalla sola traccia. Il controllo parte dall'ultimo punto **fermo** prima della corsa, e il numero si tara sul corpus.
+- **Il corpus dei voli di Carmine non c'era ancora** (arriva il 16–17): le fixture di oggi sono il ponte, e i suoi voli si aggiungono con
+  lo stesso script quando arrivano. Gli esiti attesi restano il materiale di T17–T18.
+- **Verificato in locale**: unit .NET **347** (16 nuovi), build, formato. **Non in locale**: integrazione e giro e2e (Docker spento),
+  che esegue la CI.
+- ⚠️ **Com'è andato il merge**: la PR #82 è entrata in `main` **prima** di T0, perché la PR di T0 (#81) era impilata sul branch del
+  design e il suo merge è finito **dentro quel branch** invece che in `main`. Il contenuto di T0 è tornato in `main` con la PR di
+  recupero del 16 settembre. La regola della memoria `stacked-pr-base-deletion` vale anche prima della cancellazione: **una PR impilata
+  va ritargettata sulla base nuova prima di mergiarla**, altrimenti mergia nella vecchia.
+
+### T3 — Nucleo: scope per risorsa e interessato
+
+Nota `2026-09-15-permessi-su-una-riga-e-chi-ha-interesse`. Branch `m2/t3-resource-scope`.
+
+1. `hub_user_grants.resource_scope`, migrazione `AddGrantResourceScope`.
+2. `EffectivePermission.ResourceScope`, il claim `Name:DEPT@scope` (i cookie vecchi si leggono ancora), `PermissionSet.Has` con e senza scope.
+3. `IHasResourceScope`, `IHasStakeholder`, `PermissionDescriptor.DeniedToStakeholder`; il controllo dell'interessato **per primo** nel handler.
+4. La colonna dello scope nella lista dei grant (in sola lettura); lo scope nei permessi effettivi di `/api/me`.
+5. Il modulo di prova (`SampleModule`) guadagna una risorsa con scope e interessato, così la spina dorsale si prova senza aspettare i tour.
+
+**Test**: quelli della nota §5, fra i test della spina dorsale; più: un superadmin interessato riceve no e la lista in sola lettura sì.
+**Fatta quando**: tutti i test della spina dorsale passano, e un grant con scope dato a mano nel DB di sviluppo si vede in `/api/me`.
+
+### T4 — Nucleo: proiezioni dei moduli, award, file con scadenza, preferenze
+
+Note `2026-09-15-file-con-scadenza` e `2026-09-15-contatti-con-risposte` §3.3; design §3.11, §4.1, §9. Branch `m2/t4-core-for-modules`.
+Se in apertura risulta troppo per una PR, si divide in **T4a** (punti 1–3) e **T4b** (punti 4–5), scritto qui.
+
+1. **Le righe di un modulo proiettano davvero**: `ModuleDbContext` mappa `cms_search_index`, `cms_calendar_entries`,
+   `cms_award_signals` (e da qui `cms_media_uses`) **escluse dalle migrazioni del modulo**; l'interceptor le scrive nella transazione del
+   modulo. Prima il test che fallisce sul modulo di prova, poi la correzione.
+2. **Più voci di calendario per riga**: `ProjectionSnapshot.Calendar` diventa un elenco; il writer le riscrive per intero per
+   `source_module` + `source_id` (una chiave in più, il numero della voce). Le righe esistenti del nucleo passano un elenco di uno.
+3. **Usi dei file con scadenza**: `MediaUseProjection`, `cms_media_uses`, `UsesOfMediaAsync` sulle due tabelle, il servizio di
+   eliminazione estratto da `MediaEndpoints.DeleteAsync`, `MediaExpiryJob`, l'avviso nella lista dei media.
+4. **Award**: `hub_awards` (nome e descrizione `Localized`, immagine dalla media library, dipartimento, criterio) e
+   `hub_award_assignments` (VID, award, motivazione, segnalazione d'origine), lista e form generati, la coda delle segnalazioni che
+   esiste già (`cms_award_signals`) con «assegna» e «scarta». `Awards.Assign` come nel piano §9.1. L'immagine usata da un award è un uso
+   senza scadenza.
+5. **Preferenze dell'utente**: `hub_user_preferences` (`vid`, `key`, `value_json`), `GET`/`PUT /api/me/preferences/{key}` con le chiavi
+   dichiarate dai moduli (una chiave sconosciuta è 400). Come le preferenze delle notifiche, che restano dove sono.
+
+**Test**: una riga del modulo di prova compare in ricerca e in calendario con due voci, e sparisce con un `null`; il rollback non lascia
+proiezioni; i test della nota dei file; un award assegnato da una segnalazione la segna gestita; una preferenza si legge da un altro
+cookie dello stesso utente e non da un altro utente.
+**Fatta quando**: i test sopra e quelli della spina dorsale passano; in sviluppo il job dei media gira e scrive la sua riga di log.
+
+### T5 — Modulo: lo scheletro
+
+Design §0.4, §1.5, §1.11, §7. Branch `m2/t5-flightops-skeleton`.
+
+1. `IvaoHub.Modules.FlightOps` (referenzia solo `Core`), `FlightOpsDbContext : ModuleDbContext`, `__EFMigrationsHistory_flightops`,
+   migrazione `Initial` con `fo_aircraft_profiles` e `fo_aircraft_groups`. Registrato in `IvaoHub.Web/Modules.cs`.
+2. `web/src/modules/flightops/` con il manifest, `nav.section`, i18n `flightops` in `it` e `en`; `web/src/modules/index.ts`.
+3. **I permessi** del design §7.1 nel catalogo del modulo; **`positionGrants`** del design §7.2 in `config/division.json` di IT e in
+   `division.example.json`; `modules.flightops.baseDepartment: FOD`.
+4. **Le impostazioni** (design §1.11) nella riga `flightops` di `hub_division_settings`, con validazione e un form generato dietro
+   `Tours.ManageSettings`; il rifiuto di `dailyLegLimit = null` arriva in T6 (serve la tabella dei tour).
+5. **Profili degli aerei** (`Tours.ManageAircraft`) e **gruppi di aerei** (nome `Localized`, tipi ICAO): liste e form generati; il
+   selettore dei tipi di T1.
+6. La sezione del modulo nella barra dello staff con le prime voci; la galleria se nasce un campo nuovo del form.
+
+**Test**: il seed dei grant di posizione crea le righe del FOD una volta; un advisor FOD modifica un profilo e non le impostazioni; il
+fork XX parte con il modulo e `northSouthLevelCountries` vuoto; architettura (il modulo referenzia solo `Core`, niente IVAO fuori dal client).
+**Fatta quando**: un coordinator FOD, entrato con il login di sviluppo, vede la sezione Tours, cambia un'impostazione e crea un profilo.
+
+### T6 — I tour
+
+Design §1.1, §1.2, §1.10, §2 (tipi), §3.7, §8.3, §9, §1.14. Branch `m2/t6-tours`.
+
+1. `fo_tours` com'è nel design §1.2, `IOwnedByDepartment` con la maschera, `IAuditable`, `[Audited]`, `IVisible`.
+2. **Lo stato dalle date** in un solo posto (bozza, in arrivo, aperto, in chiusura, chiuso), usato da lista, pagina, form e salvataggio.
+3. **Nascondere ed eliminare** (§1.2.2): elimina solo senza PIREP (`Tours.Delete`; la domanda «ha PIREP?» risponde no finché T11 non
+   esiste, e il test la prova con una riga scritta a mano), nasconde con `Tours.Edit`; **la nuova chiusura** almeno `2 × report_window_days`
+   da oggi.
+4. **«Segna pronto»**: i controlli di pubblicazione del design §1.2.1 che non dipendono dalle leg (lingue, date, limite giornaliero,
+   profilo dell'aereo di riferimento); quelli sulle leg li aggiunge T7. Il **tipo bloccato** quando il tour è pubblico.
+5. **Il rifiuto di `dailyLegLimit = null`** nelle impostazioni con l'elenco dei tour senza limite (§3.7).
+6. **Template** (§1.10, `Tours.ManageTemplates`): «Salva come template» e «Nuovo da template» copiano le impostazioni; le regole si
+   aggiungono alla copia in T9.
+7. **L'editor** `/staff/tours` e `/staff/tours/{id}`: lista (stato calcolato, tipo, date, nascosto) e le schede impostazioni e briefing
+   (l'editor dei blocchi); banner e foto dal selettore della media library.
+8. **Proiezioni**: ricerca per un tour visibile, **due voci di calendario** (rilascio e chiusura), niente per un tour nascosto; **usi dei
+   file** con scadenza `close_at + 1 mese` anche da nascosto e in bozza.
+
+**Test**: unit sullo stato alle soglie delle date; integrazione: un tour con un PIREP scritto a mano non si elimina e si nasconde; la
+chiusura sotto `2 × X` rifiutata; il tipo non cambia da pubblico; «pronto» con i problemi elencati campo per campo; il template non copia
+le date; la proroga sposta la scadenza del banner; un tour nascosto sparisce da ricerca e calendario.
+**Fatta quando**: dal back office si crea un tour da template, lo si segna pronto con una data di rilascio passata e compare in ricerca e
+calendario.
+
+### T7 — Le leg e la forma del tour
+
+Design §1.3, §1.4, §1.5 (tempo stimato), §1.6, §2, §2.6.1 (la definizione, non la verifica), §2.7, §8.4. Branch `m2/t7-legs`.
+
+1. `fo_legs` con le coordinate **congelate** da `ref_` e la GCD calcolata dal server (`GreatCircle` di Toursystem, con i suoi test);
+   `IRunwayDirectory.EnsureAsync` sugli aeroporti delle leg.
+2. **Il tempo stimato** calcolato a ogni lettura (formula del design §1.5), per leg e totale, solo se c'è l'aereo di riferimento.
+3. **Togliere una leg** (§1.4.1): elimina e rinumera senza PIREP, ritira con motivo con PIREP, ripristina finché il tour non è chiuso;
+   una rotazione si ritira intera. `change_reason` obbligatorio quando si modifica una leg con PIREP.
+4. **Hub e rotazioni** (`fo_hubs`, `fo_rotations`, leg `HubConnection`), **sottotour** (`parent_tour_id`, `required_subtours`, eredità di
+   aerei, callsign e regole), **vincoli sul callsign** (`fo_callsign_rules`), **aerei consentiti** con varianti e gruppi.
+5. **Tour `Distance` e `Open`**: `required_nm`; `open_goal` con i parametri e `fo_tour_constraints` (filtri e regole di sequenza del
+   design §2.6.1), ciascuno con il suo schema di parametri e la sua chiave i18n. La **verifica** su un volo è di T11.
+6. **I controlli di «pronto» che dipendono dalla forma**: almeno una leg, aeroporti noti, date delle leg nel periodo, rotazioni di `size`
+   leg che partono e tornano all'hub, anello per `SequentialChosenStart`, somma delle GCD per `Distance`, `Container` con almeno due sottotour.
+7. **L'editor delle leg a tabella** — **l'eccezione dichiarata** al motore lista e form (design §8.4, piano 0.79): un componente
+   **`LegGrid`** nell'elenco chiuso, righe con `row_version`, errori sulla cella dai `ProblemDetails`, azioni «duplica», «segue», «chiudi
+   tour», «elimina o ritira» (il server dice quale prima di confermare), «ripristina». Le schede hub e rotazioni, sottotour, callsign e
+   vincoli sono liste e form generati.
+
+**Test**: unit sulla GCD, sul tempo stimato con i numeri del design, sui controlli di forma per ogni tipo, sul consentito del callsign
+(unione e `Deny` che vince); integrazione: rinumerare senza toccare un PIREP scritto a mano; ritirare e ripristinare; ritirare una
+rotazione intera; una leg modificata con PIREP senza motivo rifiutata. Smoke: l'editor delle leg aggiunge, duplica e ritira.
+**Fatta quando**: si compone da zero un tour `Hub` con due hub, rotazioni e un collegamento, e lo si segna pronto.
+
+### T8 — L'import delle leg
+
+Design §8.4, ADR-051 di Toursystem. Branch `m2/t8-leg-import`.
+
+1. Il file XLSX o CSV si legge **nel browser** (una libreria da scegliere in apertura: licenza compatibile con Apache-2.0 e nessun
+   codice valutato a runtime, per la CSP; scritta nella PR).
+2. Il server riceve le righe e risponde con **le differenze** senza scrivere (aggiunte, cambiate, assenti con e senza PIREP).
+3. «Fondi» non tocca le assenti; «sostituisci» elimina le assenti senza PIREP e ritira quelle con PIREP, con un motivo. Una transazione.
+4. Il **modello di file** con le colonne, scaricabile dall'editor.
+
+**Test**: unit sul confronto (stessa leg riconosciuta da partenza, arrivo e numero); integrazione: sostituire ritira una leg con PIREP e
+ne elimina una senza; un file con un aeroporto sconosciuto rifiutato sulla riga. Smoke: un import di un CSV con l'anteprima.
+**Fatta quando**: le leg di un tour vero del 2026 (file del FOD) entrano con l'anteprima giusta.
+
+### T9 — Regole ed errori
+
+Design §1.7, §5, §6.2 (lo schema dei parametri). Branch `m2/t9-rules-and-errors`.
+
+1. `fo_rules` (generali e del tour, `amends_rule_id`, `check_key`, `parameters_json`), `fo_errors` (categoria, `yearly_max`,
+   `is_public`), `fo_rule_errors`; `Tours.ManageRules`.
+2. **Il form della regola disegna i parametri** dallo schema del controllo collegato. ⚠️ Estensione n.9 del design: verificare in
+   apertura se il generatore di form sa disegnare uno schema scelto a runtime e una selezione multipla; se no, **si estende il generatore**
+   (caso b), non si scrive un form a mano. I controlli di T17 non esistono ancora: il catalogo delle chiavi e dei loro schemi nasce qui,
+   vuoto di logica.
+3. **Le regole effettive** (§5.2): un servizio solo, con i sottotour.
+4. **«Copia le regole da un altro tour»**, e i template che copiano le regole (completa T6).
+5. Le colonne «senza errori» e «senza regole» (aggregati nella lista, estensione n.9).
+6. Il blocco Data **`flightops.errorCatalog`** (sempre `live`), registrato in due metà (TypeScript e `CoreBlocks`-equivalente del modulo).
+
+**Test**: unit sulle regole effettive (emenda con i parametri, ritirata esclusa, padre prima del sottotour); integrazione: la copia porta
+parametri e collegamenti; il blocco mostra solo gli errori pubblici; `ArchitectureTests` sulle due metà del blocco.
+**Fatta quando**: il FOD scrive una regola generale con i parametri delle disconnessioni, un tour la emenda, e la pagina di prova col blocco
+mostra il catalogo pubblico.
+
+### T10 — Il pubblico e la mappa
+
+Design §8.1, §8.2, §8.6; nota `2026-09-15-la-mappa`. Branch `m2/t10-public-tours`.
+
+1. **`/tours`**: riquadri dei tour aperti, in chiusura, e in arrivo con anteprima; anonimo senza avanzamento.
+2. **`/tours/{slug}`**: briefing, date, aerei, regole effettive con i parametri, leg con distanza, tempo stimato e totale, callsign
+   reale, pulsante SimBrief; per `Distance` e `Open` i vincoli. Le leg ritirate non compaiono.
+3. **`RouteMap`**: MapLibre 6, `pmtiles`, `/tiles` nel backend e in `web/backendPaths.ts`, `blob:` in `img-src`, attribuzione, fondo neutro
+   senza file, avviso senza WebGL2. Nell'elenco chiuso e nella galleria. Colori per stato già previsti (gli stati del pilota arrivano in T11).
+4. Lo script in `tools/` che estrae la mappa di base e la voce in `FORKING.md`.
+5. Il blocco Data **`flightops.tourCards`**.
+6. **Le due verifiche della nota** (§5): `Range` e `ETag` sul pacchetto pubblicato, e se `blob:` serve.
+
+**Test**: Vitest sull'interpolazione del cerchio massimo (anche attraverso l'antimeridiano); smoke `/tours` e `/tours/{slug}` con la mappa
+**sotto la CSP vera** e nessun errore in console; un tour nascosto dà 404; `devProxy.test.ts` con `/tiles`.
+**Fatta quando**: la pagina di un tour di prova mostra la mappa con la base del mondo servita dall'hub, in sviluppo e nella preview.
+
+### T11 — Il PIREP
+
+Design §1.8, §1.9, §2, §3.1, §3.2, §3.4, §3.6, §5.4. Branch `m2/t11-pirep`.
+
+1. **`TourRules`**: per ogni tipo le tre domande (volabili, prossima, finito), il rifiuto e la tolleranza (§2.5), le leg ritirate e non
+   ancora rilasciate; per `Open` obiettivo, filtri e regole di sequenza di §2.6.1; `NoRepeatedRoute` con A→B diversa da B→A.
+2. `fo_pireps`, `fo_pirep_flights` (sessione **unica**), `fo_pirep_events`, `fo_enrolments` (il primo PIREP iscrive), `fo_bans` (solo la
+   tabella e la lettura).
+3. **Il form**: finestra dedicata; la ricerca nel tracker (T2) che esclude le sessioni rivendicate e quelle dopo `close_at`; la scelta del
+   volo; tutte le revisioni del piano e quella al decollo; SID, STAR e IAP secondo `I`, `V`, `Y`, `Z`; la deviazione con il volo di
+   riposizionamento e il motivo.
+4. **I controlli che bloccano** (§3.2 punto 5) con `ProblemDetails` campo per campo: limiti giornalieri per giorno UTC del decollo, callsign,
+   aereo con varianti e gruppi, rating pilota, ban, rilascio, «da modificare» in sospeso, filtri `Open`.
+5. **Lo snapshot** delle regole effettive con parametri ed errori al primo invio, e i dati della leg com'erano; il reinvio non lo rifà.
+6. **Gli stati del pilota**: ritirare da `Queued`; correggere tutto e reinviare da `ToModify`; il **ritiro automatico** dopo
+   `report_window_days` in `ToModify` (job giornaliero del modulo).
+7. I colori degli stati sulla mappa di `/tours/{slug}` per il pilota; «Invia il report».
+
+**Test**: unit su `TourRules` per ogni tipo con tabelle di casi (compresi ritiro, tolleranza, contestazione che sblocca — la bandiera
+esiste già sulla riga), sui limiti giornalieri con l'esempio dei 12 voli del design, su `Open`; integrazione: sessione rivendicata una
+volta; limite che blocca; ban che blocca; snapshot non rifatto al reinvio; ritiro automatico. Smoke: il form con il tracker finto.
+**Fatta quando**: con il login di sviluppo e un volo del corpus, un pilota invia un PIREP su un tour di prova e lo vede in coda.
+
+### T12 — Gli ATC contattati
+
+Design §3.3, §6.5; nota `2026-09-14-dati-condivisi-con-vipi`. Branch `m2/t12-atc-contacts`.
+
+1. **`IAtcActivitySource`** nel nucleo: «quali posizioni erano online in questo intervallo, e dove». Implementazione **vIPI** (contesto EF
+   di sola lettura sulla vista `v_share_atc_sessions`, connessione nei segreti, accesa da `division.json → atcData`) e **nessuna**
+   (`Unavailable`). Nessun modulo nomina vIPI.
+2. **La proposta**: posizioni online negli aeroporti di partenza, arrivo e deviazione e nei FIR attraversati dai punti delle tracce a
+   campione (`IFirLocator`); il pilota toglie e aggiunge; resta scritto chi è proposto e chi aggiunto. Attribuzione OpenAIP accanto.
+3. **Le esenzioni**: tipo, quali controlli ammorbidisce, stato («online», «non verificabile»).
+
+⚠️ **Prerequisiti fuori da questo repository**: la vista in vIPI (una migrazione nel suo repository) e, per la produzione, l'utente MariaDB
+dedicato (nota vIPI §4). In sviluppo si prova con una vista finta nel database di sviluppo.
+
+**La vista, scritta il 16 settembre 2026 leggendo `AtcSession` di vIPI** (tabella `AtcSessions` in `itivao_atc`). L'hub fa una domanda
+sola — «quali posizioni erano online in questo intervallo» — quindi la vista porta dieci colonne e **non** traffico, piste, `ShiftKey`,
+movimenti o riepiloghi:
+
+```sql
+CREATE OR REPLACE SQL SECURITY DEFINER VIEW v_share_atc_sessions AS
+SELECT SessionId         AS session_id,
+       UserId            AS vid,
+       Callsign          AS callsign,
+       Position          AS position,
+       Frequency         AS frequency,
+       StartUtc          AS start_utc,
+       EndUtc            AS end_utc,
+       DurationSeconds   AS duration_seconds,
+       Rating            AS rating,
+       IsOutsideDivision AS is_outside_division
+FROM AtcSessions;
+```
+
+con `GRANT SELECT ON itivao_atc.v_share_atc_sessions` all'utente di sola lettura dell'hub. `end_utc` nullo vuol dire sessione ancora in
+corso. Servono anche le righe **fuori divisione** (i tour si volano nel mondo): vIPI le archivia dal 28 agosto 2026, quindi per i voli
+precedenti la copertura fuori Italia è `Unavailable`, mai «fallita».
+**Test**: unit sulla proposta con tracce del corpus e un archivio finto; integrazione: senza vIPI il form funziona e dice «non
+disponibile»; architettura: il modulo non nomina vIPI né OpenAIP.
+**Fatta quando**: un PIREP del corpus riceve una proposta plausibile da una vista finta, e senza vista il form funziona uguale.
+
+### T13 — La validazione
+
+Design §4, §3.5, §8.5. Branch `m2/t13-validation`.
+
+1. **Le code** `/staff/tours/review`: unica e per tour, ordine per data o per tour salvato come **preferenza dell'utente** (T4); chi ha
+   `Tours.Validate` su almeno un tour vede tutto in sola lettura; «Prendi» solo dove vale lo scope e mai sui propri (T3).
+2. **La presa in carico** con il lease e `row_version` (vince la prima).
+3. **La pagina di validazione** `/staff/tours/review/{id}`: leg e volo con la mappa e la traccia, tutte le revisioni del piano,
+   procedure, ATC ed esenzioni, deviazione; profilo del pilota nel tour; tabella degli errori delle regole congelate con i conteggi
+   nell'anno del volo e da sempre; il **suggerimento**; la decisione con note e `threshold_overridden`. Il meteo arriva in T16, i
+   controlli in T17: le due sezioni ci sono già e dicono «non disponibile».
+4. **Gli esiti**: intenti `flightops.pirepAccepted`, `pirepToModify`, `pirepRejected` con le regole violate, **senza il nome del validatore**.
+5. **Riaprire una decisione** (§4.2.1): il validatore che l'ha presa, FOC e FOAC, con motivazione; nuova mail.
+6. **Il riepilogo giornaliero** `flightops.reviewDigest` a chi ha `Tours.Validate`, con la preferenza per spegnerlo, non se la coda è vuota.
+7. Il blocco Data **`flightops.reviewQueue`**.
+
+**Test**: integrazione: il ciclo con tutti gli stati; nessuno valida i propri (superadmin compreso); abilitato su un tour e non su un
+altro; due prese insieme; il suggerimento con `Dangerous` e con `Warning` oltre `yearly_max`; la mail senza il nome; la riapertura;
+il riepilogo non parte a coda vuota. Smoke: coda unica e per tour, pagina di validazione.
+**Fatta quando**: un PIREP del corpus si prende, si decide con un errore e il pilota riceve la mail in Mailpit.
+
+### T14 — Contestazioni, chiarimenti, segnalazioni
+
+Nota `2026-09-15-contatti-con-risposte`; design §3.8, §3.10, §3.11. Branch `m2/t14-threads`.
+
+1. **Il nucleo**: `kind`, `participants_json`, `cms_contact_replies`, `cms_contact_references`; `IHasParticipants` nel handler e nel
+   filtro; `ThreadOpeningProjection` («una volta sola»); il registro dei risolutori dei riferimenti; gli intenti `contacts.threadOpened` e
+   `contacts.threadReplied`; `/me/contacts`; `MessageThread` nell'elenco chiuso; le risposte nel back office dei contatti.
+2. **La contestazione**: su un `Rejected` entro `disputeWindowDays`; `dispute_status`, `dispute_text`, il filo aperto dalla proiezione con
+   il validatore fra i partecipanti; **la leg non blocca più** (`TourRules`); respinta, torna a bloccare con la tolleranza da quel momento;
+   accolta, un validatore riapre il PIREP in coda. I contatori delle contestazioni nella pagina di validazione (non al pilota).
+3. **Il chiarimento**: su un PIREP deciso, una leg o una regola, più riferimenti in un messaggio, dal nucleo.
+4. **Segnalare un problema su una leg**: `fo_leg_issues`, intento `flightops.legIssueReported` alla casella del FOD.
+5. Il blocco Data **`flightops.openIssues`**.
+
+**Test**: quelli della nota §5; più: la contestazione fuori finestra rifiutata; aperta sblocca, respinta riblocca; il chiarimento non
+cambia lo stato né conta come contestazione. Giro completo: contestato e riaperto.
+**Fatta quando**: un pilota contesta, il validatore risponde dal back office, il pilota riceve la mail e risponde da `/me/contacts`.
+
+### T15 — Completamento, validatori, piloti, ban
+
+Design §3.9, §3.11, §7.2, §8.2, §8.7. Branch `m2/t15-completion-and-people`.
+
+1. **Il completamento**: `completed_at` sull'iscrizione quando un PIREP accettato completa il tour (anche per `Distance`, `Open`,
+   `Container` con `required_subtours`); **`AwardSignalProjection`** nella stessa transazione; mai tolto.
+2. **Statistiche dei validatori** `/staff/tours/validators`: per anno e per tour; **«aggiungi validatore»** e «togli» (grant con scope, T3,
+   `Tours.ManageValidators`).
+3. **Pagina del pilota** `/staff/tours/pilots/{vid}`: errori confermati per categoria (anno e da sempre), leg volate con esito e validatore,
+   contestazioni, chiarimenti, ban, tour con avanzamento.
+4. **Ban** `/staff/tours/bans` (lista e form generati, `Tours.Ban`), intento `flightops.banned` con motivo e durata.
+5. Il blocco Data **`flightops.myTours`** (spostato da T10): tour iniziati, avanzamento, prossima leg, PIREP da correggere, chiarimenti con
+   risposta, il riepilogo del pilota.
+
+**Test**: integrazione: completamento con segnalazione per ogni tipo; il completamento resta dopo una leg aggiunta; un validatore aggiunto
+prende subito sul suo tour; un validatore che non è più staff perde il grant alla sincronizzazione; il ban blocca il PIREP e non la
+validazione di quelli inviati.
+**Fatta quando**: un tour di prova completato compare nella coda degli award, e chi ha `Awards.Assign` lo assegna.
+
+### T16 — Il meteo salvato
+
+Design §1.13; nota `meteo-e-confini-dei-fir` §3.1. Branch `m2/t16-weather`.
+
+1. `fo_weather_reports` senza doppioni; il **job ogni 30 minuti** sugli aeroporti delle leg dei tour aperti o in chiusura (file di cache
+   NOAA, ripiego del METAR); **all'invio del PIREP** gli aeroporti toccati che mancano, METAR **e TAF** della finestra del volo.
+2. **La cancellazione**: più vecchio di `weatherRetentionDays` **e** tutti i PIREP con un volo in quel giorno su quell'aeroporto decisi; job giornaliero.
+3. **La pagina di validazione**: METAR e TAF di partenza, arrivo e deviazione nell'intervallo, con la fonte; in evidenza con una deviazione `Weather`.
+
+**Test**: integrazione: il job salva senza doppioni; un bollettino non si cancella finché un PIREP di quel giorno è in coda; lo scarico
+all'invio con una fonte finta.
+**Fatta quando**: in sviluppo il job gira due volte senza doppioni, e un PIREP del corpus mostra i METAR del suo volo.
+
+### T17 — Il motore dei controlli e i controlli sul piano
+
+Design §6.1–§6.4. Branch `m2/t17-check-engine`.
+
+1. `IFlightCheck` (chiave, schema dei parametri con i default, `EvaluateAsync` → `Passed`, `Failed` con evidenza, `Unavailable`);
+   `FlightCheckContext` con PIREP, snapshot, revisioni del piano, tracce, `ref_`, meteo, archivio ATC.
+2. **Il job** all'invio e al reinvio; `fo_check_results` (`ran_by = server`); gli errori con quella `check_key` diventano **suggeriti**;
+   si registra se il validatore conferma.
+3. **I controlli sul piano**: `callsign`, `aircraft`, `alternate` con la regola di `ZZZZ` e `ALTN/`, `equipment` (vocabolario da T1),
+   `repeatedRoute`.
+4. Gli schemi dei parametri collegati al catalogo di T9; la sezione dei controlli nella pagina di validazione con l'evidenza.
+5. `semicircularLevels` e `atcCoverage` nel catalogo come controlli **dell'agente**: senza agente risultano `Unavailable`.
+
+**Test**: ogni controllo sul **corpus** con gli esiti attesi di Carmine; un controllo che lancia un'eccezione diventa `Unavailable`, mai
+`Failed`; il suggerimento compare nella pagina e nella colonna della coda.
+**Fatta quando**: tutti i voli del corpus danno sui controlli del piano l'esito atteso (o la differenza è scritta e decisa con Carmine).
+
+### T18 — I controlli sulle tracce
+
+Design §6.4. Branch `m2/t18-track-checks`.
+
+1. `disconnections`, `parking`, `speed250` (con le esenzioni), `simRate`, `landingAtArrival`, `takeoffFromThreshold` (piste di T1, prua più
+   vicina, «decollo da un'intersezione» invece di un fallimento), `vmc` sul METAR più vicino (solo le parti VFR).
+2. **Le tarature sul corpus**: `thresholdToleranceMeters` (150 m di partenza) secondo il campionamento misurato in T2; `durationFactor` e
+   `durationFixedMinutes` confrontando la stima con la durata delle sessioni. I numeri scelti, e la tabella degli errori che hanno, si
+   scrivono nella PR e **si decidono con Carmine** prima di cambiare i default.
+
+**Test**: ogni controllo sul corpus; `vmc` `Unavailable` senza METAR; `speed250` ammorbidito da un'esenzione `FreeSpeed`.
+**Fatta quando**: il corpus dà gli esiti attesi, e i numeri delle tarature sono decisi.
+
+### T19 — Token personali e contratto dell'agente
+
+Nota `2026-09-15-token-personali-e-agente-del-validatore`. Branch `m2/t19-agent-contract`.
+
+1. **Nucleo**: `hub_personal_tokens`, lo schema `Bearer` accettato solo per `audience`, l'identità costruita come per il cookie, la regola
+   dell'ultimo login entro 30 giorni, `/me/tokens` (il token in chiaro una volta), audit delle scritture.
+2. **Modulo**: `GET /api/flightops/agent/contract`, la coda e il dettaglio del PIREP, `POST …/checks` con sostituzione e `ran_by = agent`;
+   l'intestazione `Hub-Agent-Contract`.
+3. **`docs/agent-contract.md`** in inglese, con esempi e la forma ammessa dell'evidenza (nota §4).
+
+**Test**: quelli della nota §6; più: un agente di prova in C# nei test d'integrazione legge un PIREP del corpus e scrive un esito che
+compare come suggerimento.
+**Fatta quando**: con un token creato da `/me/tokens`, una `curl` in sviluppo legge un PIREP e scrive un esito che la pagina di
+validazione mostra.
+
+### T20 — Conservazione, rifiniture, giro completo
+
+Design §9, §10, §13. Branch `m2/t20-retention-and-round`.
+
+1. **La conservazione** (§10, strada B): job mensile del modulo; dopo 13 o 25 mesi dalla chiusura via tracce, revisioni dei piani, esiti dei
+   controlli, snapshot, note, ATC ed esenzioni, briefing, regole del tour, hub, rotazioni, vincoli, iscrizioni; **tour e leg restano**
+   archiviati; il registro disciplinare mai. Una riga nel log dei job.
+2. **La richiesta di cancellazione dei dati di un pilota** (§10.0): PIREP e dati personali del modulo via, registro disciplinare
+   anonimizzato. ⚠️ Il design la segna come **direzione**: in apertura si guarda come il nucleo tratta la stessa richiesta per gli altri
+   dati (oggi non è descritto) e, se serve un meccanismo del nucleo, **ci si ferma** con una nota (caso c).
+3. **Rifiniture**: la galleria (`RouteMap`, `LegGrid`, `MessageThread`), `docs/UI-GUIDELINES.md` §3, `FORKING.md` (modulo, mappa, OpenAIP,
+   agente), la checklist del fork XX, il riepilogo dei PIREP nella ricerca e nel calendario rivisto.
+4. **Il giro completo** (e2e con MariaDB vera): tour da template, leg importate, PIREP con tracker finto, controlli, validato, contestato,
+   riaperto, completato, award assegnato.
+5. **La chiusura di M2 (a)**: rapporto come `decisions/2026-09-07-m1-review.md`, con gli endpoint scritti a mano accanto al motore contati
+   (piano §16.6).
+
+**Test**: integrazione: la conservazione non tocca il registro disciplinare e i PIREP di un tour ancora nella finestra; l'anonimizzazione
+lascia i conteggi aggregati uguali. Giro completo verde.
+**Fatta quando**: il giro completo passa in locale e in CI, e il rapporto di chiusura è scritto.
+
+### T21 — L'app del validatore parla con l'hub
+
+Fuori da questo repository: `D:\Programmazione\IVAO_Test\AutomaticValidatorTour`. Deciso da Carmine il 15 settembre: la adatta Claude,
+dopo T19. Si scrive in dettaglio all'apertura, con il codice dell'app davanti.
+
+1. L'app si configura con l'indirizzo dell'hub e un token personale; legge la coda e il PIREP; esegue `semicircularLevels` (rotta
+   ricostruita con i fix locali, FRA sui tratti `DCT`, paese dal FIR, `northSouthLevelCountries`) e `atcCoverage`; scrive gli esiti.
+2. Mostra in locale tutto quello che mostra oggi.
+3. ⚠️ **Prima di distribuirla ad altri validatori**: la mail a `dev@navigraph.com` con la forma delle evidenze e la risposta conservata
+   (nota T0 §4). È un messaggio verso l'esterno: lo manda Carmine, o Claude su sua conferma.
+
+**Fatta quando**: su un PIREP del corpus l'app scrive i due esiti e la pagina di validazione li mostra come suggerimenti.
 
