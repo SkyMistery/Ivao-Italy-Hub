@@ -1,4 +1,5 @@
 using IvaoHub.Core.Modules;
+using IvaoHub.Modules.FlightOps;
 
 namespace IvaoHub.Web;
 
@@ -11,12 +12,11 @@ namespace IvaoHub.Web;
 /// reference brings in something that happens to implement <see cref="IModule"/>; and it makes
 /// "which modules does this build have?" a question you answer by running the application rather
 /// than by opening a file.</para>
-/// <para>Empty since 13 September 2026, when the ATC module left together with vIPI (note
-/// 2026-09-13-staccarsi-da-vipi): events opens M2 and is the first line here. The composition is
-/// still proved end to end, by a module the integration tests add to their own host.</para>
+/// <para>Empty from 13 September 2026, when the ATC module left together with vIPI (note
+/// 2026-09-13-staccarsi-da-vipi), until the tours opened M2 (T5, 16 September 2026).</para>
 /// <para>The order is the order menu entries come out in.</para>
 /// </summary>
 internal static class Modules
 {
-    public static readonly IReadOnlyList<IModule> All = [];
+    public static readonly IReadOnlyList<IModule> All = [new FlightOpsModule()];
 }

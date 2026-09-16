@@ -52,9 +52,10 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         var body = await client.GetFromJsonAsync<JsonElement>("/api/me", token);
 
         // The module is listed, enabled and open, and with no department: a module belongs to none
-        // (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti).
-        var module = body.GetProperty("modules").EnumerateArray().Single();
-        Assert.Equal(SampleModule.ModuleKey, module.GetProperty("key").GetString());
+        // (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti). Found by its key: since T5 the build
+        // has a module of its own next to the one this host adds.
+        var module = body.GetProperty("modules").EnumerateArray()
+            .Single(entry => entry.GetProperty("key").GetString() == SampleModule.ModuleKey);
         Assert.False(module.TryGetProperty("department", out _));
         Assert.True(module.GetProperty("enabled").GetBoolean());
         Assert.False(module.GetProperty("maintenance").GetBoolean());
@@ -439,8 +440,13 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
 
-        // The start of this test host already applied the (empty) seed; this is the first start of an
-        // installation that has one.
+        // The start of this test host already applied the seed of the division file; this is the first
+        // start of an installation that has another one. What the host remembered is put back at the end,
+        // or the next host to start would apply the grants of the file a second time.
+        var remembered = await database.DivisionSettings.AsNoTracking()
+            .Where(row => row.Key == PositionGrantSeeder.AppliedSettingKey)
+            .Select(row => row.ValueJson)
+            .FirstOrDefaultAsync(token);
         await database.DivisionSettings
             .Where(row => row.Key == PositionGrantSeeder.AppliedSettingKey)
             .ExecuteDeleteAsync(token);
@@ -482,6 +488,42 @@ public sealed class ModuleAndAdminEndToEndTests(MariaDbFixture mariaDb) : IAsync
 
         Assert.Equal(0, await seeder.SeedAsync(token));
         Assert.False(await database.UserGrants.AnyAsync(row => row.PositionDepartment == Department.PRD && row.Reason == "division.json", token));
+
+        // A seed added to the file later -- what a module arriving in a running installation brings -- is
+        // applied at the next start, once, and the deleted one still does not come back (T5).
+        var withAModule = Microsoft.Extensions.Options.Options.Create(new DivisionOptions
+        {
+            PositionGrants =
+            [
+                .. options.Value.PositionGrants,
+                new PositionGrantSeed { Department = Department.PRD, Levels = [StaffLevel.Coordinator], Permission = "Links.View", Scope = Department.PRD },
+            ],
+        });
+
+        var later = new PositionGrantSeeder(
+            database,
+            withAModule,
+            scope.ServiceProvider.GetRequiredService<IvaoHub.Core.Auth.Permissions.PermissionCatalog>(),
+            scope.ServiceProvider.GetRequiredService<IClock>(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<PositionGrantSeeder>.Instance);
+
+        Assert.Equal(1, await later.SeedAsync(token));
+        Assert.Equal(0, await later.SeedAsync(token));
+
+        var now = await database.UserGrants
+            .Where(row => row.PositionDepartment == Department.PRD && row.Reason == "division.json")
+            .ToListAsync(token);
+        Assert.Equal("Links.View", Assert.Single(now).Value);
+
+        database.UserGrants.RemoveRange(now);
+        await database.SaveChangesAsync(token);
+
+        if (remembered is not null)
+        {
+            var setting = await database.DivisionSettings.SingleAsync(row => row.Key == PositionGrantSeeder.AppliedSettingKey, token);
+            setting.ValueJson = remembered;
+            await database.SaveChangesAsync(token);
+        }
     }
 
     [Fact]

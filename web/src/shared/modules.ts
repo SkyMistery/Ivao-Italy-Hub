@@ -135,6 +135,16 @@ export interface BlockRegistration {
 export interface RouteDefinition {
   readonly path: string;
   readonly component: ComponentType;
+  /**
+   * Where the route hangs: the public site, with its header and footer (the default), or the back office,
+   * behind the staff guard and inside the staff layout — `/staff/tours/...` (M2, T5). A module's screens of
+   * the back office are its own like its public pages, so they arrive the same way.
+   */
+  readonly area?: 'public' | 'staff';
+  /** A staff route only: the permission it is behind, held on any department. Without it, `/forbidden`. */
+  readonly permission?: string;
+  /** The typed search parameters of the route, as recipe 2 of design M0 §7.3 declares them for a list. */
+  readonly validateSearch?: z.ZodType;
 }
 
 export interface ModuleManifest {

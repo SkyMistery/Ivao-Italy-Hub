@@ -109,6 +109,20 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
         // the same modules, which is the point of a fork.
         Assert.NotEmpty(parsed.GetProperty("modules").EnumerateArray());
 
+        // The tours among them (M2, T5), and their settings as a fork starts: nothing of this division in
+        // them — no country whose levels go north and south until the fork's own department says so.
+        Assert.Contains(
+            parsed.GetProperty("modules").EnumerateArray(),
+            module => module.GetProperty("key").GetString() == IvaoHub.Modules.FlightOps.FlightOpsModule.ModuleKey);
+
+        await using (var settingsScope = _factory.Services.CreateAsyncScope())
+        {
+            var tours = await settingsScope.ServiceProvider.GetRequiredService<IvaoHub.Core.Modules.ModuleSettingsStore>()
+                .GetAsync<IvaoHub.Modules.FlightOps.Settings.FlightOpsSettings>(IvaoHub.Modules.FlightOps.FlightOpsModule.ModuleKey, token);
+            Assert.Empty(tours.NorthSouthLevelCountries);
+            Assert.Equal(10, tours.DailyLegLimit);
+        }
+
         AssertNothingItalian(await GetStringAsync("/api/version", token), "/api/version");
         AssertNothingItalian(await GetStringAsync("/health", token), "/health");
         AssertNothingItalian(await GetStringAsync($"{SearchEndpoints.Pattern}?q=division", token), "search");

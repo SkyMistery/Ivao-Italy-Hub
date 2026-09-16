@@ -1,0 +1,65 @@
+{
+  "_source": "web/src/modules/flightops/locales",
+  "nav": {
+    "section": "Tours",
+    "aircraftProfiles": "Aircraft profiles",
+    "aircraftGroups": "Aircraft groups",
+    "settings": "Tour settings"
+  },
+  "aircraftProfiles": {
+    "title": "Aircraft profiles",
+    "description": "How fast each aircraft type flies: the speed the estimated time of a leg is computed with.",
+    "create": "New profile",
+    "edit": "Edit profile",
+    "delete": {
+      "title": "Delete this profile?",
+      "description": "Tours with this type as reference aircraft stop showing an estimated time until a profile exists again."
+    },
+    "fields": {
+      "icaoType": "Aircraft type",
+      "cruiseTasKt": "Cruise speed (TAS, kt)",
+      "note": "Note",
+      "updatedAt": "Last change"
+    }
+  },
+  "aircraftGroups": {
+    "title": "Aircraft groups",
+    "description": "Named sets of aircraft types, usable wherever a tour chooses its aircraft.",
+    "create": "New group",
+    "edit": "Edit group",
+    "delete": {
+      "title": "Delete this group?",
+      "description": "Tours that allow this group no longer allow its types through it."
+    },
+    "fields": {
+      "name": "Name",
+      "icaoTypes": "Aircraft types",
+      "icao": "Type",
+      "updatedAt": "Last change"
+    }
+  },
+  "settings": {
+    "title": "Tour settings",
+    "description": "What the department changes without a release: limits, windows and the estimated time.",
+    "saved": "Settings saved.",
+    "fields": {
+      "dailyLegLimit": "Legs per day (empty: no limit)",
+      "defaultReportWindowDays": "Days to report a flight",
+      "disputeWindowDays": "Days to dispute a decision",
+      "rejectGraceHours": "Hours of grace after a rejection",
+      "leaseMinutes": "Minutes a taken report stays with its validator",
+      "durationFactor": "Estimated time: share added to the distance (0.05 = 5%)",
+      "durationFixedMinutes": "Estimated time: fixed minutes",
+      "northSouthLevelCountries": "Countries with north–south cruising levels",
+      "code": "Country code (two letters)",
+      "retentionMonths": "Months reports are kept",
+      "retentionMonthsLong": "Months the disciplinary record is kept",
+      "thresholdToleranceMeters": "Take-off distance allowed from the threshold (m)"
+    }
+  },
+  "errors": {
+    "profileExists": "This aircraft type already has a profile.",
+    "retentionLongShorter": "The disciplinary record cannot be kept for less time than the reports.",
+    "countryCode": "Write the country as its two letter code."
+  }
+}

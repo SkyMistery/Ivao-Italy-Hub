@@ -62,6 +62,10 @@ public sealed class ModuleRegistry
                 || setting.Enabled),
         ];
 
+        _baseDepartmentsByKey = Enabled
+            .Where(module => settings.TryGetValue(module.Key, out var setting) && setting.BaseDepartment is not null)
+            .ToDictionary(module => module.Key, module => settings[module.Key].BaseDepartment!.Value, StringComparer.Ordinal);
+
         _baseDepartments = Enabled
             .Where(module => settings.TryGetValue(module.Key, out var setting) && setting.BaseDepartment is not null)
             .SelectMany(module => module.DbContextTypes.Select(context => (context, settings[module.Key].BaseDepartment!.Value)))
@@ -86,6 +90,15 @@ public sealed class ModuleRegistry
     public IReadOnlyList<IModule> All { get; }
 
     private readonly Dictionary<Type, Department> _baseDepartments;
+
+    private readonly Dictionary<string, Department> _baseDepartmentsByKey;
+
+    /// <summary>The same department, found by the key of the module (M2, T5: who may change its settings).</summary>
+    public Department? BaseDepartmentOf(string moduleKey)
+    {
+        ArgumentNullException.ThrowIfNull(moduleKey);
+        return _baseDepartmentsByKey.TryGetValue(moduleKey, out var department) ? department : null;
+    }
 
     /// <summary>
     /// The department every row of a module is always in the care of, found by the module's database

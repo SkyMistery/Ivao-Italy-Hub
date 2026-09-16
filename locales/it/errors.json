@@ -21,7 +21,8 @@
       "absolute": "Inserisci un indirizzo completo che inizi con http:// o https://"
     },
     "number": {
-      "min": "Inserisci un numero non inferiore al minimo."
+      "min": "Inserisci un numero non inferiore al minimo.",
+      "range": "Inserisci un numero nei limiti ammessi."
     },
     "text": {
       "tooLong": "Questo testo è troppo lungo."
@@ -125,6 +126,12 @@
     "preferences": {
       "unknownKey": "L'hub non tiene nessuna preferenza con questo nome.",
       "invalidValue": "Questo non è un valore che questa preferenza accetta."
+    },
+    "aircraft": {
+      "unknownType": "Questo non è un tipo di aereo che l'hub conosce."
+    },
+    "settings": {
+      "invalid": "Queste impostazioni non hanno la forma che il modulo si aspetta."
     }
   }
 }

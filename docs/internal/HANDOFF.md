@@ -3,15 +3,20 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 16 settembre 2026, notte — **T0–T4a in `main`; T4b è fatta** sul branch `m2/t4b-awards-and-preferences`, in PR.
-Piano 0.82. **Il prossimo passo è T5 (lo scheletro del modulo)**, in una chat nuova, se non è già partita in parallelo: controllare
-`gh pr list` prima.
+**Ultimo aggiornamento:** 16 settembre 2026, notte — **T0–T4b in `main`; T5 è fatta** sul branch `m2/t5-flightops-skeleton`, in PR.
+Piano 0.83. **Il prossimo passo è T6 (i tour)**, in una chat nuova.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
-> **Per la chat che apre T5, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella e
-> la sezione della fase (il perimetro), e **T4a** e **T4b** «Com'è andata» (che cosa esiste già). Branch `m2/t5-flightops-skeleton` da
-> `main`, **dopo** il merge di T4b (o in parallelo: l'unico punto in comune è `IModule.Preferences`, con il default vuoto). Docker Desktop di solito è spento:
+> **Per la chat che apre T6, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella e
+> la sezione della fase (il perimetro), e **T4a**, **T4b** e **T5** «Com'è andata» (che cosa esiste già). Branch `m2/t6-tours` da `main`,
+> **dopo** il merge di T5. Due punti aperti da portare a Carmine in T6/T7 sono sotto («Due cose che T1 lascia aperte»).
+>
+> **Che cosa ha lasciato T5** (nota `2026-09-16-impostazioni-dei-moduli`): il modulo `flightops` esiste — progetto, contesto, `Initial`,
+> permessi `Tours.*`, `positionGrants` del FOD (applicati grant per grant anche a un DB già avviato), profili e gruppi di aerei, e le
+> **impostazioni** lette dal codice del modulo con `ModuleSettingsStore.GetAsync<FlightOpsSettings>("flightops")`. Una schermata di
+> staff del modulo si aggiunge come rotta del manifest con `area: 'staff'`; il campo di un tipo di aereo è la proposta chiusa di
+> `screens/aircraft.tsx` (`useTypeSuggestions`). Una tabella nuova del modulo è una migrazione di `FlightOpsDbContext`. Docker Desktop di solito è spento:
 > chiedere a Carmine di accenderlo se servono i test d'integrazione in locale, altrimenti li esegue la CI.
 >
 > **Che cosa ha lasciato T4a, e serve a chi arriva**: una riga di modulo **proietta davvero** (ricerca, più voci di calendario, award, usi dei
@@ -36,7 +41,8 @@ Piano 0.82. **Il prossimo passo è T5 (lo scheletro del modulo)**, in una chat n
 > | #84 | T1: aeroporti del mondo, piste su richiesta, tipi di aereo, confini dei FIR da **VATSpy** (piano 0.80) |
 > | #85 | T3: grant su una riga (`resource_scope`) e interessato (`IHasStakeholder`) nell'unico handler |
 > | #86 | T4a: le righe dei moduli proiettano, più voci di calendario, file con scadenza e `MediaExpiryJob` (piano 0.81) |
-> | (in PR) | T4b: award (catalogo, coda, registro) e preferenze dell'utente (piano 0.82) |
+> | #87 | T4b: award (catalogo, coda, registro) e preferenze dell'utente (piano 0.82) |
+> | (in PR) | T5: il modulo `flightops`, le impostazioni dei moduli, i grant del file uno per uno (piano 0.83) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -45,7 +51,7 @@ Piano 0.82. **Il prossimo passo è T5 (lo scheletro del modulo)**, in una chat n
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T5**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T6**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Due cose che T1 lascia aperte, da portare a Carmine quando si scrive T6/T7**: le «varianti» di un aereo in IVAO sono `A320w`,
 > `A320CFM`, non `A20N`, quindi la bandiera «anche le varianti» del design §1.5 non fa quello che si voleva (lo fa un **gruppo di aerei**);

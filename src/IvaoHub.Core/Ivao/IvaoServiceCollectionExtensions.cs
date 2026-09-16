@@ -28,6 +28,7 @@ public static class IvaoServiceCollectionExtensions
 
         services.AddScoped<IFirDirectory, FirDirectory>();
         services.AddScoped<IRunwayDirectory, RunwayDirectory>();
+        services.AddScoped<IAircraftTypeDirectory, AircraftTypeDirectory>();
         services.AddScoped<RefDataSyncJob>();
 
         // The token of the application, on its own client so a slow token endpoint cannot exhaust

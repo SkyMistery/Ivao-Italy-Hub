@@ -21,7 +21,8 @@
       "absolute": "Enter a full address starting with http:// or https://"
     },
     "number": {
-      "min": "Enter a number that is not smaller than the minimum."
+      "min": "Enter a number that is not smaller than the minimum.",
+      "range": "Enter a number within the allowed range."
     },
     "text": {
       "tooLong": "This text is too long."
@@ -125,6 +126,12 @@
     "preferences": {
       "unknownKey": "The hub keeps no preference by that name.",
       "invalidValue": "That is not a value this preference accepts."
+    },
+    "aircraft": {
+      "unknownType": "That is not an aircraft type the hub knows."
+    },
+    "settings": {
+      "invalid": "These settings are not in the shape the module expects."
     }
   }
 }

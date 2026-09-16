@@ -51,6 +51,7 @@ public static class ModuleServiceCollectionExtensions
         services.AddMemoryCache();
 
         services.TryAddSingleton<ModuleRegistry>();
+        services.TryAddScoped<ModuleSettingsStore>();
 
         foreach (var module in modules)
         {
