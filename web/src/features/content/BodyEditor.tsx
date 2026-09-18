@@ -107,6 +107,7 @@ export function BodyEditor({
   comparing = false,
   onCompare,
   locked = false,
+  captures = true,
 }: {
   /** The body the editor opens on. Read once: from then on the editor owns it and says so through `onChange`. */
   initial: Body;
@@ -141,6 +142,12 @@ export function BodyEditor({
   onCompare?: ((comparing: boolean) => void) | undefined;
   /** Read, not written: every field and every button of the frame is switched off. */
   locked?: boolean;
+  /**
+   * Whether anything captures a data block's answer for this body. The content's publication does; a body saved by a
+   * module's own `PUT` (a tour's briefing) never meets it, so there a data block is live and the editor does not offer
+   * "frozen" — it would promise a capture that never comes.
+   */
+  captures?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
@@ -480,6 +487,7 @@ export function BodyEditor({
         <BlockProperties
           key={block.block.id}
           dashboard={dashboard}
+          captures={captures}
           block={block.block}
           section={block.section}
           // Where it may be moved to from the keyboard: every section the template does not lock,

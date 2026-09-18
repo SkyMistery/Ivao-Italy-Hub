@@ -6,9 +6,9 @@
 **Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6a in `main`; T6b è fatta**: PR #90 (branch `m2/t6b-briefing`), CI verde.
 Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma del tour)**, in una chat nuova, dopo il merge di #90.
 
-> **Prima di aprire T7**: verificare con `gh pr list` che #90 sia mergiata (se non lo è, fermarsi e dirlo). Poi chiedere a Carmine la
-> risposta alle **tre scelte di T6b** (sotto, e in `06` §T6b) se non l'ha già data in PR: se chiede di nascondere l'interruttore
-> vivo/congelato nel briefing, è una prop di `BodyEditor` e si fa **prima** di T7, in una PR piccola a sé.
+> **Prima di aprire T7**: verificare con `gh pr list` che #90 sia mergiata (se non lo è, fermarsi e dirlo). Le **tre scelte di T6b** le
+> ha confermate Carmine il 18 settembre e sono dentro #90: l'interruttore vivo/congelato nel briefing è nascosto (`BodyEditor` →
+> `captures={false}`), niente PR a sé.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
@@ -21,9 +21,9 @@ Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma
 > `pageProperties`. `ContentEditor` lo usa e fa quello che faceva; il tour lo monta nella scheda «briefing» (`?tab=briefing`), salvata
 > con `useSaveTour({ values, briefing })`. Le schede del tour sono le `Tabs` di Atmosphere controllate da `?tab=` in
 > `tourEditorSearchSchema`: **T7 e T9 aggiungono lì la loro**. Il percorso di un problema dentro un corpo si legge con
-> `useBodyPathDescription` (`features/content/bodyPath.ts`). ⚠️ **Tre scelte piccole da far confermare a Carmine nella PR** (in
-> `06` §T6b): salvataggio a pulsante, blocco interattivo non offerto nel briefing, e l'interruttore vivo/congelato di un blocco Data che
-> nel briefing mente (nessuno cattura).
+> `useBodyPathDescription` (`features/content/bodyPath.ts`). **Tre scelte piccole, confermate da Carmine** (in `06` §T6b):
+> salvataggio a pulsante, blocco interattivo non offerto nel briefing, interruttore vivo/congelato nascosto dove niente cattura
+> (`BodyEditor` → `captures`).
 >
 > **Che cosa ha lasciato T6a** (nota `2026-09-16-i-tour-nel-back-office`, piano 0.84): `fo_tours` con tutte le colonne del design §1.2;
 > lo stato calcolato in `TourState` (`Of`, `IsPublic`, `NeedsOwnDailyLimit`); le regole in `TourSaving` e `TourReadiness` (T7 aggiunge lì

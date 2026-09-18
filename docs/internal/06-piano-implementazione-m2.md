@@ -744,7 +744,7 @@ pronto, e l'editor dei contenuti fa quello che faceva.
 **T6b fatta il 18 settembre 2026** (branch `m2/t6b-briefing`). Com'è andata:
 
 - **Nessuna decisione nuova, nessun cambiamento del server**: il `PUT` del tour accettava già il briefing (T6a). Niente versione nuova del
-  piano; le tre scelte piccole qui sotto sono dette qui e portate a Carmine nella PR.
+  piano; le tre scelte piccole qui sotto sono dette qui e le ha confermate Carmine nella PR.
 - **L'editor estratto** è `features/content/BodyEditor.tsx`: riceve `initial` e restituisce ogni cambiamento con `onChange`, annulla e
   ripeti compresi. Tiene per sé tavolozza, pagina o struttura, pannello delle proprietà, trascinamento, storia, scorciatoie, lingua
   dell'anteprima e il contesto del blocco interattivo. Il resto arriva da fuori come **prese** e **risposte**: `toolbar(tools)` (dove vanno
@@ -761,21 +761,21 @@ pronto, e l'editor dei contenuti fa quello che faceva.
   salvataggio, come un contenuto non si salva da solo prima del primo «salva bozza». Il salvataggio è `useSaveTour` con
   `{ values, briefing }`: le impostazioni del tour come le ha la cache (la `row_version` più recente) più il corpo. Le immagini vengono dalla
   libreria del dipartimento del tour, **senza caricamento**, come banner e foto (design §1.14).
-- ⚠️ **Tre scelte piccole, da confermare**: (1) il briefing si salva **con un pulsante**, non da solo. Il `PUT` porta tutto il tour, e un
-  salvataggio automatico sotto le dita di qualcuno lo sarebbe anche delle impostazioni; con modifiche non salvate, cambiare scheda o
-  pagina chiede conferma con le parole dell'editor dei contenuti. (2) **Il blocco interattivo non si offre nel briefing** (`holds` risponde
-  no): il suo frame lo costruisce `/embed/{contenuto}/…`, solo per una riga di `cms_contents`. (3) ⚠️ **Un blocco Data nel briefing resta
-  vivo**: la cattura di `frozen` la fa il servizio di pubblicazione dei contenuti, che un tour non attraversa. L'editor offre comunque
-  l'interruttore vivo/congelato, e con «congelato» l'anteprima dice «sarà catturato alla prossima pubblicazione», che per un tour non
-  arriva. Non è un guasto (il pubblico lo vede dal vivo) ma è una frase che non dice il vero: **da decidere con Carmine** se nasconderlo
-  nel briefing (una proprietà di `BodyEditor`, caso b) o lasciarlo com'è.
+- **Tre scelte piccole, confermate da Carmine il 18 settembre 2026** (prima del merge, e fatte nella stessa PR): (1) il briefing si
+  salva **con un pulsante**, non da solo. Il `PUT` porta tutto il tour, e un salvataggio automatico sotto le dita di qualcuno lo sarebbe
+  anche delle impostazioni; con modifiche non salvate, cambiare scheda o pagina chiede conferma con le parole dell'editor dei contenuti.
+  (2) **Il blocco interattivo non si offre nel briefing** (`holds` risponde no): il suo frame lo costruisce `/embed/{contenuto}/…`, solo
+  per una riga di `cms_contents`; se un giorno servisse, è un meccanismo nuovo con la sua nota. (3) **Un blocco Data nel briefing è
+  sempre vivo**: la cattura di `frozen` la fa il servizio di pubblicazione dei contenuti, che un tour non attraversa. L'editor **non
+  offre** l'interruttore vivo/congelato dove niente cattura: `BodyEditor` ha la proprietà `captures` (vera per difetto, falsa nel
+  briefing), che `BlockProperties` legge accanto a `alwaysLive`. Caso b, niente versione nuova del piano.
 - **I test**: Vitest `BodyEditor.test.tsx` (quattro: un corpo entra ed esce con un blocco aggiunto senza toccare quello dato; annulla e
-  ripeti che lo restituiscono; la tavolozza che offre il blocco interattivo solo a chi ha il permesso, provata nei due sensi); e2e
+  ripeti che lo restituiscono; la tavolozza che offre il blocco interattivo solo a chi ha il permesso, e la scelta vivo/congelato offerta solo con `captures`, provate nei due sensi); e2e
   `full/tours-briefing.spec.ts` (il «fatta quando»: un tour, un testo solo in inglese e un'immagine caricata nella libreria del suo
   dipartimento, salvati; «pronto» che chiede l'italiano e dice «Briefing › … › Text»; l'italiano scritto, il briefing salvato con
   l'immagine, il tour pronto e il testo del briefing trovato in ricerca anonima; poi tour e immagine tolti). Il banco ha due aiuti nuovi,
   `uploadMedia` e `deleteMedia`.
-- **Verificato in locale** (Docker acceso): Vitest **418**, typecheck, lint, formato, i18n, smoke **80**, giro e2e completo **23**. Guardata la
+- **Verificato in locale** (Docker acceso): Vitest **420** (418, più i due di `captures` aggiunti dopo la conferma), typecheck, lint, formato, i18n, smoke **80**, giro e2e completo **23**. Guardata la
   scheda a 1500 px: tre colonne come l'editor dei contenuti, e il cambio di scheda con il briefing non salvato fermato. **Non eseguiti**:
   unit .NET e integrazione, perché il server non è cambiato (li esegue la CI).
 

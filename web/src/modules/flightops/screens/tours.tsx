@@ -287,6 +287,9 @@ function TourBriefing({ tour }: { tour: TourDetailDto }) {
       // ⚠️ No block that asks for a permission belongs in a briefing: the only one that does, the interactive block,
       // runs in a frame the server builds for a row of the content alone (`/embed/{content}/…`).
       holds={() => false}
+      // A tour is not published through the content's publication, the only thing that captures a data block: here
+      // every one stays live, and the editor does not offer "frozen" (Carmine, 18 September 2026).
+      captures={false}
       toolbar={(tools) => (
         <div className="flex flex-wrap items-center gap-2">
           <Button

@@ -109,3 +109,33 @@ test.each([
     );
   },
 );
+
+test.each([
+  [true, 1],
+  [false, 0],
+])(
+  'the choice between live and frozen is offered only where something captures (%s)',
+  async (captures, shown) => {
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <BodyEditor
+        initial={initial}
+        onChange={() => undefined}
+        toolbar={(tools) => <div role="toolbar">{tools}</div>}
+        locales={['en']}
+        division={{ defaultLocale: 'en', timezone: 'UTC' }}
+        mediaLibrary={mediaLibrary}
+        holds={() => false}
+        captures={captures}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: editor.outline }));
+    await user.click(screen.getByRole('button', { name: 'Intro' }));
+    await user.click(screen.getByRole('button', { name: englishCommon.blocks.linkList.label }));
+
+    // A tour's briefing is saved by the tour's own `PUT`, which no capture meets: "frozen" there would be a promise.
+    expect(screen.queryAllByText(editor.renderModeHint)).toHaveLength(shown);
+  },
+);
