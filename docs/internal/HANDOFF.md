@@ -3,18 +3,32 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6a in `main`; T6b è fatta**: PR #90 (branch `m2/t6b-briefing`), CI verde.
-Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma del tour)**, in una chat nuova, dopo il merge di #90.
+**Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6b in `main`; T7a è fatta**: branch `m2/t7a-legs`, in PR. Piano **0.85**.
+**Il prossimo passo è T7b (la forma del tour: hub e rotazioni, sottotour, callsign, tour `Open`)**, in una chat nuova, dopo il merge di T7a.
 
-> **Prima di aprire T7**: verificare con `gh pr list` che #90 sia mergiata (se non lo è, fermarsi e dirlo). Le **tre scelte di T6b** le
-> ha confermate Carmine il 18 settembre e sono dentro #90: l'interruttore vivo/congelato nel briefing è nascosto (`BodyEditor` →
-> `captures={false}`), niente PR a sé.
+> **Prima di aprire T7b**: verificare con `gh pr list` che la PR di T7a sia mergiata (se non lo è, fermarsi e dirlo). **In apertura**
+> portare a Carmine la domanda sui **sottotour**: date e indirizzo propri (dentro il periodo del padre) o del padre (nota
+> `2026-09-18-le-leg-dei-tour` §2, `06` §T7).
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
-> **Per la chat che apre T7, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella, la
-> sezione **T7** (il perimetro) e **T6a** e **T6b** «Com'è andata»; poi `decisions/2026-09-16-i-tour-nel-back-office.md`. Branch
-> `m2/t7-legs` da `main`, **dopo** il merge di T6b. T7 ha l'eccezione dichiarata al motore lista e form (`LegGrid`, design §8.4).
+> **Per la chat che apre T7b, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella, la
+> sezione **T7** (il perimetro, la divisione e **T7a «Com'è andata»**); poi `decisions/2026-09-18-le-leg-dei-tour.md`. Branch
+> `m2/t7b-shape` da `main`, **dopo** il merge di T7a. T7b migra `FlightOpsDbContext` (hub, rotazioni, callsign, vincoli): **non** in
+> parallelo con T8, che tocca le leg.
+>
+> **Che cosa ha lasciato T7a** (nota `2026-09-18-le-leg-dei-tour`, piano 0.85): `fo_legs` (`Legs/Leg.cs`) con coordinate congelate da
+> **`IAirportDirectory`** (nucleo, `/api/reference/airports`) e GCD (`GreatCircle`); `kind`, `rotation_id`, `seq_in_rotation` esistono e
+> **li scrive T7b**. **Le righe figlie copiano la maschera del tour** (`LegBook.ApplyAsync`; `TourSaving` la ricopia quando cambia): un
+> hub, una rotazione, un vincolo di T7b fanno lo stesso. I controlli di forma sono **`TourShape.Problems`** (funzione pura, unit test per
+> tipo): T7b ci aggiunge rotazioni di `size` leg dall'hub all'hub, `Container` con almeno due sottotour, `Open` con il suo obiettivo.
+> Gli endpoint delle leg sono sei verbi a mano (`Legs/LegEndpoints.cs`, `LegRequest`), ognuno risponde con la griglia intera;
+> **la rotazione si ritira e si ripristina intera** già oggi (sul `rotation_id`). `ITourReports.LegsWithReportsAsync` risponde «nessuna»
+> fino a T11. Gli aerei consentiti sono `AllowedAircraftCheck` (tipi e gruppi, tour e leg). Nel frontend `screens/LegGrid.tsx` (nel
+> modulo, **non** in `catalog.ts`: la galleria non importa da `modules/`, lo dice T20) e la scheda `?tab=legs` (solo per i tipi con leg).
+> `ConfirmDialog` ha `onOpenChange` e `confirmDisabled`. Nei test: aeroporti di prova in `FoTestAirports` (integrazione, `XFA1–3`) e
+> `addLeg`/`benchAirports` nel banco e2e. ⚠️ **Un tour di un tipo con leg non è più «pronto» senza una leg**: ogni test che segna pronto
+> un tour ne aggiunge una.
 >
 > **Che cosa ha lasciato T6b**: l'editor di un `BlockDocument` è **`features/content/BodyEditor.tsx`** — un corpo entra (`initial`), ogni
 > cambiamento esce (`onChange`); il padrone mette i suoi pulsanti con `toolbar(tools)`, i suoi avvisi con `header`, i suoi campi con
@@ -65,7 +79,8 @@ Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma
 > | #87 | T4b: award (catalogo, coda, registro) e preferenze dell'utente (piano 0.82) |
 > | #88 | T5: il modulo `flightops`, le impostazioni dei moduli, i grant del file uno per uno (piano 0.83) |
 > | #89 | T6a: i tour nel back office, il job del rilascio, `ProjectionRefresh`, `DeletePolicy` (piano 0.84) |
-> | (in PR) | T6b: l'editor del corpo estratto (`BodyEditor`) e la scheda del briefing |
+> | #90 | T6b: l'editor del corpo estratto (`BodyEditor`) e la scheda del briefing |
+> | (in PR) | T7a: le leg, `LegGrid`, il tempo stimato, ritirare e ripristinare, gli aerei consentiti (piano 0.85) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -74,7 +89,7 @@ Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T7**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T7b**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Una cosa che T1 lascia aperta**: l'attribuzione dei confini dei FIR (CC BY-SA 4.0) va **mostrata** dove si vede la proposta degli ATC,
 > cioè in T12. (Le «varianti» degli aerei sono decise in T6a: tipi più gruppi, nessuna spunta.)
