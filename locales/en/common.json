@@ -598,6 +598,7 @@
       "undo": "Undo",
       "redo": "Redo",
       "page": "Page",
+      "pickHint": "Pick a section or a block, on the page or in the outline, to change it here.",
       "addRow": "Add row",
       "untitledRow": "Untitled row",
       "addHere": "+ Add here",

@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 
+import type { Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
@@ -353,8 +354,11 @@ export function tourToFormValues(tour: TourDetailDto, locales: readonly string[]
   };
 }
 
-/** What the form holds, as the API expects it. The briefing is not sent: its editor is T6b's, and null keeps it. */
-function tourBody(values: TourFormValues): TourWriteDto {
+/**
+ * What the form holds, as the API expects it. The briefing is sent only by its own tab (T6b): the settings form leaves
+ * it out, and null keeps it as it is.
+ */
+function tourBody(values: TourFormValues, briefing: Body | null): TourWriteDto {
   const text = (value: string | undefined) =>
     value === undefined || value.trim() === '' ? null : value.trim();
   const award = text(values.awardId);
@@ -366,7 +370,7 @@ function tourBody(values: TourFormValues): TourWriteDto {
     kind: values.kind,
     title: values.title,
     summary: values.summary,
-    briefing: null,
+    briefing,
     coverMediaId: values.coverMediaId ?? null,
     bannerMediaId: values.bannerMediaId ?? null,
     showPreview: values.showPreview,
@@ -384,17 +388,27 @@ function tourBody(values: TourFormValues): TourWriteDto {
   };
 }
 
+/**
+ * Saves a tour: the settings, and the briefing when the briefing's tab sends it. One `PUT` for both, so the briefing
+ * travels with the row's version like every other field.
+ */
 export function useSaveTour(id: number | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (values: TourFormValues): Promise<TourDetailDto> =>
+    mutationFn: async ({
+      values,
+      briefing = null,
+    }: {
+      values: TourFormValues;
+      briefing?: Body | null;
+    }): Promise<TourDetailDto> =>
       id === null
-        ? unwrap(await api.POST('/api/flightops/tours', { body: tourBody(values) }))
+        ? unwrap(await api.POST('/api/flightops/tours', { body: tourBody(values, briefing) }))
         : unwrap(
             await api.PUT('/api/flightops/tours/{id}', {
               params: { path: { id: String(id) } },
-              body: tourBody(values),
+              body: tourBody(values, briefing),
             }),
           ),
     onSuccess: async (saved) => {

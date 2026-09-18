@@ -598,6 +598,7 @@
       "undo": "Annulla",
       "redo": "Ripeti",
       "page": "Pagina",
+      "pickHint": "Scegli una sezione o un blocco, sulla pagina o nella struttura, per modificarlo qui.",
       "addRow": "Aggiungi riga",
       "untitledRow": "Riga senza titolo",
       "addHere": "+ Aggiungi qui",

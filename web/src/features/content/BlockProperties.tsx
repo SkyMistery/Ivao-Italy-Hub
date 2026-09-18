@@ -308,6 +308,7 @@ export function BlockProperties({
   onEnvelope,
   onMoveTo,
   dashboard = false,
+  captures = true,
 }: {
   block: BlockEnvelope;
   section: SectionEnvelope;
@@ -332,6 +333,8 @@ export function BlockProperties({
   onMoveTo: (sectionId: string) => void;
   /** A tile of a dashboard: its width instead of a column (D2). */
   dashboard?: boolean;
+  /** Whether a data block of this body can be captured at all: without it, no live/frozen choice (`BodyEditor`). */
+  captures?: boolean;
 }) {
   const { t } = useTranslation();
   const read = useLocalized();
@@ -382,7 +385,7 @@ export function BlockProperties({
         </div>
       ) : null}
 
-      {registration.kind === 'Data' && registration.alwaysLive !== true ? (
+      {registration.kind === 'Data' && registration.alwaysLive !== true && captures ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="renderMode">{t('content.editor.renderMode')}</Label>
           <Select

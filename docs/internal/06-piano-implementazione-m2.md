@@ -297,7 +297,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T4b | Nucleo: award e preferenze — **fatta il 16 set 2026** | T4a | award; preferenze dell'utente |
 | T5 | Modulo: lo scheletro — **fatta il 16 set 2026** | T4a | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
 | T6a | I tour — **fatta il 16 set 2026** | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni, il job del rilascio |
-| T6b | Il briefing | T6a | l'editor del corpo estratto dall'editor dei contenuti, montato come scheda del tour |
+| T6b | Il briefing — **fatta il 18 set 2026** | T6a | l'editor del corpo estratto dall'editor dei contenuti, montato come scheda del tour |
 | T7 | Le leg e la forma del tour | T1, T6a | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
 | T8 | L'import delle leg | T7 | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
@@ -740,6 +740,44 @@ T6a. Nata dalla divisione di T6 (nota `2026-09-16-i-tour-nel-back-office`).
 **Test**: Vitest sul componente estratto (un corpo entra, un corpo modificato esce); e2e: un blocco di testo nel briefing, «pronto» che
 chiede la seconda lingua del blocco, il testo trovato in ricerca. **Fatta quando**: un tour ha un briefing con un'immagine della libreria, è
 pronto, e l'editor dei contenuti fa quello che faceva.
+
+**T6b fatta il 18 settembre 2026** (branch `m2/t6b-briefing`). Com'è andata:
+
+- **Nessuna decisione nuova, nessun cambiamento del server**: il `PUT` del tour accettava già il briefing (T6a). Niente versione nuova del
+  piano; le tre scelte piccole qui sotto sono dette qui e le ha confermate Carmine nella PR.
+- **L'editor estratto** è `features/content/BodyEditor.tsx`: riceve `initial` e restituisce ogni cambiamento con `onChange`, annulla e
+  ripeti compresi. Tiene per sé tavolozza, pagina o struttura, pannello delle proprietà, trascinamento, storia, scorciatoie, lingua
+  dell'anteprima e il contesto del blocco interattivo. Il resto arriva da fuori come **prese** e **risposte**: `toolbar(tools)` (dove vanno
+  i suoi tre pulsanti in mezzo a quelli del padrone), `header` (problemi, stato della bozza, revisione), `pageProperties` (quello che il
+  pannello mostra quando non è scelto niente: per un contenuto il form dei metadati, sempre montato come prima), `template` (corpo, titolo,
+  dipartimento e «può modificarlo» già risolti), `frameUrl`, `published`/`comparing`, `holds`, `locked`. `ContentEditor` è sceso da 1098 a
+  437 righe (l'editor estratto ne ha 796, commenti compresi) e fa quello che faceva: la query del template, il salvataggio automatico, il blocco all'uscita, la pubblicazione e la
+  revisione restano lì. Lo provano Vitest (tutti i test dei contenuti, invariati), la smoke (80) e il giro completo (i giri dei contenuti).
+- **Il percorso dentro un corpo** («Sezione › Testo › markdown») è uscito da `publishProblems.tsx` in `features/content/bodyPath.ts`
+  (`useBodyPathDescription`), perché lo leggono in due: i problemi di pubblicazione di un contenuto e quelli di «pronto» del tour, che
+  per un percorso `briefing.…` scrivono «Briefing › Sezione › Testo › markdown» invece di «Briefing: …».
+- **La scheda «briefing»**: `/staff/tours/{id}?tab=briefing`, con le schede di Atmosphere controllate dall'indirizzo (un link o un
+  ricaricamento riaprono quella giusta) e montata solo quella aperta. Un tour nuovo non ha schede: il briefing si scrive dopo il primo
+  salvataggio, come un contenuto non si salva da solo prima del primo «salva bozza». Il salvataggio è `useSaveTour` con
+  `{ values, briefing }`: le impostazioni del tour come le ha la cache (la `row_version` più recente) più il corpo. Le immagini vengono dalla
+  libreria del dipartimento del tour, **senza caricamento**, come banner e foto (design §1.14).
+- **Tre scelte piccole, confermate da Carmine il 18 settembre 2026** (prima del merge, e fatte nella stessa PR): (1) il briefing si
+  salva **con un pulsante**, non da solo. Il `PUT` porta tutto il tour, e un salvataggio automatico sotto le dita di qualcuno lo sarebbe
+  anche delle impostazioni; con modifiche non salvate, cambiare scheda o pagina chiede conferma con le parole dell'editor dei contenuti.
+  (2) **Il blocco interattivo non si offre nel briefing** (`holds` risponde no): il suo frame lo costruisce `/embed/{contenuto}/…`, solo
+  per una riga di `cms_contents`; se un giorno servisse, è un meccanismo nuovo con la sua nota. (3) **Un blocco Data nel briefing è
+  sempre vivo**: la cattura di `frozen` la fa il servizio di pubblicazione dei contenuti, che un tour non attraversa. L'editor **non
+  offre** l'interruttore vivo/congelato dove niente cattura: `BodyEditor` ha la proprietà `captures` (vera per difetto, falsa nel
+  briefing), che `BlockProperties` legge accanto a `alwaysLive`. Caso b, niente versione nuova del piano.
+- **I test**: Vitest `BodyEditor.test.tsx` (quattro: un corpo entra ed esce con un blocco aggiunto senza toccare quello dato; annulla e
+  ripeti che lo restituiscono; la tavolozza che offre il blocco interattivo solo a chi ha il permesso, e la scelta vivo/congelato offerta solo con `captures`, provate nei due sensi); e2e
+  `full/tours-briefing.spec.ts` (il «fatta quando»: un tour, un testo solo in inglese e un'immagine caricata nella libreria del suo
+  dipartimento, salvati; «pronto» che chiede l'italiano e dice «Briefing › … › Text»; l'italiano scritto, il briefing salvato con
+  l'immagine, il tour pronto e il testo del briefing trovato in ricerca anonima; poi tour e immagine tolti). Il banco ha due aiuti nuovi,
+  `uploadMedia` e `deleteMedia`.
+- **Verificato in locale** (Docker acceso): Vitest **420** (418, più i due di `captures` aggiunti dopo la conferma), typecheck, lint, formato, i18n, smoke **80**, giro e2e completo **23**. Guardata la
+  scheda a 1500 px: tre colonne come l'editor dei contenuti, e il cambio di scheda con il briefing non salvato fermato. **Non eseguiti**:
+  unit .NET e integrazione, perché il server non è cambiato (li esegue la CI).
 
 ### T7 — Le leg e la forma del tour
 

@@ -178,6 +178,7 @@ interface CommonStrings {
       readonly options: { readonly level: Readonly<Record<string, string>> };
     };
     readonly text: { readonly label: string; readonly fields: { readonly markdown: string } };
+    readonly image: { readonly label: string };
     readonly callout: {
       readonly label: string;
       readonly fields: { readonly tone: string; readonly title: string; readonly text: string };

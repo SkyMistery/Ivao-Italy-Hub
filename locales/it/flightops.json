@@ -16,6 +16,15 @@
     "fromTemplate": "Nuovo da template",
     "saved": "Tour salvato.",
     "readyProblems": "Prima di segnarlo pronto manca ancora:",
+    "tabs": {
+      "settings": "Impostazioni",
+      "briefing": "Briefing"
+    },
+    "briefing": {
+      "save": "Salva il briefing",
+      "saved": "Briefing salvato.",
+      "unsaved": "Modifiche al briefing non salvate: si conservano con «Salva il briefing»."
+    },
     "actions": {
       "ready": "Segna pronto",
       "draft": "Torna in bozza",

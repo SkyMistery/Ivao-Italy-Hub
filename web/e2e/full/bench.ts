@@ -308,3 +308,28 @@ export function publishContent(context: BrowserContext, id: number): Promise<Con
     }),
   );
 }
+
+/**
+ * A picture put in a department's library through the API, as the library screen puts it there. The bytes are the
+ * caller's: the library answers the file already there for the same bytes, so a run that wants its own file makes them
+ * its own.
+ */
+export async function uploadMedia(
+  context: BrowserContext,
+  ownerDepartment: string,
+  name: string,
+  bytes: Buffer,
+): Promise<number> {
+  const response = await context.request.post('/api/media', {
+    headers: asTheClientDoes,
+    multipart: { file: { name, mimeType: 'image/png', buffer: bytes }, ownerDepartment },
+  });
+  expect(response.status(), await response.text()).toBeLessThan(300);
+  return ((await response.json()) as { id: number }).id;
+}
+
+/** A file a test put in the library, taken back — for the same reason as `deleteContent`. */
+export async function deleteMedia(context: BrowserContext, id: number): Promise<void> {
+  const response = await context.request.delete(`/api/media/${id}`, { headers: asTheClientDoes });
+  expect(response.status(), await response.text()).toBeLessThan(300);
+}

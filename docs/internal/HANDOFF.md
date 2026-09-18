@@ -3,21 +3,34 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 16 settembre 2026, notte — **T0–T5 in `main`; T6a è fatta** sul branch `m2/t6a-tours`, in PR.
-Piano 0.84. **Il prossimo passo è T6b (il briefing)**, in una chat nuova, dopo il merge di T6a; poi T7.
+**Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6a in `main`; T6b è fatta**: PR #90 (branch `m2/t6b-briefing`), CI verde.
+Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma del tour)**, in una chat nuova, dopo il merge di #90.
+
+> **Prima di aprire T7**: verificare con `gh pr list` che #90 sia mergiata (se non lo è, fermarsi e dirlo). Le **tre scelte di T6b** le
+> ha confermate Carmine il 18 settembre e sono dentro #90: l'interruttore vivo/congelato nel briefing è nascosto (`BodyEditor` →
+> `captures={false}`), niente PR a sé.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
-> **Per la chat che apre T6b, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella, la
-> sezione **T6b** (il perimetro) e **T6a** «Com'è andata»; poi `decisions/2026-09-16-i-tour-nel-back-office.md`. Branch `m2/t6b-briefing`
-> da `main`, **dopo** il merge di T6a.
+> **Per la chat che apre T7, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella, la
+> sezione **T7** (il perimetro) e **T6a** e **T6b** «Com'è andata»; poi `decisions/2026-09-16-i-tour-nel-back-office.md`. Branch
+> `m2/t7-legs` da `main`, **dopo** il merge di T6b. T7 ha l'eccezione dichiarata al motore lista e form (`LegGrid`, design §8.4).
+>
+> **Che cosa ha lasciato T6b**: l'editor di un `BlockDocument` è **`features/content/BodyEditor.tsx`** — un corpo entra (`initial`), ogni
+> cambiamento esce (`onChange`); il padrone mette i suoi pulsanti con `toolbar(tools)`, i suoi avvisi con `header`, i suoi campi con
+> `pageProperties`. `ContentEditor` lo usa e fa quello che faceva; il tour lo monta nella scheda «briefing» (`?tab=briefing`), salvata
+> con `useSaveTour({ values, briefing })`. Le schede del tour sono le `Tabs` di Atmosphere controllate da `?tab=` in
+> `tourEditorSearchSchema`: **T7 e T9 aggiungono lì la loro**. Il percorso di un problema dentro un corpo si legge con
+> `useBodyPathDescription` (`features/content/bodyPath.ts`). **Tre scelte piccole, confermate da Carmine** (in `06` §T6b):
+> salvataggio a pulsante, blocco interattivo non offerto nel briefing, interruttore vivo/congelato nascosto dove niente cattura
+> (`BodyEditor` → `captures`).
 >
 > **Che cosa ha lasciato T6a** (nota `2026-09-16-i-tour-nel-back-office`, piano 0.84): `fo_tours` con tutte le colonne del design §1.2;
 > lo stato calcolato in `TourState` (`Of`, `IsPublic`, `NeedsOwnDailyLimit`); le regole in `TourSaving` e `TourReadiness` (T7 aggiunge lì
 > i controlli sulle leg); i verbi `/status`, `/ready-problems`, `/from-template/{id}`, `/{id}/save-as-template`; `TourCopy.Settings` (T7 e
 > T9 aggiungono vincoli e regole alla copia); `ITourReports` che risponde no (T11 lo sostituisce); `TourReleaseJob` ogni quarto d'ora. Nel
 > nucleo: `ProjectionRefresh`, l'orologio in `ProjectionContext`, `CrudOptions.DeletePolicy`, le funzioni SQL nei contesti dei moduli, e
-> `SchemaForm` che legge un numero vuoto come «nessun numero». **Il server accetta già il briefing**: a T6b manca solo l'editor.
+> `SchemaForm` che legge un numero vuoto come «nessun numero». Il briefing lo scrive T6b (sopra).
 > **Le schermate**: `web/src/modules/flightops/screens/tours.tsx` (liste, editor, i due form dei template), aiuti in `screens/hooks.ts`. Due punti aperti da portare a Carmine in T6/T7 sono sotto («Due cose che T1 lascia aperte»).
 >
 > **Che cosa ha lasciato T5** (nota `2026-09-16-impostazioni-dei-moduli`): il modulo `flightops` esiste — progetto, contesto, `Initial`,
@@ -51,7 +64,8 @@ Piano 0.84. **Il prossimo passo è T6b (il briefing)**, in una chat nuova, dopo 
 > | #86 | T4a: le righe dei moduli proiettano, più voci di calendario, file con scadenza e `MediaExpiryJob` (piano 0.81) |
 > | #87 | T4b: award (catalogo, coda, registro) e preferenze dell'utente (piano 0.82) |
 > | #88 | T5: il modulo `flightops`, le impostazioni dei moduli, i grant del file uno per uno (piano 0.83) |
-> | (in PR) | T6a: i tour nel back office, il job del rilascio, `ProjectionRefresh`, `DeletePolicy` (piano 0.84) |
+> | #89 | T6a: i tour nel back office, il job del rilascio, `ProjectionRefresh`, `DeletePolicy` (piano 0.84) |
+> | (in PR) | T6b: l'editor del corpo estratto (`BodyEditor`) e la scheda del briefing |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -60,7 +74,7 @@ Piano 0.84. **Il prossimo passo è T6b (il briefing)**, in una chat nuova, dopo 
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T6b**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T7**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Una cosa che T1 lascia aperta**: l'attribuzione dei confini dei FIR (CC BY-SA 4.0) va **mostrata** dove si vede la proposta degli ATC,
 > cioè in T12. (Le «varianti» degli aerei sono decise in T6a: tipi più gruppi, nessuna spunta.)
