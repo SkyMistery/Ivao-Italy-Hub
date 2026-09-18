@@ -3,8 +3,12 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6a in `main`; T6b è fatta** sul branch `m2/t6b-briefing`, in PR.
-Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma del tour)**, in una chat nuova, dopo il merge di T6b.
+**Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6a in `main`; T6b è fatta**: PR #90 (branch `m2/t6b-briefing`), CI verde.
+Piano 0.84 (T6b non l'ha cambiato). **Il prossimo passo è T7 (le leg e la forma del tour)**, in una chat nuova, dopo il merge di #90.
+
+> **Prima di aprire T7**: verificare con `gh pr list` che #90 sia mergiata (se non lo è, fermarsi e dirlo). Poi chiedere a Carmine la
+> risposta alle **tre scelte di T6b** (sotto, e in `06` §T6b) se non l'ha già data in PR: se chiede di nascondere l'interruttore
+> vivo/congelato nel briefing, è una prop di `BodyEditor` e si fa **prima** di T7, in una PR piccola a sé.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
