@@ -1,11 +1,14 @@
-import { Button } from '@ivao/atmosphere-react';
+import { Button, Tabs } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useBlocker, useNavigate, useParams, useSearch } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
+import { readBody, type Body } from '../../../blocks';
 import { activeAwardsQuery } from '../../../features/awards/queries';
+import { BodyEditor } from '../../../features/content/BodyEditor';
+import { useBodyPathDescription } from '../../../features/content/bodyPath';
 import { mediaPickerQuery } from '../../../features/media/queries';
 import { holdsPermissionAnywhere, writableDepartments } from '../../../shared/api/bootstrap';
 import { SchemaForm, describeProblem, languageNames, type ChoiceOption } from '../../../shared/forms';
@@ -33,6 +36,7 @@ import {
   tourFromTemplateSchema,
   tourSaveAsTemplateSchema,
   tourSchema,
+  type TourEditorTab,
 } from '../schemas';
 
 import { NewButton } from './NewButton';
@@ -41,8 +45,9 @@ import { keepingCurrent, useListSearch, useStaff, useTypeSuggestions } from './h
 /**
  * The tours in the back office (design M2 §8.3): the list of every tour, past, present and future, and the list of
  * templates; the settings of one tour, as a generated form; the bar of what happens to it without the form — ready,
- * back to draft, hidden, shown, deleted, saved as a template (§1.2.1, §1.2.2, §1.10). The briefing, the legs and the
- * rules are tabs the next phases add (T6b, T7, T9).
+ * back to draft, hidden, shown, deleted, saved as a template (§1.2.1, §1.2.2, §1.10). A tour that exists has tabs: the
+ * settings, and the briefing written with the editor of the content (T6b); the legs and the rules are the tabs T7 and
+ * T9 add.
  */
 
 export const TOURS = '/staff/tours';
@@ -127,8 +132,17 @@ export function TourTemplatesPage() {
  * What stands between a draft and "ready", before anybody presses it: the server's answer to the very checks the
  * action runs, one line per field, the missing languages named.
  */
-function ReadyProblems({ problems }: { problems: TourReadyProblemsDto | undefined }) {
+function ReadyProblems({
+  problems,
+  briefing,
+}: {
+  problems: TourReadyProblemsDto | undefined;
+  briefing: Body;
+}) {
   const { t, i18n } = useTranslation();
+  // A path inside the briefing — `briefing.sections[0].blocks[1].props.text` — read against the briefing as saved, the
+  // way the editor of the content reads its own (`publishProblems.tsx`): the checks ran on the saved row too.
+  const describe = useBodyPathDescription(briefing);
   const entries = Object.entries(problems?.errors ?? {});
 
   if (entries.length === 0) {
@@ -143,8 +157,9 @@ function ReadyProblems({ problems }: { problems: TourReadyProblemsDto | undefine
         <ul className="list-disc pl-5">
           {entries.map(([field, keys]) => {
             const missing = problems?.localized[field] ?? [];
-            // A path inside the briefing is named after the briefing: its editor is the one that says where.
-            const label = t(`flightops:tours.fields.${field.split(/[.[]/)[0] ?? field}`);
+            const label = field.startsWith('briefing.')
+              ? `${t('flightops:tours.fields.briefing')} › ${describe(field)}`
+              : t(`flightops:tours.fields.${field.split(/[.[]/)[0] ?? field}`);
             const sentence =
               missing.length > 0
                 ? t('errors.localized.missingIn', { locales: languageNames([...missing], i18n.language) })
@@ -225,6 +240,92 @@ function TourActions({ tour }: { tour: TourDetailDto }) {
   );
 }
 
+/**
+ * The briefing of a tour (design M2 §1.2, §8.3): the editor of the content's body, saved with the tour's own `PUT` —
+ * which validates the envelope, puts the text in search and declares the pictures as uses of files that expire with
+ * the tour. Saved by a press, not by itself: a tour's other fields travel in the same request, and a save made under
+ * somebody's fingers would be one of the tour as well.
+ */
+function TourBriefing({ tour }: { tour: TourDetailDto }) {
+  const { t, i18n } = useTranslation();
+  const { bootstrap } = useStaff();
+  const locales = bootstrap.division.locales;
+  const save = useSaveTour(tour.id);
+
+  const [initial] = useState(() => readBody(tour.briefing));
+  const [body, setBody] = useState(initial);
+  // What was last stored, as one string: the briefing is dirty while the one on screen says something else.
+  const [stored, setStored] = useState(() => JSON.stringify(initial));
+  const [saved, setSaved] = useState(false);
+  const dirty = JSON.stringify(body) !== stored;
+
+  // On the way out — another tab, another screen, the browser's tab closed — a briefing not saved is asked about, in
+  // the words the editor of the content uses.
+  const leaving = useRef(dirty);
+  useEffect(() => {
+    leaving.current = dirty;
+  });
+  useBlocker({
+    shouldBlockFn: () => leaving.current && !window.confirm(t('content.editor.autosave.leave')),
+    enableBeforeUnload: () => leaving.current,
+  });
+
+  const refusal = describeProblem(save.error, t, i18n.language);
+
+  return (
+    <BodyEditor
+      initial={initial}
+      onChange={(next) => {
+        setBody(next);
+        setSaved(false);
+      }}
+      locales={locales}
+      division={{ defaultLocale: bootstrap.division.defaultLocale, timezone: bootstrap.division.timezone }}
+      // The pictures come from the library, like the banner and the photo: the department that prepares them uploads
+      // them there (design §1.14).
+      mediaLibrary={mediaPickerQuery(tour.ownerDepartment)}
+      // ⚠️ No block that asks for a permission belongs in a briefing: the only one that does, the interactive block,
+      // runs in a frame the server builds for a row of the content alone (`/embed/{content}/…`).
+      holds={() => false}
+      toolbar={(tools) => (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            disabled={save.isPending || !dirty}
+            onClick={() => {
+              const sent = body;
+              save.mutate(
+                // The tour as it stands, with this briefing: the row's version is the latest the cache has.
+                { values: tourToFormValues(tour, locales), briefing: sent },
+                {
+                  onSuccess: () => {
+                    setStored(JSON.stringify(sent));
+                    setSaved(true);
+                  },
+                },
+              );
+            }}
+          >
+            {t('flightops:tours.briefing.save')}
+          </Button>
+          {tools}
+        </div>
+      )}
+      header={
+        refusal !== null ? (
+          <Notice tone="error" title={refusal} />
+        ) : saved && !dirty ? (
+          <Notice tone="success" title={t('flightops:tours.briefing.saved')} />
+        ) : dirty ? (
+          <p role="status" className="text-muted-foreground text-sm">
+            {t('flightops:tours.briefing.unsaved')}
+          </p>
+        ) : null
+      }
+    />
+  );
+}
+
 export function TourEditor() {
   const { t } = useTranslation();
   const read = useLocalized();
@@ -235,6 +336,7 @@ export function TourEditor() {
   const isNew = id === 'new';
   const locales = bootstrap.division.locales;
   const [saved, setSaved] = useState(false);
+  const tab: TourEditorTab = search.tab ?? 'settings';
 
   const tour = useQuery({ ...tourQuery(Number(id)), enabled: !isNew }).data ?? null;
   const isTemplate = tour?.isTemplate ?? search.template === true;
@@ -261,6 +363,44 @@ export function TourEditor() {
 
   const title = isNew ? t(`${labels}.create`) : read(tour?.title ?? {}) || t(`${labels}.edit`);
 
+  const settings = (
+    <SchemaForm
+      // A new key when the row changes underneath, so the form reloads what the actions wrote.
+      key={tour?.rowVersion ?? 'new'}
+      schema={tourSchema({
+        types: keepingCurrent(suggestions, tour?.referenceAircraftIcao ? [tour.referenceAircraftIcao] : []),
+        awards,
+        isTemplate,
+        kindLocked: tour?.isPublic ?? false,
+      })}
+      defaults={tour === null ? emptyTour(department, locales, isTemplate) : tourToFormValues(tour, locales)}
+      locales={locales}
+      labels="flightops:tours"
+      // Banner and photo come from the library, where the department that prepares them uploaded them.
+      mediaLibrary={mediaPickerQuery(department)}
+      division={{
+        defaultLocale: bootstrap.division.defaultLocale,
+        timezone: bootstrap.division.timezone,
+      }}
+      onSuggestSearch={onSuggestSearch}
+      onSubmit={async (values) => {
+        setSaved(false);
+        const result = await save.mutateAsync({ values });
+        if (isNew) {
+          void navigate({ href: `${TOURS}/${result.id}` });
+        } else {
+          setSaved(true);
+        }
+      }}
+      submitLabel={t('common.save')}
+      secondaryAction={
+        <Button asChild variant="ghost">
+          <RouterAnchor href={list}>{t('common.cancel')}</RouterAnchor>
+        </Button>
+      }
+    />
+  );
+
   return (
     <PageShell
       title={title}
@@ -275,48 +415,39 @@ export function TourEditor() {
       actions={tour === null ? undefined : <TourActions tour={tour} />}
     >
       <div className="flex flex-col gap-6">
-        {saved ? <Notice tone="success" title={t('flightops:tours.saved')} /> : null}
-        <ReadyProblems problems={problems} />
-        <SchemaForm
-          // A new key when the row changes underneath, so the form reloads what the actions wrote.
-          key={tour?.rowVersion ?? 'new'}
-          schema={tourSchema({
-            types: keepingCurrent(
-              suggestions,
-              tour?.referenceAircraftIcao ? [tour.referenceAircraftIcao] : [],
-            ),
-            awards,
-            isTemplate,
-            kindLocked: tour?.isPublic ?? false,
-          })}
-          defaults={
-            tour === null ? emptyTour(department, locales, isTemplate) : tourToFormValues(tour, locales)
-          }
-          locales={locales}
-          labels="flightops:tours"
-          // Banner and photo come from the library, where the department that prepares them uploaded them.
-          mediaLibrary={mediaPickerQuery(department)}
-          division={{
-            defaultLocale: bootstrap.division.defaultLocale,
-            timezone: bootstrap.division.timezone,
-          }}
-          onSuggestSearch={onSuggestSearch}
-          onSubmit={async (values) => {
-            setSaved(false);
-            const result = await save.mutateAsync(values);
-            if (isNew) {
-              void navigate({ href: `${TOURS}/${result.id}` });
-            } else {
-              setSaved(true);
+        {saved && tab === 'settings' ? <Notice tone="success" title={t('flightops:tours.saved')} /> : null}
+        <ReadyProblems problems={problems} briefing={readBody(tour?.briefing)} />
+        {tour === null ? (
+          settings
+        ) : (
+          // The open tab is in the address, so a reload or a link lands on it; a briefing not saved is asked about
+          // before the tab changes (`TourBriefing`). Only the open tab is mounted.
+          <Tabs
+            // ⚠️ `w-full` is not decoration: Atmosphere pins `Tabs` to `w-[400px]` (HANDOFF §13).
+            className="w-full"
+            value={tab}
+            onValueChange={(next) =>
+              void navigate({
+                search: ((previous: Record<string, unknown>) => ({ ...previous, tab: next })) as never,
+                to: '.',
+              })
             }
-          }}
-          submitLabel={t('common.save')}
-          secondaryAction={
-            <Button asChild variant="ghost">
-              <RouterAnchor href={list}>{t('common.cancel')}</RouterAnchor>
-            </Button>
-          }
-        />
+            tabs={{
+              settings: {
+                trigger: t('flightops:tours.tabs.settings'),
+                content: <div className="pt-4">{settings}</div>,
+              },
+              briefing: {
+                trigger: t('flightops:tours.tabs.briefing'),
+                content: (
+                  <div className="pt-4">
+                    <TourBriefing tour={tour} />
+                  </div>
+                ),
+              },
+            }}
+          />
+        )}
       </div>
     </PageShell>
   );

@@ -144,8 +144,16 @@ export function tourSchema({
 
 export type TourFormValues = z.output<ReturnType<typeof tourSchema>>;
 
-/** The address a tour's own screen is opened with; `?template=true` makes a new one a template. */
-export const tourEditorSearchSchema = z.object({ template: z.boolean().optional() });
+/**
+ * The address a tour's own screen is opened with: `?template=true` makes a new one a template, `?tab=` says which tab is
+ * open (T6b: settings and briefing; T7 and T9 add theirs).
+ */
+export const tourEditorSearchSchema = z.object({
+  template: z.boolean().optional(),
+  tab: z.enum(['settings', 'briefing']).optional(),
+});
+
+export type TourEditorTab = NonNullable<z.infer<typeof tourEditorSearchSchema>['tab']>;
 
 /** "New from a template": which one, and the name and address of the tour it makes. */
 export function tourFromTemplateSchema(templates: readonly ChoiceOption[] = []) {

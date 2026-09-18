@@ -15,6 +15,15 @@
     "fromTemplate": "New from template",
     "saved": "Tour saved.",
     "readyProblems": "Before it can be marked ready, it still needs:",
+    "tabs": {
+      "settings": "Settings",
+      "briefing": "Briefing"
+    },
+    "briefing": {
+      "save": "Save briefing",
+      "saved": "Briefing saved.",
+      "unsaved": "Unsaved changes to the briefing: they are stored with “Save briefing”."
+    },
     "actions": {
       "ready": "Mark ready",
       "draft": "Back to draft",
