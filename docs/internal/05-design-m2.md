@@ -121,6 +121,8 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 - Le righe che lo staff scrive (tour, leg, regole, errori, template, profili degli aerei) implementano
   **`IOwnedByDepartment`** con **`OwnerDepartmentMask`** (il FOD c'è sempre, H2), **`IAuditable`** e
   **`[Audited]`**: l'audit registra prima e dopo di ogni scrittura, quindi non esiste una tabella delle modifiche.
+  **Una riga figlia di un tour** (leg, hub, rotazione, vincolo) **copia dipartimento e maschera del tour** a ogni scrittura e li
+  segue quando cambiano (Carmine, 18 settembre, nota `2026-09-18-le-leg-dei-tour`): l'unico handler la legge come il tour.
 - Le righe che il pilota scrive (PIREP, segnalazioni) sono **`ISubmittedByMembers`**.
 - **`IVisible`**: un tour visibile al pubblico è `Public`; bozze, template e tour nascosti `Staff`; un PIREP è
   `Members`, ristretto al suo pilota o a chi ha i permessi di §7.
@@ -203,7 +205,7 @@ con `show_preview`), `kind` non si cambia più, anche senza PIREP. Prima del ril
 
 | Colonna | Note |
 |---|---|
-| `tour_id`, `number` | ordine nel tour, unico per tour |
+| `tour_id`, `number` | ordine nel tour, unico per tour: lo tiene il server, che rinumera tutto il tour a ogni inserimento o eliminazione, e non l'indice (MariaDB controlla un indice unico riga per riga, e uno spostamento collide a metà; T7a) |
 | `kind` | `Normal` o `HubConnection` |
 | `rotation_id`, `seq_in_rotation` | per `Hub` |
 | `departure_icao`, `arrival_icao` | |
@@ -286,7 +288,11 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
   |---|---|---|---|
   | 200 NM | 32 min | 48 min | 50–55 min |
   | 800 NM | 2 h 08 | 2 h 12 | 2 h 10 |
-  | 2000 NM | 5 h 20 | 4 h 40 | 4 h 35–4 h 50 |
+  | 2000 NM | 5 h 20 | 5 h 00 | 4 h 35–4 h 50 |
+
+  ⚠️ **Corretto il 18 settembre (T7a)**: la prima stesura scriveva 4 h 40 nella seconda colonna a 2000 NM, che è la sola parte
+  proporzionale (60 × 2000 × 1,05 / 450 = 280 min); con i 20 minuti fissi sono 5 h 00. Sulle tratte lunghe la coppia proposta
+  sbaglia quindi più di quanto la tabella faceva credere: la taratura sul corpus deciderà.
 
   ⚖️ I due numeri si **tarano sui voli veri** del corpus di test (§13): si confronta la stima con la durata delle
   sessioni del tracker e si sceglie la coppia che sbaglia meno.
@@ -1172,7 +1178,7 @@ anche `ref_firs` (confini dei FIR da OpenAIP).
 | T4 | Nucleo: award (catalogo, assegnazioni, schermata); più voci di calendario per riga; usi dei file con scadenza e job di eliminazione; preferenze dell'utente |
 | T5 | Modulo: scheletro, impostazioni, profili degli aerei, `positionGrants` |
 | T6 | Tour: modello, stato dalle date, nascondere/eliminare/chiusura, controlli «pronto», template. **Divisa** il 16 settembre in T6a (server e schermate generate) e T6b (la scheda del briefing con l'editor dei blocchi) |
-| T7 | Leg: editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli a distanza |
+| T7 | Leg: editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli a distanza — **divisa in T7a (le leg) e T7b (hub, sottotour, callsign, `Open`)** il 18 settembre |
 | T8 | Import XLSX/CSV con anteprima |
 | T9 | Regole con parametri ed errori, regole effettive, blocco `errorCatalog` |
 | T10 | Pubblico: `/tours`, `/tours/{slug}`, mappa, `tourCards`, `myTours` |

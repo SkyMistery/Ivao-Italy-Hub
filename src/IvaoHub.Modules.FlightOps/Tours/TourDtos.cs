@@ -52,15 +52,18 @@ public sealed record TourDetailDto(
     int? DailyLegLimit,
     int? MinPilotRating,
     string? ReferenceAircraftIcao,
+    int? RequiredNm,
+    AllowedAircraft AllowedAircraft,
     long? AwardId,
     DateTime UpdatedAt,
     DateTime RowVersion);
 
 /// <summary>
 /// What a client may set on a tour. The state is not here — marking ready, back to draft, hiding and showing are
-/// actions (<see cref="TourStatusRequest"/>) — and neither are the fields of the shape of a tour, which T7 writes.
-/// A null <c>Briefing</c> keeps the briefing as it is; a null <c>ReportWindowDays</c> on a new tour takes the division's
-/// default (design M2 §1.11).
+/// actions (<see cref="TourStatusRequest"/>). Of the shape of a tour, T7a writes the distance of a <c>Distance</c> tour
+/// and the aircraft admitted (types and groups, design M2 §1.5); the goal of an <c>Open</c> tour and the subtours are
+/// T7b's. A null <c>Briefing</c> keeps the briefing as it is; a null <c>ReportWindowDays</c> on a new tour takes the
+/// division's default (§1.11); a null <c>AllowedAircraft</c> admits every aircraft.
 /// </summary>
 public sealed record TourWriteDto(
     Department OwnerDepartment,
@@ -82,6 +85,8 @@ public sealed record TourWriteDto(
     int? DailyLegLimit,
     int? MinPilotRating,
     string? ReferenceAircraftIcao,
+    int? RequiredNm,
+    AllowedAircraft? AllowedAircraft,
     long? AwardId,
     DateTime RowVersion);
 
@@ -130,6 +135,9 @@ internal sealed partial class TourMapper
     [MapperIgnoreSource(nameof(TourWriteDto.Briefing))]
     [MapperIgnoreSource(nameof(TourWriteDto.ReportWindowDays))]
     [MapperIgnoreSource(nameof(TourWriteDto.IsTemplate))]
+    [MapperIgnoreSource(nameof(TourWriteDto.AllowedAircraft))]
+    [MapperIgnoreTarget(nameof(Tour.AllowedAircraft))]
+    [MapperIgnoreTarget(nameof(Tour.AllowedAircraftJson))]
     [MapperIgnoreTarget(nameof(Tour.BriefingJson))]
     [MapperIgnoreTarget(nameof(Tour.ReportWindowDays))]
     [MapperIgnoreTarget(nameof(Tour.IsTemplate))]
@@ -154,6 +162,8 @@ internal sealed partial class TourMapper
             ? null
             : payload.ReferenceAircraftIcao.Trim().ToUpperInvariant();
         tour.HubRotationOrder = tour.Kind == TourKind.Hub ? payload.HubRotationOrder ?? Tours.HubRotationOrder.Fixed : null;
+        tour.RequiredNm = tour.Kind == TourKind.Distance ? payload.RequiredNm : null;
+        tour.AllowedAircraft = AllowedAircraftCheck.Normalize(payload.AllowedAircraft);
 
         if (tour.IsTemplate)
         {
@@ -182,6 +192,12 @@ internal sealed partial class TourMapper
 public static partial class TourValidation
 {
     public const int MaxSlugLength = 100;
+
+    /// <summary>Twice around the world: a <c>Distance</c> tour asking for more is a typo.</summary>
+    public const int MaxRequiredNm = 50_000;
+
+    /// <summary>Types and groups together; a tour that admits more is a tour that admits all.</summary>
+    public const int MaxAllowedAircraft = 100;
 
     [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$")]
     public static partial Regex SlugPattern();
@@ -227,6 +243,11 @@ public sealed class TourWriteDtoValidator : AbstractValidator<TourWriteDto>
             .WithMessage("errors.number.range");
         RuleFor(tour => tour.MinPilotRating).InclusiveBetween(1, 20).When(tour => tour.MinPilotRating is not null)
             .WithMessage("errors.number.range");
+        RuleFor(tour => tour.RequiredNm).InclusiveBetween(1, TourValidation.MaxRequiredNm).When(tour => tour.RequiredNm is not null)
+            .WithMessage("errors.number.range");
+        RuleFor(tour => tour.AllowedAircraft)
+            .Must(allowed => allowed is null || (allowed.Types ?? []).Count + (allowed.GroupIds ?? []).Count <= TourValidation.MaxAllowedAircraft)
+            .WithMessage("errors.text.tooLong");
 
         // The envelope of the briefing, and only the envelope, filed under the path of what is wrong.
         RuleFor(tour => tour.Briefing).Custom((briefing, context) =>

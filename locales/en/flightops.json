@@ -18,7 +18,8 @@
     "readyProblems": "Before it can be marked ready, it still needs:",
     "tabs": {
       "settings": "Settings",
-      "briefing": "Briefing"
+      "briefing": "Briefing",
+      "legs": "Legs"
     },
     "briefing": {
       "save": "Save briefing",
@@ -59,7 +60,13 @@
       "awardId": "Award",
       "status": "State",
       "isTemplate": "Template",
-      "updatedAt": "Last change"
+      "updatedAt": "Last change",
+      "requiredNm": "Distance to complete, in NM (distance tours only)",
+      "allowedGroups": "Aircraft groups allowed",
+      "icao": "Type",
+      "groupId": "Group",
+      "legs": "Legs",
+      "allowedAircraft": "Aircraft types allowed (none, and no group: every aircraft)"
     },
     "options": {
       "kind": {
@@ -90,6 +97,9 @@
       },
       "awardId": {
         "none": "No award"
+      },
+      "groupId": {
+        "none": "Choose a group"
       }
     }
   },
@@ -182,6 +192,67 @@
     "dailyLimitRequired": "The division's daily limit is off: the tour needs one of its own.",
     "referenceWithoutProfile": "This aircraft has no profile: without its speed the estimated time cannot be computed.",
     "tourHasReports": "This tour has reports and is not deleted: it can be hidden.",
-    "toursNeedDailyLimit": "Some tours still to be flown have no daily limit of their own."
+    "toursNeedDailyLimit": "Some tours still to be flown have no daily limit of their own.",
+    "aircraftGroupUnknown": "This aircraft group does not exist.",
+    "icao": "Write the airport as its four letter ICAO code.",
+    "airportUnknown": "The hub does not know this airport.",
+    "changeReasonRequired": "Reports point at this leg: say why it changes.",
+    "legUnknown": "This leg is not part of the tour.",
+    "templateHasNoLegs": "A template has no legs: they are written in the tour made from it.",
+    "kindHasNoLegs": "An Open tour and a tour with subtours have no legs.",
+    "legAlreadyRetired": "This leg is already retired.",
+    "legNotRetired": "This leg is not retired.",
+    "tourClosed": "The tour is closed: nothing comes back into it.",
+    "retireReasonRequired": "Say why the leg is retired.",
+    "restoreReasonRequired": "Say why the leg is restored.",
+    "noLegs": "The tour has no legs to fly.",
+    "legReleaseOutsidePeriod": "The release of this leg is outside the tour's period.",
+    "notARing": "A tour with a chosen start is a ring: every arrival is the next departure, and the last one is the first departure.",
+    "distanceUnreachable": "All the legs together do not reach the distance to complete."
+  },
+  "legs": {
+    "row": "Leg {{number}}",
+    "empty": "No legs yet: add the first one.",
+    "totals_one": "{{count}} leg flown, {{distance}} NM",
+    "totals_other": "{{count}} legs flown, {{distance}} NM",
+    "totalTime": "estimated air time {{time}}",
+    "fields": {
+      "departureIcao": "Departure",
+      "arrivalIcao": "Arrival",
+      "distanceNm": "NM",
+      "estimatedMinutes": "Est. time",
+      "realCallsign": "Real callsign",
+      "flightNumber": "Flight number",
+      "aircraft": "Aircraft types",
+      "releaseAt": "Own release (UTC)",
+      "state": "State",
+      "reason": "Reason",
+      "changeReason": "Why it changes (it has reports)"
+    },
+    "state": {
+      "retired": "Retired",
+      "new": "Not saved",
+      "hasReports": "Has reports"
+    },
+    "actions": {
+      "add": "Add a leg",
+      "addAfter": "Add after",
+      "duplicate": "Duplicate",
+      "follows": "Follows (departs from its arrival)",
+      "closeTour": "Close the tour (back to the first departure)",
+      "remove": "Remove",
+      "retire": "Retire",
+      "restore": "Restore"
+    },
+    "remove": {
+      "title": "Remove leg {{number}}?",
+      "Delete": "No report points at this leg: it is deleted, and the legs after it are renumbered.",
+      "Retire": "Reports point at this leg: it is not deleted but retired. It is no longer flown and leaves the public page; its reports stay and are validated. Say why.",
+      "RetireRotation": "Reports point at this leg, and a rotation is retired whole: legs {{numbers}} are retired. Say why."
+    },
+    "restore": {
+      "title": "Restore leg {{number}}?",
+      "description": "The leg is flown again, and comes back to the public page. Say why."
+    }
   }
 }

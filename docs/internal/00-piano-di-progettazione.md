@@ -1,9 +1,21 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.84 — 16 settembre 2026 (**i tour nel back office**: modello, stato dalle date, «pronto», template, proiezioni, T6a)
+**Versione documento:** 0.85 — 18 settembre 2026 (**le leg dei tour**: T7 in due, le righe figlie che seguono il tour, l'editor a tabella, T7a)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.85** (18 set 2026, fase T7a di M2): **i tour hanno le leg** — `fo_legs` con le coordinate congelate e la GCD del
+server, il tempo stimato calcolato a ogni lettura, eliminare e rinumerare senza report, ritirare e ripristinare con un motivo quando
+un report ci punta, e l'editor a tabella `LegGrid`. Nota `decisions/2026-09-18-le-leg-dei-tour.md`, due risposte di Carmine in
+apertura. **(1) T7 si divide** in **T7a** (le leg, gli aerei consentiti nel form, `required_nm`, i controlli di «pronto» dei tipi con
+leg) e **T7b** (hub e rotazioni, sottotour, callsign, tour `Open`), in una chat nuova. **(2) Le righe figlie di un tour copiano la sua
+maschera dei dipartimenti** a ogni scrittura, e la seguono quando cambia: l'unico handler le legge come il tour. Estensioni (caso b):
+**`IAirportDirectory`** e `/api/reference/airports` nel nucleo, come `IAircraftTypeDirectory`; **`ConfirmDialog`** (§8.3) chiede al
+server quando si apre (`onOpenChange`) e tiene spenta la conferma finché la risposta non c'è (`confirmDisabled`). ⚠️ L'eccezione
+dichiarata al motore lista e form (§16.6) vale anche **lato server**: sei verbi scritti a mano per le leg, contati nella nota, e ogni
+scrittura risponde con tutta la griglia rinumerata. `LegGrid` vive nel modulo e non è ancora nella galleria dei componenti: come un
+modulo ci porta i suoi lo dice T20. Corretto nel design il tempo stimato a 2000 NM (5 h 00, non 4 h 40). Toccate §8.3, §16.6.
 
 **Changelog 0.84** (16 set 2026, fase T6a di M2): **i tour esistono nel back office** — `fo_tours`, lo stato calcolato dalle date in
 un solo posto (`TourState`), «pronto» con i problemi elencati campo per campo, nascondere ed eliminare, template, proiezioni. Nota
@@ -1827,7 +1839,9 @@ che Carmine ha scelto di non prendere adesso.
 **Tre componenti in più con M2** (decisi in T0, 16 set 2026, piano 0.79): **`RouteMap`** (la mappa delle leg, MapLibre, nota
 `2026-09-15-la-mappa`), **`LegGrid`** (l'editor delle leg a tabella, eccezione dichiarata al motore lista e form, `05-design-m2.md`
 §8.4) e **`MessageThread`** (il filo di un contatto con le risposte, nota `2026-09-15-contatti-con-risposte`). Entrano nell'elenco nelle
-fasi T10, T7 e T14.
+fasi T10, T7 e T14. ⚠️ `LegGrid` è entrato con **T7a** (18 set 2026) e vive **nel modulo**, perché conosce le leg: non è ancora in
+`catalog.ts` né nella galleria, che non importa da `modules/`; come un modulo ci porta i suoi componenti lo dice T20. `ConfirmDialog` è
+stato esteso nella stessa fase con `onOpenChange` e `confirmDisabled` (nota `2026-09-18-le-leg-dei-tour`).
 
 ---
 
@@ -2102,7 +2116,7 @@ riconciliazione» (nota `2026-09-16-i-tour-nel-back-office`).
 5. **Un solo documento a sezioni** (§9.3): editor, renderer e registry dei blocchi unici per pagine, news, documenti e per i corpi testuali dei moduli. Schema **solo** in TypeScript/zod; il backend tratta il JSON come opaco (`schema_version` + dimensione), estrae il testo per la ricerca con un walker generico delle stringhe; sanitizzazione markdown/`embed` (allowlist host) in un solo componente.
 6. **Un solo motore di back-office**: lista generica su `DataTable` Atmosphere guidata da una configurazione di colonne + form generato dallo schema zod (lo stesso dei blocchi) anche per le entità; lato server un helper `MapCrud<TEntity, TDto>` che porta già la policy di dipartimento. **Dal 16 set 2026** (T4a, piano 0.81) una lista può mappare **una pagina di righe in una volta** (`CrudOptions.ToListPage`) quando la riga mostra un fatto di altre tabelle — il primo è la data di eliminazione di un file — con una query per pagina, mai una per riga. **Dal 16 set 2026** (T6a, piano 0.84) una risorsa può chiedere per l'eliminazione una
 policy **in più** di quella di scrittura (`CrudOptions.DeletePolicy`): chi modifica un tour non è per forza chi lo elimina. Regola: **valida
-il server, il client mostra** i `ProblemDetails` campo per campo.
+il server, il client mostra** i `ProblemDetails` campo per campo. **L'unica eccezione dichiarata** è l'editor delle leg dei tour (M2, T7a, piano 0.85): una tabella dove ogni riga si salva da sola e inserire o togliere rinumera le altre, con sei verbi scritti a mano anche lato server (nota `2026-09-18-le-leg-dei-tour`).
    Quando una risorsa non rientra, si estende `CrudOptions` e mai il motore con un ramo che la nomina: oggi può dire che una riga si scrive solo con un permesso in più (`ExtraWritePolicy`), che non ha una create JSON (`MapCreate`), che cosa significa cancellarla (`Delete`) e che accetta un filtro che è una domanda invece di un confronto su una colonna (`CustomFilters`). **Una schermata CRUD scritta a mano non si accetta**, e un endpoint scritto a mano accanto al motore è un evento da scrivere nel rapporto di chiusura della milestone. **Eccezione dichiarata di M2** (piano 0.79): l'**editor delle leg a tabella** (`LegGrid`, `05-design-m2.md` §8.4), perché comporre trenta leg una per volta in un form non si regge; salva comunque riga per riga con `row_version` e mostra i `ProblemDetails` sulla cella.
 7. **Un solo endpoint di bootstrap** (`/api/me`): menu pubblico e staff, moduli abilitati / in maintenance, permessi effettivi, widget e blocchi registrati. La SPA non ha nulla di cablato.
 8. **Un solo set di file di lingua** `locales/{lang}/*.json`, letto sia dalla SPA sia dal backend (mail, errori). Niente `.resx`.
