@@ -38,11 +38,13 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
+        // The fixtures of IVAO: a tour is ready only with a leg, and writing a leg fetches the runways of its airports.
+        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
         var token = TestContext.Current.CancellationToken;
 
         await SeedUserAsync(CoordinatorVid, "IT-FOC", token);
         await SeedUserAsync(AdvisorVid, "IT-FOA1", token);
+        await FoTestAirports.SeedAsync(_factory.Services, token);
     }
 
     public async ValueTask DisposeAsync()
@@ -58,6 +60,7 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await database.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
+        await FoTestAirports.RemoveAsync(_factory.Services, TestContext.Current.CancellationToken);
         await _factory.DisposeAsync();
     }
 
@@ -105,6 +108,9 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var problems = await advisor.GetFromJsonAsync<JsonElement>($"{TourEndpoints.Pattern}/{Id(tour)}/ready-problems", token);
         Assert.Contains("closeAt", problems.GetProperty("errors").EnumerateObject().Select(field => field.Name));
         Assert.Equal(["it", "en"], problems.GetProperty("localized").GetProperty("summary").EnumerateArray().Select(locale => locale.GetString()));
+
+        // A sequential tour is ready only with a leg (T7a).
+        await FoTestAirports.AddLegAsync(advisor, Id(tour), token);
 
         using (var notYet = await advisor.PostAsJsonAsync($"{TourEndpoints.Pattern}/{Id(tour)}/status", new { action = "Ready" }, token))
         {
@@ -236,6 +242,7 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         };
 
         var tour = await CreatedAsync(await advisor.PostAsJsonAsync(TourEndpoints.Pattern, payload, token), token);
+        await FoTestAirports.AddLegAsync(advisor, Id(tour), token);
         var ready = await OkAsync(await advisor.PostAsJsonAsync($"{TourEndpoints.Pattern}/{Id(tour)}/status", new { action = "Ready" }, token), token);
 
         // Public: the kind no longer changes.
@@ -349,6 +356,7 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
             DailyLegLimit = 5,
         };
         var tour = await CreatedAsync(await advisor.PostAsJsonAsync(TourEndpoints.Pattern, payload, token), token);
+        await FoTestAirports.AddLegAsync(advisor, Id(tour), token);
         var ready = await OkAsync(await advisor.PostAsJsonAsync($"{TourEndpoints.Pattern}/{Id(tour)}/status", new { action = "Ready" }, token), token);
         Assert.Equal("Upcoming", ready.GetProperty("state").GetString());
 
@@ -379,6 +387,9 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private sealed class EveryTourHasReports : ITourReports
     {
         public Task<bool> AnyAsync(long tourId, CancellationToken cancellationToken = default) => Task.FromResult(true);
+
+        public Task<IReadOnlySet<long>> LegsWithReportsAsync(long tourId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<long>>(new HashSet<long>());
     }
 
     private static TourWriteDto Payload(bool isTemplate, string? slug, string title) => new(
@@ -401,6 +412,8 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         DailyLegLimit: null,
         MinPilotRating: null,
         ReferenceAircraftIcao: null,
+        RequiredNm: null,
+        AllowedAircraft: null,
         AwardId: null,
         RowVersion: default);
 

@@ -333,3 +333,32 @@ export async function deleteMedia(context: BrowserContext, id: number): Promise<
   const response = await context.request.delete(`/api/media/${id}`, { headers: asTheClientDoes });
   expect(response.status(), await response.text()).toBeLessThan(300);
 }
+
+/**
+ * Airports of the bench: the snapshot of the world the fixtures of IVAO give it at its first start (T1). A leg needs
+ * both of its airports there, and a tour of a kind with legs is ready only with one (M2, T7a).
+ */
+export const benchAirports = { rome: 'LIRF', milan: 'LIMC', bari: 'LIBD' } as const;
+
+/** A leg at the end of a tour, through the editor's own call: for a spec whose subject is not the legs. */
+export async function addLeg(
+  context: BrowserContext,
+  tourId: number,
+  departureIcao: string = benchAirports.rome,
+  arrivalIcao: string = benchAirports.milan,
+): Promise<void> {
+  const response = await context.request.post(`/api/flightops/tours/${tourId}/legs`, {
+    headers: asTheClientDoes,
+    data: {
+      departureIcao,
+      arrivalIcao,
+      realCallsign: null,
+      flightNumber: null,
+      aircraft: null,
+      releaseAt: null,
+      changeReason: null,
+      rowVersion: '0001-01-01T00:00:00',
+    },
+  });
+  expect(response.status(), await response.text()).toBeLessThan(300);
+}

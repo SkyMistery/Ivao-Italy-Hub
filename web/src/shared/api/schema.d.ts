@@ -119,6 +119,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reference/airports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Airports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blocks/data/{type}": {
         parameters: {
             query?: never;
@@ -1086,6 +1102,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/{tourId}/legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsLegs"];
+        put?: never;
+        post: operations["FlightOpsLegCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{tourId}/legs/{legId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["FlightOpsLegUpdate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{tourId}/legs/{legId}/removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsLegRemoval"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{tourId}/legs/{legId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsLegRemove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{tourId}/legs/{legId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsLegRestore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1139,6 +1235,28 @@ export interface components {
             icaoCode: string;
             manufacturer: null | string;
             model: string;
+        };
+        /** @description One airport, as a field offers it and a leg freezes it. Every airport of the snapshot has coordinates (T1). */
+        AirportDto: {
+            icao: string;
+            iata: null | string;
+            name: string;
+            countryId: string;
+            /** Format: double */
+            latitude: null | number;
+            /** Format: double */
+            longitude: null | number;
+            /** Format: int32 */
+            elevationFeet: null | number;
+        };
+        /**
+         * @description The aircraft a tour admits: types and groups of types, nothing else (Carmine, 16 September 2026 — IVAO's
+         *     «variants» are liveries and engines of one type, so a neo with its ceo is a group). Empty admits all.
+         *     Written by T7a (the form of the tour); T6 created the column and copies it with a template.
+         */
+        AllowedAircraft: {
+            types: string[];
+            groupIds: number[];
         };
         /**
          * @description One row in full. `BeforeJson` and `AfterJson` are the scalar columns as they were and
@@ -2070,6 +2188,82 @@ export interface components {
         IFormFile: string;
         JsonElement: unknown;
         JsonNode: unknown;
+        /**
+         * @description One row of the leg editor (design M2 §8.4): the leg as stored, plus what is computed at the read — the IATA codes
+         *     a pilot recognises, the estimated time when the tour names a reference aircraft (§1.5), and whether a report points
+         *     at it, which decides between deleting and retiring (§1.4.1).
+         */
+        LegDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            /** Format: int32 */
+            number: number;
+            kind: components["schemas"]["LegKind"];
+            /** Format: int64 */
+            rotationId: null | number;
+            /** Format: int32 */
+            seqInRotation: null | number;
+            departureIcao: string;
+            departureIata: null | string;
+            arrivalIcao: string;
+            arrivalIata: null | string;
+            /** Format: double */
+            distanceNm: number;
+            /** Format: int32 */
+            estimatedMinutes: null | number;
+            realCallsign: null | string;
+            flightNumber: null | string;
+            aircraft: components["schemas"]["AllowedAircraft"];
+            /** Format: date-time */
+            releaseAt: null | string;
+            /** Format: date-time */
+            retiredAt: null | string;
+            retiredReason: null | string;
+            hasReports: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a leg is in its tour (design M2 §1.3): an ordinary leg, or the link between two hubs, which counts as one.
+         * @enum {unknown}
+         */
+        LegKind: "Normal" | "HubConnection";
+        /** @description Removing or restoring a leg: the reason, required to retire and to restore, and the version the editor saw. */
+        LegReasonRequest: {
+            reason: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description The answer to "what happens if I remove this leg?": the outcome, and the numbers of every leg it touches. */
+        LegRemovalDto: {
+            outcome: components["schemas"]["LegRemovalOutcome"];
+            numbers: number[];
+        };
+        /**
+         * @description What removing a leg will do, decided by the server and said before anybody confirms (design M2 §1.4.1).
+         * @enum {unknown}
+         */
+        LegRemovalOutcome: "Delete" | "Retire" | "RetireRotation";
+        /**
+         * @description What a client may set on a leg. The coordinates and the distance are the server's; the kind and the rotation are
+         *     written by the hub tours (T7b). `ChangeReason` is required when the leg has reports, and goes to the audit.
+         */
+        LegWriteDto: {
+            departureIcao: string;
+            arrivalIcao: string;
+            realCallsign: null | string;
+            flightNumber: null | string;
+            aircraft: null | components["schemas"]["AllowedAircraft"];
+            /** Format: date-time */
+            releaseAt: null | string;
+            changeReason: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description A link as the form shows it, with the audit trail and the version to write back. */
         LinkDetailDto: {
             /** Format: int64 */
@@ -2890,6 +3084,9 @@ export interface components {
             /** Format: int32 */
             minPilotRating: null | number;
             referenceAircraftIcao: null | string;
+            /** Format: int32 */
+            requiredNm: null | number;
+            allowedAircraft: components["schemas"]["AllowedAircraft"];
             /** Format: int64 */
             awardId: null | number;
             /** Format: date-time */
@@ -2907,6 +3104,19 @@ export interface components {
          * @enum {unknown}
          */
         TourKind: "Sequential" | "Free" | "Hub" | "SequentialChosenStart" | "Distance" | "Open" | "Container";
+        /**
+         * @description The legs of a tour, all of them, retired ones included — the editor shows those with their reason — and the totals
+         *     of the ones still flown: the distance, and the estimated time when there is one.
+         */
+        TourLegsDto: {
+            /** Format: int64 */
+            tourId: number;
+            legs: components["schemas"]["LegDto"][];
+            /** Format: double */
+            totalNm: number;
+            /** Format: int32 */
+            totalEstimatedMinutes: null | number;
+        };
         /** @description A tour as the list shows it: the state is computed, never stored (design M2 §1.2.1, §8.3). */
         TourListDto: {
             /** Format: int64 */
@@ -2958,9 +3168,10 @@ export interface components {
         };
         /**
          * @description What a client may set on a tour. The state is not here — marking ready, back to draft, hiding and showing are
-         *     actions (TourStatusRequest) — and neither are the fields of the shape of a tour, which T7 writes.
-         *     A null `Briefing` keeps the briefing as it is; a null `ReportWindowDays` on a new tour takes the division's
-         *     default (design M2 §1.11).
+         *     actions (TourStatusRequest). Of the shape of a tour, T7a writes the distance of a `Distance` tour
+         *     and the aircraft admitted (types and groups, design M2 §1.5); the goal of an `Open` tour and the subtours are
+         *     T7b's. A null `Briefing` keeps the briefing as it is; a null `ReportWindowDays` on a new tour takes the
+         *     division's default (§1.11); a null `AllowedAircraft` admits every aircraft.
          */
         TourWriteDto: {
             ownerDepartment: components["schemas"]["Department"];
@@ -2989,6 +3200,9 @@ export interface components {
             /** Format: int32 */
             minPilotRating: null | number;
             referenceAircraftIcao: null | string;
+            /** Format: int32 */
+            requiredNm: null | number;
+            allowedAircraft: null | components["schemas"]["AllowedAircraft"];
             /** Format: int64 */
             awardId: null | number;
             /** Format: date-time */
@@ -3266,6 +3480,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AircraftTypeDto"][];
+                };
+            };
+        };
+    };
+    Airports: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AirportDto"][];
                 };
             };
         };
@@ -6361,6 +6597,259 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourLegsDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegCreate: {
+        parameters: {
+            query?: {
+                after?: number;
+            };
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourLegsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+                legId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourLegsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegRemoval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+                legId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegRemovalDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegRemove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+                legId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourLegsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegRestore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+                legId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourLegsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -17,6 +17,7 @@ import { DataList, col, listSearchSchema, type ColumnSpec } from '../../../share
 import { ConfirmDialog, Notice, PageShell } from '../../../shared/ui';
 import {
   emptyTour,
+  groupsListQuery,
   tourQuery,
   tourReadyProblemsQuery,
   tourToFormValues,
@@ -39,6 +40,7 @@ import {
   type TourEditorTab,
 } from '../schemas';
 
+import { LegGrid } from './LegGrid';
 import { NewButton } from './NewButton';
 import { keepingCurrent, useListSearch, useStaff, useTypeSuggestions } from './hooks';
 
@@ -46,9 +48,12 @@ import { keepingCurrent, useListSearch, useStaff, useTypeSuggestions } from './h
  * The tours in the back office (design M2 §8.3): the list of every tour, past, present and future, and the list of
  * templates; the settings of one tour, as a generated form; the bar of what happens to it without the form — ready,
  * back to draft, hidden, shown, deleted, saved as a template (§1.2.1, §1.2.2, §1.10). A tour that exists has tabs: the
- * settings, and the briefing written with the editor of the content (T6b); the legs and the rules are the tabs T7 and
- * T9 add.
+ * settings, the briefing written with the editor of the content (T6b), and the legs (T7a) on a kind that has legs; the
+ * hubs, the subtours and the rules are the tabs T7b and T9 add.
  */
+
+/** The kinds that have legs: an Open tour is flown anywhere, a container through its subtours (design M2 §2.6, §2.7). */
+const KINDS_WITHOUT_LEGS: readonly string[] = ['Open', 'Container'];
 
 export const TOURS = '/staff/tours';
 export const TEMPLATES = '/staff/tours/templates';
@@ -157,9 +162,13 @@ function ReadyProblems({
         <ul className="list-disc pl-5">
           {entries.map(([field, keys]) => {
             const missing = problems?.localized[field] ?? [];
+            // `legs.3` is the leg numbered 3, `legs` the legs as a whole (T7a).
+            const leg = /^legs\.(\d+)$/.exec(field);
             const label = field.startsWith('briefing.')
               ? `${t('flightops:tours.fields.briefing')} › ${describe(field)}`
-              : t(`flightops:tours.fields.${field.split(/[.[]/)[0] ?? field}`);
+              : leg !== null
+                ? t('flightops:legs.row', { number: Number(leg[1]) })
+                : t(`flightops:tours.fields.${field.split(/[.[]/)[0] ?? field}`);
             const sentence =
               missing.length > 0
                 ? t('errors.localized.missingIn', { locales: languageNames([...missing], i18n.language) })
@@ -351,6 +360,9 @@ export function TourEditor() {
     value: String(award.id),
     label: read(award.name),
   }));
+  const groups: ChoiceOption[] = (
+    useQuery(groupsListQuery(listSearchSchema.parse({ pageSize: 100 }))).data?.items ?? []
+  ).map((group) => ({ value: String(group.id), label: read(group.name) }));
   const save = useSaveTour(isNew ? null : Number(id));
   const { suggestions, onSuggestSearch } = useTypeSuggestions();
 
@@ -371,8 +383,12 @@ export function TourEditor() {
       // A new key when the row changes underneath, so the form reloads what the actions wrote.
       key={tour?.rowVersion ?? 'new'}
       schema={tourSchema({
-        types: keepingCurrent(suggestions, tour?.referenceAircraftIcao ? [tour.referenceAircraftIcao] : []),
+        types: keepingCurrent(suggestions, [
+          ...(tour?.referenceAircraftIcao ? [tour.referenceAircraftIcao] : []),
+          ...(tour?.allowedAircraft.types ?? []),
+        ]),
         awards,
+        groups,
         isTemplate,
         kindLocked: tour?.isPublic ?? false,
       })}
@@ -448,6 +464,24 @@ export function TourEditor() {
                   </div>
                 ),
               },
+              // A template has no legs (design M2 §1.10), and neither has an Open tour or a container.
+              ...(tour.isTemplate || KINDS_WITHOUT_LEGS.includes(tour.kind)
+                ? {}
+                : {
+                    legs: {
+                      trigger: t('flightops:tours.tabs.legs'),
+                      content: (
+                        <div className="pt-4">
+                          <LegGrid
+                            tour={tour}
+                            editable={writableDepartments(bootstrap, TOURS_EDIT).includes(
+                              tour.ownerDepartment,
+                            )}
+                          />
+                        </div>
+                      ),
+                    },
+                  }),
             }}
           />
         )}

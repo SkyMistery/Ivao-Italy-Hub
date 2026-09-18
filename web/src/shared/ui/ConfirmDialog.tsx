@@ -26,6 +26,11 @@ import { useTranslation } from 'react-i18next';
  * The same dialog, extended rather than a second one written beside it (plan §16.E, rule (b)); and
  * a confirmation that is not destructive says so with `confirmVariant`, because a blue "publish"
  * and a red "delete" must never look alike.
+ *
+ * Since M2 (T7a) it can also **ask before it asks**: removing a leg is a deletion or a retirement,
+ * and only the server knows which, so the editor asks it when the dialog opens (`onOpenChange`) and
+ * keeps the confirmation off until the answer — and the reason a retirement needs — is there
+ * (`confirmDisabled`). Extended again rather than written twice.
  */
 export function ConfirmDialog({
   triggerText,
@@ -37,6 +42,8 @@ export function ConfirmDialog({
   confirmVariant = 'destructive',
   onConfirm,
   disabled = false,
+  confirmDisabled = false,
+  onOpenChange,
 }: {
   triggerText: string;
   triggerVariant?: 'ghost' | 'secondary';
@@ -48,12 +55,22 @@ export function ConfirmDialog({
   confirmVariant?: 'destructive' | 'primary';
   onConfirm: () => void;
   disabled?: boolean;
+  /** Keeps the confirmation off while the answer is not complete yet. */
+  confirmDisabled?: boolean;
+  /** Told when the dialog opens and closes, for a question asked only once somebody means it. */
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
-    <AlertDialogRoot open={open} onOpenChange={setOpen}>
+    <AlertDialogRoot
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        onOpenChange?.(next);
+      }}
+    >
       {/* No `asChild` on the three wrappers: Atmosphere's own `AlertDialog` hands them a `Button`
           exactly like this, and its Button is not a single element a slot could take over. */}
       <AlertDialogTrigger>
@@ -74,7 +91,12 @@ export function ConfirmDialog({
             </Button>
           </AlertDialogCancel>
           <AlertDialogAction>
-            <Button type="button" variant={confirmVariant} onClick={() => onConfirm()}>
+            <Button
+              type="button"
+              variant={confirmVariant}
+              disabled={confirmDisabled}
+              onClick={() => onConfirm()}
+            >
               {confirmText}
             </Button>
           </AlertDialogAction>

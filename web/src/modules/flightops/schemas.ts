@@ -109,11 +109,13 @@ export const TOUR_KINDS = [
 export function tourSchema({
   types = [],
   awards = [],
+  groups = [],
   isTemplate = false,
   kindLocked = false,
 }: {
   types?: readonly Suggestion[];
   awards?: readonly ChoiceOption[];
+  groups?: readonly ChoiceOption[];
   isTemplate?: boolean;
   kindLocked?: boolean;
 } = {}) {
@@ -137,6 +139,14 @@ export function tourSchema({
     requiresProcedures: z.boolean(),
     minPilotRating: z.number().int().optional(),
     referenceAircraftIcao: z.string().meta({ suggestions: types, suggestionsOnly: true }),
+    // Read only on a distance tour, like the order of the rotations on a hub tour (T7a).
+    requiredNm: z.number().int().optional(),
+    // The aircraft admitted: types and groups, nothing else (design M2 §1.5); both empty admit all. The types carry the
+    // payload's name, so that a refusal of the server — which files it under `allowedAircraft` — lands on a field.
+    allowedAircraft: z.array(
+      z.object({ icao: z.string().meta({ suggestions: types, suggestionsOnly: true }) }),
+    ),
+    allowedGroups: z.array(z.object({ groupId: z.string().optional().meta({ choices: groups }) })),
     awardId: z.string().optional().meta({ choices: awards, hidden: isTemplate }),
     rowVersion: z.string().meta({ hidden: true }),
   });
@@ -146,11 +156,11 @@ export type TourFormValues = z.output<ReturnType<typeof tourSchema>>;
 
 /**
  * The address a tour's own screen is opened with: `?template=true` makes a new one a template, `?tab=` says which tab is
- * open (T6b: settings and briefing; T7 and T9 add theirs).
+ * open (T6b: settings and briefing; T7a the legs; T7b and T9 add theirs).
  */
 export const tourEditorSearchSchema = z.object({
   template: z.boolean().optional(),
-  tab: z.enum(['settings', 'briefing']).optional(),
+  tab: z.enum(['settings', 'briefing', 'legs']).optional(),
 });
 
 export type TourEditorTab = NonNullable<z.infer<typeof tourEditorSearchSchema>['tab']>;
