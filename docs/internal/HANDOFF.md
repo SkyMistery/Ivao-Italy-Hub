@@ -6,7 +6,7 @@
 **Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6b in `main`; T7a è fatta**: branch `m2/t7a-legs`, in PR. Piano **0.85**.
 **Il prossimo passo è T7b (la forma del tour: hub e rotazioni, sottotour, callsign, tour `Open`)**, in una chat nuova, dopo il merge di T7a.
 
-> **Prima di aprire T7b**: verificare con `gh pr list` che la PR di T7a sia mergiata (se non lo è, fermarsi e dirlo). **In apertura**
+> **Prima di aprire T7b**: verificare con `gh pr list` che la #91 (T7a) sia mergiata (se non lo è, fermarsi e dirlo). **In apertura**
 > portare a Carmine la domanda sui **sottotour**: date e indirizzo propri (dentro il periodo del padre) o del padre (nota
 > `2026-09-18-le-leg-dei-tour` §2, `06` §T7).
 
@@ -80,7 +80,7 @@
 > | #88 | T5: il modulo `flightops`, le impostazioni dei moduli, i grant del file uno per uno (piano 0.83) |
 > | #89 | T6a: i tour nel back office, il job del rilascio, `ProjectionRefresh`, `DeletePolicy` (piano 0.84) |
 > | #90 | T6b: l'editor del corpo estratto (`BodyEditor`) e la scheda del briefing |
-> | (in PR) | T7a: le leg, `LegGrid`, il tempo stimato, ritirare e ripristinare, gli aerei consentiti (piano 0.85) |
+> | #91 | T7a: le leg, `LegGrid`, il tempo stimato, ritirare e ripristinare, gli aerei consentiti (piano 0.85) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
