@@ -18,7 +18,8 @@
     "readyProblems": "Prima di segnarlo pronto manca ancora:",
     "tabs": {
       "settings": "Impostazioni",
-      "briefing": "Briefing"
+      "briefing": "Briefing",
+      "legs": "Leg"
     },
     "briefing": {
       "save": "Salva il briefing",
@@ -59,7 +60,13 @@
       "awardId": "Award",
       "status": "Stato",
       "isTemplate": "Template",
-      "updatedAt": "Ultima modifica"
+      "updatedAt": "Ultima modifica",
+      "requiredNm": "Distanza da completare, in NM (solo tour a distanza)",
+      "allowedGroups": "Gruppi di aerei ammessi",
+      "icao": "Tipo",
+      "groupId": "Gruppo",
+      "legs": "Leg",
+      "allowedAircraft": "Tipi di aereo ammessi (nessuno, e nessun gruppo: tutti gli aerei)"
     },
     "options": {
       "kind": {
@@ -90,6 +97,9 @@
       },
       "awardId": {
         "none": "Nessun award"
+      },
+      "groupId": {
+        "none": "Scegli un gruppo"
       }
     }
   },
@@ -182,6 +192,67 @@
     "dailyLimitRequired": "Il limite giornaliero della divisione è spento: il tour ne vuole uno suo.",
     "referenceWithoutProfile": "Questo aereo non ha un profilo: senza la sua velocità il tempo stimato non si calcola.",
     "tourHasReports": "Questo tour ha dei report e non si elimina: si può nascondere.",
-    "toursNeedDailyLimit": "Ci sono tour ancora da volare senza un limite giornaliero loro."
+    "toursNeedDailyLimit": "Ci sono tour ancora da volare senza un limite giornaliero loro.",
+    "aircraftGroupUnknown": "Questo gruppo di aerei non esiste.",
+    "icao": "Scrivi l'aeroporto con il suo codice ICAO di quattro lettere.",
+    "airportUnknown": "L'hub non conosce questo aeroporto.",
+    "changeReasonRequired": "Dei report puntano a questa leg: scrivi perché cambia.",
+    "legUnknown": "Questa leg non fa parte del tour.",
+    "templateHasNoLegs": "Un template non ha leg: si scrivono nel tour creato da lui.",
+    "kindHasNoLegs": "Un tour Open e un tour con sottotour non hanno leg.",
+    "legAlreadyRetired": "Questa leg è già ritirata.",
+    "legNotRetired": "Questa leg non è ritirata.",
+    "tourClosed": "Il tour è chiuso: non ci rientra niente.",
+    "retireReasonRequired": "Scrivi perché la leg si ritira.",
+    "restoreReasonRequired": "Scrivi perché la leg si ripristina.",
+    "noLegs": "Il tour non ha leg da volare.",
+    "legReleaseOutsidePeriod": "Il rilascio di questa leg è fuori dal periodo del tour.",
+    "notARing": "Un tour con partenza a scelta è un anello: ogni arrivo è la partenza successiva, e l'ultimo è la prima partenza.",
+    "distanceUnreachable": "Tutte le leg insieme non arrivano alla distanza da completare."
+  },
+  "legs": {
+    "row": "Leg {{number}}",
+    "empty": "Ancora nessuna leg: aggiungi la prima.",
+    "totals_one": "{{count}} leg da volare, {{distance}} NM",
+    "totals_other": "{{count}} leg da volare, {{distance}} NM",
+    "totalTime": "tempo di volo stimato {{time}}",
+    "fields": {
+      "departureIcao": "Partenza",
+      "arrivalIcao": "Arrivo",
+      "distanceNm": "NM",
+      "estimatedMinutes": "Tempo stimato",
+      "realCallsign": "Callsign reale",
+      "flightNumber": "Numero di volo",
+      "aircraft": "Tipi di aereo",
+      "releaseAt": "Rilascio proprio (UTC)",
+      "state": "Stato",
+      "reason": "Motivo",
+      "changeReason": "Perché cambia (ha dei report)"
+    },
+    "state": {
+      "retired": "Ritirata",
+      "new": "Non salvata",
+      "hasReports": "Ha dei report"
+    },
+    "actions": {
+      "add": "Aggiungi una leg",
+      "addAfter": "Aggiungi dopo",
+      "duplicate": "Duplica",
+      "follows": "Segue (parte dal suo arrivo)",
+      "closeTour": "Chiudi il tour (torna alla prima partenza)",
+      "remove": "Togli",
+      "retire": "Ritira",
+      "restore": "Ripristina"
+    },
+    "remove": {
+      "title": "Togliere la leg {{number}}?",
+      "Delete": "Nessun report punta a questa leg: si elimina, e le leg dopo di lei si rinumerano.",
+      "Retire": "Dei report puntano a questa leg: non si elimina, si ritira. Non si vola più ed esce dalla pagina pubblica; i suoi report restano e si validano. Scrivi il motivo.",
+      "RetireRotation": "Dei report puntano a questa leg, e una rotazione si ritira intera: si ritirano le leg {{numbers}}. Scrivi il motivo."
+    },
+    "restore": {
+      "title": "Ripristinare la leg {{number}}?",
+      "description": "La leg torna a volarsi e ricompare nella pagina pubblica. Scrivi il motivo."
+    }
   }
 }

@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Modules.FlightOps.Aircraft;
+using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -20,6 +21,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<Tour> Tours => Set<Tour>();
 
+    public DbSet<Leg> Legs => Set<Leg>();
+
     /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -29,6 +32,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<TourProgression>().HaveConversion<string>().HaveMaxLength(32);
         configurationBuilder.Properties<HubRotationOrder>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<OpenGoal>().HaveConversion<string>().HaveMaxLength(32);
+        configurationBuilder.Properties<LegKind>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -69,6 +73,31 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             // Unique among tours; a template has none, and MariaDB lets several rows hold no address.
             tour.HasIndex(row => row.Slug).IsUnique();
             tour.HasIndex(row => new { row.IsTemplate, row.ReleaseAt });
+        });
+
+        modelBuilder.Entity<Leg>(leg =>
+        {
+            leg.ToTable("fo_legs");
+            leg.HasKey(row => row.Id);
+            leg.Ignore(row => row.Aircraft);
+            leg.Ignore(row => row.Departure);
+            leg.Ignore(row => row.Arrival);
+            leg.Property(row => row.DepartureIcao).HasMaxLength(4).IsRequired();
+            leg.Property(row => row.ArrivalIcao).HasMaxLength(4).IsRequired();
+            leg.Property(row => row.DistanceNm).HasPrecision(7, 1);
+            leg.Property(row => row.RealCallsign).HasMaxLength(LegValidation.MaxCallsignLength);
+            leg.Property(row => row.FlightNumber).HasMaxLength(LegValidation.MaxCallsignLength);
+            leg.Property(row => row.AircraftJson).HasColumnName("aircraft_json").HasColumnType("json").IsRequired();
+            leg.Property(row => row.RetiredReason).HasMaxLength(LegValidation.MaxReasonLength);
+            leg.Property(row => row.ChangeReason).HasMaxLength(LegValidation.MaxReasonLength);
+            leg.HasRowVersion(row => row.RowVersion);
+
+            // Inside one context a key is allowed, and a tour deleted takes its legs with it (design M2 §1.2.2).
+            leg.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
+
+            // ⚠️ Not unique, although a number is unique in its tour: MariaDB checks a unique key row by row, so shifting
+            // the numbers after an insert would collide half way. The server renumbers the whole tour, and that keeps it.
+            leg.HasIndex(row => new { row.TourId, row.Number });
         });
     }
 }

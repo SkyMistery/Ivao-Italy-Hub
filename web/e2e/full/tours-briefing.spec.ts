@@ -7,6 +7,7 @@ import { englishCommon } from '../locales';
 
 import {
   addBlock,
+  addLeg,
   benchUrl,
   deleteMedia,
   openOutline,
@@ -87,6 +88,10 @@ test('a tour gets a briefing with a picture, is asked for its second language, i
     ownerDepartment: string;
   };
   const mediaId = await uploadMedia(context, tour.ownerDepartment, pictureName, picture);
+
+  // A sequential tour is ready only with a leg (T7a): one through the API, and the page read again to see it.
+  await addLeg(context, tourId);
+  await page.reload();
 
   // Nothing stands in the way yet: the briefing is empty, and an empty briefing is not a briefing half translated.
   await expect(page.getByText(flightops.tours.readyProblems)).toBeHidden();

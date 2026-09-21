@@ -298,10 +298,11 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T5 | Modulo: lo scheletro — **fatta il 16 set 2026** | T4a | progetto, contesto, permessi, `positionGrants`, impostazioni, profili e gruppi di aerei |
 | T6a | I tour — **fatta il 16 set 2026** | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni, il job del rilascio |
 | T6b | Il briefing — **fatta il 18 set 2026** | T6a | l'editor del corpo estratto dall'editor dei contenuti, montato come scheda del tour |
-| T7 | Le leg e la forma del tour | T1, T6a | editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli dei tour `Open` e `Distance` |
-| T8 | L'import delle leg | T7 | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
+| T7a | Le leg — **fatta il 18 set 2026** | T1, T6a | `fo_legs`, GCD e tempo stimato, eliminare e rinumerare, ritirare e ripristinare, `LegGrid`, aerei consentiti nel form, `Distance`, «pronto» dei tipi con leg |
+| T7b | La forma del tour | T7a | hub e rotazioni, sottotour e `Container`, vincoli sul callsign, tour `Open` (obiettivo, filtri, sequenza), «pronto» di quei tipi |
+| T8 | L'import delle leg | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
-| T10 | Il pubblico e la mappa | T7, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
+| T10 | Il pubblico e la mappa | T7b, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
 | T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
 | T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
@@ -804,9 +805,70 @@ Design §1.3, §1.4, §1.5 (tempo stimato), §1.6, §2, §2.6.1 (la definizione,
 rotazione intera; una leg modificata con PIREP senza motivo rifiutata. Smoke: l'editor delle leg aggiunge, duplica e ritira.
 **Fatta quando**: si compone da zero un tour `Hub` con due hub, rotazioni e un collegamento, e lo si segna pronto.
 
+**Divisa il 18 settembre 2026** in apertura (Carmine, nota `decisions/2026-09-18-le-leg-dei-tour.md`, piano **0.85**): **T7a** sono i punti
+1, 2, 3 e 7, gli aerei consentiti del punto 4, `required_nm` del punto 5 e i controlli del punto 6 per `Sequential`, `Free`,
+`SequentialChosenStart` e `Distance`; branch `m2/t7a-legs`. **T7b** è il resto — hub e rotazioni, sottotour e `Container`, vincoli sul
+callsign (`fo_callsign_rules`, con la copia del template), il tour `Open` (`open_goal`, `fo_tour_constraints`) e i loro controlli di
+«pronto», più le schede generate — in una chat nuova, branch `m2/t7b-shape`; chiude il «fatta quando» di T7. **In apertura di T7b** si
+porta a Carmine la domanda sui sottotour: date e indirizzo propri (dentro il periodo del padre) o del padre. Nella stessa apertura di
+T7a: **le righe figlie di un tour copiano la sua maschera dei dipartimenti** a ogni scrittura, e la seguono quando cambia.
+
+**T7a fatta il 18 settembre 2026** (branch `m2/t7a-legs`). Com'è andata:
+
+- **Due domande a Carmine in apertura**, decise come proposto (sopra).
+- **Il modello**: `fo_legs` com'è nel design §1.4 (migrazione `AddLegs`, solo additiva, con la chiave verso `fo_tours` in cascata: un
+  tour eliminato si porta via le leg); `kind`, `rotation_id` e `seq_in_rotation` nascono ora e li scrive T7b. Le coordinate sono
+  **congelate** alla scrittura da `IAirportDirectory` (nel nucleo, come `IAircraftTypeDirectory`) e la distanza è `GreatCircle` di
+  Toursystem, arrotondata al decimo come la colonna. ⚠️ **L'indice `(tour_id, number)` non è unico**: MariaDB controlla un indice unico
+  riga per riga e spostare i numeri collide a metà; il numero lo tiene unico il server, che rinumera tutto il tour.
+- **Sei verbi scritti a mano** (l'eccezione di §16.6 vale anche lato server, contati nella nota): la griglia, aggiungi (`?after=`),
+  modifica, «che cosa farebbe togliere», togli, ripristina. Ogni scrittura risponde con la griglia intera. La risorsa è il tour:
+  `Tours.View` e `Tours.Edit` sul tour, dall'unico handler. Una scrittura di una leg di un tour **pronto** passa i controlli di «pronto»
+  con le leg come le lascia (`TourReadiness` prende le leg in ingresso). Le piste degli aeroporti si chiedono dopo ogni scrittura, e un
+  errore di rete non rifiuta mai una leg.
+- **I report** non esistono ancora: `ITourReports.LegsWithReportsAsync` risponde «nessuna» finché T11 non la sostituisce, e i test
+  la provano sostituendo la risposta. La regola della **rotazione ritirata intera** è già nel server e il test la prova con
+  `rotation_id` scritto a mano.
+- **Il tempo stimato** a ogni lettura, per leg e in totale, solo con l'aereo di riferimento e il suo profilo. ⚠️ **Trovato scrivendo il
+  test con i numeri del design**: a 2000 NM la tabella del design §1.5 diceva 4 h 40 per «5 % + 20 min», che è la sola parte
+  proporzionale; la formula dà 5 h 00. Corretto nel design.
+- **`TourShape`**: i controlli di forma in una funzione pura (almeno una leg non ritirata per i tipi con leg, nessuna per `Open` e
+  `Container`, aeroporti noti, rilascio della leg dentro il periodo, anello per `SequentialChosenStart`, GCD sufficienti per `Distance`),
+  usata da «pronto», dai problemi prima di premere e da ogni scrittura di un tour pronto. Un problema di una leg è `legs.{numero}`, e la
+  schermata lo dice «Leg 3».
+- **Gli aerei consentiti** (tipi e gruppi) nel form del tour, con `AllowedAircraftCheck` condiviso da tour e leg. Nel form i tipi portano
+  il nome del campo del payload (`allowedAircraft`), così un rifiuto del server cade su un campo; i gruppi stanno accanto
+  (`allowedGroups`). `required_nm` nel form, letto solo da un tour `Distance`.
+- **`LegGrid`** (`screens/LegGrid.tsx`): ogni riga si modifica dov'è e si salva da sola con la sua versione, il rifiuto sotto la cella;
+  «aggiungi dopo: duplica, segue, chiudi il tour» compilano una riga nuova che il server numera al salvataggio; «togli» chiede prima al
+  server che cosa succederà (`ConfirmDialog` esteso con `onOpenChange` e `confirmDisabled`) e un ritiro vuole il motivo; una leg ritirata
+  resta nella tabella con il motivo e si ripristina; una leg con report chiede perché cambia. La cella di un aeroporto propone gli
+  aeroporti con un `datalist` del browser. La riga ha un nome accessibile («Leg 3»). ⚠️ **Guardata a 1500 px**: la prima stesura
+  scorreva in orizzontale e nascondeva numero e partenza; ora le celle hanno larghezze fisse, lo stato sta sotto il numero e la colonna
+  del tempo stimato c'è solo quando c'è una stima. **Non fatto**: i gruppi di una leg (il server li accetta, la griglia li conserva ma
+  non li offre); `LegGrid` nella galleria dei componenti, che non importa da `modules/` — lo dirà T20.
+- **I test**: unit `LegTests` (otto, dieci casi: la GCD con i test di Toursystem, il tempo stimato con i numeri del design corretti, i
+  controlli di forma di ogni tipo con leg, la rinumerazione); integrazione `LegTests` (due: misurate, numerate, «duplica dopo»,
+  eliminata e rinumerata senza toccare la leg con report, modificata solo con un motivo, ritirata e ripristinata, una rotazione
+  ritirata intera; un tour a partenza libera che chiede l'anello, le stime di un aereo a 450 kt, un tour pronto che rifiuta di rompersi,
+  il rilascio fuori periodo sotto `legs.3`, il 409 di una versione vecchia, un tour `Open` senza leg) e gli aeroporti di prova in
+  `FoTestAirports` (codici `XFA1–3`, nessuna regione ICAO); Vitest `LegGrid.test.tsx` (quattro: segue, duplica, ritira con motivo dopo la
+  risposta del server, motivo di modifica e rifiuto sotto la cella) e `schemas.test.ts` (uno in più); e2e `full/tours-legs.spec.ts` (il
+  «fatta quando» di T7a: un tour a partenza libera composto da zero nella tabella — aggiungi, segue, chiudi il tour, duplica e togli il
+  duplicato — rifiutato finché non è un anello e poi pronto). VID `780071–780072`, slug `fo-test-legs-…`. ⚠️ **I test di T6a e T6b segnavano
+  pronto tour senza leg**: ora aggiungono una leg (integrazione con le fixture di IVAO, e2e con l'aiuto `addLeg` del banco).
+- ⚠️ **Trovato dal giro e2e, non dai test**: il database del banco era dell'11 settembre, prima di T1, e aveva gli aeroporti **senza
+  coordinate** (la sincronizzazione all'avvio gira solo su un database senza centri). Rifatto il database del banco (memoria
+  `bench-database-accumulates`); in CI il banco è sempre nuovo. Un'installazione già avviata prima di T1 prende le coordinate alla prima
+  sincronizzazione notturna.
+- **Verificato in locale** (Docker acceso): unit .NET **396**, integrazione **228**, Vitest **425**, typecheck, lint, formato, i18n, smoke
+  **80**, giro e2e completo **24**. Guardata la tabella a 1500 px sul banco. **Non verificato**: il «fatta quando» con il login di
+  sviluppo vero (l'ha guidato il giro e2e con il login del banco); il recupero delle piste da IVAO vera (nei test e sul banco rispondono
+  le fixture, che non hanno piste per quegli aeroporti).
+
 ### T8 — L'import delle leg
 
-Design §8.4, ADR-051 di Toursystem. Branch `m2/t8-leg-import`.
+Design §8.4, ADR-051 di Toursystem. Branch `m2/t8-leg-import`, dopo T7a (usa `LegBook` e la griglia).
 
 1. Il file XLSX o CSV si legge **nel browser** (una libreria da scegliere in apertura: licenza compatibile con Apache-2.0 e nessun
    codice valutato a runtime, per la CSP; scritta nella PR).

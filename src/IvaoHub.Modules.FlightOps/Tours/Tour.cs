@@ -32,7 +32,7 @@ public enum HubRotationOrder
     Free,
 }
 
-/// <summary>What an <see cref="TourKind.Open"/> tour accumulates (design M2 §2.6.1). Written by T7.</summary>
+/// <summary>What an <see cref="TourKind.Open"/> tour accumulates (design M2 §2.6.1). Written by T7b.</summary>
 public enum OpenGoal
 {
     Distance,
@@ -46,7 +46,7 @@ public enum OpenGoal
 /// <summary>
 /// The aircraft a tour admits: types and groups of types, nothing else (Carmine, 16 September 2026 — IVAO's
 /// «variants» are liveries and engines of one type, so a neo with its ceo is a group). Empty admits all.
-/// Written by T7; T6 creates the column and copies it with a template.
+/// Written by T7a (the form of the tour); T6 created the column and copies it with a template.
 /// </summary>
 public sealed record AllowedAircraft(IReadOnlyList<string> Types, IReadOnlyList<long> GroupIds)
 {
@@ -81,18 +81,18 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
     public TourKind Kind { get; set; }
 
-    /// <summary>The <see cref="TourKind.Container"/> this tour is a subtour of. Written by T7.</summary>
+    /// <summary>The <see cref="TourKind.Container"/> this tour is a subtour of. Written by T7b.</summary>
     public long? ParentTourId { get; set; }
 
-    /// <summary>How many subtours complete a container. Written by T7.</summary>
+    /// <summary>How many subtours complete a container. Written by T7b.</summary>
     public int? RequiredSubtours { get; set; }
 
-    /// <summary>The distance that completes a <see cref="TourKind.Distance"/> tour. Written by T7.</summary>
+    /// <summary>The distance that completes a <see cref="TourKind.Distance"/> tour. Written by T7a.</summary>
     public int? RequiredNm { get; set; }
 
     public OpenGoal? OpenGoal { get; set; }
 
-    /// <summary>The parameters of the goal, as the goal's own schema says. Written by T7.</summary>
+    /// <summary>The parameters of the goal, as the goal's own schema says. Written by T7b.</summary>
     public string? OpenGoalJson { get; set; }
 
     public Localized<string> Title { get; set; } = Localized<string>.Empty;

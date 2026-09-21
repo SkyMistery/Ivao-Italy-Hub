@@ -44,6 +44,12 @@ export type TourDetailDto = components['schemas']['TourDetailDto'];
 export type TourReadyProblemsDto = components['schemas']['TourReadyProblemsDto'];
 export type TourStatusAction = components['schemas']['TourStatusAction'];
 type TourWriteDto = components['schemas']['TourWriteDto'];
+export type AllowedAircraft = components['schemas']['AllowedAircraft'];
+export type LegDto = components['schemas']['LegDto'];
+export type TourLegsDto = components['schemas']['TourLegsDto'];
+export type LegWriteDto = components['schemas']['LegWriteDto'];
+export type LegRemovalDto = components['schemas']['LegRemovalDto'];
+export type AirportDto = components['schemas']['AirportDto'];
 
 // ---- aircraft types -------------------------------------------------------------------------------
 
@@ -53,6 +59,15 @@ export function aircraftTypesQuery(typed: string) {
     queryKey: ['reference', 'aircraft-types', typed] as const,
     queryFn: async (): Promise<AircraftTypeDto[]> =>
       unwrap(await api.GET('/api/reference/aircraft-types', { params: { query: { q: typed } } })),
+  });
+}
+
+/** The airports that match what is typed, by ICAO, IATA or name: the cell asks again as the text changes. */
+export function airportsQuery(typed: string) {
+  return queryOptions({
+    queryKey: ['reference', 'airports', typed] as const,
+    queryFn: async (): Promise<AirportDto[]> =>
+      unwrap(await api.GET('/api/reference/airports', { params: { query: { q: typed } } })),
   });
 }
 
@@ -322,6 +337,8 @@ export function emptyTour(
     progression: 'FlyAhead',
     requiresProcedures: false,
     referenceAircraftIcao: '',
+    allowedAircraft: [],
+    allowedGroups: [],
     rowVersion: NEW_ROW_VERSION,
   };
 }
@@ -349,8 +366,26 @@ export function tourToFormValues(tour: TourDetailDto, locales: readonly string[]
     requiresProcedures: tour.requiresProcedures,
     ...(tour.minPilotRating === null ? {} : { minPilotRating: tour.minPilotRating }),
     referenceAircraftIcao: tour.referenceAircraftIcao ?? '',
+    ...(tour.requiredNm === null ? {} : { requiredNm: tour.requiredNm }),
+    // The form repeats objects: one entry per type, one per group.
+    allowedAircraft: tour.allowedAircraft.types.map((icao) => ({ icao })),
+    allowedGroups: tour.allowedAircraft.groupIds.map((id) => ({ groupId: String(id) })),
     ...(tour.awardId === null ? {} : { awardId: String(tour.awardId) }),
     rowVersion: tour.rowVersion,
+  };
+}
+
+/** The aircraft a tour admits, out of the two lists the form repeats: empty entries dropped, codes upper case. */
+export function allowedFromFormValues(
+  types: readonly { icao: string }[],
+  groups: readonly { groupId?: string | undefined }[],
+): AllowedAircraft {
+  return {
+    types: types.map((entry) => entry.icao.trim().toUpperCase()).filter((icao) => icao !== ''),
+    groupIds: groups
+      .map((entry) => entry.groupId?.trim() ?? '')
+      .filter((id) => id !== '')
+      .map(Number),
   };
 }
 
@@ -383,6 +418,8 @@ function tourBody(values: TourFormValues, briefing: Body | null): TourWriteDto {
     dailyLegLimit: values.dailyLegLimit ?? null,
     minPilotRating: values.minPilotRating ?? null,
     referenceAircraftIcao: text(values.referenceAircraftIcao)?.toUpperCase() ?? null,
+    requiredNm: values.requiredNm ?? null,
+    allowedAircraft: allowedFromFormValues(values.allowedAircraft, values.allowedGroups),
     awardId: award === null ? null : Number(award),
     rowVersion: values.rowVersion,
   };
@@ -480,6 +517,83 @@ export function useSaveTourAsTemplate(id: number) {
       ),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: toursKey });
+    },
+  });
+}
+
+// ---- legs ------------------------------------------------------------------------------------------
+
+/**
+ * Every leg of a tour, retired ones included, with the totals of those still flown (design M2 §8.4). Every write of
+ * the editor answers with the same grid, renumbered by the server, and that answer replaces this one: the editor never
+ * guesses a number.
+ */
+export function tourLegsQuery(tourId: number) {
+  return queryOptions({
+    queryKey: [...toursKey, 'legs', tourId] as const,
+    queryFn: async (): Promise<TourLegsDto> =>
+      unwrap(await api.GET('/api/flightops/tours/{tourId}/legs', { params: { path: { tourId } } })),
+  });
+}
+
+/** What removing a leg would do: deleted, retired, or retired with its rotation. Asked before anybody confirms. */
+export async function legRemoval(tourId: number, legId: number): Promise<LegRemovalDto> {
+  return unwrap(
+    await api.GET('/api/flightops/tours/{tourId}/legs/{legId}/removal', {
+      params: { path: { tourId, legId } },
+    }),
+  );
+}
+
+export type LegChange =
+  | { kind: 'create'; leg: LegWriteDto; after: number | null }
+  | { kind: 'update'; legId: number; leg: LegWriteDto }
+  | { kind: 'remove'; legId: number; reason: string | null; rowVersion: string }
+  | { kind: 'restore'; legId: number; reason: string; rowVersion: string };
+
+/**
+ * One write of the leg editor, whichever it is. The answer is the whole grid, put straight into the cache; the tour's
+ * problems of "ready" are asked again, because a leg is part of what they look at.
+ */
+export function useLegChange(tourId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (change: LegChange): Promise<TourLegsDto> => {
+      switch (change.kind) {
+        case 'create':
+          return unwrap(
+            await api.POST('/api/flightops/tours/{tourId}/legs', {
+              params: { path: { tourId }, query: change.after === null ? {} : { after: change.after } },
+              body: change.leg,
+            }),
+          );
+        case 'update':
+          return unwrap(
+            await api.PUT('/api/flightops/tours/{tourId}/legs/{legId}', {
+              params: { path: { tourId, legId: change.legId } },
+              body: change.leg,
+            }),
+          );
+        case 'remove':
+          return unwrap(
+            await api.POST('/api/flightops/tours/{tourId}/legs/{legId}/remove', {
+              params: { path: { tourId, legId: change.legId } },
+              body: { reason: change.reason, rowVersion: change.rowVersion },
+            }),
+          );
+        case 'restore':
+          return unwrap(
+            await api.POST('/api/flightops/tours/{tourId}/legs/{legId}/restore', {
+              params: { path: { tourId, legId: change.legId } },
+              body: { reason: change.reason, rowVersion: change.rowVersion },
+            }),
+          );
+      }
+    },
+    onSuccess: async (grid) => {
+      queryClient.setQueryData(tourLegsQuery(tourId).queryKey, grid);
+      await queryClient.invalidateQueries({ queryKey: tourReadyProblemsQuery(tourId).queryKey });
     },
   });
 }

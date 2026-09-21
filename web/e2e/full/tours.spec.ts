@@ -5,7 +5,15 @@ import { expect, request, test } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, choose, readInEnglish, signIn, whileWaitingFor, writeInBothLanguages } from './bench';
+import {
+  addLeg,
+  benchUrl,
+  choose,
+  readInEnglish,
+  signIn,
+  whileWaitingFor,
+  writeInBothLanguages,
+} from './bench';
 
 /**
  * The tours in the back office (M2, T6), through the real screens: a template written, a tour made from it, given its
@@ -73,6 +81,9 @@ test('a tour is made from a template, marked ready, found in search and calendar
   });
   await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
   await expect(page.getByRole('heading', { name: tourName.en })).toBeVisible();
+
+  // A sequential tour is ready only with a leg (T7a); the legs have a spec of their own.
+  await addLeg(context, Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]));
 
   // What stands in the way of "ready" is said before anybody presses it: the dates are not copied.
   await expect(page.getByText(flightops.tours.readyProblems)).toBeVisible();

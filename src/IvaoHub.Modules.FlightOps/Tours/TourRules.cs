@@ -8,6 +8,7 @@ using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -15,18 +16,60 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Modules.FlightOps.Tours;
 
 /// <summary>
-/// Whether a tour has reports, which decides whether it may be deleted or only hidden (design M2 §1.2.2). The reports
-/// arrive with T11: until then the answer is no, and T11 replaces this implementation with the query on its table.
+/// Whether a tour has reports, which decides whether it may be deleted or only hidden (design M2 §1.2.2), and which of
+/// its legs do, which decides whether a leg is deleted or retired (§1.4.1). The reports arrive with T11: until then the
+/// answer is no, and T11 replaces this implementation with the query on its table.
 /// </summary>
 public interface ITourReports
 {
     Task<bool> AnyAsync(long tourId, CancellationToken cancellationToken = default);
+
+    /// <summary>The legs of the tour at least one report points at.</summary>
+    Task<IReadOnlySet<long>> LegsWithReportsAsync(long tourId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>No tour has reports before the reports exist (T11).</summary>
 internal sealed class NoTourReportsYet : ITourReports
 {
     public Task<bool> AnyAsync(long tourId, CancellationToken cancellationToken = default) => Task.FromResult(false);
+
+    public Task<IReadOnlySet<long>> LegsWithReportsAsync(long tourId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlySet<long>>(new HashSet<long>());
+}
+
+/// <summary>
+/// Whether the aircraft a tour or a leg admits exist (design M2 §1.5): every type one the core knows, every group one
+/// of the module's. The tour's form and the leg editor refuse the same way.
+/// </summary>
+public sealed class AllowedAircraftCheck(FlightOpsDbContext database, IAircraftTypeDirectory aircraftTypes)
+{
+    /// <summary>The i18n key of what is wrong, or null.</summary>
+    public async Task<string?> ProblemAsync(AllowedAircraft allowed, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(allowed);
+
+        if (allowed.Types.Count > 0 && (await aircraftTypes.UnknownAsync([.. allowed.Types], cancellationToken)).Count > 0)
+        {
+            return "errors.aircraft.unknownType";
+        }
+
+        if (allowed.GroupIds.Count == 0)
+        {
+            return null;
+        }
+
+        var ids = allowed.GroupIds.Distinct().ToArray();
+        var known = await database.AircraftGroups.AsNoTracking().CountAsync(group => ids.Contains(group.Id), cancellationToken);
+
+        return known == ids.Length ? null : "flightops:errors.aircraftGroupUnknown";
+    }
+
+    /// <summary>Upper case, each once, in order: what is stored, whatever was typed.</summary>
+    public static AllowedAircraft Normalize(AllowedAircraft? allowed) => allowed is null
+        ? AllowedAircraft.All
+        : new AllowedAircraft(
+            [.. (allowed.Types ?? []).Select(type => type.Trim().ToUpperInvariant()).Where(type => type.Length > 0).Distinct().Order()],
+            [.. (allowed.GroupIds ?? []).Distinct().Order()]);
 }
 
 /// <summary>Refusals, one or more i18n keys per field, in the shape the form reads.</summary>
@@ -59,6 +102,7 @@ public sealed class TourSaving(
     IAircraftTypeDirectory aircraftTypes,
     ModuleSettingsStore settings,
     TourReadiness readiness,
+    AllowedAircraftCheck allowedAircraft,
     IClock clock)
 {
     public async Task<IReadOnlyDictionary<string, string[]>?> PrepareAsync(
@@ -117,6 +161,11 @@ public sealed class TourSaving(
             problems.Add("referenceAircraftIcao", "errors.aircraft.unknownType");
         }
 
+        if (await allowedAircraft.ProblemAsync(tour.AllowedAircraft, cancellationToken) is { } aircraftProblem)
+        {
+            problems.Add("allowedAircraft", aircraftProblem);
+        }
+
         if (tour.AwardId is { } awardId
             && !await hub.Awards.AsNoTracking().AnyAsync(award => award.Id == awardId, cancellationToken))
         {
@@ -133,22 +182,53 @@ public sealed class TourSaving(
             }
         }
 
+        if (problems.IsEmpty && !isNew)
+        {
+            await KeepTheLegsWithTheTourAsync(tour, cancellationToken);
+        }
+
         return problems.IsEmpty ? null : problems.Errors;
+    }
+
+    /// <summary>
+    /// The legs are in the care of the tour's departments (Carmine, 18 September 2026): when those change, the legs
+    /// follow in the same save, so the one handler never reads a leg differently from its tour.
+    /// </summary>
+    private async Task KeepTheLegsWithTheTourAsync(Tour tour, CancellationToken cancellationToken)
+    {
+        var legs = await database.Legs
+            .Where(leg => leg.TourId == tour.Id
+                && (leg.OwnerDepartment != tour.OwnerDepartment || leg.OwnerDepartmentMask != tour.OwnerDepartmentMask))
+            .ToListAsync(cancellationToken);
+
+        foreach (var leg in legs)
+        {
+            leg.OwnerDepartment = tour.OwnerDepartment;
+            leg.OwnerDepartmentMask = tour.OwnerDepartmentMask;
+        }
     }
 }
 
 /// <summary>
 /// What a tour needs before it can be marked ready (design M2 §1.2.1), in one place: the action, the list of problems
-/// the editor shows before anybody presses it, and every later save of a ready tour. The checks on the legs, the hubs
-/// and the subtours are added by T7.
+/// the editor shows before anybody presses it, and every later save of a ready tour or of one of its legs. The checks
+/// on the legs are <see cref="TourShape"/> (T7a); the hubs and the subtours are added by T7b.
 /// </summary>
 public sealed class TourReadiness(
     FlightOpsDbContext database,
     ModuleSettingsStore settings,
     BlockDocumentWalker walker,
+    IAirportDirectory airports,
     IOptions<DivisionOptions> division)
 {
-    internal async Task<TourProblems> ProblemsAsync(Tour tour, CancellationToken cancellationToken)
+    internal Task<TourProblems> ProblemsAsync(Tour tour, CancellationToken cancellationToken) =>
+        ProblemsAsync(tour, legs: null, cancellationToken);
+
+    /// <summary>
+    /// The problems of the tour with these legs — the legs as a write is about to leave them — or, when none are
+    /// handed in, with the legs as they are stored.
+    /// </summary>
+    internal async Task<TourProblems> ProblemsAsync(Tour tour, IReadOnlyList<Leg>? legs, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tour);
 
@@ -209,6 +289,16 @@ public sealed class TourReadiness(
             problems.Add("referenceAircraftIcao", "flightops:errors.referenceWithoutProfile");
         }
 
+        legs ??= await database.Legs.AsNoTracking().Where(leg => leg.TourId == tour.Id).ToListAsync(cancellationToken);
+        var known = await airports.FindAsync(
+            [.. legs.Where(leg => !leg.IsRetired).SelectMany(leg => new[] { leg.DepartureIcao, leg.ArrivalIcao })],
+            cancellationToken);
+
+        foreach (var problem in TourShape.Problems(tour, legs, known.Keys.ToHashSet(StringComparer.Ordinal)))
+        {
+            problems.Add(problem.Field, problem.Key);
+        }
+
         return problems;
     }
 }
@@ -216,7 +306,7 @@ public sealed class TourReadiness(
 /// <summary>
 /// What a template carries into a tour and a tour into a template (design M2 §1.10): the settings, the briefing and the
 /// pictures — never the address, the dates, the award, the state, the legs or the hubs. The rules and the callsign
-/// constraints are added to the copy by the phases that create them (T7, T9).
+/// constraints are added to the copy by the phases that create them (T7b, T9).
 /// </summary>
 public static class TourCopy
 {

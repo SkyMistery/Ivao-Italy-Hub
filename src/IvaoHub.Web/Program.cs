@@ -294,6 +294,7 @@ app.MapNotificationPreferenceEndpoints();
 app.MapUserPreferenceEndpoints();
 app.MapModuleSettingsEndpoints();
 app.MapAircraftTypeEndpoints();
+app.MapAirportEndpoints();
 app.MapAwardEndpoints();
 app.MapBlockDataEndpoint();
 app.MapSeoEndpoints();
