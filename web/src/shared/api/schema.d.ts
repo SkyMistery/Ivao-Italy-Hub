@@ -1182,6 +1182,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/hubs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsHubsList"];
+        put?: never;
+        post: operations["FlightOpsHubsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/hubs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsHubsGet"];
+        put: operations["FlightOpsHubsUpdate"];
+        post?: never;
+        delete: operations["FlightOpsHubsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/rotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsRotationsList"];
+        put?: never;
+        post: operations["FlightOpsRotationsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/rotations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsRotationsGet"];
+        put: operations["FlightOpsRotationsUpdate"];
+        post?: never;
+        delete: operations["FlightOpsRotationsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/callsign-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsCallsignRulesList"];
+        put?: never;
+        post: operations["FlightOpsCallsignRulesCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/callsign-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsCallsignRulesGet"];
+        put: operations["FlightOpsCallsignRulesUpdate"];
+        post?: never;
+        delete: operations["FlightOpsCallsignRulesDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1697,6 +1793,62 @@ export interface components {
             allDay: boolean;
             url: null | string;
         };
+        /**
+         * @description What a constraint looks at (Carmine, 21 September 2026, note `2026-09-21-la-forma-dei-tour`): the airline — the
+         *     three letters a callsign starts with, the rest being the pilot's choice — or a whole callsign, which only a
+         *     CallsignMode.Deny names (the Vintage Jet of Toursystem forbids four callsigns of fatal accidents).
+         * @enum {unknown}
+         */
+        CallsignMatch: "Airline" | "Exact";
+        /** @enum {unknown} */
+        CallsignMode: "Allow" | "Deny";
+        /** @description A callsign constraint as the form loads it. */
+        CallsignRuleDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            legId: null | number;
+            mode: components["schemas"]["CallsignMode"];
+            match: components["schemas"]["CallsignMatch"];
+            value: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A callsign constraint as the list shows it: the number of its leg, when it is a leg's. */
+        CallsignRuleListDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            legId: null | number;
+            /** Format: int32 */
+            legNumber: null | number;
+            mode: components["schemas"]["CallsignMode"];
+            match: components["schemas"]["CallsignMatch"];
+            value: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        CallsignRuleWriteDto: {
+            /** Format: int64 */
+            tourId: number;
+            /** Format: int64 */
+            legId: null | number;
+            mode: components["schemas"]["CallsignMode"];
+            match: components["schemas"]["CallsignMatch"];
+            value: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description The same, as the form loads it, with the version to write back. */
         CategoryDetailDto: {
             /** Format: int64 */
@@ -2182,8 +2334,33 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** @description A hub as the list and the form show it. */
+        HubDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            icao: string;
+            /** Format: int32 */
+            sort: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @enum {unknown} */
         HubRotationOrder: "Fixed" | "Free" | null;
+        /** @description What a client may set on a hub. The tour is chosen when it is created; the department is the tour's. */
+        HubWriteDto: {
+            /** Format: int64 */
+            tourId: number;
+            icao: string;
+            /** Format: int32 */
+            sort: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** Format: binary */
         IFormFile: string;
         JsonElement: unknown;
@@ -2249,8 +2426,9 @@ export interface components {
          */
         LegRemovalOutcome: "Delete" | "Retire" | "RetireRotation";
         /**
-         * @description What a client may set on a leg. The coordinates and the distance are the server's; the kind and the rotation are
-         *     written by the hub tours (T7b). `ChangeReason` is required when the leg has reports, and goes to the audit.
+         * @description What a client may set on a leg. The coordinates and the distance are the server's, and so is the place of a leg in
+         *     its rotation, read off the order of the legs; the kind and the rotation only a hub tour sets (T7b).
+         *     `ChangeReason` is required when the leg has reports, and goes to the audit.
          */
         LegWriteDto: {
             departureIcao: string;
@@ -2263,6 +2441,9 @@ export interface components {
             changeReason: null | string;
             /** Format: date-time */
             rowVersion: string;
+            kind?: components["schemas"]["LegKind"];
+            /** Format: int64 */
+            rotationId?: null | number;
         };
         /** @description A link as the form shows it, with the audit trail and the version to write back. */
         LinkDetailDto: {
@@ -2718,6 +2899,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfCallsignRuleListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["CallsignRuleListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfCategoryListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["CategoryListDto"][];
@@ -2810,6 +3014,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfHubDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["HubDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfLinkListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["LinkListDto"][];
@@ -2859,6 +3086,29 @@ export interface components {
         PagedResultOfMenuItemListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["MenuItemListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfRotationListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["RotationListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -2990,6 +3240,57 @@ export interface components {
          * @enum {unknown}
          */
         PublishStatus: "Draft" | "Published" | "Ready";
+        /** @description A rotation as the form loads it. */
+        RotationDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            hubId: number;
+            /** Format: int32 */
+            sort: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A rotation as the list shows it: its hub, and how many of its legs are still flown out of how many it needs. */
+        RotationListDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            hubId: number;
+            hubIcao: null | string;
+            /** Format: int32 */
+            sort: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int32 */
+            legs: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        RotationWriteDto: {
+            /** Format: int64 */
+            tourId: number;
+            /** Format: int64 */
+            hubId: number;
+            /** Format: int32 */
+            sort: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description One hit. What it is and where it lives; the page itself is fetched by following it. */
         SearchHitDto: {
             /** @description `core` for the editorial core, otherwise the module key. */
@@ -3047,7 +3348,8 @@ export interface components {
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
         /**
          * @description A tour as its editor loads it. `State` is what the dates say now (design M2 §1.2.1); `IsPublic`, whether
-         *     anybody outside the staff sees it now — from then on its kind no longer changes.
+         *     anybody outside the staff sees it now — from then on its kind no longer changes. On a subtour the dates are the ones
+         *     in force, and `ReleaseFromParent` and `CloseFromParent` say which of them are its container's.
          */
         TourDetailDto: {
             /** Format: int64 */
@@ -3093,6 +3395,12 @@ export interface components {
             updatedAt: string;
             /** Format: date-time */
             rowVersion: string;
+            /** Format: int64 */
+            parentTourId: null | number;
+            /** Format: int32 */
+            requiredSubtours: null | number;
+            releaseFromParent: boolean;
+            closeFromParent: boolean;
         };
         /** @description A new tour out of a template: the settings come from the template, the name and address from here. */
         TourFromTemplateRequest: {
@@ -3134,6 +3442,8 @@ export interface components {
             isHidden: boolean;
             /** Format: date-time */
             updatedAt: string;
+            /** Format: int64 */
+            parentTourId: null | number;
         };
         /**
          * @description Whether a pilot may fly the next leg before the previous one is validated (design M2 §1.2).
@@ -3169,9 +3479,11 @@ export interface components {
         /**
          * @description What a client may set on a tour. The state is not here — marking ready, back to draft, hiding and showing are
          *     actions (TourStatusRequest). Of the shape of a tour, T7a writes the distance of a `Distance` tour
-         *     and the aircraft admitted (types and groups, design M2 §1.5); the goal of an `Open` tour and the subtours are
-         *     T7b's. A null `Briefing` keeps the briefing as it is; a null `ReportWindowDays` on a new tour takes the
-         *     division's default (§1.11); a null `AllowedAircraft` admits every aircraft.
+         *     and the aircraft admitted (types and groups, design M2 §1.5); T7b the container and its subtours — the parent is
+         *     chosen when a subtour is created and never changes, and a subtour's empty date is its container's (note
+         *     2026-09-21-la-forma-dei-tour); the goal of an `Open` tour is T7c's. A null `Briefing` keeps the briefing as
+         *     it is; a null `ReportWindowDays` on a new tour takes the division's default (§1.11); a null
+         *     `AllowedAircraft` admits every aircraft.
          */
         TourWriteDto: {
             ownerDepartment: components["schemas"]["Department"];
@@ -3207,6 +3519,10 @@ export interface components {
             awardId: null | number;
             /** Format: date-time */
             rowVersion: string;
+            /** Format: int64 */
+            parentTourId?: null | number;
+            /** Format: int32 */
+            requiredSubtours?: null | number;
         };
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
@@ -6850,6 +7166,477 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsHubsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfHubDto"];
+                };
+            };
+        };
+    };
+    FlightOpsHubsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["HubWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsHubsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsHubsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["HubWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsHubsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsRotationsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfRotationListDto"];
+                };
+            };
+        };
+    };
+    FlightOpsRotationsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RotationWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotationDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsRotationsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotationDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsRotationsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RotationWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotationDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsRotationsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsCallsignRulesList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfCallsignRuleListDto"];
+                };
+            };
+        };
+    };
+    FlightOpsCallsignRulesCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CallsignRuleWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallsignRuleDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsCallsignRulesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallsignRuleDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsCallsignRulesUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CallsignRuleWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallsignRuleDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsCallsignRulesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

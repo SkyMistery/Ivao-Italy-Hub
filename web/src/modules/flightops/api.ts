@@ -5,13 +5,16 @@ import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 import type { components } from '../../shared/api/schema';
-import { listQuerySerializer, toQuery, type ListSearch } from '../../shared/list';
+import { listQuerySerializer, listSearchSchema, toQuery, type ListSearch } from '../../shared/list';
 
 import {
   settingsFromFormValues,
   type AircraftGroupFormValues,
   type AircraftProfileFormValues,
+  type CallsignRuleFormValues,
   type FlightOpsSettings,
+  type HubFormValues,
+  type RotationFormValues,
   type SettingsFormValues,
   type TourFormValues,
   type TourFromTemplateFormValues,
@@ -50,6 +53,11 @@ export type TourLegsDto = components['schemas']['TourLegsDto'];
 export type LegWriteDto = components['schemas']['LegWriteDto'];
 export type LegRemovalDto = components['schemas']['LegRemovalDto'];
 export type AirportDto = components['schemas']['AirportDto'];
+export type HubDto = components['schemas']['HubDto'];
+export type RotationDto = components['schemas']['RotationDto'];
+export type RotationListDto = components['schemas']['RotationListDto'];
+export type CallsignRuleDto = components['schemas']['CallsignRuleDto'];
+export type CallsignRuleListDto = components['schemas']['CallsignRuleListDto'];
 
 // ---- aircraft types -------------------------------------------------------------------------------
 
@@ -285,7 +293,7 @@ export function useSaveSettings() {
  */
 export function toursListQuery(
   search: ListSearch,
-  filters: { isTemplate?: boolean; needsOwnDailyLimit?: boolean } = {},
+  filters: { isTemplate?: boolean; needsOwnDailyLimit?: boolean; parent?: number } = {},
 ) {
   return queryOptions({
     queryKey: [...toursKey, 'list', search, filters] as const,
@@ -296,6 +304,8 @@ export function toursListQuery(
           querySerializer: listQuerySerializer({
             ...(filters.isTemplate === undefined ? {} : { isTemplate: String(filters.isTemplate) }),
             ...(filters.needsOwnDailyLimit === true ? { needsOwnDailyLimit: 'true' } : {}),
+            // The subtours of a container; without it, the server lists the tours that are not subtours (T7b).
+            ...(filters.parent === undefined ? {} : { parent: String(filters.parent) }),
           }),
         }),
       ),
@@ -319,16 +329,19 @@ export function tourReadyProblemsQuery(id: number) {
   });
 }
 
+/** A new tour, template, or subtour of a container — whose dates, left empty, are the container's. */
 export function emptyTour(
   department: Department,
   locales: readonly string[],
   isTemplate: boolean,
+  parentTourId?: number,
 ): TourFormValues {
   const blank = Object.fromEntries(locales.map((locale) => [locale, '']));
 
   return {
     ownerDepartment: department,
     isTemplate,
+    ...(parentTourId === undefined ? {} : { parentTourId }),
     kind: 'Sequential',
     title: blank,
     slug: '',
@@ -350,12 +363,14 @@ export function tourToFormValues(tour: TourDetailDto, locales: readonly string[]
   return {
     ownerDepartment: tour.ownerDepartment,
     isTemplate: tour.isTemplate,
+    ...(tour.parentTourId === null ? {} : { parentTourId: tour.parentTourId }),
     kind: tour.kind,
     title: spread(tour.title),
     slug: tour.slug ?? '',
     summary: spread(tour.summary),
-    ...(tour.releaseAt === null ? {} : { releaseAt: tour.releaseAt }),
-    ...(tour.closeAt === null ? {} : { closeAt: tour.closeAt }),
+    // A subtour's date taken from its container is shown empty, and stays the container's when saved as it is.
+    ...(tour.releaseAt === null || tour.releaseFromParent ? {} : { releaseAt: tour.releaseAt }),
+    ...(tour.closeAt === null || tour.closeFromParent ? {} : { closeAt: tour.closeAt }),
     showPreview: tour.showPreview,
     ...(tour.coverMediaId === null ? {} : { coverMediaId: tour.coverMediaId }),
     ...(tour.bannerMediaId === null ? {} : { bannerMediaId: tour.bannerMediaId }),
@@ -367,6 +382,7 @@ export function tourToFormValues(tour: TourDetailDto, locales: readonly string[]
     ...(tour.minPilotRating === null ? {} : { minPilotRating: tour.minPilotRating }),
     referenceAircraftIcao: tour.referenceAircraftIcao ?? '',
     ...(tour.requiredNm === null ? {} : { requiredNm: tour.requiredNm }),
+    ...(tour.requiredSubtours === null ? {} : { requiredSubtours: tour.requiredSubtours }),
     // The form repeats objects: one entry per type, one per group.
     allowedAircraft: tour.allowedAircraft.types.map((icao) => ({ icao })),
     allowedGroups: tour.allowedAircraft.groupIds.map((id) => ({ groupId: String(id) })),
@@ -422,6 +438,8 @@ function tourBody(values: TourFormValues, briefing: Body | null): TourWriteDto {
     allowedAircraft: allowedFromFormValues(values.allowedAircraft, values.allowedGroups),
     awardId: award === null ? null : Number(award),
     rowVersion: values.rowVersion,
+    parentTourId: values.parentTourId ?? null,
+    requiredSubtours: values.requiredSubtours ?? null,
   };
 }
 
@@ -595,5 +613,211 @@ export function useLegChange(tourId: number) {
       queryClient.setQueryData(tourLegsQuery(tourId).queryKey, grid);
       await queryClient.invalidateQueries({ queryKey: tourReadyProblemsQuery(tourId).queryKey });
     },
+  });
+}
+
+// ---- the shape of a tour: hubs, rotations, callsign constraints (T7b) ------------------------------
+
+const hubsKey = ['flightops', 'hubs'] as const;
+const rotationsKey = ['flightops', 'rotations'] as const;
+const callsignRulesKey = ['flightops', 'callsign-rules'] as const;
+
+/** Every row of a tour's tab on one page: a tour has a handful of hubs, rotations and constraints, never pages of them. */
+const allOfATour: ListSearch = listSearchSchema.parse({ pageSize: 100 });
+
+/** The subtours of a container (design M2 §2.7): the tours whose parent it is. */
+export function subtoursQuery(containerId: number, search: ListSearch) {
+  return toursListQuery(search, { parent: containerId });
+}
+
+export function hubsQuery(tourId: number, search: ListSearch = allOfATour) {
+  return queryOptions({
+    queryKey: [...hubsKey, 'list', tourId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/flightops/hubs', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ tourId: String(tourId) }),
+        }),
+      ),
+  });
+}
+
+export function hubQuery(id: number) {
+  return queryOptions({
+    queryKey: [...hubsKey, 'detail', id] as const,
+    queryFn: async (): Promise<HubDto> =>
+      unwrap(await api.GET('/api/flightops/hubs/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function rotationsQuery(tourId: number, search: ListSearch = allOfATour) {
+  return queryOptions({
+    queryKey: [...rotationsKey, 'list', tourId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/flightops/rotations', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ tourId: String(tourId) }),
+        }),
+      ),
+  });
+}
+
+export function rotationQuery(id: number) {
+  return queryOptions({
+    queryKey: [...rotationsKey, 'detail', id] as const,
+    queryFn: async (): Promise<RotationDto> =>
+      unwrap(await api.GET('/api/flightops/rotations/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function callsignRulesQuery(tourId: number, search: ListSearch = allOfATour) {
+  return queryOptions({
+    queryKey: [...callsignRulesKey, 'list', tourId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/flightops/callsign-rules', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ tourId: String(tourId) }),
+        }),
+      ),
+  });
+}
+
+export function callsignRuleQuery(id: number) {
+  return queryOptions({
+    queryKey: [...callsignRulesKey, 'detail', id] as const,
+    queryFn: async (): Promise<CallsignRuleDto> =>
+      unwrap(await api.GET('/api/flightops/callsign-rules/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function emptyHub(tourId: number, sort: number): HubFormValues {
+  return { tourId, icao: '', sort, rowVersion: NEW_ROW_VERSION };
+}
+
+export function hubToFormValues(hub: HubDto): HubFormValues {
+  return { tourId: hub.tourId, icao: hub.icao, sort: hub.sort, rowVersion: hub.rowVersion };
+}
+
+export function emptyRotation(tourId: number, sort: number): RotationFormValues {
+  return { tourId, hubId: '', sort, size: '2', rowVersion: NEW_ROW_VERSION };
+}
+
+export function rotationToFormValues(rotation: RotationDto): RotationFormValues {
+  return {
+    tourId: rotation.tourId,
+    hubId: String(rotation.hubId),
+    sort: rotation.sort,
+    size: String(rotation.size) as RotationFormValues['size'],
+    rowVersion: rotation.rowVersion,
+  };
+}
+
+export function emptyCallsignRule(tourId: number): CallsignRuleFormValues {
+  return { tourId, mode: 'Allow', match: 'Airline', value: '', rowVersion: NEW_ROW_VERSION };
+}
+
+export function callsignRuleToFormValues(rule: CallsignRuleDto): CallsignRuleFormValues {
+  return {
+    tourId: rule.tourId,
+    mode: rule.mode,
+    match: rule.match,
+    value: rule.value,
+    ...(rule.legId === null ? {} : { legId: String(rule.legId) }),
+    rowVersion: rule.rowVersion,
+  };
+}
+
+/**
+ * After a row of a tour's shape is written, what reads it is asked again: its list, the problems of "ready" of its
+ * tour, and — for a rotation — the grid of the legs, which offers the rotations.
+ */
+function useShapeSaved(key: readonly string[]) {
+  const queryClient = useQueryClient();
+
+  return async (tourId: number) => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: key }),
+      queryClient.invalidateQueries({ queryKey: tourReadyProblemsQuery(tourId).queryKey }),
+    ]);
+  };
+}
+
+export function useSaveHub(id: number | null) {
+  const saved = useShapeSaved(hubsKey);
+
+  return useMutation({
+    mutationFn: async (values: HubFormValues): Promise<HubDto> => {
+      const body = { ...values, icao: values.icao.trim().toUpperCase() };
+      return id === null
+        ? unwrap(await api.POST('/api/flightops/hubs', { body }))
+        : unwrap(await api.PUT('/api/flightops/hubs/{id}', { params: { path: { id: String(id) } }, body }));
+    },
+    onSuccess: (hub) => saved(hub.tourId),
+  });
+}
+
+export function useSaveRotation(id: number | null) {
+  const saved = useShapeSaved(rotationsKey);
+
+  return useMutation({
+    mutationFn: async (values: RotationFormValues): Promise<RotationDto> => {
+      const body = { ...values, hubId: Number(values.hubId), size: Number(values.size) };
+      return id === null
+        ? unwrap(await api.POST('/api/flightops/rotations', { body }))
+        : unwrap(
+            await api.PUT('/api/flightops/rotations/{id}', { params: { path: { id: String(id) } }, body }),
+          );
+    },
+    onSuccess: (rotation) => saved(rotation.tourId),
+  });
+}
+
+export function useSaveCallsignRule(id: number | null) {
+  const saved = useShapeSaved(callsignRulesKey);
+
+  return useMutation({
+    mutationFn: async (values: CallsignRuleFormValues): Promise<CallsignRuleDto> => {
+      const legId = values.legId?.trim() ?? '';
+      const body = {
+        tourId: values.tourId,
+        mode: values.mode,
+        match: values.match,
+        value: values.value.trim().toUpperCase(),
+        legId: legId === '' ? null : Number(legId),
+        rowVersion: values.rowVersion,
+      };
+      return id === null
+        ? unwrap(await api.POST('/api/flightops/callsign-rules', { body }))
+        : unwrap(
+            await api.PUT('/api/flightops/callsign-rules/{id}', {
+              params: { path: { id: String(id) } },
+              body,
+            }),
+          );
+    },
+    onSuccess: (rule) => saved(rule.tourId),
+  });
+}
+
+/** Deleting a hub, a rotation or a constraint: the server refuses a hub with rotations and a rotation with legs. */
+export function useDeleteShapeRow(resource: 'hubs' | 'rotations' | 'callsign-rules', tourId: number) {
+  const saved = useShapeSaved(['flightops', resource]);
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> => {
+      const path = { params: { path: { id: String(id) } } };
+      switch (resource) {
+        case 'hubs':
+          return unwrapEmpty(await api.DELETE('/api/flightops/hubs/{id}', path));
+        case 'rotations':
+          return unwrapEmpty(await api.DELETE('/api/flightops/rotations/{id}', path));
+        case 'callsign-rules':
+          return unwrapEmpty(await api.DELETE('/api/flightops/callsign-rules/{id}', path));
+      }
+    },
+    onSuccess: () => saved(tourId),
   });
 }

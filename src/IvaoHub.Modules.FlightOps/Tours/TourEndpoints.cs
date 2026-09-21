@@ -30,6 +30,12 @@ public static class TourEndpoints
     /// <summary><c>filter[needsOwnDailyLimit]=true</c>: the tours that forbid switching the division's limit off (§3.7).</summary>
     public const string NeedsOwnDailyLimitFilter = "needsOwnDailyLimit";
 
+    /// <summary>
+    /// <c>filter[parent]={id}</c>: the subtours of a container; <c>none</c>, the default, the tours that are not
+    /// subtours — a subtour is listed in its container's tab (note 2026-09-21-la-forma-dei-tour).
+    /// </summary>
+    public const string ParentFilter = "parent";
+
     public static IEndpointRouteBuilder MapTourEndpoints(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -65,14 +71,22 @@ public static class TourEndpoints
                 bool.TryParse(raw, out var needs)
                     ? needs ? query.Where(TourState.NeedsOwnDailyLimit(clock.UtcNow)) : query
                     : null;
+            options.CustomFilters[ParentFilter] = (query, raw) =>
+                raw == "none" ? query.Where(tour => tour.ParentTourId == null)
+                : raw == "any" ? query
+                : long.TryParse(raw, out var parent) ? query.Where(tour => tour.ParentTourId == parent)
+                : null;
+            options.DefaultFilters[ParentFilter] = "none";
 
             options.ToList = tour => mapper.ToList(tour, clock.UtcNow);
             options.ToDetail = tour => mapper.ToDetail(tour, clock.UtcNow);
             options.Apply = mapper.Apply;
+            options.BeforeAuthorize = (tour, saving) =>
+                saving.Services.GetRequiredService<TourSaving>().AdoptAsync(tour, saving.CancellationToken);
             options.BeforeSave = (tour, saving) =>
                 saving.Services.GetRequiredService<TourSaving>().PrepareAsync(tour, saving.IsNew, saving.CancellationToken);
 
-            // A tour somebody has reported on is hidden, never deleted (§1.2.2).
+            // A tour somebody has reported on is hidden, never deleted (§1.2.2); a container goes after its subtours.
             options.Delete = async (tour, services, cancellationToken) =>
             {
                 if (await services.GetRequiredService<ITourReports>().AnyAsync(tour.Id, cancellationToken))
@@ -80,7 +94,13 @@ public static class TourEndpoints
                     throw new DomainRefusalException("id", "flightops:errors.tourHasReports");
                 }
 
-                services.GetRequiredService<FlightOpsDbContext>().Tours.Remove(tour);
+                var database = services.GetRequiredService<FlightOpsDbContext>();
+                if (await CrudSource.BackOffice<Tour>(database).AnyAsync(row => row.ParentTourId == tour.Id, cancellationToken))
+                {
+                    throw new DomainRefusalException("id", "flightops:errors.containerHasSubtours");
+                }
+
+                database.Tours.Remove(tour);
             };
         });
 
@@ -245,7 +265,7 @@ public static class TourEndpoints
         tour.Title = request.Title;
         tour.Slug = request.Slug.Trim().ToLowerInvariant();
 
-        return await CreateAsync(tour, TourPermissions.Edit, database, saving, authorization, currentUser, catalog, clock, http);
+        return await CreateAsync(tour, template.Id, TourPermissions.Edit, database, saving, authorization, currentUser, catalog, clock, http);
     }
 
     private static async Task<IResult> SaveAsTemplateAsync(
@@ -283,12 +303,16 @@ public static class TourEndpoints
         template.IsTemplate = true;
         template.Title = request.Title;
 
-        return await CreateAsync(template, TourPermissions.ManageTemplates, database, saving, authorization, currentUser, catalog, clock, http);
+        return await CreateAsync(template, source.Id, TourPermissions.ManageTemplates, database, saving, authorization, currentUser, catalog, clock, http);
     }
 
-    /// <summary>The end both copies share: permission on the row as it will be, the rules of every save, the save.</summary>
+    /// <summary>
+    /// The end both copies share: permission on the row as it will be, the rules of every save, the save — and the
+    /// callsign constraints of the source's tour copied onto the new row, in the same transaction (§1.10).
+    /// </summary>
     private static async Task<IResult> CreateAsync(
         Tour tour,
+        long sourceId,
         string permission,
         FlightOpsDbContext database,
         TourSaving saving,
@@ -310,7 +334,17 @@ public static class TourEndpoints
             return CrudProblems.Validation(refused, new Dictionary<string, string[]>(StringComparer.Ordinal), catalog, currentUser.Locale);
         }
 
+        var rules = await database.CallsignRules.AsNoTracking()
+            .Where(rule => rule.TourId == sourceId)
+            .ToListAsync(http.RequestAborted);
+
+        await using var transaction = await database.Database.BeginTransactionAsync(http.RequestAborted);
         await database.SaveChangesAsync(http.RequestAborted);
+
+        // The new row has its identifier only now.
+        database.CallsignRules.AddRange(TourCopy.CallsignRules(rules, tour));
+        await database.SaveChangesAsync(http.RequestAborted);
+        await transaction.CommitAsync(http.RequestAborted);
 
         return Results.Created($"{Pattern}/{tour.Id}", new TourMapper().ToDetail(tour, clock.UtcNow));
     }

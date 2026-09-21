@@ -3,6 +3,7 @@ import {
   Button,
   DropdownMenu,
   Input,
+  Select,
   Subtle,
   TableBody,
   TableCell,
@@ -22,6 +23,7 @@ import { ConfirmDialog, Notice } from '../../../shared/ui';
 import {
   airportsQuery,
   legRemoval,
+  rotationsQuery,
   tourLegsQuery,
   useLegChange,
   type LegDto,
@@ -39,7 +41,14 @@ import {
  *
  * The distance and the estimated time are the server's, computed at every read (§1.5): the table shows them and never
  * computes them. Every write answers with the whole grid, which replaces the one on screen.
+ *
+ * On a hub tour one more column says where a leg belongs (§1.3, T7b): a rotation of a hub, the connection between two
+ * hubs, or nowhere yet. Its place inside the rotation is the server's, from the order of the legs.
  */
+
+/** Where a leg of a hub tour belongs: nowhere yet, the connection between two hubs, or a rotation by its identifier. */
+const NOWHERE = 'none';
+const CONNECTION = 'connection';
 
 /** A row being written: the saved leg it edits, or a new one after a leg (null: at the end). */
 interface Draft {
@@ -56,6 +65,8 @@ interface Draft {
   /** `YYYY-MM-DDTHH:mm`, UTC, like every instant a form of the hub writes; empty for none. */
   readonly releaseAt: string;
   readonly changeReason: string;
+  /** `none`, `connection`, or the identifier of a rotation: only a hub tour shows it. */
+  readonly placement: string;
 }
 
 type Errors = Readonly<Record<string, string>>;
@@ -67,6 +78,8 @@ const FIELDS = [
   'flightNumber',
   'aircraft',
   'releaseAt',
+  'kind',
+  'rotationId',
 ] as const;
 
 function fromLeg(leg: LegDto): Draft {
@@ -82,10 +95,18 @@ function fromLeg(leg: LegDto): Draft {
     groupIds: leg.aircraft.groupIds,
     releaseAt: leg.releaseAt?.slice(0, 16) ?? '',
     changeReason: '',
+    placement:
+      leg.kind === 'HubConnection' ? CONNECTION : leg.rotationId === null ? NOWHERE : String(leg.rotationId),
   };
 }
 
-function blank(key: string, after: number | null, departureIcao = '', arrivalIcao = ''): Draft {
+function blank(
+  key: string,
+  after: number | null,
+  departureIcao = '',
+  arrivalIcao = '',
+  placement = NOWHERE,
+): Draft {
   return {
     key,
     legId: null,
@@ -98,6 +119,7 @@ function blank(key: string, after: number | null, departureIcao = '', arrivalIca
     groupIds: [],
     releaseAt: '',
     changeReason: '',
+    placement,
   };
 }
 
@@ -110,7 +132,8 @@ function sameAs(draft: Draft, leg: LegDto): boolean {
     draft.flightNumber.trim() === saved.flightNumber &&
     draft.types.trim() === saved.types &&
     draft.groupIds.join() === saved.groupIds.join() &&
-    draft.releaseAt === saved.releaseAt
+    draft.releaseAt === saved.releaseAt &&
+    draft.placement === saved.placement
   );
 }
 
@@ -132,6 +155,9 @@ function toPayload(draft: Draft, rowVersion: string): LegWriteDto {
     releaseAt: draft.releaseAt === '' ? null : `${draft.releaseAt}:00Z`,
     changeReason: text(draft.changeReason),
     rowVersion,
+    kind: draft.placement === CONNECTION ? 'HubConnection' : 'Normal',
+    rotationId:
+      draft.placement === CONNECTION || draft.placement === NOWHERE ? null : Number(draft.placement),
   };
 }
 
@@ -232,6 +258,35 @@ function TextCell({
   );
 }
 
+/** Where a leg of a hub tour belongs: a rotation, the connection between two hubs, or nowhere yet. */
+function PlacementCell({
+  value,
+  label,
+  items,
+  error,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  items: { value: string; label: string }[];
+  error: string | undefined;
+  disabled: boolean;
+  onChange: (next: string) => void;
+}) {
+  const id = useId();
+
+  return (
+    <div className="flex w-36 flex-col gap-1">
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
+      <Select id={id} value={value} disabled={disabled} onValueChange={onChange} items={items} />
+      {error === undefined ? null : <span className="text-destructive text-xs">{error}</span>}
+    </div>
+  );
+}
+
 /** "Remove": the server says first whether the leg is deleted or retired, and a retirement needs a reason. */
 function RemoveLeg({
   tourId,
@@ -322,6 +377,8 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
   const { t, i18n } = useTranslation();
   const grid = useQuery(tourLegsQuery(tour.id)).data;
   const change = useLegChange(tour.id);
+  const hub = tour.kind === 'Hub';
+  const rotations = useQuery({ ...rotationsQuery(tour.id), enabled: hub }).data?.items ?? [];
 
   // The rows being written, by key: a saved leg's identifier, or "new-…" for a leg not saved yet.
   const [drafts, setDrafts] = useState<Readonly<Record<string, Draft>>>({});
@@ -344,17 +401,39 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
     setErrors((current) => Object.fromEntries(Object.entries(current).filter(([row]) => row !== key)));
   };
 
-  const add = (after: number | null, departureIcao = '', arrivalIcao = '', copy?: Draft) => {
+  const add = (
+    after: number | null,
+    departureIcao = '',
+    arrivalIcao = '',
+    copy?: Draft,
+    placement?: string,
+  ) => {
     const key = `new-${counter}`;
     setCounter(counter + 1);
     setDrafts((current) => ({
       ...current,
       [key]:
         copy === undefined
-          ? blank(key, after, departureIcao, arrivalIcao)
+          ? blank(key, after, departureIcao, arrivalIcao, placement)
           : { ...copy, key, legId: null, after, changeReason: '' },
     }));
   };
+
+  // "LIRF 2 (3/4)": the hub, the place of the rotation in it, and how many of its legs there are out of its size. Short,
+  // because the table has to fit a screen without scrolling (T7a, looked at at 1500 px).
+  const placements = [
+    { value: NOWHERE, label: t('flightops:legs.placement.none') },
+    { value: CONNECTION, label: t('flightops:legs.placement.connection') },
+    ...rotations.map((rotation) => ({
+      value: String(rotation.id),
+      label: t('flightops:legs.placement.rotation', {
+        hub: rotation.hubIcao ?? '',
+        number: rotations.filter((other) => other.hubId === rotation.hubId).indexOf(rotation) + 1,
+        legs: rotation.legs,
+        size: rotation.size,
+      }),
+    })),
+  ];
 
   /** A refusal: what names a cell goes under the cell, the rest — a ready tour that would stop being one — above. */
   const refused = (key: string, error: unknown) => {
@@ -437,6 +516,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                 <TableHead className="px-2">#</TableHead>
                 <TableHead className="px-2">{t('flightops:legs.fields.departureIcao')}</TableHead>
                 <TableHead className="px-2">{t('flightops:legs.fields.arrivalIcao')}</TableHead>
+                {hub ? <TableHead className="px-2">{t('flightops:legs.fields.rotationId')}</TableHead> : null}
                 <TableHead className="px-2 text-right">{t('flightops:legs.fields.distanceNm')}</TableHead>
                 {estimates ? (
                   <TableHead className="px-2 text-right">
@@ -512,6 +592,18 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                         onChange={(next) => edit(draft, { arrivalIcao: next })}
                       />
                     </TableCell>
+                    {hub ? (
+                      <TableCell className={cell}>
+                        <PlacementCell
+                          label={t('flightops:legs.fields.rotationId')}
+                          value={draft.placement}
+                          items={placements}
+                          error={cellErrors.rotationId ?? cellErrors.kind}
+                          disabled={locked}
+                          onChange={(next) => edit(draft, { placement: next })}
+                        />
+                      </TableCell>
+                    ) : null}
                     <TableCell className={`${cell} pt-4 text-right tabular-nums`}>
                       {leg === undefined ? '' : leg.distanceNm.toLocaleString(i18n.language)}
                     </TableCell>
@@ -540,7 +632,8 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                     </TableCell>
                     <TableCell className={cell}>
                       <TextCell
-                        width="w-32"
+                        // A hub tour has one column more: the room comes from here (looked at at 1500 px, T7b).
+                        width={hub ? 'w-28' : 'w-32'}
                         label={t('flightops:legs.fields.aircraft')}
                         value={draft.types}
                         error={cellErrors.aircraft}
@@ -608,7 +701,14 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                                   },
                                   {
                                     label: t('flightops:legs.actions.follows'),
-                                    onSelect: () => add(leg.id, leg.arrivalIcao),
+                                    onSelect: () =>
+                                      add(
+                                        leg.id,
+                                        leg.arrivalIcao,
+                                        '',
+                                        undefined,
+                                        leg.rotationId === null ? NOWHERE : String(leg.rotationId),
+                                      ),
                                   },
                                   ...(first === undefined
                                     ? []

@@ -19,7 +19,10 @@
     "tabs": {
       "settings": "Impostazioni",
       "briefing": "Briefing",
-      "legs": "Leg"
+      "legs": "Leg",
+      "hubs": "Hub e rotazioni",
+      "subtours": "Sottotour",
+      "callsigns": "Callsign"
     },
     "briefing": {
       "save": "Salva il briefing",
@@ -66,7 +69,12 @@
       "icao": "Tipo",
       "groupId": "Gruppo",
       "legs": "Leg",
-      "allowedAircraft": "Tipi di aereo ammessi (nessuno, e nessun gruppo: tutti gli aerei)"
+      "allowedAircraft": "Tipi di aereo ammessi (nessuno, e nessun gruppo: tutti gli aerei)",
+      "requiredSubtours": "Sottotour da completare (solo tour con sottotour)",
+      "parentTourId": "Tour con sottotour",
+      "hubs": "Hub",
+      "rotations": "Rotazioni",
+      "subtours": "Sottotour"
     },
     "options": {
       "kind": {
@@ -101,6 +109,10 @@
       "groupId": {
         "none": "Scegli un gruppo"
       }
+    },
+    "hints": {
+      "releaseAt": "In un sottotour, vuoto è il rilascio del tour che lo contiene.",
+      "closeAt": "In un sottotour, vuota è la chiusura del tour che lo contiene."
     }
   },
   "tourTemplates": {
@@ -208,7 +220,35 @@
     "noLegs": "Il tour non ha leg da volare.",
     "legReleaseOutsidePeriod": "Il rilascio di questa leg è fuori dal periodo del tour.",
     "notARing": "Un tour con partenza a scelta è un anello: ogni arrivo è la partenza successiva, e l'ultimo è la prima partenza.",
-    "distanceUnreachable": "Tutte le leg insieme non arrivano alla distanza da completare."
+    "distanceUnreachable": "Tutte le leg insieme non arrivano alla distanza da completare.",
+    "tourUnknown": "Questo tour non esiste.",
+    "noHubs": "Un tour a hub ha almeno un hub.",
+    "hubWithoutRotations": "Questo hub non ha rotazioni da volare.",
+    "rotationSize": "Questa rotazione non ha tante leg quante ne dice la sua misura.",
+    "rotationNotAtHub": "Una rotazione parte dal suo hub con la prima leg e ci torna con l'ultima.",
+    "rotationSizeChoice": "Una rotazione ha 2, 4 o 6 leg.",
+    "rotationUnknown": "Questa rotazione non è del tour.",
+    "rotationHasLegs": "Questa rotazione ha delle leg: spostale o toglile prima.",
+    "legNotInRotation": "In un tour a hub ogni leg sta in una rotazione, o collega due hub.",
+    "connectionNotBetweenHubs": "Un collegamento va da un hub del tour a un altro.",
+    "connectionHasNoRotation": "Un collegamento fra hub non fa parte di una rotazione.",
+    "kindHasNoHubs": "Solo un tour a hub ha hub e rotazioni.",
+    "legHubOnly": "Rotazioni e collegamenti sono di un tour a hub.",
+    "templateHasNoHubs": "Un template non ha hub: si scrivono nel tour che nasce da lui.",
+    "hubTaken": "Questo aeroporto è già un hub del tour.",
+    "hubUnknown": "Questo hub non è del tour.",
+    "hubHasRotations": "Questo hub ha delle rotazioni: toglile prima.",
+    "containerNeedsSubtours": "Un tour con sottotour ne ha almeno due.",
+    "requiredSubtoursTooMany": "Chiede più sottotour di quanti ne ha.",
+    "containerHasSubtours": "Questo tour ha dei sottotour: tiene il suo tipo e si elimina dopo di loro.",
+    "parentUnknown": "Un sottotour appartiene a un tour con sottotour che non è un template.",
+    "subtourNotContainer": "Un sottotour non ha sottotour suoi.",
+    "subtourHasNoAward": "Un sottotour non ha award: l'award è del tour che lo contiene.",
+    "subtourOutsideParent": "Le date di un sottotour stanno dentro il periodo del tour che lo contiene.",
+    "subtoursOutsideParent": "Un sottotour pronto ha date sue fuori da questo periodo.",
+    "airlineCode": "Scrivi la compagnia con il suo codice di tre lettere.",
+    "callsign": "Scrivi il callsign in lettere e cifre, senza spazi.",
+    "exactOnlyDenies": "Un callsign intero si può solo vietare: una compagnia consentita lascia il resto al pilota."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -227,7 +267,8 @@
       "releaseAt": "Rilascio proprio (UTC)",
       "state": "Stato",
       "reason": "Motivo",
-      "changeReason": "Perché cambia (ha dei report)"
+      "changeReason": "Perché cambia (ha dei report)",
+      "rotationId": "Rotazione"
     },
     "state": {
       "retired": "Ritirata",
@@ -253,6 +294,84 @@
     "restore": {
       "title": "Ripristinare la leg {{number}}?",
       "description": "La leg torna a volarsi e ricompare nella pagina pubblica. Scrivi il motivo."
+    },
+    "placement": {
+      "none": "Nessuna",
+      "connection": "Collegamento",
+      "rotation": "{{hub}} {{number}} ({{legs}}/{{size}})"
+    }
+  },
+  "subtours": {
+    "create": "Nuovo sottotour"
+  },
+  "hubs": {
+    "title": "Hub",
+    "create": "Nuovo hub",
+    "edit": "Modifica hub",
+    "row": "Hub {{icao}}",
+    "delete": {
+      "title": "Eliminare questo hub?",
+      "description": "Un hub con rotazioni non si elimina: togli prima le sue rotazioni."
+    },
+    "fields": {
+      "icao": "Aeroporto (ICAO)",
+      "sort": "Ordine"
+    }
+  },
+  "rotations": {
+    "title": "Rotazioni",
+    "create": "Nuova rotazione",
+    "edit": "Modifica rotazione",
+    "row": "Rotazione {{number}} di {{hub}}",
+    "delete": {
+      "title": "Eliminare questa rotazione?",
+      "description": "Una rotazione con leg non si elimina: sposta o togli prima le sue leg."
+    },
+    "fields": {
+      "hubId": "Hub",
+      "hubIcao": "Hub",
+      "sort": "Ordine nell'hub",
+      "size": "Leg",
+      "legs": "Leg scritte"
+    },
+    "options": {
+      "size": {
+        "2": "2 leg",
+        "4": "4 leg",
+        "6": "6 leg"
+      }
+    }
+  },
+  "callsigns": {
+    "title": "Vincoli sul callsign",
+    "create": "Nuovo vincolo",
+    "edit": "Modifica vincolo",
+    "delete": {
+      "title": "Eliminare questo vincolo?",
+      "description": "Dal prossimo report i piloti non sono più tenuti a rispettarlo."
+    },
+    "fields": {
+      "mode": "Regola",
+      "match": "Su",
+      "value": "Compagnia o callsign",
+      "legId": "Leg (vuoto: tutto il tour)",
+      "legNumber": "Leg"
+    },
+    "hints": {
+      "value": "Una compagnia è il suo codice di tre lettere: quello che segue lo sceglie il pilota. Un callsign intero si può solo vietare."
+    },
+    "options": {
+      "mode": {
+        "Allow": "Consenti",
+        "Deny": "Vieta"
+      },
+      "match": {
+        "Airline": "Compagnia",
+        "Exact": "Callsign intero"
+      },
+      "legId": {
+        "none": "Tutto il tour"
+      }
     }
   }
 }

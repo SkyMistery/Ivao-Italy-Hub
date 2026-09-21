@@ -43,8 +43,9 @@ public sealed record TourLegsDto(
     int? TotalEstimatedMinutes);
 
 /// <summary>
-/// What a client may set on a leg. The coordinates and the distance are the server's; the kind and the rotation are
-/// written by the hub tours (T7b). <c>ChangeReason</c> is required when the leg has reports, and goes to the audit.
+/// What a client may set on a leg. The coordinates and the distance are the server's, and so is the place of a leg in
+/// its rotation, read off the order of the legs; the kind and the rotation only a hub tour sets (T7b).
+/// <c>ChangeReason</c> is required when the leg has reports, and goes to the audit.
 /// </summary>
 public sealed record LegWriteDto(
     string DepartureIcao,
@@ -54,7 +55,9 @@ public sealed record LegWriteDto(
     AllowedAircraft? Aircraft,
     DateTime? ReleaseAt,
     string? ChangeReason,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    LegKind Kind = LegKind.Normal,
+    long? RotationId = null);
 
 /// <summary>What removing a leg will do, decided by the server and said before anybody confirms (design M2 §1.4.1).</summary>
 public enum LegRemovalOutcome
@@ -106,6 +109,11 @@ public sealed class LegWriteDtoValidator : AbstractValidator<LegWriteDto>
         RuleFor(leg => leg.RealCallsign).MaximumLength(LegValidation.MaxCallsignLength).WithMessage("errors.text.tooLong");
         RuleFor(leg => leg.FlightNumber).MaximumLength(LegValidation.MaxCallsignLength).WithMessage("errors.text.tooLong");
         RuleFor(leg => leg.ChangeReason).MaximumLength(LegValidation.MaxReasonLength).WithMessage("errors.text.tooLong");
+        RuleFor(leg => leg.Kind).IsInEnum().WithMessage("errors.required");
+
+        // A connection between two hubs is a leg of its own, never one of a rotation (design M2 §1.3).
+        RuleFor(leg => leg.RotationId).Null().When(leg => leg.Kind == LegKind.HubConnection)
+            .WithMessage("flightops:errors.connectionHasNoRotation");
     }
 }
 

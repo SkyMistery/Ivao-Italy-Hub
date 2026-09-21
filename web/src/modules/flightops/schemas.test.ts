@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import type { components } from '../../shared/api/schema';
 
 import { allowedFromFormValues } from './api';
-import { tourSchema } from './schemas';
+import { callsignRuleSchema, hubSchema, rotationSchema, tourSchema } from './schemas';
 
 /**
  * The form of a tour mirrors `TourWriteDto` (design M0 §7.5), in both directions — with one field left out on
@@ -37,6 +37,8 @@ const TOUR_FIELDS: readonly Exclude<keyof TourWriteDto, 'briefing'>[] = [
   'allowedAircraft',
   'awardId',
   'rowVersion',
+  'parentTourId',
+  'requiredSubtours',
 ];
 
 test('the tour form carries the fields of TourWriteDto but the briefing, and the aircraft as two lists', () => {
@@ -67,4 +69,28 @@ test('a template carries no address, dates or award, and a public tour no longer
 test('the pictures of a tour are chosen from the library', () => {
   expect(tourSchema().shape.bannerMediaId.meta()).toMatchObject({ media: true });
   expect(tourSchema().shape.coverMediaId.meta()).toMatchObject({ media: true });
+});
+
+test('the forms of the shape of a tour carry the fields of their payloads, and nothing else (T7b)', () => {
+  type Keys<T> = readonly (keyof T)[];
+  const hub: Keys<components['schemas']['HubWriteDto']> = ['tourId', 'icao', 'sort', 'rowVersion'];
+  const rotation: Keys<components['schemas']['RotationWriteDto']> = [
+    'tourId',
+    'hubId',
+    'sort',
+    'size',
+    'rowVersion',
+  ];
+  const rule: Keys<components['schemas']['CallsignRuleWriteDto']> = [
+    'tourId',
+    'legId',
+    'mode',
+    'match',
+    'value',
+    'rowVersion',
+  ];
+
+  expect(Object.keys(hubSchema.shape).sort()).toEqual([...hub].sort());
+  expect(Object.keys(rotationSchema().shape).sort()).toEqual([...rotation].sort());
+  expect(Object.keys(callsignRuleSchema().shape).sort()).toEqual([...rule].sort());
 });

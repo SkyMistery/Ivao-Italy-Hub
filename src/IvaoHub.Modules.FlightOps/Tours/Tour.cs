@@ -32,7 +32,7 @@ public enum HubRotationOrder
     Free,
 }
 
-/// <summary>What an <see cref="TourKind.Open"/> tour accumulates (design M2 §2.6.1). Written by T7b.</summary>
+/// <summary>What an <see cref="TourKind.Open"/> tour accumulates (design M2 §2.6.1). Written by T7c.</summary>
 public enum OpenGoal
 {
     Distance,
@@ -81,10 +81,13 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
     public TourKind Kind { get; set; }
 
-    /// <summary>The <see cref="TourKind.Container"/> this tour is a subtour of. Written by T7b.</summary>
+    /// <summary>
+    /// The <see cref="TourKind.Container"/> this tour is a subtour of (design M2 §2.7): chosen when it is created, never
+    /// changed. A subtour has its own address and, unless it takes them from the parent, its own dates.
+    /// </summary>
     public long? ParentTourId { get; set; }
 
-    /// <summary>How many subtours complete a container. Written by T7b.</summary>
+    /// <summary>How many subtours complete a container.</summary>
     public int? RequiredSubtours { get; set; }
 
     /// <summary>The distance that completes a <see cref="TourKind.Distance"/> tour. Written by T7a.</summary>
@@ -92,7 +95,7 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
     public OpenGoal? OpenGoal { get; set; }
 
-    /// <summary>The parameters of the goal, as the goal's own schema says. Written by T7b.</summary>
+    /// <summary>The parameters of the goal, as the goal's own schema says. Written by T7c.</summary>
     public string? OpenGoalJson { get; set; }
 
     public Localized<string> Title { get; set; } = Localized<string>.Empty;
@@ -125,6 +128,17 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
     /// <summary>Null on a template only.</summary>
     public DateTime? CloseAt { get; set; }
+
+    /// <summary>
+    /// A subtour's release is its parent's, copied at every write and followed when the parent's changes (Carmine,
+    /// 21 September 2026, note <c>2026-09-21-la-forma-dei-tour</c>): <see cref="TourState"/> reads one tour and no more.
+    /// </summary>
+    public bool ReleaseFromParent { get; set; }
+
+    /// <summary>A subtour's close is its parent's, as <see cref="ReleaseFromParent"/>.</summary>
+    public bool CloseFromParent { get; set; }
+
+    public bool IsSubtour => ParentTourId is not null;
 
     /// <summary>X: days to send a report after the flight, and the window searched in the tracker.</summary>
     public int ReportWindowDays { get; set; }
@@ -194,6 +208,8 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
     /// Search, two calendar entries — release and close (answer 20) — and the files it shows (design M2 §9, §1.14).
     /// A hidden tour or a template projects only its files; a draft too, by the interceptor's rule. A ready tour the
     /// public cannot see yet projects for the staff, and <see cref="TourReleaseJob"/> projects it again at its release.
+    /// <para>A subtour projects only its files too: search and calendar are its container's (Carmine, 21 September 2026),
+    /// so a subtour ready inside a container still in draft, or hidden, is found by nobody.</para>
     /// </summary>
     public ProjectionSnapshot? Project(ProjectionContext context)
     {
@@ -201,7 +217,7 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
         var media = MediaUses(context);
 
-        if (IsHidden || IsTemplate || ReleaseAt is not { } release || CloseAt is not { } close || Slug is null)
+        if (IsHidden || IsTemplate || IsSubtour || ReleaseAt is not { } release || CloseAt is not { } close || Slug is null)
         {
             return media.Count == 0 ? null : new ProjectionSnapshot(null, [], [], media);
         }

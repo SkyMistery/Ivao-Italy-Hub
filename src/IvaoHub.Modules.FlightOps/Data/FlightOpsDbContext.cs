@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Legs;
+using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -23,6 +24,12 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<Leg> Legs => Set<Leg>();
 
+    public DbSet<TourHub> Hubs => Set<TourHub>();
+
+    public DbSet<Rotation> Rotations => Set<Rotation>();
+
+    public DbSet<CallsignRule> CallsignRules => Set<CallsignRule>();
+
     /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -33,6 +40,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<HubRotationOrder>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<OpenGoal>().HaveConversion<string>().HaveMaxLength(32);
         configurationBuilder.Properties<LegKind>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<CallsignMode>().HaveConversion<string>().HaveMaxLength(8);
+        configurationBuilder.Properties<CallsignMatch>().HaveConversion<string>().HaveMaxLength(8);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -73,6 +82,10 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             // Unique among tours; a template has none, and MariaDB lets several rows hold no address.
             tour.HasIndex(row => row.Slug).IsUnique();
             tour.HasIndex(row => new { row.IsTemplate, row.ReleaseAt });
+
+            // A subtour's parent is a tour of the same table: a container with subtours is not deleted (T7b).
+            tour.Ignore(row => row.IsSubtour);
+            tour.HasOne<Tour>().WithMany().HasForeignKey(row => row.ParentTourId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Leg>(leg =>
@@ -98,6 +111,45 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             // ⚠️ Not unique, although a number is unique in its tour: MariaDB checks a unique key row by row, so shifting
             // the numbers after an insert would collide half way. The server renumbers the whole tour, and that keeps it.
             leg.HasIndex(row => new { row.TourId, row.Number });
+
+            // A rotation with legs is not deleted (T7b); a tour deleted takes both, and the legs forget the rotation.
+            leg.HasOne<Rotation>().WithMany().HasForeignKey(row => row.RotationId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<TourHub>(hub =>
+        {
+            hub.ToTable("fo_hubs");
+            hub.HasKey(row => row.Id);
+            hub.Property(row => row.Icao).HasMaxLength(4).IsRequired();
+            hub.HasRowVersion(row => row.RowVersion);
+            hub.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
+
+            // An airport is a hub of a tour once; the server says so before the index does.
+            hub.HasIndex(row => new { row.TourId, row.Icao }).IsUnique();
+        });
+
+        modelBuilder.Entity<Rotation>(rotation =>
+        {
+            rotation.ToTable("fo_rotations");
+            rotation.HasKey(row => row.Id);
+            rotation.HasRowVersion(row => row.RowVersion);
+            rotation.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
+
+            // A hub with rotations is not deleted (T7b); the cascade is for the tour's own deletion.
+            rotation.HasOne<TourHub>().WithMany().HasForeignKey(row => row.HubId).OnDelete(DeleteBehavior.Cascade);
+            rotation.HasIndex(row => new { row.TourId, row.HubId, row.Sort });
+        });
+
+        modelBuilder.Entity<CallsignRule>(rule =>
+        {
+            rule.ToTable("fo_callsign_rules");
+            rule.HasKey(row => row.Id);
+            rule.Ignore(row => row.OnTemplate);
+            rule.Property(row => row.Value).HasMaxLength(LegValidation.MaxCallsignLength).IsRequired();
+            rule.HasRowVersion(row => row.RowVersion);
+            rule.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
+            rule.HasOne<Leg>().WithMany().HasForeignKey(row => row.LegId).OnDelete(DeleteBehavior.Cascade);
+            rule.HasIndex(row => new { row.TourId, row.LegId });
         });
     }
 }

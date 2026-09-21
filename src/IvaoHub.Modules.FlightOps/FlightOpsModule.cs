@@ -6,6 +6,7 @@ using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Settings;
+using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -59,6 +60,7 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<AllowedAircraftCheck>();
         services.AddScoped<LegBook>();
         services.AddScoped<LegRequest>();
+        services.AddScoped<TourChildren>();
 
         // No reports before T11, which replaces the answer with its own.
         services.TryAddScoped<ITourReports, NoTourReportsYet>();
@@ -77,5 +79,6 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapAircraftEndpoints();
         endpoints.MapTourEndpoints();
         endpoints.MapLegEndpoints();
+        endpoints.MapShapeEndpoints();
     }
 }

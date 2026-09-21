@@ -18,7 +18,10 @@
     "tabs": {
       "settings": "Settings",
       "briefing": "Briefing",
-      "legs": "Legs"
+      "legs": "Legs",
+      "hubs": "Hubs and rotations",
+      "subtours": "Subtours",
+      "callsigns": "Callsigns"
     },
     "briefing": {
       "save": "Save briefing",
@@ -65,7 +68,12 @@
       "icao": "Type",
       "groupId": "Group",
       "legs": "Legs",
-      "allowedAircraft": "Aircraft types allowed (none, and no group: every aircraft)"
+      "allowedAircraft": "Aircraft types allowed (none, and no group: every aircraft)",
+      "requiredSubtours": "Subtours to complete (container only)",
+      "parentTourId": "Container",
+      "hubs": "Hubs",
+      "rotations": "Rotations",
+      "subtours": "Subtours"
     },
     "options": {
       "kind": {
@@ -100,6 +108,10 @@
       "groupId": {
         "none": "Choose a group"
       }
+    },
+    "hints": {
+      "releaseAt": "On a subtour, empty is the container's release.",
+      "closeAt": "On a subtour, empty is the container's close."
     }
   },
   "tourTemplates": {
@@ -207,7 +219,35 @@
     "noLegs": "The tour has no legs to fly.",
     "legReleaseOutsidePeriod": "The release of this leg is outside the tour's period.",
     "notARing": "A tour with a chosen start is a ring: every arrival is the next departure, and the last one is the first departure.",
-    "distanceUnreachable": "All the legs together do not reach the distance to complete."
+    "distanceUnreachable": "All the legs together do not reach the distance to complete.",
+    "tourUnknown": "This tour does not exist.",
+    "noHubs": "A hub tour needs at least one hub.",
+    "hubWithoutRotations": "This hub has no rotation to fly.",
+    "rotationSize": "This rotation does not have as many legs as its size says.",
+    "rotationNotAtHub": "A rotation leaves its hub with its first leg and returns there with its last.",
+    "rotationSizeChoice": "A rotation has 2, 4 or 6 legs.",
+    "rotationUnknown": "This rotation is not part of the tour.",
+    "rotationHasLegs": "This rotation has legs: move or remove them first.",
+    "legNotInRotation": "In a hub tour every leg is part of a rotation, or connects two hubs.",
+    "connectionNotBetweenHubs": "A connection goes from one hub of the tour to another.",
+    "connectionHasNoRotation": "A connection between hubs is not part of a rotation.",
+    "kindHasNoHubs": "Only a hub tour has hubs and rotations.",
+    "legHubOnly": "Rotations and connections belong to a hub tour.",
+    "templateHasNoHubs": "A template has no hubs: they are written in the tour made from it.",
+    "hubTaken": "This airport is already a hub of the tour.",
+    "hubUnknown": "This hub is not part of the tour.",
+    "hubHasRotations": "This hub has rotations: remove them first.",
+    "containerNeedsSubtours": "A tour with subtours has at least two.",
+    "requiredSubtoursTooMany": "It asks for more subtours than it has.",
+    "containerHasSubtours": "This tour has subtours: it keeps its kind and is deleted after them.",
+    "parentUnknown": "A subtour belongs to a tour with subtours that is not a template.",
+    "subtourNotContainer": "A subtour does not have subtours of its own.",
+    "subtourHasNoAward": "A subtour has no award: the award is its container's.",
+    "subtourOutsideParent": "The dates of a subtour are inside its container's period.",
+    "subtoursOutsideParent": "A ready subtour has dates of its own outside this period.",
+    "airlineCode": "Write the airline as its three letter code.",
+    "callsign": "Write the callsign in letters and digits, without spaces.",
+    "exactOnlyDenies": "A whole callsign can only be denied: an allowed airline leaves the rest to the pilot."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -226,7 +266,8 @@
       "releaseAt": "Own release (UTC)",
       "state": "State",
       "reason": "Reason",
-      "changeReason": "Why it changes (it has reports)"
+      "changeReason": "Why it changes (it has reports)",
+      "rotationId": "Rotation"
     },
     "state": {
       "retired": "Retired",
@@ -252,6 +293,84 @@
     "restore": {
       "title": "Restore leg {{number}}?",
       "description": "The leg is flown again, and comes back to the public page. Say why."
+    },
+    "placement": {
+      "none": "None yet",
+      "connection": "Connection",
+      "rotation": "{{hub}} {{number}} ({{legs}}/{{size}})"
+    }
+  },
+  "subtours": {
+    "create": "New subtour"
+  },
+  "hubs": {
+    "title": "Hubs",
+    "create": "New hub",
+    "edit": "Edit hub",
+    "row": "Hub {{icao}}",
+    "delete": {
+      "title": "Delete this hub?",
+      "description": "A hub with rotations is not deleted: remove its rotations first."
+    },
+    "fields": {
+      "icao": "Airport (ICAO)",
+      "sort": "Order"
+    }
+  },
+  "rotations": {
+    "title": "Rotations",
+    "create": "New rotation",
+    "edit": "Edit rotation",
+    "row": "Rotation {{number}} of {{hub}}",
+    "delete": {
+      "title": "Delete this rotation?",
+      "description": "A rotation with legs is not deleted: move or remove its legs first."
+    },
+    "fields": {
+      "hubId": "Hub",
+      "hubIcao": "Hub",
+      "sort": "Order in the hub",
+      "size": "Legs",
+      "legs": "Legs written"
+    },
+    "options": {
+      "size": {
+        "2": "2 legs",
+        "4": "4 legs",
+        "6": "6 legs"
+      }
+    }
+  },
+  "callsigns": {
+    "title": "Callsign constraints",
+    "create": "New constraint",
+    "edit": "Edit constraint",
+    "delete": {
+      "title": "Delete this constraint?",
+      "description": "Pilots are no longer held to it from the next report."
+    },
+    "fields": {
+      "mode": "Rule",
+      "match": "On",
+      "value": "Airline or callsign",
+      "legId": "Leg (empty: the whole tour)",
+      "legNumber": "Leg"
+    },
+    "hints": {
+      "value": "An airline is its three letter code: what follows it is the pilot's choice. A whole callsign is only denied."
+    },
+    "options": {
+      "mode": {
+        "Allow": "Allow",
+        "Deny": "Deny"
+      },
+      "match": {
+        "Airline": "Airline",
+        "Exact": "Whole callsign"
+      },
+      "legId": {
+        "none": "The whole tour"
+      }
     }
   }
 }

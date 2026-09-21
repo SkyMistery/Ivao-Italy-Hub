@@ -73,6 +73,17 @@ public sealed class LegBook(
             problems["changeReason"] = ["flightops:errors.changeReasonRequired"];
         }
 
+        // Rotations and connections are a hub tour's (design M2 §1.3), and a rotation is one of this tour's.
+        if (tour.Kind != TourKind.Hub && (payload.Kind != LegKind.Normal || payload.RotationId is not null))
+        {
+            problems[payload.RotationId is null ? "kind" : "rotationId"] = ["flightops:errors.legHubOnly"];
+        }
+        else if (payload.RotationId is { } rotationId
+            && !await database.Rotations.AnyAsync(rotation => rotation.Id == rotationId && rotation.TourId == tour.Id, cancellationToken))
+        {
+            problems["rotationId"] = ["flightops:errors.rotationUnknown"];
+        }
+
         if (problems.Count > 0 || from is null || to is null)
         {
             return problems;
@@ -93,8 +104,38 @@ public sealed class LegBook(
         leg.Aircraft = aircraft;
         leg.ReleaseAt = payload.ReleaseAt;
         leg.ChangeReason = reason;
+        leg.Kind = payload.Kind;
+        leg.RotationId = payload.RotationId;
 
         return null;
+    }
+
+    /// <summary>
+    /// The place of every leg in its rotation, from 1, in the order the legs have in the tour: kept by the server like
+    /// the numbers, so moving a leg never leaves a rotation with two second legs. A leg in no rotation has none.
+    /// </summary>
+    public static void SequenceRotations(IReadOnlyList<Leg> legs)
+    {
+        ArgumentNullException.ThrowIfNull(legs);
+
+        foreach (var leg in legs.Where(leg => leg.RotationId is null && leg.SeqInRotation is not null))
+        {
+            leg.SeqInRotation = null;
+        }
+
+        foreach (var rotation in legs.Where(leg => leg.RotationId is not null).GroupBy(leg => leg.RotationId))
+        {
+            var seq = 1;
+            foreach (var leg in rotation.OrderBy(leg => leg.Number))
+            {
+                if (leg.SeqInRotation != seq)
+                {
+                    leg.SeqInRotation = seq;
+                }
+
+                seq++;
+            }
+        }
     }
 
     /// <summary>
