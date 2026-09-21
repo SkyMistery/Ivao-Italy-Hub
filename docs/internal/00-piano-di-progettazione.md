@@ -1,9 +1,23 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.85 — 18 settembre 2026 (**le leg dei tour**: T7 in due, le righe figlie che seguono il tour, l'editor a tabella, T7a)
+**Versione documento:** 0.86 — 21 settembre 2026 (**la forma dei tour**: hub e rotazioni, sottotour, callsign sulla compagnia, T7 in tre, T7b)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.86** (21 set 2026, fase T7b di M2): **i tour hanno la loro forma** — hub e rotazioni (`fo_hubs`, `fo_rotations`), le
+leg che dicono la loro rotazione o il collegamento fra hub, i sottotour di un `Container`, i vincoli sul callsign
+(`fo_callsign_rules`), e i controlli di «pronto» di ognuno; il «fatta quando» di T7 — un tour `Hub` composto da zero e pronto — è
+provato dal giro e2e. Nota `decisions/2026-09-21-la-forma-dei-tour.md`, cinque risposte di Carmine in apertura. **(1) T7 si divide
+ancora**: il tour `Open` (obiettivo, filtri, regole di sequenza) è **T7c**, in una chat nuova. **(2) Un sottotour ha date proprie, e
+quelle che non ha sono del padre**, ognuna da sola, dentro il periodo del padre; **(3) ha uno slug proprio**; **(4) ricerca e
+calendario li porta solo il `Container`**: un sottotour proietta solo i suoi file. **(5) Un vincolo sul callsign è sulla compagnia**
+(tre lettere, il resto lo sceglie il pilota: il callsign reale di una leg è solo un suggerimento) o, **solo per vietare**, su un
+callsign intero; `Prefix` e `Pattern` del design cadono. **(6) Fra i livelli vince l'`Allow` più vicino** (leg, tour, padre) **e i
+`Deny` si sommano**, al posto dell'unione di design §1.6. Estensione (caso b): **`CrudOptions.BeforeAuthorize`** (§16.6), che cosa una
+riga prende da un'altra prima che il suo permesso venga chiesto — il motore chiedeva il permesso di una riga figlia sul solo
+dipartimento di base, e chi cura un tour con un secondo dipartimento sarebbe stato rifiutato creando un hub. Hub, rotazioni e vincoli
+sono **liste e form generati**: l'eccezione di §16.6 resta la sola `LegGrid`. Toccate §16.6.
 
 **Changelog 0.85** (18 set 2026, fase T7a di M2): **i tour hanno le leg** — `fo_legs` con le coordinate congelate e la GCD del
 server, il tempo stimato calcolato a ogni lettura, eliminare e rinumerare senza report, ritirare e ripristinare con un motivo quando
@@ -2117,7 +2131,7 @@ riconciliazione» (nota `2026-09-16-i-tour-nel-back-office`).
 6. **Un solo motore di back-office**: lista generica su `DataTable` Atmosphere guidata da una configurazione di colonne + form generato dallo schema zod (lo stesso dei blocchi) anche per le entità; lato server un helper `MapCrud<TEntity, TDto>` che porta già la policy di dipartimento. **Dal 16 set 2026** (T4a, piano 0.81) una lista può mappare **una pagina di righe in una volta** (`CrudOptions.ToListPage`) quando la riga mostra un fatto di altre tabelle — il primo è la data di eliminazione di un file — con una query per pagina, mai una per riga. **Dal 16 set 2026** (T6a, piano 0.84) una risorsa può chiedere per l'eliminazione una
 policy **in più** di quella di scrittura (`CrudOptions.DeletePolicy`): chi modifica un tour non è per forza chi lo elimina. Regola: **valida
 il server, il client mostra** i `ProblemDetails` campo per campo. **L'unica eccezione dichiarata** è l'editor delle leg dei tour (M2, T7a, piano 0.85): una tabella dove ogni riga si salva da sola e inserire o togliere rinumera le altre, con sei verbi scritti a mano anche lato server (nota `2026-09-18-le-leg-dei-tour`).
-   Quando una risorsa non rientra, si estende `CrudOptions` e mai il motore con un ramo che la nomina: oggi può dire che una riga si scrive solo con un permesso in più (`ExtraWritePolicy`), che non ha una create JSON (`MapCreate`), che cosa significa cancellarla (`Delete`) e che accetta un filtro che è una domanda invece di un confronto su una colonna (`CustomFilters`). **Una schermata CRUD scritta a mano non si accetta**, e un endpoint scritto a mano accanto al motore è un evento da scrivere nel rapporto di chiusura della milestone. **Eccezione dichiarata di M2** (piano 0.79): l'**editor delle leg a tabella** (`LegGrid`, `05-design-m2.md` §8.4), perché comporre trenta leg una per volta in un form non si regge; salva comunque riga per riga con `row_version` e mostra i `ProblemDetails` sulla cella.
+   Quando una risorsa non rientra, si estende `CrudOptions` e mai il motore con un ramo che la nomina: oggi può dire che una riga si scrive solo con un permesso in più (`ExtraWritePolicy`), che non ha una create JSON (`MapCreate`), che cosa significa cancellarla (`Delete`), che accetta un filtro che è una domanda invece di un confronto su una colonna (`CustomFilters`) e — **dal 21 set 2026** (T7b, piano 0.86) — che cosa una riga prende da un'altra prima che il suo permesso venga chiesto (`BeforeAuthorize`: le righe figlie di un tour ne prendono la cura, nota `2026-09-21-la-forma-dei-tour`). **Una schermata CRUD scritta a mano non si accetta**, e un endpoint scritto a mano accanto al motore è un evento da scrivere nel rapporto di chiusura della milestone. **Eccezione dichiarata di M2** (piano 0.79): l'**editor delle leg a tabella** (`LegGrid`, `05-design-m2.md` §8.4), perché comporre trenta leg una per volta in un form non si regge; salva comunque riga per riga con `row_version` e mostra i `ProblemDetails` sulla cella.
 7. **Un solo endpoint di bootstrap** (`/api/me`): menu pubblico e staff, moduli abilitati / in maintenance, permessi effettivi, widget e blocchi registrati. La SPA non ha nulla di cablato.
 8. **Un solo set di file di lingua** `locales/{lang}/*.json`, letto sia dalla SPA sia dal backend (mail, errori). Niente `.resx`.
 

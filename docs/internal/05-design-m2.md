@@ -131,10 +131,10 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 
 | Colonna | Tipo | Note |
 |---|---|---|
-| `id`, `slug` | | `slug` unico fra i non template: `/tours/{slug}` |
+| `id`, `slug` | | `slug` unico fra i non template: `/tours/{slug}`; anche un sottotour ha il suo (Carmine, 21 settembre) |
 | `is_template` | bool | §1.10 |
 | `kind` | enum | `Sequential`, `Free`, `Hub`, `SequentialChosenStart`, `Distance`, `Open`, `Container` (§2) |
-| `parent_tour_id` | long? | solo per un **sottotour**; il padre è un `Container` |
+| `parent_tour_id` | long? | solo per un **sottotour**; il padre è un `Container` che non è un template, scelto alla creazione e mai cambiato |
 | `required_subtours` | int? | solo `Container` |
 | `required_nm` | int? | solo `Distance` |
 | `open_goal`, `open_goal_json` | enum?, json | solo `Open`: obiettivo e parametri (§2.6.1) |
@@ -145,7 +145,8 @@ Nessuna FK verso il nucleo: `vid`, `icao`, `media_id`, `award_id` sono colonne n
 | `status` | enum | `Draft`, `Ready` — nel codice `PublishStatus.Draft` e `Published`, così la regola della bozza è quella dell'interceptor (T6a, nota `2026-09-16-i-tour-nel-back-office`) |
 | `is_hidden` | bool | nascosto (§1.2.2) |
 | `show_preview` | bool | un tour pronto è visibile al pubblico **prima** del rilascio, come anteprima (risposta 1) |
-| `release_at`, `close_at` | UTC | |
+| `release_at`, `close_at` | UTC | su un sottotour, quelle in vigore: le sue, dentro il periodo del padre, o quelle del padre (Carmine, 21 settembre, nota `2026-09-21-la-forma-dei-tour`) |
+| `release_from_parent`, `close_from_parent` | bool | solo un sottotour: la data è del padre, **copiata** a ogni scrittura e **seguita** quando il padre la cambia, come la maschera |
 | `report_window_days` | int | X: giorni per inviare il PIREP **e** finestra di ricerca nel tracker |
 | `progression` | enum | `FlyAhead` o `WaitForValidation` |
 | `hub_rotation_order` | enum? | solo `Hub`: `Fixed` (rotazioni nell'ordine del tour) o `Free` (a scelta dentro l'hub) (risposta 10) |
@@ -195,9 +196,12 @@ con `show_preview`), `kind` non si cambia più, anche senza PIREP. Prima del ril
 
 ### 1.3 Hub e rotazioni — `fo_hubs`, `fo_rotations`
 
-- `fo_hubs`: `tour_id`, `icao`, `sort`. Solo `Hub`.
+- `fo_hubs`: `tour_id`, `icao`, `sort`. Solo `Hub`, mai su un template; un aeroporto è hub di un tour una volta.
 - `fo_rotations`: `tour_id`, `hub_id`, `sort`, `size` (2, 4 o 6; il controllo di pubblicazione verifica che
-  abbia esattamente `size` leg, parta dall'hub e ci torni).
+  abbia esattamente `size` leg, parta dall'hub e ci torni — non la continuità fra le leg di mezzo). Una rotazione con tutte le leg
+  ritirate non conta più. **Un hub con rotazioni e una rotazione con leg non si eliminano** (T7b).
+- Una leg dice la sua rotazione (`rotation_id`); il suo posto nella rotazione (`seq_in_rotation`) **lo tiene il server**
+  dall'ordine delle leg, come il numero (T7b). Ogni leg normale di un tour `Hub` sta in una rotazione.
 - **Il collegamento fra hub è una leg** con `kind = HubConnection`: conta come una leg normale. Due hub con
   una leg di collegamento sono **collegati**, senza sono **liberi**.
 
@@ -304,9 +308,14 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
 
 ### 1.6 Vincoli sul callsign
 
-- `fo_callsign_rules`: `tour_id`, `leg_id?`, `mode` (`Allow`, `Deny`), `match` (`Prefix`, `Exact`, `Pattern`),
-  `value`. Si impostano **per tour, per sottotour o per leg**. Il consentito di una leg è l'unione di leg, tour e
-  tour padre; un `Deny` vince sempre.
+- `fo_callsign_rules`: `tour_id`, `leg_id?`, `mode` (`Allow`, `Deny`), `match` (`Airline`, `Exact`), `value`. Si impostano
+  **per tour, per sottotour o per leg**. **Il vincolo è sulla compagnia** (Carmine, 21 settembre, nota
+  `2026-09-21-la-forma-dei-tour`): `Airline` sono le tre lettere, e quello che segue lo sceglie il pilota — il callsign reale di una
+  leg (§1.4) è solo un suggerimento. `Exact` è un callsign intero e **solo per `Deny`** (il Vintage Jet di Toursystem vieta quattro
+  callsign Itavia). *Erano* `Prefix`, `Exact` e `Pattern`, liberi.
+- **Fra i livelli** (Carmine, 21 settembre): gli `Allow` valgono dal **livello più vicino** che ne ha — leg, poi tour, poi tour
+  padre —; i `Deny` di tutti i livelli si sommano e **vincono sempre**; nessun `Allow` a nessun livello, ogni compagnia. *Era*
+  «l'unione di leg, tour e tour padre». Un template copia i vincoli del tour, non quelli delle leg (§1.10).
 - **È un vincolo che blocca l'invio** (risposta 5, §3.2).
 
 ### 1.7 Regole, parametri ed errori — `fo_rules`, `fo_errors`, `fo_rule_errors`
@@ -567,7 +576,13 @@ all'obiettivo e ai vincoli «al completamento».
 ### 2.7 `Container` — con sottotour
 
 - Nessuna leg; sottotour di un livello. Il pilota si iscrive e vola i sottotour.
-- **Un sottotour eredita** aerei, vincoli sul callsign e regole del tour dal padre **se non ne ha di suoi** (risposta 13).
+- **Un sottotour eredita** aerei, vincoli sul callsign e regole del tour dal padre **se non ne ha di suoi** (risposta 13); per il
+  callsign: gli `Allow` del livello più vicino, i `Deny` di tutti (§1.6).
+- **Un sottotour ha le sue date, dentro il periodo del padre; quelle che non ha sono del padre**, ognuna da sola, e lo seguono quando
+  cambia; ha **il suo slug** (Carmine, 21 settembre, nota `2026-09-21-la-forma-dei-tour`). La cura dei dipartimenti è del padre.
+  **Ricerca e calendario li porta solo il padre**: un sottotour proietta solo i suoi file, e la pagina del padre lo elenca (T10). Nella
+  lista `/staff/tours` un sottotour non compare: sta nella scheda del padre. Un `Container` con sottotour non cambia tipo e si elimina
+  dopo di loro.
 - **Un sottotour non ha award**; l'award è del padre, segnalato con `required_subtours` sottotour completati.
 
 ---
@@ -1178,7 +1193,7 @@ anche `ref_firs` (confini dei FIR da OpenAIP).
 | T4 | Nucleo: award (catalogo, assegnazioni, schermata); più voci di calendario per riga; usi dei file con scadenza e job di eliminazione; preferenze dell'utente |
 | T5 | Modulo: scheletro, impostazioni, profili degli aerei, `positionGrants` |
 | T6 | Tour: modello, stato dalle date, nascondere/eliminare/chiusura, controlli «pronto», template. **Divisa** il 16 settembre in T6a (server e schermate generate) e T6b (la scheda del briefing con l'editor dei blocchi) |
-| T7 | Leg: editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli a distanza — **divisa in T7a (le leg) e T7b (hub, sottotour, callsign, `Open`)** il 18 settembre |
+| T7 | Leg: editor a tabella, GCD e tempo stimato, ritiro, hub e rotazioni, sottotour, callsign, vincoli a distanza — **divisa in T7a (le leg) e T7b (hub, sottotour, callsign, `Open`)** il 18 settembre; **T7b divisa ancora** il 21 settembre: il tour `Open` è **T7c** |
 | T8 | Import XLSX/CSV con anteprima |
 | T9 | Regole con parametri ed errori, regole effettive, blocco `errorCatalog` |
 | T10 | Pubblico: `/tours`, `/tours/{slug}`, mappa, `tourCards`, `myTours` |

@@ -299,10 +299,11 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T6a | I tour — **fatta il 16 set 2026** | T5 | modello, stato dalle date, nascondere ed eliminare, «pronto», template, proiezioni, il job del rilascio |
 | T6b | Il briefing — **fatta il 18 set 2026** | T6a | l'editor del corpo estratto dall'editor dei contenuti, montato come scheda del tour |
 | T7a | Le leg — **fatta il 18 set 2026** | T1, T6a | `fo_legs`, GCD e tempo stimato, eliminare e rinumerare, ritirare e ripristinare, `LegGrid`, aerei consentiti nel form, `Distance`, «pronto» dei tipi con leg |
-| T7b | La forma del tour | T7a | hub e rotazioni, sottotour e `Container`, vincoli sul callsign, tour `Open` (obiettivo, filtri, sequenza), «pronto» di quei tipi |
+| T7b | La forma del tour — **fatta il 21 set 2026** | T7a | hub e rotazioni, sottotour e `Container`, vincoli sul callsign, «pronto» di quei tipi, `CrudOptions.BeforeAuthorize` |
+| T7c | Il tour `Open` | T7b | `open_goal` con i parametri, `fo_tour_constraints` (filtri e regole di sequenza), la scheda, «pronto» di `Open` |
 | T8 | L'import delle leg | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
-| T10 | Il pubblico e la mappa | T7b, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
+| T10 | Il pubblico e la mappa | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
 | T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
 | T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
@@ -865,6 +866,72 @@ T7a: **le righe figlie di un tour copiano la sua maschera dei dipartimenti** a o
   **80**, giro e2e completo **24**. Guardata la tabella a 1500 px sul banco. **Non verificato**: il «fatta quando» con il login di
   sviluppo vero (l'ha guidato il giro e2e con il login del banco); il recupero delle piste da IVAO vera (nei test e sul banco rispondono
   le fixture, che non hanno piste per quegli aeroporti).
+
+**Divisa ancora il 21 settembre 2026** in apertura di T7b (Carmine, nota `decisions/2026-09-21-la-forma-dei-tour.md`, piano **0.86**):
+**T7b** sono hub e rotazioni, sottotour e `Container`, vincoli sul callsign e i loro controlli di «pronto», e chiude il «fatta quando» di
+T7; **T7c** è il tour `Open` (sotto).
+
+**T7b fatta il 21 settembre 2026** (branch `m2/t7b-shape`). Com'è andata:
+
+- **Cinque domande a Carmine in apertura** (nota §2): la fase in due; un sottotour ha **date proprie, e quelle che non ha sono del
+  padre**, ognuna da sola; **uno slug proprio**; **ricerca e calendario li porta solo il `Container`**; un vincolo sul callsign è **sulla
+  compagnia** (tre lettere, il resto lo sceglie il pilota: il callsign reale è un suggerimento) o, solo per vietare, su un callsign
+  intero; fra i livelli **vince l'`Allow` più vicino e i `Deny` si sommano**. Corretti nel design §1.2, §1.3, §1.6, §2.7.
+- **Il modello** (migrazione `AddTourShape`, solo additiva): `fo_hubs`, `fo_rotations`, `fo_callsign_rules`, due colonne del tour
+  (`release_from_parent`, `close_from_parent`) e tre chiavi dentro il contesto — la leg verso la rotazione (`SET NULL`), la rotazione
+  verso l'hub e il tour (cascata), il sottotour verso il padre (`RESTRICT`: un `Container` si elimina dopo i suoi sottotour, e il
+  server lo dice prima). ⚠️ La chiave della leg verso la rotazione ha rotto il test di T7a che scriveva un `rotation_id` inventato:
+  ora crea una rotazione vera. Le righe figlie implementano **`ITourChild`**, e `TourSaving` le fa seguire tutte — leg, hub, rotazioni,
+  vincoli, e i sottotour con le loro — quando la cura del tour cambia.
+- **`CrudOptions.BeforeAuthorize`** (nucleo, caso b): il motore chiedeva il permesso di una riga nuova sulla sola base del modulo, e
+  `BeforeSave` arriva dopo. Il gancio gira dopo `Apply` e prima del controllo, in creazione, modifica ed eliminazione; lo usano hub,
+  rotazioni, vincoli (la cura del tour) e il tour stesso (un sottotour prende cura e date del padre). Il test d'integrazione lo prova con
+  un membro dell'ED a cui è data la cura di un tour: crea un hub, e non più quando la cura torna al solo FOD.
+- **Hub, rotazioni, vincoli**: tre risorse del motore (`/api/flightops/hubs`, `/rotations`, `/callsign-rules`) filtrate per
+  `tourId`, con liste e form generati nelle schede «Hub e rotazioni» e «Callsign» e un form per pagina
+  (`/staff/tours/{id}/hubs|rotations|callsigns/{…}`). Un vincolo su un template chiede `Tours.ManageTemplates` (`ExtraWritePolicy` su un
+  campo non mappato, `OnTemplate`, scritto da `BeforeAuthorize`). Ogni scrittura di un hub o di una rotazione di un tour **pronto** passa
+  i controlli di «pronto» con le righe come la scrittura le lascia (`TourChildren.StillReadyAsync`, `TourParts` nel controllo).
+- **`TourShape`** prende tutte le parti (`TourParts`: leg, hub, rotazioni, sottotour, padre), sempre funzione pura. Un problema di un hub
+  è `hubs.{ICAO}`, di una rotazione `rotations.{ICAO}.{posizione}`, e la schermata li dice «Hub LIRF», «Rotazione 2 di LIRF».
+- **La leg** dice la sua rotazione o il collegamento (`kind`, `rotationId` in `LegWriteDto`, in coda con un default così i test di T7a
+  non cambiano); `seq_in_rotation` lo scrive il server (`LegBook.SequenceRotations`). In `LegGrid` una colonna sola, «Rotazione», solo sui
+  tour `Hub`: «nessuna», «collegamento», o «LIRF 1 (2/2)». ⚠️ **Guardata a 1500 px**: la prima stesura spingeva fuori dallo schermo la
+  colonna delle azioni, senza che il contenitore a scorrimento lo segnalasse; etichette corte e 16 px presi dalla cella dei tipi, solo
+  sui tour `Hub`.
+- **I sottotour**: la scheda del `Container` elenca i suoi (`filter[parent]`, e la lista di `/staff/tours` ha `parent=none` di default);
+  «Nuovo sottotour» apre l'editor del tour con `?parent=`, che non offre `Container`, non offre l'award e lascia vuote le date del padre.
+  ⚠️ **Trovato dal test d'integrazione**: «un `Container` con sottotour non cambia tipo» leggeva `Tours` con il filtro di visibilità, che
+  nasconde i sottotour in bozza; ora `CrudSource.BackOffice`, anche nell'eliminazione.
+- **I test**: unit `TourShapeTests` (nove, venti casi: hub, rotazioni, ritirate, collegamenti, tipi senza hub, `Container`, sottotour, il
+  posto nella rotazione, dodici casi di `CallsignRules.Judge`); integrazione `TourShapeTests` (cinque: il tour `Hub` composto e pronto, hub
+  e collegamenti solo sui tour `Hub`, la cura presa prima del permesso e seguita, il `Container` con le date che i sottotour prendono e
+  seguono, i vincoli e il template che li copia); Vitest `schemas.test.ts` (i tre form nuovi rispecchiano i loro payload); e2e
+  `full/tours-hub.spec.ts` (**il «fatta quando» di T7**: due hub, una rotazione ciascuno nei form generati, le leg e il collegamento
+  nella tabella, rifiutato finché una rotazione è corta, poi pronto). VID `780073–780075`, slug `fo-test-shape-…`.
+- **Verificato in locale** (Docker acceso): unit .NET **416**, integrazione **233**, Vitest **426**, typecheck, lint, formato, i18n, smoke
+  **80**, giro e2e completo **25**. Guardate a 1500 px le schede «Leg», «Hub e rotazioni», «Callsign» e il form di una rotazione.
+  **Non verificato**: il «fatta quando» con il login di sviluppo vero (l'ha guidato il giro e2e); la scheda «Sottotour» a occhio (la
+  provano l'integrazione e il typecheck, non uno spec e2e).
+
+### T7c — Il tour `Open`
+
+Design §2.6, §2.6.1, §14; nota `decisions/2026-09-21-la-forma-dei-tour.md` §2.1. Branch `m2/t7c-open`, dopo T7b; **non** in parallelo con
+T8 (tutte e due migrano `FlightOpsDbContext`).
+
+1. **L'obiettivo** (`fo_tours.open_goal`, `open_goal_json`): i sei obiettivi di §2.6.1, ciascuno con il suo schema di parametri, la sua
+   verifica dei parametri sul server e la sua chiave i18n. Si scrive dal form del tour (o da una scheda sua, da decidere in apertura).
+2. **`fo_tour_constraints`**: i filtri per volo e le regole di sequenza di §2.6.1 (`NoRepeatedRoute` è sempre accesa e non è una riga),
+   una riga figlia del tour come hub e vincoli (`ITourChild`, `BeforeAuthorize`), con lista e form generati; il tipo si sceglie prima e
+   poi il form dei suoi parametri. Li copia un template.
+3. **I controlli di «pronto» di `Open`**: un obiettivo con i suoi parametri; filtri che non si contraddicono dove si vede (`Eastbound` con
+   `Westbound`); nessuna leg (già in `TourShape`).
+4. La **verifica** su un volo resta di T11.
+
+**Test**: unit sui parametri di ogni obiettivo e filtro; integrazione: un tour `Open` composto e pronto, un parametro sbagliato rifiutato
+sul campo. **Fatta quando**: si compone da zero un tour `Open` con un obiettivo, due filtri e una regola di sequenza, e lo si segna
+pronto. **In apertura** si porta a Carmine: dove si scrive l'obiettivo (form del tour o scheda) e se un filtro vale anche su un tour con
+leg.
 
 ### T8 — L'import delle leg
 
