@@ -1,9 +1,22 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.86 — 21 settembre 2026 (**la forma dei tour**: hub e rotazioni, sottotour, callsign sulla compagnia, T7 in tre, T7b)
+**Versione documento:** 0.87 — 22 settembre 2026 (**il tour `Open`**: obiettivo in una scheda sua, filtri e regole di sequenza, T7c)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.87** (22 set 2026, fase T7c di M2): **il tour `Open` si compone** — l'obiettivo con i suoi parametri
+(`open_goal_json`), i filtri per volo e le regole di sequenza (`fo_tour_constraints`, righe figlie del tour come hub e callsign),
+i loro controlli di «pronto»; il «fatta quando» di T7c — un `Open` con un obiettivo, due filtri e una regola, pronto — è provato
+dal giro e2e. Nota `decisions/2026-09-22-il-tour-open.md`, cinque risposte di Carmine in apertura. **(1) L'obiettivo ha una scheda
+sua**, «Obiettivo e vincoli», e si salva con il tour; il pezzo «tipo, poi il form dei suoi parametri» è uno, fatto di due form
+generati (il tipo è un form di un campo che si applica mentre lo si sceglie). **(2) Filtri e regole solo sui tour `Open`.**
+**(3) Una riga per tipo**, tranne `MinFlightsAt` (una per aeroporto); `TouchesAirport` prende un elenco. **(4) Un `Open` con
+vincoli non cambia tipo**; l'obiettivo si svuota fuori da `Open`. **(5) Gli elenchi si scrivono nel tour**, e un template li
+porta. Estensioni (caso b): **`IAirportDirectory.KnownCountriesAsync`** e **`IFirLocator.KnownAsync`** — un parametro che nomina
+un paese o un FIR si verifica sul server come un aeroporto, e il modulo non legge le tabelle `ref_` da sé. Corretto il design
+§2.6.1: **`AircraftTypes` cade** (sono gli aerei consentiti del tour, §1.5); resta `AircraftCategory`. Nessuna sezione del piano
+toccata oltre a questa riga.
 
 **Changelog 0.86** (21 set 2026, fase T7b di M2): **i tour hanno la loro forma** — hub e rotazioni (`fo_hubs`, `fo_rotations`), le
 leg che dicono la loro rotazione o il collegamento fra hub, i sottotour di un `Container`, i vincoli sul callsign
