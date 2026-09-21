@@ -2,19 +2,33 @@ import { expect, test } from 'vitest';
 
 import type { components } from '../../shared/api/schema';
 
-import { allowedFromFormValues } from './api';
-import { callsignRuleSchema, hubSchema, rotationSchema, tourSchema } from './schemas';
+import { readFields } from '../../shared/forms';
+
+import { allowedFromFormValues, parametersBody, parametersToFormValues } from './api';
+import {
+  CONSTRAINT_PARAMETERS,
+  GOAL_PARAMETERS,
+  OPEN_GOALS,
+  TOUR_CONSTRAINT_KINDS,
+  callsignRuleSchema,
+  hubSchema,
+  openGoalSchema,
+  rotationSchema,
+  tourConstraintSchema,
+  tourSchema,
+} from './schemas';
 
 /**
- * The form of a tour mirrors `TourWriteDto` (design M0 §7.5), in both directions — with one field left out on
- * purpose: the briefing is edited by the editor of blocks (T6b), and the form sends `null`, which keeps it. The
+ * The form of a tour mirrors `TourWriteDto` (design M0 §7.5), in both directions — with three fields left out on
+ * purpose: the briefing is edited by the editor of blocks (T6b), and the goal of an Open tour by its own tab (T7c); the
+ * form sends `null`, which keeps them. The
  * aircraft admitted (T7a) are one field of the payload and two lists of the form: the types under the payload's name,
  * so that a refusal lands on them, and the groups beside them, because a form repeats objects.
  */
 
 type TourWriteDto = components['schemas']['TourWriteDto'];
 
-const TOUR_FIELDS: readonly Exclude<keyof TourWriteDto, 'briefing'>[] = [
+const TOUR_FIELDS: readonly Exclude<keyof TourWriteDto, 'briefing' | 'openGoal' | 'openGoalParameters'>[] = [
   'ownerDepartment',
   'isTemplate',
   'slug',
@@ -93,4 +107,58 @@ test('the forms of the shape of a tour carry the fields of their payloads, and n
   expect(Object.keys(hubSchema.shape).sort()).toEqual([...hub].sort());
   expect(Object.keys(rotationSchema().shape).sort()).toEqual([...rotation].sort());
   expect(Object.keys(callsignRuleSchema().shape).sort()).toEqual([...rule].sort());
+});
+
+test('every goal and every constraint has a form the generator can draw (T7c)', () => {
+  for (const goal of OPEN_GOALS) {
+    expect(() => readFields(openGoalSchema(goal))).not.toThrow();
+  }
+
+  for (const kind of TOUR_CONSTRAINT_KINDS) {
+    expect(() => readFields(tourConstraintSchema(kind))).not.toThrow();
+  }
+});
+
+test('the form of a constraint carries the fields of its payload, and a rule without parameters only its kind', () => {
+  type Keys<T> = readonly (keyof T)[];
+  const constraint: Keys<components['schemas']['TourConstraintWriteDto']> = [
+    'tourId',
+    'kind',
+    'parameters',
+    'rowVersion',
+  ];
+
+  expect(
+    readFields(tourConstraintSchema('DistanceBetween'))
+      .map((field) => field.path)
+      .sort(),
+  ).toEqual([...constraint].sort());
+  expect(readFields(tourConstraintSchema('Chained')).map((field) => field.path)).not.toContain('parameters');
+  expect(Object.keys(CONSTRAINT_PARAMETERS.Chained)).toEqual([]);
+});
+
+test('the parameters of the form become what the API takes, and come back the same', () => {
+  const collect = GOAL_PARAMETERS.CollectList;
+  const form = { airports: [{ icao: ' lirf ' }, { icao: '' }, { icao: 'LIMC' }], count: 2 };
+
+  expect(parametersBody(collect, form)).toEqual({ airports: ['LIRF', 'LIMC'], count: 2 });
+  expect(parametersToFormValues(collect, { airports: ['LIRF', 'LIMC'], count: 2 })).toEqual({
+    airports: [{ icao: 'LIRF' }, { icao: 'LIMC' }],
+    count: 2,
+  });
+
+  // An empty number is left out: "how many" empty means all of the list.
+  expect(parametersBody(collect, { airports: [{ icao: 'LIRF' }] })).toEqual({ airports: ['LIRF'] });
+
+  const regions = GOAL_PARAMETERS.CollectRegions;
+  expect(parametersBody(regions, { countries: [], firs: [{ code: 'lirr' }] })).toEqual({
+    countries: [],
+    firs: ['LIRR'],
+  });
+
+  const minFlights = CONSTRAINT_PARAMETERS.MinFlightsAt;
+  expect(parametersBody(minFlights, { airport: ' lirf', count: 3 })).toEqual({ airport: 'LIRF', count: 3 });
+  expect(parametersToFormValues(CONSTRAINT_PARAMETERS.AircraftCategory, { categories: ['L', 'M'] })).toEqual({
+    categories: ['L', 'M'],
+  });
 });

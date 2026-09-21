@@ -30,6 +30,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<CallsignRule> CallsignRules => Set<CallsignRule>();
 
+    public DbSet<TourConstraint> TourConstraints => Set<TourConstraint>();
+
     /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -42,6 +44,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<LegKind>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<CallsignMode>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<CallsignMatch>().HaveConversion<string>().HaveMaxLength(8);
+        configurationBuilder.Properties<TourConstraintKind>().HaveConversion<string>().HaveMaxLength(32);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -150,6 +153,19 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             rule.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
             rule.HasOne<Leg>().WithMany().HasForeignKey(row => row.LegId).OnDelete(DeleteBehavior.Cascade);
             rule.HasIndex(row => new { row.TourId, row.LegId });
+        });
+
+        modelBuilder.Entity<TourConstraint>(constraint =>
+        {
+            constraint.ToTable("fo_tour_constraints");
+            constraint.HasKey(row => row.Id);
+            constraint.Ignore(row => row.OnTemplate);
+            constraint.Property(row => row.ParametersJson).HasColumnName("parameters_json").HasColumnType("json").IsRequired();
+            constraint.HasRowVersion(row => row.RowVersion);
+            constraint.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
+
+            // Once per kind, but once per airport for MinFlightsAt: the server says so, the index only finds them.
+            constraint.HasIndex(row => new { row.TourId, row.Kind });
         });
     }
 }

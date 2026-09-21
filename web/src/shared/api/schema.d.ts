@@ -1278,6 +1278,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tour-constraints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsTourConstraintsList"];
+        put?: never;
+        post: operations["FlightOpsTourConstraintsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tour-constraints/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsTourConstraintsGet"];
+        put: operations["FlightOpsTourConstraintsUpdate"];
+        post?: never;
+        delete: operations["FlightOpsTourConstraintsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2711,6 +2743,8 @@ export interface components {
             type: string;
             enabled: boolean;
         };
+        /** @enum {unknown} */
+        OpenGoal: "Distance" | "FlightCount" | "DistinctAirports" | "DistinctCountries" | "CollectList" | "CollectRegions" | null;
         /**
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
@@ -3152,6 +3186,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfTourConstraintListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["TourConstraintListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfTourListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["TourListDto"][];
@@ -3346,6 +3403,50 @@ export interface components {
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /** @description A filter or a sequence rule of an `Open` tour as the form loads it: its kind, and its parameters. */
+        TourConstraintDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            kind: components["schemas"]["TourConstraintKind"];
+            parameters: components["schemas"]["JsonNode"];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description The filters and the sequence rules of an TourKind.Open tour (design M2 §2.6.1, note
+         *     `2026-09-22-il-tour-open`). `NoRepeatedRoute` is always on and is not a row; `AircraftTypes` is the tour's
+         *     AllowedAircraft. Stored by name.
+         * @enum {unknown}
+         */
+        TourConstraintKind: "DepartureOrArrivalIn" | "DepartureIn" | "ArrivalIn" | "TouchesAirport" | "DistanceBetween" | "AircraftCategory" | "ArrivalRunwayMax" | "ArrivalElevationMin" | "FlightRules" | "Chained" | "Eastbound" | "Westbound" | "IncreasingDistance" | "MinFlightsAt";
+        /** @description A filter or a sequence rule as the list shows it: the values of its parameters, with their units. */
+        TourConstraintListDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            kind: components["schemas"]["TourConstraintKind"];
+            values: string[];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description What a client may set on a constraint. The tour and the kind are chosen when it is created, and never change. */
+        TourConstraintWriteDto: {
+            /** Format: int64 */
+            tourId: number;
+            kind: components["schemas"]["TourConstraintKind"];
+            parameters: null | components["schemas"]["JsonNode"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /**
          * @description A tour as its editor loads it. `State` is what the dates say now (design M2 §1.2.1); `IsPublic`, whether
          *     anybody outside the staff sees it now — from then on its kind no longer changes. On a subtour the dates are the ones
@@ -3401,6 +3502,8 @@ export interface components {
             requiredSubtours: null | number;
             releaseFromParent: boolean;
             closeFromParent: boolean;
+            openGoal: null | components["schemas"]["OpenGoal"];
+            openGoalParameters: null | components["schemas"]["JsonNode"];
         };
         /** @description A new tour out of a template: the settings come from the template, the name and address from here. */
         TourFromTemplateRequest: {
@@ -3481,8 +3584,9 @@ export interface components {
          *     actions (TourStatusRequest). Of the shape of a tour, T7a writes the distance of a `Distance` tour
          *     and the aircraft admitted (types and groups, design M2 §1.5); T7b the container and its subtours — the parent is
          *     chosen when a subtour is created and never changes, and a subtour's empty date is its container's (note
-         *     2026-09-21-la-forma-dei-tour); the goal of an `Open` tour is T7c's. A null `Briefing` keeps the briefing as
-         *     it is; a null `ReportWindowDays` on a new tour takes the division's default (§1.11); a null
+         *     2026-09-21-la-forma-dei-tour); T7c the goal of an `Open` tour, written from a tab of its own and saved with the tour
+         *     (note 2026-09-22-il-tour-open): a null `OpenGoal` keeps the goal as it is, and a tour that is not `Open` has none.
+         *     A null `Briefing` keeps the briefing as it is; a null `ReportWindowDays` on a new tour takes the division's default (§1.11); a null
          *     `AllowedAircraft` admits every aircraft.
          */
         TourWriteDto: {
@@ -3523,6 +3627,8 @@ export interface components {
             parentTourId?: null | number;
             /** Format: int32 */
             requiredSubtours?: null | number;
+            openGoal?: null | components["schemas"]["OpenGoal"];
+            openGoalParameters?: unknown;
         };
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
@@ -7618,6 +7724,163 @@ export interface operations {
         };
     };
     FlightOpsCallsignRulesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourConstraintsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfTourConstraintListDto"];
+                };
+            };
+        };
+    };
+    FlightOpsTourConstraintsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourConstraintWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourConstraintDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsTourConstraintsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourConstraintDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourConstraintsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourConstraintWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourConstraintDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourConstraintsDelete: {
         parameters: {
             query?: never;
             header?: never;

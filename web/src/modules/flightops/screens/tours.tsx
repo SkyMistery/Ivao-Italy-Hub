@@ -43,7 +43,7 @@ import {
 import { LegGrid } from './LegGrid';
 import { NewButton } from './NewButton';
 import { keepingCurrent, useListSearch, useStaff, useTypeSuggestions } from './hooks';
-import { TourCallsignsTab, TourHubsTab, TourSubtoursTab } from './shape';
+import { TourCallsignsTab, TourHubsTab, TourOpenTab, TourSubtoursTab } from './shape';
 
 /**
  * The tours in the back office (design M2 §8.3): the list of every tour, past, present and future, and the list of
@@ -514,6 +514,29 @@ export function TourEditor() {
                       content: (
                         <div className="pt-4">
                           <TourHubsTab tour={tour} editable={editable} />
+                        </div>
+                      ),
+                    },
+                  }),
+              // The goal and the constraints are an Open tour's only (note 2026-09-22-il-tour-open); a template of one
+              // carries them.
+              ...(tour.kind !== 'Open'
+                ? {}
+                : {
+                    open: {
+                      trigger: t('flightops:tours.tabs.open'),
+                      content: (
+                        <div className="pt-4">
+                          <TourOpenTab
+                            tour={tour}
+                            editable={
+                              editable &&
+                              (!tour.isTemplate ||
+                                writableDepartments(bootstrap, TOURS_MANAGE_TEMPLATES).includes(
+                                  tour.ownerDepartment,
+                                ))
+                            }
+                          />
                         </div>
                       ),
                     },

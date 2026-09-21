@@ -20,6 +20,12 @@ public interface IAirportDirectory
 
     /// <summary>The airports of the list the hub knows, by upper case ICAO code; an unknown code is simply absent.</summary>
     Task<IReadOnlyDictionary<string, AirportDto>> FindAsync(IReadOnlyCollection<string> icaos, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The countries of the list that have at least one airport the hub knows, by upper case code — the <c>CountryId</c> of an
+    /// airport. A parameter naming a country is checked here as one naming an airport is checked by <see cref="FindAsync"/>.
+    /// </summary>
+    Task<IReadOnlySet<string>> KnownCountriesAsync(IReadOnlyCollection<string> countryIds, CancellationToken cancellationToken = default);
 }
 
 /// <summary>One airport, as a field offers it and a leg freezes it. Every airport of the snapshot has coordinates (T1).</summary>
@@ -88,6 +94,32 @@ internal sealed class AirportDirectory(HubDbContext database) : IAirportDirector
                 airport.Longitude,
                 airport.ElevationFeet))
             .ToDictionaryAsync(airport => airport.Icao, StringComparer.Ordinal, cancellationToken);
+    }
+
+    public async Task<IReadOnlySet<string>> KnownCountriesAsync(
+        IReadOnlyCollection<string> countryIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(countryIds);
+
+        var wanted = countryIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (wanted.Length == 0)
+        {
+            return new HashSet<string>(StringComparer.Ordinal);
+        }
+
+        var known = await database.IvaoAirports.AsNoTracking()
+            .Where(airport => wanted.Contains(airport.CountryId))
+            .Select(airport => airport.CountryId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return known.ToHashSet(StringComparer.Ordinal);
     }
 }
 

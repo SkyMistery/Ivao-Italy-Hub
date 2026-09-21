@@ -70,7 +70,8 @@ public sealed class LegTests
             TourShape.Problems(Tour(TourKind.Free), [Retired(Leg(1, "AAAA", "BBBB"))], Known));
 
         Assert.Empty(TourShape.Problems(Tour(TourKind.Sequential), [Leg(1, "AAAA", "BBBB")], Known));
-        Assert.Empty(TourShape.Problems(Tour(TourKind.Open), [], Known));
+        // An Open tour needs no leg; what it needs besides, a goal, is T7c's (OpenTourTests).
+        Assert.DoesNotContain(TourShape.Problems(Tour(TourKind.Open), [], Known), problem => problem.Field == "legs");
         Assert.Contains(
             new ShapeProblem("legs", "flightops:errors.kindHasNoLegs"),
             TourShape.Problems(Tour(TourKind.Container), [Leg(1, "AAAA", "BBBB")], Known));

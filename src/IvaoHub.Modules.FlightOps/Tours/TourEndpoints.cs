@@ -308,7 +308,8 @@ public static class TourEndpoints
 
     /// <summary>
     /// The end both copies share: permission on the row as it will be, the rules of every save, the save — and the
-    /// callsign constraints of the source's tour copied onto the new row, in the same transaction (§1.10).
+    /// callsign constraints of the source's tour and, on an Open tour, its filters and sequence rules copied onto the new
+    /// row, in the same transaction (§1.10).
     /// </summary>
     private static async Task<IResult> CreateAsync(
         Tour tour,
@@ -337,12 +338,16 @@ public static class TourEndpoints
         var rules = await database.CallsignRules.AsNoTracking()
             .Where(rule => rule.TourId == sourceId)
             .ToListAsync(http.RequestAborted);
+        var constraints = await database.TourConstraints.AsNoTracking()
+            .Where(constraint => constraint.TourId == sourceId)
+            .ToListAsync(http.RequestAborted);
 
         await using var transaction = await database.Database.BeginTransactionAsync(http.RequestAborted);
         await database.SaveChangesAsync(http.RequestAborted);
 
         // The new row has its identifier only now.
         database.CallsignRules.AddRange(TourCopy.CallsignRules(rules, tour));
+        database.TourConstraints.AddRange(TourCopy.Constraints(constraints, tour));
         await database.SaveChangesAsync(http.RequestAborted);
         await transaction.CommitAsync(http.RequestAborted);
 

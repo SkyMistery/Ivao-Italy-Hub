@@ -22,7 +22,8 @@
       "legs": "Leg",
       "hubs": "Hub e rotazioni",
       "subtours": "Sottotour",
-      "callsigns": "Callsign"
+      "callsigns": "Callsign",
+      "open": "Obiettivo e vincoli"
     },
     "briefing": {
       "save": "Salva il briefing",
@@ -74,7 +75,18 @@
       "parentTourId": "Tour con sottotour",
       "hubs": "Hub",
       "rotations": "Rotazioni",
-      "subtours": "Sottotour"
+      "subtours": "Sottotour",
+      "openGoal": "Obiettivo",
+      "openGoalParameters": "Parametri dell'obiettivo",
+      "openGoalParameters.nm": "Miglia da accumulare (NM)",
+      "openGoalParameters.count": "Quanti",
+      "openGoalParameters.airports": "Aeroporti",
+      "openGoalParameters.airports.icao": "Aeroporto (ICAO)",
+      "openGoalParameters.countries": "Paesi",
+      "openGoalParameters.countries.code": "Paese (due lettere)",
+      "openGoalParameters.firs": "FIR",
+      "openGoalParameters.firs.code": "FIR",
+      "constraints": "Filtri e regole"
     },
     "options": {
       "kind": {
@@ -108,11 +120,21 @@
       },
       "groupId": {
         "none": "Scegli un gruppo"
+      },
+      "openGoal": {
+        "Distance": "Distanza",
+        "FlightCount": "Numero di voli",
+        "DistinctAirports": "Aeroporti diversi",
+        "DistinctCountries": "Paesi diversi",
+        "CollectList": "Elenco di aeroporti",
+        "CollectRegions": "Elenco di paesi o FIR"
       }
     },
     "hints": {
       "releaseAt": "In un sottotour, vuoto è il rilascio del tour che lo contiene.",
-      "closeAt": "In un sottotour, vuota è la chiusura del tour che lo contiene."
+      "closeAt": "In un sottotour, vuota è la chiusura del tour che lo contiene.",
+      "openGoalParameters.count": "Per un elenco: quanti dei suoi elementi bastano. Vuoto: tutti.",
+      "openGoalParameters.countries": "Paesi oppure FIR, non tutti e due. Un paese è il codice ISO di due lettere (IT, FR)."
     }
   },
   "tourTemplates": {
@@ -248,7 +270,19 @@
     "subtoursOutsideParent": "Un sottotour pronto ha date sue fuori da questo periodo.",
     "airlineCode": "Scrivi la compagnia con il suo codice di tre lettere.",
     "callsign": "Scrivi il callsign in lettere e cifre, senza spazi.",
-    "exactOnlyDenies": "Un callsign intero si può solo vietare: una compagnia consentita lascia il resto al pilota."
+    "exactOnlyDenies": "Un callsign intero si può solo vietare: una compagnia consentita lascia il resto al pilota.",
+    "kindHasNoConstraints": "Filtri e regole di sequenza sono solo dei tour a obiettivo libero (Open).",
+    "constraintsContradict": "Verso est e verso ovest insieme: nessun volo può rispettarli tutti e due.",
+    "openHasConstraints": "Un tour con filtri o regole non cambia tipo: toglili prima.",
+    "constraintTaken": "Il tour ne ha già uno di questo tipo.",
+    "regionsOneKind": "Scrivi dei paesi oppure dei FIR, non tutti e due.",
+    "countAboveList": "Più di quanti ne ha l'elenco.",
+    "distanceBoundRequired": "Serve almeno un estremo: minimo o massimo.",
+    "distanceBounds": "Il massimo è sotto il minimo.",
+    "firCode": "Un FIR è il suo codice, per esempio LIRR.",
+    "parameterChoice": "Non è una delle scelte possibili.",
+    "countryUnknown": "Un paese senza aeroporti che l'hub conosca.",
+    "firUnknown": "Un FIR che l'hub non conosce."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -372,6 +406,94 @@
       "legId": {
         "none": "Tutto il tour"
       }
+    }
+  },
+  "open": {
+    "goal": "Obiettivo",
+    "noGoal": "Nessun obiettivo ancora.",
+    "saveGoal": "Salva l'obiettivo",
+    "goalSaved": "Obiettivo salvato.",
+    "goals": {
+      "Distance": "Il tour è completo quando la somma delle distanze ortodromiche dei voli accettati arriva alle miglia indicate.",
+      "FlightCount": "Il tour è completo dopo il numero di voli accettati indicato.",
+      "DistinctAirports": "Il tour è completo quando i voli accettati hanno toccato il numero di aeroporti diversi indicato.",
+      "DistinctCountries": "Il tour è completo quando i voli accettati hanno toccato il numero di paesi diversi indicato.",
+      "CollectList": "Il tour è completo quando i voli accettati hanno toccato gli aeroporti dell'elenco: tutti, o quanti ne indichi.",
+      "CollectRegions": "Il tour è completo quando i voli accettati hanno toccato i paesi o i FIR dell'elenco: tutti, o quanti ne indichi."
+    }
+  },
+  "constraints": {
+    "title": "Filtri e regole di sequenza",
+    "description": "Un volo che non rispetta un filtro o una regola non si invia. La stessa rotta non si vola due volte: vale sempre, e non serve aggiungerla.",
+    "create": "Nuovo filtro o regola",
+    "edit": "Modifica filtro o regola",
+    "delete": {
+      "title": "Eliminare questo filtro o regola?",
+      "description": "Dal prossimo report i piloti non sono più tenuti a rispettarlo."
+    },
+    "fields": {
+      "kind": "Tipo",
+      "values": "Valori",
+      "parameters": "Parametri",
+      "parameters.countries": "Paesi",
+      "parameters.countries.code": "Paese (due lettere)",
+      "parameters.airports": "Aeroporti",
+      "parameters.airports.icao": "Aeroporto (ICAO)",
+      "parameters.airport": "Aeroporto (ICAO)",
+      "parameters.minNm": "Distanza minima (NM)",
+      "parameters.maxNm": "Distanza massima (NM)",
+      "parameters.categories": "Categorie di scia",
+      "parameters.meters": "Lunghezza massima della pista di arrivo (m)",
+      "parameters.feet": "Quota minima dell'aeroporto di arrivo (ft)",
+      "parameters.rules": "Regole di volo",
+      "parameters.count": "Voli almeno"
+    },
+    "hints": {
+      "parameters.minNm": "Uno dei due estremi basta."
+    },
+    "options": {
+      "kind": {
+        "DepartureOrArrivalIn": "Parte o arriva in",
+        "DepartureIn": "Parte da",
+        "ArrivalIn": "Arriva in",
+        "TouchesAirport": "Tocca un aeroporto",
+        "DistanceBetween": "Distanza fra",
+        "AircraftCategory": "Categoria di scia",
+        "ArrivalRunwayMax": "Pista corta all'arrivo",
+        "ArrivalElevationMin": "Aeroporto in quota all'arrivo",
+        "FlightRules": "Regole di volo",
+        "Chained": "In catena",
+        "Eastbound": "Verso est",
+        "Westbound": "Verso ovest",
+        "IncreasingDistance": "Sempre più lontano",
+        "MinFlightsAt": "Voli minimi su un aeroporto"
+      },
+      "parameters.rules": {
+        "I": "IFR",
+        "V": "VFR"
+      },
+      "parameters.categories": {
+        "L": "L — leggera",
+        "M": "M — media",
+        "H": "H — pesante",
+        "J": "J — super"
+      }
+    },
+    "explain": {
+      "DepartureOrArrivalIn": "Ogni volo parte o arriva in uno dei paesi indicati.",
+      "DepartureIn": "Ogni volo parte da uno dei paesi indicati.",
+      "ArrivalIn": "Ogni volo arriva in uno dei paesi indicati.",
+      "TouchesAirport": "Ogni volo parte o arriva in uno degli aeroporti indicati: un tour «a stella».",
+      "DistanceBetween": "La distanza ortodromica di ogni volo sta fra il minimo e il massimo.",
+      "AircraftCategory": "Ogni volo con un aereo di una delle categorie di scia indicate. I tipi e i gruppi ammessi sono nelle impostazioni del tour.",
+      "ArrivalRunwayMax": "Ogni volo arriva su una pista non più lunga della lunghezza indicata.",
+      "ArrivalElevationMin": "Ogni volo arriva su un aeroporto almeno alla quota indicata.",
+      "FlightRules": "Ogni volo con le regole di volo indicate.",
+      "Chained": "Ogni volo parte da dove è arrivato il volo precedente del pilota: niente teletrasporti.",
+      "Eastbound": "Ogni volo arriva più a est di dove è partito.",
+      "Westbound": "Ogni volo arriva più a ovest di dove è partito.",
+      "IncreasingDistance": "Ogni volo è più lungo del precedente.",
+      "MinFlightsAt": "Al completamento, almeno il numero di voli indicato ha toccato l'aeroporto. Uno per aeroporto."
     }
   }
 }

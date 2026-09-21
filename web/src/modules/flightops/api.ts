@@ -14,11 +14,17 @@ import {
   type CallsignRuleFormValues,
   type FlightOpsSettings,
   type HubFormValues,
+  type OpenGoalKind,
+  type ParameterKind,
+  type ParameterValues,
   type RotationFormValues,
+  type TourConstraintFormValues,
   type SettingsFormValues,
   type TourFormValues,
   type TourFromTemplateFormValues,
   type TourSaveAsTemplateFormValues,
+  CONSTRAINT_PARAMETERS,
+  GOAL_PARAMETERS,
 } from './schemas';
 
 /**
@@ -58,6 +64,8 @@ export type RotationDto = components['schemas']['RotationDto'];
 export type RotationListDto = components['schemas']['RotationListDto'];
 export type CallsignRuleDto = components['schemas']['CallsignRuleDto'];
 export type CallsignRuleListDto = components['schemas']['CallsignRuleListDto'];
+export type TourConstraintDto = components['schemas']['TourConstraintDto'];
+export type TourConstraintListDto = components['schemas']['TourConstraintListDto'];
 
 // ---- aircraft types -------------------------------------------------------------------------------
 
@@ -405,11 +413,17 @@ export function allowedFromFormValues(
   };
 }
 
+/** The goal of an Open tour as its tab sends it (T7c): the kind, and the parameters as the form holds them. */
+export interface OpenGoalChange {
+  readonly openGoal: OpenGoalKind;
+  readonly parameters: ParameterValues;
+}
+
 /**
- * What the form holds, as the API expects it. The briefing is sent only by its own tab (T6b): the settings form leaves
- * it out, and null keeps it as it is.
+ * What the form holds, as the API expects it. The briefing is sent only by its own tab (T6b), and the goal of an Open
+ * tour only by its own (T7c): the settings form leaves them out, and null keeps them as they are.
  */
-function tourBody(values: TourFormValues, briefing: Body | null): TourWriteDto {
+function tourBody(values: TourFormValues, briefing: Body | null, goal: OpenGoalChange | null): TourWriteDto {
   const text = (value: string | undefined) =>
     value === undefined || value.trim() === '' ? null : value.trim();
   const award = text(values.awardId);
@@ -440,12 +454,15 @@ function tourBody(values: TourFormValues, briefing: Body | null): TourWriteDto {
     rowVersion: values.rowVersion,
     parentTourId: values.parentTourId ?? null,
     requiredSubtours: values.requiredSubtours ?? null,
+    openGoal: goal?.openGoal ?? null,
+    openGoalParameters:
+      goal === null ? null : parametersBody(GOAL_PARAMETERS[goal.openGoal], goal.parameters),
   };
 }
 
 /**
- * Saves a tour: the settings, and the briefing when the briefing's tab sends it. One `PUT` for both, so the briefing
- * travels with the row's version like every other field.
+ * Saves a tour: the settings, and the briefing or the goal when their tab sends them. One `PUT` for all, so they travel
+ * with the row's version like every other field.
  */
 export function useSaveTour(id: number | null) {
   const queryClient = useQueryClient();
@@ -454,21 +471,26 @@ export function useSaveTour(id: number | null) {
     mutationFn: async ({
       values,
       briefing = null,
+      goal = null,
     }: {
       values: TourFormValues;
       briefing?: Body | null;
+      goal?: OpenGoalChange | null;
     }): Promise<TourDetailDto> =>
       id === null
-        ? unwrap(await api.POST('/api/flightops/tours', { body: tourBody(values, briefing) }))
+        ? unwrap(await api.POST('/api/flightops/tours', { body: tourBody(values, briefing, goal) }))
         : unwrap(
             await api.PUT('/api/flightops/tours/{id}', {
               params: { path: { id: String(id) } },
-              body: tourBody(values, briefing),
+              body: tourBody(values, briefing, goal),
             }),
           ),
     onSuccess: async (saved) => {
       queryClient.setQueryData(tourQuery(saved.id).queryKey, saved);
-      await queryClient.invalidateQueries({ queryKey: toursKey });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: toursKey }),
+        queryClient.invalidateQueries({ queryKey: tourReadyProblemsQuery(saved.id).queryKey }),
+      ]);
     },
   });
 }
@@ -621,6 +643,7 @@ export function useLegChange(tourId: number) {
 const hubsKey = ['flightops', 'hubs'] as const;
 const rotationsKey = ['flightops', 'rotations'] as const;
 const callsignRulesKey = ['flightops', 'callsign-rules'] as const;
+const constraintsKey = ['flightops', 'tour-constraints'] as const;
 
 /** Every row of a tour's tab on one page: a tour has a handful of hubs, rotations and constraints, never pages of them. */
 const allOfATour: ListSearch = listSearchSchema.parse({ pageSize: 100 });
@@ -802,8 +825,174 @@ export function useSaveCallsignRule(id: number | null) {
   });
 }
 
+// ---- the Open tour: parameters, filters and sequence rules (T7c) -------------------------------------
+
+/**
+ * The parameters as the API expects them, out of the form's: a list of `{ icao }` or `{ code }` becomes its codes, upper
+ * case and without the empty ones; an empty number is left out. Everything else (the bounds, whether a code exists) is
+ * the server's to say, on the field.
+ */
+export function parametersBody(
+  shape: Readonly<Record<string, ParameterKind>>,
+  values: ParameterValues | undefined,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+
+  for (const [name, kind] of Object.entries(shape)) {
+    const value = values?.[name];
+
+    switch (kind) {
+      case 'airports':
+      case 'countries':
+      case 'firs': {
+        const entries = Array.isArray(value) ? (value as Record<string, unknown>[]) : [];
+        const key = kind === 'airports' ? 'icao' : 'code';
+        body[name] = entries
+          .map((entry) => (typeof entry[key] === 'string' ? entry[key] : '').trim().toUpperCase())
+          .filter((code) => code !== '');
+        break;
+      }
+      case 'airport':
+        body[name] = typeof value === 'string' ? value.trim().toUpperCase() : '';
+        break;
+      case 'whole':
+      case 'wholeOptional':
+        if (typeof value === 'number') {
+          body[name] = value;
+        }
+        break;
+      case 'rules':
+      case 'categories':
+        if (value !== undefined) {
+          body[name] = value;
+        }
+        break;
+    }
+  }
+
+  return body;
+}
+
+/** The parameters as the form holds them, out of what the API stored; a list is a list of objects to repeat. */
+export function parametersToFormValues(
+  shape: Readonly<Record<string, ParameterKind>>,
+  stored: unknown,
+): ParameterValues {
+  const source = typeof stored === 'object' && stored !== null ? (stored as Record<string, unknown>) : {};
+  const values: ParameterValues = {};
+
+  for (const [name, kind] of Object.entries(shape)) {
+    const value = source[name];
+    const codes = Array.isArray(value)
+      ? value.filter((code): code is string => typeof code === 'string')
+      : [];
+
+    switch (kind) {
+      case 'airports':
+        values[name] = codes.map((icao) => ({ icao }));
+        break;
+      case 'countries':
+      case 'firs':
+        values[name] = codes.map((code) => ({ code }));
+        break;
+      case 'airport':
+        values[name] = typeof value === 'string' ? value : '';
+        break;
+      case 'categories':
+        values[name] = codes;
+        break;
+      case 'rules':
+        values[name] = value === 'I' ? 'I' : 'V';
+        break;
+      case 'whole':
+      case 'wholeOptional':
+        if (typeof value === 'number') {
+          values[name] = value;
+        }
+        break;
+    }
+  }
+
+  return values;
+}
+
+export function constraintsQuery(tourId: number, search: ListSearch = allOfATour) {
+  return queryOptions({
+    queryKey: [...constraintsKey, 'list', tourId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/flightops/tour-constraints', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ tourId: String(tourId) }),
+        }),
+      ),
+  });
+}
+
+export function constraintQuery(id: number) {
+  return queryOptions({
+    queryKey: [...constraintsKey, 'detail', id] as const,
+    queryFn: async (): Promise<TourConstraintDto> =>
+      unwrap(await api.GET('/api/flightops/tour-constraints/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function emptyConstraint(
+  tourId: number,
+  kind: TourConstraintFormValues['kind'],
+): TourConstraintFormValues {
+  const shape = CONSTRAINT_PARAMETERS[kind];
+
+  return {
+    tourId,
+    kind,
+    ...(Object.keys(shape).length === 0 ? {} : { parameters: parametersToFormValues(shape, {}) }),
+    rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+export function constraintToFormValues(constraint: TourConstraintDto): TourConstraintFormValues {
+  const shape = CONSTRAINT_PARAMETERS[constraint.kind];
+
+  return {
+    tourId: constraint.tourId,
+    kind: constraint.kind,
+    ...(Object.keys(shape).length === 0
+      ? {}
+      : { parameters: parametersToFormValues(shape, constraint.parameters) }),
+    rowVersion: constraint.rowVersion,
+  };
+}
+
+export function useSaveConstraint(id: number | null) {
+  const saved = useShapeSaved(constraintsKey);
+
+  return useMutation({
+    mutationFn: async (values: TourConstraintFormValues): Promise<TourConstraintDto> => {
+      const body = {
+        tourId: values.tourId,
+        kind: values.kind,
+        parameters: parametersBody(CONSTRAINT_PARAMETERS[values.kind], values.parameters),
+        rowVersion: values.rowVersion,
+      };
+      return id === null
+        ? unwrap(await api.POST('/api/flightops/tour-constraints', { body }))
+        : unwrap(
+            await api.PUT('/api/flightops/tour-constraints/{id}', {
+              params: { path: { id: String(id) } },
+              body,
+            }),
+          );
+    },
+    onSuccess: (constraint) => saved(constraint.tourId),
+  });
+}
+
 /** Deleting a hub, a rotation or a constraint: the server refuses a hub with rotations and a rotation with legs. */
-export function useDeleteShapeRow(resource: 'hubs' | 'rotations' | 'callsign-rules', tourId: number) {
+export function useDeleteShapeRow(
+  resource: 'hubs' | 'rotations' | 'callsign-rules' | 'tour-constraints',
+  tourId: number,
+) {
   const saved = useShapeSaved(['flightops', resource]);
 
   return useMutation({
@@ -816,6 +1005,8 @@ export function useDeleteShapeRow(resource: 'hubs' | 'rotations' | 'callsign-rul
           return unwrapEmpty(await api.DELETE('/api/flightops/rotations/{id}', path));
         case 'callsign-rules':
           return unwrapEmpty(await api.DELETE('/api/flightops/callsign-rules/{id}', path));
+        case 'tour-constraints':
+          return unwrapEmpty(await api.DELETE('/api/flightops/tour-constraints/{id}', path));
       }
     },
     onSuccess: () => saved(tourId),

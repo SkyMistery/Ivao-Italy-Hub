@@ -8,8 +8,9 @@ public sealed record ShapeProblem(string Field, string Key);
 
 /// <summary>
 /// Everything the shape of a tour is made of besides the tour itself: its legs, its hubs and their rotations, its
-/// subtours when it is a container, and its parent when it is a subtour. What a write is about to leave is handed in
-/// as it will be, so a check never reads what is stored in place of what is being saved.
+/// subtours when it is a container, its parent when it is a subtour, and its filters and rules when it is Open. What a
+/// write is about to leave is handed in as it will be, so a check never reads what is stored in place of what is being
+/// saved.
 /// </summary>
 public sealed record TourParts(
     IReadOnlyList<Leg> Legs,
@@ -18,6 +19,9 @@ public sealed record TourParts(
     IReadOnlyList<Tour> Subtours,
     Tour? Parent)
 {
+    /// <summary>The filters and sequence rules of an <c>Open</c> tour (T7c).</summary>
+    public IReadOnlyList<TourConstraint> Constraints { get; init; } = [];
+
     public static TourParts Of(IReadOnlyList<Leg> legs) => new(legs, [], [], [], null);
 }
 
@@ -28,7 +32,8 @@ public sealed record TourParts(
 /// <para>A retired leg is not part of the shape: it is no longer flown (§1.4.1), and a rotation whose legs are all
 /// retired no longer counts. A problem of one leg is filed under <c>legs.{number}</c>, one of the whole under
 /// <c>legs</c>; one of a hub under <c>hubs.{ICAO}</c>, one of a rotation under <c>rotations.{hub ICAO}.{position}</c>,
-/// its place among the rotations of its hub.</para>
+/// its place among the rotations of its hub. The goal of an Open tour is filed under <c>openGoal</c> and
+/// <c>openGoalParameters.{field}</c>, its constraints under <c>constraints</c>.</para>
 /// </summary>
 public static class TourShape
 {
@@ -52,6 +57,15 @@ public static class TourShape
         if (tour.Kind == TourKind.Container)
         {
             ContainerProblems(tour, parts, problems);
+        }
+
+        if (tour.Kind == TourKind.Open)
+        {
+            OpenProblems(tour, parts, problems);
+        }
+        else if (parts.Constraints.Count > 0)
+        {
+            problems.Add(new("constraints", "flightops:errors.kindHasNoConstraints"));
         }
 
         if (!HasLegs(tour.Kind))
@@ -217,6 +231,30 @@ public static class TourShape
         else if (required > parts.Subtours.Count)
         {
             problems.Add(new("requiredSubtours", "flightops:errors.requiredSubtoursTooMany"));
+        }
+    }
+
+    /// <summary>
+    /// An <c>Open</c> tour (design M2 §2.6.1, note 2026-09-22-il-tour-open): a goal whose parameters are still what its kind
+    /// takes — read again without the core's lists, so an airport gone from the snapshot is the write's to say —, and no two
+    /// constraints that cannot both hold. <c>Eastbound</c> with <c>Westbound</c> is the one that shows without flying.
+    /// </summary>
+    private static void OpenProblems(Tour tour, TourParts parts, List<ShapeProblem> problems)
+    {
+        if (tour.OpenGoal is not { } goal)
+        {
+            problems.Add(new("openGoal", "errors.required"));
+        }
+        else
+        {
+            problems.AddRange(OpenCatalog.Read(goal, OpenCatalog.Parse(tour.OpenGoalJson)).Problems
+                .Select(problem => problem with { Field = $"openGoalParameters.{problem.Field}" }));
+        }
+
+        var kinds = parts.Constraints.Select(constraint => constraint.Kind).ToHashSet();
+        if (kinds.Contains(TourConstraintKind.Eastbound) && kinds.Contains(TourConstraintKind.Westbound))
+        {
+            problems.Add(new("constraints", "flightops:errors.constraintsContradict"));
         }
     }
 
