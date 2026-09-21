@@ -3,10 +3,10 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 21 settembre 2026 — **T0–T7a in `main`; T7b è fatta**: branch `m2/t7b-shape`, in PR. Piano **0.86**.
+**Ultimo aggiornamento:** 21 settembre 2026 — **T0–T7a in `main`; T7b è fatta**: branch `m2/t7b-shape`, in PR #92. Piano **0.86**.
 **Il prossimo passo è T7c (il tour `Open`: obiettivo, filtri, regole di sequenza)**, in una chat nuova, dopo il merge di T7b.
 
-> **Prima di aprire T7c**: verificare con `gh pr list` che la PR di T7b sia mergiata (se non lo è, fermarsi e dirlo). **In apertura**
+> **Prima di aprire T7c**: verificare con `gh pr list` che la #92 (T7b) sia mergiata (se non lo è, fermarsi e dirlo). **In apertura**
 > portare a Carmine le due domande di `06` §T7c: dove si scrive l'obiettivo (form del tour o scheda sua) e se un filtro vale anche su un
 > tour con leg.
 
@@ -92,7 +92,7 @@
 > | #89 | T6a: i tour nel back office, il job del rilascio, `ProjectionRefresh`, `DeletePolicy` (piano 0.84) |
 > | #90 | T6b: l'editor del corpo estratto (`BodyEditor`) e la scheda del briefing |
 > | #91 | T7a: le leg, `LegGrid`, il tempo stimato, ritirare e ripristinare, gli aerei consentiti (piano 0.85) |
-> | (in PR) | T7b: hub e rotazioni, sottotour, vincoli sul callsign, `BeforeAuthorize` (piano 0.86) |
+> | #92 | T7b: hub e rotazioni, sottotour, vincoli sul callsign, `BeforeAuthorize` (piano 0.86) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
