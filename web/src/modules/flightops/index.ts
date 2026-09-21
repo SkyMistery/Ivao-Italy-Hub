@@ -10,6 +10,7 @@ import {
   AircraftProfilesPage,
 } from './screens/aircraft';
 import { FlightOpsSettingsPage } from './screens/settings';
+import { CallsignRuleForm, HubForm, RotationForm } from './screens/shape';
 import {
   TourEditor,
   TourFromTemplatePage,
@@ -20,7 +21,8 @@ import {
 
 /**
  * The tours (M2), as the front end knows them: `IvaoHub.Modules.FlightOps` on the other side. T5 is the
- * skeleton — the aircraft data and the settings, in the back office — and T6 the tours and their templates.
+ * skeleton — the aircraft data and the settings, in the back office — T6 the tours and their templates, T7 their legs
+ * and their shape: hubs and rotations, subtours, callsign constraints, each row in a form of its own under its tour.
  * Blocks and public pages come with the phases that give them something to show.
  */
 export const flightOpsManifest: ModuleManifest = {
@@ -53,6 +55,24 @@ export const flightOpsManifest: ModuleManifest = {
       permission: TOURS_VIEW,
       validateSearch: tourEditorSearchSchema,
       component: TourEditor,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/$id/hubs/$hubId',
+      permission: TOURS_EDIT,
+      component: HubForm,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/$id/rotations/$rotationId',
+      permission: TOURS_EDIT,
+      component: RotationForm,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/$id/callsigns/$ruleId',
+      permission: TOURS_EDIT,
+      component: CallsignRuleForm,
     },
     {
       area: 'staff',

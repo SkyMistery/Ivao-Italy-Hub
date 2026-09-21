@@ -1,5 +1,6 @@
 using System.Text.Json;
 using IvaoHub.Core.Division;
+using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
 
 namespace IvaoHub.Modules.FlightOps.Legs;
@@ -23,7 +24,7 @@ public enum LegKind
 /// </summary>
 [Audited]
 [PermissionArea(TourPermissions.Area)]
-public sealed class Leg : IOwnedByDepartment, IAuditable
+public sealed class Leg : ITourChild, IAuditable
 {
     private static readonly JsonSerializerOptions ColumnJson = new(JsonSerializerDefaults.Web);
 
@@ -36,10 +37,10 @@ public sealed class Leg : IOwnedByDepartment, IAuditable
 
     public LegKind Kind { get; set; }
 
-    /// <summary>The rotation of a hub tour the leg belongs to. Written by T7b.</summary>
+    /// <summary>The rotation of a hub tour the leg belongs to; none for a connection between hubs (design M2 §1.3).</summary>
     public long? RotationId { get; set; }
 
-    /// <summary>Its place in the rotation. Written by T7b.</summary>
+    /// <summary>Its place in the rotation, kept by the server from the order of the legs (<see cref="LegBook.SequenceRotations"/>).</summary>
     public int? SeqInRotation { get; set; }
 
     public string DepartureIcao { get; set; } = string.Empty;

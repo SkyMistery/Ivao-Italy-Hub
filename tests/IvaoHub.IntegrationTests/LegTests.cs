@@ -9,6 +9,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -171,14 +172,22 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(JsonValueKind.Null, Row(grid, withReport).GetProperty("retiredAt").ValueKind);
         Assert.Equal(totalBefore, grid.GetProperty("totalNm").GetDecimal());
 
-        // A rotation is never retired one leg at a time: the rotations are T7b's, the rule is already the server's.
+        // A rotation is never retired one leg at a time. The rule is the server's whatever the kind, so the rotation is
+        // written straight into the tables here; composing a hub tour through its screens is T7b's test (TourShapeTests).
         var others = Rows(grid).Select(Id).Where(id => id != withReport).ToArray();
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            var hub = new TourHub { TourId = Id(tour), Icao = Rome, OwnerDepartment = Department.FOD, OwnerDepartmentMask = DepartmentMask.Of(Department.FOD) };
+            database.Hubs.Add(hub);
+            await database.SaveChangesAsync(token);
+            var rotation = new Rotation { TourId = Id(tour), HubId = hub.Id, Size = 2, OwnerDepartment = Department.FOD, OwnerDepartmentMask = DepartmentMask.Of(Department.FOD) };
+            database.Rotations.Add(rotation);
+            await database.SaveChangesAsync(token);
+
             var rotated = new[] { withReport, others[0] };
             await database.Legs.Where(leg => rotated.Contains(leg.Id))
-                .ExecuteUpdateAsync(update => update.SetProperty(leg => leg.RotationId, 990_001L), token);
+                .ExecuteUpdateAsync(update => update.SetProperty(leg => leg.RotationId, rotation.Id), token);
         }
 
         removal = await advisor.GetFromJsonAsync<JsonElement>($"{legs}/{withReport}/removal", token);

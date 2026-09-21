@@ -43,13 +43,14 @@ import {
 import { LegGrid } from './LegGrid';
 import { NewButton } from './NewButton';
 import { keepingCurrent, useListSearch, useStaff, useTypeSuggestions } from './hooks';
+import { TourCallsignsTab, TourHubsTab, TourSubtoursTab } from './shape';
 
 /**
  * The tours in the back office (design M2 §8.3): the list of every tour, past, present and future, and the list of
  * templates; the settings of one tour, as a generated form; the bar of what happens to it without the form — ready,
  * back to draft, hidden, shown, deleted, saved as a template (§1.2.1, §1.2.2, §1.10). A tour that exists has tabs: the
- * settings, the briefing written with the editor of the content (T6b), and the legs (T7a) on a kind that has legs; the
- * hubs, the subtours and the rules are the tabs T7b and T9 add.
+ * settings, the briefing written with the editor of the content (T6b), the legs (T7a) on a kind that has legs, the hubs
+ * and rotations of a hub tour, the subtours of a container and the callsign constraints (T7b); the rules are T9's.
  */
 
 /** The kinds that have legs: an Open tour is flown anywhere, a container through its subtours (design M2 §2.6, §2.7). */
@@ -162,13 +163,20 @@ function ReadyProblems({
         <ul className="list-disc pl-5">
           {entries.map(([field, keys]) => {
             const missing = problems?.localized[field] ?? [];
-            // `legs.3` is the leg numbered 3, `legs` the legs as a whole (T7a).
+            // `legs.3` is the leg numbered 3, `legs` the legs as a whole (T7a); `hubs.LIRF` a hub, `rotations.LIRF.2` the
+            // second rotation of that hub (T7b).
             const leg = /^legs\.(\d+)$/.exec(field);
+            const hub = /^hubs\.([A-Z0-9]+)$/.exec(field);
+            const rotation = /^rotations\.([A-Z0-9]+)\.(\d+)$/.exec(field);
             const label = field.startsWith('briefing.')
               ? `${t('flightops:tours.fields.briefing')} › ${describe(field)}`
               : leg !== null
                 ? t('flightops:legs.row', { number: Number(leg[1]) })
-                : t(`flightops:tours.fields.${field.split(/[.[]/)[0] ?? field}`);
+                : hub !== null
+                  ? t('flightops:hubs.row', { icao: hub[1] })
+                  : rotation !== null
+                    ? t('flightops:rotations.row', { hub: rotation[1], number: Number(rotation[2]) })
+                    : t(`flightops:tours.fields.${field.split(/[.[]/)[0] ?? field}`);
             const sentence =
               missing.length > 0
                 ? t('errors.localized.missingIn', { locales: languageNames([...missing], i18n.language) })
@@ -352,6 +360,9 @@ export function TourEditor() {
 
   const tour = useQuery({ ...tourQuery(Number(id)), enabled: !isNew }).data ?? null;
   const isTemplate = tour?.isTemplate ?? search.template === true;
+  // A subtour: one that exists, or a new one opened from its container's tab (`?parent=`).
+  const parentId = tour?.parentTourId ?? (isNew ? search.parent : undefined) ?? null;
+  const parent = useQuery({ ...tourQuery(parentId ?? 0), enabled: parentId !== null }).data ?? null;
   const problems = useQuery({
     ...tourReadyProblemsQuery(Number(id)),
     enabled: tour !== null && !tour.isTemplate && tour.status === 'Draft',
@@ -376,7 +387,10 @@ export function TourEditor() {
     return null;
   }
 
-  const title = isNew ? t(`${labels}.create`) : read(tour?.title ?? {}) || t(`${labels}.edit`);
+  const title = isNew
+    ? t(parentId === null ? `${labels}.create` : 'flightops:subtours.create')
+    : read(tour?.title ?? {}) || t(`${labels}.edit`);
+  const editable = tour !== null && writableDepartments(bootstrap, TOURS_EDIT).includes(tour.ownerDepartment);
 
   const settings = (
     <SchemaForm
@@ -391,8 +405,13 @@ export function TourEditor() {
         groups,
         isTemplate,
         kindLocked: tour?.isPublic ?? false,
+        isSubtour: parentId !== null,
       })}
-      defaults={tour === null ? emptyTour(department, locales, isTemplate) : tourToFormValues(tour, locales)}
+      defaults={
+        tour === null
+          ? emptyTour(department, locales, isTemplate, parentId ?? undefined)
+          : tourToFormValues(tour, locales)
+      }
       locales={locales}
       labels="flightops:tours"
       // Banner and photo come from the library, where the department that prepares them uploaded them.
@@ -429,6 +448,15 @@ export function TourEditor() {
       breadcrumb={[
         { label: t('flightops:nav.section') },
         { label: t(`${labels}.title`), to: list },
+        // A subtour is reached from its container, and goes back there.
+        ...(parent === null
+          ? []
+          : [
+              {
+                label: read(parent.title) || t('flightops:tours.edit'),
+                to: `${TOURS}/${parent.id}?tab=subtours`,
+              },
+            ]),
         { label: title },
       ]}
       actions={tour === null ? undefined : <TourActions tour={tour} />}
@@ -472,16 +500,54 @@ export function TourEditor() {
                       trigger: t('flightops:tours.tabs.legs'),
                       content: (
                         <div className="pt-4">
-                          <LegGrid
-                            tour={tour}
-                            editable={writableDepartments(bootstrap, TOURS_EDIT).includes(
-                              tour.ownerDepartment,
-                            )}
-                          />
+                          <LegGrid tour={tour} editable={editable} />
                         </div>
                       ),
                     },
                   }),
+              // Hubs and rotations are a hub tour's, subtours a container's; none of them travel with a template.
+              ...(tour.isTemplate || tour.kind !== 'Hub'
+                ? {}
+                : {
+                    hubs: {
+                      trigger: t('flightops:tours.tabs.hubs'),
+                      content: (
+                        <div className="pt-4">
+                          <TourHubsTab tour={tour} editable={editable} />
+                        </div>
+                      ),
+                    },
+                  }),
+              ...(tour.isTemplate || tour.kind !== 'Container'
+                ? {}
+                : {
+                    subtours: {
+                      trigger: t('flightops:tours.tabs.subtours'),
+                      content: (
+                        <div className="pt-4">
+                          <TourSubtoursTab tour={tour} editable={editable} />
+                        </div>
+                      ),
+                    },
+                  }),
+              callsigns: {
+                trigger: t('flightops:tours.tabs.callsigns'),
+                content: (
+                  <div className="pt-4">
+                    <TourCallsignsTab
+                      tour={tour}
+                      // A template's constraints are changed with the template's own permission (§1.10).
+                      editable={
+                        editable &&
+                        (!tour.isTemplate ||
+                          writableDepartments(bootstrap, TOURS_MANAGE_TEMPLATES).includes(
+                            tour.ownerDepartment,
+                          ))
+                      }
+                    />
+                  </div>
+                ),
+              },
             }}
           />
         )}

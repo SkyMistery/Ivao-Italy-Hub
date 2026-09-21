@@ -254,6 +254,11 @@ public static class MapCrudExtensions
         options.Apply!(body, entity);
         KeepTheBaseDepartment(scope, entity);
 
+        if (await BeforeAuthorizeAsync(scope, options, entity, isNew: true, http.RequestAborted) is { } unresolved)
+        {
+            return unresolved;
+        }
+
         if (await DeniesWrite(scope, entity, options))
         {
             return Forbidden(scope);
@@ -307,6 +312,11 @@ public static class MapCrudExtensions
         options.Apply!(body, entity);
         KeepTheBaseDepartment(scope, entity);
 
+        if (await BeforeAuthorizeAsync(scope, options, entity, isNew: false, http.RequestAborted) is { } unresolved)
+        {
+            return unresolved;
+        }
+
         if (await DeniesWrite(scope, entity, options))
         {
             return Forbidden(scope);
@@ -336,6 +346,11 @@ public static class MapCrudExtensions
         if (entity is null)
         {
             return NotFound(scope);
+        }
+
+        if (await BeforeAuthorizeAsync(scope, options, entity, isNew: false, http.RequestAborted) is { } unresolved)
+        {
+            return unresolved;
         }
 
         if (await DeniesWrite(scope, entity, options)
@@ -677,20 +692,42 @@ public static class MapCrudExtensions
     /// The one extension of a write that looks at other rows (<c>CrudOptions.BeforeSave</c>). A
     /// refusal is answered like a validator's, so the form puts it under the field it names.
     /// </summary>
-    private static async Task<IResult?> BeforeSaveAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
+    private static Task<IResult?> BeforeSaveAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
         CrudScope<TEntity> scope,
         CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options,
         TEntity entity,
         bool isNew,
         CancellationToken cancellationToken)
+        where TEntity : class =>
+        RunHookAsync(scope, options.BeforeSave, entity, isNew, cancellationToken);
+
+    /// <summary>
+    /// What the row takes from other rows before its permission is asked (<c>CrudOptions.BeforeAuthorize</c>),
+    /// refused the same way as <see cref="BeforeSaveAsync"/>.
+    /// </summary>
+    private static Task<IResult?> BeforeAuthorizeAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
+        CrudScope<TEntity> scope,
+        CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options,
+        TEntity entity,
+        bool isNew,
+        CancellationToken cancellationToken)
+        where TEntity : class =>
+        RunHookAsync(scope, options.BeforeAuthorize, entity, isNew, cancellationToken);
+
+    private static async Task<IResult?> RunHookAsync<TEntity>(
+        CrudScope<TEntity> scope,
+        Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? hook,
+        TEntity entity,
+        bool isNew,
+        CancellationToken cancellationToken)
         where TEntity : class
     {
-        if (options.BeforeSave is null)
+        if (hook is null)
         {
             return null;
         }
 
-        var errors = await options.BeforeSave(
+        var errors = await hook(
             entity,
             new CrudSaving(scope.Database, scope.Services, scope.CurrentUser, isNew, cancellationToken));
 

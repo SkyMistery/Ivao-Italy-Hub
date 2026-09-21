@@ -20,11 +20,13 @@ public sealed record TourListDto(
     DateTime? ReleaseAt,
     DateTime? CloseAt,
     bool IsHidden,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    long? ParentTourId);
 
 /// <summary>
 /// A tour as its editor loads it. <c>State</c> is what the dates say now (design M2 §1.2.1); <c>IsPublic</c>, whether
-/// anybody outside the staff sees it now — from then on its kind no longer changes.
+/// anybody outside the staff sees it now — from then on its kind no longer changes. On a subtour the dates are the ones
+/// in force, and <c>ReleaseFromParent</c> and <c>CloseFromParent</c> say which of them are its container's.
 /// </summary>
 public sealed record TourDetailDto(
     long Id,
@@ -56,14 +58,20 @@ public sealed record TourDetailDto(
     AllowedAircraft AllowedAircraft,
     long? AwardId,
     DateTime UpdatedAt,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    long? ParentTourId,
+    int? RequiredSubtours,
+    bool ReleaseFromParent,
+    bool CloseFromParent);
 
 /// <summary>
 /// What a client may set on a tour. The state is not here — marking ready, back to draft, hiding and showing are
 /// actions (<see cref="TourStatusRequest"/>). Of the shape of a tour, T7a writes the distance of a <c>Distance</c> tour
-/// and the aircraft admitted (types and groups, design M2 §1.5); the goal of an <c>Open</c> tour and the subtours are
-/// T7b's. A null <c>Briefing</c> keeps the briefing as it is; a null <c>ReportWindowDays</c> on a new tour takes the
-/// division's default (§1.11); a null <c>AllowedAircraft</c> admits every aircraft.
+/// and the aircraft admitted (types and groups, design M2 §1.5); T7b the container and its subtours — the parent is
+/// chosen when a subtour is created and never changes, and a subtour's empty date is its container's (note
+/// 2026-09-21-la-forma-dei-tour); the goal of an <c>Open</c> tour is T7c's. A null <c>Briefing</c> keeps the briefing as
+/// it is; a null <c>ReportWindowDays</c> on a new tour takes the division's default (§1.11); a null
+/// <c>AllowedAircraft</c> admits every aircraft.
 /// </summary>
 public sealed record TourWriteDto(
     Department OwnerDepartment,
@@ -88,7 +96,9 @@ public sealed record TourWriteDto(
     int? RequiredNm,
     AllowedAircraft? AllowedAircraft,
     long? AwardId,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    long? ParentTourId = null,
+    int? RequiredSubtours = null);
 
 /// <summary>The four things that happen to a tour without its form (design M2 §8.3).</summary>
 public enum TourStatusAction
@@ -136,6 +146,10 @@ internal sealed partial class TourMapper
     [MapperIgnoreSource(nameof(TourWriteDto.ReportWindowDays))]
     [MapperIgnoreSource(nameof(TourWriteDto.IsTemplate))]
     [MapperIgnoreSource(nameof(TourWriteDto.AllowedAircraft))]
+    [MapperIgnoreSource(nameof(TourWriteDto.ParentTourId))]
+    [MapperIgnoreSource(nameof(TourWriteDto.RequiredSubtours))]
+    [MapperIgnoreTarget(nameof(Tour.ParentTourId))]
+    [MapperIgnoreTarget(nameof(Tour.RequiredSubtours))]
     [MapperIgnoreTarget(nameof(Tour.AllowedAircraft))]
     [MapperIgnoreTarget(nameof(Tour.AllowedAircraftJson))]
     [MapperIgnoreTarget(nameof(Tour.BriefingJson))]
@@ -154,9 +168,15 @@ internal sealed partial class TourMapper
         if (tour.Id == 0)
         {
             tour.IsTemplate = payload.IsTemplate;
+            tour.ParentTourId = payload.IsTemplate ? null : payload.ParentTourId;
         }
 
         ApplyFields(payload, tour);
+        tour.RequiredSubtours = tour.Kind == TourKind.Container ? payload.RequiredSubtours : null;
+
+        // A subtour's empty date is its container's, copied before the permission is asked (TourSaving.AdoptAsync).
+        tour.ReleaseFromParent = tour.IsSubtour && payload.ReleaseAt is null;
+        tour.CloseFromParent = tour.IsSubtour && payload.CloseAt is null;
         tour.Slug = tour.IsTemplate ? null : payload.Slug?.Trim().ToLowerInvariant();
         tour.ReferenceAircraftIcao = string.IsNullOrWhiteSpace(payload.ReferenceAircraftIcao)
             ? null
@@ -230,12 +250,21 @@ public sealed class TourWriteDtoValidator : AbstractValidator<TourWriteDto>
                 .MaximumLength(TourValidation.MaxSlugLength).WithMessage("errors.text.tooLong")
                 .Must(slug => slug is null || TourValidation.SlugPattern().IsMatch(slug.Trim().ToLowerInvariant()))
                 .WithMessage("errors.slug.invalid");
-            RuleFor(tour => tour.ReleaseAt).NotNull().WithMessage("errors.required");
-            RuleFor(tour => tour.CloseAt)
-                .NotNull().WithMessage("errors.required")
-                .GreaterThan(tour => tour.ReleaseAt).When(tour => tour.ReleaseAt is not null)
-                .WithMessage("flightops:errors.closeBeforeRelease");
         });
+
+        // A subtour may leave its dates empty: they are then its container's.
+        When(tour => !tour.IsTemplate && tour.ParentTourId is null, () =>
+        {
+            RuleFor(tour => tour.ReleaseAt).NotNull().WithMessage("errors.required");
+            RuleFor(tour => tour.CloseAt).NotNull().WithMessage("errors.required");
+        });
+
+        RuleFor(tour => tour.CloseAt)
+            .GreaterThan(tour => tour.ReleaseAt)
+            .When(tour => !tour.IsTemplate && tour.ReleaseAt is not null && tour.CloseAt is not null)
+            .WithMessage("flightops:errors.closeBeforeRelease");
+        RuleFor(tour => tour.RequiredSubtours).InclusiveBetween(1, 100).When(tour => tour.RequiredSubtours is not null)
+            .WithMessage("errors.number.range");
 
         RuleFor(tour => tour.ReportWindowDays).InclusiveBetween(1, 60).When(tour => tour.ReportWindowDays is not null)
             .WithMessage("errors.number.range");

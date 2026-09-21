@@ -3,19 +3,30 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 18 settembre 2026 — **T0–T6b in `main`; T7a è fatta**: branch `m2/t7a-legs`, in PR. Piano **0.85**.
-**Il prossimo passo è T7b (la forma del tour: hub e rotazioni, sottotour, callsign, tour `Open`)**, in una chat nuova, dopo il merge di T7a.
+**Ultimo aggiornamento:** 21 settembre 2026 — **T0–T7a in `main`; T7b è fatta**: branch `m2/t7b-shape`, in PR #92. Piano **0.86**.
+**Il prossimo passo è T7c (il tour `Open`: obiettivo, filtri, regole di sequenza)**, in una chat nuova, dopo il merge di T7b.
 
-> **Prima di aprire T7b**: verificare con `gh pr list` che la #91 (T7a) sia mergiata (se non lo è, fermarsi e dirlo). **In apertura**
-> portare a Carmine la domanda sui **sottotour**: date e indirizzo propri (dentro il periodo del padre) o del padre (nota
-> `2026-09-18-le-leg-dei-tour` §2, `06` §T7).
+> **Prima di aprire T7c**: verificare con `gh pr list` che la #92 (T7b) sia mergiata (se non lo è, fermarsi e dirlo). **In apertura**
+> portare a Carmine le due domande di `06` §T7c: dove si scrive l'obiettivo (form del tour o scheda sua) e se un filtro vale anche su un
+> tour con leg.
 
 > ## ⚠️ Prima di tutto, per la chat che riprende: le fasi T
 >
-> **Per la chat che apre T7b, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella, la
-> sezione **T7** (il perimetro, la divisione e **T7a «Com'è andata»**); poi `decisions/2026-09-18-le-leg-dei-tour.md`. Branch
-> `m2/t7b-shape` da `main`, **dopo** il merge di T7a. T7b migra `FlightOpsDbContext` (hub, rotazioni, callsign, vincoli): **non** in
-> parallelo con T8, che tocca le leg.
+> **Per la chat che apre T7c, in quest'ordine**: leggere questo riquadro; poi `06-piano-implementazione-m2.md` parte C, la tabella, la
+> sezione **T7** (la divisione, **T7b «Com'è andata»** e il perimetro di **T7c**); poi `decisions/2026-09-21-la-forma-dei-tour.md` e
+> design §2.6.1. Branch `m2/t7c-open` da `main`, **dopo** il merge di T7b. T7c migra `FlightOpsDbContext` (`fo_tour_constraints`):
+> **non** in parallelo con T8.
+>
+> **Che cosa ha lasciato T7b** (nota `2026-09-21-la-forma-dei-tour`, piano 0.86): hub, rotazioni e vincoli sul callsign sono **tre
+> risorse del motore** (`Shape/ShapeEndpoints.cs`) con liste e form generati (`screens/shape.tsx`): **T7c fa lo stesso** per
+> `fo_tour_constraints`. Una riga figlia implementa **`ITourChild`** e prende la cura del tour con **`CrudOptions.BeforeAuthorize`**
+> (`TourChildren.AdoptAsync`); `TourSaving.KeepTheRowsWithTheTourAsync` la fa seguire — T7c aggiunge lì la sua tabella. Una scrittura di
+> una riga di un tour **pronto** passa i controlli con `TourChildren.StillReadyAsync(tour, parts => …)`; i controlli sono
+> `TourShape.Problems(tour, TourParts, …)`, dove T7c aggiunge l'obiettivo e i filtri. I **sottotour**: date in vigore nelle colonne di
+> sempre, `release_from_parent`/`close_from_parent` dicono quali sono del padre; proiettano solo i file; `filter[parent]` sulla lista dei
+> tour (default `none`). Il **callsign** si decide con `CallsignRules.Judge` (Allow più vicino, Deny sommati): lo usa T11. Nel frontend
+> le schede sono `hubs`, `subtours`, `callsigns` in `tourEditorSearchSchema`; `LegGrid` ha la colonna «Rotazione» sui tour `Hub`. Nei
+> test: VID `780073–780075`; ⚠️ una leg non può più avere un `rotation_id` inventato (chiave esterna).
 >
 > **Che cosa ha lasciato T7a** (nota `2026-09-18-le-leg-dei-tour`, piano 0.85): `fo_legs` (`Legs/Leg.cs`) con coordinate congelate da
 > **`IAirportDirectory`** (nucleo, `/api/reference/airports`) e GCD (`GreatCircle`); `kind`, `rotation_id`, `seq_in_rotation` esistono e
@@ -81,6 +92,7 @@
 > | #89 | T6a: i tour nel back office, il job del rilascio, `ProjectionRefresh`, `DeletePolicy` (piano 0.84) |
 > | #90 | T6b: l'editor del corpo estratto (`BodyEditor`) e la scheda del briefing |
 > | #91 | T7a: le leg, `LegGrid`, il tempo stimato, ritirare e ripristinare, gli aerei consentiti (piano 0.85) |
+> | #92 | T7b: hub e rotazioni, sottotour, vincoli sul callsign, `BeforeAuthorize` (piano 0.86) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -89,7 +101,7 @@
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T7b**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T7c**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Una cosa che T1 lascia aperta**: l'attribuzione dei confini dei FIR (CC BY-SA 4.0) va **mostrata** dove si vede la proposta degli ATC,
 > cioè in T12. (Le «varianti» degli aerei sono decise in T6a: tipi più gruppi, nessuna spunta.)

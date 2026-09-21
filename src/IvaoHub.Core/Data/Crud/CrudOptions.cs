@@ -194,6 +194,18 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     /// </summary>
     public Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? BeforeSave { get; set; }
 
+    /// <summary>
+    /// What a row takes from other rows <b>before</b> its permission is asked — run after the payload is
+    /// applied on a create and an update, and on the stored row before a delete, ahead of the check of
+    /// the permission on the row. Refusing works as in <see cref="BeforeSave"/>.
+    /// <para>The rows of a tour are the reason it exists (M2, T7b, note 2026-09-21-la-forma-dei-tour): a
+    /// hub, a rotation, a callsign constraint and a subtour are in the care of the departments of their
+    /// tour (note 2026-09-18-le-leg-dei-tour), and the permission has to be asked on that care, not on
+    /// the base department the payload alone would give them. The engine still does not know what a
+    /// tour is — only that some rows take their owner from another.</para>
+    /// </summary>
+    public Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? BeforeAuthorize { get; set; }
+
     internal string EffectiveName =>
         string.IsNullOrWhiteSpace(Name) ? PermissionArea : Name;
 

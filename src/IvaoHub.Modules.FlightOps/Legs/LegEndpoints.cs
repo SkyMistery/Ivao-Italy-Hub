@@ -412,6 +412,8 @@ public sealed class LegRequest(
         ArgumentNullException.ThrowIfNull(tour);
         ArgumentNullException.ThrowIfNull(http);
 
+        LegBook.SequenceRotations(legs);
+
         if (tour.Status == PublishStatus.Published)
         {
             var problems = await readiness.ProblemsAsync(tour, legs, http.RequestAborted);
