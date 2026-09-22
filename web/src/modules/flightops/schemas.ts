@@ -189,7 +189,7 @@ export type TourFormValues = z.output<ReturnType<typeof tourSchema>>;
 export const tourEditorSearchSchema = z.object({
   template: z.boolean().optional(),
   parent: z.number().int().optional(),
-  tab: z.enum(['settings', 'briefing', 'legs', 'hubs', 'subtours', 'callsigns', 'open']).optional(),
+  tab: z.enum(['settings', 'briefing', 'legs', 'hubs', 'subtours', 'callsigns', 'open', 'rules']).optional(),
 });
 
 export type TourEditorTab = NonNullable<z.infer<typeof tourEditorSearchSchema>['tab']>;
@@ -302,7 +302,15 @@ export const WAKE_CATEGORIES = ['L', 'M', 'H', 'J'] as const;
  * repeats.
  */
 export type ParameterKind =
-  'whole' | 'wholeOptional' | 'airport' | 'airports' | 'countries' | 'firs' | 'rules' | 'categories';
+  | 'whole'
+  | 'wholeOptional'
+  | 'airport'
+  | 'airports'
+  | 'countries'
+  | 'firs'
+  | 'rules'
+  | 'categories'
+  | 'letters';
 
 /** The parameters of each goal, in the order the form shows them (note 2026-09-22-il-tour-open). */
 export const GOAL_PARAMETERS: Readonly<Record<OpenGoalKind, Readonly<Record<string, ParameterKind>>>> = {
@@ -334,7 +342,13 @@ export const CONSTRAINT_PARAMETERS: Readonly<
   MinFlightsAt: { airport: 'airport', count: 'whole' },
 };
 
-function parameterField(kind: ParameterKind, categories: readonly ChoiceOption[]) {
+/** What a set of parameters chooses among, where a kind is a choice: wake categories, equipment letters. */
+export interface ParameterChoices {
+  readonly categories?: readonly ChoiceOption[];
+  readonly letters?: readonly ChoiceOption[];
+}
+
+function parameterField(kind: ParameterKind, choices: ParameterChoices) {
   switch (kind) {
     case 'whole':
       return z.number().int();
@@ -350,18 +364,20 @@ function parameterField(kind: ParameterKind, categories: readonly ChoiceOption[]
     case 'rules':
       return z.enum(['I', 'V']);
     case 'categories':
-      return z.array(z.string()).meta({ multi: true, choices: categories });
+      return z.array(z.string()).meta({ multi: true, choices: choices.categories ?? [] });
+    case 'letters':
+      return z.array(z.string()).meta({ multi: true, choices: choices.letters ?? [] });
   }
 }
 
 /** The shape of a set of parameters, built from what each one holds. */
 export function parametersShape(
   parameters: Readonly<Record<string, ParameterKind>>,
-  categories: readonly ChoiceOption[] = [],
+  choices: ParameterChoices = {},
 ) {
   return z.object(
     Object.fromEntries(
-      Object.entries(parameters).map(([name, kind]) => [name, parameterField(kind, categories)]),
+      Object.entries(parameters).map(([name, kind]) => [name, parameterField(kind, choices)]),
     ),
   );
 }
@@ -400,7 +416,9 @@ export function tourConstraintSchema(
   return z.object({
     tourId: z.number().int().meta({ hidden: true }),
     kind: z.enum(TOUR_CONSTRAINT_KINDS).meta({ hidden: true }),
-    ...(Object.keys(parameters).length === 0 ? {} : { parameters: parametersShape(parameters, categories) }),
+    ...(Object.keys(parameters).length === 0
+      ? {}
+      : { parameters: parametersShape(parameters, { categories }) }),
     rowVersion: z.string().meta({ hidden: true }),
   }) as never;
 }
@@ -411,3 +429,172 @@ export interface TourConstraintFormValues extends Record<string, unknown> {
   parameters?: ParameterValues;
   rowVersion: string;
 }
+
+// ---- rules and errors (T9) --------------------------------------------------------------------------
+
+/** The checks a rule or an error may name (design M2 §6.4), as `CheckCatalog` spells them. */
+export const CHECK_KEYS = [
+  'callsign',
+  'aircraft',
+  'landingAtArrival',
+  'disconnections',
+  'parking',
+  'speed250',
+  'simRate',
+  'alternate',
+  'equipment',
+  'takeoffFromThreshold',
+  'vmc',
+  'repeatedRoute',
+  'semicircularLevels',
+  'atcCoverage',
+] as const;
+
+export type CheckKey = (typeof CHECK_KEYS)[number];
+
+/** What the check picker holds: a check, or none. */
+export type CheckChoice = CheckKey | 'none';
+
+/** The letters of item 10a an `equipment` rule may require. */
+export const EQUIPMENT_LETTERS = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E1',
+  'E2',
+  'E3',
+  'F',
+  'G',
+  'H',
+  'I',
+  'J1',
+  'J2',
+  'J3',
+  'J4',
+  'J5',
+  'J6',
+  'J7',
+  'K',
+  'L',
+  'M1',
+  'M2',
+  'M3',
+  'O',
+  'P1',
+  'P2',
+  'P3',
+  'R',
+  'S',
+  'T',
+  'U',
+  'V',
+  'W',
+  'X',
+  'Y',
+  'Z',
+] as const;
+
+/**
+ * The parameters of each check. Every number may be left empty: a rule of its own then takes the check's starting value,
+ * an amendment the value of the rule it amends (Carmine, 22 September 2026). Bounds and starting values are the server's
+ * (`CheckCatalog`); the tolerance of the take-off from the threshold is a setting, not a parameter (answer 15).
+ */
+export const CHECK_PARAMETERS: Readonly<Record<CheckKey, Readonly<Record<string, ParameterKind>>>> = {
+  callsign: {},
+  aircraft: {},
+  landingAtArrival: { radiusNm: 'wholeOptional' },
+  disconnections: { maxSingleDisconnectMinutes: 'wholeOptional', maxTotalDisconnectMinutes: 'wholeOptional' },
+  parking: { minParkingMinutesBefore: 'wholeOptional', minParkingMinutesAfter: 'wholeOptional' },
+  speed250: { toleranceKt: 'wholeOptional' },
+  simRate: { tolerancePercent: 'wholeOptional' },
+  alternate: {},
+  equipment: { letters: 'letters' },
+  takeoffFromThreshold: {},
+  vmc: { minVisibilityMeters: 'wholeOptional', minCloudBaseFeet: 'wholeOptional' },
+  repeatedRoute: {},
+  semicircularLevels: {},
+  atcCoverage: {},
+};
+
+/** The parameters a check takes; none for no check. */
+export function checkParameters(check: CheckChoice): Readonly<Record<string, ParameterKind>> {
+  return check === 'none' ? {} : CHECK_PARAMETERS[check];
+}
+
+/** The one field that picks the check of a rule or of an error, applied as it is chosen. */
+export const checkKeySchema = z.object({ checkKey: z.enum(['none', ...CHECK_KEYS]) });
+
+/**
+ * A rule, general or of a tour (design M2 §1.7): its code, title and text in every language, the errors that go with it,
+ * and the parameters of the check chosen above it. An amendment's check is its rule's, so the picker is not drawn for it.
+ */
+export function ruleSchema(
+  check: CheckChoice,
+  { errors = [], letters = [] }: { errors?: readonly ChoiceOption[]; letters?: readonly ChoiceOption[] } = {},
+): z.ZodType<RuleFormValues, RuleFormValues> {
+  const parameters = checkParameters(check);
+
+  return z.object({
+    tourId: z.number().int().optional().meta({ hidden: true }),
+    amendsRuleId: z.number().int().optional().meta({ hidden: true }),
+    checkKey: z.enum(['none', ...CHECK_KEYS]).meta({ hidden: true }),
+    code: z.string(),
+    title: localized(),
+    text: localized().meta({ localized: true, multiline: true }),
+    ...(Object.keys(parameters).length === 0 ? {} : { parameters: parametersShape(parameters, { letters }) }),
+    errorIds: z.array(z.string()).meta({ multi: true, choices: errors }),
+    sort: z.number().int(),
+    retired: z.boolean(),
+    rowVersion: z.string().meta({ hidden: true }),
+  }) as never;
+}
+
+export interface RuleFormValues extends Record<string, unknown> {
+  tourId?: number;
+  amendsRuleId?: number;
+  checkKey: CheckChoice;
+  code: string;
+  title: Record<string, string>;
+  text: Record<string, string>;
+  parameters?: ParameterValues;
+  errorIds: string[];
+  sort: number;
+  retired: boolean;
+  rowVersion: string;
+}
+
+/** What an error weighs, as `ErrorCategory` spells it. */
+export const ERROR_CATEGORIES = ['Info', 'Warning', 'Dangerous'] as const;
+
+/**
+ * An error of the division's catalogue (design M2 §1.7): its name, description and examples, its category — a warning has
+ * a yearly maximum —, whether the public may read it. The check whose failure suggests it is picked above the form.
+ */
+export const tourErrorSchema = z.object({
+  checkKey: z.enum(['none', ...CHECK_KEYS]).meta({ hidden: true }),
+  name: localized(),
+  description: localized().meta({ localized: true, multiline: true }),
+  examples: localized().optional().meta({ localized: true, multiline: true }),
+  category: z.enum(ERROR_CATEGORIES),
+  // Read only for a warning; the server refuses one on the others.
+  yearlyMax: z.number().int().optional(),
+  isPublic: z.boolean(),
+  retired: z.boolean(),
+  rowVersion: z.string().meta({ hidden: true }),
+});
+
+export type TourErrorFormValues = z.output<typeof tourErrorSchema>;
+
+/**
+ * `?amends=` on a new rule of a tour: the general rule it takes the place of. Coerced, because a link written as text
+ * arrives as the string `"7"` (found by the e2e round of T9).
+ */
+export const tourRuleSearchSchema = z.object({ amends: z.coerce.number().int().optional() });
+
+/** "Copy the rules of another tour": which one. */
+export function copyRulesSchema(tours: readonly ChoiceOption[] = []) {
+  return z.object({ sourceTourId: z.string().meta({ choices: tours }) });
+}
+
+export type CopyRulesFormValues = z.output<ReturnType<typeof copyRulesSchema>>;

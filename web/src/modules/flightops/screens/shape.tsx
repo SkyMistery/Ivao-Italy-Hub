@@ -55,6 +55,7 @@ import {
   GOAL_PARAMETERS,
   WAKE_CATEGORIES,
   callsignRuleSchema,
+  type checkKeySchema,
   constraintKindSchema,
   hubSchema,
   openGoalKindSchema,
@@ -67,7 +68,7 @@ import {
 } from '../schemas';
 
 import { NewButton } from './NewButton';
-import { useStaff } from './hooks';
+import { useRowId, useStaff } from './hooks';
 
 /**
  * The shape of a tour besides its legs (design M2 §1.3, §1.6, §2.6.1, §2.7, §8.3): the tabs of the tour's editor for its
@@ -108,18 +109,21 @@ const subtourColumns: readonly ColumnSpec<TourListDto>[] = [
 ];
 
 /** A list inside a tab: its page and search kept by the tab, not by the address, which belongs to the tour. */
-function TabList<TRow extends { id: number }, TKey extends readonly unknown[]>({
+export function TabList<TRow extends { id: number }, TKey extends readonly unknown[]>({
   columns,
   query,
   labels,
   edit,
   create,
+  actions,
 }: {
   columns: readonly ColumnSpec<TRow>[];
   query: (search: ListSearch) => UseQueryOptions<Page<TRow>, Error, Page<TRow>, TKey>;
   labels: string;
   edit: ((row: TRow) => string) | null;
   create: ReactNode;
+  /** What a row offers instead of "edit", when it offers something else. */
+  actions?: (row: TRow) => ReactNode;
 }) {
   const { t, i18n } = useTranslation();
   const { bootstrap } = useStaff();
@@ -136,12 +140,14 @@ function TabList<TRow extends { id: number }, TKey extends readonly unknown[]>({
       search={search}
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
       {...(create === null ? {} : { toolbar: create })}
-      actions={(row) =>
-        edit === null ? null : (
-          <Button asChild variant="ghost" size="sm">
-            <RouterAnchor href={edit(row)}>{t('common.edit')}</RouterAnchor>
-          </Button>
-        )
+      actions={
+        actions ??
+        ((row) =>
+          edit === null ? null : (
+            <Button asChild variant="ghost" size="sm">
+              <RouterAnchor href={edit(row)}>{t('common.edit')}</RouterAnchor>
+            </Button>
+          ))
       }
     />
   );
@@ -255,10 +261,11 @@ export function TourOpenTab({ tour, editable }: { tour: TourDetailDto; editable:
 }
 
 /**
- * The kind of a goal or of a constraint, and what it means: a form of one field applied as it is chosen, and the
- * sentence that says what the kind asks of a pilot. The parameters of the kind are the form below it.
+ * The kind of a goal or of a constraint — or the check of a rule or an error (T9) — and what it means: a form of one field
+ * applied as it is chosen, and the sentence that says what the kind asks of a pilot. The parameters of the kind are the
+ * form below it.
  */
-function KindPicker<TKind extends string>({
+export function KindPicker<TKind extends string>({
   schema,
   field,
   value,
@@ -266,8 +273,8 @@ function KindPicker<TKind extends string>({
   explanation,
   onChange,
 }: {
-  schema: typeof openGoalKindSchema | typeof constraintKindSchema;
-  field: 'openGoal' | 'kind';
+  schema: typeof openGoalKindSchema | typeof constraintKindSchema | typeof checkKeySchema;
+  field: 'openGoal' | 'kind' | 'checkKey';
   value: TKind;
   labels: string;
   explanation: string;
@@ -358,7 +365,7 @@ function OpenGoalEditor({ tour, editable }: { tour: TourDetailDto; editable: boo
  * The page a row of a tour's shape is edited on: the tour in the breadcrumb, the generated form, "delete" for a row that
  * exists, and back to the tab it came from.
  */
-function ShapeFormPage({
+export function ShapeFormPage({
   labels,
   tab,
   isNew,
@@ -413,14 +420,7 @@ function ShapeFormPage({
   );
 }
 
-function useRowId(name: 'hubId' | 'rotationId' | 'ruleId' | 'constraintId'): number | null {
-  // The routes of a module are registered from its manifest, so their parameters are not in the router's typed tree.
-  const params: Readonly<Record<string, string | undefined>> = useParams({ strict: false });
-  const raw = params[name] ?? 'new';
-  return raw === 'new' ? null : Number(raw);
-}
-
-function Cancel({ href }: { href: string }) {
+export function Cancel({ href }: { href: string }) {
   const { t } = useTranslation();
 
   return (

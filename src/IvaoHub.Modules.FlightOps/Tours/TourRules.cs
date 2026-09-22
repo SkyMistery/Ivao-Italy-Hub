@@ -9,6 +9,7 @@ using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
+using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
 using Microsoft.EntityFrameworkCore;
@@ -334,6 +335,18 @@ public sealed class TourSaving(
         await FollowAsync(database.Rotations, tour, cancellationToken);
         await FollowAsync(database.CallsignRules, tour, cancellationToken);
         await FollowAsync(database.TourConstraints, tour, cancellationToken);
+
+        // A rule is a tour's only when it has one, so it is not an ITourChild; it follows the same way (T9).
+        var rules = await database.Rules
+            .Where(row => row.TourId == tour.Id
+                && (row.OwnerDepartment != tour.OwnerDepartment || row.OwnerDepartmentMask != tour.OwnerDepartmentMask))
+            .ToListAsync(cancellationToken);
+
+        foreach (var rule in rules)
+        {
+            rule.OwnerDepartment = tour.OwnerDepartment;
+            rule.OwnerDepartmentMask = tour.OwnerDepartmentMask;
+        }
     }
 
     private static async Task FollowAsync<TRow>(IQueryable<TRow> rows, Tour tour, CancellationToken cancellationToken)
@@ -478,7 +491,7 @@ public sealed class TourReadiness(
 /// What a template carries into a tour and a tour into a template (design M2 §1.10): the settings, the briefing and the
 /// pictures, the goal of an Open tour, the callsign constraints of the tour (<see cref="CallsignRules"/>) and its filters
 /// and sequence rules (<see cref="Constraints"/>) — never the address, the dates, the award, the state, the legs, the hubs
-/// or the subtours. The rules are added to the copy by T9.
+/// or the subtours — and the tour's own rules in force, with their parameters and errors (<see cref="Rules"/>, T9).
 /// </summary>
 public static class TourCopy
 {
@@ -530,6 +543,58 @@ public static class TourCopy
                 OwnerDepartment = copy.OwnerDepartment,
                 OwnerDepartmentMask = copy.OwnerDepartmentMask,
             });
+    }
+
+    /// <summary>
+    /// A tour's rules onto another tour, with their parameters and their errors (design M2 §1.7): the template copies and
+    /// "copy the rules of another tour" share it. What <paramref name="existing"/> already holds stays — an amendment of the
+    /// same general rule, a rule with the same code — and its code is in <c>Skipped</c> (Carmine, 22 September 2026).
+    /// </summary>
+    public static (List<TourRule> Added, IReadOnlyList<string> Skipped) Rules(
+        IEnumerable<TourRule> source,
+        Tour copy,
+        IReadOnlyList<TourRule> existing)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(copy);
+        ArgumentNullException.ThrowIfNull(existing);
+
+        var amended = existing.Select(rule => rule.AmendsRuleId).OfType<long>().ToHashSet();
+        var codes = existing.Select(rule => rule.Code).ToHashSet(StringComparer.Ordinal);
+        var added = new List<TourRule>();
+        var skipped = new List<string>();
+
+        foreach (var rule in source.Where(rule => rule.RetiredAt is null))
+        {
+            if ((rule.AmendsRuleId is { } of && amended.Contains(of)) || codes.Contains(rule.Code))
+            {
+                skipped.Add(rule.Code);
+                continue;
+            }
+
+            codes.Add(rule.Code);
+            if (rule.AmendsRuleId is { } amends)
+            {
+                amended.Add(amends);
+            }
+
+            added.Add(new TourRule
+            {
+                TourId = copy.Id,
+                Code = rule.Code,
+                Title = rule.Title,
+                Text = rule.Text,
+                AmendsRuleId = rule.AmendsRuleId,
+                CheckKey = rule.CheckKey,
+                ParametersJson = rule.ParametersJson,
+                Sort = rule.Sort,
+                ErrorLinks = [.. rule.ErrorLinks.Select(link => new TourRuleError { ErrorId = link.ErrorId })],
+                OwnerDepartment = copy.OwnerDepartment,
+                OwnerDepartmentMask = copy.OwnerDepartmentMask,
+            });
+        }
+
+        return (added, skipped);
     }
 
     /// <summary>The filters and sequence rules of an Open tour, for the copy (note 2026-09-22-il-tour-open).</summary>

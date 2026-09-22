@@ -31,7 +31,7 @@ import {
   type TourListDto,
   type TourReadyProblemsDto,
 } from '../api';
-import { TOURS_DELETE, TOURS_EDIT, TOURS_MANAGE_TEMPLATES } from '../permissions';
+import { TOURS_DELETE, TOURS_EDIT, TOURS_MANAGE_RULES, TOURS_MANAGE_TEMPLATES } from '../permissions';
 import {
   tourEditorSearchSchema,
   tourFromTemplateSchema,
@@ -43,6 +43,7 @@ import {
 import { LegGrid } from './LegGrid';
 import { NewButton } from './NewButton';
 import { keepingCurrent, useListSearch, useStaff, useTypeSuggestions } from './hooks';
+import { TourRulesTab } from './rules';
 import { TourCallsignsTab, TourHubsTab, TourOpenTab, TourSubtoursTab } from './shape';
 
 /**
@@ -562,6 +563,25 @@ export function TourEditor() {
                       // A template's constraints are changed with the template's own permission (§1.10).
                       editable={
                         editable &&
+                        (!tour.isTemplate ||
+                          writableDepartments(bootstrap, TOURS_MANAGE_TEMPLATES).includes(
+                            tour.ownerDepartment,
+                          ))
+                      }
+                    />
+                  </div>
+                ),
+              },
+              // Rules are written with their own permission, and a template's with the template's too (§1.10).
+              rules: {
+                trigger: t('flightops:tours.tabs.rules'),
+                content: (
+                  <div className="pt-4">
+                    <TourRulesTab
+                      tour={tour}
+                      editable={
+                        editable &&
+                        writableDepartments(bootstrap, TOURS_MANAGE_RULES).includes(tour.ownerDepartment) &&
                         (!tour.isTemplate ||
                           writableDepartments(bootstrap, TOURS_MANAGE_TEMPLATES).includes(
                             tour.ownerDepartment,

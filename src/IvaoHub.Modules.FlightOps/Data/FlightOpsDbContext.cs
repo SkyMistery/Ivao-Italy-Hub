@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Legs;
+using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,12 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<TourConstraint> TourConstraints => Set<TourConstraint>();
 
+    public DbSet<TourRule> Rules => Set<TourRule>();
+
+    public DbSet<TourError> Errors => Set<TourError>();
+
+    public DbSet<TourRuleError> RuleErrors => Set<TourRuleError>();
+
     /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -45,6 +52,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<CallsignMode>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<CallsignMatch>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<TourConstraintKind>().HaveConversion<string>().HaveMaxLength(32);
+        configurationBuilder.Properties<ErrorCategory>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -170,6 +178,41 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
             // Once per kind, but once per airport for MinFlightsAt: the server says so, the index only finds them.
             constraint.HasIndex(row => new { row.TourId, row.Kind });
+        });
+
+        modelBuilder.Entity<TourRule>(rule =>
+        {
+            rule.ToTable("fo_rules");
+            rule.HasKey(row => row.Id);
+            rule.Ignore(row => row.IsGeneral);
+            rule.Ignore(row => row.OnTemplate);
+            rule.Ignore(row => row.RequestedErrorIds);
+            rule.Property(row => row.Code).HasMaxLength(RuleValidation.MaxCodeLength).IsRequired();
+            rule.Property(row => row.CheckKey).HasMaxLength(RuleValidation.MaxCheckKeyLength);
+            rule.Property(row => row.ParametersJson).HasColumnName("parameters_json").HasColumnType("json").IsRequired();
+            rule.HasRowVersion(row => row.RowVersion);
+
+            // A tour deleted takes its rules; a general rule with amendments stays until they go (the server says so first).
+            rule.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
+            rule.HasOne<TourRule>().WithMany().HasForeignKey(row => row.AmendsRuleId).OnDelete(DeleteBehavior.Restrict);
+            rule.HasIndex(row => new { row.TourId, row.Sort });
+        });
+
+        modelBuilder.Entity<TourError>(error =>
+        {
+            error.ToTable("fo_errors");
+            error.HasKey(row => row.Id);
+            error.Property(row => row.CheckKey).HasMaxLength(RuleValidation.MaxCheckKeyLength);
+            error.HasRowVersion(row => row.RowVersion);
+        });
+
+        modelBuilder.Entity<TourRuleError>(link =>
+        {
+            link.ToTable("fo_rule_errors");
+            link.HasKey(row => new { row.RuleId, row.ErrorId });
+            link.HasOne<TourRule>().WithMany(rule => rule.ErrorLinks).HasForeignKey(row => row.RuleId).OnDelete(DeleteBehavior.Cascade);
+            link.HasOne<TourError>().WithMany().HasForeignKey(row => row.ErrorId).OnDelete(DeleteBehavior.Cascade);
+            link.HasIndex(row => row.ErrorId);
         });
     }
 }

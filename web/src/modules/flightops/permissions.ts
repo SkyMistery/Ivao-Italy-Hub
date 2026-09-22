@@ -8,3 +8,4 @@ export const TOURS_MANAGE_SETTINGS = 'Tours.ManageSettings';
 export const TOURS_EDIT = 'Tours.Edit';
 export const TOURS_DELETE = 'Tours.Delete';
 export const TOURS_MANAGE_TEMPLATES = 'Tours.ManageTemplates';
+export const TOURS_MANAGE_RULES = 'Tours.ManageRules';
