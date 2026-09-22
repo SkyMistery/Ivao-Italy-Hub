@@ -215,7 +215,7 @@ con `show_preview`), `kind` non si cambia più, anche senza PIREP. Prima del ril
 | `departure_icao`, `arrival_icao` | |
 | `departure_lat/lon`, `arrival_lat/lon` | **congelate alla scrittura** dagli aeroporti `ref_` (ADR-024) |
 | `distance_nm` | GCD calcolata dal server |
-| `real_callsign`, `flight_number` | del volo reale, se esiste (informativi; il vincolo è in §1.6) |
+| `callsigns_json`, `flight_numbers_json` | i callsign e i numeri di volo **suggeriti**, dei voli reali: **più d'uno** quando la tratta si vola più volte al giorno (Carmine, 22 settembre 2026, T8; al massimo 24). Informativi: il vincolo è in §1.6. Le vecchie `real_callsign`, `flight_number` non si scrivono più e cadono in una release successiva |
 | `aircraft_json` | tipi ICAO della leg; vuoto = quelli del tour |
 | `release_at` | rilascio proprio, facoltativo |
 | `retired_at`, `retired_reason` | §1.4.1 |
@@ -249,7 +249,8 @@ Una leg **ritirata**:
 - **si può ripristinare** (`retired_at = null`), con un motivo, finché il tour non è chiuso.
 
 Nell'**import** (§8.4) la modalità «sostituisci» applica le stesse regole: elimina le leg assenti senza PIREP e
-ritira quelle con PIREP, mostrando la differenza prima di applicare.
+ritira quelle con PIREP, mostrando la differenza prima di applicare. In tutte e due le modalità una leg ritirata che il file
+nomina **torna nel tour**, con il motivo dell'import e non in un tour in chiusura o chiuso (Carmine, 22 settembre 2026, T8).
 
 ### 1.5 Aerei, prestazioni e tempo stimato
 
@@ -1009,7 +1010,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 - **`/tours`**: tour aperti, in chiusura, e in arrivo con anteprima, come **riquadri** (foto, titolo, riassunto; per un
   pilota barra di avanzamento e prossima leg). Anonimo: niente avanzamento.
 - **`/tours/{slug}`**: briefing, date, aerei, regole effettive con i parametri, **mappa** (blu da fare, verdi fatte, arancioni in
-  attesa, grigie non ancora rilasciate; le leg **ritirate non compaiono**, si vedono solo nella mappa dell'editor), elenco delle leg con distanza, **tempo stimato**, callsign reale,
+  attesa, grigie non ancora rilasciate; le leg **ritirate non compaiono**, si vedono solo nella mappa dell'editor), elenco delle leg con distanza, **tempo stimato**, callsign suggeriti,
   pulsante **SimBrief**; per un tour a distanza senza leg, i vincoli e quanto manca; per il pilota i suoi PIREP, «Invia il
   report», «Contesta», «Richiedi chiarimenti», «Segnala un problema».
 - **Il form del PIREP**: finestra dedicata (prima la scelta del volo, poi i campi).
@@ -1035,12 +1036,17 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 
 ### 8.4 L'editor delle leg (eccezione dichiarata, estensione n.6)
 
-- **Tabella modificabile**: numero, partenza, arrivo, IATA, distanza e tempo stimato calcolati al volo, callsign reale, numero
+- **Tabella modificabile**: numero, partenza, arrivo, IATA, distanza e tempo stimato calcolati al volo, callsign suggeriti, numeri
   di volo, aerei, rotazione, rilascio, stato (con i PIREP).
 - **Azioni sulla riga**: «aggiungi dopo: duplica», «aggiungi dopo: segue», «chiudi tour», «elimina o ritira» (il server sceglie
   secondo §1.4.1 e lo dice prima di confermare), «ripristina».
-- **Import XLSX/CSV**, letto **nel browser** (risposta 24): anteprima delle differenze dal server; «fondi» non tocca le leg
-  assenti; «sostituisci» elimina le assenti senza PIREP e ritira quelle con PIREP, con un motivo. Modello di file con le colonne.
+- **Import XLSX/CSV**, letto **nel browser** (risposta 24) con **SheetJS**, caricata solo all'import: anteprima delle differenze
+  dal server; «fondi» non tocca le leg assenti; «sostituisci» elimina le assenti senza PIREP e ritira quelle con PIREP, con un motivo.
+  **La stessa leg è la stessa coppia partenza→arrivo** (abbinata nell'ordine se ripetuta) e l'ordine delle righe è l'ordine del tour:
+  nessuna colonna di numeri; una leg ritirata che il file nomina torna nel tour. **Non sui tour `Hub`**. Si applica solo ciò che
+  l'anteprima ha mostrato (un'impronta delle leg). Modello di file con le colonne (`departure`, `arrival`, `callsign`,
+  `flightNumber`, `aircraft`, `release`; il file porta solo tipi ICAO, i gruppi di una leg restano). Carmine, 22 settembre 2026, nota
+  `2026-09-22-l-import-delle-leg`.
 - Salvataggio a righe con `row_version`, errori sulla cella.
 
 ### 8.5 La validazione

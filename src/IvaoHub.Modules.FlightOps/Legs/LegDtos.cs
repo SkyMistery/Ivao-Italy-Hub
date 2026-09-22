@@ -22,8 +22,8 @@ public sealed record LegDto(
     string? ArrivalIata,
     decimal DistanceNm,
     int? EstimatedMinutes,
-    string? RealCallsign,
-    string? FlightNumber,
+    IReadOnlyList<string> Callsigns,
+    IReadOnlyList<string> FlightNumbers,
     AllowedAircraft Aircraft,
     DateTime? ReleaseAt,
     DateTime? RetiredAt,
@@ -50,8 +50,8 @@ public sealed record TourLegsDto(
 public sealed record LegWriteDto(
     string DepartureIcao,
     string ArrivalIcao,
-    string? RealCallsign,
-    string? FlightNumber,
+    IReadOnlyList<string>? Callsigns,
+    IReadOnlyList<string>? FlightNumbers,
     AllowedAircraft? Aircraft,
     DateTime? ReleaseAt,
     string? ChangeReason,
@@ -83,12 +83,19 @@ public static partial class LegValidation
 {
     public const int MaxCallsignLength = 16;
 
+    /// <summary>The busiest domestic route of the FOD's 2027 workbook names fifteen daily flights; two dozen is the room.</summary>
+    public const int MaxSuggestions = 24;
+
     public const int MaxReasonLength = 500;
 
     [GeneratedRegex("^[A-Z0-9]{4}$")]
     public static partial Regex IcaoPattern();
 
     public static string Normalize(string? icao) => (icao ?? string.Empty).Trim().ToUpperInvariant();
+
+    /// <summary>Upper case, trimmed, each once, in order, blanks dropped: what is stored, whatever was typed.</summary>
+    public static IReadOnlyList<string> Codes(IReadOnlyList<string>? codes) =>
+        [.. (codes ?? []).Select(code => (code ?? string.Empty).Trim().ToUpperInvariant()).Where(code => code.Length > 0).Distinct(StringComparer.Ordinal)];
 }
 
 /// <summary>
@@ -106,8 +113,14 @@ public sealed class LegWriteDtoValidator : AbstractValidator<LegWriteDto>
         RuleFor(leg => leg.ArrivalIcao)
             .Must(icao => LegValidation.IcaoPattern().IsMatch(LegValidation.Normalize(icao)))
             .WithMessage("flightops:errors.icao");
-        RuleFor(leg => leg.RealCallsign).MaximumLength(LegValidation.MaxCallsignLength).WithMessage("errors.text.tooLong");
-        RuleFor(leg => leg.FlightNumber).MaximumLength(LegValidation.MaxCallsignLength).WithMessage("errors.text.tooLong");
+        RuleFor(leg => leg.Callsigns)
+            .Must(codes => codes is null || codes.Count <= LegValidation.MaxSuggestions)
+            .WithMessage("flightops:errors.tooManySuggestions");
+        RuleForEach(leg => leg.Callsigns).MaximumLength(LegValidation.MaxCallsignLength).WithMessage("errors.text.tooLong");
+        RuleFor(leg => leg.FlightNumbers)
+            .Must(codes => codes is null || codes.Count <= LegValidation.MaxSuggestions)
+            .WithMessage("flightops:errors.tooManySuggestions");
+        RuleForEach(leg => leg.FlightNumbers).MaximumLength(LegValidation.MaxCallsignLength).WithMessage("errors.text.tooLong");
         RuleFor(leg => leg.ChangeReason).MaximumLength(LegValidation.MaxReasonLength).WithMessage("errors.text.tooLong");
         RuleFor(leg => leg.Kind).IsInEnum().WithMessage("errors.required");
 

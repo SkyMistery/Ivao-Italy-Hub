@@ -122,7 +122,7 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         reported.Legs.Add(withReport);
 
         // Changed only with a reason, which the row keeps for the audit.
-        using (var noReason = await advisor.PutAsJsonAsync($"{legs}/{withReport}", Leg("XFA2", "XFA3") with { FlightNumber = "AZ 200" }, token))
+        using (var noReason = await advisor.PutAsJsonAsync($"{legs}/{withReport}", Leg("XFA2", "XFA3") with { FlightNumbers = ["az 200", "AZ 202", "AZ 200"] }, token))
         {
             await AssertRefusedAsync(noReason, "changeReason", "flightops:errors.changeReasonRequired", token);
         }
@@ -130,10 +130,13 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         grid = await OkAsync(
             await advisor.PutAsJsonAsync(
                 $"{legs}/{withReport}",
-                Leg("XFA2", "XFA3") with { FlightNumber = "AZ 200", ChangeReason = "fo-test real flight number" },
+                Leg("XFA2", "XFA3") with { FlightNumbers = ["az 200", "AZ 202", "AZ 200"], ChangeReason = "fo-test real flight number" },
                 token),
             token);
-        Assert.Equal("AZ 200", Row(grid, withReport).GetProperty("flightNumber").GetString());
+        // Upper case, each once, in order: two suggestions of a route flown twice a day.
+        Assert.Equal(
+            ["AZ 200", "AZ 202"],
+            Row(grid, withReport).GetProperty("flightNumbers").EnumerateArray().Select(number => number.GetString()));
         Assert.True(Row(grid, withReport).GetProperty("hasReports").GetBoolean());
 
         // The first leg has no report: deleted, and every leg after it renumbered — the reported one keeps its identity.
@@ -262,7 +265,7 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // A stale version is a conflict, not a silent overwrite.
         using (var stale = await coordinator.PutAsJsonAsync(
             $"{legs}/{Id(last)}",
-            Leg("XFA3", "XFA1") with { FlightNumber = "X1", RowVersion = last.GetProperty("rowVersion").GetDateTime().AddSeconds(-5) },
+            Leg("XFA3", "XFA1") with { FlightNumbers = ["X1"], RowVersion = last.GetProperty("rowVersion").GetDateTime().AddSeconds(-5) },
             token))
         {
             Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
@@ -273,6 +276,106 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using (var refused = await coordinator.PostAsJsonAsync(LegsUri(Id(open)), Leg("XFA1", "XFA2"), token))
         {
             await AssertRefusedAsync(refused, "tourId", "flightops:errors.kindHasNoLegs", token);
+        }
+    }
+
+    [Fact]
+    public async Task AnImportIsPreviewedWithoutWritingAndAppliedByTheRulesOfReports()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var reported = new ReportedLegs();
+        await using var withReports = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddSingleton<ITourReports>(reported)));
+        using var advisor = await SignedInAsync(withReports, AdvisorVid, token);
+
+        var tour = await CreatedTourAsync(advisor, TourKind.Sequential, token);
+        var legs = LegsUri(Id(tour));
+        await AddLegAsync(advisor, Id(tour), token, Rome, Milan);
+        await AddLegAsync(advisor, Id(tour), token, Milan, London);
+        await AddLegAsync(advisor, Id(tour), token, London, Rome);
+        await AddLegAsync(advisor, Id(tour), token, Rome, London);
+        var before = Rows(await advisor.GetFromJsonAsync<JsonElement>(legs, token));
+
+        // Milan to London has a report; Rome to London has none.
+        reported.Legs.Add(Id(before[1]));
+
+        // Only the row that changes names an aircraft type: an empty column is "no types", which the other legs have.
+        object FileRow(string from, string to, string? flight = null) => new
+        {
+            departureIcao = from,
+            arrivalIcao = to,
+            flightNumbers = flight is null ? Array.Empty<string>() : [flight],
+            aircraftTypes = flight is null ? Array.Empty<string>() : [TestType],
+        };
+
+        var rows = new[] { FileRow(Rome, Milan, "az 100"), FileRow(London, Rome), FileRow(Milan, Rome) };
+
+        // An airport the hub does not know is refused on its row and cell.
+        using (var unknown = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { FileRow(Rome, Milan), FileRow(Rome, "XFZ9") }, mode = "Replace" },
+            token))
+        {
+            await AssertRefusedAsync(unknown, "rows[1].arrivalIcao", "flightops:errors.airportUnknown", token);
+        }
+
+        // The preview says what "replace" does, and writes nothing.
+        var preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Replace" }, token),
+            token);
+        Assert.Equal(
+            ["Changed", "Retired", "Unchanged", "Added", "Deleted"],
+            preview.GetProperty("lines").EnumerateArray().Select(line => line.GetProperty("outcome").GetString()));
+        Assert.True(preview.GetProperty("reasonRequired").GetBoolean());
+        Assert.Equal(
+            before.Select(Id),
+            Rows(await advisor.GetFromJsonAsync<JsonElement>(legs, token)).Select(Id));
+
+        var fingerprint = preview.GetProperty("fingerprint").GetString();
+
+        // Retiring owes a reason.
+        using (var noReason = await advisor.PostAsJsonAsync($"{legs}/import", new { rows, mode = "Replace", fingerprint }, token))
+        {
+            await AssertRefusedAsync(noReason, "reason", "flightops:errors.importReasonRequired", token);
+        }
+
+        // Legs that moved since the preview are not the ones anybody looked at.
+        using (var stale = await advisor.PostAsJsonAsync(
+            $"{legs}/import",
+            new { rows, mode = "Replace", reason = "fo-test new season", fingerprint = "0000000000000000" },
+            token))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        }
+
+        var grid = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import", new { rows, mode = "Replace", reason = "fo-test new season", fingerprint }, token),
+            token);
+        var after = Rows(grid);
+
+        // The one without a report is gone, the one with a report retired in its place; every number the file's order.
+        Assert.DoesNotContain(after, row => Id(row) == Id(before[3]));
+        Assert.Equal([Id(before[0]), Id(before[1]), Id(before[2])], after.Take(3).Select(Id));
+        Assert.Equal([1, 2, 3, 4], after.Select(row => row.GetProperty("number").GetInt32()));
+        Assert.Equal("AZ 100", after[0].GetProperty("flightNumbers")[0].GetString());
+        Assert.Equal("fo-test new season", after[1].GetProperty("retiredReason").GetString());
+        Assert.Equal(Milan, after[3].GetProperty("departureIcao").GetString());
+        Assert.Equal(253.9m, after[3].GetProperty("distanceNm").GetDecimal());
+
+        // The same file again changes nothing, and owes nothing.
+        preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Replace" }, token),
+            token);
+        Assert.All(
+            preview.GetProperty("lines").EnumerateArray(),
+            line => Assert.Contains(line.GetProperty("outcome").GetString(), new[] { "Unchanged", "Kept" }));
+        Assert.False(preview.GetProperty("reasonRequired").GetBoolean());
+
+        // A hub tour's legs belong to rotations a file cannot name.
+        var hub = await CreatedTourAsync(advisor, TourKind.Hub, token);
+        using (var refused = await advisor.PostAsJsonAsync($"{LegsUri(Id(hub))}/import/preview", new { rows, mode = "Merge" }, token))
+        {
+            await AssertRefusedAsync(refused, "tourId", "flightops:errors.importNotOnHub", token);
         }
     }
 

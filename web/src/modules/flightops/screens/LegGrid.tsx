@@ -31,6 +31,8 @@ import {
   type LegWriteDto,
   type TourDetailDto,
 } from '../api';
+import { LegImport } from './LegImport';
+import { splitCodes } from './legFile';
 
 /**
  * The legs of a tour, as a table (design M2 §8.4): **the declared exception** to the list and form engine (plan 0.79,
@@ -44,6 +46,9 @@ import {
  *
  * On a hub tour one more column says where a leg belongs (§1.3, T7b): a rotation of a hub, the connection between two
  * hubs, or nowhere yet. Its place inside the rotation is the server's, from the order of the legs.
+ *
+ * Every tour with legs but a hub tour imports them from a file (T8, `LegImport`): a hub tour's legs belong to rotations
+ * a file cannot name (Carmine, 22 September 2026).
  */
 
 /** Where a leg of a hub tour belongs: nowhere yet, the connection between two hubs, or a rotation by its identifier. */
@@ -57,8 +62,9 @@ interface Draft {
   readonly after: number | null;
   readonly departureIcao: string;
   readonly arrivalIcao: string;
-  readonly realCallsign: string;
-  readonly flightNumber: string;
+  /** The suggested callsigns, as typed: "ITY1357/1365" or "RYR78RM, RYR42LK" (`splitCodes`). */
+  readonly callsigns: string;
+  readonly flightNumbers: string;
   /** The types, as typed: "A320, A20N". */
   readonly types: string;
   readonly groupIds: readonly number[];
@@ -74,8 +80,8 @@ type Errors = Readonly<Record<string, string>>;
 const FIELDS = [
   'departureIcao',
   'arrivalIcao',
-  'realCallsign',
-  'flightNumber',
+  'callsigns',
+  'flightNumbers',
   'aircraft',
   'releaseAt',
   'kind',
@@ -89,8 +95,8 @@ function fromLeg(leg: LegDto): Draft {
     after: null,
     departureIcao: leg.departureIcao,
     arrivalIcao: leg.arrivalIcao,
-    realCallsign: leg.realCallsign ?? '',
-    flightNumber: leg.flightNumber ?? '',
+    callsigns: leg.callsigns.join(', '),
+    flightNumbers: leg.flightNumbers.join(', '),
     types: leg.aircraft.types.join(', '),
     groupIds: leg.aircraft.groupIds,
     releaseAt: leg.releaseAt?.slice(0, 16) ?? '',
@@ -113,8 +119,8 @@ function blank(
     after,
     departureIcao,
     arrivalIcao,
-    realCallsign: '',
-    flightNumber: '',
+    callsigns: '',
+    flightNumbers: '',
     types: '',
     groupIds: [],
     releaseAt: '',
@@ -128,8 +134,8 @@ function sameAs(draft: Draft, leg: LegDto): boolean {
   return (
     draft.departureIcao.trim().toUpperCase() === saved.departureIcao &&
     draft.arrivalIcao.trim().toUpperCase() === saved.arrivalIcao &&
-    draft.realCallsign.trim() === saved.realCallsign &&
-    draft.flightNumber.trim() === saved.flightNumber &&
+    splitCodes(draft.callsigns).join() === splitCodes(saved.callsigns).join() &&
+    splitCodes(draft.flightNumbers).join() === splitCodes(saved.flightNumbers).join() &&
     draft.types.trim() === saved.types &&
     draft.groupIds.join() === saved.groupIds.join() &&
     draft.releaseAt === saved.releaseAt &&
@@ -143,8 +149,8 @@ function toPayload(draft: Draft, rowVersion: string): LegWriteDto {
   return {
     departureIcao: draft.departureIcao.trim().toUpperCase(),
     arrivalIcao: draft.arrivalIcao.trim().toUpperCase(),
-    realCallsign: text(draft.realCallsign),
-    flightNumber: text(draft.flightNumber),
+    callsigns: splitCodes(draft.callsigns),
+    flightNumbers: splitCodes(draft.flightNumbers),
     aircraft: {
       types: draft.types
         .split(/[\s,;]+/)
@@ -248,6 +254,8 @@ function TextCell({
         aria-label={label}
         aria-invalid={error === undefined ? undefined : true}
         className="px-2"
+        // A list of the day's flights is longer than its cell: the whole of it on hover.
+        title={value}
         type={type}
         value={value}
         disabled={disabled}
@@ -385,6 +393,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
   const [errors, setErrors] = useState<Readonly<Record<string, Errors>>>({});
   const [refusal, setRefusal] = useState<string | null>(null);
   const [counter, setCounter] = useState(0);
+  const [importing, setImporting] = useState(false);
 
   if (grid === undefined) {
     return null;
@@ -441,7 +450,9 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
     let rest = false;
 
     if (error instanceof ApiError && error.status === 400) {
-      for (const [field, keys] of Object.entries(error.problem?.errors ?? {})) {
+      for (const [path, keys] of Object.entries(error.problem?.errors ?? {})) {
+        // One item of a list is refused under "callsigns[1]": the cell is the list's.
+        const field = path.replace(/\[\d+\]$/, '');
         if ((FIELDS as readonly string[]).includes(field) || field === 'changeReason') {
           cells[field] = keys.map((errorKey) => t(errorKey)).join(' ');
         } else {
@@ -498,11 +509,25 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
             : ` · ${t('flightops:legs.totalTime', { time: minutes(grid.totalEstimatedMinutes) })}`}
         </Subtle>
         {editable ? (
-          <Button type="button" variant="outline" disabled={busy} onClick={() => add(null)}>
-            {t('flightops:legs.actions.add')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {hub ? null : (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy || importing}
+                onClick={() => setImporting(true)}
+              >
+                {t('flightops:legs.actions.import')}
+              </Button>
+            )}
+            <Button type="button" variant="outline" disabled={busy} onClick={() => add(null)}>
+              {t('flightops:legs.actions.add')}
+            </Button>
+          </div>
         ) : null}
       </div>
+
+      {importing ? <LegImport tour={tour} onClose={() => setImporting(false)} /> : null}
 
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
 
@@ -523,8 +548,8 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                     {t('flightops:legs.fields.estimatedMinutes')}
                   </TableHead>
                 ) : null}
-                <TableHead className="px-2">{t('flightops:legs.fields.realCallsign')}</TableHead>
-                <TableHead className="px-2">{t('flightops:legs.fields.flightNumber')}</TableHead>
+                <TableHead className="px-2">{t('flightops:legs.fields.callsigns')}</TableHead>
+                <TableHead className="px-2">{t('flightops:legs.fields.flightNumbers')}</TableHead>
                 <TableHead className="px-2">{t('flightops:legs.fields.aircraft')}</TableHead>
                 <TableHead className="px-2">{t('flightops:legs.fields.releaseAt')}</TableHead>
                 <TableHead className="px-2" />
@@ -614,20 +639,21 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                     ) : null}
                     <TableCell className={cell}>
                       <TextCell
-                        label={t('flightops:legs.fields.realCallsign')}
-                        value={draft.realCallsign}
-                        error={cellErrors.realCallsign}
+                        width="w-32"
+                        label={t('flightops:legs.fields.callsigns')}
+                        value={draft.callsigns}
+                        error={cellErrors.callsigns}
                         disabled={locked}
-                        onChange={(next) => edit(draft, { realCallsign: next })}
+                        onChange={(next) => edit(draft, { callsigns: next })}
                       />
                     </TableCell>
                     <TableCell className={cell}>
                       <TextCell
-                        label={t('flightops:legs.fields.flightNumber')}
-                        value={draft.flightNumber}
-                        error={cellErrors.flightNumber}
+                        label={t('flightops:legs.fields.flightNumbers')}
+                        value={draft.flightNumbers}
+                        error={cellErrors.flightNumbers}
                         disabled={locked}
-                        onChange={(next) => edit(draft, { flightNumber: next })}
+                        onChange={(next) => edit(draft, { flightNumbers: next })}
                       />
                     </TableCell>
                     <TableCell className={cell}>

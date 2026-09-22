@@ -99,8 +99,8 @@ public sealed class LegBook(
         leg.ArrivalLatitude = to.Value.Latitude;
         leg.ArrivalLongitude = to.Value.Longitude;
         leg.DistanceNm = GreatCircle.DistanceNmRounded(from.Value, to.Value);
-        leg.RealCallsign = Clean(payload.RealCallsign)?.ToUpperInvariant();
-        leg.FlightNumber = Clean(payload.FlightNumber)?.ToUpperInvariant();
+        leg.Callsigns = LegValidation.Codes(payload.Callsigns);
+        leg.FlightNumbers = LegValidation.Codes(payload.FlightNumbers);
         leg.Aircraft = aircraft;
         leg.ReleaseAt = payload.ReleaseAt;
         leg.ChangeReason = reason;
@@ -200,8 +200,8 @@ public sealed class LegBook(
                 known.GetValueOrDefault(leg.ArrivalIcao)?.Iata,
                 leg.DistanceNm,
                 estimate?.Invoke(leg.DistanceNm),
-                leg.RealCallsign,
-                leg.FlightNumber,
+                leg.Callsigns,
+                leg.FlightNumbers,
                 leg.Aircraft,
                 leg.ReleaseAt,
                 leg.RetiredAt,
@@ -250,6 +250,4 @@ public sealed class LegBook(
         found.GetValueOrDefault(icao) is { Latitude: { } latitude, Longitude: { } longitude }
             ? new GeoPoint(latitude, longitude)
             : null;
-
-    private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

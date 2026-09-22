@@ -96,6 +96,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             leg.ToTable("fo_legs");
             leg.HasKey(row => row.Id);
             leg.Ignore(row => row.Aircraft);
+            leg.Ignore(row => row.Callsigns);
+            leg.Ignore(row => row.FlightNumbers);
             leg.Ignore(row => row.Departure);
             leg.Ignore(row => row.Arrival);
             leg.Property(row => row.DepartureIcao).HasMaxLength(4).IsRequired();
@@ -104,6 +106,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             leg.Property(row => row.RealCallsign).HasMaxLength(LegValidation.MaxCallsignLength);
             leg.Property(row => row.FlightNumber).HasMaxLength(LegValidation.MaxCallsignLength);
             leg.Property(row => row.AircraftJson).HasColumnName("aircraft_json").HasColumnType("json").IsRequired();
+            leg.Property(row => row.CallsignsJson).HasColumnName("callsigns_json").HasColumnType("json").IsRequired();
+            leg.Property(row => row.FlightNumbersJson).HasColumnName("flight_numbers_json").HasColumnType("json").IsRequired();
             leg.Property(row => row.RetiredReason).HasMaxLength(LegValidation.MaxReasonLength);
             leg.Property(row => row.ChangeReason).HasMaxLength(LegValidation.MaxReasonLength);
             leg.HasRowVersion(row => row.RowVersion);

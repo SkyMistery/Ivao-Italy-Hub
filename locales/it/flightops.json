@@ -282,7 +282,11 @@
     "firCode": "Un FIR è il suo codice, per esempio LIRR.",
     "parameterChoice": "Non è una delle scelte possibili.",
     "countryUnknown": "Un paese senza aeroporti che l'hub conosca.",
-    "firUnknown": "Un FIR che l'hub non conosce."
+    "firUnknown": "Un FIR che l'hub non conosce.",
+    "importNotOnHub": "Un tour Hub non importa le leg: stanno in rotazioni che un file non sa nominare. Scrivile nella tabella.",
+    "importReasonRequired": "Questo import ritira, ripristina o cambia leg con dei report: scrivi perché.",
+    "importTooManyRows": "Il file ha troppe righe per le leg di un tour.",
+    "tooManySuggestions": "Al massimo 24."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -295,14 +299,14 @@
       "arrivalIcao": "Arrivo",
       "distanceNm": "NM",
       "estimatedMinutes": "Tempo stimato",
-      "realCallsign": "Callsign reale",
-      "flightNumber": "Numero di volo",
       "aircraft": "Tipi di aereo",
       "releaseAt": "Rilascio proprio (UTC)",
       "state": "Stato",
       "reason": "Motivo",
       "changeReason": "Perché cambia (ha dei report)",
-      "rotationId": "Rotazione"
+      "rotationId": "Rotazione",
+      "callsigns": "Callsign (suggeriti)",
+      "flightNumbers": "Numeri di volo (suggeriti)"
     },
     "state": {
       "retired": "Ritirata",
@@ -317,7 +321,8 @@
       "closeTour": "Chiudi il tour (torna alla prima partenza)",
       "remove": "Togli",
       "retire": "Ritira",
-      "restore": "Ripristina"
+      "restore": "Ripristina",
+      "import": "Importa da un file"
     },
     "remove": {
       "title": "Togliere la leg {{number}}?",
@@ -333,6 +338,65 @@
       "none": "Nessuna",
       "connection": "Collegamento",
       "rotation": "{{hub}} {{number}} ({{legs}}/{{size}})"
+    },
+    "import": {
+      "title": "Importa le leg da un file",
+      "help": "XLSX, XLS, ODS o CSV. L'intestazione può stare in una qualunque delle prime righe; le colonne si trovano per nome ({{columns}}, oppure «Departure ICAO» e «Destination ICAO»), partenza e arrivo sono obbligatorie. L'ordine delle righe è l'ordine del tour, e ogni riga non vuota è una leg: note, totali e bozze vanno tolte dal foglio. Una leg è la stessa se partenza e arrivo sono gli stessi. Una cella può avere più callsign o numeri di volo (ITY1357/1365, oppure separati da virgole); gli aerei sono tipi ICAO, i gruppi di una leg restano come sono; il rilascio è in UTC.",
+      "model": "Scarica il modello",
+      "file": {
+        "label": "File",
+        "refused": "Il file non si può importare così",
+        "release": "Riga {{line}}: il rilascio non è una data (una cella data, oppure 2026-10-01 18:00 in UTC).",
+        "empty": "Il file non contiene leg.",
+        "unreadable": "Questo file non si legge come un foglio di calcolo.",
+        "noHeader": "Nessuna delle prime righe nomina una colonna di partenza e una di arrivo (per esempio «Departure ICAO» e «Destination ICAO»)."
+      },
+      "mode": {
+        "label": "Le leg che nel file non ci sono",
+        "Merge": "Fondi: lasciale come sono",
+        "Replace": "Sostituisci: il file è il tour intero",
+        "explain": {
+          "Merge": "Le leg che il file non contiene restano dove sono. Un file parziale va bene.",
+          "Replace": "Le leg che il file non contiene si eliminano se non hanno report, e si ritirano con un motivo se ne hanno."
+        }
+      },
+      "summary": "Che cosa fa l'import",
+      "columns": {
+        "number": "N.",
+        "route": "Leg",
+        "outcome": "Che cosa succede",
+        "changes": "Che cosa cambia"
+      },
+      "line": "riga {{line}} del file",
+      "rowProblem": "Riga {{line}}, {{field}}: {{problem}}",
+      "outcome": {
+        "Added_one": "{{count}} aggiunta",
+        "Added_other": "{{count}} aggiunte",
+        "Changed_one": "{{count}} cambiata",
+        "Changed_other": "{{count}} cambiate",
+        "Unchanged_one": "{{count}} uguale",
+        "Unchanged_other": "{{count}} uguali",
+        "Restored_one": "{{count}} ripristinata",
+        "Restored_other": "{{count}} ripristinate",
+        "Kept_one": "{{count}} non nel file, resta",
+        "Kept_other": "{{count}} non nel file, restano",
+        "Deleted_one": "{{count}} eliminata",
+        "Deleted_other": "{{count}} eliminate",
+        "Retired_one": "{{count}} ritirata",
+        "Retired_other": "{{count}} ritirate"
+      },
+      "state": {
+        "Added": "Aggiunta",
+        "Changed": "Cambiata",
+        "Unchanged": "Uguale",
+        "Restored": "Ripristinata",
+        "Kept": "Resta",
+        "Deleted": "Eliminata",
+        "Retired": "Ritirata"
+      },
+      "reason": "Perché (ritira, ripristina o cambia leg con dei report)",
+      "apply": "Importa",
+      "sheet": "Foglio"
     }
   },
   "subtours": {

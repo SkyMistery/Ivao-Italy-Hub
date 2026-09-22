@@ -58,10 +58,37 @@ public sealed class Leg : ITourChild, IAuditable
     /// <summary>The great circle between the two airports, to a tenth of a mile.</summary>
     public decimal DistanceNm { get; set; }
 
-    /// <summary>The callsign of the real flight, if there is one: information, the constraint is §1.6.</summary>
+    /// <summary>
+    /// ⚠️ No longer written (T8): the suggested callsigns are <see cref="Callsigns"/>. The column stays mapped until a later
+    /// release drops it — migrations are additive, and a column is dropped only after a release that no longer uses it.
+    /// </summary>
     public string? RealCallsign { get; set; }
 
+    /// <summary>⚠️ No longer written (T8): see <see cref="FlightNumbers"/>, and <see cref="RealCallsign"/> for why it stays.</summary>
     public string? FlightNumber { get; set; }
+
+    /// <summary>The callsigns of the real flights, as a JSON array: the column.</summary>
+    public string CallsignsJson { get; set; } = "[]";
+
+    /// <summary>The flight numbers of the real flights, as a JSON array: the column.</summary>
+    public string FlightNumbersJson { get; set; } = "[]";
+
+    /// <summary>
+    /// The callsigns a pilot may use, suggested from the real flights — more than one when the route is flown several
+    /// times a day (Carmine, 22 September 2026). Information: the constraint is §1.6.
+    /// </summary>
+    public IReadOnlyList<string> Callsigns
+    {
+        get => JsonSerializer.Deserialize<List<string>>(CallsignsJson, ColumnJson) ?? [];
+        set => CallsignsJson = JsonSerializer.Serialize(value ?? [], ColumnJson);
+    }
+
+    /// <summary>The flight numbers of the real flights, suggested like the callsigns.</summary>
+    public IReadOnlyList<string> FlightNumbers
+    {
+        get => JsonSerializer.Deserialize<List<string>>(FlightNumbersJson, ColumnJson) ?? [];
+        set => FlightNumbersJson = JsonSerializer.Serialize(value ?? [], ColumnJson);
+    }
 
     /// <summary>The aircraft this leg admits, as a JSON object: the column. Empty admits the tour's.</summary>
     public string AircraftJson { get; set; } = JsonSerializer.Serialize(AllowedAircraft.All, ColumnJson);
