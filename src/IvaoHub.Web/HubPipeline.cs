@@ -100,6 +100,8 @@ internal static class HubPipeline
         "/auth/logout",
         "/health",
         "/media",
+        // The base map of the tours (T10): an archive of the world served by the hub, not a route of the SPA.
+        TileEndpoints.Prefix,
         "/openapi",
         "/scalar",
         // The two files a crawler asks for. Without these the fallback would answer both with

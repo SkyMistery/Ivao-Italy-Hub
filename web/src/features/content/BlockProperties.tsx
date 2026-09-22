@@ -434,7 +434,9 @@ export function BlockProperties({
         schema={schema}
         defaults={withDefaults(registration.schema, block.props, locales)}
         locales={locales}
-        labels={`blocks.${block.type}`}
+        // A module's block names its own prefix: its labels are in its own language files, not the
+        // core's, which know nothing of tours (`BlockRegistration.propertyLabels`).
+        labels={registration.propertyLabels ?? `blocks.${block.type}`}
         division={division}
         mediaLibrary={mediaLibrary}
         uploadMedia={uploadMedia}

@@ -34,6 +34,8 @@ node_modules/
 /data/
 # Uploaded files: they belong to an installation, never to the repository.
 /media/
+# The base map: 179 MB of world, uploaded to an installation, never committed (tools/basemap.mjs).
+/tiles/
 /logs/
 /diagnostics/
 *.db
