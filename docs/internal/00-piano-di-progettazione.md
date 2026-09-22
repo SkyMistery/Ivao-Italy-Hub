@@ -13,7 +13,10 @@ del CDN di SheetJS perché su npm c'è solo la 0.18.5 con due CVE in lettura; sc
 CSP) e un lettore scritto da noi. **(2) La stessa leg è la stessa coppia partenza→arrivo**, abbinata nell'ordine se ripetuta;
 **nessuna colonna di numeri**: l'ordine delle righe è l'ordine del tour, e in «fondi» una leg assente resta dopo quella che la
 precedeva. **(3) I tour `Hub` non importano** (le rotazioni non si nominano da un file). **(4) Una leg ritirata che il file nomina
-torna nel tour**, con il motivo dell'import (ADR-051). Nessun meccanismo nuovo: ogni riga passa per le regole di una leg scritta a
+torna nel tour**, con il motivo dell'import (ADR-051). **Sul file vero del FOD** (la cartella dei tour 2027, letta foglio per
+foglio): **(5)** le righe che non sono leg si rifiutano, il file si pulisce; **(6) una leg ha più callsign e più numeri di volo
+suggeriti** (due liste JSON al posto di `real_callsign` e `flight_number`, che non si scrivono più e cadono in una release successiva;
+design §1.4); **(7)** una cartella di più fogli si apre sul primo foglio con le leg, e se ne sceglie un altro. Nessun meccanismo nuovo: ogni riga passa per le regole di una leg scritta a
 mano, e i due verbi stanno nell'eccezione dichiarata dell'editor delle leg (§16.6, design M2 §8.4). Nessuna sezione del piano toccata
 oltre a questa riga.
 

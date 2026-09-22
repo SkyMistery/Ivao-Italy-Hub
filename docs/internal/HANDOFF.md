@@ -8,8 +8,10 @@ Piano **0.88**. **Il prossimo passo è T9 (regole ed errori)**, in una chat nuov
 
 > **Che cosa ha lasciato T8** (nota `2026-09-22-l-import-delle-leg`, piano 0.88): l'import delle leg da XLSX/CSV, letto nel browser con
 > **SheetJS 0.20.3 dal tarball del CDN** (non da npm: si aggiorna a mano, Dependabot non la vede). Il confronto è `Legs/LegImport.cs`,
-> puro; due verbi nell'eccezione dell'editor delle leg. Nessuna migrazione. ⚠️ **Resta il «fatta quando»**: le leg di un tour vero del
-> 2026 dal file del FOD, che Carmine deve mandare; se le sue colonne hanno altri nomi, si aggiungono alias in `screens/legFile.ts`.
+> puro; due verbi nell'eccezione dell'editor delle leg. **Sul file vero del FOD** (la cartella dei tour 2027): la leg ha ora **più
+> callsign e numeri di volo suggeriti** (`callsigns_json`, `flight_numbers_json`, migrazione `AddLegSuggestions`; `real_callsign` e
+> `flight_number` non si scrivono più e vanno tolte in una release successiva), l'intestazione si cerca nelle prime righe, le righe che
+> non sono leg si rifiutano (il FOD pulisce il foglio). ⚠️ **T10 e T11** mostrano i callsign suggeriti: quale va a SimBrief si decide lì.
 > T9 non tocca le leg e può partire subito dopo il merge.
 
 > **Che cosa ha lasciato T7c** (nota `2026-09-22-il-tour-open`, piano 0.87): `fo_tour_constraints` è la quarta risorsa del motore in

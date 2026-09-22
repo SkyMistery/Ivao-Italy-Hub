@@ -301,7 +301,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T7a | Le leg — **fatta il 18 set 2026** | T1, T6a | `fo_legs`, GCD e tempo stimato, eliminare e rinumerare, ritirare e ripristinare, `LegGrid`, aerei consentiti nel form, `Distance`, «pronto» dei tipi con leg |
 | T7b | La forma del tour — **fatta il 21 set 2026** | T7a | hub e rotazioni, sottotour e `Container`, vincoli sul callsign, «pronto» di quei tipi, `CrudOptions.BeforeAuthorize` |
 | T7c | Il tour `Open` | T7b | `open_goal` con i parametri, `fo_tour_constraints` (filtri e regole di sequenza), la scheda, «pronto» di `Open` |
-| T8 | L'import delle leg — **fatta il 22 set 2026** (resta il file vero del FOD) | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
+| T8 | L'import delle leg — **fatta il 22 set 2026** | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
 | T10 | Il pubblico e la mappa | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
 | T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
@@ -999,6 +999,21 @@ Com'è andata:
   nell'ordine se ripetuta, e l'ordine delle righe è l'ordine del tour (il «numero» di qui sopra non regge: lo tiene il server e cambia a
   ogni inserimento); **niente import sui tour `Hub`**; **una ritirata che il file nomina torna nel tour**. Corretto il design §1.4.1 e
   §8.4.
+- **Il secondo giro, sul file vero** (la cartella dei tour 2027 che Carmine ha mostrato la sera stessa, letta con il lettore vero in
+  ognuno dei 14 fogli): l'intestazione è **nella seconda riga** in 11 fogli (sopra i totali), e accanto a «Departure ICAO» c'è
+  «Departure» con la città — ora si cerca l'intestazione nelle prime righe e **vince la colonna ICAO**; «Destination ICAO» vale come
+  arrivo. **Più callsign in una cella** (`ITY1357/1365/1359/1363`, fino a quindici su Linate–Fiumicino, anche con `&`): Carmine li
+  vuole tutti, suggeriti — la leg ha **due liste** (`callsigns_json`, `flight_numbers_json`, migrazione `AddLegSuggestions`, additiva
+  con il travaso dei valori di prima), al massimo 24. **Le righe che non sono leg si rifiutano** (Carmine): sui 14 fogli, 7 entrano
+  come sono (AEZ, Bizjet, IFR, ITY, RYR BRI, Skills, Turboprop), gli altri hanno sotto le leg note, totali, la tabella di riferimento
+  del Long-haul, la descrizione del Vintage, le attività di Heli — da togliere. Attenzione alle righe **valide ma di bozza**, che
+  entrano come leg e si vedono solo nell'anteprima: le due in fondo al Mistral, le alternative per Buenos Aires del Long-haul. **La
+  cartella ha 17 fogli**: si apre sul primo con le leg e si sceglie.
+- **Il «fatta quando», sul banco**: il foglio ITY esportato com'è (32 leg, la riga dei totali sopra l'intestazione) è entrato dalle
+  schermate vere contro il server vero, anteprima «32 aggiunte» con la riga del file di ognuna, e la leg 21 con i suoi quindici
+  callsign. ⚠️ Con **coordinate approssimate** messe a mano nel banco per 15 aeroporti (il database di sviluppo ha lo snapshot vecchio,
+  senza coordinate), tolte subito dopo: le distanze di quella prova non contano, l'anteprima sì. Guardato a 1500 px: la cella dei
+  callsign era stretta, ora è più larga e mostra la lista intera al passaggio del mouse.
 - ⚠️ **SheetJS non sta su npm**: la 0.18.5 del registro ha due CVE in lettura, la versione corretta si installa dal tarball del CDN di
   SheetJS, fissato con l'hash nel lockfile. Dependabot non la vede: si aggiorna a mano. Chunk suo, caricato solo all'import (500 KB,
   163 KB compressi); nessun `eval`, nessun worker in lettura.
@@ -1016,11 +1031,12 @@ Com'è andata:
   un aeroporto sconosciuto detto sulla riga, due leg aggiunte, poi «sostituisci» che ne elimina una).
 - **Trovato dal test d'integrazione**: il primo giro aspettava «uguale» su una leg che il file dava con un tipo d'aereo in più; il
   confronto aveva ragione (una colonna vuota è «nessun tipo»), il test no.
-- **Verificato in locale** (Docker acceso): unit .NET **478**, integrazione **236**, Vitest **434**, typecheck, lint, formato, i18n,
+- **Verificato in locale** (Docker acceso, dopo il secondo giro): unit .NET **478**, integrazione **236**, Vitest **437**, typecheck, lint, formato, i18n,
   smoke **80**, giro e2e completo **27**. ⚠️ Il primo giro completo ha avuto **un fallimento instabile** in uno spec di T6 che cerca un
   tour appena creato nella ricerca (`expect(hits…).toContain('/tours/…')`); da soli quei due spec passano sempre, e il giro rifatto è
-  verde: non è di T8, ma se torna va guardato. **Non verificato**: il «fatta quando» con un file vero del
-  FOD, che Carmine non ha ancora mandato; le colonne del modello potrebbero dover accettare altri nomi.
+  verde: non è di T8, ma se torna va guardato. **Non verificato**: un'anteprima del server sui tour con aeroporti
+  fuori dal database locale (Long-haul, Bizjet, RYR…): il lettore li legge giusti, ma l'esistenza degli aeroporti del mondo si prova
+  solo dove c'è lo snapshot con le coordinate (staging).
 
 ### T9 — Regole ed errori
 

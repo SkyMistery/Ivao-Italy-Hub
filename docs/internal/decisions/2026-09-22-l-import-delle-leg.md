@@ -46,11 +46,32 @@ quelle con PIREP, con un motivo. Aprendo T8 restavano aperte quattro cose:
    motivo dell'import, e non in un tour in chiusura o chiuso, come il ripristino a mano (§1.4.1). *Scartata*: la ritirata resta com'è e
    la riga diventa una leg nuova (due leg uguali nel tour, una ritirata).
 
+### 2.1 Il secondo giro, sul file vero (22 settembre 2026, sera)
+
+Carmine ha mostrato la cartella dei tour 2027 del FOD (Google Sheets, un foglio per tour più un riepilogo). Letta con il lettore vero,
+foglio per foglio, ha cambiato tre cose:
+
+5. **Le righe che non sono leg si rifiutano** (Carmine): note, totali, tabelle di riferimento, bozze sotto le leg. Ogni riga non vuota è
+   una leg, e una che non lo è viene rifiutata sulla sua riga: **il file si pulisce**, non si indovina. *Scartata*: ignorarle e
+   elencarle nell'anteprima (più comodo, ma una riga persa per sbaglio passerebbe in silenzio).
+6. **Una leg ha più callsign e più numeri di volo suggeriti** (Carmine: «sono quelli reali»): `ITY1357/1365/1359/1363`,
+   `ISS962,964,966`, fino a quindici su Linate–Fiumicino. Il modello cambia (design §1.4): due liste JSON, `callsigns_json` e
+   `flight_numbers_json`, riempite dalla migrazione con il valore di prima; `real_callsign` e `flight_number` restano mappate e non si
+   scrivono più, e cadono in una release successiva (expand/contract). Al massimo **24** per lista, ciascuno di 16 caratteri.
+   *Scartati*: tenere il primo e buttare gli altri; allargare la colonna di testo (una migrazione che modifica, non che aggiunge).
+7. **La cartella ha tanti fogli**: si apre sul primo che ha un'intestazione di leg (il riepilogo no), e l'editor lascia sceglierne un
+   altro.
+
 ## 3. La forma (di Claude, da confermare nella revisione della PR)
 
-- **Le colonne**: `departure`, `arrival` (obbligatorie), `callsign`, `flightNumber`, `aircraft`, `release`, nella prima riga, in
-  qualunque ordine e maiuscolo; valgono anche i nomi del payload (`departureIcao`, `releaseAt`…). Una colonna sconosciuta si ignora,
-  una riga vuota si salta. I nomi sono **inglesi e fissi**: il file è un formato, non un testo tradotto, e un fork lo riceve uguale.
+- **Le colonne**: `departure`, `arrival` (obbligatorie), `callsign`, `flightNumber`, `aircraft`, `release`, in qualunque ordine e
+  maiuscolo; valgono anche i nomi del foglio del FOD (`Departure ICAO`, `Destination ICAO`, `Flight Number`) e quelli del payload.
+  **L'intestazione è la prima delle prime dieci righe** che nomina una partenza e un arrivo (sopra ci può essere una riga di totali);
+  dove ci sono sia `Departure` (la città) sia `Departure ICAO`, **vince il codice**. Una colonna sconosciuta si ignora, una riga vuota
+  si salta. I nomi sono **inglesi e fissi**: il file è un formato, non un testo tradotto, e un fork lo riceve uguale.
+- **Più codici in una cella**, con una regola sola per il file e per la tabella (`splitCodes`): separati da `/`, `,`, `;` o `&`; un
+  pezzo di sole cifre prende le lettere del precedente (`ITY1357/1365` → ITY1357, ITY1365); lo spazio fa parte del codice
+  (`AZ 200`).
 - **Gli aerei**: il file porta **solo tipi ICAO**. I gruppi di una leg (`groupIds`) il file non li nomina, e una leg che il file
   riconosce **li tiene**; una leg nuova non ne ha.
 - **Il rilascio** è in UTC, come ogni istante dell'hub: una cella data di Excel si legge con l'ora che mostra, un testo ISO
@@ -73,5 +94,5 @@ quelle con PIREP, con un motivo. Aprendo T8 restavano aperte quattro cose:
 
 `Legs/LegImport.cs` (il confronto, puro, con i test unitari), due verbi in `Legs/LegEndpoints.cs`; nel frontend
 `screens/legFile.ts` (il file letto e il modello), `screens/LegImport.tsx` (il pannello dentro l'editor delle leg), un caso in più di
-`useLegChange`. Nessuna migrazione, nessun componente nuovo nell'elenco chiuso (il pannello è parte di `LegGrid`, l'eccezione
+`useLegChange`. Una migrazione additiva, `AddLegSuggestions` (le due liste, §2.1), nessun componente nuovo nell'elenco chiuso (il pannello è parte di `LegGrid`, l'eccezione
 dichiarata), nessun meccanismo nuovo. Corretti il design §8.4 e `06` §T8.
