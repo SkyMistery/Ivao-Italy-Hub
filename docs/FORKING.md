@@ -233,6 +233,30 @@ department reorganising its data wants nobody to change anything, not its pages 
 every other verb under `/api/{key}` answers 503. A job of the module asks `IsInMaintenanceAsync` at
 the top of its run for the same reason.
 
+## The base map of the tours, if you enable them
+
+The tours module draws the legs of a tour on a map, and the map underneath it is **a file of your
+installation, not of this repository**: one PMTiles archive of the world, about 180 MB, which this
+server serves itself at `/tiles/basemap.pmtiles`. No tile provider, no API key, no quota, and nobody
+outside your host learns who is reading a tour page.
+
+```bash
+node tools/basemap.mjs
+```
+
+That prints the two commands: get the `pmtiles` extractor (one binary, from the Protomaps releases),
+and run `pmtiles extract https://build.protomaps.com/<YYYYMMDD>.pmtiles tiles/basemap.pmtiles
+--maxzoom=7`. It reads what it needs out of a 130 GB public build over HTTP and writes about 180 MB.
+Then put that file in `tiles/` next to the application — in development it is in the repository and
+git ignores it; in production it goes over FTP, next to `media/`, and a deployment never overwrites
+it. Protomaps keeps roughly a week of daily builds, so pass a recent date.
+
+**You can also skip it.** Without the archive the maps still draw: the legs, the airports and their
+codes, on a plain ground — no error, no empty box, no countries. Upload it when you want the world
+underneath.
+
+The data is OpenStreetMap's, under the ODbL, and the maps carry the attribution the licence asks for.
+
 ## What a division never has to touch
 
 The rules that decide who may read and write what are generic, and none of them names a division:

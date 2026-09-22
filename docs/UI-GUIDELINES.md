@@ -40,7 +40,7 @@ It is exactly:
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
 `StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
-`LiveStatusStrip`, `StaffSidebar`.
+`LiveStatusStrip`, `StaffSidebar`, `RouteMap`.
 
 `StaffSidebar` is the navigation of the back office, and it is the one entry on this list that
 replaces something Atmosphere ships rather than adding something it lacks. The reason is narrow and
@@ -142,6 +142,30 @@ measurement in `web/e2e/live-status.spec.ts` that fails if somebody moves it bac
 network could not be asked it draws **nothing**: `updatedAt` of null means "no answer", which is not
 the same as nobody being connected, and four zeroes would be the site answering a question it never
 got an answer to.
+
+`RouteMap` draws the legs of a tour on a map: great circle lines, a marker and its code at each
+airport, and a colour per state. Three things about it are decisions and not taste.
+
+**The base map is a file of the installation.** One PMTiles archive of the world, served by this hub
+at `/tiles/basemap.pmtiles` and read by the browser a few kilobytes at a time with `Range` requests.
+No tile provider, no API key, no quota, and nobody outside this host learns who is reading a tour
+page. The archive is not in the repository and not in the release package — it is 179 MB that change
+with nothing we ship — so a fork makes its own and uploads it: `node tools/basemap.mjs` writes the
+two commands, and `FORKING.md` says where the file goes. **Without it the map still draws**: the legs
+and the airports on a neutral ground, no error and no empty box.
+
+**No place names.** The archive has them, and drawing them would mean hosting the fonts of every
+script the world writes in; the airport codes are HTML markers instead, so a fork uploads one file
+rather than a directory of glyphs.
+
+**WebGL2 or a sentence.** MapLibre cannot draw without it, so the component says so in one line and
+the page keeps the list of legs underneath — which is the same information in words, and is the
+reason the map is `role="img"` with a label rather than something to navigate.
+
+The lines are `shared/ui/greatCircle.ts`, twenty lines of spherical interpolation and no geometry
+library. It unwraps longitudes past ±180 on purpose: a flight from Tokyo to Los Angeles crosses the
+antimeridian, and a line whose points jump from 179 to −179 is drawn straight back across the whole
+world.
 
 `RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist yet and are not
 to be started early.

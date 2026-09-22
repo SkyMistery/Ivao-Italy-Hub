@@ -3,8 +3,23 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 22 settembre 2026 — **T0–T8 in `main`; T9 è fatta**: branch `m2/t9-rules-and-errors`, in PR (vedi `gh pr list`).
-Piano **0.89**. **Il prossimo passo è T10 (il pubblico e la mappa)**, in una chat nuova, dopo il merge di T9.
+**Ultimo aggiornamento:** 22 settembre 2026 — **T0–T9 in `main`; T10 è fatta**: branch `m2/t10-public-tours`, in PR (vedi `gh pr list`).
+Piano **0.90**. **Il prossimo passo è T11 (il PIREP)**, in una chat nuova, dopo il merge di T10.
+
+> **Che cosa ha lasciato T10** (nota `2026-09-22-il-pubblico-dei-tour`, piano 0.90): il pubblico dei tour è
+> `Tours/PublicTours.cs` — **un servizio solo**, letto dai due verbi anonimi (`GET …/tours/public`, `…/tours/public/{slug}`) e dal
+> blocco `flightops.tourCards`. Che cosa vede un visitatore lo dice **`TourState.IsPublic`** e nient'altro: la colonna della
+> visibilità non può seguire l'orologio, quindi il rilascio si chiede lì; allo staff quei due indirizzi rispondono **quello che
+> risponde a un visitatore**. **T11** aggiunge i colori del pilota sulla mappa (`RouteMap` li ha già tutti e quattro: `todo`,
+> `done`, `pending`, `locked`) e «Invia il report» sulla pagina; i **callsign suggeriti** sono `leg.callsigns`, e il primo è quello
+> che va a SimBrief (`simbriefUrl` in `screens/public.tsx`, `ITY123` → `airline=ITY&fltnum=123`).
+> La mappa è `shared/ui/RouteMap.tsx` (**non** nel modulo: non sa che cosa sia un tour) con `greatCircle.ts`; la base del mondo è
+> `tiles/basemap.pmtiles`, **fuori dal repository**, servita da `/tiles` con `Range` ed `ETag` forte — si rifà con
+> `node tools/basemap.mjs` e ⚠️ **le build di Protomaps durano una settimana**, quindi la data va passata. Senza l'archivio la
+> mappa disegna comunque le tratte su un fondo neutro. Due estensioni: `BlockRegistration.propertyLabels` (le etichette delle
+> proprietà di un blocco di modulo) e **`IModule.ReservedSegments`** — ⚠️ un modulo con una pagina pubblica **deve** dichiarare il
+> suo primo segmento, o una pagina con quel nome si salva e diventa irraggiungibile. Nei test: VID `780080`, slug
+> `fo-test-public-…`; i conteggi dei blocchi sono ora **35** (galleria) e **10** (Data).
 
 > **Che cosa ha lasciato T9** (nota `2026-09-22-regole-ed-errori`, piano 0.89): `fo_rules` (generali con `tour_id` nullo, del tour,
 > emendamenti con `amends_rule_id`), `fo_errors`, `fo_rule_errors`, in `Rules/`. **Le regole in vigore** di un tour sono
@@ -120,7 +135,8 @@ Piano **0.89**. **Il prossimo passo è T10 (il pubblico e la mappa)**, in una ch
 > | #92 | T7b: hub e rotazioni, sottotour, vincoli sul callsign, `BeforeAuthorize` (piano 0.86) |
 > | #93 | T7c: il tour `Open` — obiettivo, filtri e regole di sequenza (piano 0.87) |
 > | #94 | T8: l'import delle leg da XLSX/CSV, SheetJS nel browser, i callsign suggeriti (piano 0.88) |
-> | — | T9: regole ed errori, regole effettive, copia, il blocco degli errori pubblici (piano 0.89) |
+> | #95 | T9: regole ed errori, regole effettive, copia, il blocco degli errori pubblici (piano 0.89) |
+> | — | T10: `/tours`, `/tours/{slug}`, `RouteMap`, `/tiles`, il blocco dei riquadri (piano 0.90) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -129,7 +145,7 @@ Piano **0.89**. **Il prossimo passo è T10 (il pubblico e la mappa)**, in una ch
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T10**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T11**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Una cosa che T1 lascia aperta**: l'attribuzione dei confini dei FIR (CC BY-SA 4.0) va **mostrata** dove si vede la proposta degli ATC,
 > cioè in T12. (Le «varianti» degli aerei sono decise in T6a: tipi più gruppi, nessuna spunta.)
