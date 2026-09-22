@@ -308,8 +308,8 @@ public static class TourEndpoints
 
     /// <summary>
     /// The end both copies share: permission on the row as it will be, the rules of every save, the save — and the
-    /// callsign constraints of the source's tour and, on an Open tour, its filters and sequence rules copied onto the new
-    /// row, in the same transaction (§1.10).
+    /// callsign constraints of the source's tour, on an Open tour its filters and sequence rules, and its own rules in force
+    /// with their parameters and errors (T9) copied onto the new row, in the same transaction (§1.10).
     /// </summary>
     private static async Task<IResult> CreateAsync(
         Tour tour,
@@ -341,6 +341,10 @@ public static class TourEndpoints
         var constraints = await database.TourConstraints.AsNoTracking()
             .Where(constraint => constraint.TourId == sourceId)
             .ToListAsync(http.RequestAborted);
+        var tourRules = await database.Rules.AsNoTracking().Include(rule => rule.ErrorLinks)
+            .Where(rule => rule.TourId == sourceId && rule.RetiredAt == null)
+            .OrderBy(rule => rule.Sort).ThenBy(rule => rule.Id)
+            .ToListAsync(http.RequestAborted);
 
         await using var transaction = await database.Database.BeginTransactionAsync(http.RequestAborted);
         await database.SaveChangesAsync(http.RequestAborted);
@@ -348,25 +352,26 @@ public static class TourEndpoints
         // The new row has its identifier only now.
         database.CallsignRules.AddRange(TourCopy.CallsignRules(rules, tour));
         database.TourConstraints.AddRange(TourCopy.Constraints(constraints, tour));
+        database.Rules.AddRange(TourCopy.Rules(tourRules, tour, existing: []).Added);
         await database.SaveChangesAsync(http.RequestAborted);
         await transaction.CommitAsync(http.RequestAborted);
 
         return Results.Created($"{Pattern}/{tour.Id}", new TourMapper().ToDetail(tour, clock.UtcNow));
     }
 
-    private static IResult Refused(string field, string key, LocaleCatalog catalog, ICurrentUser currentUser) =>
+    internal static IResult Refused(string field, string key, LocaleCatalog catalog, ICurrentUser currentUser) =>
         CrudProblems.Validation(
             new Dictionary<string, string[]>(StringComparer.Ordinal) { [field] = [key] },
             new Dictionary<string, string[]>(StringComparer.Ordinal),
             catalog,
             currentUser.Locale);
 
-    private static IResult NotFound(LocaleCatalog catalog, ICurrentUser currentUser) =>
+    internal static IResult NotFound(LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(
             statusCode: StatusCodes.Status404NotFound,
             title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey));
 
-    private static IResult Forbidden(LocaleCatalog catalog, ICurrentUser currentUser) =>
+    internal static IResult Forbidden(LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(
             statusCode: StatusCodes.Status403Forbidden,
             title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));

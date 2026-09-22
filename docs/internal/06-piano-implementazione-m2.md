@@ -1058,6 +1058,44 @@ parametri e collegamenti; il blocco mostra solo gli errori pubblici; `Architectu
 **Fatta quando**: il FOD scrive una regola generale con i parametri delle disconnessioni, un tour la emenda, e la pagina di prova col blocco
 mostra il catalogo pubblico.
 
+**Fatta il 22 settembre 2026** (branch `m2/t9-rules-and-errors`, piano 0.89, nota `decisions/2026-09-22-regole-ed-errori.md`):
+
+- **Tre risposte di Carmine in apertura**: un emendamento **eredita** i parametri che non cambia (li legge dalla generale a ogni
+  lettura); «copia le regole» **aggiunge** e salta quello che il tour ha già (stesso emendamento, stesso codice), dicendolo; i **valori
+  di partenza** dei controlli senza un numero nel design (5 NM, 2 + 2 minuti, 10 kt, 10 %).
+- **L'estensione n.9 non serve**, verificata in apertura: lo schema scelto a runtime è `KindPicker` (T7c), la selezione multipla è
+  `meta({ multi: true })`, gli aggregati «senza errori» / «senza regole» sono `ToListPage`. Il generatore di form non è stato toccato.
+- **Il backend**: `Rules/` — `TourRule`, `TourError`, `TourRuleError` (migrazione `AddRules`, tre `CreateTable`), `CheckCatalog` (le
+  chiavi di §6.4 e le due dell'agente, i campi con limiti e valori di partenza; il lettore è quello di `OpenCatalog`, reso pubblico),
+  `EffectiveRules` (`Compose` puro), due risorse del motore (`/api/flightops/rules` con `filter[tour]=general|{id}`,
+  `/api/flightops/errors`) e due verbi (`…/tours/{id}/effective-rules`, `…/tours/{id}/copy-rules`). Le regole di un tour prendono e
+  seguono la cura del tour come le righe figlie; su un template chiedono anche `Tours.ManageTemplates`. I template copiano le regole
+  (`TourCopy.Rules`, la stessa funzione della copia).
+- **Il blocco `flightops.errorCatalog`**, il primo di un modulo: descrittore letterale in `FlightOpsModule.Blocks`, provider
+  `ErrorCatalogProvider`, metà TypeScript in `web/src/modules/flightops/blocks/`. **Senza proprietà**: il form delle proprietà prende
+  le etichette dal namespace del nucleo, e il primo blocco di un modulo che ne ha (T10) dovrà estendere `BlockRegistration`. Le due
+  metà sono confrontate dal test del manifest (Vitest) e da `DataBlockEndToEndTests` (provider per ogni blocco Data, ora 9); la
+  galleria ne conta 34.
+- **Il frontend**: `screens/rules.tsx` — regole generali e errori (liste e form generati, il controllo scelto sopra il form), la scheda
+  «Regole» dell'editor del tour (regole in vigore, regole del tour, «Emenda» accanto a ogni generale, la copia), il form di una regola
+  del tour (`/staff/tours/{id}/rules/{rid}`, `?amends=`). Voci di menu «Regole dei tour» ed «Errori dei tour».
+- **Una correzione del design**: la tabella di §6.4 metteva `thresholdToleranceMeters` fra i parametri delle regole; è
+  un'impostazione (§1.11, risposta 15).
+- **I test**: unit `RuleTests` (dodici: valori di partenza, emendamento che tiene solo ciò che cambia, rifiuti sul campo, regole in
+  vigore con emendamento, ritirate, sottotour, copia che salta); integrazione `RuleTests` (due: il «fatta quando» via API con il blocco
+  letto da anonimo, e la copia e il template con parametri ed errori, il permesso dei template, i rifiuti); e2e
+  `full/tours-rules.spec.ts` (il «fatta quando» dalle schermate: errore pubblico, regola generale, emendamento, pagina pubblicata col
+  blocco letta da un visitatore).
+- **Verificato in locale** (Docker acceso): unit .NET **490**, integrazione **238**, Vitest **437**, typecheck, lint, formato, i18n,
+  giro e2e **completo 28**, smoke **80**, build Release senza warning.
+- **Trovato dal giro e2e**, e corretto: un link `?amends=7` scritto come testo arriva alla rotta come la stringa `"7"` (lo schema della
+  ricerca ora la converte); la colonna «ritirata» col badge generico «Attivo / Non attivo» diceva il contrario del vero (le liste
+  mostrano ora «In vigore»); lo spec stesso lasciava righe nel banco quando falliva a metà (ora pulisce in un `finally`, e all'inizio
+  toglie quelle di un giro interrotto, riconosciute dai nomi che dà lui). Guardate a 1500 px: le liste, i form, la scheda «Regole» e la
+  pagina pubblica col blocco.
+- **Non verificato**: una regola di un **sottotour** dalle schermate (la composizione col padre è provata dagli unit test, non dal
+  banco); il blocco dentro un **documento** (provato in una pagina).
+
 ### T10 — Il pubblico e la mappa
 
 Design §8.1, §8.2, §8.6; nota `2026-09-15-la-mappa`. Branch `m2/t10-public-tours`.

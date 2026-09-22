@@ -167,6 +167,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/{id}/effective-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsTourEffectiveRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{id}/copy-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsTourCopyRules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -1342,6 +1374,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsRulesList"];
+        put?: never;
+        post: operations["FlightOpsRulesCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsRulesGet"];
+        put: operations["FlightOpsRulesUpdate"];
+        post?: never;
+        delete: operations["FlightOpsRulesDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsErrorsList"];
+        put?: never;
+        post: operations["FlightOpsErrorsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/errors/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsErrorsGet"];
+        put: operations["FlightOpsErrorsUpdate"];
+        post?: never;
+        delete: operations["FlightOpsErrorsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2294,6 +2390,17 @@ export interface components {
             /** Format: int64 */
             parentId?: null | number;
         };
+        /** @description "Copy the rules of another tour": which one. */
+        CopyRulesRequest: {
+            /** Format: int64 */
+            sourceTourId: number;
+        };
+        /** @description What the copy did: how many rules it added, and the codes it left out because the tour already had them. */
+        CopyRulesResultDto: {
+            /** Format: int32 */
+            copied: number;
+            skipped: string[];
+        };
         /**
          * @description Owner of a row. These are the department codes IVAO itself uses, so a staff position maps onto a
          *     department without a translation table (plan section 7). Stored as a string, never as a number.
@@ -2302,6 +2409,28 @@ export interface components {
          * @enum {unknown}
          */
         Department: "HQ" | "SOD" | "FOD" | "AOD" | "TD" | "MD" | "ED" | "PRD" | "WD";
+        /** @description A rule as it holds on a tour (§5.2): the row that says it, the rule it amends, the parameters in force. */
+        EffectiveRuleDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: null | number;
+            code: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            text: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            amendsRuleId: null | number;
+            amendsCode: null | string;
+            checkKey: null | string;
+            parameters: components["schemas"]["JsonNode"];
+            values: string[];
+            errorIds: number[];
+        };
+        /**
+         * @description What an error weighs (design M2 §1.7, note 2026-09-14-requisiti-dei-tour §2). Stored by name.
+         * @enum {unknown}
+         */
+        ErrorCategory: "Info" | "Warning" | "Dangerous";
         /** @description A grant as the form loads it, with the audit trail and the version to write back. */
         GrantDetailDto: {
             /** Format: int64 */
@@ -3301,9 +3430,55 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfTourErrorListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["TourErrorListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfTourListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["TourListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfTourRuleListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["TourRuleListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -3597,6 +3772,57 @@ export interface components {
             openGoal: null | components["schemas"]["OpenGoal"];
             openGoalParameters: null | components["schemas"]["JsonNode"];
         };
+        /** @description An error as the form loads it. */
+        TourErrorDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            name: components["schemas"]["LocalizedOfstring"];
+            description: components["schemas"]["LocalizedOfstring"];
+            examples: components["schemas"]["LocalizedOfstring"];
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            yearlyMax: null | number;
+            checkKey: null | string;
+            isPublic: boolean;
+            retired: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description An error as the list shows it, with how many rules still in force name it. */
+        TourErrorListDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            name: components["schemas"]["LocalizedOfstring"];
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            yearlyMax: null | number;
+            checkKey: null | string;
+            isPublic: boolean;
+            active: boolean;
+            /** Format: int32 */
+            rules: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        TourErrorWriteDto: {
+            name: components["schemas"]["LocalizedOfstring"];
+            description: components["schemas"]["LocalizedOfstring"];
+            examples: null | components["schemas"]["LocalizedOfstring"];
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            yearlyMax: null | number;
+            checkKey: null | string;
+            isPublic: boolean;
+            retired: boolean;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description A new tour out of a template: the settings come from the template, the name and address from here. */
         TourFromTemplateRequest: {
             title: components["schemas"]["LocalizedOfstring"];
@@ -3653,6 +3879,78 @@ export interface components {
             localized: {
                 [key: string]: string[];
             };
+        };
+        /** @description A rule as the form loads it: its parameters as stored, its errors, whether it is retired. */
+        TourRuleDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: null | number;
+            ownerDepartment: components["schemas"]["Department"];
+            code: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            text: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            amendsRuleId: null | number;
+            checkKey: null | string;
+            parameters: components["schemas"]["JsonNode"];
+            errorIds: number[];
+            /** Format: int32 */
+            sort: number;
+            retired: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description A rule as the list shows it: the code of the rule it amends, the values of its parameters with their units, and how many
+         *     errors it has — its own and, on an amendment, its rule's — so that one with none stands out (design M2 §1.7). A list says
+         *     whether a row is in force (`Active`), not whether it is retired: its badge reads a true as "active".
+         */
+        TourRuleListDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: null | number;
+            ownerDepartment: components["schemas"]["Department"];
+            code: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            amendsRuleId: null | number;
+            amendsCode: null | string;
+            checkKey: null | string;
+            values: string[];
+            /** Format: int32 */
+            errors: number;
+            /** Format: int32 */
+            sort: number;
+            active: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a client may set on a rule. The tour and the rule amended are chosen when it is created and never change; an
+         *     amendment's check is its rule's, whatever is sent.
+         */
+        TourRuleWriteDto: {
+            /** Format: int64 */
+            tourId: null | number;
+            code: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            text: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            amendsRuleId: null | number;
+            checkKey: null | string;
+            parameters: null | components["schemas"]["JsonNode"];
+            errorIds: null | number[];
+            /** Format: int32 */
+            sort: number;
+            retired: boolean;
+            /** Format: date-time */
+            rowVersion: string;
         };
         /** @description A new template out of a tour: its settings, under this name. */
         TourSaveAsTemplateRequest: {
@@ -4073,6 +4371,77 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SearchResponseDto"];
                 };
+            };
+        };
+    };
+    FlightOpsTourEffectiveRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EffectiveRuleDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsTourCopyRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyRulesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyRulesResultDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -8064,6 +8433,320 @@ export interface operations {
         };
     };
     FlightOpsTourConstraintsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsRulesList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfTourRuleListDto"];
+                };
+            };
+        };
+    };
+    FlightOpsRulesCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourRuleWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourRuleDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsRulesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourRuleDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsRulesUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourRuleWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourRuleDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsRulesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsErrorsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfTourErrorListDto"];
+                };
+            };
+        };
+    };
+    FlightOpsErrorsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourErrorWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourErrorDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsErrorsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourErrorDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsErrorsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TourErrorWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourErrorDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsErrorsDelete: {
         parameters: {
             query?: never;
             header?: never;

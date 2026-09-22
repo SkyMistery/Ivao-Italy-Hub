@@ -5,7 +5,9 @@
     "templates": "Tour templates",
     "aircraftProfiles": "Aircraft profiles",
     "aircraftGroups": "Aircraft groups",
-    "settings": "Tour settings"
+    "settings": "Tour settings",
+    "rules": "Tour rules",
+    "errors": "Tour errors"
   },
   "tours": {
     "title": "Tours",
@@ -22,7 +24,8 @@
       "hubs": "Hubs and rotations",
       "subtours": "Subtours",
       "callsigns": "Callsigns",
-      "open": "Goal and constraints"
+      "open": "Goal and constraints",
+      "rules": "Rules"
     },
     "briefing": {
       "save": "Save briefing",
@@ -285,7 +288,16 @@
     "importNotOnHub": "A hub tour does not import legs: they belong to rotations a file cannot name. Write them in the table.",
     "importReasonRequired": "This import retires, restores or changes legs with reports: say why.",
     "importTooManyRows": "The file has too many rows for the legs of one tour.",
-    "tooManySuggestions": "At most 24."
+    "tooManySuggestions": "At most 24.",
+    "ruleCode": "Letters, digits, dots and dashes, up to 16.",
+    "checkUnknown": "This check does not exist.",
+    "generalAmendsNothing": "A general rule amends nothing: only a tour's rule does.",
+    "yearlyMaxOnlyWarning": "Only a warning has a yearly maximum.",
+    "amendedUnknown": "The rule amended is not a general rule in force.",
+    "alreadyAmended": "This tour already amends that rule.",
+    "ruleCodeTaken": "Another rule already has this code.",
+    "errorUnknown": "One of the errors does not exist.",
+    "ruleHasAmendments": "Some tours amend this rule: remove their amendments first, or retire it."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -557,6 +569,152 @@
       "Westbound": "Every flight arrives further west than it departed.",
       "IncreasingDistance": "Every flight is longer than the one before.",
       "MinFlightsAt": "On completion, at least the number of flights given have touched the airport. One per airport."
+    }
+  },
+  "rules": {
+    "title": "General rules",
+    "description": "The rules of every tour. A tour may amend one of them, changing its text or its numbers, and add rules of its own.",
+    "create": "New rule",
+    "createOwn": "New rule of this tour",
+    "edit": "Edit rule",
+    "delete": {
+      "title": "Delete this rule?",
+      "description": "Reports already sent keep the rules they were sent with. To keep it on record, retire it instead."
+    },
+    "fields": {
+      "code": "Code",
+      "title": "Title",
+      "text": "Text (markdown)",
+      "amendsCode": "Amends",
+      "checkKey": "Check",
+      "values": "Values",
+      "errors": "Errors",
+      "errorIds": "Errors",
+      "sort": "Order",
+      "retired": "Retired",
+      "parameters": "Parameters of the check",
+      "parameters.radiusNm": "Landing within (NM of the arrival airport)",
+      "parameters.maxSingleDisconnectMinutes": "Longest single disconnection (minutes)",
+      "parameters.maxTotalDisconnectMinutes": "Disconnections in total (minutes)",
+      "parameters.minParkingMinutesBefore": "Parked before pushback, at least (minutes)",
+      "parameters.minParkingMinutesAfter": "Parked after arrival, at least (minutes)",
+      "parameters.toleranceKt": "Tolerance (kt)",
+      "parameters.tolerancePercent": "Tolerance (%)",
+      "parameters.letters": "Equipment required (item 10a)",
+      "parameters.minVisibilityMeters": "Visibility, at least (m)",
+      "parameters.minCloudBaseFeet": "Cloud base, at least (ft)",
+      "active": "In force"
+    },
+    "hints": {
+      "code": "As the regulation names it, for example GR4. Once among the general rules, once among a tour's.",
+      "parameters": "A number left empty is the check's starting value, or on an amendment the value of the rule it amends.",
+      "errorIds": "The errors a validator marks when the rule is broken. A rule with none is shown in the list.",
+      "retired": "A retired rule no longer holds on any tour, and is no longer copied."
+    },
+    "amend": "Amend",
+    "editAmendment": "Edit the amendment",
+    "amends": "amends {{code}}",
+    "amending": "Amends {{code}} {{title}}",
+    "amendingHint": "This tour holds this rule in place of the general one. Fill in only the numbers it changes: the others stay those of the general rule, even when it changes.",
+    "effective": "Rules in force",
+    "effectiveDescription": "What holds on this tour: the general rules, each replaced by the amendment of this tour where there is one, then the tour's own. A subtour holds its container's first.",
+    "noneInForce": "No rule holds on this tour yet.",
+    "tourRules": "Rules of this tour",
+    "general": "General rules",
+    "copy": {
+      "title": "Copy the rules of another tour",
+      "description": "Adds the rules of that tour, with their parameters and errors. What this tour already has stays: a rule with the same code, or an amendment of the same general rule.",
+      "submit": "Copy the rules",
+      "done_one": "One rule copied.",
+      "done_other": "{{count}} rules copied.",
+      "skipped": "Not copied, the tour already has them: {{codes}}.",
+      "fields": {
+        "sourceTourId": "Tour"
+      }
+    }
+  },
+  "checks": {
+    "fields": {
+      "checkKey": "Automatic check"
+    },
+    "options": {
+      "checkKey": {
+        "none": "None",
+        "callsign": "Callsign",
+        "aircraft": "Aircraft type",
+        "landingAtArrival": "Landing at the arrival airport",
+        "disconnections": "Disconnections",
+        "parking": "Parked before and after",
+        "speed250": "250 kt below FL100",
+        "simRate": "Simulation rate",
+        "alternate": "Alternate",
+        "equipment": "Equipment",
+        "takeoffFromThreshold": "Take-off from the threshold",
+        "vmc": "VMC",
+        "repeatedRoute": "Route already flown",
+        "semicircularLevels": "Semicircular levels",
+        "atcCoverage": "ATC coverage"
+      }
+    },
+    "explain": {
+      "none": "No automatic check: the validator judges this one alone.",
+      "callsign": "The callsign is one the tour allows. Also refused when the report is sent.",
+      "aircraft": "The aircraft type is one the tour allows. Also refused when the report is sent.",
+      "landingAtArrival": "The flight landed at the arrival airport, or declared a diversion.",
+      "disconnections": "The flight was not disconnected longer than allowed, once or in total.",
+      "parking": "The aircraft stood still at the gate before pushback and after arrival.",
+      "speed250": "No more than 250 kt below FL100, with the tolerance given.",
+      "simRate": "The speed reported agrees with the speed between positions.",
+      "alternate": "The flight plan names an alternate; ZZZZ only with ALTN/ in the remarks.",
+      "equipment": "The flight plan declares the equipment required.",
+      "takeoffFromThreshold": "The take-off roll started at the threshold. The tolerance is one for the division, in the settings.",
+      "vmc": "VMC at departure and arrival, on VFR flight plans only.",
+      "repeatedRoute": "A route already flown in a distance or open tour; A to B is not B to A. Also refused when the report is sent.",
+      "semicircularLevels": "Cruise levels by direction. Run on the validator's computer, with its navigation data.",
+      "atcCoverage": "The controllers online along the route. Run on the validator's computer, with its navigation data."
+    }
+  },
+  "tourErrors": {
+    "title": "Errors",
+    "description": "The division's catalogue of the errors a validator marks on a report. Public errors can be shown on a page with the block \"Public errors\".",
+    "create": "New error",
+    "edit": "Edit error",
+    "delete": {
+      "title": "Delete this error?",
+      "description": "It is taken off every rule it belongs to. To keep it on record, retire it instead."
+    },
+    "fields": {
+      "name": "Name",
+      "description": "Description (markdown)",
+      "examples": "Examples (markdown)",
+      "category": "Category",
+      "yearlyMax": "At most per calendar year",
+      "checkKey": "Check",
+      "isPublic": "Public",
+      "retired": "Retired",
+      "rules": "Rules",
+      "active": "In use"
+    },
+    "hints": {
+      "yearlyMax": "A warning only: beyond this many times in a year, rejection is suggested.",
+      "isPublic": "Shown by the block \"Public errors\"."
+    },
+    "options": {
+      "category": {
+        "Info": "Info",
+        "Warning": "Warning",
+        "Dangerous": "Dangerous"
+      }
+    }
+  },
+  "blocks": {
+    "errorCatalog": {
+      "label": "Public errors",
+      "empty": "No public error yet.",
+      "examples": "Examples",
+      "rules": "Rules: {{rules}}",
+      "warningMax_one": "Warning, once a year at most",
+      "warningMax_other": "Warning, {{count}} times a year at most"
     }
   }
 }

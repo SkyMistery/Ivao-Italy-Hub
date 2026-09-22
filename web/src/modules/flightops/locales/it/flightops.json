@@ -5,7 +5,9 @@
     "templates": "Template dei tour",
     "aircraftProfiles": "Profili degli aerei",
     "aircraftGroups": "Gruppi di aerei",
-    "settings": "Impostazioni dei tour"
+    "settings": "Impostazioni dei tour",
+    "rules": "Regole dei tour",
+    "errors": "Errori dei tour"
   },
   "tours": {
     "title": "Tour",
@@ -22,7 +24,8 @@
       "hubs": "Hub e rotazioni",
       "subtours": "Sottotour",
       "callsigns": "Callsign",
-      "open": "Obiettivo e vincoli"
+      "open": "Obiettivo e vincoli",
+      "rules": "Regole"
     },
     "briefing": {
       "save": "Salva il briefing",
@@ -285,7 +288,16 @@
     "importNotOnHub": "Un tour Hub non importa le leg: stanno in rotazioni che un file non sa nominare. Scrivile nella tabella.",
     "importReasonRequired": "Questo import ritira, ripristina o cambia leg con dei report: scrivi perché.",
     "importTooManyRows": "Il file ha troppe righe per le leg di un tour.",
-    "tooManySuggestions": "Al massimo 24."
+    "tooManySuggestions": "Al massimo 24.",
+    "ruleCode": "Lettere, cifre, punti e trattini, fino a 16.",
+    "checkUnknown": "Questo controllo non esiste.",
+    "generalAmendsNothing": "Una regola generale non emenda niente: lo fa solo una regola di un tour.",
+    "yearlyMaxOnlyWarning": "Solo un warning ha un massimo annuale.",
+    "amendedUnknown": "La regola emendata non è una regola generale in vigore.",
+    "alreadyAmended": "Questo tour emenda già quella regola.",
+    "ruleCodeTaken": "Un'altra regola ha già questo codice.",
+    "errorUnknown": "Uno degli errori non esiste.",
+    "ruleHasAmendments": "Alcuni tour emendano questa regola: togli prima i loro emendamenti, oppure ritirala."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -557,6 +569,152 @@
       "Westbound": "Ogni volo arriva più a ovest di dove è partito.",
       "IncreasingDistance": "Ogni volo è più lungo del precedente.",
       "MinFlightsAt": "Al completamento, almeno il numero di voli indicato ha toccato l'aeroporto. Uno per aeroporto."
+    }
+  },
+  "rules": {
+    "title": "Regole generali",
+    "description": "Le regole di tutti i tour. Un tour può emendarne una, cambiandone il testo o i numeri, e aggiungerne di sue.",
+    "create": "Nuova regola",
+    "createOwn": "Nuova regola del tour",
+    "edit": "Modifica la regola",
+    "delete": {
+      "title": "Eliminare questa regola?",
+      "description": "I report già inviati tengono le regole con cui sono stati inviati. Per tenerne traccia, ritirala invece."
+    },
+    "fields": {
+      "code": "Codice",
+      "title": "Titolo",
+      "text": "Testo (markdown)",
+      "amendsCode": "Emenda",
+      "checkKey": "Controllo",
+      "values": "Valori",
+      "errors": "Errori",
+      "errorIds": "Errori",
+      "sort": "Ordine",
+      "retired": "Ritirata",
+      "parameters": "Parametri del controllo",
+      "parameters.radiusNm": "Atterraggio entro (NM dall'aeroporto di arrivo)",
+      "parameters.maxSingleDisconnectMinutes": "Disconnessione singola più lunga (minuti)",
+      "parameters.maxTotalDisconnectMinutes": "Disconnessioni in totale (minuti)",
+      "parameters.minParkingMinutesBefore": "Fermo prima del pushback, almeno (minuti)",
+      "parameters.minParkingMinutesAfter": "Fermo dopo l'arrivo, almeno (minuti)",
+      "parameters.toleranceKt": "Tolleranza (kt)",
+      "parameters.tolerancePercent": "Tolleranza (%)",
+      "parameters.letters": "Equipaggiamento richiesto (casella 10a)",
+      "parameters.minVisibilityMeters": "Visibilità, almeno (m)",
+      "parameters.minCloudBaseFeet": "Base delle nubi, almeno (ft)",
+      "active": "In vigore"
+    },
+    "hints": {
+      "code": "Come lo chiama il regolamento, per esempio GR4. Una volta fra le regole generali, una volta fra quelle di un tour.",
+      "parameters": "Un numero lasciato vuoto è il valore di partenza del controllo o, su un emendamento, quello della regola emendata.",
+      "errorIds": "Gli errori che il validatore segna quando la regola non è rispettata. Una regola senza errori si vede nella lista.",
+      "retired": "Una regola ritirata non vale più su nessun tour e non si copia più."
+    },
+    "amend": "Emenda",
+    "editAmendment": "Modifica l'emendamento",
+    "amends": "emenda {{code}}",
+    "amending": "Emenda {{code}} {{title}}",
+    "amendingHint": "Su questo tour vale questa regola al posto della generale. Scrivi solo i numeri che cambia: gli altri restano quelli della regola generale, anche quando cambia.",
+    "effective": "Regole in vigore",
+    "effectiveDescription": "Quello che vale su questo tour: le regole generali, ognuna sostituita dall'emendamento di questo tour dove c'è, poi quelle del tour. Un sottotour ha prima quelle del contenitore.",
+    "noneInForce": "Su questo tour non vale ancora nessuna regola.",
+    "tourRules": "Regole di questo tour",
+    "general": "Regole generali",
+    "copy": {
+      "title": "Copia le regole da un altro tour",
+      "description": "Aggiunge le regole di quel tour, con i parametri e gli errori. Quello che questo tour ha già resta: una regola con lo stesso codice, o un emendamento della stessa regola generale.",
+      "submit": "Copia le regole",
+      "done_one": "Una regola copiata.",
+      "done_other": "{{count}} regole copiate.",
+      "skipped": "Non copiate, il tour le ha già: {{codes}}.",
+      "fields": {
+        "sourceTourId": "Tour"
+      }
+    }
+  },
+  "checks": {
+    "fields": {
+      "checkKey": "Controllo automatico"
+    },
+    "options": {
+      "checkKey": {
+        "none": "Nessuno",
+        "callsign": "Callsign",
+        "aircraft": "Tipo di aereo",
+        "landingAtArrival": "Atterraggio all'arrivo",
+        "disconnections": "Disconnessioni",
+        "parking": "Fermo prima e dopo",
+        "speed250": "250 kt sotto FL100",
+        "simRate": "Sim rate",
+        "alternate": "Alternato",
+        "equipment": "Equipaggiamento",
+        "takeoffFromThreshold": "Decollo dalla testata",
+        "vmc": "VMC",
+        "repeatedRoute": "Rotta già volata",
+        "semicircularLevels": "Livelli semicircolari",
+        "atcCoverage": "Copertura ATC"
+      }
+    },
+    "explain": {
+      "none": "Nessun controllo automatico: questa la giudica solo il validatore.",
+      "callsign": "Il callsign è uno di quelli che il tour consente. Rifiutato anche all'invio del report.",
+      "aircraft": "Il tipo di aereo è uno di quelli che il tour consente. Rifiutato anche all'invio del report.",
+      "landingAtArrival": "Il volo è atterrato all'aeroporto di arrivo, o ha dichiarato una deviazione.",
+      "disconnections": "Il volo non è rimasto disconnesso più del consentito, una volta o in totale.",
+      "parking": "L'aereo è rimasto fermo al parcheggio prima del pushback e dopo l'arrivo.",
+      "speed250": "Non più di 250 kt sotto FL100, con la tolleranza indicata.",
+      "simRate": "La velocità riportata è coerente con quella fra le posizioni.",
+      "alternate": "Il piano di volo indica un alternato; ZZZZ solo con ALTN/ nelle remarks.",
+      "equipment": "Il piano di volo dichiara l'equipaggiamento richiesto.",
+      "takeoffFromThreshold": "La corsa di decollo è partita dalla testata. La tolleranza è una per la divisione, nelle impostazioni.",
+      "vmc": "VMC alla partenza e all'arrivo, solo sui piani VFR.",
+      "repeatedRoute": "Una rotta già volata in un tour a distanza o aperto; A→B non è B→A. Rifiutata anche all'invio del report.",
+      "semicircularLevels": "Livelli di crociera secondo la direzione. Gira sul PC del validatore, con i suoi dati di navigazione.",
+      "atcCoverage": "I controllori online lungo la rotta. Gira sul PC del validatore, con i suoi dati di navigazione."
+    }
+  },
+  "tourErrors": {
+    "title": "Errori",
+    "description": "Il catalogo della divisione degli errori che il validatore segna su un report. Gli errori pubblici si mostrano in una pagina con il blocco «Errori pubblici».",
+    "create": "Nuovo errore",
+    "edit": "Modifica l'errore",
+    "delete": {
+      "title": "Eliminare questo errore?",
+      "description": "Viene tolto da tutte le regole a cui è collegato. Per tenerne traccia, ritiralo invece."
+    },
+    "fields": {
+      "name": "Nome",
+      "description": "Descrizione (markdown)",
+      "examples": "Esempi (markdown)",
+      "category": "Categoria",
+      "yearlyMax": "Al massimo per anno solare",
+      "checkKey": "Controllo",
+      "isPublic": "Pubblico",
+      "retired": "Ritirato",
+      "rules": "Regole",
+      "active": "In uso"
+    },
+    "hints": {
+      "yearlyMax": "Solo per un warning: oltre questo numero di volte in un anno si suggerisce il rifiuto.",
+      "isPublic": "Lo mostra il blocco «Errori pubblici»."
+    },
+    "options": {
+      "category": {
+        "Info": "Info",
+        "Warning": "Warning",
+        "Dangerous": "Dangerous"
+      }
+    }
+  },
+  "blocks": {
+    "errorCatalog": {
+      "label": "Errori pubblici",
+      "empty": "Ancora nessun errore pubblico.",
+      "examples": "Esempi",
+      "rules": "Regole: {{rules}}",
+      "warningMax_one": "Warning, al massimo una volta all'anno",
+      "warningMax_other": "Warning, al massimo {{count}} volte all'anno"
     }
   }
 }

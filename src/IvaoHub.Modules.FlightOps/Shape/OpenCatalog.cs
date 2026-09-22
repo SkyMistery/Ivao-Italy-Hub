@@ -57,7 +57,9 @@ public enum ParameterType
 /// <summary>
 /// One parameter of a goal or of a constraint: its name in the JSON object and in the form, what it holds, whether it is
 /// required, and its bounds — the value of a number, the length of a list. <paramref name="Mark"/> is how the list of
-/// constraints shows the value, units and signs only: no word, so no language.
+/// constraints shows the value, units and signs only: no word, so no language. <paramref name="Default"/> is the value a
+/// rule starts with when it names the check the field belongs to (T9, <c>CheckCatalog</c>); the goals and the constraints
+/// have none.
 /// </summary>
 public sealed record ParameterField(
     string Name,
@@ -66,7 +68,8 @@ public sealed record ParameterField(
     int Min,
     int Max,
     IReadOnlyList<string>? Options = null,
-    string Mark = "{0}");
+    string Mark = "{0}",
+    int? Default = null);
 
 /// <summary>
 /// The one catalogue of what the goals and the constraints of an <see cref="TourKind.Open"/> tour take (note
@@ -235,8 +238,14 @@ public static partial class OpenCatalog
         }
     }
 
-    private static (JsonObject Parameters, List<ShapeProblem> Problems) Read(IReadOnlyList<ParameterField> fields, JsonNode? input)
+    /// <summary>
+    /// The fields of any catalogue read out of what was sent: only those, normalized, and what is wrong with each. The goals
+    /// and the constraints read theirs with it, and so do the parameters of a rule (T9): one reader for every parameter.
+    /// </summary>
+    public static (JsonObject Parameters, List<ShapeProblem> Problems) Read(IReadOnlyList<ParameterField> fields, JsonNode? input)
     {
+        ArgumentNullException.ThrowIfNull(fields);
+
         var source = input as JsonObject ?? [];
         var parameters = new JsonObject();
         var problems = new List<ShapeProblem>();

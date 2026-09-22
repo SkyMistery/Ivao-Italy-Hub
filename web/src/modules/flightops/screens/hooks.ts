@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useNavigate, useRouteContext, useSearch } from '@tanstack/react-router';
+import { useNavigate, useParams, useRouteContext, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import type { Suggestion } from '../../../shared/forms';
@@ -55,4 +55,14 @@ export function keepingCurrent(suggestions: readonly Suggestion[], current: read
   );
 
   return [...kept.map((value) => ({ value, label: value })), ...suggestions];
+}
+
+/** The row a form of a tour's tab edits, out of the address; null for a new one (`…/new`). */
+export function useRowId(
+  name: 'hubId' | 'rotationId' | 'ruleId' | 'constraintId' | 'tourRuleId',
+): number | null {
+  // The routes of a module are registered from its manifest, so their parameters are not in the router's typed tree.
+  const params: Readonly<Record<string, string | undefined>> = useParams({ strict: false });
+  const raw = params[name] ?? 'new';
+  return raw === 'new' ? null : Number(raw);
 }

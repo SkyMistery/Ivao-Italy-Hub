@@ -1,10 +1,12 @@
 using FluentValidation;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
+using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
@@ -36,9 +38,20 @@ public sealed class FlightOpsModule : ModuleBase
     [
         new NavItemDescriptor("flightops:nav.tours", "/staff/tours", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.templates", "/staff/tours/templates", TourPermissions.View),
+        new NavItemDescriptor("flightops:nav.rules", "/staff/tours/rules", TourPermissions.View),
+        new NavItemDescriptor("flightops:nav.errors", "/staff/tours/errors", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.aircraftProfiles", "/staff/tours/aircraft-profiles", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.aircraftGroups", "/staff/tours/aircraft-groups", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.settings", "/staff/tours/settings", TourPermissions.ManageSettings),
+    ];
+
+    /// <summary>
+    /// The public errors (T9), always live. Its other half is in <c>web/src/modules/flightops/</c>; the manifest test reads
+    /// this literal.
+    /// </summary>
+    public override IReadOnlyList<BlockDescriptor> Blocks =>
+    [
+        new BlockDescriptor("flightops.errorCatalog", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     public override ModuleSettingsDescriptor Settings { get; } =
@@ -62,6 +75,8 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<LegRequest>();
         services.AddScoped<TourChildren>();
         services.AddScoped<OpenParameterCheck>();
+        services.AddScoped<EffectiveRules>();
+        services.AddScoped<IDataBlockProvider, ErrorCatalogProvider>();
 
         // No reports before T11, which replaces the answer with its own.
         services.TryAddScoped<ITourReports, NoTourReportsYet>();
@@ -81,5 +96,6 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapTourEndpoints();
         endpoints.MapLegEndpoints();
         endpoints.MapShapeEndpoints();
+        endpoints.MapRuleEndpoints();
     }
 }

@@ -3,8 +3,21 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 22 settembre 2026 — **T0–T7c in `main`; T8 è fatta**: branch `m2/t8-leg-import`, in PR (vedi `gh pr list`).
-Piano **0.88**. **Il prossimo passo è T9 (regole ed errori)**, in una chat nuova, dopo il merge di T8.
+**Ultimo aggiornamento:** 22 settembre 2026 — **T0–T8 in `main`; T9 è fatta**: branch `m2/t9-rules-and-errors`, in PR (vedi `gh pr list`).
+Piano **0.89**. **Il prossimo passo è T10 (il pubblico e la mappa)**, in una chat nuova, dopo il merge di T9.
+
+> **Che cosa ha lasciato T9** (nota `2026-09-22-regole-ed-errori`, piano 0.89): `fo_rules` (generali con `tour_id` nullo, del tour,
+> emendamenti con `amends_rule_id`), `fo_errors`, `fo_rule_errors`, in `Rules/`. **Le regole in vigore** di un tour sono
+> `EffectiveRules.ForTourAsync(tour)` — una sola funzione, pura in `Compose`: **T10** le mostra sulla pagina pubblica (oggi il verbo
+> `GET /api/flightops/tours/{id}/effective-rules` è del back office, con `Tours.View`: la pagina pubblica ne vuole uno suo), **T11** le
+> congela nello snapshot. Un emendamento salva **solo** i parametri che cambia (eredita gli altri, Carmine): lo snapshot deve copiare
+> i parametri **composti**, `EffectiveRule.Parameters`, mai `parameters_json` della riga. I campi e i valori di partenza dei controlli
+> sono `CheckCatalog` (le chiavi di §6.4 più le due dell'agente): **T17** li legge da lì. `thresholdToleranceMeters` resta
+> un'impostazione. Il primo **blocco di un modulo**, `flightops.errorCatalog` (manifest in `web/src/modules/flightops/blocks/`,
+> descrittore letterale in `FlightOpsModule.Blocks`), **non ha proprietà**: ⚠️ il form delle proprietà di un blocco prende le etichette
+> da `blocks.<tipo>` nel namespace del nucleo, quindi **T10** (`tourCards`, con proprietà) deve estendere `BlockRegistration` con il
+> prefisso delle etichette del modulo. `KindPicker`, `TabList` e `ShapeFormPage` sono esportati da `screens/shape.tsx`, `useRowId` sta
+> in `hooks.ts`. Nei test: VID `780078–780079`; i conteggi dei blocchi sono 34 (galleria) e 9 (Data).
 
 > **Che cosa ha lasciato T8** (nota `2026-09-22-l-import-delle-leg`, piano 0.88): l'import delle leg da XLSX/CSV, letto nel browser con
 > **SheetJS 0.20.3 dal tarball del CDN** (non da npm: si aggiorna a mano, Dependabot non la vede). Il confronto è `Legs/LegImport.cs`,
@@ -12,7 +25,6 @@ Piano **0.88**. **Il prossimo passo è T9 (regole ed errori)**, in una chat nuov
 > callsign e numeri di volo suggeriti** (`callsigns_json`, `flight_numbers_json`, migrazione `AddLegSuggestions`; `real_callsign` e
 > `flight_number` non si scrivono più e vanno tolte in una release successiva), l'intestazione si cerca nelle prime righe, le righe che
 > non sono leg si rifiutano (il FOD pulisce il foglio). ⚠️ **T10 e T11** mostrano i callsign suggeriti: quale va a SimBrief si decide lì.
-> T9 non tocca le leg e può partire subito dopo il merge.
 
 > **Che cosa ha lasciato T7c** (nota `2026-09-22-il-tour-open`, piano 0.87): `fo_tour_constraints` è la quarta risorsa del motore in
 > `Shape/ShapeEndpoints.cs`; i parametri di obiettivi e vincoli hanno **un catalogo solo**, `Shape/OpenCatalog.cs` (campi, limiti,
@@ -107,7 +119,8 @@ Piano **0.88**. **Il prossimo passo è T9 (regole ed errori)**, in una chat nuov
 > | #91 | T7a: le leg, `LegGrid`, il tempo stimato, ritirare e ripristinare, gli aerei consentiti (piano 0.85) |
 > | #92 | T7b: hub e rotazioni, sottotour, vincoli sul callsign, `BeforeAuthorize` (piano 0.86) |
 > | #93 | T7c: il tour `Open` — obiettivo, filtri e regole di sequenza (piano 0.87) |
-| — | T8: l'import delle leg da XLSX/CSV, SheetJS nel browser (piano 0.88) |
+> | #94 | T8: l'import delle leg da XLSX/CSV, SheetJS nel browser, i callsign suggeriti (piano 0.88) |
+> | — | T9: regole ed errori, regole effettive, copia, il blocco degli errori pubblici (piano 0.89) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -116,7 +129,7 @@ Piano **0.88**. **Il prossimo passo è T9 (regole ed errori)**, in una chat nuov
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T9**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T10**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Una cosa che T1 lascia aperta**: l'attribuzione dei confini dei FIR (CC BY-SA 4.0) va **mostrata** dove si vede la proposta degli ATC,
 > cioè in T12. (Le «varianti» degli aerei sono decise in T6a: tipi più gruppi, nessuna spunta.)

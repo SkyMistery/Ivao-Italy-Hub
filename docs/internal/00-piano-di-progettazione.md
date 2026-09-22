@@ -1,9 +1,25 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.88 — 22 settembre 2026 (**l'import delle leg**: SheetJS nel browser, la coppia e l'ordine, niente tour Hub, T8)
+**Versione documento:** 0.89 — 22 settembre 2026 (**regole ed errori**: l'emendamento eredita, la copia aggiunge, i valori di partenza, T9)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.89** (22 set 2026, fase T9 di M2): **regole ed errori** — le regole generali e quelle dei tour (`fo_rules`, con
+l'emendamento di una generale), il catalogo degli errori della divisione (`fo_errors`, categoria, massimo annuale dei warning,
+pubblico o no), i collegamenti (`fo_rule_errors`), le **regole effettive** di un tour e di un sottotour (un servizio solo), «copia le
+regole da un altro tour», i template che copiano le regole, e il primo **blocco di un modulo**, `flightops.errorCatalog`, sempre vivo.
+Nota `decisions/2026-09-22-regole-ed-errori.md`, tre risposte di Carmine in apertura. **(1) Un emendamento eredita**: salva solo i
+parametri che cambia, gli altri li legge dalla regola generale a ogni lettura (il PIREP congela tutto al primo invio). **(2) La copia
+aggiunge**: le regole proprie in vigore dell'altro tour, con parametri ed errori; quello che il tour ha già (stessa generale emendata,
+stesso codice) resta, e l'esito dice che cosa è stato saltato. **(3) I valori di partenza dei controlli** senza un numero nel design:
+5 NM, 2 + 2 minuti di parcheggio, 10 kt, 10 %, da tarare in T17. Scelte di forma nella nota: la tolleranza del decollo dalla testata
+**resta un'impostazione** (risposta 15; la tabella del design §6.4 è corretta), si emenda solo una generale, il controllo di un
+emendamento è quello della sua regola, gli errori si sommano, una generale emendata non si elimina, il blocco non ha proprietà. Il
+catalogo dei controlli nasce qui, vuoto di logica (`CheckCatalog`, che T17 leggerà). **L'estensione n.9 del design è verificata e non
+serve**: il generatore di form già disegna uno schema scelto a runtime (`KindPicker`, T7c) e una selezione multipla, e gli aggregati
+della lista sono `ToListPage`. Nessun meccanismo nuovo; due verbi scritti a mano (regole effettive, copia), dichiarati come quelli del
+tour. Nessuna sezione del piano toccata oltre a questa riga.
 
 **Changelog 0.88** (22 set 2026, fase T8 di M2): **le leg di un tour si importano da un file** — XLSX, XLS, ODS o CSV letto nel
 browser, le differenze calcolate dal server senza scrivere, «fondi» e «sostituisci» applicati in un solo salvataggio e solo come

@@ -23,8 +23,15 @@ import {
   type TourFormValues,
   type TourFromTemplateFormValues,
   type TourSaveAsTemplateFormValues,
+  type CheckChoice,
+  type CheckKey,
+  type CopyRulesFormValues,
+  type RuleFormValues,
+  type TourErrorFormValues,
+  CHECK_KEYS,
   CONSTRAINT_PARAMETERS,
   GOAL_PARAMETERS,
+  checkParameters,
 } from './schemas';
 
 /**
@@ -1035,5 +1042,268 @@ export function useDeleteShapeRow(
       }
     },
     onSuccess: () => saved(tourId),
+  });
+}
+
+// ---- rules and errors (T9) --------------------------------------------------------------------------
+
+export type TourRuleDto = components['schemas']['TourRuleDto'];
+export type TourRuleListDto = components['schemas']['TourRuleListDto'];
+export type TourErrorDto = components['schemas']['TourErrorDto'];
+export type TourErrorListDto = components['schemas']['TourErrorListDto'];
+export type EffectiveRuleDto = components['schemas']['EffectiveRuleDto'];
+export type CopyRulesResultDto = components['schemas']['CopyRulesResultDto'];
+
+const rulesKey = ['flightops', 'rules'] as const;
+const errorsKey = ['flightops', 'errors'] as const;
+
+/** Whose rules: the general ones, or a tour's (`filter[tour]`). */
+export function rulesListQuery(search: ListSearch, tour: number | 'general' = 'general') {
+  return queryOptions({
+    queryKey: [...rulesKey, 'list', tour, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/flightops/rules', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ tour: String(tour) }),
+        }),
+      ),
+  });
+}
+
+/** Every general rule, for the tab of a tour: a regulation has dozens, never pages of them. */
+export function generalRulesQuery() {
+  return rulesListQuery(allOfATour, 'general');
+}
+
+export function tourRulesQuery(tourId: number, search: ListSearch = allOfATour) {
+  return rulesListQuery(search, tourId);
+}
+
+export function ruleQuery(id: number) {
+  return queryOptions({
+    queryKey: [...rulesKey, 'detail', id] as const,
+    queryFn: async (): Promise<TourRuleDto> =>
+      unwrap(await api.GET('/api/flightops/rules/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+/** The rules as they hold on a tour (design M2 §5.2), composed by the server. */
+export function effectiveRulesQuery(tourId: number) {
+  return queryOptions({
+    queryKey: [...rulesKey, 'effective', tourId] as const,
+    queryFn: async (): Promise<EffectiveRuleDto[]> =>
+      unwrap(
+        await api.GET('/api/flightops/tours/{id}/effective-rules', {
+          params: { path: { id: tourId } },
+        }),
+      ),
+  });
+}
+
+function checkChoice(key: string | null | undefined): CheckChoice {
+  return (CHECK_KEYS as readonly string[]).includes(key ?? '') ? (key as CheckKey) : 'none';
+}
+
+/**
+ * A new rule: a general one, a tour's own, or — with the rule it amends — an amendment, which starts from that rule's
+ * code, title and text and from no parameter of its own: what it leaves empty stays the amended rule's.
+ */
+export function emptyRule(
+  locales: readonly string[],
+  { tourId, amends }: { tourId?: number; amends?: TourRuleDto } = {},
+): RuleFormValues {
+  const check = checkChoice(amends?.checkKey);
+  const shape = checkParameters(check);
+
+  return {
+    ...(tourId === undefined ? {} : { tourId }),
+    ...(amends === undefined ? {} : { amendsRuleId: amends.id }),
+    checkKey: check,
+    code: amends?.code ?? '',
+    title: Object.fromEntries(locales.map((locale) => [locale, amends?.title[locale] ?? ''])),
+    text: Object.fromEntries(locales.map((locale) => [locale, amends?.text[locale] ?? ''])),
+    ...(Object.keys(shape).length === 0 ? {} : { parameters: parametersToFormValues(shape, {}) }),
+    errorIds: [],
+    sort: amends?.sort ?? 0,
+    retired: false,
+    rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+export function ruleToFormValues(rule: TourRuleDto, locales: readonly string[]): RuleFormValues {
+  const check = checkChoice(rule.checkKey);
+  const shape = checkParameters(check);
+
+  return {
+    ...(rule.tourId === null ? {} : { tourId: rule.tourId }),
+    ...(rule.amendsRuleId === null ? {} : { amendsRuleId: rule.amendsRuleId }),
+    checkKey: check,
+    code: rule.code,
+    title: Object.fromEntries(locales.map((locale) => [locale, rule.title[locale] ?? ''])),
+    text: Object.fromEntries(locales.map((locale) => [locale, rule.text[locale] ?? ''])),
+    ...(Object.keys(shape).length === 0
+      ? {}
+      : { parameters: parametersToFormValues(shape, rule.parameters) }),
+    errorIds: rule.errorIds.map(String),
+    sort: rule.sort,
+    retired: rule.retired,
+    rowVersion: rule.rowVersion,
+  };
+}
+
+/** After a rule is written: the lists of rules, and the rules in force of every tour, which it may change. */
+function useRulesSaved() {
+  const queryClient = useQueryClient();
+
+  return async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: rulesKey }),
+      queryClient.invalidateQueries({ queryKey: errorsKey }),
+    ]);
+  };
+}
+
+export function useSaveRule(id: number | null) {
+  const saved = useRulesSaved();
+
+  return useMutation({
+    mutationFn: async (values: RuleFormValues): Promise<TourRuleDto> => {
+      const body = {
+        tourId: values.tourId ?? null,
+        amendsRuleId: values.amendsRuleId ?? null,
+        checkKey: values.checkKey === 'none' ? null : values.checkKey,
+        code: values.code.trim().toUpperCase(),
+        title: values.title,
+        text: values.text,
+        parameters: parametersBody(checkParameters(values.checkKey), values.parameters),
+        errorIds: values.errorIds.map(Number),
+        sort: values.sort,
+        retired: values.retired,
+        rowVersion: values.rowVersion,
+      };
+      return id === null
+        ? unwrap(await api.POST('/api/flightops/rules', { body }))
+        : unwrap(await api.PUT('/api/flightops/rules/{id}', { params: { path: { id: String(id) } }, body }));
+    },
+    onSuccess: saved,
+  });
+}
+
+export function useDeleteRule() {
+  const saved = useRulesSaved();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/flightops/rules/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: saved,
+  });
+}
+
+/** "Copy the rules of another tour": the answer says how many were added and which codes the tour already had. */
+export function useCopyRules(tourId: number) {
+  const saved = useRulesSaved();
+
+  return useMutation({
+    mutationFn: async (values: CopyRulesFormValues): Promise<CopyRulesResultDto> =>
+      unwrap(
+        await api.POST('/api/flightops/tours/{id}/copy-rules', {
+          params: { path: { id: tourId } },
+          body: { sourceTourId: Number(values.sourceTourId) },
+        }),
+      ),
+    onSuccess: saved,
+  });
+}
+
+export function errorsListQuery(search: ListSearch) {
+  return queryOptions({
+    queryKey: [...errorsKey, 'list', search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/flightops/errors', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({}),
+        }),
+      ),
+  });
+}
+
+/** Every error, for the choice of a rule's: a catalogue of a few dozen. */
+export function allErrorsQuery() {
+  return errorsListQuery(listSearchSchema.parse({ pageSize: 100 }));
+}
+
+export function errorQuery(id: number) {
+  return queryOptions({
+    queryKey: [...errorsKey, 'detail', id] as const,
+    queryFn: async (): Promise<TourErrorDto> =>
+      unwrap(await api.GET('/api/flightops/errors/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function emptyError(locales: readonly string[]): TourErrorFormValues {
+  const blank = Object.fromEntries(locales.map((locale) => [locale, '']));
+
+  return {
+    checkKey: 'none',
+    name: blank,
+    description: blank,
+    examples: blank,
+    category: 'Info',
+    isPublic: false,
+    retired: false,
+    rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+export function errorToFormValues(error: TourErrorDto, locales: readonly string[]): TourErrorFormValues {
+  const read = (value: Record<string, string>) =>
+    Object.fromEntries(locales.map((locale) => [locale, value[locale] ?? '']));
+
+  return {
+    checkKey: checkChoice(error.checkKey),
+    name: read(error.name),
+    description: read(error.description),
+    examples: read(error.examples),
+    category: error.category,
+    ...(error.yearlyMax === null ? {} : { yearlyMax: error.yearlyMax }),
+    isPublic: error.isPublic,
+    retired: error.retired,
+    rowVersion: error.rowVersion,
+  };
+}
+
+export function useSaveError(id: number | null) {
+  const saved = useRulesSaved();
+
+  return useMutation({
+    mutationFn: async (values: TourErrorFormValues): Promise<TourErrorDto> => {
+      const body = {
+        checkKey: values.checkKey === 'none' ? null : values.checkKey,
+        name: values.name,
+        description: values.description,
+        examples: values.examples ?? {},
+        category: values.category,
+        yearlyMax: values.category === 'Warning' ? (values.yearlyMax ?? null) : null,
+        isPublic: values.isPublic,
+        retired: values.retired,
+        rowVersion: values.rowVersion,
+      };
+      return id === null
+        ? unwrap(await api.POST('/api/flightops/errors', { body }))
+        : unwrap(await api.PUT('/api/flightops/errors/{id}', { params: { path: { id: String(id) } }, body }));
+    },
+    onSuccess: saved,
+  });
+}
+
+export function useDeleteError() {
+  const saved = useRulesSaved();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/flightops/errors/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: saved,
   });
 }
