@@ -33,6 +33,12 @@ test('the uploads are among the paths handed to the backend, and not only the ca
   // and in development both came back as `index.html` — the frame drawing the hub inside itself and
   // the guidelines arriving as nineteen lines of Vite. Found by Carmine, downloading them.
   expect(BACKEND_PATHS).toContain('/embed');
+
+  // ⚠️ And the third of the same family, added the day it was written rather than the day somebody
+  // found it (T10): `/tiles/basemap.pmtiles` is the base map of the tours, an archive the hub serves
+  // with `Range` requests. Vite would have answered every one of them with `index.html`, and a map
+  // reading HTML where it expects tiles draws nothing and says nothing.
+  expect(BACKEND_PATHS).toContain('/tiles');
 });
 
 test('the proxy is built from that list and never written out beside it', async () => {
