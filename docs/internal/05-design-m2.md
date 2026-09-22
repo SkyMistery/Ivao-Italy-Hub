@@ -327,14 +327,17 @@ nomina **torna nel tour**, con il motivo dell'import e non in un tour in chiusur
   disconnessione e tempo minimo di parcheggio configurabili come regola generale **e** come regola del tour).
   Una regola generale collegata a un controllo porta i valori della divisione
   (`{"maxSingleDisconnectMinutes": 15, "maxTotalDisconnectMinutes": 25}`); una regola del tour che la **emenda** ne
-  cambia uno o più. Il controllo legge i parametri dalle **regole effettive** della leg (§5.2), quindi **le soglie
-  non stanno nelle impostazioni**: stanno dove il FOD le scrive e il pilota le legge. Lo schema dei parametri è
-  dichiarato dal controllo (§6.2), e il form della regola lo disegna.
+  cambia uno o più: salva **solo** quelli, e gli altri li **eredita** dalla generale a ogni lettura (Carmine, 22 settembre, nota
+  `2026-09-22-regole-ed-errori`). Il controllo legge i parametri dalle **regole effettive** della leg (§5.2), quindi **le soglie
+  non stanno nelle impostazioni**: stanno dove il FOD le scrive e il pilota le legge (l'eccezione è la tolleranza del decollo dalla
+  testata, una per il sistema, §1.11). Lo schema dei parametri e i valori di partenza sono di `CheckCatalog` (T9), che i controlli
+  di T17 leggono, e il form della regola li disegna.
 - **`fo_errors`**: catalogo **della divisione**. `name` (`Localized<string>`), `description` ed `examples`
   (`Localized<string>`), `category` (`Info`, `Warning`, `Dangerous`), `yearly_max` (solo `Warning`), `check_key?`,
   **`is_public`** (risposta 3), `retired_at`.
 - **`fo_rule_errors`**: molti a molti. Il sistema segnala regole senza errori ed errori senza regole.
-- **«Copia le regole da un altro tour»** copia le regole del tour, con parametri e collegamenti.
+- **«Copia le regole da un altro tour»** aggiunge le regole proprie in vigore del tour, con parametri e collegamenti; quello che il
+  tour ha già (lo stesso emendamento, lo stesso codice) resta e la copia lo salta (Carmine, 22 settembre).
 
 ### 1.8 Il PIREP — `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`, `fo_pirep_events`
 
@@ -811,13 +814,15 @@ notifica `flightops.reviewDigest`, con la preferenza del membro per spegnerla; n
 
 ### 5.2 Le regole effettive
 
-Le generali non ritirate, sostituite da quelle del tour che le emendano (con i parametri del tour), più quelle del tour;
-per un sottotour, prima il padre e poi il sottotour. Un solo servizio, usato da pagina, PIREP, controlli e validazione.
+Le generali non ritirate, sostituite da quelle del tour che le emendano (con i parametri del tour sopra quelli della generale, e
+gli errori di tutte e due), più quelle del tour; per un sottotour, prima il padre e poi il sottotour, che vince se emenda la stessa
+generale. Un emendamento di una generale ritirata non vale. Un solo servizio (`EffectiveRules`, T9), usato da pagina, PIREP,
+controlli e validazione.
 
 ### 5.3 Gli errori pubblici
 
-Blocco Data `flightops.errorCatalog`: gli errori con `is_public`, con categoria, descrizione e regole collegate. Sempre
-`live`. Il FOD lo mette in una pagina o in un documento.
+Blocco Data `flightops.errorCatalog`: gli errori con `is_public`, con categoria, descrizione, esempi e le regole **generali** in
+vigore collegate. Sempre `live`, senza proprietà (T9). Il FOD lo mette in una pagina o in un documento.
 
 ### 5.4 Le regole congelate
 
@@ -859,7 +864,7 @@ subito il metodo). Si registra comunque se il validatore conferma l'errore sugge
 | `simRate` | velocità riportata coerente con quella di posizione | tracce | tolleranza |
 | `alternate` | alternato presente (e `ZZZZ` ⚖️, sotto) | piano | — |
 | `equipment` | equipaggiamento richiesto | piano | lettere |
-| `takeoffFromThreshold` | decollo dalla testata | tracce, `ref_ivao_runways` | `thresholdToleranceMeters` |
+| `takeoffFromThreshold` | decollo dalla testata | tracce, `ref_ivao_runways` | — (`thresholdToleranceMeters` è un'impostazione, §1.11; T9) |
 | `vmc` | VMC a partenza e arrivo, **solo piani `V`** (e le metà VFR di `Y`/`Z`) | meteo salvato | visibilità e base nubi minime |
 | `repeatedRoute` | rotta già volata in un tour `Distance` o `Open` (anche bloccato all'invio; A→B diversa da B→A) | PIREP | — |
 
@@ -1147,7 +1152,7 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 | 6 | Editor a tabella e import XLSX/CSV | eccezione da dichiarare | §8.4 |
 | 7 | Award: catalogo e assegnazioni, schermata, immagini dalla media library (IVAO: documentazione 403, caricamento a mano) — **fatta in T4b**: catalogo del dipartimento, assegna chi ha `Awards.Assign`, la segnalazione propone l'award | sì, breve: `2026-09-16-award-e-preferenze` (piano 0.82) | §3.11 |
 | 8 | `IAtcActivitySource` sulla vista di vIPI | coperta da piano 0.78 | §6.5 |
-| 9 | Selezione multipla e parametri da schema nel generatore di form; aggregati nella lista | da verificare con il codice | §5.1, §8.7 |
+| 9 | Selezione multipla e parametri da schema nel generatore di form; aggregati nella lista — **verificata in T9: non serve**, il generatore li sa già disegnare (`KindPicker`, `multi`) e gli aggregati sono `ToListPage` | no (`2026-09-22-regole-ed-errori` §3) | §5.1, §8.7 |
 | 10 | Più voci di calendario per riga in `IProjectable` | no (estensione piccola) | §9 |
 | 11 | Tipi di aereo IVAO (`ref_ivao_aircraft`) da `/v2/aircrafts/all`, con equipaggiamenti e transponder | no | §1.5 |
 | 12 | `IWeatherSource` (NOAA → IVAO → VATSIM), come vIPI | sì, breve (una fonte esterna nuova) | §1.13 |
