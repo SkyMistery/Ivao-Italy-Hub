@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using FluentValidation;
 using IvaoHub.Core.Division;
 using IvaoHub.Modules.FlightOps.Legs;
@@ -77,6 +78,66 @@ public sealed record CallsignRuleWriteDto(
     string Value,
     DateTime RowVersion);
 
+/// <summary>A filter or a sequence rule of an <c>Open</c> tour as the form loads it: its kind, and its parameters.</summary>
+public sealed record TourConstraintDto(
+    long Id,
+    long TourId,
+    Department OwnerDepartment,
+    TourConstraintKind Kind,
+    JsonNode Parameters,
+    DateTime UpdatedAt,
+    DateTime RowVersion);
+
+/// <summary>A filter or a sequence rule as the list shows it: the values of its parameters, with their units.</summary>
+public sealed record TourConstraintListDto(
+    long Id,
+    long TourId,
+    Department OwnerDepartment,
+    TourConstraintKind Kind,
+    IReadOnlyList<string> Values,
+    DateTime UpdatedAt,
+    DateTime RowVersion);
+
+/// <summary>What a client may set on a constraint. The tour and the kind are chosen when it is created, and never change.</summary>
+public sealed record TourConstraintWriteDto(long TourId, TourConstraintKind Kind, JsonNode? Parameters, DateTime RowVersion);
+
+/// <summary>A constraint to and from its payloads: by hand, because the parameters are a JSON object and not columns.</summary>
+internal static class ConstraintMapper
+{
+    public static TourConstraintDto ToDto(TourConstraint constraint) => new(
+        constraint.Id,
+        constraint.TourId,
+        constraint.OwnerDepartment,
+        constraint.Kind,
+        OpenCatalog.Parse(constraint.ParametersJson),
+        constraint.UpdatedAt,
+        constraint.RowVersion);
+
+    public static TourConstraintListDto ToList(TourConstraint constraint) => new(
+        constraint.Id,
+        constraint.TourId,
+        constraint.OwnerDepartment,
+        constraint.Kind,
+        OpenCatalog.Describe(OpenCatalog.Fields(constraint.Kind), OpenCatalog.Parse(constraint.ParametersJson)),
+        constraint.UpdatedAt,
+        constraint.RowVersion);
+
+    /// <summary>
+    /// The tour and the kind only on a new row; the parameters as they were sent, which the save reads, normalizes and
+    /// checks (<see cref="OpenCatalog.Read(TourConstraintKind, JsonNode?)"/>).
+    /// </summary>
+    public static void Apply(TourConstraintWriteDto payload, TourConstraint constraint)
+    {
+        if (constraint.Id == 0)
+        {
+            constraint.TourId = payload.TourId;
+            constraint.Kind = payload.Kind;
+        }
+
+        constraint.ParametersJson = payload.Parameters?.ToJsonString() ?? "{}";
+    }
+}
+
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
 internal sealed partial class ShapeMapper
 {
@@ -148,6 +209,15 @@ public sealed class RotationWriteDtoValidator : AbstractValidator<RotationWriteD
         RuleFor(rotation => rotation.HubId).GreaterThan(0).WithMessage("errors.required");
         RuleFor(rotation => rotation.Sort).InclusiveBetween(0, 999).WithMessage("errors.number.range");
         RuleFor(rotation => rotation.Size).Must(Rotation.Sizes.Contains).WithMessage("flightops:errors.rotationSizeChoice");
+    }
+}
+
+public sealed class TourConstraintWriteDtoValidator : AbstractValidator<TourConstraintWriteDto>
+{
+    public TourConstraintWriteDtoValidator()
+    {
+        RuleFor(constraint => constraint.TourId).GreaterThan(0).WithMessage("errors.required");
+        RuleFor(constraint => constraint.Kind).IsInEnum().WithMessage("errors.required");
     }
 }
 

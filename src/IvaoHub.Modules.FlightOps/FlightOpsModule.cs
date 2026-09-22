@@ -61,6 +61,7 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<LegBook>();
         services.AddScoped<LegRequest>();
         services.AddScoped<TourChildren>();
+        services.AddScoped<OpenParameterCheck>();
 
         // No reports before T11, which replaces the answer with its own.
         services.TryAddScoped<ITourReports, NoTourReportsYet>();

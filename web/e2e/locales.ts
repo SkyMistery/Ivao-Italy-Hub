@@ -42,7 +42,7 @@ interface CommonStrings {
     readonly linksGroup: string;
     readonly screens: Readonly<Record<string, string>>;
   };
-  readonly form: { readonly suggest: { readonly emptyClosed: string } };
+  readonly form: { readonly addEntry: string; readonly suggest: { readonly emptyClosed: string } };
   readonly awards: { readonly create: string; readonly fields: { readonly name: string } };
   readonly awardAssignments: {
     readonly create: string;

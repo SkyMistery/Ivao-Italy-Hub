@@ -933,6 +933,50 @@ sul campo. **Fatta quando**: si compone da zero un tour `Open` con un obiettivo,
 pronto. **In apertura** si porta a Carmine: dove si scrive l'obiettivo (form del tour o scheda) e se un filtro vale anche su un tour con
 leg.
 
+**T7c fatta il 22 settembre 2026** (branch `m2/t7c-open`, nota `decisions/2026-09-22-il-tour-open.md`, piano **0.87**). Com'è andata:
+
+- **Cinque domande a Carmine in apertura**, le due di qui e tre nate leggendo il codice: l'obiettivo ha **una scheda sua**
+  («Obiettivo e vincoli», solo sui tour `Open`) e si salva con il tour; filtri e regole **solo sui tour `Open`**; **una riga per tipo**,
+  tranne `MinFlightsAt` (una per aeroporto), e `TouchesAirport` prende un elenco; un `Open` con vincoli **non cambia tipo** (l'obiettivo
+  si svuota fuori da `Open`); gli elenchi **si scrivono nel tour**, e un template li porta. Corretto il design §2.6.1 e §8.3.
+- **`AircraftTypes` cade** (caso b): tipi e gruppi ammessi sono già gli aerei consentiti del tour (T7a), anche su un `Open`. Resta
+  `AircraftCategory` (la categoria di scia, `L`/`M`/`H`/`J`).
+- **Il modello** (migrazione `AddTourConstraints`, solo additiva): `fo_tour_constraints` (`kind`, `parameters_json`, la cura del tour,
+  cascata col tour), riga figlia come hub e callsign (`ITourChild`, `BeforeAuthorize`, `TourSaving` la fa seguire, la copia la porta,
+  `Tours.ManageTemplates` sul template). L'obiettivo sta nelle colonne che T6a aveva già (`open_goal`, `open_goal_json`), scritte da
+  `TourWriteDto.OpenGoal`/`OpenGoalParameters`: assenti, restano come sono (come il briefing); lette e verificate dal salvataggio solo
+  quando cambiano.
+- **Un catalogo solo** dei parametri, in C# (`Shape/OpenCatalog.cs`): per ogni obiettivo e vincolo i campi, il tipo, obbligatorio e
+  limiti; `Read` normalizza (maiuscole, ognuno una volta, solo i campi del tipo) e rifiuta sul campo; le regole fra due campi
+  (`CollectRegions` paesi **o** FIR, «quanti» non oltre l'elenco, `DistanceBetween` con almeno un estremo e il minimo non sopra il
+  massimo) stanno lì. Se aeroporti, paesi e FIR esistono lo chiede **`OpenParameterCheck`** al nucleo, con due domande nuove
+  (caso b): **`IAirportDirectory.KnownCountriesAsync`** (un paese è il `countryId` di un aeroporto noto) e **`IFirLocator.KnownAsync`**
+  (i confini di VATSpy del mondo). Gli errori stanno sotto `openGoalParameters.{campo}` e `parameters.{campo}`, i nomi dei form.
+- **«Pronto» di un `Open`** (`TourShape.OpenProblems`): un obiettivo, i suoi parametri ancora buoni (controllo puro, senza i
+  dizionari), niente `Eastbound` con `Westbound`; su un altro tipo un vincolo è un problema (non può capitare: il server rifiuta).
+- **Il frontend**: il pezzo «tipo, poi i suoi parametri» sono **due form generati** — il tipo è un `SchemaForm` di un campo che si
+  applica mentre lo si sceglie (`onChange`, l'estensione di G15), sotto il form dei parametri di quel tipo (`KindPicker` in
+  `screens/shape.tsx`, usato dall'obiettivo e dal vincolo). Nessuna select scritta a mano, nessuna estensione del generatore: gli
+  oggetti annidati e le liste c'erano già, e le etichette annidate si scrivono piatte (`"parameters.countries": …`, come `seo.title`).
+  Gli schemi dei parametri sono una tabella (`GOAL_PARAMETERS`, `CONSTRAINT_PARAMETERS` in `schemas.ts`); ogni tipo ha una frase che
+  dice che cosa chiede al pilota (`open.goals`, `constraints.explain`). La lista dei vincoli mostra i valori con le loro unità
+  (`≥ 200 NM`, `LIRF`, `× 3`), composti dal server senza parole.
+- **I test**: unit `OpenTourTests` (i parametri di ogni obiettivo e vincolo tenuti e rifiutati, la lista, «pronto» di `Open`; un
+  test di T7a ora non si aspetta un `Open` senza problemi); integrazione `OpenTourTests` (due: il «fatta quando» via API con i rifiuti
+  sul campo, una riga per tipo e per aeroporto, `Eastbound`+`Westbound` rifiutati su un tour pronto; vincoli solo su `Open`, il cambio
+  di tipo rifiutato, il template che porta obiettivo e vincoli, l'obiettivo che si svuota); Vitest `schemas.test.ts` (ogni form si
+  disegna, il form del vincolo rispecchia il payload, i parametri andata e ritorno); e2e `full/tours-open.spec.ts` (**il «fatta
+  quando»**: un `CollectList` scritto nella scheda, due filtri e `Chained` nei form generati, un `DistanceBetween` rovesciato
+  rifiutato sul campo, pronto). VID `780076–780077`, slug `fo-test-open-…`.
+- **Trovato dal test della divisione XX, non dagli altri**: il file inglese diceva "for example LIRR" in un messaggio d'errore; un
+  fork l'avrebbe ereditato. Gli esempi dell'inglese sono ora di nessuno (EDGG, FR/DE).
+- **Verificato in locale** (Docker acceso): unit .NET **468**, integrazione **235**, Vitest **429**, typecheck, lint,
+  formato, i18n, smoke **80**, giro e2e completo **26**. Guardate a 1500 px la scheda «Obiettivo e vincoli», il form di un vincolo nuovo
+  e quello di una categoria di scia. ⚠️ **A 400 px ogni pagina dello staff è schiacciata**, perché la barra laterale non si chiude:
+  succede anche su «Gruppi di aerei», quindi non è di T7c; segnalato a parte. **Non verificato**: il «fatta quando» con il login di
+  sviluppo vero (l'ha guidato il giro e2e); un FIR nei parametri contro i confini veri (sul banco e nei test i confini di VATSpy non
+  ci sono: il controllo del formato è provato, quello dell'esistenza no).
+
 ### T8 — L'import delle leg
 
 Design §8.4, ADR-051 di Toursystem. Branch `m2/t8-leg-import`, dopo T7a (usa `LegBook` e la griglia).

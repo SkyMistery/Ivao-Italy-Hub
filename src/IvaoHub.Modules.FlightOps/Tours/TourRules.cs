@@ -105,6 +105,7 @@ public sealed class TourSaving(
     ModuleSettingsStore settings,
     TourReadiness readiness,
     AllowedAircraftCheck allowedAircraft,
+    OpenParameterCheck openParameters,
     IClock clock)
 {
     /// <summary>
@@ -194,6 +195,14 @@ public sealed class TourSaving(
                 problems.Add("kind", "flightops:errors.kindLocked");
             }
 
+            // An Open tour keeps its kind while it has constraints: they are shown on Open tours only (note 2026-09-22-il-tour-open).
+            if (before.Kind == TourKind.Open
+                && tour.Kind != TourKind.Open
+                && await database.TourConstraints.AnyAsync(row => row.TourId == tour.Id, cancellationToken))
+            {
+                problems.Add("kind", "flightops:errors.openHasConstraints");
+            }
+
             // A container keeps its kind while it has subtours: they would be left under a tour that has none.
             if (before.Kind == TourKind.Container
                 && tour.Kind != TourKind.Container
@@ -230,6 +239,13 @@ public sealed class TourSaving(
             problems.Add("allowedAircraft", aircraftProblem);
         }
 
+        if (tour.OpenGoal is { } goal
+            && (isNew || !Equals(database.Entry(tour).OriginalValues[nameof(Tour.OpenGoal)], tour.OpenGoal)
+                || database.Entry(tour).OriginalValues[nameof(Tour.OpenGoalJson)] as string != tour.OpenGoalJson))
+        {
+            await ReadGoalAsync(tour, goal, problems, cancellationToken);
+        }
+
         if (tour.AwardId is { } awardId
             && !await hub.Awards.AsNoTracking().AnyAsync(award => award.Id == awardId, cancellationToken))
         {
@@ -257,6 +273,26 @@ public sealed class TourSaving(
         }
 
         return problems.IsEmpty ? null : problems.Errors;
+    }
+
+    /// <summary>
+    /// The goal of an Open tour as it was sent: normalized, and refused field by field under <c>openGoalParameters</c> when
+    /// its kind does not take it or what it names does not exist (note 2026-09-22-il-tour-open). Read only when it changes,
+    /// so a later save of the settings does not answer for an airport the snapshot has since lost.
+    /// </summary>
+    private async Task ReadGoalAsync(Tour tour, OpenGoal goal, TourProblems problems, CancellationToken cancellationToken)
+    {
+        var (parameters, wrong) = OpenCatalog.Read(goal, OpenCatalog.Parse(tour.OpenGoalJson));
+        var unknown = wrong.Count == 0
+            ? await openParameters.UnknownAsync(OpenCatalog.Fields(goal), parameters, cancellationToken)
+            : [];
+
+        foreach (var problem in wrong.Concat(unknown))
+        {
+            problems.Add($"openGoalParameters.{problem.Field}", problem.Key);
+        }
+
+        tour.OpenGoalJson = parameters.ToJsonString();
     }
 
     /// <summary>
@@ -288,8 +324,8 @@ public sealed class TourSaving(
 
     /// <summary>
     /// The rows of a tour are in the care of its departments (Carmine, 18 September 2026): when those change, legs,
-    /// hubs, rotations and callsign constraints follow in the same save, so the one handler never reads a row
-    /// differently from its tour.
+    /// hubs, rotations, callsign constraints and the constraints of an Open tour follow in the same save, so the one
+    /// handler never reads a row differently from its tour.
     /// </summary>
     private async Task KeepTheRowsWithTheTourAsync(Tour tour, CancellationToken cancellationToken)
     {
@@ -297,6 +333,7 @@ public sealed class TourSaving(
         await FollowAsync(database.Hubs, tour, cancellationToken);
         await FollowAsync(database.Rotations, tour, cancellationToken);
         await FollowAsync(database.CallsignRules, tour, cancellationToken);
+        await FollowAsync(database.TourConstraints, tour, cancellationToken);
     }
 
     private static async Task FollowAsync<TRow>(IQueryable<TRow> rows, Tour tour, CancellationToken cancellationToken)
@@ -318,7 +355,8 @@ public sealed class TourSaving(
 /// <summary>
 /// What a tour needs before it can be marked ready (design M2 §1.2.1), in one place: the action, the list of problems
 /// the editor shows before anybody presses it, and every later save of a ready tour or of one of its legs. The checks
-/// on the shape — legs, hubs and rotations, subtours and parent — are <see cref="TourShape"/> (T7a, T7b).
+/// on the shape — legs, hubs and rotations, subtours and parent, the goal and constraints of an Open tour — are
+/// <see cref="TourShape"/> (T7a, T7b, T7c).
 /// </summary>
 public sealed class TourReadiness(
     FlightOpsDbContext database,
@@ -348,8 +386,9 @@ public sealed class TourReadiness(
         var parent = tour.ParentTourId is { } parentId
             ? await CrudSource.BackOffice<Tour>(database).AsNoTracking().FirstOrDefaultAsync(row => row.Id == parentId, cancellationToken)
             : null;
+        var constraints = await database.TourConstraints.AsNoTracking().Where(row => row.TourId == tour.Id).ToListAsync(cancellationToken);
 
-        return new TourParts(legs, hubs, rotations, subtours, parent);
+        return new TourParts(legs, hubs, rotations, subtours, parent) { Constraints = constraints };
     }
 
     /// <summary>
@@ -437,8 +476,9 @@ public sealed class TourReadiness(
 
 /// <summary>
 /// What a template carries into a tour and a tour into a template (design M2 §1.10): the settings, the briefing and the
-/// pictures, and the callsign constraints of the tour (<see cref="CallsignRules"/>) — never the address, the dates, the
-/// award, the state, the legs, the hubs or the subtours. The rules are added to the copy by T9.
+/// pictures, the goal of an Open tour, the callsign constraints of the tour (<see cref="CallsignRules"/>) and its filters
+/// and sequence rules (<see cref="Constraints"/>) — never the address, the dates, the award, the state, the legs, the hubs
+/// or the subtours. The rules are added to the copy by T9.
 /// </summary>
 public static class TourCopy
 {
@@ -490,5 +530,21 @@ public static class TourCopy
                 OwnerDepartment = copy.OwnerDepartment,
                 OwnerDepartmentMask = copy.OwnerDepartmentMask,
             });
+    }
+
+    /// <summary>The filters and sequence rules of an Open tour, for the copy (note 2026-09-22-il-tour-open).</summary>
+    public static IEnumerable<TourConstraint> Constraints(IEnumerable<TourConstraint> source, Tour copy)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(copy);
+
+        return source.Select(constraint => new TourConstraint
+        {
+            TourId = copy.Id,
+            Kind = constraint.Kind,
+            ParametersJson = constraint.ParametersJson,
+            OwnerDepartment = copy.OwnerDepartment,
+            OwnerDepartmentMask = copy.OwnerDepartmentMask,
+        });
     }
 }

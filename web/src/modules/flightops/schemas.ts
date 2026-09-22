@@ -189,7 +189,7 @@ export type TourFormValues = z.output<ReturnType<typeof tourSchema>>;
 export const tourEditorSearchSchema = z.object({
   template: z.boolean().optional(),
   parent: z.number().int().optional(),
-  tab: z.enum(['settings', 'briefing', 'legs', 'hubs', 'subtours', 'callsigns']).optional(),
+  tab: z.enum(['settings', 'briefing', 'legs', 'hubs', 'subtours', 'callsigns', 'open']).optional(),
 });
 
 export type TourEditorTab = NonNullable<z.infer<typeof tourEditorSearchSchema>['tab']>;
@@ -258,3 +258,156 @@ export function callsignRuleSchema(legs: readonly ChoiceOption[] = []) {
 }
 
 export type CallsignRuleFormValues = z.output<ReturnType<typeof callsignRuleSchema>>;
+
+// ---- the Open tour: its goal, its filters and sequence rules (T7c) ------------------------------------
+
+/** The goals of an Open tour (design M2 §2.6.1), as `OpenGoal` spells them. */
+export const OPEN_GOALS = [
+  'Distance',
+  'FlightCount',
+  'DistinctAirports',
+  'DistinctCountries',
+  'CollectList',
+  'CollectRegions',
+] as const;
+
+export type OpenGoalKind = (typeof OPEN_GOALS)[number];
+
+/** The filters and sequence rules of an Open tour, as `TourConstraintKind` spells them. */
+export const TOUR_CONSTRAINT_KINDS = [
+  'DepartureOrArrivalIn',
+  'DepartureIn',
+  'ArrivalIn',
+  'TouchesAirport',
+  'DistanceBetween',
+  'AircraftCategory',
+  'ArrivalRunwayMax',
+  'ArrivalElevationMin',
+  'FlightRules',
+  'Chained',
+  'Eastbound',
+  'Westbound',
+  'IncreasingDistance',
+  'MinFlightsAt',
+] as const;
+
+export type TourConstraintKind = (typeof TOUR_CONSTRAINT_KINDS)[number];
+
+/** The wake categories an `AircraftCategory` filter chooses among. */
+export const WAKE_CATEGORIES = ['L', 'M', 'H', 'J'] as const;
+
+/**
+ * What one parameter holds, as the form draws it. The bounds, what is required between two fields and whether a code
+ * exists are the server's (`OpenCatalog`); a list of codes is a list of objects, because that is what the generator
+ * repeats.
+ */
+export type ParameterKind =
+  'whole' | 'wholeOptional' | 'airport' | 'airports' | 'countries' | 'firs' | 'rules' | 'categories';
+
+/** The parameters of each goal, in the order the form shows them (note 2026-09-22-il-tour-open). */
+export const GOAL_PARAMETERS: Readonly<Record<OpenGoalKind, Readonly<Record<string, ParameterKind>>>> = {
+  Distance: { nm: 'whole' },
+  FlightCount: { count: 'whole' },
+  DistinctAirports: { count: 'whole' },
+  DistinctCountries: { count: 'whole' },
+  CollectList: { airports: 'airports', count: 'wholeOptional' },
+  CollectRegions: { countries: 'countries', firs: 'firs', count: 'wholeOptional' },
+};
+
+/** The parameters of each filter and sequence rule; a rule of sequence mostly has none. */
+export const CONSTRAINT_PARAMETERS: Readonly<
+  Record<TourConstraintKind, Readonly<Record<string, ParameterKind>>>
+> = {
+  DepartureOrArrivalIn: { countries: 'countries' },
+  DepartureIn: { countries: 'countries' },
+  ArrivalIn: { countries: 'countries' },
+  TouchesAirport: { airports: 'airports' },
+  DistanceBetween: { minNm: 'wholeOptional', maxNm: 'wholeOptional' },
+  AircraftCategory: { categories: 'categories' },
+  ArrivalRunwayMax: { meters: 'whole' },
+  ArrivalElevationMin: { feet: 'whole' },
+  FlightRules: { rules: 'rules' },
+  Chained: {},
+  Eastbound: {},
+  Westbound: {},
+  IncreasingDistance: {},
+  MinFlightsAt: { airport: 'airport', count: 'whole' },
+};
+
+function parameterField(kind: ParameterKind, categories: readonly ChoiceOption[]) {
+  switch (kind) {
+    case 'whole':
+      return z.number().int();
+    case 'wholeOptional':
+      return z.number().int().optional();
+    case 'airport':
+      return z.string();
+    case 'airports':
+      return z.array(z.object({ icao: z.string() }));
+    case 'countries':
+    case 'firs':
+      return z.array(z.object({ code: z.string() }));
+    case 'rules':
+      return z.enum(['I', 'V']);
+    case 'categories':
+      return z.array(z.string()).meta({ multi: true, choices: categories });
+  }
+}
+
+/** The shape of a set of parameters, built from what each one holds. */
+export function parametersShape(
+  parameters: Readonly<Record<string, ParameterKind>>,
+  categories: readonly ChoiceOption[] = [],
+) {
+  return z.object(
+    Object.fromEntries(
+      Object.entries(parameters).map(([name, kind]) => [name, parameterField(kind, categories)]),
+    ),
+  );
+}
+
+/** The parameters as the form holds them: numbers, codes, lists of `{ icao }` and `{ code }`. */
+export type ParameterValues = Record<string, unknown>;
+
+/**
+ * The goal's form, under the name the server files its refusals with (`openGoalParameters.count`). The kind is chosen
+ * above it, in a form of its own (`openGoalKindSchema`): the parameters are those of the kind chosen.
+ */
+export function openGoalSchema(goal: OpenGoalKind): z.ZodType<OpenGoalFormValues, OpenGoalFormValues> {
+  return z.object({ openGoalParameters: parametersShape(GOAL_PARAMETERS[goal]) });
+}
+
+export interface OpenGoalFormValues extends Record<string, unknown> {
+  openGoalParameters: ParameterValues;
+}
+
+/** The one field that picks the goal, applied as it is chosen. */
+export const openGoalKindSchema = z.object({ openGoal: z.enum(OPEN_GOALS) });
+
+/** The one field that picks the kind of a new constraint, applied as it is chosen. */
+export const constraintKindSchema = z.object({ kind: z.enum(TOUR_CONSTRAINT_KINDS) });
+
+/**
+ * A filter or a sequence rule of an Open tour: its kind, chosen before and never changed, and the parameters of that
+ * kind — none for most rules of sequence, and then the form has only its button.
+ */
+export function tourConstraintSchema(
+  kind: TourConstraintKind,
+  categories: readonly ChoiceOption[] = [],
+): z.ZodType<TourConstraintFormValues, TourConstraintFormValues> {
+  const parameters = CONSTRAINT_PARAMETERS[kind];
+
+  return z.object({
+    tourId: z.number().int().meta({ hidden: true }),
+    kind: z.enum(TOUR_CONSTRAINT_KINDS).meta({ hidden: true }),
+    ...(Object.keys(parameters).length === 0 ? {} : { parameters: parametersShape(parameters, categories) }),
+    rowVersion: z.string().meta({ hidden: true }),
+  }) as never;
+}
+
+export interface TourConstraintFormValues extends Record<string, unknown> {
+  tourId: number;
+  kind: TourConstraintKind;
+  parameters?: ParameterValues;
+  rowVersion: string;
+}

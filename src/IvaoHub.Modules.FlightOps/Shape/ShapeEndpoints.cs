@@ -85,10 +85,10 @@ public sealed class TourChildren(FlightOpsDbContext database, TourReadiness read
 }
 
 /// <summary>
-/// Hubs, rotations and callsign constraints of a tour (design M2 §1.3, §1.6, §8.3): three resources of the CRUD engine,
-/// each filtered by <c>filter[tourId]</c>, read with <c>Tours.View</c> and written with <c>Tours.Edit</c> on the tour's
-/// care — the tab of the tour's editor is a generated list and a generated form. No hand written verb: the one
-/// exception of §16.6 stays the legs.
+/// Hubs, rotations and callsign constraints of a tour (design M2 §1.3, §1.6, §8.3), and the filters and sequence rules of an
+/// <c>Open</c> tour (§2.6.1, T7c): four resources of the CRUD engine, each filtered by <c>filter[tourId]</c>, read with
+/// <c>Tours.View</c> and written with <c>Tours.Edit</c> on the tour's care — the tab of the tour's editor is a generated
+/// list and a generated form. No hand written verb: the one exception of §16.6 stays the legs.
 /// </summary>
 public static class ShapeEndpoints
 {
@@ -97,6 +97,9 @@ public static class ShapeEndpoints
     public const string RotationsPattern = "/api/flightops/rotations";
 
     public const string CallsignRulesPattern = "/api/flightops/callsign-rules";
+
+    /// <summary>The filters and sequence rules of an <c>Open</c> tour (T7c).</summary>
+    public const string ConstraintsPattern = "/api/flightops/tour-constraints";
 
     public static IEndpointRouteBuilder MapShapeEndpoints(this IEndpointRouteBuilder app)
     {
@@ -149,6 +152,26 @@ public static class ShapeEndpoints
                 return refusal;
             };
             options.BeforeSave = SaveCallsignRuleAsync;
+        });
+
+        app.MapCrud<TourConstraint, TourConstraintListDto, TourConstraintDto, TourConstraintWriteDto>(ConstraintsPattern, options =>
+        {
+            Common(options, "FlightOpsTourConstraints");
+            options.DefaultOrder = constraint => constraint.Id;
+            options.ToList = ConstraintMapper.ToList;
+            options.ToDetail = ConstraintMapper.ToDto;
+            options.Apply = ConstraintMapper.Apply;
+
+            // A template is changed with its own permission (§1.10), and so are its constraints — as the callsigns'.
+            options.ExtraWritePolicy = constraint => constraint.OnTemplate ? TourPermissions.ManageTemplates : null;
+            options.BeforeAuthorize = async (constraint, saving) =>
+            {
+                var (tour, refusal) = await saving.Services.GetRequiredService<TourChildren>().AdoptAsync(constraint, saving.CancellationToken);
+                constraint.OnTemplate = tour?.IsTemplate == true;
+                return refusal;
+            };
+            options.BeforeSave = SaveConstraintAsync;
+            options.Delete = DeleteConstraintAsync;
         });
 
         return app;
@@ -284,6 +307,77 @@ public static class ShapeEndpoints
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// A constraint belongs to an <c>Open</c> tour (note 2026-09-22-il-tour-open §2.2), once per kind — once per airport for
+    /// <see cref="TourConstraintKind.MinFlightsAt"/> —, with the parameters its kind takes, normalized, and what they name
+    /// existing.
+    /// </summary>
+    private static async Task<IReadOnlyDictionary<string, string[]>?> SaveConstraintAsync(TourConstraint constraint, CrudSaving saving)
+    {
+        var children = saving.Services.GetRequiredService<TourChildren>();
+        var database = (FlightOpsDbContext)saving.Database;
+
+        if (await children.TourAsync(constraint.TourId, saving.CancellationToken) is not { } tour)
+        {
+            return TourChildren.Refusal("tourId", "flightops:errors.tourUnknown");
+        }
+
+        if (tour.Kind != TourKind.Open)
+        {
+            return TourChildren.Refusal("tourId", "flightops:errors.kindHasNoConstraints");
+        }
+
+        var (parameters, problems) = OpenCatalog.Read(constraint.Kind, OpenCatalog.Parse(constraint.ParametersJson));
+        if (OpenParameterCheck.Refusal("parameters", problems) is { } wrong)
+        {
+            return wrong;
+        }
+
+        var fields = OpenCatalog.Fields(constraint.Kind);
+        var unknown = await saving.Services.GetRequiredService<OpenParameterCheck>().UnknownAsync(fields, parameters, saving.CancellationToken);
+        if (OpenParameterCheck.Refusal("parameters", unknown) is { } missing)
+        {
+            return missing;
+        }
+
+        constraint.ParametersJson = parameters.ToJsonString();
+
+        var others = await database.TourConstraints.AsNoTracking()
+            .Where(row => row.TourId == constraint.TourId && row.Kind == constraint.Kind && row.Id != constraint.Id)
+            .ToListAsync(saving.CancellationToken);
+
+        if (!OpenCatalog.Repeats(constraint.Kind) && others.Count > 0)
+        {
+            return TourChildren.Refusal("kind", "flightops:errors.constraintTaken");
+        }
+
+        var airport = OpenCatalog.Codes(parameters, "airport");
+        if (OpenCatalog.Repeats(constraint.Kind)
+            && others.Any(row => OpenCatalog.Codes(OpenCatalog.Parse(row.ParametersJson), "airport").SequenceEqual(airport)))
+        {
+            return TourChildren.Refusal("parameters.airport", "flightops:errors.constraintTaken");
+        }
+
+        return await children.StillReadyAsync(
+            tour,
+            parts => parts with { Constraints = TourChildren.Replacing(parts.Constraints, constraint, row => row.Id) },
+            saving.CancellationToken);
+    }
+
+    private static async Task DeleteConstraintAsync(TourConstraint constraint, IServiceProvider services, CancellationToken cancellationToken)
+    {
+        var children = services.GetRequiredService<TourChildren>();
+        if (await children.TourAsync(constraint.TourId, cancellationToken) is { } tour)
+        {
+            await children.ThrowUnlessStillReadyAsync(
+                tour,
+                parts => parts with { Constraints = [.. parts.Constraints.Where(row => row.Id != constraint.Id)] },
+                cancellationToken);
+        }
+
+        services.GetRequiredService<FlightOpsDbContext>().TourConstraints.Remove(constraint);
     }
 
     private static IReadOnlyDictionary<string, string[]>? HubsRefused(Tour tour) =>

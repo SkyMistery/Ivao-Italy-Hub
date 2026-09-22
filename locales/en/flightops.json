@@ -22,7 +22,8 @@
       "legs": "Legs",
       "hubs": "Hubs and rotations",
       "subtours": "Subtours",
-      "callsigns": "Callsigns"
+      "callsigns": "Callsigns",
+      "open": "Goal and constraints"
     },
     "briefing": {
       "save": "Save briefing",
@@ -74,7 +75,18 @@
       "parentTourId": "Container",
       "hubs": "Hubs",
       "rotations": "Rotations",
-      "subtours": "Subtours"
+      "subtours": "Subtours",
+      "openGoal": "Goal",
+      "openGoalParameters": "Parameters of the goal",
+      "openGoalParameters.nm": "Miles to accumulate (NM)",
+      "openGoalParameters.count": "How many",
+      "openGoalParameters.airports": "Airports",
+      "openGoalParameters.airports.icao": "Airport (ICAO)",
+      "openGoalParameters.countries": "Countries",
+      "openGoalParameters.countries.code": "Country (two letters)",
+      "openGoalParameters.firs": "FIRs",
+      "openGoalParameters.firs.code": "FIR",
+      "constraints": "Filters and rules"
     },
     "options": {
       "kind": {
@@ -108,11 +120,21 @@
       },
       "groupId": {
         "none": "Choose a group"
+      },
+      "openGoal": {
+        "Distance": "Distance",
+        "FlightCount": "Number of flights",
+        "DistinctAirports": "Different airports",
+        "DistinctCountries": "Different countries",
+        "CollectList": "List of airports",
+        "CollectRegions": "List of countries or FIRs"
       }
     },
     "hints": {
       "releaseAt": "On a subtour, empty is the container's release.",
-      "closeAt": "On a subtour, empty is the container's close."
+      "closeAt": "On a subtour, empty is the container's close.",
+      "openGoalParameters.count": "For a list: how many of it are enough. Empty: all of them.",
+      "openGoalParameters.countries": "Countries or FIRs, not both. A country is its two-letter ISO code (FR, DE)."
     }
   },
   "tourTemplates": {
@@ -248,7 +270,19 @@
     "subtoursOutsideParent": "A ready subtour has dates of its own outside this period.",
     "airlineCode": "Write the airline as its three letter code.",
     "callsign": "Write the callsign in letters and digits, without spaces.",
-    "exactOnlyDenies": "A whole callsign can only be denied: an allowed airline leaves the rest to the pilot."
+    "exactOnlyDenies": "A whole callsign can only be denied: an allowed airline leaves the rest to the pilot.",
+    "kindHasNoConstraints": "Filters and sequence rules belong to open tours (Open) only.",
+    "constraintsContradict": "Eastbound and westbound together: no flight can follow both.",
+    "openHasConstraints": "A tour with filters or rules keeps its kind: remove them first.",
+    "constraintTaken": "The tour already has one of this kind.",
+    "regionsOneKind": "Write countries or FIRs, not both.",
+    "countAboveList": "More than the list holds.",
+    "distanceBoundRequired": "At least one bound is needed: minimum or maximum.",
+    "distanceBounds": "The maximum is below the minimum.",
+    "firCode": "A FIR is its code, for example EDGG.",
+    "parameterChoice": "Not one of the possible choices.",
+    "countryUnknown": "A country with no airport the hub knows.",
+    "firUnknown": "A FIR the hub does not know."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -372,6 +406,94 @@
       "legId": {
         "none": "The whole tour"
       }
+    }
+  },
+  "open": {
+    "goal": "Goal",
+    "noGoal": "No goal yet.",
+    "saveGoal": "Save the goal",
+    "goalSaved": "Goal saved.",
+    "goals": {
+      "Distance": "The tour is complete when the great-circle distances of the accepted flights add up to the miles given.",
+      "FlightCount": "The tour is complete after the number of accepted flights given.",
+      "DistinctAirports": "The tour is complete when the accepted flights have touched the number of different airports given.",
+      "DistinctCountries": "The tour is complete when the accepted flights have touched the number of different countries given.",
+      "CollectList": "The tour is complete when the accepted flights have touched the airports of the list: all of them, or as many as you say.",
+      "CollectRegions": "The tour is complete when the accepted flights have touched the countries or FIRs of the list: all of them, or as many as you say."
+    }
+  },
+  "constraints": {
+    "title": "Filters and sequence rules",
+    "description": "A flight that breaks a filter or a rule cannot be reported. The same route is never flown twice: that always holds, and needs no row.",
+    "create": "New filter or rule",
+    "edit": "Edit filter or rule",
+    "delete": {
+      "title": "Delete this filter or rule?",
+      "description": "From the next report on, pilots no longer have to follow it."
+    },
+    "fields": {
+      "kind": "Kind",
+      "values": "Values",
+      "parameters": "Parameters",
+      "parameters.countries": "Countries",
+      "parameters.countries.code": "Country (two letters)",
+      "parameters.airports": "Airports",
+      "parameters.airports.icao": "Airport (ICAO)",
+      "parameters.airport": "Airport (ICAO)",
+      "parameters.minNm": "Minimum distance (NM)",
+      "parameters.maxNm": "Maximum distance (NM)",
+      "parameters.categories": "Wake categories",
+      "parameters.meters": "Longest runway at arrival, at most (m)",
+      "parameters.feet": "Elevation of the arrival airport, at least (ft)",
+      "parameters.rules": "Flight rules",
+      "parameters.count": "Flights at least"
+    },
+    "hints": {
+      "parameters.minNm": "One of the two bounds is enough."
+    },
+    "options": {
+      "kind": {
+        "DepartureOrArrivalIn": "Departs or arrives in",
+        "DepartureIn": "Departs from",
+        "ArrivalIn": "Arrives in",
+        "TouchesAirport": "Touches an airport",
+        "DistanceBetween": "Distance between",
+        "AircraftCategory": "Wake category",
+        "ArrivalRunwayMax": "Short runway at arrival",
+        "ArrivalElevationMin": "High airport at arrival",
+        "FlightRules": "Flight rules",
+        "Chained": "Chained",
+        "Eastbound": "Eastbound",
+        "Westbound": "Westbound",
+        "IncreasingDistance": "Ever longer",
+        "MinFlightsAt": "Minimum flights at an airport"
+      },
+      "parameters.rules": {
+        "I": "IFR",
+        "V": "VFR"
+      },
+      "parameters.categories": {
+        "L": "L — light",
+        "M": "M — medium",
+        "H": "H — heavy",
+        "J": "J — super"
+      }
+    },
+    "explain": {
+      "DepartureOrArrivalIn": "Every flight departs or arrives in one of the countries given.",
+      "DepartureIn": "Every flight departs from one of the countries given.",
+      "ArrivalIn": "Every flight arrives in one of the countries given.",
+      "TouchesAirport": "Every flight departs or arrives at one of the airports given: a \"star\" tour.",
+      "DistanceBetween": "The great-circle distance of every flight is between the minimum and the maximum.",
+      "AircraftCategory": "Every flight with an aircraft of one of the wake categories given. The types and groups admitted are in the tour's settings.",
+      "ArrivalRunwayMax": "Every flight lands on a runway no longer than the length given.",
+      "ArrivalElevationMin": "Every flight arrives at an airport at least as high as given.",
+      "FlightRules": "Every flight under the flight rules given.",
+      "Chained": "Every flight departs where the pilot's previous flight arrived: no teleporting.",
+      "Eastbound": "Every flight arrives further east than it departed.",
+      "Westbound": "Every flight arrives further west than it departed.",
+      "IncreasingDistance": "Every flight is longer than the one before.",
+      "MinFlightsAt": "On completion, at least the number of flights given have touched the airport. One per airport."
     }
   }
 }

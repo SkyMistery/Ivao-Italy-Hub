@@ -10,7 +10,7 @@ import {
   AircraftProfilesPage,
 } from './screens/aircraft';
 import { FlightOpsSettingsPage } from './screens/settings';
-import { CallsignRuleForm, HubForm, RotationForm } from './screens/shape';
+import { CallsignRuleForm, HubForm, RotationForm, TourConstraintForm } from './screens/shape';
 import {
   TourEditor,
   TourFromTemplatePage,
@@ -73,6 +73,12 @@ export const flightOpsManifest: ModuleManifest = {
       path: '/staff/tours/$id/callsigns/$ruleId',
       permission: TOURS_EDIT,
       component: CallsignRuleForm,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/$id/constraints/$constraintId',
+      permission: TOURS_EDIT,
+      component: TourConstraintForm,
     },
     {
       area: 'staff',

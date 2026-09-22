@@ -62,15 +62,18 @@ public sealed record TourDetailDto(
     long? ParentTourId,
     int? RequiredSubtours,
     bool ReleaseFromParent,
-    bool CloseFromParent);
+    bool CloseFromParent,
+    OpenGoal? OpenGoal,
+    JsonNode? OpenGoalParameters);
 
 /// <summary>
 /// What a client may set on a tour. The state is not here — marking ready, back to draft, hiding and showing are
 /// actions (<see cref="TourStatusRequest"/>). Of the shape of a tour, T7a writes the distance of a <c>Distance</c> tour
 /// and the aircraft admitted (types and groups, design M2 §1.5); T7b the container and its subtours — the parent is
 /// chosen when a subtour is created and never changes, and a subtour's empty date is its container's (note
-/// 2026-09-21-la-forma-dei-tour); the goal of an <c>Open</c> tour is T7c's. A null <c>Briefing</c> keeps the briefing as
-/// it is; a null <c>ReportWindowDays</c> on a new tour takes the division's default (§1.11); a null
+/// 2026-09-21-la-forma-dei-tour); T7c the goal of an <c>Open</c> tour, written from a tab of its own and saved with the tour
+/// (note 2026-09-22-il-tour-open): a null <c>OpenGoal</c> keeps the goal as it is, and a tour that is not <c>Open</c> has none.
+/// A null <c>Briefing</c> keeps the briefing as it is; a null <c>ReportWindowDays</c> on a new tour takes the division's default (§1.11); a null
 /// <c>AllowedAircraft</c> admits every aircraft.
 /// </summary>
 public sealed record TourWriteDto(
@@ -98,7 +101,9 @@ public sealed record TourWriteDto(
     long? AwardId,
     DateTime RowVersion,
     long? ParentTourId = null,
-    int? RequiredSubtours = null);
+    int? RequiredSubtours = null,
+    OpenGoal? OpenGoal = null,
+    JsonNode? OpenGoalParameters = null);
 
 /// <summary>The four things that happen to a tour without its form (design M2 §8.3).</summary>
 public enum TourStatusAction
@@ -133,6 +138,7 @@ internal sealed partial class TourMapper
 {
     // The state is not a column: it is handed in, computed by TourState, and mapped by name.
     [MapProperty(nameof(Tour.BriefingJson), nameof(TourDetailDto.Briefing))]
+    [MapProperty(nameof(Tour.OpenGoalJson), nameof(TourDetailDto.OpenGoalParameters), Use = nameof(ParseGoal))]
     private partial TourDetailDto ToDetail(Tour tour, TourStateKind state, bool isPublic);
 
     private partial TourListDto ToList(Tour tour, TourStateKind state);
@@ -148,6 +154,10 @@ internal sealed partial class TourMapper
     [MapperIgnoreSource(nameof(TourWriteDto.AllowedAircraft))]
     [MapperIgnoreSource(nameof(TourWriteDto.ParentTourId))]
     [MapperIgnoreSource(nameof(TourWriteDto.RequiredSubtours))]
+    [MapperIgnoreSource(nameof(TourWriteDto.OpenGoal))]
+    [MapperIgnoreSource(nameof(TourWriteDto.OpenGoalParameters))]
+    [MapperIgnoreTarget(nameof(Tour.OpenGoal))]
+    [MapperIgnoreTarget(nameof(Tour.OpenGoalJson))]
     [MapperIgnoreTarget(nameof(Tour.ParentTourId))]
     [MapperIgnoreTarget(nameof(Tour.RequiredSubtours))]
     [MapperIgnoreTarget(nameof(Tour.AllowedAircraft))]
@@ -185,6 +195,18 @@ internal sealed partial class TourMapper
         tour.RequiredNm = tour.Kind == TourKind.Distance ? payload.RequiredNm : null;
         tour.AllowedAircraft = AllowedAircraftCheck.Normalize(payload.AllowedAircraft);
 
+        // The goal is an Open tour's only; sent, it is read and checked by the save (TourSaving), absent it stays.
+        if (tour.Kind != TourKind.Open)
+        {
+            tour.OpenGoal = null;
+            tour.OpenGoalJson = null;
+        }
+        else if (payload.OpenGoal is { } goal)
+        {
+            tour.OpenGoal = goal;
+            tour.OpenGoalJson = payload.OpenGoalParameters?.ToJsonString() ?? "{}";
+        }
+
         if (tour.IsTemplate)
         {
             tour.ReleaseAt = null;
@@ -203,6 +225,8 @@ internal sealed partial class TourMapper
             tour.ReportWindowDays = days;
         }
     }
+
+    private static JsonNode? ParseGoal(string? json) => json is null ? null : Shape.OpenCatalog.Parse(json);
 
     /// <summary>An empty column is an empty document, never a null the renderer would trip on.</summary>
     private static JsonNode ParseBriefing(string json) => JsonNode.Parse(json) ?? JsonNode.Parse(Tour.EmptyBriefing)!;

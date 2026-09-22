@@ -267,8 +267,8 @@ ritira quelle con PIREP, mostrando la differenza prima di applicare.
   dello **stesso** tipo (`A320w`, `A320CFM`), non i tipi imparentati. Il tour ammette **tipi e gruppi**: un tour easyJet che vuole A320 e
   A20N usa un gruppo, un tour Volotea elenca A319 e A320. Il controllo `aircraft` e il blocco all'invio leggono lo stesso elenco.
 - **Gruppi di aerei**: `fo_aircraft_groups` (`name` tradotto, tipi ICAO), definiti dal FOD — «Bizjet», «Airliner», «Turboelica»,
-  «Aerei storici» — e usabili dovunque si scelgono aerei: aerei consentiti di un tour o di una leg, filtro `AircraftTypes` dei tour
-  `Open`. Cambiare un gruppo cambia tutti i tour che lo usano ⚖️ (come per le velocità: si calcola a ogni lettura).
+  «Aerei storici» — e usabili dovunque si scelgono aerei: aerei consentiti di un tour o di una leg, compresi i tour `Open` (che non
+  hanno un filtro `AircraftTypes` a parte: nota `2026-09-22-il-tour-open`). Cambiare un gruppo cambia tutti i tour che lo usano ⚖️ (come per le velocità: si calcola a ogni lettura).
 - **L'aereo di riferimento è facoltativo** (`reference_aircraft_icao`, Carmine, 15 settembre): si indica **solo se si
   vogliono dare ai piloti le durate indicative**. Con l'aereo, ogni leg mostra il suo **tempo stimato** e la pagina del
   tour mostra il **totale** («la somma degli air-time è stimata in xx ore xx minuti»), così un pilota sa quanto dovrà
@@ -544,9 +544,9 @@ callsign e aereo).
 | Filtro | Parametri | Esempio |
 |---|---|---|
 | `DepartureOrArrivalIn` / `DepartureIn` / `ArrivalIn` | paesi | parti **o** arrivi in Italia |
-| `TouchesAirport` | un aeroporto | ogni volo parte o arriva a LIRF (tour «a stella») |
-| `DistanceBetween` | minimo e massimo NM | tratte fra 200 e 1500 NM |
-| `AircraftTypes` / `AircraftCategory` | tipi ICAO / categoria di scia | solo turboelica, solo aerei storici |
+| `TouchesAirport` | aeroporti (uno o più) | ogni volo parte o arriva a LIRF (tour «a stella»), o a LIRF o LIMC |
+| `DistanceBetween` | minimo e/o massimo NM | tratte fra 200 e 1500 NM |
+| `AircraftCategory` | categorie di scia (`L`, `M`, `H`, `J`) | solo aerei leggeri |
 | `ArrivalRunwayMax` | lunghezza massima in metri | «piste corte»: arrivi su piste sotto i 1500 m (dalle piste `ref_`) |
 | `ArrivalElevationMin` | quota minima in piedi | «aeroporti in quota» (dall'elevazione IVAO) |
 | `FlightRules` | `I`, `V` | solo VFR |
@@ -572,6 +572,17 @@ callsign e aereo).
 **Entrano tutti in M2** (Carmine, 15 settembre): obiettivi, filtri e regole di sequenza delle tre tabelle. Usano dati che
 l'hub avrà già (GCD, paesi e FIR, piste e quote degli aeroporti, tipi di aereo). La pagina del tour mostra **quanto manca**
 all'obiettivo e ai vincoli «al completamento».
+
+**Precisato il 22 settembre 2026** in apertura di T7c (Carmine, nota `decisions/2026-09-22-il-tour-open.md`):
+
+- **L'obiettivo ha una scheda sua**, «Obiettivo e vincoli», solo sui tour `Open`: si sceglie il tipo, poi si scrivono i suoi
+  parametri; si salva con il tour. Sotto, la lista generata dei filtri e delle regole, ognuno con il suo form.
+- **Filtri e regole valgono solo sui tour `Open`**: su un tour con leg li fissano le leg, gli aerei consentiti e il tipo.
+- **Una riga per tipo**, tranne `MinFlightsAt` (una per aeroporto); `TouchesAirport` prende un elenco.
+- **`AircraftTypes` non è un filtro**: tipi e gruppi ammessi sono gli aerei consentiti del tour (§1.5), anche su un `Open`.
+- **Un `Open` con filtri o regole non cambia tipo**; l'obiettivo si svuota quando il tipo non è più `Open`.
+- **Gli elenchi** di `CollectList` e `CollectRegions` (paesi **o** FIR, mai tutti e due) si scrivono nel tour; un template li porta.
+- **«Pronto»** chiede un obiettivo con i suoi parametri, e non accetta `Eastbound` con `Westbound`.
 
 ### 2.7 `Container` — con sottotour
 
@@ -1019,7 +1030,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   «template».
 - **`/staff/tours/{id}`**, schede: **impostazioni** (form generato, compresi aereo di riferimento, anteprima, procedure,
   ordine delle rotazioni), **briefing** (editor dei blocchi), **hub e rotazioni**, **sottotour**, **vincoli sul callsign**,
-  **vincoli del tour a distanza**, **leg** (§8.4), **regole del tour**. Barra: «Segna pronto» con i problemi, «Nascondi»,
+  **obiettivo e vincoli** (solo `Open`, §2.6.1), **leg** (§8.4), **regole del tour**. Barra: «Segna pronto» con i problemi, «Nascondi»,
   «Elimina» (solo senza PIREP), «Nuovo da template», «Salva come template».
 
 ### 8.4 L'editor delle leg (eccezione dichiarata, estensione n.6)

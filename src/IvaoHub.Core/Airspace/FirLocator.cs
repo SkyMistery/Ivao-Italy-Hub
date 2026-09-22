@@ -28,6 +28,12 @@ public interface IFirLocator
         IReadOnlyList<(double Latitude, double Longitude)> points,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The regions of the list that have an outline, upper case: a parameter naming a region is checked against the world's
+    /// outlines, not only the division's.
+    /// </summary>
+    Task<IReadOnlySet<string>> KnownAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken = default);
+
     /// <summary>Called when the boundaries change, so the shapes are read again.</summary>
     void Invalidate();
 }
@@ -74,6 +80,16 @@ public sealed class FirLocator(HubDbContext database, IMemoryCache cache) : IFir
         }
 
         return crossed;
+    }
+
+    public async Task<IReadOnlySet<string>> KnownAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        var shapes = await ShapesAsync(cancellationToken);
+        var wanted = ids.Select(id => id.Trim().ToUpperInvariant()).ToHashSet(StringComparer.Ordinal);
+
+        return shapes.Select(shape => shape.Id).Where(wanted.Contains).ToHashSet(StringComparer.Ordinal);
     }
 
     public void Invalidate() => cache.Remove(CacheKey);
