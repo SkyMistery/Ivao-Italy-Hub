@@ -15,6 +15,7 @@ import {
   ContactFormSample,
   DataListSample,
   LiveStatusStripSample,
+  RouteMapSample,
   CalendarViewSample,
   EmptyStateSample,
   HeroSample,
@@ -110,6 +111,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   { name: 'ContactForm' satisfies UiKitComponent, render: () => <ContactFormSample /> },
   { name: 'LiveStatusStrip' satisfies UiKitComponent, render: () => <LiveStatusStripSample /> },
   { name: 'StaffSidebar' satisfies UiKitComponent, render: () => <StaffSidebarSample /> },
+  { name: 'RouteMap' satisfies UiKitComponent, render: () => <RouteMapSample /> },
 ];
 
 /**

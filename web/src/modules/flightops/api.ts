@@ -1307,3 +1307,33 @@ export function useDeleteError() {
     onSuccess: saved,
   });
 }
+
+// ---- the public side (T10) --------------------------------------------------------------------------
+
+export type PublicTourCardDto = components['schemas']['PublicTourCardDto'];
+export type PublicTourDto = components['schemas']['PublicTourDto'];
+export type PublicLegDto = components['schemas']['PublicLegDto'];
+
+const publicKey = ['flightops', 'public'] as const;
+
+/** The cards of `/tours`: what the public sees now, in the server's order. Anonymous, like the page. */
+export const publicToursQuery = queryOptions({
+  queryKey: [...publicKey, 'tours'] as const,
+  queryFn: async (): Promise<PublicTourCardDto[]> => unwrap(await api.GET('/api/flightops/tours/public')),
+});
+
+/**
+ * One tour by its address. A tour nobody outside the staff may see answers 404, and the query answers `null` for it:
+ * a module route has no `errorComponent` of its own — the manifest declares a component and a permission — so the
+ * screen decides, which is where "not found" is a page and not an exception.
+ */
+export function publicTourQuery(slug: string) {
+  return queryOptions({
+    queryKey: [...publicKey, 'tour', slug] as const,
+    queryFn: async (): Promise<PublicTourDto | null> => {
+      const answer = await api.GET('/api/flightops/tours/public/{slug}', { params: { path: { slug } } });
+
+      return answer.response.status === 404 ? null : unwrap(answer);
+    },
+  });
+}

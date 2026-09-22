@@ -46,13 +46,17 @@ public sealed class FlightOpsModule : ModuleBase
     ];
 
     /// <summary>
-    /// The public errors (T9), always live. Its other half is in <c>web/src/modules/flightops/</c>; the manifest test reads
-    /// this literal.
+    /// The public errors (T9) and the cards of the tours (T10), both always live. Each has its other half in
+    /// <c>web/src/modules/flightops/</c>; the manifest test reads this literal.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
     [
         new BlockDescriptor("flightops.errorCatalog", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("flightops.tourCards", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
+
+    /// <summary>The public pages of the tours (T10): <c>/tours</c> and <c>/tours/{slug}</c>, so no page may be «tours».</summary>
+    public override IReadOnlyList<string> ReservedSegments => ["tours"];
 
     public override ModuleSettingsDescriptor Settings { get; } =
         ModuleSettingsDescriptor.Create<FlightOpsSettings, FlightOpsSettingsSaveValidator>(
@@ -76,7 +80,9 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<TourChildren>();
         services.AddScoped<OpenParameterCheck>();
         services.AddScoped<EffectiveRules>();
+        services.AddScoped<PublicTours>();
         services.AddScoped<IDataBlockProvider, ErrorCatalogProvider>();
+        services.AddScoped<IDataBlockProvider, TourCardsProvider>();
 
         // No reports before T11, which replaces the answer with its own.
         services.TryAddScoped<ITourReports, NoTourReportsYet>();

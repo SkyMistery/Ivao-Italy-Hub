@@ -1792,5 +1792,9 @@
       "Document": "Documents",
       "Template": "Templates"
     }
+  },
+  "map": {
+    "label": "Map of the legs",
+    "noWebgl": "This browser cannot draw the map (WebGL2 is off or unavailable). The legs are listed below."
   }
 }

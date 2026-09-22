@@ -1792,5 +1792,9 @@
       "Document": "Documenti",
       "Template": "Template"
     }
+  },
+  "map": {
+    "label": "Mappa delle tratte",
+    "noWebgl": "Questo browser non può disegnare la mappa (WebGL2 spento o assente). Le tratte sono elencate qui sotto."
   }
 }
