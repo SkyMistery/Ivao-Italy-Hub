@@ -296,8 +296,14 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // Milan to London has a report; Rome to London has none.
         reported.Legs.Add(Id(before[1]));
 
-        object FileRow(string from, string to, string? flight = null) =>
-            new { departureIcao = from, arrivalIcao = to, flightNumber = flight, aircraftTypes = new[] { TestType } };
+        // Only the row that changes names an aircraft type: an empty column is "no types", which the other legs have.
+        object FileRow(string from, string to, string? flight = null) => new
+        {
+            departureIcao = from,
+            arrivalIcao = to,
+            flightNumber = flight,
+            aircraftTypes = flight is null ? Array.Empty<string>() : [TestType],
+        };
 
         var rows = new[] { FileRow(Rome, Milan, "az 100"), FileRow(London, Rome), FileRow(Milan, Rome) };
 
