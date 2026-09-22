@@ -410,8 +410,8 @@ public static class LegEndpoints
             var payload = new LegWriteDto(
                 line.DepartureIcao ?? string.Empty,
                 line.ArrivalIcao ?? string.Empty,
-                line.RealCallsign,
-                line.FlightNumber,
+                line.Callsigns,
+                line.FlightNumbers,
                 new AllowedAircraft(line.AircraftTypes ?? [], []),
                 line.ReleaseAt,
                 ChangeReason: null,

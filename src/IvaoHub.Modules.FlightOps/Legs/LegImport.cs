@@ -22,8 +22,8 @@ public enum LegImportMode
 public sealed record LegImportRowDto(
     string DepartureIcao,
     string ArrivalIcao,
-    string? RealCallsign,
-    string? FlightNumber,
+    IReadOnlyList<string>? Callsigns,
+    IReadOnlyList<string>? FlightNumbers,
     IReadOnlyList<string>? AircraftTypes,
     DateTime? ReleaseAt);
 
@@ -291,14 +291,14 @@ public sealed class LegImportPlan
     private static List<string> Changes(Leg leg, Leg file)
     {
         var changes = new List<string>();
-        if (leg.RealCallsign != file.RealCallsign)
+        if (!leg.Callsigns.SequenceEqual(file.Callsigns, StringComparer.Ordinal))
         {
-            changes.Add("realCallsign");
+            changes.Add("callsigns");
         }
 
-        if (leg.FlightNumber != file.FlightNumber)
+        if (!leg.FlightNumbers.SequenceEqual(file.FlightNumbers, StringComparer.Ordinal))
         {
-            changes.Add("flightNumber");
+            changes.Add("flightNumbers");
         }
 
         if (!leg.Aircraft.Types.SequenceEqual(file.Aircraft.Types, StringComparer.Ordinal))
@@ -316,8 +316,8 @@ public sealed class LegImportPlan
 
     private static void Take(Leg leg, Leg file)
     {
-        leg.RealCallsign = file.RealCallsign;
-        leg.FlightNumber = file.FlightNumber;
+        leg.Callsigns = file.Callsigns;
+        leg.FlightNumbers = file.FlightNumbers;
         leg.Aircraft = new AllowedAircraft(file.Aircraft.Types, leg.Aircraft.GroupIds);
         leg.ReleaseAt = file.ReleaseAt;
     }

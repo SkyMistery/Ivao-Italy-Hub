@@ -26,7 +26,7 @@ import {
   type LegImportRequest,
   type TourDetailDto,
 } from '../api';
-import { downloadLegFileModel, LEG_FILE_COLUMNS, readLegFile, type LegFile } from './legFile';
+import { downloadLegFileModel, LEG_FILE_COLUMNS, readLegFile, type LegWorkbook } from './legFile';
 
 /**
  * The import of the legs of a tour from a file (design M2 §8.4, T8), part of the leg editor and of its declared
@@ -47,15 +47,17 @@ const OUTCOME_COLORS: Readonly<Record<LegImportLineDto['outcome'], 'gray' | unde
   Retired: undefined,
 };
 
-/** "rows[3].arrivalIcao": the row of the request and the field. */
-const ROW_FIELD = /^rows\[(\d+)\]\.(\w+)$/;
+/** "rows[3].arrivalIcao", "rows[3].callsigns[1]": the row of the request and the field. */
+const ROW_FIELD = /^rows\[(\d+)\]\.(\w+)(?:\[\d+\])?$/;
 
 export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () => void }) {
   const { t, i18n } = useTranslation();
   const fileId = useId();
   const modeId = useId();
+  const sheetId = useId();
   const change = useLegChange(tour.id);
-  const [file, setFile] = useState<LegFile | null>(null);
+  const [source, setSource] = useState<File | null>(null);
+  const [file, setFile] = useState<LegWorkbook | null>(null);
   const [mode, setMode] = useState<Mode>('Merge');
   const [reason, setReason] = useState('');
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -96,9 +98,11 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
     return said;
   };
 
-  const choose = async (chosen: File | undefined) => {
+  // A workbook of tours has a sheet per tour: the first with a header of legs is read, and another can be chosen.
+  const choose = async (chosen: File | undefined, sheet?: string) => {
     setRefusal(null);
-    setFile(chosen === undefined ? null : await readLegFile(chosen));
+    setSource(chosen ?? null);
+    setFile(chosen === undefined ? null : await readLegFile(chosen, sheet));
   };
 
   const apply = () => {
@@ -173,6 +177,20 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
             ]}
           />
         </div>
+        {file !== null && file.sheets.length > 1 ? (
+          <div className="flex w-72 flex-col gap-1">
+            <label htmlFor={sheetId} className="text-sm">
+              {t('flightops:legs.import.sheet')}
+            </label>
+            <Select
+              id={sheetId}
+              value={file.sheet ?? ''}
+              disabled={change.isPending}
+              onValueChange={(next) => void choose(source ?? undefined, next)}
+              items={file.sheets.map((name) => ({ value: name, label: name }))}
+            />
+          </div>
+        ) : null}
         <Button type="button" variant="ghost" onClick={() => void downloadLegFileModel(`legs-${tour.slug}`)}>
           {t('flightops:legs.import.model')}
         </Button>

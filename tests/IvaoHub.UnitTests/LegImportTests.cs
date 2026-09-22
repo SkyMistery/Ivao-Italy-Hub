@@ -48,7 +48,7 @@ public sealed class LegImportTests
     {
         var legs = Tour(("AAAA", "BBBB"), ("BBBB", "AAAA"), ("AAAA", "BBBB"));
         var file = File(("AAAA", "BBBB"), ("BBBB", "AAAA"), ("AAAA", "BBBB"));
-        file[2].RealCallsign = "XYZ123";
+        file[2].Callsigns = ["XYZ123", "XYZ124"];
 
         var plan = LegImportPlan.Make(legs, file, LegImportMode.Replace, NoReports);
 
@@ -56,7 +56,7 @@ public sealed class LegImportTests
         Assert.Same(legs[2], plan.Steps[2].Leg);
         Assert.Equal(LegImportOutcome.Unchanged, plan.Steps[0].Outcome);
         Assert.Equal(LegImportOutcome.Changed, plan.Steps[2].Outcome);
-        Assert.Equal(["realCallsign"], plan.Steps[2].Changes);
+        Assert.Equal(["callsigns"], plan.Steps[2].Changes);
     }
 
     [Fact]

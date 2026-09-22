@@ -122,7 +122,7 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         reported.Legs.Add(withReport);
 
         // Changed only with a reason, which the row keeps for the audit.
-        using (var noReason = await advisor.PutAsJsonAsync($"{legs}/{withReport}", Leg("XFA2", "XFA3") with { FlightNumber = "AZ 200" }, token))
+        using (var noReason = await advisor.PutAsJsonAsync($"{legs}/{withReport}", Leg("XFA2", "XFA3") with { FlightNumbers = ["az 200", "AZ 202", "AZ 200"] }, token))
         {
             await AssertRefusedAsync(noReason, "changeReason", "flightops:errors.changeReasonRequired", token);
         }
@@ -130,10 +130,13 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         grid = await OkAsync(
             await advisor.PutAsJsonAsync(
                 $"{legs}/{withReport}",
-                Leg("XFA2", "XFA3") with { FlightNumber = "AZ 200", ChangeReason = "fo-test real flight number" },
+                Leg("XFA2", "XFA3") with { FlightNumbers = ["az 200", "AZ 202", "AZ 200"], ChangeReason = "fo-test real flight number" },
                 token),
             token);
-        Assert.Equal("AZ 200", Row(grid, withReport).GetProperty("flightNumber").GetString());
+        // Upper case, each once, in order: two suggestions of a route flown twice a day.
+        Assert.Equal(
+            ["AZ 200", "AZ 202"],
+            Row(grid, withReport).GetProperty("flightNumbers").EnumerateArray().Select(number => number.GetString()));
         Assert.True(Row(grid, withReport).GetProperty("hasReports").GetBoolean());
 
         // The first leg has no report: deleted, and every leg after it renumbered — the reported one keeps its identity.
@@ -262,7 +265,7 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // A stale version is a conflict, not a silent overwrite.
         using (var stale = await coordinator.PutAsJsonAsync(
             $"{legs}/{Id(last)}",
-            Leg("XFA3", "XFA1") with { FlightNumber = "X1", RowVersion = last.GetProperty("rowVersion").GetDateTime().AddSeconds(-5) },
+            Leg("XFA3", "XFA1") with { FlightNumbers = ["X1"], RowVersion = last.GetProperty("rowVersion").GetDateTime().AddSeconds(-5) },
             token))
         {
             Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
@@ -301,7 +304,7 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             departureIcao = from,
             arrivalIcao = to,
-            flightNumber = flight,
+            flightNumbers = flight is null ? Array.Empty<string>() : [flight],
             aircraftTypes = flight is null ? Array.Empty<string>() : [TestType],
         };
 
@@ -354,7 +357,7 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.DoesNotContain(after, row => Id(row) == Id(before[3]));
         Assert.Equal([Id(before[0]), Id(before[1]), Id(before[2])], after.Take(3).Select(Id));
         Assert.Equal([1, 2, 3, 4], after.Select(row => row.GetProperty("number").GetInt32()));
-        Assert.Equal("AZ 100", after[0].GetProperty("flightNumber").GetString());
+        Assert.Equal("AZ 100", after[0].GetProperty("flightNumbers")[0].GetString());
         Assert.Equal("fo-test new season", after[1].GetProperty("retiredReason").GetString());
         Assert.Equal(Milan, after[3].GetProperty("departureIcao").GetString());
         Assert.Equal(253.9m, after[3].GetProperty("distanceNm").GetDecimal());

@@ -285,7 +285,8 @@
     "firUnknown": "Un FIR che l'hub non conosce.",
     "importNotOnHub": "Un tour Hub non importa le leg: stanno in rotazioni che un file non sa nominare. Scrivile nella tabella.",
     "importReasonRequired": "Questo import ritira, ripristina o cambia leg con dei report: scrivi perché.",
-    "importTooManyRows": "Il file ha troppe righe per le leg di un tour."
+    "importTooManyRows": "Il file ha troppe righe per le leg di un tour.",
+    "tooManySuggestions": "Al massimo 24."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -298,14 +299,14 @@
       "arrivalIcao": "Arrivo",
       "distanceNm": "NM",
       "estimatedMinutes": "Tempo stimato",
-      "realCallsign": "Callsign reale",
-      "flightNumber": "Numero di volo",
       "aircraft": "Tipi di aereo",
       "releaseAt": "Rilascio proprio (UTC)",
       "state": "Stato",
       "reason": "Motivo",
       "changeReason": "Perché cambia (ha dei report)",
-      "rotationId": "Rotazione"
+      "rotationId": "Rotazione",
+      "callsigns": "Callsign (suggeriti)",
+      "flightNumbers": "Numeri di volo (suggeriti)"
     },
     "state": {
       "retired": "Ritirata",
@@ -340,15 +341,15 @@
     },
     "import": {
       "title": "Importa le leg da un file",
-      "help": "XLSX, XLS, ODS o CSV. La prima riga dà il nome alle colonne ({{columns}}); partenza e arrivo sono obbligatorie. L'ordine delle righe è l'ordine del tour. Una leg è la stessa se partenza e arrivo sono gli stessi; nella colonna degli aerei vanno i tipi ICAO, i gruppi di una leg restano come sono; il rilascio è in UTC.",
+      "help": "XLSX, XLS, ODS o CSV. L'intestazione può stare in una qualunque delle prime righe; le colonne si trovano per nome ({{columns}}, oppure «Departure ICAO» e «Destination ICAO»), partenza e arrivo sono obbligatorie. L'ordine delle righe è l'ordine del tour, e ogni riga non vuota è una leg: note, totali e bozze vanno tolte dal foglio. Una leg è la stessa se partenza e arrivo sono gli stessi. Una cella può avere più callsign o numeri di volo (ITY1357/1365, oppure separati da virgole); gli aerei sono tipi ICAO, i gruppi di una leg restano come sono; il rilascio è in UTC.",
       "model": "Scarica il modello",
       "file": {
         "label": "File",
         "refused": "Il file non si può importare così",
-        "missingColumn": "Nella prima riga manca la colonna «{{column}}».",
         "release": "Riga {{line}}: il rilascio non è una data (una cella data, oppure 2026-10-01 18:00 in UTC).",
         "empty": "Il file non contiene leg.",
-        "unreadable": "Questo file non si legge come un foglio di calcolo."
+        "unreadable": "Questo file non si legge come un foglio di calcolo.",
+        "noHeader": "Nessuna delle prime righe nomina una colonna di partenza e una di arrivo (per esempio «Departure ICAO» e «Destination ICAO»)."
       },
       "mode": {
         "label": "Le leg che nel file non ci sono",
@@ -394,7 +395,8 @@
         "Retired": "Ritirata"
       },
       "reason": "Perché (ritira, ripristina o cambia leg con dei report)",
-      "apply": "Importa"
+      "apply": "Importa",
+      "sheet": "Foglio"
     }
   },
   "subtours": {

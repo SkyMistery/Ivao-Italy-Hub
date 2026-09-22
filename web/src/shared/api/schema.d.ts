@@ -2454,8 +2454,8 @@ export interface components {
             distanceNm: number;
             /** Format: int32 */
             estimatedMinutes: null | number;
-            realCallsign: null | string;
-            flightNumber: null | string;
+            callsigns: string[];
+            flightNumbers: string[];
             aircraft: components["schemas"]["AllowedAircraft"];
             /** Format: date-time */
             releaseAt: null | string;
@@ -2522,8 +2522,8 @@ export interface components {
         LegImportRowDto: {
             departureIcao: string;
             arrivalIcao: string;
-            realCallsign: null | string;
-            flightNumber: null | string;
+            callsigns: null | string[];
+            flightNumbers: null | string[];
             aircraftTypes: null | string[];
             /** Format: date-time */
             releaseAt: null | string;
@@ -2557,8 +2557,8 @@ export interface components {
         LegWriteDto: {
             departureIcao: string;
             arrivalIcao: string;
-            realCallsign: null | string;
-            flightNumber: null | string;
+            callsigns: null | string[];
+            flightNumbers: null | string[];
             aircraft: null | components["schemas"]["AllowedAircraft"];
             /** Format: date-time */
             releaseAt: null | string;

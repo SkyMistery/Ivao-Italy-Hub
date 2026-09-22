@@ -70,7 +70,7 @@ internal static class FoTestAirports
         LegEndpoints.Pattern.Replace("{tourId:long}", tourId.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
 
     public static LegWriteDto Leg(string departure, string arrival) =>
-        new(departure, arrival, RealCallsign: null, FlightNumber: null, Aircraft: null, ReleaseAt: null, ChangeReason: null, RowVersion: default);
+        new(departure, arrival, Callsigns: null, FlightNumbers: null, Aircraft: null, ReleaseAt: null, ChangeReason: null, RowVersion: default);
 
     /// <summary>One leg at the end of the tour, through the editor's own verb.</summary>
     public static async Task AddLegAsync(HttpClient client, long tourId, CancellationToken cancellationToken, string departure = Rome, string arrival = Milan)

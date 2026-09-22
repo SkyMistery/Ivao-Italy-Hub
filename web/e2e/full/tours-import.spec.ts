@@ -82,14 +82,16 @@ test('the legs of a tour are imported from a file, previewed by the server first
   const response = page.waitForResponse((candidate) => candidate.url().includes('/import/preview'));
   await panel
     .getByLabel(importing.file.label, { exact: true })
-    .setInputFiles(csv([benchAirports.rome, benchAirports.milan, 'BCH1'], [benchAirports.milan, 'ZZZ9', '']));
+    .setInputFiles(
+      csv([benchAirports.rome, benchAirports.milan, 'BCH1/2'], [benchAirports.milan, 'ZZZ9', '']),
+    );
   expect((await response).status()).toBe(400);
   await expect(panel.getByText(/^Row 3, Arrival:/)).toBeVisible();
 
   // ---------------------------------------------------------------- merged, two legs added
   await chooseFile(
     page,
-    csv([benchAirports.rome, benchAirports.milan, 'BCH1'], [benchAirports.milan, benchAirports.bari, '']),
+    csv([benchAirports.rome, benchAirports.milan, 'BCH1/2'], [benchAirports.milan, benchAirports.bari, '']),
   );
   await expect(panel.getByText(outcome('Added', 2))).toBeVisible();
   await whileWaitingFor(page, 'POST', '/legs/import', async () => {
@@ -98,13 +100,13 @@ test('the legs of a tour are imported from a file, previewed by the server first
   await expect(panel).toBeHidden();
   await expect(page.getByRole('row', { name: legs.row.replace('{{number}}', '2') })).toBeVisible();
   await expect(
-    page.getByRole('row', { name: legs.row.replace('{{number}}', '1') }).getByLabel(legs.fields.realCallsign),
-  ).toHaveValue('BCH1');
+    page.getByRole('row', { name: legs.row.replace('{{number}}', '1') }).getByLabel(legs.fields.callsigns),
+  ).toHaveValue('BCH1, BCH2');
 
   // ---------------------------------------------------------------- replaced, one leg deleted
   await page.getByRole('button', { name: legs.actions.import }).click();
   await choose(page, importing.mode.label, importing.mode.Replace);
-  await chooseFile(page, csv([benchAirports.rome, benchAirports.milan, 'BCH1']));
+  await chooseFile(page, csv([benchAirports.rome, benchAirports.milan, 'BCH1/2']));
   await expect(panel.getByText(outcome('Unchanged', 1))).toBeVisible();
   await expect(panel.getByText(outcome('Deleted', 1))).toBeVisible();
   await whileWaitingFor(page, 'POST', '/legs/import', async () => {
@@ -133,7 +135,7 @@ function englishFlightOps() {
     };
     legs: {
       row: string;
-      fields: { realCallsign: string };
+      fields: { callsigns: string };
       actions: { import: string };
       import: {
         title: string;

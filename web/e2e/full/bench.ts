@@ -352,8 +352,8 @@ export async function addLeg(
     data: {
       departureIcao,
       arrivalIcao,
-      realCallsign: null,
-      flightNumber: null,
+      callsigns: null,
+      flightNumbers: null,
       aircraft: null,
       releaseAt: null,
       changeReason: null,

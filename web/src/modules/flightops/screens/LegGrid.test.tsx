@@ -43,8 +43,8 @@ function leg(id: number, number: number, from: string, to: string, extra: Partia
     arrivalIata: null,
     distanceNm: 100,
     estimatedMinutes: null,
-    realCallsign: null,
-    flightNumber: null,
+    callsigns: [],
+    flightNumbers: [],
     aircraft: { types: [], groupIds: [] },
     releaseAt: null,
     retiredAt: null,
@@ -159,7 +159,7 @@ test('a duplicate carries every field of the leg it copies', async () => {
         path === '/api/flightops/tours/{tourId}/legs'
           ? grid(
               leg(11, 1, 'AAAA', 'BBBB', {
-                flightNumber: 'XX 100',
+                flightNumbers: ['XX 100', 'XX 102'],
                 aircraft: { types: ['A320'], groupIds: [] },
               }),
             )
@@ -175,7 +175,7 @@ test('a duplicate carries every field of the leg it copies', async () => {
   const fresh = await row('+');
   expect(fresh.getByRole('combobox', { name: legs.fields.departureIcao })).toHaveValue('AAAA');
   expect(fresh.getByRole('combobox', { name: legs.fields.arrivalIcao })).toHaveValue('BBBB');
-  expect(fresh.getByRole('textbox', { name: legs.fields.flightNumber })).toHaveValue('XX 100');
+  expect(fresh.getByRole('textbox', { name: legs.fields.flightNumbers })).toHaveValue('XX 100, XX 102');
   expect(fresh.getByRole('textbox', { name: legs.fields.aircraft })).toHaveValue('A320');
 });
 

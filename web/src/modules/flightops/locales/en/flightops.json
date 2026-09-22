@@ -284,7 +284,8 @@
     "firUnknown": "A FIR the hub does not know.",
     "importNotOnHub": "A hub tour does not import legs: they belong to rotations a file cannot name. Write them in the table.",
     "importReasonRequired": "This import retires, restores or changes legs with reports: say why.",
-    "importTooManyRows": "The file has too many rows for the legs of one tour."
+    "importTooManyRows": "The file has too many rows for the legs of one tour.",
+    "tooManySuggestions": "At most 24."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -297,14 +298,14 @@
       "arrivalIcao": "Arrival",
       "distanceNm": "NM",
       "estimatedMinutes": "Est. time",
-      "realCallsign": "Real callsign",
-      "flightNumber": "Flight number",
       "aircraft": "Aircraft types",
       "releaseAt": "Own release (UTC)",
       "state": "State",
       "reason": "Reason",
       "changeReason": "Why it changes (it has reports)",
-      "rotationId": "Rotation"
+      "rotationId": "Rotation",
+      "callsigns": "Callsigns (suggested)",
+      "flightNumbers": "Flight numbers (suggested)"
     },
     "state": {
       "retired": "Retired",
@@ -339,15 +340,15 @@
     },
     "import": {
       "title": "Import legs from a file",
-      "help": "XLSX, XLS, ODS or CSV. The first row names the columns ({{columns}}); departure and arrival are required. The order of the rows is the order of the tour. A leg is the same leg when departure and arrival are the same; the aircraft column holds ICAO types, the groups of a leg stay as they are; the release is in UTC.",
+      "help": "XLSX, XLS, ODS or CSV. The header may be in any of the first rows; the columns are found by name ({{columns}}, or “Departure ICAO” and “Destination ICAO”), departure and arrival are required. The order of the rows is the order of the tour, and every row that is not empty is a leg: notes, totals and drafts must be taken out of the sheet. A leg is the same leg when departure and arrival are the same. A cell may hold more than one callsign or flight number (ITY1357/1365, or separated by commas); aircraft are ICAO types, the groups of a leg stay as they are; the release is in UTC.",
       "model": "Download the model",
       "file": {
         "label": "File",
         "refused": "The file cannot be imported as it is",
-        "missingColumn": "The first row has no column “{{column}}”.",
         "release": "Row {{line}}: the release is not a date (a date cell, or 2026-10-01 18:00 in UTC).",
         "empty": "The file has no legs.",
-        "unreadable": "This file cannot be read as a spreadsheet."
+        "unreadable": "This file cannot be read as a spreadsheet.",
+        "noHeader": "None of the first rows names a departure and an arrival column (for example “Departure ICAO” and “Destination ICAO”)."
       },
       "mode": {
         "label": "Legs that are not in the file",
@@ -393,7 +394,8 @@
         "Retired": "Retired"
       },
       "reason": "Why (it retires, restores or changes legs with reports)",
-      "apply": "Import"
+      "apply": "Import",
+      "sheet": "Sheet"
     }
   },
   "subtours": {
