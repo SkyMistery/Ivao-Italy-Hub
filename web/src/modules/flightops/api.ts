@@ -58,6 +58,10 @@ export type LegDto = components['schemas']['LegDto'];
 export type TourLegsDto = components['schemas']['TourLegsDto'];
 export type LegWriteDto = components['schemas']['LegWriteDto'];
 export type LegRemovalDto = components['schemas']['LegRemovalDto'];
+export type LegImportRowDto = components['schemas']['LegImportRowDto'];
+export type LegImportRequest = components['schemas']['LegImportRequest'];
+export type LegImportPreviewDto = components['schemas']['LegImportPreviewDto'];
+export type LegImportLineDto = components['schemas']['LegImportLineDto'];
 export type AirportDto = components['schemas']['AirportDto'];
 export type HubDto = components['schemas']['HubDto'];
 export type RotationDto = components['schemas']['RotationDto'];
@@ -585,11 +589,25 @@ export async function legRemoval(tourId: number, legId: number): Promise<LegRemo
   );
 }
 
+/** What an import would do, computed by the server and written nowhere (T8): the answer carries the fingerprint to apply. */
+export async function legImportPreview(
+  tourId: number,
+  request: LegImportRequest,
+): Promise<LegImportPreviewDto> {
+  return unwrap(
+    await api.POST('/api/flightops/tours/{tourId}/legs/import/preview', {
+      params: { path: { tourId } },
+      body: request,
+    }),
+  );
+}
+
 export type LegChange =
   | { kind: 'create'; leg: LegWriteDto; after: number | null }
   | { kind: 'update'; legId: number; leg: LegWriteDto }
   | { kind: 'remove'; legId: number; reason: string | null; rowVersion: string }
-  | { kind: 'restore'; legId: number; reason: string; rowVersion: string };
+  | { kind: 'restore'; legId: number; reason: string; rowVersion: string }
+  | { kind: 'import'; request: LegImportRequest };
 
 /**
  * One write of the leg editor, whichever it is. The answer is the whole grid, put straight into the cache; the tour's
@@ -627,6 +645,13 @@ export function useLegChange(tourId: number) {
             await api.POST('/api/flightops/tours/{tourId}/legs/{legId}/restore', {
               params: { path: { tourId, legId: change.legId } },
               body: { reason: change.reason, rowVersion: change.rowVersion },
+            }),
+          );
+        case 'import':
+          return unwrap(
+            await api.POST('/api/flightops/tours/{tourId}/legs/import', {
+              params: { path: { tourId } },
+              body: change.request,
             }),
           );
       }

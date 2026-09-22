@@ -17,9 +17,10 @@ namespace IvaoHub.Modules.FlightOps.Legs;
 /// <summary>
 /// The legs of a tour (design M2 §1.4, §8.4): <b>the declared exception</b> to the list and form engine (plan 0.79,
 /// §16.6). The editor is a table where every row is saved by itself with its version, and inserting, deleting and
-/// retiring change the numbers of the rows around it — which no generated form does. Six hand written verbs, counted:
+/// retiring change the numbers of the rows around it — which no generated form does. Eight hand written verbs, counted:
 /// read the grid, add a leg (after another, or at the end), change one, ask what removing it would do, remove it,
-/// restore it. Every write answers with the whole grid, renumbered, so the editor never guesses a number.
+/// restore it; and the import of a file (T8), previewed and then applied. Every write answers with the whole grid,
+/// renumbered, so the editor never guesses a number.
 /// <para>The resource is the <b>tour</b>: reading asks <c>Tours.View</c> on it, writing <c>Tours.Edit</c>, through the
 /// one handler. A leg carries the tour's departments (Carmine, 18 September 2026), so the interceptor's guard reads it
 /// the same way. A template has no legs (§1.10), and neither has an <c>Open</c> tour or a container (§2.6, §2.7).</para>
@@ -73,6 +74,21 @@ public static class LegEndpoints
 
         group.MapPost("/{legId:long}/restore", RestoreAsync)
             .WithName("FlightOpsLegRestore")
+            .Produces<TourLegsDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .RequireAuthorization(TourPermissions.Edit);
+
+        group.MapPost("/import/preview", PreviewImportAsync)
+            .WithName("FlightOpsLegImportPreview")
+            .Produces<LegImportPreviewDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(TourPermissions.Edit);
+
+        group.MapPost("/import", ImportAsync)
+            .WithName("FlightOpsLegImport")
             .Produces<TourLegsDto>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
@@ -305,6 +321,128 @@ public static class LegEndpoints
         return await request.SaveAsync(tour, legs, [], http);
     }
 
+    /// <summary>
+    /// The differences between the file and the legs of the tour, written nowhere (design M2 §8.4): what is added,
+    /// changed, restored, kept, deleted and retired, and whether the import owes a reason.
+    /// </summary>
+    private static async Task<IResult> PreviewImportAsync(long tourId, LegImportRequest body, LegRequest request, HttpContext http)
+    {
+        var (_, legs, plan, refusal) = await PlanImportAsync(tourId, body, request, http);
+        if (plan is null)
+        {
+            return refusal!;
+        }
+
+        return Results.Ok(new LegImportPreviewDto(plan.Lines(), plan.ReasonRequired, LegImportPlan.Fingerprint(legs!)));
+    }
+
+    /// <summary>
+    /// The import, in one save: the legs the file matches take its values, the new ones are added, the absent ones
+    /// are left, deleted or retired by the mode (§1.4.1), every number is the file's order. Refused if the legs are no
+    /// longer the ones the preview looked at; a ready tour stays ready or nothing is written, as with every write.
+    /// </summary>
+    private static async Task<IResult> ImportAsync(long tourId, LegImportRequest body, LegRequest request, HttpContext http)
+    {
+        var (tour, legs, plan, refusal) = await PlanImportAsync(tourId, body, request, http);
+        if (plan is null)
+        {
+            return refusal!;
+        }
+
+        if (body.Fingerprint != LegImportPlan.Fingerprint(legs!))
+        {
+            return request.Conflict();
+        }
+
+        var reason = string.IsNullOrWhiteSpace(body.Reason) ? null : body.Reason.Trim();
+        if (plan.ReasonRequired && reason is null)
+        {
+            return request.Refused("reason", "flightops:errors.importReasonRequired");
+        }
+
+        // As a restore by hand: nothing comes back into a tour nobody can start any more (§1.4.1).
+        if (plan.Restores && TourState.Of(tour!, request.Clock.UtcNow) is TourStateKind.Closing or TourStateKind.Closed)
+        {
+            return request.Refused("rows", "flightops:errors.tourClosed");
+        }
+
+        var (added, deleted) = plan.Apply(request.Clock.UtcNow, reason);
+        request.Database.Legs.AddRange(added);
+        request.Database.Legs.RemoveRange(deleted);
+
+        var after = legs!.Except(deleted).Concat(added).ToList();
+
+        return await request.SaveAsync(tour!, after, added, http);
+    }
+
+    /// <summary>
+    /// What the preview and the import share: the tour writable and not a hub tour (Carmine, 22 September 2026: its
+    /// legs belong to rotations the file cannot name), every row made a leg by the same code as a leg of the editor,
+    /// refusals under <c>rows[n].field</c>, and the plan.
+    /// </summary>
+    private static async Task<(Tour? Tour, List<Leg>? Legs, LegImportPlan? Plan, IResult? Refusal)> PlanImportAsync(
+        long tourId,
+        LegImportRequest body,
+        LegRequest request,
+        HttpContext http)
+    {
+        var (tour, refusal) = await request.WritableTourAsync(tourId, http);
+        if (tour is null)
+        {
+            return (null, null, null, refusal);
+        }
+
+        if (tour.Kind == TourKind.Hub)
+        {
+            return (null, null, null, request.Refused("tourId", "flightops:errors.importNotOnHub"));
+        }
+
+        if (await request.InvalidAsync(body, http) is { } invalid)
+        {
+            return (null, null, null, invalid);
+        }
+
+        var problems = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var incoming = new List<Leg>();
+        for (var row = 0; row < body.Rows.Count; row++)
+        {
+            var line = body.Rows[row];
+            var payload = new LegWriteDto(
+                line.DepartureIcao ?? string.Empty,
+                line.ArrivalIcao ?? string.Empty,
+                line.RealCallsign,
+                line.FlightNumber,
+                new AllowedAircraft(line.AircraftTypes ?? [], []),
+                line.ReleaseAt,
+                ChangeReason: null,
+                RowVersion: default);
+
+            var leg = new Leg();
+            var found = request.Check(payload)
+                ?? await request.Book.ApplyAsync(tour, leg, payload, hasReports: false, http.RequestAborted);
+            if (found is null)
+            {
+                incoming.Add(leg);
+                continue;
+            }
+
+            foreach (var (field, keys) in found)
+            {
+                problems[$"rows[{row}].{field}"] = keys;
+            }
+        }
+
+        if (problems.Count > 0)
+        {
+            return (null, null, null, request.Refused(problems));
+        }
+
+        var legs = await request.Book.LegsAsync(tourId, http.RequestAborted);
+        var withReports = await request.Reports.LegsWithReportsAsync(tourId, http.RequestAborted);
+
+        return (tour, legs, LegImportPlan.Make(legs, incoming, body.Mode, withReports), null);
+    }
+
     /// <summary>The rule of §1.4.1, once: which outcome, and which legs it touches.</summary>
     private static (LegRemovalOutcome Outcome, IReadOnlyList<Leg> Touched) Removal(Leg leg, IReadOnlyList<Leg> legs, IReadOnlySet<long> withReports)
     {
@@ -428,6 +566,25 @@ public sealed class LegRequest(
 
         return Results.Ok(await book.GridAsync(tour, legs, http.RequestAborted));
     }
+
+    /// <summary>The rules one leg answers by itself, as the payload's validator says them; null when there are none.</summary>
+    public Dictionary<string, string[]>? Check(LegWriteDto payload)
+    {
+        var result = new LegWriteDtoValidator().Validate(payload);
+        return result.IsValid
+            ? null
+            : result.Errors
+                .GroupBy(error => CrudProblems.FieldName(error.PropertyName), StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(error => error.ErrorMessage).Distinct().ToArray(),
+                    StringComparer.Ordinal);
+    }
+
+    public IResult Conflict() =>
+        Results.Problem(
+            statusCode: StatusCodes.Status409Conflict,
+            title: catalog.Resolve(currentUser.Locale, CrudProblems.ConflictTitleKey));
 
     public IResult Refused(string field, string key) =>
         Refused(new Dictionary<string, string[]>(StringComparer.Ordinal) { [field] = [key] });

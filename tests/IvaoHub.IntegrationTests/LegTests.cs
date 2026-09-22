@@ -276,6 +276,100 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task AnImportIsPreviewedWithoutWritingAndAppliedByTheRulesOfReports()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var reported = new ReportedLegs();
+        await using var withReports = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddSingleton<ITourReports>(reported)));
+        using var advisor = await SignedInAsync(withReports, AdvisorVid, token);
+
+        var tour = await CreatedTourAsync(advisor, TourKind.Sequential, token);
+        var legs = LegsUri(Id(tour));
+        await AddLegAsync(advisor, Id(tour), token, Rome, Milan);
+        await AddLegAsync(advisor, Id(tour), token, Milan, London);
+        await AddLegAsync(advisor, Id(tour), token, London, Rome);
+        await AddLegAsync(advisor, Id(tour), token, Rome, London);
+        var before = Rows(await advisor.GetFromJsonAsync<JsonElement>(legs, token));
+
+        // Milan to London has a report; Rome to London has none.
+        reported.Legs.Add(Id(before[1]));
+
+        object FileRow(string from, string to, string? flight = null) =>
+            new { departureIcao = from, arrivalIcao = to, flightNumber = flight, aircraftTypes = new[] { TestType } };
+
+        var rows = new[] { FileRow(Rome, Milan, "az 100"), FileRow(London, Rome), FileRow(Milan, Rome) };
+
+        // An airport the hub does not know is refused on its row and cell.
+        using (var unknown = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { FileRow(Rome, Milan), FileRow(Rome, "XFZ9") }, mode = "Replace" },
+            token))
+        {
+            await AssertRefusedAsync(unknown, "rows[1].arrivalIcao", "flightops:errors.airportUnknown", token);
+        }
+
+        // The preview says what "replace" does, and writes nothing.
+        var preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Replace" }, token),
+            token);
+        Assert.Equal(
+            ["Changed", "Retired", "Unchanged", "Added", "Deleted"],
+            preview.GetProperty("lines").EnumerateArray().Select(line => line.GetProperty("outcome").GetString()));
+        Assert.True(preview.GetProperty("reasonRequired").GetBoolean());
+        Assert.Equal(
+            before.Select(Id),
+            Rows(await advisor.GetFromJsonAsync<JsonElement>(legs, token)).Select(Id));
+
+        var fingerprint = preview.GetProperty("fingerprint").GetString();
+
+        // Retiring owes a reason.
+        using (var noReason = await advisor.PostAsJsonAsync($"{legs}/import", new { rows, mode = "Replace", fingerprint }, token))
+        {
+            await AssertRefusedAsync(noReason, "reason", "flightops:errors.importReasonRequired", token);
+        }
+
+        // Legs that moved since the preview are not the ones anybody looked at.
+        using (var stale = await advisor.PostAsJsonAsync(
+            $"{legs}/import",
+            new { rows, mode = "Replace", reason = "fo-test new season", fingerprint = "0000000000000000" },
+            token))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        }
+
+        var grid = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import", new { rows, mode = "Replace", reason = "fo-test new season", fingerprint }, token),
+            token);
+        var after = Rows(grid);
+
+        // The one without a report is gone, the one with a report retired in its place; every number the file's order.
+        Assert.DoesNotContain(after, row => Id(row) == Id(before[3]));
+        Assert.Equal([Id(before[0]), Id(before[1]), Id(before[2])], after.Take(3).Select(Id));
+        Assert.Equal([1, 2, 3, 4], after.Select(row => row.GetProperty("number").GetInt32()));
+        Assert.Equal("AZ 100", after[0].GetProperty("flightNumber").GetString());
+        Assert.Equal("fo-test new season", after[1].GetProperty("retiredReason").GetString());
+        Assert.Equal(Milan, after[3].GetProperty("departureIcao").GetString());
+        Assert.Equal(253.9m, after[3].GetProperty("distanceNm").GetDecimal());
+
+        // The same file again changes nothing, and owes nothing.
+        preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Replace" }, token),
+            token);
+        Assert.All(
+            preview.GetProperty("lines").EnumerateArray(),
+            line => Assert.Contains(line.GetProperty("outcome").GetString(), new[] { "Unchanged", "Kept" }));
+        Assert.False(preview.GetProperty("reasonRequired").GetBoolean());
+
+        // A hub tour's legs belong to rotations a file cannot name.
+        var hub = await CreatedTourAsync(advisor, TourKind.Hub, token);
+        using (var refused = await advisor.PostAsJsonAsync($"{LegsUri(Id(hub))}/import/preview", new { rows, mode = "Merge" }, token))
+        {
+            await AssertRefusedAsync(refused, "tourId", "flightops:errors.importNotOnHub", token);
+        }
+    }
+
     // ---- helpers ---------------------------------------------------------------------------------
 
     /// <summary>The reports arrive with T11: here a leg "has" them because the test says so.</summary>

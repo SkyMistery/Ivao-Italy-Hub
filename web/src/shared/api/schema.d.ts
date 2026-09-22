@@ -1182,6 +1182,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/{tourId}/legs/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsLegImportPreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{tourId}/legs/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsLegImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/hubs": {
         parameters: {
             query?: never;
@@ -2435,6 +2467,66 @@ export interface components {
             updatedAt: string;
             /** Format: date-time */
             rowVersion: string;
+        };
+        /**
+         * @description One line of the preview: the outcome, the row of the file (from 0) if there is one, the leg if there is one, its
+         *     number now and after, and the fields that change.
+         */
+        LegImportLineDto: {
+            outcome: components["schemas"]["LegImportOutcome"];
+            /** Format: int32 */
+            row: null | number;
+            /** Format: int64 */
+            legId: null | number;
+            /** Format: int32 */
+            numberBefore: null | number;
+            /** Format: int32 */
+            numberAfter: null | number;
+            departureIcao: string;
+            arrivalIcao: string;
+            changes: string[];
+            hasReports: boolean;
+        };
+        /**
+         * @description What an import does with the legs the file does not contain (design M2 §8.4, ADR-051 of Toursystem): "merge" leaves
+         *     them where they are, "replace" deletes those without reports and retires those with reports (§1.4.1).
+         * @enum {unknown}
+         */
+        LegImportMode: "Merge" | "Replace";
+        /**
+         * @description What the import does to one leg.
+         * @enum {unknown}
+         */
+        LegImportOutcome: "Added" | "Changed" | "Unchanged" | "Restored" | "Kept" | "Deleted" | "Retired";
+        /** @description The differences, computed by the server and written nowhere; the fingerprint the apply must carry back. */
+        LegImportPreviewDto: {
+            lines: components["schemas"]["LegImportLineDto"][];
+            reasonRequired: boolean;
+            fingerprint: string;
+        };
+        /**
+         * @description The rows of the file, in their order — which is the order of the tour — and what to do with the legs it does not
+         *     contain. `Reason` is owed when the import retires, restores or changes a leg with reports; `Fingerprint`
+         *     is the one the preview answered, so that what is applied is what was looked at.
+         */
+        LegImportRequest: {
+            rows: components["schemas"]["LegImportRowDto"][];
+            mode: components["schemas"]["LegImportMode"];
+            reason: null | string;
+            fingerprint: null | string;
+        };
+        /**
+         * @description One row of the file, as the browser read it (T8, Carmine 22 September 2026: the file is read in the browser). The
+         *     file names aircraft types only: the groups of a leg are the editor's, and a leg the file matches keeps its own.
+         */
+        LegImportRowDto: {
+            departureIcao: string;
+            arrivalIcao: string;
+            realCallsign: null | string;
+            flightNumber: null | string;
+            aircraftTypes: null | string[];
+            /** Format: date-time */
+            releaseAt: null | string;
         };
         /**
          * @description What a leg is in its tour (design M2 §1.3): an ordinary leg, or the link between two hubs, which counts as one.
@@ -7242,6 +7334,97 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LegReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourLegsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegImportPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegImportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegImportPreviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegImportRequest"];
             };
         };
         responses: {

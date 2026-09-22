@@ -282,7 +282,10 @@
     "firCode": "A FIR is its code, for example EDGG.",
     "parameterChoice": "Not one of the possible choices.",
     "countryUnknown": "A country with no airport the hub knows.",
-    "firUnknown": "A FIR the hub does not know."
+    "firUnknown": "A FIR the hub does not know.",
+    "importNotOnHub": "A hub tour does not import legs: they belong to rotations a file cannot name. Write them in the table.",
+    "importReasonRequired": "This import retires, restores or changes legs with reports: say why.",
+    "importTooManyRows": "The file has too many rows for the legs of one tour."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -317,7 +320,8 @@
       "closeTour": "Close the tour (back to the first departure)",
       "remove": "Remove",
       "retire": "Retire",
-      "restore": "Restore"
+      "restore": "Restore",
+      "import": "Import from a file"
     },
     "remove": {
       "title": "Remove leg {{number}}?",
@@ -333,6 +337,64 @@
       "none": "None yet",
       "connection": "Connection",
       "rotation": "{{hub}} {{number}} ({{legs}}/{{size}})"
+    },
+    "import": {
+      "title": "Import legs from a file",
+      "help": "XLSX, XLS, ODS or CSV. The first row names the columns ({{columns}}); departure and arrival are required. The order of the rows is the order of the tour. A leg is the same leg when departure and arrival are the same; the aircraft column holds ICAO types, the groups of a leg stay as they are; the release is in UTC.",
+      "model": "Download the model",
+      "file": {
+        "label": "File",
+        "refused": "The file cannot be imported as it is",
+        "missingColumn": "The first row has no column “{{column}}”.",
+        "release": "Row {{line}}: the release is not a date (a date cell, or 2026-10-01 18:00 in UTC).",
+        "empty": "The file has no legs.",
+        "unreadable": "This file cannot be read as a spreadsheet."
+      },
+      "mode": {
+        "label": "Legs that are not in the file",
+        "Merge": "Merge: leave them as they are",
+        "Replace": "Replace: the file is the whole tour",
+        "explain": {
+          "Merge": "The legs the file does not contain stay where they are. A partial file is fine.",
+          "Replace": "The legs the file does not contain are deleted if no report points at them, and retired with a reason if one does."
+        }
+      },
+      "summary": "What the import does",
+      "columns": {
+        "number": "#",
+        "route": "Leg",
+        "outcome": "What happens",
+        "changes": "What changes"
+      },
+      "line": "row {{line}} of the file",
+      "rowProblem": "Row {{line}}, {{field}}: {{problem}}",
+      "outcome": {
+        "Added_one": "{{count}} added",
+        "Added_other": "{{count}} added",
+        "Changed_one": "{{count}} changed",
+        "Changed_other": "{{count}} changed",
+        "Unchanged_one": "{{count}} unchanged",
+        "Unchanged_other": "{{count}} unchanged",
+        "Restored_one": "{{count}} restored",
+        "Restored_other": "{{count}} restored",
+        "Kept_one": "{{count}} not in the file, kept",
+        "Kept_other": "{{count}} not in the file, kept",
+        "Deleted_one": "{{count}} deleted",
+        "Deleted_other": "{{count}} deleted",
+        "Retired_one": "{{count}} retired",
+        "Retired_other": "{{count}} retired"
+      },
+      "state": {
+        "Added": "Added",
+        "Changed": "Changed",
+        "Unchanged": "Unchanged",
+        "Restored": "Restored",
+        "Kept": "Kept",
+        "Deleted": "Deleted",
+        "Retired": "Retired"
+      },
+      "reason": "Why (it retires, restores or changes legs with reports)",
+      "apply": "Import"
     }
   },
   "subtours": {
