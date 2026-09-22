@@ -120,7 +120,13 @@ test('a released tour is read by a visitor, with its legs on the map', async ({ 
     const reader = await visitor.newPage();
     const visitorComplaints: string[] = [];
     reader.on('console', (message) => {
-      if (message.type() === 'error') {
+      // ⚠️ A missing base map is not a complaint, and CI is where that shows: the archive is a file
+      // of an installation and a runner has none, so `/tiles/basemap.pmtiles` answers 404 there and
+      // exists here. That 404 is the documented state — the map draws its legs on a plain ground —
+      // and everything else the browser says still fails this test, which is the point of it.
+      const missingArchive = message.location().url.includes('/tiles/');
+
+      if (message.type() === 'error' && !missingArchive) {
         visitorComplaints.push(message.text());
       }
     });
