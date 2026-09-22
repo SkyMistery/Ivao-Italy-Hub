@@ -1,9 +1,21 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.87 — 22 settembre 2026 (**il tour `Open`**: obiettivo in una scheda sua, filtri e regole di sequenza, T7c)
+**Versione documento:** 0.88 — 22 settembre 2026 (**l'import delle leg**: SheetJS nel browser, la coppia e l'ordine, niente tour Hub, T8)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.88** (22 set 2026, fase T8 di M2): **le leg di un tour si importano da un file** — XLSX, XLS, ODS o CSV letto nel
+browser, le differenze calcolate dal server senza scrivere, «fondi» e «sostituisci» applicati in un solo salvataggio e solo come
+l'anteprima li ha mostrati (un'impronta delle leg, 409 se sono cambiate). Nota `decisions/2026-09-22-l-import-delle-leg.md`, quattro
+risposte di Carmine in apertura. **(1) La libreria è SheetJS 0.20.3** (Apache-2.0), caricata solo all'import, installata dal tarball
+del CDN di SheetJS perché su npm c'è solo la 0.18.5 con due CVE in lettura; scartate read-excel-file (worker da `blob:`, contro la
+CSP) e un lettore scritto da noi. **(2) La stessa leg è la stessa coppia partenza→arrivo**, abbinata nell'ordine se ripetuta;
+**nessuna colonna di numeri**: l'ordine delle righe è l'ordine del tour, e in «fondi» una leg assente resta dopo quella che la
+precedeva. **(3) I tour `Hub` non importano** (le rotazioni non si nominano da un file). **(4) Una leg ritirata che il file nomina
+torna nel tour**, con il motivo dell'import (ADR-051). Nessun meccanismo nuovo: ogni riga passa per le regole di una leg scritta a
+mano, e i due verbi stanno nell'eccezione dichiarata dell'editor delle leg (§16.6, design M2 §8.4). Nessuna sezione del piano toccata
+oltre a questa riga.
 
 **Changelog 0.87** (22 set 2026, fase T7c di M2): **il tour `Open` si compone** — l'obiettivo con i suoi parametri
 (`open_goal_json`), i filtri per volo e le regole di sequenza (`fo_tour_constraints`, righe figlie del tour come hub e callsign),

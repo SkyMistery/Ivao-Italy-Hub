@@ -3,13 +3,15 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 22 settembre 2026 — **T0–T7b in `main`; T7c è fatta**: branch `m2/t7c-open`, in PR (vedi `gh pr list`).
-Piano **0.87**. **Il prossimo passo è T8 (l'import delle leg)**, in una chat nuova, dopo il merge di T7c.
+**Ultimo aggiornamento:** 22 settembre 2026 — **T0–T7c in `main`; T8 è fatta**: branch `m2/t8-leg-import`, in PR (vedi `gh pr list`).
+Piano **0.88**. **Il prossimo passo è T9 (regole ed errori)**, in una chat nuova, dopo il merge di T8.
 
-> **Prima di aprire T8**: verificare con `gh pr list` che la PR di T7c sia mergiata (se non lo è, fermarsi e dirlo: tutte e due migrano
-> `FlightOpsDbContext`). **In apertura** T8 sceglie la libreria che legge XLSX e CSV nel browser (`06` §T8: licenza compatibile con
-> Apache-2.0, niente codice valutato a runtime) e la porta a Carmine.
->
+> **Che cosa ha lasciato T8** (nota `2026-09-22-l-import-delle-leg`, piano 0.88): l'import delle leg da XLSX/CSV, letto nel browser con
+> **SheetJS 0.20.3 dal tarball del CDN** (non da npm: si aggiorna a mano, Dependabot non la vede). Il confronto è `Legs/LegImport.cs`,
+> puro; due verbi nell'eccezione dell'editor delle leg. Nessuna migrazione. ⚠️ **Resta il «fatta quando»**: le leg di un tour vero del
+> 2026 dal file del FOD, che Carmine deve mandare; se le sue colonne hanno altri nomi, si aggiungono alias in `screens/legFile.ts`.
+> T9 non tocca le leg e può partire subito dopo il merge.
+
 > **Che cosa ha lasciato T7c** (nota `2026-09-22-il-tour-open`, piano 0.87): `fo_tour_constraints` è la quarta risorsa del motore in
 > `Shape/ShapeEndpoints.cs`; i parametri di obiettivi e vincoli hanno **un catalogo solo**, `Shape/OpenCatalog.cs` (campi, limiti,
 > normalizzazione, regole fra campi), e l'esistenza di aeroporti, paesi e FIR la chiede `OpenParameterCheck` al nucleo
@@ -102,7 +104,8 @@ Piano **0.87**. **Il prossimo passo è T8 (l'import delle leg)**, in una chat nu
 > | #90 | T6b: l'editor del corpo estratto (`BodyEditor`) e la scheda del briefing |
 > | #91 | T7a: le leg, `LegGrid`, il tempo stimato, ritirare e ripristinare, gli aerei consentiti (piano 0.85) |
 > | #92 | T7b: hub e rotazioni, sottotour, vincoli sul callsign, `BeforeAuthorize` (piano 0.86) |
-> | — | T7c: il tour `Open` — obiettivo, filtri e regole di sequenza (piano 0.87) |
+> | #93 | T7c: il tour `Open` — obiettivo, filtri e regole di sequenza (piano 0.87) |
+| — | T8: l'import delle leg da XLSX/CSV, SheetJS nel browser (piano 0.88) |
 >
 > Le fasi sono in **`06-piano-implementazione-m2.md` parte C**: per ognuna dipendenze, perimetro, test e «fatta quando», più le regole
 > comuni a tutte (VID `780001–780099`, slug `fo-test-…`, niente chiamate esterne nei test, divisione XX).
@@ -111,7 +114,7 @@ Piano **0.87**. **Il prossimo passo è T8 (l'import delle leg)**, in una chat nu
 > `main` prima del merge**, quindi è finita dentro `m2/tours-design` e non in `main`; il contenuto di T0 è rientrato con una PR di
 > recupero. La memoria `stacked-pr-base-deletion` parlava della cancellazione: vale anche **prima**, per il merge.
 >
-> **Da dove partire**: **T8**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
+> **Da dove partire**: **T9**. Il buco trovato in T0 (`IProjectable` che saltava in silenzio le righe dei moduli) è chiuso da T4a.
 >
 > **Una cosa che T1 lascia aperta**: l'attribuzione dei confini dei FIR (CC BY-SA 4.0) va **mostrata** dove si vede la proposta degli ATC,
 > cioè in T12. (Le «varianti» degli aerei sono decise in T6a: tipi più gruppi, nessuna spunta.)

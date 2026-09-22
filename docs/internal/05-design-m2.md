@@ -249,7 +249,8 @@ Una leg **ritirata**:
 - **si può ripristinare** (`retired_at = null`), con un motivo, finché il tour non è chiuso.
 
 Nell'**import** (§8.4) la modalità «sostituisci» applica le stesse regole: elimina le leg assenti senza PIREP e
-ritira quelle con PIREP, mostrando la differenza prima di applicare.
+ritira quelle con PIREP, mostrando la differenza prima di applicare. In tutte e due le modalità una leg ritirata che il file
+nomina **torna nel tour**, con il motivo dell'import e non in un tour in chiusura o chiuso (Carmine, 22 settembre 2026, T8).
 
 ### 1.5 Aerei, prestazioni e tempo stimato
 
@@ -1039,8 +1040,13 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   di volo, aerei, rotazione, rilascio, stato (con i PIREP).
 - **Azioni sulla riga**: «aggiungi dopo: duplica», «aggiungi dopo: segue», «chiudi tour», «elimina o ritira» (il server sceglie
   secondo §1.4.1 e lo dice prima di confermare), «ripristina».
-- **Import XLSX/CSV**, letto **nel browser** (risposta 24): anteprima delle differenze dal server; «fondi» non tocca le leg
-  assenti; «sostituisci» elimina le assenti senza PIREP e ritira quelle con PIREP, con un motivo. Modello di file con le colonne.
+- **Import XLSX/CSV**, letto **nel browser** (risposta 24) con **SheetJS**, caricata solo all'import: anteprima delle differenze
+  dal server; «fondi» non tocca le leg assenti; «sostituisci» elimina le assenti senza PIREP e ritira quelle con PIREP, con un motivo.
+  **La stessa leg è la stessa coppia partenza→arrivo** (abbinata nell'ordine se ripetuta) e l'ordine delle righe è l'ordine del tour:
+  nessuna colonna di numeri; una leg ritirata che il file nomina torna nel tour. **Non sui tour `Hub`**. Si applica solo ciò che
+  l'anteprima ha mostrato (un'impronta delle leg). Modello di file con le colonne (`departure`, `arrival`, `callsign`,
+  `flightNumber`, `aircraft`, `release`; il file porta solo tipi ICAO, i gruppi di una leg restano). Carmine, 22 settembre 2026, nota
+  `2026-09-22-l-import-delle-leg`.
 - Salvataggio a righe con `row_version`, errori sulla cella.
 
 ### 8.5 La validazione

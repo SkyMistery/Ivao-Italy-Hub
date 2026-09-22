@@ -301,7 +301,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T7a | Le leg — **fatta il 18 set 2026** | T1, T6a | `fo_legs`, GCD e tempo stimato, eliminare e rinumerare, ritirare e ripristinare, `LegGrid`, aerei consentiti nel form, `Distance`, «pronto» dei tipi con leg |
 | T7b | La forma del tour — **fatta il 21 set 2026** | T7a | hub e rotazioni, sottotour e `Container`, vincoli sul callsign, «pronto» di quei tipi, `CrudOptions.BeforeAuthorize` |
 | T7c | Il tour `Open` | T7b | `open_goal` con i parametri, `fo_tour_constraints` (filtri e regole di sequenza), la scheda, «pronto» di `Open` |
-| T8 | L'import delle leg | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
+| T8 | L'import delle leg — **fatta il 22 set 2026** (resta il file vero del FOD) | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
 | T10 | Il pubblico e la mappa | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
 | T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
@@ -990,6 +990,37 @@ Design §8.4, ADR-051 di Toursystem. Branch `m2/t8-leg-import`, dopo T7a (usa `L
 **Test**: unit sul confronto (stessa leg riconosciuta da partenza, arrivo e numero); integrazione: sostituire ritira una leg con PIREP e
 ne elimina una senza; un file con un aeroporto sconosciuto rifiutato sulla riga. Smoke: un import di un CSV con l'anteprima.
 **Fatta quando**: le leg di un tour vero del 2026 (file del FOD) entrano con l'anteprima giusta.
+
+**T8 fatta il 22 settembre 2026** (branch `m2/t8-leg-import`, nota `decisions/2026-09-22-l-import-delle-leg.md`, piano **0.88**).
+Com'è andata:
+
+- **Quattro domande a Carmine in apertura**, tutte con la risposta raccomandata: **SheetJS 0.20.3** (Apache-2.0) e non read-excel-file
+  (crea worker da `blob:`, che la CSP blocca) né un lettore nostro; **la stessa leg è la stessa coppia** partenza→arrivo, abbinata
+  nell'ordine se ripetuta, e l'ordine delle righe è l'ordine del tour (il «numero» di qui sopra non regge: lo tiene il server e cambia a
+  ogni inserimento); **niente import sui tour `Hub`**; **una ritirata che il file nomina torna nel tour**. Corretto il design §1.4.1 e
+  §8.4.
+- ⚠️ **SheetJS non sta su npm**: la 0.18.5 del registro ha due CVE in lettura, la versione corretta si installa dal tarball del CDN di
+  SheetJS, fissato con l'hash nel lockfile. Dependabot non la vede: si aggiorna a mano. Chunk suo, caricato solo all'import (500 KB,
+  163 KB compressi); nessun `eval`, nessun worker in lettura.
+- **Il backend**: `Legs/LegImport.cs` è il confronto, puro (`LegImportPlan.Make`, `Apply`, `Fingerprint`); due verbi nell'eccezione
+  dell'editor delle leg, `…/legs/import/preview` e `…/legs/import`. Ogni riga passa per `LegWriteDtoValidator` e `LegBook.ApplyAsync`
+  (le regole di una leg scritta a mano), i rifiuti stanno sotto `rows[n].campo`. L'impronta delle leg (id e versione) torna con
+  l'import: leg cambiate nel frattempo, 409. Il motivo solo quando si ritira, si ripristina o si cambia una leg con PIREP. Nessuna
+  migrazione.
+- **Il frontend**: `screens/legFile.ts` (il file in righe, colonne per nome, date di Excel e ISO in UTC, il modello scaricabile) e
+  `screens/LegImport.tsx`, un pannello dentro `LegGrid` (parte dell'eccezione, nessun componente nuovo); l'import è un caso in più di
+  `useLegChange`, quindi la risposta sostituisce la griglia come ogni scrittura.
+- **I test**: unit `LegImportTests` (dieci: stesso file due volte, riga inserita, coppia ripetuta, «fondi» e «sostituisci», ritirate,
+  gruppi che restano, impronta); Vitest `legFile.test.ts` (cinque: colonne, date, CSV col `;` e un XLSX vero, file illeggibile);
+  integrazione `LegTests.AnImportIsPreviewedWithoutWritingAndAppliedByTheRulesOfReports`; e2e `full/tours-import.spec.ts` (due CSV:
+  un aeroporto sconosciuto detto sulla riga, due leg aggiunte, poi «sostituisci» che ne elimina una).
+- **Trovato dal test d'integrazione**: il primo giro aspettava «uguale» su una leg che il file dava con un tipo d'aereo in più; il
+  confronto aveva ragione (una colonna vuota è «nessun tipo»), il test no.
+- **Verificato in locale** (Docker acceso): unit .NET **478**, integrazione **236**, Vitest **434**, typecheck, lint, formato, i18n,
+  smoke **80**, giro e2e completo **27**. ⚠️ Il primo giro completo ha avuto **un fallimento instabile** in uno spec di T6 che cerca un
+  tour appena creato nella ricerca (`expect(hits…).toContain('/tours/…')`); da soli quei due spec passano sempre, e il giro rifatto è
+  verde: non è di T8, ma se torna va guardato. **Non verificato**: il «fatta quando» con un file vero del
+  FOD, che Carmine non ha ancora mandato; le colonne del modello potrebbero dover accettare altri nomi.
 
 ### T9 — Regole ed errori
 
