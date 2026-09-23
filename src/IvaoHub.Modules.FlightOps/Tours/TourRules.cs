@@ -19,8 +19,8 @@ namespace IvaoHub.Modules.FlightOps.Tours;
 
 /// <summary>
 /// Whether a tour has reports, which decides whether it may be deleted or only hidden (design M2 §1.2.2), and which of
-/// its legs do, which decides whether a leg is deleted or retired (§1.4.1). The reports arrive with T11: until then the
-/// answer is no, and T11 replaces this implementation with the query on its table.
+/// its legs do, which decides whether a leg is deleted or retired (§1.4.1). The answer is the reports' table since T11
+/// (<c>PirepTourReports</c>); a test may register its own answer first.
 /// </summary>
 public interface ITourReports
 {
@@ -28,15 +28,6 @@ public interface ITourReports
 
     /// <summary>The legs of the tour at least one report points at.</summary>
     Task<IReadOnlySet<long>> LegsWithReportsAsync(long tourId, CancellationToken cancellationToken = default);
-}
-
-/// <summary>No tour has reports before the reports exist (T11).</summary>
-internal sealed class NoTourReportsYet : ITourReports
-{
-    public Task<bool> AnyAsync(long tourId, CancellationToken cancellationToken = default) => Task.FromResult(false);
-
-    public Task<IReadOnlySet<long>> LegsWithReportsAsync(long tourId, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlySet<long>>(new HashSet<long>());
 }
 
 /// <summary>
@@ -335,6 +326,9 @@ public sealed class TourSaving(
         await FollowAsync(database.Rotations, tour, cancellationToken);
         await FollowAsync(database.CallsignRules, tour, cancellationToken);
         await FollowAsync(database.TourConstraints, tour, cancellationToken);
+
+        // A report follows too (T11): a validator enabled by department reads it as they read its tour.
+        await FollowAsync(database.Pireps, tour, cancellationToken);
 
         // A rule is a tour's only when it has one, so it is not an ITourChild; it follows the same way (T9).
         var rules = await database.Rules

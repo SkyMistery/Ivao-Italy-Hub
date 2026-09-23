@@ -6,6 +6,7 @@ using IvaoHub.Core.Modules;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
+using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
@@ -84,16 +85,23 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<IDataBlockProvider, ErrorCatalogProvider>();
         services.AddScoped<IDataBlockProvider, TourCardsProvider>();
 
-        // No reports before T11, which replaces the answer with its own.
-        services.TryAddScoped<ITourReports, NoTourReportsYet>();
+        // The reports a tour and its legs have (T11); a test may still answer for them first.
+        services.TryAddScoped<ITourReports, PirepTourReports>();
+        services.AddScoped<PirepSubmission>();
 
         services.AddScoped<TourReleaseJob>();
+        services.AddScoped<PirepWithdrawalJob>();
         services.AddQuartz(quartz => quartz
             .AddJob<TourReleaseJob>(job => job.WithIdentity(TourReleaseJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(TourReleaseJob.JobName)
                 .WithIdentity($"{TourReleaseJob.JobName}-quarterly")
-                .WithCronSchedule(TourReleaseJob.Cron)));
+                .WithCronSchedule(TourReleaseJob.Cron))
+            .AddJob<PirepWithdrawalJob>(job => job.WithIdentity(PirepWithdrawalJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(PirepWithdrawalJob.JobName)
+                .WithIdentity($"{PirepWithdrawalJob.JobName}-daily")
+                .WithCronSchedule(PirepWithdrawalJob.Cron)));
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
@@ -103,5 +111,6 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapLegEndpoints();
         endpoints.MapShapeEndpoints();
         endpoints.MapRuleEndpoints();
+        endpoints.MapPirepEndpoints();
     }
 }

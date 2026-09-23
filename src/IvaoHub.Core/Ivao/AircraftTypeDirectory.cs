@@ -20,6 +20,14 @@ public interface IAircraftTypeDirectory
 
     /// <summary>The codes of the list that are not a known type, in the order they were given.</summary>
     Task<IReadOnlyList<string>> UnknownAsync(IReadOnlyCollection<string> codes, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The wake turbulence category of the known types of the list (<c>L</c>, <c>M</c>, <c>H</c>, <c>J</c>), by upper case
+    /// code; a type without one, or unknown, is absent. What a filter on the category of an aircraft reads (M2, T11).
+    /// </summary>
+    Task<IReadOnlyDictionary<string, string>> WakeCategoriesAsync(
+        IReadOnlyCollection<string> codes,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>One aircraft type, as a field offers it.</summary>
@@ -60,6 +68,29 @@ internal sealed class AircraftTypeDirectory(HubDbContext database) : IAircraftTy
             .ToListAsync(cancellationToken);
 
         return [.. codes.Where(code => !known.Contains(code, StringComparer.OrdinalIgnoreCase))];
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> WakeCategoriesAsync(
+        IReadOnlyCollection<string> codes,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codes);
+
+        if (codes.Count == 0)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        var wanted = codes.Select(code => code.ToUpperInvariant()).Distinct().ToArray();
+        var rows = await database.IvaoAircraftTypes.AsNoTracking()
+            .Where(type => wanted.Contains(type.IcaoCode) && type.WakeTurbulence != null)
+            .Select(type => new { type.IcaoCode, type.WakeTurbulence })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(
+            row => row.IcaoCode.ToUpperInvariant(),
+            row => row.WakeTurbulence!.Trim().ToUpperInvariant(),
+            StringComparer.Ordinal);
     }
 }
 

@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Legs;
+using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
@@ -39,6 +40,16 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<TourRuleError> RuleErrors => Set<TourRuleError>();
 
+    public DbSet<Pirep> Pireps => Set<Pirep>();
+
+    public DbSet<PirepFlight> PirepFlights => Set<PirepFlight>();
+
+    public DbSet<PirepEvent> PirepEvents => Set<PirepEvent>();
+
+    public DbSet<Enrolment> Enrolments => Set<Enrolment>();
+
+    public DbSet<Ban> Bans => Set<Ban>();
+
     /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -53,6 +64,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<CallsignMatch>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<TourConstraintKind>().HaveConversion<string>().HaveMaxLength(32);
         configurationBuilder.Properties<ErrorCategory>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<PirepStatus>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<DiversionReason>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -213,6 +226,87 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             link.HasOne<TourRule>().WithMany(rule => rule.ErrorLinks).HasForeignKey(row => row.RuleId).OnDelete(DeleteBehavior.Cascade);
             link.HasOne<TourError>().WithMany().HasForeignKey(row => row.ErrorId).OnDelete(DeleteBehavior.Cascade);
             link.HasIndex(row => row.ErrorId);
+        });
+
+        modelBuilder.Entity<Pirep>(pirep =>
+        {
+            pirep.ToTable("fo_pireps");
+            pirep.HasKey(row => row.Id);
+            pirep.Ignore(row => row.StakeholderVid);
+            pirep.Ignore(row => row.ResourceScope);
+            pirep.Property(row => row.DepartureIcao).HasMaxLength(4).IsRequired();
+            pirep.Property(row => row.ArrivalIcao).HasMaxLength(4).IsRequired();
+            pirep.Property(row => row.DistanceNm).HasPrecision(7, 1);
+            pirep.Property(row => row.FlightRules).HasMaxLength(1).IsRequired();
+            pirep.Property(row => row.Sid).HasMaxLength(PirepValidation.MaxProcedureLength);
+            pirep.Property(row => row.Star).HasMaxLength(PirepValidation.MaxProcedureLength);
+            pirep.Property(row => row.Approach).HasMaxLength(PirepValidation.MaxProcedureLength);
+            pirep.Property(row => row.AtcContactsJson).HasColumnName("atc_contacts_json").HasColumnType("json").IsRequired();
+            pirep.Property(row => row.AtcExemptionsJson).HasColumnName("atc_exemptions_json").HasColumnType("json").IsRequired();
+            pirep.Property(row => row.DiversionIcao).HasMaxLength(4);
+            pirep.Property(row => row.DiversionNote).HasMaxLength(PirepValidation.MaxTextLength);
+            pirep.Property(row => row.PilotRemarks).HasMaxLength(PirepValidation.MaxTextLength);
+            pirep.Property(row => row.RulesSnapshotJson).HasColumnName("rules_snapshot_json").HasColumnType("json").IsRequired();
+            pirep.Property(row => row.LegSnapshotJson).HasColumnName("leg_snapshot_json").HasColumnType("json").IsRequired();
+            pirep.HasRowVersion(row => row.RowVersion);
+
+            // A tour with a report is never deleted and a leg with one is retired, not deleted (design M2 §1.2.2, §1.4.1):
+            // the server says so first, and the keys make sure nobody forgets.
+            pirep.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Restrict);
+            pirep.HasOne<Leg>().WithMany().HasForeignKey(row => row.LegId).OnDelete(DeleteBehavior.Restrict);
+
+            // A pilot's reports on a tour, and the daily limits: the pilot's reports by take-off.
+            pirep.HasIndex(row => new { row.TourId, row.Vid });
+            pirep.HasIndex(row => new { row.Vid, row.TakeoffAt });
+            pirep.HasIndex(row => new { row.Status, row.SubmittedAt });
+        });
+
+        modelBuilder.Entity<PirepFlight>(flight =>
+        {
+            flight.ToTable("fo_pirep_flights");
+            flight.HasKey(row => row.Id);
+            flight.Property(row => row.Callsign).HasMaxLength(LegValidation.MaxCallsignLength).IsRequired();
+            flight.Property(row => row.Aircraft).HasMaxLength(8);
+            flight.Property(row => row.DepartureIcao).HasMaxLength(4).IsRequired();
+            flight.Property(row => row.ArrivalIcao).HasMaxLength(4).IsRequired();
+            flight.Property(row => row.FlightPlansJson).HasColumnName("flight_plans_json").HasColumnType("json").IsRequired();
+            flight.HasOne<Pirep>().WithMany(pirep => pirep.Flights).HasForeignKey(row => row.PirepId).OnDelete(DeleteBehavior.Cascade);
+
+            // A session counts for one report (design M2 §3.4): held here while the report claims it. MariaDB lets many
+            // rows hold none, which is what a withdrawn report leaves.
+            flight.HasIndex(row => row.ClaimedSessionId).IsUnique();
+            flight.HasIndex(row => row.TrackerSessionId);
+        });
+
+        modelBuilder.Entity<PirepEvent>(entry =>
+        {
+            entry.ToTable("fo_pirep_events");
+            entry.HasKey(row => row.Id);
+            entry.Property(row => row.Note).HasMaxLength(PirepValidation.MaxTextLength);
+            entry.HasOne<Pirep>().WithMany(pirep => pirep.Events).HasForeignKey(row => row.PirepId).OnDelete(DeleteBehavior.Cascade);
+            entry.HasIndex(row => new { row.PirepId, row.At });
+        });
+
+        modelBuilder.Entity<Enrolment>(enrolment =>
+        {
+            enrolment.ToTable("fo_enrolments");
+            enrolment.HasKey(row => row.Id);
+            enrolment.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Restrict);
+
+            // A pilot is in a tour once.
+            enrolment.HasIndex(row => new { row.TourId, row.Vid }).IsUnique();
+            enrolment.HasIndex(row => row.Vid);
+        });
+
+        modelBuilder.Entity<Ban>(ban =>
+        {
+            ban.ToTable("fo_bans");
+            ban.HasKey(row => row.Id);
+            ban.Property(row => row.Reason).HasMaxLength(PirepValidation.MaxTextLength).IsRequired();
+            ban.HasRowVersion(row => row.RowVersion);
+
+            // No key towards the tour: a ban on every tour has none, and a ban outlives the tour it was about.
+            ban.HasIndex(row => row.Vid);
         });
     }
 }
