@@ -106,7 +106,9 @@ cui contasse, quindi niente cambia per chi c'era.
 - **La coda si ordina su `queued_at`**, una colonna nuova: quando il PIREP è entrato in coda l'ultima volta (invio o reinvio).
   La migrazione la riempie per i PIREP che ci sono già.
 - **La presa** (`POST …/review/{id}/take`): da `Queued`, o da `InReview` con il lease scaduto, o per rinnovare il proprio; vince la
-  prima (`row_version`). **Lasciare** (`…/release`) lo rimette in coda: non è nel design, ma senza un validatore che apre per errore
+  prima (`row_version`). ⚠️ Su MariaDB la seconda di due prese contemporanee può perdere anche come **deadlock** (tutte e due bloccano
+  il PIREP con la chiave della riga di storia che aggiungono, poi tutte e due lo vogliono cambiare): risponde 409 come il conflitto di
+  versione. L'ha trovato la CI, non la macchina locale. **Lasciare** (`…/release`) lo rimette in coda: non è nel design, ma senza un validatore che apre per errore
   il PIREP sbagliato lo tiene per mezz'ora.
 - **La decisione** (`…/decide`): solo chi lo ha in mano. `ToModify` chiede la nota al pilota (deve sapere cosa correggere);
   `Rejected` chiede almeno un errore (la mail dice le regole violate); gli errori si scelgono fra quelli **delle regole congelate**.

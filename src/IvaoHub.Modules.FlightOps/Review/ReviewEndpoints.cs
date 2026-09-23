@@ -155,14 +155,19 @@ public static class ReviewEndpoints
                 _ => Results.Ok(await reviews.PageAsync(pirep, http.RequestAborted)),
             };
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateException exception) when (exception is DbUpdateConcurrencyException || IsDeadlock(exception))
         {
-            // Two takes at once: the first wins (§4.2), and the second reads the report again.
+            // Two takes at once: the first wins (§4.2), and the second reads the report again. On MariaDB the second can also
+            // lose as a deadlock — both writes lock the report through the key of the history row they add, then both want
+            // to change it — and the database has already rolled it back: it is the same answer.
             return Results.Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ConflictTitleKey));
         }
     }
+
+    private static bool IsDeadlock(DbUpdateException exception) =>
+        exception.InnerException is MySqlConnector.MySqlException { ErrorCode: MySqlConnector.MySqlErrorCode.LockDeadlock };
 
     /// <summary>The rows of one page: the tours' titles, the legs' numbers, the names, and whether the reader may take each.</summary>
     private static async Task<IReadOnlyList<ReviewQueueRowDto>> QueuePageAsync(

@@ -1365,6 +1365,10 @@ Com'è andata:
 - **Trovato scrivendo**: la mail non porta il numero della leg (un `Open` non ne ha); il test di architettura che vieta le istruzioni
   in blocco ha preso il primo `ExecuteDelete` del job delle tracce, ora cancella attraverso l'interceptor leggendo solo le chiavi;
   la lettura di una riga della coda (`…/queue/{id}`, che il motore mappa sempre) è più stretta della lista — nessuno la usa.
+- **Trovato dalla CI**: due prese contemporanee su MariaDB possono finire in un **deadlock** invece che in un conflitto di versione
+  (la chiave della riga di storia blocca il PIREP in lettura, poi tutte e due lo vogliono scrivere): ora è un 409 come l'altro. E i
+  test della validazione davano un indirizzo al coordinator del FOD, che riceveva così i messaggi di contatto di un'altra classe di
+  test: il database dei test è uno solo.
 - **I test**: unit `ReviewTests` (il suggerimento in tabella, il catalogo dei tipi, la traccia registrata che torna intera in meno
   di un quarto), `NotificationTemplateTests` ora legge anche i tipi dei moduli; integrazione `PirepTests.Review.cs` (cinque: il ciclo
   con tutti gli stati, le mail senza nome e la riapertura; nessuno prende i propri, superadmin compreso; abilitato su un tour e non
