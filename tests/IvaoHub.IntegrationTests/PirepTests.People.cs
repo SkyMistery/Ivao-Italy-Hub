@@ -165,6 +165,8 @@ public sealed partial class PirepTests
         Assert.Equal([tourId], row.GetProperty("tourIds").EnumerateArray().Select(id => id.GetInt64()));
         Assert.False(row.GetProperty("allTours").GetBoolean());
         Assert.Equal(1, row.GetProperty("accepted").GetInt32());
+        // The title of the tour they are enabled on travels with the statistics: a validator may not read the list of the tours (T15b).
+        Assert.Contains(statistics.GetProperty("titles").EnumerateArray(), entry => entry.GetProperty("tourId").GetInt64() == tourId);
         var perTour = statistics.GetProperty("tours").EnumerateArray().Single(entry => entry.GetProperty("tourId").GetInt64() == tourId);
         Assert.Equal(1, perTour.GetProperty("counts").EnumerateArray().Single(entry => entry.GetProperty("vid").GetInt32() == StaffValidatorVid).GetProperty("accepted").GetInt32());
 
@@ -322,6 +324,75 @@ public sealed partial class PirepTests
         {
             Assert.Equal(HttpStatusCode.NotFound, nobody.StatusCode);
         }
+    }
+
+    /// <summary>
+    /// The pilot's own tours (T15b, note 2026-09-24-le-pagine-delle-persone §3.1), from the endpoint the cards read and from the
+    /// block `flightops.myTours`, which answer the same: the tour started with how far and the next leg, the report sent back
+    /// «to modify» with the tour's address, the summary with the minutes the tracker recorded. Hidden, the tour leaves the list
+    /// and not the summary. A visitor gets nothing: 401 from the endpoint, `signedIn: false` from the block.
+    /// </summary>
+    [Fact]
+    public async Task ThePilotsOwnToursSayWhereTheyAreWhatWaitsAndWhatTheyFlew()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        await GrantValidateAsync(ValidatorVid, tourId, token);
+        using var validator = await SignedInAsync(ValidatorVid, token);
+
+        await AcceptedAsync(pilot, validator, tourId, legs[0], Rome, Milan, DateTime.UtcNow.AddDays(-1), token);
+
+        var mine = await OkAsync(await pilot.GetAsync(MyToursEndpoints.Pattern, token), token);
+        var started = mine.GetProperty("tours").EnumerateArray().Single(entry => entry.GetProperty("tourId").GetInt64() == tourId);
+        Assert.Equal(1, started.GetProperty("done").GetInt32());
+        Assert.Equal(2, started.GetProperty("target").GetInt32());
+        Assert.Equal("Legs", started.GetProperty("unit").GetString());
+        Assert.Equal(JsonValueKind.Null, started.GetProperty("completedAt").ValueKind);
+        Assert.Equal(legs[1], started.GetProperty("next").GetProperty("id").GetInt64());
+        Assert.Equal(2, started.GetProperty("next").GetProperty("number").GetInt32());
+        Assert.StartsWith("fo-test-pirep-", started.GetProperty("slug").GetString(), StringComparison.Ordinal);
+        var summary = mine.GetProperty("summary");
+        Assert.True(summary.GetProperty("legsAccepted").GetInt32() >= 1);
+        Assert.True(summary.GetProperty("minutesFlown").GetInt32() > 0);
+
+        // The second leg sent back «to modify»: it waits for the pilot, with the tour's address for the form.
+        var flown = _flights.Add(PilotVid, "XAA102", Milan, London, DateTime.UtcNow.AddHours(-6));
+        var second = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[1], flown), token));
+        var page = await TakeAsync(validator, second, token);
+        await StepAsync(validator, second, "decide", Decision(PirepStatus.ToModify, [], RowVersion(page)) with { NoteToPilot = "fo-test the STAR" }, token);
+
+        mine = await OkAsync(await pilot.GetAsync(MyToursEndpoints.Pattern, token), token);
+        var toFix = Assert.Single(mine.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
+        Assert.Equal(started.GetProperty("slug").GetString(), toFix.GetProperty("slug").GetString());
+
+        // The block says the same, to the same pilot.
+        var block = await OkAsync(await pilot.GetAsync($"/api/blocks/data/{MyToursProvider.BlockType}", token), token);
+        Assert.True(block.GetProperty("signedIn").GetBoolean());
+        Assert.Contains(block.GetProperty("tours").EnumerateArray(), entry => entry.GetProperty("tourId").GetInt64() == tourId);
+        Assert.Contains(block.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
+
+        // Hidden: gone from the list, still in the record.
+        var accepted = mine.GetProperty("summary").GetProperty("legsAccepted").GetInt32();
+        await OkAsync(
+            await coordinator.PostAsJsonAsync($"{TourEndpoints.Pattern}/{tourId}/status", new TourStatusRequest(TourStatusAction.Hide), token),
+            token);
+        mine = await OkAsync(await pilot.GetAsync(MyToursEndpoints.Pattern, token), token);
+        Assert.DoesNotContain(mine.GetProperty("tours").EnumerateArray(), entry => entry.GetProperty("tourId").GetInt64() == tourId);
+        Assert.DoesNotContain(mine.GetProperty("toModify").EnumerateArray(), entry => entry.GetProperty("pirepId").GetInt64() == second);
+        Assert.Equal(accepted, mine.GetProperty("summary").GetProperty("legsAccepted").GetInt32());
+
+        // A visitor.
+        using var anonymous = _host.CreateClient();
+        using (var refused = await anonymous.GetAsync(MyToursEndpoints.Pattern, token))
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+        }
+
+        block = await OkAsync(await anonymous.GetAsync($"/api/blocks/data/{MyToursProvider.BlockType}", token), token);
+        Assert.False(block.GetProperty("signedIn").GetBoolean());
     }
 
     /// <summary>A report of the pilot on a leg, taken and accepted by the validator with no error; its id.</summary>

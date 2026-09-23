@@ -52,11 +52,11 @@ public sealed class DataBlockEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifet
 
         var data = registry.All.Where(descriptor => descriptor.Kind == BlockKind.Data).ToList();
 
-        // Six of the core, the one M0 built, `myWork` of D3 and the four of the tours — the public errors
-        // (M2, T9), the cards (T10), the queue of the validators (T13b) and what else waits for their staff
-        // (T14b) —, and the count is written out so that a block lost in a merge is something CI says out loud
-        // rather than a gallery that is quietly shorter.
-        Assert.Equal(12, data.Count);
+        // Six of the core, the one M0 built, `myWork` of D3 and the five of the tours — the public errors
+        // (M2, T9), the cards (T10), the queue of the validators (T13b), what else waits for their staff
+        // (T14b) and the pilot's own tours (T15b) —, and the count is written out so that a block lost in a
+        // merge is something CI says out loud rather than a gallery that is quietly shorter.
+        Assert.Equal(13, data.Count);
 
         foreach (var descriptor in data)
         {
