@@ -830,6 +830,9 @@ notifica `flightops.reviewDigest`, con la preferenza del membro per spegnerla; n
   pilota, di **tutti i tour**, per anno UTC del decollo, più questo; un «da modificare» non conta (Carmine, 23 settembre, T13a). La
   pagina lo chiede al server mentre si spuntano gli errori (`…/review/{id}/suggestion`), non lo ricalcola.
 - **La decisione** con `note_to_pilot` e `staff_note`; contro il suggerimento, `threshold_overridden` e il perché.
+- **Precisato in T13b** (nota `2026-09-23-le-pagine-della-validazione`): la pagina riceve le revisioni del piano già lette dal client
+  del nucleo e gli aeroporti con la posizione, mai il JSON di IVAO; la mappa disegna la leg congelata, i voli di una deviazione e la
+  traccia (finché c'è, 90 giorni dopo la decisione). Si prende dalla pagina, non dalla coda.
 
 ---
 
@@ -1058,7 +1061,7 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 |---|---|---|
 | `flightops.tourCards` | pagine pubbliche, `/me` | i riquadri, per chi guarda |
 | `flightops.myTours` | `/me` | tour iniziati, avanzamento, prossima leg, PIREP da correggere, chiarimenti con risposta; **il riepilogo del pilota** (leg volate, ore stimate, tour completati), senza contatori degli errori. **Nessun elenco pubblico** di chi ha completato un tour: ognuno vede i suoi |
-| `flightops.reviewQueue` | dashboard FOD, `/staff` | PIREP in coda sui tour che chi guarda può validare |
+| `flightops.reviewQueue` | dashboard FOD, `/staff` | PIREP in coda sui tour che chi guarda può validare: **una riga per tour**, quanti e da quando il più vecchio, con il link alla coda del tour (Carmine, 23 settembre, T13b) |
 | `flightops.openIssues` | dashboard FOD | segnalazioni aperte, contestazioni e chiarimenti senza risposta |
 | `flightops.errorCatalog` | pagine, documenti | gli errori pubblici |
 
@@ -1105,6 +1108,8 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   (`worker-src` resta `'self'`), ma `img-src` guadagna `blob:`. Il ripiego su Leaflet è scartato (servirebbe un plugin in manutenzione
   per le tessere vettoriali).
 - Componente nuovo nell'elenco chiuso: `RouteMap`.
+- **Esteso in T13b**: `RouteMap` disegna anche **una traccia volata** (`tracks`, in rosso sopra le leg, senza marcatori) per la pagina
+  di validazione.
 - **Corretto il 22 settembre 2026 in T10** (nota `2026-09-22-il-pubblico-dei-tour`): la base **non porta i nomi dei luoghi** —
   terra, acqua e confini fra stati, e basta — quindi sotto `/tiles` non ci sono né caratteri né sprite: **un file solo**,
   `basemap.pmtiles`. Le uniche parole sulla mappa sono i codici degli aeroporti, che sono marcatori HTML del componente.
