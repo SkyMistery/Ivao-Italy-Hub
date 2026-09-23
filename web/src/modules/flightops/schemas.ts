@@ -777,3 +777,58 @@ export function clarificationSchema(references: readonly ChoiceOption[]) {
 }
 
 export type ClarificationValues = z.output<ReturnType<typeof clarificationSchema>>;
+
+// ---- the people of the tours (T15b) -------------------------------------------------------------
+
+/**
+ * `?year=` of the validators' statistics and of a pilot's page: the calendar year counted, the current one when absent
+ * (note 2026-09-24-le-pagine-delle-persone §2). Coerced, because an address holds text.
+ */
+export const yearSearchSchema = z.object({ year: z.coerce.number().int().optional() });
+
+/** `/staff/tours/bans`: the five of every list, and the pilot it is narrowed to — the pilot's page links there. */
+export const bansSearchSchema = listSearchSchema.extend({ vid: z.coerce.number().int().optional() });
+
+/** `/staff/tours/bans/new?vid=`: «ban» from a pilot's page opens the form with the pilot already written. */
+export const banFormSearchSchema = z.object({ vid: z.coerce.number().int().optional() });
+
+/**
+ * «Add a validator» (design M2 §7.2): who, and a tour of the first level — which covers its subtours — or, with nothing
+ * chosen, every tour. Only staff of the division may be enabled; the server says so on `vid`.
+ */
+export function validatorSchema(tours: readonly ChoiceOption[] = []) {
+  return z.object({
+    vid: z.number().int().optional(),
+    tourId: z
+      .string()
+      .optional()
+      .meta({ choices: [...tours] }),
+  });
+}
+
+export type ValidatorFormValues = z.output<ReturnType<typeof validatorSchema>>;
+
+/** The pilot's page is asked by VID: the only thing the staff always has in hand. */
+export const pilotLookupSchema = z.object({ vid: z.number().int().min(1).optional() });
+
+export type PilotLookupValues = z.output<typeof pilotLookupSchema>;
+
+/**
+ * A ban (§3.9): the pilot, a tour of the first level or — nothing chosen — every tour, from when, until when — nothing, for
+ * good —, and why, which the pilot reads in the mail. The instants are UTC, as the form generator writes them.
+ */
+export function banSchema(tours: readonly ChoiceOption[] = []) {
+  return z.object({
+    vid: z.number().int().optional(),
+    tourId: z
+      .string()
+      .optional()
+      .meta({ choices: [...tours] }),
+    startsAt: z.string().optional().meta({ datetime: true }),
+    endsAt: z.string().optional().meta({ datetime: true }),
+    reason: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+    rowVersion: z.string().meta({ hidden: true }),
+  });
+}
+
+export type BanFormValues = z.output<ReturnType<typeof banSchema>>;

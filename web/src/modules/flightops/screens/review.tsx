@@ -5,7 +5,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
-import { writableDepartments } from '../../../shared/api/bootstrap';
+import { holdsPermissionAnywhere, writableDepartments } from '../../../shared/api/bootstrap';
 import { preferenceQuery, useSavePreference } from '../../../features/me/queries';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
@@ -36,10 +36,11 @@ import {
   type ReopenValues,
   type ReviewQueueSearch,
 } from '../schemas';
-import { CONTACTS_VIEW } from '../permissions';
+import { CONTACTS_VIEW, TOURS_VIEW_PILOTS } from '../permissions';
 
 import { TOURS } from './tours';
 import { useStaff } from './hooks';
+import { PILOTS } from './people';
 import {
   REPORT_STATUS_COLOURS,
   REVIEW_QUEUE_ORDERS,
@@ -713,6 +714,7 @@ const DISPUTE_COLOURS: Readonly<
 function PilotProfile({ review }: { review: ReviewDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
+  const { bootstrap } = useStaff();
   const { profile } = review;
 
   return (
@@ -746,6 +748,14 @@ function PilotProfile({ review }: { review: ReviewDto }) {
           ))}
         </ul>
       )}
+      {holdsPermissionAnywhere(bootstrap, TOURS_VIEW_PILOTS) ? (
+        <p>
+          {/* Every tour, every year: the pilot's page of the staff (T15b). */}
+          <RouterAnchor href={`${PILOTS}/${review.pilot.vid}`} className="underline">
+            {t('flightops:review.pilotPage')}
+          </RouterAnchor>
+        </p>
+      ) : null}
     </div>
   );
 }

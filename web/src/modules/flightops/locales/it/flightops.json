@@ -9,7 +9,10 @@
     "settings": "Impostazioni dei tour",
     "rules": "Regole dei tour",
     "errors": "Errori dei tour",
-    "issues": "Segnalazioni sulle leg"
+    "issues": "Segnalazioni sulle leg",
+    "validators": "Validatori",
+    "pilots": "Piloti",
+    "bans": "Ban"
   },
   "tours": {
     "title": "Tour",
@@ -817,6 +820,15 @@
       "disputes_other": "{{count}} contestazioni senza risposta",
       "clarifications_one": "{{count}} richiesta di chiarimenti senza risposta",
       "clarifications_other": "{{count}} richieste di chiarimenti senza risposta"
+    },
+    "myTours": {
+      "label": "I miei tour",
+      "signIn": "Accedi per vedere i tuoi tour.",
+      "toModify": "Correggi il report su {{tour}}: {{from}} → {{to}}",
+      "answered": "Risposta: {{subject}}",
+      "none": "Non hai ancora iniziato un tour.",
+      "toTours": "Vedi i tour",
+      "summary": "{{legs}} leg accettate · {{hours}} h {{minutes}} min volati · {{tours}} tour completati"
     }
   },
   "public": {
@@ -1139,7 +1151,8 @@
     "disputeDecidedBy": "Decisa da {{name}} il {{date}} UTC",
     "disputeThread": "Il filo della contestazione",
     "decideDispute": "Decidi la contestazione",
-    "disputeDecided": "Contestazione decisa. La risposta è nel filo e il pilota la riceve per mail."
+    "disputeDecided": "Contestazione decisa. La risposta è nel filo e il pilota la riceve per mail.",
+    "pilotPage": "La pagina del pilota"
   },
   "events": {
     "submitted": "Inviato",
@@ -1264,5 +1277,130 @@
   },
   "awards": {
     "tourCompleted": "Ha completato il tour \"{{tour}}\""
+  },
+  "progress": {
+    "Legs": "{{done}} leg su {{target}}",
+    "Miles": "{{done}} NM su {{target}}",
+    "Goal": "Obiettivo: {{done}} su {{target}}",
+    "Subtours": "{{done}} sottotour su {{target}}",
+    "noTarget": "Iniziato",
+    "completed": "Completato",
+    "next": "prossima: leg {{number}} {{from}} → {{to}}"
+  },
+  "people": {
+    "year": "Anno"
+  },
+  "validators": {
+    "title": "Validatori",
+    "description": "Che cosa ha deciso ogni validatore in un anno, su quali tour è abilitato, e chi aggiungere.",
+    "sections": {
+      "validators": "Validatori nel {{year}}",
+      "tours": "Tour nel {{year}}",
+      "add": "Aggiungi un validatore"
+    },
+    "fields": {
+      "member": "Validatore",
+      "enabledOn": "Abilitato su",
+      "accepted": "Accettati",
+      "rejected": "Rifiutati",
+      "toModify": "Da modificare",
+      "vid": "VID",
+      "tourId": "Tour"
+    },
+    "hints": {
+      "vid": "Un membro dello staff della divisione.",
+      "tourId": "Nessuna scelta: tutti i tour. Un tour copre i suoi sottotour, anche quelli aggiunti dopo."
+    },
+    "options": {
+      "tourId": {
+        "none": "Tutti i tour"
+      }
+    },
+    "none": "Nessuno è abilitato e nessuno ha deciso un report quest’anno.",
+    "noTours": "Nessun report deciso quest’anno.",
+    "suspended": "Sospeso: non è più staff",
+    "allTours": "Tutti i tour",
+    "byPosition": "Per posizione",
+    "remove": "Togli",
+    "removeTitle": "Togliere il validatore da {{tour}}?",
+    "removeDescription": "Quello che ha deciso resta; dal prossimo login non prende più report lì.",
+    "removed": "Validatore tolto.",
+    "add": "Aggiungi",
+    "added": "Validatore aggiunto.",
+    "addedDescription": "Prende i report dal prossimo login."
+  },
+  "pilots": {
+    "title": "Piloti",
+    "description": "Il registro di un pilota nei tour: errori, voli, contestazioni, ban. Scrivi il suo VID.",
+    "open": "Apri",
+    "ban": "Banna",
+    "allBans": "Tutti i ban di questo pilota",
+    "startedOn": "iniziato il {{date}}",
+    "disputes": "Contestazioni: {{open}} aperte, {{upheld}} accolte, {{dismissed}} respinte.",
+    "sections": {
+      "tours": "Tour",
+      "errors": "Errori confermati",
+      "flights": "Leg volate",
+      "threads": "Contestazioni e chiarimenti",
+      "bans": "Ban"
+    },
+    "fields": {
+      "vid": "VID",
+      "category": "Categoria",
+      "inYear": "Nel {{year}}",
+      "ever": "Da sempre",
+      "error": "Errore",
+      "tour": "Tour",
+      "leg": "Leg",
+      "takeoffAt": "Decollo",
+      "status": "Esito",
+      "decidedBy": "Deciso da"
+    },
+    "dispute": {
+      "Open": "contestato",
+      "Upheld": "contestazione accolta",
+      "Dismissed": "contestazione respinta"
+    },
+    "threadKind": {
+      "dispute": "contestazione",
+      "clarification": "chiarimento"
+    },
+    "noTours": "Nessun tour iniziato.",
+    "noErrors": "Nessun errore confermato su un report accettato o rifiutato.",
+    "noFlights": "Nessuna leg riportata.",
+    "noThreads": "Nessun filo che puoi leggere."
+  },
+  "bans": {
+    "title": "Ban",
+    "description": "Chi non può inviare report, su quali tour e fino a quando. Un ban non si cancella: per toglierlo se ne sposta la fine.",
+    "create": "Nuovo ban",
+    "edit": "Ban",
+    "toPilot": "Il pilota",
+    "forGood": "per sempre",
+    "fields": {
+      "pilotName": "Pilota",
+      "vid": "VID",
+      "tourTitle": "Tour",
+      "tourId": "Tour",
+      "reach": "Portata",
+      "startsAt": "Dal",
+      "endsAt": "Fino al",
+      "active": "In vigore",
+      "reason": "Motivo"
+    },
+    "hints": {
+      "tourId": "Nessuna scelta: tutti i tour. Un tour copre i suoi sottotour.",
+      "endsAt": "Vuoto: per sempre. Per togliere un ban prima, spostane la fine.",
+      "reason": "Il pilota lo legge nella mail."
+    },
+    "options": {
+      "tourId": {
+        "none": "Tutti i tour"
+      },
+      "reach": {
+        "All": "Tutti i tour",
+        "One": "Un tour"
+      }
+    }
   }
 }
