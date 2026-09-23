@@ -80,5 +80,13 @@
   ],
 
   "$comment.firStaffScope": "all = FIR teams work on every FIR (default). own = each FIR team only sees its own FIR.",
-  "firStaffScope": "all"
+  "firStaffScope": "all",
+
+  "$comment.atcData": [
+    "Optional. Where the ATC sessions of the network are read from, so that the controllers a pilot contacted",
+    "can be proposed on a tour report. none (the default) = no archive: the list is 'not available' and the",
+    "pilot writes it alone. vipi = the read-only view v_share_atc_sessions of a vIPI installation, reached with",
+    "ConnectionStrings:AtcData in a file under secrets/ and a database user that can only SELECT on that view."
+  ],
+  "atcData": { "source": "none" }
 }

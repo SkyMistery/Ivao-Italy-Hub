@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using IvaoHub.Core.Airspace;
+using IvaoHub.Core.Atc;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Awards;
 using IvaoHub.Core.Content;
@@ -134,6 +135,10 @@ builder.Services.AddWeather();
 
 // The outlines of the flight information regions, and the weekly job that keeps them.
 builder.Services.AddAirspace();
+
+// The archive of ATC sessions, when division.json names one (atcData); a division without one gets
+// «not available» and nothing else changes (note 2026-09-14-dati-condivisi-con-vipi).
+builder.Services.AddAtcActivity();
 
 // The one notification service, and the job that empties its queue. Nothing else in the hub ever
 // talks to a mail server: a module publishes an intent (plan section 9.7).
