@@ -3,10 +3,12 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Preferences;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
+using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
@@ -59,6 +61,15 @@ public sealed class FlightOpsModule : ModuleBase
     /// <summary>The public pages of the tours (T10): <c>/tours</c> and <c>/tours/{slug}</c>, so no page may be «tours».</summary>
     public override IReadOnlyList<string> ReservedSegments => ["tours"];
 
+    /// <summary>How the validator orders the queue (§4.1), kept on their user so they find it on any computer (T13).</summary>
+    public override IReadOnlyList<PreferenceDescriptor> Preferences =>
+    [
+        PreferenceDescriptor.OneOf(ReviewQueueOrder.PreferenceKey, ReviewQueueOrder.ByDate, ReviewQueueOrder.ByTour),
+    ];
+
+    /// <summary>The outcomes to the pilot and the digest to the validators (§3.5, §4.2.2).</summary>
+    public override IReadOnlyList<string> NotificationTypes => FlightOpsNotifications.All;
+
     public override ModuleSettingsDescriptor Settings { get; } =
         ModuleSettingsDescriptor.Create<FlightOpsSettings, FlightOpsSettingsSaveValidator>(
             TourPermissions.ManageSettings,
@@ -89,9 +100,12 @@ public sealed class FlightOpsModule : ModuleBase
         services.TryAddScoped<ITourReports, PirepTourReports>();
         services.AddScoped<PirepSubmission>();
         services.AddScoped<AtcProposer>();
+        services.AddScoped<PirepReview>();
 
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
+        services.AddScoped<TrackRetentionJob>();
+        services.AddScoped<ReviewDigestJob>();
         services.AddQuartz(quartz => quartz
             .AddJob<TourReleaseJob>(job => job.WithIdentity(TourReleaseJob.JobName))
             .AddTrigger(trigger => trigger
@@ -102,7 +116,17 @@ public sealed class FlightOpsModule : ModuleBase
             .AddTrigger(trigger => trigger
                 .ForJob(PirepWithdrawalJob.JobName)
                 .WithIdentity($"{PirepWithdrawalJob.JobName}-daily")
-                .WithCronSchedule(PirepWithdrawalJob.Cron)));
+                .WithCronSchedule(PirepWithdrawalJob.Cron))
+            .AddJob<TrackRetentionJob>(job => job.WithIdentity(TrackRetentionJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(TrackRetentionJob.JobName)
+                .WithIdentity($"{TrackRetentionJob.JobName}-daily")
+                .WithCronSchedule(TrackRetentionJob.Cron))
+            .AddJob<ReviewDigestJob>(job => job.WithIdentity(ReviewDigestJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(ReviewDigestJob.JobName)
+                .WithIdentity($"{ReviewDigestJob.JobName}-daily")
+                .WithCronSchedule(ReviewDigestJob.Cron)));
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
@@ -113,5 +137,6 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapShapeEndpoints();
         endpoints.MapRuleEndpoints();
         endpoints.MapPirepEndpoints();
+        endpoints.MapReviewEndpoints();
     }
 }

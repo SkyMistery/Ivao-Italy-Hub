@@ -1566,6 +1566,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/review/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReviewQueueList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/queue/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReviewQueueGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReviewTracks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}/suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReviewSuggestion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}/take": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReviewTake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReviewRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReviewDecide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReviewReopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2735,8 +2879,32 @@ export interface components {
         };
         /** Format: binary */
         IFormFile: string;
+        /**
+         * @description One point of the track of a session. Measured on real flights: the network samples every 15
+         *     seconds or so on a long flight (minimum 4, maximum 20 on the one measured), and the points of a
+         *     session survive about 90 days at IVAO.
+         */
+        IvaoTrackPointDto: {
+            /** Format: date-time */
+            at: string;
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            /** Format: int32 */
+            altitudeFeet: number;
+            /** Format: int32 */
+            groundSpeedKnots: number;
+            /** Format: int32 */
+            heading: number;
+            onGround: boolean;
+            state: null | string;
+            transponder: null | string;
+        };
+        JsonArray: unknown[];
         JsonElement: unknown;
         JsonNode: unknown;
+        JsonObject: Record<string, never>;
         /**
          * @description One row of the leg editor (design M2 §8.4): the leg as stored, plus what is computed at the read — the IATA codes
          *     a pilot recognises, the estimated time when the tour names a reference aircraft (§1.5), and whether a report points
@@ -3046,6 +3214,12 @@ export interface components {
             category: null | string;
             /** Format: date-time */
             rowVersion: string;
+        };
+        /** @description A member as the staff reads them: the VID and the name the hub has (none, if they never signed in). */
+        MemberDto: {
+            /** Format: int32 */
+            vid: number;
+            name: null | string;
         };
         /** @description The same, as the form loads it, with the version to write back. */
         MenuItemDetailDto: {
@@ -3578,6 +3752,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfReviewQueueRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["ReviewQueueRowDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfRotationListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["RotationListDto"][];
@@ -3712,7 +3909,37 @@ export interface components {
              */
             total: number;
         };
-        /** @description A report as its pilot sees it: never the validator's name (design M2 §3.5). What the decision said arrives with T13. */
+        /** @description A ban as the validator reads it on the pilot's profile. */
+        PilotBanDto: {
+            /** Format: int64 */
+            tourId: null | number;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: null | string;
+            reason: string;
+            inForce: boolean;
+        };
+        /**
+         * @description The pilot in this tour (§4.3): legs reported, accepted, rejected, and those rejected and disputed; every ban. The counts of
+         *     the disputes (opened, upheld, turned down) arrive with the threads of T14.
+         */
+        PilotProfileDto: {
+            pilot: components["schemas"]["MemberDto"];
+            /** Format: int32 */
+            reported: number;
+            /** Format: int32 */
+            accepted: number;
+            /** Format: int32 */
+            rejected: number;
+            /** Format: int32 */
+            disputed: number;
+            bans: components["schemas"]["PilotBanDto"][];
+        };
+        /**
+         * @description A report as its pilot sees it: never the validator's name (design M2 §3.5). With a decision, when it was taken, the note
+         *     to the pilot and the rules it says were broken (T13).
+         */
         PirepDto: {
             /** Format: int64 */
             id: number;
@@ -3745,6 +3972,10 @@ export interface components {
             exemptions: components["schemas"]["AtcExemptionDto"][];
             atcArchiveAvailable: boolean;
             flights: components["schemas"]["PirepFlightDto"][];
+            /** Format: date-time */
+            decidedAt: null | string;
+            noteToPilot: null | string;
+            violatedRules: components["schemas"]["ViolatedRuleDto"][];
             /** Format: date-time */
             rowVersion: string;
         };
@@ -4046,6 +4277,177 @@ export interface components {
          * @enum {unknown}
          */
         PublishStatus: "Draft" | "Published" | "Ready";
+        /** @description What the reader may do on this report now. */
+        ReviewActionsDto: {
+            canTake: boolean;
+            canRelease: boolean;
+            canDecide: boolean;
+            canReopen: boolean;
+        };
+        /**
+         * @description A decision (§4.3): the outcome, the errors marked among the frozen rules', the note to the pilot and the one to the staff,
+         *     and — when it goes against the suggestion — why.
+         */
+        ReviewDecisionDto: {
+            outcome: components["schemas"]["PirepStatus"];
+            errorIds: number[];
+            noteToPilot: null | string;
+            staffNote: null | string;
+            overrideReason: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
+         *     suggestion, the decision as it stands and the history. The weather (T16) and the automatic checks (T17) have their place
+         *     and say they are not available yet; the tracks are a request of their own, `…/tracks`.
+         */
+        ReviewDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            tourTitle: components["schemas"]["LocalizedOfstring"];
+            tourSlug: string;
+            status: components["schemas"]["PirepStatus"];
+            isDisputed: boolean;
+            isOwn: boolean;
+            pilot: components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            resubmittedAt: null | string;
+            /** Format: date-time */
+            queuedAt: string;
+            leg: components["schemas"]["SnapshotLegDto"];
+            flightRules: string;
+            sid: null | string;
+            star: null | string;
+            approach: null | string;
+            isDiversion: boolean;
+            diversionIcao: null | string;
+            diversionReason: null | components["schemas"]["DiversionReason"];
+            diversionNote: null | string;
+            pilotRemarks: null | string;
+            atcContacts: components["schemas"]["AtcContactDto"][];
+            exemptions: components["schemas"]["AtcExemptionDto"][];
+            atcArchiveAvailable: boolean;
+            flights: components["schemas"]["ReviewFlightDto"][];
+            rules: components["schemas"]["SnapshotRuleDto"][];
+            errors: components["schemas"]["ReviewErrorDto"][];
+            suggestion: components["schemas"]["SuggestionDto"];
+            profile: components["schemas"]["PilotProfileDto"];
+            assignedTo: null | components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            leaseUntil: null | string;
+            decidedBy: null | components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            decidedAt: null | string;
+            noteToPilot: null | string;
+            staffNote: null | string;
+            thresholdOverridden: boolean;
+            overrideReason: null | string;
+            weatherAvailable: boolean;
+            checksAvailable: boolean;
+            history: components["schemas"]["ReviewEventDto"][];
+            actions: components["schemas"]["ReviewActionsDto"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description An error of the rules the report froze, as the table of the validation page shows it (§4.3): how often the pilot got it in
+         *     the calendar year of this flight and ever, on their decided reports (note 2026-09-23-la-validazione §2.5), and whether
+         *     the current decision marks it.
+         */
+        ReviewErrorDto: {
+            /** Format: int64 */
+            id: number;
+            name: components["schemas"]["LocalizedOfstring"];
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            yearlyMax: null | number;
+            ruleCodes: string[];
+            /** Format: int32 */
+            countInYear: number;
+            /** Format: int32 */
+            countEver: number;
+            marked: boolean;
+            suggestedByCheck: boolean;
+        };
+        /** @description A step of the report's history, with the name of who took it: the staff sees it, the pilot never does (§3.5). */
+        ReviewEventDto: {
+            fromStatus: null | components["schemas"]["PirepStatus"];
+            toStatus: components["schemas"]["PirepStatus"];
+            by: null | components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            at: string;
+            note: null | string;
+        };
+        /** @description One flight of the report as the validator reads it: every revision of the plan, and the one at take-off. */
+        ReviewFlightDto: {
+            /** Format: int32 */
+            seq: number;
+            /** Format: int64 */
+            trackerSessionId: number;
+            callsign: string;
+            aircraft: null | string;
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: date-time */
+            takeoffAt: string;
+            /** Format: date-time */
+            landingAt: null | string;
+            flightPlans: components["schemas"]["JsonArray"];
+            /** Format: int32 */
+            planAtTakeoffRevision: null | number;
+            hasTrack: boolean;
+        };
+        /**
+         * @description One row of the queue (§4.1): tour, leg, pilot, date of the flight, since when it waits, status, who holds it, disputed —
+         *     and whether the reader may take it. The suggestion of the checks joins with T17.
+         */
+        ReviewQueueRowDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            tourTitle: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            legId: null | number;
+            /** Format: int32 */
+            legNumber: null | number;
+            departureIcao: string;
+            arrivalIcao: string;
+            pilot: components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            takeoffAt: string;
+            /** Format: date-time */
+            queuedAt: string;
+            status: components["schemas"]["PirepStatus"];
+            assignedTo: null | components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            leaseUntil: null | string;
+            isDisputed: boolean;
+            isOwn: boolean;
+            canTake: boolean;
+        };
+        /** @description Reopening a decision (§4.2.1): the reason is required and stays in the history. */
+        ReviewReopenDto: {
+            reason: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description The version of the report the validator saw when they pressed a button. */
+        ReviewStepDto: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description The track of one flight of the report, or none when it was never stored or has already gone (§2.3 of the note). */
+        ReviewTrackDto: {
+            /** Format: int32 */
+            seq: number;
+            points: null | components["schemas"]["IvaoTrackPointDto"][];
+        };
         /** @description A rotation as the form loads it. */
         RotationDto: {
             /** Format: int64 */
@@ -4146,12 +4548,65 @@ export interface components {
             /** @description What happened to it. */
             change: components["schemas"]["SectionChange"];
         };
+        /** @description An error as a report froze it with its rule (design M2 §5.4). */
+        SnapshotErrorDto: {
+            /** Format: int64 */
+            id: number;
+            name: components["schemas"]["LocalizedOfstring"];
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            yearlyMax: null | number;
+        };
+        /**
+         * @description The leg as a report froze it (design M2 §3.2 point 6): if the leg changes afterwards, the report is judged on this one.
+         *     On an `Open` tour, the route the flight flew.
+         */
+        SnapshotLegDto: {
+            /** Format: int64 */
+            legId: null | number;
+            /** Format: int32 */
+            number: null | number;
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: double */
+            distanceNm: number;
+            callsigns: string[];
+            aircraft: components["schemas"]["AllowedAircraft"];
+        };
+        /** @description A rule as a report froze it: what it said, the check and the parameters it carried, and its errors. */
+        SnapshotRuleDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            amendsRuleId: null | number;
+            code: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            text: components["schemas"]["LocalizedOfstring"];
+            checkKey: null | string;
+            parameters: components["schemas"]["JsonObject"];
+            errors: components["schemas"]["SnapshotErrorDto"][];
+        };
         /**
          * @description Seniority of a staff position inside its department. The vocabulary lives here because the
          *     column needs it; `StaffRoleMap`, which produces it from a raw IVAO position, arrives in F2.
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /** @description What the system proposes (§4.3): `Accepted` or `Rejected`, with the errors that decide it. */
+        SuggestionDto: {
+            outcome: components["schemas"]["PirepStatus"];
+            reasons: components["schemas"]["SuggestionReasonDto"][];
+        };
+        /** @description Why the suggestion is a rejection: a dangerous error, or a warning that takes the year over its maximum. */
+        SuggestionReasonDto: {
+            /** Format: int64 */
+            errorId: number;
+            reason: string;
+            /** Format: int32 */
+            countInYear: null | number;
+            /** Format: int32 */
+            yearlyMax: null | number;
+        };
         /** @description A filter or a sequence rule of an `Open` tour as the form loads it: its kind, and its parameters. */
         TourConstraintDto: {
             /** Format: int64 */
@@ -4531,6 +4986,11 @@ export interface components {
             /** Format: date-time */
             builtAt: string;
             dotnet: string;
+        };
+        /** @description The rules a decision said were broken, as the pilot reads them with it (§3.5): never who decided. */
+        ViolatedRuleDto: {
+            code: string;
+            title: components["schemas"]["LocalizedOfstring"];
         };
         /**
          * @description Who may read a row. The global query filter of F4 turns this into a where clause.
@@ -9579,6 +10039,374 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewQueueList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfReviewQueueRowDto"];
+                };
+            };
+        };
+    };
+    FlightOpsReviewQueueGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewQueueRowDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewTracks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewTrackDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewSuggestion: {
+        parameters: {
+            query?: {
+                errorIds?: number[];
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewTake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewStepDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewStepDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewDecide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewReopen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewReopenDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {

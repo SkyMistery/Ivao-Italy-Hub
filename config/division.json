@@ -23,6 +23,7 @@
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageTemplates", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.ManageAircraft", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.Validate", "scope": "FOD" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ReopenDecisions", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageValidators", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.ViewPilots", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.Ban", "scope": "FOD" },

@@ -376,6 +376,13 @@ limiti) e `leg_snapshot_json` (la leg com'era, §3.2 punto 6); la deviazione ha 
 `diversion_note`. La sessione rivendicata è `fo_pirep_flights.claimed_session_id`, unica e annullabile, che il ritiro svuota.
 `fo_pirep_errors`, `note_to_pilot`, `staff_note`, `threshold_overridden` nascono con chi li scrive (T13); l'esito è lo stato.
 
+**Precisato in T13a** (23 settembre, nota `2026-09-23-la-validazione`): `fo_pireps` ha anche `queued_at` (quando è entrato in coda
+l'ultima volta: l'ordine della coda), `override_reason` (il perché di una decisione contro il suggerimento, obbligatorio allora e
+solo allora); `fo_pirep_errors` non ha una chiave verso il catalogo (nome e categoria si leggono dallo snapshot, quindi un errore
+cancellato dal catalogo non toglie niente alle decisioni) e una decisione nuova **sostituisce** le righe della precedente. **La
+traccia** di ogni volo si salva all'invio in **`fo_pirep_tracks`** (`pirep_flight_id`, `points_gzip`, `point_count`, `stored_at`):
+i punti come li legge il client IVAO, compressi gzip, ~10 KB a volo; si cancella `trackRetentionDays` dopo la decisione (§10).
+
 ### 1.9 L'iscrizione — `fo_enrolments`
 
 Il **primo PIREP iscrive** (su un sottotour, anche al `Container`). `vid`, `tour_id`, `started_at`, `completed_at?`.
@@ -406,6 +413,7 @@ delle impostazioni dei moduli del nucleo (`IModule.Settings`, T5, nota `2026-09-
 | `durationFactor`, `durationFixedMinutes` | 0,05 e 20 (§1.5): **configurabili dal FOD**, confermati da Carmine il 15 settembre come valori di partenza |
 | `northSouthLevelCountries` | i paesi dove i livelli semicircolari vanno nord–sud (§6.4); non cambia con l'AIRAC |
 | `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
+| `trackRetentionDays` | 90: giorni dopo la decisione (o il ritiro) in cui si tiene la traccia di un PIREP (Carmine, 23 settembre, T13a; §10) |
 | `thresholdToleranceMeters` | 150 (§6.4), uno per tutto il sistema |
 | `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) — **non in T5**: segue i tour aperti, e la forma la decide T16 |
 
@@ -781,6 +789,9 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
 - **I propri PIREP**: il validatore **li vede**, in **sola lettura**, con il loro esito e gli errori segnati (revisione del
   15 settembre); non li prende e non li decide (§7.3).
 - Colonne: tour, leg, pilota, data del volo, in coda da, stato, preso da, contestato, suggerimento dei controlli.
+- **Precisato in T13a**: la coda è la lista generica, `GET /api/flightops/review/queue`, ordinata su `queued_at`; «per tour» è
+  `sort=tourId`, e la lista generica tiene l'ordine per data dentro ogni tour. La preferenza si chiama `flightops.reviewQueueOrder`
+  (`date` | `tour`). Il suggerimento dei controlli entra con T17.
 
 ### 4.2 La presa in carico
 
@@ -791,7 +802,9 @@ prendere (nessun job). Due prese insieme: vince la prima (`row_version`).
 
 Una decisione presa si **riapre** (il PIREP torna `InReview` con una riga in `fo_pirep_events` e una motivazione obbligatoria) da:
 il **validatore che l'ha presa** e **FOC e FOAC**, **senza limiti di tempo** (Carmine, 15 settembre). La nuova decisione sostituisce
-la vecchia nei contatori e manda di nuovo la mail al pilota.
+la vecchia nei contatori e manda di nuovo la mail al pilota. **FOC e FOAC** sono il permesso **`Tours.ReopenDecisions`** (§7.1),
+negato all'interessato; chi ha deciso riapre la sua con il solo `Tours.Validate` sul tour (Carmine, 23 settembre, T13a). Il PIREP
+riaperto torna `InReview` **in mano a chi l'ha riaperto**.
 
 ### 4.2.2 Il riepilogo giornaliero
 
@@ -813,7 +826,9 @@ notifica `flightops.reviewDigest`, con la preferenza del membro per spegnerla; n
 - **La tabella degli errori** delle regole effettive, con il conteggio **nell'anno solare del volo** (risposta 8) e **da
   sempre** per il pilota; i suggeriti dai controlli già segnati come suggeriti.
 - **Il suggerimento**: un `Dangerous` segnato → rifiuto dalla prima occorrenza; un `Warning` che porta l'anno oltre
-  `yearly_max` → rifiuto; altrimenti accettazione.
+  `yearly_max` → rifiuto; altrimenti accettazione. **L'anno** conta l'errore confermato sui PIREP **accettati e rifiutati** del
+  pilota, di **tutti i tour**, per anno UTC del decollo, più questo; un «da modificare» non conta (Carmine, 23 settembre, T13a). La
+  pagina lo chiede al server mentre si spuntano gli errori (`…/review/{id}/suggestion`), non lo ricalcola.
 - **La decisione** con `note_to_pilot` e `staff_note`; contro il suggerimento, `threshold_overridden` e il perché.
 
 ---
@@ -982,6 +997,7 @@ l'hub, l'agente del validatore per `atcCoverage` (§6.6).
 | `Tours.ManageTemplates` | template di tour |
 | `Tours.ManageAircraft` | profili degli aerei |
 | `Tours.Validate` | prendere e decidere PIREP; **con scope per tour** (§7.3) |
+| `Tours.ReopenDecisions` | riaprire una decisione presa da altri (§4.2.1); negato all'interessato (T13a) |
 | `Tours.ManageValidators` | abilitare e togliere validatori |
 | `Tours.ViewPilots` | pagina del pilota, statistiche dei validatori |
 | `Tours.Ban` | bannare un pilota da un tour o da tutti |
@@ -998,6 +1014,7 @@ l'hub, l'agente del validatore per `atcCoverage` (§6.6).
 | `Tours.ManageTemplates` | ✓ | ✓ | — | |
 | `Tours.ManageAircraft` | ✓ | ✓ | ✓ | |
 | `Tours.Validate` | ✓ tutti | ✓ tutti | ✓ tutti | ✓ i tour abilitati |
+| `Tours.ReopenDecisions` | ✓ | ✓ | — | le proprie decisioni con `Tours.Validate` |
 | `Tours.ManageValidators` | ✓ | ✓ | — | |
 | `Tours.ViewPilots` | ✓ | ✓ | ✓ | ✓ (risposta 17) |
 | `Tours.Ban` | ✓ | ✓ | — | |
@@ -1120,6 +1137,9 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   tracce, tutte le revisioni dei piani, esiti dei controlli, snapshot delle regole, note, ATC ed esenzioni; del tour briefing,
   foto (se non usata altrove), regole del tour, hub, rotazioni, vincoli, iscrizioni.
 - **Meteo**: §1.13.
+- **Le tracce** vanno molto prima: **`trackRetentionDays` (90) dopo la decisione** di un PIREP accettato o rifiutato e non
+  contestato, o dopo il ritiro (Carmine, 23 settembre: «non possiamo avere GB di dati di tracce inutili»). Job giornaliero
+  `TrackRetentionJob` (T13a). Restano PIREP, piani, errori ed esiti dei controlli.
 - Job mensile del modulo, con una riga nel log dei job.
 
 ### 10.0 La richiesta di cancellazione dei dati

@@ -209,6 +209,7 @@
       "durationFixedMinutes": "Tempo stimato: minuti fissi",
       "northSouthLevelCountries": "Paesi con livelli di crociera nord–sud",
       "code": "Codice del paese (due lettere)",
+      "trackRetentionDays": "Giorni in cui si tiene la traccia di un report dopo la decisione",
       "retentionMonths": "Mesi di conservazione dei report",
       "retentionMonthsLong": "Mesi di conservazione del registro disciplinare",
       "thresholdToleranceMeters": "Distanza ammessa dalla testata al decollo (m)"
@@ -345,7 +346,16 @@
     "atcFrequency": "Una frequenza si scrive in MHz, per esempio 118.705.",
     "exemptionTooMany": "Troppe esenzioni per un solo report.",
     "exemptionNotContacted": "Un'esenzione appartiene a uno degli ATC che hai contattato.",
-    "exemptionNoteRequired": "Scrivi nella nota che cosa ti ha concesso l'ATC."
+    "exemptionNoteRequired": "Scrivi nella nota che cosa ti ha concesso l'ATC.",
+    "reviewTaken": "Un altro validatore ha già preso questo report.",
+    "reviewNotWaiting": "Questo report non è in coda.",
+    "reviewNotYours": "Questo report non è in mano tua: prendilo prima.",
+    "reviewOutcome": "Scegli fra accettato, da modificare e rifiutato.",
+    "reviewErrorUnknown": "Si possono segnare solo gli errori delle regole di questo report.",
+    "reviewRejectNeedsError": "Un rifiuto dice quali errori: segnane almeno uno.",
+    "reviewToModifyNeedsNote": "Scrivi al pilota che cosa deve correggere.",
+    "reviewOverrideNeedsReason": "La decisione va contro il suggerimento: scrivi perché.",
+    "reviewNotDecided": "Si può riaprire solo una decisione presa."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -931,6 +941,48 @@
     "submitted": "Inviato",
     "resubmitted": "Corretto e reinviato",
     "withdrawn": "Ritirato dal pilota",
-    "withdrawnAutomatically": "Ritirato: non corretto entro la finestra dei report"
+    "withdrawnAutomatically": "Ritirato: non corretto entro la finestra dei report",
+    "taken": "Preso in carico",
+    "released": "Rimesso in coda"
+  },
+  "notifications": {
+    "pirepAccepted": {
+      "title": "I miei report accettati",
+      "description": "Una mail quando un tuo report di un tour viene accettato."
+    },
+    "pirepToModify": {
+      "title": "I miei report da modificare",
+      "description": "Una mail quando un tuo report di un tour ti viene rimandato da correggere."
+    },
+    "pirepRejected": {
+      "title": "I miei report rifiutati",
+      "description": "Una mail quando un tuo report di un tour viene rifiutato, con le regole violate."
+    },
+    "reviewDigest": {
+      "title": "Riepilogo dei report da validare",
+      "description": "Una mail al giorno con i report in coda sui tour che puoi validare. Non arriva se la coda è vuota."
+    }
+  },
+  "mail": {
+    "flightops": {
+      "noNote": "(nessuna nota)",
+      "noRules": "(nessuna)",
+      "pirepAccepted": {
+        "subject": "[Tour] Report accettato: {{tour}}",
+        "body": "Il tuo report del volo {{route}} del {{date}} per il tour \"{{tour}}\" è stato accettato.\n\nNota del FOD: {{note}}\n\nRegole segnate:\n{{rules}}\n\nIl tour: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "pirepToModify": {
+        "subject": "[Tour] Report da modificare: {{tour}}",
+        "body": "Il tuo report del volo {{route}} del {{date}} per il tour \"{{tour}}\" va corretto e reinviato.\n\nChe cosa correggere: {{note}}\n\nRegole segnate:\n{{rules}}\n\nFinché non lo correggi non puoi riportare altre leg del tour. Se non lo correggi entro la finestra dei report, si ritira da solo e la leg torna da volare.\n\nIl tour: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "pirepRejected": {
+        "subject": "[Tour] Report rifiutato: {{tour}}",
+        "body": "Il tuo report del volo {{route}} del {{date}} per il tour \"{{tour}}\" è stato rifiutato.\n\nRegole violate:\n{{rules}}\n\nNota del FOD: {{note}}\n\nLa leg va volata di nuovo. Se pensi che la decisione sia sbagliata, puoi contestarla dalla pagina del tour.\n\nIl tour: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "reviewDigest": {
+        "subject": "[Tour] {{count}} report da validare",
+        "body": "Ci sono {{count}} report in coda sui tour che puoi validare (fra parentesi, da quando aspetta il più vecchio):\n\n{{tours}}\n\nLa coda: {{url}}\n\n---\nRicevi questa mail perché puoi validare i report dei tour. Puoi disattivarla dalla pagina del tuo profilo."
+      }
+    }
   }
 }

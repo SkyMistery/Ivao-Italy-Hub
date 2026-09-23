@@ -22,6 +22,12 @@ public static class TourPermissions
     /// <summary>Taking and deciding a PIREP; grantable on one tour, and never on a PIREP of one's own (§7.3).</summary>
     public const string Validate = "Tours.Validate";
 
+    /// <summary>
+    /// Reopening a decision somebody else took (§4.2.1): coordinator and assistant. Whoever took it reopens their own with
+    /// <see cref="Validate"/> alone. Never on a report of one's own (note 2026-09-23-la-validazione §2.4).
+    /// </summary>
+    public const string ReopenDecisions = "Tours.ReopenDecisions";
+
     public const string ManageValidators = "Tours.ManageValidators";
     public const string ViewPilots = "Tours.ViewPilots";
     public const string Ban = "Tours.Ban";
@@ -36,6 +42,7 @@ public static class TourPermissions
         new(ManageTemplates, IsGlobal: false),
         new(ManageAircraft, IsGlobal: false),
         new(Validate, IsGlobal: false, DeniedToStakeholder: true),
+        new(ReopenDecisions, IsGlobal: false, DeniedToStakeholder: true),
         new(ManageValidators, IsGlobal: false),
         new(ViewPilots, IsGlobal: false),
         new(Ban, IsGlobal: false),

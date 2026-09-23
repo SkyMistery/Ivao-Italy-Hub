@@ -246,6 +246,7 @@ public static class PirepEndpoints
         var reports = tracked ? database.Pireps : database.Pireps.AsNoTracking();
         return reports
             .Include(report => report.Flights)
+            .Include(report => report.Errors)
             .FirstOrDefaultAsync(report => report.Id == id && report.Vid == currentUser.Vid, http.RequestAborted);
     }
 

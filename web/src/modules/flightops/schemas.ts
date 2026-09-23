@@ -45,6 +45,7 @@ export interface FlightOpsSettings {
   readonly durationFactor: number;
   readonly durationFixedMinutes: number;
   readonly northSouthLevelCountries: readonly string[];
+  readonly trackRetentionDays: number;
   readonly retentionMonths: number;
   readonly retentionMonthsLong: number;
   readonly thresholdToleranceMeters: number;
@@ -60,6 +61,7 @@ export const settingsSchema = z.object({
   durationFactor: z.number(),
   durationFixedMinutes: z.number().int(),
   northSouthLevelCountries: z.array(z.object({ code: z.string() })),
+  trackRetentionDays: z.number().int(),
   retentionMonths: z.number().int(),
   retentionMonthsLong: z.number().int(),
   thresholdToleranceMeters: z.number().int(),

@@ -208,6 +208,7 @@
       "durationFixedMinutes": "Estimated time: fixed minutes",
       "northSouthLevelCountries": "Countries with north–south cruising levels",
       "code": "Country code (two letters)",
+      "trackRetentionDays": "Days a report's track is kept after the decision",
       "retentionMonths": "Months reports are kept",
       "retentionMonthsLong": "Months the disciplinary record is kept",
       "thresholdToleranceMeters": "Take-off distance allowed from the threshold (m)"
@@ -344,7 +345,16 @@
     "atcFrequency": "A frequency is written in MHz, for example 118.705.",
     "exemptionTooMany": "That is too many exemptions for one report.",
     "exemptionNotContacted": "An exemption belongs to one of the controllers you contacted.",
-    "exemptionNoteRequired": "Write in the note what the controller allowed."
+    "exemptionNoteRequired": "Write in the note what the controller allowed.",
+    "reviewTaken": "Another validator has already taken this report.",
+    "reviewNotWaiting": "This report is not in the queue.",
+    "reviewNotYours": "You do not hold this report: take it first.",
+    "reviewOutcome": "Choose accepted, to modify or rejected.",
+    "reviewErrorUnknown": "Only the errors of this report's rules can be marked.",
+    "reviewRejectNeedsError": "A rejection says which errors: mark at least one.",
+    "reviewToModifyNeedsNote": "Tell the pilot what to correct.",
+    "reviewOverrideNeedsReason": "The decision goes against the suggestion: say why.",
+    "reviewNotDecided": "Only a decision already taken can be reopened."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -930,6 +940,48 @@
     "submitted": "Sent",
     "resubmitted": "Corrected and sent again",
     "withdrawn": "Withdrawn by the pilot",
-    "withdrawnAutomatically": "Withdrawn: not corrected within the report window"
+    "withdrawnAutomatically": "Withdrawn: not corrected within the report window",
+    "taken": "Taken",
+    "released": "Put back in the queue"
+  },
+  "notifications": {
+    "pirepAccepted": {
+      "title": "My accepted reports",
+      "description": "An email when one of your tour reports is accepted."
+    },
+    "pirepToModify": {
+      "title": "My reports to modify",
+      "description": "An email when one of your tour reports is sent back to be corrected."
+    },
+    "pirepRejected": {
+      "title": "My rejected reports",
+      "description": "An email when one of your tour reports is rejected, with the rules broken."
+    },
+    "reviewDigest": {
+      "title": "Digest of the reports to validate",
+      "description": "One email a day with the reports waiting on the tours you may validate. None when the queue is empty."
+    }
+  },
+  "mail": {
+    "flightops": {
+      "noNote": "(no note)",
+      "noRules": "(none)",
+      "pirepAccepted": {
+        "subject": "[Tours] Report accepted: {{tour}}",
+        "body": "Your report of the flight {{route}} on {{date}} for the tour \"{{tour}}\" has been accepted.\n\nNote from the department: {{note}}\n\nRules marked:\n{{rules}}\n\nThe tour: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "pirepToModify": {
+        "subject": "[Tours] Report to modify: {{tour}}",
+        "body": "Your report of the flight {{route}} on {{date}} for the tour \"{{tour}}\" has to be corrected and sent again.\n\nWhat to correct: {{note}}\n\nRules marked:\n{{rules}}\n\nUntil you correct it you cannot report other legs of the tour. If you do not correct it within the report window, it is withdrawn and the leg is yours to fly again.\n\nThe tour: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "pirepRejected": {
+        "subject": "[Tours] Report rejected: {{tour}}",
+        "body": "Your report of the flight {{route}} on {{date}} for the tour \"{{tour}}\" has been rejected.\n\nRules broken:\n{{rules}}\n\nNote from the department: {{note}}\n\nThe leg has to be flown again. If you think the decision is wrong, you can dispute it from the tour page.\n\nThe tour: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "reviewDigest": {
+        "subject": "[Tours] {{count}} reports to validate",
+        "body": "There are {{count}} reports waiting on the tours you may validate (in brackets, since when the oldest has waited):\n\n{{tours}}\n\nThe queue: {{url}}\n\n---\nYou receive this email because you may validate tour reports. You can switch it off from your profile page."
+      }
+    }
   }
 }

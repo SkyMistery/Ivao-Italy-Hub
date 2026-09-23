@@ -105,6 +105,21 @@ public sealed class PermissionAreaAttribute(string area) : Attribute
 }
 
 /// <summary>
+/// A second permission a write of this entity may pass the interceptor's guard with, besides <c>{Area}.Edit</c>. A
+/// validator enabled on one tour holds <c>Tours.Validate</c> with that tour's scope and nothing else, and taking or
+/// deciding a report is a write of the report (M2, T13, note 2026-09-23-la-validazione §3.1).
+/// <para>The guard asks it the way the handler does: held on one of the row's departments <b>with the row's scope</b>
+/// (<see cref="IHasResourceScope"/>), and never by the member the row is about (<see cref="IHasStakeholder"/>), who has
+/// their own narrower way in (<see cref="ISubmittedByMembers"/>). Moving the row between departments still asks for
+/// <c>Edit</c> on both sides.</para>
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class AlsoWrittenWithAttribute(string permission) : Attribute
+{
+    public string Permission { get; } = permission;
+}
+
+/// <summary>
 /// Every write on this entity leaves a row in <c>hub_audit_log</c>, with the scalar properties
 /// before and after. Written by the interceptor: a service never writes an audit row by hand.
 /// </summary>

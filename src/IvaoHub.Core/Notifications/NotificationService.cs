@@ -33,6 +33,7 @@ public interface INotificationService
 /// </summary>
 public sealed class NotificationService(
     HubDbContext database,
+    NotificationTypeCatalog types,
     IOptions<DivisionOptions> division,
     IClock clock,
     ILogger<NotificationService> logger) : INotificationService
@@ -41,12 +42,12 @@ public sealed class NotificationService(
     {
         ArgumentNullException.ThrowIfNull(intent);
 
-        if (!NotificationTypes.IsKnown(intent.Type))
+        if (!types.IsKnown(intent.Type))
         {
             // A type nobody declared has no template and no preference, so it would be a mail with
             // the key where the words should be. That is a mistake in the calling code.
             throw new InvalidOperationException(
-                $"'{intent.Type}' is not a notification type. Declare it in NotificationTypes.");
+                $"'{intent.Type}' is not a notification type. Declare it in NotificationTypes, or in its module's NotificationTypes.");
         }
 
         var data = JsonSerializer.Serialize(intent.Data);

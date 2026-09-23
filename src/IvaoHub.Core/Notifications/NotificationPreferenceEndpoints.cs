@@ -38,6 +38,7 @@ public static class NotificationPreferenceEndpoints
         app.MapGet(Pattern, async Task<Ok<IReadOnlyList<NotificationPreferenceDto>>> (
             HttpContext http,
             HubDbContext database,
+            NotificationTypeCatalog types,
             ICurrentUser currentUser) =>
         {
             var switchedOff = await database.NotificationPreferences
@@ -51,7 +52,7 @@ public static class NotificationPreferenceEndpoints
             // absence of a row means (see NotificationPreference).
             IReadOnlyList<NotificationPreferenceDto> preferences =
             [
-                .. NotificationTypes.All.Select(type =>
+                .. types.All.Select(type =>
                     new NotificationPreferenceDto(type, !switchedOff.Contains(type))),
             ];
 
@@ -64,12 +65,13 @@ public static class NotificationPreferenceEndpoints
             HttpContext http,
             NotificationPreferenceDto body,
             HubDbContext database,
+            NotificationTypeCatalog types,
             ICurrentUser currentUser,
             LocaleCatalog catalog) =>
         {
             ArgumentNullException.ThrowIfNull(body);
 
-            if (!NotificationTypes.IsKnown(body.Type))
+            if (!types.IsKnown(body.Type))
             {
                 return TypedResults.ValidationProblem(
                     new Dictionary<string, string[]>(StringComparer.Ordinal) { [Field] = [UnknownTypeKey] },

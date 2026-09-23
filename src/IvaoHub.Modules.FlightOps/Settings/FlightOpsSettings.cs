@@ -44,7 +44,13 @@ public sealed record FlightOpsSettings
     /// </summary>
     public IReadOnlyList<string> NorthSouthLevelCountries { get; init; } = [];
 
-    /// <summary>Months the reports and their tracks are kept (§10).</summary>
+    /// <summary>
+    /// Days a report's track is kept after its decision, or after it was withdrawn (Carmine, 23 September 2026, note
+    /// 2026-09-23-la-validazione §2.3): the heavy part of a report, deleted long before the report itself.
+    /// </summary>
+    public int TrackRetentionDays { get; init; } = 90;
+
+    /// <summary>Months the reports are kept (§10); their tracks go much earlier, <see cref="TrackRetentionDays"/>.</summary>
     public int RetentionMonths { get; init; } = 13;
 
     /// <summary>Months the disciplinary record is kept (§10).</summary>
@@ -67,6 +73,7 @@ public sealed partial class FlightOpsSettingsValidator : AbstractValidator<Fligh
         RuleFor(settings => settings.LeaseMinutes).InclusiveBetween(5, 480).WithMessage("errors.number.range");
         RuleFor(settings => settings.DurationFactor).InclusiveBetween(0m, 1m).WithMessage("errors.number.range");
         RuleFor(settings => settings.DurationFixedMinutes).InclusiveBetween(0, 180).WithMessage("errors.number.range");
+        RuleFor(settings => settings.TrackRetentionDays).InclusiveBetween(7, 730).WithMessage("errors.number.range");
         RuleFor(settings => settings.RetentionMonths).InclusiveBetween(1, 120).WithMessage("errors.number.range");
         RuleFor(settings => settings.RetentionMonthsLong)
             .InclusiveBetween(1, 240).WithMessage("errors.number.range")

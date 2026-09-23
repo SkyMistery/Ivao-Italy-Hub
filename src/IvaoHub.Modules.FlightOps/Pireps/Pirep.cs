@@ -1,4 +1,5 @@
 using IvaoHub.Core.Division;
+using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Shape;
 
 namespace IvaoHub.Modules.FlightOps.Pireps;
@@ -40,11 +41,12 @@ public enum DiversionReason
 /// decides their own reports, super administrator included (§7.3), and they keep changing it themselves — withdraw it,
 /// correct it — through the one exception of the interceptor's guard. It is in the care of its tour's departments, which it
 /// follows as the tour's other rows do (<see cref="ITourChild"/>), and a validator enabled on the tour is enabled on it
-/// (<see cref="IHasResourceScope"/>).</para>
+/// (<see cref="IHasResourceScope"/>) — the interceptor's guard lets that validator write it (T13).</para>
 /// <para>What it is judged against is frozen at the first send: the rules in force with their parameters and errors
 /// (§5.4), and the leg as it was (§3.2 point 6). A correction does not freeze them again.</para>
 /// </summary>
 [PermissionArea(TourPermissions.Area)]
+[AlsoWrittenWith(TourPermissions.Validate)]
 public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasResourceScope
 {
     public long Id { get; set; }
@@ -64,6 +66,9 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
     public DateTime SubmittedAt { get; set; }
 
     public DateTime? ResubmittedAt { get; set; }
+
+    /// <summary>When it last entered the queue — sent, or sent again corrected: what the queue is ordered by (§4.1).</summary>
+    public DateTime QueuedAt { get; set; }
 
     /// <summary>The route the report is judged on: the leg's as it was, or the flight's on an <c>Open</c> tour.</summary>
     public string DepartureIcao { get; set; } = string.Empty;
@@ -127,6 +132,18 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
 
     public DateTime? DecidedAt { get; set; }
 
+    /// <summary>What the pilot reads with the decision (§4.3); never who wrote it (§3.5).</summary>
+    public string? NoteToPilot { get; set; }
+
+    /// <summary>What the staff reads, and the pilot never does.</summary>
+    public string? StaffNote { get; set; }
+
+    /// <summary>Whether the decision went against the suggestion (§4.3), worked out by the server when it is taken.</summary>
+    public bool ThresholdOverridden { get; set; }
+
+    /// <summary>Why, when it did: asked for then and only then.</summary>
+    public string? OverrideReason { get; set; }
+
     public Department OwnerDepartment { get; set; }
 
     public int OwnerDepartmentMask { get; set; }
@@ -161,6 +178,9 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
 
     /// <summary>Its history, added to and never changed; written in the same save as the step it records.</summary>
     public List<PirepEvent> Events { get; set; } = [];
+
+    /// <summary>The errors the decision marked (T13), replaced by the next decision.</summary>
+    public List<PirepError> Errors { get; set; } = [];
 
     /// <summary>The scope a grant on one tour carries (§7.3), the tour's and every report's on it.</summary>
     public static string ScopeOf(long tourId) => $"{FlightOpsModule.ModuleKey}:tour:{tourId}";
@@ -212,6 +232,47 @@ public sealed class PirepFlight
 
     /// <summary>Which revision the checks read: the last one filed before the take-off.</summary>
     public int? PlanAtTakeoffRevision { get; set; }
+
+    /// <summary>Its track, written at the send (T13) and gone <c>trackRetentionDays</c> after the decision; read only when asked for.</summary>
+    public PirepTrack? Track { get; set; }
+}
+
+/// <summary>
+/// An error a decision marked on a report (design M2 §1.8), <c>fo_pirep_errors</c>: one of the errors of the rules the
+/// report froze, with its category as it was then. The yearly count of an error is these rows on the pilot's decided
+/// reports (§4.3; note 2026-09-23-la-validazione §2.5). A new decision replaces them.
+/// </summary>
+public sealed class PirepError
+{
+    public long Id { get; set; }
+
+    public long PirepId { get; set; }
+
+    public long ErrorId { get; set; }
+
+    public ErrorCategory Category { get; set; }
+
+    /// <summary>Proposed by an automatic check (T17); false for one the validator marked alone.</summary>
+    public bool SuggestedByCheck { get; set; }
+
+    /// <summary>Marked by the validator: only these count. A suggestion left unconfirmed stays for the record.</summary>
+    public bool Confirmed { get; set; }
+}
+
+/// <summary>
+/// The track of one flight of a report (note 2026-09-23-la-validazione §2.2–3), <c>fo_pirep_tracks</c>: the points the
+/// tracker gave at the send, as JSON compressed with gzip — about 22 KB a flight —, apart from the flight so that no list
+/// ever reads it. It goes <c>trackRetentionDays</c> after the decision (<see cref="TrackRetentionJob"/>).
+/// </summary>
+public sealed class PirepTrack
+{
+    public long PirepFlightId { get; set; }
+
+    public byte[] PointsGzip { get; set; } = [];
+
+    public int PointCount { get; set; }
+
+    public DateTime StoredAt { get; set; }
 }
 
 /// <summary>The history of a report (design M2 §1.8), <c>fo_pirep_events</c>: rows are added, never changed.</summary>

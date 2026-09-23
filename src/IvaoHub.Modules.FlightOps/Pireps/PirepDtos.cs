@@ -60,7 +60,8 @@ public sealed record PirepFlightDto(
     string FlightRules);
 
 /// <summary>
-/// A report as its pilot sees it: never the validator's name (design M2 §3.5). What the decision said arrives with T13.
+/// A report as its pilot sees it: never the validator's name (design M2 §3.5). With a decision, when it was taken, the note
+/// to the pilot and the rules it says were broken (T13).
 /// </summary>
 public sealed record PirepDto(
     long Id,
@@ -87,6 +88,9 @@ public sealed record PirepDto(
     IReadOnlyList<AtcExemptionDto> Exemptions,
     bool AtcArchiveAvailable,
     IReadOnlyList<PirepFlightDto> Flights,
+    DateTime? DecidedAt,
+    string? NoteToPilot,
+    IReadOnlyList<Review.ViolatedRuleDto> ViolatedRules,
     DateTime RowVersion);
 
 /// <summary>One leg as the pilot's map colours it (design M2 §8.1).</summary>

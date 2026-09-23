@@ -371,6 +371,11 @@ public sealed class PirepSubmission(
         }
 
         pirep.Status = PirepStatus.Queued;
+        pirep.QueuedAt = now;
+
+        // Back in the queue for anybody (§3.1): whoever sent it back no longer holds it.
+        pirep.AssignedToVid = null;
+        pirep.LeaseUntil = null;
         pirep.DepartureIcao = departure;
         pirep.ArrivalIcao = arrival;
         pirep.DistanceNm = distance;
@@ -412,6 +417,7 @@ public sealed class PirepSubmission(
             LandingAt = flight.LandingAt,
             FlightPlansJson = "[" + string.Join(',', flight.Plans.Select(plan => plan.RawJson)) + "]",
             PlanAtTakeoffRevision = flight.PlanAtTakeoff?.Revision,
+            Track = TrackCodec.Encode(flight.Track, now),
         }));
 
         pirep.Events.Add(new PirepEvent
@@ -547,6 +553,7 @@ public sealed class PirepSubmission(
         var rotations = await database.Rotations.AsNoTracking().Where(row => row.TourId == tour.Id).ToListAsync(cancellationToken);
         var mine = await database.Pireps.AsNoTracking()
             .Include(report => report.Flights)
+            .Include(report => report.Errors)
             .Where(report => report.TourId == tour.Id && report.Vid == vid)
             .OrderByDescending(report => report.SubmittedAt)
             .ToListAsync(cancellationToken);
@@ -619,7 +626,52 @@ public sealed class PirepSubmission(
                     flight.LandingAt,
                     pirep.FlightRules)),
             ],
+            pirep.DecidedAt,
+            pirep.NoteToPilot,
+            ViolatedRules(pirep),
             pirep.RowVersion);
+    }
+
+    /// <summary>
+    /// The rules a decision said were broken (§3.5): those of the frozen rules that carry an error the decision confirmed. The
+    /// report's errors have to be loaded; a report without any has none.
+    /// </summary>
+    public static IReadOnlyList<Review.ViolatedRuleDto> ViolatedRules(Pirep pirep)
+    {
+        ArgumentNullException.ThrowIfNull(pirep);
+
+        var confirmed = pirep.Errors.Where(error => error.Confirmed).Select(error => error.ErrorId).ToHashSet();
+        return confirmed.Count == 0
+            ? []
+            : [
+                .. Snapshot(pirep)
+                    .Where(rule => rule.Errors.Any(error => confirmed.Contains(error.Id)))
+                    .Select(rule => new Review.ViolatedRuleDto(rule.Code, rule.Title)),
+            ];
+    }
+
+    /// <summary>The rules the report froze at its first send (§5.4).</summary>
+    public static IReadOnlyList<SnapshotRuleDto> Snapshot(Pirep pirep)
+    {
+        ArgumentNullException.ThrowIfNull(pirep);
+        return JsonSerializer.Deserialize<List<SnapshotRuleDto>>(pirep.RulesSnapshotJson, ColumnJson) ?? [];
+    }
+
+    /// <summary>The leg the report froze at its first send (§3.2 point 6).</summary>
+    public static SnapshotLegDto LegSnapshot(Pirep pirep)
+    {
+        ArgumentNullException.ThrowIfNull(pirep);
+        return JsonSerializer.Deserialize<SnapshotLegDto>(pirep.LegSnapshotJson, ColumnJson)
+            ?? new SnapshotLegDto(pirep.LegId, null, pirep.DepartureIcao, pirep.ArrivalIcao, pirep.DistanceNm, [], AllowedAircraft.All);
+    }
+
+    /// <summary>The controllers and the exemptions of the report, as the columns hold them (§3.3).</summary>
+    public static (IReadOnlyList<AtcContactDto> Contacts, IReadOnlyList<AtcExemptionDto> Exemptions) Atc(Pirep pirep)
+    {
+        ArgumentNullException.ThrowIfNull(pirep);
+        return (
+            JsonSerializer.Deserialize<List<AtcContactDto>>(pirep.AtcContactsJson, ColumnJson) ?? [],
+            JsonSerializer.Deserialize<List<AtcExemptionDto>>(pirep.AtcExemptionsJson, ColumnJson) ?? []);
     }
 
     /// <summary>
