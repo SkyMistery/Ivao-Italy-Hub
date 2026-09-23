@@ -413,7 +413,8 @@ public sealed partial class PirepTests
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
-        var vids = new[] { PilotVid, ValidatorVid, SecondValidatorVid, CoordinatorVid };
+        // Not the coordinator: a member of the FOD staff with an address would receive the contacts of other test classes.
+        var vids = new[] { PilotVid, ValidatorVid, SecondValidatorVid };
         foreach (var user in await database.Users.Where(user => vids.Contains(user.Vid)).ToListAsync(cancellationToken))
         {
             user.Email = string.Create(CultureInfo.InvariantCulture, $"fo-test-{user.Vid}@example.invalid");
