@@ -46,6 +46,10 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<PirepEvent> PirepEvents => Set<PirepEvent>();
 
+    public DbSet<PirepError> PirepErrors => Set<PirepError>();
+
+    public DbSet<PirepTrack> PirepTracks => Set<PirepTrack>();
+
     public DbSet<Enrolment> Enrolments => Set<Enrolment>();
 
     public DbSet<Ban> Bans => Set<Ban>();
@@ -249,6 +253,10 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             pirep.Property(row => row.PilotRemarks).HasMaxLength(PirepValidation.MaxTextLength);
             pirep.Property(row => row.RulesSnapshotJson).HasColumnName("rules_snapshot_json").HasColumnType("json").IsRequired();
             pirep.Property(row => row.LegSnapshotJson).HasColumnName("leg_snapshot_json").HasColumnType("json").IsRequired();
+            pirep.Property(row => row.NoteToPilot).HasMaxLength(PirepValidation.MaxTextLength);
+            pirep.Property(row => row.StaffNote).HasMaxLength(PirepValidation.MaxTextLength);
+            pirep.Property(row => row.OverrideReason).HasMaxLength(PirepValidation.MaxTextLength);
+            pirep.Property(row => row.ThresholdOverridden).HasDefaultValue(false);
             pirep.HasRowVersion(row => row.RowVersion);
 
             // A tour with a report is never deleted and a leg with one is retired, not deleted (design M2 §1.2.2, §1.4.1):
@@ -260,6 +268,29 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             pirep.HasIndex(row => new { row.TourId, row.Vid });
             pirep.HasIndex(row => new { row.Vid, row.TakeoffAt });
             pirep.HasIndex(row => new { row.Status, row.SubmittedAt });
+
+            // The queue, oldest first (§4.1).
+            pirep.HasIndex(row => new { row.Status, row.QueuedAt });
+        });
+
+        modelBuilder.Entity<PirepError>(error =>
+        {
+            error.ToTable("fo_pirep_errors");
+            error.HasKey(row => row.Id);
+            error.HasOne<Pirep>().WithMany(pirep => pirep.Errors).HasForeignKey(row => row.PirepId).OnDelete(DeleteBehavior.Cascade);
+
+            // No key towards the catalogue: the report reads the error's name and category from the rules it froze (§5.4), so
+            // an error deleted from the catalogue afterwards takes nothing away from the decisions that marked it.
+            error.HasIndex(row => new { row.PirepId, row.ErrorId }).IsUnique();
+            error.HasIndex(row => row.ErrorId);
+        });
+
+        modelBuilder.Entity<PirepTrack>(track =>
+        {
+            track.ToTable("fo_pirep_tracks");
+            track.HasKey(row => row.PirepFlightId);
+            track.Property(row => row.PointsGzip).HasColumnType("mediumblob").IsRequired();
+            track.HasOne<PirepFlight>().WithOne(flight => flight.Track).HasForeignKey<PirepTrack>(row => row.PirepFlightId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PirepFlight>(flight =>

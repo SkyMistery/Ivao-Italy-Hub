@@ -33,7 +33,7 @@ namespace IvaoHub.IntegrationTests;
 /// recorded fixtures are flights of June, which no report window reaches. Everything else of IVAO is the fixture client.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
-public sealed class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
+public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
     // The range the tours module owns in the shared database (design M2 §13); T11 takes 82–84.
     private const int CoordinatorVid = 780082;
@@ -57,9 +57,10 @@ public sealed class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 new TrackerDouble(provider.GetRequiredService<FixtureIvaoApiClient>(), _flights))));
 
         var token = TestContext.Current.CancellationToken;
-        await SeedUserAsync(CoordinatorVid, staffPosition: "IT-FOC", rating: null, token);
+        await SeedUserAsync(CoordinatorVid, staffPosition: "IT-FOC", rating: 4, token);
         await SeedUserAsync(PilotVid, staffPosition: null, rating: 4, token);
         await SeedUserAsync(OtherPilotVid, staffPosition: null, rating: 4, token);
+        await SeedReviewersAsync(token);
         await FoTestAirports.SeedAsync(_host.Services, token);
     }
 
@@ -70,7 +71,7 @@ public sealed class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using (var scope = _host.Services.CreateAsyncScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
-            var vids = new[] { PilotVid, OtherPilotVid };
+            var vids = new[] { PilotVid, OtherPilotVid, CoordinatorVid, SuperadminPilotVid };
 
             // A tour with a report is never deleted by the application: the test takes its reports back first.
             await Everything<Pirep>(database).Where(report => vids.Contains(report.Vid) || _tours.Contains(report.TourId)).ExecuteDeleteAsync(token);
@@ -78,7 +79,10 @@ public sealed class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await database.Bans.Where(ban => vids.Contains(ban.Vid)).ExecuteDeleteAsync(token);
             await Everything<Tour>(database).Where(tour => _tours.Contains(tour.Id)).ExecuteDeleteAsync(token);
             await database.Rules.Where(rule => _rules.Contains(rule.Id)).ExecuteDeleteAsync(token);
+            await database.Errors.Where(error => _errors.Contains(error.Id)).ExecuteDeleteAsync(token);
         }
+
+        await CleanReviewersAsync(token);
 
         await FoTestAirports.RemoveAsync(_host.Services, token);
         await _host.DisposeAsync();
