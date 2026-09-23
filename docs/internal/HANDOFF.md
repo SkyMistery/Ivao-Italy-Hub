@@ -3,9 +3,21 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T13b in `main`; T14a è fatta**: branch `m2/t14a-contact-threads`, in PR (vedi
-`gh pr list`). Piano **0.96**. **Il prossimo passo è T14b (contestazione, chiarimento dalle pagine dei tour, segnalazioni su una leg,
-`openIssues`)**, in una chat nuova, dopo il merge.
+**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T14a in `main`; T14b è fatta**: branch `m2/t14b-disputes-and-issues`, in PR
+(vedi `gh pr list`). Piano **0.97**. **Il prossimo passo è T15 (completamento con la segnalazione dell'award, validatori, pagina del
+pilota, ban, `myTours`)**, in una chat nuova, dopo il merge.
+
+> **Che cosa ha lasciato T14b** (nota `2026-09-23-contestazioni-chiarimenti-segnalazioni`, piano 0.97): il modulo usa i fili di T14a.
+> **La contestazione**: `Pirep.DisputeStatus` (`Open`, `Upheld`, `Dismissed`) e le sue colonne; `Pirep` è `IProjectable` e apre il filo
+> nella sua transazione (`PirepDisputes.OpenAsync`, `Threads/`); la decide solo chi ha `Tours.ReopenDecisions` e non ha deciso il
+> PIREP, con una risposta che entra nel filo; accolta torna `Queued`, respinta blocca con la tolleranza da `DisputeDecidedAt`; con una
+> contestazione aperta «riapri» non c'è. **Il chiarimento**: `/tours/{slug}/ask`, riferimenti `pirep:`/`leg:`/`rule:{tour}:{regola}`
+> risolti da `FlightOpsReferences`. **Le segnalazioni**: `fo_leg_issues`, `/staff/tours/issues`, mail alla sola casella. **Il blocco**
+> `flightops.openIssues`. **Per T15**: la pagina del pilota (§8.7) ha già i numeri delle contestazioni nel profilo di validazione
+> (`PilotProfileDto.DisputesOpen/Upheld/Dismissed`, per tour) da estendere a tutti i tour; `myTours` elenca i chiarimenti con risposta —
+> i fili del pilota sono `hub.ContactMessages` con il filtro del nucleo (il mittente li vede), come fa `PirepDisputes.ThreadsAsync`. ⚠️
+> **Il banco ha tre persone**: `/e2e/signin`, `?as=pilot` (999002, con Mailpit) e `?as=assistant` (999003, `IT-FOAC`, senza indirizzo).
+> ⚠️ Il catalogo del server appiattisce i namespace: dal C# una chiave del modulo si scrive `threads.x`, non `flightops:threads.x`.
 
 > **Che cosa ha lasciato T14a** (nota `2026-09-23-i-fili-dei-contatti`, piano 0.96): T14 è divisa — **T14a il nucleo, T14b il modulo**.
 > Un messaggio di contatto è un **filo**: `ContactMessage` (`Kind`, `ParticipantsJson`, `SourceModule`/`SourceId`), `ContactReply`,
