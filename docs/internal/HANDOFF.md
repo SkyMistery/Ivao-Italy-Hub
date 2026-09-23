@@ -3,9 +3,22 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T12 in `main`; T13a e T13b sono fatte**: branch `m2/t13a-validation-server` e
-`m2/t13b-validation-pages`, in PR (vedi `gh pr list`). Piano **0.95**. **Il prossimo passo è T14 (contestazioni, chiarimenti,
-segnalazioni)**, in una chat nuova, dopo il merge delle due.
+**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T13b in `main`; T14a è fatta**: branch `m2/t14a-contact-threads`, in PR (vedi
+`gh pr list`). Piano **0.96**. **Il prossimo passo è T14b (contestazione, chiarimento dalle pagine dei tour, segnalazioni su una leg,
+`openIssues`)**, in una chat nuova, dopo il merge.
+
+> **Che cosa ha lasciato T14a** (nota `2026-09-23-i-fili-dei-contatti`, piano 0.96): T14 è divisa — **T14a il nucleo, T14b il modulo**.
+> Un messaggio di contatto è un **filo**: `ContactMessage` (`Kind`, `ParticipantsJson`, `SourceModule`/`SourceId`), `ContactReply`,
+> `ContactReference`, il servizio `ContactThreads` (`Content/ContactThreads.cs`). **T14b usa**: per la contestazione, una
+> `ThreadOpeningProjection(ContactKinds.Dispute, Department.FOD, …, senderVid: pilota, participantVids: [validatore], references)` nello
+> snapshot del PIREP quando passa a contestato — il writer apre il filo **una volta sola** per `source_module, source_id, kind` e non lo
+> tocca più — e **dopo il salvataggio** `ContactThreads.NotifyOpenedAsync(id)` per le mail; per il chiarimento, `POST /api/contacts`
+> con `kind: "clarification"` e `references: [{ sourceModule: "flightops", sourceId: "pirep:12" }]`; un **`IContactReferenceResolver`**
+> dei tour (etichetta, link **per chi legge**, partecipanti — il validatore di un PIREP) registrato in `FlightOpsModule.ConfigureServices`.
+> Il filo si legge con `GET /api/contacts/{id}/thread` e si risponde con `POST …/replies`, da tutte e due le parti; `/me/contacts` è la
+> lista del membro (mittente **o** partecipante). Il componente è `MessageThread`. ⚠️ Il prossimo `migrations add` di `FlightOpsDbContext`
+> porterà nello snapshot le due tabelle dei contatti **escluse**: è lo scarto innocuo già visto in T4b. Nei test: VID `670011–670019`, il
+> risolutore di prova `SampleReferenceResolver`, il giro `full/contacts.spec.ts`; `mailFor` sta in `full/bench.ts`.
 
 > **Che cosa ha lasciato T13b** (nota `2026-09-23-le-pagine-della-validazione`, piano 0.95): le pagine sono `screens/review.tsx`
 > (`/staff/tours/review` con `?tour=` e `?decided=true`, `/staff/tours/review/{id}`) e le funzioni pure `screens/reviewing.ts`; il blocco

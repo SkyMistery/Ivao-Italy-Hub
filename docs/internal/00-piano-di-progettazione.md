@@ -1,9 +1,26 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.95 — 23 settembre 2026 (**le pagine della validazione**: la coda, la pagina con la mappa e la traccia, il blocco `reviewQueue`, il giro con la mail in Mailpit, T13b)
+**Versione documento:** 0.96 — 23 settembre 2026 (**i fili dei contatti nel nucleo**: risposte, riferimenti, partecipanti, il filo aperto da una proiezione, `/me/contacts`, `MessageThread`, T14a)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.96** (23 set 2026, fase T14a di M2): **i fili dei contatti nel nucleo** — un messaggio di contatto diventa una
+conversazione: `cms_contact_replies` (solo in aggiunta), `cms_contact_references` (gli oggetti citati, con l'etichetta presa
+all'apertura), `kind`, `participants_json` e la riga che ha aperto il filo su `cms_contact_messages` (migrazione `AddContactThreads`).
+Nota `decisions/2026-09-23-i-fili-dei-contatti.md`, **tre risposte di Carmine**, tutte come proposte: (1) **T14 divisa** in T14a (il
+nucleo) e T14b (contestazione, chiarimento dalle pagine dei tour, segnalazioni su una leg, `openIssues`); (2) un **partecipante** legge e
+risponde da **`/me/contacts`**, che elenca i fili dove si è mittente o partecipante; (3) quando risponde un partecipante la mail va **al
+mittente e agli altri partecipanti**, non alla casella del dipartimento. **Cinque estensioni di meccanismi** (§16.E caso b):
+**`IHasParticipants`** nell'unico handler (concede il permesso che legge l'area, che per un filo è anche quello che risponde) e nella
+rete dell'interceptor, gemella dell'interessato di T11a; **`[AlsoWrittenWith(Contacts.View)]`** su `ContactMessage`, perché chi legge
+la coda risponde e la risposta sposta lo stato; **`ThreadOpeningProjection`** in `ProjectionSnapshot` («una volta sola», chiave
+`source_module, source_id, kind` unica), con `ModuleDbContext` che mappa messaggi e riferimenti fuori dalle sue migrazioni;
+**`IContactReferenceResolver`** per modulo; **`CrudOptions.Participating`**, la vista personale del motore delle liste (le righe a cui
+il lettore partecipa, solo lettura, 404 sulle altre). Un endpoint del filo serve il back office e `/me/contacts`: il mittente legge
+«il dipartimento» come autore di ogni risposta dell'altra parte (design M2 §3.5). I tipi di notifica sono `contact.threadOpened` e
+`contact.threadReplied` (non `contacts.…`: il prefisso che c'era è `contact.`). **`MessageThread`** entra nell'elenco chiuso, ventitreesimo.
+Toccate §8.3 e la parte C di `06-piano-implementazione-m2.md`.
 
 **Changelog 0.95** (23 set 2026, fase T13b di M2): **le pagine della validazione** — `/staff/tours/review` (la coda, unica o per
 tour, decisi o in attesa, l'ordine come preferenza del validatore) e `/staff/tours/review/{id}` (la mappa con la traccia volata, tutte
@@ -1989,7 +2006,9 @@ nel modulo — non sa che cosa sia un tour, prende coppie di aeroporti — quind
 mappa di base è un file dell'installazione, non del pacchetto, e senza quel file disegna comunque le tratte su un fondo neutro (nota
 `2026-09-22-il-pubblico-dei-tour`). ⚠️ `LegGrid` è entrato con **T7a** (18 set 2026) e vive **nel modulo**, perché conosce le leg: non è ancora in
 `catalog.ts` né nella galleria, che non importa da `modules/`; come un modulo ci porta i suoi componenti lo dice T20. `ConfirmDialog` è
-stato esteso nella stessa fase con `onOpenChange` e `confirmDisabled` (nota `2026-09-18-le-leg-dei-tour`).
+stato esteso nella stessa fase con `onOpenChange` e `confirmDisabled` (nota `2026-09-18-le-leg-dei-tour`). ⚠️ **`MessageThread` è entrato
+con T14a** (23 set 2026, piano 0.96) ed è il **ventitreesimo**: sta in `shared/ui/`, disegna quello che il server manda (per il mittente
+il server ha già tolto chi ha risposto) ed è montato dal back office dei contatti e da `/me/contacts/{id}`.
 
 ---
 
