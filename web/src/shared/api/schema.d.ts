@@ -1470,6 +1470,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/{tourId}/reports/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReportSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{tourId}/reports/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReportsMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/{tourId}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReportSend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReport"];
+        put: operations["FlightOpsReportCorrect"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/reports/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReportWithdraw"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2441,6 +2521,8 @@ export interface components {
          * @enum {unknown}
          */
         Department: "HQ" | "SOD" | "FOD" | "AOD" | "TD" | "MD" | "ED" | "PRD" | "WD";
+        /** @enum {unknown} */
+        DiversionReason: "Weather" | "Technical" | "Medical" | "AtcInstruction" | "Other" | null;
         /** @description A rule as it holds on a tour (§5.2): the row that says it, the rule it amends, the parameters in force. */
         EffectiveRuleDto: {
             /** Format: int64 */
@@ -2694,6 +2776,12 @@ export interface components {
          * @enum {unknown}
          */
         LegKind: "Normal" | "HubConnection";
+        /**
+         * @description How a leg looks to the pilot (design M2 §8.1): the four colours of the map — to fly, done, pending, not yet. A rejected
+         *     leg is to fly again when it can be flown, and not yet when an earlier one holds it.
+         * @enum {unknown}
+         */
+        LegProgress: "Todo" | "Done" | "Pending" | "Locked";
         /** @description Removing or restoring a leg: the reason, required to retire and to restore, and the version the editor saw. */
         LegReasonRequest: {
             reason: null | string;
@@ -2965,6 +3053,29 @@ export interface components {
         ModuleMaintenanceRequest: {
             maintenance: boolean;
         };
+        /** @description One leg as the pilot's map colours it (design M2 §8.1). */
+        MyLegDto: {
+            /** Format: int64 */
+            id: number;
+            progress: components["schemas"]["LegProgress"];
+        };
+        /**
+         * @description Where the signed in pilot is in a tour: the colour of each leg, the ones that may be reported now, the next, whether the
+         *     tour is done, their reports, and — when they may send none at all — why (a ban, a report to correct, a rating, a tour
+         *     that no longer takes reports). On an `Open` tour, how far the goal is.
+         */
+        MyTourDto: {
+            /** Format: int64 */
+            tourId: number;
+            legs: components["schemas"]["MyLegDto"][];
+            flyable: number[];
+            /** Format: int64 */
+            next: null | number;
+            finished: boolean;
+            blocked: null | string;
+            goal: null | components["schemas"]["OpenProgress"];
+            reports: components["schemas"]["PirepDto"][];
+        };
         /**
          * @description One entry of a menu. Exactly one of the two names is set: Key is a
          *     translation key such as `nav.staff`, which is what a module registers because it cannot
@@ -2998,6 +3109,15 @@ export interface components {
         };
         /** @enum {unknown} */
         OpenGoal: "Distance" | "FlightCount" | "DistinctAirports" | "DistinctCountries" | "CollectList" | "CollectRegions" | null;
+        /** @description How far a pilot is towards the goal of an `Open` tour, and what is still missing at the completion. */
+        OpenProgress: {
+            /** Format: int32 */
+            done: number;
+            /** Format: int32 */
+            target: number;
+            missingMinFlightsAt: string[];
+            finished?: boolean;
+        };
         /**
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
@@ -3526,6 +3646,85 @@ export interface components {
              * @description How many rows the whole filtered set holds.
              */
             total: number;
+        };
+        /** @description A report as its pilot sees it: never the validator's name (design M2 §3.5). What the decision said arrives with T13. */
+        PirepDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            /** Format: int64 */
+            legId: null | number;
+            status: components["schemas"]["PirepStatus"];
+            isDisputed: boolean;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            resubmittedAt: null | string;
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: double */
+            distanceNm: number;
+            /** Format: date-time */
+            takeoffAt: string;
+            flightRules: string;
+            sid: null | string;
+            star: null | string;
+            approach: null | string;
+            isDiversion: boolean;
+            diversionIcao: null | string;
+            diversionReason: null | components["schemas"]["DiversionReason"];
+            diversionNote: null | string;
+            pilotRemarks: null | string;
+            flights: components["schemas"]["PirepFlightDto"][];
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description One flight of a report, as its pilot reads it back. */
+        PirepFlightDto: {
+            /** Format: int32 */
+            seq: number;
+            /** Format: int64 */
+            trackerSessionId: number;
+            callsign: string;
+            aircraft: null | string;
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: date-time */
+            takeoffAt: string;
+            /** Format: date-time */
+            landingAt: null | string;
+            flightRules: string;
+        };
+        /**
+         * @description Where a report is (design M2 §3.1). Stored by name.
+         * @enum {unknown}
+         */
+        PirepStatus: "Queued" | "InReview" | "Accepted" | "ToModify" | "Rejected" | "Withdrawn";
+        /** @description The version of the report the pilot saw when they pressed «withdraw». */
+        PirepWithdrawal: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description A report as the pilot sends it, and sends it again after a correction (design M2 §3.2): the leg — none on an
+         *     `Open` tour, and never another on a correction —, the session of the flight, and a second one when it ended
+         *     elsewhere, with the airport it ended at and why. The controllers contacted and the exemptions arrive with T12.
+         */
+        PirepWriteDto: {
+            /** Format: int64 */
+            legId: null | number;
+            sessionIds: number[];
+            isDiversion: boolean;
+            diversionIcao: null | string;
+            diversionReason: null | components["schemas"]["DiversionReason"];
+            diversionNote: null | string;
+            sid: null | string;
+            star: null | string;
+            approach: null | string;
+            pilotRemarks: null | string;
+            /** Format: date-time */
+            rowVersion: string;
         };
         /** @description The menu entry an author proposes with a page: under which entry, and in which words. */
         ProposedMenuEntry: {
@@ -4230,6 +4429,19 @@ export interface components {
             requiredSubtours?: null | number;
             openGoal?: null | components["schemas"]["OpenGoal"];
             openGoalParameters?: unknown;
+        };
+        /** @description A session of the tracker the pilot may report: what the list of the form shows to choose from. */
+        TrackerSessionDto: {
+            /** Format: int64 */
+            id: number;
+            callsign: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            endedAt: string;
+            departureIcao: null | string;
+            arrivalIcao: null | string;
+            aircraft: null | string;
         };
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
@@ -9026,6 +9238,244 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReportSessions: {
+        parameters: {
+            query?: {
+                legId?: number;
+                departure?: string;
+                arrival?: string;
+            };
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackerSessionDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReportsMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTourDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReportSend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PirepWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PirepDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PirepDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReportCorrect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PirepWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PirepDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReportWithdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PirepWithdrawal"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PirepDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
