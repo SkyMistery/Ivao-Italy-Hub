@@ -119,6 +119,16 @@ public sealed class DepartmentAuthorizationHandler(
             return false;
         }
 
+        // Whoever takes part in a row reads it, whichever department owns it: the sender of a thread and whoever was
+        // added to it (M2, T14). Only reading — which, for a thread, is also what answers it.
+        if (resource is IHasParticipants participating
+            && currentUser.IsAuthenticated
+            && participating.ParticipantVids.Contains(currentUser.Vid)
+            && IsRead(permission))
+        {
+            return true;
+        }
+
         // Without a resource the question is "may they do this at all": holding the permission on
         // any department, or globally, is enough, and the department is checked row by row later.
         // Denying here would close the list of their own department to every coordinator.

@@ -1636,7 +1636,8 @@
     },
     "sent": {
       "title": "Il tuo messaggio è partito",
-      "description": "Il dipartimento ce l'ha. La risposta arriva nel modo in cui quel dipartimento risponde di solito."
+      "description": "Il dipartimento ce l'ha. Lo trovi, con le risposte, fra i tuoi messaggi, e una mail ti avvisa quando qualcuno risponde.",
+      "open": "Apri i tuoi messaggi"
     },
     "fields": {
       "department": "Dipartimento",
@@ -1645,7 +1646,9 @@
       "status": "Stato",
       "createdBy": "Da",
       "createdAt": "Inviato",
-      "updatedAt": "Ultima modifica"
+      "updatedAt": "Ultima modifica",
+      "kind": "Tipo",
+      "ownerDepartment": "Dipartimento"
     },
     "options": {
       "status": {
@@ -1653,7 +1656,30 @@
         "Read": "Letto",
         "Answered": "Risposto",
         "Closed": "Chiuso"
+      },
+      "kind": {
+        "general": "Messaggio",
+        "dispute": "Contestazione",
+        "clarification": "Chiarimento"
       }
+    },
+    "mine": {
+      "title": "I miei messaggi",
+      "description": "Quello che hai scritto ai dipartimenti, e le conversazioni a cui sei stato aggiunto, con le risposte.",
+      "link": "I miei messaggi"
+    },
+    "thread": {
+      "about": "Riguarda",
+      "sender": "VID {{vid}}",
+      "you": "Tu",
+      "department": "Dipartimento {{department}}",
+      "participants": "Partecipano anche: {{vids}}",
+      "noReplies": "Ancora nessuna risposta.",
+      "send": "Invia la risposta",
+      "fields": {
+        "body": "La tua risposta"
+      },
+      "participant": "partecipa"
     }
   },
   "notifications": {
@@ -1662,6 +1688,14 @@
       "contact.received": {
         "title": "Messaggi al mio dipartimento",
         "description": "Una mail quando un membro scrive a un dipartimento di cui fai parte."
+      },
+      "contact.threadOpened": {
+        "title": "Conversazioni in cui sono aggiunto",
+        "description": "Una mail quando vieni aggiunto alla conversazione di un membro con un dipartimento, per esempio su un report che hai deciso."
+      },
+      "contact.threadReplied": {
+        "title": "Risposte nelle mie conversazioni",
+        "description": "Una mail quando qualcuno risponde in una conversazione che hai scritto o a cui partecipi."
       },
       "document.reviewDue": {
         "title": "Documenti da rivedere",

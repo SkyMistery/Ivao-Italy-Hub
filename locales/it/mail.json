@@ -4,6 +4,14 @@
       "received": {
         "subject": "[{{department}}] {{subject}}",
         "body": "Un membro ha scritto al dipartimento {{department}}.\n\nDa: VID {{vid}}\nOggetto: {{subject}}\n\n{{body}}\n\n---\nLeggi il messaggio e cambia il suo stato qui: {{url}}\nRicevi questa mail perché fai parte dello staff {{department}}. Puoi disattivarle dalla pagina del tuo profilo."
+      },
+      "threadOpened": {
+        "subject": "[{{department}}] {{subject}}",
+        "body": "Sei stato aggiunto a una conversazione con il dipartimento {{department}}, così puoi leggerla e rispondere.\n\nOggetto: {{subject}}\n\n{{body}}\n\n---\nLeggi e rispondi qui: {{url}}\nPuoi disattivarle dalla pagina del tuo profilo."
+      },
+      "threadReplied": {
+        "subject": "[{{department}}] Re: {{subject}}",
+        "body": "C'è un nuovo messaggio nella conversazione \"{{subject}}\" con il dipartimento {{department}}:\n\n{{body}}\n\n---\nLeggi tutta la conversazione e rispondi qui: {{url}}\nLe risposte inviate rispondendo a questa mail non vengono lette. Puoi disattivarle dalla pagina del tuo profilo."
       }
     },
     "document": {

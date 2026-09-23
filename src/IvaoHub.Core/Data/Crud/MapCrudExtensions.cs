@@ -130,6 +130,12 @@ public static class MapCrudExtensions
                 $"MapCrud for {typeof(TEntity).Name} is read only, so MapCreate says nothing.");
         }
 
+        if (options.Participating is not null && !options.ReadOnly)
+        {
+            throw new InvalidOperationException(
+                $"MapCrud for {typeof(TEntity).Name} is a personal view (Participating), which is read only.");
+        }
+
         if (!options.ReadOnly && options.Apply is null)
         {
             throw new InvalidOperationException($"MapCrud for {typeof(TEntity).Name} needs Apply to accept writes.");
@@ -175,7 +181,12 @@ public static class MapCrudExtensions
 
         var query = Source(scope.Database, options);
 
-        if (!TryNarrowToDepartments(scope.CurrentUser, options.SharedForReading, ref query, out var forbidden))
+        if (options.Participating is { } participating)
+        {
+            // A personal view: the reader's own rows, whatever department they sit in.
+            query = TakingPart(query, participating, scope.CurrentUser.Vid);
+        }
+        else if (!TryNarrowToDepartments(scope.CurrentUser, options.SharedForReading, ref query, out var forbidden))
         {
             return forbidden!;
         }
@@ -227,7 +238,8 @@ public static class MapCrudExtensions
             return NotFound(scope);
         }
 
-        if (await Denies(scope, entity, options.EffectiveReadPolicy))
+        // In a personal view FindAsync has already narrowed to the reader's rows: another one was a 404.
+        if (options.Participating is null && await Denies(scope, entity, options.EffectiveReadPolicy))
         {
             // A row of another department is not readable, and saying "forbidden" rather than
             // "missing" is fine: the staff already knows the other departments exist.
@@ -389,6 +401,18 @@ public static class MapCrudExtensions
         {
             ModuleBaseDepartment.Keep(scope.Services.GetService<ModuleRegistry>(), scope.Database.Entry(entity));
         }
+    }
+
+    /// <summary>The rows this VID takes part in: the entity's expression with the reader bound into it.</summary>
+    private static IQueryable<TEntity> TakingPart<TEntity>(
+        IQueryable<TEntity> query,
+        Expression<Func<TEntity, int, bool>> participating,
+        int vid)
+        where TEntity : class
+    {
+        var entity = participating.Parameters[0];
+        var body = new ParameterSwap(participating.Parameters[1], Expression.Constant(vid)).Visit(participating.Body)!;
+        return query.Where(Expression.Lambda<Func<TEntity, bool>>(body, entity));
     }
 
     private static IQueryable<TEntity> Source<TEntity, TListDto, TDetailDto, TWriteDto>(
@@ -672,6 +696,11 @@ public static class MapCrudExtensions
             entity);
 
         var query = Source(scope.Database, options);
+        if (options.Participating is { } participating)
+        {
+            query = TakingPart(query, participating, scope.CurrentUser.Vid);
+        }
+
         return await (tracked ? query : query.AsNoTracking()).FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
@@ -857,7 +886,7 @@ public static class MapCrudExtensions
     }
 
     /// <summary>Rewrites a lambda body so several selectors can share one parameter.</summary>
-    private sealed class ParameterSwap(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
+    private sealed class ParameterSwap(ParameterExpression from, Expression to) : ExpressionVisitor
     {
         protected override Expression VisitParameter(ParameterExpression node) =>
             node == from ? to : base.VisitParameter(node);

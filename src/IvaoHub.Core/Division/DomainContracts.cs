@@ -172,6 +172,18 @@ public interface IHasStakeholder
 }
 
 /// <summary>
+/// A row some members <b>take part in</b>, whichever department owns it: the sender of a contact thread and whoever was
+/// added to it — the validator of a disputed report (M2, note 2026-09-15-contatti-con-risposte §3.2). The single handler
+/// grants them the permission that reads the row's area, which is also the one that answers it; nothing that writes.
+/// <para>The twin of <see cref="IHasStakeholder"/> with the opposite sign: that one takes a permission away from a member
+/// on a row, this one gives one.</para>
+/// </summary>
+public interface IHasParticipants
+{
+    IReadOnlyCollection<int> ParticipantVids { get; }
+}
+
+/// <summary>
 /// A row any signed in member may <b>bring into existence</b> inside the space of a department
 /// they have nothing to do with. A contact message is the first: somebody writes to a department
 /// precisely because they are not part of it (design M1 section 5.1, decision note of 6 September

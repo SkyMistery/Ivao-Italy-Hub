@@ -132,6 +132,12 @@
     },
     "settings": {
       "invalid": "These settings are not in the shape the module expects."
+    },
+    "contacts": {
+      "referenceUnknown": "This message points at something that does not exist, or that you cannot see.",
+      "referenceRequired": "A request for clarification has to say what it is about.",
+      "tooManyReferences": "A message can point at ten things at most.",
+      "kindUnknown": "This kind of message cannot be sent from here."
     }
   }
 }

@@ -58,11 +58,16 @@ public sealed record ProjectionContext(
 /// 2026-09-15-file-con-scadenza). Unlike the other three, a row that is not published still declares
 /// them: a tour being prepared needs its banner as much as a tour already open.
 /// </param>
+/// <param name="ThreadOpenings">
+/// The contact threads the row opens: a disputed report opens one with the department (M2, T14). Once only — a thread
+/// has answers that are nobody's row, so it is never rewritten or removed by the row that opened it.
+/// </param>
 public sealed record ProjectionSnapshot(
     SearchProjection? Search,
     IReadOnlyList<CalendarProjection> Calendar,
     IReadOnlyList<AwardSignalProjection> AwardSignals,
-    IReadOnlyList<MediaUseProjection> MediaUses)
+    IReadOnlyList<MediaUseProjection> MediaUses,
+    IReadOnlyList<ThreadOpeningProjection>? ThreadOpenings = null)
 {
     public static ProjectionSnapshot ForSearch(SearchProjection search) => new(search, [], [], []);
 
@@ -109,3 +114,29 @@ public sealed record AwardSignalProjection(int Vid, string Reason, long? AwardId
 /// media expiry job deletes, and only that (note 2026-09-15-file-con-scadenza §3).
 /// </summary>
 public sealed record MediaUseProjection(long MediaId, DateTime? UsedUntilUtc);
+
+/// <summary>
+/// "Open this conversation with the department, if it is not open yet" (note 2026-09-15-contatti-con-risposte §3.3). The
+/// row and the thread live in two contexts; opened as a projection, they are written in one transaction.
+/// <para>The key of "once only" is the row itself and the kind: the writer creates the thread when that row has not
+/// opened one of that kind yet, and never touches it afterwards. What the thread decides — a dispute upheld or turned
+/// down — stays on the row of the module; the thread is the conversation.</para>
+/// </summary>
+/// <param name="Kind">A kind of <see cref="ContactKinds"/>, or one of the module's.</param>
+/// <param name="Department">Whose queue it lands in.</param>
+/// <param name="Subject">One line, in the sender's words or the module's.</param>
+/// <param name="Body">What the sender wrote.</param>
+/// <param name="SenderVid">The member who opens it: the thread is theirs.</param>
+/// <param name="ParticipantVids">Who else reads and answers: the validator of a disputed report.</param>
+/// <param name="References">The objects it is about, with their labels taken now.</param>
+public sealed record ThreadOpeningProjection(
+    string Kind,
+    Department Department,
+    string Subject,
+    string Body,
+    int SenderVid,
+    IReadOnlyList<int> ParticipantVids,
+    IReadOnlyList<ThreadReferenceProjection> References);
+
+/// <summary>One object a thread cites: <c>flightops</c> + <c>pirep:123</c>, and how it reads.</summary>
+public sealed record ThreadReferenceProjection(string SourceModule, string SourceId, Localized<string> Label);

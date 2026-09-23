@@ -1,17 +1,12 @@
-using System.Globalization;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
-using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
-using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
-using IvaoHub.Core.Notifications;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Core.Content;
 
@@ -79,17 +74,55 @@ public static class ContactsEndpoints
             // no captcha, because there is no anonymous sender (plan section 9.1).
             .RequireAuthorization(HubPolicies.SignedIn);
 
+        // The thread, for the back office and for /me/contacts alike (M2, T14). Signed in at the door; the single
+        // handler decides on the message itself, with Contacts.View: the department, the sender, the participants.
+        group.MapGet("/{id:long}/thread", ReadThreadAsync)
+            .WithName("ContactsThread")
+            .Produces<ContactThreadDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(HubPolicies.SignedIn);
+
+        group.MapPost("/{id:long}/replies", ReplyAsync)
+            .WithName("ContactsReply")
+            .Produces<ContactThreadDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .RequireAuthorization(HubPolicies.SignedIn);
+
+        // The member's own threads, whichever department they went to: the ones they sent and the ones they were added
+        // to. The same engine as the queue, as a personal view (CrudOptions.Participating).
+        app.MapCrud<ContactMessage, ContactListDto, ContactListDto, ContactStatusWriteDto>(
+            MinePattern,
+            options =>
+            {
+                options.PermissionArea = CorePermissions.ContactsArea;
+                options.Name = "MyContacts";
+                options.Participating = ContactMessage.TakesPart;
+                options.ReadOnly = true;
+                options.DefaultOrder = message => message.UpdatedAt;
+                options.Sortable.Add(nameof(ContactMessage.Subject));
+                options.Sortable.Add(nameof(ContactMessage.Status));
+                options.Sortable.Add(nameof(ContactMessage.CreatedAt));
+                options.Sortable.Add(nameof(ContactMessage.UpdatedAt));
+                options.Filterable.Add(nameof(ContactMessage.Status));
+                options.SearchFields.Add(message => message.Subject);
+                options.ToList = mapper.ToList;
+                options.ToDetail = mapper.ToList;
+            });
+
         return group;
     }
+
+    /// <summary>Where the member's own threads live.</summary>
+    public const string MinePattern = "/api/me/contacts";
 
     private static async Task<Results<Ok<ContactSubmittedDto>, ValidationProblem>> SubmitAsync(
         HttpContext http,
         ContactSubmitDto body,
-        HubDbContext database,
-        INotificationService notifications,
+        ContactThreads threads,
         ICurrentUser currentUser,
         LocaleCatalog catalog,
-        IOptions<DivisionOptions> division,
         FluentValidation.IValidator<ContactSubmitDto> validator)
     {
         ArgumentNullException.ThrowIfNull(body);
@@ -97,84 +130,85 @@ public static class ContactsEndpoints
         var validation = await validator.ValidateAsync(body, http.RequestAborted);
         if (!validation.IsValid)
         {
-            return TypedResults.ValidationProblem(
+            return Refused(
                 validation.Errors
                     .GroupBy(failure => failure.PropertyName)
                     .ToDictionary(
                         group => group.Key,
-                        group => group.Select(failure => failure.ErrorMessage).ToArray(),
+                        group => group.Select(failure => failure.ErrorMessage).Distinct().ToArray(),
                         StringComparer.Ordinal),
-                title: catalog.Resolve(currentUser.Locale, CrudProblems.ValidationTitleKey));
+                catalog,
+                currentUser);
         }
 
-        var message = new ContactMessage
+        var (message, errors) = await threads.SubmitAsync(body, http.RequestAborted);
+        if (message is null)
         {
-            OwnerDepartment = body.Department,
-            Subject = body.Subject.Trim(),
-            Body = body.Body.Trim(),
-            Status = ContactStatus.New,
-        };
-
-        // The sender is the session: CreatedBy is stamped by the interceptor, and the write guard
-        // lets this one row through because ContactMessage declares that it accepts submissions.
-        database.ContactMessages.Add(message);
-        await database.SaveChangesAsync(http.RequestAborted);
-
-        await notifications.QueueAsync(
-            await IntentFor(message, database, division.Value, http.RequestAborted),
-            http.RequestAborted);
+            return Refused(errors!, catalog, currentUser);
+        }
 
         return TypedResults.Ok(new ContactSubmittedDto(message.Id));
     }
 
-    /// <summary>
-    /// Who hears about a message: the shared inbox of the department, if the division has one, and
-    /// every member of its staff. Whether each of them actually wants it is the notification
-    /// service's question, not this one's — here it is only "who is this about".
-    /// </summary>
-    private static async Task<NotificationIntent> IntentFor(
-        ContactMessage message,
-        HubDbContext database,
-        DivisionOptions division,
-        CancellationToken cancellationToken)
+    private static async Task<Results<Ok<ContactThreadDto>, NotFound>> ReadThreadAsync(
+        long id,
+        HttpContext http,
+        ContactThreads threads)
     {
-        var recipients = new List<NotificationRecipient>();
+        // Not readable and not there are the same answer: a thread of somebody else is not confirmed to exist.
+        var thread = await threads.ReadAsync(http.User, id, http.RequestAborted);
+        return thread is null ? TypedResults.NotFound() : TypedResults.Ok(thread);
+    }
 
-        if (division.DepartmentMailboxes.TryGetValue(message.OwnerDepartment.ToString(), out var mailbox)
-            && !string.IsNullOrWhiteSpace(mailbox))
+    private static async Task<Results<Ok<ContactThreadDto>, ValidationProblem, NotFound, Conflict>> ReplyAsync(
+        long id,
+        HttpContext http,
+        ContactReplyWriteDto body,
+        ContactThreads threads,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        FluentValidation.IValidator<ContactReplyWriteDto> validator)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        var validation = await validator.ValidateAsync(body, http.RequestAborted);
+        if (!validation.IsValid)
         {
-            recipients.Add(NotificationRecipient.Mailbox(mailbox));
+            return Refused(
+                validation.Errors
+                    .GroupBy(failure => failure.PropertyName)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.Select(failure => failure.ErrorMessage).Distinct().ToArray(),
+                        StringComparer.Ordinal),
+                catalog,
+                currentUser);
         }
 
-        var staff = await database.UserStaffPositions
-            .AsNoTracking()
-            .Where(position => position.Department == message.OwnerDepartment)
-            .Select(position => position.Vid)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
-        recipients.AddRange(staff.Select(NotificationRecipient.Member));
-
-        var department = message.OwnerDepartment.ToString();
-
-        return new NotificationIntent(
-            NotificationTypes.ContactReceived,
-            recipients,
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["department"] = department,
-                ["subject"] = message.Subject,
-                ["body"] = message.Body,
-                ["vid"] = message.CreatedBy.ToString(CultureInfo.InvariantCulture),
-                // Where to go and read it. The department is spelled the way the address bar
-                // spells it, which is the same rule the single page application follows.
-                ["url"] = $"https://{division.Domain}/staff/{department.ToLowerInvariant()}/contacts",
-            });
+        try
+        {
+            var thread = await threads.ReplyAsync(http.User, id, body.Body, http.RequestAborted);
+            return thread is null ? TypedResults.NotFound() : TypedResults.Ok(thread);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Somebody moved the message in the same instant: the answer was not written, and saying so beats
+            // writing it against a status nobody saw.
+            return TypedResults.Conflict();
+        }
     }
+
+    private static ValidationProblem Refused(
+        IReadOnlyDictionary<string, string[]> errors,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser) =>
+        TypedResults.ValidationProblem(
+            errors,
+            title: catalog.Resolve(currentUser.Locale, CrudProblems.ValidationTitleKey));
 }
 
 /// <summary>
-/// What the sender gets back: the identifier of their message and nothing else. They cannot read
-/// it again — the queue belongs to the department — so there is nothing more to hand over.
+/// What the sender gets back: the identifier of their message, which is also the address of the thread in
+/// <c>/me/contacts</c> (M2, T14).
 /// </summary>
 public sealed record ContactSubmittedDto(long Id);

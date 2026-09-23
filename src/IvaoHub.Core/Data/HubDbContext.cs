@@ -88,6 +88,8 @@ public class HubDbContext : DbContext, IVisibilityScope
     public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();
     public DbSet<CalendarKind> CalendarKinds => Set<CalendarKind>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
+    public DbSet<ContactReply> ContactReplies => Set<ContactReply>();
+    public DbSet<ContactReference> ContactReferences => Set<ContactReference>();
     public DbSet<AwardSignal> AwardSignals => Set<AwardSignal>();
     public DbSet<MediaUse> MediaUses => Set<MediaUse>();
 
@@ -120,6 +122,7 @@ public class HubDbContext : DbContext, IVisibilityScope
         configurationBuilder.Properties<ContentKind>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<MenuScope>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ContactStatus>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<ContactReplySide>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<NotificationStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<GrantKind>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<GrantEffect>().HaveConversion<string>().HaveMaxLength(8);

@@ -1636,7 +1636,8 @@
     },
     "sent": {
       "title": "Your message is on its way",
-      "description": "The department has it. An answer comes back the way that department usually answers."
+      "description": "The department has it. You will find it, with the answers, among your messages, and an email tells you when somebody answers.",
+      "open": "Open your messages"
     },
     "fields": {
       "department": "Department",
@@ -1645,7 +1646,9 @@
       "status": "Status",
       "createdBy": "From",
       "createdAt": "Sent",
-      "updatedAt": "Last change"
+      "updatedAt": "Last change",
+      "kind": "Kind",
+      "ownerDepartment": "Department"
     },
     "options": {
       "status": {
@@ -1653,7 +1656,30 @@
         "Read": "Read",
         "Answered": "Answered",
         "Closed": "Closed"
+      },
+      "kind": {
+        "general": "Message",
+        "dispute": "Dispute",
+        "clarification": "Clarification"
       }
+    },
+    "mine": {
+      "title": "My messages",
+      "description": "What you wrote to the departments, and the conversations you were added to, with their answers.",
+      "link": "My messages"
+    },
+    "thread": {
+      "about": "About",
+      "sender": "VID {{vid}}",
+      "you": "You",
+      "department": "{{department}} department",
+      "participants": "Also taking part: {{vids}}",
+      "noReplies": "No answer yet.",
+      "send": "Send answer",
+      "fields": {
+        "body": "Your answer"
+      },
+      "participant": "taking part"
     }
   },
   "notifications": {
@@ -1662,6 +1688,14 @@
       "contact.received": {
         "title": "Messages to my department",
         "description": "An email when a member writes to a department you are staff of."
+      },
+      "contact.threadOpened": {
+        "title": "Conversations I am added to",
+        "description": "An email when you are added to a conversation of a member with a department, for example on a report you decided."
+      },
+      "contact.threadReplied": {
+        "title": "Answers in my conversations",
+        "description": "An email when somebody answers in a conversation you wrote or take part in."
       },
       "document.reviewDue": {
         "title": "Documents due for review",

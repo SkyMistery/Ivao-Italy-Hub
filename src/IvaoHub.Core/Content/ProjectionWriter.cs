@@ -21,12 +21,14 @@ public sealed class ProjectionState
         ILookup<(string Module, string Id), SearchIndexEntry> search,
         ILookup<(string Module, string Id), CalendarEntry> calendar,
         ILookup<(string Module, string Id), AwardSignal> awards,
-        ILookup<(string Module, string Id), MediaUse> mediaUses)
+        ILookup<(string Module, string Id), MediaUse> mediaUses,
+        ILookup<(string Module, string Id), string> threads)
     {
         Search = search;
         Calendar = calendar;
         Awards = awards;
         MediaUses = mediaUses;
+        Threads = threads;
     }
 
     internal ILookup<(string Module, string Id), SearchIndexEntry> Search { get; }
@@ -36,6 +38,9 @@ public sealed class ProjectionState
     internal ILookup<(string Module, string Id), AwardSignal> Awards { get; }
 
     internal ILookup<(string Module, string Id), MediaUse> MediaUses { get; }
+
+    /// <summary>The kinds of thread each source has opened so far (M2, T14).</summary>
+    internal ILookup<(string Module, string Id), string> Threads { get; }
 }
 
 /// <summary>
@@ -85,7 +90,13 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
             mediaUses.AddRange(await MediaUsesOf(context, module, ids).ToListAsync(cancellationToken));
         }
 
-        return Build(search, calendar, awards, mediaUses);
+        var threads = new List<OpenedThread>();
+        foreach (var (module, ids) in OpeningByModule(context, requests))
+        {
+            threads.AddRange(await ThreadsOf(context, module, ids).ToListAsync(cancellationToken));
+        }
+
+        return Build(search, calendar, awards, mediaUses, threads);
     }
 
     /// <summary>The same, for a caller that saved synchronously.</summary>
@@ -107,7 +118,13 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
             mediaUses.AddRange(MediaUsesOf(context, module, ids).ToList());
         }
 
-        return Build(search, calendar, awards, mediaUses);
+        var threads = new List<OpenedThread>();
+        foreach (var (module, ids) in OpeningByModule(context, requests))
+        {
+            threads.AddRange(ThreadsOf(context, module, ids).ToList());
+        }
+
+        return Build(search, calendar, awards, mediaUses, threads);
     }
 
     /// <summary>
@@ -136,6 +153,7 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
             ApplyCalendar(context, request, [.. state.Calendar[key]]);
             ApplyAwardSignals(context, request, [.. state.Awards[key]]);
             ApplyMediaUses(context, request, [.. state.MediaUses[key]]);
+            ApplyThreadOpenings(context, request, [.. state.Threads[key]]);
         }
     }
 
@@ -143,6 +161,28 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         requests
             .GroupBy(request => request.SourceModule, StringComparer.Ordinal)
             .Select(group => (group.Key, group.Select(request => request.SourceId).Distinct(StringComparer.Ordinal).ToArray()));
+
+    /// <summary>
+    /// Only the sources that open a thread in this save are looked up: every other save of the hub projects without
+    /// asking the contacts table anything. A context that does not map the threads and is asked to open one is a
+    /// mistake, said as one rather than skipped (the lesson of T4).
+    /// </summary>
+    private static IEnumerable<(string Module, string[] Ids)> OpeningByModule(DbContext context, IReadOnlyList<ProjectionRequest> requests)
+    {
+        var opening = requests.Where(request => request.Snapshot?.ThreadOpenings is { Count: > 0 }).ToList();
+        if (opening.Count > 0 && context.Model.FindEntityType(typeof(ContactMessage)) is null)
+        {
+            throw new InvalidOperationException(
+                $"{context.GetType().Name} does not map the contact threads, and a row of it opens one.");
+        }
+
+        return ByModule(opening);
+    }
+
+    private static IQueryable<OpenedThread> ThreadsOf(DbContext context, string module, string[] ids) =>
+        context.Set<ContactMessage>()
+            .Where(row => row.SourceModule == module && ids.Contains(row.SourceId!))
+            .Select(row => new OpenedThread(row.SourceModule!, row.SourceId!, row.Kind));
 
     private static IQueryable<SearchIndexEntry> SearchOf(DbContext context, string module, string[] ids) =>
         context.Set<SearchIndexEntry>().IgnoreQueryFilters()
@@ -164,11 +204,15 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
         List<SearchIndexEntry> search,
         List<CalendarEntry> calendar,
         List<AwardSignal> awards,
-        List<MediaUse> mediaUses) => new(
+        List<MediaUse> mediaUses,
+        List<OpenedThread> threads) => new(
             search.ToLookup(row => (row.SourceModule, row.SourceId)),
             calendar.ToLookup(row => (row.SourceModule, row.SourceId)),
             awards.ToLookup(row => (row.SourceModule, row.SourceId)),
-            mediaUses.ToLookup(row => (row.SourceModule, row.SourceId)));
+            mediaUses.ToLookup(row => (row.SourceModule, row.SourceId)),
+            threads.ToLookup(row => (row.Module, row.Id), row => row.Kind));
+
+    private sealed record OpenedThread(string Module, string Id, string Kind);
 
     private static void ApplySearch(
         DbContext context,
@@ -325,6 +369,54 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
 
         // A banner changed takes its old file out of use, which is what lets the job find it.
         context.Set<MediaUse>().RemoveRange(existing.Where(row => !uses.Exists(use => use.MediaId == row.MediaId)));
+    }
+
+    /// <summary>
+    /// Opens the threads this source has not opened yet, and nothing else: a thread already there has answers that are
+    /// not the row's, so it is never rewritten, and a row that stops asking does not close it (note §3.3).
+    /// <para>Written in full here because the interceptor does not stamp its own second pass: the sender is the author,
+    /// whoever caused the save.</para>
+    /// </summary>
+    private void ApplyThreadOpenings(DbContext context, ProjectionRequest request, List<string> openedKinds)
+    {
+        foreach (var opening in request.Snapshot?.ThreadOpenings ?? [])
+        {
+            if (openedKinds.Contains(opening.Kind, StringComparer.Ordinal))
+            {
+                continue;
+            }
+
+            openedKinds.Add(opening.Kind);
+
+            var message = new ContactMessage
+            {
+                OwnerDepartment = opening.Department,
+                Subject = opening.Subject,
+                Body = opening.Body,
+                Status = ContactStatus.New,
+                Kind = opening.Kind,
+                ParticipantsJson = ContactParticipants.Write(opening.ParticipantVids, except: opening.SenderVid),
+                SourceModule = request.SourceModule,
+                SourceId = request.SourceId,
+                CreatedAt = clock.UtcNow,
+                CreatedBy = opening.SenderVid,
+                UpdatedAt = clock.UtcNow,
+                UpdatedBy = opening.SenderVid,
+            };
+
+            context.Set<ContactMessage>().Add(message);
+
+            foreach (var reference in opening.References.DistinctBy(reference => (reference.SourceModule, reference.SourceId)))
+            {
+                context.Set<ContactReference>().Add(new ContactReference
+                {
+                    Message = message,
+                    SourceModule = reference.SourceModule,
+                    SourceId = reference.SourceId,
+                    Label = reference.Label,
+                });
+            }
+        }
     }
 
     /// <summary>
