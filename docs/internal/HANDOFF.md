@@ -3,8 +3,16 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T10 in `main`; T11a è fatta**: branch `m2/t11a-pirep-server`, in PR (vedi
-`gh pr list`). Piano **0.91**. **Il prossimo passo è T11b (il form e la pagina del pilota)**, in una chat nuova, dopo il merge di T11a.
+**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T11a in `main`; T11b è fatta**: branch `m2/t11b-pirep-form`, in PR (vedi
+`gh pr list`). Piano **0.92**. **Il prossimo passo è T12 (gli ATC contattati)**, in una chat nuova, dopo il merge di T11b.
+
+> **Che cosa ha lasciato T11b** (nota `2026-09-23-il-form-del-pirep`, piano 0.92): il form è `screens/report.tsx` a
+> `/tours/{slug}/report` (`?leg=`, `?report=` per correggere), le funzioni pure in `screens/reporting.ts`, la pagina del tour in
+> `screens/public.tsx` con i colori del pilota e «I tuoi report». **T12** aggiunge al form gli ATC contattati e le esenzioni: una
+> sezione fra il volo e i dettagli, e i campi nuovi del `PirepWriteDto` — un rifiuto su un campo che non è del form dei dettagli
+> va in `splitRefusal`, altrimenti non si vede. ⚠️ Un modulo ha ora **tre aree** di rotta: `public`, `member` (dietro il login),
+> `staff`. Nel giro e2e un volo del tracker si ottiene con **`replayFlight`** (`e2e/full/replay.ts`): **T13** lo userà per mettere
+> un PIREP in coda prima di validarlo. Il banco accumula un tour nascosto per ogni giro di `tours-report.spec.ts`.
 
 > **Che cosa ha lasciato T11a** (nota `2026-09-23-il-pirep`, piano 0.91): T11 è divisa — **T11a il server, T11b il form**. Tutto sta
 > in `Pireps/`. **Le tre domande** di ogni tipo sono `TourRules.Of(tour, legs, hubs, rotations, reports, at, graceHours)` → colore di

@@ -41,7 +41,7 @@
     },
     "delete": {
       "title": "Eliminare questo tour?",
-      "description": "Si elimina solo un tour senza report: uno con report si nasconde. L'operazione non si annulla."
+      "description": "Si elimina solo un tour senza report: uno con report si può solo nascondere. L'operazione non si annulla."
     },
     "fields": {
       "title": "Titolo",
@@ -811,6 +811,82 @@
       "miles": "{{distance}} NM",
       "requiredSubtours": "Sottotour da completare",
       "goal": "Obiettivo"
+    },
+    "progress": "Stato",
+    "reportLeg": "Riporta",
+    "legProgress": {
+      "Todo": "Da volare",
+      "Done": "Fatta",
+      "Pending": "In attesa",
+      "Locked": "Bloccata"
+    },
+    "signInToReport": "Accedi per volare il tour e inviare i report",
+    "pilot": "Il tuo tour",
+    "finished": "Hai completato questo tour.",
+    "goalProgress": "Obiettivo: {{done}} su {{target}}",
+    "goalMissing": "mancano voli a {{airports}}",
+    "sendReport": "Invia il report",
+    "myReports": "I tuoi report",
+    "reportStatus": {
+      "Queued": "In coda",
+      "InReview": "In validazione",
+      "Accepted": "Accettato",
+      "ToModify": "Da modificare",
+      "Rejected": "Rifiutato",
+      "Withdrawn": "Ritirato"
+    },
+    "reportFlown": "Decollo {{date}} UTC",
+    "reportDiverted": "deviato a {{airport}}",
+    "correct": "Correggi",
+    "withdraw": "Ritira",
+    "withdrawTitle": "Ritirare il report?",
+    "withdrawDescription": "La leg torna da volare e il volo si libera: potrai riportarlo di nuovo, anche su un altro tour.",
+    "withdrawn": "Report ritirato."
+  },
+  "report": {
+    "title": "Invia il report",
+    "correctTitle": "Correggi il report",
+    "leg": "Leg {{number}} · {{from}} → {{to}}",
+    "openFlight": "Un volo per il tour",
+    "nothingToFly": "In questo momento non hai leg da riportare in questo tour.",
+    "notFlyable": "Questa leg ora non si può riportare. Queste sì:",
+    "flight": "Il volo",
+    "secondFlight": "Il volo da {{from}} a {{to}}",
+    "searching": "Cerco i tuoi voli nel tracker…",
+    "noFlights": "Nessun tuo volo con piano di volo fra questi aeroporti negli ultimi {{days}} giorni, non ancora in un altro report. Un volo appena atterrato può metterci qualche minuto ad arrivare nel tracker.",
+    "noFlightsOpen": "Nessun tuo volo con piano di volo negli ultimi {{days}} giorni, non ancora in un altro report. Un volo appena atterrato può metterci qualche minuto ad arrivare nel tracker.",
+    "noSecondFlight": "Nessun tuo volo da {{from}} a {{to}} nel tracker, non ancora in un altro report.",
+    "sessionTime": "{{from}} – {{to}} UTC",
+    "diverted": "Il volo è finito in un altro aeroporto (deviazione)",
+    "diversionFirst": "Scrivi l'aeroporto di deviazione: poi scegli il volo che da lì ha portato l'aereo a destinazione.",
+    "details": "I dettagli",
+    "proceduresRequired": "Questo tour chiede le procedure volate: con un piano IFR SID, STAR e avvicinamento; IFR poi VFR solo la SID; VFR poi IFR solo STAR e avvicinamento.",
+    "send": "Invia il report",
+    "resend": "Reinvia il report",
+    "sent": "Report inviato: è in coda per la validazione.",
+    "resent": "Report reinviato: è di nuovo in coda.",
+    "fields": {
+      "sid": "SID",
+      "star": "STAR",
+      "approach": "Avvicinamento (IAP)",
+      "pilotRemarks": "Note per il validatore",
+      "diversionIcao": "Aeroporto di deviazione (ICAO)",
+      "diversionReason": "Motivo",
+      "diversionNote": "Che cosa è successo"
+    },
+    "hints": {
+      "sid": "Come l'hai volata, per esempio RAVA5A. Vuoto se non ne hai volata una.",
+      "approach": "Per esempio ILS Z RWY 16L."
+    },
+    "options": {
+      "diversionReason": {
+        "none": "Scegli un motivo",
+        "Weather": "Meteo",
+        "Technical": "Problema tecnico",
+        "Medical": "Emergenza medica",
+        "AtcInstruction": "Istruzione dell'ATC",
+        "Other": "Altro"
+      }
     }
   },
   "events": {

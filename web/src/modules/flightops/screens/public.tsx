@@ -1,19 +1,34 @@
 import { Badge, Button, H1, H2, H3, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
-import { ExternalLink } from 'lucide-react';
+import { useLocation, useParams } from '@tanstack/react-router';
+import { ExternalLink, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { ContentRenderer, readBody } from '../../../blocks';
+import { loginHref } from '../../../shared/api/client';
 import { mediaFileUrl } from '../../../shared/api/mediaUrl';
+import { describeProblem } from '../../../shared/forms';
 import { resolveLocalized } from '../../../shared/i18n/localized';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { PageMetadata } from '../../../shared/seo/PageMetadata';
-import { EmptyState, NotFound, RouteMap, type RouteMapLeg } from '../../../shared/ui';
+import { ConfirmDialog, EmptyState, NotFound, Notice, RouteMap, useNotice } from '../../../shared/ui';
 import { bootstrapQuery } from '../../../features/me/queries';
-import { publicTourQuery, publicToursQuery, type PublicLegDto, type PublicTourDto } from '../api';
+import {
+  myTourQuery,
+  publicTourQuery,
+  publicToursQuery,
+  useWithdrawReport,
+  type LegProgress,
+  type MyTourDto,
+  type PirepDto,
+  type PirepStatus,
+  type PublicLegDto,
+  type PublicTourDto,
+} from '../api';
 
+import { mapLeg, reportActions } from './reporting';
 import { TourCards } from './TourCards';
 
 /**
@@ -23,6 +38,10 @@ import { TourCards } from './TourCards';
  * What arrives is what a visitor may see, decided by the server: a hidden tour, a draft, a template and one not yet
  * released all answer 404 here, and a member of staff reading these addresses sees what a visitor sees. The draft is
  * in the back office, where it belongs.
+ *
+ * A signed in pilot sees their own side on top of it (T11b): the colour of every leg on the map, «send the report», and
+ * their reports with «withdraw» and «correct». All of it is `…/reports/mine`, the server's answer: the page decides
+ * nothing about the rules.
  */
 
 export function PublicToursPage() {
@@ -63,6 +82,11 @@ export function PublicTourPage() {
   const { slug = '' } = useParams({ strict: false });
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const { data: tour, isPending } = useQuery(publicTourQuery(slug));
+  const signedIn = bootstrap?.user !== null && bootstrap?.user !== undefined;
+  const mine = useQuery({
+    ...myTourQuery(tour?.id ?? 0),
+    enabled: signedIn && tour !== undefined && tour !== null,
+  }).data;
 
   if (isPending) {
     return (
@@ -148,15 +172,21 @@ export function PublicTourPage() {
 
       <TourRulesSection tour={tour} />
 
+      {tour.kind === 'Container' ? null : <PilotSection tour={tour} signedIn={signedIn} mine={mine} />}
+
       {tour.legs.length === 0 ? null : (
         <section className="flex flex-col gap-4">
           <H2>{t('flightops:public.legs')}</H2>
           <RouteMap
-            legs={tour.legs.map(mapLeg)}
+            legs={tour.legs.map((leg) => mapLeg(leg, mine))}
             label={t('flightops:public.mapOf', { title: read(tour.title) })}
           />
-          <TourLegs tour={tour} />
+          <TourLegs tour={tour} mine={mine} />
         </section>
+      )}
+
+      {mine === undefined || mine.reports.length === 0 ? null : (
+        <MyReports tour={tour} reports={mine.reports} />
       )}
     </article>
   );
@@ -325,8 +355,11 @@ function TourRulesSection({ tour }: { tour: PublicTourDto }) {
 }
 
 /** The legs in a table: where, how far, how long, what to call yourself, and a flight plan on SimBrief. */
-function TourLegs({ tour }: { tour: PublicTourDto }) {
+function TourLegs({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undefined }) {
   const { t } = useTranslation();
+  const progressOf = (leg: PublicLegDto) => mine?.legs.find((entry) => entry.id === leg.id)?.progress;
+  const flyable = (leg: PublicLegDto) =>
+    mine !== undefined && mine.blocked === null && mine.flyable.includes(leg.id);
 
   return (
     <div className="overflow-x-auto">
@@ -339,6 +372,9 @@ function TourLegs({ tour }: { tour: PublicTourDto }) {
             <th className="py-2 pr-3 font-medium">{t('flightops:legs.fields.distanceNm')}</th>
             <th className="py-2 pr-3 font-medium">{t('flightops:legs.fields.estimatedMinutes')}</th>
             <th className="py-2 pr-3 font-medium">{t('flightops:legs.fields.callsigns')}</th>
+            {mine === undefined ? null : (
+              <th className="py-2 pr-3 font-medium">{t('flightops:public.progress')}</th>
+            )}
             <th className="py-2 font-medium">
               <span className="sr-only">{t('flightops:public.simbrief')}</span>
             </th>
@@ -361,7 +397,20 @@ function TourLegs({ tour }: { tour: PublicTourDto }) {
                 {leg.estimatedMinutes === null ? '—' : formatMinutes(leg.estimatedMinutes)}
               </td>
               <td className="py-2 pr-3 font-mono">{leg.callsigns.join(' · ')}</td>
+              {mine === undefined ? null : (
+                <td className="py-2 pr-3">
+                  <LegProgressBadge progress={progressOf(leg)} />
+                </td>
+              )}
               <td className="py-2">
+                {flyable(leg) ? (
+                  <Button asChild size="sm" variant="ghost">
+                    <RouterAnchor href={`/tours/${tour.slug}/report?leg=${leg.id}`}>
+                      <Send aria-hidden className="mr-1 size-4" />
+                      {t('flightops:public.reportLeg')}
+                    </RouterAnchor>
+                  </Button>
+                ) : null}
                 {leg.released ? (
                   <Button asChild size="sm" variant="ghost">
                     <a href={simbriefUrl(leg, tour.referenceAircraftIcao)} target="_blank" rel="noreferrer">
@@ -385,22 +434,12 @@ function TourLegs({ tour }: { tour: PublicTourDto }) {
             <td className="py-2 pr-3 tabular-nums">
               {tour.totalEstimatedMinutes === null ? '—' : formatMinutes(tour.totalEstimatedMinutes)}
             </td>
-            <td colSpan={2} />
+            <td colSpan={mine === undefined ? 2 : 3} />
           </tr>
         </tfoot>
       </table>
     </div>
   );
-}
-
-/** A leg as the map draws it: grey while it is not released yet, blue to fly. The pilot's colours arrive with T11. */
-function mapLeg(leg: PublicLegDto): RouteMapLeg {
-  return {
-    id: leg.id,
-    from: { code: leg.departureIcao, latitude: leg.departureLatitude, longitude: leg.departureLongitude },
-    to: { code: leg.arrivalIcao, latitude: leg.arrivalLatitude, longitude: leg.arrivalLongitude },
-    status: leg.released ? 'todo' : 'locked',
-  };
 }
 
 /** Hours and minutes, which is how a pilot reads a flight time. */
@@ -431,4 +470,188 @@ function simbriefUrl(leg: PublicLegDto, type: string | null): string {
   }
 
   return `https://dispatch.simbrief.com/options/custom?${parameters.toString()}`;
+}
+
+/** A leg's state for the pilot, in the colours of the map. */
+function LegProgressBadge({ progress }: { progress: LegProgress | undefined }) {
+  const { t } = useTranslation();
+
+  if (progress === undefined) {
+    return null;
+  }
+
+  return (
+    <Badge
+      variant="flat"
+      color={PROGRESS_COLOURS[progress]}
+      text={t(`flightops:public.legProgress.${progress}`)}
+    />
+  );
+}
+
+const PROGRESS_COLOURS: Readonly<Record<LegProgress, 'blue' | 'green' | 'orange' | 'gray'>> = {
+  Todo: 'blue',
+  Done: 'green',
+  Pending: 'orange',
+  Locked: 'gray',
+};
+
+const STATUS_COLOURS: Readonly<Record<PirepStatus, 'blue' | 'green' | 'orange' | 'red' | 'gray'>> = {
+  Queued: 'blue',
+  InReview: 'blue',
+  Accepted: 'green',
+  ToModify: 'orange',
+  Rejected: 'red',
+  Withdrawn: 'gray',
+};
+
+/**
+ * What the pilot can do from here: sign in, when they are not; why they may send nothing, when they may not; otherwise
+ * «send the report» for the next leg (or for a new flight on an Open tour), how far the goal of an Open tour is, and
+ * whether the tour is done.
+ */
+function PilotSection({
+  tour,
+  signedIn,
+  mine,
+}: {
+  tour: PublicTourDto;
+  signedIn: boolean;
+  mine: MyTourDto | undefined;
+}) {
+  const { t } = useTranslation();
+  const location = useLocation();
+
+  if (!signedIn) {
+    return (
+      <p className="text-sm">
+        <a href={loginHref(location.href)} className="underline">
+          {t('flightops:public.signInToReport')}
+        </a>
+      </p>
+    );
+  }
+
+  if (mine === undefined) {
+    return null;
+  }
+
+  const next = tour.kind === 'Open' ? null : (mine.next ?? mine.flyable[0] ?? null);
+  const canSend = mine.blocked === null && (tour.kind === 'Open' || next !== null);
+
+  return (
+    <section className="flex flex-col gap-3" aria-label={t('flightops:public.pilot')}>
+      {mine.finished ? <Notice tone="success" title={t('flightops:public.finished')} /> : null}
+      {mine.blocked === null ? null : <Notice tone="warning" title={t(mine.blocked)} />}
+
+      {mine.goal === null ? null : (
+        <p className="text-sm tabular-nums">
+          {t('flightops:public.goalProgress', { done: mine.goal.done, target: mine.goal.target })}
+          {mine.goal.missingMinFlightsAt.length === 0
+            ? ''
+            : ` · ${t('flightops:public.goalMissing', { airports: mine.goal.missingMinFlightsAt.join(', ') })}`}
+        </p>
+      )}
+
+      {canSend ? (
+        <div>
+          <Button asChild>
+            <RouterAnchor href={`/tours/${tour.slug}/report${next === null ? '' : `?leg=${next}`}`}>
+              <Send aria-hidden className="mr-2 size-4" />
+              {t('flightops:public.sendReport')}
+            </RouterAnchor>
+          </Button>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/** The pilot's reports on this tour, newest first, with the two things a pilot can do to one. */
+function MyReports({ tour, reports }: { tour: PublicTourDto; reports: readonly PirepDto[] }) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+
+  return (
+    <section className="flex flex-col gap-4">
+      <H2>{t('flightops:public.myReports')}</H2>
+      <ul className="flex flex-col divide-y">
+        {reports.map((report) => {
+          const leg = tour.legs.find((entry) => entry.id === report.legId);
+          const actions = reportActions(report.status);
+
+          return (
+            <li key={report.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="flat"
+                    color={STATUS_COLOURS[report.status]}
+                    text={t(`flightops:public.reportStatus.${report.status}`)}
+                  />
+                  <span className="font-semibold">
+                    {leg === undefined
+                      ? `${report.departureIcao} → ${report.arrivalIcao}`
+                      : t('flightops:report.leg', {
+                          number: leg.number,
+                          from: report.departureIcao,
+                          to: report.arrivalIcao,
+                        })}
+                  </span>
+                </div>
+                <span className="text-muted-foreground text-sm tabular-nums">
+                  {[
+                    t('flightops:public.reportFlown', { date: moment(report.takeoffAt) }),
+                    ...report.flights.map((flight) => flight.callsign),
+                    ...(report.isDiversion && report.diversionIcao !== null
+                      ? [t('flightops:public.reportDiverted', { airport: report.diversionIcao })]
+                      : []),
+                  ].join(' · ')}
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                {actions.correct ? (
+                  <Button asChild size="sm">
+                    <RouterAnchor href={`/tours/${tour.slug}/report?report=${report.id}`}>
+                      {t('flightops:public.correct')}
+                    </RouterAnchor>
+                  </Button>
+                ) : null}
+                {actions.withdraw ? <WithdrawReport report={report} /> : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function WithdrawReport({ report }: { report: PirepDto }) {
+  const { t, i18n } = useTranslation();
+  const withdraw = useWithdrawReport();
+  const notice = useNotice();
+
+  return (
+    <ConfirmDialog
+      triggerText={t('flightops:public.withdraw')}
+      triggerVariant="secondary"
+      title={t('flightops:public.withdrawTitle')}
+      description={t('flightops:public.withdrawDescription')}
+      confirmText={t('flightops:public.withdraw')}
+      confirmVariant="destructive"
+      disabled={withdraw.isPending}
+      onConfirm={() =>
+        withdraw.mutate(report, {
+          onSuccess: () => notice({ tone: 'success', title: t('flightops:public.withdrawn') }),
+          onError: (error) =>
+            notice({
+              tone: 'error',
+              title: describeProblem(error, t, i18n.language) ?? t('errors.unknown'),
+            }),
+        })
+      }
+    />
+  );
 }

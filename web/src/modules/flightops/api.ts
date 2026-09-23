@@ -1337,3 +1337,99 @@ export function publicTourQuery(slug: string) {
     },
   });
 }
+
+// ---- the pilot's reports (T11b) ---------------------------------------------------------------------
+
+export type MyTourDto = components['schemas']['MyTourDto'];
+export type LegProgress = components['schemas']['LegProgress'];
+export type PirepDto = components['schemas']['PirepDto'];
+export type PirepStatus = components['schemas']['PirepStatus'];
+export type TrackerSessionDto = components['schemas']['TrackerSessionDto'];
+export type PirepWriteDto = components['schemas']['PirepWriteDto'];
+
+const reportsKey = ['flightops', 'reports'] as const;
+
+/**
+ * Where the signed in pilot is in a tour: the colour of every leg, what may be reported now, the next, their reports and,
+ * when they may send none, why. Everything is the server's answer (`TourRules`): the browser computes none of it.
+ */
+export function myTourQuery(tourId: number) {
+  return queryOptions({
+    queryKey: [...reportsKey, 'mine', tourId] as const,
+    queryFn: async (): Promise<MyTourDto> =>
+      unwrap(await api.GET('/api/flightops/tours/{tourId}/reports/mine', { params: { path: { tourId } } })),
+  });
+}
+
+/** Where the flights are searched: between a leg's airports, between two airports (after a diversion), or anywhere. */
+export type SessionSearch =
+  { legId: number } | { departure: string; arrival: string } | Record<string, never>;
+
+/**
+ * The pilot's sessions of the tracker the tour may take. A 503 is «the tracker did not answer», which is not «no flight»:
+ * it reaches the screen as an `ApiError` with that status, and the screen says so.
+ */
+export function trackerSessionsQuery(tourId: number, search: SessionSearch) {
+  return queryOptions({
+    queryKey: [...reportsKey, 'sessions', tourId, search] as const,
+    queryFn: async (): Promise<TrackerSessionDto[]> =>
+      unwrap(
+        await api.GET('/api/flightops/tours/{tourId}/reports/sessions', {
+          params: { path: { tourId }, query: search },
+        }),
+      ),
+    // A flight landed a minute ago should appear when the pilot comes back to the tab.
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+/** One of the pilot's own reports, to correct it. */
+export function reportQuery(id: number) {
+  return queryOptions({
+    queryKey: [...reportsKey, 'one', id] as const,
+    queryFn: async (): Promise<PirepDto> =>
+      unwrap(await api.GET('/api/flightops/reports/{id}', { params: { path: { id } } })),
+  });
+}
+
+function useReportsChanged() {
+  const queryClient = useQueryClient();
+
+  return async () => {
+    await queryClient.invalidateQueries({ queryKey: reportsKey });
+  };
+}
+
+/** Sends a report, or sends again one «to modify» when `correcting` is given; the refusals arrive field by field. */
+export function useSendReport(tourId: number, correcting: number | null) {
+  const changed = useReportsChanged();
+
+  return useMutation({
+    mutationFn: async (body: PirepWriteDto): Promise<PirepDto> =>
+      correcting === null
+        ? unwrap(
+            await api.POST('/api/flightops/tours/{tourId}/reports', { params: { path: { tourId } }, body }),
+          )
+        : unwrap(
+            await api.PUT('/api/flightops/reports/{id}', { params: { path: { id: correcting } }, body }),
+          ),
+    onSuccess: changed,
+  });
+}
+
+/** Withdraws a report still in the queue: its leg may be flown again and its flight is free. */
+export function useWithdrawReport() {
+  const changed = useReportsChanged();
+
+  return useMutation({
+    mutationFn: async (report: Pick<PirepDto, 'id' | 'rowVersion'>): Promise<PirepDto> =>
+      unwrap(
+        await api.POST('/api/flightops/reports/{id}/withdraw', {
+          params: { path: { id: report.id } },
+          body: { rowVersion: report.rowVersion },
+        }),
+      ),
+    onSuccess: changed,
+  });
+}

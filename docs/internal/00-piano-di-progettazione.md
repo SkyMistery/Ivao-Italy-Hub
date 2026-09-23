@@ -1,9 +1,18 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.91 — 23 settembre 2026 (**il PIREP sul server**: T11 in due, l'hub e la partenza letti dai report, il pilota tocca la sua riga, T11a)
+**Versione documento:** 0.92 — 23 settembre 2026 (**il form del PIREP**: la pagina del pilota, i colori della mappa, `area: 'member'`, T11b)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.92** (23 set 2026, fase T11b di M2): **il form del PIREP e la pagina del pilota** — `/tours/{slug}/report`
+(prima il volo fra le sessioni del tracker, con la deviazione e il secondo volo, poi SID, STAR, IAP e note), la correzione di un
+report «da modificare» che ripropone i suoi voli, i colori del pilota sulla mappa e sulle leg, «Invia il report», «I tuoi report»
+con «Ritira» e «Correggi». Nota `decisions/2026-09-23-il-form-del-pirep.md`, nessuna domanda: **un'estensione di meccanismo**
+(§16.E caso b) — il manifest di un modulo ha una terza area, **`area: 'member'`**, sotto la guardia del login del nucleo
+(`_member`, come `/contact`); le procedure obbligatorie le dice il server (il browser non legge il piano); il rifiuto si divide fra
+la metà della pagina del volo e il form dei dettagli; il giro e2e **rivola un volo registrato** (una copia ridatata a ieri, sotto
+il VID del banco), senza orologi finti nel prodotto. L'avanzamento sui riquadri resta di T15 (`myTours`).
 
 **Changelog 0.91** (23 set 2026, fase T11a di M2): **il PIREP sul server** — le tre domande di ogni tipo di tour (`TourRules`:
 quali leg si volano, qual è la prossima, quando è finito, con il rifiuto, la tolleranza e la contestazione che sblocca), i filtri e
