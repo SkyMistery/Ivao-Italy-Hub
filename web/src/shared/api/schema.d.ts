@@ -4731,7 +4731,7 @@ export interface components {
          * @description A tour as a card shows it (design M2 §8.1): what fits on a tile, and nothing a visitor may not see. The picture is
          *     the identifier alone — a module reads no row of the core's library, and the address built from the identifier is
          *     the one a browser is asked to check again rather than keep for a year.
-         *     No progress and no next leg: those are the pilot's own and arrive with the reports (T15,
+         *     No progress and no next leg: those are the pilot's own and arrive with the pilot's pages (T15b,
          *     flightops.myTours). A card is the same for whoever is looking.
          */
         PublicTourCardDto: {
