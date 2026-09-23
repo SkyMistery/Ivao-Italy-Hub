@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Modules.FlightOps.Pireps;
@@ -90,9 +89,33 @@ public sealed record ReviewFlightDto(
     string ArrivalIcao,
     DateTime TakeoffAt,
     DateTime? LandingAt,
-    JsonArray FlightPlans,
+    IReadOnlyList<ReviewPlanDto> FlightPlans,
     int? PlanAtTakeoffRevision,
     bool HasTrack);
+
+/// <summary>
+/// One revision of a flight plan as the page shows it (§4.3), read from what the report stored with the reader of the core's
+/// client: the browser never parses the network's own payload. The times are minutes, as a plan writes them (HHMM).
+/// </summary>
+public sealed record ReviewPlanDto(
+    int Revision,
+    DateTime FiledAt,
+    string DepartureIcao,
+    string ArrivalIcao,
+    string? AlternateIcao,
+    string? SecondAlternateIcao,
+    string? AircraftIcao,
+    string? WakeTurbulence,
+    string Equipment,
+    string Transponder,
+    string FlightRules,
+    string? FlightType,
+    string? Level,
+    string? Speed,
+    string? Route,
+    string? Remarks,
+    int? DepartureTimeMinutes,
+    int? EnrouteMinutes);
 
 /// <summary>A step of the report's history, with the name of who took it: the staff sees it, the pilot never does (§3.5).</summary>
 public sealed record ReviewEventDto(PirepStatus? FromStatus, PirepStatus ToStatus, MemberDto? By, DateTime At, string? Note);
@@ -102,7 +125,8 @@ public sealed record ReviewActionsDto(bool CanTake, bool CanRelease, bool CanDec
 
 /// <summary>
 /// The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
-/// suggestion, the decision as it stands and the history. The weather (T16) and the automatic checks (T17) have their place
+/// suggestion, the decision as it stands and the history. The airports of the leg and of a diversion come with their positions,
+/// for the map (T13b); one the reference data has no position for comes without. The weather (T16) and the automatic checks (T17) have their place
 /// and say they are not available yet; the tracks are a request of their own, <c>…/tracks</c>.
 /// </summary>
 public sealed record ReviewDto(
@@ -118,6 +142,7 @@ public sealed record ReviewDto(
     DateTime? ResubmittedAt,
     DateTime QueuedAt,
     SnapshotLegDto Leg,
+    IReadOnlyList<AirportDto> Airports,
     string FlightRules,
     string? Sid,
     string? Star,

@@ -1,9 +1,10 @@
 using System.Globalization;
-using System.Text.Json.Nodes;
+using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
@@ -38,6 +39,7 @@ public enum ReviewResult
 public sealed class PirepReview(
     FlightOpsDbContext database,
     HubDbContext hub,
+    IAirportDirectory airports,
     IAuthorizationService authorization,
     IHttpContextAccessor http,
     INotificationService notifications,
@@ -322,6 +324,13 @@ public sealed class PirepReview(
             [pirep.Vid, pirep.AssignedToVid, pirep.DecidedByVid, .. pirep.Events.Select(step => (int?)step.ByVid)],
             cancellationToken);
         var (contacts, exemptions) = PirepSubmission.Atc(pirep);
+        var leg = PirepSubmission.LegSnapshot(pirep);
+        var codes = new[] { leg.DepartureIcao, leg.ArrivalIcao, pirep.DiversionIcao }
+            .Concat(pirep.Flights.SelectMany(flight => new[] { flight.DepartureIcao, flight.ArrivalIcao }))
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        var located = await airports.FindAsync(codes, cancellationToken);
         var mayValidate = await MayValidateAsync(pirep);
 
         return new ReviewDto(
@@ -336,7 +345,8 @@ public sealed class PirepReview(
             pirep.SubmittedAt,
             pirep.ResubmittedAt,
             pirep.QueuedAt,
-            PirepSubmission.LegSnapshot(pirep),
+            leg,
+            [.. codes.Select(code => located.GetValueOrDefault(code)).OfType<AirportDto>()],
             pirep.FlightRules,
             pirep.Sid,
             pirep.Star,
@@ -359,7 +369,7 @@ public sealed class PirepReview(
                     flight.ArrivalIcao,
                     flight.TakeoffAt,
                     flight.LandingAt,
-                    JsonNode.Parse(flight.FlightPlansJson) as JsonArray ?? [],
+                    Plans(flight.FlightPlansJson),
                     flight.PlanAtTakeoffRevision,
                     tracked.Contains(flight.Id))),
             ],
@@ -530,6 +540,34 @@ public sealed class PirepReview(
 
     private static string Text(Localized<string> text, string locale, string fallback) =>
         text.Get(locale) ?? text.Get(fallback) ?? string.Empty;
+
+    /// <summary>
+    /// The revisions a flight stored, read with the core's reader of the tracker — the same one that read them at the send — and
+    /// handed to the page without the payload they came in.
+    /// </summary>
+    private static List<ReviewPlanDto> Plans(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return [.. IvaoTrackerReader.ReadFlightPlans(document.RootElement).Select(plan => new ReviewPlanDto(
+            plan.Revision,
+            plan.FiledAt,
+            plan.DepartureIcao,
+            plan.ArrivalIcao,
+            plan.AlternateIcao,
+            plan.SecondAlternateIcao,
+            plan.AircraftIcao,
+            plan.WakeTurbulence,
+            plan.Equipment,
+            plan.Transponder,
+            plan.FlightRules,
+            plan.FlightType,
+            plan.Level,
+            plan.Speed,
+            plan.Route,
+            plan.Remarks,
+            plan.DepartureTime is { } departure ? (int)departure.TotalMinutes : null,
+            plan.EstimatedEnroute is { } enroute ? (int)enroute.TotalMinutes : null))];
+    }
 
     private void Step(Pirep pirep, PirepStatus to, DateTime at, string? note) =>
         pirep.Events.Add(new PirepEvent

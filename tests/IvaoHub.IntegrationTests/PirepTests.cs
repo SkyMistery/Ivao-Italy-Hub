@@ -709,9 +709,13 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             var id = Interlocked.Increment(ref _nextId);
             var start = takeoff.AddMinutes(-20);
             var session = new IvaoTrackerSessionDto(id, vid, callsign, start, TimeSpan.FromMinutes(100), true, departure, arrival, "A320", "{}");
+            // The payload as the network writes it: the validation page reads the stored plans back with the core's reader
+            // (T13b), so a payload it could not read would be a page with no plan.
+            var filed = start.AddMinutes(-10).ToString("O", CultureInfo.InvariantCulture);
             var plan = new IvaoFlightPlanDto(
                 id * 10, 1, start.AddMinutes(-10), departure, arrival, null, null, "A320", "M", "SDFG", "S", "I", "S",
-                "F340", "N0450", "DCT", null, null, null, """{"revision":1}""");
+                "F340", "N0450", "DCT", null, null, null,
+                $$"""{"id":{{id * 10}},"revision":1,"createdAt":"{{filed}}","departureId":"{{departure}}","arrivalId":"{{arrival}}","aircraftId":"A320","flightRules":"I","flightType":"S","level":"F340","speed":"N0450","route":"DCT"}""");
             IReadOnlyList<IvaoTrackPointDto> track =
             [
                 new(start, 0, 0, 100, 0, 0, OnGround: true, "Boarding", "2000"),
