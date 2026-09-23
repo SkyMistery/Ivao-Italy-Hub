@@ -11,7 +11,10 @@ import { notificationPreferencesQuery, useSaveNotificationPreference } from './q
  */
 function labelKeys(type: string, part: 'title' | 'description'): string[] {
   const dot = type.indexOf('.');
-  return [`${type.slice(0, dot)}:notifications.${type.slice(dot + 1)}.${part}`, `notifications.types.${type}.${part}`];
+  return [
+    `${type.slice(0, dot)}:notifications.${type.slice(dot + 1)}.${part}`,
+    `notifications.types.${type}.${part}`,
+  ];
 }
 
 /**
