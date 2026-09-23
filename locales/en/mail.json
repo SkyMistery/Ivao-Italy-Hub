@@ -4,6 +4,14 @@
       "received": {
         "subject": "[{{department}}] {{subject}}",
         "body": "A member has written to the {{department}} department.\n\nFrom: VID {{vid}}\nSubject: {{subject}}\n\n{{body}}\n\n---\nRead the message and change its status here: {{url}}\nYou are receiving this because you are staff of {{department}}. You can turn these off on your profile page."
+      },
+      "threadOpened": {
+        "subject": "[{{department}}] {{subject}}",
+        "body": "You have been added to a conversation with the {{department}} department, so that you can read it and answer.\n\nSubject: {{subject}}\n\n{{body}}\n\n---\nRead it and answer here: {{url}}\nYou can turn these off on your profile page."
+      },
+      "threadReplied": {
+        "subject": "[{{department}}] Re: {{subject}}",
+        "body": "There is a new message in the conversation \"{{subject}}\" with the {{department}} department:\n\n{{body}}\n\n---\nRead the whole conversation and answer here: {{url}}\nAnswers sent by replying to this mail are not read. You can turn these off on your profile page."
       }
     },
     "document": {

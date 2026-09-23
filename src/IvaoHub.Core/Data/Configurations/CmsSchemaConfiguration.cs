@@ -274,8 +274,62 @@ internal sealed class ContactMessageConfiguration : IEntityTypeConfiguration<Con
         builder.Property(message => message.Body).HasColumnType("text").IsRequired();
         builder.HasRowVersion(message => message.RowVersion);
 
-        // The queue of one department, newest first, is the only way this table is ever read.
+        // The queue of one department, newest first, is how the back office reads this table.
         builder.HasIndex(message => new { message.OwnerDepartment, message.Status, message.CreatedAt });
+
+        // Since M2 a message is a thread (note 2026-09-15-contatti-con-risposte): its kind, who else takes part, and the
+        // row that opened it. The default of the kind is what every message written before T14 was.
+        builder.Property(message => message.Kind)
+            .HasMaxLength(ContactKinds.MaxLength)
+            .HasDefaultValue(ContactKinds.General)
+            .IsRequired();
+        builder.Property(message => message.ParticipantsJson)
+            .HasColumnType("json")
+            .HasDefaultValueSql("'[]'")
+            .IsRequired();
+        builder.Property(message => message.SourceModule).HasMaxLength(32);
+        builder.Property(message => message.SourceId).HasMaxLength(64);
+
+        // "Once only" for a thread a row opens (ThreadOpeningProjection): two saves at once cannot open two.
+        builder.HasIndex(message => new { message.SourceModule, message.SourceId, message.Kind }).IsUnique();
+
+        // "My threads": the sender's half of /me/contacts.
+        builder.HasIndex(message => new { message.CreatedBy, message.CreatedAt });
+
+        builder.Ignore(message => message.AddedParticipants);
+        builder.Ignore(message => message.ParticipantVids);
+    }
+}
+
+internal sealed class ContactReplyConfiguration : IEntityTypeConfiguration<ContactReply>
+{
+    public void Configure(EntityTypeBuilder<ContactReply> builder)
+    {
+        builder.ToTable("cms_contact_replies");
+        builder.HasKey(reply => reply.Id);
+        builder.Property(reply => reply.Body).HasColumnType("text").IsRequired();
+
+        // A thread is read in the order it was written.
+        builder.HasIndex(reply => new { reply.MessageId, reply.CreatedAt });
+
+        // Same context, so a real key: an answer without its message is nothing.
+        builder.HasOne<ContactMessage>().WithMany().HasForeignKey(reply => reply.MessageId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class ContactReferenceConfiguration : IEntityTypeConfiguration<ContactReference>
+{
+    public void Configure(EntityTypeBuilder<ContactReference> builder)
+    {
+        builder.ToTable("cms_contact_references");
+        builder.HasKey(reference => reference.Id);
+        builder.Property(reference => reference.SourceModule).HasMaxLength(32).IsRequired();
+        builder.Property(reference => reference.SourceId).HasMaxLength(64).IsRequired();
+        builder.HasIndex(reference => new { reference.MessageId, reference.SourceModule, reference.SourceId }).IsUnique();
+
+        // "Which threads cite this object?": the counters of a module ask it (T14b).
+        builder.HasIndex(reference => new { reference.SourceModule, reference.SourceId });
+        builder.HasOne(reference => reference.Message).WithMany().HasForeignKey(reference => reference.MessageId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

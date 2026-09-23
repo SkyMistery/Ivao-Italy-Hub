@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq.Expressions;
 using FluentValidation;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Localization;
 using Microsoft.EntityFrameworkCore;
 
@@ -206,11 +207,22 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     /// </summary>
     public Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? BeforeAuthorize { get; set; }
 
+    /// <summary>
+    /// A personal view of a resource: the rows the reader <b>takes part in</b>, instead of the rows of their departments
+    /// (M2, T14). The expression says, in SQL, whether a VID takes part in a row — the sender of a thread or somebody
+    /// added to it — and the entity's <see cref="Division.IHasParticipants"/> says the same in memory.
+    /// <para>With it the list narrows to those rows, reading needs nothing but being signed in, and a row the reader
+    /// does not take part in is 404 as if it did not exist. Only for a read only resource: what a participant may write
+    /// goes through the resource's own endpoints, asked of the single handler on the row.</para>
+    /// <para><c>/me/contacts</c> is the first: the member's threads, whichever department they went to.</para>
+    /// </summary>
+    public Expression<Func<TEntity, int, bool>>? Participating { get; set; }
+
     internal string EffectiveName =>
         string.IsNullOrWhiteSpace(Name) ? PermissionArea : Name;
 
     internal string EffectiveReadPolicy =>
-        ReadPolicy ?? $"{PermissionArea}.View";
+        ReadPolicy ?? (Participating is null ? $"{PermissionArea}.View" : HubPolicies.SignedIn);
 
     internal string EffectiveWritePolicy =>
         WritePolicy ?? $"{PermissionArea}.Edit";

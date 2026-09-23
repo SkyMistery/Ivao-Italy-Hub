@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
@@ -76,8 +77,13 @@ public sealed class SampleModule : ModuleBase
 
     public override IEnumerable<Type> DbContextTypes => [typeof(SampleDbContext)];
 
-    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddModuleDbContext<SampleDbContext>(ModuleKey);
+
+        // What a thread may cite of this module (M2, T14): how a tour will say what a report is.
+        services.AddScoped<IContactReferenceResolver, SampleReferenceResolver>();
+    }
 
     public override IReadOnlyList<NavItemDescriptor> PublicNavigation =>
         [new NavItemDescriptor(NavigationKey, NavigationPath)];

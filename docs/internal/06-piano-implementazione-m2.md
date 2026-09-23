@@ -309,7 +309,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T12 | Gli ATC contattati — **fatta il 23 set 2026** | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13a | La validazione sul server — **fatta il 23 set 2026** | T11 | code, presa, decisione con errori e suggerimento, mail, riapertura, riepilogo, tracce salvate, via API |
 | T13b | Le pagine della validazione — **fatta il 23 set 2026** | T13a | `/staff/tours/review` e `/staff/tours/review/{id}` con mappa e traccia, `reviewQueue` |
-| T14 | Contestazioni, chiarimenti, segnalazioni | T4a, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
+| T14a | I fili dei contatti nel nucleo — **fatta il 23 set 2026** | T4a, T13 | risposte, riferimenti, partecipanti, `ThreadOpeningProjection`, risolutori, `/me/contacts`, `MessageThread` |
+| T14b | Contestazioni, chiarimenti, segnalazioni | T14a | la contestazione che sblocca; il chiarimento dalle pagine dei tour; `fo_leg_issues`; `openIssues` |
 | T15 | Completamento, validatori, piloti, ban | T4b, T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
 | T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
 | T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
@@ -1416,6 +1417,42 @@ Nota `2026-09-15-contatti-con-risposte`; design §3.8, §3.10, §3.11. Branch `m
 **Test**: quelli della nota §5; più: la contestazione fuori finestra rifiutata; aperta sblocca, respinta riblocca; il chiarimento non
 cambia lo stato né conta come contestazione. Giro completo: contestato e riaperto.
 **Fatta quando**: un pilota contesta, il validatore risponde dal back office, il pilota riceve la mail e risponde da `/me/contacts`.
+
+**Divisa il 23 settembre 2026** in apertura (Carmine, nota `decisions/2026-09-23-i-fili-dei-contatti.md`), come T11 e T13:
+
+- **T14a — il nucleo** (branch `m2/t14a-contact-threads`): il punto 1, provato sul modulo di prova e con il form dei contatti.
+- **T14b — il modulo**: i punti 2–5 (la contestazione con `ThreadOpeningProjection` e `IContactReferenceResolver` dei tour, il
+  chiarimento dalle pagine dei tour con `POST /api/contacts` e `kind = clarification`, `fo_leg_issues`, `openIssues`) e il giro e2e
+  «contestato e riaperto». Il «fatta quando» di T14 è suo.
+
+**T14a fatta il 23 settembre 2026** (branch `m2/t14a-contact-threads`, piano 0.96). Com'è andata:
+
+- **Tre risposte di Carmine in apertura**, tutte come proposte: la divisione; il partecipante legge e risponde da `/me/contacts`; la
+  risposta di un partecipante va al mittente e agli altri partecipanti, non alla casella del dipartimento.
+- **Il nucleo**: `ContactMessage` + `Kind`, `ParticipantsJson`, `SourceModule`/`SourceId` (la riga che ha aperto il filo — la nota la
+  metteva nei riferimenti, ma l'indice unico del «una volta sola» si scrive solo sul messaggio); `ContactReply`, `ContactReference`;
+  migrazione `AddContactThreads`; `ContactThreads` (apertura dal form, lettura, risposta, mail) dietro `GET /api/contacts/{id}/thread`
+  e `POST /api/contacts/{id}/replies`, **un endpoint per le due schermate**; `/api/me/contacts` con il motore CRUD.
+- **Cinque estensioni** (§16.E caso b, nota §3): `IHasParticipants` nell'handler e nella rete dell'interceptor;
+  `[AlsoWrittenWith(Contacts.View)]` su `ContactMessage`; `ThreadOpeningProjection` nel writer (interroga i messaggi **solo** se una
+  riga del salvataggio apre un filo) e le due tabelle mappate da `ModuleDbContext` fuori dalle migrazioni; `IContactReferenceResolver`
+  e `ContactReferenceResolvers`; `CrudOptions.Participating` (la vista personale del motore) e `JsonQuery.ContainsValue`.
+- **Scostamenti dalla nota**: i tipi di notifica sono `contact.threadOpened` e `contact.threadReplied`; `threadOpened` va ai
+  partecipanti, mentre il dipartimento riceve come prima `contact.received` (con il link al filo e non più alla coda); quando risponde
+  il mittente la mail va a chi aveva ricevuto il primo messaggio (casella **e** staff del dipartimento) e ai partecipanti. Un filo
+  `Closed` accetta ancora una risposta: quella del mittente lo riporta a `New`.
+- **Schermate**: `MessageThread` (ventitreesimo dell'elenco chiuso, nella galleria), il dettaglio del back office con il filo sopra lo
+  stato, `/me/contacts` (lista generica) e `/me/contacts/{id}`, il link da `/me` e dal messaggio inviato. Le rotte sono
+  `me_.contacts.*` (non annidate sotto `/me`, che è una dashboard): il test dei segmenti riservati ora toglie il `_` finale.
+- **Trovato scrivendo**: il test di architettura «nessun secondo contenuto» ha preso `ThreadOpeningProjection` per il suo `Body`: è la
+  stessa prosa di un messaggio, esclusa come la famiglia dei contatti.
+- **I test**: integrazione `ContactThreadTests` (il filo aperto da una riga del modulo di prova una volta sola e mai riscritto; mittente,
+  partecipante e dipartimento leggono e rispondono, un altro membro no — 404 —, lo stato che si muove, le mail di ciascuna parte, il
+  mittente che non vede mai chi ha risposto, la vista personale; il riferimento che il mittente non vede e i tipi che non apre
+  rifiutati; chi ha solo `Contacts.View` risponde e non sposta lo stato a mano), con il risolutore di prova `SampleReferenceResolver`
+  e VID `670011–670019`; unit `ContactThreadTests`; giro `full/contacts.spec.ts` — il membro scrive, lo staff risponde dal back office,
+  la mail arriva in Mailpit senza chi ha risposto, il membro risponde da `/me/contacts` e il messaggio torna `New`. `mailFor` è passato
+  in `full/bench.ts`.
 
 ### T15 — Completamento, validatori, piloti, ban
 

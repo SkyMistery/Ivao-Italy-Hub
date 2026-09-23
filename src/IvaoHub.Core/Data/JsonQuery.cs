@@ -53,6 +53,16 @@ public static class JsonQuery
             $"{nameof(JsonQuery)}.{nameof(Mentions)} is only translatable inside a LINQ query.");
 
     /// <summary>
+    /// Whether a JSON array column holds this value at its top level: "is VID 42 among the participants of this thread?"
+    /// (M2, T14). Only ever called inside a LINQ query.
+    /// </summary>
+    /// <param name="document">The JSON column, an array.</param>
+    /// <param name="candidate">The value, written as JSON: <c>42</c> for a number.</param>
+    public static bool ContainsValue(string document, string candidate) =>
+        throw new InvalidOperationException(
+            $"{nameof(JsonQuery)}.{nameof(ContainsValue)} is only translatable inside a LINQ query.");
+
+    /// <summary>
     /// Teaches the model how to turn <see cref="Mentions"/> into
     /// <c>JSON_CONTAINS(JSON_EXTRACT(document, path), candidate)</c>. Called once from
     /// <see cref="HubDbContext.OnModelCreating"/>; it adds no table and no column, so it needs no
@@ -91,6 +101,17 @@ public static class JsonQuery
                 typeof(bool),
                 BoolMapping);
         });
+
+        var contains = modelBuilder.HasDbFunction(typeof(JsonQuery).GetMethod(nameof(ContainsValue))!);
+        contains.HasParameter("document").HasStoreType("json");
+        contains.HasParameter("candidate").HasStoreType("varchar(64)");
+        contains.HasTranslation(arguments => new SqlFunctionExpression(
+            "JSON_CONTAINS",
+            [arguments[0], arguments[1]],
+            nullable: true,
+            argumentsPropagateNullability: [true, true],
+            typeof(bool),
+            BoolMapping));
     }
 
     /// <summary>

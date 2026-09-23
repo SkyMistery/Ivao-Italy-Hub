@@ -92,7 +92,16 @@ public abstract class ModuleDbContext(DbContextOptions options, ICurrentUser? cu
         modelBuilder.ApplyConfiguration(new AwardSignalConfiguration());
         modelBuilder.ApplyConfiguration(new MediaUseConfiguration());
 
-        foreach (var projection in new[] { typeof(SearchIndexEntry), typeof(CalendarEntry), typeof(AwardSignal), typeof(MediaUse) })
+        // The threads a row opens (M2, T14, ThreadOpeningProjection): the message and what it cites, never the answers,
+        // which only the core writes.
+        modelBuilder.ApplyConfiguration(new ContactMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new ContactReferenceConfiguration());
+
+        foreach (var projection in new[]
+        {
+            typeof(SearchIndexEntry), typeof(CalendarEntry), typeof(AwardSignal), typeof(MediaUse),
+            typeof(ContactMessage), typeof(ContactReference),
+        })
         {
             modelBuilder.Entity(projection).Metadata.SetIsTableExcludedFromMigrations(true);
         }

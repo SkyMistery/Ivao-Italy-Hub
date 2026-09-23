@@ -9,6 +9,7 @@ export { useNotice, type NoticeTone } from './notices';
 export { CalendarView } from './CalendarView';
 export { LiveStatusStrip, type LiveNetworkStatus } from './LiveStatusStrip';
 export { ContactForm } from './ContactForm';
+export { MessageThread, type MessageThreadValue } from './MessageThread';
 export { StaffSidebar, type StaffSidebarEntry, type StaffSidebarGroup } from './StaffSidebar';
 export { contactSchema, type ContactFormValues } from './contact';
 export {

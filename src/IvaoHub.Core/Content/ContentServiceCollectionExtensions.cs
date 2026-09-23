@@ -37,6 +37,10 @@ public static class ContentServiceCollectionExtensions
         services.AddScoped<IDataBlockProvider, MyWorkProvider>();
         services.TryAddScoped<DataBlockProviders>();
 
+        // The threads of the contacts (M2, T14): a module adds an IContactReferenceResolver for its own references.
+        services.TryAddScoped<ContactReferenceResolvers>();
+        services.TryAddScoped<ContactThreads>();
+
         // Where the uploaded files live. A singleton because it holds one path and no state; the
         // limits it is built with are read when it is built, never when it is registered.
         services.AddOptions<MediaOptions>()

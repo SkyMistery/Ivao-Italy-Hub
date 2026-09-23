@@ -43,6 +43,14 @@ public sealed class SampleEvent : IProjectable, IPublishable
 
     public long? ProposedAwardId { get; set; }
 
+    /// <summary>
+    /// The member who contests it, and who else takes part (M2, T14): what a disputed report will project. Not columns,
+    /// like the award above.
+    /// </summary>
+    public int? DisputedBy { get; set; }
+
+    public int? DisputeParticipant { get; set; }
+
     public string SourceModule => SampleModule.ModuleKey;
 
     public string SourceId => $"event:{Id}";
@@ -72,6 +80,43 @@ public sealed class SampleEvent : IProjectable, IPublishable
                     Description: null)),
             ],
             AwardeeVid is { } awardee ? [new AwardSignalProjection(awardee, $"completed {Title}", ProposedAwardId)] : [],
-            BannerMediaId is { } media ? [new MediaUseProjection(media, BannerNeededUntil)] : []);
+            BannerMediaId is { } media ? [new MediaUseProjection(media, BannerNeededUntil)] : [],
+            DisputedBy is { } sender
+                ?
+                [
+                    new ThreadOpeningProjection(
+                        ContactKinds.Dispute,
+                        Department.ED,
+                        $"Dispute: {Title}",
+                        "I do not agree with this.",
+                        sender,
+                        DisputeParticipant is { } participant ? [participant] : [],
+                        [new ThreadReferenceProjection(SampleModule.ModuleKey, SourceId, title)]),
+                ]
+                : []);
     }
+}
+
+/// <summary>
+/// The references of the test module a thread may cite (M2, T14): <c>event:{id}</c> exists for any positive id, and
+/// brings one participant along, as a report brings its validator; <c>hidden:…</c> exists but not for the caller, which
+/// is the same answer as missing.
+/// </summary>
+public sealed class SampleReferenceResolver : IContactReferenceResolver
+{
+    /// <summary>Who a sample reference adds to a thread.</summary>
+    public const int Participant = 670019;
+
+    public string SourceModule => SampleModule.ModuleKey;
+
+    public Task<ContactReferenceTarget?> ResolveAsync(string sourceId, CancellationToken cancellationToken) =>
+        Task.FromResult(
+            sourceId.StartsWith("event:", StringComparison.Ordinal)
+                && long.TryParse(sourceId.AsSpan("event:".Length), out var id)
+                && id > 0
+                ? new ContactReferenceTarget(
+                    new Localized<string>(new Dictionary<string, string> { ["en"] = $"Event {id}", ["it"] = $"Evento {id}" }),
+                    $"{SampleModule.NavigationPath}/{id}",
+                    [Participant])
+                : null);
 }

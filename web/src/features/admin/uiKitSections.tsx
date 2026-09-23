@@ -15,6 +15,7 @@ import {
   ContactFormSample,
   DataListSample,
   LiveStatusStripSample,
+  MessageThreadSample,
   RouteMapSample,
   CalendarViewSample,
   EmptyStateSample,
@@ -112,6 +113,10 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   { name: 'LiveStatusStrip' satisfies UiKitComponent, render: () => <LiveStatusStripSample /> },
   { name: 'StaffSidebar' satisfies UiKitComponent, render: () => <StaffSidebarSample /> },
   { name: 'RouteMap' satisfies UiKitComponent, render: () => <RouteMapSample /> },
+  {
+    name: 'MessageThread' satisfies UiKitComponent,
+    render: (bootstrap) => <MessageThreadSample timezone={bootstrap.division.timezone} />,
+  },
 ];
 
 /**

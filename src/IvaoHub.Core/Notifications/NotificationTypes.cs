@@ -4,7 +4,7 @@ namespace IvaoHub.Core.Notifications;
 /// The kinds of notification of the core. A type is three things at once, and that is deliberate:
 /// the root of the template keys in <c>mail.json</c>, the preference a member switches off, and the
 /// label the profile screen shows — one value, so the three cannot drift.
-/// <para>M1 has five. Another one of the core is a line here, a pair of keys in every language file
+/// <para>M1 had five; M2 adds the two of the threads. Another one of the core is a line here, a pair of keys in every language file
 /// and nothing else: that is the whole reason the preferences are a table and not a column. A
 /// module's types are the module's (<c>IModule.NotificationTypes</c>), and every type the
 /// installation knows is <see cref="NotificationTypeCatalog"/>.</para>
@@ -13,6 +13,18 @@ public static class NotificationTypes
 {
     /// <summary>A member has written to a department. Its audience is that department's staff.</summary>
     public const string ContactReceived = "contact.received";
+
+    /// <summary>
+    /// Somebody was added to a thread with a department: the validator of a disputed report (M2, T14). Its audience is
+    /// the participants; the department hears <see cref="ContactReceived"/>.
+    /// </summary>
+    public const string ContactThreadOpened = "contact.threadOpened";
+
+    /// <summary>
+    /// A new answer in a thread (M2, T14). Its audience is the other side: the sender and the participants when the
+    /// department answers, the department and the participants when the sender does.
+    /// </summary>
+    public const string ContactThreadReplied = "contact.threadReplied";
 
     /// <summary>
     /// An operational document's review date has passed (G14). Its audience is the staff of the
@@ -34,7 +46,7 @@ public static class NotificationTypes
 
     /// <summary>The core's, in the order the profile screen lists them, before the modules'.</summary>
     public static readonly IReadOnlyList<string> All =
-        [ContactReceived, DocumentReviewDue, ContentReadyForApproval, ContentApproved, ContentSentBack];
+        [ContactReceived, ContactThreadOpened, ContactThreadReplied, DocumentReviewDue, ContentReadyForApproval, ContentApproved, ContentSentBack];
 
     /// <summary>The key of the subject line of a type, in <c>locales/{lang}/mail.json</c>.</summary>
     public static string SubjectKey(string type) => $"mail.{type}.subject";

@@ -40,7 +40,7 @@ It is exactly:
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
 `StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
-`LiveStatusStrip`, `StaffSidebar`, `RouteMap`.
+`LiveStatusStrip`, `StaffSidebar`, `RouteMap`, `MessageThread`.
 
 `StaffSidebar` is the navigation of the back office, and it is the one entry on this list that
 replaces something Atmosphere ships rather than adding something it lacks. The reason is narrow and
@@ -142,6 +142,12 @@ measurement in `web/e2e/live-status.spec.ts` that fails if somebody moves it bac
 network could not be asked it draws **nothing**: `updatedAt` of null means "no answer", which is not
 the same as nobody being connected, and four zeroes would be the site answering a question it never
 got an answer to.
+
+`MessageThread` draws a conversation of a member with a department: the message, the objects it is
+about, the answers in order and the box to answer. It hides nothing itself — for the member who
+wrote, the server has already taken the name and the VID off every answer from the department's
+side, so "the department" is all there is to draw — and it renders plain text, never markdown.
+The back office of the contacts and `/me/contacts/{id}` both mount it.
 
 `RouteMap` draws the legs of a tour on a map: great circle lines, a marker and its code at each
 airport, and a colour per state. It can also draw a flight as it was flown (`tracks`), in red over

@@ -1,4 +1,5 @@
 import { Subtle } from '@ivao/atmosphere-react';
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -54,6 +55,12 @@ export function ContactForm({
       <div className="border-border bg-card rounded-md border p-6">
         <p className="font-medium">{t('contacts.sent.title')}</p>
         <Subtle>{t('contacts.sent.description')}</Subtle>
+        {/* Where the answers will be (M2, T14a): the message is a thread now, and the sender reads it again. */}
+        <p className="mt-3 text-sm">
+          <Link to="/me/contacts" className="text-primary underline">
+            {t('contacts.sent.open')}
+          </Link>
+        </p>
       </div>
     );
   }

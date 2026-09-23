@@ -373,6 +373,17 @@ public sealed class HubSaveChangesInterceptor(
             return;
         }
 
+        // Its twin for a row somebody takes part in (M2, T14): the sender or a participant of a thread answers it, and the
+        // answer moves its status. A participant before the write and after it, and in the same departments.
+        if (entry is { State: EntityState.Modified, Entity: ISubmittedByMembers and IHasParticipants { ParticipantVids: var now } }
+            && now.Contains(currentUser.Vid)
+            && entry.OriginalValues.ToObject() is IHasParticipants { ParticipantVids: var then }
+            && then.Contains(currentUser.Vid)
+            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments))
+        {
+            return;
+        }
+
         // The second permission a row may be written with (M2, T13): a validator enabled on one tour decides its reports.
         // Asked with the row's scope, never of the member the row is about, and never to move the row somewhere else.
         if (entry.State == EntityState.Modified

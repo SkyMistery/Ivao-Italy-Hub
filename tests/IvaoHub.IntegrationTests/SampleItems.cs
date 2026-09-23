@@ -80,6 +80,8 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             sample.Ignore(row => row.SourceId);
             sample.Ignore(row => row.AwardeeVid);
             sample.Ignore(row => row.ProposedAwardId);
+            sample.Ignore(row => row.DisputedBy);
+            sample.Ignore(row => row.DisputeParticipant);
         });
     }
 }

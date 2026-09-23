@@ -766,6 +766,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contacts/{id}/thread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContactsThread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contacts/{id}/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ContactsReply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MyContactsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/contacts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MyContactsGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/awards": {
         parameters: {
             query?: never;
@@ -2383,6 +2447,7 @@ export interface components {
             ownerDepartment: components["schemas"]["Department"];
             subject: string;
             body: string;
+            kind: string;
             status: components["schemas"]["ContactStatus"];
             /** Format: int32 */
             createdBy: number;
@@ -2404,6 +2469,7 @@ export interface components {
             id: number;
             ownerDepartment: components["schemas"]["Department"];
             subject: string;
+            kind: string;
             status: components["schemas"]["ContactStatus"];
             /** Format: int32 */
             createdBy: number;
@@ -2411,6 +2477,42 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /** @description One object the thread cites: its label from when the thread opened, and a link when the reader may open it. */
+        ContactReferenceDto: {
+            sourceModule: string;
+            sourceId: string;
+            label: string;
+            url: null | string;
+        };
+        /** @description One object a message cites, as the sender names it: `flightops` and `pirep:123`. */
+        ContactReferenceInput: {
+            sourceModule: string;
+            sourceId: string;
+        };
+        /**
+         * @description One answer. int? ContactReplyDto.AuthorVid and string? ContactReplyDto.AuthorName are null when the reader is the sender and the
+         *     answer is from the department's side: the member reads the department, never the person (design M2 section 3.5).
+         */
+        ContactReplyDto: {
+            /** Format: int64 */
+            id: number;
+            side: components["schemas"]["ContactReplySide"];
+            /** Format: int32 */
+            authorVid: null | number;
+            authorName: null | string;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /**
+         * @description Who wrote an answer, as the thread draws it. The member reads the department for both of the last two.
+         * @enum {unknown}
+         */
+        ContactReplySide: "Sender" | "Department" | "Participant";
+        /** @description An answer, as whoever writes it sends it: the text and nothing else. Who and which side is the session. */
+        ContactReplyWriteDto: {
+            body: string;
         };
         /**
          * @description Where a message has got to. The queue of a department is these four words.
@@ -2432,19 +2534,47 @@ export interface components {
         /**
          * @description What a member sends. There is no sender field: the VID is the one of the session, so there is
          *     nothing to verify and nothing to forge (design M1 section 5.1).
+         *     Since M2 a message may be a clarification about some objects of a module (design M2 section 3.10): its kind
+         *     and what it cites. A module's own kinds — a dispute — are never sent from here: the module opens them.
          */
         ContactSubmitDto: {
             department: components["schemas"]["Department"];
             subject: string;
             body: string;
+            kind?: null | string;
+            references?: null | components["schemas"]["ContactReferenceInput"][];
         };
         /**
-         * @description What the sender gets back: the identifier of their message and nothing else. They cannot read
-         *     it again — the queue belongs to the department — so there is nothing more to hand over.
+         * @description What the sender gets back: the identifier of their message, which is also the address of the thread in
+         *     `/me/contacts` (M2, T14).
          */
         ContactSubmittedDto: {
             /** Format: int64 */
             id: number;
+        };
+        /**
+         * @description A thread as one reader reads it (M2, T14): the message, what it cites, and the answers in order. The same shape for
+         *     the back office and `/me/contacts`; what changes with the reader is what it hides.
+         *     ReaderIsSender says whether the reader wrote it, and the screen then draws the department as the other
+         *     side; Participants, who else takes part, is empty for the sender, who does not read who of the department
+         *     answers.
+         */
+        ContactThreadDto: {
+            /** Format: int64 */
+            id: number;
+            department: components["schemas"]["Department"];
+            kind: string;
+            subject: string;
+            body: string;
+            status: components["schemas"]["ContactStatus"];
+            /** Format: int32 */
+            senderVid: number;
+            /** Format: date-time */
+            createdAt: string;
+            readerIsSender: boolean;
+            participants: number[];
+            references: components["schemas"]["ContactReferenceDto"][];
+            replies: components["schemas"]["ContactReplyDto"][];
         };
         /** @description The answer to "where would this page be, and may it be there?". */
         ContentAddressDto: {
@@ -7106,6 +7236,139 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContactsThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactThreadDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContactsReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactReplyWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactThreadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MyContactsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfContactListDto"];
+                };
+            };
+        };
+    };
+    MyContactsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactListDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

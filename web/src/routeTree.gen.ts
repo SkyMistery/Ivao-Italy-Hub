@@ -29,6 +29,8 @@ import { Route as StaffStaffAwardsRouteImport } from './routes/_staff/staff.awar
 import { Route as StaffStaffContentRouteImport } from './routes/_staff/staff.content'
 import { Route as StaffStaffLinksRouteImport } from './routes/_staff/staff.links'
 import { Route as StaffStaffMediaRouteImport } from './routes/_staff/staff.media'
+import { Route as MemberMeContactsIndexRouteImport } from './routes/_member/me_.contacts.index'
+import { Route as MemberMeContactsIdRouteImport } from './routes/_member/me_.contacts.$id'
 import { Route as StaffStaffDeptIndexRouteImport } from './routes/_staff/staff.$dept.index'
 import { Route as StaffStaffDeptCalendarRouteImport } from './routes/_staff/staff.$dept.calendar'
 import { Route as StaffStaffDeptCategoriesRouteImport } from './routes/_staff/staff.$dept.categories'
@@ -159,6 +161,16 @@ const StaffStaffMediaRoute = StaffStaffMediaRouteImport.update({
   id: '/staff/media',
   path: '/staff/media',
   getParentRoute: () => StaffRoute,
+} as any)
+const MemberMeContactsIndexRoute = MemberMeContactsIndexRouteImport.update({
+  id: '/me_/contacts/',
+  path: '/me/contacts/',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberMeContactsIdRoute = MemberMeContactsIdRouteImport.update({
+  id: '/me_/contacts/$id',
+  path: '/me/contacts/$id',
+  getParentRoute: () => MemberRoute,
 } as any)
 const StaffStaffDeptIndexRoute = StaffStaffDeptIndexRouteImport.update({
   id: '/staff/$dept/',
@@ -359,6 +371,7 @@ export interface FileRoutesByFullPath {
   '/documents/': typeof PublicDocumentsIndexRoute
   '/news/': typeof PublicNewsIndexRoute
   '/staff/': typeof StaffStaffIndexRoute
+  '/me/contacts/$id': typeof MemberMeContactsIdRoute
   '/staff/$dept/calendar': typeof StaffStaffDeptCalendarRouteWithChildren
   '/staff/$dept/categories': typeof StaffStaffDeptCategoriesRouteWithChildren
   '/staff/$dept/contacts': typeof StaffStaffDeptContactsRouteWithChildren
@@ -372,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/staff/content/$id': typeof StaffStaffContentIdRoute
   '/staff/links/$id': typeof StaffStaffLinksIdRoute
   '/staff/media/$id': typeof StaffStaffMediaIdRoute
+  '/me/contacts/': typeof MemberMeContactsIndexRoute
   '/staff/$dept/': typeof StaffStaffDeptIndexRoute
   '/staff/awards/': typeof StaffStaffAwardsIndexRoute
   '/staff/content/': typeof StaffStaffContentIndexRoute
@@ -407,6 +421,7 @@ export interface FileRoutesByTo {
   '/documents': typeof PublicDocumentsIndexRoute
   '/news': typeof PublicNewsIndexRoute
   '/staff': typeof StaffStaffIndexRoute
+  '/me/contacts/$id': typeof MemberMeContactsIdRoute
   '/staff/admin/audit': typeof StaffStaffAdminAuditRoute
   '/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
@@ -415,6 +430,7 @@ export interface FileRoutesByTo {
   '/staff/content/$id': typeof StaffStaffContentIdRoute
   '/staff/links/$id': typeof StaffStaffLinksIdRoute
   '/staff/media/$id': typeof StaffStaffMediaIdRoute
+  '/me/contacts': typeof MemberMeContactsIndexRoute
   '/staff/$dept': typeof StaffStaffDeptIndexRoute
   '/staff/awards': typeof StaffStaffAwardsIndexRoute
   '/staff/content': typeof StaffStaffContentIndexRoute
@@ -458,6 +474,7 @@ export interface FileRoutesById {
   '/_public/documents/': typeof PublicDocumentsIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_staff/staff/': typeof StaffStaffIndexRoute
+  '/_member/me_/contacts/$id': typeof MemberMeContactsIdRoute
   '/_staff/staff/$dept/calendar': typeof StaffStaffDeptCalendarRouteWithChildren
   '/_staff/staff/$dept/categories': typeof StaffStaffDeptCategoriesRouteWithChildren
   '/_staff/staff/$dept/contacts': typeof StaffStaffDeptContactsRouteWithChildren
@@ -471,6 +488,7 @@ export interface FileRoutesById {
   '/_staff/staff/content/$id': typeof StaffStaffContentIdRoute
   '/_staff/staff/links/$id': typeof StaffStaffLinksIdRoute
   '/_staff/staff/media/$id': typeof StaffStaffMediaIdRoute
+  '/_member/me_/contacts/': typeof MemberMeContactsIndexRoute
   '/_staff/staff/$dept/': typeof StaffStaffDeptIndexRoute
   '/_staff/staff/awards/': typeof StaffStaffAwardsIndexRoute
   '/_staff/staff/content/': typeof StaffStaffContentIndexRoute
@@ -512,6 +530,7 @@ export interface FileRouteTypes {
     | '/documents/'
     | '/news/'
     | '/staff/'
+    | '/me/contacts/$id'
     | '/staff/$dept/calendar'
     | '/staff/$dept/categories'
     | '/staff/$dept/contacts'
@@ -525,6 +544,7 @@ export interface FileRouteTypes {
     | '/staff/content/$id'
     | '/staff/links/$id'
     | '/staff/media/$id'
+    | '/me/contacts/'
     | '/staff/$dept/'
     | '/staff/awards/'
     | '/staff/content/'
@@ -560,6 +580,7 @@ export interface FileRouteTypes {
     | '/documents'
     | '/news'
     | '/staff'
+    | '/me/contacts/$id'
     | '/staff/admin/audit'
     | '/staff/admin/modules'
     | '/staff/admin/ui-kit'
@@ -568,6 +589,7 @@ export interface FileRouteTypes {
     | '/staff/content/$id'
     | '/staff/links/$id'
     | '/staff/media/$id'
+    | '/me/contacts'
     | '/staff/$dept'
     | '/staff/awards'
     | '/staff/content'
@@ -610,6 +632,7 @@ export interface FileRouteTypes {
     | '/_public/documents/'
     | '/_public/news/'
     | '/_staff/staff/'
+    | '/_member/me_/contacts/$id'
     | '/_staff/staff/$dept/calendar'
     | '/_staff/staff/$dept/categories'
     | '/_staff/staff/$dept/contacts'
@@ -623,6 +646,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/content/$id'
     | '/_staff/staff/links/$id'
     | '/_staff/staff/media/$id'
+    | '/_member/me_/contacts/'
     | '/_staff/staff/$dept/'
     | '/_staff/staff/awards/'
     | '/_staff/staff/content/'
@@ -792,6 +816,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/staff/media'
       preLoaderRoute: typeof StaffStaffMediaRouteImport
       parentRoute: typeof StaffRoute
+    }
+    '/_member/me_/contacts/': {
+      id: '/_member/me_/contacts/'
+      path: '/me/contacts'
+      fullPath: '/me/contacts/'
+      preLoaderRoute: typeof MemberMeContactsIndexRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/me_/contacts/$id': {
+      id: '/_member/me_/contacts/$id'
+      path: '/me/contacts/$id'
+      fullPath: '/me/contacts/$id'
+      preLoaderRoute: typeof MemberMeContactsIdRouteImport
+      parentRoute: typeof MemberRoute
     }
     '/_staff/staff/$dept/': {
       id: '/_staff/staff/$dept/'
@@ -1030,11 +1068,15 @@ declare module '@tanstack/react-router' {
 interface MemberRouteChildren {
   MemberContactRoute: typeof MemberContactRoute
   MemberMeRoute: typeof MemberMeRoute
+  MemberMeContactsIdRoute: typeof MemberMeContactsIdRoute
+  MemberMeContactsIndexRoute: typeof MemberMeContactsIndexRoute
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
   MemberContactRoute: MemberContactRoute,
   MemberMeRoute: MemberMeRoute,
+  MemberMeContactsIdRoute: MemberMeContactsIdRoute,
+  MemberMeContactsIndexRoute: MemberMeContactsIndexRoute,
 }
 
 const MemberRouteWithChildren =

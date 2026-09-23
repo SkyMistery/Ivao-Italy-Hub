@@ -132,6 +132,12 @@
     },
     "settings": {
       "invalid": "Queste impostazioni non hanno la forma che il modulo si aspetta."
+    },
+    "contacts": {
+      "referenceUnknown": "Il messaggio cita qualcosa che non esiste, o che non puoi vedere.",
+      "referenceRequired": "Una richiesta di chiarimento deve dire di che cosa parla.",
+      "tooManyReferences": "Un messaggio può citare al massimo dieci cose.",
+      "kindUnknown": "Questo tipo di messaggio non si invia da qui."
     }
   }
 }

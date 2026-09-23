@@ -23,13 +23,19 @@ function reservedOnTheServer(): string[] {
   return [...block!.matchAll(/"([^"]+)"/g)].map((match) => match[1]!);
 }
 
-/** `news.$slug.tsx` → `news`; `index.tsx`, `$.tsx` and a layout's own file answer for no segment. */
+/**
+ * `news.$slug.tsx` → `news`; `index.tsx`, `$.tsx` and a layout's own file answer for no segment. A trailing `_` is the
+ * router's "not nested under the route of that name" (`me_.contacts.tsx`, T14a): the address is still `me`.
+ */
 function firstSegmentsOfRoutes(): string[] {
   const segments = new Set<string>();
 
   for (const layout of ['_public', '_member', '_staff']) {
     for (const file of readdirSync(resolve(process.cwd(), 'src/routes', layout))) {
-      const first = file.replace(/\.tsx$/, '').split('.')[0]!;
+      const first = file
+        .replace(/\.tsx$/, '')
+        .split('.')[0]!
+        .replace(/_$/, '');
       if (first !== 'index' && !first.startsWith('$') && !first.startsWith('-')) {
         segments.add(first);
       }

@@ -37,6 +37,9 @@ export const UI_KIT_COMPONENTS = [
   // over a PMTiles archive this hub serves itself — no tile provider, no key, nobody watching who
   // reads a tour page.
   'RouteMap',
+  // The twenty-third, decided with the threads of the contacts (note 2026-09-15-contatti-con-risposte §3.1, T14a): a
+  // conversation with a department, mounted by the back office and by /me/contacts alike.
+  'MessageThread',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

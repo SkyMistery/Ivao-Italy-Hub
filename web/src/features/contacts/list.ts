@@ -11,8 +11,21 @@ import type { ContactListDto } from './queries';
  */
 export const contactColumns: readonly ColumnSpec<ContactListDto>[] = [
   col.text('subject', { sortable: true }),
+  col.badge('kind', 'contacts'),
   col.badge('status', 'contacts', { sortable: true }),
   col.number('createdBy'),
   col.date('createdAt', { sortable: true }),
+  col.date('updatedAt', { sortable: true }),
+];
+
+/**
+ * The member's own threads (`/me/contacts`, M2, T14a): which department, what kind, where it has got to. The sender is
+ * not a column — it is the reader, or the member whose conversation the reader was added to.
+ */
+export const myContactColumns: readonly ColumnSpec<ContactListDto>[] = [
+  col.text('subject', { sortable: true }),
+  col.department('ownerDepartment'),
+  col.badge('kind', 'contacts'),
+  col.badge('status', 'contacts', { sortable: true }),
   col.date('updatedAt', { sortable: true }),
 ];

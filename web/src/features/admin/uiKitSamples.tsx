@@ -20,6 +20,7 @@ import {
   MediaPicker,
   Notice,
   PageShell,
+  MessageThread,
   RouteMap,
   SectionHeader,
   StaffSidebar,
@@ -435,6 +436,60 @@ export function RouteMapSample() {
  */
 export function ContactFormSample() {
   return <ContactForm onSubmit={() => Promise.resolve()} />;
+}
+
+/**
+ * A conversation as the staff reads it: a clarification about one object, an answer of the department, one of a
+ * participant and the member writing again. Written here, not read from the server: the gallery is about the component.
+ */
+export function MessageThreadSample({ timezone }: { timezone: string }) {
+  return (
+    <MessageThread
+      timezone={timezone}
+      onReply={() => Promise.resolve()}
+      thread={{
+        id: 1,
+        department: 'FOD',
+        kind: 'clarification',
+        subject: 'The speed limit below 10,000 ft',
+        body: 'My report was accepted, but I would like to understand why the rule applies on this leg.',
+        status: 'New',
+        senderVid: 700000,
+        createdAt: '2026-09-20T18:05:00Z',
+        readerIsSender: false,
+        participants: [700001],
+        references: [
+          { sourceModule: 'sample', sourceId: 'rule:1', label: 'Speed below 10,000 ft', url: '#' },
+        ],
+        replies: [
+          {
+            id: 1,
+            side: 'Department',
+            authorVid: 700002,
+            authorName: 'Ada Lovelace',
+            body: 'It applies to every leg of the tour, as the rules page says.',
+            createdAt: '2026-09-21T08:30:00Z',
+          },
+          {
+            id: 2,
+            side: 'Participant',
+            authorVid: 700001,
+            authorName: 'Alan Turing',
+            body: 'The track showed 280 kt at 8,000 ft; that is why it was confirmed.',
+            createdAt: '2026-09-21T09:10:00Z',
+          },
+          {
+            id: 3,
+            side: 'Sender',
+            authorVid: 700000,
+            authorName: null,
+            body: 'Thank you, clear now.',
+            createdAt: '2026-09-21T10:00:00Z',
+          },
+        ],
+      }}
+    />
+  );
 }
 
 /**
