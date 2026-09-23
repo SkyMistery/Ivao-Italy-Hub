@@ -72,6 +72,15 @@ public interface IModule
     IReadOnlyList<string> SpaFallbackExclusions { get; }
 
     /// <summary>
+    /// The first segments of the site the module's own public pages answer for — <c>tours</c> for
+    /// <c>/tours</c> and <c>/tours/{slug}</c> — so that no page of the content can take them (M2, T10).
+    /// <para>The core keeps its own list in <c>ContentAddresses.ReservedSegments</c> and cannot know a
+    /// module's; a module that opens a public address says so here, and the address check composes the
+    /// two. Without it the first page somebody named "tours" would simply never be reachable.</para>
+    /// </summary>
+    IReadOnlyList<string> ReservedSegments { get; }
+
+    /// <summary>
     /// The preferences its members may keep, each named after the module (<c>flightops.…</c>). The core
     /// stores them in one table and serves them at <c>/api/me/preferences/{key}</c>; a key nobody
     /// declares is refused (M2, T4b).
@@ -118,6 +127,8 @@ public abstract class ModuleBase : IModule
     public virtual IReadOnlyList<BlockDescriptor> Blocks => [];
 
     public virtual IReadOnlyList<string> SpaFallbackExclusions => [];
+
+    public virtual IReadOnlyList<string> ReservedSegments => [];
 
     public virtual IReadOnlyList<PreferenceDescriptor> Preferences => [];
 

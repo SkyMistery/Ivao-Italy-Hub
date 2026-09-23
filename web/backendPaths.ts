@@ -24,4 +24,16 @@
  * It lives in a file of its own because two things read it — `vite.config.ts` builds the proxy from
  * it, and `src/test/devProxy.test.ts` checks it — and a list written twice is a list that drifts.
  */
-export const BACKEND_PATHS = ['/api', '/auth', '/health', '/media', '/embed', '/sitemap.xml', '/robots.txt'];
+export const BACKEND_PATHS = [
+  '/api',
+  '/auth',
+  '/health',
+  '/media',
+  '/embed',
+  // The base map of the tours (T10): `/tiles/basemap.pmtiles` is a file of the installation, read with
+  // `Range` requests by the map. Added here the day it was written rather than the day somebody found an
+  // archive of HTML where the map expected one of tiles.
+  '/tiles',
+  '/sitemap.xml',
+  '/robots.txt',
+];

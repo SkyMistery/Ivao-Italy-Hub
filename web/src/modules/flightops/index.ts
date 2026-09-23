@@ -1,7 +1,7 @@
 import { listSearchSchema } from '../../shared/list';
 import type { ModuleManifest } from '../../shared/modules';
 
-import { errorCatalogBlock } from './blocks';
+import { errorCatalogBlock, tourCardsBlock } from './blocks';
 import { tourEditorSearchSchema, tourRuleSearchSchema } from './schemas';
 import {
   TOURS_EDIT,
@@ -16,6 +16,7 @@ import {
   AircraftProfileForm,
   AircraftProfilesPage,
 } from './screens/aircraft';
+import { PublicTourPage, PublicToursPage } from './screens/public';
 import { ErrorForm, ErrorsPage, RuleForm, RulesPage, TourRuleForm } from './screens/rules';
 import { FlightOpsSettingsPage } from './screens/settings';
 import { CallsignRuleForm, HubForm, RotationForm, TourConstraintForm } from './screens/shape';
@@ -36,8 +37,20 @@ import {
  */
 export const flightOpsManifest: ModuleManifest = {
   key: 'flightops',
-  blocks: [errorCatalogBlock],
+  blocks: [errorCatalogBlock, tourCardsBlock],
   routes: [
+    // The public side (T10): the cards of every tour a visitor may see, and one tour by its address.
+    // Under `_public`, so they wear the header, the footer and the language switcher of the site.
+    {
+      area: 'public',
+      path: '/tours',
+      component: PublicToursPage,
+    },
+    {
+      area: 'public',
+      path: '/tours/$slug',
+      component: PublicTourPage,
+    },
     {
       area: 'staff',
       path: '/staff/tours',

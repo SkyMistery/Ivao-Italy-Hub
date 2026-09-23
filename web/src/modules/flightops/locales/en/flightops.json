@@ -715,6 +715,61 @@
       "rules": "Rules: {{rules}}",
       "warningMax_one": "Warning, once a year at most",
       "warningMax_other": "Warning, {{count}} times a year at most"
+    },
+    "tourCards": {
+      "label": "Tour cards",
+      "fields": {
+        "states": "Tours shown",
+        "limit": "How many at most"
+      },
+      "hints": {
+        "states": "Nothing chosen shows every tour the public sees.",
+        "limit": "Zero shows all of them."
+      },
+      "options": {
+        "states": {
+          "Open": "Open",
+          "Closing": "Closing",
+          "Upcoming": "Upcoming"
+        }
+      }
+    }
+  },
+  "public": {
+    "title": "Tours",
+    "description": "Fly the tours of the division: a route, a set of rules, and a validator who reads every report.",
+    "none": "No tour is open right now.",
+    "opensOn": "Opens on {{date}}",
+    "closesOn": "Open until {{date}}",
+    "period": "From {{from}} to {{to}}",
+    "partOf": "Part of {{title}}",
+    "subtours": "Subtours",
+    "legs": "Legs",
+    "legNumber": "#",
+    "legsAndDistance_one": "{{count}} leg · {{distance}} NM",
+    "legsAndDistance_other": "{{count}} legs · {{distance}} NM",
+    "rules": "Rules",
+    "errors": "Errors a report can be given",
+    "mapOf": "Map of the legs of {{title}}",
+    "onLeg": "on leg {{number}}",
+    "simbrief": "SimBrief",
+    "notReleased": "Not released yet",
+    "total": "Total",
+    "facts": {
+      "title": "What the tour asks",
+      "aircraft": "Aircraft",
+      "anyAircraft": "Any aircraft",
+      "reportWindow": "Time to report",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "progression": "Order of the legs",
+      "minRating": "Minimum pilot rating",
+      "procedures": "SID, STAR and approach",
+      "required": "Required in the report",
+      "requiredNm": "Distance to fly",
+      "miles": "{{distance}} NM",
+      "requiredSubtours": "Subtours to complete",
+      "goal": "Goal"
     }
   }
 }

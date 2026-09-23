@@ -1073,6 +1073,9 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   (`worker-src` resta `'self'`), ma `img-src` guadagna `blob:`. Il ripiego su Leaflet è scartato (servirebbe un plugin in manutenzione
   per le tessere vettoriali).
 - Componente nuovo nell'elenco chiuso: `RouteMap`.
+- **Corretto il 22 settembre 2026 in T10** (nota `2026-09-22-il-pubblico-dei-tour`): la base **non porta i nomi dei luoghi** —
+  terra, acqua e confini fra stati, e basta — quindi sotto `/tiles` non ci sono né caratteri né sprite: **un file solo**,
+  `basemap.pmtiles`. Le uniche parole sulla mappa sono i codici degli aeroporti, che sono marcatori HTML del componente.
 
 ### 8.7 Le altre pagine dello staff
 

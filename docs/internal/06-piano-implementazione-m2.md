@@ -303,7 +303,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T7c | Il tour `Open` | T7b | `open_goal` con i parametri, `fo_tour_constraints` (filtri e regole di sequenza), la scheda, «pronto» di `Open` |
 | T8 | L'import delle leg — **fatta il 22 set 2026** | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
-| T10 | Il pubblico e la mappa | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
+| T10 | Il pubblico e la mappa — **fatta il 22 set 2026** | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
 | T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
 | T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
@@ -1112,6 +1112,43 @@ Design §8.1, §8.2, §8.6; nota `2026-09-15-la-mappa`. Branch `m2/t10-public-to
 **Test**: Vitest sull'interpolazione del cerchio massimo (anche attraverso l'antimeridiano); smoke `/tours` e `/tours/{slug}` con la mappa
 **sotto la CSP vera** e nessun errore in console; un tour nascosto dà 404; `devProxy.test.ts` con `/tiles`.
 **Fatta quando**: la pagina di un tour di prova mostra la mappa con la base del mondo servita dall'hub, in sviluppo e nella preview.
+
+**Fatta il 22 settembre 2026** (branch `m2/t10-public-tours`, piano 0.90, nota `decisions/2026-09-22-il-pubblico-dei-tour.md`):
+
+- **Tre risposte di Carmine in apertura**: l'archivio della mappa si scarica qui (misurato oggi: **179,4 MB** fino allo zoom 7,
+  la misura del 15 settembre, in 18 secondi); la base **senza i nomi dei luoghi**, quindi niente glifi né sprite da ospitare e un
+  file solo per chi forka; il blocco `tourCards` **sempre vivo**, con «quali stati» e «quante carte».
+- **Il backend**: `Tours/PublicTours.cs` — un servizio letto dai due verbi anonimi (`…/tours/public`, `…/tours/public/{slug}`) e
+  dal blocco — con `PublicTourDtos`, e `TourCardsProvider`. Che cosa è pubblico lo dice `TourState.IsPublic` e nient'altro: la
+  colonna della visibilità è grossolana (non può seguire l'orologio), quindi il rilascio si chiede qui, e **anche allo staff**
+  questi due indirizzi rispondono quello che risponde a un visitatore. Un sottotour non è sui riquadri, e la sua pagina non
+  risponde se il suo `Container` non è pubblico.
+- **`/tiles` nel nucleo**: `Content/TileEndpoints.cs` serve `basemap.pmtiles` da `HubPaths.Tiles` con `Range`, un `ETag` forte e
+  nessuna compressione (una risposta compressa fa ignorare `Range` a Cloudflare); un nome che non sia quello risponde 404.
+  `/tiles` è in `web/backendPaths.ts` **il giorno in cui è stato scritto**, non il giorno in cui qualcuno avrebbe trovato
+  `index.html` al posto delle tessere; `img-src` guadagna `blob:`.
+- **Il frontend**: `shared/ui/RouteMap.tsx` (MapLibre 6.10 + pmtiles 4.5, worker da `?worker&url`, attribuzione, avviso senza
+  WebGL2, fondo neutro senza archivio) e `shared/ui/greatCircle.ts` (venti righe di interpolazione sferica, nessuna libreria di
+  geometria); `modules/flightops/screens/public.tsx` e `TourCards.tsx`; il blocco in due metà; `tools/basemap.mjs` e la voce in
+  `FORKING.md`.
+- **Due estensioni di meccanismi** (§16.E caso b, nessun meccanismo nuovo): `BlockRegistration.propertyLabels`, che T9 aveva
+  previsto; e ⚠️ **`IModule.ReservedSegments`** — trovato scrivendo il codice, e non da un test: `/tours` è un indirizzo del sito,
+  e una pagina chiamata «tours» sarebbe stata salvata, pubblicata e irraggiungibile per sempre. Il test del frontend
+  (`routes/-reserved.test.ts`) ha preso `tiles`, che è del nucleo; i segmenti di un modulo non li vedeva nessuno.
+- **I test**: Vitest `greatCircle.test.ts` (sei: gli estremi, la curva verso il polo, **l'antimeridiano**, i due punti uguali, il
+  riquadro) e `/tiles` in `devProxy.test.ts`; integrazione `PublicTourTests` (quattro: il «fatta quando» letto da un client mai
+  autenticato, la bozza / il template / il tour non ancora rilasciato, il blocco con i suoi stati, e l'archivio servito a pezzi con
+  il tag forte); e2e `full/tours-public.spec.ts` (il giro vero: il FOD scrive un tour con tre leg, lo rilascia, e un visitatore lo
+  trova, lo apre e vede **la mappa disegnata** — la tela di MapLibre, il codice di un aeroporto, l'attribuzione — senza un errore in
+  console, sotto la CSP vera del pacchetto pubblicato).
+- **Trovato dall'occhio**, guardando le due schermate a 1500 px: il riquadro pubblico riusava la frase dell'editor delle leg, che
+  dice «tratte volate», e su una carta pubblica era falsa — nessuno le ha volate, sono le tratte del tour (chiave sua).
+- **Trovato dal test dell'antimeridiano**: la prima versione dello srotolamento confrontava ogni punto con il punto **di
+  partenza** e non con quello già spostato, e la linea Tokyo → Los Angeles saltava indietro attraverso tutto il mondo.
+- **Non verificato**: `Range` su Passenger (non c'è staging); che `blob:` serva davvero (non è stato tolto per vedere se si rompe);
+  i colori verde e arancione delle tratte (arrivano con i PIREP, T11); la pagina di un `Container` con sottotour e quella di un
+  `Open` con i vincoli, provate dal codice ma non dal banco.
+
 
 ### T11 — Il PIREP
 

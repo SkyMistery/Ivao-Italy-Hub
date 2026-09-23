@@ -81,6 +81,11 @@ public sealed class ModuleRegistry
             .. Enabled.SelectMany(module => module.SpaFallbackExclusions)
                 .Distinct(StringComparer.OrdinalIgnoreCase),
         ];
+        ReservedSegments =
+        [
+            .. Enabled.SelectMany(module => module.ReservedSegments)
+                .Distinct(StringComparer.OrdinalIgnoreCase),
+        ];
     }
 
     /// <summary>How a maintenance flag is keyed in <c>hub_division_settings</c>.</summary>
@@ -126,6 +131,9 @@ public sealed class ModuleRegistry
 
     /// <summary>What the single page application must not answer for, on top of the core's own.</summary>
     public IReadOnlyList<string> SpaFallbackExclusions { get; }
+
+    /// <summary>The first segments the enabled modules' public pages answer for, which no page may take.</summary>
+    public IReadOnlyList<string> ReservedSegments { get; }
 
     public IModule? Find(string? key) => key is null
         ? null

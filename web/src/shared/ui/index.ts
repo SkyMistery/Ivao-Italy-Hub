@@ -26,4 +26,13 @@ export {
 } from './calendar';
 export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';
 export { NotFound, Forbidden } from './status-pages';
+export {
+  RouteMap,
+  BASE_MAP_URL,
+  type RouteMapAirport,
+  type RouteMapLeg,
+  type RouteMapProps,
+  type RouteMapStatus,
+} from './RouteMap';
+export { boundsOf, greatCirclePath, GREAT_CIRCLE_SEGMENTS, type GeoPoint } from './greatCircle';
 export { UI_KIT_COMPONENTS, type UiKitComponent } from './catalog';

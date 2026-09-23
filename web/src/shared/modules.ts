@@ -99,6 +99,16 @@ export interface BlockRegistration {
   readonly exampleData?: unknown;
   /** i18n key for the name the editor puts on it, for instance `blocks.text.label`. */
   readonly editorLabelKey: string;
+  /**
+   * Where the labels of its properties are written, when they are not the core's.
+   *
+   * The property form reads `<prefix>.fields.<path>` and `<prefix>.options.<path>.<value>`, and the
+   * prefix is `blocks.<type>` unless this says otherwise — which is exactly what a module needs:
+   * the core's language files do not know what a tour is, and a module writes its own
+   * (`flightops:blocks.tourCards`). T9 saw it coming with a block that has no properties at all;
+   * T10 is the first that has them.
+   */
+  readonly propertyLabels?: string;
   /** Which drawer of the palette it appears in. Required: a block with nowhere to be added is a
    * block nobody can use, and `registry.test.ts` refuses one. */
   readonly group: BlockGroup;

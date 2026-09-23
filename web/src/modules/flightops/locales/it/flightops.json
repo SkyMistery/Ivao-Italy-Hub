@@ -715,6 +715,61 @@
       "rules": "Regole: {{rules}}",
       "warningMax_one": "Warning, al massimo una volta all'anno",
       "warningMax_other": "Warning, al massimo {{count}} volte all'anno"
+    },
+    "tourCards": {
+      "label": "Riquadri dei tour",
+      "fields": {
+        "states": "Tour mostrati",
+        "limit": "Quanti al massimo"
+      },
+      "hints": {
+        "states": "Senza scelte mostra tutti i tour che il pubblico vede.",
+        "limit": "Zero li mostra tutti."
+      },
+      "options": {
+        "states": {
+          "Open": "Aperti",
+          "Closing": "In chiusura",
+          "Upcoming": "In arrivo"
+        }
+      }
+    }
+  },
+  "public": {
+    "title": "Tour",
+    "description": "Vola i tour della divisione: un percorso, un regolamento e un validatore che legge ogni report.",
+    "none": "Nessun tour aperto in questo momento.",
+    "opensOn": "Apre il {{date}}",
+    "closesOn": "Aperto fino al {{date}}",
+    "period": "Dal {{from}} al {{to}}",
+    "partOf": "Fa parte di {{title}}",
+    "subtours": "Sottotour",
+    "legs": "Tratte",
+    "legNumber": "#",
+    "legsAndDistance_one": "{{count}} tratta · {{distance}} NM",
+    "legsAndDistance_other": "{{count}} tratte · {{distance}} NM",
+    "rules": "Regole",
+    "errors": "Errori che un report può prendere",
+    "mapOf": "Mappa delle tratte di {{title}}",
+    "onLeg": "sulla tratta {{number}}",
+    "simbrief": "SimBrief",
+    "notReleased": "Non ancora rilasciata",
+    "total": "Totale",
+    "facts": {
+      "title": "Che cosa chiede il tour",
+      "aircraft": "Aerei",
+      "anyAircraft": "Qualsiasi aereo",
+      "reportWindow": "Tempo per inviare il report",
+      "days_one": "{{count}} giorno",
+      "days_other": "{{count}} giorni",
+      "progression": "Ordine delle tratte",
+      "minRating": "Rating minimo del pilota",
+      "procedures": "SID, STAR e avvicinamento",
+      "required": "Richiesti nel report",
+      "requiredNm": "Distanza da percorrere",
+      "miles": "{{distance}} NM",
+      "requiredSubtours": "Sottotour da completare",
+      "goal": "Obiettivo"
     }
   }
 }

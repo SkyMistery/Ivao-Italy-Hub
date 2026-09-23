@@ -124,6 +124,20 @@ public static class TourEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(TourPermissions.Edit);
 
+        // The two reads of the site (T10, design M2 §8.1). Anonymous, and narrower than the query filter: what the
+        // public sees is `TourState.IsPublic`, which the column cannot say because it cannot follow the clock. A member
+        // of staff asking these two gets what a visitor gets; the drafts are in the back office above.
+        group.MapGet("/public", PublicCardsAsync)
+            .WithName("FlightOpsPublicTours")
+            .Produces<IReadOnlyList<PublicTourCardDto>>()
+            .AllowAnonymous();
+
+        group.MapGet("/public/{slug}", PublicTourAsync)
+            .WithName("FlightOpsPublicTour")
+            .Produces<PublicTourDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .AllowAnonymous();
+
         group.MapPost("/{id:long}/save-as-template", SaveAsTemplateAsync)
             .WithName("FlightOpsTourSaveAsTemplate")
             .Produces<TourDetailDto>(StatusCodes.Status201Created)
@@ -201,6 +215,14 @@ public static class TourEndpoints
 
         return Results.Ok(new TourMapper().ToDetail(tour, now));
     }
+
+    /// <summary>The cards of <c>/tours</c>: the tours the public sees now, containers included, subtours not.</summary>
+    private static async Task<IResult> PublicCardsAsync(PublicTours tours, HttpContext http) =>
+        Results.Ok(await tours.CardsAsync(states: null, limit: null, http.RequestAborted));
+
+    /// <summary>One tour by its address. A hidden tour, a draft, a template and one not yet released all answer 404.</summary>
+    private static async Task<IResult> PublicTourAsync(string slug, PublicTours tours, HttpContext http) =>
+        await tours.ReadAsync(slug, http.RequestAborted) is { } tour ? Results.Ok(tour) : Results.NotFound();
 
     /// <summary>The answer "ready" would give, without marking anything: nothing written.</summary>
     private static async Task<IResult> ReadyProblemsAsync(

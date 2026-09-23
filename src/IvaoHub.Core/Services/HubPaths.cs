@@ -2,7 +2,7 @@ namespace IvaoHub.Core.Services;
 
 /// <summary>
 /// Where the files that are not code live: <c>config/</c>, <c>locales/</c>, <c>secrets/</c>,
-/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>seed/</c>, <c>media/</c>.
+/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>seed/</c>, <c>media/</c>, <c>tiles/</c>.
 /// </summary>
 /// <remarks>
 /// In production they sit next to the application, which is also the content root. During
@@ -33,6 +33,13 @@ public sealed class HubPaths
     /// package so that a deployment does not overwrite them.
     /// </summary>
     public string Media => Path.Combine(Root, "media");
+    /// <summary>
+    /// The base map of the tours, one PMTiles archive of the world (note 2026-09-15-la-mappa). Next to the uploads
+    /// and outside the package for the same reason: it belongs to an installation, is put there over FTP, and a
+    /// deployment must not overwrite it. An installation without it draws maps on a neutral ground.
+    /// </summary>
+    public string Tiles => Path.Combine(Root, "tiles");
+
     public string Secrets => Path.Combine(Root, "secrets");
     public string DataProtectionKeys => Path.Combine(Root, "hub-keys");
     public string Logs => Path.Combine(Root, "logs");

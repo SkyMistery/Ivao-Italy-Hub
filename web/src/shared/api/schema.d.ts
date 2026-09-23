@@ -1118,6 +1118,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsPublicTours"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/tours/public/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsPublicTour"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/save-as-template": {
         parameters: {
             query?: never;
@@ -3506,6 +3538,20 @@ export interface components {
             label: components["schemas"]["LocalizedOfstring"];
         };
         /**
+         * @description The aircraft something admits, as a reader needs them: the types written on it, and the names of the groups — a
+         *     visitor has no group list to look an identifier up in. Empty admits every aircraft.
+         */
+        PublicAircraftDto: {
+            types: string[];
+            groups: components["schemas"]["PublicAircraftGroupDto"][];
+        };
+        /** @description A group of types by name: the identifier is of no use to a reader, the name is. */
+        PublicAircraftGroupDto: {
+            /** Format: int64 */
+            id: number;
+            name: components["schemas"]["LocalizedOfstring"];
+        };
+        /**
          * @description What the public site is given: the published version and nothing about the draft behind it.
          *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
          *     any of them.
@@ -3552,12 +3598,177 @@ export interface components {
             };
         };
         /**
+         * @description An error a rule in force names, when the division made it public (design M2 §5.3). The same rows the block
+         *     `flightops.errorCatalog` shows, narrowed to the ones this tour's rules can give.
+         */
+        PublicErrorDto: {
+            /** Format: int64 */
+            id: number;
+            name: components["schemas"]["LocalizedOfstring"];
+            description: components["schemas"]["LocalizedOfstring"];
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            yearlyMax: null | number;
+        };
+        /**
+         * @description One leg of a tour as the public page and the map draw it (design M2 §8.1): the two airports with their coordinates —
+         *     the leg's own, frozen when it was written — the great circle between them, the estimated time when the tour names a
+         *     reference aircraft, and the callsigns and flight numbers suggested.
+         *     A retired leg never arrives here (§1.4.1): it is in the editor's map and nowhere else. One not yet released
+         *     does, saying so, because a tour says in advance what it will ask.
+         */
+        PublicLegDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            number: number;
+            kind: components["schemas"]["LegKind"];
+            /** Format: int64 */
+            rotationId: null | number;
+            departureIcao: string;
+            departureIata: null | string;
+            /** Format: double */
+            departureLatitude: number;
+            /** Format: double */
+            departureLongitude: number;
+            arrivalIcao: string;
+            arrivalIata: null | string;
+            /** Format: double */
+            arrivalLatitude: number;
+            /** Format: double */
+            arrivalLongitude: number;
+            /** Format: double */
+            distanceNm: number;
+            /** Format: int32 */
+            estimatedMinutes: null | number;
+            callsigns: string[];
+            flightNumbers: string[];
+            aircraft: components["schemas"]["PublicAircraftDto"];
+            /** Format: date-time */
+            releaseAt: null | string;
+            released: boolean;
+        };
+        /**
          * @description What a visitor asking for an address is given: the page that has it, or — when a published page
          *     had it before it moved — where that page is now. Exactly one of the two is set.
          */
         PublicPageDto: {
             page: null | components["schemas"]["PublicContentDto"];
             movedTo: null | string;
+        };
+        /** @description The container a subtour belongs to, so that its page can lead back to it. */
+        PublicParentDto: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            title: components["schemas"]["LocalizedOfstring"];
+        };
+        /** @description One rotation of a hub tour, so that the page groups the legs the way the tour flies them (design M2 §1.3). */
+        PublicRotationDto: {
+            /** Format: int64 */
+            id: number;
+            icao: string;
+            /** Format: int32 */
+            sort: number;
+            /** Format: int32 */
+            size: number;
+        };
+        /** @description A subtour of a container, as its parent's page lists it (note 2026-09-21-la-forma-dei-tour). */
+        PublicSubtourDto: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: components["schemas"]["LocalizedOfstring"];
+            state: components["schemas"]["TourStateKind"];
+            /** Format: date-time */
+            releaseAt: string;
+            /** Format: date-time */
+            closeAt: string;
+            /** Format: int32 */
+            legs: number;
+            /** Format: double */
+            totalNm: number;
+        };
+        /**
+         * @description A tour as a card shows it (design M2 §8.1): what fits on a tile, and nothing a visitor may not see. The picture is
+         *     the identifier alone — a module reads no row of the core's library, and the address built from the identifier is
+         *     the one a browser is asked to check again rather than keep for a year.
+         *     No progress and no next leg: those are the pilot's own and arrive with the reports (T15,
+         *     flightops.myTours). A card is the same for whoever is looking.
+         */
+        PublicTourCardDto: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            kind: components["schemas"]["TourKind"];
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            coverMediaId: null | number;
+            state: components["schemas"]["TourStateKind"];
+            /** Format: date-time */
+            releaseAt: string;
+            /** Format: date-time */
+            closeAt: string;
+            /** Format: int32 */
+            legs: number;
+            /** Format: double */
+            totalNm: number;
+        };
+        /**
+         * @description One tour as a visitor reads it (design M2 §8.1): the briefing as it stands — a tour has no published version behind
+         *     it, the row is the version — the dates, the aircraft, the rules in force with their parameters, and the legs with
+         *     their distances and the totals.
+         *     What is here depends on the kind: a Distance tour carries the miles it asks for, an Open tour its
+         *     goal and the filters and sequence rules every flight has to respect (§2.6.1), a Container its subtours and no
+         *     legs of its own, a Hub tour its rotations.
+         */
+        PublicTourDto: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            kind: components["schemas"]["TourKind"];
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: components["schemas"]["LocalizedOfstring"];
+            briefing: components["schemas"]["JsonNode"];
+            /** Format: int64 */
+            coverMediaId: null | number;
+            /** Format: int64 */
+            bannerMediaId: null | number;
+            state: components["schemas"]["TourStateKind"];
+            /** Format: date-time */
+            releaseAt: string;
+            /** Format: date-time */
+            closeAt: string;
+            /** Format: int32 */
+            reportWindowDays: number;
+            progression: components["schemas"]["TourProgression"];
+            hubRotationOrder: null | components["schemas"]["HubRotationOrder"];
+            requiresProcedures: boolean;
+            /** Format: int32 */
+            minPilotRating: null | number;
+            referenceAircraftIcao: null | string;
+            aircraft: components["schemas"]["PublicAircraftDto"];
+            /** Format: int32 */
+            requiredNm: null | number;
+            /** Format: int32 */
+            requiredSubtours: null | number;
+            openGoal: null | components["schemas"]["OpenGoal"];
+            openGoalParameters: null | components["schemas"]["JsonNode"];
+            openGoalValues: string[];
+            constraints: components["schemas"]["TourConstraintListDto"][];
+            callsignRules: components["schemas"]["CallsignRuleListDto"][];
+            rules: components["schemas"]["EffectiveRuleDto"][];
+            errors: components["schemas"]["PublicErrorDto"][];
+            rotations: components["schemas"]["PublicRotationDto"][];
+            legs: components["schemas"]["PublicLegDto"][];
+            /** Format: double */
+            totalNm: number;
+            /** Format: int32 */
+            totalEstimatedMinutes: null | number;
+            parent: null | components["schemas"]["PublicParentDto"];
+            subtours: components["schemas"]["PublicSubtourDto"][];
         };
         /**
          * @description Editorial state. The public site only ever reads published rows.
@@ -7434,6 +7645,55 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsPublicTours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTourCardDto"][];
+                };
+            };
+        };
+    };
+    FlightOpsPublicTour: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTourDto"];
                 };
             };
             /** @description Not Found */

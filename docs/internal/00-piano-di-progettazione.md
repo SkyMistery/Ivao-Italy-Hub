@@ -1,9 +1,29 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.89 — 22 settembre 2026 (**regole ed errori**: l'emendamento eredita, la copia aggiunge, i valori di partenza, T9)
+**Versione documento:** 0.90 — 22 settembre 2026 (**il pubblico dei tour e la mappa**: una base senza nomi, i riquadri come blocco, `tours` riservato, T10)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.90** (22 set 2026, fase T10 di M2): **il pubblico dei tour e la mappa** — `/tours` (i riquadri dei tour aperti, in
+chiusura e in arrivo), `/tours/{slug}` (briefing, date, aerei, regole in vigore con i parametri, errori pubblici, leg con distanza
+e tempo stimato, pulsante SimBrief, i vincoli di un `Open`, i sottotour di un `Container`), il componente **`RouteMap`** —
+ventiduesimo dell'elenco chiuso (§8.3) — e il blocco **`flightops.tourCards`**. Nota
+`decisions/2026-09-22-il-pubblico-dei-tour.md`, tre risposte di Carmine in apertura. **(1) La mappa di base non porta i nomi dei
+luoghi**: terra, acqua e confini dall'archivio, i codici degli aeroporti come marcatori HTML — niente glifi né sprite da ospitare,
+**un file solo** per chi forka (correzione alla nota `2026-09-15-la-mappa`, che li prevedeva sotto `/tiles`). Il mondo fino allo
+zoom 7 rimisurato oggi: **179,4 MB**, la misura del 15 settembre; ⚠️ le build di Protomaps durano una settimana, quindi
+`tools/basemap.mjs` prende la data come argomento. **(2) Il blocco è sempre vivo** e ha due proprietà (quali stati, quante carte);
+nessun avanzamento nei riquadri, che è di chi guarda e arriva in T15. **(3)** L'archivio si scarica con `pmtiles extract`, sta in
+`tiles/` fuori dal repository e si serve da `/tiles/basemap.pmtiles` con `Range` ed `ETag` forte: in sviluppo risponde 206
+(`PublicTourTests`), in produzione lo dirà lo staging (verifica 1 della nota resta aperta). `img-src` guadagna `blob:`
+(`config/security.json`). **Due estensioni di meccanismi esistenti** (§16.E caso b, nessun meccanismo nuovo): `BlockRegistration`
+guadagna `propertyLabels`, perché il form delle proprietà di un blocco legge le etichette dal namespace del nucleo e il nucleo non
+sa che cosa sia un tour; e ⚠️ **`IModule.ReservedSegments`** — trovato scrivendo il codice: `/tours` è un indirizzo del sito, il
+nucleo tiene l'elenco dei segmenti che nessuna pagina può prendere e non conosce quelli di un modulo, quindi una pagina chiamata
+«tours» sarebbe stata salvata, pubblicata e irraggiungibile per sempre. `ModuleRegistry` li compone come già compone
+`SpaFallbackExclusions`; `tiles` entra invece nell'elenco del nucleo. Sezioni toccate: §8.3 (il ventiduesimo componente), §14 (un
+rischio: l'archivio non caricato).
 
 **Changelog 0.89** (22 set 2026, fase T9 di M2): **regole ed errori** — le regole generali e quelle dei tour (`fo_rules`, con
 l'emendamento di una generale), il catalogo degli errori della divisione (`fo_errors`, categoria, massimo annuale dei warning,
@@ -1897,7 +1917,10 @@ che Carmine ha scelto di non prendere adesso.
 **Tre componenti in più con M2** (decisi in T0, 16 set 2026, piano 0.79): **`RouteMap`** (la mappa delle leg, MapLibre, nota
 `2026-09-15-la-mappa`), **`LegGrid`** (l'editor delle leg a tabella, eccezione dichiarata al motore lista e form, `05-design-m2.md`
 §8.4) e **`MessageThread`** (il filo di un contatto con le risposte, nota `2026-09-15-contatti-con-risposte`). Entrano nell'elenco nelle
-fasi T10, T7 e T14. ⚠️ `LegGrid` è entrato con **T7a** (18 set 2026) e vive **nel modulo**, perché conosce le leg: non è ancora in
+fasi T10, T7 e T14. ⚠️ **`RouteMap` è entrato con T10** (22 set 2026) ed è il **ventiduesimo** dell'elenco: sta in `shared/ui/` e non
+nel modulo — non sa che cosa sia un tour, prende coppie di aeroporti — quindi è in `catalog.ts` e nella galleria come gli altri. La sua
+mappa di base è un file dell'installazione, non del pacchetto, e senza quel file disegna comunque le tratte su un fondo neutro (nota
+`2026-09-22-il-pubblico-dei-tour`). ⚠️ `LegGrid` è entrato con **T7a** (18 set 2026) e vive **nel modulo**, perché conosce le leg: non è ancora in
 `catalog.ts` né nella galleria, che non importa da `modules/`; come un modulo ci porta i suoi componenti lo dice T20. `ConfirmDialog` è
 stato esteso nella stessa fase con `onOpenChange` e `confirmDisabled` (nota `2026-09-18-le-leg-dei-tour`).
 
@@ -2133,7 +2156,7 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 | Forkabilità che si erode | Test "divisione XX" in CI; review checklist nel template PR. |
 | GDPR (dati personali di membri, email, discord id) | Minimizzazione scope, retention, export/cancellazione, privacy policy divisionale. |
 | Fonti esterne dei tour (M2) che cambiano licenza o spariscono: OpenAIP, NOAA, Navigraph per l'agente | Ognuna dietro un'interfaccia del nucleo, con «non disponibile» e mai «fallito» quando manca; la licenza di OpenAIP va letta a mano, e prima di distribuire l'agente si chiede a Navigraph per iscritto (note del 15 set 2026). |
-| La mappa di base dei tour (179 MB) non caricata, o servita senza richieste parziali da Passenger | La mappa disegna leg e aeroporti su un fondo neutro; la verifica di `Range` sul pacchetto è nella fase T10 e sullo staging (nota `2026-09-15-la-mappa`). |
+| La mappa di base dei tour (179 MB) non caricata, o servita senza richieste parziali da Passenger | La mappa disegna leg e aeroporti su un fondo neutro; ✅ in sviluppo `/tiles/basemap.pmtiles` risponde **206 con un `ETag` forte** (T10, `PublicTourTests`), su Passenger lo dirà lo staging. ⚠️ **Le build di Protomaps durano circa una settimana**: chi rifà l'archivio passa una data recente a `tools/basemap.mjs`. |
 
 ---
 

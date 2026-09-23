@@ -32,6 +32,11 @@ export const UI_KIT_COMPONENTS = [
   // The twenty-first, and the second Carmine has asked for: Atmosphere's sidebar draws its own
   // collapse button, at the bottom, full width, with an English word written into the library.
   'StaffSidebar',
+  // The twenty-second, and the one M2 asked for before its first line of code was written: a tour is
+  // a set of legs and a set of legs is a picture (note 2026-09-15-la-mappa, design M2 §8.6). MapLibre
+  // over a PMTiles archive this hub serves itself — no tile provider, no key, nobody watching who
+  // reads a tour page.
+  'RouteMap',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

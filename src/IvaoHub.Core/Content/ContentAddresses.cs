@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Modules;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Core.Content;
@@ -45,7 +46,7 @@ public sealed record ContentAddressDto(string Path, ContentAddressState State, s
 /// "new from a template", and by the check the form asks while somebody is typing — so the form
 /// and the save cannot give two answers.</para>
 /// </summary>
-public sealed class ContentAddresses(HubDbContext database, ICurrentUser currentUser)
+public sealed class ContentAddresses(HubDbContext database, ICurrentUser currentUser, ModuleRegistry modules)
 {
     /// <summary>Levels of the address of a page: <c>/a/b/c</c>.</summary>
     public const int MaxDepth = 3;
@@ -68,7 +69,16 @@ public sealed class ContentAddresses(HubDbContext database, ICurrentUser current
     [
         "api", "auth", "health", "media", "embed", "openapi", "scalar", "sitemap.xml", "robots.txt",
         "news", "documents", "calendar", "search", "forbidden", "login-error", "me", "contact", "staff",
+        // The base map of the tours, served by the hub itself (T10).
+        "tiles",
     ];
+
+    /// <summary>
+    /// Those and the ones the enabled modules answer for (<c>IModule.ReservedSegments</c>): the core cannot
+    /// know that <c>/tours</c> is a page of the site, and a page named after it would be unreachable.
+    /// </summary>
+    public IReadOnlyList<string> AllReservedSegments =>
+        [.. ReservedSegments.Concat(modules.ReservedSegments).Distinct(StringComparer.OrdinalIgnoreCase)];
 
     /// <summary>
     /// Everything <c>BeforeSave</c> does for a content row: refuses an address that may not be
@@ -177,7 +187,7 @@ public sealed class ContentAddresses(HubDbContext database, ICurrentUser current
 
         if (parentId is null)
         {
-            if (ReservedSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
+            if (AllReservedSegments.Contains(slug, StringComparer.OrdinalIgnoreCase))
             {
                 return Refuse(ContentAddressState.Reserved, "slug", "errors.content.address.reserved");
             }

@@ -20,6 +20,7 @@ import {
   MediaPicker,
   Notice,
   PageShell,
+  RouteMap,
   SectionHeader,
   StaffSidebar,
   StatTile,
@@ -379,6 +380,38 @@ export function LiveStatusStripSample() {
           { figure: 'divisionPilots', value: 37 },
         ],
       }}
+    />
+  );
+}
+
+/**
+ * The map, with three legs written here: a hop, a long one, and one across the antimeridian — which
+ * is the case a straight line gets wrong, and the reason `greatCircle` exists. It is the real
+ * component, so a gallery on an installation without the base map archive shows exactly what such
+ * an installation shows: the legs on a neutral ground.
+ */
+export function RouteMapSample() {
+  return (
+    <RouteMap
+      legs={[
+        {
+          id: 'short',
+          from: { code: 'EGLL', latitude: 51.4775, longitude: -0.4614 },
+          to: { code: 'LFPG', latitude: 49.0097, longitude: 2.5479 },
+        },
+        {
+          id: 'long',
+          from: { code: 'LFPG', latitude: 49.0097, longitude: 2.5479 },
+          to: { code: 'KJFK', latitude: 40.6413, longitude: -73.7781 },
+          status: 'done',
+        },
+        {
+          id: 'seam',
+          from: { code: 'RJAA', latitude: 35.7647, longitude: 140.3863 },
+          to: { code: 'KLAX', latitude: 33.9416, longitude: -118.4085 },
+          status: 'pending',
+        },
+      ]}
     />
   );
 }
