@@ -3,8 +3,23 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T11a in `main`; T11b è fatta**: branch `m2/t11b-pirep-form`, in PR (vedi
-`gh pr list`). Piano **0.92**. **Il prossimo passo è T12 (gli ATC contattati)**, in una chat nuova, dopo il merge di T11b.
+**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T12 in `main`; T13a è fatta**: branch `m2/t13a-validation-server`, in PR (vedi
+`gh pr list`). Piano **0.94**. **Il prossimo passo è T13b (le pagine della validazione)**, in una chat nuova, dopo il merge di T13a.
+
+> **Che cosa ha lasciato T13a** (nota `2026-09-23-la-validazione`, piano 0.94): T13 è divisa — **T13a il server, T13b le pagine**.
+> Tutto sta in `Review/`: `PirepReview` (pagina, presa, rilascio, decisione, riapertura, suggerimento, tracce, mail), `ReviewEndpoints`,
+> `ReviewSuggestion` (pura), `ReviewDigestJob`; le tracce in `Pireps/` (`TrackCodec`, `TrackRetentionJob`, `fo_pirep_tracks`).
+> **T13b legge**: la coda `GET /api/flightops/review/queue` (lista generica: `filter[tourId]`, `filter[open]`, `sort=queuedAt|tourId`,
+> ogni riga con `canTake` e `isOwn`); l'ordine è la preferenza `flightops.reviewQueueOrder` (`date` | `tour`) → `sort`; la pagina
+> `GET /api/flightops/review/{id}` (`ReviewDto`: volo con **tutte** le revisioni del piano e quella al decollo, regole congelate,
+> tabella degli errori con i conteggi, suggerimento, profilo del pilota, storia con i nomi, `actions` con cosa può fare chi guarda,
+> `weatherAvailable`/`checksAvailable` falsi fino a T16/T17); le tracce `…/tracks` (per volo, `points` nullo se non c'è o è già
+> cancellata); **il suggerimento mentre si spuntano gli errori** `…/suggestion?errorIds=` — **non** si ricalcola nel browser; i passi
+> `POST …/take|release|decide|reopen` rispondono con la pagina aggiornata, 403 se non tocca a chi guarda, 409 se è cambiata.
+> Il blocco `flightops.reviewQueue` è **tutto** di T13b (le due metà). ⚠️ **Il nucleo** ha quattro estensioni: `[AlsoWrittenWith]` nella
+> rete dell'interceptor, `IModule.NotificationTypes` (le parole di un tipo del modulo nel suo file: `mail.{tipo}` e
+> `notifications.{nome}`), `IPermissionHolders`, e la lista generica che ordinando per una colonna tiene dentro l'ordine di default.
+> Nei test: VID `780085–780087`, i test della validazione in `PirepTests.Review.cs` (la classe è `partial`).
 
 > **Che cosa ha lasciato T11b** (nota `2026-09-23-il-form-del-pirep`, piano 0.92): il form è `screens/report.tsx` a
 > `/tours/{slug}/report` (`?leg=`, `?report=` per correggere), le funzioni pure in `screens/reporting.ts`, la pagina del tour in

@@ -1,9 +1,23 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.93 — 23 settembre 2026 (**gli ATC contattati**: `IAtcActivitySource`, la proposta, le esenzioni con il loro perimetro, T12)
+**Versione documento:** 0.94 — 23 settembre 2026 (**la validazione sul server**: coda, presa, decisione, suggerimento, mail, riapertura, riepilogo, tracce salvate, T13a)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.94** (23 set 2026, fase T13a di M2): **la validazione dei PIREP sul server** — la coda (lista generica, ordinata per
+data o per tour, l'ordine come preferenza del validatore), la presa con il lease, la pagina di validazione come API con la tabella
+degli errori delle regole congelate e i loro conteggi, il suggerimento chiesto al server, la decisione con gli errori, le mail al
+pilota **senza il nome del validatore**, la riapertura, il riepilogo giornaliero ai validatori e le **tracce salvate all'invio**.
+Nota `decisions/2026-09-23-la-validazione.md`, **cinque risposte di Carmine**: (1) **T13 si divide** in T13a (il server) e T13b (le
+pagine e il blocco `reviewQueue`); (2) **la traccia si salva all'invio**, compressa, in `fo_pirep_tracks` (~10 KB a volo); (3) **si
+cancella 90 giorni dopo la decisione**, `trackRetentionDays`; (4) **riaprire una decisione altrui** è il permesso nuovo
+**`Tours.ReopenDecisions`** (FOC e FOAC da `positionGrants`), chi ha deciso riapre la sua con `Tours.Validate`; (5) **l'anno di un
+errore** conta i PIREP accettati e rifiutati del pilota su tutti i tour, per anno UTC del decollo. **Quattro estensioni di meccanismi**
+(§16.E caso b): la rete dell'interceptor accetta una scrittura con il permesso che la riga dichiara (**`[AlsoWrittenWith]`**, con lo
+scope della riga e mai per l'interessato); **`IModule.NotificationTypes`** con `NotificationTypeCatalog` (i tipi di notifica dei
+moduli, le parole nel file del modulo); **`IPermissionHolders`** (chi tiene un permesso, con il calcolatore del login); la lista
+generica che tiene l'ordine di default dentro una colonna ordinata. Migrazione additiva `AddValidation`.
 
 **Changelog 0.93** (23 set 2026, fase T12 di M2): **gli ATC contattati e le esenzioni** — nel nucleo `IAtcActivitySource`
 («quali posizioni erano online in questo intervallo»), con due risposte: la vista `v_share_atc_sessions` di vIPI, accesa da

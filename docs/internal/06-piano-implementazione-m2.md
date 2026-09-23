@@ -307,7 +307,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T11a | Il PIREP sul server — **fatta il 23 set 2026** | T2, T3, T9, T10 | `TourRules`, tabelle, invio e reinvio e ritiro via API, controlli che bloccano, deviazioni, iscrizione, snapshot, ritiro automatico |
 | T11b | Il form e la pagina del pilota — **fatta il 23 set 2026** | T11a | la pagina del form, ricerca e scelta del volo, i colori della mappa, «Invia il report», i PIREP del pilota |
 | T12 | Gli ATC contattati — **fatta il 23 set 2026** | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
-| T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
+| T13a | La validazione sul server — **fatta il 23 set 2026** | T11 | code, presa, decisione con errori e suggerimento, mail, riapertura, riepilogo, tracce salvate, via API |
+| T13b | Le pagine della validazione | T13a | `/staff/tours/review` e `/staff/tours/review/{id}` con mappa e traccia, `reviewQueue` |
 | T14 | Contestazioni, chiarimenti, segnalazioni | T4a, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
 | T15 | Completamento, validatori, piloti, ban | T4b, T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
 | T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
@@ -1330,6 +1331,47 @@ Design §4, §3.5, §8.5. Branch `m2/t13-validation`.
 altro; due prese insieme; il suggerimento con `Dangerous` e con `Warning` oltre `yearly_max`; la mail senza il nome; la riapertura;
 il riepilogo non parte a coda vuota. Smoke: coda unica e per tour, pagina di validazione.
 **Fatta quando**: un PIREP del corpus si prende, si decide con un errore e il pilota riceve la mail in Mailpit.
+
+**Divisa il 23 settembre 2026** in apertura (Carmine, nota `decisions/2026-09-23-la-validazione.md` §2.1), come T11:
+
+- **T13a — il server** (branch `m2/t13a-validation-server`): i punti 1–6 via API — le code come lista generica, la presa con il
+  lease, la pagina di validazione come risposta, il suggerimento, la decisione con gli errori, le mail, la riapertura, il riepilogo —
+  e le **tracce salvate all'invio**, che la pagina e i controlli di T17–T18 leggono. Provato dai test d'integrazione.
+- **T13b — le pagine** (branch `m2/t13b-validation-pages`): `/staff/tours/review` (coda unica e per tour, l'ordine come preferenza) e
+  `/staff/tours/review/{id}` (la mappa con la traccia, le revisioni del piano, la tabella degli errori, il suggerimento chiesto al
+  server, la decisione, la riapertura), la voce di menu, il punto 7 (il blocco `flightops.reviewQueue`, le due metà), lo smoke e il
+  giro e2e con `replayFlight`. Il «fatta quando» di T13 è suo.
+
+**T13a fatta il 23 settembre 2026** (branch `m2/t13a-validation-server`, piano 0.94, nota `decisions/2026-09-23-la-validazione.md`).
+Com'è andata:
+
+- **Cinque risposte di Carmine in apertura**, quattro come proposte e una sua: la divisione; **le tracce si salvano all'invio**
+  (non erano salvate: il PIREP teneva solo i piani); **si cancellano 90 giorni dopo la decisione** — la domanda l'ha aperta lui
+  («non possiamo avere GB di dati di tracce inutili»), e misurate sono ~10 KB a volo compresse, meno di 20 MB a regime;
+  **`Tours.ReopenDecisions`** per FOC e FOAC; **l'anno** conta gli errori confermati sui PIREP accettati e rifiutati di tutti i tour.
+- **Il modulo**: `Review/` — `PirepReview` (pagina, presa, rilascio, decisione, riapertura, suggerimento, tracce, mail),
+  `ReviewEndpoints` (la coda con `MapCrud` in sola lettura su `/api/flightops/review/queue`; la pagina, le tracce, il suggerimento e
+  quattro passi su `/api/flightops/review/{id}`), `ReviewSuggestion` (pura), `ReviewDigestJob` (ogni giorno alle 07:00 UTC);
+  `Pireps/TrackCodec` e `TrackRetentionJob` (03:40 UTC). Il pilota legge ora nel suo PIREP la nota e le regole violate, mai chi ha
+  deciso. Migrazione `AddValidation`: cinque colonne su `fo_pireps` (con `queued_at` riempita per chi c'era), `fo_pirep_errors`,
+  `fo_pirep_tracks`. Il «rilascio» (rimettere in coda un PIREP preso per sbaglio) non era nel design: senza, resterebbe preso per
+  mezz'ora.
+- **Quattro estensioni del nucleo** (§16.E caso b, nota §3): ⚠️ **`[AlsoWrittenWith]`** nella rete dell'interceptor — il muro
+  annunciato da T11a: un validatore abilitato su un tour scrive il PIREP con `Tours.Validate` e lo scope della riga, mai sul proprio;
+  **`IModule.NotificationTypes`** e `NotificationTypeCatalog` (un modulo non poteva dichiarare i suoi tipi di mail; lo schermo del
+  profilo trova le parole nel namespace del modulo); **`IPermissionHolders`** (chi tiene un permesso, con lo stesso calcolatore del
+  login, implementato da `UserSyncService` perché leggere le posizioni è della metà IVAO); la lista generica che, ordinando per una
+  colonna, **tiene dentro l'ordine di default**.
+- **Trovato scrivendo**: la mail non porta il numero della leg (un `Open` non ne ha); il test di architettura che vieta le istruzioni
+  in blocco ha preso il primo `ExecuteDelete` del job delle tracce, ora cancella attraverso l'interceptor leggendo solo le chiavi;
+  la lettura di una riga della coda (`…/queue/{id}`, che il motore mappa sempre) è più stretta della lista — nessuno la usa.
+- **I test**: unit `ReviewTests` (il suggerimento in tabella, il catalogo dei tipi, la traccia registrata che torna intera in meno
+  di un quarto), `NotificationTemplateTests` ora legge anche i tipi dei moduli; integrazione `PirepTests.Review.cs` (cinque: il ciclo
+  con tutti gli stati, le mail senza nome e la riapertura; nessuno prende i propri, superadmin compreso; abilitato su un tour e non
+  sull'altro, e due prese insieme; il `Warning` oltre `yearly_max`; il riepilogo solo a chi ha qualcosa, e la traccia che se ne va).
+  Suite intere verdi in locale (Docker acceso): unit 528, integrazione 253, Vitest 454, giro e2e 30.
+- **Non verificato**: la mail vera in Mailpit (il «fatta quando» di T13 è di T13b, con il giro e2e); il riepilogo con i veri
+  validatori di produzione; la pagina e le code non si vedono ancora (T13b).
 
 ### T14 — Contestazioni, chiarimenti, segnalazioni
 
