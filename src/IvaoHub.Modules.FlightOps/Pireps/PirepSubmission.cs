@@ -12,6 +12,7 @@ using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
+using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
 
@@ -559,6 +560,7 @@ public sealed class PirepSubmission(
             .ToListAsync(cancellationToken);
 
         var progress = TourRules.Of(tour, legs, hubs, rotations, mine, now, settings.RejectGraceHours);
+        var threads = await PirepDisputes.ThreadsAsync(hub, [.. mine.Where(report => report.DisputeStatus is not null).Select(report => report.Id)], cancellationToken);
 
         var blocked = !pilot.TakesReports(now)
             ? "flightops:errors.reportTourClosed"
@@ -583,10 +585,17 @@ public sealed class PirepSubmission(
             tour.Kind == TourKind.Open ? goal?.Finished ?? false : progress.Finished,
             blocked,
             goal,
-            [.. mine.Select(ToDto)]);
+            [.. mine.Select(report => ToDto(
+                report,
+                PirepDisputes.DisputableUntil(report, settings.DisputeWindowDays, now),
+                threads.TryGetValue(report.Id, out var thread) ? thread : null))]);
     }
 
-    public static PirepDto ToDto(Pirep pirep)
+    /// <summary>
+    /// The report as its pilot reads it. <paramref name="disputableUntil"/> and <paramref name="threadId"/> are the dispute's
+    /// (T14b), which need the settings and the core's threads: the pages that show them pass them, the answers of a step leave them out.
+    /// </summary>
+    public static PirepDto ToDto(Pirep pirep, DateTime? disputableUntil = null, long? threadId = null)
     {
         ArgumentNullException.ThrowIfNull(pirep);
 
@@ -629,7 +638,10 @@ public sealed class PirepSubmission(
             pirep.DecidedAt,
             pirep.NoteToPilot,
             ViolatedRules(pirep),
-            pirep.RowVersion);
+            pirep.RowVersion,
+            pirep.DisputeStatus,
+            disputableUntil,
+            threadId);
     }
 
     /// <summary>

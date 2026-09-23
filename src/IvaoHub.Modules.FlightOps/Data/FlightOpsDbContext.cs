@@ -5,6 +5,7 @@ using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Shape;
+using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -54,6 +55,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<Ban> Bans => Set<Ban>();
 
+    public DbSet<LegIssue> LegIssues => Set<LegIssue>();
+
     /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -70,6 +73,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<ErrorCategory>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<PirepStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<DiversionReason>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<DisputeStatus>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<LegIssueStatus>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -238,6 +243,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             pirep.HasKey(row => row.Id);
             pirep.Ignore(row => row.StakeholderVid);
             pirep.Ignore(row => row.ResourceScope);
+            pirep.Ignore(row => row.DisputeThread);
             pirep.Property(row => row.DepartureIcao).HasMaxLength(4).IsRequired();
             pirep.Property(row => row.ArrivalIcao).HasMaxLength(4).IsRequired();
             pirep.Property(row => row.DistanceNm).HasPrecision(7, 1);
@@ -257,6 +263,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             pirep.Property(row => row.StaffNote).HasMaxLength(PirepValidation.MaxTextLength);
             pirep.Property(row => row.OverrideReason).HasMaxLength(PirepValidation.MaxTextLength);
             pirep.Property(row => row.ThresholdOverridden).HasDefaultValue(false);
+            pirep.Property(row => row.DisputeText).HasMaxLength(PirepValidation.MaxTextLength);
             pirep.HasRowVersion(row => row.RowVersion);
 
             // A tour with a report is never deleted and a leg with one is retired, not deleted (design M2 §1.2.2, §1.4.1):
@@ -339,6 +346,23 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
             // No key towards the tour: a ban on every tour has none, and a ban outlives the tour it was about.
             ban.HasIndex(row => row.Vid);
+        });
+
+        modelBuilder.Entity<LegIssue>(issue =>
+        {
+            issue.ToTable("fo_leg_issues");
+            issue.HasKey(row => row.Id);
+            issue.Property(row => row.Body).HasMaxLength(LegIssue.MaxBodyLength).IsRequired();
+            issue.Property(row => row.StaffNote).HasMaxLength(LegIssue.MaxBodyLength);
+            issue.HasRowVersion(row => row.RowVersion);
+
+            // An issue is about its leg and nothing else: a leg deleted — one nobody reported a flight on (§1.4.1) — takes its
+            // issues with it, and so does a tour.
+            issue.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Cascade);
+            issue.HasOne<Leg>().WithMany().HasForeignKey(row => row.LegId).OnDelete(DeleteBehavior.Cascade);
+
+            // The list of the staff, open ones first, and the count of the dashboard.
+            issue.HasIndex(row => new { row.Status, row.CreatedAt });
         });
     }
 }

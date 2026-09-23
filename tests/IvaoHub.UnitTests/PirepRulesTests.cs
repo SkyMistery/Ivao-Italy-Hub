@@ -74,9 +74,27 @@ public sealed class PirepRulesTests
         Assert.Null(TourRules.Refusal(tour, legs, [], [], mine, legs[1].Id, decided.AddHours(1), Grace));
 
         // Disputed: it no longer holds anything (§3.8), and it may still be flown again.
-        mine[0].IsDisputed = true;
+        mine[0].DisputeStatus = DisputeStatus.Open;
         var disputed = TourRules.Of(tour, legs, [], [], mine, Now.AddDays(3), Grace);
         Assert.Equal([legs[0].Id, legs[1].Id], disputed.Flyable.Order());
+        Assert.Null(TourRules.Refusal(tour, legs, [], [], mine, legs[1].Id, Now.AddDays(3), Grace));
+
+        // Turned down: it holds again, the grace counted from the dismissal (§15.2 point 9) — a flight that took off while it was
+        // open, or within the grace of its end, stays good; one after does not.
+        var dismissed = Now.AddDays(4);
+        mine[0].DisputeStatus = DisputeStatus.Dismissed;
+        mine[0].DisputeDecidedAt = dismissed;
+        Assert.Null(TourRules.Refusal(tour, legs, [], [], mine, legs[1].Id, Now.AddDays(3), Grace));
+        Assert.Null(TourRules.Refusal(tour, legs, [], [], mine, legs[1].Id, dismissed.AddHours(Grace), Grace));
+        Assert.Equal(
+            "flightops:errors.reportLegLocked",
+            TourRules.Refusal(tour, legs, [], [], mine, legs[1].Id, dismissed.AddHours(Grace).AddMinutes(1), Grace));
+        Assert.Equal([legs[0].Id], TourRules.Of(tour, legs, [], [], mine, dismissed.AddDays(1), Grace).Flyable);
+
+        // Upheld, the report is back in the queue: the leg is pending, as for any report waiting for a decision.
+        mine[0].DisputeStatus = DisputeStatus.Upheld;
+        mine[0].Status = PirepStatus.Queued;
+        Assert.Equal(LegProgress.Pending, TourRules.Of(tour, legs, [], [], mine, dismissed.AddDays(1), Grace).Legs[legs[0].Id]);
     }
 
     [Fact]

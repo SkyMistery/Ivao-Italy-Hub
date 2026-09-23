@@ -53,14 +53,21 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         _factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
         _host = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
             services.AddScoped<IIvaoApiClient>(provider =>
-                new TrackerDouble(provider.GetRequiredService<FixtureIvaoApiClient>(), _flights))));
+                new TrackerDouble(provider.GetRequiredService<FixtureIvaoApiClient>(), _flights));
+
+            // The FOD's mailbox, for the issues on the legs (T14b): given here, never written into the division's file.
+            services.PostConfigure<DivisionOptions>(division => division.DepartmentMailboxes[nameof(Department.FOD)] = FodMailbox);
+        }));
 
         var token = TestContext.Current.CancellationToken;
         await SeedUserAsync(CoordinatorVid, staffPosition: "IT-FOC", rating: 4, token);
         await SeedUserAsync(PilotVid, staffPosition: null, rating: 4, token);
         await SeedUserAsync(OtherPilotVid, staffPosition: null, rating: 4, token);
+        await SeedUserAsync(AssistantVid, staffPosition: "IT-FOAC", rating: 4, token);
         await SeedReviewersAsync(token);
+        await CleanThreadsAsync(token);
         await FoTestAirports.SeedAsync(_host.Services, token);
     }
 
@@ -71,7 +78,7 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using (var scope = _host.Services.CreateAsyncScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
-            var vids = new[] { PilotVid, OtherPilotVid, CoordinatorVid, SuperadminPilotVid };
+            var vids = new[] { PilotVid, OtherPilotVid, CoordinatorVid, SuperadminPilotVid, AssistantVid };
 
             // A tour with a report is never deleted by the application: the test takes its reports back first.
             await Everything<Pirep>(database).Where(report => vids.Contains(report.Vid) || _tours.Contains(report.TourId)).ExecuteDeleteAsync(token);
@@ -83,6 +90,7 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
 
         await CleanReviewersAsync(token);
+        await CleanThreadsAsync(token);
 
         await FoTestAirports.RemoveAsync(_host.Services, token);
         await _host.DisposeAsync();

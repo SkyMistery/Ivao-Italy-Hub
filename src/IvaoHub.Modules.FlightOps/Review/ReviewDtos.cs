@@ -1,3 +1,4 @@
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Modules.FlightOps.Pireps;
@@ -68,16 +69,31 @@ public sealed record SuggestionDto(PirepStatus Outcome, IReadOnlyList<Suggestion
 public sealed record PilotBanDto(long? TourId, DateTime StartsAt, DateTime? EndsAt, string Reason, bool InForce);
 
 /// <summary>
-/// The pilot in this tour (§4.3): legs reported, accepted, rejected, and those rejected and disputed; every ban. The counts of
-/// the disputes (opened, upheld, turned down) arrive with the threads of T14.
+/// The pilot in this tour (§4.3): legs reported, accepted, rejected; their disputes — open, upheld, turned down (§3.8), which the
+/// pilot never reads —; every ban.
 /// </summary>
 public sealed record PilotProfileDto(
     MemberDto Pilot,
     int Reported,
     int Accepted,
     int Rejected,
-    int Disputed,
+    int DisputesOpen,
+    int DisputesUpheld,
+    int DisputesDismissed,
     IReadOnlyList<PilotBanDto> Bans);
+
+/// <summary>
+/// The pilot's dispute of this report (§3.8), as the staff reads it: what they wrote, where it is, who decided it and when, and the
+/// thread where it is talked about — none when the reader may not read that thread — in the queue of which department.
+/// </summary>
+public sealed record ReviewDisputeDto(
+    DisputeStatus Status,
+    string? Text,
+    DateTime? DisputedAt,
+    MemberDto? DecidedBy,
+    DateTime? DecidedAt,
+    long? ThreadId,
+    Department Department);
 
 /// <summary>One flight of the report as the validator reads it: every revision of the plan, and the one at take-off.</summary>
 public sealed record ReviewFlightDto(
@@ -121,7 +137,7 @@ public sealed record ReviewPlanDto(
 public sealed record ReviewEventDto(PirepStatus? FromStatus, PirepStatus ToStatus, MemberDto? By, DateTime At, string? Note);
 
 /// <summary>What the reader may do on this report now.</summary>
-public sealed record ReviewActionsDto(bool CanTake, bool CanRelease, bool CanDecide, bool CanReopen);
+public sealed record ReviewActionsDto(bool CanTake, bool CanRelease, bool CanDecide, bool CanReopen, bool CanDecideDispute);
 
 /// <summary>
 /// The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
@@ -171,6 +187,7 @@ public sealed record ReviewDto(
     bool WeatherAvailable,
     bool ChecksAvailable,
     IReadOnlyList<ReviewEventDto> History,
+    ReviewDisputeDto? Dispute,
     ReviewActionsDto Actions,
     DateTime RowVersion);
 
@@ -194,6 +211,12 @@ public sealed record ReviewDecisionDto(
 
 /// <summary>Reopening a decision (§4.2.1): the reason is required and stays in the history.</summary>
 public sealed record ReviewReopenDto(string? Reason, DateTime RowVersion);
+
+/// <summary>
+/// Deciding a dispute (§3.8): upheld — the report goes back to the queue — or turned down, with the answer the pilot reads in the
+/// thread (note 2026-09-23-contestazioni-chiarimenti-segnalazioni §2).
+/// </summary>
+public sealed record DisputeDecisionDto(bool Upheld, string? Answer, DateTime RowVersion);
 
 /// <summary>The rules a decision said were broken, as the pilot reads them with it (§3.5): never who decided.</summary>
 public sealed record ViolatedRuleDto(string Code, Localized<string> Title);

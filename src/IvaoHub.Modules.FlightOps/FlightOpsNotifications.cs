@@ -19,5 +19,8 @@ public static class FlightOpsNotifications
     /// <summary>The daily digest of the queue (§4.2.2). Its audience is whoever may validate, each with their own tours.</summary>
     public const string ReviewDigest = "flightops.reviewDigest";
 
-    public static readonly IReadOnlyList<string> All = [PirepAccepted, PirepToModify, PirepRejected, ReviewDigest];
+    /// <summary>A pilot reported a problem on a leg (§3.11, T14b). Its audience is the mailbox of the tour's department.</summary>
+    public const string LegIssueReported = "flightops.legIssueReported";
+
+    public static readonly IReadOnlyList<string> All = [PirepAccepted, PirepToModify, PirepRejected, ReviewDigest, LegIssueReported];
 }

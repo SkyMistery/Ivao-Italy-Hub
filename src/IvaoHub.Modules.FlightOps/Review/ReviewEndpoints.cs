@@ -4,6 +4,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
+using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -15,8 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace IvaoHub.Modules.FlightOps.Review;
 
 /// <summary>
-/// The validation (design M2 §4, §8.5): the queue as a generated list, and the page with its five verbs — read, tracks, take,
-/// let go, decide, reopen. Anybody who may validate one tour reads every report (§4.1); what they may do on one is the
+/// The validation (design M2 §4, §8.5): the queue as a generated list, and the page with its verbs — read, tracks, take,
+/// let go, decide, reopen, and decide a dispute (T14b). Anybody who may validate one tour reads every report (§4.1); what they may do on one is the
 /// handler's answer on the row, and every refusal is a <c>ProblemDetails</c> field by field.
 /// </summary>
 public static class ReviewEndpoints
@@ -27,6 +28,9 @@ public static class ReviewEndpoints
 
     /// <summary><c>filter[open]=true</c>, the default: waiting or in review. <c>false</c>: decided.</summary>
     public const string OpenFilter = "open";
+
+    /// <summary><c>filter[disputed]=true</c>: the rejections whose dispute is open (§3.8) — decided, so off the default view.</summary>
+    public const string DisputedFilter = "disputed";
 
     public static IEndpointRouteBuilder MapReviewEndpoints(this IEndpointRouteBuilder app)
     {
@@ -59,6 +63,7 @@ public static class ReviewEndpoints
                     || report.Status == PirepStatus.Rejected),
                 _ => null,
             };
+            options.CustomFilters[DisputedFilter] = (query, raw) => raw == "true" ? query.Where(report => report.IsDisputed) : null;
             options.DefaultFilters[OpenFilter] = "true";
 
             options.ToList = report => Row(report, null, null, new Dictionary<int, string>(), canTake: false, isOwn: false);
@@ -99,6 +104,11 @@ public static class ReviewEndpoints
         review.MapPost("/{id:long}/reopen", (long id, ReviewReopenDto body, PirepReview reviews, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
                 StepAsync(id, reviews, catalog, user, http, pirep => reviews.ReopenAsync(pirep, body, http.RequestAborted)))
             .Step("FlightOpsReviewReopen");
+
+        // A dispute upheld or turned down (§3.8, T14b), by who holds Tours.ReopenDecisions and did not decide the report.
+        review.MapPost("/{id:long}/dispute", (long id, DisputeDecisionDto body, PirepReview reviews, PirepDisputes disputes, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, reviews, catalog, user, http, pirep => disputes.DecideAsync(pirep, body, http.RequestAborted)))
+            .Step("FlightOpsReviewDispute");
 
         return app;
     }

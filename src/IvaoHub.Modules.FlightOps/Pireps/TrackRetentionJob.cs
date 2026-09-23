@@ -50,7 +50,7 @@ public sealed class TrackRetentionJob(
                 .Where(report =>
                     ((report.Status == PirepStatus.Accepted || report.Status == PirepStatus.Rejected)
                         && !report.IsDisputed
-                        && report.DecidedAt < before)
+                        && (report.DisputeDecidedAt ?? report.DecidedAt) < before)
                     || (report.Status == PirepStatus.Withdrawn && report.UpdatedAt < before))
                 .Select(report => report.Id);
 

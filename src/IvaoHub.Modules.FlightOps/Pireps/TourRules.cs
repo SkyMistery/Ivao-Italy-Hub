@@ -268,8 +268,12 @@ public static class TourRules
                 return (LegState.Fresh, false);
             }
 
-            // Disputed, it no longer holds the next legs (§3.8); decided, it holds them for flights after the grace (§2.5).
-            var decided = rejected.DecidedAt ?? rejected.SubmittedAt;
+            // Disputed, it no longer holds the next legs (§3.8); decided, it holds them for flights after the grace (§2.5). A
+            // dispute turned down holds them again with the grace counted from then (§15.2 point 9): whatever took off while it
+            // was open, or within the grace of its end, stays good.
+            var decided = rejected.DisputeStatus == DisputeStatus.Dismissed && rejected.DisputeDecidedAt is { } dismissed
+                ? dismissed
+                : rejected.DecidedAt ?? rejected.SubmittedAt;
             return (LegState.Rejected, rejected.IsDisputed || _at <= decided + _grace);
         }
     }

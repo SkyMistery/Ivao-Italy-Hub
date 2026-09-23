@@ -480,7 +480,7 @@ public sealed partial class PirepTests
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
-        var vids = new[] { PilotVid, OtherPilotVid, ValidatorVid, SecondValidatorVid, CoordinatorVid, SuperadminPilotVid };
+        var vids = new[] { PilotVid, OtherPilotVid, ValidatorVid, SecondValidatorVid, CoordinatorVid, SuperadminPilotVid, AssistantVid };
 
         await database.UserGrants.Where(grant => grant.Vid != null && vids.Contains(grant.Vid.Value)).ExecuteDeleteAsync(cancellationToken);
         await database.Notifications.Where(row => vids.Contains(row.Vid)).ExecuteDeleteAsync(cancellationToken);
