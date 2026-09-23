@@ -362,7 +362,10 @@
     "disputeWindowClosed": "Il tempo per contestare questo report è scaduto.",
     "disputeNotOpen": "Su questo report non c'è una contestazione aperta.",
     "disputeThreadUnreadable": "Non puoi leggere il filo di questa contestazione, quindi la risposta non arriverebbe al pilota. Chiedi a chi legge i contatti del dipartimento.",
-    "reviewDisputed": "Con una contestazione aperta, la decisione si riapre accogliendo la contestazione."
+    "reviewDisputed": "Con una contestazione aperta, la decisione si riapre accogliendo la contestazione.",
+    "validatorTour": "Scegli un tour di primo livello: un sottotour si valida con il suo contenitore.",
+    "banTour": "Scegli un tour di primo livello: un ban su un contenitore vale per i suoi sottotour.",
+    "banEndsBeforeStart": "La fine viene prima dell'inizio."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -1169,6 +1172,10 @@
     "legIssueReported": {
       "title": "Segnalazioni sulle leg",
       "description": "Una mail alla casella del dipartimento quando un pilota segnala un problema su una leg."
+    },
+    "banned": {
+      "title": "Ban dai tour",
+      "description": "Una mail quando ricevi un ban da un tour o da tutti, con il motivo e la durata."
     }
   },
   "mail": {
@@ -1194,6 +1201,12 @@
       "legIssueReported": {
         "subject": "[Tour] Segnalazione su una leg: {{tour}}",
         "body": "Il pilota con VID {{vid}} ha segnalato un problema sulla leg {{leg}} del tour \"{{tour}}\":\n\n{{body}}\n\nLeggila e chiudila: {{url}}\n\n---\nQuesta mail arriva alla casella del dipartimento."
+      },
+      "allTours": "tutti i tour",
+      "forGood": "per sempre",
+      "banned": {
+        "subject": "[Tour] Hai ricevuto un ban: {{tour}}",
+        "body": "Hai ricevuto un ban da {{tour}}, dal {{from}} fino a {{until}}.\n\nIl motivo: {{reason}}\n\nFinché il ban vale non puoi inviare report su quei tour. I report che hai già inviato si validano come sempre.\n\nI tour: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
       }
     }
   },
@@ -1248,5 +1261,8 @@
         "Resolved": "Risolta"
       }
     }
+  },
+  "awards": {
+    "tourCompleted": "Ha completato il tour \"{{tour}}\""
   }
 }

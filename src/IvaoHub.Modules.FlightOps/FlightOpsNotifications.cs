@@ -22,5 +22,8 @@ public static class FlightOpsNotifications
     /// <summary>A pilot reported a problem on a leg (§3.11, T14b). Its audience is the mailbox of the tour's department.</summary>
     public const string LegIssueReported = "flightops.legIssueReported";
 
-    public static readonly IReadOnlyList<string> All = [PirepAccepted, PirepToModify, PirepRejected, ReviewDigest, LegIssueReported];
+    /// <summary>They were banned from a tour or from all of them, with the reason and how long (§3.9, T15). Its audience is the pilot.</summary>
+    public const string Banned = "flightops.banned";
+
+    public static readonly IReadOnlyList<string> All = [PirepAccepted, PirepToModify, PirepRejected, ReviewDigest, LegIssueReported, Banned];
 }

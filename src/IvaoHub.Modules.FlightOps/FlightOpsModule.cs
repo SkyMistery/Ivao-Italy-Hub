@@ -7,6 +7,7 @@ using IvaoHub.Core.Preferences;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
+using IvaoHub.Modules.FlightOps.People;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Rules;
@@ -104,6 +105,8 @@ public sealed class FlightOpsModule : ModuleBase
 
         // The reports a tour and its legs have (T11); a test may still answer for them first.
         services.TryAddScoped<ITourReports, PirepTourReports>();
+        services.AddScoped<PilotProgress>();
+        services.AddScoped<TourCompletion>();
         services.AddScoped<PirepSubmission>();
         services.AddScoped<AtcProposer>();
         services.AddScoped<PirepReview>();
@@ -114,6 +117,10 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<IContactReferenceResolver>(provider => provider.GetRequiredService<FlightOpsReferences>());
         services.AddScoped<PirepDisputes>();
         services.AddScoped<IDataBlockProvider, OpenIssuesProvider>();
+
+        // The people of the tours (T15): the validators, the pilots, the bans.
+        services.AddScoped<Validators>();
+        services.AddScoped<Pilots>();
 
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
@@ -152,5 +159,8 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapPirepEndpoints();
         endpoints.MapReviewEndpoints();
         endpoints.MapLegIssueEndpoints();
+        endpoints.MapValidatorEndpoints();
+        endpoints.MapBanEndpoints();
+        endpoints.MapPilotEndpoints();
     }
 }

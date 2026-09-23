@@ -47,6 +47,7 @@ public sealed class PirepReview(
     LocaleCatalog catalog,
     ModuleSettingsStore settingsStore,
     PirepDisputes disputes,
+    TourCompletion completion,
     IOptions<DivisionOptions> division,
     ICurrentUser currentUser,
     IClock clock)
@@ -238,6 +239,9 @@ public sealed class PirepReview(
         pirep.StaffNote = Trimmed(decision.StaffNote);
         pirep.ThresholdOverridden = overridden;
         pirep.OverrideReason = overridden ? overrideReason : null;
+
+        // An acceptance that finishes the tour completes it, and signals the award, in this same save (§3.11).
+        await completion.RecordAsync(pirep, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
         await TellThePilotAsync(pirep, cancellationToken);
