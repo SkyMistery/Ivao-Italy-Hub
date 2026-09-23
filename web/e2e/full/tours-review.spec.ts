@@ -7,6 +7,7 @@ import {
   benchAirports,
   benchUrl,
   choose,
+  mailFor,
   readInEnglish,
   releasedTourWithOneLeg,
   removeBenchTours,
@@ -44,7 +45,6 @@ const words = JSON.parse(
   };
 };
 
-const mailpit = process.env.E2E_MAILPIT_URL ?? 'http://127.0.0.1:8025';
 const pilotAddress = 'bench-pilot@bench.test';
 
 const stamp = Date.now().toString(36);
@@ -184,28 +184,4 @@ async function created(request: APIRequestContext, path: string, data: unknown):
   const response = await request.post(path, { headers: asTheClientDoes, data });
   expect(response.status(), await response.text()).toBe(201);
   return ((await response.json()) as { id: number }).id;
-}
-
-/** The mail Mailpit holds for this address about this run, read whole; null while it has not arrived. */
-async function mailFor(
-  request: APIRequestContext,
-  address: string,
-  about: string,
-): Promise<{ Subject: string; Text: string } | null> {
-  const list = await request.get(`${mailpit}/api/v1/messages?limit=100`);
-  expect(list.status(), `Mailpit at ${mailpit}`).toBe(200);
-
-  const messages = (
-    (await list.json()) as { messages: { ID: string; Subject: string; To: { Address: string }[] }[] }
-  ).messages;
-  const found = messages.find(
-    (message) =>
-      message.Subject.includes(about) && message.To.some((recipient) => recipient.Address === address),
-  );
-  if (found === undefined) {
-    return null;
-  }
-
-  const read = await request.get(`${mailpit}/api/v1/message/${found.ID}`);
-  return (await read.json()) as { Subject: string; Text: string };
 }

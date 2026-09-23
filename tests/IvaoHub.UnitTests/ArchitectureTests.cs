@@ -161,6 +161,8 @@ public sealed class ArchitectureTests
             // decision rather than a coincidence of spelling. It is the only family excused: the
             // mail that carries one of these calls its own prose `Text`, for this very reason.
             .Where(type => !type.Name.StartsWith("Contact", StringComparison.Ordinal))
+            // The projection a module row opens a thread with (M2, T14a) carries the same prose into the same table.
+            .Where(type => type != typeof(ThreadOpeningProjection))
             .Select(type => type.Name)
             .Order(StringComparer.Ordinal)
             .ToArray();

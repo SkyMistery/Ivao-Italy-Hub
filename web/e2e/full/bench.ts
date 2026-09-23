@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, type APIResponse, type BrowserContext, type Locator, type Page } from '@playwright/test';
+import {
+  expect,
+  type APIRequestContext,
+  type APIResponse,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
@@ -445,4 +452,31 @@ export async function removeBenchTours(context: BrowserContext, slugPrefix: stri
     });
     expect(hidden.status(), await hidden.text()).toBeLessThan(300);
   }
+}
+
+/** Where the bench's mail lands: Mailpit, a service of the CI and a container on a developer's machine (T13b). */
+export const mailpit = process.env.E2E_MAILPIT_URL ?? 'http://127.0.0.1:8025';
+
+/** The mail Mailpit holds for this address about this run, read whole; null while it has not arrived. */
+export async function mailFor(
+  request: APIRequestContext,
+  address: string,
+  about: string,
+): Promise<{ Subject: string; Text: string } | null> {
+  const list = await request.get(`${mailpit}/api/v1/messages?limit=100`);
+  expect(list.status(), `Mailpit at ${mailpit}`).toBe(200);
+
+  const messages = (
+    (await list.json()) as { messages: { ID: string; Subject: string; To: { Address: string }[] }[] }
+  ).messages;
+  const found = messages.find(
+    (message) =>
+      message.Subject.includes(about) && message.To.some((recipient) => recipient.Address === address),
+  );
+  if (found === undefined) {
+    return null;
+  }
+
+  const read = await request.get(`${mailpit}/api/v1/message/${found.ID}`);
+  return (await read.json()) as { Subject: string; Text: string };
 }
