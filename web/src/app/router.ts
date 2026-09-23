@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRoute, createRouter, redirect, type RouteComponent } from '@tanstack/react-router';
 
 import { routeTree } from '../routeTree.gen';
+import { Route as MemberLayoutRoute } from '../routes/_member';
 import { Route as PublicLayoutRoute } from '../routes/_public';
 import { Route as StaffLayoutRoute } from '../routes/_staff';
 import { holdsPermissionAnywhere } from '../shared/api/bootstrap';
@@ -37,6 +38,19 @@ export function createHubRouter(queryClient: QueryClient) {
       }),
     );
 
+  // A page only a signed in member reaches (M2, T11b): under `_member`, whose guard sends anybody else to the
+  // login and back. Otherwise the same as a public route: the same frame, no permission.
+  const memberRoutes = registry.routes
+    .filter((definition) => definition.area === 'member')
+    .map((definition) =>
+      createRoute({
+        getParentRoute: () => MemberLayoutRoute,
+        path: definition.path,
+        ...searchOf(definition),
+        component: definition.component as RouteComponent,
+      }),
+    );
+
   // A module's back office (M2, T5): under the staff layout, so the staff guard runs first, and behind the
   // permission the manifest names — the same "held anywhere" question the core's own screens ask.
   const staffRoutes = registry.routes
@@ -64,6 +78,7 @@ export function createHubRouter(queryClient: QueryClient) {
   // the tree without the tree being rebuilt around it.
   for (const [layout, routes] of [
     [PublicLayoutRoute, publicRoutes],
+    [MemberLayoutRoute, memberRoutes],
     [StaffLayoutRoute, staffRoutes],
   ] as const) {
     if (routes.length > 0) {

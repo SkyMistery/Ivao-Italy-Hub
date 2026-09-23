@@ -149,8 +149,11 @@ export interface RouteDefinition {
    * Where the route hangs: the public site, with its header and footer (the default), or the back office,
    * behind the staff guard and inside the staff layout — `/staff/tours/...` (M2, T5). A module's screens of
    * the back office are its own like its public pages, so they arrive the same way.
+   * <br />`member` is the third, for a page that only makes sense signed in — the pilot's report form (M2, T11b):
+   * under `_member`, like `/contact`, so the sign in guard runs first and an anonymous visitor goes to the login and
+   * comes back to the same address.
    */
-  readonly area?: 'public' | 'staff';
+  readonly area?: 'public' | 'member' | 'staff';
   /** A staff route only: the permission it is behind, held on any department. Without it, `/forbidden`. */
   readonly permission?: string;
   /** The typed search parameters of the route, as recipe 2 of design M0 §7.3 declares them for a list. */
