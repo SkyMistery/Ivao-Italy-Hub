@@ -38,6 +38,15 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
+      # The mailbox of the round (M2, T13b): the outcome of a report reaches the pilot as a mail,
+      # and the spec reads it through Mailpit's API on 8025. Pinned like the one in
+      # docker-compose.yml.
+      mailpit:
+        image: axllent/mailpit:v1.28.4
+        ports:
+          - 1025:1025
+          - 8025:8025
+
     steps:
       - uses: actions/checkout@v7
 

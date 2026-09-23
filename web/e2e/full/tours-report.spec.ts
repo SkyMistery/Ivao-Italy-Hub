@@ -3,16 +3,13 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test, type BrowserContext } from '@playwright/test';
 
-import { englishCommon } from '../locales';
-
 import {
-  addLeg,
   benchAirports,
-  choose,
   readInEnglish,
+  releasedTourWithOneLeg,
+  removeBenchTours,
   signIn,
   whileWaitingFor,
-  writeInBothLanguages,
 } from './bench';
 import { replayFlight } from './replay';
 
@@ -30,43 +27,10 @@ import { replayFlight } from './replay';
  */
 
 const flightops = englishFlightOps();
-const tours = flightops.tours;
 
 const stamp = Date.now().toString(36);
 const tourName = { en: `Bench report ${stamp}`, it: `Report del banco ${stamp}` };
 const slug = `bench-report-${stamp}`;
-
-const asTheClientDoes = { 'X-Requested-With': 'hub' };
-
-function wallClock(date: Date): string {
-  return date.toISOString().slice(0, 16);
-}
-
-/**
- * The tours a run of this spec left behind, recognised by their address: deleted, or — the server refuses to delete a
- * tour with reports (`tourHasReports`) — hidden. One already hidden is left as it is.
- */
-async function removeLeftovers(context: BrowserContext): Promise<void> {
-  const response = await context.request.get('/api/flightops/tours?pageSize=100&q=bench-report-');
-  expect(response.status()).toBe(200);
-
-  const found = ((await response.json()) as { items: { id: number; isHidden: boolean }[] }).items;
-  for (const tour of found.filter((row) => !row.isHidden)) {
-    const removed = await context.request.delete(`/api/flightops/tours/${tour.id}`, {
-      headers: asTheClientDoes,
-    });
-    if (removed.status() < 300) {
-      continue;
-    }
-
-    expect(await removed.text()).toContain('flightops:errors.tourHasReports');
-    const hidden = await context.request.post(`/api/flightops/tours/${tour.id}/status`, {
-      headers: asTheClientDoes,
-      data: { action: 'Hide' },
-    });
-    expect(hidden.status(), await hidden.text()).toBeLessThan(300);
-  }
-}
 
 test('a pilot reports a flight on a tour, sees it in the queue and withdraws it', async ({
   page,
@@ -93,40 +57,17 @@ test('a pilot reports a flight on a tour, sees it in the queue and withdraws it'
     arrival: benchAirports.milan,
   });
 
-  await removeLeftovers(context);
+  await removeBenchTours(context, 'bench-report-');
   try {
     await reportAndWithdraw();
   } finally {
     flight.remove();
-    await removeLeftovers(context);
+    await removeBenchTours(context, 'bench-report-');
   }
 
   async function reportAndWithdraw() {
     // ---------------------------------------------------------------- a tour released two days ago, one leg
-    const now = Date.now();
-    await page.goto('/staff/tours/new');
-    await choose(page, tours.fields.kind, tours.options.kind.Free);
-    await writeInBothLanguages(page.locator('form'), tours.fields.title, 'title', tourName);
-    await page.locator('[id="slug"]').fill(slug);
-    await writeInBothLanguages(page.locator('form'), tours.fields.summary, 'summary', {
-      en: 'One leg to report.',
-      it: 'Una leg da riportare.',
-    });
-    await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now - 48 * 3600 * 1000)));
-    await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
-    await page.locator('[id="dailyLegLimit"]').fill('5');
-    await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
-      await page.getByRole('button', { name: englishCommon.common.save }).click();
-    });
-    await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
-
-    const tourId = Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]);
-    await addLeg(context, tourId, benchAirports.rome, benchAirports.milan);
-
-    await page.goto(`/staff/tours/${tourId}`);
-    await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
-      await page.getByRole('button', { name: tours.actions.ready }).click();
-    });
+    const tourId = await releasedTourWithOneLeg(page, context, { name: tourName, slug });
 
     // ---------------------------------------------------------------- the pilot's page: nothing flown yet
     await page.goto(`/tours/${slug}`);
@@ -182,11 +123,6 @@ function englishFlightOps() {
   return JSON.parse(
     readFileSync(fileURLToPath(new URL('../../../locales/en/flightops.json', import.meta.url)), 'utf8'),
   ) as {
-    tours: {
-      fields: { title: string; summary: string; kind: string };
-      options: { kind: { Free: string } };
-      actions: { ready: string };
-    };
     public: {
       sendReport: string;
       withdraw: string;

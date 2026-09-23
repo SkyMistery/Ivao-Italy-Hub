@@ -93,6 +93,20 @@ const server = spawn(executable, [], {
     E2E__LastName: 'Coordinator',
     E2E__Positions__0: 'IT-WM',
 
+    // And a pilot, signed in with `/e2e/signin?as=pilot` (M2, T13b): nobody validates their own
+    // reports, so the round needs somebody else to fly the one the coordinator decides, and the
+    // outcome needs an address — a mailbox of Mailpit, which the bench writes to below.
+    E2E__Pilot__Vid: '999002',
+    E2E__Pilot__FirstName: 'Bench',
+    E2E__Pilot__LastName: 'Pilot',
+    E2E__Pilot__Email: 'bench-pilot@bench.test',
+
+    // Mailpit, from `docker-compose.yml` here and a service of the CI there: the queue of the
+    // notifications is sent every minute, and a spec reads what arrived through Mailpit's API.
+    Smtp__Host: process.env.E2E_SMTP_HOST ?? '127.0.0.1',
+    Smtp__Port: process.env.E2E_SMTP_PORT ?? '1025',
+    Smtp__From: 'hub@bench.test',
+
     // No IVAO credentials, and none needed: the reference data comes from the fixtures and the
     // sign in never talks to an identity provider. The OAuth block still has to parse, because the
     // application refuses to start without one — these are the values the integration tests use.
