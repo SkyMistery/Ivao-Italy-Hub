@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
@@ -56,8 +57,11 @@ public sealed record PilotFlightDto(
 
 public sealed record PilotDisputesDto(int Open, int Upheld, int Dismissed);
 
-/// <summary>A thread of the pilot with the tours' department — a dispute or a clarification — that the reader may open.</summary>
-public sealed record PilotThreadDto(long Id, string Kind, string Subject, ContactStatus Status, DateTime CreatedAt);
+/// <summary>
+/// A thread of the pilot with the tours' department — a dispute or a clarification — that the reader may open, in the contacts
+/// of its department (T15b links it there).
+/// </summary>
+public sealed record PilotThreadDto(long Id, string Kind, string Subject, ContactStatus Status, DateTime CreatedAt, Department Department);
 
 /// <summary>A tour the pilot is in, and how far: done out of target, in the unit of its kind (<see cref="PilotStanding"/>).</summary>
 public sealed record PilotTourDto(
@@ -213,7 +217,7 @@ public sealed class Pilots(
         [
             .. threads
                 .Where(message => currentUser.Has(CorePermissions.ContactsView, message.OwnerDepartment))
-                .Select(message => new PilotThreadDto(message.Id, message.Kind, message.Subject, message.Status, message.CreatedAt)),
+                .Select(message => new PilotThreadDto(message.Id, message.Kind, message.Subject, message.Status, message.CreatedAt, message.OwnerDepartment)),
         ];
     }
 }

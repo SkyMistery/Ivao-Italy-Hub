@@ -21,7 +21,17 @@ public sealed record ValidatorWriteDto(int Vid, long? TourId);
 /// <param name="Year">The calendar year (UTC) of the decisions counted.</param>
 /// <param name="Validators">Everybody enabled by a grant of their own, and everybody who decided a report that year.</param>
 /// <param name="Tours">The tours with a decision that year, each with what every validator decided on it.</param>
-public sealed record ValidatorsDto(int Year, IReadOnlyList<ValidatorDto> Validators, IReadOnlyList<ValidatorTourDto> Tours);
+/// <param name="Titles">
+/// The title of every tour a validator is enabled on: whoever reads the statistics may hold <c>Tours.ViewPilots</c> without
+/// <c>Tours.View</c>, and could not ask the list of the tours (T15b).
+/// </param>
+public sealed record ValidatorsDto(
+    int Year,
+    IReadOnlyList<ValidatorDto> Validators,
+    IReadOnlyList<ValidatorTourDto> Tours,
+    IReadOnlyList<TourTitleDto> Titles);
+
+public sealed record TourTitleDto(long TourId, Localized<string> Title);
 
 /// <summary>
 /// One validator. <c>AllTours</c> and <c>TourIds</c> are the grants of their own (<c>Tours.Validate</c>, «add a validator»); who
@@ -97,7 +107,7 @@ public sealed class Validators(
             })
             .ToList();
 
-        var tourIds = decided.Select(row => row.ScopeTourId).Distinct().ToList();
+        var tourIds = decided.Select(row => row.ScopeTourId).Union(validators.SelectMany(validator => validator.TourIds)).Distinct().ToList();
         var titles = await CrudSource.BackOffice<Tour>(database).AsNoTracking()
             .Where(tour => tourIds.Contains(tour.Id))
             .Select(tour => new { tour.Id, tour.Title })
@@ -118,7 +128,11 @@ public sealed class Validators(
                 ]))
             .ToList();
 
-        return new ValidatorsDto(year, validators, tours);
+        return new ValidatorsDto(
+            year,
+            validators,
+            tours,
+            [.. titles.Where(entry => validators.Any(validator => validator.TourIds.Contains(entry.Key))).OrderBy(entry => entry.Key).Select(entry => new TourTitleDto(entry.Key, entry.Value))]);
     }
 
     /// <summary>Enables the member on the tour, or on every tour. The refusals are field by field: <c>vid</c>, <c>tourId</c>.</summary>

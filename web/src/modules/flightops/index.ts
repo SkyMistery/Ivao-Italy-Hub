@@ -1,14 +1,17 @@
 import { listSearchSchema } from '../../shared/list';
 import type { ModuleManifest } from '../../shared/modules';
 
-import { errorCatalogBlock, openIssuesBlock, reviewQueueBlock, tourCardsBlock } from './blocks';
+import { errorCatalogBlock, myToursBlock, openIssuesBlock, reviewQueueBlock, tourCardsBlock } from './blocks';
 import {
   askSearchSchema,
+  banFormSearchSchema,
+  bansSearchSchema,
   legIssuesSearchSchema,
   reportSearchSchema,
   reviewQueueSearchSchema,
   tourEditorSearchSchema,
   tourRuleSearchSchema,
+  yearSearchSchema,
 } from './schemas';
 import {
   TOURS_EDIT,
@@ -17,6 +20,7 @@ import {
   TOURS_MANAGE_TEMPLATES,
   TOURS_VALIDATE,
   TOURS_VIEW,
+  TOURS_VIEW_PILOTS,
 } from './permissions';
 import {
   AircraftGroupForm,
@@ -26,6 +30,7 @@ import {
 } from './screens/aircraft';
 import { AskPage } from './screens/ask';
 import { LegIssueForm, LegIssuesPage } from './screens/issues';
+import { BanForm, BansPage, PilotLookupPage, PilotPage, ValidatorsPage } from './screens/people';
 import { PublicTourPage, PublicToursPage } from './screens/public';
 import { ReportPage } from './screens/report';
 import { ReviewPage, ReviewQueuePage } from './screens/review';
@@ -46,11 +51,12 @@ import {
  * and their shape: hubs and rotations, subtours, callsign constraints, each row in a form of its own under its tour; T9
  * the rules and the errors, and the first block, the public errors; T10 the public pages; T11b the pilot's report; T13b
  * the validation — the queue, the page of one report, and the block of the queue for a dashboard; T14b the clarification
- * from the tour's pages, the issues on the legs, and the block of what else waits.
+ * from the tour's pages, the issues on the legs, and the block of what else waits; T15b the people — the validators, the
+ * pilots, the bans — and the pilot's own block.
  */
 export const flightOpsManifest: ModuleManifest = {
   key: 'flightops',
-  blocks: [errorCatalogBlock, tourCardsBlock, reviewQueueBlock, openIssuesBlock],
+  blocks: [errorCatalogBlock, tourCardsBlock, reviewQueueBlock, openIssuesBlock, myToursBlock],
   routes: [
     // The public side (T10): the cards of every tour a visitor may see, and one tour by its address.
     // Under `_public`, so they wear the header, the footer and the language switcher of the site.
@@ -112,6 +118,41 @@ export const flightOpsManifest: ModuleManifest = {
       path: '/staff/tours/issues/$id',
       permission: TOURS_VIEW,
       component: LegIssueForm,
+    },
+    // The people of the tours (T15b): read with Tours.ViewPilots; adding a validator and writing a ban ask more, on the page.
+    {
+      area: 'staff',
+      path: '/staff/tours/validators',
+      permission: TOURS_VIEW_PILOTS,
+      validateSearch: yearSearchSchema,
+      component: ValidatorsPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/pilots',
+      permission: TOURS_VIEW_PILOTS,
+      component: PilotLookupPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/pilots/$id',
+      permission: TOURS_VIEW_PILOTS,
+      validateSearch: yearSearchSchema,
+      component: PilotPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/bans',
+      permission: TOURS_VIEW_PILOTS,
+      validateSearch: bansSearchSchema,
+      component: BansPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/bans/$id',
+      permission: TOURS_VIEW_PILOTS,
+      validateSearch: banFormSearchSchema,
+      component: BanForm,
     },
     {
       area: 'staff',

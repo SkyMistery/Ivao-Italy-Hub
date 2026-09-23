@@ -10,6 +10,9 @@ export const TOURS_DELETE = 'Tours.Delete';
 export const TOURS_MANAGE_TEMPLATES = 'Tours.ManageTemplates';
 export const TOURS_MANAGE_RULES = 'Tours.ManageRules';
 export const TOURS_VALIDATE = 'Tours.Validate';
+export const TOURS_VIEW_PILOTS = 'Tours.ViewPilots';
+export const TOURS_MANAGE_VALIDATORS = 'Tours.ManageValidators';
+export const TOURS_BAN = 'Tours.Ban';
 
 /**
  * The core's permission that reads a department's contacts, and answers them (T14a): the validation page links a dispute's

@@ -10,7 +10,10 @@
     "settings": "Tour settings",
     "rules": "Tour rules",
     "errors": "Tour errors",
-    "issues": "Leg issues"
+    "issues": "Leg issues",
+    "validators": "Validators",
+    "pilots": "Pilots",
+    "bans": "Bans"
   },
   "tours": {
     "title": "Tours",
@@ -818,6 +821,15 @@
       "disputes_other": "{{count}} disputes without an answer",
       "clarifications_one": "{{count}} clarification without an answer",
       "clarifications_other": "{{count}} clarifications without an answer"
+    },
+    "myTours": {
+      "label": "My tours",
+      "signIn": "Sign in to see your tours.",
+      "toModify": "Correct your report on {{tour}}: {{from}} → {{to}}",
+      "answered": "Answered: {{subject}}",
+      "none": "You have not started a tour yet.",
+      "toTours": "See the tours",
+      "summary": "{{legs}} legs accepted · {{hours}} h {{minutes}} min flown · {{tours}} tours completed"
     }
   },
   "public": {
@@ -1140,7 +1152,8 @@
     "disputeDecidedBy": "Decided by {{name}} on {{date}} UTC",
     "disputeThread": "The thread of the dispute",
     "decideDispute": "Decide the dispute",
-    "disputeDecided": "Dispute decided. The answer is in the thread, and the pilot has it by email."
+    "disputeDecided": "Dispute decided. The answer is in the thread, and the pilot has it by email.",
+    "pilotPage": "The pilot’s page"
   },
   "events": {
     "submitted": "Sent",
@@ -1265,5 +1278,130 @@
   },
   "awards": {
     "tourCompleted": "Completed the tour \"{{tour}}\""
+  },
+  "progress": {
+    "Legs": "{{done}} of {{target}} legs",
+    "Miles": "{{done}} of {{target}} NM",
+    "Goal": "Goal: {{done}} of {{target}}",
+    "Subtours": "{{done}} of {{target}} subtours",
+    "noTarget": "Started",
+    "completed": "Completed",
+    "next": "next: leg {{number}} {{from}} → {{to}}"
+  },
+  "people": {
+    "year": "Year"
+  },
+  "validators": {
+    "title": "Validators",
+    "description": "What every validator decided in a year, on which tours they are enabled, and who to add.",
+    "sections": {
+      "validators": "Validators in {{year}}",
+      "tours": "Tours in {{year}}",
+      "add": "Add a validator"
+    },
+    "fields": {
+      "member": "Validator",
+      "enabledOn": "Enabled on",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "toModify": "To modify",
+      "vid": "VID",
+      "tourId": "Tour"
+    },
+    "hints": {
+      "vid": "A member of the staff of the division.",
+      "tourId": "Nothing chosen: every tour. A tour covers its subtours, those added later too."
+    },
+    "options": {
+      "tourId": {
+        "none": "Every tour"
+      }
+    },
+    "none": "Nobody is enabled and nobody decided a report this year.",
+    "noTours": "No report was decided this year.",
+    "suspended": "Suspended: no longer staff",
+    "allTours": "Every tour",
+    "byPosition": "By position",
+    "remove": "Remove",
+    "removeTitle": "Remove the validator from {{tour}}?",
+    "removeDescription": "They keep what they decided; from their next sign in they no longer take reports there.",
+    "removed": "Validator removed.",
+    "add": "Add",
+    "added": "Validator added.",
+    "addedDescription": "They take reports from their next sign in."
+  },
+  "pilots": {
+    "title": "Pilots",
+    "description": "The record of a pilot in the tours: errors, flights, disputes, bans. Write their VID.",
+    "open": "Open",
+    "ban": "Ban",
+    "allBans": "Every ban of this pilot",
+    "startedOn": "started on {{date}}",
+    "disputes": "Disputes: {{open}} open, {{upheld}} upheld, {{dismissed}} turned down.",
+    "sections": {
+      "tours": "Tours",
+      "errors": "Errors confirmed",
+      "flights": "Legs flown",
+      "threads": "Disputes and clarifications",
+      "bans": "Bans"
+    },
+    "fields": {
+      "vid": "VID",
+      "category": "Category",
+      "inYear": "In {{year}}",
+      "ever": "Ever",
+      "error": "Error",
+      "tour": "Tour",
+      "leg": "Leg",
+      "takeoffAt": "Took off",
+      "status": "Outcome",
+      "decidedBy": "Decided by"
+    },
+    "dispute": {
+      "Open": "disputed",
+      "Upheld": "dispute upheld",
+      "Dismissed": "dispute turned down"
+    },
+    "threadKind": {
+      "dispute": "dispute",
+      "clarification": "clarification"
+    },
+    "noTours": "No tour started.",
+    "noErrors": "No error confirmed on an accepted or rejected report.",
+    "noFlights": "No leg reported.",
+    "noThreads": "No thread you can read."
+  },
+  "bans": {
+    "title": "Bans",
+    "description": "Who may not send reports, on which tours and until when. A ban is never deleted: move its end to lift it.",
+    "create": "New ban",
+    "edit": "Ban",
+    "toPilot": "The pilot",
+    "forGood": "for good",
+    "fields": {
+      "pilotName": "Pilot",
+      "vid": "VID",
+      "tourTitle": "Tour",
+      "tourId": "Tour",
+      "reach": "Reach",
+      "startsAt": "From",
+      "endsAt": "Until",
+      "active": "In force",
+      "reason": "Reason"
+    },
+    "hints": {
+      "tourId": "Nothing chosen: every tour. A tour covers its subtours.",
+      "endsAt": "Empty: for good. To lift a ban early, move its end.",
+      "reason": "The pilot reads it in the mail."
+    },
+    "options": {
+      "tourId": {
+        "none": "Every tour"
+      },
+      "reach": {
+        "All": "Every tour",
+        "One": "One tour"
+      }
+    }
   }
 }

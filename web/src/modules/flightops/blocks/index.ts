@@ -1,9 +1,10 @@
-import { ClipboardCheck, ListChecks, Map as MapIcon, MessagesSquare } from 'lucide-react';
+import { ClipboardCheck, ListChecks, Map as MapIcon, MessagesSquare, Plane } from 'lucide-react';
 import { z } from 'zod';
 
 import type { BlockRegistration } from '../../../shared/modules';
 
 import { ErrorCatalogBlock, type ErrorCatalogData } from './errorCatalog';
+import { MyToursBlock, type MyToursData } from './myTours';
 import { OpenIssuesBlock, type OpenIssuesData } from './openIssues';
 import { ReviewQueueBlock, type ReviewQueueData } from './reviewQueue';
 import { TourCardsBlock, type TourCardsData } from './tourCards';
@@ -132,4 +133,48 @@ export const openIssuesBlock: BlockRegistration = {
   editorLabelKey: 'flightops:blocks.openIssues.label',
   group: 'data',
   icon: MessagesSquare,
+};
+
+/**
+ * The reader's own tours (T15b): started tours with how far and the next leg, the reports to correct, the answers to read,
+ * and the summary. No property — it is the reader's — and nothing for a visitor: it belongs on `/me`.
+ */
+export const myToursBlock: BlockRegistration = {
+  type: 'flightops.myTours',
+  version: 1,
+  kind: 'Data',
+  alwaysLive: true,
+  schema: z.object({}),
+  component: MyToursBlock,
+  example: {},
+  exampleData: {
+    signedIn: true,
+    tours: [
+      {
+        tourId: 1,
+        slug: 'round-the-alps',
+        title: { en: 'Round the Alps', it: 'Giro delle Alpi' },
+        parentTourId: null,
+        startedAt: '2026-09-02T18:00:00.000Z',
+        completedAt: null,
+        done: 3,
+        target: 8,
+        unit: 'Legs',
+        next: { id: 4, number: 4, departureIcao: 'XXAA', arrivalIcao: 'XXBB' },
+      },
+    ],
+    toModify: [],
+    answered: [
+      {
+        id: 12,
+        kind: 'clarification',
+        subject: 'The approach at leg 2',
+        updatedAt: '2026-09-20T09:15:00.000Z',
+      },
+    ],
+    summary: { legsAccepted: 11, minutesFlown: 1265, toursCompleted: 1 },
+  } satisfies MyToursData,
+  editorLabelKey: 'flightops:blocks.myTours.label',
+  group: 'data',
+  icon: Plane,
 };

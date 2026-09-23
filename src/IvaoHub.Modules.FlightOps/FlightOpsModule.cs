@@ -44,6 +44,9 @@ public sealed class FlightOpsModule : ModuleBase
         new NavItemDescriptor("flightops:nav.tours", "/staff/tours", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.review", "/staff/tours/review", TourPermissions.Validate),
         new NavItemDescriptor("flightops:nav.issues", "/staff/tours/issues", TourPermissions.View),
+        new NavItemDescriptor("flightops:nav.validators", "/staff/tours/validators", TourPermissions.ViewPilots),
+        new NavItemDescriptor("flightops:nav.pilots", "/staff/tours/pilots", TourPermissions.ViewPilots),
+        new NavItemDescriptor("flightops:nav.bans", "/staff/tours/bans", TourPermissions.ViewPilots),
         new NavItemDescriptor("flightops:nav.templates", "/staff/tours/templates", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.rules", "/staff/tours/rules", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.errors", "/staff/tours/errors", TourPermissions.View),
@@ -53,8 +56,8 @@ public sealed class FlightOpsModule : ModuleBase
     ];
 
     /// <summary>
-    /// The public errors (T9), the cards of the tours (T10), the queue of the validators (T13b) and what else waits for the staff
-    /// (T14b), all always live. Each has
+    /// The public errors (T9), the cards of the tours (T10), the queue of the validators (T13b), what else waits for the staff
+    /// (T14b) and the pilot's own tours (T15b), all always live. Each has
     /// its other half in <c>web/src/modules/flightops/</c>; the manifest test reads this literal.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
@@ -63,6 +66,7 @@ public sealed class FlightOpsModule : ModuleBase
         new BlockDescriptor("flightops.tourCards", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("flightops.reviewQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("flightops.openIssues", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("flightops.myTours", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>The public pages of the tours (T10): <c>/tours</c> and <c>/tours/{slug}</c>, so no page may be «tours».</summary>
@@ -121,6 +125,8 @@ public sealed class FlightOpsModule : ModuleBase
         // The people of the tours (T15): the validators, the pilots, the bans.
         services.AddScoped<Validators>();
         services.AddScoped<Pilots>();
+        services.AddScoped<MyTours>();
+        services.AddScoped<IDataBlockProvider, MyToursProvider>();
 
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
@@ -162,5 +168,6 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapValidatorEndpoints();
         endpoints.MapBanEndpoints();
         endpoints.MapPilotEndpoints();
+        endpoints.MapMyToursEndpoints();
     }
 }

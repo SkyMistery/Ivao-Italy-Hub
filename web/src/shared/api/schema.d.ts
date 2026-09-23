@@ -231,6 +231,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/my-tours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsMyTours"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -2010,6 +2026,15 @@ export interface components {
             types: string[];
             groupIds: number[];
         };
+        /** @description A dispute or a clarification about the tours that the staff answered and the pilot has not read yet. */
+        AnsweredThreadDto: {
+            /** Format: int64 */
+            id: number;
+            kind: string;
+            subject: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         /** @description A controller on a report, where it came from included. */
         AtcContactDto: {
             callsign: string;
@@ -3699,6 +3724,17 @@ export interface components {
             reports: components["schemas"]["PirepDto"][];
         };
         /**
+         * @description A pilot's tours as they read them (design M2 §8.2; note 2026-09-23-completamento-validatori-piloti-ban §3.4): the tours they
+         *     started and still see, how far, and the next leg; the reports to correct; the threads the staff answered; and the summary —
+         *     legs accepted, minutes flown, tours completed. No count of errors: those are the staff's (§8.7).
+         */
+        MyToursDto: {
+            tours: components["schemas"]["StartedTourDto"][];
+            toModify: components["schemas"]["ReportToFixDto"][];
+            answered: components["schemas"]["AnsweredThreadDto"][];
+            summary: components["schemas"]["PilotSummaryDto"];
+        };
+        /**
          * @description One entry of a menu. Exactly one of the two names is set: Key is a
          *     translation key such as `nav.staff`, which is what a module registers because it cannot
          *     know the language of the browser; Label is the text itself in every language
@@ -3723,6 +3759,14 @@ export interface components {
              *         null for an entry of the core or of the editorial menu.
              */
             module?: null | string;
+        };
+        NextLegDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            number: number;
+            departureIcao: string;
+            arrivalIcao: string;
         };
         /** @description One kind of notification, and whether this member wants it. */
         NotificationPreferenceDto: {
@@ -4433,7 +4477,22 @@ export interface components {
             disputesDismissed: number;
             bans: components["schemas"]["PilotBanDto"][];
         };
-        /** @description A thread of the pilot with the tours' department — a dispute or a clarification — that the reader may open. */
+        /**
+         * @description Legs accepted, the minutes the tracker recorded from take-off to landing on the accepted reports (Carmine, 23 September
+         *     2026), and the tours of the first level completed. Everything the pilot ever flew, hidden tours included: it is their record.
+         */
+        PilotSummaryDto: {
+            /** Format: int32 */
+            legsAccepted: number;
+            /** Format: int32 */
+            minutesFlown: number;
+            /** Format: int32 */
+            toursCompleted: number;
+        };
+        /**
+         * @description A thread of the pilot with the tours' department — a dispute or a clarification — that the reader may open, in the contacts
+         *     of its department (T15b links it there).
+         */
         PilotThreadDto: {
             /** Format: int64 */
             id: number;
@@ -4442,6 +4501,7 @@ export interface components {
             status: components["schemas"]["ContactStatus"];
             /** Format: date-time */
             createdAt: string;
+            department: components["schemas"]["Department"];
         };
         /** @description A tour the pilot is in, and how far: done out of target, in the unit of its kind (PilotStanding). */
         PilotTourDto: {
@@ -4731,8 +4791,8 @@ export interface components {
          * @description A tour as a card shows it (design M2 §8.1): what fits on a tile, and nothing a visitor may not see. The picture is
          *     the identifier alone — a module reads no row of the core's library, and the address built from the identifier is
          *     the one a browser is asked to check again rather than keep for a year.
-         *     No progress and no next leg: those are the pilot's own and arrive with the pilot's pages (T15b,
-         *     flightops.myTours). A card is the same for whoever is looking.
+         *     No progress and no next leg: those are the pilot's own, and the browser draws them on top of the card from
+         *     GET /api/flightops/my-tours (T15b, MyTours). A card is the same for whoever is looking.
          */
         PublicTourCardDto: {
             /** Format: int64 */
@@ -4814,6 +4874,19 @@ export interface components {
          * @enum {unknown}
          */
         PublishStatus: "Draft" | "Published" | "Ready";
+        /** @description A report the validator sent back «to modify», with the address of the form that corrects it. */
+        ReportToFixDto: {
+            /** Format: int64 */
+            pirepId: number;
+            /** Format: int64 */
+            tourId: number;
+            slug: string;
+            tourTitle: components["schemas"]["LocalizedOfstring"];
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: date-time */
+            takeoffAt: string;
+        };
         /** @description What the reader may do on this report now. */
         ReviewActionsDto: {
             canTake: boolean;
@@ -5177,6 +5250,25 @@ export interface components {
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /** @description A tour the pilot started, with the measure of PilotProgress and the next leg while it is not done. */
+        StartedTourDto: {
+            /** Format: int64 */
+            tourId: number;
+            slug: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            parentTourId: null | number;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            completedAt: null | string;
+            /** Format: int32 */
+            done: number;
+            /** Format: int32 */
+            target: number;
+            unit: components["schemas"]["ProgressUnit"];
+            next: null | components["schemas"]["NextLegDto"];
+        };
         /** @description What the system proposes (§4.3): `Accepted` or `Rejected`, with the errors that decide it. */
         SuggestionDto: {
             outcome: components["schemas"]["PirepStatus"];
@@ -5491,6 +5583,11 @@ export interface components {
         TourStatusRequest: {
             action: components["schemas"]["TourStatusAction"];
         };
+        TourTitleDto: {
+            /** Format: int64 */
+            tourId: number;
+            title: components["schemas"]["LocalizedOfstring"];
+        };
         /**
          * @description What a client may set on a tour. The state is not here — marking ready, back to draft, hiding and showing are
          *     actions (TourStatusRequest). Of the shape of a tour, T7a writes the distance of a `Distance` tour
@@ -5602,6 +5699,11 @@ export interface components {
             validators: components["schemas"]["ValidatorDto"][];
             /** @description The tours with a decision that year, each with what every validator decided on it. */
             tours: components["schemas"]["ValidatorTourDto"][];
+            /**
+             * @description The title of every tour a validator is enabled on: whoever reads the statistics may hold `Tours.ViewPilots` without
+             *     `Tours.View`, and could not ask the list of the tours (T15b).
+             */
+            titles: components["schemas"]["TourTitleDto"][];
         };
         ValidatorTourDto: {
             /** Format: int64 */
@@ -6106,6 +6208,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    FlightOpsMyTours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyToursDto"];
+                };
             };
         };
     };

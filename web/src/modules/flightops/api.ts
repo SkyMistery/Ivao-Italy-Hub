@@ -16,6 +16,7 @@ import {
 import {
   settingsFromFormValues,
   type AircraftGroupFormValues,
+  type BanFormValues,
   type AircraftProfileFormValues,
   type CallsignRuleFormValues,
   type FlightOpsSettings,
@@ -1771,3 +1772,166 @@ export function useSaveLegIssue(issue: LegIssueDto) {
     },
   });
 }
+
+// ---- the people of the tours (T15b) -------------------------------------------------------------
+
+export type ValidatorsDto = components['schemas']['ValidatorsDto'];
+export type ValidatorDto = components['schemas']['ValidatorDto'];
+export type PilotPageDto = components['schemas']['PilotPageDto'];
+export type BanDto = components['schemas']['BanDto'];
+export type MyToursDto = components['schemas']['MyToursDto'];
+export type StartedTourDto = components['schemas']['StartedTourDto'];
+export type ProgressUnit = components['schemas']['ProgressUnit'];
+
+const peopleKey = ['flightops', 'people'] as const;
+
+/** The statistics of the validators in a calendar year, and who is enabled on what (design M2 §8.7). */
+export function validatorsQuery(year: number) {
+  return queryOptions({
+    queryKey: [...peopleKey, 'validators', year] as const,
+    queryFn: async (): Promise<ValidatorsDto> =>
+      unwrap(await api.GET('/api/flightops/validators', { params: { query: { year } } })),
+  });
+}
+
+/**
+ * «Add a validator» and «remove»: a grant of the core written for the tours (T15a). A null tour is every tour. Whoever
+ * receives it signs in again to have it — the core's stamp —, so nothing here is optimistic.
+ */
+export function useValidatorGrant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (change: { add: boolean; vid: number; tourId: number | null }): Promise<void> => {
+      if (change.add) {
+        unwrapEmpty(
+          await api.POST('/api/flightops/validators', {
+            body: { vid: change.vid, tourId: change.tourId },
+          }),
+        );
+        return;
+      }
+
+      unwrapEmpty(
+        await api.DELETE('/api/flightops/validators/{vid}', {
+          params: {
+            path: { vid: change.vid },
+            query: change.tourId === null ? {} : { tourId: change.tourId },
+          },
+        }),
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [...peopleKey, 'validators'] });
+    },
+  });
+}
+
+/** One pilot as the tours' staff read them, in a calendar year and ever; null when the hub knows nothing of them. */
+export function pilotQuery(vid: number, year: number) {
+  return queryOptions({
+    queryKey: [...peopleKey, 'pilot', vid, year] as const,
+    queryFn: async (): Promise<PilotPageDto | null> => {
+      const result = await api.GET('/api/flightops/pilots/{vid}', {
+        params: { path: { vid }, query: { year } },
+      });
+      return result.response.status === 404 ? null : unwrap(result);
+    },
+  });
+}
+
+/** A row of the bans as the list draws it: the pilot and the tour written out, as a cell draws a value. */
+export interface BanRow extends BanDto {
+  readonly pilotName: string;
+  /** Every tour, or the one the next column names: a cell draws a word, not the absence of a tour. */
+  readonly reach: 'All' | 'One';
+}
+
+const bansKey = ['flightops', 'bans'] as const;
+
+export function bansListQuery(search: ListSearch, filters: { vid?: number } = {}) {
+  return queryOptions({
+    queryKey: [...bansKey, 'list', search, filters] as const,
+    queryFn: async (): Promise<Page<BanRow>> => {
+      const page = unwrap(
+        await api.GET('/api/flightops/bans', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer(filters.vid === undefined ? {} : { vid: String(filters.vid) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((row) => ({
+          ...row,
+          pilotName: memberName(row.pilot),
+          reach: row.tourId === null ? ('All' as const) : ('One' as const),
+        })),
+      };
+    },
+  });
+}
+
+export function banQuery(id: number) {
+  return queryOptions({
+    queryKey: [...bansKey, 'one', id] as const,
+    queryFn: async (): Promise<BanDto> =>
+      unwrap(await api.GET('/api/flightops/bans/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+/** A new ban starts now, on every tour, for good; `vid` is the pilot's page it was opened from, when it was. */
+export function emptyBan(now: Date, vid?: number): BanFormValues {
+  return {
+    ...(vid === undefined ? {} : { vid }),
+    startsAt: `${now.toISOString().slice(0, 16)}:00Z`,
+    reason: '',
+    rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+export function banToFormValues(ban: BanDto): BanFormValues {
+  return {
+    vid: ban.pilot.vid,
+    ...(ban.tourId === null ? {} : { tourId: String(ban.tourId) }),
+    startsAt: ban.startsAt,
+    ...(ban.endsAt === null ? {} : { endsAt: ban.endsAt }),
+    reason: ban.reason,
+    rowVersion: ban.rowVersion,
+  };
+}
+
+/** Writes a ban. Never deleted: lifting one early is moving its end (§3.9). */
+export function useSaveBan(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: BanFormValues): Promise<BanDto> => {
+      const body = {
+        vid: values.vid ?? 0,
+        tourId: values.tourId === undefined || values.tourId === '' ? null : Number(values.tourId),
+        startsAt: values.startsAt ?? '',
+        endsAt: values.endsAt ?? null,
+        reason: values.reason,
+        rowVersion: values.rowVersion,
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/flightops/bans', { body }))
+        : unwrap(await api.PUT('/api/flightops/bans/{id}', { params: { path: { id: String(id) } }, body }));
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: bansKey });
+      await queryClient.invalidateQueries({ queryKey: [...peopleKey, 'pilot'] });
+    },
+  });
+}
+
+/**
+ * The signed-in pilot's tours (note 2026-09-24-le-pagine-delle-persone §3.1): the same answer the block `flightops.myTours`
+ * gives, read by the cards of `/tours` to draw the pilot's progress on top of a card that is the same for everybody.
+ */
+export const myToursQuery = queryOptions({
+  queryKey: ['flightops', 'myTours'] as const,
+  queryFn: async (): Promise<MyToursDto> => unwrap(await api.GET('/api/flightops/my-tours')),
+});
