@@ -101,6 +101,13 @@ const server = spawn(executable, [], {
     E2E__Pilot__LastName: 'Pilot',
     E2E__Pilot__Email: 'bench-pilot@bench.test',
 
+    // And an assistant coordinator of the department of the tours, with `/e2e/signin?as=assistant` (M2, T14b): whoever
+    // decided a report does not judge its dispute, so upholding one in the round needs somebody else who may.
+    E2E__Assistant__Vid: '999003',
+    E2E__Assistant__FirstName: 'Bench',
+    E2E__Assistant__LastName: 'Assistant',
+    E2E__Assistant__Positions__0: 'IT-FOAC',
+
     // Mailpit, from `docker-compose.yml` here and a service of the CI there: the queue of the
     // notifications is sent every minute, and a spec reads what arrived through Mailpit's API.
     Smtp__Host: process.env.E2E_SMTP_HOST ?? '127.0.0.1',
