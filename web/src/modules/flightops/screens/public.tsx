@@ -23,12 +23,12 @@ import {
   type LegProgress,
   type MyTourDto,
   type PirepDto,
-  type PirepStatus,
   type PublicLegDto,
   type PublicTourDto,
 } from '../api';
 
 import { mapLeg, reportActions } from './reporting';
+import { REPORT_STATUS_COLOURS } from './reviewing';
 import { TourCards } from './TourCards';
 
 /**
@@ -496,15 +496,6 @@ const PROGRESS_COLOURS: Readonly<Record<LegProgress, 'blue' | 'green' | 'orange'
   Locked: 'gray',
 };
 
-const STATUS_COLOURS: Readonly<Record<PirepStatus, 'blue' | 'green' | 'orange' | 'red' | 'gray'>> = {
-  Queued: 'blue',
-  InReview: 'blue',
-  Accepted: 'green',
-  ToModify: 'orange',
-  Rejected: 'red',
-  Withdrawn: 'gray',
-};
-
 /**
  * What the pilot can do from here: sign in, when they are not; why they may send nothing, when they may not; otherwise
  * «send the report» for the next leg (or for a new flight on an Open tour), how far the goal of an Open tour is, and
@@ -586,7 +577,7 @@ function MyReports({ tour, reports }: { tour: PublicTourDto; reports: readonly P
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge
                     variant="flat"
-                    color={STATUS_COLOURS[report.status]}
+                    color={REPORT_STATUS_COLOURS[report.status]}
                     text={t(`flightops:public.reportStatus.${report.status}`)}
                   />
                   <span className="font-semibold">

@@ -33,6 +33,7 @@ export {
   type RouteMapLeg,
   type RouteMapProps,
   type RouteMapStatus,
+  type RouteMapTrack,
 } from './RouteMap';
-export { boundsOf, greatCirclePath, GREAT_CIRCLE_SEGMENTS, type GeoPoint } from './greatCircle';
+export { boundsOf, greatCirclePath, trackPath, GREAT_CIRCLE_SEGMENTS, type GeoPoint } from './greatCircle';
 export { UI_KIT_COMPONENTS, type UiKitComponent } from './catalog';

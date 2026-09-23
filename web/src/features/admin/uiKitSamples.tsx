@@ -388,7 +388,8 @@ export function LiveStatusStripSample() {
  * The map, with three legs written here: a hop, a long one, and one across the antimeridian — which
  * is the case a straight line gets wrong, and the reason `greatCircle` exists. It is the real
  * component, so a gallery on an installation without the base map archive shows exactly what such
- * an installation shows: the legs on a neutral ground.
+ * an installation shows: the legs on a neutral ground. The hop carries a flown track too, which wanders
+ * off the line the way a real one does (T13b, the validation page).
  */
 export function RouteMapSample() {
   return (
@@ -410,6 +411,18 @@ export function RouteMapSample() {
           from: { code: 'RJAA', latitude: 35.7647, longitude: 140.3863 },
           to: { code: 'KLAX', latitude: 33.9416, longitude: -118.4085 },
           status: 'pending',
+        },
+      ]}
+      tracks={[
+        {
+          id: 'flown',
+          points: [
+            { latitude: 51.4775, longitude: -0.4614 },
+            { latitude: 51.2, longitude: 0.3 },
+            { latitude: 50.6, longitude: 1.1 },
+            { latitude: 49.8, longitude: 1.6 },
+            { latitude: 49.0097, longitude: 2.5479 },
+          ],
         },
       ]}
     />

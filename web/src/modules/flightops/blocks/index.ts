@@ -1,9 +1,10 @@
-import { ListChecks, Map as MapIcon } from 'lucide-react';
+import { ClipboardCheck, ListChecks, Map as MapIcon } from 'lucide-react';
 import { z } from 'zod';
 
 import type { BlockRegistration } from '../../../shared/modules';
 
 import { ErrorCatalogBlock, type ErrorCatalogData } from './errorCatalog';
+import { ReviewQueueBlock, type ReviewQueueData } from './reviewQueue';
 import { TourCardsBlock, type TourCardsData } from './tourCards';
 
 /** The three states a card can be in, as `PublicTours.CardStates` names them on the server. */
@@ -85,4 +86,31 @@ export const tourCardsBlock: BlockRegistration = {
   propertyLabels: 'flightops:blocks.tourCards',
   group: 'data',
   icon: MapIcon,
+};
+
+/**
+ * The queue of the validators on a dashboard (T13b): one line per tour, for whoever is looking. No property — a dashboard
+ * that wants it shows it, and what it holds is the reader's.
+ */
+export const reviewQueueBlock: BlockRegistration = {
+  type: 'flightops.reviewQueue',
+  version: 1,
+  kind: 'Data',
+  alwaysLive: true,
+  schema: z.object({}),
+  component: ReviewQueueBlock,
+  example: {},
+  exampleData: {
+    items: [
+      {
+        tourId: 1,
+        title: { en: 'Round the Alps', it: 'Giro delle Alpi' },
+        count: 4,
+        oldest: '2026-09-20T08:30:00.000Z',
+      },
+    ],
+  } satisfies ReviewQueueData,
+  editorLabelKey: 'flightops:blocks.reviewQueue.label',
+  group: 'data',
+  icon: ClipboardCheck,
 };

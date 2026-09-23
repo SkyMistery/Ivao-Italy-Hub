@@ -5,7 +5,13 @@ import type { Department } from '../../shared/api/bootstrap';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 import type { components } from '../../shared/api/schema';
-import { listQuerySerializer, listSearchSchema, toQuery, type ListSearch } from '../../shared/list';
+import {
+  listQuerySerializer,
+  listSearchSchema,
+  toQuery,
+  type ListSearch,
+  type Page,
+} from '../../shared/list';
 
 import {
   settingsFromFormValues,
@@ -1460,5 +1466,151 @@ export function useWithdrawReport() {
         }),
       ),
     onSuccess: changed,
+  });
+}
+
+// ---- the validation (T13b) ------------------------------------------------------------------------
+
+export type ReviewQueueRowDto = components['schemas']['ReviewQueueRowDto'];
+export type ReviewDto = components['schemas']['ReviewDto'];
+export type ReviewErrorDto = components['schemas']['ReviewErrorDto'];
+export type ReviewFlightDto = components['schemas']['ReviewFlightDto'];
+export type ReviewPlanDto = components['schemas']['ReviewPlanDto'];
+export type ReviewTrackDto = components['schemas']['ReviewTrackDto'];
+export type ReviewEventDto = components['schemas']['ReviewEventDto'];
+export type SuggestionDto = components['schemas']['SuggestionDto'];
+export type MemberDto = components['schemas']['MemberDto'];
+export type ReviewDecisionDto = components['schemas']['ReviewDecisionDto'];
+
+/**
+ * A row of the queue as the list draws it: the server's row, with the people and the route written out as the columns of
+ * the generic list read them — a cell draws a value, not an object.
+ */
+export interface ReviewQueueRow extends ReviewQueueRowDto {
+  readonly route: string;
+  readonly pilotName: string;
+  readonly assignedToName: string | null;
+}
+
+/** A member as the staff reads them: the name the hub has, and the VID that always is. */
+export function memberName(member: MemberDto): string {
+  return member.name === null || member.name === '' ? String(member.vid) : `${member.name} (${member.vid})`;
+}
+
+const reviewKey = ['flightops', 'review'] as const;
+
+/**
+ * The queue (design M2 §4.1): every report not withdrawn, to anybody who may validate one tour; `tourId` narrows it to a
+ * tour, `open: false` shows the decided ones. The order is the list's `sort` — `queuedAt` or `tourId`, the validator's
+ * preference — and the server keeps the date inside each tour.
+ */
+export function reviewQueueQuery(search: ListSearch, filters: { tourId?: number; open: boolean }) {
+  return queryOptions({
+    queryKey: [...reviewKey, 'queue', search, filters] as const,
+    queryFn: async (): Promise<Page<ReviewQueueRow>> => {
+      const page = unwrap(
+        await api.GET('/api/flightops/review/queue', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({
+            open: String(filters.open),
+            ...(filters.tourId === undefined ? {} : { tourId: String(filters.tourId) }),
+          }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((row) => ({
+          ...row,
+          route: `${row.departureIcao} → ${row.arrivalIcao}`,
+          pilotName: memberName(row.pilot),
+          assignedToName: row.assignedTo === null ? null : memberName(row.assignedTo),
+        })),
+      };
+    },
+  });
+}
+
+/** The validation page of one report (§4.3): everything the decision needs, and what the reader may do on it now. */
+export function reviewQuery(id: number) {
+  return queryOptions({
+    queryKey: [...reviewKey, 'one', id] as const,
+    queryFn: async (): Promise<ReviewDto> =>
+      unwrap(await api.GET('/api/flightops/review/{id}', { params: { path: { id } } })),
+  });
+}
+
+/** The tracks of its flights, asked apart: they weigh, and only the map reads them. */
+export function reviewTracksQuery(id: number) {
+  return queryOptions({
+    queryKey: [...reviewKey, 'tracks', id] as const,
+    queryFn: async (): Promise<ReviewTrackDto[]> =>
+      unwrap(await api.GET('/api/flightops/review/{id}/tracks', { params: { path: { id } } })),
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * What the system proposes for the errors being ticked (§4.3), asked of the server as they change: the rule — a dangerous
+ * error, a warning over its yearly maximum — is written once, there.
+ */
+export function reviewSuggestionQuery(id: number, errorIds: readonly number[]) {
+  const sorted = [...errorIds].sort((left, right) => left - right);
+
+  return queryOptions({
+    queryKey: [...reviewKey, 'suggestion', id, sorted] as const,
+    queryFn: async (): Promise<SuggestionDto> =>
+      unwrap(
+        await api.GET('/api/flightops/review/{id}/suggestion', {
+          params: { path: { id }, query: { errorIds: sorted } },
+        }),
+      ),
+  });
+}
+
+/** The four steps of a review, each answering with the page as it is afterwards. */
+export type ReviewStep =
+  | { step: 'take' | 'release'; rowVersion: string }
+  | { step: 'decide'; decision: ReviewDecisionDto }
+  | { step: 'reopen'; reason: string; rowVersion: string };
+
+export function useReviewStep(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (step: ReviewStep): Promise<ReviewDto> => {
+      const path = { params: { path: { id } } };
+      switch (step.step) {
+        case 'take':
+          return unwrap(
+            await api.POST('/api/flightops/review/{id}/take', {
+              ...path,
+              body: { rowVersion: step.rowVersion },
+            }),
+          );
+        case 'release':
+          return unwrap(
+            await api.POST('/api/flightops/review/{id}/release', {
+              ...path,
+              body: { rowVersion: step.rowVersion },
+            }),
+          );
+        case 'decide':
+          return unwrap(
+            await api.POST('/api/flightops/review/{id}/decide', { ...path, body: step.decision }),
+          );
+        case 'reopen':
+          return unwrap(
+            await api.POST('/api/flightops/review/{id}/reopen', {
+              ...path,
+              body: { reason: step.reason, rowVersion: step.rowVersion },
+            }),
+          );
+      }
+    },
+    onSuccess: async (page) => {
+      queryClient.setQueryData(reviewQuery(id).queryKey, page);
+      await queryClient.invalidateQueries({ queryKey: [...reviewKey, 'queue'] });
+    },
   });
 }
