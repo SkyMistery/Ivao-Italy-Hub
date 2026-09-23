@@ -1,4 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { expect, type APIResponse, type BrowserContext, type Locator, type Page } from '@playwright/test';
+
+import { englishCommon } from '../locales';
 
 /**
  * The moves the round is made of, written once. Everything here is about *driving* the application
@@ -361,4 +366,83 @@ export async function addLeg(
     },
   });
   expect(response.status(), await response.text()).toBeLessThan(300);
+}
+
+/** The words of the tours the moves below press, read from the file the module ships. */
+const tourWords = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../../locales/en/flightops.json', import.meta.url)), 'utf8'),
+) as {
+  tours: {
+    fields: { title: string; summary: string; kind: string };
+    options: { kind: { Free: string } };
+    actions: { ready: string };
+  };
+};
+
+function wallClock(date: Date): string {
+  return date.toISOString().slice(0, 16);
+}
+
+/**
+ * A Free tour released two days ago with one leg, Rome to Milan, made ready through the editor's own screens — the start
+ * of every round about a pilot's report (T11b, T13b). Answers the tour's identifier.
+ */
+export async function releasedTourWithOneLeg(
+  page: Page,
+  context: BrowserContext,
+  { name, slug }: { name: { en: string; it: string }; slug: string },
+): Promise<number> {
+  const now = Date.now();
+  await page.goto('/staff/tours/new');
+  await choose(page, tourWords.tours.fields.kind, tourWords.tours.options.kind.Free);
+  await writeInBothLanguages(page.locator('form'), tourWords.tours.fields.title, 'title', name);
+  await page.locator('[id="slug"]').fill(slug);
+  await writeInBothLanguages(page.locator('form'), tourWords.tours.fields.summary, 'summary', {
+    en: 'One leg to report.',
+    it: 'Una leg da riportare.',
+  });
+  await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now - 48 * 3600 * 1000)));
+  await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
+  await page.locator('[id="dailyLegLimit"]').fill('5');
+  await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
+    await page.getByRole('button', { name: englishCommon.common.save }).click();
+  });
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+
+  const tourId = Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]);
+  await addLeg(context, tourId, benchAirports.rome, benchAirports.milan);
+
+  await page.goto(`/staff/tours/${tourId}`);
+  await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
+    await page.getByRole('button', { name: tourWords.tours.actions.ready }).click();
+  });
+
+  return tourId;
+}
+
+/**
+ * The tours a run left behind, recognised by the start of their address: deleted, or — the server refuses to delete a
+ * tour with reports (`tourHasReports`, design M2 §1.2.2) — hidden, which puts them on no public page and in no other
+ * spec's way. One already hidden is left as it is.
+ */
+export async function removeBenchTours(context: BrowserContext, slugPrefix: string): Promise<void> {
+  const response = await context.request.get(`/api/flightops/tours?pageSize=100&q=${slugPrefix}`);
+  expect(response.status()).toBe(200);
+
+  const found = ((await response.json()) as { items: { id: number; isHidden: boolean }[] }).items;
+  for (const tour of found.filter((row) => !row.isHidden)) {
+    const removed = await context.request.delete(`/api/flightops/tours/${tour.id}`, {
+      headers: asTheClientDoes,
+    });
+    if (removed.status() < 300) {
+      continue;
+    }
+
+    expect(await removed.text()).toContain('flightops:errors.tourHasReports');
+    const hidden = await context.request.post(`/api/flightops/tours/${tour.id}/status`, {
+      headers: asTheClientDoes,
+      data: { action: 'Hide' },
+    });
+    expect(hidden.status(), await hidden.text()).toBeLessThan(300);
+  }
 }

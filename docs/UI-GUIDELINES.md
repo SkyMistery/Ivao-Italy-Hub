@@ -144,7 +144,9 @@ the same as nobody being connected, and four zeroes would be the site answering 
 got an answer to.
 
 `RouteMap` draws the legs of a tour on a map: great circle lines, a marker and its code at each
-airport, and a colour per state. Three things about it are decisions and not taste.
+airport, and a colour per state. It can also draw a flight as it was flown (`tracks`), in red over
+the legs and without markers — the validation page uses it to put the track over the planned leg.
+Three things about it are decisions and not taste.
 
 **The base map is a file of the installation.** One PMTiles archive of the world, served by this hub
 at `/tiles/basemap.pmtiles` and read by the browser a few kilobytes at a time with `Range` requests.

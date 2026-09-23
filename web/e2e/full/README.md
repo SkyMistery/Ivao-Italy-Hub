@@ -15,10 +15,11 @@ block and publishes" had never been executed in a browser even once — the firs
 
 ## Running it
 
-You need Docker running, because the bench needs MariaDB:
+You need Docker running, because the bench needs MariaDB, and Mailpit for the round that reads
+the mail a pilot receives (`tours-review.spec.ts`):
 
 ```bash
-docker compose up -d mariadb
+docker compose up -d mariadb mailpit
 ```
 
 Then, from `web/`:
@@ -48,6 +49,8 @@ E2E_SKIP_PUBLISH=1 pnpm e2e:full
   caller in as a made up member of staff — a coordinator of the web department — with the same
   application cookie a real IVAO login writes. The environment name is one lock and
   `E2E:Enabled` is the other; the flag anywhere else stops the application (`HubConfiguration`).
+  `POST /e2e/signin?as=pilot` signs in a second person, a pilot with no position and a mailbox
+  of Mailpit: nobody validates their own reports, so the validation round needs two (M2, T13b).
 - **No IVAO credentials**: the reference data comes from `tests/fixtures/ivao/`.
 
 What it is not: a `--self-contained --runtime linux-x64` package, which is what a release ships and

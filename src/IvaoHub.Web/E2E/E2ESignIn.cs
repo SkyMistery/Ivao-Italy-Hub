@@ -40,6 +40,30 @@ internal sealed class E2EOptions
     /// that role and not a list somebody wrote out.
     /// </summary>
     public IList<string> Positions { get; init; } = [];
+
+    /// <summary>
+    /// A second person, a pilot with no staff position and a mailbox, signed in with <c>?as=pilot</c> (M2, T13b). Nobody
+    /// validates their own reports, so the round needs somebody else to fly them, and the mail of the outcome needs an address
+    /// to reach — Mailpit's, on the bench. Left out, <c>?as=pilot</c> is a 404.
+    /// </summary>
+    public E2EPilotOptions? Pilot { get; set; }
+}
+
+/// <summary>The bench's pilot: a member of the division and nothing else.</summary>
+internal sealed class E2EPilotOptions
+{
+    [Range(1, int.MaxValue)]
+    public int Vid { get; set; }
+
+    [Required]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required]
+    public string LastName { get; set; } = string.Empty;
+
+    /// <summary>Where the outcome of a report is written to. On the bench, a mailbox of Mailpit.</summary>
+    [Required]
+    public string Email { get; set; } = string.Empty;
 }
 
 internal static class E2ESignIn
@@ -60,9 +84,12 @@ internal static class E2ESignIn
         return services;
     }
 
+    /// <summary>The value of <c>?as=</c> that signs in the pilot rather than the member of staff.</summary>
+    public const string AsPilot = "pilot";
+
     /// <summary>
-    /// Signs the caller in as the configured staff member, creating them on first use. The cookie
-    /// it writes is the one a real login writes, so what the suite exercises afterwards — the
+    /// Signs the caller in as the configured staff member — or, with <c>?as=pilot</c>, as the configured pilot —, creating
+    /// them on first use. The cookie it writes is the one a real login writes, so what the suite exercises afterwards — the
     /// security stamp, the permission claims, the department guard — is the real thing.
     /// </summary>
     public static void MapE2ESignIn(this WebApplication app)
@@ -74,34 +101,41 @@ internal static class E2ESignIn
             return;
         }
 
-        app.MapPost(Path, async (
+        app.MapPost(Path, async Task<IResult> (
             HttpContext context,
             UserSyncService users,
             IOptions<E2EOptions> e2e,
             IOptions<DivisionOptions> division,
+            string? @as,
             CancellationToken cancellationToken) =>
         {
             var options = e2e.Value;
             var settings = division.Value;
 
+            var pilot = string.Equals(@as, AsPilot, StringComparison.Ordinal);
+            if ((pilot && options.Pilot is null) || (!pilot && @as is not null))
+            {
+                return TypedResults.NotFound();
+            }
+
             var signedIn = await users.UpsertAsync(
                 new IvaoUserProfile(
-                    options.Vid,
-                    options.FirstName,
-                    options.LastName,
+                    pilot ? options.Pilot!.Vid : options.Vid,
+                    pilot ? options.Pilot!.FirstName : options.FirstName,
+                    pilot ? options.Pilot!.LastName : options.LastName,
                     PublicNickname: null,
                     DivisionCode: settings.Code,
                     CountryId: null,
                     RatingAtc: null,
                     RatingPilot: null,
                     DiscordId: null,
-                    // The bench has no mailbox: nothing it does sends a mail, and an invented
-                    // address would be one the queue would actually try to write to.
-                    Email: null,
+                    // The member of staff has no mailbox: an invented address would be one the queue would
+                    // actually try to write to. The pilot has one, on the bench's Mailpit (T13b).
+                    Email: pilot ? options.Pilot!.Email : null,
                     LanguageId: settings.DefaultLocale,
-                    IvaoIsStaff: options.Positions.Count > 0,
+                    IvaoIsStaff: !pilot && options.Positions.Count > 0,
                     IvaoIsSupervisor: false,
-                    StaffPositions: [.. options.Positions]),
+                    StaffPositions: pilot ? [] : [.. options.Positions]),
                 cancellationToken);
 
             var identity = HubClaims.BuildIdentity(

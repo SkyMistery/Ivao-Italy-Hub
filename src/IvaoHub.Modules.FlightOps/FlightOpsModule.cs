@@ -40,6 +40,7 @@ public sealed class FlightOpsModule : ModuleBase
     public override IReadOnlyList<NavItemDescriptor> StaffNavigation =>
     [
         new NavItemDescriptor("flightops:nav.tours", "/staff/tours", TourPermissions.View),
+        new NavItemDescriptor("flightops:nav.review", "/staff/tours/review", TourPermissions.Validate),
         new NavItemDescriptor("flightops:nav.templates", "/staff/tours/templates", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.rules", "/staff/tours/rules", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.errors", "/staff/tours/errors", TourPermissions.View),
@@ -49,13 +50,14 @@ public sealed class FlightOpsModule : ModuleBase
     ];
 
     /// <summary>
-    /// The public errors (T9) and the cards of the tours (T10), both always live. Each has its other half in
-    /// <c>web/src/modules/flightops/</c>; the manifest test reads this literal.
+    /// The public errors (T9), the cards of the tours (T10) and the queue of the validators (T13b), all always live. Each has
+    /// its other half in <c>web/src/modules/flightops/</c>; the manifest test reads this literal.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
     [
         new BlockDescriptor("flightops.errorCatalog", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("flightops.tourCards", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("flightops.reviewQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>The public pages of the tours (T10): <c>/tours</c> and <c>/tours/{slug}</c>, so no page may be «tours».</summary>
@@ -101,6 +103,7 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<PirepSubmission>();
         services.AddScoped<AtcProposer>();
         services.AddScoped<PirepReview>();
+        services.AddScoped<IDataBlockProvider, ReviewQueueProvider>();
 
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();

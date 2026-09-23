@@ -1,13 +1,19 @@
 import { listSearchSchema } from '../../shared/list';
 import type { ModuleManifest } from '../../shared/modules';
 
-import { errorCatalogBlock, tourCardsBlock } from './blocks';
-import { reportSearchSchema, tourEditorSearchSchema, tourRuleSearchSchema } from './schemas';
+import { errorCatalogBlock, reviewQueueBlock, tourCardsBlock } from './blocks';
+import {
+  reportSearchSchema,
+  reviewQueueSearchSchema,
+  tourEditorSearchSchema,
+  tourRuleSearchSchema,
+} from './schemas';
 import {
   TOURS_EDIT,
   TOURS_MANAGE_RULES,
   TOURS_MANAGE_SETTINGS,
   TOURS_MANAGE_TEMPLATES,
+  TOURS_VALIDATE,
   TOURS_VIEW,
 } from './permissions';
 import {
@@ -18,6 +24,7 @@ import {
 } from './screens/aircraft';
 import { PublicTourPage, PublicToursPage } from './screens/public';
 import { ReportPage } from './screens/report';
+import { ReviewPage, ReviewQueuePage } from './screens/review';
 import { ErrorForm, ErrorsPage, RuleForm, RulesPage, TourRuleForm } from './screens/rules';
 import { FlightOpsSettingsPage } from './screens/settings';
 import { CallsignRuleForm, HubForm, RotationForm, TourConstraintForm } from './screens/shape';
@@ -33,11 +40,12 @@ import {
  * The tours (M2), as the front end knows them: `IvaoHub.Modules.FlightOps` on the other side. T5 is the
  * skeleton — the aircraft data and the settings, in the back office — T6 the tours and their templates, T7 their legs
  * and their shape: hubs and rotations, subtours, callsign constraints, each row in a form of its own under its tour; T9
- * the rules and the errors, and the first block, the public errors; T10 the public pages; T11b the pilot's report.
+ * the rules and the errors, and the first block, the public errors; T10 the public pages; T11b the pilot's report; T13b
+ * the validation — the queue, the page of one report, and the block of the queue for a dashboard.
  */
 export const flightOpsManifest: ModuleManifest = {
   key: 'flightops',
-  blocks: [errorCatalogBlock, tourCardsBlock],
+  blocks: [errorCatalogBlock, tourCardsBlock, reviewQueueBlock],
   routes: [
     // The public side (T10): the cards of every tour a visitor may see, and one tour by its address.
     // Under `_public`, so they wear the header, the footer and the language switcher of the site.
@@ -64,6 +72,20 @@ export const flightOpsManifest: ModuleManifest = {
       permission: TOURS_VIEW,
       validateSearch: listSearchSchema,
       component: ToursPage,
+    },
+    // The validation (T13b): the queue and the page of one report.
+    {
+      area: 'staff',
+      path: '/staff/tours/review',
+      permission: TOURS_VALIDATE,
+      validateSearch: reviewQueueSearchSchema,
+      component: ReviewQueuePage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/tours/review/$id',
+      permission: TOURS_VALIDATE,
+      component: ReviewPage,
     },
     {
       area: 'staff',

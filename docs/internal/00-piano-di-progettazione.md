@@ -1,9 +1,22 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.94 — 23 settembre 2026 (**la validazione sul server**: coda, presa, decisione, suggerimento, mail, riapertura, riepilogo, tracce salvate, T13a)
+**Versione documento:** 0.95 — 23 settembre 2026 (**le pagine della validazione**: la coda, la pagina con la mappa e la traccia, il blocco `reviewQueue`, il giro con la mail in Mailpit, T13b)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.95** (23 set 2026, fase T13b di M2): **le pagine della validazione** — `/staff/tours/review` (la coda, unica o per
+tour, decisi o in attesa, l'ordine come preferenza del validatore) e `/staff/tours/review/{id}` (la mappa con la traccia volata, tutte
+le revisioni del piano con quella al decollo, ciò che il pilota ha dichiarato, il profilo, la tabella degli errori con i conteggi, il
+suggerimento chiesto al server a ogni spunta, la decisione, la riapertura, la storia), la voce di menu e il blocco
+**`flightops.reviewQueue`**. Il «fatta quando» di T13 è provato dal giro e2e. Nota `decisions/2026-09-23-le-pagine-della-validazione.md`,
+**due risposte di Carmine**: (1) **il giro con due persone e Mailpit** — il login del banco accetta `?as=pilot` (un membro senza
+posizioni, con un indirizzo), Mailpit è un servizio della CI, e il giro aspetta la mail del rifiuto e controlla che non porti chi ha
+deciso; (2) **il blocco `reviewQueue` è per tour** (quanti e da quando il più vecchio, sui tour che chi guarda può validare). **Tre
+estensioni di meccanismi** (§16.E caso b): **`RouteMap` disegna una traccia** (`tracks`, in rosso sopra le leg); la prima preferenza
+letta dal browser (`preferenceQuery`); il secondo membro del banco. La pagina riceve le revisioni del piano **già lette** dal client
+del nucleo (`ReviewPlanDto`) e gli aeroporti con la posizione: il browser non legge il JSON di IVAO. ⚠️ Trovato: un validatore con il
+solo grant, senza posizioni staff, non entra in `/staff` — da decidere con «aggiungi validatore» (T15).
 
 **Changelog 0.94** (23 set 2026, fase T13a di M2): **la validazione dei PIREP sul server** — la coda (lista generica, ordinata per
 data o per tour, l'ordine come preferenza del validatore), la presa con il lease, la pagina di validazione come API con la tabella

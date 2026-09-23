@@ -76,3 +76,30 @@ export function useSaveNotificationPreference() {
     },
   });
 }
+
+/**
+ * One preference of the member asking, declared by a module (`IModule.Preferences`, M2 T4b); `null` when they never chose,
+ * and the screen that asks has the default. Not in the bootstrap: a screen that needs one asks for it (T13b, the order of
+ * the validators' queue, is the first).
+ */
+export function preferenceQuery(key: string) {
+  return queryOptions({
+    queryKey: ['me', 'preferences', key] as const,
+    queryFn: async (): Promise<unknown> =>
+      unwrap(await api.GET('/api/me/preferences/{key}', { params: { path: { key } } })).value ?? null,
+  });
+}
+
+/** Keeps a preference on the member, so they find it on any computer. The value is whatever the module declared. */
+export function useSavePreference(key: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (value: unknown): Promise<unknown> =>
+      unwrap(await api.PUT('/api/me/preferences/{key}', { params: { path: { key } }, body: { value } }))
+        .value ?? null,
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['me', 'preferences', key], saved);
+    },
+  });
+}

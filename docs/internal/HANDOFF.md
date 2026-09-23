@@ -3,8 +3,18 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T12 in `main`; T13a è fatta**: branch `m2/t13a-validation-server`, in PR (vedi
-`gh pr list`). Piano **0.94**. **Il prossimo passo è T13b (le pagine della validazione)**, in una chat nuova, dopo il merge di T13a.
+**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T12 in `main`; T13a e T13b sono fatte**: branch `m2/t13a-validation-server` e
+`m2/t13b-validation-pages`, in PR (vedi `gh pr list`). Piano **0.95**. **Il prossimo passo è T14 (contestazioni, chiarimenti,
+segnalazioni)**, in una chat nuova, dopo il merge delle due.
+
+> **Che cosa ha lasciato T13b** (nota `2026-09-23-le-pagine-della-validazione`, piano 0.95): le pagine sono `screens/review.tsx`
+> (`/staff/tours/review` con `?tour=` e `?decided=true`, `/staff/tours/review/{id}`) e le funzioni pure `screens/reviewing.ts`; il blocco
+> `flightops.reviewQueue` (per tour) è `ReviewQueueProvider` + `blocks/reviewQueue.tsx`. `RouteMap` ha `tracks`. Una preferenza si legge
+> con `preferenceQuery(key)` di `features/me/queries.ts`. **Il banco ha due persone**: `/e2e/signin` (il WM) e `/e2e/signin?as=pilot`
+> (VID 999002, senza posizioni, indirizzo `bench-pilot@bench.test`), e **Mailpit** (servizio della CI; in locale quello di
+> `docker-compose.yml`): una spec legge le mail da `http://127.0.0.1:8025/api/v1/messages`. **T14** aggiunge alla coda la colonna
+> «contestato» e alla pagina i contatori delle contestazioni. ⚠️ Per **T15**: un validatore con il solo grant e senza posizioni staff
+> non entra in `/staff`.
 
 > **Che cosa ha lasciato T13a** (nota `2026-09-23-la-validazione`, piano 0.94): T13 è divisa — **T13a il server, T13b le pagine**.
 > Tutto sta in `Review/`: `PirepReview` (pagina, presa, rilascio, decisione, riapertura, suggerimento, tracce, mail), `ReviewEndpoints`,

@@ -217,6 +217,56 @@ public sealed partial class PirepTests
     }
 
     /// <summary>
+    /// What the pages of T13b read beyond T13a's: the plans as revisions the browser does not have to parse, the airports of
+    /// the leg with their positions for the map, and the block of the queue on a dashboard — one line per tour the reader may
+    /// validate, never a tour they may not and never their own reports.
+    /// </summary>
+    [Fact]
+    public async Task ThePageCarriesPlansAndAirportsAndTheBlockCountsOnlyTheReadersTours()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (enabled, enabledLegs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var (other, otherLegs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        await GrantValidateAsync(ValidatorVid, enabled, token);
+        using var validator = await SignedInAsync(ValidatorVid, token);
+
+        var first = Id(await CreatedAsync(pilot, Reports(enabled), Payload(enabledLegs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1))), token));
+        await CreatedAsync(pilot, Reports(other), Payload(otherLegs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1).AddHours(-3))), token);
+
+        var page = await OkAsync(await validator.GetAsync($"{ReviewEndpoints.Pattern}/{first}", token), token);
+        var plan = Assert.Single(Assert.Single(page.GetProperty("flights").EnumerateArray()).GetProperty("flightPlans").EnumerateArray());
+        Assert.Equal(1, plan.GetProperty("revision").GetInt32());
+        Assert.Equal("F340", plan.GetProperty("level").GetString());
+        Assert.False(plan.TryGetProperty("rawJson", out _));
+
+        var airports = page.GetProperty("airports").EnumerateArray().ToDictionary(airport => airport.GetProperty("icao").GetString()!);
+        Assert.Equal(41.8, airports[Rome].GetProperty("latitude").GetDouble(), precision: 1);
+        Assert.Equal(9.3, airports[Milan].GetProperty("longitude").GetDouble(), precision: 1);
+
+        // The block: the enabled tour, with its one report; the other tour is not the validator's.
+        var block = await OkAsync(await validator.GetAsync($"/api/blocks/data/{ReviewQueueProvider.BlockType}", token), token);
+        var lines = block.GetProperty("items").EnumerateArray().ToList();
+        var line = Assert.Single(lines, entry => entry.GetProperty("tourId").GetInt64() == enabled);
+        Assert.Equal(1, line.GetProperty("count").GetInt32());
+        Assert.DoesNotContain(lines, entry => entry.GetProperty("tourId").GetInt64() == other);
+
+        // Taken, it is no longer waiting.
+        await TakeAsync(validator, first, token);
+        block = await OkAsync(await validator.GetAsync($"/api/blocks/data/{ReviewQueueProvider.BlockType}", token), token);
+        Assert.DoesNotContain(block.GetProperty("items").EnumerateArray(), entry => entry.GetProperty("tourId").GetInt64() == enabled);
+
+        // The pilot sees none of their own reports in it, and an anonymous visitor nothing at all.
+        block = await OkAsync(await pilot.GetAsync($"/api/blocks/data/{ReviewQueueProvider.BlockType}", token), token);
+        Assert.DoesNotContain(block.GetProperty("items").EnumerateArray(), entry => entry.GetProperty("tourId").GetInt64() == other);
+        using var anonymous = _host.CreateClient();
+        block = await OkAsync(await anonymous.GetAsync($"/api/blocks/data/{ReviewQueueProvider.BlockType}", token), token);
+        Assert.Empty(block.GetProperty("items").EnumerateArray());
+    }
+
+    /// <summary>
     /// A warning that takes the pilot's year over its maximum suggests a rejection (§4.3): the count is the error confirmed on
     /// their decided reports of the year, on any tour, plus this one.
     /// </summary>

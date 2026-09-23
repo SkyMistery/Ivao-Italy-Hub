@@ -3,6 +3,7 @@
   "nav": {
     "section": "Tours",
     "tours": "Tours",
+    "review": "Validation",
     "templates": "Tour templates",
     "aircraftProfiles": "Aircraft profiles",
     "aircraftGroups": "Aircraft groups",
@@ -791,6 +792,12 @@
           "Upcoming": "Upcoming"
         }
       }
+    },
+    "reviewQueue": {
+      "label": "Reports to validate",
+      "empty": "No report is waiting on the tours you may validate.",
+      "waiting_one": "{{count}} report, waiting since {{since}} UTC",
+      "waiting_other": "{{count}} reports, the oldest since {{since}} UTC"
     }
   },
   "public": {
@@ -934,6 +941,141 @@
           "LevelChange": "Level other than the semicircular rule",
           "Other": "Other (write it in the note)"
         }
+      }
+    }
+  },
+  "review": {
+    "title": "Validation",
+    "description": "The reports of the tours waiting for a validator, and the ones decided.",
+    "pageTitle": "{{tour}} · {{from}} → {{to}}",
+    "route": "{{from}} → {{to}}",
+    "pilotLine": "pilot {{pilot}}",
+    "sentOn": "sent {{date}} UTC",
+    "open": "Open",
+    "own": "Yours",
+    "ownNotice": "This is your own report: you can read it, but another validator decides it.",
+    "heldBy": "in the hands of {{name}} until {{until}} UTC",
+    "decidedBy": "decided by {{name}} on {{date}} UTC",
+    "take": "Take",
+    "taken": "The report is yours: nobody else can take it while you decide.",
+    "release": "Put back in the queue",
+    "reopen": "Reopen the decision",
+    "reopenTitle": "Reopen the decision?",
+    "reopenDescription": "The report goes back in review in your hands. The pilot gets a new email when you decide again.",
+    "reopened": "Decision reopened: the report is in your hands.",
+    "refused": "That could not be done.",
+    "decide": "Save the decision",
+    "decided": "Decision saved: the pilot will receive an email.",
+    "notDecided": "Not decided yet.",
+    "mapOf": "Map of the flight {{from}} → {{to}}",
+    "noTrack": "The track of this flight is not available: it was not stored, or it has been deleted after the retention period.",
+    "flightLine": "{{callsign}} · {{from}} → {{to}} · took off {{takeoff}} UTC, landed {{landing}} UTC",
+    "atcUnavailable": "The archive of ATC sessions was not available when the report was sent: the controllers are as the pilot declared them.",
+    "noAtc": "No controller declared.",
+    "profile": "In this tour: {{reported}} reported, {{accepted}} accepted, {{rejected}} rejected, {{disputed}} disputed.",
+    "noBans": "No ban, now or in the past.",
+    "banInForce": "Banned from {{from}} to {{to}}: {{reason}}",
+    "banPast": "Was banned from {{from}} to {{to}}: {{reason}}",
+    "weatherLater": "The saved weather is not available yet.",
+    "checksLater": "The automatic checks are not available yet.",
+    "noErrors": "The rules of this report have no errors to mark.",
+    "suggestionAccept": "No error marked makes it a rejection.",
+    "reasons": {
+      "dangerous": "{{error}} is dangerous: a rejection from the first time.",
+      "overYearlyMax": "{{error}} would be the {{count}}th this year, over the {{max}} allowed."
+    },
+    "sections": {
+      "flight": "The leg and the flight",
+      "declared": "What the pilot declared",
+      "pilot": "The pilot",
+      "weather": "Weather",
+      "checks": "Automatic checks",
+      "errors": "Errors",
+      "suggestion": "Suggestion",
+      "decision": "Decision",
+      "history": "History"
+    },
+    "plan": {
+      "revision": "Revision",
+      "filedAt": "Filed",
+      "flightRules": "Rules",
+      "aircraft": "Aircraft",
+      "equipment": "Equipment",
+      "level": "Level",
+      "speed": "Speed",
+      "route": "Route",
+      "alternate": "Alternates",
+      "times": "Departure · EET",
+      "remarks": "Remarks",
+      "atTakeoff": "At take-off"
+    },
+    "errors": {
+      "marked": "Marked",
+      "name": "Error",
+      "category": "Category",
+      "rules": "Rules",
+      "inYear": "In the year",
+      "ever": "Ever",
+      "yearlyMax": "At most per year",
+      "byCheck": "suggested by a check"
+    },
+    "filters": {
+      "tour": "Tour",
+      "allTours": "Every tour",
+      "shown": "Reports",
+      "waiting": "Waiting and in review",
+      "decided": "Decided",
+      "order": "Order"
+    },
+    "order": {
+      "date": "By date",
+      "tour": "By tour"
+    },
+    "fields": {
+      "tourTitle": "Tour",
+      "legNumber": "Leg",
+      "route": "Route",
+      "pilotName": "Pilot",
+      "takeoffAt": "Flown",
+      "queuedAt": "In the queue since",
+      "status": "Status",
+      "assignedToName": "In the hands of",
+      "flightRules": "Flight rules",
+      "outcome": "Outcome",
+      "noteToPilot": "Note to the pilot",
+      "staffNote": "Note for the staff",
+      "overrideReason": "Why against the suggestion",
+      "reason": "Why"
+    },
+    "hints": {
+      "noteToPilot": "The pilot reads it in the email and on their report. Required for «to modify».",
+      "staffNote": "Only the staff reads it.",
+      "overrideReason": "Required when the outcome goes against the suggestion.",
+      "reason": "It stays in the history of the report."
+    },
+    "options": {
+      "status": {
+        "Queued": "Queued",
+        "InReview": "In review",
+        "Accepted": "Accepted",
+        "ToModify": "To modify",
+        "Rejected": "Rejected",
+        "Withdrawn": "Withdrawn"
+      },
+      "outcome": {
+        "Accepted": "Accepted",
+        "ToModify": "To modify",
+        "Rejected": "Rejected"
+      },
+      "origin": {
+        "Proposed": "Proposed, confirmed",
+        "Added": "Added by the pilot",
+        "Removed": "Proposed, removed by the pilot"
+      },
+      "exemptionStatus": {
+        "Online": "Controller online",
+        "NotOnline": "Controller not online",
+        "Unverifiable": "Not verifiable"
       }
     }
   },

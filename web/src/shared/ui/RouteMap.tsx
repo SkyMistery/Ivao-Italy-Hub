@@ -19,7 +19,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // silently, with a map that never draws (MapLibre issue 8168, measured in the note of 15 September).
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
-import { boundsOf, greatCirclePath, type GeoPoint } from './greatCircle';
+import { boundsOf, greatCirclePath, trackPath, type GeoPoint } from './greatCircle';
 
 /**
  * The legs of a tour on a map (design M2 §8.6, note 2026-09-15-la-mappa).
@@ -47,6 +47,16 @@ export interface RouteMapLeg {
   readonly status?: RouteMapStatus;
 }
 
+/**
+ * A flight as it was flown, over the leg it was meant to fly (T13b, the validation page): the points the network
+ * recorded, in their order. Drawn in one colour of its own, above the legs, and never with markers — the airports are
+ * the legs'.
+ */
+export interface RouteMapTrack {
+  readonly id: number | string;
+  readonly points: readonly GeoPoint[];
+}
+
 export interface RouteMapAirport extends GeoPoint {
   /** The code written next to the marker; the ICAO, or the IATA where a page prefers it. */
   readonly code: string;
@@ -71,6 +81,9 @@ const EARTH = { token: '--ivao-color-fuselage-150', fallback: '#e0e1ec' };
 const WATER = { token: '--ivao-color-ocean-100', fallback: '#c8d0ec' };
 const BORDER = { token: '--ivao-color-fuselage-300', fallback: '#a7a8bb' };
 
+/** The flown track: red, which no leg is drawn in, so the eye tells the plan from the flight at once. */
+const TRACK = { token: '--ivao-color-semantic-red-600', fallback: '#cf1616' };
+
 /** Where the archive lives. A path of the site, listed in `web/backendPaths.ts` like `/media` and `/embed`. */
 export const BASE_MAP_URL = '/tiles/basemap.pmtiles';
 
@@ -80,13 +93,15 @@ const ATTRIBUTION =
 
 export interface RouteMapProps {
   readonly legs: readonly RouteMapLeg[];
+  /** Flights as they were flown, drawn over the legs. A tour page has none; the validation page has the report's. */
+  readonly tracks?: readonly RouteMapTrack[];
   /** The height of the box. A map with no height is a map nobody sees; the default suits a tour page. */
   readonly className?: string;
   /** What a screen reader is told the map is of. */
   readonly label?: string;
 }
 
-export function RouteMap({ legs, className, label }: RouteMapProps) {
+export function RouteMap({ legs, tracks, className, label }: RouteMapProps) {
   const { t } = useTranslation();
   const container = useRef<HTMLDivElement | null>(null);
   // Asked once, while rendering rather than in the effect: whether this browser can draw a map is a
@@ -103,6 +118,13 @@ export function RouteMap({ legs, className, label }: RouteMapProps) {
           path: greatCirclePath(leg.from, leg.to),
         })),
     [legs],
+  );
+  const flown = useMemo(
+    () =>
+      (tracks ?? [])
+        .map((track) => ({ id: track.id, path: trackPath(track.points) }))
+        .filter((track) => track.path.length > 1),
+    [tracks],
   );
 
   // ⚠️ The map is built **once** and then fed. A page hands `legs` as a fresh array on every render —
@@ -160,6 +182,15 @@ export function RouteMap({ legs, className, label }: RouteMapProps) {
         },
       });
 
+      drawn.addSource('tracks', { type: 'geojson', data: empty() });
+      drawn.addLayer({
+        id: 'tracks-line',
+        type: 'line',
+        source: 'tracks',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-width': 2, 'line-color': colour(TRACK) },
+      });
+
       map.current = drawn;
       setReady(true);
     });
@@ -185,6 +216,7 @@ export function RouteMap({ legs, className, label }: RouteMapProps) {
     // and nothing here waits for it: the lines appear when they appear, and a map torn down first
     // simply never draws them.
     void drawn.getSource<GeoJSONSource>('legs')?.setData(collectionOf(routes));
+    void drawn.getSource<GeoJSONSource>('tracks')?.setData(tracksOf(flown));
 
     for (const marker of markers.current) {
       marker.remove();
@@ -196,11 +228,14 @@ export function RouteMap({ legs, className, label }: RouteMapProps) {
         .addTo(drawn),
     );
 
-    const bounds = boundsOf(routes.flatMap((route) => route.path));
+    const bounds = boundsOf([
+      ...routes.flatMap((route) => route.path),
+      ...flown.flatMap((track) => track.path),
+    ]);
     if (bounds !== null) {
       drawn.fitBounds(bounds, { padding: 56, maxZoom: 7, duration: 0 });
     }
-  }, [ready, routes]);
+  }, [ready, routes, flown]);
 
   if (!supported) {
     return (
@@ -297,6 +332,18 @@ function collectionOf(routes: readonly { leg: RouteMapLeg; path: [number, number
       id: String(route.leg.id),
       properties: { colour: colour(STATUS_TOKENS[route.leg.status ?? 'todo']) },
       geometry: { type: 'LineString' as const, coordinates: route.path },
+    })),
+  };
+}
+
+function tracksOf(tracks: readonly { id: number | string; path: [number, number][] }[]) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: tracks.map((track) => ({
+      type: 'Feature' as const,
+      id: String(track.id),
+      properties: {},
+      geometry: { type: 'LineString' as const, coordinates: track.path },
     })),
   };
 }

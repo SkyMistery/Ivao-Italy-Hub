@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { DEPARTMENTS } from '../../shared/api/department';
 import { localized, type ChoiceOption, type Suggestion } from '../../shared/forms';
+import { listSearchSchema } from '../../shared/list';
 
 /**
  * The forms of the tours' skeleton (M2, T5), as zod schemas. Types and what is required; the rules — a
@@ -670,3 +671,37 @@ export function atcDeclarationSchema(contacted: readonly string[]) {
 }
 
 export type AtcDeclarationValues = z.output<ReturnType<typeof atcDeclarationSchema>>;
+
+// ---- the validation (T13b) ------------------------------------------------------------------------
+
+/**
+ * The queue's address (design M2 §4.1): the five of every list, the tour it is narrowed to, and whether it shows the
+ * decided reports instead of the waiting ones. The order is not here: it is the validator's preference, kept on their user.
+ */
+export const reviewQueueSearchSchema = listSearchSchema.extend({
+  tour: z.coerce.number().int().optional(),
+  decided: z.coerce.boolean().optional(),
+});
+
+export type ReviewQueueSearch = z.output<typeof reviewQueueSearchSchema>;
+
+/**
+ * A decision (§4.3), the words of it: the outcome, the note the pilot reads, the one only the staff reads, and why the
+ * decision goes against the suggestion when it does. The errors are ticked in their table, beside the counts. Which of
+ * these the server requires — the note of a «to modify», the reason of an override — it says itself, field by field.
+ */
+export const decisionSchema = z.object({
+  outcome: z.enum(['Accepted', 'ToModify', 'Rejected']),
+  noteToPilot: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+  staffNote: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+  overrideReason: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type DecisionValues = z.output<typeof decisionSchema>;
+
+/** Reopening a decision (§4.2.1): the reason is required and stays in the history. */
+export const reopenSchema = z.object({
+  reason: z.string().trim().min(1).max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type ReopenValues = z.output<typeof reopenSchema>;

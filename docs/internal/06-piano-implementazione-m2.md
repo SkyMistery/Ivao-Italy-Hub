@@ -308,7 +308,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T11b | Il form e la pagina del pilota — **fatta il 23 set 2026** | T11a | la pagina del form, ricerca e scelta del volo, i colori della mappa, «Invia il report», i PIREP del pilota |
 | T12 | Gli ATC contattati — **fatta il 23 set 2026** | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13a | La validazione sul server — **fatta il 23 set 2026** | T11 | code, presa, decisione con errori e suggerimento, mail, riapertura, riepilogo, tracce salvate, via API |
-| T13b | Le pagine della validazione | T13a | `/staff/tours/review` e `/staff/tours/review/{id}` con mappa e traccia, `reviewQueue` |
+| T13b | Le pagine della validazione — **fatta il 23 set 2026** | T13a | `/staff/tours/review` e `/staff/tours/review/{id}` con mappa e traccia, `reviewQueue` |
 | T14 | Contestazioni, chiarimenti, segnalazioni | T4a, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
 | T15 | Completamento, validatori, piloti, ban | T4b, T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
 | T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
@@ -1376,6 +1376,28 @@ Com'è andata:
   Suite intere verdi in locale (Docker acceso): unit 528, integrazione 253, Vitest 454, giro e2e 30.
 - **Non verificato**: la mail vera in Mailpit (il «fatta quando» di T13 è di T13b, con il giro e2e); il riepilogo con i veri
   validatori di produzione; la pagina e le code non si vedono ancora (T13b).
+
+**T13b fatta il 23 settembre 2026** (branch `m2/t13b-validation-pages`, piano 0.95, nota
+`decisions/2026-09-23-le-pagine-della-validazione.md`). Com'è andata:
+
+- **Due risposte di Carmine in apertura**, tutte e due come proposte: il giro e2e con **due persone e Mailpit** (`?as=pilot` sul login
+  del banco, Mailpit servizio della CI); il blocco **`reviewQueue` per tour**.
+- **Le pagine**: `screens/review.tsx` (coda e pagina), `screens/reviewing.ts` (funzioni pure: ordine, piano al decollo, mappa, storia),
+  `blocks/reviewQueue.tsx`; lato server `ReviewQueueProvider`, `ReviewDto.Airports`, `ReviewPlanDto` (le revisioni lette dal client del
+  nucleo invece del JSON grezzo), la voce di menu «Validazione». **Tre estensioni**: `RouteMap` con `tracks`, `preferenceQuery` in
+  `features/me`, il secondo membro del banco. «Un tour rilasciato con una leg» è passato in `bench.ts`, usato dai due giri dei PIREP.
+- **I test**: integrazione `ThePageCarriesPlansAndAirportsAndTheBlockCountsOnlyTheReadersTours` (e il doppio del tracker ora salva un
+  payload come quello vero; il conteggio dei provider sale a 11); Vitest `reviewing.test.ts` e la traccia in `greatCircle.test.ts`;
+  smoke `e2e/tours-review.spec.ts` (tre: l'ordine salvato e mandato come `sort`, la preferenza letta all'apertura, presa-spunta-
+  suggerimento-rifiuto sotto il campo); giro `full/tours-review.spec.ts` — **il «fatta quando» di T13**: la mail arriva in Mailpit con
+  la regola e senza chi ha deciso. Suite intere verdi in locale (Docker acceso): unit 528, integrazione 254, Vitest 465, smoke 90,
+  giro e2e 31.
+- **Guardata** a 1500 px sul banco, con il volo registrato: mappa con la traccia, tre revisioni con quella al decollo in testa. A 400 px
+  sborda come ogni schermata dello staff (il difetto del nucleo di T11b).
+- **Trovato**: ⚠️ un validatore con il solo grant e senza posizioni staff non entra in `/staff` (per T15); il banco accumula errori
+  generali di altri giri, che compaiono nella tabella degli errori.
+- **Non verificato**: la mail con un SMTP vero di produzione; la pagina con un volo di più ore e decine di migliaia di punti (le tre
+  tracce registrate hanno ~1000 punti); il blocco su una dashboard vera del FOD (è provato dall'API e dalla galleria).
 
 ### T14 — Contestazioni, chiarimenti, segnalazioni
 

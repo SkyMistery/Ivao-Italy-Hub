@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { boundsOf, greatCirclePath } from './greatCircle';
+import { boundsOf, greatCirclePath, trackPath } from './greatCircle';
 
 /**
  * The one piece of geometry the hub owns (design M2 §8.6): the line an aeroplane flies, drawn on a map. The map itself
@@ -79,5 +79,30 @@ describe('the box around the lines', () => {
 
   test('is nothing at all when there are no legs, so the map keeps the world', () => {
     expect(boundsOf([])).toBeNull();
+  });
+});
+
+describe('a track as it was flown (T13b)', () => {
+  test('keeps its points in order, longitude first, and drops one with no position', () => {
+    expect(
+      trackPath([
+        { latitude: 41.8, longitude: 12.24 },
+        { latitude: Number.NaN, longitude: 12.5 },
+        { latitude: 42.1, longitude: 11.9 },
+      ]),
+    ).toEqual([
+      [12.24, 41.8],
+      [11.9, 42.1],
+    ]);
+  });
+
+  test('keeps going across the antimeridian instead of leaping back over the world', () => {
+    const path = trackPath([
+      { latitude: 40, longitude: 179.5 },
+      { latitude: 40.2, longitude: -179.8 },
+      { latitude: 40.4, longitude: -179.1 },
+    ]);
+
+    [179.5, 180.2, 180.9].forEach((longitude, index) => expect(path[index]![0]).toBeCloseTo(longitude, 6));
   });
 });

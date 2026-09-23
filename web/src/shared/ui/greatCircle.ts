@@ -75,6 +75,18 @@ export function greatCirclePath(
 }
 
 /**
+ * A path somebody actually flew — the points of a track, in the order they were recorded — as GeoJSON wants it, and
+ * unwrapped across the antimeridian like a great circle (T13b): a track over the Pacific is the same problem.
+ */
+export function trackPath(points: readonly GeoPoint[]): [number, number][] {
+  return unwrapped(
+    points
+      .filter((point) => Number.isFinite(point.latitude) && Number.isFinite(point.longitude))
+      .map((point): [number, number] => [point.longitude, point.latitude]),
+  );
+}
+
+/**
  * Every point within half a turn of the one before it, so that a line crossing the antimeridian keeps going.
  *
  * ⚠️ Each point is compared with the point **already moved**, not with what it was in the input. Comparing with the
