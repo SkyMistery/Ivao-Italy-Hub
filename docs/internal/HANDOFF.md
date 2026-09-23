@@ -3,8 +3,26 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 22 settembre 2026 — **T0–T9 in `main`; T10 è fatta**: branch `m2/t10-public-tours`, in PR (vedi `gh pr list`).
-Piano **0.90**. **Il prossimo passo è T11 (il PIREP)**, in una chat nuova, dopo il merge di T10.
+**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T10 in `main`; T11a è fatta**: branch `m2/t11a-pirep-server`, in PR (vedi
+`gh pr list`). Piano **0.91**. **Il prossimo passo è T11b (il form e la pagina del pilota)**, in una chat nuova, dopo il merge di T11a.
+
+> **Che cosa ha lasciato T11a** (nota `2026-09-23-il-pirep`, piano 0.91): T11 è divisa — **T11a il server, T11b il form**. Tutto sta
+> in `Pireps/`. **Le tre domande** di ogni tipo sono `TourRules.Of(tour, legs, hubs, rotations, reports, at, graceHours)` → colore di
+> ogni leg (`Todo`, `Done`, `Pending`, `Locked`: **i quattro stati di `RouteMap`**), le volabili, la prossima, finito; il perché di un
+> no è `TourRules.Refusal`. `Open` è `OpenRules` (filtri, sequenza, `Progress` dell'obiettivo), i limiti `DailyLimits`. Tutte pure:
+> **T11b non ricalcola niente nel browser**, legge `GET /api/flightops/tours/{id}/reports/mine` (colori, volabili, prossima, finito,
+> `blocked` con la chiave del perché, l'obiettivo di un `Open`, i PIREP del pilota). Il form ha **tre verbi**: `…/reports/sessions`
+> (`?legId=`, o `?departure=&arrival=` per il volo dopo una deviazione; **503** quando il tracker non risponde, che non è «nessun
+> volo»), `POST …/reports` (`PirepWriteDto`: `legId`, `sessionIds` — uno, o due in una deviazione con `diversionIcao` e
+> `diversionReason` —, SID/STAR/IAP, note), e per il pilota `/api/flightops/reports/{id}` (lettura, `PUT` per correggere un «da
+> modificare», `POST …/withdraw` da `Queued`). Ogni rifiuto è un `ProblemDetails` sul campo: `tour` (ban, rating, «da modificare» in
+> sospeso, tour chiuso), `legId`, `sessionIds`, `sid`/`star`/`approach`, `diversionIcao`. **L'hub si sceglie volando** e **la
+> partenza è il primo PIREP non ritirato** (Carmine): nessun passo «scegli». ⚠️ **Il nucleo**: la rete dell'interceptor ora lascia
+> all'interessato di una riga `ISubmittedByMembers` + `IHasStakeholder` modificarla — **T13 troverà lo stesso muro** con i validatori
+> abilitati (hanno `Tours.Validate`, non `Tours.Edit`) e deve estendere la regola con la sua nota. `IAircraftTypeDirectory` ha
+> `WakeCategoriesAsync`. Nei test: VID `780082–780084`, slug `fo-test-pirep-…`, e un **tracker finto** in `PirepTests`
+> (`FlightShelf` + `TrackerDouble`): le fixture registrate sono di giugno e nessuna finestra le raggiunge — **per il «fatta quando» di
+> T11b in sviluppo** serve un volo vero recente di Carmine o un tracker finto anche lì.
 
 > **Che cosa ha lasciato T10** (nota `2026-09-22-il-pubblico-dei-tour`, piano 0.90): il pubblico dei tour è
 > `Tours/PublicTours.cs` — **un servizio solo**, letto dai due verbi anonimi (`GET …/tours/public`, `…/tours/public/{slug}`) e dal

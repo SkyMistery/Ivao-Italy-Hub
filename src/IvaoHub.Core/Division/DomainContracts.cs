@@ -131,22 +131,6 @@ public interface ISharedForReading
 }
 
 /// <summary>
-/// A row any signed in member may <b>bring into existence</b> inside the space of a department
-/// they have nothing to do with. A contact message is the first: somebody writes to a department
-/// precisely because they are not part of it (design M1 section 5.1, decision note of 6 September
-/// 2026).
-/// <para>The write guard of the interceptor asks for <c>{Area}.Edit</c> on the owning department
-/// before letting any write of an <see cref="IOwnedByDepartment"/> row through, which is exactly
-/// right for every row somebody edits and exactly wrong for a row somebody sends. This is the
-/// entity's way of saying so, and it is deliberately the narrowest thing that works: it applies to
-/// <b>creation only</b>. Changing such a row afterwards — moving a message from new to answered —
-/// is an ordinary write and asks for the permission like everything else.</para>
-/// <para>It is the third of the same family and it is written in the same style: <see
-/// cref="ISharedForReading"/> widens reading, <c>CrudOptions.ReadOnlyRows</c> narrows writing, this
-/// widens creating. The engine is never told what a contact message is; it is told that this
-/// resource accepts submissions.</para>
-/// </summary>
-/// <summary>
 /// A row a permission can be granted on <b>by itself</b>. The scope it declares is compared, string
 /// against string, with the scope of a grant: the core never parses it, and a module chooses its
 /// shape (<c>flightops:tour:42</c>).
@@ -172,4 +156,23 @@ public interface IHasStakeholder
     int? StakeholderVid { get; }
 }
 
+/// <summary>
+/// A row any signed in member may <b>bring into existence</b> inside the space of a department
+/// they have nothing to do with. A contact message is the first: somebody writes to a department
+/// precisely because they are not part of it (design M1 section 5.1, decision note of 6 September
+/// 2026).
+/// <para>The write guard of the interceptor asks for <c>{Area}.Edit</c> on the owning department
+/// before letting any write of an <see cref="IOwnedByDepartment"/> row through, which is exactly
+/// right for every row somebody edits and exactly wrong for a row somebody sends. This is the
+/// entity's way of saying so, and it is deliberately the narrowest thing that works: it applies to
+/// <b>creation only</b>. Changing such a row afterwards — moving a message from new to answered —
+/// is an ordinary write and asks for the permission like everything else.</para>
+/// <para>It is the third of the same family and it is written in the same style: <see
+/// cref="ISharedForReading"/> widens reading, <c>CrudOptions.ReadOnlyRows</c> narrows writing, this
+/// widens creating. The engine is never told what a contact message is; it is told that this
+/// resource accepts submissions.</para>
+/// <para>One exception after creation, for a row that is also <see cref="IHasStakeholder"/>: the member it is
+/// about, who sent it, may keep changing it — a pilot withdraws or corrects their own report (M2, T11) —
+/// provided it stays theirs and in the same departments. Deleting it is still the department's.</para>
+/// </summary>
 public interface ISubmittedByMembers;

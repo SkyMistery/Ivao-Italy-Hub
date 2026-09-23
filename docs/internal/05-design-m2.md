@@ -369,10 +369,18 @@ sessione vale per un solo PIREP), `callsign`, `aircraft`, `departure_icao`, `arr
 
 **`fo_pirep_events`**: la storia, solo in aggiunta: `from_status`, `to_status`, `by_vid`, `at`, `note`.
 
+**Precisato in T11a** (23 settembre, nota `2026-09-23-il-pirep` §7): il PIREP porta anche la rotta su cui si giudica
+(`departure_icao`, `arrival_icao`, `distance_nm`: quella della leg, o quella del volo in un `Open`), `takeoff_at` (il giorno UTC dei
+limiti) e `leg_snapshot_json` (la leg com'era, §3.2 punto 6); la deviazione ha `diversion_icao` e il motivo è `diversion_reason` più
+`diversion_note`. La sessione rivendicata è `fo_pirep_flights.claimed_session_id`, unica e annullabile, che il ritiro svuota.
+`fo_pirep_errors`, `note_to_pilot`, `staff_note`, `threshold_overridden` nascono con chi li scrive (T13); l'esito è lo stato.
+
 ### 1.9 L'iscrizione — `fo_enrolments`
 
-Il **primo PIREP iscrive**. `vid`, `tour_id`, `started_at`, `start_leg_id?` (per `SequentialChosenStart`, fissa),
-`hub_order_json` (per `Hub`), `completed_at?`. **L'avanzamento non si memorizza**: si calcola dai PIREP.
+Il **primo PIREP iscrive** (su un sottotour, anche al `Container`). `vid`, `tour_id`, `started_at`, `completed_at?`.
+**L'avanzamento non si memorizza**: si calcola dai PIREP. ~~`start_leg_id?` (per `SequentialChosenStart`, fissa),
+`hub_order_json` (per `Hub`)~~ — **tolte il 23 settembre** (Carmine, apertura di T11, nota `2026-09-23-il-pirep`): la partenza è
+la leg del primo PIREP non ritirato, l'hub è quello della prima leg volata; si leggono dai PIREP come il resto.
 
 ### 1.10 I template di tour (risposta 2)
 
@@ -496,7 +504,8 @@ una leg accettata o in attesa non si rivola; una leg rifiutata si rivola; un pil
 
 ### 2.3 `Hub`
 
-- **All'inizio** il pilota sceglie un hub.
+- **All'inizio** il pilota sceglie un hub **volando la prima leg di una sua rotazione** (Carmine, 23 settembre, nota
+  `2026-09-23-il-pirep`): nessun passo in più, l'hub è quello della prima leg volata.
 - **Dentro l'hub**: con `hub_rotation_order = Fixed` le rotazioni nell'ordine del tour, con `Free` a scelta; **ogni
   rotazione sempre in ordine** (risposta 10).
 - **Cambio di hub**: finite tutte le rotazioni. Con leg di collegamento, solo verso un hub collegato non fatto, volando
@@ -505,7 +514,8 @@ una leg accettata o in attesa non si rivola; una leg rifiutata si rivola; un pil
 
 ### 2.4 `SequentialChosenStart` — in sequenza con partenza a scelta
 
-- Il primo PIREP fissa `start_leg_id`; poi in ordine fino all'ultima, e dalla prima fino a quella prima della partenza.
+- La leg del primo PIREP **non ritirato** è la partenza (Carmine, 23 settembre: un PIREP ritirato la lascia libera, uno rifiutato
+  no); poi in ordine fino all'ultima, e dalla prima fino a quella prima della partenza.
 - **Il tour dev'essere ad anello** (risposta 11): controllo di pubblicazione.
 
 ### 2.5 Il rifiuto e la tolleranza

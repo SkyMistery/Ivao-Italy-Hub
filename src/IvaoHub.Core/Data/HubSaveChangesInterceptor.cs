@@ -361,6 +361,18 @@ public sealed class HubSaveChangesInterceptor(
             return;
         }
 
+        // The one exception after creation: a row somebody sent that is about them, which they keep changing — a pilot
+        // withdraws or corrects their own report (M2, T11). Theirs before the write and after it, and in the same
+        // departments: they may change it, not give it to somebody else or move it. Deleting is still the department's.
+        if (entry is { State: EntityState.Modified, Entity: ISubmittedByMembers and IHasStakeholder { StakeholderVid: var after } }
+            && after == currentUser.Vid
+            && entry.OriginalValues.ToObject() is IHasStakeholder { StakeholderVid: var before }
+            && before == currentUser.Vid
+            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments))
+        {
+            return;
+        }
+
         var permission = ResolvePermissionArea(context, entry.Metadata.ClrType) + ".Edit";
 
         // Held on one of the departments of the row: whoever creates a row of a module has to put in
