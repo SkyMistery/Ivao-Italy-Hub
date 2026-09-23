@@ -88,11 +88,17 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
 
     public string? Approach { get; set; }
 
-    /// <summary>The controllers contacted (§3.3), written by T12; an empty list until then.</summary>
+    /// <summary>The controllers contacted (§3.3): a list of <see cref="AtcContactDto"/>, the proposed ones the pilot removed included.</summary>
     public string AtcContactsJson { get; set; } = "[]";
 
-    /// <summary>The exemptions received (§3.3), written by T12; an empty list until then.</summary>
+    /// <summary>The exemptions received (§3.3): a list of <see cref="AtcExemptionDto"/>, each with its status at the send.</summary>
     public string AtcExemptionsJson { get; set; } = "[]";
+
+    /// <summary>
+    /// Whether the archive of ATC sessions answered at the send: without it nothing was proposed, and an empty list of
+    /// controllers says nothing about who was online (§3.3). False on the reports sent before T12.
+    /// </summary>
+    public bool AtcArchiveAvailable { get; set; }
 
     public bool IsDiversion { get; set; }
 

@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Atc;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
@@ -308,7 +309,190 @@ public sealed class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(0, row.Events.OrderBy(step => step.At).Last().ByVid);
     }
 
+    /// <summary>
+    /// T12 without an archive — a fork's case, and the hub's until vIPI's view exists: the form is told «not available», the
+    /// report is sent all the same with the controllers the pilot wrote, and an exemption on one of them is «unverifiable».
+    /// </summary>
+    [Fact]
+    public async Task WithoutAnArchiveTheControllersAreNotAvailableAndTheReportIsSentAllTheSame()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var flown = _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1));
+
+        var proposal = await OkAsync(await pilot.GetAsync($"{Reports(tourId)}/atc?sessionIds={flown}", token), token);
+        Assert.False(proposal.GetProperty("available").GetBoolean());
+        Assert.Empty(proposal.GetProperty("proposed").EnumerateArray());
+        Assert.False(string.IsNullOrWhiteSpace(proposal.GetProperty("attribution").GetString()));
+
+        var sent = await CreatedAsync(
+            pilot,
+            Reports(tourId),
+            Payload(legs[0], flown) with
+            {
+                AtcContacts = [new($"{Rome}_TWR", "118.705")],
+                Exemptions = [new($"{Rome}_TWR", ExemptionKind.FreeSpeed, null)],
+            },
+            token);
+
+        Assert.False(sent.GetProperty("atcArchiveAvailable").GetBoolean());
+        var contact = Assert.Single(sent.GetProperty("atcContacts").EnumerateArray());
+        Assert.Equal("Added", contact.GetProperty("origin").GetString());
+        var exemption = Assert.Single(sent.GetProperty("exemptions").EnumerateArray());
+        Assert.Equal("Unverifiable", exemption.GetProperty("status").GetString());
+        Assert.Equal([CheckCatalog.Speed250], exemption.GetProperty("softens").EnumerateArray().Select(item => item.GetString()));
+
+        // An exemption on a position the pilot did not declare is refused under its field.
+        var again = _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1).AddHours(4));
+        await RefusedAsync(
+            pilot,
+            Reports(tourId),
+            Payload(legs[1], again) with { Exemptions = [new($"{Milan}_APP", ExemptionKind.LevelChange, null)] },
+            "exemptions",
+            "flightops:errors.exemptionNotContacted",
+            token);
+    }
+
+    /// <summary>
+    /// T12's "done when" on a fake of vIPI's view, built here with the very SQL of the contract (plan M2, T12): the positions
+    /// of the departure and the arrival online at the right moments are proposed, and nothing else; the report keeps the kept,
+    /// the removed and the added, and an exemption is «online» or «not online» as the archive says.
+    /// </summary>
+    [Fact]
+    public async Task WithAnArchiveThePositionsOnlineAlongTheFlightAreProposedAndKept()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var takeoff = DateTime.UtcNow.AddDays(-1);
+        takeoff = takeoff.AddTicks(-(takeoff.Ticks % TimeSpan.TicksPerSecond));
+
+        await using var archive = await FakeArchiveAsync(
+            token,
+            (1, $"{Rome}_TWR", "118.705", takeoff.AddHours(-1), takeoff.AddMinutes(5), false),
+            (2, $"{Rome}_GND", "121.805", takeoff.AddHours(2), takeoff.AddHours(3), false),
+            (3, $"{Milan}_APP", "126.750", takeoff.AddMinutes(40), null, false),
+            (4, $"{London}_TWR", "118.500", takeoff.AddHours(-2), takeoff.AddHours(4), true),
+            // The oldest row of each half: where the archive is complete from.
+            (5, "XFAX_CTR", null, takeoff.AddYears(-1), takeoff.AddYears(-1).AddHours(1), false),
+            (6, "XFBX_CTR", null, takeoff.AddMonths(-1), takeoff.AddMonths(-1).AddHours(1), true));
+
+        await using var host = _host.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("ConnectionStrings:AtcData", mariaDb.ConnectionString);
+            builder.ConfigureTestServices(services =>
+                services.AddScoped<IAtcActivitySource>(provider => provider.GetRequiredService<VipiAtcActivitySource>()));
+        });
+
+        using var coordinator = await SignedInAsync(host, CoordinatorVid, token);
+        using var pilot = await SignedInAsync(host, PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var flown = _flights.Add(PilotVid, "XAA100", Rome, Milan, takeoff);
+
+        var proposal = await OkAsync(await pilot.GetAsync($"{Reports(tourId)}/atc?sessionIds={flown}", token), token);
+        Assert.True(proposal.GetProperty("available").GetBoolean());
+        Assert.Equal(
+            [$"{Rome}_TWR", $"{Milan}_APP"],
+            proposal.GetProperty("proposed").EnumerateArray().Select(item => item.GetProperty("callsign").GetString()));
+
+        // The pilot keeps the tower, removes the approach and adds a centre the archive has never seen.
+        var sent = await CreatedAsync(
+            pilot,
+            Reports(tourId),
+            Payload(legs[0], flown) with
+            {
+                AtcContacts = [new($"{Rome}_TWR", null), new("XFBX_CTR", "132.600")],
+                Exemptions =
+                [
+                    new($"{Rome}_TWR", ExemptionKind.FreeSpeed, null),
+                    new("XFBX_CTR", ExemptionKind.Other, "fo-test vectors"),
+                ],
+            },
+            token);
+
+        Assert.True(sent.GetProperty("atcArchiveAvailable").GetBoolean());
+        Assert.Equal(
+            [($"{Rome}_TWR", "Proposed", "118.705"), ($"{Milan}_APP", "Removed", "126.750"), ("XFBX_CTR", "Added", "132.600")],
+            sent.GetProperty("atcContacts").EnumerateArray().Select(item => (
+                item.GetProperty("callsign").GetString(),
+                item.GetProperty("origin").GetString(),
+                item.GetProperty("frequency").GetString())));
+        Assert.Equal(
+            ["Online", "NotOnline"],
+            sent.GetProperty("exemptions").EnumerateArray().Select(item => item.GetProperty("status").GetString()));
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// A table shaped like vIPI's <c>AtcSessions</c> and the view of the contract over it, in the test database; dropped when
+    /// the test is done. The view is written as the plan writes it, so a change to the contract is a change here.
+    /// </summary>
+    private async Task<IAsyncDisposable> FakeArchiveAsync(
+        CancellationToken cancellationToken,
+        params (long Id, string Callsign, string? Frequency, DateTime Start, DateTime? End, bool Outside)[] sessions)
+    {
+        var connection = new MySqlConnector.MySqlConnection(mariaDb.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        async Task RunAsync(string sql, params (string Name, object? Value)[] parameters)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            foreach (var (name, value) in parameters)
+            {
+                command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+            }
+
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await RunAsync("DROP VIEW IF EXISTS v_share_atc_sessions");
+        await RunAsync("DROP TABLE IF EXISTS fo_test_atc_sessions");
+        await RunAsync("""
+            CREATE TABLE fo_test_atc_sessions (
+                SessionId bigint NOT NULL PRIMARY KEY, UserId int NOT NULL, Callsign varchar(32) NOT NULL, Position varchar(16) NULL,
+                Frequency varchar(16) NULL, StartUtc datetime(6) NOT NULL, EndUtc datetime(6) NULL, DurationSeconds int NOT NULL,
+                Rating int NULL, IsOutsideDivision tinyint(1) NOT NULL, TrafficCount int NOT NULL DEFAULT 0)
+            """);
+        await RunAsync("""
+            CREATE OR REPLACE SQL SECURITY DEFINER VIEW v_share_atc_sessions AS
+            SELECT SessionId AS session_id, UserId AS vid, Callsign AS callsign, Position AS position, Frequency AS frequency,
+                   StartUtc AS start_utc, EndUtc AS end_utc, DurationSeconds AS duration_seconds, Rating AS rating,
+                   IsOutsideDivision AS is_outside_division
+            FROM fo_test_atc_sessions
+            """);
+
+        foreach (var session in sessions)
+        {
+            await RunAsync(
+                "INSERT INTO fo_test_atc_sessions VALUES (@id, 780099, @callsign, NULL, @frequency, @start, @end, 3600, 5, @outside, 0)",
+                ("@id", session.Id),
+                ("@callsign", session.Callsign),
+                ("@frequency", session.Frequency),
+                ("@start", session.Start),
+                ("@end", session.End),
+                ("@outside", session.Outside));
+        }
+
+        return new Dropping(connection, cancellationToken);
+    }
+
+    private sealed class Dropping(MySqlConnector.MySqlConnection connection, CancellationToken cancellationToken) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            await using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "DROP VIEW IF EXISTS v_share_atc_sessions; DROP TABLE IF EXISTS fo_test_atc_sessions;";
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await connection.DisposeAsync();
+        }
+    }
 
     private static string Reports(long tourId) => $"/api/flightops/tours/{tourId}/reports";
 
@@ -453,9 +637,11 @@ public sealed class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
     }
 
-    private async Task<HttpClient> SignedInAsync(int vid, CancellationToken cancellationToken)
+    private Task<HttpClient> SignedInAsync(int vid, CancellationToken cancellationToken) => SignedInAsync(_host, vid, cancellationToken);
+
+    private static async Task<HttpClient> SignedInAsync(WebApplicationFactory<Program> host, int vid, CancellationToken cancellationToken)
     {
-        var client = _host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+        var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
         client.DefaultRequestHeaders.Add("X-Requested-With", "hub");
 
         using var response = await client.PostAsync(

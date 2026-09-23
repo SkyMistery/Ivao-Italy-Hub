@@ -5,6 +5,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Modules.FlightOps.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,12 @@ public static class PirepEndpoints
             .Produces<IReadOnlyList<TrackerSessionDto>>()
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status503ServiceUnavailable);
+
+        tour.MapGet("/atc", AtcAsync)
+            .WithName("FlightOpsReportAtc")
+            .Produces<AtcProposalDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound);
 
         tour.MapGet("/mine", MineAsync)
             .WithName("FlightOpsReportsMine")
@@ -102,6 +109,33 @@ public static class PirepEndpoints
 
         // "We could not look" is not "there is nothing": a pilot sure of having flown is not told there is no flight (T2).
         return sessions is null ? Results.StatusCode(StatusCodes.Status503ServiceUnavailable) : Results.Ok(sessions);
+    }
+
+    /// <summary>
+    /// The controllers online along the flights of <c>?sessionIds=</c> — two for a diversion, with <c>?diversionIcao=</c> —,
+    /// proposed to the pilot while they fill the form in (§3.3). An archive that is missing is <c>Available: false</c>, not
+    /// an error: the form works the same.
+    /// </summary>
+    private static async Task<IResult> AtcAsync(
+        long tourId,
+        [FromQuery] long[]? sessionIds,
+        string? diversionIcao,
+        PirepSubmission submission,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser,
+        HttpContext http)
+    {
+        var pilot = await submission.TourAsync(tourId, http.RequestAborted);
+        if (pilot is null)
+        {
+            return Results.NotFound();
+        }
+
+        var (proposal, problems) = await submission.ProposeAsync(pilot, sessionIds ?? [], diversionIcao, http.RequestAborted);
+
+        return proposal is null
+            ? CrudProblems.Validation(problems!, new Dictionary<string, string[]>(), catalog, currentUser.Locale)
+            : Results.Ok(proposal);
     }
 
     private static async Task<IResult> MineAsync(long tourId, PirepSubmission submission, HttpContext http)

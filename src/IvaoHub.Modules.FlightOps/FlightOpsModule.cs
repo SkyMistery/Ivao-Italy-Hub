@@ -88,6 +88,7 @@ public sealed class FlightOpsModule : ModuleBase
         // The reports a tour and its legs have (T11); a test may still answer for them first.
         services.TryAddScoped<ITourReports, PirepTourReports>();
         services.AddScoped<PirepSubmission>();
+        services.AddScoped<AtcProposer>();
 
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();

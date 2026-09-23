@@ -41,6 +41,7 @@ public sealed class PirepSubmission(
     IRunwayDirectory runways,
     IAircraftTypeDirectory aircraftTypes,
     IFirLocator firs,
+    AtcProposer atc,
     EffectiveRules effectiveRules,
     ModuleSettingsStore settingsStore,
     ICurrentUser currentUser,
@@ -194,6 +195,13 @@ public sealed class PirepSubmission(
             problems.Add("diversionReason", "errors.required");
         }
 
+        var contacts = payload.AtcContacts ?? [];
+        var exemptions = payload.Exemptions ?? [];
+        foreach (var (field, key) in AtcProposal.Problems(contacts, exemptions))
+        {
+            problems.Add(field, key);
+        }
+
         if (!problems.IsEmpty)
         {
             return (null, problems.Errors);
@@ -201,7 +209,7 @@ public sealed class PirepSubmission(
 
         // The flights, read from the tracker: theirs, in the window, not claimed by another report.
         var from = now.AddDays(-tour.ReportWindowDays);
-        var flights = await FlightsAsync(ids, vid, from, now, correctingId, problems, cancellationToken);
+        var flights = await FlightsAsync(ids, vid, from, now, correctingId, checkClaims: true, problems, cancellationToken);
         if (flights is null)
         {
             return (null, problems.Errors);
@@ -321,6 +329,11 @@ public sealed class PirepSubmission(
             return (null, problems.Errors);
         }
 
+        // The proposal worked out again here, and not taken from the browser: what the report says was proposed is what the
+        // archive had (§3.3).
+        var (activity, proposed) = await atc.ProposeAsync(flights, diversion, cancellationToken);
+        var (flownFrom, flownTo) = AtcProposer.Interval(flights);
+
         var pirep = correcting ?? new Pirep
         {
             TourId = tour.Id,
@@ -371,6 +384,20 @@ public sealed class PirepSubmission(
         pirep.DiversionReason = payload.IsDiversion ? payload.DiversionReason : null;
         pirep.DiversionNote = payload.IsDiversion ? Trimmed(payload.DiversionNote) : null;
         pirep.PilotRemarks = Trimmed(payload.PilotRemarks);
+        pirep.AtcArchiveAvailable = activity is not null;
+        pirep.AtcContactsJson = JsonSerializer.Serialize(AtcProposal.Merge(proposed, contacts), ColumnJson);
+        pirep.AtcExemptionsJson = JsonSerializer.Serialize(
+            exemptions.Select(exemption =>
+            {
+                var callsign = AtcProposal.Normalize(exemption.Callsign);
+                return new AtcExemptionDto(
+                    callsign,
+                    exemption.Kind,
+                    Trimmed(exemption.Note),
+                    AtcProposal.StatusOf(callsign, flownFrom, flownTo, activity),
+                    ExemptionCatalog.Softens(exemption.Kind));
+            }),
+            ColumnJson);
 
         pirep.Flights.AddRange(flights.Select((flight, index) => new PirepFlight
         {
@@ -416,6 +443,51 @@ public sealed class PirepSubmission(
         await runways.EnsureAsync([.. new[] { departure, arrival, diversion }.OfType<string>().Distinct()], cancellationToken);
 
         return (pirep, null);
+    }
+
+    /// <summary>
+    /// The controllers to propose while the pilot fills the form in (§3.3): the pilot's own sessions of the report window,
+    /// read as flights, and the archive's positions along them. Null, with the refusal written, when the flights cannot be
+    /// read; a proposal that is not <c>Available</c> when there is no archive. Nothing is claimed or written.
+    /// </summary>
+    public async Task<(AtcProposalDto? Proposal, IReadOnlyDictionary<string, string[]>? Problems)> ProposeAsync(
+        PilotTour pilot,
+        IReadOnlyList<long> sessionIds,
+        string? diversionIcao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(pilot);
+        ArgumentNullException.ThrowIfNull(sessionIds);
+
+        var problems = new Refusals();
+        if (sessionIds.Count is 0 or > PirepValidation.MaxFlights || sessionIds.Distinct().Count() != sessionIds.Count)
+        {
+            return (null, problems.Add("sessionIds", "flightops:errors.reportSessionCount").Errors);
+        }
+
+        var now = clock.UtcNow;
+        var flights = await FlightsAsync(
+            sessionIds,
+            currentUser.Vid,
+            now.AddDays(-pilot.Tour.ReportWindowDays),
+            now,
+            correctingId: 0,
+            checkClaims: false,
+            problems,
+            cancellationToken);
+        if (flights is null)
+        {
+            return (null, problems.Errors);
+        }
+
+        var (activity, proposed) = await atc.ProposeAsync(flights, Upper(diversionIcao), cancellationToken);
+
+        return (
+            new AtcProposalDto(
+                activity is not null,
+                [.. proposed.Select(presence => new AtcContactDto(presence.Callsign, presence.Frequency, AtcContactOrigin.Proposed))],
+                atc.Attribution),
+            null);
     }
 
     /// <summary>A report still in the queue, taken back by its pilot (§3.1): the leg is flyable and its sessions free again.</summary>
@@ -532,6 +604,9 @@ public sealed class PirepSubmission(
             pirep.DiversionReason,
             pirep.DiversionNote,
             pirep.PilotRemarks,
+            JsonSerializer.Deserialize<List<AtcContactDto>>(pirep.AtcContactsJson, ColumnJson) ?? [],
+            JsonSerializer.Deserialize<List<AtcExemptionDto>>(pirep.AtcExemptionsJson, ColumnJson) ?? [],
+            pirep.AtcArchiveAvailable,
             [
                 .. pirep.Flights.OrderBy(flight => flight.Seq).Select(flight => new PirepFlightDto(
                     flight.Seq,
@@ -592,6 +667,7 @@ public sealed class PirepSubmission(
         DateTime from,
         DateTime to,
         long correctingId,
+        bool checkClaims,
         Refusals problems,
         CancellationToken cancellationToken)
     {
@@ -603,7 +679,7 @@ public sealed class PirepSubmission(
         }
 
         var wanted = ids.Select(id => (long?)id).ToArray();
-        var claimed = await database.PirepFlights.AsNoTracking()
+        var claimed = checkClaims && await database.PirepFlights.AsNoTracking()
             .Where(flight => wanted.Contains(flight.ClaimedSessionId) && flight.PirepId != correctingId)
             .AnyAsync(cancellationToken);
         if (claimed)
