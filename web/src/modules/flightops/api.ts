@@ -1346,6 +1346,11 @@ export type PirepDto = components['schemas']['PirepDto'];
 export type PirepStatus = components['schemas']['PirepStatus'];
 export type TrackerSessionDto = components['schemas']['TrackerSessionDto'];
 export type PirepWriteDto = components['schemas']['PirepWriteDto'];
+export type AtcProposalDto = components['schemas']['AtcProposalDto'];
+export type AtcContactDto = components['schemas']['AtcContactDto'];
+export type AtcContactWriteDto = components['schemas']['AtcContactWriteDto'];
+export type AtcExemptionWriteDto = components['schemas']['AtcExemptionWriteDto'];
+export type ExemptionKind = components['schemas']['ExemptionKind'];
 
 const reportsKey = ['flightops', 'reports'] as const;
 
@@ -1380,6 +1385,30 @@ export function trackerSessionsQuery(tourId: number, search: SessionSearch) {
       ),
     // A flight landed a minute ago should appear when the pilot comes back to the tab.
     staleTime: 0,
+    retry: false,
+  });
+}
+
+/**
+ * The controllers online along the chosen flights (design M2 §3.3), proposed while the pilot fills the form in. An archive
+ * the division does not have is `available: false`, an answer and not an error.
+ */
+export function atcProposalQuery(
+  tourId: number,
+  sessionIds: readonly number[],
+  diversionIcao: string | null,
+) {
+  return queryOptions({
+    queryKey: [...reportsKey, 'atc', tourId, sessionIds, diversionIcao] as const,
+    queryFn: async (): Promise<AtcProposalDto> =>
+      unwrap(
+        await api.GET('/api/flightops/tours/{tourId}/reports/atc', {
+          params: {
+            path: { tourId },
+            query: { sessionIds: [...sessionIds], ...(diversionIcao === null ? {} : { diversionIcao }) },
+          },
+        }),
+      ),
     retry: false,
   });
 }

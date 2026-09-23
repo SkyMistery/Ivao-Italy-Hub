@@ -8,9 +8,9 @@ import {
   RadioGroupItem,
   RadioGroupRoot,
 } from '@ivao/atmosphere-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
@@ -21,11 +21,13 @@ import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { NotFound, Notice, useNotice } from '../../../shared/ui';
 import {
+  atcProposalQuery,
   myTourQuery,
   publicTourQuery,
   reportQuery,
   trackerSessionsQuery,
   useSendReport,
+  type AtcProposalDto,
   type MyTourDto,
   type PirepDto,
   type PirepWriteDto,
@@ -35,14 +37,24 @@ import {
   type TrackerSessionDto,
 } from '../api';
 import {
+  atcDeclarationSchema,
   diversionSchema,
   reportDetailsSchema,
+  type AtcDeclarationValues,
   type DiversionValues,
   type ReportDetailsValues,
   type ReportSearch,
 } from '../schemas';
 
-import { mergeSessions, sessionsOf, splitRefusal } from './reporting';
+import {
+  ATC_FIELDS,
+  contactsToSend,
+  declarationOf,
+  exemptionsToSend,
+  mergeSessions,
+  sessionsOf,
+  splitRefusal,
+} from './reporting';
 
 /**
  * The pilot's report (design M2 §3.2, §8.1), a page of its own at `/tours/{slug}/report` (note `2026-09-23-il-pirep` §4):
@@ -187,6 +199,7 @@ function ReportForm({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const notice = useNotice();
+  const queryClient = useQueryClient();
   const send = useSendReport(tour.id, report?.id ?? null);
 
   const kept = report === null ? [] : sessionsOf(report);
@@ -199,6 +212,10 @@ function ReportForm({
     diversionNote: report?.diversionNote ?? '',
   });
   const [flightProblem, setFlightProblem] = useState<string | null>(null);
+  const [initial] = useState(() => declarationOf(report));
+  const [removed, setRemoved] = useState<string[]>(initial.removed);
+  const [declaration, setDeclaration] = useState<AtcDeclarationValues>(initial.declaration);
+  const [atcProblem, setAtcProblem] = useState<string | null>(null);
 
   const firstSearch: SessionSearch = leg === null ? {} : { legId: leg.id };
   const firstFound = useQuery(trackerSessionsQuery(tour.id, firstSearch));
@@ -218,12 +235,30 @@ function ReportForm({
   });
   const secondSessions = mergeSessions(kept.slice(1, 2), secondFound.data ?? []);
 
+  // The controllers are proposed once the flights are chosen: the first, and the second of a diversion.
+  const chosen = [first, ...(diverted ? [second] : [])].filter((id): id is number => id !== null);
+  const flightsChosen =
+    first !== null && (!diverted || (second !== null && diversion.diversionIcao.length === 4));
+  const atcQuery = atcProposalQuery(tour.id, chosen, diverted ? diversion.diversionIcao : null);
+  const proposal = useQuery({ ...atcQuery, enabled: flightsChosen });
+
   const submit = async (values: ReportDetailsValues) => {
     setFlightProblem(null);
+    setAtcProblem(null);
+
+    // A send before the proposal arrived waits for it: without it, every proposed controller would be written down as
+    // removed. One that cannot be had sends none, and the server works the proposal out on its own anyway.
+    let proposed = proposal.data?.proposed ?? [];
+    if (flightsChosen && proposal.data === undefined) {
+      proposed = await queryClient.ensureQueryData(atcQuery).then(
+        (answer) => answer.proposed,
+        () => [],
+      );
+    }
 
     const body: PirepWriteDto = {
       legId: leg?.id ?? null,
-      sessionIds: [first, ...(diverted ? [second] : [])].filter((id): id is number => id !== null),
+      sessionIds: chosen,
       isDiversion: diverted,
       diversionIcao: diverted ? blank(diversion.diversionIcao) : null,
       diversionReason: diverted ? (diversion.diversionReason ?? null) : null,
@@ -233,13 +268,18 @@ function ReportForm({
       approach: blank(values.approach),
       pilotRemarks: blank(values.pilotRemarks),
       rowVersion: report?.rowVersion ?? NEW_ROW_VERSION,
+      atcContacts: contactsToSend(proposed, removed, declaration.added),
+      exemptions: exemptionsToSend(declaration.exemptions),
     };
 
     try {
       await send.mutateAsync(body);
     } catch (error) {
-      const { details, flight } = splitRefusal(error, DETAIL_FIELDS);
+      const { details, flight: elsewhere } = splitRefusal(error, DETAIL_FIELDS);
+      const { details: atc, flight } =
+        elsewhere === null ? { details: null, flight: null } : splitRefusal(elsewhere, ATC_FIELDS);
       setFlightProblem(flight === null ? null : describeProblem(flight, t, i18n.language));
+      setAtcProblem(atc === null ? null : describeProblem(atc, t, i18n.language));
       if (details !== null) {
         throw details;
       }
@@ -310,6 +350,16 @@ function ReportForm({
         {flightProblem === null ? null : <Notice tone="error" title={flightProblem} />}
       </section>
 
+      <AtcSection
+        flightsChosen={flightsChosen}
+        proposal={proposal}
+        removed={removed}
+        onRemovedChange={setRemoved}
+        declaration={declaration}
+        onDeclarationChange={setDeclaration}
+        problem={atcProblem}
+      />
+
       <section className="flex flex-col gap-4">
         <H2>{t('flightops:report.details')}</H2>
         {tour.requiresProcedures ? (
@@ -335,6 +385,105 @@ function ReportForm({
         />
       </section>
     </div>
+  );
+}
+
+/**
+ * The controllers contacted and the exemptions (design M2 §3.3): the positions the archive had online along the flight,
+ * ticked, for the pilot to untick the ones they did not contact; the ones they add; and what a controller allowed them. A
+ * division without an archive is told so, and the pilot writes the list alone. Next to a proposal, the credit of the
+ * outlines the regions were worked out with, as their licence asks.
+ */
+function AtcSection({
+  flightsChosen,
+  proposal,
+  removed,
+  onRemovedChange,
+  declaration,
+  onDeclarationChange,
+  problem,
+}: {
+  flightsChosen: boolean;
+  proposal: UseQueryResult<AtcProposalDto>;
+  removed: readonly string[];
+  onRemovedChange: (removed: string[]) => void;
+  declaration: AtcDeclarationValues;
+  onDeclarationChange: (declaration: AtcDeclarationValues) => void;
+  problem: string | null;
+}) {
+  const { t, i18n } = useTranslation();
+  const proposed = proposal.data?.proposed ?? [];
+
+  const contacted = [
+    ...proposed.filter((contact) => !removed.includes(contact.callsign)).map((contact) => contact.callsign),
+    ...declaration.added
+      .map((contact) => contact.callsign.trim().toUpperCase())
+      .filter((callsign) => callsign !== ''),
+  ];
+  const choices = contacted.join('|');
+  // The positions an exemption is chosen among change as the pilot ticks and adds; the schema follows them.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const schema = useMemo(() => atcDeclarationSchema(contacted), [choices]);
+
+  const toggle = (callsign: string, keep: boolean) =>
+    onRemovedChange(keep ? removed.filter((entry) => entry !== callsign) : [...removed, callsign]);
+
+  let found: React.ReactNode;
+  if (!flightsChosen) {
+    found = <p className="text-muted-foreground text-sm">{t('flightops:report.atc.chooseFlight')}</p>;
+  } else if (proposal.isPending) {
+    found = <p className="text-muted-foreground text-sm">{t('flightops:report.atc.searching')}</p>;
+  } else if (proposal.error !== null) {
+    found = (
+      <Notice tone="error" title={describeProblem(proposal.error, t, i18n.language) ?? t('errors.unknown')} />
+    );
+  } else if (proposal.data?.available !== true) {
+    found = <Notice tone="info" title={t('flightops:report.atc.unavailable')} />;
+  } else if (proposed.length === 0) {
+    found = <Notice tone="info" title={t('flightops:report.atc.noneOnline')} />;
+  } else {
+    found = (
+      <div className="flex flex-col gap-2">
+        <p className="text-muted-foreground text-sm">{t('flightops:report.atc.proposedLead')}</p>
+        {proposed.map((contact) => {
+          const id = `atc-${contact.callsign}`;
+
+          return (
+            <div key={contact.callsign} className="flex items-center gap-2">
+              <Checkbox
+                id={id}
+                checked={!removed.includes(contact.callsign)}
+                onCheckedChange={(checked) => toggle(contact.callsign, checked === true)}
+              />
+              <Label htmlFor={id} className="font-mono">
+                {contact.callsign}
+                {contact.frequency === null ? null : (
+                  <span className="text-muted-foreground font-sans font-normal"> · {contact.frequency}</span>
+                )}
+              </Label>
+            </div>
+          );
+        })}
+        <p className="text-muted-foreground text-xs">
+          {t('flightops:report.atc.attribution', { source: proposal.data.attribution })}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <section className="flex flex-col gap-4">
+      <H2>{t('flightops:report.atc.title')}</H2>
+      {found}
+      <SchemaForm
+        schema={schema}
+        defaults={declaration}
+        locales={[]}
+        labels="flightops:report.atc"
+        onChange={onDeclarationChange}
+      />
+      {problem === null ? null : <Notice tone="error" title={problem} />}
+    </section>
   );
 }
 

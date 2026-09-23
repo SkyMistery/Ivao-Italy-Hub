@@ -23,7 +23,13 @@ const words = JSON.parse(
     legProgress: Record<string, string>;
     reportStatus: Record<string, string>;
   };
-  report: { title: string; send: string; notFlyable: string; fields: Record<string, string> };
+  report: {
+    title: string;
+    send: string;
+    notFlyable: string;
+    fields: Record<string, string>;
+    atc: { title: string; unavailable: string; proposedLead: string };
+  };
   errors: Record<string, string>;
 };
 
@@ -153,6 +159,16 @@ const flight = {
   aircraft: 'A320',
 };
 
+/** The controllers the archive had online along the flight (T12). */
+const proposal = {
+  available: true,
+  proposed: [
+    { callsign: 'LIPZ_TWR', frequency: '120.205', origin: 'Proposed' },
+    { callsign: 'LIMC_APP', frequency: '126.750', origin: 'Proposed' },
+  ],
+  attribution: 'Test outlines',
+};
+
 const json = (body: unknown, status = 200) => ({
   status,
   contentType: 'application/json',
@@ -165,10 +181,12 @@ async function stubThePilot(
   {
     sessions = [flight] as unknown,
     sessionsStatus = 200,
+    atc = proposal,
     send,
   }: {
     sessions?: unknown;
     sessionsStatus?: number;
+    atc?: unknown;
     send: (body: Record<string, unknown>) => { status: number; body: unknown };
   },
 ): Promise<void> {
@@ -179,6 +197,7 @@ async function stubThePilot(
   await page.route('**/api/flightops/tours/7/reports/sessions**', (route) =>
     route.fulfill(json(sessionsStatus === 200 ? sessions : { title: 'Service unavailable' }, sessionsStatus)),
   );
+  await page.route('**/api/flightops/tours/7/reports/atc**', (route) => route.fulfill(json(atc)));
   await page.route('**/api/flightops/tours/7/reports', (route) => {
     const answer = send(route.request().postDataJSON() as Record<string, unknown>);
     return route.fulfill(json(answer.body, answer.status));
@@ -209,6 +228,12 @@ test('a pilot sees where they are, chooses the flight and sends the report', asy
   await expect(page.getByRole('heading', { level: 1, name: words.report.title })).toBeVisible();
 
   await page.getByRole('radio', { name: /ITY101/ }).check();
+
+  // The controllers online along the flight, ticked; the pilot did not contact the approach.
+  await expect(page.getByText(words.report.atc.proposedLead)).toBeVisible();
+  await expect(page.getByText('Test outlines')).toBeVisible();
+  await page.getByRole('checkbox', { name: /LIMC_APP/ }).uncheck();
+
   await page.getByLabel(words.report.fields.star!, { exact: true }).fill('ODINA1A');
   await page.getByRole('button', { name: words.report.send }).click();
 
@@ -220,7 +245,29 @@ test('a pilot sees where they are, chooses the flight and sends the report', asy
     isDiversion: false,
     star: 'ODINA1A',
     sid: null,
+    atcContacts: [{ callsign: 'LIPZ_TWR', frequency: '120.205' }],
+    exemptions: [],
   });
+});
+
+test('without an archive the controllers are not available, and the report still goes', async ({ page }) => {
+  const sent: Record<string, unknown>[] = [];
+  await stubThePilot(page, {
+    atc: { available: false, proposed: [], attribution: 'Test outlines' },
+    send: (body) => {
+      sent.push(body);
+      return { status: 201, body: { ...accepted, id: 43, legId: 2, status: 'Queued' } };
+    },
+  });
+
+  await page.goto(`/tours/${SLUG}/report?leg=2`);
+  await page.getByRole('radio', { name: /ITY101/ }).check();
+
+  await expect(page.getByText(words.report.atc.unavailable)).toBeVisible();
+  await page.getByRole('button', { name: words.report.send }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/tours/${SLUG}$`));
+  expect(sent[0]).toMatchObject({ atcContacts: [], exemptions: [] });
 });
 
 test('each refusal lands where it belongs: the flight above, a field on its field', async ({ page }) => {
@@ -233,6 +280,7 @@ test('each refusal lands where it belongs: the flight above, a field on its fiel
         errors: {
           sessionIds: ['flightops:errors.reportSessionClaimed'],
           sid: ['flightops:errors.reportProcedureRequired'],
+          exemptions: ['flightops:errors.exemptionNotContacted'],
         },
       },
     }),
@@ -244,6 +292,7 @@ test('each refusal lands where it belongs: the flight above, a field on its fiel
 
   await expect(page.getByText(words.errors.reportSessionClaimed!)).toBeVisible();
   await expect(page.getByText(words.errors.reportProcedureRequired!)).toBeVisible();
+  await expect(page.getByText(words.errors.exemptionNotContacted!)).toBeVisible();
   await expect(page).toHaveURL(/\/report\?leg=2$/);
 });
 

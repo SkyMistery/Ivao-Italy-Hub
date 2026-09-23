@@ -641,3 +641,30 @@ export const diversionSchema = z.object({
 });
 
 export type DiversionValues = z.output<typeof diversionSchema>;
+
+export const EXEMPTION_KINDS = ['FreeSpeed', 'DirectRouting', 'LevelChange', 'Other'] as const;
+
+/**
+ * The controllers the pilot adds to the ones proposed, and the exemptions they received (design M2 §3.3): the position of
+ * an exemption is chosen among the contacted ones, which is why the schema is built with them. Applied as it is written;
+ * the server refuses a callsign, a frequency or an exemption that is not one, and says which list.
+ */
+export function atcDeclarationSchema(contacted: readonly string[]) {
+  return z.object({
+    added: z.array(
+      z.object({
+        callsign: z.string().trim().toUpperCase().max(24),
+        frequency: z.string().trim().max(7),
+      }),
+    ),
+    exemptions: z.array(
+      z.object({
+        callsign: z.string().meta({ choices: [...contacted] }),
+        kind: z.enum(EXEMPTION_KINDS),
+        note: z.string().trim().max(MAX_TEXT),
+      }),
+    ),
+  });
+}
+
+export type AtcDeclarationValues = z.output<ReturnType<typeof atcDeclarationSchema>>;

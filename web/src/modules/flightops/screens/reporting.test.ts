@@ -3,7 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { ApiError } from '../../../shared/api/problem';
 import type { MyTourDto, PirepDto, PublicLegDto } from '../api';
 
-import { mapLeg, mergeSessions, reportActions, sessionsOf, splitRefusal } from './reporting';
+import {
+  contactsToSend,
+  declarationOf,
+  exemptionsToSend,
+  mapLeg,
+  mergeSessions,
+  reportActions,
+  sessionsOf,
+  splitRefusal,
+} from './reporting';
 
 const leg = (id: number, released = true): PublicLegDto => ({
   id,
@@ -138,5 +147,58 @@ describe('a refusal split across the page', () => {
 
     expect(details?.message).toBe('network');
     expect(flight).toBeNull();
+  });
+});
+
+describe('the controllers a report sends', () => {
+  const proposed = [
+    { callsign: 'LIRF_TWR', frequency: '118.705', origin: 'Proposed' as const },
+    { callsign: 'LIRR_CTR', frequency: null, origin: 'Proposed' as const },
+  ];
+
+  it('sends the proposed ones kept, then the added ones once, and never the removed', () => {
+    const sent = contactsToSend(
+      proposed,
+      ['LIRR_CTR'],
+      [
+        { callsign: ' limm_ctr ', frequency: '134.205' },
+        { callsign: 'LIRF_TWR', frequency: '' },
+        { callsign: '', frequency: '' },
+      ],
+    );
+
+    expect(sent).toEqual([
+      { callsign: 'LIRF_TWR', frequency: '118.705' },
+      { callsign: 'LIMM_CTR', frequency: '134.205' },
+    ]);
+  });
+
+  it('sends an exemption only once its controller is chosen, with no empty note', () => {
+    expect(
+      exemptionsToSend([
+        { callsign: 'LIRF_TWR', kind: 'FreeSpeed', note: '  ' },
+        { callsign: '', kind: 'Other', note: 'vectors' },
+      ]),
+    ).toEqual([{ callsign: 'LIRF_TWR', kind: 'FreeSpeed', note: null }]);
+  });
+
+  it('starts a correction from what the report declared', () => {
+    const report = {
+      atcContacts: [
+        { callsign: 'LIRF_TWR', frequency: '118.705', origin: 'Proposed' },
+        { callsign: 'LIRR_CTR', frequency: null, origin: 'Removed' },
+        { callsign: 'LIMM_CTR', frequency: null, origin: 'Added' },
+      ],
+      exemptions: [{ callsign: 'LIMM_CTR', kind: 'Other', note: 'vectors', status: 'Online', softens: [] }],
+    } as unknown as PirepDto;
+
+    expect(declarationOf(report)).toEqual({
+      removed: ['LIRR_CTR'],
+      declaration: {
+        added: [{ callsign: 'LIMM_CTR', frequency: '' }],
+        exemptions: [{ callsign: 'LIMM_CTR', kind: 'Other', note: 'vectors' }],
+      },
+    });
+    expect(declarationOf(null)).toEqual({ removed: [], declaration: { added: [], exemptions: [] } });
   });
 });
