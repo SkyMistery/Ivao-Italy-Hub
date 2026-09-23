@@ -312,7 +312,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T14a | I fili dei contatti nel nucleo — **fatta il 23 set 2026** | T4a, T13 | risposte, riferimenti, partecipanti, `ThreadOpeningProjection`, risolutori, `/me/contacts`, `MessageThread` |
 | T14b | Contestazioni, chiarimenti, segnalazioni — **fatta il 23 set 2026** | T14a | la contestazione che sblocca; il chiarimento dalle pagine dei tour; `fo_leg_issues`; `openIssues` |
 | T15a | Completamento, validatori, piloti, ban sul server — **fatta il 23 set 2026** | T4b, T13 | segnalazione dell'award nella transazione dell'accettazione, «aggiungi validatore» e statistiche, dati della pagina del pilota, ban e mail |
-| T15b | Le pagine delle persone | T15a | `/staff/tours/validators`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans`, `myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato» |
+| T15b | Le pagine delle persone — **fatta il 24 set 2026** | T15a | `/staff/tours/validators`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans`, `myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato» |
 | T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
 | T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
 | T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`; tarature |
@@ -1542,6 +1542,33 @@ T13 e T14:
   intere verdi in locale (Docker acceso): unit 538, integrazione 267, Vitest 467, lint, formato, typecheck, i18n.
 - **Non verificato**: il completamento di un `Open` in integrazione (stessa strada, provata dai test unitari di `OpenRules`); la coda
   degli award dalla schermata (è il giro di T15b); le statistiche con numeri veri.
+
+**T15b fatta il 24 settembre 2026** (branch `m2/t15b-people-pages`, piano 0.99, nota `decisions/2026-09-24-le-pagine-delle-persone.md`).
+Com'è andata:
+
+- **Due risposte di Carmine in apertura**, tutte e due come proposte: la pagina del pilota da una voce «Piloti» con un campo VID (più i
+  link dalla validazione e dai ban); un selettore d'anno per le statistiche e per la pagina del pilota.
+- **Il server** aggiunge poco: `MyTours` (`People/MyTours.cs`) con il blocco `MyToursProvider` e `GET /api/flightops/my-tours`, una
+  risposta sola per `/me` e per i riquadri; alle statistiche i **titoli** dei tour abilitati (`ValidatorsDto.titles`: chi ha solo
+  `Tours.ViewPilots` non legge `/api/flightops/tours`); ai fili della pagina del pilota il **dipartimento** (il link va nei suoi
+  contatti). Le tre voci di menu.
+- **Le pagine** in `screens/people.tsx`: le statistiche (tabella per validatore con «togli» su ogni abilitazione, tabelle per tour,
+  «aggiungi validatore» con il form generato), «Piloti» e la pagina del pilota, i ban (lista e form generati, niente «elimina»).
+  `ProgressLine` (barra, misura, prossima leg) è scritta una volta per i riquadri, il blocco e la pagina del pilota; la barra è il
+  `Progress` di Atmosphere, quindi **nessun componente nuovo**. Le funzioni pure in `screens/progress.ts`, con i test.
+- **I riquadri**: il server manda lo stesso riquadro a tutti; il componente, se c'è un login, chiede `my-tours` e ci disegna sopra la
+  barra — su `/tours` e nel blocco `tourCards`, perché i riquadri sono gli stessi.
+- **I test**: integrazione `ThePilotsOwnToursSayWhereTheyAreWhatWaitsAndWhatTheyFlew` in `PirepTests.People.cs` (endpoint e blocco
+  uguali, la prossima leg, il «da modificare», il tour nascosto che lascia l'elenco e non il riepilogo, il visitatore) e i titoli nelle
+  statistiche; i conteggi dei blocchi a 38 e 13; unit Vitest `progress.test.ts`; giro `full/tours-people.spec.ts` — il «fatta quando»:
+  un tour con un award, il pilota vola l'unica leg e la vede sul riquadro, il coordinatore accetta, il riquadro dice «completato», la
+  riga compare nella coda degli award e si assegna — e le pagine delle persone: «aggiungi validatore» rifiutato a un pilota e fatto
+  all'assistente, «togli», il pilota cercato per VID, un ban su un tour del giro scritto dalla sua pagina e tolto spostandone la fine.
+- **Trovato dal giro**: assegnato dalla coda, l'award torna alla coda (non al registro); il selettore del tour di un form lascia la
+  scelta dopo l'invio, quindi il giro guarda la riga del validatore e non la pagina. Guardate a 1500 px le cinque pagine nuove.
+- **Suite intere verdi in locale** (Docker acceso): unit 538, integrazione 268, Vitest 472, giro completo 35, lint, formato, typecheck, i18n.
+- **Non verificato**: la barra sui riquadri **a occhio** (il banco non ha un tour iniziato e visibile fuori dal giro: la prova è il giro,
+  che legge «0 of 1 legs» e «Completed» sul riquadro); il blocco `myTours` montato su una dashboard `/me` vera.
 
 ### T16 — Il meteo salvato
 

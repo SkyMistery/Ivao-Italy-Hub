@@ -1082,7 +1082,9 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 ### 8.1 Pubblico
 
 - **`/tours`**: tour aperti, in chiusura, e in arrivo con anteprima, come **riquadri** (foto, titolo, riassunto; per un
-  pilota barra di avanzamento e prossima leg). Anonimo: niente avanzamento.
+  pilota barra di avanzamento e prossima leg). Anonimo: niente avanzamento. **Precisato in T15b** (nota
+  `2026-09-24-le-pagine-delle-persone` §3.1): il riquadro che il server manda resta uguale per tutti; barra e prossima leg arrivano da
+  `GET /api/flightops/my-tours`, chiesto dal componente dei riquadri solo a chi ha fatto login, su `/tours` e nel blocco `tourCards`.
 - **`/tours/{slug}`**: briefing, date, aerei, regole effettive con i parametri, **mappa** (blu da fare, verdi fatte, arancioni in
   attesa, grigie non ancora rilasciate; le leg **ritirate non compaiono**, si vedono solo nella mappa dell'editor), elenco delle leg con distanza, **tempo stimato**, callsign suggeriti,
   pulsante **SimBrief**; per un tour a distanza senza leg, i vincoli e quanto manca; per il pilota i suoi PIREP, «Invia il
@@ -1101,6 +1103,11 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 
 **Precisato in T15a** (Carmine, 23 settembre): le ore del riepilogo di `myTours` sono **le ore volate**, dal decollo all'atterraggio
 registrati dal tracker sui PIREP accettati, non le ore stimate delle leg. Il blocco, nelle sue due metà, è di T15b.
+
+**Fatto in T15b** (nota `2026-09-24-le-pagine-delle-persone`): `myTours` è `MyToursProvider` sopra `MyTours` (`People/`), la stessa
+risposta di `GET /api/flightops/my-tours`: prima ciò che aspetta il pilota (i PIREP da correggere, le risposte da leggere), poi i tour
+iniziati con la barra e la prossima leg, poi il riepilogo. Un tour nascosto sparisce dall'elenco e resta nel riepilogo. A un visitatore
+il blocco risponde `signedIn: false`.
 
 ### 8.3 L'editor del tour
 
@@ -1163,6 +1170,10 @@ registrati dal tracker sui PIREP accettati, non le ore stimate delle leg. Il blo
   ha adesso** (accettati, rifiutati, da modificare, per anno di `decided_at`), ed elencano chi ha un grant suo e chi ha deciso
   nell'anno; la pagina del pilota conta gli errori sui PIREP **accettati e rifiutati** (come il suggerimento, T13a) per anno solare del
   decollo, con il nome congelato nei PIREP, e mostra i fili che chi guarda legge nei contatti del suo dipartimento.
+- **Precisato in T15b** (Carmine, 24 settembre, nota `2026-09-24-le-pagine-delle-persone`): alla pagina del pilota si arriva da una voce
+  **«Piloti»** (`/staff/tours/pilots`, un campo VID) e dai link della pagina di validazione e dei ban; le statistiche dei validatori e la
+  pagina del pilota hanno **un selettore d'anno** (`?year=`), il corrente per primo. «Banna» apre il form del ban con il VID scritto e
+  torna alla pagina. Voci di menu «Validatori», «Piloti», «Ban», tutte con `Tours.ViewPilots`.
 
 ---
 

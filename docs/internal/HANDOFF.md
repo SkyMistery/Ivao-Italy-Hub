@@ -3,9 +3,21 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T14b in `main`; T15a è fatta**: branch `m2/t15a-completion-and-people`, in PR
-(vedi `gh pr list`). Piano **0.98**. **Il prossimo passo è T15b (le pagine delle persone: validatori, pilota, ban, il blocco
-`myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato»)**, in una chat nuova, dopo il merge.
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T15a in `main`; T15b è fatta**: branch `m2/t15b-people-pages`, in PR
+(vedi `gh pr list`). Piano **0.99**. **T15 è chiusa. Il prossimo passo è T16 (il meteo salvato: `fo_weather_reports`, il job ogni 30
+minuti, lo scarico all'invio, METAR e TAF nella pagina di validazione)**, in una chat nuova, dopo il merge.
+
+> **Che cosa ha lasciato T15b** (nota `2026-09-24-le-pagine-delle-persone`, piano 0.99): le pagine delle persone stanno in
+> `screens/people.tsx` — `/staff/tours/validators` (selettore d'anno `?year=`, «togli» su ogni abilitazione, «aggiungi validatore»),
+> `/staff/tours/pilots` (un campo VID, Carmine) e `/staff/tours/pilots/{vid}` (la rotta è `$id`, come le altre del modulo),
+> `/staff/tours/bans` e `/staff/tours/bans/{id}` (`?vid=` scrive il pilota e fa tornare alla sua pagina); tre voci di menu con
+> `Tours.ViewPilots`. **`MyTours`** (`People/MyTours.cs`) è l'unica risposta a «i tour di questo pilota», letta dal blocco
+> **`flightops.myTours`** e da **`GET /api/flightops/my-tours`**; il componente dei riquadri la chiede quando c'è un login e ci disegna
+> sopra `ProgressLine` (barra `Progress` di Atmosphere, misura, prossima leg) — il riquadro del server resta uguale per tutti. Le
+> funzioni pure sono `screens/progress.ts`. ⚠️ I conteggi dei blocchi scritti nei test sono ora **38** (`uiKit.test.ts`) e **13**
+> (`DataBlockEndToEndTests`). ⚠️ Il blocco `myTours` **non** è su `/me` da sé: `/me` parte con il saluto (D3) e ce lo mette chi ne
+> compone la dashboard. Il giro è `full/tours-people.spec.ts` (il «fatta quando» di T15: tour con award → leg volata → accettata →
+> «completato» sul riquadro → coda degli award → assegnato; più validatori, pilota per VID, ban tolto spostandone la fine).
 
 > **Che cosa ha lasciato T15a** (nota `2026-09-23-completamento-validatori-piloti-ban`, piano 0.98): T15 è divisa — **T15a il server,
 > T15b le pagine**. **T15b legge**: `GET /api/flightops/validators?year=` (`ValidatorsDto`: per validatore `member`, `allTours`,

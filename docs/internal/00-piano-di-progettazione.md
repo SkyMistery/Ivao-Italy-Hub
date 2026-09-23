@@ -1,9 +1,22 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.98 — 23 settembre 2026 (**completamento, validatori, piloti, ban** sul server: il completamento che segnala l'award nella transazione dell'accettazione, «aggiungi validatore» sul tour di primo livello, la pagina del pilota, i ban con la mail, T15a)
+**Versione documento:** 0.99 — 24 settembre 2026 (**le pagine delle persone**: statistiche dei validatori, la pagina del pilota cercata per VID, i ban, il blocco `myTours`, l'avanzamento del pilota sui riquadri, il giro «completato → award assegnato», T15b)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.99** (24 set 2026, fase T15b di M2): **le pagine delle persone** — T15 è chiusa. Nota
+`decisions/2026-09-24-le-pagine-delle-persone.md`, **due risposte di Carmine**, tutte e due come proposte: (1) alla pagina del pilota si
+arriva da **una voce «Piloti»** con un campo VID, più i link dalla pagina di validazione e dai ban — nessuna lista degli iscritti;
+(2) le statistiche dei validatori hanno **un selettore d'anno** (il corrente, il precedente a un clic, fino a cinque indietro) e non
+i due anni sempre insieme. **Nel codice**: `MyTours` (`People/`), una risposta sola a «i tour di questo pilota» — iniziati e ancora
+visibili con la misura di `PilotProgress` e la prossima leg, PIREP `ToModify`, fili dei tour `Answered`, riepilogo con i minuti volati —
+letta dal blocco **`flightops.myTours`** e da **`GET /api/flightops/my-tours`**, che i riquadri di `/tours` (e del blocco `tourCards`)
+chiedono quando qualcuno ha fatto login: **il riquadro resta uguale per tutti** (T10) e la barra ci si disegna sopra. Le pagine
+`/staff/tours/validators`, `/staff/tours/pilots`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans` (lista e form generati) e le tre voci
+di menu, tutte con `Tours.ViewPilots`. Al server di T15a si aggiungono **i titoli dei tour abilitati** nelle statistiche (un validatore
+con il solo grant non legge la lista dei tour) e **il dipartimento dei fili** nella pagina del pilota (il link va nei contatti di quel
+dipartimento). Nessuna estensione del nucleo, nessun componente nuovo (la barra è il `Progress` di Atmosphere).
 
 **Changelog 0.98** (23 set 2026, fase T15a di M2): **completamento, validatori, piloti, ban** — il server. Nota
 `decisions/2026-09-23-completamento-validatori-piloti-ban.md`, **quattro risposte di Carmine**, tutte come proposte: (1) **T15 divisa** in
