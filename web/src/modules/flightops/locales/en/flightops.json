@@ -811,6 +811,82 @@
       "miles": "{{distance}} NM",
       "requiredSubtours": "Subtours to complete",
       "goal": "Goal"
+    },
+    "progress": "State",
+    "reportLeg": "Report",
+    "legProgress": {
+      "Todo": "To fly",
+      "Done": "Done",
+      "Pending": "Waiting",
+      "Locked": "Locked"
+    },
+    "signInToReport": "Sign in to fly the tour and send reports",
+    "pilot": "Your tour",
+    "finished": "You have completed this tour.",
+    "goalProgress": "Goal: {{done}} of {{target}}",
+    "goalMissing": "flights missing at {{airports}}",
+    "sendReport": "Send the report",
+    "myReports": "Your reports",
+    "reportStatus": {
+      "Queued": "Queued",
+      "InReview": "In review",
+      "Accepted": "Accepted",
+      "ToModify": "To modify",
+      "Rejected": "Rejected",
+      "Withdrawn": "Withdrawn"
+    },
+    "reportFlown": "Took off {{date}} UTC",
+    "reportDiverted": "diverted to {{airport}}",
+    "correct": "Correct",
+    "withdraw": "Withdraw",
+    "withdrawTitle": "Withdraw the report?",
+    "withdrawDescription": "The leg is to fly again and the flight is free: you can report it again, on another tour too.",
+    "withdrawn": "Report withdrawn."
+  },
+  "report": {
+    "title": "Send the report",
+    "correctTitle": "Correct the report",
+    "leg": "Leg {{number}} · {{from}} → {{to}}",
+    "openFlight": "A flight for the tour",
+    "nothingToFly": "You have no leg to report on this tour right now.",
+    "notFlyable": "This leg cannot be reported now. These can:",
+    "flight": "The flight",
+    "secondFlight": "The flight from {{from}} to {{to}}",
+    "searching": "Looking for your flights in the tracker…",
+    "noFlights": "No flight of yours with a flight plan between these airports in the last {{days}} days that is not already in another report. A flight that just landed can take a few minutes to reach the tracker.",
+    "noFlightsOpen": "No flight of yours with a flight plan in the last {{days}} days that is not already in another report. A flight that just landed can take a few minutes to reach the tracker.",
+    "noSecondFlight": "No flight of yours from {{from}} to {{to}} in the tracker that is not already in another report.",
+    "sessionTime": "{{from}} – {{to}} UTC",
+    "diverted": "The flight ended at another airport (diversion)",
+    "diversionFirst": "Write the airport you diverted to, then choose the flight that took the aircraft from there to the destination.",
+    "details": "The details",
+    "proceduresRequired": "This tour asks for the procedures flown: SID, STAR and approach on an IFR plan; the SID only on IFR then VFR; STAR and approach only on VFR then IFR.",
+    "send": "Send the report",
+    "resend": "Send the report again",
+    "sent": "Report sent: it is in the queue for validation.",
+    "resent": "Report sent again: it is back in the queue.",
+    "fields": {
+      "sid": "SID",
+      "star": "STAR",
+      "approach": "Approach (IAP)",
+      "pilotRemarks": "Notes for the validator",
+      "diversionIcao": "Diversion airport (ICAO)",
+      "diversionReason": "Reason",
+      "diversionNote": "What happened"
+    },
+    "hints": {
+      "sid": "As you flew it, for example RAVA5A. Empty if you flew none.",
+      "approach": "For example ILS Z RWY 16L."
+    },
+    "options": {
+      "diversionReason": {
+        "none": "Choose a reason",
+        "Weather": "Weather",
+        "Technical": "Technical problem",
+        "Medical": "Medical emergency",
+        "AtcInstruction": "ATC instruction",
+        "Other": "Other"
+      }
     }
   },
   "events": {

@@ -2,7 +2,7 @@ import { listSearchSchema } from '../../shared/list';
 import type { ModuleManifest } from '../../shared/modules';
 
 import { errorCatalogBlock, tourCardsBlock } from './blocks';
-import { tourEditorSearchSchema, tourRuleSearchSchema } from './schemas';
+import { reportSearchSchema, tourEditorSearchSchema, tourRuleSearchSchema } from './schemas';
 import {
   TOURS_EDIT,
   TOURS_MANAGE_RULES,
@@ -17,6 +17,7 @@ import {
   AircraftProfilesPage,
 } from './screens/aircraft';
 import { PublicTourPage, PublicToursPage } from './screens/public';
+import { ReportPage } from './screens/report';
 import { ErrorForm, ErrorsPage, RuleForm, RulesPage, TourRuleForm } from './screens/rules';
 import { FlightOpsSettingsPage } from './screens/settings';
 import { CallsignRuleForm, HubForm, RotationForm, TourConstraintForm } from './screens/shape';
@@ -32,8 +33,7 @@ import {
  * The tours (M2), as the front end knows them: `IvaoHub.Modules.FlightOps` on the other side. T5 is the
  * skeleton — the aircraft data and the settings, in the back office — T6 the tours and their templates, T7 their legs
  * and their shape: hubs and rotations, subtours, callsign constraints, each row in a form of its own under its tour; T9
- * the rules and the errors, and the first block, the public errors. Public pages come with the phases that give them
- * something to show.
+ * the rules and the errors, and the first block, the public errors; T10 the public pages; T11b the pilot's report.
  */
 export const flightOpsManifest: ModuleManifest = {
   key: 'flightops',
@@ -50,6 +50,13 @@ export const flightOpsManifest: ModuleManifest = {
       area: 'public',
       path: '/tours/$slug',
       component: PublicTourPage,
+    },
+    // The pilot's report (T11b): a page of its own, and only signed in — the login brings the pilot back here.
+    {
+      area: 'member',
+      path: '/tours/$slug/report',
+      validateSearch: reportSearchSchema,
+      component: ReportPage,
     },
     {
       area: 'staff',

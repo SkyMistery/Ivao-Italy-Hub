@@ -598,3 +598,46 @@ export function copyRulesSchema(tours: readonly ChoiceOption[] = []) {
 }
 
 export type CopyRulesFormValues = z.output<ReturnType<typeof copyRulesSchema>>;
+
+// ---- the pilot's report (T11b) ----------------------------------------------------------------------
+
+/**
+ * `/tours/{slug}/report`: which leg (`?leg=`), or which report «to modify» is being corrected (`?report=`). Numbers
+ * from the address arrive as strings and are coerced, as T9 learned with `?amends=`.
+ */
+export const reportSearchSchema = z.object({
+  leg: z.coerce.number().int().optional(),
+  report: z.coerce.number().int().optional(),
+});
+
+export type ReportSearch = z.output<typeof reportSearchSchema>;
+
+/** The bounds the server holds (`PirepValidation`). */
+const MAX_PROCEDURE = 16;
+const MAX_TEXT = 2000;
+
+/**
+ * What the pilot writes once the flight is chosen: the procedures flown and a note. The server decides which procedures
+ * a tour requires, by the flight rules of the plan at take-off (design M2 §3.2 point 4) — the form offers all three and
+ * says so in their hints, rather than guessing the rules of a plan the browser never read.
+ */
+export const reportDetailsSchema = z.object({
+  sid: z.string().trim().max(MAX_PROCEDURE),
+  star: z.string().trim().max(MAX_PROCEDURE),
+  approach: z.string().trim().max(MAX_PROCEDURE),
+  pilotRemarks: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type ReportDetailsValues = z.output<typeof reportDetailsSchema>;
+
+export const DIVERSION_REASONS = ['Weather', 'Technical', 'Medical', 'AtcInstruction', 'Other'] as const;
+
+/** A flight that ended elsewhere (§3.4): where, why, and a line about it. Applied as it is written, no button. */
+export const diversionSchema = z.object({
+  // The server says whether the airport is one (`diversionIcao`): the browser only keeps it to four letters.
+  diversionIcao: z.string().trim().toUpperCase().max(4),
+  diversionReason: z.enum(DIVERSION_REASONS).optional(),
+  diversionNote: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type DiversionValues = z.output<typeof diversionSchema>;
