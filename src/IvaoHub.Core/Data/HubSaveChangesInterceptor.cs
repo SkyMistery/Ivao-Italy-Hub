@@ -373,6 +373,19 @@ public sealed class HubSaveChangesInterceptor(
             return;
         }
 
+        // The second permission a row may be written with (M2, T13): a validator enabled on one tour decides its reports.
+        // Asked with the row's scope, never of the member the row is about, and never to move the row somewhere else.
+        if (entry.State == EntityState.Modified
+            && entry.Metadata.ClrType.GetCustomAttributes(typeof(AlsoWrittenWithAttribute), inherit: false)
+                is [AlsoWrittenWithAttribute alternative, ..]
+            && (entry.Entity as IHasStakeholder)?.StakeholderVid != currentUser.Vid
+            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments)
+            && owned.OwnerDepartments.Any(department =>
+                currentUser.Has(alternative.Permission, department, (entry.Entity as IHasResourceScope)?.ResourceScope)))
+        {
+            return;
+        }
+
         var permission = ResolvePermissionArea(context, entry.Metadata.ClrType) + ".Edit";
 
         // Held on one of the departments of the row: whoever creates a row of a module has to put in

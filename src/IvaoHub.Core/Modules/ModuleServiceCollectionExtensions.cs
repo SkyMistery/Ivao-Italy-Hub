@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Preferences;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -72,6 +73,10 @@ public static class ModuleServiceCollectionExtensions
         // The preferences, composed the same way and for the same reason (M2, T4b).
         services.TryAddSingleton(provider => new PreferenceCatalog(
             provider.GetRequiredService<ModuleRegistry>().Enabled.Select(module => (module.Key, module.Preferences))));
+
+        // And the kinds of notification (M2, T13).
+        services.TryAddSingleton(provider => new NotificationTypeCatalog(
+            provider.GetRequiredService<ModuleRegistry>().Enabled.Select(module => (module.Key, module.NotificationTypes))));
 
         return services;
     }

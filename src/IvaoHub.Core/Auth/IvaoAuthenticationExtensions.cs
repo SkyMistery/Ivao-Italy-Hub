@@ -40,6 +40,7 @@ public static class IvaoAuthenticationExtensions
         services.AddMemoryCache();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
         services.AddScoped<UserSyncService>();
+        services.AddScoped<IPermissionHolders>(provider => provider.GetRequiredService<UserSyncService>());
         services.AddScoped<SuperadminService>();
         services.AddScoped<PositionGrantSeeder>();
         services.AddScoped<IvaoUserTokenStore>();

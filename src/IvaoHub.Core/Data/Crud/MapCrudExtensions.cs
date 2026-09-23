@@ -632,6 +632,14 @@ public static class MapCrudExtensions
             .MakeGenericMethod(typeof(TEntity), property.PropertyType);
 
         query = (IQueryable<TEntity>)method.Invoke(null, [query, selector])!;
+
+        // Rows equal on the column asked for keep the list's own order among them: the review queue sorted by tour is
+        // each tour's reports oldest first (M2, T13), and no page shows equal rows in whatever order the database likes.
+        if (options.DefaultOrder is not null)
+        {
+            query = ((IOrderedQueryable<TEntity>)query).ThenBy(options.DefaultOrder);
+        }
+
         return true;
     }
 

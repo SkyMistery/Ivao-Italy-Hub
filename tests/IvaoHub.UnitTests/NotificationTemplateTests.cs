@@ -1,5 +1,7 @@
+using System.Reflection;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Options;
@@ -12,7 +14,8 @@ namespace IvaoHub.UnitTests;
 /// <c>pnpm i18n:check</c> cannot see them, exactly like the keys of a block: the language check of
 /// the build reads literals, and a key made of a variable is not one.
 /// <para>So the same discipline the block registry gets is applied here: whoever adds a kind of
-/// notification does not add a test, because this one already reads the list.</para>
+/// notification does not add a test, because this one already reads the list — the core's and every
+/// module's (M2, T13), whose words are in the module's own file.</para>
 /// </summary>
 public sealed class NotificationTemplateTests
 {
@@ -21,7 +24,11 @@ public sealed class NotificationTemplateTests
     {
         var catalog = Catalog(out var locales);
 
-        foreach (var type in NotificationTypes.All)
+        var types = new NotificationTypeCatalog(Modules().Select(module => (module.Key, module.NotificationTypes)));
+
+        Assert.Contains(types.All, type => !NotificationTypes.All.Contains(type));
+
+        foreach (var type in types.All)
         {
             foreach (var locale in locales)
             {
@@ -64,6 +71,15 @@ public sealed class NotificationTemplateTests
         Assert.Contains("The body of it", mail.Text, StringComparison.Ordinal);
         Assert.Contains("{{url}}", mail.Text, StringComparison.Ordinal);
     }
+
+    /// <summary>Every module this test project is built with, found rather than listed, so a new one is read without a line here.</summary>
+    private static IEnumerable<IModule> Modules() =>
+        Assembly.GetExecutingAssembly().GetReferencedAssemblies()
+            .Where(name => name.Name?.StartsWith("IvaoHub.Modules.", StringComparison.Ordinal) == true)
+            .Select(Assembly.Load)
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => typeof(IModule).IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false })
+            .Select(type => (IModule)Activator.CreateInstance(type)!);
 
     /// <summary>The language files of this repository, read the way the server reads them.</summary>
     private static LocaleCatalog Catalog(out IReadOnlyList<string> locales)

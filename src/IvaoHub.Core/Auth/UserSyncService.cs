@@ -49,7 +49,7 @@ public sealed class UserSyncService(
     IOptions<DivisionOptions> division,
     PermissionCatalog catalogue,
     IClock clock,
-    ILogger<UserSyncService> logger)
+    ILogger<UserSyncService> logger) : IPermissionHolders
 {
     public async Task<SignedInUser> UpsertAsync(IvaoUserProfile profile, CancellationToken cancellationToken = default)
     {
@@ -180,6 +180,52 @@ public sealed class UserSyncService(
             user,
             parsed,
             EffectivePermissionsCalculator.Calculate(parsed, grants, user.IsSuperadmin, clock.UtcNow, catalogue));
+    }
+
+    /// <summary>
+    /// Everybody who holds a permission, with their effective permissions to ask where: a notification that goes to
+    /// "whoever may validate", each with their own tours (M2, T13, note 2026-09-23-la-validazione §3.3).
+    /// <para>The answer is the calculator's, run on every candidate exactly as a login runs it — the staff, whoever a
+    /// grant names, the super administrators — so it cannot drift from what the same people are allowed on the next
+    /// request. Nobody else can hold anything: a member with no position and no grant holds no permission.</para>
+    /// </summary>
+    public async Task<IReadOnlyList<PermissionHolder>> HoldersOfAsync(string permission, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(permission);
+
+        var options = division.Value;
+        var firIds = await firs.GetFirIdsAsync(cancellationToken);
+
+        var positions = (await database.UserStaffPositions.AsNoTracking()
+                .Select(position => new { position.Vid, position.Position })
+                .ToListAsync(cancellationToken))
+            .GroupBy(position => position.Vid)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(position => StaffRoleMap.Parse(position.Position, options.Code, firIds)).OfType<StaffPosition>().ToArray());
+
+        var grants = await database.UserGrants.AsNoTracking().ToListAsync(cancellationToken);
+        var named = grants.Where(grant => grant.Vid is not null).Select(grant => grant.Vid!.Value);
+
+        var candidates = positions.Keys.Concat(named).ToHashSet();
+        var users = await database.Users.AsNoTracking()
+            .Where(user => candidates.Contains(user.Vid) || user.IsSuperadmin)
+            .ToListAsync(cancellationToken);
+
+        var now = clock.UtcNow;
+        var holders = new List<PermissionHolder>();
+        foreach (var user in users)
+        {
+            var held = positions.GetValueOrDefault(user.Vid) ?? [];
+            var own = grants.Where(grant => grant.Vid == user.Vid || grant.PositionDepartment != null);
+            var permissions = EffectivePermissionsCalculator.Calculate(held, own, user.IsSuperadmin, now, catalogue);
+            if (PermissionSet.HasAny(permissions, user.IsSuperadmin, permission))
+            {
+                holders.Add(new PermissionHolder(user.Vid, user.IsSuperadmin, permissions));
+            }
+        }
+
+        return holders;
     }
 
     private async Task ReplacePositionsAsync(

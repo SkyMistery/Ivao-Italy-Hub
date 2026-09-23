@@ -88,6 +88,13 @@ public interface IModule
     IReadOnlyList<PreferenceDescriptor> Preferences { get; }
 
     /// <summary>
+    /// The kinds of notification it sends through the one notification service, each named after the
+    /// module (<c>flightops.pirepAccepted</c>). A member switches each off like one of the core's; the
+    /// words are in the module's language file, under <c>mail.{type}</c> (M2, T13).
+    /// </summary>
+    IReadOnlyList<string> NotificationTypes { get; }
+
+    /// <summary>
     /// The settings its department changes from the interface, or null for a module that has none. The
     /// core keeps them in <c>hub_division_settings</c> and serves them at <c>/api/modules/{key}/settings</c>
     /// behind the permission the descriptor names (M2, T5).
@@ -131,6 +138,8 @@ public abstract class ModuleBase : IModule
     public virtual IReadOnlyList<string> ReservedSegments => [];
 
     public virtual IReadOnlyList<PreferenceDescriptor> Preferences => [];
+
+    public virtual IReadOnlyList<string> NotificationTypes => [];
 
     public virtual ModuleSettingsDescriptor? Settings => null;
 
