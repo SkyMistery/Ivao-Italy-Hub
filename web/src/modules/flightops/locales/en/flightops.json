@@ -8,7 +8,8 @@
     "aircraftGroups": "Aircraft groups",
     "settings": "Tour settings",
     "rules": "Tour rules",
-    "errors": "Tour errors"
+    "errors": "Tour errors",
+    "issues": "Leg issues"
   },
   "tours": {
     "title": "Tours",
@@ -355,7 +356,13 @@
     "reviewRejectNeedsError": "A rejection says which errors: mark at least one.",
     "reviewToModifyNeedsNote": "Tell the pilot what to correct.",
     "reviewOverrideNeedsReason": "The decision goes against the suggestion: say why.",
-    "reviewNotDecided": "Only a decision already taken can be reopened."
+    "reviewNotDecided": "Only a decision already taken can be reopened.",
+    "disputeAlready": "This report has already been disputed. Write in its thread instead.",
+    "disputeNotRejected": "Only a rejected report can be disputed.",
+    "disputeWindowClosed": "The time to dispute this report is over.",
+    "disputeNotOpen": "There is no open dispute on this report.",
+    "disputeThreadUnreadable": "You cannot read the thread of this dispute, so your answer could not reach the pilot. Ask somebody who reads the department's contacts.",
+    "reviewDisputed": "Under an open dispute the decision is reopened by upholding the dispute."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -797,6 +804,16 @@
       "empty": "No report is waiting on the tours you may validate.",
       "waiting_one": "{{count}} report, waiting since {{since}} UTC",
       "waiting_other": "{{count}} reports, the oldest since {{since}} UTC"
+    },
+    "openIssues": {
+      "label": "What else waits for the tours",
+      "empty": "Nothing waits: no open issue on the legs, no dispute or clarification without an answer.",
+      "legIssues_one": "{{count}} open issue on the legs",
+      "legIssues_other": "{{count}} open issues on the legs",
+      "disputes_one": "{{count}} dispute without an answer",
+      "disputes_other": "{{count}} disputes without an answer",
+      "clarifications_one": "{{count}} clarification without an answer",
+      "clarifications_other": "{{count}} clarifications without an answer"
     }
   },
   "public": {
@@ -864,7 +881,29 @@
     "withdraw": "Withdraw",
     "withdrawTitle": "Withdraw the report?",
     "withdrawDescription": "The leg is to fly again and the flight is free: you can report it again, on another tour too.",
-    "withdrawn": "Report withdrawn."
+    "withdrawn": "Report withdrawn.",
+    "ask": "Ask for a clarification",
+    "askAbout": "Ask about it",
+    "dispute": {
+      "Open": "Disputed: the next legs are open while it is looked at again",
+      "Upheld": "Dispute upheld: back in the queue",
+      "Dismissed": "Dispute turned down"
+    },
+    "disputeThread": "the thread",
+    "disputableUntil": "You can dispute it until {{date}} UTC",
+    "disputeAction": "Dispute",
+    "disputeTitle": "Dispute the rejection?",
+    "disputeDescription": "Say what should be looked at again. While the dispute is open the next legs are not held; the answer comes in a thread you will find in your contacts.",
+    "disputed": "Dispute sent. The answer will come in the thread.",
+    "issueAction": "Report a problem",
+    "issueTitle": "A problem on leg {{number}} · {{from}} → {{to}}",
+    "issueDescription": "An airport closed, a route that does not exist, a callsign that does not fit: the department that looks after the tour reads it.",
+    "issueSend": "Send",
+    "issueSent": "Thank you: the department has it.",
+    "fields": {
+      "text": "What should be looked at again",
+      "body": "What is wrong"
+    }
   },
   "report": {
     "title": "Send the report",
@@ -971,7 +1010,7 @@
     "flightLine": "{{callsign}} · {{from}} → {{to}} · took off {{takeoff}} UTC, landed {{landing}} UTC",
     "atcUnavailable": "The archive of ATC sessions was not available when the report was sent: the controllers are as the pilot declared them.",
     "noAtc": "No controller declared.",
-    "profile": "In this tour: {{reported}} reported, {{accepted}} accepted, {{rejected}} rejected, {{disputed}} disputed.",
+    "profile": "In this tour: {{reported}} reported, {{accepted}} accepted, {{rejected}} rejected.",
     "noBans": "No ban, now or in the past.",
     "banInForce": "Banned from {{from}} to {{to}}: {{reason}}",
     "banPast": "Was banned from {{from}} to {{to}}: {{reason}}",
@@ -992,7 +1031,8 @@
       "errors": "Errors",
       "suggestion": "Suggestion",
       "decision": "Decision",
-      "history": "History"
+      "history": "History",
+      "dispute": "Dispute"
     },
     "plan": {
       "revision": "Revision",
@@ -1024,7 +1064,8 @@
       "shown": "Reports",
       "waiting": "Waiting and in review",
       "decided": "Decided",
-      "order": "Order"
+      "order": "Order",
+      "disputed": "Disputed"
     },
     "order": {
       "date": "By date",
@@ -1044,13 +1085,16 @@
       "noteToPilot": "Note to the pilot",
       "staffNote": "Note for the staff",
       "overrideReason": "Why against the suggestion",
-      "reason": "Why"
+      "reason": "Why",
+      "dispute": "Dispute",
+      "answer": "Answer to the pilot"
     },
     "hints": {
       "noteToPilot": "The pilot reads it in the email and on their report. Required for «to modify».",
       "staffNote": "Only the staff reads it.",
       "overrideReason": "Required when the outcome goes against the suggestion.",
-      "reason": "It stays in the history of the report."
+      "reason": "It stays in the history of the report.",
+      "answer": "It goes into the thread as the department's answer: the pilot reads it there and by email, without your name."
     },
     "options": {
       "status": {
@@ -1064,7 +1108,9 @@
       "outcome": {
         "Accepted": "Accepted",
         "ToModify": "To modify",
-        "Rejected": "Rejected"
+        "Rejected": "Rejected",
+        "Upheld": "Upheld: back in the queue",
+        "Dismissed": "Turned down"
       },
       "origin": {
         "Proposed": "Proposed, confirmed",
@@ -1075,8 +1121,22 @@
         "Online": "Controller online",
         "NotOnline": "Controller not online",
         "Unverifiable": "Not verifiable"
+      },
+      "dispute": {
+        "Open": "Disputed"
+      },
+      "disputeStatus": {
+        "Open": "Dispute open",
+        "Upheld": "Dispute upheld",
+        "Dismissed": "Dispute turned down"
       }
-    }
+    },
+    "disputes": "Disputes in this tour: {{open}} open, {{upheld}} upheld, {{dismissed}} turned down.",
+    "disputedOn": "Disputed on {{date}} UTC",
+    "disputeDecidedBy": "Decided by {{name}} on {{date}} UTC",
+    "disputeThread": "The thread of the dispute",
+    "decideDispute": "Decide the dispute",
+    "disputeDecided": "Dispute decided. The answer is in the thread, and the pilot has it by email."
   },
   "events": {
     "submitted": "Sent",
@@ -1084,7 +1144,10 @@
     "withdrawn": "Withdrawn by the pilot",
     "withdrawnAutomatically": "Withdrawn: not corrected within the report window",
     "taken": "Taken",
-    "released": "Put back in the queue"
+    "released": "Put back in the queue",
+    "disputed": "Disputed by the pilot",
+    "disputeUpheld": "Dispute upheld: back in the queue",
+    "disputeDismissed": "Dispute turned down"
   },
   "notifications": {
     "pirepAccepted": {
@@ -1102,6 +1165,10 @@
     "reviewDigest": {
       "title": "Digest of the reports to validate",
       "description": "One email a day with the reports waiting on the tours you may validate. None when the queue is empty."
+    },
+    "legIssueReported": {
+      "title": "Issues reported on the legs",
+      "description": "An email to the department's mailbox when a pilot reports a problem on a leg."
     }
   },
   "mail": {
@@ -1123,6 +1190,62 @@
       "reviewDigest": {
         "subject": "[Tours] {{count}} reports to validate",
         "body": "There are {{count}} reports waiting on the tours you may validate (in brackets, since when the oldest has waited):\n\n{{tours}}\n\nThe queue: {{url}}\n\n---\nYou receive this email because you may validate tour reports. You can switch it off from your profile page."
+      },
+      "legIssueReported": {
+        "subject": "[Tours] Issue on a leg: {{tour}}",
+        "body": "The pilot with VID {{vid}} reported a problem on leg {{leg}} of the tour \"{{tour}}\":\n\n{{body}}\n\nRead it and close it: {{url}}\n\n---\nThis email goes to the department's mailbox."
+      }
+    }
+  },
+  "threads": {
+    "pirepLabel": "{{tour}} · leg {{number}} {{from}} → {{to}} ({{date}})",
+    "pirepLabelOpen": "{{tour}} · {{from}} → {{to}} ({{date}})",
+    "legLabel": "{{tour}} · leg {{number}} {{from}} → {{to}}",
+    "ruleLabel": "{{tour}} · {{code}} {{title}}",
+    "disputeSubject": "Dispute: {{label}}"
+  },
+  "ask": {
+    "title": "Ask for a clarification",
+    "description": "Ask the department to explain a decision, a leg or a rule. It changes nothing and is not a dispute; the answer comes in a thread in your contacts.",
+    "subject": "Clarification: {{tour}}",
+    "report": "Report {{route}} of {{date}} ({{status}})",
+    "send": "Send",
+    "fields": {
+      "subject": "Subject",
+      "body": "Your question",
+      "references": "What it is about"
+    },
+    "hints": {
+      "references": "Tick one or more: whoever answers sees each of them."
+    }
+  },
+  "issues": {
+    "title": "Issues on the legs",
+    "description": "The problems the pilots report on the legs of the tours. Close one when it is dealt with.",
+    "one": "Issue on {{tour}}",
+    "open": "Open",
+    "toTour": "the tour",
+    "filters": {
+      "shown": "Issues",
+      "open": "Open",
+      "all": "Open and closed"
+    },
+    "fields": {
+      "tourTitle": "Tour",
+      "leg": "Leg",
+      "pilotName": "Pilot",
+      "body": "What the pilot wrote",
+      "status": "Status",
+      "createdAt": "Reported",
+      "staffNote": "Note for the staff"
+    },
+    "hints": {
+      "staffNote": "What was done, for the rest of the staff. The pilot does not read it."
+    },
+    "options": {
+      "status": {
+        "Open": "Open",
+        "Resolved": "Resolved"
       }
     }
   }

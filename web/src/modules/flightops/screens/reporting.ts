@@ -1,4 +1,5 @@
 import { ApiError } from '../../../shared/api/problem';
+import type { ChoiceOption } from '../../../shared/forms';
 import type { RouteMapLeg, RouteMapStatus } from '../../../shared/ui';
 import type {
   AtcContactDto,
@@ -9,9 +10,10 @@ import type {
   PirepDto,
   PirepStatus,
   PublicLegDto,
+  PublicTourDto,
   TrackerSessionDto,
 } from '../api';
-import type { AtcDeclarationValues } from '../schemas';
+import type { AskSearch, AtcDeclarationValues } from '../schemas';
 
 /**
  * What the pilot's screens compute, which is little: the server answers every question of the rules (`TourRules`), and
@@ -173,4 +175,56 @@ export function exemptionsToSend(exemptions: AtcDeclarationValues['exemptions'])
       kind: exemption.kind,
       note: exemption.note.trim() === '' ? null : exemption.note.trim(),
     }));
+}
+
+/** A report the pilot may ask to have explained (§3.10, T14b): one that was decided. */
+export function isDecided(status: PirepStatus): boolean {
+  return status === 'Accepted' || status === 'ToModify' || status === 'Rejected';
+}
+
+/** How a clarification cites the tour's objects, spelled as `FlightOpsReferences` reads them on the server. */
+export const references = {
+  pirep: (id: number) => `pirep:${id}`,
+  leg: (id: number) => `leg:${id}`,
+  rule: (tourId: number, ruleId: number) => `rule:${tourId}:${ruleId}`,
+} as const;
+
+/** How the page words each object it offers to cite; the page knows the language, this does not. */
+export interface ChoiceWords {
+  report: (report: PirepDto) => string;
+  leg: (leg: PublicLegDto) => string;
+  rule: (rule: PublicTourDto['rules'][number]) => string;
+}
+
+/**
+ * What a pilot may cite in a clarification about a tour, in the page's order: their decided reports, newest first, the legs,
+ * the rules in force.
+ */
+export function clarificationChoices(
+  tour: Pick<PublicTourDto, 'id' | 'legs' | 'rules'>,
+  reports: readonly PirepDto[],
+  words: ChoiceWords,
+): ChoiceOption[] {
+  return [
+    ...reports
+      .filter((report) => isDecided(report.status))
+      .map((report) => ({ value: references.pirep(report.id), label: words.report(report) })),
+    ...tour.legs.map((leg) => ({ value: references.leg(leg.id), label: words.leg(leg) })),
+    ...tour.rules.map((rule) => ({ value: references.rule(tour.id, rule.id), label: words.rule(rule) })),
+  ];
+}
+
+/** The object the pilot came from (`?pirep=`, `?leg=`, `?rule=`), ticked already — when the page offers it at all. */
+export function initialReferences(
+  search: AskSearch,
+  tourId: number,
+  choices: readonly ChoiceOption[],
+): string[] {
+  const wanted = [
+    search.pirep === undefined ? null : references.pirep(search.pirep),
+    search.leg === undefined ? null : references.leg(search.leg),
+    search.rule === undefined ? null : references.rule(tourId, search.rule),
+  ];
+
+  return choices.map((choice) => choice.value).filter((value) => wanted.includes(value));
 }

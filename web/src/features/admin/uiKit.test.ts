@@ -38,9 +38,9 @@ test('the gallery shows the whole set of blocks the milestone declares', () => {
   // whole set the milestone declared; G14 added the two tables of an operational document, and the
   // interactive block of 12 September is the thirtieth; D3 added the three of the personal
   // dashboards; the tours brought the first block of a module, the public errors (M2, T9), and the
-  // cards of the tours with it (T10), and the queue of the validators (T13b) — losing
-  // one has to be something CI says out loud.
-  expect(registry.blocks).toHaveLength(36);
+  // cards of the tours with it (T10), the queue of the validators (T13b) and what else waits for
+  // their staff (T14b) — losing one has to be something CI says out loud.
+  expect(registry.blocks).toHaveLength(37);
 });
 
 test('a block registers example props that its own schema accepts', () => {

@@ -8,8 +8,9 @@ import { staffBootstrap, stubTheApi } from './fixtures';
 /**
  * The validation in a browser, with the server stubbed (M2, T13b): the queue keeps its order as the validator's preference
  * and narrows to a tour; the page of a report is taken, its errors ticked — the suggestion asked of the server each time,
- * never worked out here — and decided, with the refusal of the server under its field. What the server decides is proved
- * by `PirepTests.Review`; the round against the real server is `full/tours-review.spec.ts`.
+ * never worked out here — and decided, with the refusal of the server under its field; a dispute is decided with the answer
+ * the pilot reads in its thread (T14b). What the server decides is proved by `PirepTests.Review` and `PirepTests.Disputes`;
+ * the rounds against the real server are `full/tours-review.spec.ts` and `full/tours-dispute.spec.ts`.
  */
 
 const words = JSON.parse(
@@ -19,9 +20,15 @@ const words = JSON.parse(
     title: string;
     take: string;
     decide: string;
-    fields: { overrideReason: string };
+    decideDispute: string;
+    disputeThread: string;
+    fields: { overrideReason: string; answer: string; outcome: string };
     order: { tour: string };
-    options: { status: { Rejected: string; Accepted: string } };
+    options: {
+      status: { Rejected: string; Accepted: string; Queued: string };
+      outcome: { Upheld: string };
+      disputeStatus: { Open: string; Upheld: string };
+    };
     plan: { atTakeoff: string };
   };
   errors: { reviewOverrideNeedsReason: string };
@@ -189,7 +196,9 @@ function review(overrides: Record<string, unknown> = {}) {
       reported: 3,
       accepted: 2,
       rejected: 0,
-      disputed: 0,
+      disputesOpen: 0,
+      disputesUpheld: 0,
+      disputesDismissed: 0,
       bans: [],
     },
     assignedTo: null,
@@ -211,7 +220,14 @@ function review(overrides: Record<string, unknown> = {}) {
         note: 'flightops:events.submitted',
       },
     ],
-    actions: { canTake: true, canRelease: false, canDecide: false, canReopen: false },
+    dispute: null,
+    actions: {
+      canTake: true,
+      canRelease: false,
+      canDecide: false,
+      canReopen: false,
+      canDecideDispute: false,
+    },
     rowVersion: '2026-09-22T12:00:00Z',
     ...overrides,
   };
@@ -228,11 +244,16 @@ interface Seen {
   preference: unknown[];
   suggestion: string[];
   decisions: Record<string, unknown>[];
+  disputes: Record<string, unknown>[];
 }
 
-async function stubTheValidator(page: Page, stored: unknown = null): Promise<Seen> {
-  const seen: Seen = { queue: [], preference: [], suggestion: [], decisions: [] };
-  let current = review();
+async function stubTheValidator(
+  page: Page,
+  stored: unknown = null,
+  initial: Record<string, unknown> = {},
+): Promise<Seen> {
+  const seen: Seen = { queue: [], preference: [], suggestion: [], decisions: [], disputes: [] };
+  let current = review(initial);
 
   await stubTheApi(page);
   await page.route('**/api/me', (route) => route.fulfill(json(validatorBootstrap)));
@@ -274,6 +295,25 @@ async function stubTheValidator(page: Page, stored: unknown = null): Promise<See
           : { outcome: 'Accepted', reasons: [] },
       ),
     );
+  });
+  await page.route('**/api/flightops/review/5/dispute', (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    seen.disputes.push(body);
+    current = review({
+      ...initial,
+      status: 'Queued',
+      isDisputed: false,
+      dispute: { ...(initial.dispute as object), status: 'Upheld', decidedAt: '2026-09-23T09:00:00Z' },
+      actions: {
+        canTake: true,
+        canRelease: false,
+        canDecide: false,
+        canReopen: false,
+        canDecideDispute: false,
+      },
+      rowVersion: '2026-09-23T09:00:00Z',
+    });
+    return route.fulfill(json(current));
   });
   await page.route('**/api/flightops/review/5/decide', (route) => {
     const body = route.request().postDataJSON() as Record<string, unknown>;
@@ -374,4 +414,56 @@ test('a report is taken, its errors ticked with the server suggesting, and decid
     rowVersion: '2026-09-22T12:01:00Z',
   });
   await expect(page.getByText(words.review.options.status.Accepted).first()).toBeVisible();
+});
+
+test('a dispute is decided with the answer the pilot reads in its thread', async ({ page }) => {
+  const seen = await stubTheValidator(page, null, {
+    status: 'Rejected',
+    isDisputed: true,
+    decidedBy: { vid: 444444, name: 'Other Validator' },
+    decidedAt: '2026-09-22T12:05:00Z',
+    dispute: {
+      status: 'Open',
+      text: 'The chart had that SID.',
+      disputedAt: '2026-09-22T18:00:00Z',
+      decidedBy: null,
+      decidedAt: null,
+      threadId: 12,
+      department: 'FOD',
+    },
+    actions: {
+      canTake: false,
+      canRelease: false,
+      canDecide: false,
+      canReopen: false,
+      canDecideDispute: true,
+    },
+  });
+  await page.goto('/staff/tours/review/5');
+
+  await expect(page.getByText(words.review.options.disputeStatus.Open, { exact: true })).toBeVisible();
+  await expect(page.getByText('The chart had that SID.')).toBeVisible();
+  // The validator holds no Contacts.View here: the thread is theirs to read among their own.
+  await expect(page.getByRole('link', { name: words.review.disputeThread })).toHaveAttribute(
+    'href',
+    '/me/contacts/12',
+  );
+
+  await page
+    .getByText(words.review.fields.outcome, { exact: true })
+    .locator('..')
+    .getByRole('combobox')
+    .click();
+  await page.getByRole('option', { name: words.review.options.outcome.Upheld, exact: true }).click();
+  await page.getByLabel(words.review.fields.answer).fill('You were right.');
+  await page.getByRole('button', { name: words.review.decideDispute }).click();
+
+  await expect.poll(() => seen.disputes.length).toBe(1);
+  expect(seen.disputes[0]).toEqual({
+    upheld: true,
+    answer: 'You were right.',
+    rowVersion: '2026-09-22T12:00:00Z',
+  });
+  await expect(page.getByText(words.review.options.disputeStatus.Upheld, { exact: true })).toBeVisible();
+  await expect(page.getByText(words.review.options.status.Queued, { exact: true }).first()).toBeVisible();
 });

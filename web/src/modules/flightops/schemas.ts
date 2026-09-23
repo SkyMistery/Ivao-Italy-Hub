@@ -681,6 +681,8 @@ export type AtcDeclarationValues = z.output<ReturnType<typeof atcDeclarationSche
 export const reviewQueueSearchSchema = listSearchSchema.extend({
   tour: z.coerce.number().int().optional(),
   decided: z.coerce.boolean().optional(),
+  // The rejections whose dispute is open (T14b): decided, so off the default view.
+  disputed: z.coerce.boolean().optional(),
 });
 
 export type ReviewQueueSearch = z.output<typeof reviewQueueSearchSchema>;
@@ -705,3 +707,73 @@ export const reopenSchema = z.object({
 });
 
 export type ReopenValues = z.output<typeof reopenSchema>;
+
+/**
+ * Deciding a dispute (§3.8, T14b): upheld — the report goes back to the queue — or turned down, and the answer, which is how
+ * the pilot hears it: it goes into the thread as the department's.
+ */
+export const disputeDecisionSchema = z.object({
+  outcome: z.enum(['Upheld', 'Dismissed']),
+  answer: z.string().trim().min(1).max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type DisputeDecisionValues = z.output<typeof disputeDecisionSchema>;
+
+/** A pilot disputing a rejection (§3.8): what they want looked at again. */
+export const disputeSchema = z.object({
+  text: z.string().trim().min(1).max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type DisputeValues = z.output<typeof disputeSchema>;
+
+/** A pilot reporting a problem on a leg (§3.11): what they saw. */
+export const legIssueReportSchema = z.object({
+  body: z.string().trim().min(1).max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type LegIssueReportValues = z.output<typeof legIssueReportSchema>;
+
+/** An issue as the staff close it: whether it is dealt with, and a note for the others. */
+export const legIssueSchema = z.object({
+  status: z.enum(['Open', 'Resolved']),
+  staffNote: z.string().trim().max(MAX_TEXT).meta({ multiline: true }),
+});
+
+export type LegIssueFormValues = z.output<typeof legIssueSchema>;
+
+/** `/staff/tours/issues`: the open ones by default, `?all=true` for the closed too. */
+export const legIssuesSearchSchema = listSearchSchema.extend({
+  all: z.coerce.boolean().optional(),
+});
+
+/** `/tours/{slug}/ask`: what the question starts from — a report, a leg or a rule of the tour. */
+export const askSearchSchema = z.object({
+  pirep: z.coerce.number().int().optional(),
+  leg: z.coerce.number().int().optional(),
+  rule: z.coerce.number().int().optional(),
+});
+
+export type AskSearch = z.output<typeof askSearchSchema>;
+
+/** The core's limits of a contact message, which a clarification is (`ContactSubmitDtoValidator`). */
+const MAX_SUBJECT = 200;
+const MAX_MESSAGE = 5000;
+const MAX_REFERENCES = 10;
+
+/**
+ * A clarification (§3.10): a subject, the question, and the objects of the tour it is about — the one the pilot clicked
+ * already ticked, the others there to add. The choices are the tour's, worded by the page.
+ */
+export function clarificationSchema(references: readonly ChoiceOption[]) {
+  return z.object({
+    subject: z.string().trim().min(1).max(MAX_SUBJECT),
+    body: z.string().trim().min(1).max(MAX_MESSAGE).meta({ multiline: true }),
+    references: z
+      .array(z.string())
+      .min(1)
+      .max(MAX_REFERENCES)
+      .meta({ multi: true, choices: [...references] }),
+  });
+}
+
+export type ClarificationValues = z.output<ReturnType<typeof clarificationSchema>>;

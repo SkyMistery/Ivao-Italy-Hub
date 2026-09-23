@@ -8,7 +8,8 @@
     "aircraftGroups": "Gruppi di aerei",
     "settings": "Impostazioni dei tour",
     "rules": "Regole dei tour",
-    "errors": "Errori dei tour"
+    "errors": "Errori dei tour",
+    "issues": "Segnalazioni sulle leg"
   },
   "tours": {
     "title": "Tour",
@@ -355,7 +356,13 @@
     "reviewRejectNeedsError": "Un rifiuto dice quali errori: segnane almeno uno.",
     "reviewToModifyNeedsNote": "Scrivi al pilota che cosa deve correggere.",
     "reviewOverrideNeedsReason": "La decisione va contro il suggerimento: scrivi perché.",
-    "reviewNotDecided": "Si può riaprire solo una decisione presa."
+    "reviewNotDecided": "Si può riaprire solo una decisione presa.",
+    "disputeAlready": "Questo report è già stato contestato. Scrivi nel suo filo.",
+    "disputeNotRejected": "Si può contestare solo un report rifiutato.",
+    "disputeWindowClosed": "Il tempo per contestare questo report è scaduto.",
+    "disputeNotOpen": "Su questo report non c'è una contestazione aperta.",
+    "disputeThreadUnreadable": "Non puoi leggere il filo di questa contestazione, quindi la risposta non arriverebbe al pilota. Chiedi a chi legge i contatti del dipartimento.",
+    "reviewDisputed": "Con una contestazione aperta, la decisione si riapre accogliendo la contestazione."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -797,6 +804,16 @@
       "empty": "Nessun report aspetta sui tour che puoi validare.",
       "waiting_one": "{{count}} report, in attesa dal {{since}} UTC",
       "waiting_other": "{{count}} report, il più vecchio dal {{since}} UTC"
+    },
+    "openIssues": {
+      "label": "Che altro aspetta i tour",
+      "empty": "Non aspetta niente: nessuna segnalazione aperta sulle leg, nessuna contestazione o richiesta di chiarimenti senza risposta.",
+      "legIssues_one": "{{count}} segnalazione aperta sulle leg",
+      "legIssues_other": "{{count}} segnalazioni aperte sulle leg",
+      "disputes_one": "{{count}} contestazione senza risposta",
+      "disputes_other": "{{count}} contestazioni senza risposta",
+      "clarifications_one": "{{count}} richiesta di chiarimenti senza risposta",
+      "clarifications_other": "{{count}} richieste di chiarimenti senza risposta"
     }
   },
   "public": {
@@ -864,7 +881,29 @@
     "withdraw": "Ritira",
     "withdrawTitle": "Ritirare il report?",
     "withdrawDescription": "La leg torna da volare e il volo si libera: potrai riportarlo di nuovo, anche su un altro tour.",
-    "withdrawn": "Report ritirato."
+    "withdrawn": "Report ritirato.",
+    "ask": "Chiedi chiarimenti",
+    "askAbout": "Chiedi",
+    "dispute": {
+      "Open": "Contestato: le leg successive restano aperte mentre lo si riguarda",
+      "Upheld": "Contestazione accolta: di nuovo in coda",
+      "Dismissed": "Contestazione respinta"
+    },
+    "disputeThread": "il filo",
+    "disputableUntil": "Puoi contestarlo fino al {{date}} UTC",
+    "disputeAction": "Contesta",
+    "disputeTitle": "Contestare il rifiuto?",
+    "disputeDescription": "Scrivi che cosa va riguardato. Finché la contestazione è aperta le leg successive non sono bloccate; la risposta arriva in un filo che trovi fra i tuoi contatti.",
+    "disputed": "Contestazione inviata. La risposta arriverà nel filo.",
+    "issueAction": "Segnala un problema",
+    "issueTitle": "Un problema sulla leg {{number}} · {{from}} → {{to}}",
+    "issueDescription": "Un aeroporto chiuso, una rotta che non esiste, un callsign che non va: lo legge il dipartimento che cura il tour.",
+    "issueSend": "Invia",
+    "issueSent": "Grazie: il dipartimento l'ha ricevuta.",
+    "fields": {
+      "text": "Che cosa va riguardato",
+      "body": "Che cosa non va"
+    }
   },
   "report": {
     "title": "Invia il report",
@@ -971,7 +1010,7 @@
     "flightLine": "{{callsign}} · {{from}} → {{to}} · decollato il {{takeoff}} UTC, atterrato alle {{landing}} UTC",
     "atcUnavailable": "L'archivio delle sessioni ATC non era disponibile all'invio: i controllori sono quelli dichiarati dal pilota.",
     "noAtc": "Nessun controllore dichiarato.",
-    "profile": "In questo tour: {{reported}} inviate, {{accepted}} accettate, {{rejected}} rifiutate, {{disputed}} contestate.",
+    "profile": "In questo tour: {{reported}} inviati, {{accepted}} accettati, {{rejected}} rifiutati.",
     "noBans": "Nessun ban, né ora né in passato.",
     "banInForce": "Bannato dal {{from}} al {{to}}: {{reason}}",
     "banPast": "È stato bannato dal {{from}} al {{to}}: {{reason}}",
@@ -992,7 +1031,8 @@
       "errors": "Errori",
       "suggestion": "Suggerimento",
       "decision": "Decisione",
-      "history": "Storia"
+      "history": "Storia",
+      "dispute": "Contestazione"
     },
     "plan": {
       "revision": "Revisione",
@@ -1024,7 +1064,8 @@
       "shown": "Report",
       "waiting": "In coda e in validazione",
       "decided": "Decisi",
-      "order": "Ordine"
+      "order": "Ordine",
+      "disputed": "Contestati"
     },
     "order": {
       "date": "Per data",
@@ -1044,13 +1085,16 @@
       "noteToPilot": "Nota al pilota",
       "staffNote": "Nota per lo staff",
       "overrideReason": "Perché contro il suggerimento",
-      "reason": "Perché"
+      "reason": "Perché",
+      "dispute": "Contestazione",
+      "answer": "Risposta al pilota"
     },
     "hints": {
       "noteToPilot": "Il pilota la legge nella mail e nel suo report. Obbligatoria per «da modificare».",
       "staffNote": "La legge solo lo staff.",
       "overrideReason": "Obbligatorio quando l'esito va contro il suggerimento.",
-      "reason": "Resta nella storia del report."
+      "reason": "Resta nella storia del report.",
+      "answer": "Entra nel filo come risposta del dipartimento: il pilota la legge lì e per mail, senza il tuo nome."
     },
     "options": {
       "status": {
@@ -1064,7 +1108,9 @@
       "outcome": {
         "Accepted": "Accettato",
         "ToModify": "Da modificare",
-        "Rejected": "Rifiutato"
+        "Rejected": "Rifiutato",
+        "Upheld": "Accolta: di nuovo in coda",
+        "Dismissed": "Respinta"
       },
       "origin": {
         "Proposed": "Proposto, confermato",
@@ -1075,8 +1121,22 @@
         "Online": "Controllore online",
         "NotOnline": "Controllore non online",
         "Unverifiable": "Non verificabile"
+      },
+      "dispute": {
+        "Open": "Contestato"
+      },
+      "disputeStatus": {
+        "Open": "Contestazione aperta",
+        "Upheld": "Contestazione accolta",
+        "Dismissed": "Contestazione respinta"
       }
-    }
+    },
+    "disputes": "Contestazioni in questo tour: {{open}} aperte, {{upheld}} accolte, {{dismissed}} respinte.",
+    "disputedOn": "Contestato il {{date}} UTC",
+    "disputeDecidedBy": "Decisa da {{name}} il {{date}} UTC",
+    "disputeThread": "Il filo della contestazione",
+    "decideDispute": "Decidi la contestazione",
+    "disputeDecided": "Contestazione decisa. La risposta è nel filo e il pilota la riceve per mail."
   },
   "events": {
     "submitted": "Inviato",
@@ -1084,7 +1144,10 @@
     "withdrawn": "Ritirato dal pilota",
     "withdrawnAutomatically": "Ritirato: non corretto entro la finestra dei report",
     "taken": "Preso in carico",
-    "released": "Rimesso in coda"
+    "released": "Rimesso in coda",
+    "disputed": "Contestato dal pilota",
+    "disputeUpheld": "Contestazione accolta: di nuovo in coda",
+    "disputeDismissed": "Contestazione respinta"
   },
   "notifications": {
     "pirepAccepted": {
@@ -1102,6 +1165,10 @@
     "reviewDigest": {
       "title": "Riepilogo dei report da validare",
       "description": "Una mail al giorno con i report in coda sui tour che puoi validare. Non arriva se la coda è vuota."
+    },
+    "legIssueReported": {
+      "title": "Segnalazioni sulle leg",
+      "description": "Una mail alla casella del dipartimento quando un pilota segnala un problema su una leg."
     }
   },
   "mail": {
@@ -1123,6 +1190,62 @@
       "reviewDigest": {
         "subject": "[Tour] {{count}} report da validare",
         "body": "Ci sono {{count}} report in coda sui tour che puoi validare (fra parentesi, da quando aspetta il più vecchio):\n\n{{tours}}\n\nLa coda: {{url}}\n\n---\nRicevi questa mail perché puoi validare i report dei tour. Puoi disattivarla dalla pagina del tuo profilo."
+      },
+      "legIssueReported": {
+        "subject": "[Tour] Segnalazione su una leg: {{tour}}",
+        "body": "Il pilota con VID {{vid}} ha segnalato un problema sulla leg {{leg}} del tour \"{{tour}}\":\n\n{{body}}\n\nLeggila e chiudila: {{url}}\n\n---\nQuesta mail arriva alla casella del dipartimento."
+      }
+    }
+  },
+  "threads": {
+    "pirepLabel": "{{tour}} · leg {{number}} {{from}} → {{to}} ({{date}})",
+    "pirepLabelOpen": "{{tour}} · {{from}} → {{to}} ({{date}})",
+    "legLabel": "{{tour}} · leg {{number}} {{from}} → {{to}}",
+    "ruleLabel": "{{tour}} · {{code}} {{title}}",
+    "disputeSubject": "Contestazione: {{label}}"
+  },
+  "ask": {
+    "title": "Chiedi chiarimenti",
+    "description": "Chiedi al dipartimento di spiegarti una decisione, una leg o una regola. Non cambia niente e non è una contestazione; la risposta arriva in un filo fra i tuoi contatti.",
+    "subject": "Chiarimento: {{tour}}",
+    "report": "Report {{route}} del {{date}} ({{status}})",
+    "send": "Invia",
+    "fields": {
+      "subject": "Oggetto",
+      "body": "La tua domanda",
+      "references": "Di che cosa si tratta"
+    },
+    "hints": {
+      "references": "Scegline uno o più: chi risponde li vede tutti."
+    }
+  },
+  "issues": {
+    "title": "Segnalazioni sulle leg",
+    "description": "I problemi che i piloti segnalano sulle leg dei tour. Chiudine una quando è risolta.",
+    "one": "Segnalazione su {{tour}}",
+    "open": "Apri",
+    "toTour": "il tour",
+    "filters": {
+      "shown": "Segnalazioni",
+      "open": "Aperte",
+      "all": "Aperte e chiuse"
+    },
+    "fields": {
+      "tourTitle": "Tour",
+      "leg": "Leg",
+      "pilotName": "Pilota",
+      "body": "Che cosa ha scritto il pilota",
+      "status": "Stato",
+      "createdAt": "Segnalata",
+      "staffNote": "Nota per lo staff"
+    },
+    "hints": {
+      "staffNote": "Che cosa è stato fatto, per il resto dello staff. Il pilota non la legge."
+    },
+    "options": {
+      "status": {
+        "Open": "Aperta",
+        "Resolved": "Risolta"
       }
     }
   }

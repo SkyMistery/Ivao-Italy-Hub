@@ -5,6 +5,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
+import { writableDepartments } from '../../../shared/api/bootstrap';
 import { preferenceQuery, useSavePreference } from '../../../features/me/queries';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
@@ -19,6 +20,7 @@ import {
   toursListQuery,
   memberName,
   useReviewStep,
+  type ReviewDisputeDto,
   type ReviewDto,
   type ReviewErrorDto,
   type ReviewFlightDto,
@@ -26,12 +28,15 @@ import {
 } from '../api';
 import {
   decisionSchema,
+  disputeDecisionSchema,
   reopenSchema,
   reviewQueueSearchSchema,
   type DecisionValues,
+  type DisputeDecisionValues,
   type ReopenValues,
   type ReviewQueueSearch,
 } from '../schemas';
+import { CONTACTS_VIEW } from '../permissions';
 
 import { TOURS } from './tours';
 import { useStaff } from './hooks';
@@ -69,6 +74,7 @@ const queueColumns: readonly ColumnSpec<ReviewQueueRow>[] = [
   col.date('takeoffAt'),
   col.date('queuedAt'),
   col.badge('status', 'flightops:review'),
+  col.badge('dispute', 'flightops:review'),
   col.text('assignedToName'),
 ];
 
@@ -98,8 +104,11 @@ export function ReviewQueuePage() {
       to: '.',
     });
 
+  // Waiting by default; decided; or the rejections whose dispute is open (T14b), which are decided too.
+  const shown = search.disputed === true ? 'disputed' : search.decided === true ? 'decided' : undefined;
   const filters = {
-    open: search.decided !== true,
+    open: shown === undefined,
+    ...(shown === 'disputed' ? { disputed: true } : {}),
     ...(search.tour === undefined ? {} : { tourId: search.tour }),
   };
 
@@ -140,11 +149,18 @@ export function ReviewQueuePage() {
                 id="review-shown"
                 label={t('flightops:review.filters.shown')}
                 none={t('flightops:review.filters.waiting')}
-                value={search.decided === true ? 'decided' : undefined}
+                value={shown}
                 onChange={(value) =>
-                  onSearchChange({ decided: value === 'decided' ? true : undefined, page: 1 })
+                  onSearchChange({
+                    decided: value === 'decided' ? true : undefined,
+                    disputed: value === 'disputed' ? true : undefined,
+                    page: 1,
+                  })
                 }
-                items={[{ value: 'decided', label: t('flightops:review.filters.decided') }]}
+                items={[
+                  { value: 'decided', label: t('flightops:review.filters.decided') },
+                  { value: 'disputed', label: t('flightops:review.filters.disputed') },
+                ]}
               />
               <ListFilter
                 id="review-order"
@@ -217,6 +233,12 @@ function ReviewScreen({ review }: { review: ReviewDto }) {
     >
       <div className="flex flex-col gap-8">
         <ReviewStanding review={review} />
+
+        {review.dispute === null ? null : (
+          <Section title={t('flightops:review.sections.dispute')}>
+            <Dispute key={review.rowVersion} review={review} dispute={review.dispute} />
+          </Section>
+        )}
 
         <Section title={t('flightops:review.sections.flight')}>
           <p className="text-sm">
@@ -596,7 +618,98 @@ function Declared({ review }: { review: ReviewDto }) {
   );
 }
 
-/** The pilot in this tour: legs reported, accepted, rejected, disputed, and every ban. */
+/**
+ * The pilot's dispute (§3.8, T14b): what they wrote, where it stands, the thread where it is talked about and, for who may
+ * judge it — `Tours.ReopenDecisions`, never whoever decided the report —, upheld or turned down with the answer the pilot
+ * reads in that thread.
+ */
+function Dispute({ review, dispute }: { review: ReviewDto; dispute: ReviewDisputeDto }) {
+  const { t, i18n } = useTranslation();
+  const moment = useMoment();
+  const notice = useNotice();
+  const { bootstrap } = useStaff();
+  const step = useReviewStep(review.id);
+
+  // The department's queue for who reads it, the reader's own threads for a validator who takes part.
+  const thread =
+    dispute.threadId === null
+      ? null
+      : writableDepartments(bootstrap, CONTACTS_VIEW).includes(dispute.department)
+        ? `/staff/${dispute.department.toLowerCase()}/contacts/${dispute.threadId}`
+        : `/me/contacts/${dispute.threadId}`;
+
+  // Always a status on the wire; the generated type is nullable because the pilot's report carries it as «none yet».
+  const status = dispute.status ?? 'Open';
+
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge
+          variant="flat"
+          color={DISPUTE_COLOURS[status]}
+          text={t(`flightops:review.options.disputeStatus.${status}`)}
+        />
+        {dispute.disputedAt === null ? null : (
+          <span>{t('flightops:review.disputedOn', { date: moment(dispute.disputedAt) })}</span>
+        )}
+        {dispute.decidedBy === null || dispute.decidedAt === null ? null : (
+          <span>
+            {t('flightops:review.disputeDecidedBy', {
+              name: memberName(dispute.decidedBy),
+              date: moment(dispute.decidedAt),
+            })}
+          </span>
+        )}
+      </div>
+      {dispute.text === null ? null : <p className="whitespace-pre-line">{dispute.text}</p>}
+      {thread === null ? null : (
+        <p>
+          <RouterAnchor href={thread} className="underline">
+            {t('flightops:review.disputeThread')}
+          </RouterAnchor>
+        </p>
+      )}
+
+      {review.actions.canDecideDispute ? (
+        <SchemaForm<DisputeDecisionValues>
+          schema={disputeDecisionSchema}
+          defaults={{ outcome: 'Dismissed', answer: '' }}
+          locales={[]}
+          labels="flightops:review"
+          onSubmit={async (values) => {
+            try {
+              await step.mutateAsync({
+                step: 'dispute',
+                upheld: values.outcome === 'Upheld',
+                answer: values.answer,
+                rowVersion: review.rowVersion,
+              });
+              notice({ tone: 'success', title: t('flightops:review.disputeDecided') });
+            } catch (error) {
+              const reason = describeProblem(error, t, i18n.language);
+              notice({
+                tone: 'error',
+                title: t('flightops:review.refused'),
+                ...(reason === null ? {} : { description: reason }),
+              });
+            }
+          }}
+          submitLabel={t('flightops:review.decideDispute')}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+const DISPUTE_COLOURS: Readonly<
+  Record<NonNullable<ReviewDisputeDto['status']>, 'orange' | 'green' | 'gray'>
+> = {
+  Open: 'orange',
+  Upheld: 'green',
+  Dismissed: 'gray',
+};
+
+/** The pilot in this tour: legs reported, accepted, rejected, their disputes, and every ban. */
 function PilotProfile({ review }: { review: ReviewDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
@@ -609,7 +722,13 @@ function PilotProfile({ review }: { review: ReviewDto }) {
           reported: profile.reported,
           accepted: profile.accepted,
           rejected: profile.rejected,
-          disputed: profile.disputed,
+        })}
+      </p>
+      <p>
+        {t('flightops:review.disputes', {
+          open: profile.disputesOpen,
+          upheld: profile.disputesUpheld,
+          dismissed: profile.disputesDismissed,
         })}
       </p>
       {profile.bans.length === 0 ? (
