@@ -47,3 +47,7 @@ node_modules/
 .idea/
 *.user
 .DS_Store
+
+# A recorded flight flown again for the bench (web/e2e/full/replay.ts): written and removed by the round.
+tests/fixtures/ivao/tracker-sessions-999001.json
+tests/fixtures/ivao/tracker-*-9[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].json
