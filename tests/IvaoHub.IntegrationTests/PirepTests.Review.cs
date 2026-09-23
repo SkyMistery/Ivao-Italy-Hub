@@ -435,7 +435,7 @@ public sealed partial class PirepTests
         return (dangerous, warning, code);
     }
 
-    /// <summary>What «add validator» will write (T15): <c>Tours.Validate</c> on one tour, to one member.</summary>
+    /// <summary>The grant «add validator» writes (T15a), <c>Tours.Validate</c> on one tour, straight into the table: these validators are not staff.</summary>
     private async Task GrantValidateAsync(int vid, long tourId, CancellationToken cancellationToken)
     {
         await using var scope = _factory.Services.CreateAsyncScope();

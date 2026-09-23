@@ -10,7 +10,7 @@ import { useMoment } from '../../../shared/i18n/useMoment';
  * far. Written once and drawn twice — by `/tours` and by the block `flightops.tourCards` — because they are the same
  * cards, and a second copy is a second thing to keep in step.
  *
- * No progress bar and no next leg: those belong to whoever is logged in and arrive with the reports (T15). A card is
+ * No progress bar and no next leg: those belong to whoever is logged in and arrive with the pilot's pages (T15b). A card is
  * the same for a visitor and for a pilot.
  */
 

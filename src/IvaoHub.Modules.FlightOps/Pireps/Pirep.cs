@@ -412,7 +412,7 @@ public sealed class Enrolment : IAuditable, IProjectable
 
 /// <summary>
 /// A ban (design M2 §3.9), <c>fo_bans</c>: the pilot sends no report on the tours it names — one, or all of them — while it
-/// runs. Their reports already sent are validated as usual. T11 reads it; the screen that writes it is T15's.
+/// runs. Their reports already sent are validated as usual. T11 reads it; the bans' list and form write it (T15a, <c>BanEndpoints</c>).
 /// </summary>
 [Audited]
 [PermissionArea(TourPermissions.Area)]

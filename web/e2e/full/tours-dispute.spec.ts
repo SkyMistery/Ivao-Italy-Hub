@@ -164,7 +164,7 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
     await whileWaitingFor(pilotPage, 'POST', `/api/flightops/reports/${reportId}/dispute`, async () => {
       await dialog.getByRole('button', { name: words.public.disputeAction, exact: true }).click();
     });
-    await expect(pilotPage.getByText(words.public.disputed)).toBeVisible();
+    await expect(pilotPage.getByText(words.public.disputed, { exact: true })).toBeVisible();
 
     // The thread it opened, from the report.
     await pilotPage.getByRole('link', { name: words.public.disputeThread, exact: true }).click();
