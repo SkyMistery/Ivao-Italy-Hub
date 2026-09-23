@@ -42,7 +42,7 @@
     },
     "delete": {
       "title": "Delete this tour?",
-      "description": "Only a tour without reports is deleted: one with reports is hidden. This cannot be undone."
+      "description": "Only a tour without reports is deleted: one with reports can only be hidden. This cannot be undone."
     },
     "fields": {
       "title": "Title",

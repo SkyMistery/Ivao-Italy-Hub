@@ -42,7 +42,7 @@
     },
     "delete": {
       "title": "Eliminare questo tour?",
-      "description": "Si elimina solo un tour senza report: uno con report si nasconde. L'operazione non si annulla."
+      "description": "Si elimina solo un tour senza report: uno con report si può solo nascondere. L'operazione non si annulla."
     },
     "fields": {
       "title": "Titolo",

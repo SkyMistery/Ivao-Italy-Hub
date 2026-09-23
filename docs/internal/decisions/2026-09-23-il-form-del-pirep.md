@@ -67,7 +67,8 @@ piano, la traccia e le revisioni restano quelli veri.
 - **Scartato**: un tracker finto registrato nel contenitore del banco. Sarebbe un secondo `IIvaoApiClient`, e i file esistono già.
 
 ⚠️ **Un tour con un PIREP non si elimina mai**, nemmeno ritirato (§1.2.2): il server rifiuta (`tourHasReports`) e il giro lo **nasconde**. Corretto dopo la prima CI, che
-aveva creduto alla descrizione del dialogo («uno con report si nasconde») e si era fermata sulla pulizia. Il giro lascia quindi **un tour
+aveva creduto alla descrizione del dialogo («uno con report si nasconde», scritta in T6a quando i report non esistevano; ora
+dice «si può solo nascondere») e si era fermata sulla pulizia. Il giro lascia quindi **un tour
 nascosto per ogni esecuzione** nel database del banco. Nascosto, non è su nessuna pagina pubblica e nella lista dello staff lo
 trova solo chi cerca `bench-report-`.
 
