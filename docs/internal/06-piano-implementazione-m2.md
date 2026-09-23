@@ -305,7 +305,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
 | T10 | Il pubblico e la mappa — **fatta il 22 set 2026** | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
 | T11a | Il PIREP sul server — **fatta il 23 set 2026** | T2, T3, T9, T10 | `TourRules`, tabelle, invio e reinvio e ritiro via API, controlli che bloccano, deviazioni, iscrizione, snapshot, ritiro automatico |
-| T11b | Il form e la pagina del pilota | T11a | la pagina del form, ricerca e scelta del volo, i colori della mappa, «Invia il report», i PIREP del pilota |
+| T11b | Il form e la pagina del pilota — **fatta il 23 set 2026** | T11a | la pagina del form, ricerca e scelta del volo, i colori della mappa, «Invia il report», i PIREP del pilota |
 | T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
 | T14 | Contestazioni, chiarimenti, segnalazioni | T4a, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
@@ -1211,6 +1211,35 @@ volta; limite che blocca; ban che blocca; snapshot non rifatto al reinvio; ritir
   alla correzione, la sessione rivendicata una volta e liberata dal ritiro, limite giornaliero / ordine / rotta sbagliata / ban,
   il ritiro automatico del job), con un **tracker finto** costruito dal test — le fixture registrate sono voli di giugno, che
   nessuna finestra raggiunge.
+
+**T11b fatta il 23 settembre 2026** (branch `m2/t11b-pirep-form`, piano 0.92, nota `decisions/2026-09-23-il-form-del-pirep.md`).
+Com'è andata:
+
+- **Nessuna domanda**: tutto stava nel design e nella nota di T11a. Il server **non è cambiato** (nessun verbo nuovo, `schema.d.ts`
+  identico).
+- **Il form**: `screens/report.tsx`, rotta `/tours/$slug/report` con `?leg=` e `?report=` (`reportSearchSchema`). Prima il volo
+  (`FlightChoice`, un `RadioGroup` di Atmosphere: la lista del tracker, «il tracker non risponde» distinto da «nessun volo»), la
+  casella della deviazione con un `SchemaForm` che si applica mentre si scrive e la seconda lista dall'aeroporto di deviazione alla
+  destinazione; poi i dettagli con il `SchemaForm` di sempre. La correzione mette in testa i voli del report (la lista nasconde le
+  sessioni rivendicate, e la sua lo è).
+- **La pagina del tour**: `mapLeg` con i colori del server, la colonna «Stato» e «Riporta» sulle leg volabili, la sezione del pilota
+  (accedi / perché no / completato / obiettivo di un `Open` / «Invia il report» alla prossima), «I tuoi report» con «Ritira»
+  (`ConfirmDialog`) e «Correggi».
+- ⚠️ **Estensione del manifest**: `RouteDefinition.area: 'member'`, montata sotto `_member` in `createHubRouter`; una frase in
+  `FORKING.md`.
+- **Dove va un rifiuto**: `splitRefusal` — i campi del form dei dettagli al form, `tour`, `legId`, `sessionIds` e la deviazione in un
+  avviso sotto la scelta del volo. Senza, un rifiuto su `sessionIds` sarebbe finito su un campo che nessuno disegna.
+- **I test**: Vitest `reporting.test.ts` (sette: i colori per visitatore e pilota, le azioni per stato, i voli della correzione, il
+  rifiuto diviso); smoke `e2e/tours-report.spec.ts` (quattro, con l'API finta: la pagina e l'invio, i rifiuti al loro posto, il
+  tracker che non risponde, la leg non volabile); giro `e2e/full/tours-report.spec.ts` — il «fatta quando» — con
+  `e2e/full/replay.ts`, che scrive una copia del volo registrato 62747397 ridatata a ieri sotto il VID del banco (ID di dieci cifre
+  che iniziano con 9, in `.gitignore`) e la toglie alla fine.
+- **Trovato guardando le schermate** a 1500 e 400 px: la riga di un report diceva «# 1» (l'intestazione della colonna) invece di
+  «Leg 1», e lasciava un « ·» in coda. E ⚠️ **non di T11b**: a 400 px, con un utente loggato, l'intestazione del sito sborda a destra
+  e la pagina diventa larga il doppio — è `Chrome` del nucleo, segnalato a parte.
+- ⚠️ **Il banco accumula**: un tour con un PIREP non si elimina (§1.2.2), quindi il giro lascia un tour nascosto per esecuzione.
+- **Non verificato**: il «fatta quando» in sviluppo con il login IVAO vero (serve un volo recente di Carmine); i colori sulla mappa
+  sono provati da Vitest e dai badge della tabella, non leggendo la tela di MapLibre.
 
 ### T12 — Gli ATC contattati
 
