@@ -12,6 +12,7 @@ using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
+using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +42,7 @@ public sealed class FlightOpsModule : ModuleBase
     [
         new NavItemDescriptor("flightops:nav.tours", "/staff/tours", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.review", "/staff/tours/review", TourPermissions.Validate),
+        new NavItemDescriptor("flightops:nav.issues", "/staff/tours/issues", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.templates", "/staff/tours/templates", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.rules", "/staff/tours/rules", TourPermissions.View),
         new NavItemDescriptor("flightops:nav.errors", "/staff/tours/errors", TourPermissions.View),
@@ -50,7 +52,8 @@ public sealed class FlightOpsModule : ModuleBase
     ];
 
     /// <summary>
-    /// The public errors (T9), the cards of the tours (T10) and the queue of the validators (T13b), all always live. Each has
+    /// The public errors (T9), the cards of the tours (T10), the queue of the validators (T13b) and what else waits for the staff
+    /// (T14b), all always live. Each has
     /// its other half in <c>web/src/modules/flightops/</c>; the manifest test reads this literal.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
@@ -58,6 +61,7 @@ public sealed class FlightOpsModule : ModuleBase
         new BlockDescriptor("flightops.errorCatalog", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("flightops.tourCards", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("flightops.reviewQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("flightops.openIssues", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>The public pages of the tours (T10): <c>/tours</c> and <c>/tours/{slug}</c>, so no page may be «tours».</summary>
@@ -69,7 +73,7 @@ public sealed class FlightOpsModule : ModuleBase
         PreferenceDescriptor.OneOf(ReviewQueueOrder.PreferenceKey, ReviewQueueOrder.ByDate, ReviewQueueOrder.ByTour),
     ];
 
-    /// <summary>The outcomes to the pilot and the digest to the validators (§3.5, §4.2.2).</summary>
+    /// <summary>The outcomes to the pilot, the digest to the validators, the issues on the legs to the mailbox (§3.5, §4.2.2, §3.11).</summary>
     public override IReadOnlyList<string> NotificationTypes => FlightOpsNotifications.All;
 
     public override ModuleSettingsDescriptor Settings { get; } =
@@ -104,6 +108,12 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<AtcProposer>();
         services.AddScoped<PirepReview>();
         services.AddScoped<IDataBlockProvider, ReviewQueueProvider>();
+
+        // Disputes, clarifications and issues on the legs (T14b): the threads are the core's, the tours say what they cite.
+        services.AddScoped<FlightOpsReferences>();
+        services.AddScoped<IContactReferenceResolver>(provider => provider.GetRequiredService<FlightOpsReferences>());
+        services.AddScoped<PirepDisputes>();
+        services.AddScoped<IDataBlockProvider, OpenIssuesProvider>();
 
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
@@ -141,5 +151,6 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapRuleEndpoints();
         endpoints.MapPirepEndpoints();
         endpoints.MapReviewEndpoints();
+        endpoints.MapLegIssueEndpoints();
     }
 }

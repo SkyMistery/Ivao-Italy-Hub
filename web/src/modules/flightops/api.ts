@@ -32,6 +32,7 @@ import {
   type CheckChoice,
   type CheckKey,
   type CopyRulesFormValues,
+  type LegIssueFormValues,
   type RuleFormValues,
   type TourErrorFormValues,
   CHECK_KEYS,
@@ -1453,6 +1454,76 @@ export function useSendReport(tourId: number, correcting: number | null) {
   });
 }
 
+/**
+ * Disputes a rejection (§3.8, T14b): the report is flagged and the thread with the department opens; what comes back carries
+ * the thread, which the page links to.
+ */
+export function useDisputeReport() {
+  const changed = useReportsChanged();
+
+  return useMutation({
+    mutationFn: async ({
+      report,
+      text,
+    }: {
+      report: Pick<PirepDto, 'id' | 'rowVersion'>;
+      text: string;
+    }): Promise<PirepDto> =>
+      unwrap(
+        await api.POST('/api/flightops/reports/{id}/dispute', {
+          params: { path: { id: report.id } },
+          body: { text, rowVersion: report.rowVersion },
+        }),
+      ),
+    onSuccess: changed,
+  });
+}
+
+/** One object a clarification cites, as the core's form takes it: the module and `pirep:12`, `leg:3`, `rule:4:9`. */
+export interface ClarificationReference {
+  readonly sourceModule: 'flightops';
+  readonly sourceId: string;
+}
+
+/**
+ * Asks the department to explain (§3.10, T14b): a thread of the core's contacts, of the kind `clarification`, citing the
+ * tour's objects. The module's resolver on the server checks each is the pilot's to cite.
+ */
+export function useAskClarification() {
+  return useMutation({
+    mutationFn: async (message: {
+      department: Department;
+      subject: string;
+      body: string;
+      references: readonly ClarificationReference[];
+    }): Promise<{ id: number }> =>
+      unwrap(
+        await api.POST('/api/contacts', {
+          body: {
+            department: message.department,
+            subject: message.subject.trim(),
+            body: message.body.trim(),
+            kind: 'clarification',
+            references: [...message.references],
+          },
+        }),
+      ),
+  });
+}
+
+/** Reports a problem on a leg (§3.11, T14b): it reaches the mailbox of the tour's department. */
+export function useReportLegIssue(tourId: number) {
+  return useMutation({
+    mutationFn: async ({ legId, body }: { legId: number; body: string }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/flightops/tours/{tourId}/legs/{legId}/issues', {
+          params: { path: { tourId, legId } },
+          body: { body },
+        }),
+      ),
+  });
+}
+
 /** Withdraws a report still in the queue: its leg may be flown again and its flight is free. */
 export function useWithdrawReport() {
   const changed = useReportsChanged();
@@ -1478,6 +1549,7 @@ export type ReviewFlightDto = components['schemas']['ReviewFlightDto'];
 export type ReviewPlanDto = components['schemas']['ReviewPlanDto'];
 export type ReviewTrackDto = components['schemas']['ReviewTrackDto'];
 export type ReviewEventDto = components['schemas']['ReviewEventDto'];
+export type ReviewDisputeDto = components['schemas']['ReviewDisputeDto'];
 export type SuggestionDto = components['schemas']['SuggestionDto'];
 export type MemberDto = components['schemas']['MemberDto'];
 export type ReviewDecisionDto = components['schemas']['ReviewDecisionDto'];
@@ -1490,6 +1562,8 @@ export interface ReviewQueueRow extends ReviewQueueRowDto {
   readonly route: string;
   readonly pilotName: string;
   readonly assignedToName: string | null;
+  /** `Open` while the rejection is disputed (T14b): the column draws it as a word, and nothing otherwise. */
+  readonly dispute: 'Open' | null;
 }
 
 /** A member as the staff reads them: the name the hub has, and the VID that always is. */
@@ -1504,7 +1578,10 @@ const reviewKey = ['flightops', 'review'] as const;
  * tour, `open: false` shows the decided ones. The order is the list's `sort` — `queuedAt` or `tourId`, the validator's
  * preference — and the server keeps the date inside each tour.
  */
-export function reviewQueueQuery(search: ListSearch, filters: { tourId?: number; open: boolean }) {
+export function reviewQueueQuery(
+  search: ListSearch,
+  filters: { tourId?: number; open: boolean; disputed?: boolean },
+) {
   return queryOptions({
     queryKey: [...reviewKey, 'queue', search, filters] as const,
     queryFn: async (): Promise<Page<ReviewQueueRow>> => {
@@ -1514,6 +1591,7 @@ export function reviewQueueQuery(search: ListSearch, filters: { tourId?: number;
           querySerializer: listQuerySerializer({
             open: String(filters.open),
             ...(filters.tourId === undefined ? {} : { tourId: String(filters.tourId) }),
+            ...(filters.disputed === true ? { disputed: 'true' } : {}),
           }),
         }),
       );
@@ -1525,6 +1603,7 @@ export function reviewQueueQuery(search: ListSearch, filters: { tourId?: number;
           route: `${row.departureIcao} → ${row.arrivalIcao}`,
           pilotName: memberName(row.pilot),
           assignedToName: row.assignedTo === null ? null : memberName(row.assignedTo),
+          dispute: row.isDisputed ? ('Open' as const) : null,
         })),
       };
     },
@@ -1572,7 +1651,8 @@ export function reviewSuggestionQuery(id: number, errorIds: readonly number[]) {
 export type ReviewStep =
   | { step: 'take' | 'release'; rowVersion: string }
   | { step: 'decide'; decision: ReviewDecisionDto }
-  | { step: 'reopen'; reason: string; rowVersion: string };
+  | { step: 'reopen'; reason: string; rowVersion: string }
+  | { step: 'dispute'; upheld: boolean; answer: string; rowVersion: string };
 
 export function useReviewStep(id: number) {
   const queryClient = useQueryClient();
@@ -1606,11 +1686,88 @@ export function useReviewStep(id: number) {
               body: { reason: step.reason, rowVersion: step.rowVersion },
             }),
           );
+        case 'dispute':
+          return unwrap(
+            await api.POST('/api/flightops/review/{id}/dispute', {
+              ...path,
+              body: { upheld: step.upheld, answer: step.answer, rowVersion: step.rowVersion },
+            }),
+          );
       }
     },
     onSuccess: async (page) => {
       queryClient.setQueryData(reviewQuery(id).queryKey, page);
       await queryClient.invalidateQueries({ queryKey: [...reviewKey, 'queue'] });
+    },
+  });
+}
+
+// ---- the issues on the legs (T14b) ----------------------------------------------------------------
+
+export type LegIssueDto = components['schemas']['LegIssueDto'];
+export type LegIssueStatus = components['schemas']['LegIssueStatus'];
+
+/** A row of the issues as the list draws it: the pilot and the leg written out, as a cell draws a value. */
+export interface LegIssueRow extends LegIssueDto {
+  readonly pilotName: string;
+  readonly leg: string;
+}
+
+const legIssuesKey = ['flightops', 'legIssues'] as const;
+
+export function legIssuesListQuery(search: ListSearch, filters: { open: boolean }) {
+  return queryOptions({
+    queryKey: [...legIssuesKey, 'list', search, filters] as const,
+    queryFn: async (): Promise<Page<LegIssueRow>> => {
+      const page = unwrap(
+        await api.GET('/api/flightops/leg-issues', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer(filters.open ? { status: 'Open' } : {}),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((row) => ({
+          ...row,
+          pilotName: memberName(row.pilot),
+          leg: row.legNumber === null ? (row.route ?? '') : `${row.legNumber} · ${row.route ?? ''}`,
+        })),
+      };
+    },
+  });
+}
+
+export function legIssueQuery(id: number) {
+  return queryOptions({
+    queryKey: [...legIssuesKey, 'one', id] as const,
+    queryFn: async (): Promise<LegIssueDto> =>
+      unwrap(await api.GET('/api/flightops/leg-issues/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function legIssueToFormValues(issue: LegIssueDto): LegIssueFormValues {
+  return { status: issue.status, staffNote: issue.staffNote ?? '' };
+}
+
+/** Closes an issue, or opens it again, with a note for the rest of the staff. */
+export function useSaveLegIssue(issue: LegIssueDto) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: LegIssueFormValues): Promise<LegIssueDto> =>
+      unwrap(
+        await api.PUT('/api/flightops/leg-issues/{id}', {
+          params: { path: { id: String(issue.id) } },
+          body: {
+            status: values.status,
+            staffNote: values.staffNote.trim() === '' ? null : values.staffNote.trim(),
+            rowVersion: issue.rowVersion,
+          },
+        }),
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: legIssuesKey });
     },
   });
 }

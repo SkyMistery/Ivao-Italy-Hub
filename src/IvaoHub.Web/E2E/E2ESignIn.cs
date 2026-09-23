@@ -47,6 +47,13 @@ internal sealed class E2EOptions
     /// to reach — Mailpit's, on the bench. Left out, <c>?as=pilot</c> is a 404.
     /// </summary>
     public E2EPilotOptions? Pilot { get; set; }
+
+    /// <summary>
+    /// A third person, a member of staff of the department that looks after the tours, signed in with <c>?as=assistant</c>
+    /// (M2, T14b). Whoever decided a report does not judge its dispute, so upholding one needs somebody who holds
+    /// <c>Tours.ReopenDecisions</c> and did not decide it. No mailbox. Left out, <c>?as=assistant</c> is a 404.
+    /// </summary>
+    public E2EAssistantOptions? Assistant { get; set; }
 }
 
 /// <summary>The bench's pilot: a member of the division and nothing else.</summary>
@@ -64,6 +71,21 @@ internal sealed class E2EPilotOptions
     /// <summary>Where the outcome of a report is written to. On the bench, a mailbox of Mailpit.</summary>
     [Required]
     public string Email { get; set; } = string.Empty;
+}
+
+/// <summary>The bench's assistant: a member of staff, with positions as IVAO spells them, and no mailbox.</summary>
+internal sealed class E2EAssistantOptions
+{
+    [Range(1, int.MaxValue)]
+    public int Vid { get; set; }
+
+    [Required]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required]
+    public string LastName { get; set; } = string.Empty;
+
+    public IList<string> Positions { get; init; } = [];
 }
 
 internal static class E2ESignIn
@@ -87,9 +109,12 @@ internal static class E2ESignIn
     /// <summary>The value of <c>?as=</c> that signs in the pilot rather than the member of staff.</summary>
     public const string AsPilot = "pilot";
 
+    /// <summary>The value of <c>?as=</c> that signs in the third person, the assistant (T14b).</summary>
+    public const string AsAssistant = "assistant";
+
     /// <summary>
-    /// Signs the caller in as the configured staff member — or, with <c>?as=pilot</c>, as the configured pilot —, creating
-    /// them on first use. The cookie it writes is the one a real login writes, so what the suite exercises afterwards — the
+    /// Signs the caller in as the configured staff member — or, with <c>?as=pilot</c> or <c>?as=assistant</c>, as the
+    /// configured pilot or assistant —, creating them on first use. The cookie it writes is the one a real login writes, so what the suite exercises afterwards — the
     /// security stamp, the permission claims, the department guard — is the real thing.
     /// </summary>
     public static void MapE2ESignIn(this WebApplication app)
@@ -112,30 +137,39 @@ internal static class E2ESignIn
             var options = e2e.Value;
             var settings = division.Value;
 
-            var pilot = string.Equals(@as, AsPilot, StringComparison.Ordinal);
-            if ((pilot && options.Pilot is null) || (!pilot && @as is not null))
+            // Who, of the three: the member of staff, the pilot, the assistant — or nobody the bench configured.
+            (int Vid, string FirstName, string LastName, string? Email, IList<string> Positions)? person = @as switch
+            {
+                null => (options.Vid, options.FirstName, options.LastName, null, options.Positions),
+                AsPilot when options.Pilot is { } pilot => (pilot.Vid, pilot.FirstName, pilot.LastName, pilot.Email, []),
+                AsAssistant when options.Assistant is { } assistant =>
+                    (assistant.Vid, assistant.FirstName, assistant.LastName, null, assistant.Positions),
+                _ => null,
+            };
+
+            if (person is not { } who)
             {
                 return TypedResults.NotFound();
             }
 
             var signedIn = await users.UpsertAsync(
                 new IvaoUserProfile(
-                    pilot ? options.Pilot!.Vid : options.Vid,
-                    pilot ? options.Pilot!.FirstName : options.FirstName,
-                    pilot ? options.Pilot!.LastName : options.LastName,
+                    who.Vid,
+                    who.FirstName,
+                    who.LastName,
                     PublicNickname: null,
                     DivisionCode: settings.Code,
                     CountryId: null,
                     RatingAtc: null,
                     RatingPilot: null,
                     DiscordId: null,
-                    // The member of staff has no mailbox: an invented address would be one the queue would
-                    // actually try to write to. The pilot has one, on the bench's Mailpit (T13b).
-                    Email: pilot ? options.Pilot!.Email : null,
+                    // A member of staff has no mailbox: an invented address would be one the queue would actually try
+                    // to write to. The pilot has one, on the bench's Mailpit (T13b).
+                    Email: who.Email,
                     LanguageId: settings.DefaultLocale,
-                    IvaoIsStaff: !pilot && options.Positions.Count > 0,
+                    IvaoIsStaff: who.Positions.Count > 0,
                     IvaoIsSupervisor: false,
-                    StaffPositions: pilot ? [] : [.. options.Positions]),
+                    StaffPositions: [.. who.Positions]),
                 cancellationToken);
 
             var identity = HubClaims.BuildIdentity(

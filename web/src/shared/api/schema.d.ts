@@ -199,6 +199,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/{tourId}/legs/{legId}/issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsLegIssueReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -1614,6 +1630,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/reports/{id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReportDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/reports/{id}/withdraw": {
         parameters: {
             query?: never;
@@ -1768,6 +1800,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["FlightOpsReviewReopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/review/{id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsReviewDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/leg-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsLegIssuesList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/leg-issues/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsLegIssuesGet"];
+        put: operations["FlightOpsLegIssuesUpdate"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2850,6 +2930,24 @@ export interface components {
          * @enum {unknown}
          */
         Department: "HQ" | "SOD" | "FOD" | "AOD" | "TD" | "MD" | "ED" | "PRD" | "WD";
+        /**
+         * @description Deciding a dispute (§3.8): upheld — the report goes back to the queue — or turned down, with the answer the pilot reads in the
+         *     thread (note 2026-09-23-contestazioni-chiarimenti-segnalazioni §2).
+         */
+        DisputeDecisionDto: {
+            upheld: boolean;
+            answer: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A pilot disputing a rejection (§3.8): what they want looked at again, required. */
+        DisputeOpenDto: {
+            text: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @enum {unknown} */
+        DisputeStatus: "Open" | "Upheld" | "Dismissed" | null;
         /** @enum {unknown} */
         DiversionReason: "Weather" | "Technical" | "Medical" | "AtcInstruction" | "Other" | null;
         /** @description A rule as it holds on a tour (§5.2): the row that says it, the rule it amends, the parameters in force. */
@@ -3132,6 +3230,45 @@ export interface components {
             aircraftTypes: null | string[];
             /** Format: date-time */
             releaseAt: null | string;
+        };
+        /** @description An issue as the staff's list and form show it: the tour, the leg, who wrote it and what, where it is. */
+        LegIssueDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            tourTitle: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            legId: number;
+            /** Format: int32 */
+            legNumber: null | number;
+            route: null | string;
+            pilot: components["schemas"]["MemberDto"];
+            body: string;
+            status: components["schemas"]["LegIssueStatus"];
+            staffNote: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A pilot's report of a problem on a leg (§3.11): what they saw, in their words. */
+        LegIssueReportDto: {
+            body: null | string;
+        };
+        /**
+         * @description Where a pilot's report of a problem on a leg is. Stored by name.
+         * @enum {unknown}
+         */
+        LegIssueStatus: "Open" | "Resolved";
+        /** @description What the staff writes on an issue: whether it is dealt with, and a note for the others. */
+        LegIssueWriteDto: {
+            status: components["schemas"]["LegIssueStatus"];
+            staffNote: null | string;
+            /** Format: date-time */
+            rowVersion: string;
         };
         /**
          * @description What a leg is in its tour (design M2 §1.3): an ordinary leg, or the link between two hubs, which counts as one.
@@ -3812,6 +3949,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfLegIssueDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["LegIssueDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfLinkListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["LinkListDto"][];
@@ -4050,8 +4210,8 @@ export interface components {
             inForce: boolean;
         };
         /**
-         * @description The pilot in this tour (§4.3): legs reported, accepted, rejected, and those rejected and disputed; every ban. The counts of
-         *     the disputes (opened, upheld, turned down) arrive with the threads of T14.
+         * @description The pilot in this tour (§4.3): legs reported, accepted, rejected; their disputes — open, upheld, turned down (§3.8), which the
+         *     pilot never reads —; every ban.
          */
         PilotProfileDto: {
             pilot: components["schemas"]["MemberDto"];
@@ -4062,12 +4222,17 @@ export interface components {
             /** Format: int32 */
             rejected: number;
             /** Format: int32 */
-            disputed: number;
+            disputesOpen: number;
+            /** Format: int32 */
+            disputesUpheld: number;
+            /** Format: int32 */
+            disputesDismissed: number;
             bans: components["schemas"]["PilotBanDto"][];
         };
         /**
          * @description A report as its pilot sees it: never the validator's name (design M2 §3.5). With a decision, when it was taken, the note
-         *     to the pilot and the rules it says were broken (T13).
+         *     to the pilot and the rules it says were broken (T13). With a rejection, until when it may be disputed, and once disputed
+         *     where the dispute is and the thread it opened (T14b).
          */
         PirepDto: {
             /** Format: int64 */
@@ -4107,6 +4272,11 @@ export interface components {
             violatedRules: components["schemas"]["ViolatedRuleDto"][];
             /** Format: date-time */
             rowVersion: string;
+            disputeStatus?: null | components["schemas"]["DisputeStatus"];
+            /** Format: date-time */
+            disputableUntil?: null | string;
+            /** Format: int64 */
+            threadId?: null | number;
         };
         /** @description One flight of a report, as its pilot reads it back. */
         PirepFlightDto: {
@@ -4350,7 +4520,8 @@ export interface components {
         /**
          * @description One tour as a visitor reads it (design M2 §8.1): the briefing as it stands — a tour has no published version behind
          *     it, the row is the version — the dates, the aircraft, the rules in force with their parameters, and the legs with
-         *     their distances and the totals.
+         *     their distances and the totals. Department PublicTourDto.Department is where a pilot's questions about it go (T14b): the department
+         *     that looks after it.
          *     What is here depends on the kind: a Distance tour carries the miles it asks for, an Open tour its
          *     goal and the filters and sequence rules every flight has to respect (§2.6.1), a Container its subtours and no
          *     legs of its own, a Hub tour its rotations.
@@ -4400,6 +4571,7 @@ export interface components {
             totalEstimatedMinutes: null | number;
             parent: null | components["schemas"]["PublicParentDto"];
             subtours: components["schemas"]["PublicSubtourDto"][];
+            department: components["schemas"]["Department"];
         };
         /**
          * @description Editorial state. The public site only ever reads published rows.
@@ -4412,6 +4584,7 @@ export interface components {
             canRelease: boolean;
             canDecide: boolean;
             canReopen: boolean;
+            canDecideDispute: boolean;
         };
         /**
          * @description A decision (§4.3): the outcome, the errors marked among the frozen rules', the note to the pilot and the one to the staff,
@@ -4425,6 +4598,22 @@ export interface components {
             overrideReason: null | string;
             /** Format: date-time */
             rowVersion: string;
+        };
+        /**
+         * @description The pilot's dispute of this report (§3.8), as the staff reads it: what they wrote, where it is, who decided it and when, and the
+         *     thread where it is talked about — none when the reader may not read that thread — in the queue of which department.
+         */
+        ReviewDisputeDto: {
+            status: components["schemas"]["DisputeStatus"];
+            text: null | string;
+            /** Format: date-time */
+            disputedAt: null | string;
+            decidedBy: null | components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            decidedAt: null | string;
+            /** Format: int64 */
+            threadId: null | number;
+            department: components["schemas"]["Department"];
         };
         /**
          * @description The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
@@ -4481,6 +4670,7 @@ export interface components {
             weatherAvailable: boolean;
             checksAvailable: boolean;
             history: components["schemas"]["ReviewEventDto"][];
+            dispute: null | components["schemas"]["ReviewDisputeDto"];
             actions: components["schemas"]["ReviewActionsDto"];
             /** Format: date-time */
             rowVersion: string;
@@ -5540,6 +5730,47 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CopyRulesResultDto"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegIssueReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tourId: number;
+                legId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegIssueReportDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {
@@ -10299,6 +10530,55 @@ export interface operations {
             };
         };
     };
+    FlightOpsReportDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeOpenDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PirepDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     FlightOpsReportWithdraw: {
         parameters: {
             query?: never;
@@ -10706,6 +10986,159 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReviewDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeDecisionDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegIssuesList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfLegIssueDto"];
+                };
+            };
+        };
+    };
+    FlightOpsLegIssuesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegIssueDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsLegIssuesUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LegIssueWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegIssueDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
             };
             /** @description Conflict */
             409: {

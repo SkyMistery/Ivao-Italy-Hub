@@ -1,8 +1,10 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
 using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Threads;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +15,7 @@ namespace IvaoHub.Modules.FlightOps.Pireps;
 
 /// <summary>
 /// A pilot's reports (design M2 §3): the sessions to choose from, the send, the pilot's own place in a tour, reading one of
-/// their reports, correcting it and withdrawing it. Six hand written verbs, because a report is not a form over a row — it
+/// their reports, correcting it, withdrawing it and disputing its rejection (T14b). Seven hand written verbs, because a report is not a form over a row — it
 /// is a choice among flights the tracker lists and a set of checks across the pilot's other reports — and the answer to
 /// every refusal is the <c>ProblemDetails</c> of the generated forms, field by field.
 /// <para>Any signed in member: a pilot is not a role. Every verb reads only the caller's own reports, on a tour the public
@@ -63,6 +65,14 @@ public static class PirepEndpoints
 
         report.MapPut("/{id:long}", CorrectAsync)
             .WithName("FlightOpsReportCorrect")
+            .Produces<PirepDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
+
+        // A rejection disputed (§3.8, T14b): the report is flagged and the thread with the department opens in the same save.
+        report.MapPost("/{id:long}/dispute", DisputeAsync)
+            .WithName("FlightOpsReportDispute")
             .Produces<PirepDto>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
@@ -238,6 +248,41 @@ public static class PirepEndpoints
         {
             return Conflict(catalog, currentUser);
         }
+    }
+
+    private static async Task<IResult> DisputeAsync(
+        long id,
+        DisputeOpenDto payload,
+        PirepSubmission submission,
+        PirepDisputes disputes,
+        FlightOpsDbContext database,
+        HubDbContext hub,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser,
+        HttpContext http)
+    {
+        var pirep = await OwnAsync(id, database, currentUser, tracked: true, http);
+        var pilot = pirep is null ? null : await submission.TourAsync(pirep.TourId, http.RequestAborted);
+        if (pirep is null || pilot is null)
+        {
+            return Results.NotFound();
+        }
+
+        try
+        {
+            var problems = await disputes.OpenAsync(pirep, pilot, payload, http.RequestAborted);
+            if (problems is not null)
+            {
+                return CrudProblems.Validation(problems, new Dictionary<string, string[]>(), catalog, currentUser.Locale);
+            }
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(catalog, currentUser);
+        }
+
+        var threads = await PirepDisputes.ThreadsAsync(hub, [pirep.Id], http.RequestAborted);
+        return Results.Ok(PirepSubmission.ToDto(pirep, threadId: threads.TryGetValue(pirep.Id, out var thread) ? thread : null));
     }
 
     /// <summary>The caller's own report, with its flights; nobody else's, whatever they hold (the staff's side is T13).</summary>

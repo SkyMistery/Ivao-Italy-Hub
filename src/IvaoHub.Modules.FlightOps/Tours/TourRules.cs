@@ -330,6 +330,9 @@ public sealed class TourSaving(
         // A report follows too (T11): a validator enabled by department reads it as they read its tour.
         await FollowAsync(database.Pireps, tour, cancellationToken);
 
+        // And a pilot's report of a problem on a leg (T14b): whoever looks after the tour closes it.
+        await FollowAsync(database.LegIssues, tour, cancellationToken);
+
         // A rule is a tour's only when it has one, so it is not an ITourChild; it follows the same way (T9).
         var rules = await database.Rules
             .Where(row => row.TourId == tour.Id

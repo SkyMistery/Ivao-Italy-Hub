@@ -200,7 +200,8 @@ public sealed class PublicTours(
             grid.TotalNm,
             grid.TotalEstimatedMinutes,
             parent is null ? null : new PublicParentDto(parent.Id, parent.Slug!, parent.Title),
-            subtours);
+            subtours,
+            tour.OwnerDepartment);
     }
 
     /// <summary>Ready, not hidden, not a template, with an address and both its dates, and released or shown as a preview.</summary>

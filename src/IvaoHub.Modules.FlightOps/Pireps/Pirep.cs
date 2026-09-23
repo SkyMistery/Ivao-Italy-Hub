@@ -1,3 +1,4 @@
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Shape;
@@ -25,6 +26,22 @@ public enum PirepStatus
     Withdrawn,
 }
 
+/// <summary>
+/// Where a pilot's dispute of a rejection is (design M2 §3.8; note 2026-09-23-contestazioni-chiarimenti-segnalazioni). Stored by
+/// name; none while nobody disputed.
+/// </summary>
+public enum DisputeStatus
+{
+    /// <summary>Somebody is looking at it again: the leg no longer holds the next ones.</summary>
+    Open,
+
+    /// <summary>Upheld: the report went back to the queue for a new decision.</summary>
+    Upheld,
+
+    /// <summary>Turned down: the rejection holds the next legs again, the grace counted from then.</summary>
+    Dismissed,
+}
+
 /// <summary>Why a flight ended somewhere else (design M2 §3.4). Stored by name.</summary>
 public enum DiversionReason
 {
@@ -44,10 +61,12 @@ public enum DiversionReason
 /// (<see cref="IHasResourceScope"/>) — the interceptor's guard lets that validator write it (T13).</para>
 /// <para>What it is judged against is frozen at the first send: the rules in force with their parameters and errors
 /// (§5.4), and the leg as it was (§3.2 point 6). A correction does not freeze them again.</para>
+/// <para>A dispute opens a thread with the department in the same save (<see cref="IProjectable"/>, T14b): the thread is the
+/// conversation, the outcome stays here.</para>
 /// </summary>
 [PermissionArea(TourPermissions.Area)]
 [AlsoWrittenWith(TourPermissions.Validate)]
-public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasResourceScope
+public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasResourceScope, IProjectable
 {
     public long Id { get; set; }
 
@@ -60,8 +79,37 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
 
     public PirepStatus Status { get; set; }
 
-    /// <summary>A flag on a <see cref="PirepStatus.Rejected"/>, not a state: the leg no longer blocks the next ones (§3.8).</summary>
-    public bool IsDisputed { get; set; }
+    /// <summary>
+    /// A flag on a <see cref="PirepStatus.Rejected"/>, not a state: the leg no longer blocks the next ones (§3.8). Since T14b it
+    /// is <see cref="DisputeStatus"/> read as a column, written from the getter so the queue filters it in SQL.
+    /// </summary>
+    public bool IsDisputed
+    {
+        get => DisputeStatus == Pireps.DisputeStatus.Open;
+
+        // The column is written from the getter; what the database holds is never read back into the row.
+        private set { }
+    }
+
+    /// <summary>Where the pilot's dispute is; none while nobody disputed. One per report: the thread it opens is opened once.</summary>
+    public DisputeStatus? DisputeStatus { get; set; }
+
+    /// <summary>What the pilot wrote when disputing: the first message of the thread, kept here with the outcome.</summary>
+    public string? DisputeText { get; set; }
+
+    public DateTime? DisputedAt { get; set; }
+
+    /// <summary>When the dispute was upheld or turned down: a rejection that holds again counts its grace from here (§2.5).</summary>
+    public DateTime? DisputeDecidedAt { get; set; }
+
+    public int? DisputeDecidedByVid { get; set; }
+
+    /// <summary>
+    /// The thread a dispute opens, worded by <c>PirepDisputes</c> with the tour's title the report does not carry, and handed to
+    /// the row for the one save that opens it. Not a column: every later save projects nothing, and the thread is never
+    /// rewritten anyway (note 2026-09-23-contestazioni-chiarimenti-segnalazioni §3.1).
+    /// </summary>
+    public ThreadOpeningProjection? DisputeThread { get; set; }
 
     public DateTime SubmittedAt { get; set; }
 
@@ -174,6 +222,14 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
 
     public string ResourceScope => ScopeOf(TourId);
 
+    public string SourceModule => FlightOpsModule.ModuleKey;
+
+    public string SourceId => ReferenceOf(Id);
+
+    /// <summary>The thread of a dispute, in the save that opens it; nothing otherwise — no search line, no calendar entry.</summary>
+    public ProjectionSnapshot? Project(ProjectionContext context) =>
+        DisputeStatus is not null && DisputeThread is { } thread ? new ProjectionSnapshot(null, [], [], [], [thread]) : null;
+
     public List<PirepFlight> Flights { get; set; } = [];
 
     /// <summary>Its history, added to and never changed; written in the same save as the step it records.</summary>
@@ -184,6 +240,9 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
 
     /// <summary>The scope a grant on one tour carries (§7.3), the tour's and every report's on it.</summary>
     public static string ScopeOf(long tourId) => $"{FlightOpsModule.ModuleKey}:tour:{tourId}";
+
+    /// <summary>How a thread cites a report (<c>FlightOpsReferences</c>), and the source of the thread its dispute opens.</summary>
+    public static string ReferenceOf(long id) => $"pirep:{id}";
 
     /// <summary>The states in which the leg counts as pending: sent and not decided, or sent back to the pilot.</summary>
     public static bool IsPending(PirepStatus status) =>

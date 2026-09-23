@@ -1,9 +1,10 @@
-import { ClipboardCheck, ListChecks, Map as MapIcon } from 'lucide-react';
+import { ClipboardCheck, ListChecks, Map as MapIcon, MessagesSquare } from 'lucide-react';
 import { z } from 'zod';
 
 import type { BlockRegistration } from '../../../shared/modules';
 
 import { ErrorCatalogBlock, type ErrorCatalogData } from './errorCatalog';
+import { OpenIssuesBlock, type OpenIssuesData } from './openIssues';
 import { ReviewQueueBlock, type ReviewQueueData } from './reviewQueue';
 import { TourCardsBlock, type TourCardsData } from './tourCards';
 
@@ -113,4 +114,22 @@ export const reviewQueueBlock: BlockRegistration = {
   editorLabelKey: 'flightops:blocks.reviewQueue.label',
   group: 'data',
   icon: ClipboardCheck,
+};
+
+/**
+ * What else waits for the tours' staff (T14b): the issues on the legs, the disputes and the clarifications nobody answered,
+ * each a number and a link. No property: it is the reader's.
+ */
+export const openIssuesBlock: BlockRegistration = {
+  type: 'flightops.openIssues',
+  version: 1,
+  kind: 'Data',
+  alwaysLive: true,
+  schema: z.object({}),
+  component: OpenIssuesBlock,
+  example: {},
+  exampleData: { legIssues: 2, disputes: 1, clarifications: 3, department: 'fod' } satisfies OpenIssuesData,
+  editorLabelKey: 'flightops:blocks.openIssues.label',
+  group: 'data',
+  icon: MessagesSquare,
 };

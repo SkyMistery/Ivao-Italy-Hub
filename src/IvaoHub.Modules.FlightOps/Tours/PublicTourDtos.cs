@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Rules;
@@ -81,7 +82,8 @@ public sealed record PublicSubtourDto(
 /// <summary>
 /// One tour as a visitor reads it (design M2 §8.1): the briefing as it stands — a tour has no published version behind
 /// it, the row is the version — the dates, the aircraft, the rules in force with their parameters, and the legs with
-/// their distances and the totals.
+/// their distances and the totals. <see cref="Department"/> is where a pilot's questions about it go (T14b): the department
+/// that looks after it.
 /// <para>What is here depends on the kind: a <c>Distance</c> tour carries the miles it asks for, an <c>Open</c> tour its
 /// goal and the filters and sequence rules every flight has to respect (§2.6.1), a <c>Container</c> its subtours and no
 /// legs of its own, a <c>Hub</c> tour its rotations.</para>
@@ -119,7 +121,8 @@ public sealed record PublicTourDto(
     decimal TotalNm,
     int? TotalEstimatedMinutes,
     PublicParentDto? Parent,
-    IReadOnlyList<PublicSubtourDto> Subtours);
+    IReadOnlyList<PublicSubtourDto> Subtours,
+    Department Department);
 
 /// <summary>The container a subtour belongs to, so that its page can lead back to it.</summary>
 public sealed record PublicParentDto(long Id, string Slug, Localized<string> Title);

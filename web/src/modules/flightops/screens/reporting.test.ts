@@ -4,9 +4,12 @@ import { ApiError } from '../../../shared/api/problem';
 import type { MyTourDto, PirepDto, PublicLegDto } from '../api';
 
 import {
+  clarificationChoices,
   contactsToSend,
   declarationOf,
   exemptionsToSend,
+  initialReferences,
+  isDecided,
   mapLeg,
   mergeSessions,
   reportActions,
@@ -200,5 +203,46 @@ describe('the controllers a report sends', () => {
       },
     });
     expect(declarationOf(null)).toEqual({ removed: [], declaration: { added: [], exemptions: [] } });
+  });
+});
+
+describe('what a clarification may cite', () => {
+  const report = (id: number, status: PirepDto['status']) => ({ id, status }) as PirepDto;
+  const words = {
+    report: (entry: PirepDto) => `report ${entry.id}`,
+    leg: (entry: PublicLegDto) => `leg ${entry.number}`,
+    rule: (entry: { code: string }) => entry.code,
+  };
+  const tour = {
+    id: 7,
+    legs: [leg(1), leg(2)],
+    rules: [{ id: 40, code: 'GR1' }],
+  } as unknown as Parameters<typeof clarificationChoices>[0];
+
+  it('offers the decided reports, then the legs and the rules, in the forms the server reads', () => {
+    const choices = clarificationChoices(
+      tour,
+      [report(3, 'Rejected'), report(4, 'Queued'), report(5, 'Accepted')],
+      words,
+    );
+
+    expect(choices).toEqual([
+      { value: 'pirep:3', label: 'report 3' },
+      { value: 'pirep:5', label: 'report 5' },
+      { value: 'leg:1', label: 'leg 1' },
+      { value: 'leg:2', label: 'leg 2' },
+      { value: 'rule:7:40', label: 'GR1' },
+    ]);
+    expect(isDecided('ToModify')).toBe(true);
+    expect(isDecided('InReview')).toBe(false);
+  });
+
+  it('ticks the object the pilot came from, and nothing the page does not offer', () => {
+    const choices = clarificationChoices(tour, [report(3, 'Rejected'), report(4, 'Queued')], words);
+
+    expect(initialReferences({ pirep: 3 }, 7, choices)).toEqual(['pirep:3']);
+    expect(initialReferences({ rule: 40 }, 7, choices)).toEqual(['rule:7:40']);
+    expect(initialReferences({ pirep: 4 }, 7, choices)).toEqual([]);
+    expect(initialReferences({}, 7, choices)).toEqual([]);
   });
 });

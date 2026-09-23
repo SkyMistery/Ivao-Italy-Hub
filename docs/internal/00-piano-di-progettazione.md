@@ -1,9 +1,26 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.96 — 23 settembre 2026 (**i fili dei contatti nel nucleo**: risposte, riferimenti, partecipanti, il filo aperto da una proiezione, `/me/contacts`, `MessageThread`, T14a)
+**Versione documento:** 0.97 — 23 settembre 2026 (**contestazioni, chiarimenti, segnalazioni**: la contestazione che sblocca e si decide nel filo, il chiarimento dalle pagine dei tour, `fo_leg_issues`, `flightops.openIssues`, T14b)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.97** (23 set 2026, fase T14b di M2): **contestazioni, chiarimenti, segnalazioni** — il modulo dei tour usa i fili di
+T14a. Nota `decisions/2026-09-23-contestazioni-chiarimenti-segnalazioni.md`, **quattro risposte di Carmine**, tutte come proposte:
+(1) una contestazione la **decide solo chi ha `Tours.ReopenDecisions`** sul tour e **non ha deciso quel PIREP** — il validatore che ha
+deciso partecipa al filo e risponde, non giudica; (2) il pilota sa l'esito da **una risposta del dipartimento nel filo**, che la
+decisione chiede e scrive (`contact.threadReplied`), senza un tipo di notifica nuovo; (3) **una contestazione per PIREP**, la chiave
+«una volta sola» della proiezione; (4) il chiarimento ha **una pagina propria**, `/tours/{slug}/ask`, con il form generato e i
+riferimenti del tour. **Nel codice**: `fo_pireps` + `dispute_status` (`Open`, `Upheld`, `Dismissed`), `dispute_text`, `disputed_at`,
+`dispute_decided_at`, `dispute_decided_by_vid` (`is_disputed` resta, letta da `dispute_status`); `Pirep` diventa `IProjectable` e apre
+il filo nella sua transazione (oggetto ed etichetta con il titolo del tour, consegnati alla riga in una proprietà non mappata per il
+salvataggio che apre); aperta, la leg non blocca più; **respinta, blocca con la tolleranza da `dispute_decided_at`**; **accolta, il PIREP
+torna `Queued`** a chiunque; con una contestazione aperta **«riapri» non c'è** (trovato scrivendo il giro: lascerebbe la contestazione
+aperta per sempre). `FlightOpsReferences` risolve `pirep:{id}` (il validatore partecipa), `leg:{id}`, `rule:{tourId}:{ruleId}`;
+`PublicTourDto.department` porta la domanda al dipartimento del tour. **`fo_leg_issues`** con `flightops.legIssueReported` alla sola
+casella, lista e form generati in `/staff/tours/issues`; il blocco **`flightops.openIssues`** (segnalazioni aperte, contestazioni e
+chiarimenti senza risposta). Il banco guadagna una terza persona, `?as=assistant` (FOAC), per il giro «contestato e riaperto».
+**Nessun meccanismo nuovo del nucleo.** Migrazione `AddDisputesAndLegIssues` (solo additiva).
 
 **Changelog 0.96** (23 set 2026, fase T14a di M2): **i fili dei contatti nel nucleo** — un messaggio di contatto diventa una
 conversazione: `cms_contact_replies` (solo in aggiunta), `cms_contact_references` (gli oggetti citati, con l'etichetta presa
@@ -2040,7 +2057,7 @@ L'idea di partenza di Carmine era "un modulo per dipartimento, e dentro ciò che
 | **Documenti** | documenti per dipartimento, di qualsiasi natura, con raccolte, versioni, visibilità per ruolo | media | §9.4; nelle pagine per raccolta |
 | **Calendario unico** | tutte le voci: eventi, RFE, training, esami, tour, riunioni staff, meeting di divisione, scadenze | proiezioni `IProjectable` dai moduli (§16.4) | §9.5 |
 | Media library | upload immagini/file con alt tradotto, per dipartimento | disco Plesk | limite upload esplicito; dal 13 set 2026 **letta e scelta da tutto lo staff** (`ISharedForReading`), gestita dal proprietario, da WD e HQ e dai grant — lo stesso per i link. **Dal 16 set 2026** (nota `2026-09-15-file-con-scadenza`) le righe dei moduli dichiarano i file che usano **con una scadenza** (`IProjectable`, `cms_media_uses`), e un job del nucleo elimina i file con tutti gli usi scaduti: i banner di un tour un mese dopo la chiusura, poi quelli degli eventi |
-| Contatti | form (solo autenticati) indirizzato a un dipartimento; coda nel back-office | mail | sostituisce il form del sito Blazor. **Dal 16 set 2026** (nota `2026-09-15-contatti-con-risposte`) un contatto è un **filo** con le risposte, un tipo (`Dispute`, `Clarification`…), riferimenti a oggetti dei moduli e partecipanti in più; il membro risponde da `/me/contacts` |
+| Contatti | form (solo autenticati) indirizzato a un dipartimento; coda nel back-office | mail | sostituisce il form del sito Blazor. **Dal 16 set 2026** (nota `2026-09-15-contatti-con-risposte`) un contatto è un **filo** con le risposte, un tipo (`Dispute`, `Clarification`…), riferimenti a oggetti dei moduli e partecipanti in più; il membro risponde da `/me/contacts`. Il primo modulo che lo usa sono i tour (T14b, piano 0.97): la contestazione aperta da una proiezione del PIREP e decisa con una risposta nel filo, il chiarimento dalle pagine dei tour |
 | **Award** | catalogo award (nome, immagine, dipartimento, criterio) + assegnazioni per VID con motivazione e audit; **il catalogo lo scrive il dipartimento** (`Awards.View`/`Awards.Edit`, letto da tutti) e **assegna chi ha `Awards.Assign`**, globale (in IT: MD e HQ con i grant — varia per divisione, quindi è configurazione, non codice); il membro vede i suoi award sul profilo IVAO, mai nell'hub (piano 0.82) | segnalazioni dai moduli, mail | **mai assegnazione automatica**: i moduli segnalano a chi assegna cosa c'è da assegnare (coda "da verificare"), l'assegnazione è sempre umana (§9.7) |
 | Mail | SMTP, template tradotti, coda con retry (Quartz) | SMTP Plesk | infrastruttura, non un modulo |
 | Live status | ATC/piloti online in area, FIR online, tile della home | Whazzup SDK | polling, niente SignalR in prima fase |

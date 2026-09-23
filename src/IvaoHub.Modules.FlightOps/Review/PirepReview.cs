@@ -12,6 +12,7 @@ using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Settings;
+using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -45,6 +46,7 @@ public sealed class PirepReview(
     INotificationService notifications,
     LocaleCatalog catalog,
     ModuleSettingsStore settingsStore,
+    PirepDisputes disputes,
     IOptions<DivisionOptions> division,
     ICurrentUser currentUser,
     IClock clock)
@@ -72,7 +74,9 @@ public sealed class PirepReview(
     /// </summary>
     public async Task<bool> MayReopenAsync(Pirep pirep)
     {
-        if (!IsDecided(pirep.Status) || http.HttpContext is not { } context)
+        // A decision under an open dispute is reopened by upholding the dispute (T14b): reopening it aside would leave the dispute
+        // open for ever, and let whoever decided judge it after all.
+        if (!IsDecided(pirep.Status) || pirep.IsDisputed || http.HttpContext is not { } context)
         {
             return false;
         }
@@ -256,6 +260,11 @@ public sealed class PirepReview(
             return Refuse("status", "flightops:errors.reviewNotDecided");
         }
 
+        if (pirep.IsDisputed)
+        {
+            return Refuse("status", "flightops:errors.reviewDisputed");
+        }
+
         if (!await MayReopenAsync(pirep))
         {
             return (ReviewResult.Forbidden, null);
@@ -321,7 +330,7 @@ public sealed class PirepReview(
             .ToListAsync(cancellationToken);
 
         var names = await NamesAsync(
-            [pirep.Vid, pirep.AssignedToVid, pirep.DecidedByVid, .. pirep.Events.Select(step => (int?)step.ByVid)],
+            [pirep.Vid, pirep.AssignedToVid, pirep.DecidedByVid, pirep.DisputeDecidedByVid, .. pirep.Events.Select(step => (int?)step.ByVid)],
             cancellationToken);
         var (contacts, exemptions) = PirepSubmission.Atc(pirep);
         var leg = PirepSubmission.LegSnapshot(pirep);
@@ -332,6 +341,13 @@ public sealed class PirepReview(
             .ToList();
         var located = await airports.FindAsync(codes, cancellationToken);
         var mayValidate = await MayValidateAsync(pirep);
+
+        // The thread of the dispute, when the reader may read it: the department, the validator who takes part.
+        long? thread = null;
+        if (pirep.DisputeStatus is not null && (await PirepDisputes.ThreadsAsync(hub, [pirep.Id], cancellationToken)).TryGetValue(pirep.Id, out var found))
+        {
+            thread = found;
+        }
 
         return new ReviewDto(
             pirep.Id,
@@ -395,11 +411,15 @@ public sealed class PirepReview(
                     step.At,
                     step.Note)),
             ],
+            pirep.DisputeStatus is { } dispute
+                ? new ReviewDisputeDto(dispute, pirep.DisputeText, pirep.DisputedAt, Member(pirep.DisputeDecidedByVid, names), pirep.DisputeDecidedAt, thread, pirep.OwnerDepartment)
+                : null,
             new ReviewActionsDto(
                 CanTake: mayValidate && IsTakable(pirep, now) && !(pirep.Status == PirepStatus.InReview && pirep.AssignedToVid == currentUser.Vid && pirep.LeaseUntil > now),
                 CanRelease: mayValidate && pirep.Status == PirepStatus.InReview && pirep.AssignedToVid == currentUser.Vid,
                 CanDecide: mayValidate && pirep.Status == PirepStatus.InReview && pirep.AssignedToVid == currentUser.Vid,
-                CanReopen: await MayReopenAsync(pirep)),
+                CanReopen: await MayReopenAsync(pirep),
+                CanDecideDispute: pirep.DisputeStatus == DisputeStatus.Open && pirep.Status == PirepStatus.Rejected && await disputes.MayDecideAsync(pirep)),
             pirep.RowVersion);
     }
 
@@ -479,7 +499,7 @@ public sealed class PirepReview(
         var now = clock.UtcNow;
         var theirs = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
             .Where(report => report.TourId == pirep.TourId && report.Vid == pirep.Vid && report.Status != PirepStatus.Withdrawn)
-            .Select(report => new { report.Status, report.IsDisputed })
+            .Select(report => new { report.Status, report.DisputeStatus })
             .ToListAsync(cancellationToken);
         var bans = await CrudSource.BackOffice<Ban>(database).AsNoTracking()
             .Where(ban => ban.Vid == pirep.Vid)
@@ -491,7 +511,9 @@ public sealed class PirepReview(
             theirs.Count,
             theirs.Count(report => report.Status == PirepStatus.Accepted),
             theirs.Count(report => report.Status == PirepStatus.Rejected),
-            theirs.Count(report => report.Status == PirepStatus.Rejected && report.IsDisputed),
+            theirs.Count(report => report.DisputeStatus == DisputeStatus.Open),
+            theirs.Count(report => report.DisputeStatus == DisputeStatus.Upheld),
+            theirs.Count(report => report.DisputeStatus == DisputeStatus.Dismissed),
             [.. bans.Select(ban => new PilotBanDto(ban.TourId, ban.StartsAt, ban.EndsAt, ban.Reason, ban.StartsAt <= now && (ban.EndsAt is null || ban.EndsAt > now)))]);
     }
 

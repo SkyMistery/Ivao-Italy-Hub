@@ -61,7 +61,8 @@ public sealed record PirepFlightDto(
 
 /// <summary>
 /// A report as its pilot sees it: never the validator's name (design M2 §3.5). With a decision, when it was taken, the note
-/// to the pilot and the rules it says were broken (T13).
+/// to the pilot and the rules it says were broken (T13). With a rejection, until when it may be disputed, and once disputed
+/// where the dispute is and the thread it opened (T14b).
 /// </summary>
 public sealed record PirepDto(
     long Id,
@@ -91,7 +92,13 @@ public sealed record PirepDto(
     DateTime? DecidedAt,
     string? NoteToPilot,
     IReadOnlyList<Review.ViolatedRuleDto> ViolatedRules,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    DisputeStatus? DisputeStatus = null,
+    DateTime? DisputableUntil = null,
+    long? ThreadId = null);
+
+/// <summary>A pilot disputing a rejection (§3.8): what they want looked at again, required.</summary>
+public sealed record DisputeOpenDto(string? Text, DateTime RowVersion);
 
 /// <summary>One leg as the pilot's map colours it (design M2 §8.1).</summary>
 public sealed record MyLegDto(long Id, LegProgress Progress);

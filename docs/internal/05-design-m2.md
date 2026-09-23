@@ -744,6 +744,12 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
 - **Si contano le contestazioni** di ogni pilota (aperte, accolte, respinte), nella pagina del pilota e nel pannello di
   validazione: chi le usa per andare avanti con le leg si vede.
 - **Il pilota non vede i contatori** (ADR-009), né nella pagina né nella mail.
+- **Precisato in T14b** (23 settembre, nota `2026-09-23-contestazioni-chiarimenti-segnalazioni`, quattro risposte di Carmine): la
+  decide **solo chi ha `Tours.ReopenDecisions`** sul tour e **non ha deciso quel PIREP** (il validatore che ha deciso partecipa e
+  risponde, non giudica); accogliere o respingere chiede **una risposta al pilota**, che entra nel filo come risposta del dipartimento
+  ed è la mail dell'esito; **una contestazione per PIREP**; accolta, il PIREP torna **`Queued`** a chiunque. Le colonne sono
+  `dispute_status` (`Open`, `Upheld`, `Dismissed`), `dispute_text`, `disputed_at`, `dispute_decided_at`, `dispute_decided_by_vid`;
+  `is_disputed` è la lettura di `Open`. Con una contestazione aperta **«riapri» (§4.2.1) non c'è**: si riapre accogliendola.
 
 ### 3.9 I ban — `fo_bans`
 
@@ -762,6 +768,9 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
   non uno solo. Chi risponde vede tutti gli oggetti citati.
 - Stesso meccanismo del filo (estensione n.2), con il tipo `Clarification`: arriva al FOD e al validatore del PIREP, se
   c'è.
+- **Precisato in T14b**: si chiede da una pagina propria, `/tours/{slug}/ask` (dalla riga di un PIREP deciso, da una regola, dal
+  tour), con il form generato; i riferimenti sono `pirep:{id}`, `leg:{id}` e `rule:{tourId}:{ruleId}`, risolti dal modulo
+  (`FlightOpsReferences`) per chi legge; va al dipartimento del tour. «Deciso» lo fa la pagina: il risolutore non sa se apre o legge.
 
 ### 3.11 Il completamento, l'award, le segnalazioni
 
@@ -771,7 +780,9 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
   `/staff/awards/queue`, e il membro vede l'award sul suo profilo IVAO, mai nell'hub. Un sottotour completato conta per
   il padre, non segnala niente di suo.
 - **Segnalare un problema su una leg**: `fo_leg_issues` e una notifica alla casella del FOD
-  (`flightops.legIssueReported`).
+  (`flightops.legIssueReported`). **Precisato in T14b**: `tour_id`, `leg_id`, `body`, `status` (`Open`, `Resolved`), `staff_note`,
+  dipartimento del tour, audit (il pilota è `created_by`); il pilota la scrive da un dialog sulla riga della leg, lo staff la chiude
+  da `/staff/tours/issues` (lista e form generati, `Tours.View` legge, `Tours.Edit` chiude); nessuna risposta al pilota.
 
 ---
 
@@ -1216,7 +1227,8 @@ modulo: `source_module`, `source_id`), `cms_contact_replies`, `hub_awards`, `hub
 **Modulo** (`Initial`): `fo_tours`, `fo_hubs`, `fo_rotations`, `fo_legs`, `fo_callsign_rules`, `fo_tour_constraints`,
 `fo_aircraft_profiles`, `fo_rules`, `fo_errors`, `fo_rule_errors`, `fo_pireps`, `fo_pirep_flights`, `fo_pirep_errors`,
 `fo_pirep_events`, `fo_check_results`, `fo_enrolments`, `fo_bans`, `fo_leg_issues`, `fo_weather_reports`. Nel nucleo
-anche `ref_firs` (confini dei FIR da OpenAIP).
+anche `ref_firs` (confini dei FIR da OpenAIP). (Scritte fase per fase: `fo_leg_issues` e le colonne della contestazione su `fo_pireps`
+sono `AddDisputesAndLegIssues`, T14b.)
 
 **vIPI** (nel suo repository): `v_share_atc_sessions` e l'utente di sola lettura.
 

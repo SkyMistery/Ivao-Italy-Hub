@@ -310,7 +310,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T13a | La validazione sul server — **fatta il 23 set 2026** | T11 | code, presa, decisione con errori e suggerimento, mail, riapertura, riepilogo, tracce salvate, via API |
 | T13b | Le pagine della validazione — **fatta il 23 set 2026** | T13a | `/staff/tours/review` e `/staff/tours/review/{id}` con mappa e traccia, `reviewQueue` |
 | T14a | I fili dei contatti nel nucleo — **fatta il 23 set 2026** | T4a, T13 | risposte, riferimenti, partecipanti, `ThreadOpeningProjection`, risolutori, `/me/contacts`, `MessageThread` |
-| T14b | Contestazioni, chiarimenti, segnalazioni | T14a | la contestazione che sblocca; il chiarimento dalle pagine dei tour; `fo_leg_issues`; `openIssues` |
+| T14b | Contestazioni, chiarimenti, segnalazioni — **fatta il 23 set 2026** | T14a | la contestazione che sblocca; il chiarimento dalle pagine dei tour; `fo_leg_issues`; `openIssues` |
 | T15 | Completamento, validatori, piloti, ban | T4b, T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
 | T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
 | T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
@@ -1453,6 +1453,36 @@ cambia lo stato né conta come contestazione. Giro completo: contestato e riaper
   e VID `670011–670019`; unit `ContactThreadTests`; giro `full/contacts.spec.ts` — il membro scrive, lo staff risponde dal back office,
   la mail arriva in Mailpit senza chi ha risposto, il membro risponde da `/me/contacts` e il messaggio torna `New`. `mailFor` è passato
   in `full/bench.ts`.
+
+**T14b fatta il 23 settembre 2026** (branch `m2/t14b-disputes-and-issues`, piano 0.97, nota
+`decisions/2026-09-23-contestazioni-chiarimenti-segnalazioni.md`). Com'è andata:
+
+- **Quattro risposte di Carmine in apertura**, tutte come proposte: la contestazione la decide solo chi ha `Tours.ReopenDecisions` e non
+  ha deciso il PIREP; l'esito arriva al pilota come risposta del dipartimento nel filo; una contestazione per PIREP; il chiarimento ha
+  una pagina propria.
+- **Il server** (`Threads/`): `PirepDisputes` (aprire — il PIREP proietta la `ThreadOpeningProjection` nella sua transazione, oggetto ed
+  etichetta consegnati da una proprietà non mappata `DisputeThread` —, decidere, trovare il filo di un PIREP), `FlightOpsReferences`
+  (`pirep:`, `leg:`, `rule:{tour}:{regola}`, per chi legge; il validatore del PIREP partecipa), `LegIssue` con l'endpoint del pilota e
+  `MapCrud` per lo staff, `OpenIssuesProvider`. `TourRules` conta la tolleranza da `dispute_decided_at` di una contestazione respinta;
+  la coda ha `filter[disputed]`; la pagina di validazione la sezione della contestazione e i tre contatori; `PirepDto` porta
+  `disputeStatus`, `disputableUntil` e `threadId`; `PublicTourDto.department`. Migrazione `AddDisputesAndLegIssues`.
+- **Trovato scrivendo il giro**: con una contestazione aperta chi aveva deciso poteva ancora **riaprire** da sé (§4.2.1), decidere di
+  nuovo, e la contestazione restava `Open` per sempre. Ora «riapri» con una contestazione aperta non c'è
+  (`flightops:errors.reviewDisputed`): si riapre accogliendola.
+- **Trovato dai test**: il catalogo del server appiattisce i namespace (`threads.pirepLabel`, non `flightops:threads.…`), e il form dei
+  contatti risponde 200, non 201.
+- **Schermate**: la contestazione (un dialog) e il link al filo sui PIREP del pilota, «chiedi chiarimenti» dal tour, dai PIREP decisi e
+  dalle regole, `/tours/{slug}/ask` (form generato, i riferimenti come scelta multipla), il dialog «segnala un problema» sulla riga della
+  leg, la sezione della contestazione e la colonna «contestato» nella validazione, `/staff/tours/issues` (lista e form generati), il
+  blocco `openIssues`. Nessun componente nuovo.
+- **Il banco** ha una terza persona, `?as=assistant` (VID 999003, `IT-FOAC`): senza, chi rifiuta non può giudicare la contestazione e il
+  giro «riaperto» non si prova.
+- **I test**: unit `PirepRulesTests` (aperta sblocca, respinta riblocca dalla sua data, accolta in attesa); integrazione
+  `PirepTests.Disputes.cs` (VID 780088, casella `fo-test-fod@example.invalid` data all'host) — contestazione con testo, una volta,
+  nella finestra, solo su un rifiuto; il filo con il validatore e il riferimento; la leg che si libera; chi decide e chi no, «riapri»
+  bloccato; respinta e accolta, la risposta nel filo senza nome e la mail; il chiarimento con il validatore partecipante e i
+  riferimenti rifiutati; la segnalazione, la sua mail, la lista, la chiusura; il blocco per lo staff e per il pilota. Giro
+  `full/tours-dispute.spec.ts`. I conteggi dei blocchi scritti nei test passano a 12 e 37.
 
 ### T15 — Completamento, validatori, piloti, ban
 

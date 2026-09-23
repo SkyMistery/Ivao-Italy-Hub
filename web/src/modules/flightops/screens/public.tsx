@@ -1,14 +1,15 @@
 import { Badge, Button, H1, H2, H3, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation, useParams } from '@tanstack/react-router';
-import { ExternalLink, Send } from 'lucide-react';
+import { ExternalLink, MessageCircleQuestion, Send } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { ContentRenderer, readBody } from '../../../blocks';
 import { loginHref } from '../../../shared/api/client';
 import { mediaFileUrl } from '../../../shared/api/mediaUrl';
-import { describeProblem } from '../../../shared/forms';
+import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { resolveLocalized } from '../../../shared/i18n/localized';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
@@ -19,6 +20,8 @@ import {
   myTourQuery,
   publicTourQuery,
   publicToursQuery,
+  useDisputeReport,
+  useReportLegIssue,
   useWithdrawReport,
   type LegProgress,
   type MyTourDto,
@@ -26,8 +29,14 @@ import {
   type PublicLegDto,
   type PublicTourDto,
 } from '../api';
+import {
+  disputeSchema,
+  legIssueReportSchema,
+  type DisputeValues,
+  type LegIssueReportValues,
+} from '../schemas';
 
-import { mapLeg, reportActions } from './reporting';
+import { isDecided, mapLeg, reportActions } from './reporting';
 import { REPORT_STATUS_COLOURS } from './reviewing';
 import { TourCards } from './TourCards';
 
@@ -41,7 +50,8 @@ import { TourCards } from './TourCards';
  *
  * A signed in pilot sees their own side on top of it (T11b): the colour of every leg on the map, «send the report», and
  * their reports with «withdraw» and «correct». All of it is `…/reports/mine`, the server's answer: the page decides
- * nothing about the rules.
+ * nothing about the rules. Since T14b they also dispute a rejection within its window, follow the thread it opened, ask
+ * for a clarification about a report, a leg or a rule (`/tours/{slug}/ask`), and report a problem on a leg.
  */
 
 export function PublicToursPage() {
@@ -170,7 +180,7 @@ export function PublicTourPage() {
         </section>
       )}
 
-      <TourRulesSection tour={tour} />
+      <TourRulesSection tour={tour} signedIn={signedIn} />
 
       {tour.kind === 'Container' ? null : <PilotSection tour={tour} signedIn={signedIn} mine={mine} />}
 
@@ -299,8 +309,11 @@ function TourFacts({ tour }: { tour: PublicTourDto }) {
   );
 }
 
-/** The rules in force with their parameters, and the errors a pilot can be given (design M2 §5.2, §5.3). */
-function TourRulesSection({ tour }: { tour: PublicTourDto }) {
+/**
+ * The rules in force with their parameters, and the errors a pilot can be given (design M2 §5.2, §5.3); a signed in pilot
+ * may ask for one to be explained (§3.10).
+ */
+function TourRulesSection({ tour, signedIn }: { tour: PublicTourDto; signedIn: boolean }) {
   const { t } = useTranslation();
   const read = useLocalized();
 
@@ -326,6 +339,14 @@ function TourRulesSection({ tour }: { tour: PublicTourDto }) {
                     {rule.values.join(' · ')}
                   </span>
                 )}
+                {signedIn ? (
+                  <RouterAnchor
+                    href={`/tours/${tour.slug}/ask?rule=${rule.id}`}
+                    className="text-sm underline"
+                  >
+                    {t('flightops:public.askAbout')}
+                  </RouterAnchor>
+                ) : null}
               </div>
               {text === '' ? null : <p className="text-muted-foreground text-sm">{text}</p>}
             </li>
@@ -421,6 +442,7 @@ function TourLegs({ tour, mine }: { tour: PublicTourDto; mine: MyTourDto | undef
                 ) : (
                   <span className="text-muted-foreground">{t('flightops:public.notReleased')}</span>
                 )}
+                {mine === undefined ? null : <ReportLegIssue tour={tour} leg={leg} />}
               </td>
             </tr>
           ))}
@@ -544,16 +566,22 @@ function PilotSection({
         </p>
       )}
 
-      {canSend ? (
-        <div>
+      <div className="flex flex-wrap gap-2">
+        {canSend ? (
           <Button asChild>
             <RouterAnchor href={`/tours/${tour.slug}/report${next === null ? '' : `?leg=${next}`}`}>
               <Send aria-hidden className="mr-2 size-4" />
               {t('flightops:public.sendReport')}
             </RouterAnchor>
           </Button>
-        </div>
-      ) : null}
+        ) : null}
+        <Button asChild variant="outline">
+          <RouterAnchor href={`/tours/${tour.slug}/ask`}>
+            <MessageCircleQuestion aria-hidden className="mr-2 size-4" />
+            {t('flightops:public.ask')}
+          </RouterAnchor>
+        </Button>
+      </div>
     </section>
   );
 }
@@ -599,9 +627,27 @@ function MyReports({ tour, reports }: { tour: PublicTourDto; reports: readonly P
                       : []),
                   ].join(' · ')}
                 </span>
+                {report.disputeStatus === null || report.disputeStatus === undefined ? null : (
+                  <span className="text-sm">
+                    {t(`flightops:public.dispute.${report.disputeStatus}`)}
+                    {report.threadId === null || report.threadId === undefined ? null : (
+                      <>
+                        {' · '}
+                        <RouterAnchor href={`/me/contacts/${report.threadId}`} className="underline">
+                          {t('flightops:public.disputeThread')}
+                        </RouterAnchor>
+                      </>
+                    )}
+                  </span>
+                )}
+                {report.disputableUntil === null || report.disputableUntil === undefined ? null : (
+                  <span className="text-muted-foreground text-sm">
+                    {t('flightops:public.disputableUntil', { date: moment(report.disputableUntil) })}
+                  </span>
+                )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {actions.correct ? (
                   <Button asChild size="sm">
                     <RouterAnchor href={`/tours/${tour.slug}/report?report=${report.id}`}>
@@ -610,12 +656,119 @@ function MyReports({ tour, reports }: { tour: PublicTourDto; reports: readonly P
                   </Button>
                 ) : null}
                 {actions.withdraw ? <WithdrawReport report={report} /> : null}
+                {report.disputableUntil === null || report.disputableUntil === undefined ? null : (
+                  <DisputeReport report={report} />
+                )}
+                {isDecided(report.status) ? (
+                  <Button asChild size="sm" variant="ghost">
+                    <RouterAnchor href={`/tours/${tour.slug}/ask?pirep=${report.id}`}>
+                      {t('flightops:public.askAbout')}
+                    </RouterAnchor>
+                  </Button>
+                ) : null}
               </div>
             </li>
           );
         })}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Disputing a rejection (§3.8), within its window: what to look at again. The thread it opens is where the answer comes,
+ * and the mail says so.
+ */
+function DisputeReport({ report }: { report: PirepDto }) {
+  const { t, i18n } = useTranslation();
+  const dispute = useDisputeReport();
+  const notice = useNotice();
+  const [text, setText] = useState('');
+
+  return (
+    <ConfirmDialog
+      triggerText={t('flightops:public.disputeAction')}
+      triggerVariant="secondary"
+      title={t('flightops:public.disputeTitle')}
+      description={t('flightops:public.disputeDescription')}
+      confirmText={t('flightops:public.disputeAction')}
+      confirmVariant="primary"
+      disabled={dispute.isPending}
+      confirmDisabled={text.trim() === ''}
+      onConfirm={() =>
+        dispute.mutate(
+          { report, text },
+          {
+            onSuccess: () => {
+              setText('');
+              notice({ tone: 'success', title: t('flightops:public.disputed') });
+            },
+            onError: (error) =>
+              notice({
+                tone: 'error',
+                title: describeProblem(error, t, i18n.language) ?? t('errors.unknown'),
+              }),
+          },
+        )
+      }
+    >
+      <SchemaForm<DisputeValues>
+        schema={disputeSchema}
+        defaults={{ text }}
+        locales={[]}
+        labels="flightops:public"
+        onChange={(values) => setText(values.text)}
+      />
+    </ConfirmDialog>
+  );
+}
+
+/** A problem on a leg (§3.11): an airport closed, a route that does not exist. It goes to the tour's department. */
+function ReportLegIssue({ tour, leg }: { tour: PublicTourDto; leg: PublicLegDto }) {
+  const { t, i18n } = useTranslation();
+  const report = useReportLegIssue(tour.id);
+  const notice = useNotice();
+  const [body, setBody] = useState('');
+
+  return (
+    <ConfirmDialog
+      triggerText={t('flightops:public.issueAction')}
+      triggerVariant="ghost"
+      title={t('flightops:public.issueTitle', {
+        number: leg.number,
+        from: leg.departureIcao,
+        to: leg.arrivalIcao,
+      })}
+      description={t('flightops:public.issueDescription')}
+      confirmText={t('flightops:public.issueSend')}
+      confirmVariant="primary"
+      disabled={report.isPending}
+      confirmDisabled={body.trim() === ''}
+      onConfirm={() =>
+        report.mutate(
+          { legId: leg.id, body },
+          {
+            onSuccess: () => {
+              setBody('');
+              notice({ tone: 'success', title: t('flightops:public.issueSent') });
+            },
+            onError: (error) =>
+              notice({
+                tone: 'error',
+                title: describeProblem(error, t, i18n.language) ?? t('errors.unknown'),
+              }),
+          },
+        )
+      }
+    >
+      <SchemaForm<LegIssueReportValues>
+        schema={legIssueReportSchema}
+        defaults={{ body }}
+        locales={[]}
+        labels="flightops:public"
+        onChange={(values) => setBody(values.body)}
+      />
+    </ConfirmDialog>
   );
 }
 
