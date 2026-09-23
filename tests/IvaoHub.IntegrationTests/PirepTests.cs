@@ -66,8 +66,13 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await SeedUserAsync(PilotVid, staffPosition: null, rating: 4, token);
         await SeedUserAsync(OtherPilotVid, staffPosition: null, rating: 4, token);
         await SeedUserAsync(AssistantVid, staffPosition: "IT-FOAC", rating: 4, token);
+
+        // Staff of another department, trainers: what «add a validator» may enable (T15).
+        await SeedUserAsync(StaffValidatorVid, staffPosition: "IT-T87", rating: 4, token);
+        await SeedUserAsync(LeavingValidatorVid, staffPosition: "IT-T88", rating: 4, token);
         await SeedReviewersAsync(token);
         await CleanThreadsAsync(token);
+        await CleanSignalsAsync(token);
         await FoTestAirports.SeedAsync(_host.Services, token);
     }
 
@@ -84,6 +89,9 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await Everything<Pirep>(database).Where(report => vids.Contains(report.Vid) || _tours.Contains(report.TourId)).ExecuteDeleteAsync(token);
             await database.Enrolments.Where(row => vids.Contains(row.Vid) || _tours.Contains(row.TourId)).ExecuteDeleteAsync(token);
             await database.Bans.Where(ban => vids.Contains(ban.Vid)).ExecuteDeleteAsync(token);
+
+            // Subtours first: a container goes after them (T15).
+            await Everything<Tour>(database).Where(tour => _tours.Contains(tour.Id) && tour.ParentTourId != null).ExecuteDeleteAsync(token);
             await Everything<Tour>(database).Where(tour => _tours.Contains(tour.Id)).ExecuteDeleteAsync(token);
             await database.Rules.Where(rule => _rules.Contains(rule.Id)).ExecuteDeleteAsync(token);
             await database.Errors.Where(error => _errors.Contains(error.Id)).ExecuteDeleteAsync(token);
@@ -91,6 +99,7 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         await CleanReviewersAsync(token);
         await CleanThreadsAsync(token);
+        await CleanSignalsAsync(token);
 
         await FoTestAirports.RemoveAsync(_host.Services, token);
         await _host.DisposeAsync();
@@ -527,7 +536,7 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             .GetProperty("progress").GetString()!;
 
     /// <summary>A Sequential tour flying ahead, released two days ago, with two legs: Rome–Milan and Milan–London.</summary>
-    private async Task<(long TourId, long[] Legs)> ReadyTourAsync(HttpClient coordinator, int dailyLimit, CancellationToken cancellationToken)
+    private async Task<(long TourId, long[] Legs)> ReadyTourAsync(HttpClient coordinator, int dailyLimit, CancellationToken cancellationToken, long? awardId = null)
     {
         var slug = $"fo-test-pirep-{Guid.NewGuid():N}"[..27];
         var tour = await CreatedAsync(
@@ -555,7 +564,7 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 ReferenceAircraftIcao: null,
                 RequiredNm: null,
                 AllowedAircraft: null,
-                AwardId: null,
+                AwardId: awardId,
                 RowVersion: default),
             cancellationToken);
         var tourId = Id(tour);
