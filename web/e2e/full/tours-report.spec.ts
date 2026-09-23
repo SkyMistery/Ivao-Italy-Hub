@@ -24,7 +24,8 @@ import { replayFlight } from './replay';
  * The tracker is the recorded one (`tests/fixtures/ivao/`), with one of its flights copied to have taken off yesterday
  * under the bench's VID (`replay.ts`): the recordings are from June, and no report window reaches them.
  *
- * ⚠️ A tour with a report is never deleted, even a withdrawn one (design M2 §1.2.2): «delete» hides it. So every run
+ * ⚠️ A tour with a report is never deleted, even a withdrawn one (design M2 §1.2.2): the server refuses
+ * (`tourHasReports`) and the spec hides it instead. So every run
  * leaves one hidden tour behind in the bench database — hidden, it is on no public page and in no other spec's way.
  */
 
@@ -41,16 +42,29 @@ function wallClock(date: Date): string {
   return date.toISOString().slice(0, 16);
 }
 
-/** The tours a run of this spec left behind, recognised by their address: deleted, or hidden when they have reports. */
+/**
+ * The tours a run of this spec left behind, recognised by their address: deleted, or — the server refuses to delete a
+ * tour with reports (`tourHasReports`) — hidden. One already hidden is left as it is.
+ */
 async function removeLeftovers(context: BrowserContext): Promise<void> {
   const response = await context.request.get('/api/flightops/tours?pageSize=100&q=bench-report-');
   expect(response.status()).toBe(200);
 
-  for (const tour of ((await response.json()) as { items: { id: number }[] }).items) {
+  const found = ((await response.json()) as { items: { id: number; isHidden: boolean }[] }).items;
+  for (const tour of found.filter((row) => !row.isHidden)) {
     const removed = await context.request.delete(`/api/flightops/tours/${tour.id}`, {
       headers: asTheClientDoes,
     });
-    expect(removed.status(), await removed.text()).toBeLessThan(300);
+    if (removed.status() < 300) {
+      continue;
+    }
+
+    expect(await removed.text()).toContain('flightops:errors.tourHasReports');
+    const hidden = await context.request.post(`/api/flightops/tours/${tour.id}/status`, {
+      headers: asTheClientDoes,
+      data: { action: 'Hide' },
+    });
+    expect(hidden.status(), await hidden.text()).toBeLessThan(300);
   }
 }
 
