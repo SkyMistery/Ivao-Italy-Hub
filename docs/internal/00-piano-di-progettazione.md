@@ -1,9 +1,25 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.90 — 22 settembre 2026 (**il pubblico dei tour e la mappa**: una base senza nomi, i riquadri come blocco, `tours` riservato, T10)
+**Versione documento:** 0.91 — 23 settembre 2026 (**il PIREP sul server**: T11 in due, l'hub e la partenza letti dai report, il pilota tocca la sua riga, T11a)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.91** (23 set 2026, fase T11a di M2): **il PIREP sul server** — le tre domande di ogni tipo di tour (`TourRules`:
+quali leg si volano, qual è la prossima, quando è finito, con il rifiuto, la tolleranza e la contestazione che sblocca), i filtri e
+le regole di sequenza di un `Open` e il suo obiettivo (`OpenRules`), i limiti giornalieri per giorno UTC del decollo, cinque
+tabelle (`fo_pireps`, `fo_pirep_flights`, `fo_pirep_events`, `fo_enrolments`, `fo_bans`), sei verbi del pilota (le sessioni del
+tracker, l'invio, il suo stato nel tour, la lettura, la correzione, il ritiro), lo snapshot delle regole e della leg al primo invio,
+il job del ritiro automatico e l'`ITourReports` vero. Nota `decisions/2026-09-23-il-pirep.md`, quattro risposte di Carmine in
+apertura: **(1) T11 si divide** in T11a (il server) e T11b (il form, i colori della mappa, la pagina del pilota); **(2) l'hub di un
+tour `Hub` si sceglie volando** la prima leg, quindi `hub_order_json` non esiste; **(3) la partenza di `SequentialChosenStart`** è la
+leg del primo PIREP **non ritirato**, quindi `start_leg_id` non esiste — l'iscrizione ha `vid`, `tour_id`, `started_at`,
+`completed_at`; **(4) il form è una pagina sua**, `/tours/{slug}/report` (T11b). **Due estensioni di meccanismi** (§16.E caso b):
+⚠️ **la rete di sicurezza dell'interceptor** lascia modificare una riga `ISubmittedByMembers` e `IHasStakeholder` all'interessato
+che l'ha inviata, se resta sua e negli stessi dipartimenti — senza, un pilota non poteva ritirare né correggere il proprio PIREP
+(la regola del «terzo della famiglia», changelog di M1, valeva per la sola creazione); T13 dovrà estenderla ancora per i
+validatori abilitati, che hanno `Tours.Validate` e non `Tours.Edit`. E `IAircraftTypeDirectory.WakeCategoriesAsync`, per il filtro
+`AircraftCategory`. Sezioni toccate: §16 (la frase su `ISubmittedByMembers`, sotto).
 
 **Changelog 0.90** (22 set 2026, fase T10 di M2): **il pubblico dei tour e la mappa** — `/tours` (i riquadri dei tour aperti, in
 chiusura e in arrivo), `/tours/{slug}` (briefing, date, aerei, regole in vigore con i parametri, errori pubblici, leg con distanza
@@ -1004,7 +1020,9 @@ due decisioni di Carmine cambiano una riga ciascuna di questo piano.
   allarga **la sola creazione**: un messaggio di contatto è una riga che qualcuno scrive nello spazio
   di un dipartimento a cui non appartiene, e la guardia dell'interceptor lo rifiuterebbe. Vale solo
   per `EntityState.Added` e solo per i tipi che la dichiarano; muovere quella riga dopo resta una
-  scrittura ordinaria. M2 (iscrizione a un evento) e M4 (richiesta di esame) sono la stessa forma
+  scrittura ordinaria. *(0.91, T11a: con un'eccezione — una riga che è anche `IHasStakeholder` la
+  modifica il suo interessato, se resta sua e negli stessi dipartimenti: un pilota ritira e corregge
+  il proprio PIREP. Nota `decisions/2026-09-23-il-pirep.md` §5.)* M2 (iscrizione a un evento) e M4 (richiesta di esame) sono la stessa forma
   (`decisions/2026-09-06-una-riga-scritta-da-fuori.md`).
 
 Il resto della fase non ha aperto perimetro: la coda, il job Quartz con i tentativi, le preferenze

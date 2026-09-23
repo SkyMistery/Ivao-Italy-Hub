@@ -304,7 +304,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T8 | L'import delle leg — **fatta il 22 set 2026** | T7a | XLSX e CSV letti nel browser, differenze dal server, «fondi» e «sostituisci» |
 | T9 | Regole ed errori | T6 | regole con parametri, errori, regole effettive, `errorCatalog`, copia delle regole |
 | T10 | Il pubblico e la mappa — **fatta il 22 set 2026** | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
-| T11 | Il PIREP | T2, T3, T9, T10 | `TourRules`, ricerca nel tracker, form, controlli che bloccano, deviazioni, iscrizione, snapshot |
+| T11a | Il PIREP sul server — **fatta il 23 set 2026** | T2, T3, T9, T10 | `TourRules`, tabelle, invio e reinvio e ritiro via API, controlli che bloccano, deviazioni, iscrizione, snapshot, ritiro automatico |
+| T11b | Il form e la pagina del pilota | T11a | la pagina del form, ricerca e scelta del volo, i colori della mappa, «Invia il report», i PIREP del pilota |
 | T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
 | T14 | Contestazioni, chiarimenti, segnalazioni | T4a, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
@@ -1172,6 +1173,44 @@ Design §1.8, §1.9, §2, §3.1, §3.2, §3.4, §3.6, §5.4. Branch `m2/t11-pire
 esiste già sulla riga), sui limiti giornalieri con l'esempio dei 12 voli del design, su `Open`; integrazione: sessione rivendicata una
 volta; limite che blocca; ban che blocca; snapshot non rifatto al reinvio; ritiro automatico. Smoke: il form con il tracker finto.
 **Fatta quando**: con il login di sviluppo e un volo del corpus, un pilota invia un PIREP su un tour di prova e lo vede in coda.
+
+**Divisa il 23 settembre 2026** in apertura (Carmine, nota `decisions/2026-09-23-il-pirep.md` §1), come T6 e T7:
+
+- **T11a — il server** (branch `m2/t11a-pirep-server`): i punti 1, 2, 4, 5 e 6, e del punto 3 la ricerca nel tracker, la revisione
+  al decollo, le procedure per regole di volo e la deviazione — tutto via API, provato dai test d'integrazione con un tracker finto.
+- **T11b — il form e la pagina** (branch `m2/t11b-pirep-form`): il resto del punto 3 (la pagina del form, **`/tours/{slug}/report`**,
+  prima la scelta del volo e poi i campi) e il punto 7 (i colori sulla mappa, «Invia il report», i PIREP del pilota con «Ritira» e
+  «Correggi»). Lo smoke del form con il tracker finto e il «fatta quando» di T11 sono suoi.
+
+**T11a fatta il 23 settembre 2026** (branch `m2/t11a-pirep-server`, piano 0.91, nota `decisions/2026-09-23-il-pirep.md`). Com'è andata:
+
+- **Quattro risposte di Carmine in apertura**, tutte come proposte: la divisione; l'hub di un tour `Hub` **si sceglie volando** la
+  prima leg di una sua rotazione; la partenza di `SequentialChosenStart` è la leg del primo PIREP **non ritirato**; il form è una
+  pagina sua (T11b). Le due colonne dell'iscrizione che servivano solo a quelle scelte, `start_leg_id` e `hub_order_json`, non
+  esistono: si leggono dai PIREP come l'avanzamento.
+- **Il modulo**: `Pireps/` — le cinque entità in `Pirep.cs`; **`TourRules`** (puro: le tre domande per `Sequential`, `Free`,
+  `Distance`, `SequentialChosenStart`, `Hub`, con il rifiuto, la tolleranza e la contestazione); **`OpenRules`** (puro: rotta già
+  volata, i nove filtri, le quattro regole di sequenza, l'obiettivo e `MinFlightsAt` al completamento) e **`DailyLimits`**;
+  `TrackedFlight` (una sessione letta come volo: decollo, atterraggio, revisione al decollo); **`PirepSubmission`** (raccoglie
+  quello che le funzioni pure chiedono e scrive); sei verbi del pilota in `PirepEndpoints` (`…/tours/{id}/reports/sessions`,
+  `…/mine`, l'invio; `/api/flightops/reports/{id}` in lettura, correzione e `…/withdraw`); `PirepWithdrawalJob` ogni giorno alle
+  03:20 UTC; `PirepTourReports` sostituisce la risposta «nessun report» di T6a. Migrazione `AddPireps`, solo tabelle nuove.
+- **Due estensioni del nucleo** (§16.E caso b): ⚠️ **la rete dell'interceptor** — il pilota non poteva ritirare né correggere il
+  proprio PIREP, perché `ISubmittedByMembers` valeva solo alla creazione e ogni modifica chiedeva `Tours.Edit`; ora l'interessato
+  di una riga inviata la modifica se resta sua e negli stessi dipartimenti. ⚠️ **T13 incontrerà lo stesso muro** con un validatore
+  abilitato su un tour (ha `Tours.Validate`, non `Tours.Edit`). E `IAircraftTypeDirectory.WakeCategoriesAsync` per il filtro
+  `AircraftCategory`. Trovato nello stesso passaggio: il commento di `ISubmittedByMembers` stava sopra `IHasResourceScope`.
+- **Scelte scritte senza domanda**, tutte nella nota §7: il decollo dalla traccia, la sessione rivendicata in una colonna unica e
+  annullabile, la rotta e il decollo copiati sul PIREP, la leg congelata in `leg_snapshot_json`, gli aerei della leg → del tour →
+  del `Container`, un filtro `Open` senza dato che lascia passare, l'iscrizione anche al `Container`.
+- **I test**: unit `PirepRulesTests` (venti: la sequenza con le due progressioni in tabella, il rifiuto con la tolleranza e la
+  contestazione, leg ritirate e non rilasciate, `Free`, `Distance`, la partenza scelta che torna libera, tre casi di `Hub` —
+  l'ordine fisso, l'ordine libero una rotazione alla volta, l'hub collegato raggiunto solo con la sua leg —, i filtri e le regole
+  di sequenza di `Open` con l'antimeridiano, l'obiettivo e `MinFlightsAt`, **l'esempio dei 12 voli** del design, e un volo vero
+  delle fixture letto come volo); integrazione `PirepTests` (quattro: il «fatta quando» senza browser con lo snapshot non rifatto
+  alla correzione, la sessione rivendicata una volta e liberata dal ritiro, limite giornaliero / ordine / rotta sbagliata / ban,
+  il ritiro automatico del job), con un **tracker finto** costruito dal test — le fixture registrate sono voli di giugno, che
+  nessuna finestra raggiunge.
 
 ### T12 — Gli ATC contattati
 
