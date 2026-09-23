@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { DashboardScreen } from '../content/DashboardScreen';
@@ -30,6 +31,12 @@ export function MePage() {
         slug={PERSONAL_DASHBOARDS.member}
         missing={t('dashboard.personalMissing')}
       />
+      {/* The member's threads with the departments (M2, T14a): a place of theirs, like the preferences under it. */}
+      <p>
+        <Link to="/me/contacts" className="text-primary underline">
+          {t('contacts.mine.link')}
+        </Link>
+      </p>
       <NotificationPreferences />
     </div>
   );

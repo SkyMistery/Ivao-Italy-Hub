@@ -3,12 +3,12 @@ import { Button, Subtle } from '@ivao/atmosphere-react';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
-import { useUpdateContactStatus } from '../../features/contacts/mutations';
-import { contactQuery, type ContactDetailDto } from '../../features/contacts/queries';
+import { useReplyContact, useUpdateContactStatus } from '../../features/contacts/mutations';
+import { contactQuery, contactThreadQuery, type ContactDetailDto } from '../../features/contacts/queries';
 import { contactStatusSchema, type ContactStatusFormValues } from '../../features/contacts/schema';
 import { deptParam } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
-import { PageShell } from '../../shared/ui';
+import { MessageThread, PageShell } from '../../shared/ui';
 
 /**
  * One message, and the one thing the department may write about it.
@@ -18,8 +18,11 @@ import { PageShell } from '../../shared/ui';
  * server does not need to keep. The form below is the whole of what this screen can save.
  */
 export const Route = createFileRoute('/_staff/staff/$dept/contacts/$id')({
-  loader: ({ context, params }): Promise<ContactDetailDto> =>
-    context.queryClient.ensureQueryData(contactQuery(Number(params.id))),
+  loader: async ({ context, params }): Promise<ContactDetailDto> => {
+    // The thread alongside the row (M2, T14a): what was said, then what the department may change.
+    await context.queryClient.ensureQueryData(contactThreadQuery(Number(params.id)));
+    return context.queryClient.ensureQueryData(contactQuery(Number(params.id)));
+  },
   component: ContactDetail,
 });
 
@@ -33,11 +36,13 @@ function ContactDetail() {
   // never again, so after one save the screen still held the `rowVersion` from when the page
   // opened, and the second save was answered 409 — blaming somebody who does not exist. The loader
   // above is the *preload*; what the screen reads is the query it filled (design M0 §7.3).
-  const message = useQuery(contactQuery(Number(id))).data;
+  const { data: message, refetch: refetchMessage } = useQuery(contactQuery(Number(id)));
+  const thread = useQuery(contactThreadQuery(Number(id))).data;
 
   const update = useUpdateContactStatus(Number(id));
+  const reply = useReplyContact(Number(id));
 
-  if (message === undefined) {
+  if (message === undefined || thread === undefined) {
     // The loader has already put it in the cache, so this is the compiler asking rather than a
     // state a reader reaches.
     return null;
@@ -67,12 +72,18 @@ function ContactDetail() {
       ]}
     >
       <div className="flex max-w-3xl flex-col gap-6">
-        <div className="border-border bg-card rounded-md border p-4">
-          <Subtle>{t('contacts.from', { vid: message.createdBy, at: formatted })}</Subtle>
-          {/* Plain text as it was written: a message is not markdown, and rendering it as such
-              would turn somebody's asterisks into somebody else's formatting. */}
-          <p className="mt-4 text-sm whitespace-pre-wrap">{message.body}</p>
-        </div>
+        <Subtle>{t('contacts.from', { vid: message.createdBy, at: formatted })}</Subtle>
+        {/* The conversation, with the box to answer it: Contacts.View answers, and the answer moves the status by
+            itself (note 2026-09-15-contatti-con-risposte §3.1). The form below is for moving it by hand. */}
+        <MessageThread
+          thread={thread}
+          timezone={bootstrap.division.timezone}
+          onReply={async (body) => {
+            await reply.mutateAsync(body);
+            // The row's version moved with the status: the form below has to hold the new one.
+            await refetchMessage();
+          }}
+        />
 
         <SchemaForm
           schema={contactStatusSchema}

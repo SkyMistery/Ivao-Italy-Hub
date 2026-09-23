@@ -4,7 +4,13 @@ import { api, unwrap } from '../../shared/api/client';
 import type { Department } from '../../shared/api/bootstrap';
 import type { ContactFormValues } from '../../shared/ui';
 
-import { contactKey, contactsKey, type ContactDetailDto } from './queries';
+import {
+  contactKey,
+  contactThreadKey,
+  contactsKey,
+  type ContactDetailDto,
+  type ContactThreadDto,
+} from './queries';
 import type { ContactStatusFormValues } from './schema';
 
 /**
@@ -43,6 +49,23 @@ export function useUpdateContactStatus(id: number) {
       ),
     onSuccess: async (message) => {
       queryClient.setQueryData(contactKey(id), message);
+      await queryClient.invalidateQueries({ queryKey: contactsKey });
+    },
+  });
+}
+
+/**
+ * Answering a thread, from either side: the server knows who is writing and which side that is (M2, T14a). The thread
+ * that comes back is the one on screen from then on; the lists behind it move with the status.
+ */
+export function useReplyContact(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: string): Promise<ContactThreadDto> =>
+      unwrap(await api.POST('/api/contacts/{id}/replies', { params: { path: { id } }, body: { body } })),
+    onSuccess: async (thread) => {
+      queryClient.setQueryData(contactThreadKey(id), thread);
       await queryClient.invalidateQueries({ queryKey: contactsKey });
     },
   });
