@@ -36,6 +36,12 @@ public interface IFirLocator
 
     /// <summary>Called when the boundaries change, so the shapes are read again.</summary>
     void Invalidate();
+
+    /// <summary>
+    /// The credit the outlines' licence asks for, to show next to an answer derived from them (decision note of 16 September
+    /// 2026): a module shows it without learning who drew them.
+    /// </summary>
+    string Attribution { get; }
 }
 
 /// <inheritdoc />
@@ -93,6 +99,8 @@ public sealed class FirLocator(HubDbContext database, IMemoryCache cache) : IFir
     }
 
     public void Invalidate() => cache.Remove(CacheKey);
+
+    public string Attribution => VatSpyFirBoundarySource.Attribution;
 
     private async Task<IReadOnlyList<FirShape>> ShapesAsync(CancellationToken cancellationToken)
     {

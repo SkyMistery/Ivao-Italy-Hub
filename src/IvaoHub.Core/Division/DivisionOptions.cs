@@ -124,6 +124,13 @@ public sealed record DivisionOptions
     /// <summary>How far the authority of a FIR team reaches.</summary>
     public FirStaffScope FirStaffScope { get; init; } = FirStaffScope.All;
 
+    /// <summary>
+    /// Where the ATC sessions of the network are read from, when the division has an archive of them (note
+    /// 2026-09-14-dati-condivisi-con-vipi §3.4). Absent — the default, and a fork's — means none: the controllers a pilot
+    /// contacted are «not available» and everything else works the same.
+    /// </summary>
+    public IvaoHub.Core.Atc.AtcDataOptions? AtcData { get; init; }
+
     // There is deliberately no ResolveName here. Falling back from one language to another is a
     // rule the hub already has, in Localized<T>.Resolve, and a second copy of it on this type had
     // no caller and would have been the copy that drifted.

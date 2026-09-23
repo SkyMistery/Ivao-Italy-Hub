@@ -5,14 +5,16 @@ namespace IvaoHub.Modules.FlightOps.Pireps;
 /// <summary>
 /// One session of the tracker read as a flight (design M2 §3.2 point 3): when it left the ground and when it came back, every
 /// revision of its plan and the one valid at take-off — the last filed before the wheels left the ground, or the first when
-/// none was. The checks read that one (§1.8); the validator sees them all.
+/// none was. The checks read that one (§1.8); the validator sees them all. The track is kept in time order, for what is
+/// read off it later: the regions the flight crossed (§3.3).
 /// </summary>
 public sealed record TrackedFlight(
     IvaoTrackerSessionDto Session,
     IReadOnlyList<IvaoFlightPlanDto> Plans,
     DateTime? TakeoffAt,
     DateTime? LandingAt,
-    IvaoFlightPlanDto? PlanAtTakeoff)
+    IvaoFlightPlanDto? PlanAtTakeoff,
+    IReadOnlyList<IvaoTrackPointDto> Track)
 {
     /// <summary>The aircraft as the plan at take-off says it, else as the session's summary does.</summary>
     public string? Aircraft => (PlanAtTakeoff?.AircraftIcao ?? Session.AircraftIcao)?.Trim().ToUpperInvariant();
@@ -47,6 +49,6 @@ public sealed record TrackedFlight(
             ? ordered.LastOrDefault(plan => plan.FiledAt <= off) ?? ordered.FirstOrDefault()
             : ordered.LastOrDefault();
 
-        return new TrackedFlight(session, ordered, takeoff, landing, atTakeoff);
+        return new TrackedFlight(session, ordered, takeoff, landing, atTakeoff, points);
     }
 }

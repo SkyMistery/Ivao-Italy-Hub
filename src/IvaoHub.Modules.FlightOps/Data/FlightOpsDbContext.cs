@@ -243,6 +243,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             pirep.Property(row => row.Approach).HasMaxLength(PirepValidation.MaxProcedureLength);
             pirep.Property(row => row.AtcContactsJson).HasColumnName("atc_contacts_json").HasColumnType("json").IsRequired();
             pirep.Property(row => row.AtcExemptionsJson).HasColumnName("atc_exemptions_json").HasColumnType("json").IsRequired();
+            pirep.Property(row => row.AtcArchiveAvailable).HasDefaultValue(false);
             pirep.Property(row => row.DiversionIcao).HasMaxLength(4);
             pirep.Property(row => row.DiversionNote).HasMaxLength(PirepValidation.MaxTextLength);
             pirep.Property(row => row.PilotRemarks).HasMaxLength(PirepValidation.MaxTextLength);

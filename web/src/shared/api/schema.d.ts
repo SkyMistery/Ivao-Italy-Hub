@@ -1486,6 +1486,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/{tourId}/reports/atc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsReportAtc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{tourId}/reports/mine": {
         parameters: {
             query?: never;
@@ -1625,6 +1641,45 @@ export interface components {
         AllowedAircraft: {
             types: string[];
             groupIds: number[];
+        };
+        /** @description A controller on a report, where it came from included. */
+        AtcContactDto: {
+            callsign: string;
+            frequency: null | string;
+            origin: components["schemas"]["AtcContactOrigin"];
+        };
+        /**
+         * @description Where a controller on a report comes from (design M2 §3.3). Stored by name.
+         * @enum {unknown}
+         */
+        AtcContactOrigin: "Proposed" | "Added" | "Removed";
+        /** @description A controller as the pilot declares it: a callsign, and the frequency when they want to write one. */
+        AtcContactWriteDto: {
+            callsign: string;
+            frequency: null | string;
+        };
+        /** @description An exemption on a report: with its status at the send, and the checks it softens as they were then. */
+        AtcExemptionDto: {
+            callsign: string;
+            kind: components["schemas"]["ExemptionKind"];
+            note: null | string;
+            status: components["schemas"]["ExemptionStatus"];
+            softens: string[];
+        };
+        /** @description An exemption as the pilot declares it: the position among the contacted ones, what it allowed, and a note. */
+        AtcExemptionWriteDto: {
+            callsign: string;
+            kind: components["schemas"]["ExemptionKind"];
+            note: null | string;
+        };
+        /**
+         * @description What the form shows while the pilot fills it in: the controllers online along the chosen flights, or «not available» —
+         *     and the credit the outlines of the regions ask for, next to an answer derived from them.
+         */
+        AtcProposalDto: {
+            available: boolean;
+            proposed: components["schemas"]["AtcContactDto"][];
+            attribution: string;
         };
         /**
          * @description One row in full. `BeforeJson` and `AfterJson` are the scalar columns as they were and
@@ -2545,6 +2600,16 @@ export interface components {
          * @enum {unknown}
          */
         ErrorCategory: "Info" | "Warning" | "Dangerous";
+        /**
+         * @description What a controller allowed (design M2 §3.3); each kind declares which checks it softens (Toursystem ADR-014).
+         * @enum {unknown}
+         */
+        ExemptionKind: "FreeSpeed" | "DirectRouting" | "LevelChange" | "Other";
+        /**
+         * @description Whether the position of an exemption was online during the flight, as far as the archive can tell.
+         * @enum {unknown}
+         */
+        ExemptionStatus: "Online" | "NotOnline" | "Unverifiable";
         /** @description A grant as the form loads it, with the audit trail and the version to write back. */
         GrantDetailDto: {
             /** Format: int64 */
@@ -3676,6 +3741,9 @@ export interface components {
             diversionReason: null | components["schemas"]["DiversionReason"];
             diversionNote: null | string;
             pilotRemarks: null | string;
+            atcContacts: components["schemas"]["AtcContactDto"][];
+            exemptions: components["schemas"]["AtcExemptionDto"][];
+            atcArchiveAvailable: boolean;
             flights: components["schemas"]["PirepFlightDto"][];
             /** Format: date-time */
             rowVersion: string;
@@ -3709,7 +3777,9 @@ export interface components {
         /**
          * @description A report as the pilot sends it, and sends it again after a correction (design M2 §3.2): the leg — none on an
          *     `Open` tour, and never another on a correction —, the session of the flight, and a second one when it ended
-         *     elsewhere, with the airport it ended at and why. The controllers contacted and the exemptions arrive with T12.
+         *     elsewhere, with the airport it ended at and why; and the controllers the pilot contacted — the proposed ones they kept
+         *     and the ones they added — with the exemptions they received (§3.3). Both lists are optional on the wire: none is a
+         *     flight on which nobody was contacted.
          */
         PirepWriteDto: {
             /** Format: int64 */
@@ -3725,6 +3795,8 @@ export interface components {
             pilotRemarks: null | string;
             /** Format: date-time */
             rowVersion: string;
+            atcContacts?: null | components["schemas"]["AtcContactWriteDto"][];
+            exemptions?: null | components["schemas"]["AtcExemptionWriteDto"][];
         };
         /** @description The menu entry an author proposes with a page: under which entry, and in which words. */
         ProposedMenuEntry: {
@@ -9278,6 +9350,47 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsReportAtc: {
+        parameters: {
+            query?: {
+                sessionIds?: number[];
+                diversionIcao?: string;
+            };
+            header?: never;
+            path: {
+                tourId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtcProposalDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

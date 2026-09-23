@@ -1,9 +1,22 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.92 — 23 settembre 2026 (**il form del PIREP**: la pagina del pilota, i colori della mappa, `area: 'member'`, T11b)
+**Versione documento:** 0.93 — 23 settembre 2026 (**gli ATC contattati**: `IAtcActivitySource`, la proposta, le esenzioni con il loro perimetro, T12)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 0.93** (23 set 2026, fase T12 di M2): **gli ATC contattati e le esenzioni** — nel nucleo `IAtcActivitySource`
+(«quali posizioni erano online in questo intervallo»), con due risposte: la vista `v_share_atc_sessions` di vIPI, accesa da
+`division.json → atcData` con `ConnectionStrings:AtcData` nei segreti, o **nessuna** (`Unavailable`, il default e quello di chi
+forka); nel modulo la proposta leggera sul server (aeroporti di partenza, arrivo e deviazione nelle loro finestre, FIR attraversati
+un punto al minuto), la sezione «ATC contattati» del form, `GET …/reports/atc`. Nota `decisions/2026-09-23-gli-atc-contattati.md`,
+**tre risposte di Carmine**: (1) il **perimetro delle esenzioni** — `FreeSpeed` → `speed250`, `LevelChange` → `semicircularLevels`,
+`DirectRouting` e `Other` nessun controllo di M2, `Other` con la nota obbligatoria; (2) **tre stati** di un'esenzione (`Online`,
+`NotOnline`, `Unverifiable`), mai un rifiuto all'invio; (3) gli **ATC proposti e tolti restano scritti** (`Removed`). **Un'estensione
+di meccanismo** (§16.E caso b): `AddSharedViewContext`, il contesto di sola lettura su una vista di un altro sito, accanto agli altri
+due metodi che costruiscono un contesto. Una colonna additiva, `fo_pireps.atc_archive_available`. La vista la crea una migrazione
+**di vIPI** (una PR nel suo repository); l'utente MariaDB di sola lettura e il privilegio sulle viste restano **da verificare sul
+server** (nota del 14 settembre §4), e fino ad allora `division.json` non ha `atcData`.
 
 **Changelog 0.92** (23 set 2026, fase T11b di M2): **il form del PIREP e la pagina del pilota** — `/tours/{slug}/report`
 (prima il volo fra le sessioni del tracker, con la deviazione e il secondo volo, poi SID, STAR, IAP e note), la correzione di un

@@ -338,7 +338,13 @@
     "reportTourDailyLimit": "Hai raggiunto il limite di voli del tour per quel giorno UTC. I voli di altri giorni si possono ancora riportare.",
     "reportDivisionDailyLimit": "Hai raggiunto il limite di voli della divisione per quel giorno UTC. I voli di altri giorni si possono ancora riportare.",
     "reportNotWithdrawable": "Si può ritirare solo un report ancora in coda.",
-    "reportNotCorrectable": "Si può reinviare solo un report da modificare."
+    "reportNotCorrectable": "Si può reinviare solo un report da modificare.",
+    "atcTooMany": "Troppi ATC per un solo report.",
+    "atcCallsign": "Un ATC si scrive con il suo callsign, per esempio LIRF_TWR.",
+    "atcFrequency": "Una frequenza si scrive in MHz, per esempio 118.705.",
+    "exemptionTooMany": "Troppe esenzioni per un solo report.",
+    "exemptionNotContacted": "Un'esenzione appartiene a uno degli ATC che hai contattato.",
+    "exemptionNoteRequired": "Scrivi nella nota che cosa ti ha concesso l'ATC."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -886,6 +892,37 @@
         "Medical": "Emergenza medica",
         "AtcInstruction": "Istruzione dell'ATC",
         "Other": "Altro"
+      }
+    },
+    "atc": {
+      "title": "ATC contattati",
+      "chooseFlight": "Prima scegli il volo: qui compaiono gli ATC che erano online lungo il percorso.",
+      "searching": "Cerco gli ATC online lungo il volo…",
+      "unavailable": "L'archivio delle sessioni ATC non è disponibile: scrivi tu gli ATC che hai contattato.",
+      "noneOnline": "Per l'archivio nessuno era online lungo il volo. Aggiungi gli ATC che hai contattato, se ce ne sono.",
+      "proposedLead": "Online lungo il volo mentre passavi: togli la spunta a quelli che non hai contattato.",
+      "attribution": "FIR attraversati calcolati con: {{source}}",
+      "fields": {
+        "added": "Altri ATC che hai contattato",
+        "added.callsign": "Callsign",
+        "added.frequency": "Frequenza",
+        "exemptions": "Esenzioni ricevute",
+        "exemptions.callsign": "ATC",
+        "exemptions.kind": "Che cosa ti ha concesso",
+        "exemptions.note": "Nota"
+      },
+      "hints": {
+        "added.callsign": "Per esempio LIRF_TWR.",
+        "exemptions": "Che cosa ti ha concesso un ATC che una regola del tour vieta. Il validatore lo legge accanto al controllo che ammorbidisce.",
+        "exemptions.note": "Obbligatoria per «Altro»."
+      },
+      "options": {
+        "exemptions.kind": {
+          "FreeSpeed": "Limite di velocità tolto (250 kt sotto FL100)",
+          "DirectRouting": "Diretto",
+          "LevelChange": "Livello diverso dalla regola semicircolare",
+          "Other": "Altro (scrivilo nella nota)"
+        }
       }
     }
   },

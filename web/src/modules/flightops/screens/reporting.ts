@@ -1,6 +1,17 @@
 import { ApiError } from '../../../shared/api/problem';
 import type { RouteMapLeg, RouteMapStatus } from '../../../shared/ui';
-import type { LegProgress, MyTourDto, PirepDto, PirepStatus, PublicLegDto, TrackerSessionDto } from '../api';
+import type {
+  AtcContactDto,
+  AtcContactWriteDto,
+  AtcExemptionWriteDto,
+  LegProgress,
+  MyTourDto,
+  PirepDto,
+  PirepStatus,
+  PublicLegDto,
+  TrackerSessionDto,
+} from '../api';
+import type { AtcDeclarationValues } from '../schemas';
 
 /**
  * What the pilot's screens compute, which is little: the server answers every question of the rules (`TourRules`), and
@@ -96,4 +107,70 @@ export function splitRefusal(
       : new ApiError(error.status, { ...error.problem, errors: inDetails });
 
   return { details, flight };
+}
+
+/** The fields of the controllers' half of the form: a refusal on them is shown there, not under the flight. */
+export const ATC_FIELDS: readonly string[] = ['atcContacts', 'exemptions'];
+
+/** What the pilot declared about the controllers, as a correction starts from it: the added, the removed, the exemptions. */
+export function declarationOf(report: PirepDto | null): {
+  removed: string[];
+  declaration: AtcDeclarationValues;
+} {
+  if (report === null) {
+    return { removed: [], declaration: { added: [], exemptions: [] } };
+  }
+
+  return {
+    removed: report.atcContacts
+      .filter((contact) => contact.origin === 'Removed')
+      .map((contact) => contact.callsign),
+    declaration: {
+      added: report.atcContacts
+        .filter((contact) => contact.origin === 'Added')
+        .map((contact) => ({ callsign: contact.callsign, frequency: contact.frequency ?? '' })),
+      exemptions: report.exemptions.map((exemption) => ({
+        callsign: exemption.callsign,
+        kind: exemption.kind,
+        note: exemption.note ?? '',
+      })),
+    },
+  };
+}
+
+/**
+ * The controllers the report sends: the proposed ones the pilot kept, then the ones they added, each once. The proposed
+ * ones taken away are not sent — the server works the proposal out again and writes them down as removed.
+ */
+export function contactsToSend(
+  proposed: readonly AtcContactDto[],
+  removed: readonly string[],
+  added: AtcDeclarationValues['added'],
+): AtcContactWriteDto[] {
+  const kept = proposed
+    .filter((contact) => !removed.includes(contact.callsign))
+    .map((contact) => ({ callsign: contact.callsign, frequency: contact.frequency }));
+  const seen = new Set(kept.map((contact) => contact.callsign));
+  const mine: AtcContactWriteDto[] = [];
+
+  for (const contact of added) {
+    const callsign = contact.callsign.trim().toUpperCase();
+    if (callsign !== '' && !seen.has(callsign)) {
+      seen.add(callsign);
+      mine.push({ callsign, frequency: contact.frequency.trim() === '' ? null : contact.frequency.trim() });
+    }
+  }
+
+  return [...kept, ...mine];
+}
+
+/** The exemptions the report sends: the ones with a position chosen, the note blank when nothing was written. */
+export function exemptionsToSend(exemptions: AtcDeclarationValues['exemptions']): AtcExemptionWriteDto[] {
+  return exemptions
+    .filter((exemption) => exemption.callsign !== '')
+    .map((exemption) => ({
+      callsign: exemption.callsign,
+      kind: exemption.kind,
+      note: exemption.note.trim() === '' ? null : exemption.note.trim(),
+    }));
 }

@@ -338,7 +338,13 @@
     "reportTourDailyLimit": "You have reached this tour's limit of flights for that UTC day. Flights of other days can still be reported.",
     "reportDivisionDailyLimit": "You have reached the division's limit of flights for that UTC day. Flights of other days can still be reported.",
     "reportNotWithdrawable": "Only a report still in the queue can be withdrawn.",
-    "reportNotCorrectable": "Only a report marked to modify can be sent again."
+    "reportNotCorrectable": "Only a report marked to modify can be sent again.",
+    "atcTooMany": "That is too many controllers for one report.",
+    "atcCallsign": "A controller is written as its callsign, for example LIRF_TWR.",
+    "atcFrequency": "A frequency is written in MHz, for example 118.705.",
+    "exemptionTooMany": "That is too many exemptions for one report.",
+    "exemptionNotContacted": "An exemption belongs to one of the controllers you contacted.",
+    "exemptionNoteRequired": "Write in the note what the controller allowed."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -886,6 +892,37 @@
         "Medical": "Medical emergency",
         "AtcInstruction": "ATC instruction",
         "Other": "Other"
+      }
+    },
+    "atc": {
+      "title": "Controllers contacted",
+      "chooseFlight": "Choose the flight first: the controllers online along it are proposed here.",
+      "searching": "Looking for the controllers online along the flight…",
+      "unavailable": "The archive of ATC sessions is not available: write the controllers you contacted yourself.",
+      "noneOnline": "As far as the archive knows, nobody was online along the flight. Add the controllers you contacted, if any.",
+      "proposedLead": "Online along the flight when you were there: untick the ones you did not contact.",
+      "attribution": "Regions crossed worked out with: {{source}}",
+      "fields": {
+        "added": "Other controllers you contacted",
+        "added.callsign": "Callsign",
+        "added.frequency": "Frequency",
+        "exemptions": "Exemptions received",
+        "exemptions.callsign": "Controller",
+        "exemptions.kind": "What it allowed",
+        "exemptions.note": "Note"
+      },
+      "hints": {
+        "added.callsign": "For example LIRF_TWR.",
+        "exemptions": "What a controller allowed that a rule of the tour forbids. The validator reads it next to the check it softens.",
+        "exemptions.note": "Required for «Other»."
+      },
+      "options": {
+        "exemptions.kind": {
+          "FreeSpeed": "Speed restriction lifted (250 kt below FL100)",
+          "DirectRouting": "Direct routing",
+          "LevelChange": "Level other than the semicircular rule",
+          "Other": "Other (write it in the note)"
+        }
       }
     }
   },

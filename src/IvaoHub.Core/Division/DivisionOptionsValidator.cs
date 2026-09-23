@@ -131,6 +131,13 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
             }
         }
 
+        if (options.AtcData is { } atc && !IvaoHub.Core.Atc.AtcDataOptions.KnownSources.Contains(atc.Source))
+        {
+            failures.Add(
+                $"division.json: 'atcData.source' ({atc.Source}) is not a known archive. Use one of: "
+                + string.Join(", ", IvaoHub.Core.Atc.AtcDataOptions.KnownSources) + ".");
+        }
+
         // Reported, not remembered. This object is a singleton and validation can run more than
         // once, so a property holding the result of the last call is a field that means nothing to
         // whoever reads it and is unsafe for whoever reads it from another thread.

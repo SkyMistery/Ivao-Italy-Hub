@@ -28,7 +28,9 @@ public sealed record TrackerSessionDto(
 /// <summary>
 /// A report as the pilot sends it, and sends it again after a correction (design M2 §3.2): the leg — none on an
 /// <c>Open</c> tour, and never another on a correction —, the session of the flight, and a second one when it ended
-/// elsewhere, with the airport it ended at and why. The controllers contacted and the exemptions arrive with T12.
+/// elsewhere, with the airport it ended at and why; and the controllers the pilot contacted — the proposed ones they kept
+/// and the ones they added — with the exemptions they received (§3.3). Both lists are optional on the wire: none is a
+/// flight on which nobody was contacted.
 /// </summary>
 public sealed record PirepWriteDto(
     long? LegId,
@@ -41,7 +43,9 @@ public sealed record PirepWriteDto(
     string? Star,
     string? Approach,
     string? PilotRemarks,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    IReadOnlyList<AtcContactWriteDto>? AtcContacts = null,
+    IReadOnlyList<AtcExemptionWriteDto>? Exemptions = null);
 
 /// <summary>One flight of a report, as its pilot reads it back.</summary>
 public sealed record PirepFlightDto(
@@ -79,6 +83,9 @@ public sealed record PirepDto(
     DiversionReason? DiversionReason,
     string? DiversionNote,
     string? PilotRemarks,
+    IReadOnlyList<AtcContactDto> AtcContacts,
+    IReadOnlyList<AtcExemptionDto> Exemptions,
+    bool AtcArchiveAvailable,
     IReadOnlyList<PirepFlightDto> Flights,
     DateTime RowVersion);
 

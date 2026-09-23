@@ -350,8 +350,9 @@ nomina **torna nel tour**, con il motivo dell'import e non in un tour in chiusur
 | `submitted_at`, `resubmitted_at?` | |
 | `flight_rules` | `I`, `V`, `Y`, `Z`, dal piano al decollo |
 | `sid`, `star`, `approach` | §3.2 |
-| `atc_contacts_json` | ATC contattati: callsign, frequenza, `proposed` (dal sistema) o `added` (dal pilota) (§3.3) |
-| `atc_exemptions_json` | autorizzazioni ricevute: posizione, tipo, nota |
+| `atc_contacts_json` | ATC contattati: callsign, frequenza, origine `Proposed` (proposto e tenuto), `Added` (dal pilota) o `Removed` (proposto e tolto dal pilota) (§3.3; T12) |
+| `atc_exemptions_json` | autorizzazioni ricevute: posizione, tipo, nota, stato all'invio (`Online`, `NotOnline`, `Unverifiable`), controlli ammorbiditi congelati (§3.3; T12) |
+| `atc_archive_available` | se l'archivio ATC ha risposto all'invio: senza, una lista vuota non dice chi era online (T12) |
 | `is_diversion`, `diversion_reason` | §3.4, con i motivi strutturati (`Weather`, `Technical`, `Medical`, `AtcInstruction`, `Other`) |
 | `pilot_remarks` | |
 | `rules_snapshot_json` | §5.4 |
@@ -673,13 +674,17 @@ all'obiettivo e ai vincoli «al completamento».
 - **Mentre il pilota compila**, il sistema **propone** gli ATC che erano online lungo il volo, con lo stesso meccanismo
   del controllo di copertura (§6.5): archivio ATC per l'intervallo del volo, incrociato con le tracce. Il pilota
   **toglie** quelli che non ha contattato e **aggiunge** quelli che mancano; resta scritto chi è stato proposto e chi
-  aggiunto.
+  aggiunto, **e chi è stato proposto e tolto** (Carmine, 23 settembre 2026). La proposta si rifà sul server all'invio: quella
+  che il browser mostra serve solo al pilota.
 - **Versione leggera, sul server** (per non caricarlo, e perché il pilota non ha i dati di navigazione): le posizioni
   online negli aeroporti di partenza, arrivo e deviazione e nei FIR attraversati, calcolati dai punti delle tracce a
   campione con i confini dei FIR di OpenAIP. La verifica precisa lungo la rotta è dell'agente del validatore (§6.6).
 - **Esenzioni**: il pilota sceglie la posizione fra gli ATC contattati e il tipo (`FreeSpeed`, `DirectRouting`,
-  `LevelChange`, `Other`); ogni tipo dichiara quali controlli ammorbidisce. Vale se la posizione risultava online; se il
-  dato manca, «non verificabile» e decide il validatore.
+  `LevelChange`, `Other`); ogni tipo dichiara quali controlli ammorbidisce (Carmine, 23 settembre 2026): `FreeSpeed` →
+  `speed250`, `LevelChange` → `semicircularLevels`, `DirectRouting` → nessun controllo di M2 (l'aderenza alla rotta, quando ci
+  sarà), `Other` → nessuno, con la nota obbligatoria. Vale se la posizione risultava online; lo stato all'invio è **`Online`**,
+  **`NotOnline`** (l'archivio copre tutto il volo e non la elenca) o **`Unverifiable`** (nessun archivio, o uno che non arriva
+  così indietro), e **non blocca mai l'invio**: decide il validatore. Nota `decisions/2026-09-23-gli-atc-contattati.md`.
 
 ### 3.4 Il volo del tracker e le deviazioni
 

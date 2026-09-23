@@ -306,7 +306,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T10 | Il pubblico e la mappa — **fatta il 22 set 2026** | T7b, T7c, T9 | `/tours`, `/tours/{slug}`, `RouteMap`, `tourCards` |
 | T11a | Il PIREP sul server — **fatta il 23 set 2026** | T2, T3, T9, T10 | `TourRules`, tabelle, invio e reinvio e ritiro via API, controlli che bloccano, deviazioni, iscrizione, snapshot, ritiro automatico |
 | T11b | Il form e la pagina del pilota — **fatta il 23 set 2026** | T11a | la pagina del form, ricerca e scelta del volo, i colori della mappa, «Invia il report», i PIREP del pilota |
-| T12 | Gli ATC contattati | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
+| T12 | Gli ATC contattati — **fatta il 23 set 2026** | T1, T11 | proposta dal server, esenzioni, `IAtcActivitySource` |
 | T13 | La validazione | T11 | code, presa in carico, pagina, suggerimento, decisione, mail, riapertura, riepilogo, `reviewQueue` |
 | T14 | Contestazioni, chiarimenti, segnalazioni | T4a, T13 | i contatti con le risposte; la contestazione che sblocca; `openIssues` |
 | T15 | Completamento, validatori, piloti, ban | T4b, T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
@@ -1280,6 +1280,35 @@ precedenti la copertura fuori Italia è `Unavailable`, mai «fallita».
 **Test**: unit sulla proposta con tracce del corpus e un archivio finto; integrazione: senza vIPI il form funziona e dice «non
 disponibile»; architettura: il modulo non nomina vIPI né OpenAIP.
 **Fatta quando**: un PIREP del corpus riceve una proposta plausibile da una vista finta, e senza vista il form funziona uguale.
+
+**T12 fatta il 23 settembre 2026** (branch `m2/t12-atc-contacts`, piano 0.93, nota `decisions/2026-09-23-gli-atc-contattati.md`).
+Com'è andata:
+
+- **Tre domande a Carmine in apertura**, tre raccomandazioni prese: il perimetro delle esenzioni (`FreeSpeed` → `speed250`,
+  `LevelChange` → `semicircularLevels`, gli altri due niente), tre stati di un'esenzione senza rifiuto all'invio, gli ATC tolti
+  scritti come `Removed`. E due sul lavoro fuori da qui: la migrazione della vista in vIPI la scrive Claude (PR nel repository di
+  vIPI), le verifiche sul server Plesk le fa Carmine.
+- **Nucleo**: `Core/Atc/` — `IAtcActivitySource`, `AtcActivity` (con `Covers`: da quando l'archivio è completo, per la divisione e per
+  il mondo, dalle righe più vecchie della vista), `VipiAtcActivitySource` su `VipiShareDbContext` (sola lettura, `SaveChanges`
+  lancia), `UnavailableAtcActivitySource`; `division.json → atcData.source` (`none` | `vipi`) controllato all'avvio;
+  `ConnectionStrings:AtcData`. ⚠️ **Estensione**: `AddSharedViewContext`, accanto ai due metodi che costruiscono un contesto.
+  `IFirLocator.Attribution` porta al form il credito dei confini.
+- **Modulo**: `AtcProposal` (pura: la proposta, l'unione con ciò che il pilota dichiara, lo stato di un'esenzione, i rifiuti),
+  `AtcProposer` (l'archivio per l'intervallo e i FIR della traccia, un punto al minuto), `GET …/reports/atc`, l'invio che **rifà la
+  proposta** e scrive i due JSON, `atc_archive_available` (migrazione additiva). La traccia resta su `TrackedFlight`.
+- **Form**: la sezione «ATC contattati» fra il volo e i dettagli — caselle dei proposti con l'attribuzione, un `SchemaForm` dal vivo per
+  gli aggiunti e le esenzioni (la posizione si sceglie fra i contattati: lo schema si costruisce con loro). Un invio prima che la
+  proposta arrivi la aspetta (`ensureQueryData`), altrimenti tutti i proposti sarebbero finiti «tolti».
+- **I test**: unit `AtcContactsTests` (sei: il volo registrato LIRQ → LXGB con un archivio costruito attorno, senza archivio, la
+  deviazione, l'unione, i tre stati, il perimetro, i rifiuti) e un test di architettura (nessun modulo nomina vIPI, `v_share`, VATSpy
+  od OpenAIP, server e browser); integrazione in `PirepTests` (due: **senza archivio** «non disponibile» e il PIREP va lo stesso;
+  **con una vista finta** costruita con l'SQL del contratto — il «fatta quando»); Vitest `reporting.test.ts` (tre in più); smoke
+  `e2e/tours-report.spec.ts` (una casella tolta, l'archivio assente, il rifiuto di un'esenzione sotto la sua sezione). Suite intere:
+  unit 518, integrazione 248, verdi in locale (Docker acceso).
+- **Guardata** a 1500 e 400 px con lo stub: a posto. A 400 px la barra del sito sborda ancora: è il difetto del nucleo segnalato in T11b.
+- **Non verificato**: la vista vera di vIPI su MariaDB di produzione (dipende dalla PR di vIPI e dalle due verifiche sul server); le
+  finestre di 20 e 30 minuti e il campionamento al minuto sono ragionevoli ma non tarati su voli veri con ATC veri; il giro e2e
+  completo (`pnpm e2e:full`) passa dalla sezione solo nel caso «non disponibile».
 
 ### T13 — La validazione
 

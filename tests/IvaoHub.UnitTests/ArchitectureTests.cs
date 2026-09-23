@@ -242,6 +242,38 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
+    /// The same question once more, for the archive of ATC sessions (note 2026-09-14-dati-condivisi-con-vipi §3.4): it is an
+    /// optional integration of the core, and no module names it — not its site, not its view, not the outlines' dataset,
+    /// which the tours module reads through <c>IFirLocator</c>. The browser half of a module is asked too.
+    /// </summary>
+    [Fact]
+    public void NoModuleNamesTheAtcArchiveOrTheBoundaryDataset()
+    {
+        var server = Directory.EnumerateDirectories(RepositoryRoot("src"), "IvaoHub.Modules.*")
+            .SelectMany(project => Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories))
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
+        // A module's own folder: the list of modules beside them is the composition root, which may name anything.
+        var browser = Directory.EnumerateDirectories(Path.Combine(RepositoryRoot("web"), "src", "modules"))
+            .SelectMany(module => Directory.EnumerateFiles(module, "*.*", SearchOption.AllDirectories))
+            .Where(file => file.EndsWith(".ts", StringComparison.Ordinal) || file.EndsWith(".tsx", StringComparison.Ordinal)
+                || file.EndsWith(".json", StringComparison.Ordinal));
+
+        var offenders = server.Concat(browser)
+            .Where(file =>
+            {
+                var text = File.ReadAllText(file);
+                return text.Contains("vipi", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("v_share", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("vatspy", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("openaip", StringComparison.OrdinalIgnoreCase);
+            })
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    /// <summary>
     /// The address of a member leaves the database only as a mail. It is read from the IVAO profile
     /// for the notification service and for nothing else (decision note of 6 September 2026), so no
     /// payload of the API may carry it — not the bootstrap, not a list, not the staff directory that

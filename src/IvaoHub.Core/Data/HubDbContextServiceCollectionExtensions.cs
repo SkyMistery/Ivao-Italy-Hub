@@ -77,18 +77,40 @@ public static class HubDbContextServiceCollectionExtensions
     }
 
     /// <summary>
+    /// A context over the views another site shares with the hub (note 2026-09-14-dati-condivisi-con-vipi §3.3): its own
+    /// connection, a user that can only read, no migrations and no interceptor — nothing is ever written through it, and the
+    /// context itself refuses to save. The one exception to the two methods above, and the reason it lives beside them.
+    /// </summary>
+    public static IServiceCollection AddSharedViewContext<TContext>(this IServiceCollection services, string connectionStringName)
+        where TContext : DbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringName);
+
+        services.AddDbContext<TContext>((provider, options) =>
+        {
+            options.UseMySql(
+                ResolveConnectionString(provider, connectionStringName),
+                new MariaDbServerVersion(HubDbContext.ServerVersion));
+            options.UseSnakeCaseNamingConvention();
+            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        });
+        return services;
+    }
+
+    /// <summary>
     /// Read when the context is built, not when the host is being configured: a test host and a
     /// deployment both add configuration sources after that point.
     /// </summary>
-    private static string ResolveConnectionString(IServiceProvider provider)
+    private static string ResolveConnectionString(IServiceProvider provider, string name = ConnectionStringName)
     {
-        var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName);
+        var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString(name);
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException(
-                "The connection string 'ConnectionStrings:Default' is not configured. "
+                $"The connection string 'ConnectionStrings:{name}' is not configured. "
                 + "In development it is in appsettings.Development.json; in production it belongs to a file "
-                + "under secrets/ or to the ConnectionStrings__Default environment variable.");
+                + $"under secrets/ or to the ConnectionStrings__{name} environment variable.");
         }
 
         return connectionString;
