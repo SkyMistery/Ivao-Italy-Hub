@@ -58,7 +58,7 @@ public enum DiversionReason
 /// decides their own reports, super administrator included (§7.3), and they keep changing it themselves — withdraw it,
 /// correct it — through the one exception of the interceptor's guard. It is in the care of its tour's departments, which it
 /// follows as the tour's other rows do (<see cref="ITourChild"/>), and a validator enabled on the tour is enabled on it
-/// (<see cref="IHasResourceScope"/>) — the interceptor's guard lets that validator write it (T13).</para>
+/// (<see cref="IHasResourceScope"/>, the container's for a subtour) — the interceptor's guard lets that validator write it (T13).</para>
 /// <para>What it is judged against is frozen at the first send: the rules in force with their parameters and errors
 /// (§5.4), and the leg as it was (§3.2 point 6). A correction does not freeze them again.</para>
 /// <para>A dispute opens a thread with the department in the same save (<see cref="IProjectable"/>, T14b): the thread is the
@@ -71,6 +71,13 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
     public long Id { get; set; }
 
     public long TourId { get; set; }
+
+    /// <summary>
+    /// The tour a validator is enabled on to take this report: its own, or its container's when it is on a subtour (Carmine,
+    /// 23 September 2026, T15). A validator is enabled from the list of the tours, where a subtour does not appear, and a
+    /// subtour added to the container later is covered as well. Written at the first send, never changed.
+    /// </summary>
+    public long ScopeTourId { get; set; }
 
     /// <summary>Null only on an <c>Open</c> tour, where the flight is the route (§2.6).</summary>
     public long? LegId { get; set; }
@@ -220,7 +227,7 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
 
     public int? StakeholderVid => Vid;
 
-    public string ResourceScope => ScopeOf(TourId);
+    public string ResourceScope => ScopeOf(ScopeTourId);
 
     public string SourceModule => FlightOpsModule.ModuleKey;
 
@@ -360,8 +367,11 @@ public sealed class PirepEvent
 /// it is read off the reports (<see cref="TourRules"/>). Where a <c>SequentialChosenStart</c> began and the order of the hubs
 /// of a <c>Hub</c> tour are read off them too (Carmine, 23 September 2026): a start whose only report is withdrawn is free again.
 /// <para>A report on a subtour enrols the pilot in it and in its container (§2.7).</para>
+/// <para>A completed tour points its pilot out for the tour's award (§3.11, T15): the enrolment projects an
+/// <see cref="AwardSignalProjection"/> in the save that completes it, and a human decides from the core's queue. A subtour
+/// signals nothing of its own — it counts for its container.</para>
 /// </summary>
-public sealed class Enrolment : IAuditable
+public sealed class Enrolment : IAuditable, IProjectable
 {
     public long Id { get; set; }
 
@@ -371,8 +381,25 @@ public sealed class Enrolment : IAuditable
 
     public DateTime StartedAt { get; set; }
 
-    /// <summary>Written by T15, when an accepted report completes the tour; never taken back (§3.5).</summary>
+    /// <summary>Written when an accepted report completes the tour (<c>TourCompletion</c>, T15); never taken back (§3.11).</summary>
     public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// The signal of the save that completes the tour, with the reason and the award the tour proposes, which the enrolment
+    /// does not hold — set by <c>TourCompletion</c>, not mapped. A completed enrolment is saved that once and never again: a
+    /// later save without it would project nothing, and the writer drops a signal still waiting when its row stops projecting
+    /// it (one already handled stays whatever happens).
+    /// </summary>
+    public AwardSignalProjection? AwardSignal { get; set; }
+
+    public string SourceModule => FlightOpsModule.ModuleKey;
+
+    public string SourceId => ReferenceOf(Id);
+
+    public static string ReferenceOf(long id) => $"enrolment:{id}";
+
+    public ProjectionSnapshot? Project(ProjectionContext context) =>
+        AwardSignal is { } signal ? new ProjectionSnapshot(null, [], [signal], []) : null;
 
     public DateTime CreatedAt { get; set; }
 
@@ -385,7 +412,7 @@ public sealed class Enrolment : IAuditable
 
 /// <summary>
 /// A ban (design M2 §3.9), <c>fo_bans</c>: the pilot sends no report on the tours it names — one, or all of them — while it
-/// runs. Their reports already sent are validated as usual. T11 reads it; the screen that writes it is T15's.
+/// runs. Their reports already sent are validated as usual. T11 reads it; the bans' list and form write it (T15a, <c>BanEndpoints</c>).
 /// </summary>
 [Audited]
 [PermissionArea(TourPermissions.Area)]

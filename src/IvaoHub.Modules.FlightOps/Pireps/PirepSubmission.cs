@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
@@ -41,7 +40,7 @@ public sealed class PirepSubmission(
     IAirportDirectory airports,
     IRunwayDirectory runways,
     IAircraftTypeDirectory aircraftTypes,
-    IFirLocator firs,
+    PilotProgress progress,
     AtcProposer atc,
     EffectiveRules effectiveRules,
     ModuleSettingsStore settingsStore,
@@ -338,6 +337,7 @@ public sealed class PirepSubmission(
         var pirep = correcting ?? new Pirep
         {
             TourId = tour.Id,
+            ScopeTourId = tour.ParentTourId ?? tour.Id,
             LegId = leg?.Id,
             Vid = vid,
             SubmittedAt = now,
@@ -549,9 +549,6 @@ public sealed class PirepSubmission(
         var vid = currentUser.Vid;
         var settings = await settingsStore.GetAsync<FlightOpsSettings>(FlightOpsModule.ModuleKey, cancellationToken);
 
-        var legs = await database.Legs.AsNoTracking().Where(row => row.TourId == tour.Id).ToListAsync(cancellationToken);
-        var hubs = await database.Hubs.AsNoTracking().Where(row => row.TourId == tour.Id).ToListAsync(cancellationToken);
-        var rotations = await database.Rotations.AsNoTracking().Where(row => row.TourId == tour.Id).ToListAsync(cancellationToken);
         var mine = await database.Pireps.AsNoTracking()
             .Include(report => report.Flights)
             .Include(report => report.Errors)
@@ -559,32 +556,21 @@ public sealed class PirepSubmission(
             .OrderByDescending(report => report.SubmittedAt)
             .ToListAsync(cancellationToken);
 
-        var progress = TourRules.Of(tour, legs, hubs, rotations, mine, now, settings.RejectGraceHours);
+        var standing = await progress.OfAsync(tour, vid, mine, cancellationToken);
         var threads = await PirepDisputes.ThreadsAsync(hub, [.. mine.Where(report => report.DisputeStatus is not null).Select(report => report.Id)], cancellationToken);
 
         var blocked = !pilot.TakesReports(now)
             ? "flightops:errors.reportTourClosed"
             : (await PilotRefusalsAsync(pilot, mine, cancellationToken)).FirstOrDefault();
 
-        OpenProgress? goal = null;
-        if (tour.Kind == TourKind.Open && tour.OpenGoal is { } kind)
-        {
-            var constraints = await database.TourConstraints.AsNoTracking()
-                .Where(row => row.TourId == tour.Id)
-                .ToListAsync(cancellationToken);
-            var parameters = OpenCatalog.Parse(tour.OpenGoalJson);
-            var facts = await FactsAsync(kind, parameters, mine, cancellationToken);
-            goal = OpenRules.Progress(kind, parameters, constraints, mine, facts);
-        }
-
         return new MyTourDto(
             tour.Id,
-            [.. progress.Legs.Select(entry => new MyLegDto(entry.Key, entry.Value))],
-            [.. progress.Flyable.Order()],
-            progress.Next,
-            tour.Kind == TourKind.Open ? goal?.Finished ?? false : progress.Finished,
+            [.. standing.Progress.Legs.Select(entry => new MyLegDto(entry.Key, entry.Value))],
+            [.. standing.Progress.Flyable.Order()],
+            standing.Progress.Next,
+            standing.Finished,
             blocked,
-            goal,
+            standing.Goal,
             [.. mine.Select(report => ToDto(
                 report,
                 PirepDisputes.DisputableUntil(report, settings.DisputeWindowDays, now),
@@ -911,36 +897,6 @@ public sealed class PirepSubmission(
                 longest,
                 to.ElevationFeet),
             distance);
-    }
-
-    /// <summary>What the goal of an Open tour needs of the airports its accepted flights touched.</summary>
-    private async Task<OpenFacts> FactsAsync(OpenGoal goal, System.Text.Json.Nodes.JsonObject parameters, IReadOnlyList<Pirep> mine, CancellationToken cancellationToken)
-    {
-        if (goal is not (OpenGoal.DistinctCountries or OpenGoal.CollectRegions))
-        {
-            return OpenFacts.None;
-        }
-
-        var touched = mine
-            .Where(report => report.Status == PirepStatus.Accepted)
-            .SelectMany(report => new[] { report.DepartureIcao, report.ArrivalIcao })
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        var known = await airports.FindAsync(touched, cancellationToken);
-        var regions = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-
-        if (goal == OpenGoal.CollectRegions && OpenCatalog.Codes(parameters, "firs").Count > 0)
-        {
-            foreach (var airport in known.Values)
-            {
-                if (airport.Latitude is { } latitude && airport.Longitude is { } longitude)
-                {
-                    regions[airport.Icao] = await firs.LocateAsync(latitude, longitude, cancellationToken);
-                }
-            }
-        }
-
-        return new OpenFacts(known.ToDictionary(entry => entry.Key, entry => entry.Value.CountryId, StringComparer.Ordinal), regions);
     }
 
     /// <summary>The rules in force on the tour, with their parameters composed and their errors (§5.4), as JSON.</summary>

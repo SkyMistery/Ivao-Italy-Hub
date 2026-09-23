@@ -284,6 +284,7 @@ public static class MapCrudExtensions
         }
 
         await scope.Database.SaveChangesAsync(http.RequestAborted);
+        await AfterSaveAsync(scope, options.AfterSave, entity, isNew: true, http.RequestAborted);
 
         var key = scope.Key.PropertyInfo is null
             ? scope.Database.Entry(entity).Property(scope.Key.Name).CurrentValue
@@ -342,6 +343,7 @@ public static class MapCrudExtensions
         }
 
         await scope.Database.SaveChangesAsync(http.RequestAborted);
+        await AfterSaveAsync(scope, options.AfterSave, entity, isNew: false, http.RequestAborted);
 
         return Results.Ok(options.ToDetail!(entity));
     }
@@ -750,6 +752,18 @@ public static class MapCrudExtensions
         CancellationToken cancellationToken)
         where TEntity : class =>
         RunHookAsync(scope, options.BeforeAuthorize, entity, isNew, cancellationToken);
+
+    /// <summary>What follows a saved write (<c>CrudOptions.AfterSave</c>).</summary>
+    private static Task AfterSaveAsync<TEntity>(
+        CrudScope<TEntity> scope,
+        Func<TEntity, CrudSaving, Task>? hook,
+        TEntity entity,
+        bool isNew,
+        CancellationToken cancellationToken)
+        where TEntity : class =>
+        hook is null
+            ? Task.CompletedTask
+            : hook(entity, new CrudSaving(scope.Database, scope.Services, scope.CurrentUser, isNew, cancellationToken));
 
     private static async Task<IResult?> RunHookAsync<TEntity>(
         CrudScope<TEntity> scope,

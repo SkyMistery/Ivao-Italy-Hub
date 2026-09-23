@@ -273,6 +273,9 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
             // A pilot's reports on a tour, and the daily limits: the pilot's reports by take-off.
             pirep.HasIndex(row => new { row.TourId, row.Vid });
+
+            // The statistics of the validators: who decided what, and when (§8.7).
+            pirep.HasIndex(row => new { row.DecidedByVid, row.DecidedAt });
             pirep.HasIndex(row => new { row.Vid, row.TakeoffAt });
             pirep.HasIndex(row => new { row.Status, row.SubmittedAt });
 
@@ -330,6 +333,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         {
             enrolment.ToTable("fo_enrolments");
             enrolment.HasKey(row => row.Id);
+            enrolment.Ignore(row => row.AwardSignal);
             enrolment.HasOne<Tour>().WithMany().HasForeignKey(row => row.TourId).OnDelete(DeleteBehavior.Restrict);
 
             // A pilot is in a tour once.

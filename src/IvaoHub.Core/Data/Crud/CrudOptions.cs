@@ -208,6 +208,13 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     public Func<TEntity, CrudSaving, Task<IReadOnlyDictionary<string, string[]>?>>? BeforeAuthorize { get; set; }
 
     /// <summary>
+    /// What follows a create or an update once it is saved — never a delete, never a refused write: a mail about the row. It
+    /// cannot refuse anything any more, and it does not run in the row's transaction, like the mails after a decision.
+    /// <para>A ban tells its pilot (M2, T15): the mail goes only when the ban is really written.</para>
+    /// </summary>
+    public Func<TEntity, CrudSaving, Task>? AfterSave { get; set; }
+
+    /// <summary>
     /// A personal view of a resource: the rows the reader <b>takes part in</b>, instead of the rows of their departments
     /// (M2, T14). The expression says, in SQL, whether a VID takes part in a row — the sender of a thread or somebody
     /// added to it — and the entity's <see cref="Division.IHasParticipants"/> says the same in memory.

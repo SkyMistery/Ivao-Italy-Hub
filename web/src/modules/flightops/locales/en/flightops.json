@@ -362,7 +362,10 @@
     "disputeWindowClosed": "The time to dispute this report is over.",
     "disputeNotOpen": "There is no open dispute on this report.",
     "disputeThreadUnreadable": "You cannot read the thread of this dispute, so your answer could not reach the pilot. Ask somebody who reads the department's contacts.",
-    "reviewDisputed": "Under an open dispute the decision is reopened by upholding the dispute."
+    "reviewDisputed": "Under an open dispute the decision is reopened by upholding the dispute.",
+    "validatorTour": "Choose a tour of the first level: a subtour is validated with its container.",
+    "banTour": "Choose a tour of the first level: a ban on a container holds on its subtours.",
+    "banEndsBeforeStart": "The end comes before the start."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -1169,6 +1172,10 @@
     "legIssueReported": {
       "title": "Issues reported on the legs",
       "description": "An email to the department's mailbox when a pilot reports a problem on a leg."
+    },
+    "banned": {
+      "title": "Bans from the tours",
+      "description": "An email when you are banned from a tour or from all of them, with the reason and how long."
     }
   },
   "mail": {
@@ -1194,6 +1201,12 @@
       "legIssueReported": {
         "subject": "[Tours] Issue on a leg: {{tour}}",
         "body": "The pilot with VID {{vid}} reported a problem on leg {{leg}} of the tour \"{{tour}}\":\n\n{{body}}\n\nRead it and close it: {{url}}\n\n---\nThis email goes to the department's mailbox."
+      },
+      "allTours": "every tour",
+      "forGood": "for good",
+      "banned": {
+        "subject": "[Tours] You have been banned: {{tour}}",
+        "body": "You have been banned from {{tour}}, from {{from}} until {{until}}.\n\nThe reason: {{reason}}\n\nWhile the ban holds you cannot send reports on those tours. The reports you have already sent are validated as usual.\n\nThe tours: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       }
     }
   },
@@ -1248,5 +1261,8 @@
         "Resolved": "Resolved"
       }
     }
+  },
+  "awards": {
+    "tourCompleted": "Completed the tour \"{{tour}}\""
   }
 }

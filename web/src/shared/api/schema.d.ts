@@ -215,6 +215,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/pilots/{vid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsPilot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -1854,6 +1870,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/validators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsValidators"];
+        put?: never;
+        post: operations["FlightOpsValidatorAdd"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/validators/{vid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["FlightOpsValidatorRemove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/bans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsBansList"];
+        put?: never;
+        post: operations["FlightOpsBansCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/bans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsBansGet"];
+        put: operations["FlightOpsBansUpdate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2159,6 +2239,43 @@ export interface components {
             /** Format: int64 */
             imageMediaId: null | number;
             isActive: boolean;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A ban as the list and the form show it: who, on which tour or on all, from when to when, why, and whether it holds now. */
+        BanDto: {
+            /** Format: int64 */
+            id: number;
+            pilot: components["schemas"]["MemberDto"];
+            /** Format: int64 */
+            tourId: null | number;
+            tourTitle: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: null | string;
+            reason: string;
+            active: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: null | components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What the staff writes on a ban. `TourId` null is every tour, `EndsAt` null is for good. Lifting a ban early is
+         *     moving its end: a ban is never deleted, it is part of the pilot's record (design M2 §10.1).
+         */
+        BanWriteDto: {
+            /** Format: int32 */
+            vid: number;
+            /** Format: int64 */
+            tourId: null | number;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: null | string;
+            reason: null | string;
             /** Format: date-time */
             rowVersion: string;
         };
@@ -3765,6 +3882,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfBanDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["BanDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfCalendarKindListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["CalendarKindListDto"][];
@@ -4209,6 +4349,70 @@ export interface components {
             reason: string;
             inForce: boolean;
         };
+        /** @description How many errors of a category were confirmed on the pilot's accepted and rejected reports, in the year and ever. */
+        PilotCategoryDto: {
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            inYear: number;
+            /** Format: int32 */
+            ever: number;
+        };
+        PilotDisputesDto: {
+            /** Format: int32 */
+            open: number;
+            /** Format: int32 */
+            upheld: number;
+            /** Format: int32 */
+            dismissed: number;
+        };
+        /** @description One error, with the name the reports froze (§5.4): an error gone from the catalogue still reads. */
+        PilotErrorDto: {
+            /** Format: int64 */
+            errorId: number;
+            name: components["schemas"]["LocalizedOfstring"];
+            category: components["schemas"]["ErrorCategory"];
+            /** Format: int32 */
+            inYear: number;
+            /** Format: int32 */
+            ever: number;
+        };
+        /** @description A leg flown — a report not withdrawn — with its outcome, who decided it, and its dispute if any. */
+        PilotFlightDto: {
+            /** Format: int64 */
+            pirepId: number;
+            /** Format: int64 */
+            tourId: number;
+            tourTitle: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            legNumber: null | number;
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: date-time */
+            takeoffAt: string;
+            status: components["schemas"]["PirepStatus"];
+            decidedBy: null | components["schemas"]["MemberDto"];
+            /** Format: date-time */
+            decidedAt: null | string;
+            disputeStatus: null | components["schemas"]["DisputeStatus"];
+        };
+        /**
+         * @description A pilot as the tours' staff read them (design M2 §8.7): the errors confirmed, per category and per error, in the calendar year
+         *     asked and ever; every leg flown with its outcome and who decided it; the disputes, the clarifications, the bans; the tours with
+         *     how far they got. Nothing of it reaches the pilot, who has their own block (`flightops.myTours`) without the counts.
+         */
+        PilotPageDto: {
+            pilot: components["schemas"]["MemberDto"];
+            /** Format: int32 */
+            year: number;
+            categories: components["schemas"]["PilotCategoryDto"][];
+            errors: components["schemas"]["PilotErrorDto"][];
+            flights: components["schemas"]["PilotFlightDto"][];
+            disputes: components["schemas"]["PilotDisputesDto"];
+            threads: components["schemas"]["PilotThreadDto"][];
+            bans: components["schemas"]["BanDto"][];
+            tours: components["schemas"]["PilotTourDto"][];
+            canBan: boolean;
+        };
         /**
          * @description The pilot in this tour (§4.3): legs reported, accepted, rejected; their disputes — open, upheld, turned down (§3.8), which the
          *     pilot never reads —; every ban.
@@ -4228,6 +4432,33 @@ export interface components {
             /** Format: int32 */
             disputesDismissed: number;
             bans: components["schemas"]["PilotBanDto"][];
+        };
+        /** @description A thread of the pilot with the tours' department — a dispute or a clarification — that the reader may open. */
+        PilotThreadDto: {
+            /** Format: int64 */
+            id: number;
+            kind: string;
+            subject: string;
+            status: components["schemas"]["ContactStatus"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @description A tour the pilot is in, and how far: done out of target, in the unit of its kind (PilotStanding). */
+        PilotTourDto: {
+            /** Format: int64 */
+            tourId: number;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int64 */
+            parentTourId: null | number;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            completedAt: null | string;
+            /** Format: int32 */
+            done: number;
+            /** Format: int32 */
+            target: number;
+            unit: components["schemas"]["ProgressUnit"];
         };
         /**
          * @description A report as its pilot sees it: never the validator's name (design M2 §3.5). With a decision, when it was taken, the note
@@ -4328,6 +4559,11 @@ export interface components {
             atcContacts?: null | components["schemas"]["AtcContactWriteDto"][];
             exemptions?: null | components["schemas"]["AtcExemptionWriteDto"][];
         };
+        /**
+         * @description What a measure of progress counts: legs, nautical miles, the goal of an `Open` tour, subtours.
+         * @enum {unknown}
+         */
+        ProgressUnit: "Legs" | "Miles" | "Goal" | "Subtours";
         /** @description The menu entry an author proposes with a page: under which entry, and in which words. */
         ProposedMenuEntry: {
             /**
@@ -4495,7 +4731,7 @@ export interface components {
          * @description A tour as a card shows it (design M2 §8.1): what fits on a tile, and nothing a visitor may not see. The picture is
          *     the identifier alone — a module reads no row of the core's library, and the address built from the identifier is
          *     the one a browser is asked to check again rather than keep for a year.
-         *     No progress and no next leg: those are the pilot's own and arrive with the reports (T15,
+         *     No progress and no next leg: those are the pilot's own and arrive with the pilot's pages (T15b,
          *     flightops.myTours). A card is the same for whoever is looking.
          */
         PublicTourCardDto: {
@@ -5328,6 +5564,58 @@ export interface components {
         UserPreferenceWriteDto: {
             value: components["schemas"]["JsonElement"];
         };
+        ValidatorCountDto: {
+            /** Format: int32 */
+            vid: number;
+            /** Format: int32 */
+            accepted: number;
+            /** Format: int32 */
+            rejected: number;
+            /** Format: int32 */
+            toModify: number;
+        };
+        /**
+         * @description One validator. `AllTours` and `TourIds` are the grants of their own (`Tours.Validate`, «add a validator»); who
+         *     validates through their position (FOC, FOAC, FOA) has none and appears for what they decided. `Suspended`: they left the
+         *     staff, and their grants wait for them (§7.2).
+         */
+        ValidatorDto: {
+            member: components["schemas"]["MemberDto"];
+            allTours: boolean;
+            tourIds: number[];
+            suspended: boolean;
+            /** Format: int32 */
+            accepted: number;
+            /** Format: int32 */
+            rejected: number;
+            /** Format: int32 */
+            toModify: number;
+        };
+        /** @description The statistics of the validators in a year (design M2 §8.7), and who is enabled on what. */
+        ValidatorsDto: {
+            /**
+             * Format: int32
+             * @description The calendar year (UTC) of the decisions counted.
+             */
+            year: number;
+            /** @description Everybody enabled by a grant of their own, and everybody who decided a report that year. */
+            validators: components["schemas"]["ValidatorDto"][];
+            /** @description The tours with a decision that year, each with what every validator decided on it. */
+            tours: components["schemas"]["ValidatorTourDto"][];
+        };
+        ValidatorTourDto: {
+            /** Format: int64 */
+            tourId: number;
+            title: components["schemas"]["LocalizedOfstring"];
+            counts: components["schemas"]["ValidatorCountDto"][];
+        };
+        /** @description A validator enabled on a tour of the first level, or on every tour when `TourId` is null. */
+        ValidatorWriteDto: {
+            /** Format: int32 */
+            vid: number;
+            /** Format: int64 */
+            tourId: null | number;
+        };
         /** @description What was deployed. Anonymous, and never cached, so a report can quote a build. */
         VersionResponse: {
             version: string;
@@ -5779,6 +6067,37 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsPilot: {
+        parameters: {
+            query?: {
+                year?: number;
+            };
+            header?: never;
+            path: {
+                vid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotPageDto"];
                 };
             };
             /** @description Not Found */
@@ -11129,6 +11448,218 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LegIssueDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsValidators: {
+        parameters: {
+            query?: {
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidatorsDto"];
+                };
+            };
+        };
+    };
+    FlightOpsValidatorAdd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidatorWriteDto"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsValidatorRemove: {
+        parameters: {
+            query?: {
+                tourId?: number;
+            };
+            header?: never;
+            path: {
+                vid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsBansList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfBanDto"];
+                };
+            };
+        };
+    };
+    FlightOpsBansCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BanWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BanDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsBansGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BanDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsBansUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BanWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BanDto"];
                 };
             };
             /** @description Bad Request */
