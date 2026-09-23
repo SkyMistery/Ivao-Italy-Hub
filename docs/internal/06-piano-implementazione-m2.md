@@ -311,7 +311,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T13b | Le pagine della validazione — **fatta il 23 set 2026** | T13a | `/staff/tours/review` e `/staff/tours/review/{id}` con mappa e traccia, `reviewQueue` |
 | T14a | I fili dei contatti nel nucleo — **fatta il 23 set 2026** | T4a, T13 | risposte, riferimenti, partecipanti, `ThreadOpeningProjection`, risolutori, `/me/contacts`, `MessageThread` |
 | T14b | Contestazioni, chiarimenti, segnalazioni — **fatta il 23 set 2026** | T14a | la contestazione che sblocca; il chiarimento dalle pagine dei tour; `fo_leg_issues`; `openIssues` |
-| T15 | Completamento, validatori, piloti, ban | T4b, T13 | segnalazione dell'award, statistiche e «aggiungi validatore», pagina del pilota, ban, `myTours` |
+| T15a | Completamento, validatori, piloti, ban sul server — **fatta il 23 set 2026** | T4b, T13 | segnalazione dell'award nella transazione dell'accettazione, «aggiungi validatore» e statistiche, dati della pagina del pilota, ban e mail |
+| T15b | Le pagine delle persone | T15a | `/staff/tours/validators`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans`, `myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato» |
 | T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
 | T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
 | T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`; tarature |
@@ -1502,6 +1503,45 @@ Design §3.9, §3.11, §7.2, §8.2, §8.7. Branch `m2/t15-completion-and-people`
 prende subito sul suo tour; un validatore che non è più staff perde il grant alla sincronizzazione; il ban blocca il PIREP e non la
 validazione di quelli inviati.
 **Fatta quando**: un tour di prova completato compare nella coda degli award, e chi ha `Awards.Assign` lo assegna.
+
+**Divisa il 23 settembre 2026** in apertura (Carmine, nota `decisions/2026-09-23-completamento-validatori-piloti-ban.md`), come T11,
+T13 e T14:
+
+- **T15a — il server** (branch `m2/t15a-completion-and-people`): i punti 1–4 via API.
+- **T15b — le pagine**: `/staff/tours/validators` (statistiche, aggiungi e togli), `/staff/tours/pilots/{vid}` (con «banna»),
+  `/staff/tours/bans` (lista e form generati), le voci di menu, il blocco **`flightops.myTours` nelle due metà** (il test del manifest le
+  vuole nella stessa PR), **l'avanzamento del pilota sui riquadri** di `/tours` (piano 0.90: «l'avanzamento sui riquadri resta di
+  T15») e il giro e2e «completato → award assegnato». Il «fatta quando» di T15 è suo.
+
+**T15a fatta il 23 settembre 2026** (branch `m2/t15a-completion-and-people`, piano 0.98). Com'è andata:
+
+- **Quattro risposte di Carmine in apertura**, tutte come proposte: la divisione; il validatore **sul tour di primo livello** (il PIREP
+  di un sottotour prende lo scope del contenitore) **o su tutti**; `Tours.ViewPilots` scritto insieme a `Tours.Validate`; le **ore
+  volate** dal tracker nel riepilogo di `myTours`.
+- **Il completamento**: `PilotProgress` (una risposta sola a «dove sta il pilota», con il `Container` e una misura per ogni tipo; ora la
+  usa anche `MineAsync` di T11b), `TourCompletion` chiamato dalla decisione prima del salvataggio, `Enrolment` `IProjectable` con
+  l'`AwardSignalProjection` in una proprietà non mappata. Mai tolto.
+- **Lo scope**: `fo_pireps.scope_tour_id` (migrazione `AddValidatorScope`, riempita dai tour esistenti), letto da `ResourceScope`.
+- **Il server delle persone** in `People/`: `Validators` (`/api/flightops/validators`: statistiche per anno e per tour sulla decisione
+  di adesso, aggiungi, togli), `Pilots` (`/api/flightops/pilots/{vid}`), `BanEndpoints` (`/api/flightops/bans`, `MapCrud`, mai
+  cancellati, `flightops.banned` quando il ban si scrive).
+- **Due estensioni del nucleo** (caso b): `ModuleGrants` (un grant a una persona scritto per conto di un modulo, con le regole della
+  schermata dei permessi) e `CrudOptions.AfterSave` (la mail del ban solo per un ban salvato).
+- **`myTours` è passato a T15b**: scritto il provider, il test del manifest ha ricordato che un blocco ha le due metà nella stessa PR,
+  come `reviewQueue` in T13b.
+- **Trovato dai test**: un grant scritto butta fuori la sessione di chi lo riceve (401, poi il login rimette i permessi nuovi): «prende
+  subito» vuol dire dal login dopo, ed è il comportamento del nucleo da M0; l'award proposto dal tour deve esistere
+  (`flightops:errors.awardUnknown`); la pulizia dei test cancella i sottotour prima del contenitore.
+- **La domanda di T13b** (un validatore con il solo grant non entra in `/staff`) non si pone: un grant a una persona si dà solo allo
+  staff.
+- **I test**: integrazione `PirepTests.People.cs` (VID 780089–780090) — il `Sequential` completato con la segnalazione e l'award, che
+  restano dopo una leg aggiunta e una decisione riaperta e rifiutata; un `Distance` sottotour che completa il `Container` (e lo
+  valida chi è abilitato sul contenitore); il validatore aggiunto che prende sul suo tour e non su un altro, legge la pagina del pilota,
+  compare nelle statistiche ed è tolto con tutti e due i grant; il validatore che lascia lo staff con i grant (anche con scope, il test
+  che T3 aveva lasciato qui) sospesi; il ban che blocca il PIREP e non la validazione, con la mail, e la pagina del pilota. Suite
+  intere verdi in locale (Docker acceso): unit 538, integrazione 267, Vitest 467, lint, formato, typecheck, i18n.
+- **Non verificato**: il completamento di un `Open` in integrazione (stessa strada, provata dai test unitari di `OpenRules`); la coda
+  degli award dalla schermata (è il giro di T15b); le statistiche con numeri veri.
 
 ### T16 — Il meteo salvato
 

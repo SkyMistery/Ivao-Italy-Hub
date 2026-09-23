@@ -3,9 +3,25 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T14a in `main`; T14b è fatta**: branch `m2/t14b-disputes-and-issues`, in PR
-(vedi `gh pr list`). Piano **0.97**. **Il prossimo passo è T15 (completamento con la segnalazione dell'award, validatori, pagina del
-pilota, ban, `myTours`)**, in una chat nuova, dopo il merge.
+**Ultimo aggiornamento:** 23 settembre 2026 — **T0–T14b in `main`; T15a è fatta**: branch `m2/t15a-completion-and-people`, in PR
+(vedi `gh pr list`). Piano **0.98**. **Il prossimo passo è T15b (le pagine delle persone: validatori, pilota, ban, il blocco
+`myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato»)**, in una chat nuova, dopo il merge.
+
+> **Che cosa ha lasciato T15a** (nota `2026-09-23-completamento-validatori-piloti-ban`, piano 0.98): T15 è divisa — **T15a il server,
+> T15b le pagine**. **T15b legge**: `GET /api/flightops/validators?year=` (`ValidatorsDto`: per validatore `member`, `allTours`,
+> `tourIds`, `suspended`, `accepted`/`rejected`/`toModify`; per tour i conteggi per VID), `POST /api/flightops/validators`
+> (`{ vid, tourId|null }`, 204 o `ProblemDetails` su `vid` — `errors.grant.notStaff` — e `tourId`), `DELETE
+> /api/flightops/validators/{vid}?tourId=` (204/404); `GET /api/flightops/pilots/{vid}?year=` (`PilotPageDto`: categorie ed errori con
+> `inYear`/`ever`, voli con chi ha deciso, contestazioni, fili, ban, tour con `done`/`target`/`unit`, `canBan`); `/api/flightops/bans`
+> (lista e form generati, niente delete). Le voci di menu non ci sono ancora (sono delle pagine). **Il blocco `flightops.myTours` è
+> tutto di T15b**: il contenuto è deciso nella nota §3.4 (tour iniziati visibili con la misura di `PilotProgress` e la prossima leg,
+> PIREP `ToModify`, fili `Answered` dei tour, leg accettate, **minuti volati** dal tracker, tour completati di primo livello); il
+> provider si scrive in `People/` come `OpenIssuesProvider`, con i conteggi dei blocchi nei due test (`uiKit.test.ts` 37,
+> `DataBlockEndToEndTests` 12) che salgono di uno. **L'avanzamento sui riquadri** di `/tours` per un pilota (piano 0.90, design §8.1) è
+> di T15b: `PilotProgress.OfAsync(tour, vid, null)` dà la misura. ⚠️ **Un grant scritto butta fuori la sessione di chi lo riceve**
+> (401, il login rimette i permessi nuovi): nel giro, il validatore aggiunto rientra. ⚠️ L'award di un tour deve esistere
+> (`flightops:errors.awardUnknown`). Nei test: VID `780089–780090` (formatori `IT-T87`/`IT-T88`), `PirepTests.People.cs`, i sottotour si
+> cancellano prima del contenitore.
 
 > **Che cosa ha lasciato T14b** (nota `2026-09-23-contestazioni-chiarimenti-segnalazioni`, piano 0.97): il modulo usa i fili di T14a.
 > **La contestazione**: `Pirep.DisputeStatus` (`Open`, `Upheld`, `Dismissed`) e le sue colonne; `Pirep` è `IProjectable` e apre il filo

@@ -383,12 +383,19 @@ cancellato dal catalogo non toglie niente alle decisioni) e una decisione nuova 
 traccia** di ogni volo si salva all'invio in **`fo_pirep_tracks`** (`pirep_flight_id`, `points_gzip`, `point_count`, `stored_at`):
 i punti come li legge il client IVAO, compressi gzip, ~10 KB a volo; si cancella `trackRetentionDays` dopo la decisione (§10).
 
+**Precisato in T15a** (23 settembre, nota `2026-09-23-completamento-validatori-piloti-ban` §3.2): `fo_pireps.scope_tour_id` è il tour
+su cui un validatore è abilitato a prendere il PIREP — il suo, o il contenitore per un sottotour (§7.3) —, scritto al primo invio.
+
 ### 1.9 L'iscrizione — `fo_enrolments`
 
 Il **primo PIREP iscrive** (su un sottotour, anche al `Container`). `vid`, `tour_id`, `started_at`, `completed_at?`.
 **L'avanzamento non si memorizza**: si calcola dai PIREP. ~~`start_leg_id?` (per `SequentialChosenStart`, fissa),
 `hub_order_json` (per `Hub`)~~ — **tolte il 23 settembre** (Carmine, apertura di T11, nota `2026-09-23-il-pirep`): la partenza è
 la leg del primo PIREP non ritirato, l'hub è quello della prima leg volata; si leggono dai PIREP come il resto.
+
+**Precisato in T15a**: `completed_at` si scrive nel salvataggio che accetta il PIREP che finisce il tour (`TourCompletion`), e
+l'iscrizione proietta la segnalazione dell'award nella stessa transazione (§3.11); un `Container` si completa quando lo sono
+`required_subtours` suoi sottotour, letti dalle loro iscrizioni.
 
 ### 1.10 I template di tour (risposta 2)
 
@@ -758,6 +765,10 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
   che **si validano normalmente** (confermato il 15 settembre).
 - Lo decide chi ha `Tours.Ban`: **HQ, superadmin, coordinator e assistant coordinator FOD** (FOC e FOAC; Carmine,
   15 settembre). Il pilota **riceve una mail** (`flightops.banned`) **con il motivo** e la durata.
+- **Precisato in T15a**: un ban nomina un tour di primo livello o nessuno (un ban sul contenitore vale per i sottotour); **non si
+  cancella** — si toglie spostandone la fine —, perché è parte del registro del pilota (§10.1); la mail parte quando il ban si scrive,
+  non quando si cambia. Lista e form generati, lettura con `Tours.ViewPilots` (la pagina del pilota li mostra), scrittura con
+  `Tours.Ban`.
 
 ### 3.10 Richiedi chiarimenti
 
@@ -779,6 +790,10 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
   `2026-09-16-award-e-preferenze`). Nessuna assegnazione automatica: chi ha `Awards.Assign` risponde dalla coda
   `/staff/awards/queue`, e il membro vede l'award sul suo profilo IVAO, mai nell'hub. Un sottotour completato conta per
   il padre, non segnala niente di suo.
+- **Precisato in T15a** (nota `2026-09-23-completamento-validatori-piloti-ban` §3.1): è l'**iscrizione** a proiettare la
+  segnalazione (`enrolment:{id}`), con il motivo nella lingua della divisione e l'award proposto dal tour, nel salvataggio che accetta
+  il PIREP: PIREP accettato, completamento e segnalazione in una transazione. Mai tolto, nemmeno se la decisione si riapre e diventa un
+  rifiuto.
 - **Segnalare un problema su una leg**: `fo_leg_issues` e una notifica alla casella del FOD
   (`flightops.legIssueReported`). **Precisato in T14b**: `tour_id`, `leg_id`, `body`, `status` (`Open`, `Resolved`), `staff_note`,
   dipartimento del tour, audit (il pilota è `created_by`); il pilota la scrive da un dialog sulla riga della leg, lo staff la chiude
@@ -1040,11 +1055,19 @@ un'installazione già avviata (nota `2026-09-16-impostazioni-dei-moduli`). HQ e 
 più staff perde l'abilitazione da solo**: il suo grant viene sospeso dalla sincronizzazione dello staff, come ogni grant del nucleo
 (Carmine, 15 settembre).
 
+**Precisato in T15a** (Carmine, 23 settembre, nota `2026-09-23-completamento-validatori-piloti-ban`): un validatore si abilita **su un
+tour di primo livello** — che copre i suoi sottotour, anche quelli aggiunti dopo — **o su tutti i tour** (un grant senza scope); solo chi
+è staff della divisione. «Aggiungi validatore» scrive con `Tours.Validate` anche **`Tours.ViewPilots`** (la colonna qui sopra) se il
+membro non ne ha uno suo, e «togli» l'ultimo tour lo toglie solo se l'aveva scritto lui. I grant li scrive il servizio del nucleo
+`ModuleGrants`, con le regole della schermata dei permessi.
+
 ### 7.3 Le due estensioni del meccanismo dei permessi (estensione del nucleo n.1)
 
 1. **Scope per risorsa**: `hub_user_grants.resource_scope` (`flightops:tour:42`); una risorsa con `IHasResourceScope`
    dichiara il suo; l'handler conta un grant con scope solo sulla risorsa con lo stesso scope. «Aggiungi validatore» scrive
    un grant `Tours.Validate` con lo scope del tour; audit, sospensione e sessione vengono gratis.
+   **Precisato in T15a**: lo scope di un PIREP è quello del **tour di primo livello** (`fo_pireps.scope_tour_id`), quindi un
+   validatore abilitato su un `Container` valida i suoi sottotour.
 2. **Stakeholder della riga**: `IHasStakeholder` (`StakeholderVid`) e i permessi che una risorsa **non** concede al suo
    stakeholder (`Tours.Validate` sul PIREP). Vale per tutti, **superadmin compreso** (risposta 15). La lettura resta
    concessa: il validatore vede i propri PIREP (§4.1).
@@ -1075,6 +1098,9 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 | `flightops.reviewQueue` | dashboard FOD, `/staff` | PIREP in coda sui tour che chi guarda può validare: **una riga per tour**, quanti e da quando il più vecchio, con il link alla coda del tour (Carmine, 23 settembre, T13b) |
 | `flightops.openIssues` | dashboard FOD | segnalazioni aperte, contestazioni e chiarimenti senza risposta |
 | `flightops.errorCatalog` | pagine, documenti | gli errori pubblici |
+
+**Precisato in T15a** (Carmine, 23 settembre): le ore del riepilogo di `myTours` sono **le ore volate**, dal decollo all'atterraggio
+registrati dal tracker sui PIREP accettati, non le ore stimate delle leg. Il blocco, nelle sue due metà, è di T15b.
 
 ### 8.3 L'editor del tour
 
@@ -1133,6 +1159,10 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
   tutte le leg volate con esito e validatore, contestazioni, chiarimenti, ban, tour con avanzamento; da qui «banna».
 - **Ban** (`/staff/tours/bans`), **regole generali**, **errori**, **template**, **profili degli aerei**, **segnalazioni**,
   **impostazioni**: liste e form generati.
+- **Precisato in T15a** (nota `2026-09-23-completamento-validatori-piloti-ban`): le statistiche contano **la decisione che un PIREP
+  ha adesso** (accettati, rifiutati, da modificare, per anno di `decided_at`), ed elencano chi ha un grant suo e chi ha deciso
+  nell'anno; la pagina del pilota conta gli errori sui PIREP **accettati e rifiutati** (come il suggerimento, T13a) per anno solare del
+  decollo, con il nome congelato nei PIREP, e mostra i fili che chi guarda legge nei contatti del suo dipartimento.
 
 ---
 
