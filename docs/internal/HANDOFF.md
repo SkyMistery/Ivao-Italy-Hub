@@ -3,7 +3,15 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T19** (T19b sul branch `m2/t19b-agent-contract`). Piano **1.05**. **Il prossimo passo è T20 (conservazione, cancellazione dei dati di un pilota, rifiniture, giro completo, chiusura di M2)**, in una chat nuova, dopo il merge di T19b; T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+> **Un secondo sviluppatore** (nota `2026-09-24-un-secondo-sviluppatore`, piano 1.06): **M3 Training lo scrive `dalberone`**
+> con il suo Claude Code, dal design, su branch del repository; il suo punto d'ingresso è **`HANDOFF-M3.md`**, che scrive
+> lui. **Su `main` unisce solo Carmine**, dopo la revisione del suo Claude (`CLAUDE.md` §0, procedura in `CLAUDE.local.md`).
+> `CLAUDE.md` è ora **pubblico e in inglese**; `CONTRIBUTING.md` raccoglie le trappole; il check `core-guard` ferma su una PR
+> del collaboratore i file del maintainer e chiede una nota per ogni file del nucleo. **Il piano e questo file li scrive solo
+> il revisore**, anche per M3, dopo il merge. ⚠️ Da fare da Carmine: attivare i due ruleset (`main`, `release tags`) e
+> verificarli con una PR di prova di `dalberone`.
+
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T19**. Piano **1.06**. **Il prossimo passo è T20 (conservazione, cancellazione dei dati di un pilota, rifiniture, giro completo, chiusura di M2)**, in una chat nuova, dopo il merge di T19b; T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
 
 > **Che cosa ha lasciato T19b** (nota `2026-09-24-il-contratto-dell-agente`, piano 1.05): il contratto dell'agente sta in `Agent/` del
 > modulo — `AgentContract` (audience `flightops.agent`, intestazione `Hub-Agent-Contract`, versione 1, il filtro che risponde 400 con

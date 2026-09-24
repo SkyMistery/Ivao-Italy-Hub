@@ -2,8 +2,8 @@
 
 **Data:** 13 settembre 2026, notte — portata da Carmine dopo il confronto con lo staff di IVAO,
 subito dopo la chiusura delle dashboard (D3, PR #77)
-**Stato:** **decisa** (Carmine, 13 settembre 2026) per §3.1–§3.4; **§3.5 è una proposta**, da
-decidere prima che parta il secondo modulo
+**Stato:** **decisa** (Carmine, 13 settembre 2026) per §3.1–§3.4; **§3.5 decisa il 24 settembre 2026** nella nota
+`2026-09-24-un-secondo-sviluppatore` (Training a `dalberone`, branch nel repository, merge solo di Carmine)
 **Regola applicata:** `CLAUDE.md` §5: nessun meccanismo nuovo. Cambia l'ordine della roadmap
 (piano §13) e si precisa chi tiene i permessi dei moduli dentro la nota
 `2026-09-13-moduli-non-subordinati-ai-dipartimenti`, che resta valida.
@@ -73,7 +73,7 @@ decidere prima che parta il secondo modulo
 - La chiave del modulo dei tour resta **`flightops`** (piano §9.2, `division.json`, schema `fo_`);
   «Tours» è il nome della sezione.
 
-### 3.5 Due agenti su due PC — **proposta, non ancora decisa**
+### 3.5 Due agenti su due PC — **decisa il 24 settembre 2026** (nota `2026-09-24-un-secondo-sviluppatore`)
 
 **Si può.** I due Claude Code non si parlano: si coordinano attraverso GitHub (branch, PR, CI) e i
 documenti del repository. La struttura aiuta: ogni modulo ha la sua cartella, il suo `DbContext` con
