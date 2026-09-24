@@ -465,6 +465,7 @@ export const CHECK_KEYS = [
   'parking',
   'speed250',
   'simRate',
+  'maxAltitude',
   'takeoffFromThreshold',
   'vmc',
   'repeatedRoute',
@@ -555,6 +556,13 @@ export const CHECK_PARAMETERS: Readonly<Record<CheckKey, Readonly<Record<string,
   parking: { minParkingMinutesBefore: 'wholeOptional', minParkingMinutesAfter: 'wholeOptional' },
   speed250: { toleranceKt: 'wholeOptional' },
   simRate: { tolerancePercent: 'wholeOptional' },
+  // The highest altitude for each flight rule: 19 500 ft for V and 66 000 for the rest to start with (T18).
+  maxAltitude: {
+    maxFeetI: 'wholeOptional',
+    maxFeetV: 'wholeOptional',
+    maxFeetY: 'wholeOptional',
+    maxFeetZ: 'wholeOptional',
+  },
   alternate: {},
   // The letters required for each flight rule, and those required only above a level: W and J1 above FL285 (T17).
   equipment: {

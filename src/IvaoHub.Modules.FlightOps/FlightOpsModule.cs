@@ -142,6 +142,14 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddSingleton<IFlightCheck, AlternateCheck>();
         services.AddSingleton<IFlightCheck, EquipmentCheck>();
         services.AddSingleton<IFlightCheck, RepeatedRouteCheck>();
+        services.AddSingleton<IFlightCheck, DisconnectionsCheck>();
+        services.AddSingleton<IFlightCheck, ParkingCheck>();
+        services.AddSingleton<IFlightCheck, Speed250Check>();
+        services.AddSingleton<IFlightCheck, SimRateCheck>();
+        services.AddSingleton<IFlightCheck, MaxAltitudeCheck>();
+        services.AddSingleton<IFlightCheck, LandingAtArrivalCheck>();
+        services.AddSingleton<IFlightCheck, TakeoffFromThresholdCheck>();
+        services.AddSingleton<IFlightCheck, VmcCheck>();
         services.AddScoped<FlightChecks>();
 
         services.AddScoped<TourReleaseJob>();
