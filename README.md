@@ -208,6 +208,12 @@ folder would empty the media library of every page that shows one.
 | `docs/` | Public documentation: the [forking guide](docs/FORKING.md) and the [UI guidelines](docs/UI-GUIDELINES.md) |
 | `tools/` | Walk-throughs meant to be followed by hand, starting with [the M0 demo](tools/demo-m0.md) |
 
+## Contributing
+
+The rules — who merges, what a contributor never touches, how a decision is taken — are in
+[CLAUDE.md](CLAUDE.md), which every Claude Code session reads; the practical half is in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Forking
 
 See [docs/FORKING.md](docs/FORKING.md).
