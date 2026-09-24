@@ -40,10 +40,26 @@ public sealed class RuleTests
     [Theory]
     [InlineData(CheckCatalog.Disconnections, """{"maxSingleDisconnectMinutes":-1}""", "maxSingleDisconnectMinutes", "errors.number.range")]
     [InlineData(CheckCatalog.Vmc, """{"minVisibilityMeters":"five"}""", "minVisibilityMeters", "errors.number.range")]
-    [InlineData(CheckCatalog.Equipment, "{}", "letters", "errors.required")]
-    [InlineData(CheckCatalog.Equipment, """{"letters":["W","Q9"]}""", "letters", "flightops:errors.parameterChoice")]
+    [InlineData(CheckCatalog.FlightRules, """{"rules":[]}""", "rules", "errors.required")]
+    [InlineData(CheckCatalog.FlightRules, """{"rules":["X"]}""", "rules", "flightops:errors.parameterChoice")]
+    [InlineData(CheckCatalog.Equipment, """{"lettersI":["W","Q9"]}""", "lettersI", "flightops:errors.parameterChoice")]
+    [InlineData(CheckCatalog.Equipment, """{"transponderV":["S","W"]}""", "transponderV", "flightops:errors.parameterChoice")]
+    [InlineData(CheckCatalog.Equipment, """{"highLevelFl":90}""", "highLevelFl", "errors.number.range")]
     public void AWrongParameterIsRefusedOnTheField(string check, string input, string field, string key) =>
         Assert.Contains(new ShapeProblem(field, key), CheckCatalog.Read(check, JsonNode.Parse(input), amending: false).Problems);
+
+    [Fact]
+    public void AnEquipmentRuleStartsWithWAndJ1OnlyAboveFl285AndNothingElseRequired()
+    {
+        var (parameters, problems) = CheckCatalog.Read(CheckCatalog.Equipment, JsonNode.Parse("""{"lettersI":["s","D","W"]}"""), amending: false);
+
+        Assert.Empty(problems);
+        Assert.Equal(["S", "D", "W"], OpenCatalog.Codes(parameters, "lettersI"));
+        Assert.Equal(["W", "J1"], OpenCatalog.Codes(parameters, "highLevelLetters"));
+        Assert.Equal(285, OpenCatalog.Number(parameters, "highLevelFl"));
+        Assert.Empty(OpenCatalog.Codes(parameters, "lettersV"));
+        Assert.Equal(["I", "V", "Y", "Z"], OpenCatalog.Codes(CheckCatalog.Read(CheckCatalog.FlightRules, null, amending: false).Parameters, "rules"));
+    }
 
     [Fact]
     public void ARuleWithoutACheckHasNoParameters()

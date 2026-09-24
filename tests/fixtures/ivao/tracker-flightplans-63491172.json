@@ -1,0 +1,113 @@
+[
+  {
+    "id": 72650170,
+    "sessionId": 63491172,
+    "revision": 1,
+    "aircraftId": "F26T",
+    "aircraftNumber": 1,
+    "departureId": "LOWI",
+    "arrivalId": "LIDT",
+    "alternativeId": "LIDA",
+    "alternative2Id": null,
+    "route": "INNSBRUCK STEINACH AM BRENNER BRENNER PASS STERZING VIPITENO SARENTINO LIPB EGNA TERMENO LAVIS DTN1",
+    "remarks": "DOF/260922  ",
+    "speed": "N0150",
+    "level": "F085",
+    "flightRules": "V",
+    "flightType": "G",
+    "eet": 5400,
+    "endurance": 10800,
+    "departureTime": 66180,
+    "actualDepartureTime": 65137,
+    "peopleOnBoard": 1,
+    "createdAt": "2026-09-22T17:41:53.000Z",
+    "updatedAt": "2026-09-22T17:46:41.000Z",
+    "departure_id": "LOWI",
+    "arrival_id": "LIDT",
+    "alternative_id": "LIDA",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "L",
+        "name": "ILS",
+        "order": 21
+      },
+      {
+        "id": "O",
+        "name": "VOR",
+        "order": 25
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "V",
+        "name": "VHF RTF",
+        "order": 32
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "F26T",
+      "model": "SF-260T",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LOWI",
+      "iata": "INN",
+      "name": "Innsbruck",
+      "city": "Innsbruck",
+      "countryId": "AT",
+      "latitude": 47.2602777778,
+      "longitude": 11.3438888889
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIDT",
+      "iata": null,
+      "name": "Trento-Mattarello",
+      "city": "Trento-Mattarello",
+      "countryId": "IT",
+      "latitude": 46.0233333333,
+      "longitude": 11.125
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIDA",
+      "iata": "",
+      "name": "Asiago",
+      "city": "",
+      "countryId": "IT",
+      "latitude": 45.8877777778,
+      "longitude": 11.5166666667
+    },
+    "alternative2": null
+  }
+]

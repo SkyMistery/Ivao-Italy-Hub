@@ -1,9 +1,24 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.01 — 24 settembre 2026 (**i controlli dai PIREP veri**: 45 PIREP e 363 commenti dei controllori del sistema di oggi aggiungono `flightRules`, `planAtTakeoff`, `flightPlanForm`, `maxAltitude`, le lettere di `equipment` per regola di volo e i livelli volati sull'agente, prima di T17)
+**Versione documento:** 1.02 — 24 settembre 2026 (**il motore dei controlli**, fase T17 di M2: `IFlightCheck`, `fo_check_results`, i controlli sul piano e i suggerimenti; W e J1 sopra FL285, la casella 10b, R con PBN/)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.02** (24 set 2026, fase T17 di M2): **il motore dei controlli e i controlli sul piano**. Nota
+`decisions/2026-09-24-il-motore-dei-controlli.md`, **quattro risposte di Carmine**: (1) oltre a W, **anche J1 sopra FL285**; (2) le
+lettere della **casella 10b** per regola di volo, come la 10a; (3) **R senza `PBN/`** fa fallire `flightPlanForm`; (4) un **livello
+scritto in un piano VFR** (`F085`) fa fallire `flightPlanForm` — la nota del 24 settembre §5 lo dava «tutto passa» ed è corretta. **Le
+fixture**: i 15 PIREP della nota registrati dal tracker con VID, data e callsign letti da Chrome (`tools/record-ivao-fixtures.mjs --list`),
+sotto il VID 780002. **Nel codice** (`Checks/` del modulo): `IFlightCheck` con `Evaluate` **puro e sincrono** (il design diceva
+`EvaluateAsync`), il contesto raccolto una volta, otto controlli sul piano, `FlightChecks` che li esegue **subito dopo l'invio** e
+`FlightCheckJob` **ogni dieci minuti** su chi non ha esiti recenti; `fo_check_results` (`ran_by` `Server`/`Agent`) e `fo_pireps.checks_ran_at`;
+gli errori dei controlli falliti **suggeriti** in `fo_pirep_errors`, e la decisione tiene se il validatore li ha confermati; la sezione
+dei controlli nella pagina di validazione e la parola dei controlli nella coda. Il parametro di `equipment` ha una forma nuova
+(`lettersI|V|Y|Z`, `transponderI|V|Y|Z`, `highLevelLetters` con W e J1, `highLevelFl` 285); l'impostazione **`routeProcedurePrefixes`**
+parte da `ED`, `LO`. **Una correzione nel nucleo**: `IvaoTrackerReader` legge quando è stata depositata una revisione da `updatedAt`, non
+da `createdAt` (uguale per tutte le revisioni di un piano), quindi il piano al decollo non è più sempre l'ultima revisione. Sul corpus i
+controlli sul piano danno gli esiti della nota. Aggiornati il design §1.11, §6.1, §6.2, §6.4 e la fase T17.
 
 **Changelog 1.01** (24 set 2026, prima di T17): **i controlli dai PIREP veri**. Nota `decisions/2026-09-24-i-controlli-dai-pirep-veri.md`:
 Carmine ha chiesto di guardare, da amministratore e in sola lettura, che cosa trovano oggi i controllori nel sistema dei tour in uso (45

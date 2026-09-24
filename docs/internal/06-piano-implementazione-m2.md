@@ -314,7 +314,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T15a | Completamento, validatori, piloti, ban sul server — **fatta il 23 set 2026** | T4b, T13 | segnalazione dell'award nella transazione dell'accettazione, «aggiungi validatore» e statistiche, dati della pagina del pilota, ban e mail |
 | T15b | Le pagine delle persone — **fatta il 24 set 2026** | T15a | `/staff/tours/validators`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans`, `myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato» |
 | T16 | Il meteo salvato — **fatta il 24 set 2026** | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
-| T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute`, `flightRules`, `planAtTakeoff`, `flightPlanForm` |
+| T17 | Il motore dei controlli e i controlli sul piano — **fatta il 24 set 2026** | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute`, `flightRules`, `planAtTakeoff`, `flightPlanForm` |
 | T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`; tarature |
 | T19 | Token personali e contratto dell'agente | T3, T17 | `hub_personal_tokens`, lo schema `Bearer` per `audience`, `/api/flightops/agent` |
 | T20 | Conservazione, rifiniture, giro completo | tutte | job mensile, cancellazione dei dati di un pilota, smoke, giro e2e, documenti |
@@ -1624,6 +1624,39 @@ Design §6.1–§6.4. Branch `m2/t17-check-engine`.
 §5; un controllo che lancia un'eccezione diventa `Unavailable`, mai `Failed`; il suggerimento compare nella pagina e nella colonna della
 coda; **un volo di un PIREP respinto non si può riportare di nuovo** (`reportSessionClaimed`: oggi il test copre solo un PIREP in coda).
 **Fatta quando**: tutti i voli del corpus danno sui controlli del piano l'esito atteso (o la differenza è scritta e decisa con Carmine).
+
+**T17 fatta il 24 settembre 2026** (branch `m2/t17-check-engine`, piano 1.02, nota `decisions/2026-09-24-il-motore-dei-controlli.md`).
+Com'è andata:
+
+- **Quattro risposte di Carmine**: J1 sopra FL285 come W; la casella 10b per regola di volo; R senza `PBN/` in `flightPlanForm`; e, a
+  metà fase, un livello scritto in un piano VFR fallisce (881923: la nota §5 è corretta).
+- **Prima di tutto le fixture**: VID, data e callsign dei 15 PIREP (non 16) letti da Chrome sul sistema di oggi, in sola lettura; le
+  sessioni registrate con `tools/record-ivao-fixtures.mjs --list <file> 780002`, il file con i VID veri fuori dal repository. Il primo
+  tentativo, per giorno e callsign, prendeva anche i voli vicini: ora la sessione è quella in volo al decollo dichiarato fra i due
+  aeroporti della leg. **880159** si spiega: gli orari dichiarati sono la fine di una sessione di due giorni prima.
+- **Il motore** in `Checks/`: `IFlightCheck` con `Evaluate` puro e sincrono (non `EvaluateAsync`: il contesto si raccoglie una volta),
+  otto controlli sul piano in `PlanChecks.cs`, il testo del piano in `FlightPlanText.cs`, `FlightChecks` (contesto, esecuzione,
+  suggerimenti) chiamato dopo l'invio, `FlightCheckJob` ogni dieci minuti. `fo_check_results` e `fo_pireps.checks_ran_at` in una
+  migrazione additiva. La decisione tiene i suggerimenti con `confirmed`; lo snapshot degli errori porta `CheckKey`.
+- **La pagina**: `ReviewDto.checks` e `checksRanAt` al posto di `checksAvailable`, la sezione «Controlli automatici» con l'esito, le righe
+  nella lingua di chi legge e gli errori suggeriti; **la coda** ha `failedChecks` e `checkSuggestion`, una colonna con una parola.
+- **Trovato strada facendo**: il lettore del tracker del nucleo prendeva `createdAt` come «depositata alle», ma le revisioni di un piano
+  lo condividono: il piano al decollo era sempre l'ultima revisione. Ora è `updatedAt` (nota §4). Il `letters` di `equipment` non c'è
+  più: una regola di sviluppo che lo usava non chiede niente finché qualcuno la risalva.
+- **Test**: unit `FlightCheckTests` — i 15 PIREP del corpus con gli esiti della nota sui controlli del piano (passano per il lettore del
+  tracker, `TrackedFlight` e la riga che l'invio scrive), W e J1 dalla rotta, le revisioni dopo il decollo, la STAR a Vienna con e senza
+  `LO`, i livelli, le lettere, i callsign, l'alternato, la forma del piano, un controllo che si rompe `Unavailable`, i suggerimenti; i
+  parametri nuovi in `RuleTests`. Integrazione `PirepTests.Checks.cs`: gli esiti all'invio, il suggerimento nella pagina e nella coda, il
+  job, l'accettazione che tiene il suggerimento non confermato, e **il volo di un PIREP respinto non si riporta** (`reportSessionClaimed`).
+  Vitest: la parola della coda e le righe dell'evidenza. Playwright con il server finto: la pagina e la coda; il giro vero
+  `full/tours-review.spec.ts` ha una seconda regola con `flightRules` (solo V) che il volo registrato non passa. **Suite intere verdi
+  in locale**: unit 592, integrazione 273, Vitest 474, Playwright con il server finto 91, giro completo 35, lint, formato, typecheck,
+  i18n, build Release. Guardata la sezione a 1500 px.
+- **Trovato sul banco**: `ivaohub_e2e` ha accumulato molte regole generali «Bench disconnection …» con il controllo `disconnections`,
+  lasciate da giri di `tours-rules.spec.ts`: compaiono su ogni pagina di validazione del banco, e il controllo di T18 le eseguirà.
+- **Non verificato**: le lettere equivalenti (S della 10a, S e C della 10b) sono una lettura del Doc 4444 da confermare; le forme del
+  callsign e di una procedura nella rotta sono euristiche; le regole vere dei tour del corpus non sono state lette (il corpus usa quelle
+  del Turboprop per tutti gli IFR); il job sul banco.
 
 ### T18 — I controlli sulle tracce
 

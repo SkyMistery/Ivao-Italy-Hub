@@ -1,0 +1,144 @@
+[
+  {
+    "id": 72624418,
+    "sessionId": 63469521,
+    "revision": 1,
+    "aircraftId": "A20N",
+    "aircraftNumber": 1,
+    "departureId": "LDDU",
+    "arrivalId": "LOWW",
+    "alternativeId": "LHBP",
+    "alternative2Id": null,
+    "route": "RIGVA Z748 BALHA L187 GEBNI DCT EDALA DCT TIVNU DCT OBUTI OBUTI2W",
+    "remarks": "PBN/A1B1C1D1O1S2 DOF/260920 REG/EIEIA EET/LDZO0001 LQSB0008 LDZO0032 LJLA0042 LOVV0046 OPR/ITY PER/C RVR/075 RMK/TCAS SIMBRIEF",
+    "speed": "N0450",
+    "level": "F300",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 4320,
+    "endurance": 9300,
+    "departureTime": 24600,
+    "actualDepartureTime": 24929,
+    "peopleOnBoard": 149,
+    "createdAt": "2026-09-20T06:14:36.000Z",
+    "updatedAt": "2026-09-20T06:18:10.000Z",
+    "departure_id": "LDDU",
+    "arrival_id": "LOWW",
+    "alternative_id": "LHBP",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E2",
+        "name": "D-FIS ACARS",
+        "order": 7
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "A20N",
+      "model": "A320Neo",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LDDU",
+      "iata": "DBV",
+      "name": "Rudjer Boskovic",
+      "city": "Dubrovnik",
+      "countryId": "HR",
+      "latitude": 42.5613527778,
+      "longitude": 18.2682444444
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LOWW",
+      "iata": "VIE",
+      "name": "Schwechat",
+      "city": "Vienna",
+      "countryId": "AT",
+      "latitude": 48.1102777778,
+      "longitude": 16.5697222222
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LHBP",
+      "iata": "BUD",
+      "name": "Liszt Ferenc International",
+      "city": "Budapest",
+      "countryId": "HU",
+      "latitude": 47.4394444444,
+      "longitude": 19.2619444444
+    },
+    "alternative2": null
+  }
+]

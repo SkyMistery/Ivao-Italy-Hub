@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ReviewDto, ReviewFlightDto, ReviewPlanDto } from '../api';
+import { queueChecks, type ReviewDto, type ReviewFlightDto, type ReviewPlanDto } from '../api';
 
 import {
   eventNote,
+  evidenceText,
   hhmm,
   planAtTakeoff,
   queueOrderOf,
@@ -172,5 +173,29 @@ describe('the map', () => {
       },
     ]);
     expect(reviewMapTracks(undefined)).toEqual([]);
+  });
+});
+
+describe('the checks', () => {
+  const t = ((key: string, values?: Record<string, string>) =>
+    `«${key}${values === undefined ? '' : ` ${JSON.stringify(values)}`}»`) as never;
+
+  it('words the lines of the server, keeps those of the agent, and says which flight of a diversion', () => {
+    expect(evidenceText(t, { key: 'flightops:evidence.alternateMissing' })).toBe(
+      '«flightops:evidence.alternateMissing {}»',
+    );
+    expect(evidenceText(t, { key: null, text: 'FL350 westbound on a DCT segment' })).toBe(
+      'FL350 westbound on a DCT segment',
+    );
+    expect(evidenceText(t, { key: 'flightops:evidence.noPlan', values: { flight: '2' } })).toBe(
+      '«flightops:review.checks.flight {"flight":"2"}»«flightops:evidence.noPlan {"flight":"2"}»',
+    );
+  });
+
+  it('names what the checks propose in the queue, and nothing before they ran', () => {
+    expect(queueChecks({ failedChecks: 0, checkSuggestion: null })).toBeNull();
+    expect(queueChecks({ failedChecks: 0, checkSuggestion: 'Accepted' })).toBe('Clean');
+    expect(queueChecks({ failedChecks: 2, checkSuggestion: 'Accepted' })).toBe('Accept');
+    expect(queueChecks({ failedChecks: 1, checkSuggestion: 'Rejected' })).toBe('Reject');
   });
 });

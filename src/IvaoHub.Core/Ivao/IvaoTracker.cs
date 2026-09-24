@@ -35,6 +35,7 @@ public sealed record IvaoTrackerSessionDto(
 /// <para><see cref="Equipment"/> and <see cref="Transponder"/> come expanded from IVAO as lists of
 /// <c>{ id, name }</c>: the letters are flattened back here, so a check can read <c>SD</c> the way
 /// the pilot filed it.</para>
+/// <para><see cref="FiledAt"/> is when the revision was filed: IVAO's <c>updatedAt</c>, not its <c>createdAt</c>.</para>
 /// </summary>
 public sealed record IvaoFlightPlanDto(
     long Id,
@@ -197,10 +198,13 @@ public static class IvaoTrackerReader
             return null;
         }
 
+        // When a revision was filed is its updatedAt: the revisions of a plan share one createdAt unless the route changes,
+        // and on a real flight two of four revisions came after the take-off with the createdAt of the first (T17, measured
+        // on the tours' own PIREPs of September 2026).
         return new IvaoFlightPlanDto(
             (long)id,
             (int)(Number(item, "revision") ?? 1),
-            Moment(item, "createdAt") ?? DateTime.UnixEpoch,
+            Moment(item, "updatedAt") ?? Moment(item, "createdAt") ?? DateTime.UnixEpoch,
             Text(item, "departureId")?.ToUpperInvariant() ?? string.Empty,
             Text(item, "arrivalId")?.ToUpperInvariant() ?? string.Empty,
             Text(item, "alternativeId")?.ToUpperInvariant(),

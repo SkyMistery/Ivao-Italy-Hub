@@ -6,6 +6,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Rules;
@@ -46,6 +47,7 @@ public sealed class PirepSubmission(
     EffectiveRules effectiveRules,
     ModuleSettingsStore settingsStore,
     WeatherArchive weatherArchive,
+    FlightChecks checks,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -453,6 +455,9 @@ public sealed class PirepSubmission(
 
         // The weather of the flight's airports the job did not keep (design M2 §1.13 point 2, T16): never a refused send.
         await weatherArchive.FillFlightAsync(pirep, now, cancellationToken);
+
+        // The automatic checks on what was just sent (§6.1, T17), after the weather they will read: never a refused send either.
+        await checks.TryRunAsync(pirep, cancellationToken);
 
         return (pirep, null);
     }
@@ -925,7 +930,7 @@ public sealed class PirepSubmission(
                 [
                     .. rule.ErrorIds
                         .Where(errors.ContainsKey)
-                        .Select(id => new SnapshotErrorDto(id, errors[id].Name, errors[id].Category, errors[id].YearlyMax)),
+                        .Select(id => new SnapshotErrorDto(id, errors[id].Name, errors[id].Category, errors[id].YearlyMax, errors[id].CheckKey)),
                 ])),
             ColumnJson);
     }

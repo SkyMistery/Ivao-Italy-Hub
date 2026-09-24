@@ -1,0 +1,204 @@
+[
+  {
+    "id": 72564739,
+    "sessionId": 63418838,
+    "revision": 2,
+    "aircraftId": "B350",
+    "aircraftNumber": 1,
+    "departureId": "LIPB",
+    "arrivalId": "LIMF",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "ALESE DCT LUSIL DCT SRN DCT NELAB",
+    "remarks": "PBN/B2C2D2O2S1S2 DOF/260913 REG/N070SB PER/B RMK/TCAS SIMBRIEF",
+    "speed": "N0312",
+    "level": "F250",
+    "flightRules": "I",
+    "flightType": "G",
+    "eet": 3900,
+    "endurance": 9540,
+    "departureTime": 69900,
+    "actualDepartureTime": 69832,
+    "peopleOnBoard": 13,
+    "createdAt": "2026-09-13T18:53:50.000Z",
+    "updatedAt": "2026-09-13T18:54:46.000Z",
+    "departure_id": "LIPB",
+    "arrival_id": "LIMF",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B350",
+      "model": "King Air 350",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": true,
+      "icao": "LIPB",
+      "iata": "BZO",
+      "name": "Bolzano",
+      "city": "Bolzano",
+      "countryId": "IT",
+      "latitude": 46.4602777778,
+      "longitude": 11.3263888889
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIMF",
+      "iata": "TRN",
+      "name": "Torino Caselle",
+      "city": "Torino Caselle",
+      "countryId": "IT",
+      "latitude": 45.2025,
+      "longitude": 7.6494444444
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72564737,
+    "sessionId": 63418838,
+    "revision": 1,
+    "aircraftId": "B350",
+    "aircraftNumber": 1,
+    "departureId": "LIPB",
+    "arrivalId": "LIMF",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "ALESE DCT LUSIL DCT SRN DCT NELAB",
+    "remarks": "PBN/B2C2D2O2S1S2 DOF/260913 REG/N070SB PER/B RMK/TCAS SIMBRIEF",
+    "speed": "N0312",
+    "level": "F250",
+    "flightRules": "I",
+    "flightType": "G",
+    "eet": 3900,
+    "endurance": 9540,
+    "departureTime": 69900,
+    "actualDepartureTime": 69832,
+    "peopleOnBoard": 13,
+    "createdAt": "2026-09-13T18:53:50.000Z",
+    "updatedAt": "2026-09-13T18:54:47.000Z",
+    "departure_id": "LIPB",
+    "arrival_id": "LIMF",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B350",
+      "model": "King Air 350",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": true,
+      "icao": "LIPB",
+      "iata": "BZO",
+      "name": "Bolzano",
+      "city": "Bolzano",
+      "countryId": "IT",
+      "latitude": 46.4602777778,
+      "longitude": 11.3263888889
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIMF",
+      "iata": "TRN",
+      "name": "Torino Caselle",
+      "city": "Torino Caselle",
+      "countryId": "IT",
+      "latitude": 45.2025,
+      "longitude": 7.6494444444
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  }
+]

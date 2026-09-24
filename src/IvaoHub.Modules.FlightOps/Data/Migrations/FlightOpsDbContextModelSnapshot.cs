@@ -599,6 +599,56 @@ namespace IvaoHub.Modules.FlightOps.Data.Migrations
                     b.ToTable("fo_aircraft_profiles", (string)null);
                 });
 
+            modelBuilder.Entity("IvaoHub.Modules.FlightOps.Checks.CheckResult", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CheckKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("check_key");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasColumnType("json")
+                        .HasColumnName("evidence_json");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("outcome");
+
+                    b.Property<long>("PirepId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("pirep_id");
+
+                    b.Property<DateTime>("RanAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("ran_at");
+
+                    b.Property<string>("RanBy")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("ran_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fo_check_results");
+
+                    b.HasIndex("PirepId", "CheckKey", "RanBy")
+                        .IsUnique()
+                        .HasDatabaseName("ix_fo_check_results_pirep_id_check_key_ran_by");
+
+                    b.ToTable("fo_check_results", (string)null);
+                });
+
             modelBuilder.Entity("IvaoHub.Modules.FlightOps.Legs.Leg", b =>
                 {
                     b.Property<long>("Id")
@@ -917,6 +967,10 @@ namespace IvaoHub.Modules.FlightOps.Data.Migrations
                         .IsRequired()
                         .HasColumnType("json")
                         .HasColumnName("atc_exemptions_json");
+
+                    b.Property<DateTime?>("ChecksRanAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("checks_ran_at");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
@@ -2162,6 +2216,16 @@ namespace IvaoHub.Modules.FlightOps.Data.Migrations
                         .HasConstraintName("fk_cms_contact_references_cms_contact_messages_message_id");
 
                     b.Navigation("Message");
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.FlightOps.Checks.CheckResult", b =>
+                {
+                    b.HasOne("IvaoHub.Modules.FlightOps.Pireps.Pirep", null)
+                        .WithMany()
+                        .HasForeignKey("PirepId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_fo_check_results_fo_pireps_pirep_id");
                 });
 
             modelBuilder.Entity("IvaoHub.Modules.FlightOps.Legs.Leg", b =>

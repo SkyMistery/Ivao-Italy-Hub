@@ -1553,6 +1553,9 @@ export type ReviewWeatherDto = components['schemas']['ReviewWeatherDto'];
 export type WeatherBulletinDto = components['schemas']['WeatherBulletinDto'];
 export type ReviewEventDto = components['schemas']['ReviewEventDto'];
 export type ReviewDisputeDto = components['schemas']['ReviewDisputeDto'];
+export type ReviewCheckDto = components['schemas']['ReviewCheckDto'];
+export type CheckOutcome = components['schemas']['CheckOutcome'];
+export type EvidenceLine = components['schemas']['EvidenceLine'];
 export type SuggestionDto = components['schemas']['SuggestionDto'];
 export type MemberDto = components['schemas']['MemberDto'];
 export type ReviewDecisionDto = components['schemas']['ReviewDecisionDto'];
@@ -1567,6 +1570,22 @@ export interface ReviewQueueRow extends ReviewQueueRowDto {
   readonly assignedToName: string | null;
   /** `Open` while the rejection is disputed (T14b): the column draws it as a word, and nothing otherwise. */
   readonly dispute: 'Open' | null;
+  /**
+   * What the checks propose (T17), as a word: none failed, or failed with the outcome their suggested errors lead to; nothing
+   * until they ran.
+   */
+  readonly checks: 'Clean' | 'Accept' | 'Reject' | null;
+}
+
+/** The checks of a row of the queue as one word (T17): the server counts and proposes, the list only names it. */
+export function queueChecks(
+  row: Pick<ReviewQueueRowDto, 'failedChecks' | 'checkSuggestion'>,
+): ReviewQueueRow['checks'] {
+  if (row.checkSuggestion === null) {
+    return null;
+  }
+
+  return row.failedChecks === 0 ? 'Clean' : row.checkSuggestion === 'Rejected' ? 'Reject' : 'Accept';
 }
 
 /** A member as the staff reads them: the name the hub has, and the VID that always is. */
@@ -1607,6 +1626,7 @@ export function reviewQueueQuery(
           pilotName: memberName(row.pilot),
           assignedToName: row.assignedTo === null ? null : memberName(row.assignedTo),
           dispute: row.isDisputed ? ('Open' as const) : null,
+          checks: queueChecks(row),
         })),
       };
     },

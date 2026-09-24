@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Aircraft;
+using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
@@ -53,6 +54,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<PirepTrack> PirepTracks => Set<PirepTrack>();
 
+    public DbSet<CheckResult> CheckResults => Set<CheckResult>();
+
     public DbSet<Enrolment> Enrolments => Set<Enrolment>();
 
     public DbSet<Ban> Bans => Set<Ban>();
@@ -80,6 +83,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<DisputeStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<LegIssueStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<WeatherReportKind>().HaveConversion<string>().HaveMaxLength(8);
+        configurationBuilder.Properties<CheckOutcome>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<CheckRanBy>().HaveConversion<string>().HaveMaxLength(8);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -298,6 +303,18 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             // an error deleted from the catalogue afterwards takes nothing away from the decisions that marked it.
             error.HasIndex(row => new { row.PirepId, row.ErrorId }).IsUnique();
             error.HasIndex(row => row.ErrorId);
+        });
+
+        modelBuilder.Entity<CheckResult>(result =>
+        {
+            result.ToTable("fo_check_results");
+            result.HasKey(row => row.Id);
+            result.Property(row => row.CheckKey).HasMaxLength(64).IsRequired();
+            result.Property(row => row.EvidenceJson).HasColumnName("evidence_json").HasColumnType("json").IsRequired();
+            result.HasOne<Pirep>().WithMany().HasForeignKey(row => row.PirepId).OnDelete(DeleteBehavior.Cascade);
+
+            // One result per check and per runner (T17, T19): running again replaces it.
+            result.HasIndex(row => new { row.PirepId, row.CheckKey, row.RanBy }).IsUnique();
         });
 
         modelBuilder.Entity<PirepTrack>(track =>

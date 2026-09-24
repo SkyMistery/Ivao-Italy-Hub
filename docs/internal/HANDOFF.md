@@ -3,9 +3,25 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T16 in `main`**. Piano **1.01**. **Il prossimo passo è T17 (il motore dei
-controlli e i controlli sul piano: `IFlightCheck`, `fo_check_results`, i suggerimenti)**, in una chat nuova, dopo il merge della nota qui
-sotto.
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T17 in `main`**. Piano **1.02**. **Il prossimo passo è
+T18 (i controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`, e
+le tarature)**, in una chat nuova, dopo il merge di T17.
+
+> **Che cosa ha lasciato T17** (nota `2026-09-24-il-motore-dei-controlli`, piano 1.02): il motore sta in `Checks/` del modulo.
+> **`IFlightCheck`** ha `Key` ed **`Evaluate(context, parameters)` puro e sincrono**: un controllo di T18 è una classe in più, registrata
+> come singleton in `FlightOpsModule`, con i campi dei suoi parametri **solo** in `CheckCatalog.Fields` (e la metà TypeScript in
+> `CHECK_PARAMETERS`); la risposta è `CheckVerdict` con righe `EvidenceLine.Of("chiave", ("nome", "valore"))` → `flightops:evidence.chiave`
+> nei due file del modulo. **Il contesto** (`FlightChecks.ContextAsync`) ha già le **tracce decodificate** di ogni volo (`CheckedFlight.Track`)
+> e il volo con decollo e atterraggio: T18 ci aggiunge **meteo** (`WeatherArchive`), **piste** (`IRunwayDirectory`) ed **esenzioni**
+> (`PirepSubmission.Atc`). Gli esiti vanno in `fo_check_results` (unici per PIREP, controllo, `ran_by`); gli errori con la `check_key` di un
+> controllo fallito diventano righe **suggerite e non confermate** di `fo_pirep_errors`, e la decisione tiene `confirmed`. Girano **dopo
+> l'invio** (dopo il meteo) e con **`FlightCheckJob`** ogni dieci minuti su chi ha `checks_ran_at` più vecchio di `queued_at`. **Le fixture
+> del corpus**: `tracker-reports-780002.json` (PIREP → sessione), `tracker-sessions-780002.json` e i piani e le tracce di 15 sessioni;
+> `FlightCheckTests.Context(report)` legge un PIREP del corpus come lo rilegge il motore — **T18 ci scrive i suoi esiti attesi** (nota
+> `2026-09-24-i-controlli-dai-pirep-veri` §5: 877464 `speed250` e `parking`, 877596 e 877187 `speed250`, 877196 `simRate`, 880159
+> `disconnections` e `landingAtArrival` che **passano**). ⚠️ **Il lettore del tracker** prende ora `updatedAt` come momento di una revisione
+> (le revisioni condividono `createdAt`). ⚠️ `equipment` non ha più `letters`: `lettersI|V|Y|Z`, `transponderI|V|Y|Z`, `highLevelLetters`
+> (W, J1), `highLevelFl` (285). ⚠️ Il giro `full/tours-review.spec.ts` ha una regola `flightRules` solo V che il volo registrato non passa.
 
 > **Prima di T17** (nota `2026-09-24-i-controlli-dai-pirep-veri`, piano 1.01, solo documenti): Carmine ha fatto guardare che cosa trovano
 > oggi i controllori nel sistema dei tour in uso (45 PIREP, 363 commenti). T17 prende **tre controlli in più** (`flightRules`,

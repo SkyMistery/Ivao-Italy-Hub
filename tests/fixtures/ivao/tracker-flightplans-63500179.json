@@ -1,0 +1,113 @@
+[
+  {
+    "id": 72660459,
+    "sessionId": 63500179,
+    "revision": 1,
+    "aircraftId": "C152",
+    "aircraftNumber": 1,
+    "departureId": "LJPZ",
+    "arrivalId": "LDLO",
+    "alternativeId": "LDRI",
+    "alternative2Id": null,
+    "route": "DCT POREC DCT VODNJAN DCT PULA DCT",
+    "remarks": "DOF/260923 REG/ICELLO EET/LDZO0006 PER/A RMK/TCAS SIMBRIEF  ",
+    "speed": "K0095",
+    "level": "VFR",
+    "flightRules": "V",
+    "flightType": "G",
+    "eet": 2700,
+    "endurance": 8100,
+    "departureTime": 73500,
+    "actualDepartureTime": 73920,
+    "peopleOnBoard": 1,
+    "createdAt": "2026-09-23T20:05:11.000Z",
+    "updatedAt": "2026-09-23T20:07:22.000Z",
+    "departure_id": "LJPZ",
+    "arrival_id": "LDLO",
+    "alternative_id": "LDRI",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "A",
+        "name": "GBAS Ldg System",
+        "order": 2
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "C",
+        "name": "mode C",
+        "type": null,
+        "order": 2
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "C152",
+      "model": "152",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LJPZ",
+      "iata": "POW",
+      "name": "Portoroz/Secovlje",
+      "city": "Portoroz",
+      "countryId": "SI",
+      "latitude": 45.4733333333,
+      "longitude": 13.615
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LDLO",
+      "iata": "LSZ",
+      "name": "Losinj",
+      "city": "Losinj Island",
+      "countryId": "HR",
+      "latitude": 44.5659055556,
+      "longitude": 14.3931888889
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LDRI",
+      "iata": "RJK",
+      "name": "Krk",
+      "city": "Rijeka",
+      "countryId": "HR",
+      "latitude": 45.2168888889,
+      "longitude": 14.5702666667
+    },
+    "alternative2": null
+  }
+]

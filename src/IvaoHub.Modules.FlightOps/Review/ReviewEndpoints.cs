@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Threads;
@@ -211,17 +212,37 @@ public static class ReviewEndpoints
             .ToDictionaryAsync(leg => leg.Id, leg => leg.Number, cancellationToken);
         var names = await reviews.NamesAsync([.. reports.Select(report => (int?)report.Vid), .. reports.Select(report => report.AssignedToVid)], cancellationToken);
 
+        // What the checks propose (T17): how many failed, and where their suggested errors lead — as the page words it.
+        var ids = reports.Select(report => report.Id).ToList();
+        var failed = await database.CheckResults.AsNoTracking()
+            .Where(result => ids.Contains(result.PirepId) && result.Outcome == CheckOutcome.Failed)
+            .GroupBy(result => result.PirepId)
+            .Select(group => new { PirepId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(row => row.PirepId, row => row.Count, cancellationToken);
+        var suggested = (await database.PirepErrors.AsNoTracking()
+                .Where(error => ids.Contains(error.PirepId) && error.SuggestedByCheck)
+                .Select(error => new { error.PirepId, error.ErrorId })
+                .ToListAsync(cancellationToken))
+            .ToLookup(error => error.PirepId, error => error.ErrorId);
+
         var rows = new List<ReviewQueueRowDto>(reports.Count);
         foreach (var report in reports)
         {
             var canTake = reviews.IsTakable(report, now) && await reviews.MayValidateAsync(report);
+            var suggestion = report.ChecksRanAt is null
+                ? null
+                : (PirepStatus?)(await reviews.SuggestAsync(report, [.. suggested[report.Id]], cancellationToken)).Outcome;
             rows.Add(Row(
                 report,
                 titles.GetValueOrDefault(report.TourId),
                 report.LegId is { } legId && numbers.TryGetValue(legId, out var number) ? number : null,
                 names,
                 canTake,
-                report.Vid == currentUser.Vid));
+                report.Vid == currentUser.Vid) with
+            {
+                FailedChecks = failed.GetValueOrDefault(report.Id),
+                CheckSuggestion = suggestion,
+            });
         }
 
         return rows;
@@ -250,5 +271,7 @@ public static class ReviewEndpoints
             report.LeaseUntil,
             report.IsDisputed,
             isOwn,
-            canTake);
+            canTake,
+            FailedChecks: 0,
+            CheckSuggestion: null);
 }

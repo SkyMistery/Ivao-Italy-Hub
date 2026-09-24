@@ -24,8 +24,10 @@ const words = JSON.parse(
     disputeThread: string;
     fields: { overrideReason: string; answer: string; outcome: string };
     order: { tour: string };
+    checks: { suggests: string };
     options: {
       status: { Rejected: string; Accepted: string; Queued: string };
+      checks: { Accept: string };
       outcome: { Upheld: string };
       disputeStatus: { Open: string; Upheld: string };
     };
@@ -33,7 +35,12 @@ const words = JSON.parse(
     weather: { airportNone: string };
   };
   errors: { reviewOverrideNeedsReason: string };
+  evidence: { equipmentMissing: string };
 };
+
+/** A sentence of the language file with its values in. */
+const filled = (sentence: string, values: Record<string, string>) =>
+  Object.entries(values).reduce((text, [name, value]) => text.replace(`{{${name}}}`, value), sentence);
 
 const validatorBootstrap = {
   ...staffBootstrap,
@@ -71,6 +78,8 @@ const row = {
   isDisputed: false,
   isOwn: false,
   canTake: true,
+  failedChecks: 1,
+  checkSuggestion: 'Accepted',
 };
 
 const plan = (revision: number, level: string) => ({
@@ -188,7 +197,7 @@ function review(overrides: Record<string, unknown> = {}) {
         countInYear: 1,
         countEver: 4,
         marked: false,
-        suggestedByCheck: false,
+        suggestedByCheck: true,
       },
     ],
     suggestion: { outcome: 'Accepted', reasons: [] },
@@ -235,7 +244,22 @@ function review(overrides: Record<string, unknown> = {}) {
         tafs: [],
       },
     ],
-    checksAvailable: false,
+    checks: [
+      {
+        key: 'equipment',
+        outcome: 'Failed',
+        evidence: [
+          {
+            key: 'flightops:evidence.equipmentMissing',
+            values: { letters: 'Y', rules: 'I', filed: 'SDFG/S' },
+          },
+        ],
+        ranBy: 'Server',
+        ranAt: '2026-09-22T12:00:05Z',
+        errorIds: [WARNING],
+      },
+    ],
+    checksRanAt: '2026-09-22T12:00:05Z',
     history: [
       {
         fromStatus: null,
@@ -378,6 +402,7 @@ test('the queue keeps the order the validator chose, and narrows to one tour', a
   await expect(page.getByRole('heading', { level: 1, name: words.review.title })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Test Pilot (222222)' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'LIRF → LIMC' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: words.review.options.checks.Accept })).toBeVisible();
   expect(seen.queue.at(-1)).toContain('sort=queuedAt');
   expect(seen.queue.at(-1)).toContain('filter[open]=true');
 
@@ -414,6 +439,13 @@ test('a report is taken, its errors ticked with the server suggesting, and decid
   // The weather kept for the flight (T16): the METAR with who published it, and «none kept» said as such.
   await expect(page.getByText('LIRF 220950Z 24008KT CAVOK 22/12 Q1015')).toBeVisible();
   await expect(page.getByText(words.review.weather.airportNone)).toBeVisible();
+
+  // The checks (T17): what failed, worded from the server's key, and the error it suggests — not ticked by anybody.
+  await expect(
+    page.getByText(filled(words.evidence.equipmentMissing, { letters: 'Y', rules: 'I', filed: 'SDFG/S' })),
+  ).toBeVisible();
+  await expect(page.getByText(filled(words.review.checks.suggests, { errors: 'Late plan' }))).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Late plan' })).not.toBeChecked();
 
   // Nothing to tick before the report is in the reader's hands.
   const dangerous = page.getByRole('checkbox', { name: 'Runway incursion' });

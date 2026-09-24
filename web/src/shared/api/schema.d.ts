@@ -2659,6 +2659,16 @@ export interface components {
             rowVersion: string;
         };
         /**
+         * @description What a check found (design M2 §6.2). Stored by name.
+         * @enum {unknown}
+         */
+        CheckOutcome: "Passed" | "Failed" | "Unavailable";
+        /**
+         * @description Who ran a check: the server, or the agent on the validator's computer (§6.6, T19). Stored by name.
+         * @enum {unknown}
+         */
+        CheckRanBy: "Server" | "Agent";
+        /**
          * @description A message in full. Everything but the status is read only on the screen and read only on the
          *     server: what the sender wrote is not the department's to edit, which is why the write payload
          *     below carries the status and nothing else.
@@ -3114,6 +3124,17 @@ export interface components {
          * @enum {unknown}
          */
         ErrorCategory: "Info" | "Warning" | "Dangerous";
+        /**
+         * @description One line of what a check saw. The server writes an i18n key with its values, which the page words in the reader's
+         *     language; the agent writes text (note 2026-09-15-token-personali-e-agente-del-validatore §3).
+         */
+        EvidenceLine: {
+            key: null | string;
+            values?: null | {
+                [key: string]: string;
+            };
+            text?: null | string;
+        };
         /**
          * @description What a controller allowed (design M2 §3.3); each kind declares which checks it softens (Toursystem ADR-014).
          * @enum {unknown}
@@ -4896,6 +4917,19 @@ export interface components {
             canDecideDispute: boolean;
         };
         /**
+         * @description What one check found on the report (design M2 §6.1, T17): the outcome, the lines of evidence — an i18n key with its values
+         *     from the server, text from the agent —, who ran it and when, and the errors of the catalogue it suggests when it fails.
+         */
+        ReviewCheckDto: {
+            key: string;
+            outcome: components["schemas"]["CheckOutcome"];
+            evidence: components["schemas"]["EvidenceLine"][];
+            ranBy: components["schemas"]["CheckRanBy"];
+            /** Format: date-time */
+            ranAt: null | string;
+            errorIds: number[];
+        };
+        /**
          * @description A decision (§4.3): the outcome, the errors marked among the frozen rules', the note to the pilot and the one to the staff,
          *     and — when it goes against the suggestion — why.
          */
@@ -4928,7 +4962,7 @@ export interface components {
          * @description The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
          *     suggestion, the decision as it stands and the history. The airports of the leg and of a diversion come with their positions,
          *     for the map (T13b); one the reference data has no position for comes without. The weather kept for each airport during the
-         *     flight comes with it (T16); the automatic checks (T17) have their place and say they are not available yet; the tracks are a
+         *     flight comes with it (T16), and what the automatic checks found, with when the server's last ran (T17); the tracks are a
          *     request of their own, `…/tracks`.
          */
         ReviewDto: {
@@ -4978,7 +5012,9 @@ export interface components {
             thresholdOverridden: boolean;
             overrideReason: null | string;
             weather: components["schemas"]["ReviewWeatherDto"][];
-            checksAvailable: boolean;
+            checks: components["schemas"]["ReviewCheckDto"][];
+            /** Format: date-time */
+            checksRanAt: null | string;
             history: components["schemas"]["ReviewEventDto"][];
             dispute: null | components["schemas"]["ReviewDisputeDto"];
             actions: components["schemas"]["ReviewActionsDto"];
@@ -5063,7 +5099,8 @@ export interface components {
         };
         /**
          * @description One row of the queue (§4.1): tour, leg, pilot, date of the flight, since when it waits, status, who holds it, disputed —
-         *     and whether the reader may take it. The suggestion of the checks joins with T17.
+         *     and whether the reader may take it. Since T17, what the checks propose: how many failed, and the outcome their suggested errors
+         *     lead to — none until the checks ran.
          */
         ReviewQueueRowDto: {
             /** Format: int64 */
@@ -5089,6 +5126,9 @@ export interface components {
             isDisputed: boolean;
             isOwn: boolean;
             canTake: boolean;
+            /** Format: int32 */
+            failedChecks: number;
+            checkSuggestion: null | components["schemas"]["PirepStatus"];
         };
         /** @description Reopening a decision (§4.2.1): the reason is required and stays in the history. */
         ReviewReopenDto: {
@@ -5229,6 +5269,7 @@ export interface components {
             category: components["schemas"]["ErrorCategory"];
             /** Format: int32 */
             yearlyMax: null | number;
+            checkKey?: null | string;
         };
         /**
          * @description The leg as a report froze it (design M2 §3.2 point 6): if the leg changes afterwards, the report is judged on this one.

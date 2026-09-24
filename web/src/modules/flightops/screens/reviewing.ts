@@ -1,7 +1,15 @@
 import type { TFunction } from 'i18next';
 
 import type { RouteMapLeg, RouteMapTrack } from '../../../shared/ui';
-import type { PirepStatus, ReviewDto, ReviewFlightDto, ReviewPlanDto, ReviewTrackDto } from '../api';
+import type {
+  CheckOutcome,
+  EvidenceLine,
+  PirepStatus,
+  ReviewDto,
+  ReviewFlightDto,
+  ReviewPlanDto,
+  ReviewTrackDto,
+} from '../api';
 
 /**
  * What the validation pages compute, pure, so a test can read it without a browser (T13b). Nothing here decides: the
@@ -23,6 +31,13 @@ export function queueOrderOf(stored: unknown): ReviewQueueOrder {
 export function queueSortOf(order: ReviewQueueOrder): string {
   return order === 'tour' ? 'tourId' : 'queuedAt';
 }
+
+/** The colour of what a check found (T17): failed in red, passed in green, not available in grey — never read as passed. */
+export const CHECK_OUTCOME_COLOURS: Readonly<Record<CheckOutcome, 'green' | 'red' | 'gray'>> = {
+  Passed: 'green',
+  Failed: 'red',
+  Unavailable: 'gray',
+};
 
 /** The colours of a report's status, the pilot's page's and the staff's alike. */
 export const REPORT_STATUS_COLOURS: Readonly<
@@ -110,3 +125,13 @@ export function reviewMapTracks(tracks: readonly ReviewTrackDto[] | undefined): 
 /** The outcomes a decision can have, in the order the form offers them. */
 export const DECISION_OUTCOMES = ['Accepted', 'ToModify', 'Rejected'] as const;
 export type DecisionOutcome = (typeof DECISION_OUTCOMES)[number];
+
+/**
+ * One line of what a check saw, in the reader's language (T17): the server's is an i18n key with its values, the agent's is
+ * its own text. On a report with two flights the line says which.
+ */
+export function evidenceText(t: TFunction, line: EvidenceLine): string {
+  const text = line.text ?? (line.key === null ? '' : t(line.key, { ...line.values }));
+  const flight = line.values?.flight;
+  return flight === undefined ? text : `${t('flightops:review.checks.flight', { flight })}${text}`;
+}

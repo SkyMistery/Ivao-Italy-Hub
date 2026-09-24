@@ -1,0 +1,118 @@
+[
+  {
+    "id": 72420229,
+    "sessionId": 63295868,
+    "revision": 1,
+    "aircraftId": "F28",
+    "aircraftNumber": 1,
+    "departureId": "LIPE",
+    "arrivalId": "LICC",
+    "alternativeId": "LICJ",
+    "alternative2Id": null,
+    "route": "PELEG DCT BAGNO DCT GAVRA DCT RITEB DCT LAT DCT VAKOR DCT PELEN DCT UXUTA",
+    "remarks": "PBN/B3B4B5D3D4 NAV/RNVD1E2A1 DAT/V DOF/260830 REG/ITIDE EET/LIRR0015 OPR/IHS CS/ITAVIA RMK/SIMBRIEF",
+    "speed": "N0421",
+    "level": "F290",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 5040,
+    "endurance": 10380,
+    "departureTime": 40500,
+    "actualDepartureTime": 41773,
+    "peopleOnBoard": 69,
+    "createdAt": "2026-08-30T11:03:41.000Z",
+    "updatedAt": "2026-08-30T11:05:40.000Z",
+    "departure_id": "LIPE",
+    "arrival_id": "LICC",
+    "alternative_id": "LICJ",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "H",
+        "name": "mode S (with aircraft ID, pressure altitude and enhanced surveillance capability)",
+        "type": null,
+        "order": 4
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "F28",
+      "model": "F-28 Fellowship",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIPE",
+      "iata": "BLQ",
+      "name": "Bologna Borgo Panigale",
+      "city": "Bologna Borgo Panigale",
+      "countryId": "IT",
+      "latitude": 44.5308333333,
+      "longitude": 11.2969444444
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LICC",
+      "iata": "CTA",
+      "name": "Catania Fontanarossa",
+      "city": "Catania Fontanarossa",
+      "countryId": "IT",
+      "latitude": 37.4666666667,
+      "longitude": 15.0638888889
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LICJ",
+      "iata": "PMO",
+      "name": "Palermo Punta Raisi",
+      "city": "Palermo Punta Raisi",
+      "countryId": "IT",
+      "latitude": 38.1819444444,
+      "longitude": 13.0994444444
+    },
+    "alternative2": null
+  }
+]

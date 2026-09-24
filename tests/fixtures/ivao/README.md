@@ -28,5 +28,18 @@ Two limits worth knowing before re-recording: IVAO keeps the points of a session
 days**, and the sessions of a member are paged fifty at a time. Both were measured on 16 September
 2026, in phase T2.
 
+## The corpus of the checks
+
+`tracker-sessions-780002.json` holds fifteen flights of several pilots, all written under VID 780002:
+the flights the tours' reports of August and September 2026 were about, recorded on 24 September 2026
+(phase T17) with `node tools/record-ivao-fixtures.mjs --list <file> 780002`. The list the tool reads
+holds the real VIDs and stays outside the repository. `tracker-reports-780002.json` says which session
+each report flew, by the report's number in the old tour system; the unit tests of the checks read a
+report through it, with what the controllers found on it as the expected outcome.
+
+One thing the corpus taught: the revisions of a flight plan share their `createdAt` until the route
+changes, and only `updatedAt` tells when each was filed — on one VFR flight two of four revisions came
+after the take-off. The reader takes `updatedAt`.
+
 `metars.json` is small and written by hand, like the first three files: it is the fallback the
 weather chain reaches for when the first source has no observation, so it only has to exist.
