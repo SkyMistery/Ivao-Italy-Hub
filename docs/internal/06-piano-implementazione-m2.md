@@ -317,7 +317,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T17 | Il motore dei controlli e i controlli sul piano — **fatta il 24 set 2026** | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute`, `flightRules`, `planAtTakeoff`, `flightPlanForm` |
 | T18 | I controlli sulle tracce — **fatta il 24 set 2026** | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`; tarature |
 | T19a | I token personali (nucleo) — **fatta il 24 set 2026** | T3 | `hub_personal_tokens`, lo schema del token per `audience`, `/me/tokens`, l'audit delle righe dei moduli |
-| T19b | Il contratto dell'agente (modulo) | T17, T19a | `/api/flightops/agent`, `Hub-Agent-Contract`, `docs/agent-contract.md`, la `curl` del «fatta quando» |
+| T19b | Il contratto dell'agente (modulo) — **fatta il 24 set 2026** | T17, T19a | `/api/flightops/agent`, `Hub-Agent-Contract`, `docs/agent-contract.md`, la `curl` del «fatta quando» |
 | T20 | Conservazione, rifiniture, giro completo | tutte | job mensile, cancellazione dei dati di un pilota, smoke, giro e2e, documenti |
 | T21 | L'app del validatore parla con l'hub | T19 | nel repository `AutomaticValidatorTour`, fuori da questo; la mail a Navigraph prima di distribuirla |
 
@@ -1698,7 +1698,8 @@ Com'è andata:
 
 ### T19 — Token personali e contratto dell'agente
 
-Nota `2026-09-15-token-personali-e-agente-del-validatore`. **Divisa il 24 settembre** (nota `2026-09-24-i-token-personali`, Carmine): **T19a** il punto 1, branch `m2/t19a-personal-tokens` — **fatta**; **T19b** i punti 2 e 3, branch `m2/t19b-agent-contract`, con i DTO dell'agente suoi e versionati, gli esiti solo su un PIREP in coda o in revisione (409 altrimenti) e 400 con le versioni accettate senza `Hub-Agent-Contract`. ⚠️ **T19b** dichiara l'audience `flightops.agent` in `FlightOpsModule.TokenAudiences` (con `Tours.Validate`) e la parola `tokenAudiences.agent` nel file di lingua del modulo, e decide se `fo_check_results` diventa `[Audited]`.
+Nota `2026-09-15-token-personali-e-agente-del-validatore`. **Divisa il 24 settembre** (nota `2026-09-24-i-token-personali`, Carmine): **T19a** il punto 1, branch `m2/t19a-personal-tokens` — **fatta**; **T19b** i punti 2 e 3, branch `m2/t19b-agent-contract` — **fatta**
+(nota `2026-09-24-il-contratto-dell-agente`: esiti non auditati ma con VID, token e versione sulla riga; le chiavi del server rifiutate), con i DTO dell'agente suoi e versionati, gli esiti solo su un PIREP in coda o in revisione (409 altrimenti) e 400 con le versioni accettate senza `Hub-Agent-Contract`. ⚠️ **T19b** dichiara l'audience `flightops.agent` in `FlightOpsModule.TokenAudiences` (con `Tours.Validate`) e la parola `tokenAudiences.agent` nel file di lingua del modulo, e decide se `fo_check_results` diventa `[Audited]`.
 
 1. **Nucleo**: `hub_personal_tokens`, lo schema `Bearer` accettato solo per `audience`, l'identità costruita come per il cookie, la regola
    dell'ultimo login entro 30 giorni, `/me/tokens` (il token in chiaro una volta), audit delle scritture.

@@ -1006,6 +1006,10 @@ dove serve.
   personale; da verificare che anche l'evidenza testuale sia ammessa ⚠️).
 - **Senza agente**, i due controlli risultano `Unavailable` e il validatore giudica come oggi: l'hub funziona anche per una
   divisione che non ha l'agente.
+- **Scritto in T19b** (24 settembre, nota `2026-09-24-il-contratto-dell-agente`, `docs/agent-contract.md`): il contratto è aperto a
+  tutti, il resto chiede il token e `Hub-Agent-Contract`; l'agente legge e scrive **solo** i PIREP che il suo validatore decide (la
+  pagina ne lascia leggere di più); **un controllo, un esecutore** (Carmine): l'agente non manda le chiavi del server; gli esiti
+  **non** vanno nell'audit (Carmine) e portano sulla riga VID, token e versione dell'app, che la pagina mostra.
 
 **I costi, detti prima**: ogni validatore che lo vuole ha bisogno di un abbonamento Navigraph e dell'app installata; l'app è un
 secondo prodotto, fuori da questo repository, con il suo rilascio; il contratto API va **versionato** perché l'app e l'hub si
@@ -1284,7 +1288,7 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 | 11 | Tipi di aereo IVAO (`ref_ivao_aircraft`) da `/v2/aircrafts/all`, con equipaggiamenti e transponder | no | §1.5 |
 | 12 | `IWeatherSource` (NOAA → IVAO → VATSIM), come vIPI | sì, breve (una fonte esterna nuova) | §1.13 |
 | 13 | Confini dei FIR da **OpenAIP** (`ref_firs`: codice, paese, poligono), sincronizzati da un job con la chiave API nei segreti, per la proposta degli ATC contattati; licenza e attribuzione dei dati OpenAIP da verificare | sì, breve (una fonte esterna nuova) | §3.3 |
-| 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore — **il nucleo fatto in T19a**: `IModule.TokenAudiences`, `PersonalTokenPolicy.For(audience)`, `/me/tokens` (nota `2026-09-24-i-token-personali`) | sì | §6.6 |
+| 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore — **il nucleo fatto in T19a**: `IModule.TokenAudiences`, `PersonalTokenPolicy.For(audience)`, `/me/tokens` (nota `2026-09-24-i-token-personali`); **il contratto in T19b**: `/api/flightops/agent`, `docs/agent-contract.md` (nota `2026-09-24-il-contratto-dell-agente`) | sì | §6.6 |
 | 15 | **Preferenze dell'utente** generiche (chiave e valore per utente), per l'ordine della coda del validatore — **fatta in T4b**: chiavi dichiarate da `IModule.Preferences` | nella stessa nota di T4b, §4 | §4.1 |
 | 16 | **Usi dei file con scadenza** dalle righe dei moduli nell'indice della media library (`MediaReferences` in `IProjectable`), e il **job che elimina i file con tutti gli usi scaduti** (servirà anche agli eventi) | breve (estende G20, ma elimina file da solo) | §1.14 |
 
