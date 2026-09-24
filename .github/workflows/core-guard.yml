@@ -1,0 +1,40 @@
+name: core-guard
+
+# Which parts of the repository a contributor's pull request touches (CLAUDE.md section 0,
+# .github/scripts/core-guard.sh). A required check on main, next to build-test.
+#
+# pull_request_target, not pull_request: the workflow and the script are read from main, so a branch cannot loosen
+# the guard that judges it. Nothing from the pull request is checked out or run; the job reads only the names of
+# the files it changes, with a read-only token.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  core-guard:
+    runs-on: ubuntu-latest
+    steps:
+      # The base branch, never the pull request's head.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: List the files the pull request changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: >
+          gh api --paginate "repos/$REPO/pulls/$PR/files"
+          --jq '.[] | [.status, .filename, (.previous_filename // "")] | @tsv'
+          > "$RUNNER_TEMP/files.tsv"
+
+      # The maintainer's own pull requests change the core on purpose; the guard is for everyone else.
+      - name: Judge them
+        if: github.event.pull_request.user.login != github.repository_owner
+        run: bash .github/scripts/core-guard.sh < "$RUNNER_TEMP/files.tsv"

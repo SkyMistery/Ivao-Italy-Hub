@@ -1,0 +1,19 @@
+# Every change to this repository is reviewed by the maintainer, who is also the only one allowed to merge into
+# main (ruleset "main", CLAUDE.md section 0). The paths below are listed apart so that the review request says
+# plainly when a pull request reaches the core, the rules or the pipeline.
+*                                               @SkyMistery
+
+/CLAUDE.md                                      @SkyMistery
+/CONTRIBUTING.md                                @SkyMistery
+/.github/                                       @SkyMistery
+/docs/internal/00-piano-di-progettazione.md     @SkyMistery
+/docs/internal/HANDOFF.md                       @SkyMistery
+/docs/internal/decisions/                       @SkyMistery
+/src/IvaoHub.Core/                              @SkyMistery
+/src/IvaoHub.Web/                               @SkyMistery
+/tests/IvaoHub.UnitTests/ArchitectureTests.cs   @SkyMistery
+/web/src/shared/                                @SkyMistery
+/web/src/features/                              @SkyMistery
+/web/src/blocks/                                @SkyMistery
+/Directory.Packages.props                       @SkyMistery
+/web/package.json                               @SkyMistery
