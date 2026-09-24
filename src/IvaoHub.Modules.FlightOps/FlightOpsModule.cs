@@ -1,9 +1,11 @@
 using FluentValidation;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Preferences;
+using IvaoHub.Modules.FlightOps.Agent;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
@@ -83,6 +85,13 @@ public sealed class FlightOpsModule : ModuleBase
     /// <summary>The outcomes to the pilot, the digest to the validators, the issues on the legs to the mailbox (§3.5, §4.2.2, §3.11).</summary>
     public override IReadOnlyList<string> NotificationTypes => FlightOpsNotifications.All;
 
+    /// <summary>
+    /// The agent on the validator's computer (design M2 §6.6, T19b): its personal tokens open <c>/api/flightops/agent</c> only, and
+    /// only for who may validate. The word for it is <c>flightops:tokenAudiences.agent</c>.
+    /// </summary>
+    public override IReadOnlyList<TokenAudienceDescriptor> TokenAudiences =>
+        [new TokenAudienceDescriptor(AgentContract.Audience, TourPermissions.Validate)];
+
     public override ModuleSettingsDescriptor Settings { get; } =
         ModuleSettingsDescriptor.Create<FlightOpsSettings, FlightOpsSettingsSaveValidator>(
             TourPermissions.ManageSettings,
@@ -152,6 +161,9 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddSingleton<IFlightCheck, VmcCheck>();
         services.AddScoped<FlightChecks>();
 
+        // The agent on the validator's computer (T19b): the same reports and checks, through its own contract.
+        services.AddScoped<AgentDesk>();
+
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
         services.AddScoped<TrackRetentionJob>();
@@ -211,5 +223,6 @@ public sealed class FlightOpsModule : ModuleBase
         endpoints.MapBanEndpoints();
         endpoints.MapPilotEndpoints();
         endpoints.MapMyToursEndpoints();
+        endpoints.MapAgentEndpoints();
     }
 }

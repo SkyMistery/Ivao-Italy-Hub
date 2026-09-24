@@ -200,7 +200,8 @@ public sealed record ReviewDto(
 
 /// <summary>
 /// What one check found on the report (design M2 §6.1, T17): the outcome, the lines of evidence — an i18n key with its values
-/// from the server, text from the agent —, who ran it and when, and the errors of the catalogue it suggests when it fails.
+/// from the server, text from the agent —, who ran it and when, and the errors of the catalogue it suggests when it fails. An
+/// agent's result says whose agent sent it and the version it said it was (T19b); the server's has neither.
 /// </summary>
 public sealed record ReviewCheckDto(
     string Key,
@@ -208,7 +209,9 @@ public sealed record ReviewCheckDto(
     IReadOnlyList<EvidenceLine> Evidence,
     CheckRanBy RanBy,
     DateTime? RanAt,
-    IReadOnlyList<long> ErrorIds);
+    IReadOnlyList<long> ErrorIds,
+    MemberDto? By,
+    string? AgentVersion);
 
 /// <summary>The track of one flight of the report, or none when it was never stored or has already gone (§2.3 of the note).</summary>
 public sealed record ReviewTrackDto(int Seq, IReadOnlyList<IvaoTrackPointDto>? Points);

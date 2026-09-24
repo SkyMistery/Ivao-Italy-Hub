@@ -128,6 +128,9 @@ public sealed record FlightCheckContext(
 /// <summary>
 /// What a check found on a report (design M2 §6.1), <c>fo_check_results</c>: one row per check and per runner — the server's
 /// replaced when it runs again, the agent's when it sends the same check again (T19).
+/// <para>Not audited (Carmine, 24 September 2026, note 2026-09-24-il-contratto-dell-agente): a result is a suggestion, and the
+/// decision that follows is what counts. An agent's row says itself who sent it — the VID, the token, the program's version —,
+/// which is what revoking the right token needs.</para>
 /// </summary>
 public sealed class CheckResult
 {
@@ -145,4 +148,13 @@ public sealed class CheckResult
     public CheckRanBy RanBy { get; set; }
 
     public DateTime RanAt { get; set; }
+
+    /// <summary>The validator whose agent sent it; none for the server's.</summary>
+    public int? ByVid { get; set; }
+
+    /// <summary>The personal token it came with; none for the server's.</summary>
+    public long? TokenId { get; set; }
+
+    /// <summary>The version the agent said it was (<c>agentVersion</c>); none for the server's.</summary>
+    public string? AgentVersion { get; set; }
 }
