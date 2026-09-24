@@ -104,7 +104,7 @@ spariscano** (quelli di metà settembre fino a metà dicembre). Esiti attesi:
 | 879788, 879691, 879558 | Turboprop, 3–5 (B350, piano I) | `equipment` non passa (manca Y); `flightRules` passa |
 | 882171 | VFR, 4 (C152) | `flightPlanForm` non passa (DCT nel VFR) |
 | 880760 | VFR, 24 | tutto passa; il rifiuto (pista 12/30) è una manovra obbligatoria |
-| 881923 | VFR, 22 | tutto passa |
+| 881923 | VFR, 22 | `flightPlanForm` non passa: livello `F085` in un piano VFR (**corretto in T17**, Carmine: fallisce; nota `2026-09-24-il-motore-dei-controlli` §2) |
 | 877464 | Dangerous Airports, 2 (B737 a London City) | `aircraft`, `speed250`, `parking` non passano |
 | 877596 | Dangerous Airports, 4 | `speed250` non passa |
 | 877187 | Bizjet, 8 | `speed250` non passa (il pilota dichiara un'emergenza) |
@@ -121,4 +121,5 @@ sistema di oggi **non valida** in automatico, si valutano più avanti come cosa 
 
 - Le frequenze del §3 vengono da parole chiave, non da una lettura commento per commento.
 - «Speed was ok (300 below 6.000 ft)» del vecchio sistema: non si sa che cosa misuri.
-- Nessun PIREP del campione è ancora stato registrato come fixture.
+- ~~Nessun PIREP del campione è ancora stato registrato come fixture.~~ Registrati in T17 (`tracker-reports-780002.json`): i PIREP distinti
+  sono 15, non 16 (nota `2026-09-24-il-motore-dei-controlli` §3).

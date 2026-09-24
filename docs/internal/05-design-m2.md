@@ -419,6 +419,7 @@ delle impostazioni dei moduli del nucleo (`IModule.Settings`, T5, nota `2026-09-
 | `leaseMinutes` | 30 |
 | `durationFactor`, `durationFixedMinutes` | 0,05 e 20 (§1.5): **configurabili dal FOD**, confermati da Carmine il 15 settembre come valori di partenza |
 | `northSouthLevelCountries` | i paesi dove i livelli semicircolari vanno nord–sud (§6.4); non cambia con l'AIRAC |
+| `routeProcedurePrefixes` | le prime due lettere dei codici ICAO degli aeroporti che vogliono SID e STAR scritte nella rotta (`flightPlanForm`, §6.4); parte da `ED`, `LO`: un fatto dell'AIP, non della divisione (T17) |
 | `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
 | `trackRetentionDays` | 90: giorni dopo la decisione (o il ritiro) in cui si tiene la traccia di un PIREP (Carmine, 23 settembre, T13a; §10) |
 | `thresholdToleranceMeters` | 150 (§6.4), uno per tutto il sistema |
@@ -902,10 +903,18 @@ Un PIREP inviato mette in coda un job che esegue i controlli e scrive `fo_check_
 `outcome`, `evidence_json`, `ran_at`). Per ogni controllo non superato, gli errori con quel `check_key` diventano
 **suggeriti**.
 
+**Com'è fatto (T17, nota `2026-09-24-il-motore-dei-controlli`)**: i controlli girano **subito dopo l'invio e il reinvio**, senza mai
+rifiutarlo, e **un job ogni dieci minuti** riprende i PIREP in coda o in revisione con `checks_ran_at` più vecchio di `queued_at`.
+`fo_check_results` ha anche `ran_by` (`Server`, `Agent`), unico per PIREP, controllo e chi l'ha eseguito. Gli errori suggeriti sono righe di
+`fo_pirep_errors` con `suggested_by_check` e non confermate; la decisione le tiene accanto a quelle spuntate, e contano solo le confermate.
+L'evidenza del server è un elenco di chiavi i18n con i loro valori, quella dell'agente testo.
+
 ### 6.2 La forma
 
 - `IFlightCheck`: `Key`, lo **schema dei parametri** (con i default della regola generale di partenza) e
   `EvaluateAsync(FlightCheckContext)` → `Passed`, `Failed` (con evidenza) o **`Unavailable`** (dati mancanti: mai «fallito»).
+  **In T17** `Evaluate` è una funzione **pura e sincrona** (il contesto si raccoglie una volta, prima), e lo schema dei parametri resta
+  in `CheckCatalog`; un controllo che lancia un'eccezione è `Unavailable`.
 - Il contesto porta il PIREP, lo snapshot con i parametri, tutte le revisioni del piano, le tracce, gli aeroporti e le piste
   `ref_`, il meteo salvato e l'archivio ATC.
 
@@ -926,10 +935,10 @@ subito il metodo). Si registra comunque se il validatore conferma l'errore sugge
 | `speed250` | 250 kt sotto FL100 | tracce, esenzioni | tolleranza |
 | `simRate` | velocità riportata coerente con quella di posizione | tracce | tolleranza |
 | `alternate` | alternato presente, diverso dalla destinazione (uguale alla partenza: solo nell'evidenza), e `ZZZZ` ⚖️, sotto | piano | — |
-| `equipment` | equipaggiamento richiesto | piano | lettere **per regola di volo**; W solo con un livello pianificato sopra FL285 |
+| `equipment` | equipaggiamento richiesto | piano | lettere delle caselle **10a e 10b per regola di volo**; W e J1 solo con un livello pianificato sopra FL285 (nella casella 15 o nella rotta; T17) |
 | `flightRules` | regole di volo del piano ammesse | piano | lettere I, V, Y, Z |
 | `planAtTakeoff` | un piano valido al decollo; le revisioni dopo non contano (GR9) | piano | — |
-| `flightPlanForm` | forma del piano: REG/ con un callsign da volo di linea, RMK/, Z con COM/DAT/NAV, SID e STAR nella rotta solo nei paesi dell'impostazione, VFR senza DCT | piano, impostazione dei paesi | — |
+| `flightPlanForm` | forma del piano: REG/ con un callsign da volo di linea, RMK/, Z con COM/DAT/NAV, R con PBN/ (T17), SID e STAR nella rotta solo nei paesi dell'impostazione, VFR senza DCT e con `VFR` come livello (un livello scritto fallisce, T17) | piano, impostazione dei paesi | — |
 | `maxAltitude` | quota massima | tracce | quota |
 | `takeoffFromThreshold` | decollo dalla testata | tracce, `ref_ivao_runways` | — (`thresholdToleranceMeters` è un'impostazione, §1.11; T9) |
 | `vmc` | VMC a partenza e arrivo, **solo piani `V`** (e le metà VFR di `Y`/`Z`) | meteo salvato | visibilità e base nubi minime |
