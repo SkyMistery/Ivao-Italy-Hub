@@ -1,0 +1,734 @@
+[
+  {
+    "icao": "LIPB",
+    "latitude": 46.4602777778,
+    "longitude": 11.3263888889,
+    "elevation": 789,
+    "runways": [
+      {
+        "runway": "RW01",
+        "length": 1432,
+        "width": 32,
+        "bearing": 7,
+        "latitude": 46.4543805556,
+        "longitude": 11.3248638889,
+        "elevation": 772
+      },
+      {
+        "runway": "RW19",
+        "length": 1432,
+        "width": 32,
+        "bearing": 187,
+        "latitude": 46.4652694444,
+        "longitude": 11.3277111111,
+        "elevation": 789
+      }
+    ]
+  },
+  {
+    "icao": "LIMF",
+    "latitude": 45.2025,
+    "longitude": 7.6494444444,
+    "elevation": 989,
+    "runways": [
+      {
+        "runway": "RW18",
+        "length": 3300,
+        "width": 60,
+        "bearing": 180,
+        "latitude": 45.2090611111,
+        "longitude": 7.6501555556,
+        "elevation": 982
+      },
+      {
+        "runway": "RW36",
+        "length": 3300,
+        "width": 60,
+        "bearing": 360,
+        "latitude": 45.1890722222,
+        "longitude": 7.6488861111,
+        "elevation": 933
+      }
+    ]
+  },
+  {
+    "icao": "LIMP",
+    "latitude": 44.8222222222,
+    "longitude": 10.2952777778,
+    "elevation": 161,
+    "runways": [
+      {
+        "runway": "RW02",
+        "length": 2124,
+        "width": 45,
+        "bearing": 16,
+        "latitude": 44.8194944444,
+        "longitude": 10.2939333333,
+        "elevation": 158
+      },
+      {
+        "runway": "RW20",
+        "length": 2124,
+        "width": 45,
+        "bearing": 196,
+        "latitude": 44.8343166667,
+        "longitude": 10.3004527778,
+        "elevation": 147
+      }
+    ]
+  },
+  {
+    "icao": "LFKF",
+    "latitude": 41.502222,
+    "longitude": 9.096667,
+    "elevation": 85,
+    "runways": [
+      {
+        "runway": "RW05",
+        "length": 2480,
+        "width": 45,
+        "bearing": 48,
+        "latitude": 41.49508889,
+        "longitude": 9.08654167,
+        "elevation": 41
+      },
+      {
+        "runway": "RW23",
+        "length": 2840,
+        "width": 45,
+        "bearing": 228,
+        "latitude": 41.50980278,
+        "longitude": 9.10793056,
+        "elevation": 85
+      }
+    ]
+  },
+  {
+    "icao": "LJPZ",
+    "latitude": 45.4733333333,
+    "longitude": 13.615,
+    "elevation": 7,
+    "runways": [
+      {
+        "runway": "RW15",
+        "length": 3937,
+        "width": 30,
+        "bearing": 148,
+        "latitude": 45.4771777778,
+        "longitude": 13.6119833333,
+        "elevation": 5
+      },
+      {
+        "runway": "RW33",
+        "length": 3937,
+        "width": 30,
+        "bearing": 328,
+        "latitude": 45.4695222222,
+        "longitude": 13.6179611111,
+        "elevation": 6
+      }
+    ]
+  },
+  {
+    "icao": "LDLO",
+    "latitude": 44.5659055556,
+    "longitude": 14.3931888889,
+    "elevation": 154,
+    "runways": [
+      {
+        "runway": "RW02",
+        "length": 2953,
+        "width": 30,
+        "bearing": 18,
+        "latitude": 44.5634472222,
+        "longitude": 14.3918305556,
+        "elevation": 129
+      },
+      {
+        "runway": "RW20",
+        "length": 2953,
+        "width": 30,
+        "bearing": 198,
+        "latitude": 44.5708777778,
+        "longitude": 14.3959416667,
+        "elevation": 146
+      }
+    ]
+  },
+  {
+    "icao": "LIPN",
+    "latitude": 45.4730555556,
+    "longitude": 10.9269444444,
+    "elevation": 286,
+    "runways": [
+      {
+        "runway": "RW08",
+        "length": 3327,
+        "width": 22,
+        "bearing": 73,
+        "latitude": 45.4708194444,
+        "longitude": 10.9216638889,
+        "elevation": 286
+      },
+      {
+        "runway": "RW26",
+        "length": 3327,
+        "width": 22,
+        "bearing": 253,
+        "latitude": 45.4732166667,
+        "longitude": 10.9341722222,
+        "elevation": 271
+      }
+    ]
+  },
+  {
+    "icao": "LIME",
+    "latitude": 45.6688888889,
+    "longitude": 9.7002777778,
+    "elevation": 782,
+    "runways": [
+      {
+        "runway": "RW10",
+        "length": 2874,
+        "width": 45,
+        "bearing": 102,
+        "latitude": 45.6705277778,
+        "longitude": 9.6925055556,
+        "elevation": 780
+      },
+      {
+        "runway": "RW12",
+        "length": 774,
+        "width": 18,
+        "bearing": 118,
+        "latitude": 45.677925,
+        "longitude": 9.7022277778,
+        "elevation": 805
+      },
+      {
+        "runway": "RW28",
+        "length": 2874,
+        "width": 45,
+        "bearing": 282,
+        "latitude": 45.6647166667,
+        "longitude": 9.7237888889,
+        "elevation": 754
+      },
+      {
+        "runway": "RW30",
+        "length": 774,
+        "width": 18,
+        "bearing": 298,
+        "latitude": 45.6748666667,
+        "longitude": 9.7093777778,
+        "elevation": 802
+      }
+    ]
+  },
+  {
+    "icao": "LOWI",
+    "latitude": 47.2602777778,
+    "longitude": 11.3438888889,
+    "elevation": 1907,
+    "runways": [
+      {
+        "runway": "RW08",
+        "length": 6562,
+        "width": 45,
+        "bearing": 78,
+        "latitude": 47.2589444444,
+        "longitude": 11.3322611111,
+        "elevation": 1907
+      },
+      {
+        "runway": "RW26",
+        "length": 6562,
+        "width": 45,
+        "bearing": 258,
+        "latitude": 47.2616194444,
+        "longitude": 11.3570166667,
+        "elevation": 1894
+      }
+    ]
+  },
+  {
+    "icao": "LIDT",
+    "latitude": 46.0233333333,
+    "longitude": 11.125,
+    "elevation": 610,
+    "runways": [
+      {
+        "runway": "RW18",
+        "length": 3707,
+        "width": 30,
+        "bearing": 178,
+        "latitude": 46.0272694444,
+        "longitude": 11.1249,
+        "elevation": 611
+      },
+      {
+        "runway": "RW36",
+        "length": 3707,
+        "width": 30,
+        "bearing": 358,
+        "latitude": 46.0170833333,
+        "longitude": 11.1249,
+        "elevation": 606
+      }
+    ]
+  },
+  {
+    "icao": "EGLC",
+    "latitude": 51.5052777778,
+    "longitude": 0.0552777778,
+    "elevation": 19,
+    "runways": [
+      {
+        "runway": "RW09",
+        "length": 4948,
+        "width": 30,
+        "bearing": 93,
+        "latitude": 51.5055277778,
+        "longitude": 0.0457583333,
+        "elevation": 17
+      },
+      {
+        "runway": "RW27",
+        "length": 4948,
+        "width": 30,
+        "bearing": 273,
+        "latitude": 51.504925,
+        "longitude": 0.0649555556,
+        "elevation": 19
+      }
+    ]
+  },
+  {
+    "icao": "EKVG",
+    "latitude": 62.0636277778,
+    "longitude": -7.2772194444,
+    "elevation": 280,
+    "runways": [
+      {
+        "runway": "RW12",
+        "length": 5902,
+        "width": 30,
+        "bearing": 125,
+        "latitude": 62.0670416667,
+        "longitude": -7.2909722222,
+        "elevation": 264
+      },
+      {
+        "runway": "RW30",
+        "length": 5902,
+        "width": 30,
+        "bearing": 305,
+        "latitude": 62.0594888889,
+        "longitude": -7.2605666667,
+        "elevation": 235
+      }
+    ]
+  },
+  {
+    "icao": "EGJJ",
+    "latitude": 49.2080555556,
+    "longitude": -2.1955555556,
+    "elevation": 277,
+    "runways": [
+      {
+        "runway": "RW08",
+        "length": 5597,
+        "width": 45,
+        "bearing": 83,
+        "latitude": 49.2070666667,
+        "longitude": -2.2060944444,
+        "elevation": 271
+      },
+      {
+        "runway": "RW26",
+        "length": 5597,
+        "width": 45,
+        "bearing": 263,
+        "latitude": 49.2088333333,
+        "longitude": -2.1849055556,
+        "elevation": 272
+      }
+    ]
+  },
+  {
+    "icao": "LIRQ",
+    "latitude": 43.8086111111,
+    "longitude": 11.2027777778,
+    "elevation": 142,
+    "runways": [
+      {
+        "runway": "RW05",
+        "length": 1560,
+        "width": 30,
+        "bearing": 46,
+        "latitude": 43.8059694444,
+        "longitude": 11.1987916667,
+        "elevation": 123
+      },
+      {
+        "runway": "RW23",
+        "length": 1560,
+        "width": 30,
+        "bearing": 226,
+        "latitude": 43.8111972222,
+        "longitude": 11.2068694444,
+        "elevation": 132
+      }
+    ]
+  },
+  {
+    "icao": "LFPM",
+    "latitude": 48.6052777778,
+    "longitude": 2.6708333333,
+    "elevation": 304,
+    "runways": [
+      {
+        "runway": "RW01",
+        "length": 4265,
+        "width": 30,
+        "bearing": 12,
+        "latitude": 48.6061638889,
+        "longitude": 2.6710777778,
+        "elevation": 298
+      },
+      {
+        "runway": "RW10",
+        "length": 6470,
+        "width": 45,
+        "bearing": 103,
+        "latitude": 48.6064777778,
+        "longitude": 2.6632861111,
+        "elevation": 296
+      },
+      {
+        "runway": "RW19",
+        "length": 4265,
+        "width": 30,
+        "bearing": 192,
+        "latitude": 48.6175833333,
+        "longitude": 2.674975,
+        "elevation": 304
+      },
+      {
+        "runway": "RW28",
+        "length": 6470,
+        "width": 45,
+        "bearing": 283,
+        "latitude": 48.6025083333,
+        "longitude": 2.6882055556,
+        "elevation": 300
+      }
+    ]
+  },
+  {
+    "icao": "LIPE",
+    "latitude": 44.5308333333,
+    "longitude": 11.2969444444,
+    "elevation": 123,
+    "runways": [
+      {
+        "runway": "RW12",
+        "length": 2803,
+        "width": 45,
+        "bearing": 114,
+        "latitude": 44.5400027778,
+        "longitude": 11.2759861111,
+        "elevation": 120
+      },
+      {
+        "runway": "RW30",
+        "length": 2803,
+        "width": 45,
+        "bearing": 294,
+        "latitude": 44.5313805556,
+        "longitude": 11.2999416667,
+        "elevation": 120
+      }
+    ]
+  },
+  {
+    "icao": "LICR",
+    "latitude": 38.0719444444,
+    "longitude": 15.6536111111,
+    "elevation": 95,
+    "runways": [
+      {
+        "runway": "RW11",
+        "length": 1745,
+        "width": 45,
+        "bearing": 109,
+        "latitude": 38.0751,
+        "longitude": 15.6396361111,
+        "elevation": 38
+      },
+      {
+        "runway": "RW15",
+        "length": 2058,
+        "width": 45,
+        "bearing": 149,
+        "latitude": 38.0794388889,
+        "longitude": 15.6462027778,
+        "elevation": 84
+      },
+      {
+        "runway": "RW29",
+        "length": 1745,
+        "width": 45,
+        "bearing": 289,
+        "latitude": 38.069225,
+        "longitude": 15.6575166667,
+        "elevation": 42
+      },
+      {
+        "runway": "RW33",
+        "length": 2058,
+        "width": 45,
+        "bearing": 329,
+        "latitude": 38.0658916667,
+        "longitude": 15.6550083333,
+        "elevation": 34
+      }
+    ]
+  },
+  {
+    "icao": "LIEO",
+    "latitude": 40.8986111111,
+    "longitude": 9.5177777778,
+    "elevation": 37,
+    "runways": [
+      {
+        "runway": "RW05",
+        "length": 2740,
+        "width": 45,
+        "bearing": 53,
+        "latitude": 40.8936583333,
+        "longitude": 9.5080694444,
+        "elevation": 36
+      },
+      {
+        "runway": "RW23",
+        "length": 2740,
+        "width": 45,
+        "bearing": 233,
+        "latitude": 40.9041472222,
+        "longitude": 9.5281083333,
+        "elevation": 20
+      }
+    ]
+  },
+  {
+    "icao": "LFBO",
+    "latitude": 43.635,
+    "longitude": 1.3677777778,
+    "elevation": 499,
+    "runways": [
+      {
+        "runway": "RW14L",
+        "length": 9925,
+        "width": 45,
+        "bearing": 143,
+        "latitude": 43.6373638889,
+        "longitude": 1.357625,
+        "elevation": 489
+      },
+      {
+        "runway": "RW14R",
+        "length": 11493,
+        "width": 45,
+        "bearing": 143,
+        "latitude": 43.6441138889,
+        "longitude": 1.3459333333,
+        "elevation": 488
+      },
+      {
+        "runway": "RW32L",
+        "length": 11493,
+        "width": 45,
+        "bearing": 323,
+        "latitude": 43.6189638889,
+        "longitude": 1.3721166667,
+        "elevation": 497
+      },
+      {
+        "runway": "RW32R",
+        "length": 9925,
+        "width": 45,
+        "bearing": 323,
+        "latitude": 43.6156361111,
+        "longitude": 1.3802361111,
+        "elevation": 497
+      }
+    ]
+  },
+  {
+    "icao": "LDDU",
+    "latitude": 42.5613527778,
+    "longitude": 18.2682444444,
+    "elevation": 527,
+    "runways": [
+      {
+        "runway": "RW11",
+        "length": 10597,
+        "width": 45,
+        "bearing": 114,
+        "latitude": 42.569225,
+        "longitude": 18.2484,
+        "elevation": 519
+      },
+      {
+        "runway": "RW29",
+        "length": 10597,
+        "width": 45,
+        "bearing": 294,
+        "latitude": 42.5558194444,
+        "longitude": 18.2821916667,
+        "elevation": 485
+      }
+    ]
+  },
+  {
+    "icao": "LOWW",
+    "latitude": 48.1102777778,
+    "longitude": 16.5697222222,
+    "elevation": 600,
+    "runways": [
+      {
+        "runway": "RW11",
+        "length": 11483,
+        "width": 45,
+        "bearing": 112,
+        "latitude": 48.1228138889,
+        "longitude": 16.5333583333,
+        "elevation": 575
+      },
+      {
+        "runway": "RW16",
+        "length": 11811,
+        "width": 45,
+        "bearing": 160,
+        "latitude": 48.1197833333,
+        "longitude": 16.5781666667,
+        "elevation": 597
+      },
+      {
+        "runway": "RW29",
+        "length": 11483,
+        "width": 45,
+        "bearing": 292,
+        "latitude": 48.1090472222,
+        "longitude": 16.5756305556,
+        "elevation": 600
+      },
+      {
+        "runway": "RW34",
+        "length": 11811,
+        "width": 45,
+        "bearing": 340,
+        "latitude": 48.0886305556,
+        "longitude": 16.5913388889,
+        "elevation": 586
+      }
+    ]
+  },
+  {
+    "icao": "LIBP",
+    "latitude": 42.4372222222,
+    "longitude": 14.1872222222,
+    "elevation": 48,
+    "runways": [
+      {
+        "runway": "RW04",
+        "length": 2419,
+        "width": 45,
+        "bearing": 36,
+        "latitude": 42.4233555556,
+        "longitude": 14.1747805556,
+        "elevation": 46
+      },
+      {
+        "runway": "RW22",
+        "length": 2419,
+        "width": 45,
+        "bearing": 216,
+        "latitude": 42.4385388889,
+        "longitude": 14.1904944444,
+        "elevation": 27
+      }
+    ]
+  },
+  {
+    "icao": "LICT",
+    "latitude": 37.9120583333,
+    "longitude": 12.4934388889,
+    "elevation": 26,
+    "runways": [
+      {
+        "runway": "13L",
+        "length": 2579,
+        "width": 30,
+        "bearing": 124,
+        "latitude": 37.920375,
+        "longitude": 12.4774111111,
+        "elevation": 8
+      },
+      {
+        "runway": "13R",
+        "length": 2695,
+        "width": 45,
+        "bearing": 113,
+        "latitude": 37.9188222222,
+        "longitude": 12.4758166667,
+        "elevation": 9
+      },
+      {
+        "runway": "31L",
+        "length": 2695,
+        "width": 45,
+        "bearing": 289,
+        "latitude": 37.9053527778,
+        "longitude": 12.4978611111,
+        "elevation": 24
+      },
+      {
+        "runway": "31R",
+        "length": 2579,
+        "width": 30,
+        "bearing": 304,
+        "latitude": 37.9069805556,
+        "longitude": 12.4993277778,
+        "elevation": 24
+      }
+    ]
+  },
+  {
+    "icao": "LICC",
+    "latitude": 37.4666666667,
+    "longitude": 15.0638888889,
+    "elevation": 39,
+    "runways": [
+      {
+        "runway": "RW08",
+        "length": 2436,
+        "width": 45,
+        "bearing": 84,
+        "latitude": 37.4657194444,
+        "longitude": 15.0537944444,
+        "elevation": 38
+      },
+      {
+        "runway": "RW26",
+        "length": 2436,
+        "width": 45,
+        "bearing": 264,
+        "latitude": 37.4678527778,
+        "longitude": 15.0791388889,
+        "elevation": 18
+      }
+    ]
+  }
+]

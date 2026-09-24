@@ -41,5 +41,12 @@ One thing the corpus taught: the revisions of a flight plan share their `created
 changes, and only `updatedAt` tells when each was filed — on one VFR flight two of four revisions came
 after the take-off. The reader takes `updatedAt`.
 
+The checks on the tracks (phase T18) need two more things, both public and without any member in them:
+`airports-corpus.json` holds the position and the runway ends of the corpus's 24 airports, recorded with
+`node tools/record-ivao-fixtures.mjs --airports corpus <ICAO…>`; `metars-corpus.json` holds the METARs NOAA
+still had of the three VFR flights (its history reaches thirty days back). Two things they taught: IVAO gives the
+length of a runway in metres for some airports and in feet for others, and the thresholds are not always where the
+paved runway starts.
+
 `metars.json` is small and written by hand, like the first three files: it is the fallback the
 weather chain reaches for when the first source has no observation, so it only has to exist.

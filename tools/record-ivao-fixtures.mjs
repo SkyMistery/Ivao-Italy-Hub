@@ -17,6 +17,12 @@
  * that was connected at takeoff is written under the one <asVid>. Beside the usual files it writes
  * tracker-reports-<asVid>.json, which says which sessions each report flew, without the VID.
  *
+ *   node tools/record-ivao-fixtures.mjs --airports <name> <ICAO> [ICAO...]
+ *
+ * records public reference data instead: each airport as /v2/airports/{icao} answers it, with the runway ends
+ * /v2/airports/{icao}/runways gives, into tests/fixtures/ivao/airports-<name>.json. The checks on the tracks read
+ * the airport's position and the thresholds from there (T18); no member is in it.
+ *
  * The recorded rows are anonymised: the VID becomes <asVid> (the range the integration tests own),
  * and the member object IVAO embeds — real name, country, staff positions — is dropped. Tracks are
  * only kept by IVAO for about ninety days, so a fixture cannot be re-recorded from an old flight.
@@ -29,13 +35,15 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "tests/fixtures/ivao");
 
 const listed = process.argv[2] === "--list";
-const vid = listed ? 0 : Number(process.argv[2]);
+const airportsOnly = process.argv[2] === "--airports";
+const vid = listed || airportsOnly ? 0 : Number(process.argv[2]);
 const wanted = listed ? 0 : Number(process.argv[3] ?? 3);
 const asVid = Number(process.argv[4] ?? 780001);
-if (listed ? !process.argv[3] || !asVid : !vid) {
+if (airportsOnly ? process.argv.length < 5 : listed ? !process.argv[3] || !asVid : !vid) {
   console.error(
     "Give the VID to record from: node tools/record-ivao-fixtures.mjs <vid> [flights] [asVid]\n"
-      + "or a list of flights:        node tools/record-ivao-fixtures.mjs --list <file.json> <asVid>",
+      + "or a list of flights:        node tools/record-ivao-fixtures.mjs --list <file.json> <asVid>\n"
+      + "or airports and runways:     node tools/record-ivao-fixtures.mjs --airports <name> <ICAO> [ICAO...]",
   );
   process.exit(1);
 }
@@ -109,6 +117,27 @@ const record = async (session) => {
 };
 
 mkdirSync(outDir, { recursive: true });
+
+if (airportsOnly) {
+  const airports = [];
+  for (const icao of process.argv.slice(4).map((code) => code.toUpperCase())) {
+    const airport = await get(`/v2/airports/${icao}`);
+    const runways = await get(`/v2/airports/${icao}/runways`);
+    airports.push({
+      icao,
+      latitude: airport.latitude,
+      longitude: airport.longitude,
+      elevation: airport.elevation,
+      runways: (Array.isArray(runways) ? runways : runways.items ?? []).map(
+        ({ runway, length, width, bearing, latitude, longitude, elevation }) =>
+          ({ runway, length, width, bearing, latitude, longitude, elevation })),
+    });
+    console.log(`recorded ${icao}: ${airports.at(-1).runways.length} runway end(s)`);
+  }
+  writeFileSync(join(outDir, `airports-${process.argv[3]}.json`), JSON.stringify(airports, null, 2));
+  process.exit(0);
+}
+
 const recorded = [];
 
 if (listed) {
