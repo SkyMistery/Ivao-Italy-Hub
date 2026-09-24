@@ -69,7 +69,11 @@ public sealed record ParameterField(
     int Max,
     IReadOnlyList<string>? Options = null,
     string Mark = "{0}",
-    int? Default = null);
+    int? Default = null)
+{
+    /// <summary>The codes a list starts with, as <see cref="Default"/> is the number a number starts with (T17).</summary>
+    public IReadOnlyList<string>? DefaultCodes { get; init; }
+}
 
 /// <summary>
 /// The one catalogue of what the goals and the constraints of an <see cref="TourKind.Open"/> tour take (note

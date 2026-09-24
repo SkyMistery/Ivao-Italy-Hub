@@ -5,6 +5,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Preferences;
 using IvaoHub.Modules.FlightOps.Aircraft;
+using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.People;
@@ -132,13 +133,30 @@ public sealed class FlightOpsModule : ModuleBase
         // The weather kept for the validators (T16): the airports of the tours every half hour, the flight's at the send.
         services.AddScoped<WeatherArchive>();
 
+        // The automatic checks (T17): one class per key of the catalogue, pure; the engine gathers what they read.
+        services.AddSingleton<IFlightCheck, CallsignCheck>();
+        services.AddSingleton<IFlightCheck, AircraftCheck>();
+        services.AddSingleton<IFlightCheck, FlightRulesCheck>();
+        services.AddSingleton<IFlightCheck, PlanAtTakeoffCheck>();
+        services.AddSingleton<IFlightCheck, FlightPlanFormCheck>();
+        services.AddSingleton<IFlightCheck, AlternateCheck>();
+        services.AddSingleton<IFlightCheck, EquipmentCheck>();
+        services.AddSingleton<IFlightCheck, RepeatedRouteCheck>();
+        services.AddScoped<FlightChecks>();
+
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
         services.AddScoped<TrackRetentionJob>();
         services.AddScoped<ReviewDigestJob>();
         services.AddScoped<WeatherJob>();
         services.AddScoped<WeatherRetentionJob>();
+        services.AddScoped<FlightCheckJob>();
         services.AddQuartz(quartz => quartz
+            .AddJob<FlightCheckJob>(job => job.WithIdentity(FlightCheckJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(FlightCheckJob.JobName)
+                .WithIdentity($"{FlightCheckJob.JobName}-ten-minutes")
+                .WithCronSchedule(FlightCheckJob.Cron))
             .AddJob<TourReleaseJob>(job => job.WithIdentity(TourReleaseJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(TourReleaseJob.JobName)

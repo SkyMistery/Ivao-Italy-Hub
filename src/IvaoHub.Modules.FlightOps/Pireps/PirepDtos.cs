@@ -119,7 +119,7 @@ public sealed record MyTourDto(
     IReadOnlyList<PirepDto> Reports);
 
 /// <summary>An error as a report froze it with its rule (design M2 §5.4).</summary>
-public sealed record SnapshotErrorDto(long Id, Localized<string> Name, ErrorCategory Category, int? YearlyMax);
+public sealed record SnapshotErrorDto(long Id, Localized<string> Name, ErrorCategory Category, int? YearlyMax, string? CheckKey = null);
 
 /// <summary>A rule as a report froze it: what it said, the check and the parameters it carried, and its errors.</summary>
 public sealed record SnapshotRuleDto(

@@ -6,8 +6,8 @@ namespace IvaoHub.Modules.FlightOps.Rules;
 
 /// <summary>
 /// The automatic checks a rule or an error may name (design M2 §6.4), and the parameters each takes with the values a rule
-/// starts with (§6.2). Born in T9 with no logic behind it: the checks themselves arrive with T17, which implements one
-/// <c>IFlightCheck</c> per key and reads its fields from here — one catalogue, not a second one next to the code.
+/// starts with (§6.2). Born in T9 with no logic behind it; since T17 each key the server runs has one <c>IFlightCheck</c>
+/// (<c>Checks/</c>), which reads its fields from here — one catalogue, not a second one next to the code.
 /// <para>The numbers of the regulation are parameters of the rules, not settings (§1.7). The one exception is the tolerance
 /// of <see cref="TakeoffFromThreshold"/>: one for the whole system, changed by the coordinators in the settings (answer 15),
 /// so the check takes none here. The values without a figure in the design are Carmine's of 22 September 2026, to be
@@ -28,6 +28,16 @@ public static class CheckCatalog
     public const string Vmc = "vmc";
     public const string RepeatedRoute = "repeatedRoute";
 
+    /// <summary>
+    /// The three the controllers' own PIREPs added (note 2026-09-24-i-controlli-dai-pirep-veri §4): the flight rules of the
+    /// plan, a plan filed before the take-off, and the form of the plan.
+    /// </summary>
+    public const string FlightRules = "flightRules";
+
+    public const string PlanAtTakeoff = "planAtTakeoff";
+
+    public const string FlightPlanForm = "flightPlanForm";
+
     /// <summary>The two that run on the validator's own computer, with its navigation data (§6.6).</summary>
     public const string SemicircularLevels = "semicircularLevels";
 
@@ -40,14 +50,32 @@ public static class CheckCatalog
         "M1", "M2", "M3", "O", "P1", "P2", "P3", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
     ];
 
+    /// <summary>The letters of item 10b — the transponder and the surveillance —, the same way (Carmine, 24 September 2026).</summary>
+    public static readonly IReadOnlyList<string> TransponderLetters =
+    [
+        "N", "A", "C", "E", "H", "I", "L", "P", "S", "X", "B1", "B2", "U1", "U2", "V1", "V2", "D1", "G1",
+    ];
+
+    /// <summary>The flight rules of item 8: IFR, VFR, IFR then VFR, VFR then IFR.</summary>
+    public static readonly IReadOnlyList<string> FlightRuleLetters = ["I", "V", "Y", "Z"];
+
     /// <summary>Every key, in the order the form offers them.</summary>
     public static readonly IReadOnlyList<string> Keys =
     [
-        Callsign, Aircraft, LandingAtArrival, Disconnections, Parking, Speed250, SimRate, Alternate, Equipment,
-        TakeoffFromThreshold, Vmc, RepeatedRoute, SemicircularLevels, AtcCoverage,
+        Callsign, Aircraft, FlightRules, PlanAtTakeoff, FlightPlanForm, Alternate, Equipment, LandingAtArrival, Disconnections,
+        Parking, Speed250, SimRate, TakeoffFromThreshold, Vmc, RepeatedRoute, SemicircularLevels, AtcCoverage,
     ];
 
+    /// <summary>The checks the server never runs: without an agent they stay <c>Unavailable</c> (§6.6).</summary>
+    public static readonly IReadOnlyList<string> AgentKeys = [SemicircularLevels, AtcCoverage];
+
     public static bool Exists(string? key) => key is not null && Keys.Contains(key, StringComparer.Ordinal);
+
+    /// <summary>The name of the parameter that holds the letters of item 10a required with these flight rules.</summary>
+    public static string LettersFor(string flightRules) => $"letters{flightRules}";
+
+    /// <summary>The name of the parameter that holds the letters of item 10b required with these flight rules.</summary>
+    public static string TransponderFor(string flightRules) => $"transponder{flightRules}";
 
     public static IReadOnlyList<ParameterField> Fields(string? key) => key switch
     {
@@ -64,8 +92,22 @@ public static class CheckCatalog
         ],
         Speed250 => [Whole("toleranceKt", 0, 100, 10, "± {0} kt")],
         SimRate => [Whole("tolerancePercent", 0, 100, 10, "± {0} %")],
+        // Letters for each flight rule, and the letters wanted only above a level (Carmine, 24 September 2026): W for RVSM and J1
+        // for the data link mandate, both above FL285 — a letter the tour does not require stays not required up there too.
         Equipment =>
-            [new ParameterField("letters", ParameterType.Choices, Required: true, 1, EquipmentLetters.Count, EquipmentLetters)],
+        [
+            .. FlightRuleLetters.Select(rules => Letters(LettersFor(rules), EquipmentLetters, $"{rules}·{{0}}")),
+            .. FlightRuleLetters.Select(rules => Letters(TransponderFor(rules), TransponderLetters, $"{rules}·{{0}}")),
+            Letters("highLevelLetters", EquipmentLetters, "↑{0}") with { DefaultCodes = ["W", "J1"] },
+            Whole("highLevelFl", 100, 600, 285, "> FL{0}"),
+        ],
+        FlightRules =>
+        [
+            new ParameterField("rules", ParameterType.Choices, Required: true, 1, FlightRuleLetters.Count, FlightRuleLetters)
+            {
+                DefaultCodes = FlightRuleLetters,
+            },
+        ],
         Vmc =>
         [
             Whole("minVisibilityMeters", 0, 20_000, 5000, "≥ {0} m"),
@@ -87,9 +129,14 @@ public static class CheckCatalog
 
         if (!amending)
         {
-            foreach (var field in fields.Where(field => field.Default is not null && source[field.Name] is null))
+            foreach (var field in fields.Where(field => source[field.Name] is null))
             {
-                source[field.Name] = field.Default;
+                source[field.Name] = field switch
+                {
+                    { Default: { } number } => number,
+                    { DefaultCodes: { } codes } => new JsonArray([.. codes.Select(code => JsonValue.Create(code))]),
+                    _ => null,
+                };
             }
         }
 
@@ -113,4 +160,7 @@ public static class CheckCatalog
 
     private static ParameterField Whole(string name, int min, int max, int fallback, string mark) =>
         new(name, ParameterType.Whole, Required: true, min, max, Mark: mark, Default: fallback);
+
+    private static ParameterField Letters(string name, IReadOnlyList<string> options, string mark) =>
+        new(name, ParameterType.Choices, Required: false, 0, options.Count, options, mark);
 }

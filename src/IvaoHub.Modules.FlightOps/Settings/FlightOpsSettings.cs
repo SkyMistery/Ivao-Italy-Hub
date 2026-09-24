@@ -45,6 +45,13 @@ public sealed record FlightOpsSettings
     public IReadOnlyList<string> NorthSouthLevelCountries { get; init; } = [];
 
     /// <summary>
+    /// The first two letters of the ICAO codes of the airports whose AIP wants the SID and the STAR written in the route (note
+    /// 2026-09-24-i-controlli-dai-pirep-veri §4): elsewhere <c>flightPlanForm</c> says a procedure in the route is wrong. A
+    /// fact of those countries' publications, not of the division, so it starts filled (Carmine, 24 September 2026).
+    /// </summary>
+    public IReadOnlyList<string> RouteProcedurePrefixes { get; init; } = ["ED", "LO"];
+
+    /// <summary>
     /// Days a report's track is kept after its decision, or after it was withdrawn (Carmine, 23 September 2026, note
     /// 2026-09-23-la-validazione §2.3): the heavy part of a report, deleted long before the report itself.
     /// </summary>
@@ -82,6 +89,9 @@ public sealed partial class FlightOpsSettingsValidator : AbstractValidator<Fligh
         RuleForEach(settings => settings.NorthSouthLevelCountries)
             .Must(code => code is not null && CountryCode().IsMatch(code))
             .WithMessage("flightops:errors.countryCode");
+        RuleForEach(settings => settings.RouteProcedurePrefixes)
+            .Must(code => code is not null && CountryCode().IsMatch(code))
+            .WithMessage("flightops:errors.icaoPrefix");
     }
 
     [GeneratedRegex("^[A-Z]{2}$")]

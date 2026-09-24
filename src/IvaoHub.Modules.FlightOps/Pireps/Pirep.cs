@@ -193,6 +193,12 @@ public sealed class Pirep : ITourChild, IAuditable, IVisible, ISubmittedByMember
     /// <summary>What the staff reads, and the pilot never does.</summary>
     public string? StaffNote { get; set; }
 
+    /// <summary>
+    /// When the server's checks last ran on it (T17): after every send, and by the job on a report whose checks are older than
+    /// <see cref="QueuedAt"/>. None before they ever ran.
+    /// </summary>
+    public DateTime? ChecksRanAt { get; set; }
+
     /// <summary>Whether the decision went against the suggestion (§4.3), worked out by the server when it is taken.</summary>
     public bool ThresholdOverridden { get; set; }
 

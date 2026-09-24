@@ -9,8 +9,10 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
+using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
@@ -228,8 +230,19 @@ public sealed class PirepReview(
         var now = clock.UtcNow;
         database.Entry(pirep).Property(row => row.RowVersion).OriginalValue = decision.RowVersion;
 
+        // The errors marked, and the checks' suggestions kept beside them with whether the validator confirmed each (§6.3).
+        var suggested = pirep.Errors.Where(error => error.SuggestedByCheck).Select(error => error.ErrorId).ToHashSet();
         database.PirepErrors.RemoveRange(pirep.Errors);
-        pirep.Errors = [.. ids.Select(id => new PirepError { ErrorId = id, Category = frozen[id].Category, Confirmed = true })];
+        pirep.Errors =
+        [
+            .. ids.Union(suggested).Where(frozen.ContainsKey).Select(id => new PirepError
+            {
+                ErrorId = id,
+                Category = frozen[id].Category,
+                Confirmed = ids.Contains(id),
+                SuggestedByCheck = suggested.Contains(id),
+            }),
+        ];
 
         Step(pirep, decision.Outcome, now, null);
         pirep.Status = decision.Outcome;
@@ -408,7 +421,8 @@ public sealed class PirepReview(
             pirep.ThresholdOverridden,
             pirep.OverrideReason,
             await weather.ForReviewAsync(pirep, cancellationToken),
-            ChecksAvailable: false,
+            await ChecksAsync(pirep, rules, cancellationToken),
+            pirep.ChecksRanAt,
             [
                 .. pirep.Events.OrderBy(step => step.At).ThenBy(step => step.Id).Select(step => new ReviewEventDto(
                     step.FromStatus,
@@ -438,6 +452,37 @@ public sealed class PirepReview(
         return ReviewSuggestion.Of(
             PirepSubmission.Snapshot(pirep).SelectMany(rule => rule.Errors).Where(error => errorIds.Contains(error.Id)),
             await CountsAsync(pirep, inYearOnly: true, cancellationToken));
+    }
+
+    /// <summary>
+    /// What the checks found on the report (§6.1, T17), in the catalogue's order, each with the errors it suggests when it
+    /// fails. A check of the agent the report names and no agent ran is there as <c>Unavailable</c> (§6.6).
+    /// </summary>
+    public async Task<IReadOnlyList<ReviewCheckDto>> ChecksAsync(Pirep pirep, IReadOnlyList<SnapshotRuleDto> rules, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(pirep);
+        ArgumentNullException.ThrowIfNull(rules);
+
+        var results = await database.CheckResults.AsNoTracking()
+            .Where(result => result.PirepId == pirep.Id)
+            .ToListAsync(cancellationToken);
+        var errors = rules.SelectMany(rule => rule.Errors).DistinctBy(error => error.Id).ToList();
+        IReadOnlyList<long> ErrorsOf(string key) => [.. errors.Where(error => error.CheckKey == key).Select(error => error.Id)];
+
+        var named = rules.Select(rule => rule.CheckKey).Concat(errors.Select(error => error.CheckKey)).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var checks = results
+            .Select(result => new ReviewCheckDto(result.CheckKey, result.Outcome, FlightChecks.Evidence(result), result.RanBy, result.RanAt, ErrorsOf(result.CheckKey)))
+            .Concat(CheckCatalog.AgentKeys
+                .Where(key => named.Contains(key) && results.All(result => result.CheckKey != key))
+                .Select(key => new ReviewCheckDto(key, CheckOutcome.Unavailable, [EvidenceLine.Of("noAgent")], CheckRanBy.Agent, null, ErrorsOf(key))));
+
+        return [.. checks.OrderBy(check => Order(check.Key)).ThenBy(check => check.RanBy)];
+    }
+
+    private static int Order(string key)
+    {
+        var at = CheckCatalog.Keys.ToList().IndexOf(key);
+        return at < 0 ? int.MaxValue : at;
     }
 
     /// <summary>The tracks of the report's flights, decoded; none for a flight whose track was never stored or has gone.</summary>

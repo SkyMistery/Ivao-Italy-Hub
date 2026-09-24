@@ -1,6 +1,7 @@
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Weather;
@@ -24,7 +25,8 @@ public sealed record MemberDto(int Vid, string? Name);
 
 /// <summary>
 /// One row of the queue (§4.1): tour, leg, pilot, date of the flight, since when it waits, status, who holds it, disputed —
-/// and whether the reader may take it. The suggestion of the checks joins with T17.
+/// and whether the reader may take it. Since T17, what the checks propose: how many failed, and the outcome their suggested errors
+/// lead to — none until the checks ran.
 /// </summary>
 public sealed record ReviewQueueRowDto(
     long Id,
@@ -42,7 +44,9 @@ public sealed record ReviewQueueRowDto(
     DateTime? LeaseUntil,
     bool IsDisputed,
     bool IsOwn,
-    bool CanTake);
+    bool CanTake,
+    int FailedChecks,
+    PirepStatus? CheckSuggestion);
 
 /// <summary>
 /// An error of the rules the report froze, as the table of the validation page shows it (§4.3): how often the pilot got it in
@@ -144,7 +148,7 @@ public sealed record ReviewActionsDto(bool CanTake, bool CanRelease, bool CanDec
 /// The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
 /// suggestion, the decision as it stands and the history. The airports of the leg and of a diversion come with their positions,
 /// for the map (T13b); one the reference data has no position for comes without. The weather kept for each airport during the
-/// flight comes with it (T16); the automatic checks (T17) have their place and say they are not available yet; the tracks are a
+/// flight comes with it (T16), and what the automatic checks found, with when the server's last ran (T17); the tracks are a
 /// request of their own, <c>…/tracks</c>.
 /// </summary>
 public sealed record ReviewDto(
@@ -187,11 +191,24 @@ public sealed record ReviewDto(
     bool ThresholdOverridden,
     string? OverrideReason,
     IReadOnlyList<ReviewWeatherDto> Weather,
-    bool ChecksAvailable,
+    IReadOnlyList<ReviewCheckDto> Checks,
+    DateTime? ChecksRanAt,
     IReadOnlyList<ReviewEventDto> History,
     ReviewDisputeDto? Dispute,
     ReviewActionsDto Actions,
     DateTime RowVersion);
+
+/// <summary>
+/// What one check found on the report (design M2 §6.1, T17): the outcome, the lines of evidence — an i18n key with its values
+/// from the server, text from the agent —, who ran it and when, and the errors of the catalogue it suggests when it fails.
+/// </summary>
+public sealed record ReviewCheckDto(
+    string Key,
+    CheckOutcome Outcome,
+    IReadOnlyList<EvidenceLine> Evidence,
+    CheckRanBy RanBy,
+    DateTime? RanAt,
+    IReadOnlyList<long> ErrorIds);
 
 /// <summary>The track of one flight of the report, or none when it was never stored or has already gone (§2.3 of the note).</summary>
 public sealed record ReviewTrackDto(int Seq, IReadOnlyList<IvaoTrackPointDto>? Points);
