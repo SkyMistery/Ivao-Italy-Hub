@@ -371,7 +371,16 @@
     "reviewDisputed": "Under an open dispute the decision is reopened by upholding the dispute.",
     "validatorTour": "Choose a tour of the first level: a subtour is validated with its container.",
     "banTour": "Choose a tour of the first level: a ban on a container holds on its subtours.",
-    "banEndsBeforeStart": "The end comes before the start."
+    "banEndsBeforeStart": "The end comes before the start.",
+    "agentContract": "Say which version of the contract the agent speaks, in the Hub-Agent-Contract header.",
+    "agentNotWaiting": "This report is no longer waiting for a validator: results are taken only while it is queued or in review.",
+    "agentVersion": "Say the agent's version, up to 32 characters.",
+    "agentResults": "Send from 1 to 50 results.",
+    "agentCheckKey": "A check's key is letters and digits, starting with a small letter, up to 64 characters.",
+    "agentCheckKeyServer": "The hub runs this check itself: an agent does not send it.",
+    "agentCheckKeyTwice": "The same check twice in one request.",
+    "agentOutcome": "The outcome is Passed, Failed or Unavailable.",
+    "agentEvidence": "The evidence is at most 50 lines and 2000 characters in all."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -1142,7 +1151,8 @@
         "Passed": "Passed",
         "Failed": "Failed",
         "Unavailable": "Not available"
-      }
+      },
+      "byAgentOf": "by the agent of {{name}}, version {{version}}"
     },
     "noErrors": "The rules of this report have no errors to mark.",
     "suggestionAccept": "No error marked makes it a rejection.",
@@ -1538,5 +1548,8 @@
         "One": "One tour"
       }
     }
+  },
+  "tokenAudiences": {
+    "agent": "The validator's agent"
   }
 }

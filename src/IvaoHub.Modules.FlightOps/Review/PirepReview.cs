@@ -456,7 +456,8 @@ public sealed class PirepReview(
 
     /// <summary>
     /// What the checks found on the report (§6.1, T17), in the catalogue's order, each with the errors it suggests when it
-    /// fails. A check of the agent the report names and no agent ran is there as <c>Unavailable</c> (§6.6).
+    /// fails. A check of the agent the report names and no agent ran is there as <c>Unavailable</c> (§6.6); one an agent sent
+    /// says whose agent and which version (T19b).
     /// </summary>
     public async Task<IReadOnlyList<ReviewCheckDto>> ChecksAsync(Pirep pirep, IReadOnlyList<SnapshotRuleDto> rules, CancellationToken cancellationToken)
     {
@@ -470,11 +471,20 @@ public sealed class PirepReview(
         IReadOnlyList<long> ErrorsOf(string key) => [.. errors.Where(error => error.CheckKey == key).Select(error => error.Id)];
 
         var named = rules.Select(rule => rule.CheckKey).Concat(errors.Select(error => error.CheckKey)).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var names = await NamesAsync(results.Select(result => result.ByVid), cancellationToken);
         var checks = results
-            .Select(result => new ReviewCheckDto(result.CheckKey, result.Outcome, FlightChecks.Evidence(result), result.RanBy, result.RanAt, ErrorsOf(result.CheckKey)))
+            .Select(result => new ReviewCheckDto(
+                result.CheckKey,
+                result.Outcome,
+                FlightChecks.Evidence(result),
+                result.RanBy,
+                result.RanAt,
+                ErrorsOf(result.CheckKey),
+                Member(result.ByVid, names),
+                result.AgentVersion))
             .Concat(CheckCatalog.AgentKeys
                 .Where(key => named.Contains(key) && results.All(result => result.CheckKey != key))
-                .Select(key => new ReviewCheckDto(key, CheckOutcome.Unavailable, [EvidenceLine.Of("noAgent")], CheckRanBy.Agent, null, ErrorsOf(key))));
+                .Select(key => new ReviewCheckDto(key, CheckOutcome.Unavailable, [EvidenceLine.Of("noAgent")], CheckRanBy.Agent, null, ErrorsOf(key), null, null)));
 
         return [.. checks.OrderBy(check => Order(check.Key)).ThenBy(check => check.RanBy)];
     }

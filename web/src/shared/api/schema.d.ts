@@ -247,6 +247,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/agent/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsAgentContract"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -1998,10 +2014,298 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/agent/pireps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsAgentQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/agent/pireps/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsAgentPirep"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flightops/agent/pireps/{id}/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FlightOpsAgentChecks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description An airport of the report, with its position when the reference data has one, and its runway ends. */
+        AgentAirportDto: {
+            icao: string;
+            name: string;
+            countryId: string;
+            /** Format: double */
+            latitude: null | number;
+            /** Format: double */
+            longitude: null | number;
+            /** Format: int32 */
+            elevationFeet: null | number;
+            runways: components["schemas"]["AgentRunwayDto"][];
+        };
+        /** @description A controller the pilot said they contacted: proposed by the hub and kept, added by hand, or proposed and removed. */
+        AgentAtcContactDto: {
+            callsign: string;
+            frequency: null | string;
+            origin: string;
+        };
+        /**
+         * @description The controllers for the flight's interval: an hour before the first take-off to an hour after the last landing. Not
+         *     `Available` when the division has no archive or it could not be read — «not available», never «nobody online». A
+         *     position the archive does not list was offline only from `DivisionSince` (for the division's prefixes) or
+         *     `WorldSince` on. `Declared` and `Exemptions` are what the pilot sent.
+         */
+        AgentAtcDto: {
+            available: boolean;
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            online: components["schemas"]["AgentAtcPresenceDto"][];
+            /** Format: date-time */
+            divisionSince: null | string;
+            /** Format: date-time */
+            worldSince: null | string;
+            divisionPrefixes: string[];
+            declared: components["schemas"]["AgentAtcContactDto"][];
+            exemptions: components["schemas"]["AgentExemptionDto"][];
+        };
+        AgentAtcPresenceDto: {
+            callsign: string;
+            frequency: null | string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            endedAt: null | string;
+        };
+        /** @description The results of one run of the agent on a report. */
+        AgentChecksWriteDto: {
+            agentVersion: null | string;
+            results: null | components["schemas"]["AgentCheckWriteDto"][];
+        };
+        /** @description What the report holds from agents afterwards, and the errors of the catalogue now suggested on it by any check. */
+        AgentChecksWrittenDto: {
+            results: components["schemas"]["AgentResultDto"][];
+            suggestedErrorIds: number[];
+        };
+        /** @description A check the report's rules name that the server does not run, with the parameters of the rule that names it. */
+        AgentCheckWantedDto: {
+            key: string;
+            parameters: components["schemas"]["JsonObject"];
+        };
+        /**
+         * @description One result: the check's key, `Passed`, `Failed` or `Unavailable`, and the lines that say why — text, up to 2000
+         *     characters in all, in the shape the note allows (no coordinates, no points the pilot did not write, no geometry).
+         */
+        AgentCheckWriteDto: {
+            checkKey: null | string;
+            outcome: null | string;
+            evidence: null | string[];
+        };
+        /** @description What the hub speaks: the versions, the checks an agent may send, and the ones the server keeps for itself. */
+        AgentContractDto: {
+            /** Format: int32 */
+            current: number;
+            accepted: number[];
+            agentChecks: string[];
+            serverChecks: string[];
+            /** Format: int32 */
+            maxResults: number;
+            /** Format: int32 */
+            maxEvidenceCharacters: number;
+        };
+        /** @description An exemption the pilot declared, with the status the send found and the checks it softens. */
+        AgentExemptionDto: {
+            callsign: string;
+            kind: string;
+            note: null | string;
+            status: string;
+            softens: string[];
+        };
+        /** @description One flight: 1, or 2 after a diversion. `Track` is null once the track has gone (90 days after the decision). */
+        AgentFlightDto: {
+            /** Format: int32 */
+            seq: number;
+            callsign: string;
+            aircraft: null | string;
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: date-time */
+            takeoffAt: string;
+            /** Format: date-time */
+            landingAt: null | string;
+            /** Format: int32 */
+            planAtTakeoffRevision: null | number;
+            plans: components["schemas"]["AgentPlanDto"][];
+            track: null | components["schemas"]["AgentTrackPointDto"][];
+        };
+        /** @description The leg the report froze: on an `Open` tour, the route flown and no number. */
+        AgentLegDto: {
+            /** Format: int32 */
+            number: null | number;
+            departureIcao: string;
+            arrivalIcao: string;
+            callsigns: string[];
+        };
+        /**
+         * @description A report as the agent reads it (note of 15 September §3.2): every revision of every flight's plan, the tracks, the parameters
+         *     of the agent's checks as the report froze them, the settings they read, the airports with their runways, the archive of the
+         *     controllers for the flight's interval, and what agents already sent.
+         */
+        AgentPirepDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            tourTitle: components["schemas"]["LocalizedOfstring"];
+            status: string;
+            /** Format: int32 */
+            pilotVid: number;
+            flightRules: string;
+            sid: null | string;
+            star: null | string;
+            approach: null | string;
+            leg: components["schemas"]["AgentLegDto"];
+            isDiversion: boolean;
+            diversionIcao: null | string;
+            flights: components["schemas"]["AgentFlightDto"][];
+            checks: components["schemas"]["AgentCheckWantedDto"][];
+            settings: components["schemas"]["AgentSettingsDto"];
+            airports: components["schemas"]["AgentAirportDto"][];
+            atc: components["schemas"]["AgentAtcDto"];
+            results: components["schemas"]["AgentResultDto"][];
+        };
+        /** @description One revision of a flight plan, as the tracker filed it; the times are minutes (HHMM in the plan). */
+        AgentPlanDto: {
+            /** Format: int32 */
+            revision: number;
+            /** Format: date-time */
+            filedAt: string;
+            departureIcao: string;
+            arrivalIcao: string;
+            alternateIcao: null | string;
+            secondAlternateIcao: null | string;
+            aircraftIcao: null | string;
+            wakeTurbulence: null | string;
+            equipment: string;
+            transponder: string;
+            flightRules: string;
+            flightType: null | string;
+            level: null | string;
+            speed: null | string;
+            route: null | string;
+            remarks: null | string;
+            /** Format: int32 */
+            departureTimeMinutes: null | number;
+            /** Format: int32 */
+            enrouteMinutes: null | number;
+        };
+        /**
+         * @description A report waiting for a validator the token's member may decide — never their own —, with the agent's checks its rules name
+         *     and when an agent last sent a result on it since it was queued (none: it waits for one).
+         */
+        AgentQueueItemDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tourId: number;
+            tourTitle: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            legNumber: null | number;
+            departureIcao: string;
+            arrivalIcao: string;
+            /** Format: int32 */
+            pilotVid: number;
+            /** Format: date-time */
+            takeoffAt: string;
+            /** Format: date-time */
+            queuedAt: string;
+            status: string;
+            agentChecks: string[];
+            /** Format: date-time */
+            agentRanAt: null | string;
+        };
+        /** @description What an agent sent on the report for one check: the last one, since sending the same check again replaces it. */
+        AgentResultDto: {
+            checkKey: string;
+            outcome: string;
+            evidence: string[];
+            /** Format: date-time */
+            ranAt: string;
+            /** Format: int32 */
+            byVid: null | number;
+            agentVersion: null | string;
+        };
+        /** @description One runway end; IVAO gives the length sometimes in feet as if it were metres. */
+        AgentRunwayDto: {
+            designator: string;
+            /** Format: int32 */
+            lengthMetres: null | number;
+            /** Format: int32 */
+            bearing: null | number;
+            /** Format: double */
+            latitude: null | number;
+            /** Format: double */
+            longitude: null | number;
+            /** Format: int32 */
+            elevationFeet: null | number;
+        };
+        /** @description The module's settings an agent's check reads: where semicircular levels go north and south (design M2 §6.4). */
+        AgentSettingsDto: {
+            northSouthLevelCountries: string[];
+        };
+        /** @description One point of a track, about every 15 seconds. */
+        AgentTrackPointDto: {
+            /** Format: date-time */
+            at: string;
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            /** Format: int32 */
+            altitudeFeet: number;
+            /** Format: int32 */
+            groundSpeedKnots: number;
+            /** Format: int32 */
+            heading: number;
+            onGround: boolean;
+        };
         /** @description A group as the list and the form show it. */
         AircraftGroupDto: {
             /** Format: int64 */
@@ -4746,6 +5050,14 @@ export interface components {
             atcContacts?: null | components["schemas"]["AtcContactWriteDto"][];
             exemptions?: null | components["schemas"]["AtcExemptionWriteDto"][];
         };
+        ProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+        };
         /**
          * @description What a measure of progress counts: legs, nautical miles, the goal of an `Open` tour, subtours.
          * @enum {unknown}
@@ -5024,7 +5336,8 @@ export interface components {
         };
         /**
          * @description What one check found on the report (design M2 §6.1, T17): the outcome, the lines of evidence — an i18n key with its values
-         *     from the server, text from the agent —, who ran it and when, and the errors of the catalogue it suggests when it fails.
+         *     from the server, text from the agent —, who ran it and when, and the errors of the catalogue it suggests when it fails. An
+         *     agent's result says whose agent sent it and the version it said it was (T19b); the server's has neither.
          */
         ReviewCheckDto: {
             key: string;
@@ -5034,6 +5347,8 @@ export interface components {
             /** Format: date-time */
             ranAt: null | string;
             errorIds: number[];
+            by: null | components["schemas"]["MemberDto"];
+            agentVersion: null | string;
         };
         /**
          * @description A decision (§4.3): the outcome, the errors marked among the frozen rules', the note to the pilot and the one to the staff,
@@ -6407,6 +6722,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyToursDto"];
+                };
+            };
+        };
+    };
+    FlightOpsAgentContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentContractDto"];
                 };
             };
         };
@@ -12094,6 +12429,140 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    FlightOpsAgentQueue: {
+        parameters: {
+            query?: {
+                pending?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentQueueItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    FlightOpsAgentPirep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPirepDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlightOpsAgentChecks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentChecksWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentChecksWrittenDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
         };
     };

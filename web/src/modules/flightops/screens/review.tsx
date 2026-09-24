@@ -564,7 +564,14 @@ function CheckResult({ check, review }: { check: ReviewCheckDto; review: ReviewD
           {t(`flightops:checks.options.checkKey.${check.key}`, { defaultValue: check.key })}
         </span>
         {check.ranBy === 'Agent' ? (
-          <span className="text-muted-foreground text-xs">{t('flightops:review.checks.byAgent')}</span>
+          <span className="text-muted-foreground text-xs">
+            {check.by === null
+              ? t('flightops:review.checks.byAgent')
+              : t('flightops:review.checks.byAgentOf', {
+                  name: check.by.name ?? String(check.by.vid),
+                  version: check.agentVersion ?? '?',
+                })}
+          </span>
         ) : null}
       </div>
       <ul className="list-disc pl-5 text-sm">

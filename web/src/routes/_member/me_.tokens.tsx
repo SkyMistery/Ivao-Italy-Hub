@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useCreateToken, useRevokeToken } from '../../features/tokens/mutations';
 import { tokenColumns } from '../../features/tokens/list';
 import { tokensListQuery, type PersonalTokenIssuedDto } from '../../features/tokens/queries';
-import { emptyToken, tokenSchema, type TokenFormValues } from '../../features/tokens/schema';
+import { audienceWordKey, emptyToken, tokenSchema, type TokenFormValues } from '../../features/tokens/schema';
 import { SchemaForm } from '../../shared/forms';
 import { DataList, listSearchSchema } from '../../shared/list';
 import { ConfirmDialog, Notice, PageShell } from '../../shared/ui';
@@ -33,7 +33,16 @@ function MyTokensPage() {
   const [issued, setIssued] = useState<PersonalTokenIssuedDto | null>(null);
 
   const audiences = useMemo(() => bootstrap.user?.tokenAudiences ?? [], [bootstrap.user]);
-  const schema = useMemo(() => tokenSchema(audiences), [audiences]);
+  const schema = useMemo(
+    () =>
+      tokenSchema(
+        audiences.map((audience) => ({
+          value: audience,
+          label: t(audienceWordKey(audience), { defaultValue: audience }),
+        })),
+      ),
+    [audiences, t],
+  );
 
   return (
     <PageShell

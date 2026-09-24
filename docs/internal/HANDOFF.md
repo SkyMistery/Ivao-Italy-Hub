@@ -3,7 +3,22 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T18 e T19a** (T19a sul branch `m2/t19a-personal-tokens`). Piano **1.04**. **Il prossimo passo è T19b (il contratto dell'agente: `/api/flightops/agent`, `Hub-Agent-Contract`, `docs/agent-contract.md`, la `curl` del «fatta quando»)**, in una chat nuova, dopo il merge di T19a.
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T19** (T19b sul branch `m2/t19b-agent-contract`). Piano **1.05**. **Il prossimo passo è T20 (conservazione, cancellazione dei dati di un pilota, rifiniture, giro completo, chiusura di M2)**, in una chat nuova, dopo il merge di T19b; T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+
+> **Che cosa ha lasciato T19b** (nota `2026-09-24-il-contratto-dell-agente`, piano 1.05): il contratto dell'agente sta in `Agent/` del
+> modulo — `AgentContract` (audience `flightops.agent`, intestazione `Hub-Agent-Contract`, versione 1, il filtro che risponde 400 con
+> `accepted`), `AgentDtos` (la versione 1, **suoi**: stati ed esiti come stringhe), `AgentDesk` (coda, lettura, scrittura) e
+> `AgentEndpoints`. Il documento per chi scrive un agente è **`docs/agent-contract.md`** (inglese). **Decise da Carmine**: gli esiti
+> **non** sono `[Audited]` — la riga porta `by_vid`, `token_id`, `agent_version` (migrazione `AddAgentResultColumns`) — e **un controllo ha
+> un solo esecutore**: una chiave che il server esegue (`FlightChecks.ServerKeys`) è 400 `agentCheckKeyServer`. `GET …/agent/contract` è
+> aperto a tutti; coda, dettaglio e scrittura chiedono il token e l'intestazione, e ogni PIREP è la domanda all'unico handler (403 sul
+> proprio e su un tour non abilitato; 409 `agentNotWaiting` su un PIREP deciso). La scrittura sostituisce per controllo e risuggerisce con
+> `FlightChecks.Suggest` gli errori di **tutti** i controlli falliti, **senza toccare il PIREP**. La pagina di validazione dice «dall'agente
+> di X, versione Y» (`ReviewCheckDto.By`, `AgentVersion`); il form di `/me/tokens` mostra la parola del modulo (`audienceWordKey`).
+> ⚠️ **Il login di prova dell'integrazione non scrive `last_login_at`**: il seme dei test dei PIREP lo scrive, se no un token risponde
+> `signInAgain`. ⚠️ **Corretto**: il PIREP non è `[Audited]` (è `IAuditable`; la storia è `fo_pirep_events`) — la frase «PIREP e tour
+> compresi» qui sotto vale per i tour. Test: `PirepTests.Agent.cs` (validatore 780085 con un grant), e2e `full/tours-agent.spec.ts`
+> (token dalla pagina, un contesto con il solo token come la `curl`, esito sulla pagina).
 
 > **Che cosa ha lasciato T19a** (nota `2026-09-24-i-token-personali`, piano 1.04): T19 è divisa — **T19a il nucleo, T19b il modulo**.
 > **I token** stanno in `Core/Auth/PersonalTokens.cs` (entità, catalogo delle audience, `PersonalTokens` con le regole),
@@ -15,7 +30,7 @@
 > `fo_check_results` oggi non lo è. Le decisioni già prese per T19b: DTO dell'agente suoi e versionati, esiti solo su `Queued`/`InReview`
 > (409), 400 con le versioni accettate senza `Hub-Agent-Contract`. La guardia contro le richieste da altri siti lascia passare
 > `Authorization: Bearer`: la `curl` non manda `X-Requested-With`. ⚠️ **Trovato e corretto**: i contesti dei moduli non mappavano
-> `hub_audit_log`, quindi **nessuna riga `[Audited]` di un modulo aveva audit** (PIREP e tour compresi); ora `ModuleDbContext` la mappa, fuori
+> `hub_audit_log`, quindi **nessuna riga `[Audited]` di un modulo aveva audit** (i tour compresi; il PIREP non è `[Audited]`, vedi T19b); ora `ModuleDbContext` la mappa, fuori
 > dalle migrazioni del modulo (la migrazione vuota `MapAuditLog` dei tour aggiorna lo snapshot). ⚠️ In produzione non c'è ancora nessuna
 > audience: fino a T19b `/me/tokens` dice «nessun programma» e il link sotto `/me` non compare. Nei test: VID `780091–780094`,
 > `PersonalTokenTests`, l'audience `sample.agent` del modulo di prova.

@@ -311,6 +311,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
             result.HasKey(row => row.Id);
             result.Property(row => row.CheckKey).HasMaxLength(64).IsRequired();
             result.Property(row => row.EvidenceJson).HasColumnName("evidence_json").HasColumnType("json").IsRequired();
+            result.Property(row => row.AgentVersion).HasMaxLength(32);
             result.HasOne<Pirep>().WithMany().HasForeignKey(row => row.PirepId).OnDelete(DeleteBehavior.Cascade);
 
             // One result per check and per runner (T17, T19): running again replaces it.

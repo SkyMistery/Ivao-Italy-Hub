@@ -371,7 +371,16 @@
     "reviewDisputed": "Con una contestazione aperta, la decisione si riapre accogliendo la contestazione.",
     "validatorTour": "Scegli un tour di primo livello: un sottotour si valida con il suo contenitore.",
     "banTour": "Scegli un tour di primo livello: un ban su un contenitore vale per i suoi sottotour.",
-    "banEndsBeforeStart": "La fine viene prima dell'inizio."
+    "banEndsBeforeStart": "La fine viene prima dell'inizio.",
+    "agentContract": "Indica quale versione del contratto parla l'agente, nell'intestazione Hub-Agent-Contract.",
+    "agentNotWaiting": "Questo report non aspetta più un validatore: gli esiti si accettano solo mentre è in coda o in revisione.",
+    "agentVersion": "Indica la versione dell'agente, fino a 32 caratteri.",
+    "agentResults": "Manda da 1 a 50 esiti.",
+    "agentCheckKey": "La chiave di un controllo è fatta di lettere e cifre, comincia con una lettera minuscola, fino a 64 caratteri.",
+    "agentCheckKeyServer": "Questo controllo lo esegue l'hub: un agente non lo manda.",
+    "agentCheckKeyTwice": "Lo stesso controllo due volte nella stessa richiesta.",
+    "agentOutcome": "L'esito è Passed, Failed o Unavailable.",
+    "agentEvidence": "L'evidenza ha al massimo 50 righe e 2000 caratteri in tutto."
   },
   "legs": {
     "row": "Leg {{number}}",
@@ -1142,7 +1151,8 @@
         "Passed": "Superato",
         "Failed": "Non superato",
         "Unavailable": "Non disponibile"
-      }
+      },
+      "byAgentOf": "dall'agente di {{name}}, versione {{version}}"
     },
     "noErrors": "Le regole di questo report non hanno errori da segnare.",
     "suggestionAccept": "Nessun errore segnato porta al rifiuto.",
@@ -1538,5 +1548,8 @@
         "One": "Un tour"
       }
     }
+  },
+  "tokenAudiences": {
+    "agent": "L'agente del validatore"
   }
 }

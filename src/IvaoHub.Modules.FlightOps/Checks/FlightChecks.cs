@@ -109,17 +109,28 @@ public sealed class FlightChecks(
     /// The checks the server runs on a report, with the parameters of the rule that names each: a check named only by an error
     /// runs with the values it starts with. The agent's are left to the agent.
     /// </summary>
-    public IReadOnlyDictionary<string, JsonObject> Wanted(IReadOnlyList<SnapshotRuleDto> rules)
+    public IReadOnlyDictionary<string, JsonObject> Wanted(IReadOnlyList<SnapshotRuleDto> rules) => Named(rules, _checks.ContainsKey);
+
+    /// <summary>
+    /// The checks a report's rules name that the server does not run, the same way: what the agent on the validator's computer
+    /// is asked for (§6.6, T19b).
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonObject> WantedOfTheAgent(IReadOnlyList<SnapshotRuleDto> rules) => Named(rules, key => !_checks.ContainsKey(key));
+
+    /// <summary>The keys the server runs: an agent may not send them (Carmine, 24 September 2026) — one runner a check.</summary>
+    public IReadOnlyCollection<string> ServerKeys => _checks.Keys;
+
+    private static Dictionary<string, JsonObject> Named(IReadOnlyList<SnapshotRuleDto> rules, Func<string, bool> runs)
     {
         ArgumentNullException.ThrowIfNull(rules);
 
         var wanted = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
-        foreach (var rule in rules.Where(rule => rule.CheckKey is { } key && _checks.ContainsKey(key)))
+        foreach (var rule in rules.Where(rule => rule.CheckKey is { } key && runs(key)))
         {
             wanted.TryAdd(rule.CheckKey!, rule.Parameters);
         }
 
-        foreach (var key in rules.SelectMany(rule => rule.Errors).Select(error => error.CheckKey).OfType<string>().Where(_checks.ContainsKey))
+        foreach (var key in rules.SelectMany(rule => rule.Errors).Select(error => error.CheckKey).OfType<string>().Where(runs))
         {
             wanted.TryAdd(key, CheckCatalog.Read(key, new JsonObject(), amending: false).Parameters);
         }
