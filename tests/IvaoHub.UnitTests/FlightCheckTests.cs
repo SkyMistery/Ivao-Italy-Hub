@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
@@ -204,7 +205,7 @@ public sealed class FlightCheckTests
     [Fact]
     public void ACheckThatBreaksIsUnavailableAndNeverFailed()
     {
-        var engine = new FlightChecks(null!, [new Broken()], null!, null!, NullLogger<FlightChecks>.Instance);
+        var engine = new FlightChecks(null!, [new Broken()], null!, null!, null!, null!, NullLogger<FlightChecks>.Instance);
         var found = engine.Evaluate(new Dictionary<string, JsonObject> { [CheckCatalog.Callsign] = [] }, WithPlan(Plan()), []);
 
         Assert.Equal(CheckOutcome.Unavailable, found[CheckCatalog.Callsign].Outcome);
@@ -238,8 +239,11 @@ public sealed class FlightCheckTests
 
     // ─── Builders ─────────────────────────────────────────────────────────────
 
-    /// <summary>A report of the corpus as the engine reads it back after the send.</summary>
-    private static FlightCheckContext Context(long report, IReadOnlySet<string>? allowed = null)
+    /// <summary>
+    /// A report of the corpus as the engine reads it back after the send: with the position and the runway ends of its
+    /// airports (<c>airports-corpus.json</c>) and the METARs NOAA kept of the VFR flights (<c>metars-corpus.json</c>), T18.
+    /// </summary>
+    internal static FlightCheckContext Context(long report, IReadOnlySet<string>? allowed = null)
     {
         var sessionId = Fixture("tracker-reports-780002.json").EnumerateArray()
             .Single(row => row.GetProperty("report").GetInt64() == report)
@@ -273,7 +277,53 @@ public sealed class FlightCheckTests
             [[], [], []],
             allowed,
             [],
-            new FlightOpsSettings());
+            new FlightOpsSettings())
+        {
+            Airports = Corpus.Airports,
+            Runways = Corpus.Runways,
+            Metars = Corpus.Metars,
+        };
+    }
+
+    /// <summary>The airports and the weather of the corpus, read once.</summary>
+    private static class Corpus
+    {
+        public static readonly IReadOnlyDictionary<string, AirportDto> Airports = Fixture("airports-corpus.json").EnumerateArray()
+            .ToDictionary(
+                airport => airport.GetProperty("icao").GetString()!,
+                airport => new AirportDto(
+                    airport.GetProperty("icao").GetString()!,
+                    null,
+                    airport.GetProperty("icao").GetString()!,
+                    "XX",
+                    airport.GetProperty("latitude").GetDouble(),
+                    airport.GetProperty("longitude").GetDouble(),
+                    airport.GetProperty("elevation").GetInt32()));
+
+        public static readonly IReadOnlyDictionary<string, IReadOnlyList<IvaoRunway>> Runways = Fixture("airports-corpus.json").EnumerateArray()
+            .ToDictionary(
+                airport => airport.GetProperty("icao").GetString()!,
+                airport => (IReadOnlyList<IvaoRunway>)[
+                    .. airport.GetProperty("runways").EnumerateArray().Select(runway => new IvaoRunway
+                    {
+                        AirportIcao = airport.GetProperty("icao").GetString()!,
+                        Designator = runway.GetProperty("runway").GetString()!,
+                        LengthMetres = runway.GetProperty("length").GetInt32(),
+                        Bearing = runway.GetProperty("bearing").GetInt32(),
+                        Latitude = runway.GetProperty("latitude").GetDouble(),
+                        Longitude = runway.GetProperty("longitude").GetDouble(),
+                    }),
+                ]);
+
+        public static readonly IReadOnlyList<WeatherReport> Metars =
+        [
+            .. Fixture("metars-corpus.json").EnumerateArray().Select(metar => new WeatherReport(
+                metar.GetProperty("icao").GetString()!,
+                WeatherReportKind.Metar,
+                metar.GetProperty("issuedAt").GetDateTime().ToUniversalTime(),
+                metar.GetProperty("raw").GetString()!,
+                "noaa")),
+        ];
     }
 
     private static FlightCheckContext WithPlan(IvaoFlightPlanDto plan) =>
@@ -305,7 +355,7 @@ public sealed class FlightCheckTests
 
     private static Localized<string> Name(string text) => new(new Dictionary<string, string> { ["en"] = text });
 
-    private static JsonElement Fixture(string name)
+    internal static JsonElement Fixture(string name)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "IvaoHub.sln")))

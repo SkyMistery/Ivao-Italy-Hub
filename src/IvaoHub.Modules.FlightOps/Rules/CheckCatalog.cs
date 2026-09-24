@@ -38,6 +38,9 @@ public static class CheckCatalog
 
     public const string FlightPlanForm = "flightPlanForm";
 
+    /// <summary>The highest altitude flown, a limit for each flight rule (note 2026-09-24-i-controlli-dai-pirep-veri §4; T18).</summary>
+    public const string MaxAltitude = "maxAltitude";
+
     /// <summary>The two that run on the validator's own computer, with its navigation data (§6.6).</summary>
     public const string SemicircularLevels = "semicircularLevels";
 
@@ -63,7 +66,7 @@ public static class CheckCatalog
     public static readonly IReadOnlyList<string> Keys =
     [
         Callsign, Aircraft, FlightRules, PlanAtTakeoff, FlightPlanForm, Alternate, Equipment, LandingAtArrival, Disconnections,
-        Parking, Speed250, SimRate, TakeoffFromThreshold, Vmc, RepeatedRoute, SemicircularLevels, AtcCoverage,
+        Parking, Speed250, SimRate, MaxAltitude, TakeoffFromThreshold, Vmc, RepeatedRoute, SemicircularLevels, AtcCoverage,
     ];
 
     /// <summary>The checks the server never runs: without an agent they stay <c>Unavailable</c> (§6.6).</summary>
@@ -76,6 +79,9 @@ public static class CheckCatalog
 
     /// <summary>The name of the parameter that holds the letters of item 10b required with these flight rules.</summary>
     public static string TransponderFor(string flightRules) => $"transponder{flightRules}";
+
+    /// <summary>The name of the parameter that holds the highest altitude allowed with these flight rules.</summary>
+    public static string MaxFeetFor(string flightRules) => $"maxFeet{flightRules}";
 
     public static IReadOnlyList<ParameterField> Fields(string? key) => key switch
     {
@@ -107,6 +113,14 @@ public static class CheckCatalog
             {
                 DefaultCodes = FlightRuleLetters,
             },
+        ],
+        // One limit for each flight rule, like the letters of the equipment (Carmine, 24 September 2026): the system of today's
+        // 19 500 ft for VFR and 66 000 for the rest. Y and Z take the IFR limit: where the rules change is on the route, which
+        // only the agent reads.
+        MaxAltitude =>
+        [
+            .. FlightRuleLetters.Select(rules =>
+                Whole(MaxFeetFor(rules), 1000, 66_000, rules == "V" ? 19_500 : 66_000, $"{rules} ≤ {{0}} ft")),
         ],
         Vmc =>
         [

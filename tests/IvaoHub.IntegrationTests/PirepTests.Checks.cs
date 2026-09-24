@@ -1,7 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Rules;
@@ -110,6 +113,91 @@ public sealed partial class PirepTests
         var offered = await OkAsync(await pilot.GetAsync($"{Reports(tourId)}/sessions?legId={legs[0]}", token), token);
         Assert.DoesNotContain(offered.EnumerateArray(), session => session.GetProperty("id").GetInt64() == flown);
         await RefusedAsync(pilot, Reports(tourId), Payload(legs[0], flown), "sessionIds", "flightops:errors.reportSessionClaimed", token);
+    }
+
+    /// <summary>
+    /// The checks on the tracks (T18) read what the engine gathers: the airports' positions, the METARs the send kept, the
+    /// track. A VFR flight from Rome that flies forty minutes to Milan at 5000 ft and 375 kt lands where it should and stays
+    /// low, is too fast below FL100, and arrives in fog.
+    /// </summary>
+    [Fact]
+    public async Task TheChecksOnTheTracksReadThePlacesTheWeatherAndTheTrack()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        foreach (var check in new[] { CheckCatalog.LandingAtArrival, CheckCatalog.Speed250, CheckCatalog.Vmc, CheckCatalog.MaxAltitude })
+        {
+            await CheckedRuleAsync(coordinator, tourId, check, token);
+        }
+
+        var takeoff = DateTime.UtcNow.AddDays(-1).AddMinutes(-11);
+        takeoff = takeoff.AddTicks(-(takeoff.Ticks % TimeSpan.TicksPerSecond));
+        var flown = _flights.Add(PilotVid, "XAA180", Rome, Milan, takeoff, "V", Track(takeoff, (41.8003, 12.2389), (45.4451, 9.27674)));
+
+        _weather.AddHistory(new WeatherReport(Rome, WeatherReportKind.Metar, takeoff.AddMinutes(-10), $"METAR {Rome} {takeoff:ddHHmm}Z 00000KT 9999 FEW040 20/10 Q1015", WeatherSourceName));
+        _weather.AddHistory(new WeatherReport(Milan, WeatherReportKind.Metar, takeoff.AddMinutes(35), $"METAR {Milan} {takeoff:ddHHmm}Z 00000KT 0800 FG VV002 12/12 Q1015", WeatherSourceName));
+
+        var id = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], flown), token));
+
+        var page = await OkAsync(await coordinator.GetAsync($"{ReviewEndpoints.Pattern}/{id}", token), token);
+        var checks = page.GetProperty("checks").EnumerateArray().ToDictionary(check => check.GetProperty("key").GetString()!);
+        string Outcome(string key) => checks[key].GetProperty("outcome").GetString()!;
+        IEnumerable<string?> Keys(string key) => checks[key].GetProperty("evidence").EnumerateArray().Select(line => line.GetProperty("key").GetString());
+
+        Assert.Equal("Passed", Outcome(CheckCatalog.LandingAtArrival));
+        Assert.Contains("flightops:evidence.landedAt", Keys(CheckCatalog.LandingAtArrival));
+        Assert.Equal("Failed", Outcome(CheckCatalog.Speed250));
+        Assert.Contains("flightops:evidence.speed250Exceeded", Keys(CheckCatalog.Speed250));
+        Assert.Equal("Failed", Outcome(CheckCatalog.Vmc));
+        Assert.Equal(["flightops:evidence.vmcMet", "flightops:evidence.vmcNotMet"], Keys(CheckCatalog.Vmc));
+        Assert.Equal("Passed", Outcome(CheckCatalog.MaxAltitude));
+
+        var queued = await QueueRowAsync(coordinator, tourId, id, token);
+        Assert.Equal(2, queued.GetProperty("failedChecks").GetInt32());
+    }
+
+    /// <summary>
+    /// A track in the tracker's shape: five minutes standing, a roll, forty minutes at 5000 ft on the great circle — the ground
+    /// speed the positions give, so the simulation rate is one —, the landing, five minutes standing.
+    /// </summary>
+    private static IReadOnlyList<IvaoTrackPointDto> Track(DateTime takeoff, (double Lat, double Lon) from, (double Lat, double Lon) to)
+    {
+        var points = new List<IvaoTrackPointDto>();
+        for (var second = -300; second < -45; second += 15)
+        {
+            points.Add(new(takeoff.AddSeconds(second), from.Lat, from.Lon, 50, 0, 320, OnGround: true, "Boarding", "2000"));
+        }
+
+        points.Add(new(takeoff.AddSeconds(-30), from.Lat, from.Lon, 50, 20, 320, OnGround: true, "Departing", "2000"));
+        points.Add(new(takeoff.AddSeconds(-15), from.Lat, from.Lon, 50, 90, 320, OnGround: true, "Departing", "2000"));
+
+        const int Minutes = 40;
+        var nm = GreatCircle.DistanceNm(new GeoPoint(from.Lat, from.Lon), new GeoPoint(to.Lat, to.Lon));
+        var speed = (int)Math.Round(nm / Minutes * 60);
+        for (var second = 0; second < Minutes * 60; second += 15)
+        {
+            var share = second / (Minutes * 60.0);
+            points.Add(new(
+                takeoff.AddSeconds(second),
+                from.Lat + ((to.Lat - from.Lat) * share),
+                from.Lon + ((to.Lon - from.Lon) * share),
+                5000,
+                speed,
+                320,
+                OnGround: false,
+                "En Route",
+                "2000"));
+        }
+
+        for (var second = 0; second <= 300; second += 15)
+        {
+            points.Add(new(takeoff.AddMinutes(Minutes).AddSeconds(second), to.Lat, to.Lon, 400, second == 0 ? 60 : 0, 320, OnGround: true, "On Blocks", "2000"));
+        }
+
+        return points;
     }
 
     /// <summary>A rule of the tour naming a check, with a dangerous error of the catalogue that check suggests.</summary>

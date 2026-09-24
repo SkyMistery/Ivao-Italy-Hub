@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
@@ -86,8 +87,9 @@ public sealed record CheckedFlight(
 /// <summary>
 /// Everything a check may read (design M2 §6.2): the report and the leg it froze, its flights, and what the tour said when it
 /// was judged — the callsign rules by level, the aircraft allowed, the routes the pilot already flew on a tour that counts
-/// them — and the module's settings. The weather, the runways and the archive of the controllers join with the checks on the
-/// tracks (T18).
+/// them — and the module's settings. The checks on the tracks (T18) add where the airports are and their runway ends, the
+/// METARs kept for the flight and the exemptions the pilot declared; each starts empty, which the checks read as «not
+/// available».
 /// </summary>
 public sealed record FlightCheckContext(
     long PirepId,
@@ -98,7 +100,30 @@ public sealed record FlightCheckContext(
     IReadOnlyList<IReadOnlyList<CallsignRule>> CallsignLevels,
     IReadOnlySet<string>? AllowedAircraft,
     IReadOnlyList<(string Departure, string Arrival)> RoutesFlown,
-    FlightOpsSettings Settings);
+    FlightOpsSettings Settings)
+{
+    /// <summary>Where the first flight landed instead, on a report with a diversion.</summary>
+    public string? DiversionIcao { get; init; }
+
+    /// <summary>The airports of the report by ICAO, with their position when the reference data has one.</summary>
+    public IReadOnlyDictionary<string, AirportDto> Airports { get; init; } = new Dictionary<string, AirportDto>();
+
+    /// <summary>The runway ends of the report's airports by ICAO: the thresholds <c>takeoffFromThreshold</c> measures from.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<IvaoRunway>> Runways { get; init; } = new Dictionary<string, IReadOnlyList<IvaoRunway>>();
+
+    /// <summary>The METARs kept for the report's airports around its flights (T16): what <c>vmc</c> reads.</summary>
+    public IReadOnlyList<WeatherReport> Metars { get; init; } = [];
+
+    /// <summary>The exemptions the pilot declared, with their status and the checks they soften as the send froze them.</summary>
+    public IReadOnlyList<AtcExemptionDto> Exemptions { get; init; } = [];
+
+    /// <summary>Where a flight was meant to land: the diversion airport for the first flight of a diversion, the leg's arrival otherwise.</summary>
+    public string ExpectedArrival(CheckedFlight flight)
+    {
+        ArgumentNullException.ThrowIfNull(flight);
+        return IsDiversion && flight.Seq == 1 && DiversionIcao is { Length: > 0 } diversion ? diversion : Leg.ArrivalIcao;
+    }
+}
 
 /// <summary>
 /// What a check found on a report (design M2 §6.1), <c>fo_check_results</c>: one row per check and per runner — the server's

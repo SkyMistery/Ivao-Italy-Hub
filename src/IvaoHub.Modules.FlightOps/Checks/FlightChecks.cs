@@ -5,12 +5,14 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
+using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
+using IvaoHub.Modules.FlightOps.Weather;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -27,6 +29,8 @@ public sealed class FlightChecks(
     FlightOpsDbContext database,
     IEnumerable<IFlightCheck> checks,
     ModuleSettingsStore settingsStore,
+    IAirportDirectory airports,
+    IRunwayDirectory runways,
     IClock clock,
     ILogger<FlightChecks> logger)
 {
@@ -218,6 +222,23 @@ public sealed class FlightChecks(
             .Where(track => flightIds.Contains(track.PirepFlightId))
             .ToDictionaryAsync(track => track.PirepFlightId, cancellationToken);
 
+        // The places and the weather the checks on the tracks read (T18): the runways were fetched at the send, the METARs
+        // kept by the weather job or at the send (T16).
+        var icaos = WeatherArchive.Airports(pirep).Select(airport => airport.Icao).ToList();
+        var places = await airports.FindAsync(icaos, cancellationToken);
+        var ends = new Dictionary<string, IReadOnlyList<IvaoRunway>>(StringComparer.Ordinal);
+        foreach (var icao in icaos)
+        {
+            ends[icao] = await runways.GetAsync(icao, cancellationToken);
+        }
+
+        var (from, to) = WeatherArchive.Window(pirep);
+        var metars = await database.WeatherBulletins.AsNoTracking()
+            .Where(bulletin => icaos.Contains(bulletin.Icao) && bulletin.Kind == WeatherReportKind.Metar
+                && bulletin.IssuedAt >= from && bulletin.IssuedAt <= to)
+            .Select(bulletin => new WeatherReport(bulletin.Icao, bulletin.Kind, bulletin.IssuedAt, bulletin.Raw, bulletin.Source))
+            .ToListAsync(cancellationToken);
+
         return new FlightCheckContext(
             pirep.Id,
             tour.Kind,
@@ -231,7 +252,14 @@ public sealed class FlightChecks(
             levels,
             await AllowedAsync(leg.Aircraft, cancellationToken),
             [.. routes.Where(route => Pirep.Counts(route.Status)).Select(route => (route.DepartureIcao, route.ArrivalIcao))],
-            settings);
+            settings)
+        {
+            DiversionIcao = pirep.DiversionIcao,
+            Airports = places,
+            Runways = ends,
+            Metars = metars,
+            Exemptions = PirepSubmission.Atc(pirep).Exemptions,
+        };
     }
 
     /// <summary>A flight as the checks read it: its plans with the reader of the core's client, the one at take-off as the send chose it.</summary>

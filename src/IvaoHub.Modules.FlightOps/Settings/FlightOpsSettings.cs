@@ -35,8 +35,12 @@ public sealed record FlightOpsSettings
     /// <summary><c>k</c> of the estimated time: the share the route adds to the great circle (§1.5).</summary>
     public decimal DurationFactor { get; init; } = 0.05m;
 
-    /// <summary><c>c</c> of the estimated time: climb, descent, approach and taxi, in minutes (§1.5).</summary>
-    public int DurationFixedMinutes { get; init; } = 20;
+    /// <summary>
+    /// <c>c</c> of the estimated time: climb, descent and approach, in minutes (§1.5). 15 and not the 20 first proposed: on
+    /// the corpus of real flights 20 overstated the time in the air by four minutes on average, 15 by less than one (Carmine,
+    /// 24 September 2026, T18).
+    /// </summary>
+    public int DurationFixedMinutes { get; init; } = 15;
 
     /// <summary>
     /// The countries, as two letter codes, where semicircular levels go north and south rather than east and
