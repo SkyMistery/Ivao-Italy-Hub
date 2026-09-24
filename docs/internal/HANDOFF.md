@@ -3,9 +3,22 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T18** (T18 sul branch `m2/t18-track-checks`). Piano **1.03**. **Il prossimo passo è
-T19 (token personali e contratto dell'agente: `hub_personal_tokens`, lo schema `Bearer` per `audience`, `/api/flightops/agent`)**, in una
-chat nuova, dopo il merge di T18.
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T18 e T19a** (T19a sul branch `m2/t19a-personal-tokens`). Piano **1.04**. **Il prossimo passo è T19b (il contratto dell'agente: `/api/flightops/agent`, `Hub-Agent-Contract`, `docs/agent-contract.md`, la `curl` del «fatta quando»)**, in una chat nuova, dopo il merge di T19a.
+
+> **Che cosa ha lasciato T19a** (nota `2026-09-24-i-token-personali`, piano 1.04): T19 è divisa — **T19a il nucleo, T19b il modulo**.
+> **I token** stanno in `Core/Auth/PersonalTokens.cs` (entità, catalogo delle audience, `PersonalTokens` con le regole),
+> `PersonalTokenAuthentication.cs` (lo schema `HubToken`, `PersonalTokenPolicy`) e `PersonalTokenEndpoints.cs` (`/api/me/tokens`). **Per T19b**:
+> il modulo dichiara `TokenAudiences => [new("flightops.agent", TourPermissions.Validate)]` e la parola `tokenAudiences.agent` nei suoi due file
+> di lingua; il gruppo `/api/flightops/agent` chiede `RequireAuthorization(PersonalTokenPolicy.For("flightops.agent"))`, e **ogni riga si chiede
+> all'unico handler con la riga in mano** (`IAuthorizationService.AuthorizeAsync(principal, pirep, Tours.Validate)`), come fa `SampleModule`
+> con `AgentDecidePattern`. Una scrittura del programma è auditata con `hub_audit_log.token_id` **solo** se l'entità è `[Audited]`:
+> `fo_check_results` oggi non lo è. Le decisioni già prese per T19b: DTO dell'agente suoi e versionati, esiti solo su `Queued`/`InReview`
+> (409), 400 con le versioni accettate senza `Hub-Agent-Contract`. La guardia contro le richieste da altri siti lascia passare
+> `Authorization: Bearer`: la `curl` non manda `X-Requested-With`. ⚠️ **Trovato e corretto**: i contesti dei moduli non mappavano
+> `hub_audit_log`, quindi **nessuna riga `[Audited]` di un modulo aveva audit** (PIREP e tour compresi); ora `ModuleDbContext` la mappa, fuori
+> dalle migrazioni del modulo (la migrazione vuota `MapAuditLog` dei tour aggiorna lo snapshot). ⚠️ In produzione non c'è ancora nessuna
+> audience: fino a T19b `/me/tokens` dice «nessun programma» e il link sotto `/me` non compare. Nei test: VID `780091–780094`,
+> `PersonalTokenTests`, l'audience `sample.agent` del modulo di prova.
 
 > **Che cosa ha lasciato T18** (nota `2026-09-24-i-controlli-sulle-tracce`, piano 1.03): i controlli sulle tracce stanno in
 > `Checks/TrackChecks.cs` (`DisconnectionsCheck`, `ParkingCheck`, `Speed250Check`, `SimRateCheck`, `MaxAltitudeCheck`,
