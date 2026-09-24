@@ -1,9 +1,22 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.00 — 24 settembre 2026 (**il meteo salvato**: `fo_weather_reports`, il job ogni 30 minuti sugli aeroporti dei tour, lo scarico all'invio, la cancellazione con `weatherRetentionDays` = la finestra di riporto più lunga, METAR e TAF nella pagina di validazione, T16)
+**Versione documento:** 1.01 — 24 settembre 2026 (**i controlli dai PIREP veri**: 45 PIREP e 363 commenti dei controllori del sistema di oggi aggiungono `flightRules`, `planAtTakeoff`, `flightPlanForm`, `maxAltitude`, le lettere di `equipment` per regola di volo e i livelli volati sull'agente, prima di T17)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.01** (24 set 2026, prima di T17): **i controlli dai PIREP veri**. Nota `decisions/2026-09-24-i-controlli-dai-pirep-veri.md`:
+Carmine ha chiesto di guardare, da amministratore e in sola lettura, che cosa trovano oggi i controllori nel sistema dei tour in uso (45
+PIREP da 12 tour del 2026, 363 commenti, i commenti predefiniti, il regolamento). **Le sue risposte**: (1) **`flightRules`** nuovo, lettere
+ammesse nella regola; (2) **`planAtTakeoff`** nuovo, i controlli sul piano leggono il piano valido al decollo (GR9); (3)
+**`flightPlanForm`** nuovo — REG/ solo con un callsign da volo di linea, RMK/, Z con COM/DAT/NAV, VFR senza DCT, SID e STAR nella rotta solo
+nei paesi di **un'impostazione del modulo** (parte da `ED` e `LO`; non `division.json`, è un fatto dell'AIP); (4) **`equipment`** con le
+**lettere per regola di volo**, e W solo con un livello pianificato sopra FL285; (5) **`alternate`** non passa anche se l'alternato è uguale
+alla destinazione, e segnala nell'evidenza se è uguale alla partenza; (6) **`maxAltitude`** sulle tracce in T18; (7) **i livelli volati
+contro i pianificati** sull'agente (T21), perché salite e discese sono pianificate sui fix. **Restano fuori** le manovre obbligatorie
+della leg (touch and go, pista, VRP): oggi nessuno le valida in automatico, si valutano più avanti. **Già coperti** per costruzione: le
+procedure nel form, i dati del report (il volo si sceglie dal tracker), il PIREP respinto rimandato uguale (il volo resta preso; T17
+aggiunge il test). Aggiornati il design §6.4 e §6.6 e le fasi T17, T18, T21. Nessun codice, nessuna estensione del nucleo.
 
 **Changelog 1.00** (24 set 2026, fase T16 di M2): **il meteo salvato**. Nota `decisions/2026-09-24-il-meteo-salvato.md`, **due risposte
 di Carmine**: (1) il meteo di un volo con PIREP deciso **si cancella** come dice il design (un bollettino resta oltre il tempo solo finché
