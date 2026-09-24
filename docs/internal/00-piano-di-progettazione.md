@@ -1,9 +1,23 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.02 — 24 settembre 2026 (**il motore dei controlli**, fase T17 di M2: `IFlightCheck`, `fo_check_results`, i controlli sul piano e i suggerimenti; W e J1 sopra FL285, la casella 10b, R con PBN/)
+**Versione documento:** 1.03 — 24 settembre 2026 (**i controlli sulle tracce**, fase T18 di M2: disconnessioni, parcheggio, 250 kt, sim rate, quota massima, atterraggio, testata, VMC; le tarature della testata e del tempo stimato)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.03** (24 set 2026, fase T18 di M2): **i controlli sulle tracce e le tarature**. Nota
+`decisions/2026-09-24-i-controlli-sulle-tracce.md`, **quattro risposte di Carmine**: (1) `maxAltitude` ha **un limite per regola di volo**
+(`maxFeetI|V|Y|Z`, V 19 500 ft e gli altri 66 000, i numeri del sistema di oggi); (2) un'esenzione `FreeSpeed` ammorbidisce `speed250` solo
+se la posizione era `Online` o `Unverifiable`, **non** `NotOnline`; (3) **`thresholdToleranceMeters` resta 150** dopo la taratura sul
+corpus (dodici decolli entro 100 m dalla testata IVAO, tre oltre 250: LFPM, LIPB, LIEO); (4) il tempo stimato parte da **5 % e 15 minuti**
+(erano 20: sul tempo in volo di 14 voli sovrastimavano di 4 minuti in media). **Nel codice** (`Checks/TrackChecks.cs`,
+`Checks/MetarReading.cs`): otto controlli, con il contesto di T17 esteso a posizioni degli aeroporti, piste, METAR tenuti ed esenzioni; il
+decollo e l'atterraggio dell'invio (un touch and go lungo la strada non è l'atterraggio); la velocità indicata stimata senza vento con la
+fascia dei 1 000 ft sotto FL100 che non fallisce; il sim rate come mediana su cinque minuti; la corsa di decollo dall'ultimo punto sotto i
+30 kt riportato indietro, perché a 15 secondi per punto l'aereo non è quasi mai colto fermo in pista; il ceiling del METAR per `vmc`, letto
+nel modulo. **Le fixture**: `airports-corpus.json` (`tools/record-ivao-fixtures.mjs --airports`, un modo nuovo) e `metars-corpus.json`, dati
+pubblici. Sul corpus i controlli sulle tracce danno gli esiti della nota del 24 settembre §5 (880159 passa). **Trovato**: IVAO dà la
+lunghezza delle piste in metri per alcuni aeroporti e in piedi per altri. Aggiornati il design §1.5, §1.11, §6.4 e la fase T18.
 
 **Changelog 1.02** (24 set 2026, fase T17 di M2): **il motore dei controlli e i controlli sul piano**. Nota
 `decisions/2026-09-24-il-motore-dei-controlli.md`, **quattro risposte di Carmine**: (1) oltre a W, **anche J1 sopra FL285**; (2) le

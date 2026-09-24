@@ -277,7 +277,9 @@ nomina **torna nel tour**, con il motivo dell'import e non in un tour in chiusur
 
   **minuti = 60 × GCD × (1 + k) / velocità + c**
 
-  con `k` e `c` nelle impostazioni (§1.11). **Proposta**: `k = 5 %`, `c = 20 minuti`.
+  con `k` e `c` nelle impostazioni (§1.11). **Proposta**: `k = 5 %`, `c = 20 minuti`. **Tarato in T18** (Carmine, 24 settembre; nota
+  `2026-09-24-i-controlli-sulle-tracce` §4.2): **`k = 5 %`, `c = 15 minuti`** — sul tempo in volo di 14 voli del corpus i 20 minuti
+  sovrastimavano di 4 minuti in media, i 15 di meno di uno.
 
   **Perché una parte fissa e non solo una percentuale** (la domanda di Carmine: «+20 %, o proporzionale alla
   lunghezza?»). Quello che una rotta aggiunge al volo in crociera ha due nature diverse:
@@ -299,8 +301,8 @@ nomina **torna nel tour**, con il motivo dell'import e non in un tour in chiusur
   proporzionale (60 × 2000 × 1,05 / 450 = 280 min); con i 20 minuti fissi sono 5 h 00. Sulle tratte lunghe la coppia proposta
   sbaglia quindi più di quanto la tabella faceva credere: la taratura sul corpus deciderà.
 
-  ⚖️ I due numeri si **tarano sui voli veri** del corpus di test (§13): si confronta la stima con la durata delle
-  sessioni del tracker e si sceglie la coppia che sbaglia meno.
+  ~~⚖️ I due numeri si **tarano sui voli veri** del corpus di test (§13): si confronta la stima con la durata delle
+  sessioni del tracker e si sceglie la coppia che sbaglia meno.~~ **Tarati in T18**: 5 % e 15 minuti (sopra).
 
 - Il tempo stimato si mostra nella pagina del tour e nell'editor; è **solo un'informazione per il pilota**, mai un vincolo del PIREP né un controllo (Carmine, 15 settembre).
 - **Si calcola a ogni lettura, non si memorizza**: GCD della leg, velocità del profilo dell'aereo di riferimento, `k` e `c`
@@ -417,12 +419,12 @@ delle impostazioni dei moduli del nucleo (`IModule.Settings`, T5, nota `2026-09-
 | `disputeWindowDays` | 7 (risposta 7: uguale per tutti i tour) |
 | `rejectGraceHours` | 12 |
 | `leaseMinutes` | 30 |
-| `durationFactor`, `durationFixedMinutes` | 0,05 e 20 (§1.5): **configurabili dal FOD**, confermati da Carmine il 15 settembre come valori di partenza |
+| `durationFactor`, `durationFixedMinutes` | 0,05 e **15** (§1.5): **configurabili dal FOD**; 0,05 e 20 confermati da Carmine il 15 settembre, `c` tarato a 15 sul corpus il 24 settembre (T18) |
 | `northSouthLevelCountries` | i paesi dove i livelli semicircolari vanno nord–sud (§6.4); non cambia con l'AIRAC |
 | `routeProcedurePrefixes` | le prime due lettere dei codici ICAO degli aeroporti che vogliono SID e STAR scritte nella rotta (`flightPlanForm`, §6.4); parte da `ED`, `LO`: un fatto dell'AIP, non della divisione (T17) |
 | `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
 | `trackRetentionDays` | 90: giorni dopo la decisione (o il ritiro) in cui si tiene la traccia di un PIREP (Carmine, 23 settembre, T13a; §10) |
-| `thresholdToleranceMeters` | 150 (§6.4), uno per tutto il sistema |
+| `thresholdToleranceMeters` | 150 (§6.4), uno per tutto il sistema; **tenuto dopo la taratura sul corpus** (T18: dodici decolli entro 100 m, tre oltre 250) |
 | `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) — **non è un'impostazione** (T16, Carmine 24 set 2026): la `report_window_days` più lunga dei tour aperti o in chiusura, `defaultReportWindowDays` se non ce n'è |
 
 Le **soglie dei controlli** non stanno qui: sono parametri delle regole (§1.7).
@@ -932,14 +934,14 @@ subito il metodo). Si registra comunque se il validatore conferma l'errore sugge
 | `landingAtArrival` | atterrato all'arrivo o deviazione dichiarata | tracce | raggio |
 | `disconnections` | disconnessioni in volo | tracce | `maxSingleDisconnectMinutes`, `maxTotalDisconnectMinutes` |
 | `parking` | fermo prima del push e dopo l'arrivo | tracce | `minParkingMinutesBefore`, `minParkingMinutesAfter` |
-| `speed250` | 250 kt sotto FL100 | tracce, esenzioni | tolleranza |
-| `simRate` | velocità riportata coerente con quella di posizione | tracce | tolleranza |
+| `speed250` | 250 kt sotto FL100: la velocità indicata **stimata** dalla velocità al suolo senza vento; i 1 000 ft sotto FL100 non falliscono (T18) | tracce, esenzioni | tolleranza |
+| `simRate` | velocità riportata coerente con quella di posizione: la mediana su finestre di cinque minuti, solo più veloce (T18) | tracce | tolleranza |
 | `alternate` | alternato presente, diverso dalla destinazione (uguale alla partenza: solo nell'evidenza), e `ZZZZ` ⚖️, sotto | piano | — |
 | `equipment` | equipaggiamento richiesto | piano | lettere delle caselle **10a e 10b per regola di volo**; W e J1 solo con un livello pianificato sopra FL285 (nella casella 15 o nella rotta; T17) |
 | `flightRules` | regole di volo del piano ammesse | piano | lettere I, V, Y, Z |
 | `planAtTakeoff` | un piano valido al decollo; le revisioni dopo non contano (GR9) | piano | — |
 | `flightPlanForm` | forma del piano: REG/ con un callsign da volo di linea, RMK/, Z con COM/DAT/NAV, R con PBN/ (T17), SID e STAR nella rotta solo nei paesi dell'impostazione, VFR senza DCT e con `VFR` come livello (un livello scritto fallisce, T17) | piano, impostazione dei paesi | — |
-| `maxAltitude` | quota massima | tracce | quota |
+| `maxAltitude` | quota massima | tracce | un limite **per regola di volo** (`maxFeetI|V|Y|Z`): V 19 500 ft, I, Y, Z 66 000 (T18) |
 | `takeoffFromThreshold` | decollo dalla testata | tracce, `ref_ivao_runways` | — (`thresholdToleranceMeters` è un'impostazione, §1.11; T9) |
 | `vmc` | VMC a partenza e arrivo, **solo piani `V`** (e le metà VFR di `Y`/`Z`) | meteo salvato | visibilità e base nubi minime |
 | `repeatedRoute` | rotta già volata in un tour `Distance` o `Open` (anche bloccato all'invio; A→B diversa da B→A) | PIREP | — |
@@ -953,12 +955,19 @@ Note sui controlli delicati:
   senza ICAO», molto usato nei VFR. Il controllo **non supera** solo se `ZZZZ` è l'**alternato** e nelle remarks del piano
   **manca `ALTN/`**; con `ALTN/` presente l'alternato è un campo volo senza ICAO, ed è valido. Un piano senza alternato
   resta un errore dove la regola lo chiede.
-- **`takeoffFromThreshold`**: dall'ultimo punto fermo prima della corsa di decollo nelle tracce, la distanza dalla testata
+- **`takeoffFromThreshold`**: ~~dall'ultimo punto fermo prima della corsa di decollo nelle tracce~~, la distanza dalla testata
   della pista usata (quella con la prua più vicina alla prua di decollo). Oltre `thresholdToleranceMeters` il controllo non
   «fallisce»: segnala al validatore il **decollo da un'intersezione**, e il validatore verifica se da quel punto c'è una TORA
-  pubblicata (dato che nessuna API dà). ⚠️ Il campionamento delle tracce IVAO va misurato: se i punti a terra sono radi, la
-  posizione di inizio corsa è approssimativa, e la tolleranza va tarata sui voli veri.
-- **`vmc`**: sul METAR più vicino all'ora di decollo e di atterraggio; senza METAR salvato, `Unavailable`.
+  pubblicata (dato che nessuna API dà). ~~⚠️ Il campionamento delle tracce IVAO va misurato~~ **Misurato in T18** (nota
+  `2026-09-24-i-controlli-sulle-tracce` §4.1): con un punto ogni 15 secondi l'aereo quasi mai è colto fermo sulla pista, e un decollo
+  senza fermarsi mai; la corsa parte quindi dall'**ultimo punto sotto i 30 kt**, riportato indietro di v²/2a, e la pista è anche quella
+  **sul cui asse** sta la corsa (le parallele). 150 m tenuti.
+- **`vmc`**: sul METAR più vicino all'ora di decollo e di atterraggio (entro un'ora); senza METAR salvato, `Unavailable`. La «base
+  nubi» è il **ceiling** (BKN, OVC, VV); un piano I passa, Y guarda l'arrivo, Z la partenza (T18).
+- **`speed250` e le esenzioni** (Carmine, 24 settembre, T18): un'esenzione `FreeSpeed` fa passare il controllo con una riga che la
+  nomina, se la posizione era `Online` o `Unverifiable`; con `NotOnline` il controllo fallisce come senza.
+- **`landingAtArrival`**: l'atterraggio è il primo punto a terra **dopo l'ultimo in volo** (un touch and go lungo la strada non conta),
+  entro il raggio dalla posizione dell'aeroporto o da una sua testata; il primo volo di una deviazione deve atterrare alla deviazione.
 
 Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`); ogni controllo si prova su **voli veri**
 (§13).
@@ -1372,7 +1381,8 @@ dal PIREP più vecchio, più code per tour e ordine a scelta.
 2. ~~**Tour nascosto**~~ **deciso**: non lo vede più nessuno fuori dallo staff (§1.2.2).
 3. ~~**Eliminare una leg senza PIREP**~~ **deciso**: le successive si rinumerano (§1.4.1).
 4. ~~**Leg ritirata dentro una rotazione**~~ **deciso**: si ritira la rotazione intera e se ne crea una nuova.
-5. ~~**Tempo stimato**~~ **deciso**: 5 % + 20 minuti configurabili dal FOD, solo un'informazione per il pilota.
+5. ~~**Tempo stimato**~~ **deciso**: 5 % + 20 minuti configurabili dal FOD, solo un'informazione per il pilota; **tarati a 5 % + 15** sul
+   corpus in T18.
 6. ~~**Aereo di riferimento**~~ **deciso**: facoltativo; se c'è, stime per leg e totale del tour, ricalcolate a ogni lettura.
 7. ~~**Tour a distanza**~~ **deciso**: A→B e B→A sono rotte diverse.
 8. ~~**Tour `Open`**~~ **deciso**: tutti gli obiettivi, filtri e regole di §2.6.1 in M2.

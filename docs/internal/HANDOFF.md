@@ -3,9 +3,20 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T17 in `main`**. Piano **1.02**. **Il prossimo passo è
-T18 (i controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`, e
-le tarature)**, in una chat nuova, dopo il merge di T17.
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T18** (T18 sul branch `m2/t18-track-checks`). Piano **1.03**. **Il prossimo passo è
+T19 (token personali e contratto dell'agente: `hub_personal_tokens`, lo schema `Bearer` per `audience`, `/api/flightops/agent`)**, in una
+chat nuova, dopo il merge di T18.
+
+> **Che cosa ha lasciato T18** (nota `2026-09-24-i-controlli-sulle-tracce`, piano 1.03): i controlli sulle tracce stanno in
+> `Checks/TrackChecks.cs` (`DisconnectionsCheck`, `ParkingCheck`, `Speed250Check`, `SimRateCheck`, `MaxAltitudeCheck`,
+> `LandingAtArrivalCheck`, `TakeoffFromThresholdCheck`, `VmcCheck`) e il METAR si legge in `Checks/MetarReading.cs`. **Il contesto**
+> (`FlightCheckContext`) ha ora, come proprietà `init` con un valore vuoto di partenza, `DiversionIcao`, `Airports`, `Runways`, `Metars` ed
+> `Exemptions`, e `ExpectedArrival(flight)`: **T19 non deve toccarli** — i controlli dell'agente arrivano già fatti, con `ran_by = Agent`.
+> `TrackLines.PerFlight` è la forma delle righe per volo (fine, fallita, non giudicabile). **`maxAltitude`** è una chiave nuova del catalogo
+> (`maxFeetI|V|Y|Z`). **Le tarature decise**: `thresholdToleranceMeters` 150, `durationFixedMinutes` **15** (era 20). **Le fixture**:
+> `airports-corpus.json` e `metars-corpus.json`; `FlightCheckTests.Context(report)` le mette nel contesto, e `TrackCheckTests` lo usa.
+> ⚠️ **IVAO mescola metri e piedi** nella lunghezza delle piste (`IvaoRunway.LengthMetres`): il filtro della pista più lunga dei tour `Open`
+> la legge, da guardare a parte. ⚠️ La velocità indicata è **stimata senza vento**: l'evidenza lo dice sempre.
 
 > **Che cosa ha lasciato T17** (nota `2026-09-24-il-motore-dei-controlli`, piano 1.02): il motore sta in `Checks/` del modulo.
 > **`IFlightCheck`** ha `Key` ed **`Evaluate(context, parameters)` puro e sincrono**: un controllo di T18 è una classe in più, registrata

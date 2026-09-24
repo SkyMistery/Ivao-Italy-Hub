@@ -315,7 +315,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T15b | Le pagine delle persone — **fatta il 24 set 2026** | T15a | `/staff/tours/validators`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans`, `myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato» |
 | T16 | Il meteo salvato — **fatta il 24 set 2026** | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
 | T17 | Il motore dei controlli e i controlli sul piano — **fatta il 24 set 2026** | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute`, `flightRules`, `planAtTakeoff`, `flightPlanForm` |
-| T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`; tarature |
+| T18 | I controlli sulle tracce — **fatta il 24 set 2026** | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`; tarature |
 | T19 | Token personali e contratto dell'agente | T3, T17 | `hub_personal_tokens`, lo schema `Bearer` per `audience`, `/api/flightops/agent` |
 | T20 | Conservazione, rifiniture, giro completo | tutte | job mensile, cancellazione dei dati di un pilota, smoke, giro e2e, documenti |
 | T21 | L'app del validatore parla con l'hub | T19 | nel repository `AutomaticValidatorTour`, fuori da questo; la mail a Navigraph prima di distribuirla |
@@ -1672,6 +1672,28 @@ Design §6.4. Branch `m2/t18-track-checks`.
 
 **Test**: ogni controllo sul corpus; `vmc` `Unavailable` senza METAR; `speed250` ammorbidito da un'esenzione `FreeSpeed`.
 **Fatta quando**: il corpus dà gli esiti attesi, e i numeri delle tarature sono decisi.
+
+**T18 fatta il 24 settembre 2026** (branch `m2/t18-track-checks`, piano 1.03, nota `decisions/2026-09-24-i-controlli-sulle-tracce.md`).
+Com'è andata:
+
+- **Prima le misure, poi il codice**: uno script sul corpus (disconnessioni, parcheggio, velocità sotto FL100, sim rate, quota, testata,
+  tempo in volo) ha dato i numeri, e **quattro domande** a Carmine in apertura, tutte con la raccomandazione presa: `maxAltitude` per regola
+  di volo; `NotOnline` non ammorbidisce; 150 m tenuti; il tempo stimato a **5 % e 15 minuti**.
+- **Due fixture nuove**, dati pubblici: `airports-corpus.json` (24 aeroporti con posizione e testate, `tools/record-ivao-fixtures.mjs
+  --airports`, un modo nuovo) e `metars-corpus.json` (i METAR NOAA dei tre voli VFR, ancora nei trenta giorni).
+- **Il contesto** di `FlightChecks` ha ora posizioni, piste, METAR, esenzioni e l'aeroporto di deviazione, tutti con un valore vuoto di
+  partenza; i controlli in `Checks/TrackChecks.cs`, la lettura del METAR in `Checks/MetarReading.cs`; `maxAltitude` nel catalogo e nella
+  metà TypeScript.
+- **Trovato strada facendo**: il design voleva la corsa di decollo dall'«ultimo punto fermo»: a 15 secondi per punto l'aereo non è quasi
+  mai colto fermo in pista, e su tre voli quel punto era sul raccordo. Tre voli VFR fanno un **touch and go** a 30 NM dall'arrivo: il
+  controllo dell'atterraggio prende quello dopo l'ultimo punto in volo, come l'invio. Il primo punto dopo una riconnessione **salta**
+  (1264 kt su 880159): il sim rate usa la mediana. **IVAO mescola metri e piedi** nella lunghezza delle piste (nota §6).
+- **Test**: unit `TrackCheckTests` — i 15 PIREP del corpus con gli esiti della nota (877464 `parking` e `speed250`, 877596 e 877187
+  `speed250`, 877196 `simRate`, 880159 nessuno), le due disconnessioni corte di 880159, i decolli (dieci con la pista, tre intersezioni),
+  le esenzioni nei quattro stati, `vmc` con e senza METAR, `maxAltitude`, il touch and go, la deviazione, la sessione finita in volo, il
+  volo senza traccia, otto METAR scritti, la velocità indicata. Integrazione `PirepTests.Checks.cs`: un volo VFR Roma–Milano con una
+  traccia nella forma del tracker e i METAR nel doppio del meteo — atterraggio e quota passano, 250 kt e VMC falliscono, e la coda conta
+  due controlli falliti.
 
 ### T19 — Token personali e contratto dell'agente
 
