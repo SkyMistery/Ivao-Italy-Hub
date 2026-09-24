@@ -11,5 +11,7 @@ test('the form schema carries exactly the fields of PersonalTokenWriteDto', () =
 });
 
 test('the audiences are the ones the bootstrap offers, as a closed choice', () => {
-  expect(tokenSchema(['a.one', 'b.two']).shape.audience.meta()).toMatchObject({ choices: ['a.one', 'b.two'] });
+  expect(tokenSchema(['a.one', 'b.two']).shape.audience.meta()).toMatchObject({
+    choices: ['a.one', 'b.two'],
+  });
 });

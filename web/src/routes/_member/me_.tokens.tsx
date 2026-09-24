@@ -100,7 +100,12 @@ function IssuedToken({ issued }: { issued: PersonalTokenIssuedDto }) {
         <div className="flex flex-col gap-2">
           <p>{t('tokens.issued.description')}</p>
           <div className="flex gap-2">
-            <Input readOnly value={issued.token} aria-label={t('tokens.issued.label')} className="font-mono" />
+            <Input
+              readOnly
+              value={issued.token}
+              aria-label={t('tokens.issued.label')}
+              className="font-mono"
+            />
             <Button
               type="button"
               variant="secondary"
