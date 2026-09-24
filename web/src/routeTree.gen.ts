@@ -20,6 +20,7 @@ import { Route as PublicCalendarRouteImport } from './routes/_public/calendar'
 import { Route as PublicForbiddenRouteImport } from './routes/_public/forbidden'
 import { Route as PublicLoginErrorRouteImport } from './routes/_public/login-error'
 import { Route as PublicSearchRouteImport } from './routes/_public/search'
+import { Route as MemberMeTokensRouteImport } from './routes/_member/me_.tokens'
 import { Route as PublicDocumentsIndexRouteImport } from './routes/_public/documents.index'
 import { Route as PublicDocumentsSlugRouteImport } from './routes/_public/documents.$slug'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public/news.index'
@@ -116,6 +117,11 @@ const PublicSearchRoute = PublicSearchRouteImport.update({
   id: '/search',
   path: '/search',
   getParentRoute: () => PublicRoute,
+} as any)
+const MemberMeTokensRoute = MemberMeTokensRouteImport.update({
+  id: '/me_/tokens',
+  path: '/me/tokens',
+  getParentRoute: () => MemberRoute,
 } as any)
 const PublicDocumentsIndexRoute = PublicDocumentsIndexRouteImport.update({
   id: '/documents/',
@@ -362,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
   '/search': typeof PublicSearchRoute
+  '/me/tokens': typeof MemberMeTokensRoute
   '/documents/$slug': typeof PublicDocumentsSlugRoute
   '/news/$slug': typeof PublicNewsSlugRoute
   '/staff/awards': typeof StaffStaffAwardsRouteWithChildren
@@ -416,6 +423,7 @@ export interface FileRoutesByTo {
   '/forbidden': typeof PublicForbiddenRoute
   '/login-error': typeof PublicLoginErrorRoute
   '/search': typeof PublicSearchRoute
+  '/me/tokens': typeof MemberMeTokensRoute
   '/documents/$slug': typeof PublicDocumentsSlugRoute
   '/news/$slug': typeof PublicNewsSlugRoute
   '/documents': typeof PublicDocumentsIndexRoute
@@ -465,6 +473,7 @@ export interface FileRoutesById {
   '/_public/login-error': typeof PublicLoginErrorRoute
   '/_public/search': typeof PublicSearchRoute
   '/_public/': typeof PublicIndexRoute
+  '/_member/me_/tokens': typeof MemberMeTokensRoute
   '/_public/documents/$slug': typeof PublicDocumentsSlugRoute
   '/_public/news/$slug': typeof PublicNewsSlugRoute
   '/_staff/staff/awards': typeof StaffStaffAwardsRouteWithChildren
@@ -521,6 +530,7 @@ export interface FileRouteTypes {
     | '/forbidden'
     | '/login-error'
     | '/search'
+    | '/me/tokens'
     | '/documents/$slug'
     | '/news/$slug'
     | '/staff/awards'
@@ -575,6 +585,7 @@ export interface FileRouteTypes {
     | '/forbidden'
     | '/login-error'
     | '/search'
+    | '/me/tokens'
     | '/documents/$slug'
     | '/news/$slug'
     | '/documents'
@@ -623,6 +634,7 @@ export interface FileRouteTypes {
     | '/_public/login-error'
     | '/_public/search'
     | '/_public/'
+    | '/_member/me_/tokens'
     | '/_public/documents/$slug'
     | '/_public/news/$slug'
     | '/_staff/staff/awards'
@@ -753,6 +765,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/search'
       preLoaderRoute: typeof PublicSearchRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_member/me_/tokens': {
+      id: '/_member/me_/tokens'
+      path: '/me/tokens'
+      fullPath: '/me/tokens'
+      preLoaderRoute: typeof MemberMeTokensRouteImport
+      parentRoute: typeof MemberRoute
     }
     '/_public/documents/': {
       id: '/_public/documents/'
@@ -1068,6 +1087,7 @@ declare module '@tanstack/react-router' {
 interface MemberRouteChildren {
   MemberContactRoute: typeof MemberContactRoute
   MemberMeRoute: typeof MemberMeRoute
+  MemberMeTokensRoute: typeof MemberMeTokensRoute
   MemberMeContactsIdRoute: typeof MemberMeContactsIdRoute
   MemberMeContactsIndexRoute: typeof MemberMeContactsIndexRoute
 }
@@ -1075,6 +1095,7 @@ interface MemberRouteChildren {
 const MemberRouteChildren: MemberRouteChildren = {
   MemberContactRoute: MemberContactRoute,
   MemberMeRoute: MemberMeRoute,
+  MemberMeTokensRoute: MemberMeTokensRoute,
   MemberMeContactsIdRoute: MemberMeContactsIdRoute,
   MemberMeContactsIndexRoute: MemberMeContactsIndexRoute,
 }

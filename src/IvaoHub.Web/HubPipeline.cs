@@ -52,7 +52,12 @@ internal static class HubPipeline
             var guarded = path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
                 || path.StartsWithSegments("/auth/logout", StringComparison.OrdinalIgnoreCase);
 
-            if (guarded && !safeMethods.Contains(context.Request.Method, StringComparer.OrdinalIgnoreCase))
+            // A personal token is not a cookie: the browser never attaches it by itself, and a page of another site cannot
+            // set an Authorization header on a cross site request without a preflight this host never answers (T19a).
+            var bearer = context.Request.Headers.Authorization.ToString()
+                .StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
+
+            if (guarded && !bearer && !safeMethods.Contains(context.Request.Method, StringComparer.OrdinalIgnoreCase))
             {
                 var header = context.Request.Headers.XRequestedWith.ToString();
                 if (!string.Equals(header, RequestedWithValue, StringComparison.Ordinal))

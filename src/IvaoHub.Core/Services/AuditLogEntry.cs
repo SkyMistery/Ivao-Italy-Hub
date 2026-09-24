@@ -24,6 +24,9 @@ public sealed class AuditLogEntry
 
     public string? Ip { get; set; }
 
+    /// <summary>The personal token the write was made with (M2, T19a), or null for the site itself.</summary>
+    public long? TokenId { get; set; }
+
     /// <summary>Whether the author acted as a super administrator; a bypass is always visible.</summary>
     public bool IsSuperadmin { get; set; }
 

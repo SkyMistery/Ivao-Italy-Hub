@@ -1284,7 +1284,7 @@ disciplinare resta leggibile per sempre, senza codice di copia. Le immagini del 
 | 11 | Tipi di aereo IVAO (`ref_ivao_aircraft`) da `/v2/aircrafts/all`, con equipaggiamenti e transponder | no | §1.5 |
 | 12 | `IWeatherSource` (NOAA → IVAO → VATSIM), come vIPI | sì, breve (una fonte esterna nuova) | §1.13 |
 | 13 | Confini dei FIR da **OpenAIP** (`ref_firs`: codice, paese, poligono), sincronizzati da un job con la chiave API nei segreti, per la proposta degli ATC contattati; licenza e attribuzione dei dati OpenAIP da verificare | sì, breve (una fonte esterna nuova) | §3.3 |
-| 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore | sì | §6.6 |
+| 14 | **Token personali per un agente esterno** (creati dall'utente, revocabili, con scadenza, con i suoi permessi, auditati) e il contratto versionato dell'agente del validatore — **il nucleo fatto in T19a**: `IModule.TokenAudiences`, `PersonalTokenPolicy.For(audience)`, `/me/tokens` (nota `2026-09-24-i-token-personali`) | sì | §6.6 |
 | 15 | **Preferenze dell'utente** generiche (chiave e valore per utente), per l'ordine della coda del validatore — **fatta in T4b**: chiavi dichiarate da `IModule.Preferences` | nella stessa nota di T4b, §4 | §4.1 |
 | 16 | **Usi dei file con scadenza** dalle righe dei moduli nell'indice della media library (`MediaReferences` in `IProjectable`), e il **job che elimina i file con tutti gli usi scaduti** (servirà anche agli eventi) | breve (estende G20, ma elimina file da solo) | §1.14 |
 
@@ -1355,7 +1355,7 @@ sono `AddDisputesAndLegIssues`, T14b.)
 | T16 | Meteo salvato (job, scarico all'invio, cancellazione) |
 | T17 | Controlli automatici: motore, job, controlli sul piano |
 | T18 | Controlli sulle tracce: disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc` |
-| T19 | Nucleo e modulo: token personali e contratto dell'agente del validatore (lettura del PIREP, scrittura degli esiti), con i test; l'adattamento dell'app Python fuori da questo repository |
+| T19 | Nucleo e modulo: token personali e contratto dell'agente del validatore (lettura del PIREP, scrittura degli esiti), con i test; l'adattamento dell'app Python fuori da questo repository. Divisa il 24 set 2026 in **T19a** (nucleo) e **T19b** (modulo) |
 | T20 | Conservazione, calendario, ricerca, rifiniture, giro completo |
 
 ---

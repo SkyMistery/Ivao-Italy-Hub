@@ -93,6 +93,25 @@ internal sealed class UserTokenConfiguration : IEntityTypeConfiguration<UserToke
     }
 }
 
+internal sealed class PersonalTokenConfiguration : IEntityTypeConfiguration<PersonalToken>
+{
+    public void Configure(EntityTypeBuilder<PersonalToken> builder)
+    {
+        builder.ToTable("hub_personal_tokens");
+        builder.HasKey(token => token.Id);
+        builder.Property(token => token.Name).HasMaxLength(PersonalTokens.MaxNameLength).IsRequired();
+        builder.Property(token => token.Audience).HasMaxLength(TokenAudienceCatalog.MaxKeyLength).IsRequired();
+        builder.Property(token => token.TokenHash).HasMaxLength(64).IsRequired();
+        builder.Property(token => token.Prefix).HasMaxLength(16).IsRequired();
+        builder.HasOne<HubUser>()
+            .WithMany()
+            .HasForeignKey(token => token.Vid)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(token => token.TokenHash).IsUnique();
+        builder.HasIndex(token => new { token.Vid, token.RevokedAt });
+    }
+}
+
 internal sealed class DivisionSettingConfiguration : IEntityTypeConfiguration<DivisionSetting>
 {
     public void Configure(EntityTypeBuilder<DivisionSetting> builder)

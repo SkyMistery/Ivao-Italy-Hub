@@ -30,6 +30,7 @@ const bootstrap = {
     locale: 'en',
     departments: ['WD', 'ED'],
     firs: [],
+    tokenAudiences: [],
   },
   permissions: [],
   division: {

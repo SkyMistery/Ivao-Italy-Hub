@@ -152,6 +152,7 @@ const signedIn = (extra: Partial<NonNullable<Bootstrap['user']>>): Bootstrap => 
     locale: 'en',
     departments: [],
     firs: [],
+    tokenAudiences: [],
     ...extra,
   },
 });

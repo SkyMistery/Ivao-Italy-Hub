@@ -1,3 +1,4 @@
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
@@ -105,7 +106,7 @@ public sealed class ModuleCompositionTests
             new PermissionDescriptor("Roster.Edit", IsGlobal: false),
         ]);
 
-        var provider = new HubPolicyProvider(Options.Create(new AuthorizationOptions()), catalogue);
+        var provider = new HubPolicyProvider(Options.Create(new AuthorizationOptions()), catalogue, new TokenAudienceCatalog([]));
 
         var policy = await provider.GetPolicyAsync("Roster.Edit");
         Assert.NotNull(policy);

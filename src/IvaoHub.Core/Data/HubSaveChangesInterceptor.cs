@@ -249,6 +249,12 @@ public sealed class HubSaveChangesInterceptor(
                 continue;
             }
 
+            // A write of bookkeeping only (a token's last use, T19a) is neither a change of the row nor something to audit.
+            if (IsBookkeepingOnly(entry))
+            {
+                continue;
+            }
+
             Stamp(entry, vid, now);
             if (entry.State is EntityState.Added or EntityState.Modified)
             {
@@ -309,6 +315,11 @@ public sealed class HubSaveChangesInterceptor(
         _pending[context] = pending;
         return pending;
     }
+
+    private static bool IsBookkeepingOnly(EntityEntry entry) =>
+        entry.State == EntityState.Modified
+        && entry.Properties.Where(property => property.IsModified).All(property =>
+            property.Metadata.PropertyInfo?.IsDefined(typeof(NotAuditedAttribute), inherit: false) == true);
 
     private static void Stamp(EntityEntry entry, int vid, DateTime now)
     {
@@ -589,6 +600,15 @@ public sealed class HubSaveChangesInterceptor(
         // the proxies the installation declares: see HubConfiguration.TrustedProxies.
         var ip = httpContext?.HttpContext?.Connection.RemoteIpAddress?.ToString();
 
+        // A write a program made with a personal token says which token (T19a): revoking the right one needs it.
+        var token = long.TryParse(
+            httpContext?.HttpContext?.User.FindFirst(HubClaims.PersonalToken)?.Value,
+            NumberStyles.None,
+            CultureInfo.InvariantCulture,
+            out var tokenId)
+            ? tokenId
+            : (long?)null;
+
         foreach (var audit in pending.Audits)
         {
             pending.Context.Set<AuditLogEntry>().Add(new AuditLogEntry
@@ -600,6 +620,7 @@ public sealed class HubSaveChangesInterceptor(
                 BeforeJson = audit.Before,
                 AfterJson = audit.After,
                 Ip = ip,
+                TokenId = token,
                 IsSuperadmin = currentUser.IsSuperadmin,
                 At = audit.At,
             });

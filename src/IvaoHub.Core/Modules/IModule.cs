@@ -1,3 +1,4 @@
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Preferences;
@@ -95,6 +96,13 @@ public interface IModule
     IReadOnlyList<string> NotificationTypes { get; }
 
     /// <summary>
+    /// What a member's personal token may be for, each named after the module (<c>flightops.agent</c>) with the permission
+    /// its creator must hold. The endpoints of an audience ask for <c>PersonalTokenPolicy.For(key)</c>; the words are in the
+    /// module's language file, under <c>tokenAudiences.{name}</c> (M2, T19a).
+    /// </summary>
+    IReadOnlyList<TokenAudienceDescriptor> TokenAudiences { get; }
+
+    /// <summary>
     /// The settings its department changes from the interface, or null for a module that has none. The
     /// core keeps them in <c>hub_division_settings</c> and serves them at <c>/api/modules/{key}/settings</c>
     /// behind the permission the descriptor names (M2, T5).
@@ -140,6 +148,8 @@ public abstract class ModuleBase : IModule
     public virtual IReadOnlyList<PreferenceDescriptor> Preferences => [];
 
     public virtual IReadOnlyList<string> NotificationTypes => [];
+
+    public virtual IReadOnlyList<TokenAudienceDescriptor> TokenAudiences => [];
 
     public virtual ModuleSettingsDescriptor? Settings => null;
 

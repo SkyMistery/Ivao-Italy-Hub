@@ -74,6 +74,7 @@ const member: Bootstrap['user'] = {
   locale: 'en',
   departments: [],
   firs: [],
+  tokenAudiences: [],
 };
 
 test('signing out redraws the shell as anonymous, without a reload', async () => {

@@ -33,6 +33,7 @@ internal static class MeEndpoints
             ModuleRegistry modules,
             BlockRegistry blocks,
             PermissionCatalog catalogue,
+            TokenAudienceCatalog audiences,
             HubDbContext database,
             BuildInfo build,
             CancellationToken cancellationToken) =>
@@ -64,7 +65,8 @@ internal static class MeEndpoints
                         user.HasAllDepartments,
                         user.Locale,
                         [.. user.Departments.Select(department => department.ToString())],
-                        [.. user.Firs])
+                        [.. user.Firs],
+                        audiences.AvailableTo(user))
                     : null,
                 Permissions: [.. user.Permissions.Select(permission =>
                     new BootstrapPermission(
@@ -225,7 +227,10 @@ internal sealed record BootstrapUser(
     bool HasAllDepartments,
     string Locale,
     IReadOnlyList<string> Departments,
-    IReadOnlyList<string> Firs);
+    IReadOnlyList<string> Firs,
+    // What this member may create a personal token for (M2, T19a): the audiences whose permission they hold. Empty for
+    // almost everybody, and then /me/tokens is not offered.
+    IReadOnlyList<string> TokenAudiences);
 
 /// <summary>A department of null means the permission is held on every department.</summary>
 /// <param name="Name">The permission, as the catalogue names it.</param>

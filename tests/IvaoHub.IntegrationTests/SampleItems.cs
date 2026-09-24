@@ -19,6 +19,9 @@ namespace IvaoHub.IntegrationTests;
 /// is about (<see cref="IHasStakeholder"/>), so that both are proved here before the first PIREP
 /// exists.</para>
 [PermissionArea(SampleModule.PermissionArea)]
+[Audited]
+// Decided by whoever holds Sample.Decide on it, the way a validator's agent writes on a report (T19a).
+[AlsoWrittenWith(SampleModule.DecidePermission)]
 public sealed class SampleItem : IOwnedByDepartment, IVisible, IAuditable, IHasResourceScope, IHasStakeholder
 {
     public long Id { get; set; }

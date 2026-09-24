@@ -46,6 +46,7 @@ const pilotBootstrap = {
     locale: 'en',
     departments: [],
     firs: [],
+    tokenAudiences: [],
   },
 };
 

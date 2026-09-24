@@ -55,7 +55,9 @@ public static class IvaoAuthenticationExtensions
                 options.DefaultChallengeScheme = HubClaims.IvaoScheme;
             })
             .AddCookie(HubClaims.CookieScheme, ConfigureCookie)
-            .AddOpenIdConnect(HubClaims.IvaoScheme, "IVAO Single Sign-On", _ => { });
+            .AddOpenIdConnect(HubClaims.IvaoScheme, "IVAO Single Sign-On", _ => { })
+            // A member's own program, on the endpoints of its audience only (M2, T19a).
+            .AddPersonalTokens();
 
         // The OpenID Connect options need the OAuth client and the environment, so they are
         // configured through the options pipeline rather than in the AddOpenIdConnect callback.

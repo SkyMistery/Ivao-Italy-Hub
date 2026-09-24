@@ -138,6 +138,15 @@
       "referenceRequired": "Una richiesta di chiarimento deve dire di che cosa parla.",
       "tooManyReferences": "Un messaggio può citare al massimo dieci cose.",
       "kindUnknown": "Questo tipo di messaggio non si invia da qui."
+    },
+    "token": {
+      "audienceNotAllowed": "Non hai il permesso che serve a un token di questo tipo.",
+      "days": "Scegli tra 1 e 90 giorni.",
+      "tooMany": "Hai già dieci token attivi: revocane uno che non usi più.",
+      "unknown": "L'hub non conosce questo token.",
+      "revoked": "Questo token è stato revocato. Creane uno nuovo dalla tua pagina dell'hub.",
+      "expired": "Questo token è scaduto. Creane uno nuovo dalla tua pagina dell'hub.",
+      "signInAgain": "Non entri nell'hub da più di 30 giorni. Entra una volta, poi riprova."
     }
   }
 }

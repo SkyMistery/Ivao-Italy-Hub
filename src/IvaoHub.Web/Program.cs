@@ -309,6 +309,7 @@ app.MapSearchEndpoint();
 // The administration of the hub itself: who holds which permission, who administers the system,
 // what happened, and which modules are open. Three of the four are the CRUD engine in global mode.
 app.MapGrantEndpoints();
+app.MapPersonalTokenEndpoints();
 app.MapSuperadminEndpoints();
 app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();

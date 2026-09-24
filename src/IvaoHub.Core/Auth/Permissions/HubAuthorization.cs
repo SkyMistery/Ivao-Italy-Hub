@@ -36,7 +36,7 @@ public sealed class PermissionRequirement(string permission) : IAuthorizationReq
 /// not known at compile time: a module permission has to become a policy exactly like one of the
 /// core, or the module's own endpoints would deny everybody.
 /// </remarks>
-public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options, PermissionCatalog catalogue)
+public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options, PermissionCatalog catalogue, TokenAudienceCatalog audiences)
     : IAuthorizationPolicyProvider
 {
     private readonly DefaultAuthorizationPolicyProvider _fallback = new(options);
@@ -54,6 +54,12 @@ public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options, Pe
         if (declared is not null)
         {
             return declared;
+        }
+
+        // An audience of personal tokens (M2, T19a): the token scheme, never the cookie.
+        if (PersonalTokenAuthenticationExtensions.PolicyFor(policyName, audiences) is { } tokenPolicy)
+        {
+            return tokenPolicy;
         }
 
         if (catalogue.IsKnown(policyName))

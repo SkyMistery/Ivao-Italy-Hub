@@ -1830,5 +1830,38 @@
   "map": {
     "label": "Map of the legs",
     "noWebgl": "This browser cannot draw the map (WebGL2 is off or unavailable). The legs are listed below."
+  },
+  "tokens": {
+    "title": "My tokens",
+    "description": "A program of yours — the validator's agent — signs in with a token instead of your browser. It opens what the program needs and nothing else, and it works with your permissions as they are today.",
+    "link": "My tokens",
+    "new": "New token",
+    "create": "Create the token",
+    "noAudience": "None of your programs can use a token: they come with the permissions that need one.",
+    "fields": {
+      "name": "Name",
+      "audience": "For",
+      "days": "Days",
+      "prefix": "Starts with",
+      "createdAt": "Created",
+      "expiresAt": "Expires",
+      "lastUsedAt": "Last used"
+    },
+    "hints": {
+      "name": "Where it will live, so you recognise it later: \"home PC\".",
+      "days": "From 1 to 90. When it expires, make a new one."
+    },
+    "issued": {
+      "title": "The token \"{{name}}\" is ready",
+      "description": "Copy it into your program now: the hub will not show it again. If you lose it, revoke it and make another.",
+      "label": "The token",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "revoke": {
+      "action": "Revoke",
+      "title": "Revoke this token?",
+      "description": "The program using \"{{name}}\" stops working on its next request. This cannot be undone."
+    }
   }
 }
