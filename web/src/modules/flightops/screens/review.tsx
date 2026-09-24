@@ -20,6 +20,7 @@ import {
   toursListQuery,
   memberName,
   useReviewStep,
+  type ReviewCheckDto,
   type ReviewDisputeDto,
   type ReviewDto,
   type ReviewErrorDto,
@@ -44,10 +45,12 @@ import { TOURS } from './tours';
 import { useStaff } from './hooks';
 import { PILOTS } from './people';
 import {
+  CHECK_OUTCOME_COLOURS,
   REPORT_STATUS_COLOURS,
   REVIEW_QUEUE_ORDERS,
   REVIEW_QUEUE_ORDER_PREFERENCE,
   eventNote,
+  evidenceText,
   hhmm,
   planAtTakeoff,
   queueOrderOf,
@@ -78,6 +81,7 @@ const queueColumns: readonly ColumnSpec<ReviewQueueRow>[] = [
   col.date('queuedAt'),
   col.badge('status', 'flightops:review'),
   col.badge('dispute', 'flightops:review'),
+  col.badge('checks', 'flightops:review'),
   col.text('assignedToName'),
 ];
 
@@ -276,7 +280,7 @@ function ReviewScreen({ review }: { review: ReviewDto }) {
         </Section>
 
         <Section title={t('flightops:review.sections.checks')}>
-          <p className="text-muted-foreground text-sm">{t('flightops:review.checksLater')}</p>
+          <Checks review={review} />
         </Section>
 
         <Decision key={review.rowVersion} review={review} />
@@ -506,6 +510,75 @@ function Bulletin({ bulletin }: { bulletin: WeatherBulletinDto }) {
       <span className="text-muted-foreground text-xs">
         {t('flightops:review.weather.source', { source: bulletin.source })}
       </span>
+    </li>
+  );
+}
+
+/**
+ * What the automatic checks found (design M2 §6.1, T17): each with its outcome and its lines, the server's worded here in the
+ * reader's language, the agent's as it wrote them. Nothing here decides: a failed check suggests its errors in the table
+ * below, and only what the validator ticks counts.
+ */
+function Checks({ review }: { review: ReviewDto }) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+
+  if (review.checks.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        {t(review.checksRanAt === null ? 'flightops:review.checks.pending' : 'flightops:review.checks.none')}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {review.checksRanAt === null ? null : (
+        <p className="text-muted-foreground text-xs">
+          {t('flightops:review.checks.ranAt', { at: moment(review.checksRanAt) })}
+        </p>
+      )}
+      <ul className="flex flex-col gap-3">
+        {review.checks.map((check) => (
+          <CheckResult key={`${check.key}-${check.ranBy}`} check={check} review={review} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function CheckResult({ check, review }: { check: ReviewCheckDto; review: ReviewDto }) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const suggested = review.errors.filter((error) => check.errorIds.includes(error.id));
+
+  return (
+    <li className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Badge
+          variant="flat"
+          color={CHECK_OUTCOME_COLOURS[check.outcome]}
+          text={t(`flightops:review.checks.outcomes.${check.outcome}`)}
+        />
+        <span className="font-semibold">
+          {t(`flightops:checks.options.checkKey.${check.key}`, { defaultValue: check.key })}
+        </span>
+        {check.ranBy === 'Agent' ? (
+          <span className="text-muted-foreground text-xs">{t('flightops:review.checks.byAgent')}</span>
+        ) : null}
+      </div>
+      <ul className="list-disc pl-5 text-sm">
+        {check.evidence.map((line, index) => (
+          <li key={index}>{evidenceText(t, line)}</li>
+        ))}
+      </ul>
+      {check.outcome === 'Failed' && suggested.length > 0 ? (
+        <p className="text-muted-foreground text-xs">
+          {t('flightops:review.checks.suggests', {
+            errors: suggested.map((error) => read(error.name)).join(', '),
+          })}
+        </p>
+      ) : null}
     </li>
   );
 }

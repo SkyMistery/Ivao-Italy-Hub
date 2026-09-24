@@ -39,6 +39,7 @@ import {
 import { TOURS_MANAGE_RULES } from '../permissions';
 import {
   EQUIPMENT_LETTERS,
+  TRANSPONDER_LETTERS,
   checkKeySchema,
   checkParameters,
   copyRulesSchema,
@@ -93,6 +94,7 @@ const errorColumns: readonly ColumnSpec<TourErrorListDto>[] = [
 ];
 
 const LETTERS: ChoiceOption[] = EQUIPMENT_LETTERS.map((letter) => ({ value: letter, label: letter }));
+const TRANSPONDER: ChoiceOption[] = TRANSPONDER_LETTERS.map((letter) => ({ value: letter, label: letter }));
 
 /** Who may write rules and errors: `Tours.ManageRules` on some department. */
 function useWritesRules() {
@@ -198,7 +200,7 @@ function RuleEditor({
       )}
       <SchemaForm
         key={check}
-        schema={ruleSchema(check, { errors, letters: LETTERS })}
+        schema={ruleSchema(check, { errors, letters: LETTERS, transponder: TRANSPONDER })}
         defaults={withCheck(defaults, check)}
         locales={bootstrap.division.locales}
         labels="flightops:rules"

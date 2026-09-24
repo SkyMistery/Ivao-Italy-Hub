@@ -46,6 +46,7 @@ export interface FlightOpsSettings {
   readonly durationFactor: number;
   readonly durationFixedMinutes: number;
   readonly northSouthLevelCountries: readonly string[];
+  readonly routeProcedurePrefixes: readonly string[];
   readonly trackRetentionDays: number;
   readonly retentionMonths: number;
   readonly retentionMonthsLong: number;
@@ -62,6 +63,8 @@ export const settingsSchema = z.object({
   durationFactor: z.number(),
   durationFixedMinutes: z.number().int(),
   northSouthLevelCountries: z.array(z.object({ code: z.string() })),
+  // The first letters of the ICAO codes whose AIP wants SID and STAR in the route (T17): ED, LO to start with.
+  routeProcedurePrefixes: z.array(z.object({ code: z.string() })),
   trackRetentionDays: z.number().int(),
   retentionMonths: z.number().int(),
   retentionMonthsLong: z.number().int(),
@@ -71,12 +74,13 @@ export const settingsSchema = z.object({
 export type SettingsFormValues = z.output<typeof settingsSchema>;
 
 export function settingsToFormValues(settings: FlightOpsSettings): SettingsFormValues {
-  const { dailyLegLimit, northSouthLevelCountries, ...rest } = settings;
+  const { dailyLegLimit, northSouthLevelCountries, routeProcedurePrefixes, ...rest } = settings;
 
   return {
     ...rest,
     ...(dailyLegLimit === null ? {} : { dailyLegLimit }),
     northSouthLevelCountries: northSouthLevelCountries.map((code) => ({ code })),
+    routeProcedurePrefixes: routeProcedurePrefixes.map((code) => ({ code })),
   };
 }
 
@@ -84,10 +88,13 @@ export function settingsFromFormValues(values: SettingsFormValues): FlightOpsSet
   return {
     ...values,
     dailyLegLimit: values.dailyLegLimit ?? null,
-    northSouthLevelCountries: values.northSouthLevelCountries
-      .map((entry) => entry.code.trim().toUpperCase())
-      .filter((code) => code !== ''),
+    northSouthLevelCountries: codes(values.northSouthLevelCountries),
+    routeProcedurePrefixes: codes(values.routeProcedurePrefixes),
   };
+}
+
+function codes(entries: readonly { code: string }[]): string[] {
+  return entries.map((entry) => entry.code.trim().toUpperCase()).filter((code) => code !== '');
 }
 
 // ---- tours ---------------------------------------------------------------------------------------
@@ -313,7 +320,9 @@ export type ParameterKind =
   | 'firs'
   | 'rules'
   | 'categories'
-  | 'letters';
+  | 'letters'
+  | 'transponder'
+  | 'flightRules';
 
 /** The parameters of each goal, in the order the form shows them (note 2026-09-22-il-tour-open). */
 export const GOAL_PARAMETERS: Readonly<Record<OpenGoalKind, Readonly<Record<string, ParameterKind>>>> = {
@@ -345,10 +354,11 @@ export const CONSTRAINT_PARAMETERS: Readonly<
   MinFlightsAt: { airport: 'airport', count: 'whole' },
 };
 
-/** What a set of parameters chooses among, where a kind is a choice: wake categories, equipment letters. */
+/** What a set of parameters chooses among, where a kind is a choice: wake categories, equipment and transponder letters. */
 export interface ParameterChoices {
   readonly categories?: readonly ChoiceOption[];
   readonly letters?: readonly ChoiceOption[];
+  readonly transponder?: readonly ChoiceOption[];
 }
 
 function parameterField(kind: ParameterKind, choices: ParameterChoices) {
@@ -370,6 +380,12 @@ function parameterField(kind: ParameterKind, choices: ParameterChoices) {
       return z.array(z.string()).meta({ multi: true, choices: choices.categories ?? [] });
     case 'letters':
       return z.array(z.string()).meta({ multi: true, choices: choices.letters ?? [] });
+    case 'transponder':
+      return z.array(z.string()).meta({ multi: true, choices: choices.transponder ?? [] });
+    case 'flightRules':
+      return z
+        .array(z.string())
+        .meta({ multi: true, choices: FLIGHT_RULE_LETTERS.map((rules) => ({ value: rules, label: rules })) });
   }
 }
 
@@ -439,13 +455,16 @@ export interface TourConstraintFormValues extends Record<string, unknown> {
 export const CHECK_KEYS = [
   'callsign',
   'aircraft',
+  'flightRules',
+  'planAtTakeoff',
+  'flightPlanForm',
+  'alternate',
+  'equipment',
   'landingAtArrival',
   'disconnections',
   'parking',
   'speed250',
   'simRate',
-  'alternate',
-  'equipment',
   'takeoffFromThreshold',
   'vmc',
   'repeatedRoute',
@@ -498,6 +517,31 @@ export const EQUIPMENT_LETTERS = [
   'Z',
 ] as const;
 
+/** The letters of item 10b — transponder and surveillance — an `equipment` rule may require (T17). */
+export const TRANSPONDER_LETTERS = [
+  'N',
+  'A',
+  'C',
+  'E',
+  'H',
+  'I',
+  'L',
+  'P',
+  'S',
+  'X',
+  'B1',
+  'B2',
+  'U1',
+  'U2',
+  'V1',
+  'V2',
+  'D1',
+  'G1',
+] as const;
+
+/** The flight rules of item 8: IFR, VFR, IFR then VFR, VFR then IFR. */
+export const FLIGHT_RULE_LETTERS = ['I', 'V', 'Y', 'Z'] as const;
+
 /**
  * The parameters of each check. Every number may be left empty: a rule of its own then takes the check's starting value,
  * an amendment the value of the rule it amends (Carmine, 22 September 2026). Bounds and starting values are the server's
@@ -512,10 +556,25 @@ export const CHECK_PARAMETERS: Readonly<Record<CheckKey, Readonly<Record<string,
   speed250: { toleranceKt: 'wholeOptional' },
   simRate: { tolerancePercent: 'wholeOptional' },
   alternate: {},
-  equipment: { letters: 'letters' },
+  // The letters required for each flight rule, and those required only above a level: W and J1 above FL285 (T17).
+  equipment: {
+    lettersI: 'letters',
+    lettersV: 'letters',
+    lettersY: 'letters',
+    lettersZ: 'letters',
+    transponderI: 'transponder',
+    transponderV: 'transponder',
+    transponderY: 'transponder',
+    transponderZ: 'transponder',
+    highLevelLetters: 'letters',
+    highLevelFl: 'wholeOptional',
+  },
   takeoffFromThreshold: {},
   vmc: { minVisibilityMeters: 'wholeOptional', minCloudBaseFeet: 'wholeOptional' },
   repeatedRoute: {},
+  flightRules: { rules: 'flightRules' },
+  planAtTakeoff: {},
+  flightPlanForm: {},
   semicircularLevels: {},
   atcCoverage: {},
 };
@@ -534,7 +593,15 @@ export const checkKeySchema = z.object({ checkKey: z.enum(['none', ...CHECK_KEYS
  */
 export function ruleSchema(
   check: CheckChoice,
-  { errors = [], letters = [] }: { errors?: readonly ChoiceOption[]; letters?: readonly ChoiceOption[] } = {},
+  {
+    errors = [],
+    letters = [],
+    transponder = [],
+  }: {
+    errors?: readonly ChoiceOption[];
+    letters?: readonly ChoiceOption[];
+    transponder?: readonly ChoiceOption[];
+  } = {},
 ): z.ZodType<RuleFormValues, RuleFormValues> {
   const parameters = checkParameters(check);
 
@@ -545,7 +612,9 @@ export function ruleSchema(
     code: z.string(),
     title: localized(),
     text: localized().meta({ localized: true, multiline: true }),
-    ...(Object.keys(parameters).length === 0 ? {} : { parameters: parametersShape(parameters, { letters }) }),
+    ...(Object.keys(parameters).length === 0
+      ? {}
+      : { parameters: parametersShape(parameters, { letters, transponder }) }),
     errorIds: z.array(z.string()).meta({ multi: true, choices: errors }),
     sort: z.number().int(),
     retired: z.boolean(),
