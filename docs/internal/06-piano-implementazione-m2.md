@@ -1649,7 +1649,11 @@ Com'è andata:
   parametri nuovi in `RuleTests`. Integrazione `PirepTests.Checks.cs`: gli esiti all'invio, il suggerimento nella pagina e nella coda, il
   job, l'accettazione che tiene il suggerimento non confermato, e **il volo di un PIREP respinto non si riporta** (`reportSessionClaimed`).
   Vitest: la parola della coda e le righe dell'evidenza. Playwright con il server finto: la pagina e la coda; il giro vero
-  `full/tours-review.spec.ts` ha una seconda regola con `flightRules` (solo V) che il volo registrato non passa.
+  `full/tours-review.spec.ts` ha una seconda regola con `flightRules` (solo V) che il volo registrato non passa. **Suite intere verdi
+  in locale**: unit 592, integrazione 273, Vitest 474, Playwright con il server finto 91, giro completo 35, lint, formato, typecheck,
+  i18n, build Release. Guardata la sezione a 1500 px.
+- **Trovato sul banco**: `ivaohub_e2e` ha accumulato molte regole generali «Bench disconnection …» con il controllo `disconnections`,
+  lasciate da giri di `tours-rules.spec.ts`: compaiono su ogni pagina di validazione del banco, e il controllo di T18 le eseguirà.
 - **Non verificato**: le lettere equivalenti (S della 10a, S e C della 10b) sono una lettura del Doc 4444 da confermare; le forme del
   callsign e di una procedura nella rotta sono euristiche; le regole vere dei tour del corpus non sono state lette (il corpus usa quelle
   del Turboprop per tutti gli IFR); il job sul banco.
