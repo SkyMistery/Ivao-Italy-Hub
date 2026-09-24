@@ -1,9 +1,20 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 0.99 — 24 settembre 2026 (**le pagine delle persone**: statistiche dei validatori, la pagina del pilota cercata per VID, i ban, il blocco `myTours`, l'avanzamento del pilota sui riquadri, il giro «completato → award assegnato», T15b)
+**Versione documento:** 1.00 — 24 settembre 2026 (**il meteo salvato**: `fo_weather_reports`, il job ogni 30 minuti sugli aeroporti dei tour, lo scarico all'invio, la cancellazione con `weatherRetentionDays` = la finestra di riporto più lunga, METAR e TAF nella pagina di validazione, T16)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.00** (24 set 2026, fase T16 di M2): **il meteo salvato**. Nota `decisions/2026-09-24-il-meteo-salvato.md`, **due risposte
+di Carmine**: (1) il meteo di un volo con PIREP deciso **si cancella** come dice il design (un bollettino resta oltre il tempo solo finché
+un PIREP di quel giorno su quell'aeroporto aspetta una decisione); (2) **`weatherRetentionDays` è la finestra di riporto più lunga** dei
+tour aperti o in chiusura (il default della divisione se non ce n'è), **non un'impostazione**. **Nel codice**: `WeatherArchive` e
+`fo_weather_reports` (indice unico su aeroporto, momento e tipo) nel modulo; `WeatherJob` ai minuti 5 e 35 sugli aeroporti delle leg dei tour
+che prendono PIREP; all'invio e al reinvio la storia degli aeroporti del report **senza un METAR nella finestra del volo** (20 secondi al
+massimo, mai un invio rifiutato); `WeatherRetentionJob` ogni giorno; `ReviewDto.weather` al posto di `weatherAvailable`, con la deviazione
+`Weather` in evidenza. **Correzione** alla nota del 15 settembre: il file di cache dei TAF di NOAA non esiste, i TAF si chiedono a gruppi.
+Il test di architettura sulle fonti del meteo guarda ora la cartella del nucleo e non una qualsiasi `Weather`. Nessuna estensione del
+nucleo, nessun componente nuovo.
 
 **Changelog 0.99** (24 set 2026, fase T15b di M2): **le pagine delle persone** — T15 è chiusa. Nota
 `decisions/2026-09-24-le-pagine-delle-persone.md`, **due risposte di Carmine**, tutte e due come proposte: (1) alla pagina del pilota si
@@ -2081,7 +2092,7 @@ L'idea di partenza di Carmine era "un modulo per dipartimento, e dentro ciò che
 | Utenti, permessi, audit | login OIDC BFF, `StaffRoleMap`, grant per VID, superadmin, audit | IVAO OAuth | §6 |
 | Dati di riferimento IVAO | FIR/centri, aeroporti (snapshot giornalieri) | API IVAO `client_credentials` | §7 schema `ref_`; **dal 16 set 2026** (M2, T1) aeroporti **del mondo** con IATA e coordinate, piste con le testate (per gli aeroporti che le chiedono), tipi di aereo con varianti, equipaggiamenti e transponder |
 | **Confini dei FIR** (M2) | poligoni dei FIR del mondo, «in quale FIR sta questo punto» | il dataset di **VATSpy**, scaricato da un job e mai committato | nota `2026-09-16-i-confini-dei-fir` (sostituisce OpenAIP, misurato in T1); CC BY-SA 4.0 con attribuzione; senza il file, `ref_firs` è vuota e la proposta degli ATC si ferma agli aeroporti |
-| **Meteo** (M2) | METAR e TAF attuali e della storia recente (`IWeatherSource`) | NOAA, ripiego del METAR su IVAO e VATSIM | stessa nota; il salvataggio lo decide il modulo |
+| **Meteo** (M2) | METAR e TAF attuali e della storia recente (`IWeatherSource`) | NOAA, ripiego del METAR su IVAO e VATSIM | stessa nota; il salvataggio è del modulo dei tour (`fo_weather_reports`, nota `2026-09-24-il-meteo-salvato`) |
 | **Token personali** (M2) | un programma esterno dell'utente chiama gli endpoint di una `audience` | — | nota `2026-09-15-token-personali-e-agente-del-validatore`, §6.3 |
 | **Preferenze dell'utente** (M2) | chiave e valore per utente, chiavi dichiarate dai moduli | — | l'ordine della coda del validatore; come le preferenze delle notifiche |
 | **Contenuti a sezioni** | pagine, news e documenti: un solo modello `cms_contents` a sezioni e blocchi, con template, versioni, per dipartimento | media | §9.3; include `/start` (onboarding), `/pilots`, `/about`, la home |
