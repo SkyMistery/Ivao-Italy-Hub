@@ -1,7 +1,9 @@
 using System.Reflection;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -15,7 +17,8 @@ namespace IvaoHub.UnitTests;
 public sealed class PolicyNamesTests
 {
     private static readonly HubPolicyProvider Provider =
-        new(Options.Create(new AuthorizationOptions()), PermissionCatalog.Core);
+        new(Options.Create(new AuthorizationOptions()), PermissionCatalog.Core, new TokenAudienceCatalog(
+            [("roster", [new TokenAudienceDescriptor("roster.agent", CorePermissions.LinksEdit)])]));
 
     [Fact]
     public async Task EveryPermissionOfTheCatalogueIsAPolicy()
@@ -28,6 +31,33 @@ public sealed class PolicyNamesTests
             var requirement = Assert.Single(policy.Requirements.OfType<PermissionRequirement>());
             Assert.Equal(permission.Name, requirement.Permission);
         }
+    }
+
+    /// <summary>
+    /// The policy of a token's audience (T19a): the token scheme and only that one, the audience's claim, and the permission
+    /// the audience needs held somewhere. An audience nobody declared is as loud as a permission nobody declared.
+    /// </summary>
+    [Fact]
+    public async Task AnAudienceIsAPolicyOfTheTokenSchemeAlone()
+    {
+        var policy = await Provider.GetPolicyAsync(PersonalTokenPolicy.For("roster.agent"));
+
+        Assert.NotNull(policy);
+        Assert.Equal([HubClaims.TokenScheme], policy.AuthenticationSchemes);
+        Assert.Equal(CorePermissions.LinksEdit, Assert.Single(policy.Requirements.OfType<PermissionRequirement>()).Permission);
+        Assert.Contains(policy.Requirements.OfType<ClaimsAuthorizationRequirement>(), requirement =>
+            requirement.ClaimType == HubClaims.Audience && requirement.AllowedValues!.SequenceEqual(["roster.agent"]));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Provider.GetPolicyAsync(PersonalTokenPolicy.For("roster.invented")));
+    }
+
+    [Fact]
+    public void AnAudienceIsNamedAfterItsModule()
+    {
+        Assert.Throws<InvalidOperationException>(() => new TokenAudienceCatalog(
+            [("roster", [new TokenAudienceDescriptor("agent", CorePermissions.LinksEdit)])]));
+        Assert.Throws<InvalidOperationException>(() => new TokenAudienceCatalog(
+            [("roster", [new TokenAudienceDescriptor("roster.agent", CorePermissions.LinksEdit), new TokenAudienceDescriptor("roster.agent", CorePermissions.LinksEdit)])]));
     }
 
     [Fact]

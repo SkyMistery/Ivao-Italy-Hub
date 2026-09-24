@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data.Crud;
@@ -77,6 +78,18 @@ public sealed class SampleModule : ModuleBase
 
     public override IEnumerable<Type> DbContextTypes => [typeof(SampleDbContext)];
 
+    /// <summary>What a personal token of this module is for (T19a): the shape of the validator's agent.</summary>
+    public const string AgentAudience = "sample.agent";
+
+    /// <summary>Who the token says is asking. Only a token of <see cref="AgentAudience"/> opens it.</summary>
+    public const string AgentWhoAmIPattern = "/api/sample/agent/whoami";
+
+    /// <summary>Deciding one row with a token: the single handler with the row in hand, and an audited write.</summary>
+    public const string AgentDecidePattern = "/api/sample/agent/items/{id:long}/decide";
+
+    public override IReadOnlyList<TokenAudienceDescriptor> TokenAudiences =>
+        [new TokenAudienceDescriptor(AgentAudience, DecidePermission)];
+
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddModuleDbContext<SampleDbContext>(ModuleKey);
@@ -151,7 +164,42 @@ public sealed class SampleModule : ModuleBase
             var allowed = await authorization.AuthorizeAsync(principal, item, DecidePermission);
             return allowed.Succeeded ? Results.Ok(SampleItemMapping.ToDto(item)) : Results.Forbid();
         });
+
+        // The endpoints of a program with a personal token (T19a): the audience's policy on the group, and the row still
+        // asked of the single handler, exactly as the tours' agent will do.
+        var agent = endpoints.MapGroup("/api/sample/agent").RequireAuthorization(PersonalTokenPolicy.For(AgentAudience));
+
+        agent.MapGet("/whoami", (ClaimsPrincipal principal) =>
+            TypedResults.Ok(new SampleWhoAmI(int.Parse(principal.FindFirstValue(HubClaims.Vid)!, System.Globalization.CultureInfo.InvariantCulture))));
+
+        agent.MapPost("/items/{id:long}/decide", async Task<IResult> (
+            long id,
+            SampleDbContext database,
+            IAuthorizationService authorization,
+            ClaimsPrincipal principal,
+            CancellationToken cancellationToken) =>
+        {
+            var item = await database.Items
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(row => row.Id == id, cancellationToken);
+
+            if (item is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (!(await authorization.AuthorizeAsync(principal, item, DecidePermission)).Succeeded)
+            {
+                return Results.Forbid();
+            }
+
+            item.Title += " (decided)";
+            await database.SaveChangesAsync(cancellationToken);
+            return Results.Ok(SampleItemMapping.ToDto(item));
+        });
     }
 }
 
 public sealed record SamplePing(string Module);
+
+public sealed record SampleWhoAmI(int Vid);
