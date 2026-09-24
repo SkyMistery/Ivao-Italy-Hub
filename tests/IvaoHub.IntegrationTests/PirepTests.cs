@@ -734,8 +734,18 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         public ConcurrentDictionary<long, (IvaoTrackerSessionDto Session, IvaoFlightPlanDto Plan, IReadOnlyList<IvaoTrackPointDto> Track)> Sessions { get; } = new();
 
-        /// <summary>A flight of an A320: twenty minutes on the ground, an hour in the air.</summary>
-        public long Add(int vid, string callsign, string departure, string arrival, DateTime takeoff)
+        /// <summary>
+        /// A flight of an A320: twenty minutes on the ground, an hour in the air — or the track and the flight rules a test
+        /// of the checks on the tracks gives (T18).
+        /// </summary>
+        public long Add(
+            int vid,
+            string callsign,
+            string departure,
+            string arrival,
+            DateTime takeoff,
+            string flightRules = "I",
+            IReadOnlyList<IvaoTrackPointDto>? flown = null)
         {
             var id = Interlocked.Increment(ref _nextId);
             var start = takeoff.AddMinutes(-20);
@@ -744,10 +754,10 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             // (T13b), so a payload it could not read would be a page with no plan.
             var filed = start.AddMinutes(-10).ToString("O", CultureInfo.InvariantCulture);
             var plan = new IvaoFlightPlanDto(
-                id * 10, 1, start.AddMinutes(-10), departure, arrival, null, null, "A320", "M", "SDFG", "S", "I", "S",
+                id * 10, 1, start.AddMinutes(-10), departure, arrival, null, null, "A320", "M", "SDFG", "S", flightRules, "S",
                 "F340", "N0450", "DCT", null, null, null,
-                $$"""{"id":{{id * 10}},"revision":1,"createdAt":"{{filed}}","departureId":"{{departure}}","arrivalId":"{{arrival}}","aircraftId":"A320","flightRules":"I","flightType":"S","level":"F340","speed":"N0450","route":"DCT"}""");
-            IReadOnlyList<IvaoTrackPointDto> track =
+                $$"""{"id":{{id * 10}},"revision":1,"createdAt":"{{filed}}","departureId":"{{departure}}","arrivalId":"{{arrival}}","aircraftId":"A320","flightRules":"{{flightRules}}","flightType":"S","level":"F340","speed":"N0450","route":"DCT"}""");
+            IReadOnlyList<IvaoTrackPointDto> track = flown ??
             [
                 new(start, 0, 0, 100, 0, 0, OnGround: true, "Boarding", "2000"),
                 new(takeoff, 0, 0, 500, 150, 0, OnGround: false, "Departing", "2000"),

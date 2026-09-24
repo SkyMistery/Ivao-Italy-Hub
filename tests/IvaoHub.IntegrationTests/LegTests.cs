@@ -207,7 +207,7 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var token = TestContext.Current.CancellationToken;
         using var coordinator = await SignedInAsync(_factory, CoordinatorVid, token);
 
-        // The reference aircraft flies at 450 kt; the division's numbers are the defaults, 5 % and 20 minutes.
+        // The reference aircraft flies at 450 kt; the division's numbers are the defaults, 5 % and 15 minutes (T18).
         using (var profile = await coordinator.PostAsJsonAsync(
             AircraftEndpoints.ProfilesPattern,
             new AircraftProfileWriteDto(Department.FOD, TestType, 450, "fo-test", default),
@@ -226,8 +226,8 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await OkAsync(await coordinator.PostAsJsonAsync(legs, Leg("XFA1", "XFA2"), token), token);
         var grid = await OkAsync(await coordinator.PostAsJsonAsync(legs, Leg("XFA2", "XFA3"), token), token);
 
-        // 253.9 NM at 450 kt: 60 × 253.9 × 1.05 / 450 + 20 = 55.5 → 56 minutes.
-        Assert.Equal(56, Rows(grid)[0].GetProperty("estimatedMinutes").GetInt32());
+        // 253.9 NM at 450 kt: 60 × 253.9 × 1.05 / 450 + 15 = 50.5 → 51 minutes.
+        Assert.Equal(51, Rows(grid)[0].GetProperty("estimatedMinutes").GetInt32());
         Assert.Equal(
             Rows(grid).Sum(row => row.GetProperty("estimatedMinutes").GetInt32()),
             grid.GetProperty("totalEstimatedMinutes").GetInt32());
