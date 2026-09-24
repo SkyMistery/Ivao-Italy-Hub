@@ -3,9 +3,16 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T15b in `main`; T16 è fatta**: branch `m2/t16-weather`, in PR
-(vedi `gh pr list`). Piano **1.00**. **Il prossimo passo è T17 (il motore dei controlli e i controlli sul piano: `IFlightCheck`,
-`fo_check_results`, i suggerimenti)**, in una chat nuova, dopo il merge.
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T16 in `main`**. Piano **1.01**. **Il prossimo passo è T17 (il motore dei
+controlli e i controlli sul piano: `IFlightCheck`, `fo_check_results`, i suggerimenti)**, in una chat nuova, dopo il merge della nota qui
+sotto.
+
+> **Prima di T17** (nota `2026-09-24-i-controlli-dai-pirep-veri`, piano 1.01, solo documenti): Carmine ha fatto guardare che cosa trovano
+> oggi i controllori nel sistema dei tour in uso (45 PIREP, 363 commenti). T17 prende **tre controlli in più** (`flightRules`,
+> `planAtTakeoff`, `flightPlanForm` con l'impostazione dei paesi per SID e STAR nella rotta), `equipment` con le **lettere per regola di
+> volo** (W solo sopra FL285) e l'alternato uguale alla destinazione; T18 prende `maxAltitude`; T21 i livelli volati. ⚠️ **Il primo
+> lavoro di T17** è registrare come fixture i PIREP della nota §5 finché il tracker IVAO li ha (circa tre mesi dal volo). ⚠️ In apertura
+> chiedere a Carmine se, oltre a W, altre lettere hanno una condizione.
 
 > **Che cosa ha lasciato T16** (nota `2026-09-24-il-meteo-salvato`, piano 1.00): il meteo dei tour sta in `Weather/` del modulo —
 > `WeatherArchive` (aeroporti guardati, salvataggio senza doppioni, scarico all'invio, cancellazione, meteo della pagina di validazione),

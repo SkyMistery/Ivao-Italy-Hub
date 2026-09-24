@@ -925,8 +925,12 @@ subito il metodo). Si registra comunque se il validatore conferma l'errore sugge
 | `parking` | fermo prima del push e dopo l'arrivo | tracce | `minParkingMinutesBefore`, `minParkingMinutesAfter` |
 | `speed250` | 250 kt sotto FL100 | tracce, esenzioni | tolleranza |
 | `simRate` | velocità riportata coerente con quella di posizione | tracce | tolleranza |
-| `alternate` | alternato presente (e `ZZZZ` ⚖️, sotto) | piano | — |
-| `equipment` | equipaggiamento richiesto | piano | lettere |
+| `alternate` | alternato presente, diverso dalla destinazione (uguale alla partenza: solo nell'evidenza), e `ZZZZ` ⚖️, sotto | piano | — |
+| `equipment` | equipaggiamento richiesto | piano | lettere **per regola di volo**; W solo con un livello pianificato sopra FL285 |
+| `flightRules` | regole di volo del piano ammesse | piano | lettere I, V, Y, Z |
+| `planAtTakeoff` | un piano valido al decollo; le revisioni dopo non contano (GR9) | piano | — |
+| `flightPlanForm` | forma del piano: REG/ con un callsign da volo di linea, RMK/, Z con COM/DAT/NAV, SID e STAR nella rotta solo nei paesi dell'impostazione, VFR senza DCT | piano, impostazione dei paesi | — |
+| `maxAltitude` | quota massima | tracce | quota |
 | `takeoffFromThreshold` | decollo dalla testata | tracce, `ref_ivao_runways` | — (`thresholdToleranceMeters` è un'impostazione, §1.11; T9) |
 | `vmc` | VMC a partenza e arrivo, **solo piani `V`** (e le metà VFR di `Y`/`Z`) | meteo salvato | visibilità e base nubi minime |
 | `repeatedRoute` | rotta già volata in un tour `Distance` o `Open` (anche bloccato all'invio; A→B diversa da B→A) | PIREP | — |
@@ -950,6 +954,11 @@ Note sui controlli delicati:
 Il riferimento per la logica è il validatore Python (`AutomaticValidatorTour`); ogni controllo si prova su **voli veri**
 (§13).
 
+**Dai PIREP veri** (24 settembre 2026, nota `2026-09-24-i-controlli-dai-pirep-veri`): 45 PIREP e 363 commenti dei controllori del
+sistema di oggi hanno aggiunto `flightRules`, `planAtTakeoff`, `flightPlanForm`, `maxAltitude`, la forma per regola di volo di
+`equipment` e l'alternato uguale alla destinazione. Le **manovre obbligatorie** della leg (touch and go, pista, VRP) restano fuori:
+oggi nessuno le valida in automatico, e si valutano più avanti.
+
 ### 6.6 L'agente sul PC del validatore (livello B)
 
 **L'idea di Carmine** (15 settembre): i controlli che dipendono dalla geometria della rotta vanno sul PC del validatore, dove c'è
@@ -963,6 +972,7 @@ dove serve.
 |---|---|
 | `semicircularLevels` | ricostruisce la rotta segmento per segmento: dove il segmento è **`DCT`** assume FRA (circa 90 %, errore accettato dal FOD), dove è un'**aerovia** non giudica; per ogni tratto `DCT` calcola la **rotta magnetica** e il paese (dal FIR), e la confronta con il livello (est–ovest, o nord–sud per i paesi di `northSouthLevelCountries`) |
 | `atcCoverage` | incrocia la rotta con le posizioni ATC online nell'intervallo (dall'archivio che l'hub gli passa) e dice quali settori ha attraversato con un ATC aperto; verifica le esenzioni dichiarate |
+| livelli volati contro pianificati | salite e discese pianificate sui fix del piano, confrontate con le tracce (nota `2026-09-24-i-controlli-dai-pirep-veri`) |
 | più avanti | aderenza alla rotta, SID e STAR dichiarate contro quelle volate (i controlli B di Toursystem: 07, 10, 14, 16) |
 
 **Il contratto con l'hub** (estensione del nucleo n.14):

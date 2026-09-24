@@ -314,8 +314,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T15a | Completamento, validatori, piloti, ban sul server — **fatta il 23 set 2026** | T4b, T13 | segnalazione dell'award nella transazione dell'accettazione, «aggiungi validatore» e statistiche, dati della pagina del pilota, ban e mail |
 | T15b | Le pagine delle persone — **fatta il 24 set 2026** | T15a | `/staff/tours/validators`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans`, `myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato» |
 | T16 | Il meteo salvato — **fatta il 24 set 2026** | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
-| T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
-| T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`; tarature |
+| T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute`, `flightRules`, `planAtTakeoff`, `flightPlanForm` |
+| T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`; tarature |
 | T19 | Token personali e contratto dell'agente | T3, T17 | `hub_personal_tokens`, lo schema `Bearer` per `audience`, `/api/flightops/agent` |
 | T20 | Conservazione, rifiniture, giro completo | tutte | job mensile, cancellazione dei dati di un pilota, smoke, giro e2e, documenti |
 | T21 | L'app del validatore parla con l'hub | T19 | nel repository `AutomaticValidatorTour`, fuori da questo; la mail a Navigraph prima di distribuirla |
@@ -1609,13 +1609,20 @@ Design §6.1–§6.4. Branch `m2/t17-check-engine`.
    `FlightCheckContext` con PIREP, snapshot, revisioni del piano, tracce, `ref_`, meteo, archivio ATC.
 2. **Il job** all'invio e al reinvio; `fo_check_results` (`ran_by = server`); gli errori con quella `check_key` diventano **suggeriti**;
    si registra se il validatore conferma.
-3. **I controlli sul piano**: `callsign`, `aircraft`, `alternate` con la regola di `ZZZZ` e `ALTN/`, `equipment` (vocabolario da T1),
-   `repeatedRoute`.
+3. **I controlli sul piano**: `callsign`, `aircraft`, `alternate` con la regola di `ZZZZ` e `ALTN/` e l'alternato **uguale alla
+   destinazione** (uguale alla partenza: solo nell'evidenza), `equipment` (vocabolario da T1) con le **lettere per regola di volo** e W
+   solo sopra FL285, `repeatedRoute`, e dalla nota `2026-09-24-i-controlli-dai-pirep-veri`: **`flightRules`**, **`planAtTakeoff`** (i
+   controlli sul piano leggono il piano valido al decollo), **`flightPlanForm`** (REG/ con un callsign da volo di linea, RMK/, Z con
+   COM/DAT/NAV, VFR senza DCT, SID e STAR nella rotta solo nei paesi di un'impostazione del modulo che parte da `ED` e `LO`).
+   ⚠️ In apertura: chiedere a Carmine se, oltre a W, altre lettere hanno una condizione (l'ha citata «tipo»).
 4. Gli schemi dei parametri collegati al catalogo di T9; la sezione dei controlli nella pagina di validazione con l'evidenza.
 5. `semicircularLevels` e `atcCoverage` nel catalogo come controlli **dell'agente**: senza agente risultano `Unavailable`.
+6. **Prima di tutto il resto**: registrare come fixture, con il token vero, i PIREP della nota (§5), finché il tracker li ha (circa tre
+   mesi dal volo).
 
-**Test**: ogni controllo sul **corpus** con gli esiti attesi di Carmine; un controllo che lancia un'eccezione diventa `Unavailable`, mai
-`Failed`; il suggerimento compare nella pagina e nella colonna della coda.
+**Test**: ogni controllo sul **corpus** con gli esiti attesi di Carmine e sui casi della nota `2026-09-24-i-controlli-dai-pirep-veri`
+§5; un controllo che lancia un'eccezione diventa `Unavailable`, mai `Failed`; il suggerimento compare nella pagina e nella colonna della
+coda; **un volo di un PIREP respinto non si può riportare di nuovo** (`reportSessionClaimed`: oggi il test copre solo un PIREP in coda).
 **Fatta quando**: tutti i voli del corpus danno sui controlli del piano l'esito atteso (o la differenza è scritta e decisa con Carmine).
 
 ### T18 — I controlli sulle tracce
@@ -1623,7 +1630,9 @@ Design §6.1–§6.4. Branch `m2/t17-check-engine`.
 Design §6.4. Branch `m2/t18-track-checks`.
 
 1. `disconnections`, `parking`, `speed250` (con le esenzioni), `simRate`, `landingAtArrival`, `takeoffFromThreshold` (piste di T1, prua più
-   vicina, «decollo da un'intersezione» invece di un fallimento), `vmc` sul METAR più vicino (solo le parti VFR).
+   vicina, «decollo da un'intersezione» invece di un fallimento), `vmc` sul METAR più vicino (solo le parti VFR), `maxAltitude` (nota
+   `2026-09-24-i-controlli-dai-pirep-veri`; il PIREP 880159 è il caso di un falso positivo di disconnessione e aeroporti del vecchio
+   sistema, e da noi deve passare).
 2. **Le tarature sul corpus**: `thresholdToleranceMeters` (150 m di partenza) secondo il campionamento misurato in T2; `durationFactor` e
    `durationFixedMinutes` confrontando la stima con la durata delle sessioni. I numeri scelti, e la tabella degli errori che hanno, si
    scrivono nella PR e **si decidono con Carmine** prima di cambiare i default.
@@ -1673,7 +1682,8 @@ Fuori da questo repository: `D:\Programmazione\IVAO_Test\AutomaticValidatorTour`
 dopo T19. Si scrive in dettaglio all'apertura, con il codice dell'app davanti.
 
 1. L'app si configura con l'indirizzo dell'hub e un token personale; legge la coda e il PIREP; esegue `semicircularLevels` (rotta
-   ricostruita con i fix locali, FRA sui tratti `DCT`, paese dal FIR, `northSouthLevelCountries`) e `atcCoverage`; scrive gli esiti.
+   ricostruita con i fix locali, FRA sui tratti `DCT`, paese dal FIR, `northSouthLevelCountries`), `atcCoverage` e **i livelli volati
+   contro i pianificati** (salite e discese sui fix del piano; nota `2026-09-24-i-controlli-dai-pirep-veri`); scrive gli esiti.
 2. Mostra in locale tutto quello che mostra oggi.
 3. ⚠️ **Prima di distribuirla ad altri validatori**: la mail a `dev@navigraph.com` con la forma delle evidenze e la risposta conservata
    (nota T0 §4). È un messaggio verso l'esterno: lo manda Carmine, o Claude su sua conferma.
