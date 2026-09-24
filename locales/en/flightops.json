@@ -1030,7 +1030,6 @@
     "noBans": "No ban, now or in the past.",
     "banInForce": "Banned from {{from}} to {{to}}: {{reason}}",
     "banPast": "Was banned from {{from}} to {{to}}: {{reason}}",
-    "weatherLater": "The saved weather is not available yet.",
     "checksLater": "The automatic checks are not available yet.",
     "noErrors": "The rules of this report have no errors to mark.",
     "suggestionAccept": "No error marked makes it a rejection.",
@@ -1153,7 +1152,24 @@
     "disputeThread": "The thread of the dispute",
     "decideDispute": "Decide the dispute",
     "disputeDecided": "Dispute decided. The answer is in the thread, and the pilot has it by email.",
-    "pilotPage": "The pilot’s page"
+    "pilotPage": "The pilot’s page",
+    "weather": {
+      "none": "No METAR or TAF was kept for the airports of this flight: the weather is not available.",
+      "airport": "{{icao}} · {{role}} · from {{from}} to {{to}} UTC",
+      "airportNone": "No bulletin was kept for this airport during the flight.",
+      "diversion": "Diversion for weather: these are the METARs and TAFs of {{icao}}, the planned destination.",
+      "source": "source: {{source}}",
+      "roles": {
+        "Departure": "departure",
+        "Arrival": "arrival",
+        "Diversion": "diversion",
+        "Flown": "touched by the flight"
+      },
+      "kinds": {
+        "Metar": "METAR",
+        "Taf": "TAF"
+      }
+    }
   },
   "events": {
     "submitted": "Sent",

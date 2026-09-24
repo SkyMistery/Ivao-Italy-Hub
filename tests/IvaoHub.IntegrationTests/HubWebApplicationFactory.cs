@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
+using IvaoHub.Core.Weather;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -64,6 +65,9 @@ public sealed class HubWebApplicationFactory(
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<IStartupFilter, TestSignInStartupFilter>();
+
+            // No test asks the real weather sources (T16): a report sent fills its flight's weather at the send, and finds none.
+            services.AddScoped<IWeatherSource, WeatherDouble>();
 
             // EF Core picks up any IInterceptor registered in the application container, so a test
             // can watch what the contexts of the host actually send to the database.

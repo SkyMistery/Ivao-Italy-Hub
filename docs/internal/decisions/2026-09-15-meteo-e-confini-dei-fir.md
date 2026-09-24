@@ -35,6 +35,8 @@ Da `aviationweather.gov/data/api/` e dal suo `openapi.yaml`, più sette chiamate
   (`/v2/airports/{icao}/metar`, **minuscolo**). Un test di architettura: nessun modulo nomina NOAA né VATSIM.
 - **Il job ogni 30 minuti** (T16) legge i **due file di cache** di NOAA (METAR e TAF di tutto il mondo, due richieste) e ne tiene gli
   aeroporti delle leg dei tour aperti o in chiusura. Due richieste ogni mezz'ora qualunque sia il numero di aeroporti, com'è raccomandato.
+  ⚠️ **Corretto in T16** (nota `2026-09-24-il-meteo-salvato` §4): **il file dei TAF non esiste** (404, misurato in T2). Il client usa il
+  file dei METAR sopra i 60 aeroporti e le interrogazioni a gruppi di 40 sotto; i TAF vanno sempre a gruppi.
   Se NOAA non risponde: METAR da IVAO, poi da VATSIM, per quegli aeroporti; il TAF salta il giro.
 - **All'invio del PIREP** gli aeroporti toccati dal volo che non erano in elenco si chiedono all'API con `date` e `hours` sulla finestra
   del volo, **METAR e TAF** (correzione di §2). La finestra di un PIREP (`report_window_days`, 7 di default) sta ben dentro i 18 giorni

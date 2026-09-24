@@ -3,6 +3,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
+using IvaoHub.Modules.FlightOps.Weather;
 
 namespace IvaoHub.Modules.FlightOps.Review;
 
@@ -142,8 +143,9 @@ public sealed record ReviewActionsDto(bool CanTake, bool CanRelease, bool CanDec
 /// <summary>
 /// The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
 /// suggestion, the decision as it stands and the history. The airports of the leg and of a diversion come with their positions,
-/// for the map (T13b); one the reference data has no position for comes without. The weather (T16) and the automatic checks (T17) have their place
-/// and say they are not available yet; the tracks are a request of their own, <c>…/tracks</c>.
+/// for the map (T13b); one the reference data has no position for comes without. The weather kept for each airport during the
+/// flight comes with it (T16); the automatic checks (T17) have their place and say they are not available yet; the tracks are a
+/// request of their own, <c>…/tracks</c>.
 /// </summary>
 public sealed record ReviewDto(
     long Id,
@@ -184,7 +186,7 @@ public sealed record ReviewDto(
     string? StaffNote,
     bool ThresholdOverridden,
     string? OverrideReason,
-    bool WeatherAvailable,
+    IReadOnlyList<ReviewWeatherDto> Weather,
     bool ChecksAvailable,
     IReadOnlyList<ReviewEventDto> History,
     ReviewDisputeDto? Dispute,

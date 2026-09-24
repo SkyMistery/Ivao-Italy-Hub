@@ -14,6 +14,7 @@ using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
+using IvaoHub.Modules.FlightOps.Weather;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,7 @@ public sealed class PirepReview(
     ModuleSettingsStore settingsStore,
     PirepDisputes disputes,
     TourCompletion completion,
+    WeatherArchive weather,
     IOptions<DivisionOptions> division,
     ICurrentUser currentUser,
     IClock clock)
@@ -405,7 +407,7 @@ public sealed class PirepReview(
             pirep.StaffNote,
             pirep.ThresholdOverridden,
             pirep.OverrideReason,
-            WeatherAvailable: false,
+            await weather.ForReviewAsync(pirep, cancellationToken),
             ChecksAvailable: false,
             [
                 .. pirep.Events.OrderBy(step => step.At).ThenBy(step => step.Id).Select(step => new ReviewEventDto(

@@ -3,9 +3,19 @@
 > Documento **interno** (italiano). Si aggiorna alla fine di ogni fase (piano di implementazione §A.6).
 > Fonte di verità: `00-piano-di-progettazione.md`; perimetro e firme: `01-design-m0.md`; ordine: `02-piano-implementazione-m0.md`.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T15a in `main`; T15b è fatta**: branch `m2/t15b-people-pages`, in PR
-(vedi `gh pr list`). Piano **0.99**. **T15 è chiusa. Il prossimo passo è T16 (il meteo salvato: `fo_weather_reports`, il job ogni 30
-minuti, lo scarico all'invio, METAR e TAF nella pagina di validazione)**, in una chat nuova, dopo il merge.
+**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T15b in `main`; T16 è fatta**: branch `m2/t16-weather`, in PR
+(vedi `gh pr list`). Piano **1.00**. **Il prossimo passo è T17 (il motore dei controlli e i controlli sul piano: `IFlightCheck`,
+`fo_check_results`, i suggerimenti)**, in una chat nuova, dopo il merge.
+
+> **Che cosa ha lasciato T16** (nota `2026-09-24-il-meteo-salvato`, piano 1.00): il meteo dei tour sta in `Weather/` del modulo —
+> `WeatherArchive` (aeroporti guardati, salvataggio senza doppioni, scarico all'invio, cancellazione, meteo della pagina di validazione),
+> `WeatherBulletin` su `fo_weather_reports`, `WeatherJob` (minuti 5 e 35) e `WeatherRetentionJob` (03:50 UTC). **`weatherRetentionDays`
+> non è un'impostazione**: è la `report_window_days` più lunga dei tour che prendono PIREP (`RetentionDaysAsync`). **Per T17/T18**: il
+> contesto dei controlli legge il meteo da `fo_weather_reports` con `WeatherArchive.Window(pirep)` e `Airports(pirep)`; `vmc` usa il METAR
+> più vicino all'ora di decollo e di atterraggio, e senza METAR è `Unavailable`. La pagina di validazione ha `review.weather` (per
+> aeroporto: ruolo, finestra, `metars`, `tafs` con la fonte) al posto di `weatherAvailable`; `checksAvailable` resta falso fino a T17.
+> ⚠️ **Nei test d'integrazione nessuno chiede il meteo vero**: `HubWebApplicationFactory` registra un `WeatherDouble` vuoto, e
+> `PirepTests` gliene dà uno suo (`_weather`). ⚠️ `ReadyTourAsync` accetta ora `releasedDaysAgo` e `reportWindowDays`.
 
 > **Che cosa ha lasciato T15b** (nota `2026-09-24-le-pagine-delle-persone`, piano 0.99): le pagine delle persone stanno in
 > `screens/people.tsx` — `/staff/tours/validators` (selettore d'anno `?year=`, «togli» su ogni abilitazione, «aggiungi validatore»),

@@ -313,7 +313,7 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T14b | Contestazioni, chiarimenti, segnalazioni — **fatta il 23 set 2026** | T14a | la contestazione che sblocca; il chiarimento dalle pagine dei tour; `fo_leg_issues`; `openIssues` |
 | T15a | Completamento, validatori, piloti, ban sul server — **fatta il 23 set 2026** | T4b, T13 | segnalazione dell'award nella transazione dell'accettazione, «aggiungi validatore» e statistiche, dati della pagina del pilota, ban e mail |
 | T15b | Le pagine delle persone — **fatta il 24 set 2026** | T15a | `/staff/tours/validators`, `/staff/tours/pilots/{vid}`, `/staff/tours/bans`, `myTours`, l'avanzamento sui riquadri, il giro «completato → award assegnato» |
-| T16 | Il meteo salvato | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
+| T16 | Il meteo salvato — **fatta il 24 set 2026** | T2, T13 | job ogni 30 minuti, scarico all'invio, cancellazione, meteo nella pagina di validazione |
 | T17 | Il motore dei controlli e i controlli sul piano | T9, T13 | `IFlightCheck`, job, `fo_check_results`, suggerimenti; `callsign`, `aircraft`, `alternate`, `equipment`, `repeatedRoute` |
 | T18 | I controlli sulle tracce | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`; tarature |
 | T19 | Token personali e contratto dell'agente | T3, T17 | `hub_personal_tokens`, lo schema `Bearer` per `audience`, `/api/flightops/agent` |
@@ -1582,6 +1582,24 @@ Design §1.13; nota `meteo-e-confini-dei-fir` §3.1. Branch `m2/t16-weather`.
 **Test**: integrazione: il job salva senza doppioni; un bollettino non si cancella finché un PIREP di quel giorno è in coda; lo scarico
 all'invio con una fonte finta.
 **Fatta quando**: in sviluppo il job gira due volte senza doppioni, e un PIREP del corpus mostra i METAR del suo volo.
+
+**T16 fatta il 24 settembre 2026** (branch `m2/t16-weather`, piano 1.00, nota `decisions/2026-09-24-il-meteo-salvato.md`). Com'è andata:
+
+- **Due risposte di Carmine in apertura**: il meteo di un PIREP deciso si cancella come dice il design; `weatherRetentionDays` è la
+  finestra di riporto più lunga dei tour che prendono PIREP, non un'impostazione.
+- **Il modulo** ha `Weather/`: `WeatherArchive`, `WeatherBulletin` (`fo_weather_reports`, indice unico), `WeatherJob` (minuti 5 e 35),
+  `WeatherRetentionJob` (03:50 UTC). All'invio si chiede la storia di ogni aeroporto del report **senza un METAR nella finestra del
+  volo**, dopo il salvataggio, al massimo 20 secondi. `ReviewDto.weather` al posto di `weatherAvailable`; la sezione Meteo della pagina di
+  validazione con la fonte di ogni bollettino e l'arrivo in evidenza con una deviazione `Weather`. Nessun componente nuovo.
+- **Trovato strada facendo**: il file di cache dei TAF di NOAA non esiste (la nota del 15 settembre è corretta); il test di architettura
+  sulle fonti del meteo escludeva qualsiasi cartella `Weather`, anche quella del modulo (ora solo quella del nucleo); la copia dei testi
+  del modulo in `locales/` si rigenera con `pnpm i18n:sync`.
+- **Test**: il job due volte senza doppioni, lo scarico all'invio con una fonte finta e la pagina che lo mostra, un bollettino che resta
+  finché un PIREP di quel giorno aspetta e se ne va dopo il ritiro; lo spec della pagina di validazione mostra il METAR. Nei test
+  d'integrazione nessuno chiede il meteo vero (`WeatherDouble` nella factory). Suite intere in locale: unit 538, integrazione 271,
+  Vitest 472, lint, formato, typecheck, i18n.
+- **Non verificato**: i PIREP del corpus sono di giugno, oltre i 30 giorni di storia di NOAA, quindi mostrano «non disponibile» e non i
+  METAR del loro volo; il TAF in vigore al decollo di un volo lungo, chiesto alla storia (si ottiene quello in vigore alla fine).
 
 ### T17 — Il motore dei controlli e i controlli sul piano
 

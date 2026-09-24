@@ -10,6 +10,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
+using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
@@ -57,6 +58,9 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             services.AddScoped<IIvaoApiClient>(provider =>
                 new TrackerDouble(provider.GetRequiredService<FixtureIvaoApiClient>(), _flights));
 
+            // The weather of these tests' airports, put there by the tests about it (T16).
+            services.AddScoped<IWeatherSource>(_ => _weather);
+
             // The FOD's mailbox, for the issues on the legs (T14b): given here, never written into the division's file.
             services.PostConfigure<DivisionOptions>(division => division.DepartmentMailboxes[nameof(Department.FOD)] = FodMailbox);
         }));
@@ -89,6 +93,7 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await Everything<Pirep>(database).Where(report => vids.Contains(report.Vid) || _tours.Contains(report.TourId)).ExecuteDeleteAsync(token);
             await database.Enrolments.Where(row => vids.Contains(row.Vid) || _tours.Contains(row.TourId)).ExecuteDeleteAsync(token);
             await database.Bans.Where(ban => vids.Contains(ban.Vid)).ExecuteDeleteAsync(token);
+            await CleanWeatherAsync(database, token);
 
             // Subtours first: a container goes after them (T15).
             await Everything<Tour>(database).Where(tour => _tours.Contains(tour.Id) && tour.ParentTourId != null).ExecuteDeleteAsync(token);
@@ -535,8 +540,17 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
             .Single(leg => leg.GetProperty("id").GetInt64() == legId)
             .GetProperty("progress").GetString()!;
 
-    /// <summary>A Sequential tour flying ahead, released two days ago, with two legs: Rome–Milan and Milan–London.</summary>
-    private async Task<(long TourId, long[] Legs)> ReadyTourAsync(HttpClient coordinator, int dailyLimit, CancellationToken cancellationToken, long? awardId = null)
+    /// <summary>
+    /// A Sequential tour flying ahead, released four days ago unless the test says otherwise, with two legs: Rome–Milan and
+    /// Milan–London.
+    /// </summary>
+    private async Task<(long TourId, long[] Legs)> ReadyTourAsync(
+        HttpClient coordinator,
+        int dailyLimit,
+        CancellationToken cancellationToken,
+        long? awardId = null,
+        int releasedDaysAgo = 4,
+        int? reportWindowDays = null)
     {
         var slug = $"fo-test-pirep-{Guid.NewGuid():N}"[..27];
         var tour = await CreatedAsync(
@@ -553,9 +567,9 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 CoverMediaId: null,
                 BannerMediaId: null,
                 ShowPreview: false,
-                ReleaseAt: DateTime.UtcNow.AddDays(-4),
+                ReleaseAt: DateTime.UtcNow.AddDays(-releasedDaysAgo),
                 CloseAt: DateTime.UtcNow.AddDays(60),
-                ReportWindowDays: null,
+                ReportWindowDays: reportWindowDays,
                 Progression: TourProgression.FlyAhead,
                 HubRotationOrder: null,
                 RequiresProcedures: false,

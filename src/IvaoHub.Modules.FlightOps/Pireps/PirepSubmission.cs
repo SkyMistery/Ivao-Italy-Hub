@@ -13,6 +13,7 @@ using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
+using IvaoHub.Modules.FlightOps.Weather;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.FlightOps.Pireps;
@@ -44,6 +45,7 @@ public sealed class PirepSubmission(
     AtcProposer atc,
     EffectiveRules effectiveRules,
     ModuleSettingsStore settingsStore,
+    WeatherArchive weatherArchive,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -448,6 +450,9 @@ public sealed class PirepSubmission(
 
         // The runways of the airports a report touches, for the checks that read them (T1, T18).
         await runways.EnsureAsync([.. new[] { departure, arrival, diversion }.OfType<string>().Distinct()], cancellationToken);
+
+        // The weather of the flight's airports the job did not keep (design M2 §1.13 point 2, T16): never a refused send.
+        await weatherArchive.FillFlightAsync(pirep, now, cancellationToken);
 
         return (pirep, null);
     }

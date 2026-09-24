@@ -422,7 +422,7 @@ delle impostazioni dei moduli del nucleo (`IModule.Settings`, T5, nota `2026-09-
 | `retentionMonths`, `retentionMonthsLong` | 13 e 25 (§10) |
 | `trackRetentionDays` | 90: giorni dopo la decisione (o il ritiro) in cui si tiene la traccia di un PIREP (Carmine, 23 settembre, T13a; §10) |
 | `thresholdToleranceMeters` | 150 (§6.4), uno per tutto il sistema |
-| `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) — **non in T5**: segue i tour aperti, e la forma la decide T16 |
+| `weatherRetentionDays` | la finestra massima dei tour aperti (§1.13) — **non è un'impostazione** (T16, Carmine 24 set 2026): la `report_window_days` più lunga dei tour aperti o in chiusura, `defaultReportWindowDays` se non ce n'è |
 
 Le **soglie dei controlli** non stanno qui: sono parametri delle regole (§1.7).
 
@@ -489,7 +489,11 @@ almeno all'aeroporto di partenza e di arrivo. Il meteo di un giorno passato non 
      validatore vede «non disponibile».
 - **Quando si cancella** (la regola di Carmine): un bollettino si elimina quando è più vecchio di
   `weatherRetentionDays` **e** tutti i PIREP con un volo in quel giorno su quell'aeroporto sono decisi. Un job
-  giornaliero.
+  giornaliero. **Deciso in T16** (nota `2026-09-24-il-meteo-salvato`): `weatherRetentionDays` è la finestra di riporto più lunga dei
+  tour aperti o in chiusura, più un giorno di margine; «deciso» vuol dire né in coda, né in revisione, né da modificare, né rifiutato con
+  una contestazione aperta; il giorno prima del volo resta con il volo (il TAF in vigore). Il meteo di un PIREP deciso non si tiene.
+  All'invio si chiede la storia di ogni aeroporto del report **senza un METAR salvato nella finestra del volo**, non solo di quelli fuori
+  elenco.
 - **Come si usa**: nella pagina di validazione i METAR e i TAF dell'intervallo del volo per partenza, arrivo e
   deviazione (§4.3); il controllo `vmc` (§6.4) sui tour VFR.
 - Nessun modulo nomina NOAA o VATSIM: le nomina solo l'implementazione del nucleo, come IVAO.

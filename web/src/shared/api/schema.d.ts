@@ -4927,8 +4927,9 @@ export interface components {
         /**
          * @description The validation page (§4.3): the report and its flights, the rules it froze with the table of their errors, the pilot, the
          *     suggestion, the decision as it stands and the history. The airports of the leg and of a diversion come with their positions,
-         *     for the map (T13b); one the reference data has no position for comes without. The weather (T16) and the automatic checks (T17) have their place
-         *     and say they are not available yet; the tracks are a request of their own, `…/tracks`.
+         *     for the map (T13b); one the reference data has no position for comes without. The weather kept for each airport during the
+         *     flight comes with it (T16); the automatic checks (T17) have their place and say they are not available yet; the tracks are a
+         *     request of their own, `…/tracks`.
          */
         ReviewDto: {
             /** Format: int64 */
@@ -4976,7 +4977,7 @@ export interface components {
             staffNote: null | string;
             thresholdOverridden: boolean;
             overrideReason: null | string;
-            weatherAvailable: boolean;
+            weather: components["schemas"]["ReviewWeatherDto"][];
             checksAvailable: boolean;
             history: components["schemas"]["ReviewEventDto"][];
             dispute: null | components["schemas"]["ReviewDisputeDto"];
@@ -5105,6 +5106,20 @@ export interface components {
             /** Format: int32 */
             seq: number;
             points: null | components["schemas"]["IvaoTrackPointDto"][];
+        };
+        /**
+         * @description The weather of one airport of a report during its flight (§4.3): empty lists mean nothing was kept — the page says
+         *     «not available», never «good weather».
+         */
+        ReviewWeatherDto: {
+            icao: string;
+            role: components["schemas"]["WeatherAirportRole"];
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            metars: components["schemas"]["WeatherBulletinDto"][];
+            tafs: components["schemas"]["WeatherBulletinDto"][];
         };
         /** @description A rotation as the form loads it. */
         RotationDto: {
@@ -5736,6 +5751,24 @@ export interface components {
          * @enum {unknown}
          */
         Visibility: "Public" | "Members" | "Staff" | "Department";
+        /**
+         * @description The part an airport plays in a report, for the validation page: the diversion's is shown with a reason `Weather`.
+         * @enum {unknown}
+         */
+        WeatherAirportRole: "Departure" | "Arrival" | "Diversion" | "Flown";
+        /** @description One kept bulletin, as the validator reads it. */
+        WeatherBulletinDto: {
+            kind: components["schemas"]["WeatherReportKind"];
+            /** Format: date-time */
+            issuedAt: string;
+            raw: string;
+            source: string;
+        };
+        /**
+         * @description Which bulletin this is: what the weather was, or what it is expected to be.
+         * @enum {unknown}
+         */
+        WeatherReportKind: "Metar" | "Taf";
     };
     responses: never;
     parameters: never;
