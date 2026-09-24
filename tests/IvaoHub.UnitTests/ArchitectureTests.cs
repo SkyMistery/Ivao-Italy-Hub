@@ -215,8 +215,9 @@ public sealed class ArchitectureTests
                     || text.Contains("metar.vatsim", StringComparison.OrdinalIgnoreCase)
                     || text.Contains("NOAA", StringComparison.Ordinal);
             })
+            // The core's folder, not any folder called so: the tours keep their bulletins in one of their own (T16).
             .Where(file => !file.Contains(
-                $"{Path.DirectorySeparatorChar}Weather{Path.DirectorySeparatorChar}",
+                $"IvaoHub.Core{Path.DirectorySeparatorChar}Weather{Path.DirectorySeparatorChar}",
                 StringComparison.Ordinal))
             .Select(Path.GetFileName)
             .ToArray();

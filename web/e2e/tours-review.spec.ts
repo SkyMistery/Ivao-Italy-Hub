@@ -30,6 +30,7 @@ const words = JSON.parse(
       disputeStatus: { Open: string; Upheld: string };
     };
     plan: { atTakeoff: string };
+    weather: { airportNone: string };
   };
   errors: { reviewOverrideNeedsReason: string };
 };
@@ -209,7 +210,31 @@ function review(overrides: Record<string, unknown> = {}) {
     staffNote: null,
     thresholdOverridden: false,
     overrideReason: null,
-    weatherAvailable: false,
+    weather: [
+      {
+        icao: 'LIRF',
+        role: 'Departure',
+        from: '2026-09-22T09:10:00Z',
+        to: '2026-09-22T12:20:00Z',
+        metars: [
+          {
+            kind: 'Metar',
+            issuedAt: '2026-09-22T09:50:00Z',
+            raw: 'LIRF 220950Z 24008KT CAVOK 22/12 Q1015',
+            source: 'noaa',
+          },
+        ],
+        tafs: [],
+      },
+      {
+        icao: 'LIMC',
+        role: 'Arrival',
+        from: '2026-09-22T09:10:00Z',
+        to: '2026-09-22T12:20:00Z',
+        metars: [],
+        tafs: [],
+      },
+    ],
     checksAvailable: false,
     history: [
       {
@@ -385,6 +410,10 @@ test('a report is taken, its errors ticked with the server suggesting, and decid
   const plans = page.getByRole('table').first();
   await expect(plans.getByRole('row').nth(1)).toContainText(words.review.plan.atTakeoff);
   await expect(plans.getByRole('row').nth(1)).toContainText('F360');
+
+  // The weather kept for the flight (T16): the METAR with who published it, and «none kept» said as such.
+  await expect(page.getByText('LIRF 220950Z 24008KT CAVOK 22/12 Q1015')).toBeVisible();
+  await expect(page.getByText(words.review.weather.airportNone)).toBeVisible();
 
   // Nothing to tick before the report is in the reader's hands.
   const dangerous = page.getByRole('checkbox', { name: 'Runway incursion' });
