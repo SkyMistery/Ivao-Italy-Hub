@@ -224,6 +224,7 @@ export const staffBootstrap = {
     locale: 'en',
     departments: ['ED'],
     firs: [],
+    tokenAudiences: [],
   },
   permissions: [
     // Since 13 September 2026 the screens of content are not under a department in the address, so
