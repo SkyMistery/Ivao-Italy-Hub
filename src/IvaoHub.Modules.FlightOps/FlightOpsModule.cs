@@ -15,6 +15,7 @@ using IvaoHub.Modules.FlightOps.Settings;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
+using IvaoHub.Modules.FlightOps.Weather;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -128,10 +129,15 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<MyTours>();
         services.AddScoped<IDataBlockProvider, MyToursProvider>();
 
+        // The weather kept for the validators (T16): the airports of the tours every half hour, the flight's at the send.
+        services.AddScoped<WeatherArchive>();
+
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
         services.AddScoped<TrackRetentionJob>();
         services.AddScoped<ReviewDigestJob>();
+        services.AddScoped<WeatherJob>();
+        services.AddScoped<WeatherRetentionJob>();
         services.AddQuartz(quartz => quartz
             .AddJob<TourReleaseJob>(job => job.WithIdentity(TourReleaseJob.JobName))
             .AddTrigger(trigger => trigger
@@ -152,7 +158,17 @@ public sealed class FlightOpsModule : ModuleBase
             .AddTrigger(trigger => trigger
                 .ForJob(ReviewDigestJob.JobName)
                 .WithIdentity($"{ReviewDigestJob.JobName}-daily")
-                .WithCronSchedule(ReviewDigestJob.Cron)));
+                .WithCronSchedule(ReviewDigestJob.Cron))
+            .AddJob<WeatherJob>(job => job.WithIdentity(WeatherJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(WeatherJob.JobName)
+                .WithIdentity($"{WeatherJob.JobName}-half-hourly")
+                .WithCronSchedule(WeatherJob.Cron))
+            .AddJob<WeatherRetentionJob>(job => job.WithIdentity(WeatherRetentionJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(WeatherRetentionJob.JobName)
+                .WithIdentity($"{WeatherRetentionJob.JobName}-daily")
+                .WithCronSchedule(WeatherRetentionJob.Cron)));
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)

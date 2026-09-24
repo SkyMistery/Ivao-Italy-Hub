@@ -1,5 +1,6 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
@@ -7,6 +8,7 @@ using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Threads;
 using IvaoHub.Modules.FlightOps.Tours;
+using IvaoHub.Modules.FlightOps.Weather;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -57,6 +59,8 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
     public DbSet<LegIssue> LegIssues => Set<LegIssue>();
 
+    public DbSet<WeatherBulletin> WeatherBulletins => Set<WeatherBulletin>();
+
     /// <summary>The enums of the tours are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -75,6 +79,7 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
         configurationBuilder.Properties<DiversionReason>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<DisputeStatus>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<LegIssueStatus>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<WeatherReportKind>().HaveConversion<string>().HaveMaxLength(8);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -367,6 +372,21 @@ public sealed class FlightOpsDbContext(DbContextOptions<FlightOpsDbContext> opti
 
             // The list of the staff, open ones first, and the count of the dashboard.
             issue.HasIndex(row => new { row.Status, row.CreatedAt });
+        });
+
+        modelBuilder.Entity<WeatherBulletin>(bulletin =>
+        {
+            bulletin.ToTable("fo_weather_reports");
+            bulletin.HasKey(row => row.Id);
+            bulletin.Property(row => row.Icao).HasMaxLength(4).IsRequired();
+            bulletin.Property(row => row.Raw).HasMaxLength(WeatherBulletin.MaxRawLength).IsRequired();
+            bulletin.Property(row => row.Source).HasMaxLength(16).IsRequired();
+
+            // No doubles (§1.13): the job every half hour and the send ask for the same bulletins again and again.
+            bulletin.HasIndex(row => new { row.Icao, row.IssuedAt, row.Kind }).IsUnique();
+
+            // The retention job reads the old ones first.
+            bulletin.HasIndex(row => row.IssuedAt);
         });
     }
 }

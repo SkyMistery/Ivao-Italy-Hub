@@ -13,7 +13,7 @@ namespace IvaoHub.Modules.FlightOps.Settings;
 /// The values below are the ones the design proposes and Carmine confirmed on 15 September 2026; they are
 /// the defaults of an installation that never saved, and of a setting added after it did.
 /// <para>The thresholds of the checks are not here: they are parameters of the rules (§1.7). The window
-/// the weather is kept for is not here either — it follows the open tours, and T16 decides how.</para>
+/// the weather is kept for is not here either — it follows the tours taking reports (T16, <c>WeatherArchive.RetentionDaysAsync</c>).</para>
 /// </summary>
 public sealed record FlightOpsSettings
 {

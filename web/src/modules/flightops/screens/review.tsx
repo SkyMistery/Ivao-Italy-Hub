@@ -25,6 +25,8 @@ import {
   type ReviewErrorDto,
   type ReviewFlightDto,
   type ReviewQueueRow,
+  type ReviewWeatherDto,
+  type WeatherBulletinDto,
 } from '../api';
 import {
   decisionSchema,
@@ -270,7 +272,7 @@ function ReviewScreen({ review }: { review: ReviewDto }) {
         </Section>
 
         <Section title={t('flightops:review.sections.weather')}>
-          <p className="text-muted-foreground text-sm">{t('flightops:review.weatherLater')}</p>
+          <Weather review={review} />
         </Section>
 
         <Section title={t('flightops:review.sections.checks')}>
@@ -431,6 +433,83 @@ function ReviewMap({ review }: { review: ReviewDto }) {
 }
 
 /** One flight and every revision of its plan, the one at take-off first and marked (§4.3). */
+/**
+ * The weather kept for the report's airports during the flight (design M2 §1.13, T16): the METARs inside it and the TAFs in
+ * force, each with who published it. With a diversion for weather, the destination's comes first and is pointed out (§3.4).
+ * Nothing kept is said as such — never read as good weather.
+ */
+function Weather({ review }: { review: ReviewDto }) {
+  const { t } = useTranslation();
+  const forWeather = review.isDiversion && review.diversionReason === 'Weather';
+  const airports = forWeather
+    ? [...review.weather].sort((a, b) => Number(b.role === 'Arrival') - Number(a.role === 'Arrival'))
+    : review.weather;
+
+  if (airports.every((airport) => airport.metars.length === 0 && airport.tafs.length === 0)) {
+    return <p className="text-muted-foreground text-sm">{t('flightops:review.weather.none')}</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {airports.map((airport) => (
+        <AirportWeather
+          key={airport.icao}
+          airport={airport}
+          highlighted={forWeather && airport.role === 'Arrival'}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AirportWeather({ airport, highlighted }: { airport: ReviewWeatherDto; highlighted: boolean }) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm font-semibold">
+        {t('flightops:review.weather.airport', {
+          icao: airport.icao,
+          role: t(`flightops:review.weather.roles.${airport.role}`),
+          from: moment(airport.from),
+          to: moment(airport.to, { date: false }),
+        })}
+      </p>
+      {highlighted ? (
+        <Notice tone="warning" title={t('flightops:review.weather.diversion', { icao: airport.icao })} />
+      ) : null}
+      {airport.metars.length === 0 && airport.tafs.length === 0 ? (
+        <p className="text-muted-foreground text-sm">{t('flightops:review.weather.airportNone')}</p>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {[...airport.metars, ...airport.tafs].map((bulletin) => (
+            <Bulletin key={`${bulletin.kind}-${bulletin.issuedAt}`} bulletin={bulletin} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Bulletin({ bulletin }: { bulletin: WeatherBulletinDto }) {
+  const { t } = useTranslation();
+
+  return (
+    <li className="flex flex-wrap items-baseline gap-2 text-sm">
+      <Badge
+        variant="flat"
+        color={bulletin.kind === 'Taf' ? 'blue' : 'gray'}
+        text={t(`flightops:review.weather.kinds.${bulletin.kind}`)}
+      />
+      <span className="font-mono break-all">{bulletin.raw}</span>
+      <span className="text-muted-foreground text-xs">
+        {t('flightops:review.weather.source', { source: bulletin.source })}
+      </span>
+    </li>
+  );
+}
+
 function FlightPlans({ flight }: { flight: ReviewFlightDto }) {
   const { t } = useTranslation();
   const moment = useMoment();

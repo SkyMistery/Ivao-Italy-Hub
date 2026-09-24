@@ -1030,7 +1030,6 @@
     "noBans": "Nessun ban, né ora né in passato.",
     "banInForce": "Bannato dal {{from}} al {{to}}: {{reason}}",
     "banPast": "È stato bannato dal {{from}} al {{to}}: {{reason}}",
-    "weatherLater": "Il meteo salvato non è ancora disponibile.",
     "checksLater": "I controlli automatici non sono ancora disponibili.",
     "noErrors": "Le regole di questo report non hanno errori da segnare.",
     "suggestionAccept": "Nessun errore segnato porta al rifiuto.",
@@ -1153,7 +1152,24 @@
     "disputeThread": "Il filo della contestazione",
     "decideDispute": "Decidi la contestazione",
     "disputeDecided": "Contestazione decisa. La risposta è nel filo e il pilota la riceve per mail.",
-    "pilotPage": "La pagina del pilota"
+    "pilotPage": "La pagina del pilota",
+    "weather": {
+      "none": "Nessun METAR né TAF salvato per gli aeroporti di questo volo: il meteo non è disponibile.",
+      "airport": "{{icao}} · {{role}} · dal {{from}} alle {{to}} UTC",
+      "airportNone": "Nessun bollettino salvato per questo aeroporto nell'intervallo del volo.",
+      "diversion": "Deviazione per meteo: questi sono METAR e TAF di {{icao}}, la destinazione prevista.",
+      "source": "fonte: {{source}}",
+      "roles": {
+        "Departure": "partenza",
+        "Arrival": "arrivo",
+        "Diversion": "deviazione",
+        "Flown": "toccato dal volo"
+      },
+      "kinds": {
+        "Metar": "METAR",
+        "Taf": "TAF"
+      }
+    }
   },
   "events": {
     "submitted": "Inviato",
