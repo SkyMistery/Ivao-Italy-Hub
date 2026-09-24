@@ -1,3 +1,4 @@
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
@@ -77,6 +78,10 @@ public static class ModuleServiceCollectionExtensions
         // And the kinds of notification (M2, T13).
         services.TryAddSingleton(provider => new NotificationTypeCatalog(
             provider.GetRequiredService<ModuleRegistry>().Enabled.Select(module => (module.Key, module.NotificationTypes))));
+
+        // And what a personal token may be for (M2, T19a).
+        services.TryAddSingleton(provider => new TokenAudienceCatalog(
+            provider.GetRequiredService<ModuleRegistry>().Enabled.Select(module => (module.Key, module.TokenAudiences))));
 
         return services;
     }

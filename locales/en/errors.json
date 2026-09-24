@@ -138,6 +138,15 @@
       "referenceRequired": "A request for clarification has to say what it is about.",
       "tooManyReferences": "A message can point at ten things at most.",
       "kindUnknown": "This kind of message cannot be sent from here."
+    },
+    "token": {
+      "audienceNotAllowed": "You do not hold the permission a token of this kind needs.",
+      "days": "Choose between 1 and 90 days.",
+      "tooMany": "You already have ten live tokens: revoke one you no longer use.",
+      "unknown": "This token is not one the hub knows.",
+      "revoked": "This token was revoked. Make a new one from your page on the hub.",
+      "expired": "This token has expired. Make a new one from your page on the hub.",
+      "signInAgain": "You have not signed in to the hub for more than 30 days. Sign in once, then try again."
     }
   }
 }

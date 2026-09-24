@@ -97,10 +97,15 @@ public abstract class ModuleDbContext(DbContextOptions options, ICurrentUser? cu
         modelBuilder.ApplyConfiguration(new ContactMessageConfiguration());
         modelBuilder.ApplyConfiguration(new ContactReferenceConfiguration());
 
+        // And the audit log (T19a). The interceptor writes an audit row only into a context that maps it, and until T19a
+        // none of a module did: every [Audited] row of a module — a PIREP, a tour — was written without one, and the
+        // sentence above this class said otherwise. Found while making the agent's writes auditable.
+        modelBuilder.ApplyConfiguration(new AuditLogEntryConfiguration());
+
         foreach (var projection in new[]
         {
             typeof(SearchIndexEntry), typeof(CalendarEntry), typeof(AwardSignal), typeof(MediaUse),
-            typeof(ContactMessage), typeof(ContactReference),
+            typeof(ContactMessage), typeof(ContactReference), typeof(Services.AuditLogEntry),
         })
         {
             modelBuilder.Entity(projection).Metadata.SetIsTableExcludedFromMigrations(true);

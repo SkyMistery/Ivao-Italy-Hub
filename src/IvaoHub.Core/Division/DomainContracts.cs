@@ -127,6 +127,13 @@ public sealed class AlsoWrittenWithAttribute(string permission) : Attribute
 public sealed class AuditedAttribute : Attribute;
 
 /// <summary>
+/// A column of bookkeeping on an audited row: a save that changes only such columns is not a change of the row — no audit
+/// row, and <c>updated_at</c> stays where it was. A personal token's last use is the first (M2, T19a).
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class NotAuditedAttribute : Attribute;
+
+/// <summary>
 /// A row some of whose instances every department may <b>read</b>, whoever owns them. A template
 /// is the first and so far the only one: it belongs to the department that made it and is edited
 /// by that department alone, but a coordinator of any other has to be able to see it, or "new from

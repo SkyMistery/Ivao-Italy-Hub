@@ -57,6 +57,8 @@ public class HubDbContext : DbContext, IVisibilityScope
     public DbSet<HubUser> Users => Set<HubUser>();
     public DbSet<UserStaffPosition> UserStaffPositions => Set<UserStaffPosition>();
     public DbSet<UserGrant> UserGrants => Set<UserGrant>();
+
+    public DbSet<PersonalToken> PersonalTokens => Set<PersonalToken>();
     public DbSet<UserToken> UserTokens => Set<UserToken>();
     public DbSet<DivisionSetting> DivisionSettings => Set<DivisionSetting>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();

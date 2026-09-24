@@ -18,6 +18,12 @@ public static class HubClaims
     /// <summary>Name of the OpenID Connect challenge scheme towards IVAO.</summary>
     public const string IvaoScheme = "IVAO";
 
+    /// <summary>
+    /// Name of the scheme of personal tokens (M2, T19a): <c>Authorization: Bearer hubpat_…</c>, accepted only by the
+    /// endpoints of the token's audience. Never a default scheme.
+    /// </summary>
+    public const string TokenScheme = "HubToken";
+
     public const string Vid = "vid";
     public const string Superadmin = "sa";
     public const string Staff = "staff";
@@ -38,6 +44,12 @@ public static class HubClaims
     public const string SecurityStamp = "stamp";
     public const string FirstName = "given_name";
     public const string LastName = "family_name";
+
+    /// <summary>The audience of the personal token a request came with. Only on the identity the token scheme builds.</summary>
+    public const string Audience = "aud";
+
+    /// <summary>The identifier of that token, for the audit of what the program wrote.</summary>
+    public const string PersonalToken = "tok";
 
     /// <summary>Separates a permission from the department it is scoped to: <c>Links.Edit:EV</c>.</summary>
     private const char DepartmentSeparator = ':';

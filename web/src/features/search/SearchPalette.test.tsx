@@ -37,6 +37,7 @@ const bootstrap = {
     locale: 'en',
     departments: ['ED'],
     firs: [],
+    tokenAudiences: [],
   },
   permissions: [{ name: 'Links.View', department: 'ED' }],
   division: {

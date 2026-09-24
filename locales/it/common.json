@@ -1830,5 +1830,38 @@
   "map": {
     "label": "Mappa delle tratte",
     "noWebgl": "Questo browser non può disegnare la mappa (WebGL2 spento o assente). Le tratte sono elencate qui sotto."
+  },
+  "tokens": {
+    "title": "I miei token",
+    "description": "Un tuo programma — l'agente del validatore — entra con un token invece che con il browser. Apre quello che serve al programma e nient'altro, e vale con i tuoi permessi come sono oggi.",
+    "link": "I miei token",
+    "new": "Nuovo token",
+    "create": "Crea il token",
+    "noAudience": "Nessun tuo programma può usare un token: arrivano con i permessi che ne hanno bisogno.",
+    "fields": {
+      "name": "Nome",
+      "audience": "Per",
+      "days": "Giorni",
+      "prefix": "Inizia con",
+      "createdAt": "Creato",
+      "expiresAt": "Scade",
+      "lastUsedAt": "Ultimo uso"
+    },
+    "hints": {
+      "name": "Dove starà, per riconoscerlo dopo: «PC di casa».",
+      "days": "Da 1 a 90. Quando scade, se ne crea un altro."
+    },
+    "issued": {
+      "title": "Il token «{{name}}» è pronto",
+      "description": "Copialo adesso nel tuo programma: l'hub non lo mostrerà più. Se lo perdi, revocalo e creane un altro.",
+      "label": "Il token",
+      "copy": "Copia",
+      "copied": "Copiato"
+    },
+    "revoke": {
+      "action": "Revoca",
+      "title": "Revocare questo token?",
+      "description": "Il programma che usa «{{name}}» smette di funzionare alla richiesta successiva. Non si torna indietro."
+    }
   }
 }

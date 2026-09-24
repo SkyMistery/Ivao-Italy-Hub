@@ -1006,6 +1006,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MyTokensList"];
+        put?: never;
+        post: operations["MyTokensCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MyTokensGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/tokens/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MyTokensRevoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/superadmins": {
         parameters: {
             query?: never;
@@ -2424,6 +2472,7 @@ export interface components {
             locale: string;
             departments: string[];
             firs: string[];
+            tokenAudiences: string[];
         };
         /**
          * @description The same entry as the form loads it, with the audit trail.
@@ -4246,6 +4295,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfPersonalTokenDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["PersonalTokenDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfReviewQueueRowDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ReviewQueueRowDto"][];
@@ -4402,6 +4474,40 @@ export interface components {
              * @description How many rows the whole filtered set holds.
              */
             total: number;
+        };
+        /** @description One of the member's tokens as the list shows it: never the token, never its hash. */
+        PersonalTokenDto: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            audience: string;
+            prefix: string;
+            status: components["schemas"]["PersonalTokenStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            lastUsedAt: null | string;
+            /** Format: date-time */
+            revokedAt: null | string;
+        };
+        /** @description The token just created, with its text: the one and only time the hub shows it. */
+        PersonalTokenIssuedDto: {
+            row: components["schemas"]["PersonalTokenDto"];
+            token: string;
+        };
+        /**
+         * @description Where a personal token stands. Worked out from its dates, never stored.
+         * @enum {unknown}
+         */
+        PersonalTokenStatus: "Active" | "Expired" | "Revoked";
+        /** @description A new token: what it is for, what to call it, and for how many days (1 to 90). */
+        PersonalTokenWriteDto: {
+            name: string;
+            audience: string;
+            /** Format: int32 */
+            days: number;
         };
         /** @description A ban as the validator reads it on the pilot's profile. */
         PilotBanDto: {
@@ -8669,6 +8775,121 @@ export interface operations {
             header?: never;
             path: {
                 id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MyTokensList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfPersonalTokenDto"];
+                };
+            };
+        };
+    };
+    MyTokensCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalTokenWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalTokenIssuedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    MyTokensGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalTokenDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MyTokensRevoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
             };
             cookie?: never;
         };

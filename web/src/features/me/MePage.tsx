@@ -37,6 +37,14 @@ export function MePage() {
           {t('contacts.mine.link')}
         </Link>
       </p>
+      {/* The tokens of the member's own programs (M2, T19a): offered only to whoever may create one. */}
+      {(bootstrap.user?.tokenAudiences.length ?? 0) > 0 && (
+        <p>
+          <Link to="/me/tokens" className="text-primary underline">
+            {t('tokens.link')}
+          </Link>
+        </p>
+      )}
       <NotificationPreferences />
     </div>
   );
