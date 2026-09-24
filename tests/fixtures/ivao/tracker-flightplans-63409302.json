@@ -1,0 +1,305 @@
+[
+  {
+    "id": 72553358,
+    "sessionId": 63409302,
+    "revision": 3,
+    "aircraftId": "B350",
+    "aircraftNumber": 1,
+    "departureId": "LFKF",
+    "arrivalId": "LIMP",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "BTA L146 MOULE DCT LUPOS",
+    "remarks": "PBN/B2C2D2O2S1S2 DOF/260912 REG/N070SB EET/LFFF0013 LIRR0024 LIMM0035 PER/B RMK/TCAS SIMBRIEF",
+    "speed": "N0315",
+    "level": "F240",
+    "flightRules": "I",
+    "flightType": "G",
+    "eet": 3660,
+    "endurance": 8400,
+    "departureTime": 76800,
+    "actualDepartureTime": 77606,
+    "peopleOnBoard": 13,
+    "createdAt": "2026-09-12T20:51:04.000Z",
+    "updatedAt": "2026-09-12T20:54:35.000Z",
+    "departure_id": "LFKF",
+    "arrival_id": "LIMP",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B350",
+      "model": "King Air 350",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LFKF",
+      "iata": "FSC",
+      "name": "Figari Sud Corse",
+      "city": "Figari",
+      "countryId": "FR",
+      "latitude": 41.502222,
+      "longitude": 9.096667
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIMP",
+      "iata": "PMF",
+      "name": "Parma",
+      "city": "Parma",
+      "countryId": "IT",
+      "latitude": 44.8222222222,
+      "longitude": 10.2952777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72553357,
+    "sessionId": 63409302,
+    "revision": 2,
+    "aircraftId": "B350",
+    "aircraftNumber": 1,
+    "departureId": "LFKF",
+    "arrivalId": "LIMP",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "BTA L146 MOULE DCT LUPOS",
+    "remarks": "PBN/B2C2D2O2S1S2 DOF/260912 REG/N070SB EET/LFFF0013 LIRR0024 LIMM0035 PER/B RMK/TCAS SIMBRIEF",
+    "speed": "N0315",
+    "level": "F240",
+    "flightRules": "I",
+    "flightType": "G",
+    "eet": 3660,
+    "endurance": 8400,
+    "departureTime": 76800,
+    "actualDepartureTime": 77606,
+    "peopleOnBoard": 13,
+    "createdAt": "2026-09-12T20:51:04.000Z",
+    "updatedAt": "2026-09-12T20:54:35.000Z",
+    "departure_id": "LFKF",
+    "arrival_id": "LIMP",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B350",
+      "model": "King Air 350",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LFKF",
+      "iata": "FSC",
+      "name": "Figari Sud Corse",
+      "city": "Figari",
+      "countryId": "FR",
+      "latitude": 41.502222,
+      "longitude": 9.096667
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIMP",
+      "iata": "PMF",
+      "name": "Parma",
+      "city": "Parma",
+      "countryId": "IT",
+      "latitude": 44.8222222222,
+      "longitude": 10.2952777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72553354,
+    "sessionId": 63409302,
+    "revision": 1,
+    "aircraftId": "B350",
+    "aircraftNumber": 1,
+    "departureId": "LFKF",
+    "arrivalId": "LIMP",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "BTA L146 MOULE DCT LUPOS",
+    "remarks": "PBN/B2C2D2O2S1S2 DOF/260912 REG/N070SB EET/LFFF0013 LIRR0024 LIMM0035 PER/B RMK/TCAS SIMBRIEF",
+    "speed": "N0315",
+    "level": "F240",
+    "flightRules": "I",
+    "flightType": "G",
+    "eet": 3660,
+    "endurance": 8400,
+    "departureTime": 76800,
+    "actualDepartureTime": 77606,
+    "peopleOnBoard": 13,
+    "createdAt": "2026-09-12T20:51:04.000Z",
+    "updatedAt": "2026-09-12T20:54:35.000Z",
+    "departure_id": "LFKF",
+    "arrival_id": "LIMP",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B350",
+      "model": "King Air 350",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LFKF",
+      "iata": "FSC",
+      "name": "Figari Sud Corse",
+      "city": "Figari",
+      "countryId": "FR",
+      "latitude": 41.502222,
+      "longitude": 9.096667
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIMP",
+      "iata": "PMF",
+      "name": "Parma",
+      "city": "Parma",
+      "countryId": "IT",
+      "latitude": 44.8222222222,
+      "longitude": 10.2952777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  }
+]

@@ -1,0 +1,134 @@
+[
+  {
+    "id": 72453406,
+    "sessionId": 63324617,
+    "revision": 1,
+    "aircraftId": "C700",
+    "aircraftNumber": 1,
+    "departureId": "LFPM",
+    "arrivalId": "LIPE",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "N0235F190 TRO Y112 HOC L856 TRA/N0500F310 DCT ARGAX DCT RESIA DCT ADOSA DCT OSTEG M738 BENUS",
+    "remarks": "PBN/A1B2C2D2D3O2O3S2 DOF/260902 REG/N700SB EET/LFEE0013 LSAS0026 LIMM0044 OPR/ADH PER/C RMK/TCAS SIMBRIEF",
+    "speed": "N0433",
+    "level": "F310",
+    "flightRules": "I",
+    "flightType": "G",
+    "eet": 4080,
+    "endurance": 9480,
+    "departureTime": 64800,
+    "actualDepartureTime": 65102,
+    "peopleOnBoard": 10,
+    "createdAt": "2026-09-02T17:34:52.000Z",
+    "updatedAt": "2026-09-02T17:47:05.000Z",
+    "departure_id": "LFPM",
+    "arrival_id": "LIPE",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "M1",
+        "name": "ATC RTF SATCOM (INMARSAT)",
+        "order": 22
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B2",
+        "name": "ADS-B with dedicated in and out capability",
+        "type": "ADS",
+        "order": 2
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "C700",
+      "model": "700 Citation Longitude",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LFPM",
+      "iata": "",
+      "name": "Melun Villaroche",
+      "city": "Melun",
+      "countryId": "FR",
+      "latitude": 48.6052777778,
+      "longitude": 2.6708333333
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIPE",
+      "iata": "BLQ",
+      "name": "Bologna Borgo Panigale",
+      "city": "Bologna Borgo Panigale",
+      "countryId": "IT",
+      "latitude": 44.5308333333,
+      "longitude": 11.2969444444
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  }
+]

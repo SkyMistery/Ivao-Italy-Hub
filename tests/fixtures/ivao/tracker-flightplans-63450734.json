@@ -1,0 +1,406 @@
+[
+  {
+    "id": 72602926,
+    "sessionId": 63450734,
+    "revision": 4,
+    "aircraftId": "C208",
+    "aircraftNumber": 1,
+    "departureId": "LIPN",
+    "arrivalId": "LIME",
+    "alternativeId": "LIPO",
+    "alternative2Id": null,
+    "route": "SAVONA GAZOLDO PIADENA LILR ROMANODILOMBARDIA ",
+    "remarks": "DOF/260918  TIPE/C208 REG/SCI044  RMK/DAILIGHT SIMULATION VOICE IN ITALIAN/TOUCH AND GO AT LILR",
+    "speed": "K0160",
+    "level": "VFR",
+    "flightRules": "V",
+    "flightType": "G",
+    "eet": 3000,
+    "endurance": 7200,
+    "departureTime": 30600,
+    "actualDepartureTime": null,
+    "peopleOnBoard": 1,
+    "createdAt": "2026-09-18T08:08:19.000Z",
+    "updatedAt": "2026-09-18T08:44:16.000Z",
+    "departure_id": "LIPN",
+    "arrival_id": "LIME",
+    "alternative_id": "LIPO",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "C208",
+      "model": "208 Caravan 1",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIPN",
+      "iata": null,
+      "name": "Boscomantico",
+      "city": "Verona",
+      "countryId": "IT",
+      "latitude": 45.4730555556,
+      "longitude": 10.9269444444
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIME",
+      "iata": "BGY",
+      "name": "Bergamo Orio Al Serio",
+      "city": "Bergamo Orio Al Serio",
+      "countryId": "IT",
+      "latitude": 45.6688888889,
+      "longitude": 9.7002777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIPO",
+      "iata": "VBS",
+      "name": "Brescia Montichiari",
+      "city": "Brescia Montichiari",
+      "countryId": "IT",
+      "latitude": 45.4288888889,
+      "longitude": 10.3305555556
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72602905,
+    "sessionId": 63450734,
+    "revision": 3,
+    "aircraftId": "C208",
+    "aircraftNumber": 1,
+    "departureId": "LIPN",
+    "arrivalId": "LIME",
+    "alternativeId": "LIPO",
+    "alternative2Id": null,
+    "route": "SAVONA GAZOLDO PIADENA LILR ROMANODILOMBARDIA ",
+    "remarks": "DOF/260918  TIPE/C208 REG/SCI044  RMK/DAILIGHT SIMULATION VOICE IN ITALIAN/TOUCH AND GO AT LILR",
+    "speed": "K0160",
+    "level": "VFR",
+    "flightRules": "V",
+    "flightType": "G",
+    "eet": 3000,
+    "endurance": 7200,
+    "departureTime": 30600,
+    "actualDepartureTime": null,
+    "peopleOnBoard": 1,
+    "createdAt": "2026-09-18T08:08:19.000Z",
+    "updatedAt": "2026-09-18T08:39:42.000Z",
+    "departure_id": "LIPN",
+    "arrival_id": "LIME",
+    "alternative_id": "LIPO",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "C208",
+      "model": "208 Caravan 1",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIPN",
+      "iata": null,
+      "name": "Boscomantico",
+      "city": "Verona",
+      "countryId": "IT",
+      "latitude": 45.4730555556,
+      "longitude": 10.9269444444
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIME",
+      "iata": "BGY",
+      "name": "Bergamo Orio Al Serio",
+      "city": "Bergamo Orio Al Serio",
+      "countryId": "IT",
+      "latitude": 45.6688888889,
+      "longitude": 9.7002777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIPO",
+      "iata": "VBS",
+      "name": "Brescia Montichiari",
+      "city": "Brescia Montichiari",
+      "countryId": "IT",
+      "latitude": 45.4288888889,
+      "longitude": 10.3305555556
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72602772,
+    "sessionId": 63450734,
+    "revision": 2,
+    "aircraftId": "C208",
+    "aircraftNumber": 1,
+    "departureId": "LIPN",
+    "arrivalId": "LIME",
+    "alternativeId": "LIPO",
+    "alternative2Id": null,
+    "route": "SAVONA GAZOLDO PIADENA LILR ROMANODILOMBARDIA ",
+    "remarks": "DOF/260918  TIPE/C208 REG/SCI044  RMK/DAILIGHT SIMULATION VOICE IN ITALIAN/TOUCH AND GO AT LILR",
+    "speed": "K0160",
+    "level": "VFR",
+    "flightRules": "V",
+    "flightType": "G",
+    "eet": 3000,
+    "endurance": 7200,
+    "departureTime": 30600,
+    "actualDepartureTime": 30563,
+    "peopleOnBoard": 1,
+    "createdAt": "2026-09-18T08:08:19.000Z",
+    "updatedAt": "2026-09-18T08:13:02.000Z",
+    "departure_id": "LIPN",
+    "arrival_id": "LIME",
+    "alternative_id": "LIPO",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "C208",
+      "model": "208 Caravan 1",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIPN",
+      "iata": null,
+      "name": "Boscomantico",
+      "city": "Verona",
+      "countryId": "IT",
+      "latitude": 45.4730555556,
+      "longitude": 10.9269444444
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIME",
+      "iata": "BGY",
+      "name": "Bergamo Orio Al Serio",
+      "city": "Bergamo Orio Al Serio",
+      "countryId": "IT",
+      "latitude": 45.6688888889,
+      "longitude": 9.7002777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIPO",
+      "iata": "VBS",
+      "name": "Brescia Montichiari",
+      "city": "Brescia Montichiari",
+      "countryId": "IT",
+      "latitude": 45.4288888889,
+      "longitude": 10.3305555556
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72602771,
+    "sessionId": 63450734,
+    "revision": 1,
+    "aircraftId": "C208",
+    "aircraftNumber": 1,
+    "departureId": "LIPN",
+    "arrivalId": "LIME",
+    "alternativeId": "LIPO",
+    "alternative2Id": null,
+    "route": "SAVONA GAZOLDO PIADENA LILR ROMANODILOMBARDIA ",
+    "remarks": "DOF/260918  TIPE/C208 REG/SCI044  RMK/DAILIGHT SIMULATION VOICE IN ITALIAN/TOUCH AND GO AT LILR",
+    "speed": "K0160",
+    "level": "VFR",
+    "flightRules": "V",
+    "flightType": "G",
+    "eet": 3000,
+    "endurance": 7200,
+    "departureTime": 30600,
+    "actualDepartureTime": 30563,
+    "peopleOnBoard": 1,
+    "createdAt": "2026-09-18T08:08:19.000Z",
+    "updatedAt": "2026-09-18T08:13:02.000Z",
+    "departure_id": "LIPN",
+    "arrival_id": "LIME",
+    "alternative_id": "LIPO",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "C208",
+      "model": "208 Caravan 1",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIPN",
+      "iata": null,
+      "name": "Boscomantico",
+      "city": "Verona",
+      "countryId": "IT",
+      "latitude": 45.4730555556,
+      "longitude": 10.9269444444
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIME",
+      "iata": "BGY",
+      "name": "Bergamo Orio Al Serio",
+      "city": "Bergamo Orio Al Serio",
+      "countryId": "IT",
+      "latitude": 45.6688888889,
+      "longitude": 9.7002777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIPO",
+      "iata": "VBS",
+      "name": "Brescia Montichiari",
+      "city": "Brescia Montichiari",
+      "countryId": "IT",
+      "latitude": 45.4288888889,
+      "longitude": 10.3305555556
+    },
+    "alternative2": null
+  }
+]

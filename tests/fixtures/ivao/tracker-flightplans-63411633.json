@@ -1,0 +1,134 @@
+[
+  {
+    "id": 72556101,
+    "sessionId": 63411633,
+    "revision": 1,
+    "aircraftId": "A320",
+    "aircraftNumber": 1,
+    "departureId": "LIEO",
+    "arrivalId": "LFBO",
+    "alternativeId": "LFBD",
+    "alternative2Id": null,
+    "route": "INDUM DCT EPIKU DCT GINOX DCT OKSER DCT AMFAC DCT FJR DCT AFRIC",
+    "remarks": "PBN/A1B1C1D1O1S1 DOF/260913 REG/N320SB EET/LFFF0015 LFBB0101 OPR/VOE PER/C RMK/TCAS ",
+    "speed": "N0442",
+    "level": "F320",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 4380,
+    "endurance": 9300,
+    "departureTime": 20400,
+    "actualDepartureTime": 19826,
+    "peopleOnBoard": 172,
+    "createdAt": "2026-09-13T05:08:47.000Z",
+    "updatedAt": "2026-09-13T05:13:49.000Z",
+    "departure_id": "LIEO",
+    "arrival_id": "LFBO",
+    "alternative_id": "LFBD",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "A320",
+      "model": "A320",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIEO",
+      "iata": "OLB",
+      "name": "Olbia Costa Smeralda",
+      "city": "Olbia Costa Smeralda",
+      "countryId": "IT",
+      "latitude": 40.8986111111,
+      "longitude": 9.5177777778
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LFBO",
+      "iata": "TLS",
+      "name": "Toulouse Blagnac",
+      "city": "Toulouse",
+      "countryId": "FR",
+      "latitude": 43.635,
+      "longitude": 1.3677777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LFBD",
+      "iata": "BOD",
+      "name": "Bordeaux Merignac",
+      "city": "Bordeaux",
+      "countryId": "FR",
+      "latitude": 44.8286111111,
+      "longitude": -0.7152777778
+    },
+    "alternative2": null
+  }
+]

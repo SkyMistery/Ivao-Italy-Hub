@@ -1,0 +1,144 @@
+[
+  {
+    "id": 72399799,
+    "sessionId": 63278337,
+    "revision": 1,
+    "aircraftId": "B736",
+    "aircraftNumber": 1,
+    "departureId": "EGJJ",
+    "arrivalId": "LIRQ",
+    "alternativeId": "LIRF",
+    "alternative2Id": null,
+    "route": "ORVAL V20 UPALO UN491 POGZI/N0466F370 DCT IBABA/N0462F390 T37 PAS/N0403F190 T37 BANKO DCT PIMOT DCT ELBUK DCT LOMED",
+    "remarks": "PBN/A1B1C1D1S1S2 DOF/260828 REG/N616SB EET/LFFF0019 LFEE0057 LFFF0112 LFMM0113 LIMM0118 LIRR0154 LIMM0155 OPR/LIT PER/C RVR/075 RMK/TCAS SIMBRIEF //DANGEROURS AIPORTS TOUR",
+    "speed": "N0283",
+    "level": "F090",
+    "flightRules": "I",
+    "flightType": "N",
+    "eet": 7260,
+    "endurance": 12480,
+    "departureTime": 55140,
+    "actualDepartureTime": 53284,
+    "peopleOnBoard": 88,
+    "createdAt": "2026-08-28T14:35:11.000Z",
+    "updatedAt": "2026-08-28T14:35:38.000Z",
+    "departure_id": "EGJJ",
+    "arrival_id": "LIRQ",
+    "alternative_id": "LIRF",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E2",
+        "name": "D-FIS ACARS",
+        "order": 7
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B736",
+      "model": "737-600",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": true,
+      "icao": "EGJJ",
+      "iata": "JER",
+      "name": "Jersey",
+      "city": "Jersey",
+      "countryId": "GB",
+      "latitude": 49.2080555556,
+      "longitude": -2.1955555556
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIRQ",
+      "iata": "FLR",
+      "name": "Peretola",
+      "city": "Firenze",
+      "countryId": "IT",
+      "latitude": 43.8086111111,
+      "longitude": 11.2027777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIRF",
+      "iata": "FCO",
+      "name": "Roma Fiumicino",
+      "city": "Roma Fiumicino",
+      "countryId": "IT",
+      "latitude": 41.8002777778,
+      "longitude": 12.2388888889
+    },
+    "alternative2": null
+  }
+]

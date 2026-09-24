@@ -1,0 +1,286 @@
+[
+  {
+    "id": 72453506,
+    "sessionId": 63324712,
+    "revision": 2,
+    "aircraftId": "B738",
+    "aircraftNumber": 1,
+    "departureId": "LICR",
+    "arrivalId": "LIMP",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "PAZZE L869 PIGER DCT REGSO DCT AGNIS DCT DELER DCT PEVIR DCT EDOPA DCT LAT DCT GIKIN DCT SOVAN DCT AMTEL DCT KUGIX L995 LUPOS",
+    "remarks": "PBN/A1B1C1D1S1S2 DOF/260902 REG/N738PM EET/LIMM0104 SEL/ERAP OPR/RYR PER/D RVR/075 RMK/TCAS SIMBRIEF",
+    "speed": "N0442",
+    "level": "F380",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 5520,
+    "endurance": 9420,
+    "departureTime": 66000,
+    "actualDepartureTime": 67146,
+    "peopleOnBoard": 117,
+    "createdAt": "2026-09-02T17:48:31.000Z",
+    "updatedAt": "2026-09-02T17:56:16.000Z",
+    "departure_id": "LICR",
+    "arrival_id": "LIMP",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E2",
+        "name": "D-FIS ACARS",
+        "order": 7
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B738",
+      "model": "737-800",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LICR",
+      "iata": "REG",
+      "name": "Reggio Calabria",
+      "city": "Reggio Calabria",
+      "countryId": "IT",
+      "latitude": 38.0719444444,
+      "longitude": 15.6536111111
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIMP",
+      "iata": "PMF",
+      "name": "Parma",
+      "city": "Parma",
+      "countryId": "IT",
+      "latitude": 44.8222222222,
+      "longitude": 10.2952777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72453504,
+    "sessionId": 63324712,
+    "revision": 1,
+    "aircraftId": "B738",
+    "aircraftNumber": 1,
+    "departureId": "LICR",
+    "arrivalId": "LIMP",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "PAZZE L869 PIGER DCT REGSO DCT AGNIS DCT DELER DCT PEVIR DCT EDOPA DCT LAT DCT GIKIN DCT SOVAN DCT AMTEL DCT KUGIX L995 LUPOS",
+    "remarks": "PBN/A1B1C1D1S1S2 DOF/260902 REG/N738PM EET/LIMM0104 SEL/ERAP OPR/RYR PER/D RVR/075 RMK/TCAS SIMBRIEF",
+    "speed": "N0442",
+    "level": "F380",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 5520,
+    "endurance": 9420,
+    "departureTime": 66000,
+    "actualDepartureTime": 67146,
+    "peopleOnBoard": 117,
+    "createdAt": "2026-09-02T17:48:31.000Z",
+    "updatedAt": "2026-09-02T17:56:16.000Z",
+    "departure_id": "LICR",
+    "arrival_id": "LIMP",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E2",
+        "name": "D-FIS ACARS",
+        "order": 7
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B738",
+      "model": "737-800",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LICR",
+      "iata": "REG",
+      "name": "Reggio Calabria",
+      "city": "Reggio Calabria",
+      "countryId": "IT",
+      "latitude": 38.0719444444,
+      "longitude": 15.6536111111
+    },
+    "arrival": {
+      "military": false,
+      "icao": "LIMP",
+      "iata": "PMF",
+      "name": "Parma",
+      "city": "Parma",
+      "countryId": "IT",
+      "latitude": 44.8222222222,
+      "longitude": 10.2952777778
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  }
+]

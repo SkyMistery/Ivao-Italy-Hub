@@ -1,0 +1,103 @@
+[
+  {
+    "id": 72559323,
+    "sessionId": 63414386,
+    "revision": 1,
+    "aircraftId": "B350",
+    "aircraftNumber": 1,
+    "departureId": "LIMP",
+    "arrivalId": "LIPB",
+    "alternativeId": "LIMC",
+    "alternative2Id": null,
+    "route": "OSBUL DCT BENUS DCT ADOSA",
+    "remarks": "PBN/B2C2D2O2S1S2 DOF/260913 REG/N070SB PER/B RMK/TCAS SIMBRIEF",
+    "speed": "N0307",
+    "level": "F160",
+    "flightRules": "I",
+    "flightType": "G",
+    "eet": 1920,
+    "endurance": 9060,
+    "departureTime": 44700,
+    "actualDepartureTime": 47044,
+    "peopleOnBoard": 13,
+    "createdAt": "2026-09-13T12:21:37.000Z",
+    "updatedAt": "2026-09-13T12:22:24.000Z",
+    "departure_id": "LIMP",
+    "arrival_id": "LIPB",
+    "alternative_id": "LIMC",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "B",
+        "name": "LPV",
+        "order": 3
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B350",
+      "model": "King Air 350",
+      "wakeTurbulence": "L",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIMP",
+      "iata": "PMF",
+      "name": "Parma",
+      "city": "Parma",
+      "countryId": "IT",
+      "latitude": 44.8222222222,
+      "longitude": 10.2952777778
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LIPB",
+      "iata": "BZO",
+      "name": "Bolzano",
+      "city": "Bolzano",
+      "countryId": "IT",
+      "latitude": 46.4602777778,
+      "longitude": 11.3263888889
+    },
+    "alternative": {
+      "military": false,
+      "icao": "LIMC",
+      "iata": "MXP",
+      "name": "MIlano Malpensa",
+      "city": "MIlano Malpensa",
+      "countryId": "IT",
+      "latitude": 45.63,
+      "longitude": 8.7230555556
+    },
+    "alternative2": null
+  }
+]

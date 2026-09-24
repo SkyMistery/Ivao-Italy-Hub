@@ -1,0 +1,428 @@
+[
+  {
+    "id": 72370011,
+    "sessionId": 63252070,
+    "revision": 3,
+    "aircraftId": "B737",
+    "aircraftNumber": 1,
+    "departureId": "EGLC",
+    "arrivalId": "EKVG",
+    "alternativeId": "EGPH",
+    "alternative2Id": null,
+    "route": "BPK UN601 RIBEL DCT TLA DCT INBAS DCT ULLAP DCT ADASI/N0433F370 DCT KESEG DCT NALAN DCT ROBUR DCT",
+    "remarks": "PBN/A1B1C1D1S1S2 DOF/260825 REG/N714SB EET/EGPX0034 BIRD0126 PER/C RVR/075 RMK/TCAS SIMBRIEF DANGEOUS AIRPORTS ITALY",
+    "speed": "N0437",
+    "level": "F360",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 6660,
+    "endurance": 14100,
+    "departureTime": 37560,
+    "actualDepartureTime": 44377,
+    "peopleOnBoard": 155,
+    "createdAt": "2026-08-25T12:13:52.000Z",
+    "updatedAt": "2026-08-25T12:14:36.000Z",
+    "departure_id": "EGLC",
+    "arrival_id": "EKVG",
+    "alternative_id": "EGPH",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E2",
+        "name": "D-FIS ACARS",
+        "order": 7
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B737",
+      "model": "737-700",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "EGLC",
+      "iata": "LCY",
+      "name": "London City",
+      "city": "London",
+      "countryId": "GB",
+      "latitude": 51.5052777778,
+      "longitude": 0.0552777778
+    },
+    "arrival": {
+      "military": false,
+      "icao": "EKVG",
+      "iata": "FAE",
+      "name": "Vagar",
+      "city": "Vagar",
+      "countryId": "DK",
+      "latitude": 62.0636277778,
+      "longitude": -7.2772194444
+    },
+    "alternative": {
+      "military": false,
+      "icao": "EGPH",
+      "iata": "EDI",
+      "name": "Edinburgh",
+      "city": "Edinburgh",
+      "countryId": "GB",
+      "latitude": 55.95,
+      "longitude": -3.3725
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72370009,
+    "sessionId": 63252070,
+    "revision": 2,
+    "aircraftId": "B737",
+    "aircraftNumber": 1,
+    "departureId": "EGLC",
+    "arrivalId": "EKVG",
+    "alternativeId": "EGPH",
+    "alternative2Id": null,
+    "route": "BPK UN601 RIBEL DCT TLA DCT INBAS DCT ULLAP DCT ADASI/N0433F370 DCT KESEG DCT NALAN DCT ROBUR DCT",
+    "remarks": "PBN/A1B1C1D1S1S2 DOF/260825 REG/N714SB EET/EGPX0034 BIRD0126 PER/C RVR/075 RMK/TCAS SIMBRIEF DANGEOUS AIRPORTS ITALY",
+    "speed": "N0437",
+    "level": "F360",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 6660,
+    "endurance": 14100,
+    "departureTime": 37560,
+    "actualDepartureTime": 44377,
+    "peopleOnBoard": 155,
+    "createdAt": "2026-08-25T12:13:52.000Z",
+    "updatedAt": "2026-08-25T12:14:36.000Z",
+    "departure_id": "EGLC",
+    "arrival_id": "EKVG",
+    "alternative_id": "EGPH",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E2",
+        "name": "D-FIS ACARS",
+        "order": 7
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B737",
+      "model": "737-700",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "EGLC",
+      "iata": "LCY",
+      "name": "London City",
+      "city": "London",
+      "countryId": "GB",
+      "latitude": 51.5052777778,
+      "longitude": 0.0552777778
+    },
+    "arrival": {
+      "military": false,
+      "icao": "EKVG",
+      "iata": "FAE",
+      "name": "Vagar",
+      "city": "Vagar",
+      "countryId": "DK",
+      "latitude": 62.0636277778,
+      "longitude": -7.2772194444
+    },
+    "alternative": {
+      "military": false,
+      "icao": "EGPH",
+      "iata": "EDI",
+      "name": "Edinburgh",
+      "city": "Edinburgh",
+      "countryId": "GB",
+      "latitude": 55.95,
+      "longitude": -3.3725
+    },
+    "alternative2": null
+  },
+  {
+    "id": 72370008,
+    "sessionId": 63252070,
+    "revision": 1,
+    "aircraftId": "B737",
+    "aircraftNumber": 1,
+    "departureId": "EGLC",
+    "arrivalId": "EKVG",
+    "alternativeId": "EGPH",
+    "alternative2Id": null,
+    "route": "BPK UN601 RIBEL DCT TLA DCT INBAS DCT ULLAP DCT ADASI/N0433F370 DCT KESEG DCT NALAN DCT ROBUR DCT",
+    "remarks": "PBN/A1B1C1D1S1S2 DOF/260825 REG/N714SB EET/EGPX0034 BIRD0126 PER/C RVR/075 RMK/TCAS SIMBRIEF DANGEOUS AIRPORTS ITALY",
+    "speed": "N0437",
+    "level": "F360",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 6660,
+    "endurance": 14100,
+    "departureTime": 37560,
+    "actualDepartureTime": 44377,
+    "peopleOnBoard": 155,
+    "createdAt": "2026-08-25T12:13:52.000Z",
+    "updatedAt": "2026-08-25T12:14:36.000Z",
+    "departure_id": "EGLC",
+    "arrival_id": "EKVG",
+    "alternative_id": "EGPH",
+    "alternative2_id": null,
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "E2",
+        "name": "D-FIS ACARS",
+        "order": 7
+      },
+      {
+        "id": "E3",
+        "name": "PDC ACARS",
+        "order": 8
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "L",
+        "name": "mode S (with aircraft ID, pressure altitude, ADS-B and enhanced surveillance capability)",
+        "type": null,
+        "order": 6
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B737",
+      "model": "737-700",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "EGLC",
+      "iata": "LCY",
+      "name": "London City",
+      "city": "London",
+      "countryId": "GB",
+      "latitude": 51.5052777778,
+      "longitude": 0.0552777778
+    },
+    "arrival": {
+      "military": false,
+      "icao": "EKVG",
+      "iata": "FAE",
+      "name": "Vagar",
+      "city": "Vagar",
+      "countryId": "DK",
+      "latitude": 62.0636277778,
+      "longitude": -7.2772194444
+    },
+    "alternative": {
+      "military": false,
+      "icao": "EGPH",
+      "iata": "EDI",
+      "name": "Edinburgh",
+      "city": "Edinburgh",
+      "countryId": "GB",
+      "latitude": 55.95,
+      "longitude": -3.3725
+    },
+    "alternative2": null
+  }
+]

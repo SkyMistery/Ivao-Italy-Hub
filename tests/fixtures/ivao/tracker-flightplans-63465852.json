@@ -1,0 +1,185 @@
+[
+  {
+    "id": 72619933,
+    "sessionId": 63465852,
+    "revision": 1,
+    "aircraftId": "B738",
+    "aircraftNumber": 1,
+    "departureId": "LIBP",
+    "arrivalId": "LICT",
+    "alternativeId": "LICC",
+    "alternative2Id": "LIRN",
+    "route": "ASPIR Z924 MOPUV/N0462F350 DCT GIANO",
+    "remarks": "PBN/A1B1B5D1D3L1O1S2 NAV/RNP2 COM/TCAS SUR/RSP180 DOF/260919 REG/EIGJK EET/LIRR0009 CODE/4CABD1 OPR/RYR PER/C RMK/TCAS SIMBRIEF IVAOVA/EIN",
+    "speed": "N0390",
+    "level": "F190",
+    "flightRules": "I",
+    "flightType": "S",
+    "eet": 3540,
+    "endurance": 8820,
+    "departureTime": 68700,
+    "actualDepartureTime": 69398,
+    "peopleOnBoard": 162,
+    "createdAt": "2026-09-19T18:18:03.000Z",
+    "updatedAt": "2026-09-19T18:47:59.000Z",
+    "departure_id": "LIBP",
+    "arrival_id": "LICT",
+    "alternative_id": "LICC",
+    "alternative2_id": "LIRN",
+    "aircraftEquipments": [
+      {
+        "id": "S",
+        "name": "Standard (VHF, VOR, ILS)",
+        "order": 1
+      },
+      {
+        "id": "A",
+        "name": "GBAS Ldg System",
+        "order": 2
+      },
+      {
+        "id": "D",
+        "name": "DME",
+        "order": 5
+      },
+      {
+        "id": "F",
+        "name": "ADF",
+        "order": 9
+      },
+      {
+        "id": "G",
+        "name": "GPS / GNSS",
+        "order": 10
+      },
+      {
+        "id": "H",
+        "name": "HF RTF",
+        "order": 11
+      },
+      {
+        "id": "I",
+        "name": "INS (Inertial nav)",
+        "order": 12
+      },
+      {
+        "id": "J1",
+        "name": "CPDLC ATN VDL Mode 2",
+        "order": 13
+      },
+      {
+        "id": "J7",
+        "name": "CPDLC FANS 1/A SATCOM (Iridium)",
+        "order": 19
+      },
+      {
+        "id": "L",
+        "name": "ILS",
+        "order": 21
+      },
+      {
+        "id": "P2",
+        "name": "CPDLC RCP 240",
+        "order": 27
+      },
+      {
+        "id": "R",
+        "name": "PBN (PBN/ required in item 18)",
+        "order": 29
+      },
+      {
+        "id": "W",
+        "name": "RVSM (FL290-FL410)",
+        "order": 33
+      },
+      {
+        "id": "X",
+        "name": "MNPS",
+        "order": 34
+      },
+      {
+        "id": "Y",
+        "name": "8.33 kHz radio",
+        "order": 35
+      },
+      {
+        "id": "Z",
+        "name": "Others (specify in item 18 preceded by COM/ NAV/ or DAT/)",
+        "order": 36
+      }
+    ],
+    "aircraftTransponderTypes": [
+      {
+        "id": "S",
+        "name": "mode S (with aircraft ID and pressure altitude)",
+        "type": null,
+        "order": 8
+      },
+      {
+        "id": "B1",
+        "name": "ADS-B with dedicated out capability",
+        "type": "ADS",
+        "order": 1
+      },
+      {
+        "id": "D1",
+        "name": "ADS-C with FANS 1/A capabilities",
+        "type": "ADS",
+        "order": 7
+      },
+      {
+        "id": "G1",
+        "name": "ADS-C with ATN capabilities",
+        "type": "ADS",
+        "order": 8
+      }
+    ],
+    "aircraft": {
+      "icaoCode": "B738",
+      "model": "737-800",
+      "wakeTurbulence": "M",
+      "military": "civil",
+      "description": "LandPlane"
+    },
+    "departure": {
+      "military": false,
+      "icao": "LIBP",
+      "iata": "PSR",
+      "name": "Pescara",
+      "city": "Pescara",
+      "countryId": "IT",
+      "latitude": 42.4372222222,
+      "longitude": 14.1872222222
+    },
+    "arrival": {
+      "military": true,
+      "icao": "LICT",
+      "iata": "TPS",
+      "name": "Trapani Birgi",
+      "city": "Trapani Birgi",
+      "countryId": "IT",
+      "latitude": 37.9120583333,
+      "longitude": 12.4934388889
+    },
+    "alternative": {
+      "military": true,
+      "icao": "LICC",
+      "iata": "CTA",
+      "name": "Catania Fontanarossa",
+      "city": "Catania Fontanarossa",
+      "countryId": "IT",
+      "latitude": 37.4666666667,
+      "longitude": 15.0638888889
+    },
+    "alternative2": {
+      "military": false,
+      "icao": "LIRN",
+      "iata": "NAP",
+      "name": "Napoli Capodichino",
+      "city": "Napoli Capodichino",
+      "countryId": "IT",
+      "latitude": 40.8844444444,
+      "longitude": 14.2908333333
+    }
+  }
+]

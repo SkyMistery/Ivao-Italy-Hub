@@ -1,0 +1,491 @@
+[
+  {
+    "time": 6483,
+    "createdAt": "2026-09-13T18:54:46.000Z",
+    "updatedAt": "2026-09-13T20:42:49.000Z",
+    "id": 63418838,
+    "userId": 780002,
+    "callsign": "IKSZA",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-13T20:42:49.000Z",
+    "flightPlans": [
+      {
+        "id": 72564737,
+        "arrivalId": "LIMF",
+        "departureId": "LIPB",
+        "aircraftId": "B350"
+      },
+      {
+        "id": 72564739,
+        "arrivalId": "LIMF",
+        "departureId": "LIPB",
+        "aircraftId": "B350"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 5348,
+    "createdAt": "2026-09-13T12:22:23.000Z",
+    "updatedAt": "2026-09-13T13:51:31.000Z",
+    "id": 63414386,
+    "userId": 780002,
+    "callsign": "IKSZA",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-13T13:51:31.000Z",
+    "flightPlans": [
+      {
+        "id": 72559323,
+        "arrivalId": "LIPB",
+        "departureId": "LIMP",
+        "aircraftId": "B350"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 6796,
+    "createdAt": "2026-09-12T20:54:35.000Z",
+    "updatedAt": "2026-09-12T22:47:51.000Z",
+    "id": 63409302,
+    "userId": 780002,
+    "callsign": "IKSZA",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-12T22:47:51.000Z",
+    "flightPlans": [
+      {
+        "id": 72553354,
+        "arrivalId": "LIMP",
+        "departureId": "LFKF",
+        "aircraftId": "B350"
+      },
+      {
+        "id": 72553357,
+        "arrivalId": "LIMP",
+        "departureId": "LFKF",
+        "aircraftId": "B350"
+      },
+      {
+        "id": 72553358,
+        "arrivalId": "LIMP",
+        "departureId": "LFKF",
+        "aircraftId": "B350"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 3813,
+    "createdAt": "2026-09-23T20:07:22.000Z",
+    "updatedAt": "2026-09-23T21:10:55.000Z",
+    "id": 63500179,
+    "userId": 780002,
+    "callsign": "ICELLO",
+    "rating": 5,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-23T21:10:55.000Z",
+    "flightPlans": [
+      {
+        "id": 72660459,
+        "arrivalId": "LDLO",
+        "departureId": "LJPZ",
+        "aircraftId": "C152"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 3144,
+    "createdAt": "2026-09-18T08:13:02.000Z",
+    "updatedAt": "2026-09-18T09:05:26.000Z",
+    "id": 63450734,
+    "userId": 780002,
+    "callsign": "SCI044",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-18T09:05:26.000Z",
+    "flightPlans": [
+      {
+        "id": 72602771,
+        "arrivalId": "LIME",
+        "departureId": "LIPN",
+        "aircraftId": "C208"
+      },
+      {
+        "id": 72602772,
+        "arrivalId": "LIME",
+        "departureId": "LIPN",
+        "aircraftId": "C208"
+      },
+      {
+        "id": 72602905,
+        "arrivalId": "LIME",
+        "departureId": "LIPN",
+        "aircraftId": "C208"
+      },
+      {
+        "id": 72602926,
+        "arrivalId": "LIME",
+        "departureId": "LIPN",
+        "aircraftId": "C208"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 5010,
+    "createdAt": "2026-09-22T17:46:41.000Z",
+    "updatedAt": "2026-09-22T19:10:11.000Z",
+    "id": 63491172,
+    "userId": 780002,
+    "callsign": "N260MA",
+    "rating": 3,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-22T19:10:11.000Z",
+    "flightPlans": [
+      {
+        "id": 72650170,
+        "arrivalId": "LIDT",
+        "departureId": "LOWI",
+        "aircraftId": "F26T"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 7139,
+    "createdAt": "2026-08-25T12:14:36.000Z",
+    "updatedAt": "2026-08-25T14:13:35.000Z",
+    "id": 63252070,
+    "userId": 780002,
+    "callsign": "LIT234S",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-08-25T14:13:35.000Z",
+    "flightPlans": [
+      {
+        "id": 72370008,
+        "arrivalId": "EKVG",
+        "departureId": "EGLC",
+        "aircraftId": "B737"
+      },
+      {
+        "id": 72370009,
+        "arrivalId": "EKVG",
+        "departureId": "EGLC",
+        "aircraftId": "B737"
+      },
+      {
+        "id": 72370011,
+        "arrivalId": "EKVG",
+        "departureId": "EGLC",
+        "aircraftId": "B737"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 6782,
+    "createdAt": "2026-08-28T14:35:38.000Z",
+    "updatedAt": "2026-08-28T16:28:40.000Z",
+    "id": 63278337,
+    "userId": 780002,
+    "callsign": "LIT234S",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-08-28T16:28:40.000Z",
+    "flightPlans": [
+      {
+        "id": 72399799,
+        "arrivalId": "LIRQ",
+        "departureId": "EGJJ",
+        "aircraftId": "B736"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 6123,
+    "createdAt": "2026-09-02T17:47:05.000Z",
+    "updatedAt": "2026-09-02T19:29:08.000Z",
+    "id": 63324617,
+    "userId": 780002,
+    "callsign": "IBGGC",
+    "rating": 5,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-02T19:29:08.000Z",
+    "flightPlans": [
+      {
+        "id": 72453406,
+        "arrivalId": "LIPE",
+        "departureId": "LFPM",
+        "aircraftId": "C700"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 7366,
+    "createdAt": "2026-09-02T17:56:16.000Z",
+    "updatedAt": "2026-09-02T19:59:02.000Z",
+    "id": 63324712,
+    "userId": 780002,
+    "callsign": "RYR2599",
+    "rating": 6,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-02T19:59:02.000Z",
+    "flightPlans": [
+      {
+        "id": 72453504,
+        "arrivalId": "LIMP",
+        "departureId": "LICR",
+        "aircraftId": "B738"
+      },
+      {
+        "id": 72453506,
+        "arrivalId": "LIMP",
+        "departureId": "LICR",
+        "aircraftId": "B738"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 6698,
+    "createdAt": "2026-09-15T15:45:26.000Z",
+    "updatedAt": "2026-09-15T17:37:04.000Z",
+    "id": 63431676,
+    "userId": 780002,
+    "callsign": "RYR73F",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-15T17:37:04.000Z",
+    "flightPlans": [
+      {
+        "id": 72580329,
+        "arrivalId": "LIMP",
+        "departureId": "LICR",
+        "aircraftId": "B738"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 5683,
+    "createdAt": "2026-09-13T05:13:49.000Z",
+    "updatedAt": "2026-09-13T06:48:32.000Z",
+    "id": 63411633,
+    "userId": 780002,
+    "callsign": "VOE2520",
+    "rating": 5,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-13T06:48:32.000Z",
+    "flightPlans": [
+      {
+        "id": 72556101,
+        "arrivalId": "LFBO",
+        "departureId": "LIEO",
+        "aircraftId": "A320"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 8237,
+    "createdAt": "2026-09-20T06:18:10.000Z",
+    "updatedAt": "2026-09-20T08:35:27.000Z",
+    "id": 63469521,
+    "userId": 780002,
+    "callsign": "ITY591",
+    "rating": 4,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-20T08:35:27.000Z",
+    "flightPlans": [
+      {
+        "id": 72624418,
+        "arrivalId": "LOWW",
+        "departureId": "LDDU",
+        "aircraftId": "A20N"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 5660,
+    "createdAt": "2026-09-19T18:47:59.000Z",
+    "updatedAt": "2026-09-19T20:22:19.000Z",
+    "id": 63465852,
+    "userId": 780002,
+    "callsign": "RYR276",
+    "rating": 7,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-09-19T20:22:19.000Z",
+    "flightPlans": [
+      {
+        "id": 72619933,
+        "arrivalId": "LICT",
+        "departureId": "LIBP",
+        "aircraftId": "B738"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  },
+  {
+    "time": 9139,
+    "createdAt": "2026-08-30T11:05:40.000Z",
+    "updatedAt": "2026-08-30T13:37:59.000Z",
+    "id": 63295868,
+    "userId": 780002,
+    "callsign": "IHS894",
+    "rating": 5,
+    "serverId": "WS1-EUW2",
+    "softwareTypeId": "altitude/win",
+    "softwareVersion": "1.13.0.33",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2026-08-30T13:37:59.000Z",
+    "flightPlans": [
+      {
+        "id": 72420229,
+        "arrivalId": "LICC",
+        "departureId": "LIPE",
+        "aircraftId": "F28"
+      }
+    ],
+    "softwareType": {
+      "id": "altitude/win",
+      "name": "Altitude/win"
+    }
+  }
+]

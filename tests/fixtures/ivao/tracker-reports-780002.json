@@ -1,0 +1,122 @@
+[
+  {
+    "report": 879788,
+    "callsign": "IKSZA",
+    "date": "2026-09-13",
+    "sessionIds": [
+      63418838
+    ]
+  },
+  {
+    "report": 879691,
+    "callsign": "IKSZA",
+    "date": "2026-09-13",
+    "sessionIds": [
+      63414386
+    ]
+  },
+  {
+    "report": 879558,
+    "callsign": "IKSZA",
+    "date": "2026-09-12",
+    "sessionIds": [
+      63409302
+    ]
+  },
+  {
+    "report": 882171,
+    "callsign": "ICELLO",
+    "date": "2026-09-23",
+    "sessionIds": [
+      63500179
+    ]
+  },
+  {
+    "report": 880760,
+    "callsign": "SCI044",
+    "date": "2026-09-18",
+    "sessionIds": [
+      63450734
+    ]
+  },
+  {
+    "report": 881923,
+    "callsign": "N260MA",
+    "date": "2026-09-22",
+    "sessionIds": [
+      63491172
+    ]
+  },
+  {
+    "report": 877464,
+    "callsign": "LIT234S",
+    "date": "2026-08-25",
+    "sessionIds": [
+      63252070
+    ]
+  },
+  {
+    "report": 877596,
+    "callsign": "LIT234S",
+    "date": "2026-08-28",
+    "sessionIds": [
+      63278337
+    ]
+  },
+  {
+    "report": 877187,
+    "callsign": "IBGGC",
+    "date": "2026-09-02",
+    "sessionIds": [
+      63324617
+    ]
+  },
+  {
+    "report": 877196,
+    "callsign": "RYR2599",
+    "date": "2026-09-02",
+    "sessionIds": [
+      63324712
+    ]
+  },
+  {
+    "report": 880159,
+    "callsign": "RYR73F",
+    "date": "2026-09-15",
+    "sessionIds": [
+      63431676
+    ]
+  },
+  {
+    "report": 879610,
+    "callsign": "VOE2520",
+    "date": "2026-09-13",
+    "sessionIds": [
+      63411633
+    ]
+  },
+  {
+    "report": 881263,
+    "callsign": "ITY591",
+    "date": "2026-09-20",
+    "sessionIds": [
+      63469521
+    ]
+  },
+  {
+    "report": 881169,
+    "callsign": "RYR276",
+    "date": "2026-09-19",
+    "sessionIds": [
+      63465852
+    ]
+  },
+  {
+    "report": 876413,
+    "callsign": "IHS894",
+    "date": "2026-08-30",
+    "sessionIds": [
+      63295868
+    ]
+  }
+]
