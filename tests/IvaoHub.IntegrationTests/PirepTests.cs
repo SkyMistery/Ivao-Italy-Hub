@@ -709,6 +709,9 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         user.SecurityStamp = SuperadminService.NewStamp();
         user.UpdatedAt = clock.UtcNow;
 
+        // Signed in lately, as the test sign-in does not say: a personal token works only within 30 days of it (T19b).
+        user.LastLoginAt = clock.UtcNow;
+
         if (staffPosition is not null
             && !await database.UserStaffPositions.AnyAsync(row => row.Vid == vid && row.Position == staffPosition, cancellationToken))
         {
