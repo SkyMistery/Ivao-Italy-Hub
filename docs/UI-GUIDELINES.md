@@ -178,6 +178,25 @@ world.
 `RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist yet and are not
 to be started early.
 
+### A module's own components
+
+A component only a module has use for lives in the module, and the core — the gallery included —
+cannot import it. The module declares it in its manifest, `components: [{ name, sample }]`, and the
+gallery shows it under "Components of the modules", named after its module the way a block type is
+(`flightops.LegGrid`). The sample is the module's: the component drawn with example data, in a query
+client of its own if it reads one, and never with a call to the server — the gallery is not a page of
+this installation. Adding one is the same decision as adding one to the list above, and the test next
+to the gallery writes out their names, so a manifest cannot quietly grow one.
+
+There is one so far. **`flightops.LegGrid`** is the table of a tour's legs, and it is the **declared
+exception** to "screens are configuration" below: every row is edited where it stands and saved by
+itself with its version, a refusal lands under its cell, and the distances and times are the server's,
+never computed on screen. A second table like it is not a copy of this one: it is a reason to decide
+whether the exception has become a mechanism.
+
+A bar of progress on a card of the tours is **not** a component: it is Atmosphere's `Progress` with a
+sentence under it, inside the block that draws the card.
+
 ## 4. Colours are tokens, and dark mode is not optional
 
 Use the semantic classes of the Atmosphere theme: `bg-body`, `bg-card`, `text-foreground`,

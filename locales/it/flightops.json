@@ -1,5 +1,8 @@
 {
   "_source": "web/src/modules/flightops/locales",
+  "gallery": {
+    "retiredReason": "Una pista chiusa per la stagione."
+  },
   "nav": {
     "section": "Tour",
     "tours": "Tour",

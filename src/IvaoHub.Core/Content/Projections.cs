@@ -49,8 +49,8 @@ public sealed record ProjectionContext(
 /// <summary>Everything a row projects, at once. Missing pieces are simply null or empty.</summary>
 /// <param name="Search">The line of the row in the search index, one per language once written.</param>
 /// <param name="Calendar">
-/// Every entry the row puts in the calendar, in a stable order: a tour has one per leg window, a
-/// link has none. The position in the list is what tells one entry of a row from the next (M2, T4).
+/// Every entry the row puts in the calendar, in a stable order: a tour has two, its release and its
+/// close, a link has none. The position in the list is what tells one entry of a row from the next (M2, T4).
 /// </param>
 /// <param name="AwardSignals">The members the row points out for an award; a human decides.</param>
 /// <param name="MediaUses">
