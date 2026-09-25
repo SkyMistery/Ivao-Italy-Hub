@@ -26,8 +26,29 @@
  * The recorded rows are anonymised: the VID becomes <asVid> (the range the integration tests own),
  * and the member object IVAO embeds — real name, country, staff positions — is dropped. Tracks are
  * only kept by IVAO for about ninety days, so a fixture cannot be re-recorded from an old flight.
+ *
+ *   node tools/record-ivao-fixtures.mjs --me <asVid>
+ *
+ * records the profile a sign in reads, /v2/users/me, which only opens to a member's own token (M3, A1). So it signs
+ * in the way the hub does — authorization code with PKCE, the client and the scopes of config/ivao-oauth.json — and
+ * listens for IVAO's answer on the redirect address registered for that client: nothing else may be listening there
+ * while it runs, the development server of the SPA included. A browser opens on IVAO's own sign in page, where the
+ * member types their own credentials; the token never leaves this process. It writes users-me-<asVid>.json with the
+ * fields the hub reads and nothing else, the person taken out: the VID, the names and the address become <asVid> and
+ * placeholders, the staff positions an empty list, and the connection times keep their shape and lose their values.
+ * What IVAO sent for the ratings and the times is printed, so that the unit can be compared with the member's page.
+ *
+ *   node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]
+ *
+ * records public reference data: the ATC positions of the airports named, as /v2/ATCPositions/all answers them, into
+ * atc-positions-<name>.json, and the sectors of the FIRs named, as /v2/subcenters/all answers them, into
+ * subcenters-<name>.json (M3, A1). Both without the outline of the sector (regionMap, regionMapPolygon), which is most
+ * of the fifty megabytes the two answers weigh for the world.
  */
+import { spawn } from "node:child_process";
+import { createHash, randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -36,20 +57,149 @@ const outDir = join(root, "tests/fixtures/ivao");
 
 const listed = process.argv[2] === "--list";
 const airportsOnly = process.argv[2] === "--airports";
-const vid = listed || airportsOnly ? 0 : Number(process.argv[2]);
+const profileOnly = process.argv[2] === "--me";
+const positionsOnly = process.argv[2] === "--positions";
+const referenceOnly = airportsOnly || positionsOnly;
+const vid = listed || referenceOnly || profileOnly ? 0 : Number(process.argv[2]);
 const wanted = listed ? 0 : Number(process.argv[3] ?? 3);
-const asVid = Number(process.argv[4] ?? 780001);
-if (airportsOnly ? process.argv.length < 5 : listed ? !process.argv[3] || !asVid : !vid) {
+const asVid = Number(profileOnly ? process.argv[3] : process.argv[4] ?? 780001);
+if (referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid) {
   console.error(
     "Give the VID to record from: node tools/record-ivao-fixtures.mjs <vid> [flights] [asVid]\n"
       + "or a list of flights:        node tools/record-ivao-fixtures.mjs --list <file.json> <asVid>\n"
-      + "or airports and runways:     node tools/record-ivao-fixtures.mjs --airports <name> <ICAO> [ICAO...]",
+      + "or airports and runways:     node tools/record-ivao-fixtures.mjs --airports <name> <ICAO> [ICAO...]\n"
+      + "or your own profile:         node tools/record-ivao-fixtures.mjs --me <asVid>\n"
+      + "or ATC positions and sectors: node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]",
   );
   process.exit(1);
 }
 
 const ivao = JSON.parse(readFileSync(join(root, "config/ivao-oauth.json"), "utf8")).Ivao;
 const base = ivao.Authority.replace(/\/$/, "");
+
+/** Opens the default browser without a shell, so the address is never parsed by one. */
+const openBrowser = (address) => {
+  const [command, args] = process.platform === "win32"
+    ? ["rundll32", ["url.dll,FileProtocolHandler", address]]
+    : [process.platform === "darwin" ? "open" : "xdg-open", [address]];
+  const child = spawn(command, args, { detached: true, stdio: "ignore" });
+  child.on("error", () => console.log(`No browser could be opened; sign in at:\n${address}`));
+  child.unref();
+};
+
+/** A member's own token, the way the hub gets one at a sign in (IvaoAuthenticationExtensions). */
+const signIn = async (discovery) => {
+  const redirect = new URL(ivao.RedirectUri);
+  const verifier = randomBytes(32).toString("base64url");
+  const state = randomBytes(16).toString("base64url");
+  const authorize = new URL(discovery.authorization_endpoint);
+  authorize.search = new URLSearchParams({
+    response_type: "code",
+    client_id: ivao.ClientId,
+    redirect_uri: ivao.RedirectUri,
+    scope: ivao.Scopes.join(" "),
+    state,
+    code_challenge: createHash("sha256").update(verifier).digest("base64url"),
+    code_challenge_method: "S256",
+  }).toString();
+
+  const code = await new Promise((resolve, reject) => {
+    const server = createServer((request, response) => {
+      const answer = new URL(request.url, redirect);
+      if (answer.pathname !== redirect.pathname) {
+        response.writeHead(404).end();
+        return;
+      }
+      const returned = answer.searchParams.get("state") === state ? answer.searchParams.get("code") : null;
+      response
+        .writeHead(returned ? 200 : 400, { "content-type": "text/plain; charset=utf-8" })
+        .end(returned ? "Recorded. This tab can be closed." : "The sign in did not come back as expected.");
+      server.close();
+      if (returned) resolve(returned);
+      else reject(new Error(`IVAO came back without a code (${answer.searchParams.get("error") ?? "no error given"}).`));
+    });
+    server.on("error", reject);
+    server.listen(Number(redirect.port || 80), redirect.hostname, () => {
+      console.log(`Waiting on ${redirect.origin}${redirect.pathname}; a browser opens on IVAO's sign in.`);
+      openBrowser(authorize.href);
+    });
+  });
+
+  const tokenResponse = await fetch(discovery.token_endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: ivao.RedirectUri,
+      client_id: ivao.ClientId,
+      client_secret: ivao.ClientSecret,
+      code_verifier: verifier,
+    }),
+  });
+  if (!tokenResponse.ok) throw new Error(`The token endpoint answered ${tokenResponse.status}.`);
+  return (await tokenResponse.json()).access_token;
+};
+
+/**
+ * What the hub reads of a profile (IvaoUserProfileReader), with the person taken out. The connection times keep their
+ * shape and IVAO's unit and lose their values: 120 hours as a controller and 150 as a pilot, whatever the member has.
+ */
+const anonymiseProfile = (me) => {
+  const invented = { atc: 120 * 3600, pilot: 150 * 3600 };
+  const kept = {
+    id: asVid,
+    sub: String(asVid),
+    firstName: "Test",
+    lastName: "Member",
+    given_name: "Test",
+    family_name: "Member",
+    nickname: "Test",
+    publicNickname: `Test (${asVid})`,
+    email: `member-${asVid}@example.invalid`,
+    divisionId: me.divisionId,
+    countryId: me.countryId,
+    languageId: me.languageId,
+    isStaff: me.isStaff,
+    isSupervisor: me.isSupervisor,
+    rating: me.rating,
+    hours: Array.isArray(me.hours)
+      ? me.hours.map((row) => ({ ...row, hours: (invented[row.type] ?? 0) + (Number.isInteger(row.hours) ? 0 : 0.25) }))
+      : undefined,
+    userStaffPositions: [],
+  };
+  return Object.fromEntries(Object.entries(kept).filter(([key, value]) => key in me && value !== undefined));
+};
+
+if (profileOnly) {
+  const discovery = await (await fetch(`${base}/.well-known/openid-configuration`)).json();
+  const accessToken = await signIn(discovery);
+  const profileResponse = await fetch(discovery.userinfo_endpoint ?? `${base}/v2/users/me`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  if (!profileResponse.ok) throw new Error(`/v2/users/me answered ${profileResponse.status}.`);
+  const me = await profileResponse.json();
+
+  const fixture = anonymiseProfile(me);
+  console.log(`fields IVAO sent: ${Object.keys(me).join(", ")}`);
+  console.log(`dropped: ${Object.keys(me).filter((key) => !(key in fixture)).join(", ")}`);
+  for (const kind of ["atcRating", "pilotRating"]) {
+    const { id, shortName, name } = me.rating?.[kind] ?? {};
+    console.log(`${kind}: id ${id}, ${shortName}, ${name}`);
+  }
+  if (Array.isArray(me.hours)) {
+    for (const row of me.hours) {
+      console.log(`hours ${row.type}: ${row.hours} (${(row.hours / 3600).toFixed(2)} if seconds)`);
+    }
+  } else {
+    console.warn(`hours is not the array IVAO documents: ${JSON.stringify(me.hours)}; it was not written.`);
+  }
+
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, `users-me-${asVid}.json`), JSON.stringify(fixture, null, 2));
+  console.log(`wrote tests/fixtures/ivao/users-me-${asVid}.json as VID ${asVid}`);
+  process.exit(0);
+}
 
 const tokenResponse = await fetch(`${base}/v2/oauth/token`, {
   method: "POST",
@@ -135,6 +285,29 @@ if (airportsOnly) {
     console.log(`recorded ${icao}: ${airports.at(-1).runways.length} runway end(s)`);
   }
   writeFileSync(join(outDir, `airports-${process.argv[3]}.json`), JSON.stringify(airports, null, 2));
+  process.exit(0);
+}
+
+if (positionsOnly) {
+  // Twenty and thirty megabytes, and IVAO has closed the connection half way through the second one: a few attempts.
+  const getWorld = async (path) => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await get(path);
+      } catch (error) {
+        if (attempt === 3) throw error;
+        console.warn(`${path}: ${error.cause?.code ?? error.message}, again`);
+      }
+    }
+  };
+  const codes = new Set(process.argv.slice(4).map((code) => code.toUpperCase()));
+  const withoutOutline = ({ regionMap, regionMapPolygon, ...position }) => position;
+  const positions = (await getWorld("/v2/ATCPositions/all")).filter((row) => codes.has(row.airportId)).map(withoutOutline);
+  const subcenters = (await getWorld("/v2/subcenters/all")).filter((row) => codes.has(row.centerId)).map(withoutOutline);
+  writeFileSync(join(outDir, `atc-positions-${process.argv[3]}.json`), JSON.stringify(positions, null, 2));
+  writeFileSync(join(outDir, `subcenters-${process.argv[3]}.json`), JSON.stringify(subcenters, null, 2));
+  const types = (rows) => [...new Set(rows.map((row) => row.position))].join(", ");
+  console.log(`recorded ${positions.length} position(s) (${types(positions)}) and ${subcenters.length} sector(s) (${types(subcenters)})`);
   process.exit(0);
 }
 

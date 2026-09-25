@@ -1,0 +1,52 @@
+{
+  "id": 790001,
+  "sub": "790001",
+  "firstName": "Test",
+  "lastName": "Member",
+  "given_name": "Test",
+  "family_name": "Member",
+  "nickname": "Test",
+  "publicNickname": "Test (790001)",
+  "email": "member-790001@example.invalid",
+  "divisionId": "IT",
+  "countryId": "IT",
+  "languageId": "it",
+  "isStaff": true,
+  "isSupervisor": false,
+  "rating": {
+    "isPilot": true,
+    "isAtc": true,
+    "pilotRating": {
+      "id": 5,
+      "name": "Private Pilot",
+      "shortName": "PP",
+      "description": "Rating requires at least 50 hours online as a pilot<br>and a successful theoretical and practical test"
+    },
+    "atcRating": {
+      "id": 6,
+      "name": "Approach Controller",
+      "shortName": "APC",
+      "description": "Rating requires at least 100 hours online as a controller<br>and a successful theoretical and practical test"
+    },
+    "networkRating": {
+      "id": 2,
+      "name": "Active User",
+      "description": "Active user, has VID/PWD on IVAN"
+    }
+  },
+  "hours": [
+    {
+      "type": "pilot",
+      "hours": 540000
+    },
+    {
+      "type": "atc",
+      "hours": 432000
+    },
+    {
+      "type": "staff",
+      "hours": 0
+    }
+  ],
+  "userStaffPositions": []
+}
