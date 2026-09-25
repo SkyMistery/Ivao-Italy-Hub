@@ -101,6 +101,26 @@ const server = spawn(executable, [], {
     E2E__Pilot__LastName: 'Pilot',
     E2E__Pilot__Email: 'bench-pilot@bench.test',
 
+    // The same pilot is the trainee of the training's round (M3, A1): AS3 and FS3 in IVAO's numbers, so the next
+    // training is ADC as a controller and PP as a pilot, and more hours than any threshold a division would set.
+    E2E__Pilot__RatingAtc: '4',
+    E2E__Pilot__RatingPilot: '4',
+    E2E__Pilot__HoursAtc: '120',
+    E2E__Pilot__HoursPilot: '150',
+
+    // And a trainer of the training department, with `/e2e/signin?as=trainer` (M3, A1): the training is conducted by
+    // the staff of the training, which the web master is not, with a rating at least as high as the one trained — SEC
+    // and ATP are above every rating a division trains. A mailbox of Mailpit, because a trainer is written to.
+    E2E__Trainer__Vid: '999004',
+    E2E__Trainer__FirstName: 'Bench',
+    E2E__Trainer__LastName: 'Trainer',
+    E2E__Trainer__Email: 'bench-trainer@bench.test',
+    E2E__Trainer__Positions__0: 'IT-T01',
+    E2E__Trainer__RatingAtc: '8',
+    E2E__Trainer__RatingPilot: '8',
+    E2E__Trainer__HoursAtc: '1500',
+    E2E__Trainer__HoursPilot: '900',
+
     // And an assistant coordinator of the department of the tours, with `/e2e/signin?as=assistant` (M2, T14b): whoever
     // decided a report does not judge its dispute, so upholding one in the round needs somebody else who may.
     E2E__Assistant__Vid: '999003',
