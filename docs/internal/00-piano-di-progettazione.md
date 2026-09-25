@@ -1,9 +1,22 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.06 — 24 settembre 2026 (**un secondo sviluppatore**: Training a `dalberone` con il suo Claude Code, su branch del repository; su `main` unisce solo Carmine dopo la revisione; `CLAUDE.md` pubblico e in inglese, `CONTRIBUTING.md`, il check `core-guard`)
+**Versione documento:** 1.07 — 25 settembre 2026 (**T20a, la conservazione dei tour**: T20 divisa in tre; il job mensile archivia un tour 13 mesi dopo la chiusura, 25 se è durato più di un anno; la cancellazione dei dati di un pilota va nel nucleo, in T20b)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.07** (25 set 2026, T20a): **la conservazione dei tour**. Nota `decisions/2026-09-25-la-conservazione-dei-tour.md`.
+In apertura di T20 il censimento dei dati personali ha trovato che **il nucleo non ha nessun modo di cancellare o anonimizzare un
+utente** (fili delle contestazioni, notifiche, award e `hub_audit_log`, che copia intere le righe auditate e non si svuota mai).
+**Tre risposte di Carmine**: (1) T20 si divide in **T20a** (conservazione), **T20b** (cancellazione dei dati di un pilota) e **T20c**
+(rifiniture, giro completo, chiusura di M2); (2) la cancellazione si fa **adesso, nel nucleo**: T20b apre con una nota di caso (c)
+per un meccanismo che ogni modulo implementa, e Training lo trova fatto; (3) tiene **25 mesi** il tour che **dura più di 12 mesi**
+(`close_at > release_at + 12 mesi`), non quello che chiude nell'anno dopo. **Fatto in T20a**: `TourRetentionJob`, mensile, archivia un
+tour pronto (`fo_tours.purged_at`) e toglie ciò che pesa; il tour esce dal pubblico, non si modifica più e le sue decisioni non si
+riaprono. **Trovato**: il registro legge i nomi degli errori confermati dallo **snapshot delle regole**, che quindi si **snellisce**
+(restano le regole con un errore confermato, senza testo né parametri) invece di svuotarsi; un tour **aspetta** finché ha un PIREP da
+decidere o contestato, o un award in attesa; le etichette di `retentionMonths`/`retentionMonthsLong` dicevano «report» e «registro
+disciplinare», corrette. Toccati: `05-design-m2.md` §10, `06-piano-implementazione-m2.md` parte C (T20a/b/c).
 
 **Changelog 1.06** (24 set 2026, tra T19b e T20): **un secondo sviluppatore**. Nota
 `decisions/2026-09-24-un-secondo-sviluppatore.md`, che chiude la proposta §3.5 della nota `2026-09-13-ordine-dei-moduli`.

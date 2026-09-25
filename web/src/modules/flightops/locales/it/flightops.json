@@ -22,6 +22,7 @@
     "fromTemplate": "Nuovo da template",
     "saved": "Tour salvato.",
     "readyProblems": "Prima di segnarlo pronto manca ancora:",
+    "purged": "In archivio dal {{date}}: regole, hub, briefing e i dettagli dei report non ci sono più. I report e le loro decisioni restano, e non si cambia più niente.",
     "tabs": {
       "settings": "Impostazioni",
       "briefing": "Briefing",
@@ -215,14 +216,14 @@
       "code": "Codice del paese (due lettere)",
       "routeProcedurePrefixes": "Aeroporti con SID e STAR nella rotta (prime due lettere del codice ICAO)",
       "trackRetentionDays": "Giorni in cui si tiene la traccia di un report dopo la decisione",
-      "retentionMonths": "Mesi di conservazione dei report",
-      "retentionMonthsLong": "Mesi di conservazione del registro disciplinare",
+      "retentionMonths": "Mesi dopo la chiusura prima che un tour vada in archivio",
+      "retentionMonthsLong": "Lo stesso, per un tour che dura più di un anno",
       "thresholdToleranceMeters": "Distanza ammessa dalla testata al decollo (m)"
     }
   },
   "errors": {
     "profileExists": "Questo tipo di aereo ha già un profilo.",
-    "retentionLongShorter": "Il registro disciplinare non si può tenere meno a lungo dei report.",
+    "retentionLongShorter": "Un tour che dura più di un anno non va in archivio prima degli altri.",
     "countryCode": "Scrivi il paese con il suo codice di due lettere.",
     "icaoPrefix": "Scrivi le prime due lettere dei codici ICAO, come ED.",
     "closeBeforeRelease": "La chiusura dev'essere dopo il rilascio.",
@@ -236,6 +237,7 @@
     "dailyLimitRequired": "Il limite giornaliero della divisione è spento: il tour ne vuole uno suo.",
     "referenceWithoutProfile": "Questo aereo non ha un profilo: senza la sua velocità il tempo stimato non si calcola.",
     "tourHasReports": "Questo tour ha dei report e non si elimina: si può nascondere.",
+    "tourPurged": "Questo tour è in archivio: si legge, e non si cambia più niente.",
     "toursNeedDailyLimit": "Ci sono tour ancora da volare senza un limite giornaliero loro.",
     "aircraftGroupUnknown": "Questo gruppo di aerei non esiste.",
     "icao": "Scrivi l'aeroporto con il suo codice ICAO di quattro lettere.",
@@ -368,6 +370,7 @@
     "disputeNotOpen": "Su questo report non c'è una contestazione aperta.",
     "disputeThreadUnreadable": "Non puoi leggere il filo di questa contestazione, quindi la risposta non arriverebbe al pilota. Chiedi a chi legge i contatti del dipartimento.",
     "reviewDisputed": "Con una contestazione aperta, la decisione si riapre accogliendo la contestazione.",
+    "reviewPurged": "Il tour è in archivio: piani, controlli e regole non ci sono più, e la decisione non si riapre.",
     "validatorTour": "Scegli un tour di primo livello: un sottotour si valida con il suo contenitore.",
     "banTour": "Scegli un tour di primo livello: un ban su un contenitore vale per i suoi sottotour.",
     "banEndsBeforeStart": "La fine viene prima dell'inizio.",

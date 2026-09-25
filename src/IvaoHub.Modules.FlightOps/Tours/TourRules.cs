@@ -122,6 +122,11 @@ public sealed class TourSaving(
             return new Dictionary<string, string[]>(StringComparer.Ordinal) { ["parentTourId"] = ["flightops:errors.parentUnknown"] };
         }
 
+        if (parent.PurgedAt is not null)
+        {
+            return TourChildren.Refusal("parentTourId", TourState.PurgedKey);
+        }
+
         Inherit(tour, parent);
         return null;
     }
@@ -175,6 +180,12 @@ public sealed class TourSaving(
         {
             var entry = database.Entry(tour);
             var before = (Tour)entry.OriginalValues.ToObject();
+
+            // An archived tour is read, never changed: a close moved ahead would reopen a tour without rules or hubs (§10).
+            if (before.PurgedAt is not null)
+            {
+                return TourChildren.Refusal("id", TourState.PurgedKey);
+            }
 
             if (before.IsTemplate != tour.IsTemplate)
             {

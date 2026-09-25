@@ -13,10 +13,27 @@
 > `backbone-ran.sh` di `build-test` verifica che i test di architettura siano stati **eseguiti**, non solo verdi.
 > **Prova con `dalberone` fatta il 25 set** (nota §9): push su `main`, PR #114 su `CLAUDE.md` e tag `v0.0.0-test` tutti
 > rifiutati; il bypass admin del ruleset deve essere «Always» e ogni merge di Carmine passa dalla casella «bypass rules».
-> ⚠️ **Prima del 2 nov 2026**: una event policy delle Actions che consenta `pull_request_target` a `core-guard.yml`, o il check
-> smette di partire e blocca ogni merge (nota §9). **M3 può partire**: a `dalberone` il prompt di `HANDOFF-M3.md`.
+> La event policy delle Actions che consente `pull_request_target` a `core-guard.yml` (obbligatoria dal 2 nov 2026) **esiste dal
+> 25 set** (nota §9, id 5617). **M3 è partito**: `dalberone` ha letto `HANDOFF-M3.md` e lavora al design.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **T0–T19**. Piano **1.06**. **Il prossimo passo è T20 (conservazione, cancellazione dei dati di un pilota, rifiniture, giro completo, chiusura di M2)**, in una chat nuova, dopo il merge di T19b; T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+**Ultimo aggiornamento:** 25 settembre 2026 — **T0–T20a**. Piano **1.07**. **Il prossimo passo è T20b (la cancellazione dei dati di un pilota, nel nucleo)**, in una chat nuova, dopo il merge di T20a: si apre con una **nota di caso (c)**, decisa con Carmine prima del codice; poi T20c (rifiniture, giro completo, chiusura di M2). T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+
+> **Che cosa ha lasciato T20a** (nota `2026-09-25-la-conservazione-dei-tour`, piano 1.07): T20 è **divisa in tre** (Carmine). La
+> conservazione sta in `Tours/TourRetentionJob.cs`, il primo del mese alle 04:20 (ora del server): un tour **pronto** chiuso da
+> `retentionMonths` (13) — `retentionMonthsLong` (25) se **dura** più di 12 mesi, `TourRetentionJob.RetentionMonths` — perde briefing,
+> regole sue, hub e rotazioni, vincoli, vincoli sul callsign e iscrizioni, e i suoi PIREP perdono tracce, esiti, errori non confermati,
+> piani, ATC, note. **Restano** tour, leg, PIREP con decisione, errori confermati e storia, ban. Il segno è **`fo_tours.purged_at`**
+> (migrazione `AddTourPurgedAt`): `Tour.Visibility` diventa `Staff`, `TourState.IsPublic` risponde no, `Tour.Project` non proietta ricerca
+> né calendario, e ogni scrittura risponde `TourState.PurgedKey` (`flightops:errors.tourPurged`: form del tour, stato, leg, hub, rotazioni,
+> vincoli, regole, copia delle regole, sottotour nuovi); la riapertura risponde `reviewPurged`. Nel back office la barra del tour mostra un
+> avviso al posto delle azioni. ⚠️ **Lo snapshot delle regole non si svuota, si snellisce** (`PirepSubmission.ArchivedSnapshot`): la pagina
+> del pilota e quella di validazione leggono da lì i **nomi degli errori confermati**. ⚠️ Un tour **aspetta** (e il log lo conta) finché ha
+> un PIREP in coda, in revisione, da modificare o contestato, o una segnalazione d'award in attesa: cancellare l'iscrizione la toglierebbe.
+> **Per T20b**: il censimento dei dati di una persona, tabella per tabella, è nella nota §4. Il nucleo **non ha nessun modo** di cancellare o
+> anonimizzare un utente, e `hub_audit_log` tiene copie intere delle righe auditate. Test: `PirepTests.Retention.cs`, `TourStateTests`.
+> ⚠️ Docker era spento: l'integrazione è girata prima in CI. ⚠️ **Sessioni parallele nella stessa cartella**: il 25 settembre un'altra
+> sessione ha cambiato branch nella cartella principale mentre questa lavorava, e un commit è finito sul branch sbagliato. Una fase si fa
+> **in un worktree** (`.claude/worktrees/`), mai nella cartella principale.
 
 > **Che cosa ha lasciato T19b** (nota `2026-09-24-il-contratto-dell-agente`, piano 1.05): il contratto dell'agente sta in `Agent/` del
 > modulo — `AgentContract` (audience `flightops.agent`, intestazione `Hub-Agent-Contract`, versione 1, il filtro che risponde 400 con

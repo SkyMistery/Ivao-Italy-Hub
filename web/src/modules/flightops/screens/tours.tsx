@@ -13,6 +13,7 @@ import { mediaPickerQuery } from '../../../features/media/queries';
 import { holdsPermissionAnywhere, writableDepartments } from '../../../shared/api/bootstrap';
 import { SchemaForm, describeProblem, languageNames, type ChoiceOption } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
+import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, col, listSearchSchema, type ColumnSpec } from '../../../shared/list';
 import { ConfirmDialog, Notice, PageShell } from '../../../shared/ui';
 import {
@@ -208,7 +209,18 @@ function TourActions({ tour }: { tour: TourDetailDto }) {
   const mayDelete =
     holdsPermissionAnywhere(bootstrap, TOURS_DELETE) &&
     (!tour.isTemplate || holdsPermissionAnywhere(bootstrap, TOURS_MANAGE_TEMPLATES));
+  const moment = useMoment();
   const refusal = describeProblem(status.error ?? remove.error, t, i18n.language);
+
+  // An archived tour is read, never changed (design M2 §10): the server refuses every action, so none is offered.
+  if (tour.purgedAt !== null) {
+    return (
+      <Notice
+        tone="info"
+        title={t('flightops:tours.purged', { date: moment(tour.purgedAt, { time: false }) })}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col items-end gap-2">

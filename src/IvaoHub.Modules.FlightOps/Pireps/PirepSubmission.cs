@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
@@ -663,6 +664,29 @@ public sealed class PirepSubmission(
     {
         ArgumentNullException.ThrowIfNull(pirep);
         return JsonSerializer.Deserialize<List<SnapshotRuleDto>>(pirep.RulesSnapshotJson, ColumnJson) ?? [];
+    }
+
+    /// <summary>
+    /// The snapshot the retention leaves (design M2 §10, note 2026-09-25-la-conservazione-dei-tour): the rules with an error
+    /// confirmed on the report, with their code, title and those errors, and nothing else — the disciplinary record still reads
+    /// in the words of the day it was decided, and the texts and parameters, which weigh, are gone.
+    /// </summary>
+    public static string ArchivedSnapshot(Pirep pirep)
+    {
+        ArgumentNullException.ThrowIfNull(pirep);
+
+        var confirmed = pirep.Errors.Where(error => error.Confirmed).Select(error => error.ErrorId).ToHashSet();
+
+        return JsonSerializer.Serialize(
+            Snapshot(pirep)
+                .Select(rule => rule with
+                {
+                    Text = Localized<string>.Empty,
+                    Parameters = new JsonObject(),
+                    Errors = [.. rule.Errors.Where(error => confirmed.Contains(error.Id))],
+                })
+                .Where(rule => rule.Errors.Count > 0),
+            ColumnJson);
     }
 
     /// <summary>The leg the report froze at its first send (§3.2 point 6).</summary>

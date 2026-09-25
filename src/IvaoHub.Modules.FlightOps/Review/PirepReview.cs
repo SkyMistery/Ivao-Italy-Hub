@@ -284,6 +284,12 @@ public sealed class PirepReview(
             return Refuse("status", "flightops:errors.reviewDisputed");
         }
 
+        // The retention took its plans, checks and rules (§10): a decision made again now would be made on nothing.
+        if (await CrudSource.BackOffice<Tour>(database).AnyAsync(row => row.Id == pirep.TourId && row.PurgedAt != null, cancellationToken))
+        {
+            return Refuse("status", "flightops:errors.reviewPurged");
+        }
+
         if (!await MayReopenAsync(pirep))
         {
             return (ReviewResult.Forbidden, null);
@@ -438,7 +444,7 @@ public sealed class PirepReview(
                 CanTake: mayValidate && IsTakable(pirep, now) && !(pirep.Status == PirepStatus.InReview && pirep.AssignedToVid == currentUser.Vid && pirep.LeaseUntil > now),
                 CanRelease: mayValidate && pirep.Status == PirepStatus.InReview && pirep.AssignedToVid == currentUser.Vid,
                 CanDecide: mayValidate && pirep.Status == PirepStatus.InReview && pirep.AssignedToVid == currentUser.Vid,
-                CanReopen: await MayReopenAsync(pirep),
+                CanReopen: tour.PurgedAt is null && await MayReopenAsync(pirep),
                 CanDecideDispute: pirep.DisputeStatus == DisputeStatus.Open && pirep.Status == PirepStatus.Rejected && await disputes.MayDecideAsync(pirep)),
             pirep.RowVersion);
     }

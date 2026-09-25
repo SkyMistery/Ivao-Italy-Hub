@@ -204,7 +204,7 @@ public sealed class PublicTours(
             tour.OwnerDepartment);
     }
 
-    /// <summary>Ready, not hidden, not a template, with an address and both its dates, and released or shown as a preview.</summary>
+    /// <summary>Ready, not hidden, not archived, not a template, with an address and both its dates, and released or shown as a preview.</summary>
     private IQueryable<Tour> Public(IQueryable<Tour> tours)
     {
         var now = clock.UtcNow;
@@ -212,6 +212,7 @@ public sealed class PublicTours(
         return tours.Where(tour =>
             !tour.IsTemplate
             && !tour.IsHidden
+            && tour.PurgedAt == null
             && tour.Status == PublishStatus.Published
             && tour.Slug != null
             && tour.ReleaseAt != null

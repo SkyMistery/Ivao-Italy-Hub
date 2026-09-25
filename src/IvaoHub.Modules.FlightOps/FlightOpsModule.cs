@@ -167,6 +167,7 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<TourReleaseJob>();
         services.AddScoped<PirepWithdrawalJob>();
         services.AddScoped<TrackRetentionJob>();
+        services.AddScoped<TourRetentionJob>();
         services.AddScoped<ReviewDigestJob>();
         services.AddScoped<WeatherJob>();
         services.AddScoped<WeatherRetentionJob>();
@@ -192,6 +193,11 @@ public sealed class FlightOpsModule : ModuleBase
                 .ForJob(TrackRetentionJob.JobName)
                 .WithIdentity($"{TrackRetentionJob.JobName}-daily")
                 .WithCronSchedule(TrackRetentionJob.Cron))
+            .AddJob<TourRetentionJob>(job => job.WithIdentity(TourRetentionJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(TourRetentionJob.JobName)
+                .WithIdentity($"{TourRetentionJob.JobName}-monthly")
+                .WithCronSchedule(TourRetentionJob.Cron))
             .AddJob<ReviewDigestJob>(job => job.WithIdentity(ReviewDigestJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(ReviewDigestJob.JobName)

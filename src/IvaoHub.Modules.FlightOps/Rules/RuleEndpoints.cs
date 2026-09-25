@@ -118,6 +118,11 @@ public static class RuleEndpoints
             return TourChildren.Refusal("tourId", "flightops:errors.tourUnknown");
         }
 
+        if (tour.PurgedAt is not null)
+        {
+            return TourChildren.Refusal("tourId", TourState.PurgedKey);
+        }
+
         rule.OwnerDepartment = tour.OwnerDepartment;
         rule.OwnerDepartmentMask = tour.OwnerDepartmentMask;
         rule.OnTemplate = tour.IsTemplate;
@@ -298,6 +303,11 @@ public static class RuleEndpoints
             || (target.IsTemplate && !(await authorization.AuthorizeAsync(http.User, target, TourPermissions.ManageTemplates)).Succeeded))
         {
             return TourEndpoints.Forbidden(catalog, currentUser);
+        }
+
+        if (target.PurgedAt is not null)
+        {
+            return TourEndpoints.Refused("id", TourState.PurgedKey, catalog, currentUser);
         }
 
         if (source is null || source.Id == target.Id || !(await authorization.AuthorizeAsync(http.User, source, TourPermissions.View)).Succeeded)

@@ -318,7 +318,9 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T18 | I controlli sulle tracce — **fatta il 24 set 2026** | T1, T16, T17 | disconnessioni, parcheggio, 250 kt, sim rate, atterraggio, decollo dalla testata, `vmc`, `maxAltitude`; tarature |
 | T19a | I token personali (nucleo) — **fatta il 24 set 2026** | T3 | `hub_personal_tokens`, lo schema del token per `audience`, `/me/tokens`, l'audit delle righe dei moduli |
 | T19b | Il contratto dell'agente (modulo) — **fatta il 24 set 2026** | T17, T19a | `/api/flightops/agent`, `Hub-Agent-Contract`, `docs/agent-contract.md`, la `curl` del «fatta quando» |
-| T20 | Conservazione, rifiniture, giro completo | tutte | job mensile, cancellazione dei dati di un pilota, smoke, giro e2e, documenti |
+| T20a | La conservazione dei tour — **fatta il 25 set 2026** | T13, T15 | job mensile, 13 o 25 mesi, `purged_at`, il registro disciplinare intatto |
+| T20b | La cancellazione dei dati di un pilota | T20a | nota di caso (c), il meccanismo nel nucleo, poi il modulo dei tour |
+| T20c | Rifiniture, giro completo, chiusura di M2 | T20b | galleria, `FORKING.md`, smoke, giro e2e, rapporto di chiusura |
 | T21 | L'app del validatore parla con l'hub | T19 | nel repository `AutomaticValidatorTour`, fuori da questo; la mail a Navigraph prima di distribuirla |
 
 **Parallelismo possibile** (se servisse): T1, T2 e T3 non si toccano; T8 e T9 nemmeno; T12, T14, T15 e T16 dopo T13 toccano pezzi
@@ -1714,7 +1716,20 @@ validazione mostra.
 
 ### T20 — Conservazione, rifiniture, giro completo
 
-Design §9, §10, §13. Branch `m2/t20-retention-and-round`.
+Design §9, §10, §13. **Divisa il 25 settembre** (Carmine, nota `2026-09-25-la-conservazione-dei-tour`, piano 1.07), perché il punto 2
+chiede il nucleo:
+
+- **T20a** — il punto 1, branch `m2/t20a-retention`. **Fatta**: `TourRetentionJob` mensile; 25 mesi per un tour che **dura** più di 12
+  mesi; `fo_tours.purged_at`; un tour archiviato esce dal pubblico, non si modifica e non riapre le decisioni. **Com'è andata**, gli
+  scostamenti: lo snapshot delle regole si **snellisce** e non si svuota (il registro ci legge i nomi degli errori confermati); un tour con
+  un PIREP ancora aperto o un award in attesa **aspetta** il mese dopo; si archiviano solo i tour pronti; le etichette di
+  `retentionMonths`/`retentionMonthsLong` erano sbagliate e sono corrette. Test: `PirepTests.Retention.cs` (integrazione),
+  `TourStateTests` (unità). ⚠️ Docker era spento: l'integrazione gira prima in CI.
+- **T20b** — il punto 2, **nel nucleo** (Carmine): prima una nota di caso (c) con il meccanismo — un'interfaccia che ogni modulo
+  implementa, un'azione del superadmin sull'utente, il nucleo che ripulisce fili, notifiche, preferenze, token e `hub_audit_log` —, poi
+  una PR del nucleo, poi il modulo dei tour. Il censimento dei dati personali per tabella è nella nota di T20a, §4, e va rifatto in
+  apertura (T20b lo mette nella sua nota).
+- **T20c** — i punti 3, 4 e 5.
 
 1. **La conservazione** (§10, strada B): job mensile del modulo; dopo 13 o 25 mesi dalla chiusura via tracce, revisioni dei piani, esiti dei
    controlli, snapshot, note, ATC ed esenzioni, briefing, regole del tour, hub, rotazioni, vincoli, iscrizioni; **tour e leg restano**

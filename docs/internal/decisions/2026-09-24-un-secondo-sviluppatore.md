@@ -145,12 +145,20 @@ ref che gli altri non toccano». Il JSON che regge (riletto da GitHub il 25 sett
 
 Il ruleset `release tags` (`refs/tags/v*`, `creation`/`update`/`deletion`, bypass admin «Always») ha retto così com'era.
 
-⚠️ **Da fare prima del 2 novembre 2026** (avviso di GitHub sul run di `core-guard`, trovato da `dalberone`): sui repository
-pubblici `pull_request_target` sarà **bloccato per default** da una regola delle Actions, salvo una *event policy* del
-repository che lo consenta. `core-guard` usa quel trigger di proposito (legge lo script da `main`). La policy si crea in
-Settings → Actions → Policies (o via `POST /repos/{owner}/{repo}/actions/policies`), limitata al solo file
-`.github/workflows/core-guard.yml`. Finché non c'è, il check funziona; dal 2 novembre smetterebbe di partire e, essendo
-obbligatorio, bloccherebbe ogni merge.
+**La policy delle Actions per `pull_request_target`** (avviso di GitHub sul run di `core-guard`, trovato da `dalberone`): dal
+2 novembre 2026 sui repository pubblici `pull_request_target` è **bloccato per default** da una regola delle Actions, salvo una
+*event policy* del repository che lo consenta. `core-guard` usa quel trigger di proposito (legge lo script da `main`); senza
+policy, dal 2 novembre il check obbligatorio non sarebbe più partito e avrebbe bloccato ogni merge. **Creata il 25 settembre
+2026** (Carmine ha detto sì, `POST /repos/{owner}/{repo}/actions/policies`, id 5617), attiva, limitata al solo file
+`.github/workflows/core-guard.yml`:
+
+```json
+{ "name": "core-guard may use pull_request_target", "enforcement": "active",
+  "conditions": { "workflow_path": { "include": [".github/workflows/core-guard.yml"], "exclude": [] } },
+  "rules": [{ "type": "restrict_action_events", "parameters": { "allowed_events": ["pull_request_target"] } }] }
+```
+
+Si rilegge da Settings → Actions → Policies o con `GET /repos/{owner}/{repo}/actions/policies`.
 
 ## 8. Da portare nel piano
 

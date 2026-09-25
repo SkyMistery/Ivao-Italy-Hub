@@ -5807,7 +5807,8 @@ export interface components {
         };
         /**
          * @description A tour as its editor loads it. `State` is what the dates say now (design M2 §1.2.1); `IsPublic`, whether
-         *     anybody outside the staff sees it now — from then on its kind no longer changes. On a subtour the dates are the ones
+         *     anybody outside the staff sees it now — from then on its kind no longer changes; `PurgedAt`, when the retention
+         *     archived it (design M2 §10), after which nothing on it changes. On a subtour the dates are the ones
          *     in force, and `ReleaseFromParent` and `CloseFromParent` say which of them are its container's.
          */
         TourDetailDto: {
@@ -5831,6 +5832,8 @@ export interface components {
             isPublic: boolean;
             isHidden: boolean;
             showPreview: boolean;
+            /** Format: date-time */
+            purgedAt: null | string;
             /** Format: date-time */
             releaseAt: null | string;
             /** Format: date-time */
