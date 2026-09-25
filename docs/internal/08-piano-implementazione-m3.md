@@ -384,7 +384,66 @@ test del modulo: `ForkabilityXxDivisionTests` è condiviso). Unit: i predefiniti
 salvate e rilette.
 **Fatta quando**: l'utente del banco con i permessi del TD vede la sezione Training, cambia un'impostazione e la rilegge.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`; la PR si apre dopo il merge di A4a, #133):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo, dentro meccanismi che ci sono — `IModule`, `ModuleDbContext`,
+  le impostazioni dei moduli, `positionGrants`, `SchemaForm`, il vocabolario dei rating (A1) e la directory delle postazioni (A2) —;
+  nessun file del nucleo. ⚠️ **Al primo test d'integrazione l'hub non è partito**: il catalogo delle lingue del server non regge due
+  moduli (`_source` e `nav.section` ripetuti). `dalberone` ha scelto la fase del nucleo **A4a** subito, a sé (#133, nota
+  `2026-09-26-le-parole-di-piu-moduli`, Proposta); il codice di A4 è rimasto in locale e **aspetta la risposta di Carmine e il merge**.
+- **Fatto**, come il perimetro qui sopra:
+  1. `IvaoHub.Modules.Training` (solo `Core`), `TrainingDbContext`, `__EFMigrationsHistory_training`, e **`Initial`** senza tabelle
+     del modulo: lo snapshot ha le sette tabelle del nucleo escluse, la migrazione soltanto l'`AlterDatabase` del set di caratteri,
+     come l'`Initial` dei tour. Registrato in `Modules.cs`, nel `.sln`, nell'host e nei test di unità.
+  2. `web/src/modules/training/`: il manifest, la sezione «Training» con una voce, **`/staff/training/settings`** (design §4.2), le
+     lingue it ed en copiate da `pnpm i18n:sync`; `modules/index.ts`.
+  3. I nove permessi di §3.1, `DeniedToStakeholder` su `Approve`, `Assign`, `Conduct`, `Edit` e `Ban`; i nove `positionGrants` del TD
+     di §3.2 in `division.json` e in `division.example.json`.
+  4. **`TrainingSettings`** con i dieci campi di §1.6 e i loro predefiniti — nessuna soglia di ore, `maxResponseDays` e `theoryExamUrl`
+     vuoti (`null`), `hiddenPositions` vuoto, attese 5 e 14 giorni, avviso dopo 3, `Warn`, `["event"]`, promemoria a 24 ore —, dietro
+     `Training.ManageSettings`, schermata generata.
+  5. Il segmento riservato `training`.
+  6. **`TrainingArchitectureTests`**, i controlli del design §10, in un file del modulo.
+- **Scostamenti dal piano, piccoli**:
+  1. **Due endpoint di lettura** che il piano non nominava, perché la schermata generata sceglie e non fa scrivere:
+     `/api/training/ratings` (i rating con un training pratico, dal vocabolario del nucleo; a ogni membro, perché li useranno anche
+     A5 e A6) e `/api/training/positions` (le postazioni della divisione di quei rating, dalla directory, ognuna con il suo rating; a
+     chi gestisce le impostazioni). **Il modulo non scrive un numero di rating**: una soglia di ore si sceglie fra quelli del server,
+     e il valore della scelta porta percorso e numero (`Atc:5`), perché i due percorsi numerano i gradini allo stesso modo.
+  2. **Le regole delle impostazioni leggono il nucleo**: il rating di una soglia deve avere un training pratico nel vocabolario, una
+     riga per rating; `conflictKinds` sono tipi del calendario che esistono (la schermata offre quelli del bootstrap e lascia fuori un
+     tipo che non c'è più); `hiddenPositions` sono postazioni su cui la divisione allena — una che IVAO toglie è rifiutata sulla sua
+     riga e resta visibile, così il TD la toglie —; `theoryExamUrl` un indirizzo http o https, la regola dei link della libreria, con
+     `errors.url.absolute` e la lunghezza di `LinkWriteDtoValidator`.
+  3. **L'errore di una riga porta il nome del campo della riga** (`minimumHours[0].rating`, `hiddenPositions[0].callsign`): il form
+     generato non disegna un errore sulla lista intera, e quello sparirebbe.
+  4. **La sezione è per ora solo la voce delle impostazioni**: la lista dei training a `/staff/training` è di A7, e fino ad allora TA
+     e trainer non hanno voci nel back office.
+  5. **«Il modulo non nomina IVAO»** (§10) è un modello e non una prova: nel codice del modulo nessun «ivao» fuori dal nome del
+     prodotto, dal perimetro `IvaoHub.Core.Ivao` e dal pacchetto di Atmosphere; nei suoi file di lingua nessun indirizzo di IVAO;
+     nessun numero accanto a un rating, nessun nome di rating o di tipo di postazione della rete in una stringa (i nomi letti dal
+     vocabolario vero); nessun client HTTP. Due `Theory` mostrano che cosa prende e che cosa lascia passare, ed è provato che cade su
+     file di prova messi e tolti. Il primo giro ha preso davvero una riga: la stringa di connessione della factory di `dotnet ef`
+     nomina il database `ivaohub`, il nome del prodotto — eccezione allargata a ogni maiuscola.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Una posizione del TD senza indirizzo non riceve i messaggi al TD**: `NotificationService.Resolve` salta un membro senza
+     indirizzo, e `NotificationUsesRecipientLocale` sceglie le mail per oggetto e indirizzo. I test del modulo seminano TC, TA1 e T03
+     senza email, e il permesso sulle impostazioni lo danno con un grant a un VID — verificato leggendo i test dei contatti, come il
+     piano chiedeva.
+  2. ⚠️ **`web/e2e/address.spec.ts`** (del maintainer) va su `/training/team` e si aspetta il router delle pagine: una rotta del
+     modulo che prendesse ogni `/training/…` (un `/training/$id`) la farebbe cadere; `/training/request`, `/training/mine` e
+     `/training/sessions/$id` no.
+  3. ⚠️ **Le impostazioni dei tour hanno lo stesso caso del punto 3 qui sopra**: l'errore di una riga di `northSouthLevelCountries` o
+     di `routeProcedurePrefixes` arriva come `…[0]` e non si vede. È codice del maintainer: detto al revisore.
+  4. I VID **790009–790013** sono di A4; il prossimo libero è 790014.
+- **Verificato, in locale** (26 settembre 2026), su un branch temporaneo con A4a unita, poi tolto: `dotnet build` senza avvisi; unità
+  750/750 (le 718 di A4a e le 32 nuove); **integrazione intera senza filtro** 302/302 (le 298 e le 4 nuove); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 488 in 63 file; `pnpm e2e` 91; **`pnpm e2e:full` 40**, con le due spec
+  nuove (la sezione nella tavolozza, l'impostazione salvata e riletta, rimessa com'era; il trainer del banco con `View` e
+  `ManageExams` e un 403 sulle impostazioni); la classe nuova di integrazione da sola; `pnpm gen:api` con i due endpoint nuovi.
+  **Da rifare sul branch dopo il merge di #133**, prima della PR.
+- **Non verificato**: la CI (la dirà la PR); le impostazioni con le postazioni vere della divisione (sul banco e nei test ci sono
+  quelle delle fixture, 43 d'aeroporto e 29 settori); la schermata guardata a mano, con le due lingue e i due temi.
 
 ### A5 — Le voci della scheda
 
