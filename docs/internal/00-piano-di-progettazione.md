@@ -18,7 +18,9 @@ nota nuova per ogni file del nucleo; `CONTRIBUTING.md` con le trappole che stava
 the reviewer»** del template. **Il piano e `HANDOFF.md` li scrive solo il revisore**, dopo il merge, dalla sezione «Da portare
 nel piano» di ogni nota; il collaboratore scrive `07-design-m3.md`, `08-piano-implementazione-m3.md`, `HANDOFF-M3.md`. Test di
 M3: VID `790001–790099`, slug `trn-test-`. **Da verificare**: che «Restrict updates» regga su un repository personale (una PR
-di prova di `dalberone`). Toccate §13 e §16.E.
+di prova di `dalberone`). Toccate §13 e §16.E. **25 set** (nota §7): ruleset attivi; le sessioni Claude di Carmine hanno un `deny`
+su merge e push su `main` (nessuna sessione unisce più niente); `.claude/settings.json` committato con lo stesso `deny`; il passo
+`backbone-ran.sh` verifica che i test di architettura e del fork XX siano stati eseguiti (un `.csproj` può toglierli dalla build).
 
 **Changelog 1.05** (24 set 2026, fase T19b di M2): **il contratto dell'agente del validatore**. Nota
 `decisions/2026-09-24-il-contratto-dell-agente.md`, **due risposte di Carmine**: (1) `fo_check_results` **non** diventa `[Audited]`: un

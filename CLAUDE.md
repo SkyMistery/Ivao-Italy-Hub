@@ -35,10 +35,11 @@ There are three roles, and the repository enforces them (rulesets on `main` and 
    refused push: stop and say so.
 2. **Never edit** `docs/internal/00-piano-di-progettazione.md`, `docs/internal/HANDOFF.md`, the M0–M2 documents
    (`docs/internal/0[0-6]-*.md`), an existing note under `decisions/`, this file, `CONTRIBUTING.md`, anything under
-   `.github/`, `tests/IvaoHub.UnitTests/ArchitectureTests.cs`, or another module's code
+   `.github/` or `.claude/`, `tests/IvaoHub.UnitTests/ArchitectureTests.cs`, or another module's code
    (`src/IvaoHub.Modules.FlightOps/`, `web/src/modules/flightops/`). The `core-guard` check fails if you do.
-3. **Never make a test pass by changing a test you did not write.** A backbone or architecture test that goes red
-   is telling you that the change is wrong, not that the test is.
+3. **Never make a test pass by changing a test you did not write**, nor by leaving it out of the build. A backbone
+   or architecture test that goes red is telling you that the change is wrong, not that the test is. CI checks that
+   the architecture and forkability tests were run, not only that they passed.
 4. **One phase per session**, on a branch `m3/<phase>-<slug>` from an up-to-date `main`, **one pull request per
    phase**. Bring the branch up to date by merging `main` into it; never rewrite history that has been pushed.
 5. **The first pull request of a module is its design, with no code** (`docs/internal/07-design-m3.md`), and no code

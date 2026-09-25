@@ -78,6 +78,11 @@ jobs:
       - name: Test .NET
         run: dotnet test --solution IvaoHub.sln --configuration Release --no-build
 
+      # Green above proves that every test found passed; this proves that the tests guarding the
+      # architecture were found at all (a .csproj can leave a file out of the build).
+      - name: Check that the backbone tests ran
+        run: bash .github/scripts/backbone-ran.sh Release
+
       - name: Install web dependencies
         run: pnpm install --frozen-lockfile
         working-directory: web
