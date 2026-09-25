@@ -293,7 +293,56 @@ della riga e non con quello di un'altra; l'interessato non la scrive con nessuna
 continua a bastare.
 **Fatta quando**: i test della spina dorsale passano, compresi quelli che c'erano (contatti, validazione dei tour).
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (25 settembre 2026, branch `m3/a3-alternative-write-permissions`, PR #131):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5, caso b) e **scritta per prima la nota nuova**,
+  `2026-09-25-i-permessi-alternativi-e-la-creazione`: una **scelta tecnica** che dà forma alla decisione n.2 di Carmine, senza
+  domande nuove. **La forma dell'«anche alla creazione»**, che il punto 2 lasciava alla nota, è **una proprietà dell'attributo**,
+  `AlsoOnCreation`: il permesso è lo stesso, la segnatura è di un'alternativa e non dell'entità (sul training nessuna delle tre
+  alternative crea), e chi usa l'attributo oggi non cambia una riga (nota §3.2).
+- **Fatto**: `[AlsoWrittenWith]` ripetibile e con `AlsoOnCreation` (`Core/Division/DomainContracts.cs`); nel guardiano
+  (`HubSaveChangesInterceptor`) il blocco della «seconda» alternativa è diventato una funzione sola, `IsWrittenWithAnAlternative`, che
+  le prova tutte — in modifica come prima, alla creazione solo quelle segnate, senza scope, su almeno un dipartimento della riga e mai
+  per una riga su chi scrive, all'eliminazione nessuna. Nel modulo di prova `SampleRecord` (`smp_records`), scritta da `Sample.Decide`
+  e dal nuovo `Sample.Record` (anche alla creazione); cinque test della spina dorsale, `AlternativeWritePermissionTests`.
+- **Scostamenti dal piano, piccoli e scritti nella nota**:
+  1. **A3 migra, ma solo il contesto del modulo di prova** («A3 non migra», in «Parallelismo possibile», voleva dire nessun contesto
+     dell'hub né di un modulo): `AddSampleRecords` crea `smp_records`. Lo snapshot prende anche le tre tabelle che `ModuleDbContext`
+     mappa fuori dalle migrazioni da T14 e T19a, lo scarto innocuo di T4b, senza operazioni nella migrazione.
+  2. **I test non usano `TestCurrentUser`**: tiene solo i permessi del nucleo, e il suo `Has` non passa lo scope della riga. Chi scrive
+     è l'identità che un login mette nel cookie (`HubClaims.BuildIdentity`), messa nella richiesta dello scope del test e letta dal vero
+     `HttpContextCurrentUser`; nessun utente seminato in `hub_users` (VID 790005–790008), e le righe si tolgono a fine test.
+  3. **Un test in più dell'elenco**: nessuna alternativa **elimina** una riga, nemmeno quella che crea. La nota lo dice, il test lo
+     fissa.
+  4. `SampleModule.cs`: gli `using` riordinati da `dotnet format`, come `CONTRIBUTING.md` chiede per un file toccato.
+- **Trovato, e scritto per chi viene dopo** (nota §3.3 e §5):
+  1. ⚠️ **Per A10: eliminare un esame resta di `Edit`.** Crearlo passerà con `AlsoOnCreation`; se lo eliminano TC e TAC basta
+     `CrudOptions.DeletePolicy = Training.Edit`, e il guardiano è già d'accordo; se deve eliminarlo anche chi l'ha inserito, è un'altra
+     estensione del nucleo, e la domanda va a Carmine in apertura di A10.
+  2. **Per A10**: `MapCrud` chiede all'handler il permesso di scrittura **sulla riga**, prima del guardiano: per gli esami
+     `WritePolicy = Training.ManageExams`. Il commento di `CrudOptions.WritePolicy` parla di risorse senza dipartimento, ma il motore
+     lo chiede sulla riga anche alle altre.
+  3. **Per A7**: lo scope che il training dichiara (`IHasResourceScope`) e quello del grant che l'assegnazione scrive (`ModuleGrants`)
+     devono essere la stessa stringa, `training:training:{id}`: il guardiano e l'handler le confrontano così come sono.
+  4. **Per il revisore, non cambiati** (è il comportamento di oggi, che A3 ripete per ogni alternativa, come deciso): il guardiano
+     guarda l'interessato e lo scope di una riga **solo dopo** la scrittura; `TestCurrentUser.Has` non passa lo scope a
+     `PermissionSet`.
+  5. **Gli eseguibili xUnit non ricompilano**: dopo la prova dei test sul guardiano di `main` (sotto), la prima corsa intera è partita
+     senza ricompilare, e i tre test nuovi sono caduti sui binari della prova. Non conta; rifatta dopo la build.
+- **`main` è andato avanti durante A3**: la #130 di Carmine (il piano con M3, e `IvaoUserProfileReaderTests.RealShape` con la forma vera
+  delle ore, trovata in A1) è stata unita alle 20:26. Portata nel branch con un merge prima del primo push: nessun file della fase, e
+  tutto rifatto sul merge.
+- **Verificato, in locale** (25 settembre 2026, sul merge con `main`): `dotnet build` senza avvisi; unità 709/709; **integrazione
+  intera senza filtro** 295/295, compresi i test che passano dal guardiano con un'alternativa (contatti, validazione dei tour,
+  token personali); la classe nuova da sola 5/5, e **3 dei 5 cadono sul guardiano di `main`** (rimesso per la prova, poi riscritto e
+  confrontato con il diff salvato); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 481 in 62 file;
+  `pnpm e2e` 91; `pnpm e2e:full` 38, senza la mappa di base; `pnpm gen:api` senza differenze; `dotnet format --verify-no-changes`
+  sui file toccati; le regole di `core-guard` rifatte in PowerShell sul diff verso `main` (nessun file del maintainer, 5 del nucleo,
+  la nota aggiunta).
+  Prima del merge, sul branch da solo: unità 709, integrazione 295, `pnpm e2e` 91, `pnpm e2e:full` 38 su un banco nuovo.
+- **Non verificato**: la CI (la dirà la PR); l'estensione su un modulo vero (il training dichiara le sue alternative in A7, gli esami in
+  A10); un'alternativa dichiarata su una classe base (il guardiano legge gli attributi della classe dell'entità, `inherit: false`, come
+  prima).
 
 ### A4 — Modulo: lo scheletro
 

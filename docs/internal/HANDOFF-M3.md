@@ -6,11 +6,10 @@
 > il maintainer. Le regole — chi unisce, che cosa non si tocca, come si ottiene una decisione — sono in `CLAUDE.md` §0 e
 > non si ripetono qui.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **fase A1** (nucleo: le ore di connessione, il vocabolario dei rating,
-`RatingBadge`, il banco e2e con un trainee e un trainer), sul branch `m3/a1-ratings-and-hours`, **PR #128** verso `main`, **pronta**
-dopo che #125 (A0) è stata unita e `main` è entrato nel branch. **Il prossimo passo** è una fase che non dipende da A1 per il codice
-— **A3** (i permessi alternativi) o **A4** (lo scheletro del modulo), da `main` — oppure **A2** (le postazioni ATC e il tipo `exam`) in
-coda sopra A1, perché migra lo stesso contesto e legge il legame postazione→rating del vocabolario (`08`, «Parallelismo possibile»).
+**Ultimo aggiornamento:** 25 settembre 2026 — **fase A3** (nucleo: più permessi alternativi in scrittura, e uno anche alla
+creazione), sul branch `m3/a3-alternative-write-permissions`, **PR #131** verso `main`, da `main` e non in coda (dipende solo da A0).
+La **#129 (A2)** è aperta e pronta: il suo paragrafo qui sotto arriva con il suo merge. **Il prossimo passo** è **A4** (lo scheletro del
+modulo), da `main`; A5 e A6 vengono dopo A4, in coda, e A7 usa A3 (`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -81,6 +80,35 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A3 (25 settembre 2026, branch `m3/a3-alternative-write-permissions`, PR #131)
+
+- **Che cosa c'è** (nota `decisions/2026-09-25-i-permessi-alternativi-e-la-creazione.md`, scelta tecnica, nessuna domanda nuova):
+  - **`[AlsoWrittenWith]` si ripete** (`Core/Division/DomainContracts.cs`), e il guardiano di `HubSaveChangesInterceptor` prova ogni
+    alternativa (`IsWrittenWithAnAlternative`): **ne basta una**, ognuna come prima — sul dipartimento della riga con lo scope della
+    riga, mai per l'interessato, senza spostare la riga.
+  - **`AlsoOnCreation = true`** segna un'alternativa che vale **anche alla creazione**: senza scope (conta chi la tiene sul
+    dipartimento, non su una riga), su almeno un dipartimento della riga come `Edit`, mai per una riga su chi scrive. **Nessuna
+    alternativa elimina**: resta di `Edit`.
+  - Nel modulo di prova `SampleRecord` (`smp_records`, migrazione del solo contesto di prova), il permesso `Sample.Record`, e i cinque
+    test della spina dorsale `AlternativeWritePermissionTests`.
+- **Che cosa deve sapere la fase dopo**:
+  - **A7** dichiara sul training `[AlsoWrittenWith(...)]` per `Approve`, `Assign` e `Conduct`, **senza** `AlsoOnCreation` (il
+    training lo crea il trainee, `ISubmittedByMembers`). Lo scope che il training dichiara e quello del grant del trainer
+    (`ModuleGrants`) sono la stessa stringa, `training:training:{id}`, confrontata così com'è.
+  - **A10**: `trn_exams` con `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true)]`, e `MapCrud` con
+    `WritePolicy = Training.ManageExams`, perché il motore chiede il permesso all'handler sulla riga prima del guardiano. ⚠️ **Eliminare
+    un esame resta di `Edit`**: con `DeletePolicy = Training.Edit` lo eliminano TC e TAC; se deve poterlo eliminare chi l'ha inserito,
+    è un'altra estensione del nucleo, e la domanda va a Carmine **in apertura di A10**.
+  - ⚠️ **Un test di permessi con scope non usa `TestCurrentUser`**: il suo `Has` non passa lo scope, e tiene solo i permessi del nucleo.
+    `AlternativeWritePermissionTests.AsAsync` scrive senza endpoint con l'identità del cookie (`HubClaims.BuildIdentity`) letta dal vero
+    `HttpContextCurrentUser`.
+  - ⚠️ **Gli eseguibili xUnit non ricompilano**: dopo una modifica, `dotnet build` prima di lanciarli.
+- ⚠️ **Trovato per il revisore**, non cambiato (è il comportamento di oggi, che A3 ripete per ogni alternativa): il guardiano guarda
+  l'interessato e lo scope di una riga **solo dopo** la scrittura (nota §5).
+- **`main` è andato avanti durante A3** (la #130 di Carmine, il piano con M3): unito nel branch prima del primo push, e tutto rifatto.
+  ⚠️ Quando la **#129 (A2)** sarà unita, il merge di `main` qui darà un conflitto in cima a questo file (l'ultimo aggiornamento e il
+  primo paragrafo dello stato): si tengono tutti e due i paragrafi, il più recente sopra. In `08` le due fasi scrivono in punti diversi.
 
 ### Che cosa ha lasciato A1 (25 settembre 2026, branch `m3/a1-ratings-and-hours`, PR #128, in coda dopo #125)
 
