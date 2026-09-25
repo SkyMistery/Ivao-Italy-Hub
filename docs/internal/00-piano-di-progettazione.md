@@ -18,7 +18,8 @@ nessuno aveva volato (l'italiano diceva «da volare»). **Il rapporto** è `deci
 previste), 12 del nucleo (10), un permesso in più, **zero handler, zero estensioni al generatore, zero CRUD a mano non dichiarati**, 15
 estensioni del nucleo su 16 (la n.9 non è servita); 42 endpoint a mano nel modulo, contati per famiglia. **(5) Carmine ha preso anche la proposta del rapporto**: da M2 il conto
 **per famiglia** sostituisce in §16.6 la metrica dei verbi di M1 — CRUD a mano non dichiarati 0, al più un'eccezione dichiarata per
-milestone, ogni endpoint a mano nella sua famiglia con la sua decisione. Toccate §8.3, §9.5, §16.6 (i numeri misurati e la metrica) e
+milestone, ogni endpoint a mano nella sua famiglia con la sua decisione. **(6)** `note_to_pilot` si cancella con le altre note dopo
+13 mesi, come T20a l'aveva letta: confermato, nessun codice cambia. Toccate §8.3, §9.5, §16.6 (i numeri misurati e la metrica) e
 lo stato in testa.
 
 **Changelog 1.11** (25 set 2026, dopo la revisione del design di M3, PR #121): **le fasi in coda**. Nota
