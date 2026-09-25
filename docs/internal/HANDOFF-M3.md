@@ -13,9 +13,11 @@
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A3** (nucleo: più permessi alternativi in scrittura, e uno anche alla
 creazione), sul branch `m3/a3-alternative-write-permissions`, **PR #131** verso `main`, da `main` e non in coda (dipende solo da A0).
-**A2 (#129) è unita** (21:14) ed è entrata nel branch con un merge. **Il prossimo passo** è **A4** (lo scheletro del modulo), da
-`main`: porta `hiddenPositions`, che la directory di A2 lascia al modulo; A5 e A6 vengono dopo A4, in coda, e A7 usa A3 (`08`,
-«Parallelismo possibile»).
+**A2 (#129) è unita** (21:14) ed è entrata nel branch con un merge. **#131 è approvabile** (revisione del 25 settembre) e Carmine
+ha risposto sugli esami: la 4, e quindi la fase del nucleo **A3b**, prima di A10 (`08`). **A4** (lo scheletro del modulo) è aperta
+in un'altra sessione, sul branch `m3/a4-training-skeleton` da `main`: porta `hiddenPositions`, che la directory di A2 lascia al
+modulo; A5 e A6 vengono dopo A4, in coda, A7 usa A3, e A3b può andare avanti in una sessione sua in qualunque momento prima di A10
+(`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -106,17 +108,20 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **A10**: `trn_exams` con `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true)]`, e `MapCrud` con
     `WritePolicy = Training.ManageExams`, perché il motore chiede il permesso all'handler sulla riga prima del guardiano. ⚠️ **Eliminare
     un esame resta di `Edit`**: con `DeletePolicy = Training.Edit` lo eliminano TC e TAC; se deve poterlo eliminare chi l'ha inserito,
-    è un'altra estensione del nucleo. **La domanda è già a Carmine**, con tre commenti su #131 (nota §3.5). **I fatti del TD**: gli
-    esami si gestiscono su IVAO, all'hub servono solo per il calendario (niente «annullato»); dall'hub un esame lo tolgono **HQ, TC,
-    TAC e il TA a cui è assegnato**, nessun altro, ed è solo una rimozione «cosmetica»; la postazione la decide chi ha l'esame.
-    **Raccomandata la 4** (la regola del TD, un meccanismo che il nucleo non ha): se Carmine la sceglie, **prima di A10 serve una
-    fase del nucleo in più**, con la sua nota, da aggiungere a `08`. Se #131 viene unita senza la risposta, A10 la riprende in apertura.
+    è un'altra estensione del nucleo. **I fatti del TD** (tre commenti su #131, nota §3.5): gli esami si gestiscono su IVAO, all'hub
+    servono solo per il calendario (niente «annullato»); dall'hub un esame lo tolgono **HQ, TC, TAC e il TA a cui è assegnato**,
+    nessun altro, ed è solo una rimozione «cosmetica»; la postazione la decide chi ha l'esame. **Carmine ha scelto la 4, la regola del
+    TD** ([commento su #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5840224757)): la regola nel nucleo
+    arriva con **A3b**, una fase del nucleo con la sua nota (caso c, «Proposta») e i suoi test della spina dorsale, **prima di A10**
+    (in `08`). ⚠️ Da chiarire in apertura di A3b con `dalberone`: se un esame si assegna anche a un trainer, o solo a un TA.
   - ⚠️ **Un test di permessi con scope non usa `TestCurrentUser`**: il suo `Has` non passa lo scope, e tiene solo i permessi del nucleo.
     `AlternativeWritePermissionTests.AsAsync` scrive senza endpoint con l'identità del cookie (`HubClaims.BuildIdentity`) letta dal vero
     `HttpContextCurrentUser`.
   - ⚠️ **Gli eseguibili xUnit non ricompilano**: dopo una modifica, `dotnet build` prima di lanciarli.
 - ⚠️ **Trovato per il revisore**, non cambiato (è il comportamento di oggi, che A3 ripete per ogni alternativa): il guardiano guarda
-  l'interessato e lo scope di una riga **solo dopo** la scrittura (nota §5).
+  l'interessato e lo scope di una riga **solo dopo** la scrittura (nota §5). **Il revisore li ha confermati** ([revisione di A3 su
+  #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5839714140), «approvable as it is»): un compito di
+  rafforzamento del maintainer, che non blocca questa fase.
 - **`main` è andato avanti due volte durante A3**: la #130 di Carmine (il piano con M3), unita nel branch prima del primo push; e
   **la #129 (A2), unita alle 21:14**, entrata con un merge. L'unico conflitto era in cima a questo file: tenuti tutti e due i
   paragrafi, A3 sopra; `08` si è unito da solo. Build e test rifatti sul merge.

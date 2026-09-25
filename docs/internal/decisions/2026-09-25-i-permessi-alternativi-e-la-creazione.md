@@ -4,9 +4,10 @@
 **Stato:** **scelta tecnica**, per dare forma nel codice alla decisione n.2 di Carmine (design `07-design-m3.md` §3.4, §8 n.7,
 §12 n.2, deciso sulla PR #121 nel [commento delle risposte][r1]; nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 2),
 che rimanda a questa la forma nel codice. La domanda che il piano lasciava alla nota — «una proprietà dell'attributo o un attributo a
-parte» (`08-piano-implementazione-m3.md`, A3 punto 2) — non apre un bivio (§3.2). **Una domanda proposta**, fuori dalla forma decisa
-e posta in anticipo su A10: **chi elimina un esame** (§3.5), a Carmine con tre commenti su #131 — la domanda, i fatti del TD e la
-loro precisazione —; raccomandata la 4, fuori da questa PR, e solo la 3 toccherebbe il codice di A3.
+parte» (`08-piano-implementazione-m3.md`, A3 punto 2) — non apre un bivio (§3.2). **Una domanda**, fuori dalla forma decisa e
+posta in anticipo su A10: **chi elimina un esame** (§3.5), a Carmine con tre commenti su #131 — la domanda, i fatti del TD e la loro
+precisazione —, **decisa da Carmine il 25 settembre 2026** ([il suo commento][c4]): **la 4, la regola del TD**, con una nota sua e una
+fase del nucleo sua prima di A10 (A3b in `08`); questa PR non cambia.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono la rete dell'interceptor (`HubSaveChangesInterceptor`, il guardiano
 `EnsureWriteIsAllowed`) e il suo attributo `[AlsoWrittenWith]` (M2, T13), che coprono già un permesso alternativo in modifica; il
 modulo non scrive una tabella per ruolo né un controllo suo. È una PR del nucleo, prima del codice del modulo che la usa (A7, A10),
@@ -84,7 +85,8 @@ Alla creazione il guardiano prova **solo le alternative segnate**, e ognuna:
   l'eccezione di `ISubmittedByMembers` dice lo stesso della riga che un membro manda («deleting is still the department's»). ⚠️ **Da
   sapere per A10**: se un esame lo eliminano solo TC e TAC, A10 lo dice con `CrudOptions.DeletePolicy = Training.Edit` (T6a), e il
   guardiano è già d'accordo; se deve poterlo eliminare anche chi l'ha inserito, è un'altra estensione del nucleo (un'alternativa anche
-  all'eliminazione). La domanda è in §3.5, posta a Carmine in anticipo su A10.
+  all'eliminazione). La domanda è in §3.5, posta a Carmine in anticipo su A10: ha scelto la 4, la regola del TD, con una fase del
+  nucleo sua prima di A10 (A3b).
 - **`ContactMessage` e il PIREP**: un'alternativa ciascuno, non segnata; il guardiano fa per loro esattamente ciò che faceva. I test
   che passano dal guardiano con quelle alternative — `ContactThreadTests` (chi legge soltanto risponde), `PirepTests.Review` (il
   validatore di un tour), `PersonalTokenTests` (l'agente di un validatore su una riga di prova) — restano verdi senza essere toccati.
@@ -107,7 +109,7 @@ Alla creazione il guardiano prova **solo le alternative segnate**, e ognuna:
   scope della riga a `PermissionSet` (un permesso con scope non raggiunge mai una riga), che è proprio ciò che questi test provano. È
   un file del maintainer: non si tocca, e lo si dice al revisore (§5).
 
-### 3.5 Una domanda per Carmine: chi elimina un esame (Proposta)
+### 3.5 Una domanda per Carmine: chi elimina un esame (decisa: la 4)
 
 Posta a Carmine con [un commento su #131][q1] il 25 settembre, in anticipo su A10, come ha chiesto `dalberone`: se la risposta tocca il
 nucleo, la porta questa PR e non una seconda. Lo stesso giorno, [un secondo commento][q2] con **i fatti del TD**, da `dalberone`:
@@ -144,12 +146,19 @@ questa PR resta com'è. Se Carmine sceglie comunque la 3 — una proprietà in p
 dello staff, e chi ha tolto che cosa lo dice il registro. (Prima della precisazione la raccomandazione era la 3, e prima ancora
 la 2, ritirata.)
 
-Il resto di A3 non ne dipende: solo la risposta 3 cambia il suo codice, e aspetta la risposta. La risposta entra qui con il link al
-commento di Carmine; se questa PR viene unita prima, la domanda torna in apertura di A10.
+**Decisa da Carmine, il 25 settembre 2026** ([il suo commento su #131][c4], che riporta la risposta data in chat al revisore): **la 4,
+la regola del TD**.
+
+- Un esame lo **tolgono** dall'hub, e lo **cambiano**, **HQ, TC, TAC e il TA a cui l'esame è assegnato**, e nessun altro.
+- La regola che il nucleo oggi non ha — «questo permesso raggiunge solo le righe affidate a chi scrive» — ha **una nota sua**
+  (caso (c), stato «Proposta», con la forma nell'handler e nel guardiano e la sua domanda a Carmine) e **una fase del nucleo sua
+  prima di A10**, con i suoi test della spina dorsale: **A3b** in `08`.
+- **Questa PR resta com'è**, e si può unire: la risposta 3, l'unica che toccava il codice di A3, non è stata scelta.
 
 [q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5838221191
 [q2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5838422641
 [q3]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5838936670
+[c4]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5840224757
 
 ## 4. Alternative scartate
 
@@ -158,14 +167,18 @@ commento di Carmine; se questa PR viene unita prima, la domanda torna in apertur
 | Un attributo a parte, `[AlsoCreatedWith]` | lo stesso permesso scritto due volte, o due attributi per una cosa (§3.2) |
 | Un'interfaccia dell'entità, «le mie alternative creano» | vale per tutte le alternative, e sul training nessuna deve creare (§3.2) |
 | Alla creazione con lo scope della riga | la riga nuova non ne ha uno suo; un permesso dato su una riga ne farebbe nascere altre (§3.2) |
-| Un'alternativa che elimina, già ora | non è nella decisione: è la risposta 3 di §3.5, più larga della regola del TD, e aspetta Carmine |
+| Un'alternativa che elimina, già ora | la risposta 3 di §3.5, più larga della regola del TD: Carmine ha scelto la 4 |
 | Nel modulo, una tabella per ruolo o un controllo suo prima del salvataggio | `CLAUDE.md` §5 caso (b): il meccanismo c'è e si estende (design §3.4) |
 | `Training.Edit` ai TA e ai trainer | «tutto su ogni training», molto più largo del bisogno (nota di A0, §3) |
 | I test con `TestCurrentUser`, corretto perché passi lo scope | un doppio del maintainer, toccato per far passare test nuovi (`CLAUDE.md` §0 regola 3) |
 
 ## 5. Trovato, per il revisore
 
-Non cambiato: è il comportamento di oggi, e A3 lo ripete per ogni alternativa, come deciso.
+Non cambiato: è il comportamento di oggi, e A3 lo ripete per ogni alternativa, come deciso. Il revisore ha confermato i punti 1 e 2
+([la revisione di A3][rv], 25 settembre 2026, «approvable as it is»): oggi nessuno dei due si raggiunge, e sono un compito di
+rafforzamento del maintainer, fuori da questa fase.
+
+[rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5839714140
 
 1. **L'interessato si guarda solo dopo la scrittura.** Una riga che riguarda X, riscritta da X con un'alternativa perché riguardi Y,
    passa il guardiano (l'eccezione di `ISubmittedByMembers` guarda prima e dopo). Ci arriva solo un endpoint che non chiede l'handler
@@ -190,5 +203,9 @@ Non cambiato: è il comportamento di oggi, e A3 lo ripete per ogni alternativa, 
 - **§16 punto 2** (l'unico handler e la rete dell'interceptor) e **`CLAUDE.md` §2**: la rete dell'interceptor accetta **più**
   permessi alternativi dichiarati dall'entità (`[AlsoWrittenWith]`, ripetibile), ognuno con lo scope della riga, mai per
   l'interessato, senza spostare la riga; uno segnato **`AlsoOnCreation`** vale anche alla creazione, senza scope e su almeno un
-  dipartimento della riga; l'eliminazione resta di `Edit` (salvo la risposta 3 di §3.5). È la prima delle due estensioni dell'handler
-  annunciate per M3 (la seconda, i capi FIR, in A11).
+  dipartimento della riga; l'eliminazione resta di `Edit`. È la prima delle due estensioni dell'handler annunciate per M3 (la
+  seconda, i capi FIR, in A11).
+- **§9.2, riga Training**: un esame lo tolgono dal calendario, e lo cambiano, solo **HQ, TC, TAC e il TA a cui è assegnato**
+  (Carmine, risposta 4 di §3.5); la regola nel nucleo — un permesso che raggiunge solo le righe affidate a chi scrive — arriva con la
+  fase **A3b** e la sua nota, e **§16 punto 2** la registra quando quella nota è decisa.
+- **§13, riga M3**: le fasi di `08` guadagnano **A3b**, del nucleo, prima di A10.
