@@ -165,6 +165,17 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     }
 
     /// <summary>
+    /// The positions of the bench's airports and the sectors of its FIRs, a French one among them, recorded from IVAO's
+    /// two answers of the world (<c>tools/record-ivao-fixtures.mjs --positions world …</c>) and read through the very
+    /// reader the real client uses.
+    /// </summary>
+    public Task<(IReadOnlyList<IvaoAtcPositionDto> Airports, IReadOnlyList<IvaoAtcPositionDto> Sectors)>
+        GetAtcPositionsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<(IReadOnlyList<IvaoAtcPositionDto>, IReadOnlyList<IvaoAtcPositionDto>)>((
+            IvaoAtcPositionReader.ReadAirportPositions(Read("atc-positions-world.json")),
+            IvaoAtcPositionReader.ReadSectors(Read("subcenters-world.json"))));
+
+    /// <summary>
     /// The recorded sessions of a member, filtered the way the API filters them, so that a test and
     /// production disagree about nothing except where the bytes came from. The files are written by
     /// <c>tools/record-ivao-fixtures.mjs</c> from real flights.
