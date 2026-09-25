@@ -5,8 +5,8 @@
 §12 n.2, deciso sulla PR #121 nel [commento delle risposte][r1]; nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 2),
 che rimanda a questa la forma nel codice. La domanda che il piano lasciava alla nota — «una proprietà dell'attributo o un attributo a
 parte» (`08-piano-implementazione-m3.md`, A3 punto 2) — non apre un bivio (§3.2). **Una domanda proposta**, fuori dalla forma decisa
-e posta in anticipo su A10: **chi elimina un esame** (§3.5), a Carmine con un commento su #131; solo una delle tre risposte
-toccherebbe il codice di A3.
+e posta in anticipo su A10: **chi elimina un esame** (§3.5), a Carmine con due commenti su #131, la domanda e i fatti del TD; solo
+una delle risposte (la 3) toccherebbe il codice di A3.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono la rete dell'interceptor (`HubSaveChangesInterceptor`, il guardiano
 `EnsureWriteIsAllowed`) e il suo attributo `[AlsoWrittenWith]` (M2, T13), che coprono già un permesso alternativo in modifica; il
 modulo non scrive una tabella per ruolo né un controllo suo. È una PR del nucleo, prima del codice del modulo che la usa (A7, A10),
@@ -109,28 +109,41 @@ Alla creazione il guardiano prova **solo le alternative segnate**, e ognuna:
 
 ### 3.5 Una domanda per Carmine: chi elimina un esame (Proposta)
 
-Posta a Carmine con un commento su #131 il 25 settembre, in anticipo su A10, come ha chiesto `dalberone`: se la risposta tocca il
-nucleo, la porta questa PR e non una seconda.
+Posta a Carmine con [un commento su #131][q1] il 25 settembre, in anticipo su A10, come ha chiesto `dalberone`: se la risposta tocca il
+nucleo, la porta questa PR e non una seconda. Lo stesso giorno, [un secondo commento][q2] con **i fatti del TD**, da `dalberone`:
 
-Con A3 un esame lo **crea** e lo **cambia** chi ha `Training.ManageExams` (TC, TAC, TA e trainer; nota di A0 §2 punto 4); **eliminarlo
-resta di `Edit`** (TC e TAC). Un esame annullato su IVAO resterebbe quindi nel calendario pubblico finché TC o TAC non lo tolgono; uno
-rimandato lo sposta chi l'ha inserito.
+- **gli esami si gestiscono su IVAO** — assegnazione, annullamento, esito —: all'hub servono **solo per metterli nel calendario**, e
+  nell'hub non c'è un esame «annullato»;
+- **un esame lo eliminano HQ, TC, TAC o la persona a cui è affidato** (il suo esaminatore);
+- **la postazione la decide la persona a cui è affidato l'esame**.
 
-1. **Lo eliminano TC e TAC**: in A10 `CrudOptions.DeletePolicy = Training.Edit`, e il guardiano è già d'accordo. Nessun cambio del
-   nucleo; chi esamina chiede a TC o TAC di togliere un esame annullato.
-2. **Eliminare un esame vuol dire annullarlo**: in A10 `CrudOptions.Delete` scrive `cancelled_at` invece di togliere la riga, come la
-   libreria dei media ridefinisce già l'eliminazione. È una modifica della riga, che `ManageExams` fa con la sua alternativa; la voce del
-   calendario sparisce (un esame annullato non proietta niente) e la riga resta, nel registro, con chi l'ha annullato. Nessun cambio del
-   nucleo; la riga va via solo con la cancellazione dei dati di una persona.
-3. **Elimina anche chi ha `ManageExams`**: un'estensione del nucleo — un'alternativa che vale anche all'eliminazione (per esempio
-   `AlsoOnDeletion = true`) — aggiunta a questa PR prima del merge, con il suo test della spina dorsale. «Eliminare è di `Edit`»
-   avrebbe un'eccezione.
+Con n.10 e A3, `Training.ManageExams` — ogni TC, TAC, TA e trainer (nota di A0 §2 punto 4) — crea un esame e cambia **qualunque**
+esame, non solo il suo; HQ, TC e TAC hanno `Training.Edit`, che elimina comunque. La regola del TD è più stretta, e le risposte
+diventano:
 
-**Raccomandazione: la 2.** Chi esamina toglie dal calendario un esame annullato il giorno stesso, il guardiano non si allarga, e
-«eliminare è di `Edit`» resta vero ovunque. Se Carmine preferisce il minimo, la 1.
+1. **Lo eliminano solo HQ, TC e TAC**: in A10 `CrudOptions.DeletePolicy = Training.Edit`, e il guardiano è già d'accordo. Nessun
+   cambio del nucleo, ma **contro il TD**: chi ha l'esame affidato non lo toglie dal calendario.
+2. ~~Eliminare un esame vuol dire annullarlo~~ (`CrudOptions.Delete` con un `cancelled_at`): **ritirata**, perché nell'hub non c'è
+   niente da annullare.
+3. **Elimina anche chi ha `ManageExams`**: un'alternativa che vale anche all'eliminazione (per esempio `AlsoOnDeletion = true`),
+   aggiunta a questa PR prima del merge, con il suo test della spina dorsale. Come la modifica con n.10, vale per **tutto** lo staff
+   del training su **ogni** esame; chi ha fatto che cosa lo dice il registro.
+4. **Solo la persona a cui è affidato l'esame** (con HQ, TC e TAC) lo cambia e lo elimina, come chiede il TD: una regola su una riga
+   che il nucleo non ha. Il grant con scope del trainer (n.1) non basta: l'esame nasce con un permesso tenuto su tutto il dipartimento,
+   che raggiunge poi ogni esame, e un grant per esame farebbe rientrare l'esaminatore a ogni esame inserito. Servirebbe una regola
+   nuova nell'unico handler e nel guardiano — «questo permesso raggiunge solo le righe affidate a chi scrive», con la riga che dice a
+   chi è affidata —: caso (c) di `CLAUDE.md` §5, con una nota sua e una fase del nucleo prima di A10.
+
+**Raccomandazione (aggiornata dopo i fatti del TD): la 3.** Nell'hub un esame è una voce di calendario la cui verità sta su IVAO: con
+la 3 la persona a cui è affidato lo toglie, come con n.10 già lo cambia, per una proprietà in più in questa PR. Una regola sulle righe
+dell'esaminatore sarebbe il pezzo più delicato di M3 (l'unico handler) per le righe che valgono meno. Se Carmine vuole che sia il
+codice a tenere la regola del TD, la 4, in una fase a sé prima di A10, e questa PR resta com'è.
 
 Il resto di A3 non ne dipende: solo la risposta 3 cambia il suo codice, e aspetta la risposta. La risposta entra qui con il link al
 commento di Carmine; se questa PR viene unita prima, la domanda torna in apertura di A10.
+
+[q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5838221191
+[q2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5838422641
 
 ## 4. Alternative scartate
 
@@ -139,7 +152,7 @@ commento di Carmine; se questa PR viene unita prima, la domanda torna in apertur
 | Un attributo a parte, `[AlsoCreatedWith]` | lo stesso permesso scritto due volte, o due attributi per una cosa (§3.2) |
 | Un'interfaccia dell'entità, «le mie alternative creano» | vale per tutte le alternative, e sul training nessuna deve creare (§3.2) |
 | Alla creazione con lo scope della riga | la riga nuova non ne ha uno suo; un permesso dato su una riga ne farebbe nascere altre (§3.2) |
-| Un'alternativa che elimina, già ora | non è nella decisione; è la risposta 3 della domanda di §3.5, non raccomandata |
+| Un'alternativa che elimina, già ora | non è nella decisione: è la risposta 3 della domanda di §3.5, raccomandata, e aspetta Carmine |
 | Nel modulo, una tabella per ruolo o un controllo suo prima del salvataggio | `CLAUDE.md` §5 caso (b): il meccanismo c'è e si estende (design §3.4) |
 | `Training.Edit` ai TA e ai trainer | «tutto su ogni training», molto più largo del bisogno (nota di A0, §3) |
 | I test con `TestCurrentUser`, corretto perché passi lo scope | un doppio del maintainer, toccato per far passare test nuovi (`CLAUDE.md` §0 regola 3) |
