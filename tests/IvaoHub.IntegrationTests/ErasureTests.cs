@@ -78,8 +78,11 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // answer in somebody else's thread.
         using (var person = await SignedInAsync(PersonVid, token))
         {
-            _items.Add(await CreateItemAsync(person, "erasure-kept", OtherVid, token));
+            _items.Add(await CreateItemAsync(person, "erasure-for-other", OtherVid, token));
             _items.Add(await CreateItemAsync(person, "erasure-gone", PersonVid, token));
+
+            // And one about themselves that the module keeps as it is, the way it keeps a ban still in force.
+            _items.Add(await CreateItemAsync(person, $"{SampleEraser.KeptPrefix}-ban", PersonVid, token));
 
             using var other = await SignedInAsync(OtherVid, token);
             var theirs = await SubmitAsync(other, $"Other's question {Guid.NewGuid():N}", token);
@@ -91,7 +94,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
 
         await SeedAboutThePersonAsync(token);
-        var (kept, gone) = (_items[0], _items[1]);
+        var (forOther, gone, kept) = (_items[0], _items[1], _items[2]);
         var (theirThread, ownThread) = (_threads[0], _threads[1]);
 
         using var superadmin = await SignedInAsync(SuperadminVid, token);
@@ -100,6 +103,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.False(preview.GetProperty("isSuperadmin").GetBoolean());
         Assert.Equal(1, Line(preview, "erasure.lines.threads"));
         Assert.Equal(1, Line(preview, SampleEraser.ItemsKey));
+        Assert.Equal(1, Line(preview, SampleEraser.KeptKey));
 
         using var response = await superadmin.PostAsync(new Uri($"{ErasureEndpoints.Pattern}/{PersonVid}", UriKind.Relative), null, token);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -123,8 +127,12 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.False(await sample.Items.IgnoreQueryFilters().AnyAsync(row => row.Id == gone, token));
 
         // What they did for others: kept, under the pseudonym, in the core's context and in the module's.
-        var item = await sample.Items.IgnoreQueryFilters().AsNoTracking().SingleAsync(row => row.Id == kept, token);
+        var item = await sample.Items.IgnoreQueryFilters().AsNoTracking().SingleAsync(row => row.Id == forOther, token);
         Assert.Equal((pseudonym, pseudonym, OtherVid), (item.CreatedBy, item.UpdatedBy, item.StakeholderVid));
+
+        // What the module keeps on purpose: as it was, VID and all.
+        var ban = await sample.Items.IgnoreQueryFilters().AsNoTracking().SingleAsync(row => row.Id == kept, token);
+        Assert.Equal((PersonVid, PersonVid), (ban.StakeholderVid, ban.CreatedBy));
         var thread = await database.ContactMessages.IgnoreQueryFilters().AsNoTracking().SingleAsync(row => row.Id == theirThread, token);
         Assert.Equal((OtherVid, pseudonym), (thread.CreatedBy, thread.UpdatedBy));
         Assert.Equal(pseudonym, (await database.ContactReplies.SingleAsync(row => row.MessageId == theirThread, token)).AuthorVid);
@@ -139,7 +147,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 && (row.BeforeJson != null || row.AfterJson != null),
             token));
         Assert.True(await audit.AnyAsync(
-            row => row.Entity == "smp_items" && row.EntityId == kept.ToString(CultureInfo.InvariantCulture)
+            row => row.Entity == "smp_items" && row.EntityId == forOther.ToString(CultureInfo.InvariantCulture)
                 && row.Vid == pseudonym && row.AfterJson != null && row.Ip == null,
             token));
         Assert.True(await audit.AnyAsync(
