@@ -1217,7 +1217,9 @@ il blocco risponde `signedIn: false`.
 
 - **Ricerca**: `IProjectable` su un tour visibile (titolo, riassunto, `/tours/{slug}`).
 - **Calendario**: **due voci** per tour, rilascio e chiusura (risposta 20). ⚠️ `ProjectionSnapshot` oggi porta **una**
-  `CalendarProjection`: diventa un **elenco** (estensione n.10, piccola). Un tour nascosto non proietta niente.
+  `CalendarProjection`: diventa un **elenco** (estensione n.10, piccola). Un tour nascosto non proietta niente. **Precisato in T20c**
+  (Carmine, 25 settembre, nota `2026-09-25-le-rifiniture-di-m2`): il rilascio è una voce `tour`, la chiusura una voce `deadline`, così
+  le due non si leggono uguali. **Un PIREP non proietta** né ricerca né calendario.
 - **Notifiche** del modulo: `pirepAccepted`, `pirepToModify`, `pirepRejected`, `threadReplied` (contestazione o
   chiarimento), `banned`; alla casella del FOD: `threadOpened`, `legIssueReported`.
 

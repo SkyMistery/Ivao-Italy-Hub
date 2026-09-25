@@ -319,8 +319,8 @@ taratura del tempo stimato (`durationFactor`, `durationFixedMinutes`) e di `thre
 | T19a | I token personali (nucleo) — **fatta il 24 set 2026** | T3 | `hub_personal_tokens`, lo schema del token per `audience`, `/me/tokens`, l'audit delle righe dei moduli |
 | T19b | Il contratto dell'agente (modulo) — **fatta il 24 set 2026** | T17, T19a | `/api/flightops/agent`, `Hub-Agent-Contract`, `docs/agent-contract.md`, la `curl` del «fatta quando» |
 | T20a | La conservazione dei tour — **fatta il 25 set 2026** | T13, T15 | job mensile, 13 o 25 mesi, `purged_at`, il registro disciplinare intatto |
-| T20b | La cancellazione dei dati di un pilota | T20a | nota di caso (c), il meccanismo nel nucleo, poi il modulo dei tour |
-| T20c | Rifiniture, giro completo, chiusura di M2 | T20b | galleria, `FORKING.md`, smoke, giro e2e, rapporto di chiusura |
+| T20b | La cancellazione dei dati di un pilota — **fatta il 25 set 2026** | T20a | nota di caso (c), il meccanismo nel nucleo, poi il modulo dei tour |
+| T20c | Rifiniture, giro completo, chiusura di M2 — **fatta il 25 set 2026** | T20b | galleria, `FORKING.md`, smoke, giro e2e, rapporto di chiusura |
 | T21 | L'app del validatore parla con l'hub | T19 | nel repository `AutomaticValidatorTour`, fuori da questo; la mail a Navigraph prima di distribuirla |
 
 **Parallelismo possibile** (se servisse): T1, T2 e T3 non si toccano; T8 e T9 nemmeno; T12, T14, T15 e T16 dopo T13 toccano pezzi
@@ -1747,7 +1747,28 @@ chiede il nucleo:
     svuotamento del PIREP è quello della conservazione (`TourRetentionJob.Empty`, ora condiviso); nelle **tre liste** (coda, segnalazioni,
     ban) una persona cancellata resta il suo numero negativo, perché lì il nome si calcola nella query dove non c'è `t`, mentre le pagine
     dicono «persona cancellata» (`memberName(member, t)`). Test: `PirepTests.Erasure.cs`.
-- **T20c** — i punti 3, 4 e 5.
+- **T20c** — i punti 3, 4 e 5, branch `m2/t20c-closing`. **Fatta** (nota `2026-09-25-le-rifiniture-di-m2`, piano 1.12, le quattro
+  raccomandazioni di Carmine). **Com'è andata**, gli scostamenti:
+  - **la galleria**: `RouteMap` e `MessageThread` c'erano già; `LegGrid` entra **dal manifest del modulo** (`components`), un'estensione
+    piccola del nucleo del front end (`shared/modules.ts`, `app/registry.ts`, la galleria) con un campione del modulo
+    (`screens/LegGridSample.tsx`). Guardarlo a 1500 px ha trovato un difetto: l'editor diceva «2 legs flown» di leg da volare.
+    ⚠️ Lo smoke della galleria contava i campi data e ora di **tutta** la pagina: ora guarda solo la sezione di `SchemaForm`;
+  - **il calendario rivisto**: la chiusura di un tour è una voce `deadline`; **il riepilogo dei PIREP** della riga qui sotto si è letto
+    come «i PIREP restano fuori» da ricerca e calendario (Carmine), e un test d'unità lo fissa;
+  - **`FORKING.md`**: lo stato era fermo a M0; una sezione sui tour (chi li gestisce, le due impostazioni che nominano paesi, la mappa, le
+    fonti esterne con l'archivio ATC, l'agente). **OpenAIP** della riga qui sotto non c'è più: i confini vengono da VATSpy (nota
+    `2026-09-16-i-confini-dei-fir`), e `FORKING.md` lo diceva già;
+  - **la checklist del fork XX** è `ForkabilityXxDivisionTests`: in più le impostazioni dei tour serializzate, la pagina pubblica dei
+    tour e i due tipi di calendario;
+  - **il giro completo** è una spec sola, `web/e2e/full/tours-round.spec.ts`, su **un** tour: da template, due leg da un XLSX con un
+    foglio di riepilogo davanti, la prima leg respinta, contestata, accolta e accettata, la seconda respinta, **riaperta** da chi l'ha
+    decisa e accettata, il tour completato, l'award assegnato. La riapertura esplicita e l'import da XLSX non avevano un e2e. Le mail non
+    si aspettano: le leggono già `tours-review` e `tours-dispute`;
+  - **il rapporto** è `decisions/2026-09-25-m2-review.md`, contato dalla #70. Propone di contare i verbi a mano **per famiglia** invece
+    che con un numero solo: è una proposta, da decidere con Carmine.
+
+  Test: `TourStateTests` (il tipo delle due voci, un PIREP che non proietta), `uiKit.test.ts` (i componenti dei moduli per nome),
+  `ForkabilityXxDivisionTests`, `tours.spec.ts` (le due voci con i due tipi), `tours-round.spec.ts`.
 
 1. **La conservazione** (§10, strada B): job mensile del modulo; dopo 13 o 25 mesi dalla chiusura via tracce, revisioni dei piani, esiti dei
    controlli, snapshot, note, ATC ed esenzioni, briefing, regole del tour, hub, rotazioni, vincoli, iscrizioni; **tour e leg restano**

@@ -16,7 +16,23 @@
 > La event policy delle Actions che consente `pull_request_target` a `core-guard.yml` (obbligatoria dal 2 nov 2026) **esiste dal
 > 25 set** (nota §9, id 5617). **M3 è partito**: `dalberone` ha letto `HANDOFF-M3.md` e lavora al design.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **T0–T20b**. Piano **1.10**. **Il prossimo passo è T20c** (rifiniture, giro completo, chiusura di M2), in una chat nuova. T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+**Ultimo aggiornamento:** 25 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.12**. Il rapporto è
+`decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
+`dalberone` (`HANDOFF-M3.md`). **Una domanda aperta per Carmine**: il rapporto propone di contare i verbi a mano **per famiglia** in
+piano §16.6 invece che con il numero solo di M1.
+
+> **Che cosa ha lasciato T20c** (nota `2026-09-25-le-rifiniture-di-m2`, piano 1.12): Carmine ha preso le quattro raccomandazioni. **Un
+> modulo porta i suoi componenti dal manifest**: `ModuleManifest.components` (`{ name, sample }`, facoltativo), composto da
+> `app/registry.ts` in `registry.components` con il modulo, mostrato dalla galleria in «Componenti dei moduli» come `flightops.LegGrid`.
+> Il campione è `modules/flightops/screens/LegGridSample.tsx`: tre leg d'esempio in un `QueryClient` suo, già pieno, in sola lettura. Un
+> componente nuovo di un modulo fa fallire `uiKit.test.ts`, che ne scrive i nomi. **La chiusura di un tour è una voce `deadline`**
+> (`Tour.CloseCalendarKind`), il rilascio `tour`: un blocco calendario che filtra solo `tour` mostra solo i rilasci. **Il giro
+> completo** è `web/e2e/full/tours-round.spec.ts`, un test solo con tre persone su un tour, che costruisce l'XLSX con la stessa
+> libreria dell'editor e fa due voli con `replayFlight` uno dopo l'altro (il secondo sovrascrive le sessioni del pilota: il primo è già
+> rivendicato). ⚠️ **La galleria ora ha campi data e ora anche fuori da `SchemaForm`** (le righe di `LegGrid`): uno smoke che cerca un
+> campo nella pagina intera lo trova quattro volte — `back-office.spec.ts` ora guarda `[data-ui-kit="SchemaForm"]`. ⚠️ Trovato
+> guardando: l'inglese di `legs.totals` diceva «legs flown» di leg da volare. `FORKING.md` era fermo a M0 e ha una sezione sui tour.
+> Test locali: unit 660, integrazione 287 (tutta, senza filtro), Vitest 478, smoke 91, giro pieno tutto.
 
 > **Che cosa ha lasciato T20b, la PR del modulo** (piano 1.10; prima la #122, `ErasureRequest.Keep`, nota
 > `2026-09-25-le-righe-che-restano-con-il-vid`, piano 1.09): l'eraser dei tour è `People/FlightOpsPersonalData`. Un PIREP **accettato o
@@ -2256,7 +2272,9 @@ cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
 4. ~~**`expiresAt` di un grant è una casella di testo.**~~ **Chiuso in G2** (§16): `.meta({ date:
    true })` è un input nativo, e quello che arriva al server è un istante ISO in UTC invece di un
    testo senza fuso.
-5. **Il primo permesso di modulo vero, e il primo `DbContext` di modulo.** `AtcModule` non dichiara
+5. ~~**Il primo permesso di modulo vero, e il primo `DbContext` di modulo.**~~ **Chiuso da M2** (25 set 2026, rapporto
+   `decisions/2026-09-25-m2-review.md`): i tour hanno dodici permessi `Tours.*` e `FlightOpsDbContext` con sedici migrazioni e il suo
+   `__EFMigrationsHistory_flightops`. Il testo di allora: `AtcModule` non dichiara
    permessi e non ha un contesto: entrambi i rami sono scritti, testati con un modulo finto, e non
    ancora esercitati da un modulo reale. Il primo vero è M2 (Events), ma se un modulo di M1 li tocca
    è lì che si scopre se `AddModuleDbContext<T>` regge.
