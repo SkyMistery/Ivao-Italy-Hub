@@ -129,6 +129,11 @@ the runways of the airports your tours and reports actually touch, fetched one a
 Whatever means "the airspace of this division" still reads your `countryId`, so nothing else
 changes for you.
 
+Since the training module the snapshot also holds IVAO's **ATC positions** of the world — the
+positions of the airports and the sectors of the FIRs, about 13 000 rows. Which of them are your
+division's is read the same way: the positions of the airports of your `countryId`, and the sectors
+of your FIRs.
+
 Two more things are fetched from outside IVAO, both optional and both named in one folder of the
 core each:
 
