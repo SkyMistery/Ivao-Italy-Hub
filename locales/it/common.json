@@ -1452,6 +1452,38 @@
       "vid": "VID"
     }
   },
+  "erasure": {
+    "title": "Cancella i dati di una persona",
+    "description": "Quando qualcuno chiede alla divisione di cancellare i suoi dati. Ciò che lo riguarda va via; ciò che la divisione deve tenere resta senza il suo nome, sotto un numero che nessuno può ricondurre a lui. Non si può annullare.",
+    "lookup": "Mostra che cosa si cancellerebbe",
+    "person": "{{name}}, VID {{vid}}",
+    "neverSignedIn": "Il VID {{vid}} non ha mai fatto login: va via solo ciò che i moduli tengono su di lui.",
+    "superadmin": "Un super amministratore non si cancella: prima gli si toglie il ruolo.",
+    "confirm": {
+      "trigger": "Cancella",
+      "title": "Cancellare i dati del VID {{vid}}?",
+      "description": "Tutto ciò che è elencato va via adesso, e non si può annullare. Se rientra, è un membro nuovo."
+    },
+    "done": "Cancellato. In ciò che resta, la persona adesso è {{pseudonym}}.",
+    "outcomes": {
+      "Deleted": "Cancellati",
+      "Anonymised": "Tenuti senza il nome",
+      "Kept": "Tenuti"
+    },
+    "lines": {
+      "user": "Il suo account",
+      "access": "Token, permessi e posizioni",
+      "notifications": "Notifiche",
+      "awards": "Award e segnalazioni di award",
+      "threads": "Fili che ha aperto, con le risposte",
+      "participation": "Fili di altri a cui ha partecipato",
+      "named": "Righe che lo nominano come autore",
+      "audit": "Righe del registro delle modifiche"
+    },
+    "fields": {
+      "vid": "VID"
+    }
+  },
   "modules": {
     "title": "Moduli",
     "description": "Con che cosa è stata compilata questa installazione, e se ciascuno accetta modifiche.",
