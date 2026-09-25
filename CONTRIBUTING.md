@@ -7,8 +7,9 @@ traps this project has already paid for once. How to install and run the hub is 
 
 ## Working a phase
 
-1. **Start from an up-to-date `main`**, on a branch `m3/<phase>-<slug>`. Check `gh pr list` first: another session
-   may be working on the same files.
+1. **Start from an up-to-date `main`**, on a branch `m3/<phase>-<slug>`, or from the branch of the previous phase if
+   its pull request is still open (see "Phases in a queue" below). Check `gh pr list` first: another session may be
+   working on the same files.
 2. **Read before writing**: `docs/internal/HANDOFF-M3.md` (where things stand), the module design, the phase in the
    implementation plan, and the plan sections they point to. Read the plan before calling anything in the existing
    code a defect: many things that look odd are decisions with a note.
@@ -21,8 +22,25 @@ traps this project has already paid for once. How to install and run the hub is 
 6. **Done** means: CI green (`build-test` and `core-guard`), the template's "For the reviewer" filled in,
    `HANDOFF-M3.md` updated. Then the maintainer asks the reviewer, and merges — or sends it back.
 
-Don't stack pull requests (a branch on top of another unmerged branch). If you really must, say so in both pull
-requests: the maintainer has to retarget the child to `main` before merging it, or it lands in the wrong branch.
+### Phases in a queue
+
+You do not wait for the merge of one phase to start the next. The reviewer can read several phases in one go, and the
+maintainer merges them in order.
+
+- **Branch** the next phase from the branch of the previous one (`git switch -c m3/<next> m3/<previous>`), still one
+  phase per session and one pull request per phase.
+- **The pull request always targets `main`**, never another branch: that way CI and `core-guard` run on it, and
+  nothing has to be retargeted before the merge. Until the phase below is merged its diff also shows the commits
+  below; that is expected.
+- **Open it as a draft**, with `(after #N)` at the end of the title and `Queued after #N.` as the first line of the
+  body, where #N is the pull request of the phase below. A draft cannot be merged, so the order cannot go wrong.
+  In "For the reviewer", name the range that is this phase's own: `git diff m3/<previous>...m3/<next>`.
+- **A fix asked on a phase below** goes on that phase's branch, and then you merge that branch into every branch
+  above it, in order. Merge, never rebase.
+- **When #N is merged**: merge `main` into the next branch, build and run the tests again, remove `(after #N)`, and
+  mark the pull request ready. The reviewer checks that its diff is now only its own phase.
+- **A phase that needs an answer from the maintainer** (a case (c) note, a core change still under review) does not
+  queue on top of the question: the parts that depend on it wait for the answer.
 
 ## Your own IVAO OAuth client
 
