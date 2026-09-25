@@ -1,6 +1,6 @@
 # IVAO Division Hub — Design di M3 (il modulo Training)
 
-> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.07).
+> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.08).
 > Ingresso: i **requisiti dello staff TD**, raccolti con `dalberone` a domande (§R). Sui fatti — come funziona il
 > training oggi e che cosa lo staff vuole — risponde `dalberone`; **le scelte le decide Carmine**: dove resta una scelta
 > aperta è segnata **⚖️** e raccolta, con una raccomandazione, in §12 «Domande per Carmine». Le fasi si scrivono in
@@ -9,7 +9,8 @@
 **Stato:** **bozza completa per la revisione di Carmine** (25 settembre 2026): i requisiti sono chiusi con le conferme
 di `dalberone` (R.7), le scelte aperte sono in §12. Nessun codice. Primo giro di revisione (25 settembre): il teorico
 dichiarato dal trainee è uno scostamento dal piano (§0.6, §12 n.15), le regole dei rating di IVAO passano al nucleo
-(§1.7, n.4), i GCA sono nel profilo IVAO (§0.2).
+(§1.7, n.4), i GCA sono nel profilo IVAO (§0.2). Allineato al piano 1.08: la cancellazione dei dati di una persona usa il
+meccanismo del nucleo di T20b (§6.1).
 
 ---
 
@@ -49,7 +50,8 @@ M3 è fatta quando lo staff TD può **spegnere PATS** (`training.ivao.it`, piano
 
 - **I meccanismi del nucleo** (`CLAUDE.md` §2, piano §16): `MapCrud`, lista e form generati, l'unico handler, il filtro
   globale, `IOwnedByDepartment` a insieme, i grant a una posizione e per riga, `IProjectable`, il servizio notifiche,
-  l'unico `IIvaoApiClient`, i blocchi Data, le dashboard, le impostazioni dei moduli.
+  l'unico `IIvaoApiClient`, i blocchi Data, le dashboard, le impostazioni dei moduli, la cancellazione dei dati di una
+  persona (`IPersonalDataEraser`, T20b).
 - **I moduli fuori dai dipartimenti**: sezione `/staff/training`, «a cura di» con il TD sempre presente
   (`division.json → modules.training.baseDepartment: TD`, già scritto).
 - **Chi gestisce il modulo** (piano 0.77): coordinator e assistant del TD tutto, per grant a una posizione; HQ e web
@@ -631,11 +633,33 @@ Convenzioni di M2: `[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, 
   decisa.
 - **Che cosa è personale**: il VID di trainee e trainer, i testi liberi della richiesta, commenti e note. Nome ed email
   non si copiano: si leggono dal nucleo.
-- **La richiesta di cancellazione** (piano §9.7): ⚖️ §12 n.7 — proposta: si cancellano i testi liberi del trainee e il
-  suo VID diventa anonimo; voti e date restano per le statistiche, come il registro disciplinare di M2 §10.0. **Il
-  meccanismo non è del modulo**: il piano 1.07 (nota `2026-09-25-la-conservazione-dei-tour`) ha trovato che il nucleo non
-  sa ancora cancellare o anonimizzare un utente, e lo porta nel nucleo con T20b; il modulo ci si aggancia, non ne scrive
-  uno suo.
+
+### 6.1 La cancellazione dei dati di una persona
+
+**Il meccanismo è del nucleo e c'è** (T20b, piano 1.08, nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona`):
+il superadmin cancella dal pannello dei permessi; il nucleo sostituisce da solo, in ogni contesto, il VID nelle colonne
+che si chiamano `vid`, `*_vid` o `*_by` con uno **pseudonimo negativo**; ogni modulo che tiene dati di persone implementa
+**`IPersonalDataEraser`** (anteprima ed esecuzione) per ciò che è **sulla** persona. Il modulo si aggancia, non scrive un
+meccanismo suo.
+
+- **Le colonne seguono la convenzione**: `trainee_vid`, `trainer_vid`, `examiner_vid`, `decided_by`, `assigned_by`,
+  `closed_by`, il `vid` e i `*_by` dei ban. Nessuna lista di VID in JSON. Il test che elenca le colonne di persona
+  (`ErasureTests`) le vedrà da solo.
+- **`TrainingPersonalData : IPersonalDataEraser`**, proposta (⚖️ §12 n.7), con le quattro risposte di Carmine della nota
+  come regola:
+  - i **training chiusi** del trainee (`Completed`, `NoShow`, `Closed`, `Rejected`, `Cancelled`) sono **il registro**:
+    restano, con lo pseudonimo; vanno via **tutti i testi liberi** che parlano di lui — i due della richiesta, i commenti
+    per il trainee, le note riservate, i commenti del report, gli appunti delle sessioni, il motivo di un rifiuto —;
+    restano stati, date, rating, voti e spunte;
+  - i **training aperti** (`Requested` … `Scheduled`) si **cancellano**: non vanno avanti senza la persona (come i PIREP
+    aperti);
+  - gli **esami** in cui è candidato si cancellano (sono voci di calendario, l'esame è su IVAO);
+  - un **ban in vigore resta** con VID e motivo; uno scaduto si anonimizza (risposta 2 della nota);
+  - ciò che ha fatto **come staff o trainer** — training condotti, decisioni, assegnazioni, esami inseriti — resta con lo
+    pseudonimo, e i suoi testi restano perché parlano di altri (risposta 4).
+- **«Persona cancellata»**: dove il modulo mostra un VID (percorso del trainee, liste, pagina della sessione), un VID
+  negativo diventa «persona cancellata» senza link. La nota dice che l'helper passa nel nucleo quando Training ne ha
+  bisogno: è questo il momento (n.10).
 
 ---
 
@@ -664,6 +688,7 @@ Ognuna è una PR a sé, **prima** del codice del modulo che la usa, con la sua n
 | 7 | **Più permessi alternativi in scrittura** sulla stessa entità (`[AlsoWrittenWith]` ripetibile) e, per l'entità che lo dichiara, **anche alla creazione** | sì, con i test della spina dorsale | §3.4 |
 | 8 | **Il banco e2e con rating e ore**: i personaggi di `/e2e/signin` oggi non hanno rating; il giro del training ne ha bisogno | nella nota di n.1 | §10 |
 | 9 | ⚖️ **Un feed iCal personale**, anticipato da M6: un indirizzo con un token di sola lettura, perché un calendario esterno (Google Calendar) non manda intestazioni; il modulo contribuisce «i miei training» (trainer e trainee). Decide anche la domanda aperta del piano §15.9 | sì | §12 n.14 |
+| 10 | **«Persona cancellata»** nel nucleo: l'helper che mostra un VID negativo senza link, oggi nelle pagine dei tour; la nota della cancellazione lo fa passare nel nucleo quando un secondo modulo ne ha bisogno | no (già scritto nella nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona` §3) | §6.1 |
 
 ---
 
@@ -689,7 +714,9 @@ arrivano con la loro fase, sempre additive.
   il suo e non quello di un altro; il capo FIR assegna nel suo FIR e non in un altro; il trainee legge il suo training
   **senza** note riservate; una richiesta alla volta **per percorso**, ATC e pilota insieme sì; un TA e un trainer creano
   un esame senza `Edit` (n.7); un bannato non chiede; il promemoria parte una volta; il grant del trainer sparisce a
-  training chiuso.
+  training chiuso; **la cancellazione di una persona** (§6.1): i conteggi del registro uguali prima e dopo, nessun testo
+  libero rimasto, i training aperti e gli esami del candidato spariti, il ban in vigore rimasto, «persona cancellata» nelle
+  pagine.
 - ⚠️ **Il TD nei test** (HANDOFF-M3, `CONTRIBUTING.md`): i test dei contatti affermano i destinatari esatti del TD, quindi
   **nessun TC o TAC seminato** nei test del modulo: i permessi si danno con grant a un VID. Da verificare se anche un
   T01–T99 entra nei destinatari.
@@ -721,7 +748,7 @@ Le fasi vere si scrivono in `08-piano-implementazione-m3.md` dopo l'approvazione
 | A10 | Blocchi Data, pagina pubblica della sessione, percorso del trainee, esami nel calendario, ban |
 | A11 | Nucleo: i capi FIR (n.2); poi nel modulo l'assegnazione e le liste per FIR |
 | A12 | Se deciso: nucleo, il feed iCal personale (n.9); poi nel modulo «i miei training» nel feed |
-| A13 | Conservazione, cancellazione, archivio di PATS se deciso, giro completo |
+| A13 | Conservazione; `TrainingPersonalData : IPersonalDataEraser` e «persona cancellata» nel nucleo (n.10); archivio di PATS se deciso; giro completo |
 
 I capi FIR e il feed stanno in fondo di proposito: tutto il resto funziona senza, e le due estensioni più delicate non
 bloccano il modulo (⚖️ §12 n.3, n.14). **PATS però non si spegne prima di A12**, se il feed si fa: i trainer lo usano.
@@ -750,8 +777,10 @@ A0.
    `hiddenPositions` nelle impostazioni. Alternativa: un elenco scritto a mano dallo staff, come le 143 righe di PATS.
 6. **Lo storico di PATS** (§7). **Raccomandato: un archivio in sola lettura** di `trainingNEW` ed `exam`, solo se
    otteniamo il significato dei codici; niente da `training`. Alternativa: nessun import, come per tour ed eventi.
-7. **Conservazione e cancellazione** (§6). **Raccomandato: il registro resta**; a una richiesta di cancellazione il VID
-   diventa anonimo e i testi liberi del trainee spariscono, attraverso il meccanismo del nucleo che nasce con T20b.
+7. **Che cosa è il registro dei training, alla cancellazione** (§6.1). Il meccanismo è deciso (T20b); resta che cosa il
+   modulo tiene. **Raccomandato**: i training chiusi restano con lo pseudonimo, senza nessun testo libero; quelli aperti e
+   gli esami del candidato si cancellano; il ban in vigore resta. Alternativa: cancellare anche i training chiusi (il
+   percorso di un trainee non servirebbe più a nessuno, ma i conteggi del TD — training per trainer, per rating — cambiano).
 8. **Group training, GCA, flight briefing** (§0.2). **Raccomandato: fuori da M3**, da riprendere se lo staff TD li chiede
    (i GCA di un membro sono già nel profilo IVAO, `gcas`).
 9. **Tempo massimo per scegliere la data superato** (§2.5). **Raccomandato: chiusura automatica** (`Closed`), solo se

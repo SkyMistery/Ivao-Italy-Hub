@@ -83,7 +83,8 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 - **Che cosa c'è**: `07-design-m3.md`, bozza completa per la revisione. §R sono i requisiti del TD, raccolti a domande
   con `dalberone` in quattro giri e segnati uno per uno (d1–d4); §0–§11 il design sul modello di `05-design-m2.md`; §12 le
-  15 domande per Carmine; §8 le nove estensioni del nucleo (una non serve), ognuna una PR a sé prima del modulo; §0.6
+  15 domande per Carmine; §8 le dieci estensioni del nucleo (una non serve), ognuna una PR a sé prima del modulo; §6.1
+  la cancellazione dei dati di una persona sul meccanismo di T20b (piano 1.08), già nel nucleo; §0.6
   gli scostamenti dal piano. ⚠️ **Il modulo non scrive numeri di rating né regole di IVAO** (revisione del 25
   settembre): stanno nel vocabolario del nucleo (n.4).
 - **PATS**: il dump del 12 settembre 2026 l'ha fornito `dalberone` e **non entra nel repository**, né in una PR né in
