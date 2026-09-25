@@ -27,7 +27,16 @@
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageValidators", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.ViewPilots", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.Ban", "scope": "FOD" },
-    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageSettings", "scope": "FOD" }
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageSettings", "scope": "FOD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor", "Member"], "permission": "Training.View", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Training.Approve", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Assign", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Conduct", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Edit", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSheets", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor", "Member"], "permission": "Training.ManageExams", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Ban", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSettings", "scope": "TD" }
   ],
   "superAdmins": [704798],
   "firStaffScope": "all",
