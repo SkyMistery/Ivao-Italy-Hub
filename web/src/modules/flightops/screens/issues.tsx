@@ -137,7 +137,7 @@ function LegIssueScreen({ issue }: { issue: LegIssueDto }) {
           </div>
           <div className="flex flex-col">
             <dt className="text-muted-foreground">{t('flightops:issues.fields.pilotName')}</dt>
-            <dd>{memberName(issue.pilot)}</dd>
+            <dd>{memberName(issue.pilot, t)}</dd>
           </div>
           <div className="flex flex-col">
             <dt className="text-muted-foreground">{t('flightops:issues.fields.createdAt')}</dt>

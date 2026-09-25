@@ -257,7 +257,7 @@ function ReviewScreen({ review }: { review: ReviewDto }) {
                   to: review.leg.arrivalIcao,
                 })}
             {' · '}
-            {t('flightops:review.pilotLine', { pilot: memberName(review.pilot) })}
+            {t('flightops:review.pilotLine', { pilot: memberName(review.pilot, t) })}
             {' · '}
             {t('flightops:review.sentOn', { date: moment(review.submittedAt) })}
           </p>
@@ -318,7 +318,7 @@ function ReviewStanding({ review }: { review: ReviewDto }) {
         {review.status === 'InReview' && review.assignedTo !== null ? (
           <span>
             {t('flightops:review.heldBy', {
-              name: memberName(review.assignedTo),
+              name: memberName(review.assignedTo, t),
               until: moment(review.leaseUntil, { date: false }),
             })}
           </span>
@@ -326,7 +326,7 @@ function ReviewStanding({ review }: { review: ReviewDto }) {
         {review.decidedBy !== null && review.decidedAt !== null ? (
           <span>
             {t('flightops:review.decidedBy', {
-              name: memberName(review.decidedBy),
+              name: memberName(review.decidedBy, t),
               date: moment(review.decidedAt),
             })}
           </span>
@@ -815,7 +815,7 @@ function Dispute({ review, dispute }: { review: ReviewDto; dispute: ReviewDisput
         {dispute.decidedBy === null || dispute.decidedAt === null ? null : (
           <span>
             {t('flightops:review.disputeDecidedBy', {
-              name: memberName(dispute.decidedBy),
+              name: memberName(dispute.decidedBy, t),
               date: moment(dispute.decidedAt),
             })}
           </span>
@@ -1152,7 +1152,7 @@ function History({ review }: { review: ReviewDto }) {
           <li key={index} className="flex flex-wrap gap-2">
             <span className="text-muted-foreground tabular-nums">{moment(step.at)}</span>
             <span className="font-medium">{t(`flightops:review.options.status.${step.toStatus}`)}</span>
-            {step.by === null ? null : <span>{memberName(step.by)}</span>}
+            {step.by === null ? null : <span>{memberName(step.by, t)}</span>}
             {note === null ? null : <span className="text-muted-foreground">— {note}</span>}
           </li>
         );

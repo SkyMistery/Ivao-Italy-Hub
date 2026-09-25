@@ -205,7 +205,7 @@ function ValidatorTable({ stats, manages }: { stats: ValidatorsDto; manages: boo
       empty={t('flightops:validators.none')}
       rows={stats.validators.map((validator) => [
         <span key="member" className="flex flex-wrap items-center gap-2">
-          {memberName(validator.member)}
+          {memberName(validator.member, t)}
           {validator.suspended ? (
             <Badge variant="flat" color="gray" text={t('flightops:validators.suspended')} />
           ) : null}
@@ -305,7 +305,7 @@ function ToursOfTheYear({ stats }: { stats: ValidatorsDto }) {
             ]}
             empty=""
             rows={tour.counts.map((count) => [
-              members.has(count.vid) ? memberName(members.get(count.vid) as MemberDto) : String(count.vid),
+              members.has(count.vid) ? memberName(members.get(count.vid) as MemberDto, t) : String(count.vid),
               <Count key="accepted" value={count.accepted} />,
               <Count key="rejected" value={count.rejected} />,
               <Count key="toModify" value={count.toModify} />,
@@ -420,7 +420,7 @@ function PilotScreen({ page, year }: { page: PilotPageDto; year: ReturnType<type
 
   return (
     <PageShell
-      title={memberName(page.pilot)}
+      title={memberName(page.pilot, t)}
       breadcrumb={[
         { label: t('flightops:nav.section') },
         { label: t('flightops:pilots.title'), to: PILOTS },
@@ -523,7 +523,7 @@ function PilotScreen({ page, year }: { page: PilotPageDto; year: ReturnType<type
                   </span>
                 )}
               </span>,
-              flight.decidedBy === null ? '—' : memberName(flight.decidedBy),
+              flight.decidedBy === null ? '—' : memberName(flight.decidedBy, t),
             ])}
           />
         </Section>
