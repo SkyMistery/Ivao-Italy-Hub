@@ -13,8 +13,8 @@
 > `backbone-ran.sh` di `build-test` verifica che i test di architettura siano stati **eseguiti**, non solo verdi.
 > **Prova con `dalberone` fatta il 25 set** (nota §9): push su `main`, PR #114 su `CLAUDE.md` e tag `v0.0.0-test` tutti
 > rifiutati; il bypass admin del ruleset deve essere «Always» e ogni merge di Carmine passa dalla casella «bypass rules».
-> ⚠️ **Prima del 2 nov 2026**: una event policy delle Actions che consenta `pull_request_target` a `core-guard.yml`, o il check
-> smette di partire e blocca ogni merge (nota §9). **M3 può partire**: a `dalberone` il prompt di `HANDOFF-M3.md`.
+> La event policy delle Actions che consente `pull_request_target` a `core-guard.yml` (obbligatoria dal 2 nov 2026) **esiste dal
+> 25 set** (nota §9, id 5617). **M3 è partito**: `dalberone` ha letto `HANDOFF-M3.md` e lavora al design.
 
 **Ultimo aggiornamento:** 24 settembre 2026 — **T0–T19**. Piano **1.06**. **Il prossimo passo è T20 (conservazione, cancellazione dei dati di un pilota, rifiniture, giro completo, chiusura di M2)**, in una chat nuova, dopo il merge di T19b; T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
 
