@@ -116,6 +116,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - ⚠️ **Lo strumento `--me` ascolta sull'indirizzo di ritorno registrato** (`localhost:5173/auth/callback`): con Vite acceso non
   parte. L'hub di sviluppo della cartella principale è stato fermato per la misura, con il permesso di `dalberone`, e il database di
   sviluppo `ivaohub` ha già la migrazione `AddConnectionHours`.
+- ⚠️ **`main` ha la #126 (T20c) che il branch non ha**: il merge è pulito e provato in locale, ma non fatto. Quando #125 è unita, si
+  unisce `main` in `m3/a1-ratings-and-hours`, si rifanno build e test, si toglie `(after #125)` e la PR passa da bozza a pronta
+  (`CONTRIBUTING.md`, «Phases in a queue»).
 
 ### Che cosa ha lasciato A0 (25 settembre 2026, branch `m3/a0-decisions`, PR #125)
 
