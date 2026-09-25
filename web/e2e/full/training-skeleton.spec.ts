@@ -62,7 +62,7 @@ test('the training section is offered, and its settings are saved and read back'
   }
 });
 
-test('the trainer of the bench views the trainings and does not manage their settings', async ({
+test('the trainer of the bench views the trainings, and neither holds exams nor manages the settings', async ({
   browser,
 }) => {
   const context = await browser.newContext({ baseURL: benchUrl });
@@ -77,8 +77,8 @@ test('the trainer of the bench views the trainings and does not manage their set
     .filter((permission) => permission.department === 'TD')
     .map((permission) => permission.name);
 
-  expect(held).toEqual(expect.arrayContaining(['Training.View', 'Training.ManageExams']));
-  expect(held).not.toContain('Training.ManageSettings');
+  // An exam is assigned only to an examiner, never to a trainer (the training department, 26 September 2026).
+  expect([...new Set(held.filter((name) => name.startsWith('Training.')))]).toEqual(['Training.View']);
 
   expect((await context.request.get(settingsUrl)).status()).toBe(403);
 

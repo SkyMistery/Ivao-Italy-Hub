@@ -30,7 +30,11 @@ public static class TrainingPermissions
 
     public const string ManageSheets = "Training.ManageSheets";
 
-    /// <summary>The exams in the calendar, put there by whoever holds the exam: all the staff of the training (§12 n.10).</summary>
+    /// <summary>
+    /// The exams in the calendar, put there by whoever holds the exam (§12 n.10). An exam is assigned only to an examiner — the
+    /// direction, the coordinator and the assistant of the training department, or one of its advisors — and never to a
+    /// trainer, so the trainers do not hold it.
+    /// </summary>
     public const string ManageExams = "Training.ManageExams";
 
     public const string Ban = "Training.Ban";

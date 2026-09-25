@@ -62,8 +62,10 @@ public sealed partial class TrainingArchitectureTests
         StaffLevel[] heads = [StaffLevel.Coordinator, StaffLevel.Assistant];
 
         // Design M3 §3.2: coordinator and assistant everything, the advisors (TA1–9) view, approve and put exams in the
-        // calendar, the trainers (T01–T99) view and put exams in the calendar. A trainer conducts only the trainings assigned
-        // to them, through a grant on the one row (§3.3, A7), so conducting is not given here.
+        // calendar, the trainers (T01–T99) view. A trainer conducts only the trainings assigned to them, through a grant on
+        // the one row (§3.3, A7), so conducting is not given here; and an exam is assigned only to an examiner — the direction,
+        // the coordinator, the assistant or an advisor —, never to a trainer (the training department, 26 September 2026), so
+        // neither are the exams, which whoever holds one puts in the calendar (§12 n.10).
         var design = new Dictionary<string, StaffLevel[]>(StringComparer.Ordinal)
         {
             [TrainingPermissions.View] = everybody,
@@ -72,7 +74,7 @@ public sealed partial class TrainingArchitectureTests
             [TrainingPermissions.Conduct] = heads,
             [TrainingPermissions.Edit] = heads,
             [TrainingPermissions.ManageSheets] = heads,
-            [TrainingPermissions.ManageExams] = everybody,
+            [TrainingPermissions.ManageExams] = advisors,
             [TrainingPermissions.Ban] = heads,
             [TrainingPermissions.ManageSettings] = heads,
         };

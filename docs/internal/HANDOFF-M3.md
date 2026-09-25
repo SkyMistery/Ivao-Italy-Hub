@@ -84,14 +84,20 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 ### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`; la PR dopo il merge di A4a, #133)
 
-- **Che cosa c'è** (nessuna nota: codice del modulo; lo scostamento vero è la fase del nucleo A4a, trovata qui):
+- **Che cosa c'è** (codice del modulo; una nota sola, **Proposta**, `2026-09-26-gli-esami-li-inserisce-chi-esamina`, per gli esami
+  senza i trainer; lo scostamento grande è la fase del nucleo A4a, trovata qui):
   - **Il modulo**: `src/IvaoHub.Modules.Training/` — `TrainingModule` (chiave `training`, la voce `/staff/training/settings`, il
     segmento riservato `training`), `TrainingPermissions` (i nove di design §3.1), `Data/TrainingDbContext` con l'`Initial` senza
     tabelle del modulo, `Settings/TrainingSettings` (i dieci campi di §1.6, `TrainingSettingsValidator` sul vocabolario,
     `TrainingSettingsSaveValidator` che legge anche i tipi del calendario e le postazioni), `Reference/TrainingReference` (i rating con
     un training pratico e le loro postazioni, chiesti al nucleo) con `/api/training/ratings` e `/api/training/positions`.
   - **Il front end**: `web/src/modules/training/` — manifest, `screens/settings.tsx` (il form generato), `schemas.ts`, `api.ts`, le lingue.
-  - **La configurazione**: i nove `positionGrants` del TD in `config/division.json` e nell'esempio.
+  - **La configurazione**: i nove `positionGrants` del TD in `config/division.json` e nell'esempio. ⚠️ **`ManageExams` a TC, TAC e
+    TA1–9, non ai trainer**, a differenza del design §3.2: **un esame si assegna solo a un esaminatore, e gli esaminatori sono HQ, TC,
+    TAC e i TA, mai un trainer** (`dalberone`, 26 settembre 2026), e la regola n.10 di Carmine è che l'esame lo inserisce chi ce l'ha.
+    **Vale anche per A3b** (la domanda «anche a un trainer?» della sua sezione ha già la risposta: no) **e per A10**. Cambia l'elenco
+    scritto nella n.10, quindi ha una nota sua, `decisions/2026-09-26-gli-esami-li-inserisce-chi-esamina.md`, **Proposta**: la conferma
+    di Carmine va chiesta, e registrata con il link.
   - **I test**: `TrainingSettingsTests` e `TrainingArchitectureTests` (unità), `TrainingSkeletonTests` e `TrainingXxDivisionTests`
     (integrazione, VID 790009–790013), `schemas.test.ts`, `web/e2e/full/training-skeleton.spec.ts`.
 - **Che cosa deve sapere la fase dopo**:

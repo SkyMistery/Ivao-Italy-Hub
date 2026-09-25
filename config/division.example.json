@@ -85,7 +85,7 @@
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Conduct", "scope": "TD" },
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Edit", "scope": "TD" },
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSheets", "scope": "TD" },
-    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor", "Member"], "permission": "Training.ManageExams", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Training.ManageExams", "scope": "TD" },
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Ban", "scope": "TD" },
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSettings", "scope": "TD" }
   ],
