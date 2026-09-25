@@ -7,10 +7,10 @@
 > non si ripetono qui.
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A2** (nucleo: le postazioni ATC da IVAO, la loro directory, il tipo
-`exam`), sul branch `m3/a2-atc-positions`, **PR #129** in bozza verso `main` **in coda dopo #128** (A1, pronta: #125, cioè A0, è unita, e
-`main` è entrato in A1 e da lì qui). **Il prossimo passo** è **A3** (i permessi alternativi) o **A4** (lo scheletro del modulo), che
-non dipendono da A1 e A2 per il codice e partono da `main`; A4 porta `hiddenPositions`, che la directory di A2 lascia al modulo.
-A5 e A6 vengono dopo A4, in coda (`08`, «Parallelismo possibile»).
+`exam`), sul branch `m3/a2-atc-positions`, **PR #129** verso `main`, **pronta**: A0 (#125) e A1 (#128) sono unite, e `main` è
+entrato nel branch. **Il prossimo passo** è **A3** (i permessi alternativi), sul branch `m3/a3-alternative-write-permissions` già
+preparato da `main`, oppure **A4** (lo scheletro del modulo): non dipendono da A2 per il codice e partono da `main`; A4 porta
+`hiddenPositions`, che la directory di A2 lascia al modulo. A5 e A6 vengono dopo A4, in coda (`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -82,7 +82,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A2 (25 settembre 2026, branch `m3/a2-atc-positions`, PR #129, in coda dopo #128)
+### Che cosa ha lasciato A2 (25 settembre 2026, branch `m3/a2-atc-positions`, PR #129)
 
 - **Che cosa c'è** (nota `decisions/2026-09-25-le-postazioni-atc-e-il-tipo-exam.md`, scelta tecnica, nessuna domanda nuova):
   - **Le postazioni ATC del mondo** in `ref_ivao_atc_positions` (`Core/Ivao/IvaoAtcPosition.cs`: `Callsign` è la chiave,
@@ -113,7 +113,8 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - ⚠️ **#125 è stata unita durante A2** (19:18): questa sessione, con il permesso di `dalberone`, ha fatto il passo della coda di A1 —
   `main` unito in `m3/a1-ratings-and-hours` insieme a ciò che il revisore aveva chiesto su #128 (le risposte di Carmine su #125 in
   `08`, sotto A0 e A10; la frase sul tipo di postazione unico, sotto A1) —, ha rifatto i test, e ha passato #128 a pronta. Il branch
-  locale del worktree di A1 (`vigorous-dijkstra-d64442`) resta indietro rispetto a `origin`.
+  locale del worktree di A1 (`vigorous-dijkstra-d64442`) resta indietro rispetto a `origin`. **Alle 20:07 anche #128 è stata unita**:
+  `main` è entrato qui con un merge che non porta file (l'albero è quello su cui sono girati i test), e #129 è passata a pronta.
 - ⚠️ **Trovato per il maintainer**: il seme dei template e delle pagine ha lo stesso difetto che aveva quello dei tipi (una chiave
   nuova su uno slug già scritto a mano farebbe fallire l'avvio sull'indice univoco). Detto al revisore nella PR.
 
