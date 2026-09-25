@@ -445,10 +445,11 @@ Nota di A3 `2026-09-25-i-permessi-alternativi-e-la-creazione` §3.5: la domanda,
    affidate» (nel catalogo, o sull'alternativa dell'entità); che cosa vale alla creazione (oggi, n.10, un esame lo inserisce chi ce l'ha
    assegnato); e che la rimozione della riga, che A3 lascia a `Edit`, valga anche per la persona a cui è affidata.
 3. **Gli esami** (A10): li **cambiano e li tolgono** dall'hub **HQ, TC, TAC e il TA a cui l'esame è assegnato**, nessun altro, e togliere
-   è **solo una rimozione dal calendario** (l'annullamento vero è su ivao.aero). **Chiarito da `dalberone` il 26 settembre 2026**
-   (nella sessione di A4): un esame si assegna **solo a un TA**, come da regole, mai a un trainer; il design (d4) diceva «anche un TA o
-   un trainer». La conseguenza sui `positionGrants` del TD — `Training.ManageExams` ai trainer — è di A4, che la scrive nel suo
-   «Com'è andata».
+   è **solo una rimozione dal calendario** (l'annullamento vero è su ivao.aero). **Chiarito da `dalberone` il 26 settembre 2026**: un
+   esame si assegna **solo a un esaminatore**, e gli esaminatori sono **solo HQ, TC, TAC e i TA (TA1–9)**, come da regole, **mai i
+   trainer** (T01–T99); il design (d4) diceva «anche un TA o un trainer». HQ, TC e TAC hanno già `Training.Edit` su ogni esame; la
+   regola nuova serve ai TA, ognuno sui suoi. La conseguenza sui `positionGrants` del TD — `Training.ManageExams` ai trainer — è di
+   A4, che la scrive nel suo «Com'è andata».
 4. **Chi c'è oggi non cambia**: il training, i PIREP, i contatti e le righe di prova si comportano come prima, e i loro test restano
    verdi senza essere toccati; il modulo di prova guadagna una riga affidata a una persona.
 
