@@ -1,7 +1,7 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
-using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +30,17 @@ public sealed record IvaoUserProfile(
     string? LanguageId,
     bool? IvaoIsStaff,
     bool? IvaoIsSupervisor,
-    IReadOnlyList<string> StaffPositions);
+    IReadOnlyList<string> StaffPositions)
+{
+    /// <summary>
+    /// Hours connected as a controller, as the reader turned IVAO's seconds into them (M3, A1). A property rather than a
+    /// parameter, so that every profile written before it — the bench's, the tests' — still says what it said.
+    /// </summary>
+    public decimal? HoursAtc { get; init; }
+
+    /// <summary>Hours connected as a pilot, the same way as <see cref="HoursAtc"/>.</summary>
+    public decimal? HoursPilot { get; init; }
+}
 
 /// <summary>The identity the hub hands to the cookie once a login has been processed.</summary>
 public sealed record SignedInUser(
@@ -92,6 +102,12 @@ public sealed class UserSyncService(
         user.Country = profile.CountryId;
         user.RatingAtc = profile.RatingAtc;
         user.RatingPilot = profile.RatingPilot;
+
+        // The last photograph, like the ratings: the training reads it and never asks IVAO. Kept rather than blanked when
+        // a profile comes without it, because the hours only grow — an old figure can count fewer of them, never more,
+        // so it never lets anybody past a threshold they have not reached (decision note of 25 September 2026).
+        user.HoursAtc = profile.HoursAtc ?? user.HoursAtc;
+        user.HoursPilot = profile.HoursPilot ?? user.HoursPilot;
         user.DiscordId = profile.DiscordId;
 
         // Read for the notification service and for nothing else. Kept up to date at every sign

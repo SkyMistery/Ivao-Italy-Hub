@@ -8,13 +8,38 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Web.E2E;
 
 /// <summary>
+/// What every person of the bench is: a VID and a name, and what IVAO would say of their ratings and their connection
+/// hours at a sign in (M3, A1). The ratings are IVAO's numbers and the hours are hours, the way <c>hub_users</c> keeps
+/// them; left out, the person has none, as the bench's people had before the training needed a trainee and a trainer.
+/// </summary>
+internal class E2EPersonOptions
+{
+    [Range(1, int.MaxValue)]
+    public int Vid { get; set; }
+
+    [Required]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required]
+    public string LastName { get; set; } = string.Empty;
+
+    public int? RatingAtc { get; set; }
+
+    public int? RatingPilot { get; set; }
+
+    public decimal? HoursAtc { get; set; }
+
+    public decimal? HoursPilot { get; set; }
+}
+
+/// <summary>
 /// Who the browser suite is when it runs the round: a staff member of this division, made up.
 /// <para>Not a login: IVAO cannot be part of a run that has to be reproducible in CI, and a real
 /// login needs a real person's credentials. What is faked is the identity provider and nothing
 /// else — the row in <c>hub_users</c>, the staff positions, the effective permissions, the
 /// application cookie and every policy behind it are the production ones (design M1 §11.1).</para>
 /// </summary>
-internal sealed class E2EOptions
+internal sealed class E2EOptions : E2EPersonOptions
 {
     public const string SectionName = "E2E";
 
@@ -24,15 +49,6 @@ internal sealed class E2EOptions
     /// of being quietly ignored (<see cref="HubConfiguration.RequireE2EEnvironment"/>).
     /// </summary>
     public bool Enabled { get; set; }
-
-    [Range(1, int.MaxValue)]
-    public int Vid { get; set; }
-
-    [Required]
-    public string FirstName { get; set; } = string.Empty;
-
-    [Required]
-    public string LastName { get; set; } = string.Empty;
 
     /// <summary>
     /// Staff positions as IVAO spells them, for example <c>IT-EC</c>. They are parsed by the real
@@ -54,38 +70,36 @@ internal sealed class E2EOptions
     /// <c>Tours.ReopenDecisions</c> and did not decide it. No mailbox. Left out, <c>?as=assistant</c> is a 404.
     /// </summary>
     public E2EAssistantOptions? Assistant { get; set; }
+
+    /// <summary>
+    /// A fourth person, a trainer of the training department, signed in with <c>?as=trainer</c> (M3, A1): the training is
+    /// conducted by the staff of the training (design M3 §2.4), which the bench's web master is not, and with a rating at
+    /// least as high as the one trained. A mailbox, because a trainer is written to. Left out, <c>?as=trainer</c> is a 404.
+    /// </summary>
+    public E2ETrainerOptions? Trainer { get; set; }
 }
 
-/// <summary>The bench's pilot: a member of the division and nothing else.</summary>
-internal sealed class E2EPilotOptions
+/// <summary>The bench's pilot: a member of the division and nothing else — and, since M3, the trainee of the round.</summary>
+internal sealed class E2EPilotOptions : E2EPersonOptions
 {
-    [Range(1, int.MaxValue)]
-    public int Vid { get; set; }
-
-    [Required]
-    public string FirstName { get; set; } = string.Empty;
-
-    [Required]
-    public string LastName { get; set; } = string.Empty;
-
     /// <summary>Where the outcome of a report is written to. On the bench, a mailbox of Mailpit.</summary>
     [Required]
     public string Email { get; set; } = string.Empty;
 }
 
 /// <summary>The bench's assistant: a member of staff, with positions as IVAO spells them, and no mailbox.</summary>
-internal sealed class E2EAssistantOptions
+internal sealed class E2EAssistantOptions : E2EPersonOptions
 {
-    [Range(1, int.MaxValue)]
-    public int Vid { get; set; }
-
-    [Required]
-    public string FirstName { get; set; } = string.Empty;
-
-    [Required]
-    public string LastName { get; set; } = string.Empty;
-
     public IList<string> Positions { get; init; } = [];
+}
+
+/// <summary>The bench's trainer: positions as IVAO spells them, and a mailbox of Mailpit.</summary>
+internal sealed class E2ETrainerOptions : E2EPersonOptions
+{
+    public IList<string> Positions { get; init; } = [];
+
+    [Required]
+    public string Email { get; set; } = string.Empty;
 }
 
 internal static class E2ESignIn
@@ -112,9 +126,12 @@ internal static class E2ESignIn
     /// <summary>The value of <c>?as=</c> that signs in the third person, the assistant (T14b).</summary>
     public const string AsAssistant = "assistant";
 
+    /// <summary>The value of <c>?as=</c> that signs in the fourth person, the trainer (M3, A1).</summary>
+    public const string AsTrainer = "trainer";
+
     /// <summary>
-    /// Signs the caller in as the configured staff member — or, with <c>?as=pilot</c> or <c>?as=assistant</c>, as the
-    /// configured pilot or assistant —, creating them on first use. The cookie it writes is the one a real login writes, so what the suite exercises afterwards — the
+    /// Signs the caller in as the configured staff member — or, with <c>?as=pilot</c>, <c>?as=assistant</c> or
+    /// <c>?as=trainer</c>, as the configured pilot, assistant or trainer —, creating them on first use. The cookie it writes is the one a real login writes, so what the suite exercises afterwards — the
     /// security stamp, the permission claims, the department guard — is the real thing.
     /// </summary>
     public static void MapE2ESignIn(this WebApplication app)
@@ -137,13 +154,13 @@ internal static class E2ESignIn
             var options = e2e.Value;
             var settings = division.Value;
 
-            // Who, of the three: the member of staff, the pilot, the assistant — or nobody the bench configured.
-            (int Vid, string FirstName, string LastName, string? Email, IList<string> Positions)? person = @as switch
+            // Who, of the four: the member of staff, the pilot, the assistant, the trainer — or nobody the bench configured.
+            (E2EPersonOptions Person, string? Email, IList<string> Positions)? person = @as switch
             {
-                null => (options.Vid, options.FirstName, options.LastName, null, options.Positions),
-                AsPilot when options.Pilot is { } pilot => (pilot.Vid, pilot.FirstName, pilot.LastName, pilot.Email, []),
-                AsAssistant when options.Assistant is { } assistant =>
-                    (assistant.Vid, assistant.FirstName, assistant.LastName, null, assistant.Positions),
+                null => (options, null, options.Positions),
+                AsPilot when options.Pilot is { } pilot => (pilot, pilot.Email, []),
+                AsAssistant when options.Assistant is { } assistant => (assistant, null, assistant.Positions),
+                AsTrainer when options.Trainer is { } trainer => (trainer, trainer.Email, trainer.Positions),
                 _ => null,
             };
 
@@ -154,22 +171,26 @@ internal static class E2ESignIn
 
             var signedIn = await users.UpsertAsync(
                 new IvaoUserProfile(
-                    who.Vid,
-                    who.FirstName,
-                    who.LastName,
+                    who.Person.Vid,
+                    who.Person.FirstName,
+                    who.Person.LastName,
                     PublicNickname: null,
                     DivisionCode: settings.Code,
                     CountryId: null,
-                    RatingAtc: null,
-                    RatingPilot: null,
+                    RatingAtc: who.Person.RatingAtc,
+                    RatingPilot: who.Person.RatingPilot,
                     DiscordId: null,
                     // A member of staff has no mailbox: an invented address would be one the queue would actually try
-                    // to write to. The pilot has one, on the bench's Mailpit (T13b).
+                    // to write to. The pilot has one, on the bench's Mailpit (T13b), and so has the trainer (M3, A1).
                     Email: who.Email,
                     LanguageId: settings.DefaultLocale,
                     IvaoIsStaff: who.Positions.Count > 0,
                     IvaoIsSupervisor: false,
-                    StaffPositions: [.. who.Positions]),
+                    StaffPositions: [.. who.Positions])
+                {
+                    HoursAtc = who.Person.HoursAtc,
+                    HoursPilot = who.Person.HoursPilot,
+                },
                 cancellationToken);
 
             var identity = HubClaims.BuildIdentity(
@@ -188,10 +209,24 @@ internal static class E2ESignIn
             return TypedResults.Ok(new E2ESignInResponse(
                 signedIn.User.Vid,
                 [.. signedIn.Positions.Select(position => position.Raw)],
-                [.. signedIn.Permissions.Select(permission => permission.Name).Distinct().Order(StringComparer.Ordinal)]));
+                [.. signedIn.Permissions.Select(permission => permission.Name).Distinct().Order(StringComparer.Ordinal)],
+                signedIn.User.RatingAtc,
+                signedIn.User.RatingPilot,
+                signedIn.User.HoursAtc,
+                signedIn.User.HoursPilot));
         });
     }
 }
 
-/// <summary>What the bench got, so a failing run says who it was rather than only that it failed.</summary>
-internal sealed record E2ESignInResponse(int Vid, IReadOnlyList<string> Positions, IReadOnlyList<string> Permissions);
+/// <summary>
+/// What the bench got, so a failing run says who it was rather than only that it failed. The ratings and the hours are the
+/// row the sign in wrote, not the configuration read back.
+/// </summary>
+internal sealed record E2ESignInResponse(
+    int Vid,
+    IReadOnlyList<string> Positions,
+    IReadOnlyList<string> Permissions,
+    int? RatingAtc,
+    int? RatingPilot,
+    decimal? HoursAtc,
+    decimal? HoursPilot);

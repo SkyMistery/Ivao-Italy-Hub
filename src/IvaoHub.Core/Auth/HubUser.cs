@@ -26,6 +26,16 @@ public sealed class HubUser
 
     public int? RatingPilot { get; set; }
 
+    /// <summary>
+    /// Hours connected to the network as a controller, from the IVAO profile at every sign in, like the ratings (M3, A1):
+    /// what the training compares with its thresholds. IVAO counts seconds; the reader turns them into hours and nothing
+    /// else has to know. Null until the member signs in after it was added.
+    /// </summary>
+    public decimal? HoursAtc { get; set; }
+
+    /// <summary>Hours connected as a pilot, the same way as <see cref="HoursAtc"/>.</summary>
+    public decimal? HoursPilot { get; set; }
+
     public string? DiscordId { get; set; }
 
     /// <summary>

@@ -15,6 +15,9 @@ namespace IvaoHub.Core.Auth;
 /// but the queue. The rule of plan section 11.4 is unchanged — the minimum IVAO data the hub needs,
 /// and "no email unless a module needs one" — this is the module needing one (decision note of
 /// 6 September 2026).</para>
+/// <para>The connection hours joined it on 25 September 2026 for the same reason: the training compares them with its
+/// thresholds (M3, A1, decision note of that day). Their shape was measured with a real sign in the same day, not taken
+/// from the one a test had written before anybody read the field.</para>
 /// </summary>
 public static class IvaoUserProfileReader
 {
@@ -58,7 +61,44 @@ public static class IvaoUserProfileReader
             LanguageId: Text(userInfo, "languageId"),
             IvaoIsStaff: Boolean(userInfo, "isStaff"),
             IvaoIsSupervisor: Boolean(userInfo, "isSupervisor"),
-            StaffPositions: StaffPositions(userInfo));
+            StaffPositions: StaffPositions(userInfo))
+        {
+            // The third row, "staff", is time spent connected as a member of staff, and nothing here has a use for it.
+            HoursAtc = Hours(userInfo, "atc"),
+            HoursPilot = Hours(userInfo, "pilot"),
+        };
+    }
+
+    /// <summary>
+    /// The time connected as <paramref name="type"/>, out of the <c>hours</c> array — one <c>{ type, hours }</c> row per
+    /// kind of connection, in seconds, measured on 25 September 2026 — turned into hours with two decimals: IVAO counts
+    /// in seconds, and nothing past this line has to know it. Rounded towards zero, so a figure is never more than IVAO
+    /// counted. Anything but a row of that type holding a number that is not negative is worth null.
+    /// </summary>
+    private static decimal? Hours(JsonElement root, string type)
+    {
+        if (!root.TryGetProperty("hours", out var rows) || rows.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (var row in rows.EnumerateArray())
+        {
+            if (row.ValueKind != JsonValueKind.Object
+                || !string.Equals(Text(row, "type"), type, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            return row.TryGetProperty("hours", out var seconds)
+                && seconds.ValueKind == JsonValueKind.Number
+                && seconds.TryGetDecimal(out var value)
+                && value >= 0
+                    ? Math.Round(value / 3600m, 2, MidpointRounding.ToZero)
+                    : null;
+        }
+
+        return null;
     }
 
     /// <summary>

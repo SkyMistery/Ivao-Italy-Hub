@@ -50,3 +50,20 @@ paved runway starts.
 
 `metars.json` is small and written by hand, like the first three files: it is the fallback the
 weather chain reaches for when the first source has no observation, so it only has to exist.
+
+## The profile, the ratings and the positions (M3, A1)
+
+`users-me-790001.json` is the profile a sign in reads, `/v2/users/me`, recorded on 25 September 2026 through a real sign in
+with `node tools/record-ivao-fixtures.mjs --me 790001` — the one endpoint here that only opens to a member's own token. It
+keeps the fields the hub reads and nothing else, with the person taken out: the VID is 790001 (the range the training tests
+own), the names and the address are placeholders, the staff positions an empty list. Two things are as IVAO sent them: the
+`rating` objects, which are IVAO's vocabulary, and the **shape** of `hours` — an array of `{ type, hours }` rows for `pilot`,
+`atc` and `staff`, in seconds — whose values are invented (150 hours as a pilot, 120 as a controller). A test that wrote
+`"hours": { "atc": 100, "pilot": 200 }` before the field was read had guessed the shape wrong.
+
+`atc-positions-sample.json` and `subcenters-sample.json` are public reference data, recorded the same day with
+`node tools/record-ivao-fixtures.mjs --positions sample LIRF LIMC LIRR`: the positions of two airports as `/v2/ATCPositions/all`
+answers them, and the sectors of one FIR as `/v2/subcenters/all` does, both without the outline of the sector
+(`regionMap`, `regionMapPolygon`). What they taught: **no position carries a rating**, so the type of position a rating is
+trained on belongs to the vocabulary of the ratings; the airports' positions are `DEL`, `GND`, `TWR`, `APP`, `DEP` and `ATIS`,
+and the sectors (`CTR`, `FSS`) are only in the second endpoint, which dropped the connection twice out of three attempts.

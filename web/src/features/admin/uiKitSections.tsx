@@ -5,6 +5,7 @@ import type { Bootstrap } from '../../shared/api/bootstrap';
 import {
   DepartmentBadge,
   LocaleSwitcher,
+  RatingBadge,
   StatusBadge,
   VisibilityBadge,
   type UiKitComponent,
@@ -116,6 +117,19 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
   {
     name: 'MessageThread' satisfies UiKitComponent,
     render: (bootstrap) => <MessageThreadSample timezone={bootstrap.division.timezone} />,
+  },
+  {
+    name: 'RatingBadge' satisfies UiKitComponent,
+    render: () => (
+      <div className="flex flex-wrap gap-2">
+        <RatingBadge kind="Atc" shortName="AS3" />
+        <RatingBadge kind="Atc" shortName="ADC" />
+        <RatingBadge kind="Atc" shortName="SEC" />
+        <RatingBadge kind="Pilot" shortName="FS3" />
+        <RatingBadge kind="Pilot" shortName="PP" />
+        <RatingBadge kind="Pilot" shortName="CP" />
+      </div>
+    ),
   },
 ];
 
