@@ -1311,7 +1311,8 @@
     "released": "Rimesso in coda",
     "disputed": "Contestato dal pilota",
     "disputeUpheld": "Contestazione accolta: di nuovo in coda",
-    "disputeDismissed": "Contestazione respinta"
+    "disputeDismissed": "Contestazione respinta",
+    "disputeClosedByErasure": "Contestazione chiusa: i dati del pilota sono stati cancellati"
   },
   "notifications": {
     "pirepAccepted": {

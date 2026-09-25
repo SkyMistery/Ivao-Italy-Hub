@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.People;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Threads;
@@ -52,6 +54,12 @@ public sealed partial class PirepTests
             decided,
             "decide",
             new ReviewDecisionDto(PirepStatus.Rejected, [warning], NoteToPilot: null, StaffNote: null, OverrideReason: "fo-test-erasure against the suggestion", RowVersion(page)),
+            token);
+
+        // The pilot disputes the rejection, and asks for their data to be erased before anybody answers.
+        var read = await OkAsync(await pilot.GetAsync($"{PirepEndpoints.Pattern}/{decided}", token), token);
+        await OkAsync(
+            await pilot.PostAsJsonAsync($"{PirepEndpoints.Pattern}/{decided}/dispute", new DisputeOpenDto("fo-test-erasure the SID was right", RowVersion(read)), token),
             token);
 
         // A report still in the queue, on a tour of its own (a rejection holds the next legs), and a problem reported on a leg.
@@ -116,6 +124,13 @@ public sealed partial class PirepTests
             Assert.Null(report.NoteToPilot);
             Assert.Null(report.StaffNote);
             Assert.Null(report.OverrideReason);
+
+            // Its dispute: closed by the module, turned down, without the pilot's words, and its thread gone with theirs.
+            Assert.Equal((DisputeStatus.Dismissed, (string?)null, (int?)null), (report.DisputeStatus, report.DisputeText, report.DisputeDecidedByVid));
+            Assert.Contains(report.Events, step => step.Note == FlightOpsPersonalData.DisputeClosedKey && step.ByVid == 0);
+            Assert.False(await database.Set<ContactMessage>().IgnoreQueryFilters().AnyAsync(
+                row => row.SourceModule == "flightops" && row.SourceId == Pirep.ReferenceOf(decided),
+                token));
             var flight = Assert.Single(report.Flights);
             Assert.Equal((string.Empty, 0L, (long?)null, "[]"), (flight.Callsign, flight.TrackerSessionId, flight.ClaimedSessionId, flight.FlightPlansJson));
             Assert.False(await database.PirepTracks.AnyAsync(track => track.PirepFlightId == flight.Id, token));

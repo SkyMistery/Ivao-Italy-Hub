@@ -1312,7 +1312,8 @@
     "released": "Put back in the queue",
     "disputed": "Disputed by the pilot",
     "disputeUpheld": "Dispute upheld: back in the queue",
-    "disputeDismissed": "Dispute turned down"
+    "disputeDismissed": "Dispute turned down",
+    "disputeClosedByErasure": "Dispute closed: the pilot's data was erased"
   },
   "notifications": {
     "pirepAccepted": {

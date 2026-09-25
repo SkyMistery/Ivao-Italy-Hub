@@ -17,6 +17,7 @@ namespace IvaoHub.Modules.FlightOps.People;
 /// retention takes (<see cref="TourRetentionJob.Empty"/>: notes, the dispute's text, controllers, plans, errors never confirmed)
 /// and, since it is the person that goes rather than the tour, what ties it to them: the callsign and the tracker's session of
 /// its flights, their tracks, the checks' results, and the words a validator wrote when reopening it.</item>
+/// <item>A dispute still open on a kept report is closed by the module, turned down: its thread goes with the person's.</item>
 /// <item>A report still open, sent back, or withdrawn is not part of the record: it goes, with everything under it.</item>
 /// <item>Enrolments and the leg issues they reported go.</item>
 /// <item>A ban still in force stays as it is, VID and reason (Carmine: a ban without the VID protects nobody); an erasure run
@@ -26,6 +27,9 @@ namespace IvaoHub.Modules.FlightOps.People;
 /// </summary>
 public sealed class FlightOpsPersonalData(FlightOpsDbContext database, IClock clock) : IPersonalDataEraser
 {
+    /// <summary>The step of the history that says a dispute was closed because its pilot's data was erased.</summary>
+    public const string DisputeClosedKey = "flightops:events.disputeClosedByErasure";
+
     public string ModuleKey => FlightOpsModule.ModuleKey;
 
     public async Task<IReadOnlyList<ErasureLine>> PreviewAsync(int vid, CancellationToken cancellationToken = default)
@@ -77,6 +81,24 @@ public sealed class FlightOpsPersonalData(FlightOpsDbContext database, IClock cl
             foreach (var step in report.Events.Where(step => step.Note is { } note && !note.StartsWith($"{FlightOpsModule.ModuleKey}:", StringComparison.Ordinal)))
             {
                 step.Note = null;
+            }
+
+            // A dispute still open is closed by the module, turned down (Carmine, 25 September 2026): its thread goes with the
+            // person's, and nobody should decide a dispute whose words are gone. The rejection stays in the record.
+            if (report.DisputeStatus == DisputeStatus.Open)
+            {
+                report.Events.Add(new PirepEvent
+                {
+                    PirepId = report.Id,
+                    FromStatus = report.Status,
+                    ToStatus = report.Status,
+                    ByVid = 0,
+                    At = now,
+                    Note = DisputeClosedKey,
+                });
+                report.DisputeStatus = DisputeStatus.Dismissed;
+                report.DisputeDecidedAt = now;
+                report.DisputeDecidedByVid = null;
             }
         }
 
