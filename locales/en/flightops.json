@@ -1,5 +1,8 @@
 {
   "_source": "web/src/modules/flightops/locales",
+  "gallery": {
+    "retiredReason": "A runway closed for the season."
+  },
   "nav": {
     "section": "Tours",
     "tours": "Tours",

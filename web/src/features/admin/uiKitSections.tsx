@@ -130,3 +130,13 @@ export const UI_KIT_BLOCKS: readonly UiKitSection[] = registry.blocks.map((block
   name: block.type,
   render: () => <block.component props={block.example} data={block.exampleData ?? null} />,
 }));
+
+/**
+ * The components the modules bring for their own screens (M2, T20c): the core cannot import them, so the registry hands
+ * them over like the blocks, each named after its module like a block type. The module draws its own sample, with
+ * example data and nothing from the server.
+ */
+export const UI_KIT_MODULE_COMPONENTS: readonly UiKitSection[] = registry.components.map((component) => ({
+  name: `${component.module}.${component.name}`,
+  render: () => <component.sample />,
+}));

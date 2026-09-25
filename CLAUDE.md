@@ -93,7 +93,8 @@ Structural rules:
   `IvaoHub.Modules.<Name>` per module. **No** `Infrastructure`, `Content` or `Auth` project (plan §16.9).
 - A module references only `Core`. The core never references a module. Modules talk to each other through the core.
 - A module is **not a runtime plugin**: it is added in the monorepo and compiled. Its front end lives **entirely** in
-  `web/src/modules/<key>/` (one manifest: blocks, routes, i18n); explicit lists in `IvaoHub.Web/Modules.cs` and
+  `web/src/modules/<key>/` (one manifest: blocks, routes, i18n, and the module's own components for the gallery);
+  explicit lists in `IvaoHub.Web/Modules.cs` and
   `web/src/modules/index.ts`; never imports between modules nor from `features/` to `modules/` (design M0 §6.5).
 - One `DbContext` per module with its own `__EFMigrationsHistory_<module>` table; **no FK between contexts** (only
   unconstrained `vid` / `icao` columns). MariaDB "schemas" are only prefixes (`hub_`, `ref_`, `cms_`, `evt_`, `fo_`,

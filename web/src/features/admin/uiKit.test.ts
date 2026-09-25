@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import { registry } from '../../app/registry';
 import { UI_KIT_COMPONENTS } from '../../shared/ui';
 
-import { UI_KIT_BLOCKS, UI_KIT_SECTIONS } from './uiKitSections';
+import { UI_KIT_BLOCKS, UI_KIT_MODULE_COMPONENTS, UI_KIT_SECTIONS } from './uiKitSections';
 
 /**
  * "registry ⇄ ui-kit" (design M0 §7.1). The gallery is what a component of the closed list and a
@@ -29,6 +29,13 @@ test('the gallery shows nothing that is not on the closed list', () => {
 
 test('every block of the registry has a section in the gallery', () => {
   expect(UI_KIT_BLOCKS.map((section) => section.name)).toEqual(registry.blocks.map((block) => block.type));
+});
+
+test('the components the modules bring are the ones decided, each shown in the gallery', () => {
+  // Written out like the blocks below: a module's component is a decision like one of the core's (plan §8.3), and a
+  // manifest that grew one quietly would otherwise agree with the gallery just as happily. The tours brought the table
+  // of their legs, the declared exception to the list and form engine (M2, T7a; in the gallery since T20c).
+  expect(UI_KIT_MODULE_COMPONENTS.map((section) => section.name)).toEqual(['flightops.LegGrid']);
 });
 
 test('the gallery shows the whole set of blocks the milestone declares', () => {
