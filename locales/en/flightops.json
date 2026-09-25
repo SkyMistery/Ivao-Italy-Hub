@@ -1437,7 +1437,16 @@
     "next": "next: leg {{number}} {{from}} → {{to}}"
   },
   "people": {
-    "year": "Year"
+    "year": "Year",
+    "erased": "Deleted person"
+  },
+  "erasure": {
+    "decided": "Decided reports, kept in the record without the pilot",
+    "open": "Reports not decided, sent back or withdrawn",
+    "enrolments": "Enrolments in tours",
+    "issues": "Problems reported on legs",
+    "bansInForce": "Bans still in force, kept with the VID until they end",
+    "bansEnded": "Bans that have ended"
   },
   "validators": {
     "title": "Validators",

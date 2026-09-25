@@ -1436,7 +1436,16 @@
     "next": "prossima: leg {{number}} {{from}} → {{to}}"
   },
   "people": {
-    "year": "Anno"
+    "year": "Anno",
+    "erased": "Persona cancellata"
+  },
+  "erasure": {
+    "decided": "PIREP decisi, tenuti nel registro senza il pilota",
+    "open": "PIREP non decisi, da modificare o ritirati",
+    "enrolments": "Iscrizioni ai tour",
+    "issues": "Problemi segnalati sulle leg",
+    "bansInForce": "Ban ancora in vigore, tenuti con il VID finché non scadono",
+    "bansEnded": "Ban già scaduti"
   },
   "validators": {
     "title": "Validatori",
