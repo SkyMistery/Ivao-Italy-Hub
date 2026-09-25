@@ -121,7 +121,13 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
                 .GetAsync<IvaoHub.Modules.FlightOps.Settings.FlightOpsSettings>(IvaoHub.Modules.FlightOps.FlightOpsModule.ModuleKey, token);
             Assert.Empty(tours.NorthSouthLevelCountries);
             Assert.Equal(10, tours.DailyLegLimit);
+
+            // All of them, as the settings screen reads them (M2, T20c): nothing of this division in any.
+            AssertNothingItalian(JsonSerializer.Serialize(tours), "tours settings");
         }
+
+        // What a visitor of the fork's tours reads before its department writes one (T20c).
+        AssertNothingItalian(await GetStringAsync("/api/flightops/tours/public", token), "public tours");
 
         AssertNothingItalian(await GetStringAsync("/api/version", token), "/api/version");
         AssertNothingItalian(await GetStringAsync("/health", token), "/health");
@@ -167,6 +173,19 @@ public sealed class ForkabilityXxDivisionTests(MariaDbFixture mariaDb) : IAsyncL
         Assert.Equal(
             Enum.GetValues<Department>().Length + 2,
             pages.Count(page => page.Kind == ContentKind.Dashboard));
+
+        // The two kinds of a tour's calendar entries, its release and its close (T20c): a fork is born with both, in its
+        // own language, or the calendar would show a tour's close with no word for it.
+        var kinds = await database.CalendarKinds.IgnoreQueryFilters().ToListAsync(token);
+
+        Assert.Contains(kinds, kind => kind.Key == IvaoHub.Modules.FlightOps.Tours.Tour.ReleaseCalendarKind);
+        Assert.Contains(kinds, kind => kind.Key == IvaoHub.Modules.FlightOps.Tours.Tour.CloseCalendarKind);
+
+        foreach (var kind in kinds)
+        {
+            Assert.Equal(["en"], kind.Label.Select(label => label.Key));
+            AssertNothingItalian(kind.Label.Get("en") ?? string.Empty, $"calendar kind {kind.Key}");
+        }
 
         // The menu that leads to those pages. It is a table, so it is the one part of the
         // navigation that could carry a division's own words — and here they are read.
