@@ -1,4 +1,5 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { TFunction } from 'i18next';
 
 import type { Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
@@ -1588,8 +1589,17 @@ export function queueChecks(
   return row.failedChecks === 0 ? 'Clean' : row.checkSuggestion === 'Rejected' ? 'Reject' : 'Accept';
 }
 
-/** A member as the staff reads them: the name the hub has, and the VID that always is. */
-export function memberName(member: MemberDto): string {
+/**
+ * A member as the staff reads them: the name the hub has, and the VID that always is.
+ *
+ * A negative VID is not a member: it is a person whose data was erased (T20b, design §10.0), and a page reads it as such.
+ * A list computes its names inside the query, where there is no `t`: there the pseudonym stays a number.
+ */
+export function memberName(member: MemberDto, t?: TFunction): string {
+  if (member.vid < 0 && t !== undefined) {
+    return t('flightops:people.erased');
+  }
+
   return member.name === null || member.name === '' ? String(member.vid) : `${member.name} (${member.vid})`;
 }
 

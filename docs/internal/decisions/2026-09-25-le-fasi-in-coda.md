@@ -61,8 +61,8 @@ assoluta del 24 settembre resta).
 - `CLAUDE.md` §0: la riga «Reviewer» e la regola 4.
 - `CONTRIBUTING.md`: il passo 1 di «Working a phase» e la sezione «Phases in a queue», al posto del divieto di impilare.
 - `CLAUDE.local.md` (privato, fuori dal repository): il sì di Carmine non serve più per i rilievi; serve per le decisioni.
-- Piano: versione 1.10 e riga di changelog.
+- Piano: versione 1.11 e riga di changelog (la 1.10 l'ha presa T20b, PR #123).
 
 ## Da portare nel piano
 
-Portato nella stessa PR, perché la scrive la sessione di Carmine: versione 1.10, changelog.
+Portato nella stessa PR, perché la scrive la sessione di Carmine: versione 1.11, changelog.

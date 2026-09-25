@@ -5,6 +5,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Preferences;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.FlightOps.Agent;
 using IvaoHub.Modules.FlightOps.Aircraft;
 using IvaoHub.Modules.FlightOps.Checks;
@@ -130,6 +131,9 @@ public sealed class FlightOpsModule : ModuleBase
         // Disputes, clarifications and issues on the legs (T14b): the threads are the core's, the tours say what they cite.
         services.AddScoped<FlightOpsReferences>();
         services.AddScoped<IContactReferenceResolver>(provider => provider.GetRequiredService<FlightOpsReferences>());
+
+        // The tours' half of erasing a person's data (T20b): the record stays without them, the rest goes.
+        services.AddScoped<IPersonalDataEraser, FlightOpsPersonalData>();
         services.AddScoped<PirepDisputes>();
         services.AddScoped<IDataBlockProvider, OpenIssuesProvider>();
 

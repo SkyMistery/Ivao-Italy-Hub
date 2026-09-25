@@ -1311,7 +1311,8 @@
     "released": "Rimesso in coda",
     "disputed": "Contestato dal pilota",
     "disputeUpheld": "Contestazione accolta: di nuovo in coda",
-    "disputeDismissed": "Contestazione respinta"
+    "disputeDismissed": "Contestazione respinta",
+    "disputeClosedByErasure": "Contestazione chiusa: i dati del pilota sono stati cancellati"
   },
   "notifications": {
     "pirepAccepted": {
@@ -1436,7 +1437,16 @@
     "next": "prossima: leg {{number}} {{from}} → {{to}}"
   },
   "people": {
-    "year": "Anno"
+    "year": "Anno",
+    "erased": "Persona cancellata"
+  },
+  "erasure": {
+    "decided": "PIREP decisi, tenuti nel registro senza il pilota",
+    "open": "PIREP non decisi, da modificare o ritirati",
+    "enrolments": "Iscrizioni ai tour",
+    "issues": "Problemi segnalati sulle leg",
+    "bansInForce": "Ban ancora in vigore, tenuti con il VID finché non scadono",
+    "bansEnded": "Ban già scaduti"
   },
   "validators": {
     "title": "Validatori",

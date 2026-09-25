@@ -1736,8 +1736,17 @@ chiede il nucleo:
     precedente, niente rotta né voce di menu); l'helper «persona cancellata» del front end lo scrive il modulo, l'unico che oggi ne ha
     bisogno; le notifiche **su** la persona (non solo **a** lei) vanno via, perché quelle alla casella di un dipartimento ne portano VID,
     oggetto e testo. Test: `ErasureTests` (integrazione, con un `SampleEraser` nel modulo di prova), `PersonalDataErasureTests` (unità).
-  - **la PR del modulo dei tour**: `FlightOpsPersonalData : IPersonalDataEraser` e «persona cancellata» nelle pagine del modulo (design
-    §10.0).
+  - **la correzione del nucleo — fatta** (PR #122, nota `2026-09-25-le-righe-che-restano-con-il-vid`, piano 1.09): `ErasureRequest.Keep`,
+    perché il nucleo scriveva lo pseudonimo anche nel ban in vigore che Carmine vuole tenere con il VID.
+  - **la PR del modulo dei tour — fatta**: `People/FlightOpsPersonalData : IPersonalDataEraser` e «persona cancellata» nelle pagine del
+    modulo (design §10.0). **Com'è andata**, gli scostamenti: i **voli** di un PIREP tenuto restano come righe (aeroporti, orari, aereo:
+    la pagina di validazione li legge), senza callsign, sessione del tracker, piani e traccia, invece di andare via; la **nota libera di
+    una riapertura** va via e le chiavi della storia (`flightops:…`) restano; una **contestazione ancora aperta** la chiude il modulo,
+    respinta, con un passo nella storia (Carmine, nota `2026-09-25-la-contestazione-aperta-di-chi-si-cancella`): il suo filo va via con
+    gli altri fili della persona, e nessuno deve decidere una contestazione senza il suo testo; lo
+    svuotamento del PIREP è quello della conservazione (`TourRetentionJob.Empty`, ora condiviso); nelle **tre liste** (coda, segnalazioni,
+    ban) una persona cancellata resta il suo numero negativo, perché lì il nome si calcola nella query dove non c'è `t`, mentre le pagine
+    dicono «persona cancellata» (`memberName(member, t)`). Test: `PirepTests.Erasure.cs`.
 - **T20c** — i punti 3, 4 e 5.
 
 1. **La conservazione** (§10, strada B): job mensile del modulo; dopo 13 o 25 mesi dalla chiusura via tracce, revisioni dei piani, esiti dei

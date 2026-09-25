@@ -171,7 +171,7 @@ public sealed class TourRetentionJob(
 
         foreach (var pirep in pireps)
         {
-            Empty(pirep);
+            Empty(database, pirep);
         }
 
         var pirepIds = pireps.Select(report => report.Id).ToList();
@@ -213,8 +213,11 @@ public sealed class TourRetentionJob(
         return pireps.Count;
     }
 
-    /// <summary>What a report loses; the decision, the confirmed errors and the history stay.</summary>
-    private void Empty(Pirep pirep)
+    /// <summary>
+    /// What a report loses; the decision, the confirmed errors and the history stay. Also what a report kept in the record loses
+    /// when its pilot's data is erased (<see cref="People.FlightOpsPersonalData"/>), which takes a little more.
+    /// </summary>
+    internal static void Empty(FlightOpsDbContext database, Pirep pirep)
     {
         pirep.RulesSnapshotJson = PirepSubmission.ArchivedSnapshot(pirep);
         pirep.AtcContactsJson = "[]";

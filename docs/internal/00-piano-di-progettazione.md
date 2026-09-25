@@ -1,16 +1,24 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.10 — 25 settembre 2026 (**le fasi in coda**: il collaboratore comincia la fase dopo senza aspettare il merge, le PR in bozza verso `main`; il revisore pubblica da solo i rilievi, le decisioni e il merge restano di Carmine)
+**Versione documento:** 1.11 — 25 settembre 2026 (**le fasi in coda**: il collaboratore comincia la fase dopo senza aspettare il merge, le PR in bozza verso `main`; il revisore pubblica da solo i rilievi, le decisioni e il merge restano di Carmine)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
 
-**Changelog 1.10** (25 set 2026, dopo la revisione del design di M3, PR #121): **le fasi in coda**. Nota
+**Changelog 1.11** (25 set 2026, dopo la revisione del design di M3, PR #121): **le fasi in coda**. Nota
 `decisions/2026-09-25-le-fasi-in-coda.md`, caso (c). **Due risposte di Carmine**: (1) il revisore pubblica da solo i rilievi
 sulle PR del collaboratore e ne controlla le correzioni, senza mai rispondere a una domanda che è di Carmine; (2) il
 collaboratore **non aspetta il merge** per la fase dopo: il branch parte da quello della fase prima, la PR va **sempre a
 `main`**, in bozza con `(after #N)` finché la fase sotto non è unita; Carmine unisce in ordine. Toccati: `CLAUDE.md` §0 (la
 riga del revisore, la regola 4), `CONTRIBUTING.md` («Phases in a queue», al posto del divieto di impilare).
+
+**Changelog 1.10** (25 set 2026, T20b, PR del modulo): **T20b è fatta**. `People/FlightOpsPersonalData` è l'eraser del modulo dei tour: i
+PIREP decisi restano con lo pseudonimo e perdono ciò che toglie la conservazione (`TourRetentionJob.Empty`, condiviso) più callsign e
+sessione dei voli, tracce, esiti dei controlli e la nota libera di una riapertura; gli altri PIREP, le iscrizioni e le segnalazioni sulle leg
+vanno via; un ban in vigore resta intero (`ErasureRequest.Keep`), uno scaduto perde il motivo. Le pagine del modulo leggono un VID negativo
+come «persona cancellata». **Una domanda nuova, di Carmine** (nota `decisions/2026-09-25-la-contestazione-aperta-di-chi-si-cancella.md`):
+una contestazione ancora aperta la **chiude il modulo, respinta**, perché il suo filo va via con quelli della persona. Scelte tecniche e
+scostamenti in `06-piano-implementazione-m2.md` parte C, T20b. Toccati: `05-design-m2.md` §10.0.
 
 **Changelog 1.09** (25 set 2026, T20b, tra la PR del nucleo e quella del modulo): **le righe che restano con il VID**. Nota
 `decisions/2026-09-25-le-righe-che-restano-con-il-vid.md`, caso (b). La risposta 2 della nota di 1.08 (un ban in vigore resta con il VID)
