@@ -100,11 +100,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **A10**: `trn_exams` con `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true)]`, e `MapCrud` con
     `WritePolicy = Training.ManageExams`, perché il motore chiede il permesso all'handler sulla riga prima del guardiano. ⚠️ **Eliminare
     un esame resta di `Edit`**: con `DeletePolicy = Training.Edit` lo eliminano TC e TAC; se deve poterlo eliminare chi l'ha inserito,
-    è un'altra estensione del nucleo. **La domanda è già a Carmine**, con due commenti su #131 (nota §3.5). **I fatti del TD**: gli
-    esami si gestiscono su IVAO, all'hub servono solo per il calendario (niente «annullato»); li eliminano HQ, TC, TAC o la persona a
-    cui l'esame è affidato, che ne decide la postazione. Raccomandata: `ManageExams` elimina anche, con un'alternativa anche
-    all'eliminazione in #131; «solo la persona a cui è affidato» sarebbe un meccanismo nuovo dell'unico handler, in una fase a sé.
-    Se #131 viene unita senza la risposta, A10 la riprende in apertura.
+    è un'altra estensione del nucleo. **La domanda è già a Carmine**, con tre commenti su #131 (nota §3.5). **I fatti del TD**: gli
+    esami si gestiscono su IVAO, all'hub servono solo per il calendario (niente «annullato»); dall'hub un esame lo tolgono **HQ, TC,
+    TAC e il TA a cui è assegnato**, nessun altro, ed è solo una rimozione «cosmetica»; la postazione la decide chi ha l'esame.
+    **Raccomandata la 4** (la regola del TD, un meccanismo che il nucleo non ha): se Carmine la sceglie, **prima di A10 serve una
+    fase del nucleo in più**, con la sua nota, da aggiungere a `08`. Se #131 viene unita senza la risposta, A10 la riprende in apertura.
   - ⚠️ **Un test di permessi con scope non usa `TestCurrentUser`**: il suo `Has` non passa lo scope, e tiene solo i permessi del nucleo.
     `AlternativeWritePermissionTests.AsAsync` scrive senza endpoint con l'identità del cookie (`HubClaims.BuildIdentity`) letta dal vero
     `HttpContextCurrentUser`.

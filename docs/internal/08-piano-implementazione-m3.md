@@ -318,12 +318,13 @@ continua a bastare.
 - **Trovato, e scritto per chi viene dopo** (nota §3.3 e §5):
   1. ⚠️ **Per A10: eliminare un esame resta di `Edit`.** Crearlo passerà con `AlsoOnCreation`; se lo eliminano TC e TAC basta
      `CrudOptions.DeletePolicy = Training.Edit`, e il guardiano è già d'accordo; se deve eliminarlo anche chi l'ha inserito, è un'altra
-     estensione del nucleo. **La domanda è già a Carmine**, in anticipo su A10 come ha chiesto `dalberone`, con due commenti su #131
-     (nota §3.5): la domanda, e i fatti del TD — gli esami si gestiscono su IVAO e all'hub servono solo per il calendario; li
-     eliminano HQ, TC, TAC o la persona a cui l'esame è affidato, che ne decide anche la postazione. Raccomandata: `ManageExams`
-     elimina anche (un'alternativa anche all'eliminazione, in questa PR); la regola esatta del TD, «solo la persona a cui è
-     affidato», sarebbe un meccanismo nuovo dell'unico handler, in una fase a sé. Se #131 viene unita prima della risposta, la
-     domanda torna ad A10.
+     estensione del nucleo. **La domanda è già a Carmine**, in anticipo su A10 come ha chiesto `dalberone`, con tre commenti su #131
+     (nota §3.5): la domanda, i fatti del TD e la loro precisazione — gli esami si gestiscono su IVAO e all'hub servono solo per il
+     calendario; dall'hub un esame lo tolgono **HQ, TC, TAC e il TA a cui è assegnato**, nessun altro, ed è solo una rimozione
+     «cosmetica» dal calendario; la postazione la decide chi ha l'esame. **Raccomandata la 4**, la regola del TD: una regola del nucleo
+     che oggi non c'è, con una nota sua e una fase del nucleo prima di A10; questa PR resta com'è. Se Carmine sceglie la 3
+     (`ManageExams` elimina anche, un'alternativa in più in questa PR), la regola del TD resta dello staff. Se #131 viene unita prima
+     della risposta, la domanda torna ad A10.
   2. **Per A10**: `MapCrud` chiede all'handler il permesso di scrittura **sulla riga**, prima del guardiano: per gli esami
      `WritePolicy = Training.ManageExams`. Il commento di `CrudOptions.WritePolicy` parla di risorse senza dipartimento, ma il motore
      lo chiede sulla riga anche alle altre.
