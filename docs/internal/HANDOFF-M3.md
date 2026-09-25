@@ -113,7 +113,8 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     nessun altro, ed è solo una rimozione «cosmetica»; la postazione la decide chi ha l'esame. **Carmine ha scelto la 4, la regola del
     TD** ([commento su #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5840224757)): la regola nel nucleo
     arriva con **A3b**, una fase del nucleo con la sua nota (caso c, «Proposta») e i suoi test della spina dorsale, **prima di A10**
-    (in `08`). ⚠️ Da chiarire in apertura di A3b con `dalberone`: se un esame si assegna anche a un trainer, o solo a un TA.
+    (in `08`). **Chiarito da `dalberone` il 26 settembre** (nella sessione di A4): un esame si assegna **solo a un TA**, mai a un
+    trainer; la conseguenza sui `positionGrants` del TD è di A4.
   - ⚠️ **Un test di permessi con scope non usa `TestCurrentUser`**: il suo `Has` non passa lo scope, e tiene solo i permessi del nucleo.
     `AlternativeWritePermissionTests.AsAsync` scrive senza endpoint con l'identità del cookie (`HubClaims.BuildIdentity`) letta dal vero
     `HttpContextCurrentUser`.
