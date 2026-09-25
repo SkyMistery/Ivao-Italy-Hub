@@ -6,11 +6,11 @@
 > il maintainer. Le regole — chi unisce, che cosa non si tocca, come si ottiene una decisione — sono in `CLAUDE.md` §0 e
 > non si ripetono qui.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **fase A2** (nucleo: le postazioni ATC da IVAO, la loro directory, il tipo
-`exam`), sul branch `m3/a2-atc-positions`, **PR #129** verso `main`, **pronta**: A0 (#125) e A1 (#128) sono unite, e `main` è
-entrato nel branch. **Il prossimo passo** è **A3** (i permessi alternativi), sul branch `m3/a3-alternative-write-permissions` già
-preparato da `main`, oppure **A4** (lo scheletro del modulo): non dipendono da A2 per il codice e partono da `main`; A4 porta
-`hiddenPositions`, che la directory di A2 lascia al modulo. A5 e A6 vengono dopo A4, in coda (`08`, «Parallelismo possibile»).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A4a** (nucleo: le parole di più moduli), trovata scrivendo A4, sul branch
+`m3/a4a-module-locales`, PR del nucleo verso `main` con una nota **Proposta** e la domanda a Carmine. **Lo scheletro del modulo
+(A4) è scritto e provato, ma solo in locale** sul branch `m3/a4-training-skeleton` (un commit WIP, mai spinto): senza A4a l'hub non
+parte con due moduli. **Il prossimo passo**: la risposta di Carmine e il merge di A4a; poi `main` entra in A4, si rifanno build e
+test, e A4 apre la sua PR (sotto, «Che cosa ha lasciato A4a»). A5 e A6 vengono dopo A4, in coda (`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -81,6 +81,27 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A4a (26 settembre 2026, branch `m3/a4a-module-locales`)
+
+- **Perché c'è**: la sessione di A4 ha scritto lo scheletro del modulo, e al primo test d'integrazione l'hub non è partito:
+  `LocaleCatalog`, il catalogo delle lingue del server, appiattisce tutti i file di una lingua in un solo dizionario e rifiuta una
+  chiave dichiarata due volte, e con due moduli si ripetono per forza `_source` (lo scrive `pnpm i18n:sync` in ogni copia) e
+  `nav.section` (lo esige la barra dello staff). `dalberone` ha scelto di fare subito la fase del nucleo, a sé, prima di A4.
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-parole-di-piu-moduli.md`, **Proposta**, la domanda a Carmine sulla PR):
+  `LocaleCatalog` salta `_source` e la usa per riconoscere il file di un modulo; tiene le chiavi di un modulo anche con il namespace
+  (`training:nav.section`); senza namespace, come oggi, quelle che un solo modulo dichiara; una chiave di due moduli solo con il
+  namespace; i doppioni che toccano il nucleo ancora rifiutati. Il test nuovo `LocaleCatalogModuleTests` scrive i suoi file di lingua.
+- **Che cosa deve sapere la fase dopo (A4)**:
+  - **Il codice di A4 è pronto in locale**, nel worktree `exciting-hofstadter-bedefd`, sul branch `m3/a4-training-skeleton`: un commit
+    WIP da rifare in commit veri prima del push (il branch non è mai stato spinto, quindi si può). Quando A4a è unita: `git merge
+    origin/main` nel branch, build e **tutti** i test, poi la PR. Provato già insieme ad A4a su un branch temporaneo: l'host parte, e
+    passano i test d'integrazione del training e i test di unità che leggono le lingue del repository.
+  - ⚠️ **In C# una chiave di un modulo si legge senza namespace solo se nessun altro modulo la dichiara**: `training:<chiave>` va
+    sempre. Le mail dei tipi di notifica restano `mail.<modulo>.<tipo>`, uniche per costruzione; `nav.section` e le altre chiavi che
+    due moduli condividono si chiedono con il namespace (oggi il server non ne chiede nessuna).
+  - ⚠️ **Se Carmine sceglie un'altra forma** (nota §4: la più vicina è leggere i moduli solo con il namespace), la PR di A4a cambia, e
+    A4 aspetta ancora.
 
 ### Che cosa ha lasciato A2 (25 settembre 2026, branch `m3/a2-atc-positions`, PR #129)
 

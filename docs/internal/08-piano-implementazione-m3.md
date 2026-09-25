@@ -55,7 +55,8 @@ Per non ripeterle tredici volte:
 | A1 | Nucleo: ore, vocabolario dei rating, `RatingBadge`, banco e2e | A0 | le ore dal profilo IVAO; le regole dei rating nel perimetro IVAO; il badge; i personaggi del banco con rating e ore |
 | A2 | Nucleo: postazioni ATC da IVAO, tipo `exam` | A1 | `ref_ivao_atc_positions` nella sincronizzazione e la sua directory; `exam` nel seme dei tipi del calendario |
 | A3 | Nucleo: più permessi alternativi, anche alla creazione | A0 | `[AlsoWrittenWith]` ripetibile e, per l'entità che lo dichiara, anche alla creazione; test della spina dorsale |
-| A4 | Modulo: lo scheletro | A0 | progetto, contesto, `Initial`, catalogo, `positionGrants` del TD, impostazioni, menu, segmento riservato |
+| A4a | Nucleo: le parole di più moduli — **trovata scrivendo A4** | A0 | il catalogo delle lingue del server tiene le parole di due moduli, ciascuno con il suo namespace |
+| A4 | Modulo: lo scheletro | A0, A4a | progetto, contesto, `Initial`, catalogo, `positionGrants` del TD, impostazioni, menu, segmento riservato |
 | A5 | Le voci della scheda | A1, A4 | `trn_sheet_items` tradotte, lista e form generati |
 | A6 | La richiesta | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), `/training/request`, i controlli per percorso, il teorico, l'annullamento, `/training/mine` |
 | A7 | Accettare, rifiutare, assegnare | A3, A6 | le pagine dello staff, il grant del trainer, il job che lo toglie |
@@ -358,7 +359,48 @@ continua a bastare.
 
 **Com'è andata**: *(a fase chiusa)*
 
-### A4 — Modulo: lo scheletro
+### A4a — Nucleo: le parole di più moduli
+
+**Non era nel piano**: l'ha trovata la sessione di A4, il 26 settembre 2026, al primo test d'integrazione dello scheletro, e
+`dalberone` ha scelto di farla subito, come fase del nucleo a sé (`CLAUDE.md` §0 regola 6). Nota nuova
+`2026-09-26-le-parole-di-piu-moduli`, **Proposta**. Branch `m3/a4a-module-locales`, da `main`. **PR del nucleo**, prima di A4, che
+aspetta la risposta e il merge (`CONTRIBUTING.md`, «Phases in a queue»: non si mette in coda sopra un cambio del nucleo in revisione).
+
+1. **Il problema**: `LocaleCatalog` appiattisce tutti i file di una lingua in un solo dizionario e rifiuta una chiave dichiarata due
+   volte. Con due moduli si ripetono per forza `_source` (lo scrive `pnpm i18n:sync` in ogni copia) e `nav.section` (lo esige la barra
+   dello staff da ogni modulo): **l'hub non parte**.
+2. **La proposta** (nota §3): `_source` saltata, e usata per riconoscere il file di un modulo; le chiavi di un modulo anche con il loro
+   namespace (`training:nav.section`); senza namespace, come oggi, quelle che un solo modulo dichiara; una chiave di due moduli solo
+   con il namespace; i doppioni che toccano il nucleo ancora rifiutati. I tour non cambiano.
+
+**Test** (spina dorsale, file nuovo `LocaleCatalogModuleTests`, su file di lingua scritti dal test): due moduli con `_source` e
+`nav.section` si caricano e ciascuno si legge con il suo namespace; la chiave di un modulo solo anche senza; quella di due moduli solo
+con; `_source` non è una parola; un modulo che ridice una parola del nucleo, e due file del nucleo con la stessa chiave, fermano l'avvio
+come prima.
+**Fatta quando**: i test nuovi e quelli che c'erano passano, e lo scheletro di A4 parte con il suo file di lingua accanto a quello dei
+tour.
+
+**Com'è andata** (26 settembre 2026, branch `m3/a4a-module-locales`):
+
+- **Trovata, non pensata**: lo scheletro di A4 compilava e i suoi test di unità passavano; i due test d'integrazione nuovi sono caduti
+  all'avvio dell'host, con `The translation key '_source' is declared twice for the same language`. Misurato sui file veri: fra
+  `training.json` e `flightops.json` collidono `_source`, `nav.section` e quattro chiavi che il training avrebbe potuto chiamare
+  diversamente; nessuna con i file del nucleo. Cadrebbero anche i due test di unità del maintainer che caricano le lingue del
+  repository (`NotificationTemplateTests`, `RatingVocabularyTests`). Il codice di A4 è stato messo da parte, **solo in locale**, e la
+  scelta — fermarsi o fare la fase del nucleo subito — l'ha fatta `dalberone`.
+- **Fatto**: `LocaleCatalog` (`Core/Localization/LocaleCatalog.cs`) come nella nota §3 — `ModuleSourceKey`, i file dei moduli letti a
+  parte e aggiunti dopo quelli del nucleo (`AddModules`), l'errore di prima in una funzione sola (`DeclaredTwice`) —; il test nuovo;
+  la nota, **Proposta**, con la domanda a Carmine sulla PR.
+- **Provato che il test cade senza la correzione**: con il comportamento di `main` (la sola costante aggiunta, perché il test la
+  nomina) il primo test cade proprio sull'errore dell'avvio, e gli altri due — la regola che resta — passano.
+- **Provato con A4**: su un branch temporaneo, poi tolto, A4a unita con lo scheletro di A4: l'host parte, e passano i quattro test
+  d'integrazione del training e i test di unità che leggono le lingue del repository.
+- **Verificato, in locale** (26 settembre 2026, sul branch da `main`): `dotnet build` senza avvisi; unità 718/718 (le 715 di `main` e
+  le 3 nuove); **integrazione intera senza filtro** 298/298; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test`
+  481 in 62 file; `pnpm e2e` 91; `pnpm e2e:full` 38, sul banco di A3, senza la mappa di base; `pnpm gen:api` senza differenze;
+  `dotnet format --verify-no-changes` sui file toccati. Le suite pesanti una alla volta.
+- **Non verificato**: la CI (la dirà la PR); un avvio sull'host di produzione (lo stesso codice dell'host dei test, che legge la
+  stessa cartella); una risposta di Carmine diversa da quella raccomandata.
 
 Design §0.4, §1.6, §3.1, §3.2; note `chi-conduce-e-chi-scrive-un-training`, `il-teorico-lo-dichiara-il-trainee`,
 `rating-e-postazioni-dal-nucleo`, `il-tempo-per-la-data-e-le-voci-della-scheda`. Branch `m3/a4-training-skeleton`.
