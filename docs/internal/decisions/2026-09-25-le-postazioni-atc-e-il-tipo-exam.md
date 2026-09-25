@@ -109,6 +109,10 @@ tipi del calendario — e il modulo non ne scrive una copia sua. È una PR del n
 - **Nessun endpoint**: la richiesta chiede dal suo (A6), e l'elenco di un tipo in una divisione sta in una pagina — in Italia 84 `TWR`,
   59 `APP` senza i doppioni, 32 `CTR`. Nessuna cache: si legge a ogni richiesta, e cambia una volta per notte.
 - **Il modulo non nomina un tipo di postazione**: chiede per un rating, e la risposta non porta il tipo.
+- **Un tipo per rating**, quello del vocabolario di A1 (ADC `TWR`, APC `APP`, ACC `CTR`), che sostituisce di proposito l'elenco
+  della prima stesura del design (ADC anche su `DEL` e `GND`, APC anche su `DEP`): `dalberone` l'ha confermato di nuovo il 25
+  settembre, dopo la revisione di #128. Se un giorno un rating si allenasse su più tipi, `Rating.PositionType` diventerebbe un
+  elenco e la directory chiederebbe più tipi: un cambio del nucleo, con la sua nota.
 
 ### 2.4 Il tipo `exam` e il seme
 
