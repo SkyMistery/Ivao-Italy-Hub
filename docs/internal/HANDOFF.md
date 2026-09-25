@@ -8,8 +8,10 @@
 > lui. **Su `main` unisce solo Carmine**, dopo la revisione del suo Claude (`CLAUDE.md` §0, procedura in `CLAUDE.local.md`).
 > `CLAUDE.md` è ora **pubblico e in inglese**; `CONTRIBUTING.md` raccoglie le trappole; il check `core-guard` ferma su una PR
 > del collaboratore i file del maintainer e chiede una nota per ogni file del nucleo. **Il piano e questo file li scrive solo
-> il revisore**, anche per M3, dopo il merge. ⚠️ Da fare da Carmine: attivare i due ruleset (`main`, `release tags`) e
-> verificarli con una PR di prova di `dalberone`.
+> il revisore**, anche per M3, dopo il merge. **25 set**: i due ruleset sono attivi (nota, §7); le sessioni Claude di Carmine
+> hanno un `deny` su merge e push su `main`, e `.claude/settings.json` committato lo dà a ogni sessione; il passo
+> `backbone-ran.sh` di `build-test` verifica che i test di architettura siano stati **eseguiti**, non solo verdi.
+> ⚠️ Resta la prova con `dalberone` (push su `main`, PR su `CLAUDE.md`, tag): finché non è fatta, il lucchetto è sulla carta.
 
 **Ultimo aggiornamento:** 24 settembre 2026 — **T0–T19**. Piano **1.06**. **Il prossimo passo è T20 (conservazione, cancellazione dei dati di un pilota, rifiniture, giro completo, chiusura di M2)**, in una chat nuova, dopo il merge di T19b; T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
 

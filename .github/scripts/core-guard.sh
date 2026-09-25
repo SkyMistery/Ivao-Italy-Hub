@@ -35,6 +35,7 @@ is_maintainer_only() {
   local status=$1 path=$2
   [[ $path =~ ^\.github/ ]] ||
   [[ $path =~ ^(CLAUDE\.md|CONTRIBUTING\.md|LICENSE|NOTICE|global\.json)$ ]] ||
+  [[ $path =~ ^\.claude/ ]] ||
   [[ $path =~ ^docs/internal/(0[0-6]-|HANDOFF\.md$|demo-m1\.md$) ]] ||
   [[ $path =~ ^docs/internal/decisions/ && $status != added ]] ||
   [[ $path =~ ^tests/IvaoHub\.UnitTests/ArchitectureTests\.cs$ ]] ||

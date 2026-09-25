@@ -1,7 +1,10 @@
 # Private working notes of the maintainer — never part of the product. CLAUDE.md is not in this
 # list since 24 September 2026: it holds the rules every contributor's Claude Code session must read.
+# .claude/settings.json is committed for the same reason (the deny rules every session inherits);
+# the rest of .claude/ (worktrees, local settings) stays private.
 CLAUDE.local.md
-.claude/
+.claude/*
+!.claude/settings.json
 
 # Secrets and per-environment configuration
 /config/ivao-oauth.json

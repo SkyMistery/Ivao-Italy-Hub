@@ -1,0 +1,34 @@
+{
+  "$comment": "Read by every Claude Code session in this repository. Only the maintainer merges into main and pushes tags (CLAUDE.md section 0); these rules make a session refuse before GitHub has to. A local settings.local.json can override them, so they are a belt, not the lock: the lock is the ruleset on main.",
+  "permissions": {
+    "deny": [
+      "Bash(gh pr merge)",
+      "Bash(gh pr merge *)",
+      "Bash(gh api -X PUT *)",
+      "Bash(gh api --method PUT *)",
+      "Bash(gh api --method=PUT *)",
+      "Bash(gh api -XPUT *)",
+      "Bash(git push origin main)",
+      "Bash(git push origin main *)",
+      "Bash(git push origin HEAD:main*)",
+      "Bash(git push * main)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git push origin v*)",
+      "Bash(git push --tags*)",
+      "Bash(git push origin --tags*)",
+      "PowerShell(gh pr merge)",
+      "PowerShell(gh pr merge *)",
+      "PowerShell(gh api -X PUT *)",
+      "PowerShell(gh api --method PUT *)",
+      "PowerShell(git push origin main)",
+      "PowerShell(git push origin main *)",
+      "PowerShell(git push origin HEAD:main*)",
+      "PowerShell(git push --force*)",
+      "PowerShell(git push -f *)",
+      "PowerShell(git push origin v*)",
+      "PowerShell(git push --tags*)",
+      "mcp__ccd_pr__set_auto_merge"
+    ]
+  }
+}

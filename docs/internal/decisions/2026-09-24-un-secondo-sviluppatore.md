@@ -98,7 +98,25 @@ che a decidere sia stato Carmine e non una sessione.
 - Le sessioni Claude di Carmine hanno gli stessi permessi GitHub di Carmine: che non uniscano una PR del collaboratore
   lo garantisce `CLAUDE.local.md`, non GitHub.
 
-## 7. Da portare nel piano
+## 7. Addendum del 25 settembre 2026 — i ruleset sono attivi, e due buchi chiusi
+
+- **I ruleset esistono** (`main` 23985129, `release tags` 23985131), creati con `gh api` dopo il merge della PR #112 e riletti
+  da GitHub: su `main` aggiornamenti solo dal ruolo admin e solo via PR, `build-test` e `core-guard` obbligatori. Sulla macchina
+  di Carmine `~/.claude/settings.json` rifiuta a ogni sua sessione Claude `gh pr merge`, `gh api` in PUT, `git push` su `main` e
+  `--force` (verificato: `gh pr merge --help` e `git push origin main --dry-run` negati, un push su un branch passa). **Da
+  quel giorno nessuna sessione Claude di Carmine unisce niente**, nemmeno le PR sue.
+- **Buco 1 — il `.csproj` dei test è un file «ammesso»** dalla guardia (serve per referenziare il modulo): con
+  `<Compile Remove="ArchitectureTests.cs" />` i test di architettura sparivano con CI verde e guardia verde. Chiuso con
+  `.github/scripts/backbone-ran.sh`, un passo di `build-test` che esegue da sole `ArchitectureTests` e
+  `ForkabilityXxDivisionTests` e confronta quanti test xunit ha eseguito con quanti `[Fact]`/`[Theory]` stanno nel sorgente
+  (file riservati al maintainer). Provato: con il `Remove` nel csproj il passo dice «0 tests ran, 14 are written» e fallisce.
+- **Buco 2 — niente configurava il Claude Code del collaboratore**: `.claude/` era tutto in `.gitignore`. Ora
+  `.claude/settings.json` è **committato** (solo lui: `.claude/*` + `!.claude/settings.json`) con le stesse regole `deny`
+  (merge, push su `main`, tag, `--force`), ed è un file riservato al maintainer per la guardia. Un `settings.local.json` lo
+  scavalca: è una cintura, non la serratura.
+- Resta da fare la prova di §6 con `dalberone` (push su `main`, PR su `CLAUDE.md`, tag `v0.0.0-test`).
+
+## 8. Da portare nel piano
 
 - Versione **1.06**, riga di changelog.
 - **§16.E**: `CLAUDE.md` non è più privato; `CLAUDE.local.md`; la guardia del nucleo accanto al template e ai test della
