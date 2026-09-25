@@ -1,6 +1,6 @@
 # IVAO Division Hub — Design di M3 (il modulo Training)
 
-> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.08).
+> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.09).
 > Ingresso: i **requisiti dello staff TD**, raccolti con `dalberone` a domande (§R). Sui fatti — come funziona il
 > training oggi e che cosa lo staff vuole — risponde `dalberone`; **le scelte le decide Carmine**: nel testo sono segnate
 > **⚖️**, e in §12 c'è ognuna con la raccomandazione e **la decisione di Carmine** (25 settembre 2026). Le fasi si scrivono in
@@ -9,8 +9,9 @@
 **Stato:** **deciso** il 25 settembre 2026. I requisiti sono chiusi con le conferme di `dalberone` (R.7); Carmine ha
 deciso le 15 domande di §12 sulla PR #121 ([risposte][r1], [secondo giro][r2], [n.5][r3]). Due giri di revisione: il teorico
 dichiarato dal trainee è uno scostamento dal piano (§0.6, §12 n.15), le regole dei rating di IVAO stanno nel nucleo
-(§1.7, n.4), i GCA sono nel profilo IVAO (§0.2), il feed del calendario non è in M3 (§12 n.14). Allineato al piano 1.08:
-la cancellazione dei dati di una persona usa il meccanismo del nucleo di T20b (§6.1). Nessun codice: il prossimo passo è
+(§1.7, n.4), i GCA sono nel profilo IVAO (§0.2), il feed del calendario non è in M3 (§12 n.14). Allineato al piano 1.09:
+la cancellazione dei dati di una persona usa il meccanismo del nucleo di T20b, e un ban in vigore resta con
+`ErasureRequest.Keep` (§6.1). Nessun codice: il prossimo passo è
 la fase A0 (§11).
 
 ---
@@ -657,7 +658,9 @@ meccanismo suo.
   - i **training aperti** (`Requested` … `Scheduled`) si **cancellano**: non vanno avanti senza la persona (come i PIREP
     aperti);
   - gli **esami** in cui è candidato si cancellano (sono voci di calendario, l'esame è su IVAO);
-  - un **ban in vigore resta** con VID e motivo; uno scaduto si anonimizza (risposta 2 della nota);
+  - un **ban in vigore resta** con VID e motivo, con `ErasureRequest.Keep(ban)` (piano 1.09, nota
+    `2026-09-25-le-righe-che-restano-con-il-vid`: senza, il nucleo lo renderebbe anonimo come ogni colonna `vid`); uno
+    scaduto si anonimizza (risposta 2 della nota);
   - ciò che ha fatto **come staff o trainer** — training condotti, decisioni, assegnazioni, esami inseriti — resta con lo
     pseudonimo, e i suoi testi restano perché parlano di altri (risposta 4).
 - **«Persona cancellata»**: dove il modulo mostra un VID (percorso del trainee, liste, pagina della sessione), un VID
