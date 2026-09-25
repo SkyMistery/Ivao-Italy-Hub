@@ -21,15 +21,15 @@ internal static class PersonColumnRewrite
     private static readonly MethodInfo RowsMethod = typeof(PersonColumnRewrite)
         .GetMethod(nameof(RowsAsync), BindingFlags.NonPublic | BindingFlags.Static)!;
 
-    /// <summary>Rewrites the rows and returns how many it changed.</summary>
-    public static async Task<int> RewriteAsync(DbContext context, int vid, int pseudonym, CancellationToken cancellationToken)
+    /// <summary>Rewrites the rows, except those a module keeps (<see cref="ErasureRequest.Keep"/>), and returns how many it changed.</summary>
+    public static async Task<int> RewriteAsync(DbContext context, ErasureRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(request);
 
         var rows = 0;
         foreach (var entity in context.Model.GetEntityTypes().Where(entity => PersonColumns.RewrittenBy(context, entity)))
         {
-
             var columns = entity.GetProperties()
                 .Where(property => PersonColumns.IsVid(property) && !property.IsPrimaryKey())
                 .ToArray();
@@ -40,7 +40,7 @@ internal static class PersonColumnRewrite
             }
 
             var task = (Task<int>)RowsMethod.MakeGenericMethod(entity.ClrType)
-                .Invoke(null, [context, columns, vid, pseudonym, cancellationToken])!;
+                .Invoke(null, [context, columns, request, cancellationToken])!;
             rows += await task;
         }
 
@@ -50,8 +50,7 @@ internal static class PersonColumnRewrite
     private static async Task<int> RowsAsync<TEntity>(
         DbContext context,
         IProperty[] columns,
-        int vid,
-        int pseudonym,
+        ErasureRequest request,
         CancellationToken cancellationToken)
         where TEntity : class
     {
@@ -60,7 +59,7 @@ internal static class PersonColumnRewrite
         var holds = columns
             .Select(column => (Expression)Expression.Equal(
                 Expression.Call(typeof(EF), nameof(EF.Property), [column.ClrType], row, Expression.Constant(column.Name)),
-                Expression.Constant(vid, column.ClrType)))
+                Expression.Constant(request.Vid, column.ClrType)))
             .Aggregate(Expression.OrElse);
 
         // Every row, whoever is signed in: the back office's way of reading, and the one the architecture test allows.
@@ -69,18 +68,20 @@ internal static class PersonColumnRewrite
             .Where(Expression.Lambda<Func<TEntity, bool>>(holds, row))
             .ToListAsync(cancellationToken);
 
-        foreach (var entry in rows.Select(context.Entry))
+        var changed = 0;
+        foreach (var entry in rows.Where(entity => !request.IsKept(entity)).Select(context.Entry))
         {
+            changed++;
             foreach (var column in columns)
             {
                 var property = entry.Property(column.Name);
-                if (property.CurrentValue is int value && value == vid)
+                if (property.CurrentValue is int value && value == request.Vid)
                 {
-                    property.CurrentValue = pseudonym;
+                    property.CurrentValue = request.Pseudonym;
                 }
             }
         }
 
-        return rows.Count;
+        return changed;
     }
 }

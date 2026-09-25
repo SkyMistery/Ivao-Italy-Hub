@@ -24,7 +24,25 @@ public sealed record ErasureLine(string Key, int Count, ErasureOutcome Outcome);
 /// <summary>The person being erased, and the number that takes their place in what stays.</summary>
 /// <param name="Vid">Their VID.</param>
 /// <param name="Pseudonym">A negative number, new for this erasure, that no table ties back to the VID.</param>
-public sealed record ErasureRequest(int Vid, int Pseudonym);
+public sealed record ErasureRequest(int Vid, int Pseudonym)
+{
+    private readonly HashSet<object> _kept = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// Keeps a row as it is, VID included: the core does not write the pseudonym into it. For a row the division keeps about the
+    /// person on purpose — a ban still in force, which protects nobody without the VID (note
+    /// <c>2026-09-25-le-righe-che-restano-con-il-vid</c>). The row is the instance the module's context tracks: the core reads
+    /// through the same context, which hands back that very instance.
+    /// </summary>
+    public void Keep(object row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        _kept.Add(row);
+    }
+
+    /// <summary>Whether a module asked to keep this row as it is.</summary>
+    public bool IsKept(object row) => _kept.Contains(row);
+}
 
 /// <summary>
 /// A module's half of erasing a person's data (note <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c>). Registered in

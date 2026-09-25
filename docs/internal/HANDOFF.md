@@ -16,7 +16,7 @@
 > La event policy delle Actions che consente `pull_request_target` a `core-guard.yml` (obbligatoria dal 2 nov 2026) **esiste dal
 > 25 set** (nota §9, id 5617). **M3 è partito**: `dalberone` ha letto `HANDOFF-M3.md` e lavora al design.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **T0–T20a e la PR del nucleo di T20b**. Piano **1.08**. **Il prossimo passo è la PR del modulo di T20b** (`FlightOpsPersonalData : IPersonalDataEraser`, design §10.0), dopo il merge di quella del nucleo; poi T20c (rifiniture, giro completo, chiusura di M2). T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+**Ultimo aggiornamento:** 25 settembre 2026 — **T0–T20a e la PR del nucleo di T20b**, più la piccola estensione `ErasureRequest.Keep` (piano **1.09**, nota `2026-09-25-le-righe-che-restano-con-il-vid`: un ban in vigore la usa per restare con il VID, perché il nucleo scrive lo pseudonimo dopo l'eraser del modulo). **Il prossimo passo è la PR del modulo di T20b** (`FlightOpsPersonalData : IPersonalDataEraser`, design §10.0), dopo il merge di quella del nucleo; poi T20c (rifiniture, giro completo, chiusura di M2). T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
 
 > **Che cosa ha lasciato T20b, la PR del nucleo** (nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona`, piano 1.08): Carmine ha
 > preso le quattro raccomandazioni (pseudonimo negativo per persona, senza tabella; ban in vigore tenuto con il VID; fili aperti dalla
