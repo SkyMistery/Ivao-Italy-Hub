@@ -167,7 +167,7 @@ qui, e la nota della fase lo dice).
 PR); il vocabolario risponde come IVAO oggi (AS3 → ADC, ACC → nessun training pratico, SEC almeno ADC); `RatingBadge` è nella
 galleria; il banco entra con un trainee e un trainer con rating e ore.
 
-**Com'è andata** (25 settembre 2026, branch `m3/a1-ratings-and-hours`, in coda sopra A0):
+**Com'è andata** (25 settembre 2026, branch `m3/a1-ratings-and-hours`, PR #128, in coda dopo #125):
 
 - **Misurato prima del codice, con il token vero** (nota nuova `2026-09-25-le-ore-e-il-vocabolario-dei-rating`, §1): `hours` di
   `/v2/users/me` è un **array** di righe `{ type, hours }` per `pilot`, `atc` e `staff`, **in secondi** — lo schema pubblico di IVAO

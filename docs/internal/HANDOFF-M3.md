@@ -7,8 +7,8 @@
 > non si ripetono qui.
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A1** (nucleo: le ore di connessione, il vocabolario dei rating,
-`RatingBadge`, il banco e2e con un trainee e un trainer), sul branch `m3/a1-ratings-and-hours`, PR in bozza verso `main` **in coda
-dopo #125** (A0, non ancora unita). **Il prossimo passo** è una fase che non dipende da A1 per il codice — **A3** (i permessi
+`RatingBadge`, il banco e2e con un trainee e un trainer), sul branch `m3/a1-ratings-and-hours`, **PR #128** in bozza verso `main`
+**in coda dopo #125** (A0, non ancora unita). **Il prossimo passo** è una fase che non dipende da A1 per il codice — **A3** (i permessi
 alternativi) o **A4** (lo scheletro del modulo), in coda sopra A0 — oppure **A2** (le postazioni ATC e il tipo `exam`) in coda sopra
 A1, perché migra lo stesso contesto e legge il legame postazione→rating del vocabolario (`08`, «Parallelismo possibile»).
 
@@ -82,7 +82,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A1 (25 settembre 2026, branch `m3/a1-ratings-and-hours`, in coda dopo #125)
+### Che cosa ha lasciato A1 (25 settembre 2026, branch `m3/a1-ratings-and-hours`, PR #128, in coda dopo #125)
 
 - **Che cosa c'è** (nota `decisions/2026-09-25-le-ore-e-il-vocabolario-dei-rating.md`, scelta tecnica, nessuna domanda nuova):
   - **Le ore di connessione** in `hub_users.hours_atc` e `hours_pilot` (`decimal(9,2)`, **in ore**; migrazione `AddConnectionHours`
