@@ -114,10 +114,10 @@ test('a tour is made from a template, marked ready, found in search and calendar
   const hits = ((await search.json()) as { results: { items: { url: string }[] } }).results.items;
   expect(hits.map((hit) => hit.url)).toContain(`/tours/${slug}`);
 
-  // ...and in the calendar, as the public calendar block reads it: the release and the close. The staff list of
-  // the calendar is by department, and the bench's is not the tours' one.
+  // ...and in the calendar, as the public calendar block reads it: the release, and the close as a deadline (T20c). The
+  // staff list of the calendar is by department, and the bench's is not the tours' one.
   const window = {
-    kinds: [{ kind: 'tour' }],
+    kinds: [{ kind: 'tour' }, { kind: 'deadline' }],
     from: new Date(now - 2 * 24 * 3600 * 1000).toISOString(),
     to: new Date(now + 61 * 24 * 3600 * 1000).toISOString(),
     limit: 50,
@@ -125,8 +125,13 @@ test('a tour is made from a template, marked ready, found in search and calendar
   const props = Buffer.from(JSON.stringify(window)).toString('base64url');
   const calendar = await anonymous.get(`/api/blocks/data/calendar?props=${props}`);
   expect(calendar.status()).toBe(200);
-  const entries = ((await calendar.json()) as { items: { url: string | null }[] }).items;
-  expect(entries.filter((entry) => entry.url === `/tours/${slug}`)).toHaveLength(2);
+  const entries = ((await calendar.json()) as { items: { url: string | null; kind: string }[] }).items;
+  expect(
+    entries
+      .filter((entry) => entry.url === `/tours/${slug}`)
+      .map((entry) => entry.kind)
+      .sort(),
+  ).toEqual(['deadline', 'tour']);
   await anonymous.dispose();
 
   // ---------------------------------------------------------------- deleted, with the template
