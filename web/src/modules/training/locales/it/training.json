@@ -1,0 +1,51 @@
+{
+  "nav": {
+    "section": "Training",
+    "settings": "Impostazioni del training"
+  },
+  "kinds": {
+    "Atc": "ATC",
+    "Pilot": "Pilota"
+  },
+  "settings": {
+    "title": "Impostazioni del training",
+    "description": "Ciò che il dipartimento training cambia senza un rilascio: le regole di una richiesta, i tempi delle date, le postazioni su cui si allena.",
+    "saved": "Impostazioni salvate.",
+    "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+    "fields": {
+      "minimumHours": "Ore minime per chiedere un training",
+      "minimumHours.rating": "Rating richiesto",
+      "minimumHours.hours": "Ore necessarie",
+      "cooldownDays": "Giorni di attesa dopo un training",
+      "noShowCooldownDays": "Giorni di attesa dopo un no-show",
+      "maxResponseDays": "Giorni per scegliere la data prima che il training si chiuda",
+      "responseReminderDays": "Giorni senza una data scelta prima dell'avviso al trainer",
+      "conflictPolicy": "Quando una data proposta incontra il calendario",
+      "conflictKinds": "Tipi del calendario controllati",
+      "reminderLeadHours": "Ore di anticipo del promemoria di una sessione",
+      "hiddenPositions": "Postazioni non usate per il training",
+      "hiddenPositions.callsign": "Postazione",
+      "theoryExamUrl": "Indirizzo dell'esame teorico"
+    },
+    "hints": {
+      "minimumHours": "Ore di connessione da controllore per un rating ATC, da pilota per un rating pilota. Chi ne ha meno non può chiedere quel rating. Nessuna riga: nessuna soglia.",
+      "maxResponseDays": "Vuoto: un training non si chiude mai da solo, e lo chiude lo staff a mano.",
+      "conflictKinds": "Una data proposta che cade su una voce di uno di questi tipi è trattata come dice l'impostazione qui sopra.",
+      "hiddenPositions": "Ai trainee si offrono tutte le postazioni della divisione su cui si allena un rating, militari comprese, tranne queste.",
+      "theoryExamUrl": "Mostrato con la domanda sull'esame teorico, e a chi approva una richiesta."
+    },
+    "options": {
+      "conflictPolicy": {
+        "Warn": "Avvisa, e il trainer conferma",
+        "Block": "Rifiuta la data",
+        "None": "Non controllare"
+      }
+    }
+  },
+  "errors": {
+    "ratingNotTrained": "Questo rating non ha un training pratico.",
+    "ratingTwice": "Questo rating ha più di una riga.",
+    "positionUnknown": "La divisione non allena più su questa postazione: toglila dall'elenco.",
+    "calendarKindUnknown": "Uno di questi non è un tipo del calendario."
+  }
+}
