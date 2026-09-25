@@ -78,7 +78,7 @@ più delicata non blocca il modulo (§12 n.3).
 
 ### A0 — Note di decisione e questo piano
 
-Design §11, §12, §14. Branch `m3/a0-decisions`. Documenti, nessun codice.
+Design §11, §12, §14. Branch `m3/a0-decisions`, PR #125. Documenti, nessun codice.
 
 1. **Otto note** in `decisions/`, una per decisione o per gruppo coerente di §12, ognuna con il link al commento di Carmine che la
    decide:

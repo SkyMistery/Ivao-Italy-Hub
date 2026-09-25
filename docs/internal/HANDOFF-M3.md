@@ -7,10 +7,10 @@
 > non si ripetono qui.
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A0**: le otto note di decisione e `08-piano-implementazione-m3.md`,
-sul branch `m3/a0-decisions`, in una PR verso `main`. Il design è deciso e unito (PR #121). Nessun codice. **Il prossimo
+sul branch `m3/a0-decisions`, PR #125 verso `main`. Il design è deciso e unito (PR #121). Nessun codice. **Il prossimo
 passo** è la fase **A1** (nucleo: ore, vocabolario dei rating, `RatingBadge`, banco e2e) in una **nuova sessione**, **in coda**
 sopra A0 senza aspettarne il merge (`CLAUDE.md` §0 regola 4): branch da `m3/a0-decisions`, PR in bozza verso `main` con
-`(after #N)`. A3 e A4 non la toccano e possono andare avanti insieme (`08`, «Parallelismo possibile»).
+`(after #125)`. A3 e A4 non la toccano e possono andare avanti insieme (`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -82,7 +82,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A0 (25 settembre 2026, branch `m3/a0-decisions`)
+### Che cosa ha lasciato A0 (25 settembre 2026, branch `m3/a0-decisions`, PR #125)
 
 - **Che cosa c'è**: otto note in `decisions/`, una per decisione o per gruppo coerente di §12 del design, ognuna con il link
   al commento di Carmine che la decide — `chi-conduce-e-chi-scrive-un-training` (n.1, n.2, n.3, n.10),
