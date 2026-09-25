@@ -1764,8 +1764,8 @@ chiede il nucleo:
     foglio di riepilogo davanti, la prima leg respinta, contestata, accolta e accettata, la seconda respinta, **riaperta** da chi l'ha
     decisa e accettata, il tour completato, l'award assegnato. La riapertura esplicita e l'import da XLSX non avevano un e2e. Le mail non
     si aspettano: le leggono già `tours-review` e `tours-dispute`;
-  - **il rapporto** è `decisions/2026-09-25-m2-review.md`, contato dalla #70. Propone di contare i verbi a mano **per famiglia** invece
-    che con un numero solo: è una proposta, da decidere con Carmine.
+  - **il rapporto** è `decisions/2026-09-25-m2-review.md`, contato dalla #70. Ha proposto di contare gli endpoint a mano **per
+    famiglia** invece che con un numero solo, e Carmine l'ha presa (domanda 5 della nota): è la metrica di piano §16.6.
 
   Test: `TourStateTests` (il tipo delle due voci, un PIREP che non proietta), `uiKit.test.ts` (i componenti dei moduli per nome),
   `ForkabilityXxDivisionTests`, `tours.spec.ts` (le due voci con i due tipi), `tours-round.spec.ts`.

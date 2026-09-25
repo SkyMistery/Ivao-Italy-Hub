@@ -1,7 +1,7 @@
 # Le rifiniture di M2: i componenti di un modulo, il calendario di un tour, i PIREP fuori dalla ricerca
 
 **Data:** 25 settembre 2026 — T20c (`06-piano-implementazione-m2.md`, T20 punto 3)
-**Stato:** decisa da Carmine in chat il 25 settembre 2026, le quattro raccomandazioni
+**Stato:** decisa da Carmine in chat il 25 settembre 2026, le quattro raccomandazioni; poi la quinta domanda, nata dal rapporto
 **Caso:** (b) per la galleria — si estende il manifest di un modulo, un meccanismo che c'è —; (a) per il calendario — un dato; il
 resto è lettura del piano
 
@@ -58,6 +58,19 @@ filtra per `tour`, quindi oggi non cambia niente di pubblicato.
 
 **Carmine: dalla #70.** Il rapporto è `2026-09-25-m2-review.md`.
 
+**(5) Come si contano gli endpoint scritti a mano?** La domanda l'ha aperta il rapporto (§«Gli endpoint scritti a mano»): la metrica di
+M1 — «verbi a mano appesi a un gruppo `MapCrud`: tre», changelog 0.45 — in M2 vale 42 nel modulo, perché un PIREP è una macchina a stati
+e i suoi passi sono il prodotto.
+
+- **Per famiglia** (raccomandata): il rapporto di ogni milestone porta **CRUD scritti a mano non dichiarati: 0**, **eccezioni
+  dichiarate: al più una per milestone**, ognuna decisa prima del codice con la sua nota, e **ogni endpoint scritto a mano in una
+  famiglia** — eccezione dichiarata, verbi di stato o d'azione su una risorsa del motore, letture composte accanto al motore, flusso di
+  un membro, contratto di un programma esterno, verbi su righe del nucleo, fuori da ogni risorsa — con la decisione che l'ha voluto.
+- Tenere il numero solo di M1: un numero che cresce con ogni flusso di lavoro smette di dire qualcosa, e un modulo di eventi o di
+  training lo farebbe crescere di nuovo.
+
+**Carmine: per famiglia** («sì, vai», in chat, 25 settembre). Piano §16.6.
+
 ## 3. Che cosa è stato toccato
 
 - **Nucleo, front end**: `shared/modules.ts` (`ComponentRegistration`, `ModuleManifest.components`, facoltativo), `app/registry.ts`
@@ -81,4 +94,5 @@ filtra per `tour`, quindi oggi non cambia niente di pubblicato.
 
 - §8.3: `LegGrid` è nella galleria dal manifest del modulo; un modulo porta i suoi componenti con `components`.
 - §9.5 (calendario) e design M2 §9: la chiusura di un tour è una voce `deadline`; i PIREP non proiettano né ricerca né calendario.
+- §16.6: la metrica degli endpoint scritti a mano, per famiglia (domanda 5).
 - Changelog e numero di versione.

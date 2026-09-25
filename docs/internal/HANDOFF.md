@@ -18,8 +18,9 @@
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.12**. Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
-`dalberone` (`HANDOFF-M3.md`). **Una domanda aperta per Carmine**: il rapporto propone di contare i verbi a mano **per famiglia** in
-piano §16.6 invece che con il numero solo di M1.
+`dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
+chiusura di M3 e di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia con
+la sua decisione — la tabella di `2026-09-25-m2-review.md` è il modello.
 
 > **Che cosa ha lasciato T20c** (nota `2026-09-25-le-rifiniture-di-m2`, piano 1.12): Carmine ha preso le quattro raccomandazioni. **Un
 > modulo porta i suoi componenti dal manifest**: `ModuleManifest.components` (`{ name, sample }`, facoltativo), composto da
