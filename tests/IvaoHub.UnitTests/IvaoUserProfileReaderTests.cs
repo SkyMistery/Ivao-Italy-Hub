@@ -26,7 +26,7 @@ public sealed class IvaoUserProfileReaderTests
           "languageId": "it",
           "email": "someone@example.invalid",
           "rating": { "atcRating": { "id": 7 }, "pilotRating": { "id": 5 } },
-          "hours": { "atc": 100, "pilot": 200 },
+          "hours": [{ "type": "pilot", "hours": 720000 }, { "type": "atc", "hours": 360000 }, { "type": "staff", "hours": 0 }],
           "userStaffPositions": [
             { "id": "IT-AOA1", "connectAs": "IT-AOA1" },
             { "id": "IT-T03", "connectAs": "IT-T03" }
@@ -56,6 +56,9 @@ public sealed class IvaoUserProfileReaderTests
         Assert.Equal("it", profile.LanguageId);
         Assert.Equal(7, profile.RatingAtc);
         Assert.Equal(5, profile.RatingPilot);
+        // In the shape measured on 25 September 2026 (M3, A1): one row per kind of connection, in seconds.
+        Assert.Equal(100m, profile.HoursAtc);
+        Assert.Equal(200m, profile.HoursPilot);
         Assert.True(profile.IvaoIsStaff);
         Assert.False(profile.IvaoIsSupervisor);
         Assert.Equal(["IT-AOA1", "IT-T03"], profile.StaffPositions);
