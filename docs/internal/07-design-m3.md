@@ -1,6 +1,6 @@
 # IVAO Division Hub — Design di M3 (il modulo Training)
 
-> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.06).
+> Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.07).
 > Ingresso: i **requisiti dello staff TD**, raccolti con `dalberone` a domande (§R). Sui fatti — come funziona il
 > training oggi e che cosa lo staff vuole — risponde `dalberone`; **le scelte le decide Carmine**: dove resta una scelta
 > aperta è segnata **⚖️** e raccolta, con una raccomandazione, in §12 «Domande per Carmine». Le fasi si scrivono in
@@ -609,7 +609,10 @@ Convenzioni di M2: `[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, 
 - **Che cosa è personale**: il VID di trainee e trainer, i testi liberi della richiesta, commenti e note. Nome ed email
   non si copiano: si leggono dal nucleo.
 - **La richiesta di cancellazione** (piano §9.7): ⚖️ §12 n.7 — proposta: si cancellano i testi liberi del trainee e il
-  suo VID diventa anonimo; voti e date restano per le statistiche, come il registro disciplinare di M2 §10.0.
+  suo VID diventa anonimo; voti e date restano per le statistiche, come il registro disciplinare di M2 §10.0. **Il
+  meccanismo non è del modulo**: il piano 1.07 (nota `2026-09-25-la-conservazione-dei-tour`) ha trovato che il nucleo non
+  sa ancora cancellare o anonimizzare un utente, e lo porta nel nucleo con T20b; il modulo ci si aggancia, non ne scrive
+  uno suo.
 
 ---
 
@@ -724,7 +727,7 @@ A0.
 6. **Lo storico di PATS** (§7). **Raccomandato: un archivio in sola lettura** di `trainingNEW` ed `exam`, solo se
    otteniamo il significato dei codici; niente da `training`. Alternativa: nessun import, come per tour ed eventi.
 7. **Conservazione e cancellazione** (§6). **Raccomandato: il registro resta**; a una richiesta di cancellazione il VID
-   diventa anonimo e i testi liberi del trainee spariscono.
+   diventa anonimo e i testi liberi del trainee spariscono, attraverso il meccanismo del nucleo che nasce con T20b.
 8. **Group training, GCA, flight briefing** (§0.2). **Raccomandato: fuori da M3**, da riprendere se lo staff TD li chiede.
 9. **Tempo massimo per scegliere la data superato** (§2.5). **Raccomandato: chiusura automatica** (`Closed`), solo se
    l'impostazione c'è; di default non c'è.
