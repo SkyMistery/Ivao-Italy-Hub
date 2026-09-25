@@ -96,9 +96,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   creazione è un cambio del nucleo con **nota e test della spina dorsale**, prima del modulo (n.2, fase A3); i capi FIR in
   A11 (n.3); **la regola «il trainee non legge le note riservate del proprio training» ha una nota sua e un test
   d'integrazione** (n.13); **il feed del calendario non è in M3** e PATS resta acceso solo per quello fino a M6 (n.14);
-  il teorico lo dichiara il trainee (n.15). In §14 del design c'è l'elenco di ciò che il revisore porta nel piano. ⚠️ Per
-  la n.5 la risposta nomina `facilityRatings` nelle impostazioni, ma il design lo mette nel vocabolario del nucleo dopo la
-  correzione accettata nel secondo giro: la conferma di Carmine è chiesta sulla PR.
+  il teorico lo dichiara il trainee (n.15); le postazioni vengono da IVAO, legate al rating dal vocabolario del nucleo,
+  e nelle impostazioni c'è solo `hiddenPositions` (n.5). In §14 del design c'è l'elenco di ciò che il revisore porta nel
+  piano.
 - ⚠️ **`[AlsoWrittenWith]` vale una volta per entità e solo in modifica** (`HubSaveChangesInterceptor`, la prima
   alternativa e basta): il training lo scrivono tre ruoli senza `Edit`, e un esame lo crea chi non ha `Edit`. È
   l'estensione n.7.

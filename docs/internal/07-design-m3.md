@@ -7,7 +7,7 @@
 > `08-piano-implementazione-m3.md` **dopo** l'approvazione di questo documento. Il modello è `05-design-m2.md`.
 
 **Stato:** **deciso** il 25 settembre 2026. I requisiti sono chiusi con le conferme di `dalberone` (R.7); Carmine ha
-deciso le 15 domande di §12 sulla PR #121 ([risposte][r1], [secondo giro][r2]). Due giri di revisione: il teorico
+deciso le 15 domande di §12 sulla PR #121 ([risposte][r1], [secondo giro][r2], [n.5][r3]). Due giri di revisione: il teorico
 dichiarato dal trainee è uno scostamento dal piano (§0.6, §12 n.15), le regole dei rating di IVAO stanno nel nucleo
 (§1.7, n.4), i GCA sono nel profilo IVAO (§0.2), il feed del calendario non è in M3 (§12 n.14). Allineato al piano 1.08:
 la cancellazione dei dati di una persona usa il meccanismo del nucleo di T20b (§6.1). Nessun codice: il prossimo passo è
@@ -762,11 +762,12 @@ feed**, finché l'iCal del nucleo non arriva in M6.
 ## 12. Domande per Carmine — decise il 25 settembre 2026
 
 Carmine ha risposto sulla PR #121: alle domande n.1–14 nel [commento delle risposte][r1], alla n.7 riformulata e alla
-n.15 nel [secondo giro][r2]. Qui sotto ogni domanda con la raccomandazione e la decisione; ognuna entra nella nota della
-fase A0.
+n.15 nel [secondo giro][r2], e ha precisato la n.5 in [un terzo commento][r3]. Qui sotto ogni domanda con la
+raccomandazione e la decisione; ognuna entra nella nota della fase A0.
 
 [r1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/121#issuecomment-5832705237
 [r2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/121#issuecomment-5832839987
+[r3]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/121#issuecomment-5833005647
 
 1. **Il trainer sul suo training** (§3.3). Raccomandato: il grant con scope per training. **Deciso** ([r1]): **come
    raccomandato** — un grant `Training.Conduct` con lo scope del training, scritto all'assegnazione con `ModuleGrants`,
@@ -777,11 +778,10 @@ fase A0.
 3. **I capi FIR** (n.2). **Deciso** ([r1]): **sì, come fase A11**, dopo che il modulo funziona con TC e TAC.
 4. **Il VID nel calendario pubblico** (R.6-bis). **Deciso** ([r1]): **niente VID ai visitatori**; VID e nomi solo a chi ha
    fatto il login, sulla pagina della sessione (piano §9.7, il minimo necessario).
-5. **Le postazioni** (n.5). **Deciso** ([r1]): **da IVAO**, con `facilityRatings` e `hiddenPositions` nelle impostazioni.
-   ⚠️ La risposta è stata scritta prima della correzione n.3 della revisione (nessuna regola di IVAO nel modulo), che il
-   secondo giro ha accettato: nel design il legame postazione→rating sta nel **vocabolario del nucleo** (n.4) e nelle
-   impostazioni resta `hiddenPositions`. Chiesto a Carmine di confermarlo sulla PR; se lo vuole nelle impostazioni, torna
-   `facilityRatings` con il predefinito **vuoto**.
+5. **Le postazioni** (n.5). **Deciso** ([r3]): **da IVAO**, con il legame postazione→rating nel **vocabolario del
+   nucleo** (n.4) e nelle impostazioni **solo `hiddenPositions`**; nessun `facilityRatings`. (La prima risposta, in [r1],
+   nominava `facilityRatings` nelle impostazioni perché era scritta sul testo di prima della correzione n.3; Carmine l'ha
+   corretta in [r3].)
 6. **Lo storico di PATS** (§7). **Deciso** ([r1]): **un archivio in sola lettura** di `trainingNEW` ed `exam`, mostrato
    com'è sul percorso del trainee, **solo se** otteniamo il significato dei codici; niente da `training` (2014–2020).
 7. **Che cosa tiene il registro dei training alla cancellazione** (§6.1). **Deciso** ([r2]): **come raccomandato** — i
