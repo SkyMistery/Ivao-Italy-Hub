@@ -8,8 +8,9 @@
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A0**: le otto note di decisione e `08-piano-implementazione-m3.md`,
 sul branch `m3/a0-decisions`, in una PR verso `main`. Il design è deciso e unito (PR #121). Nessun codice. **Il prossimo
-passo**, dopo il merge di A0, è la fase **A1** (nucleo: ore, vocabolario dei rating, `RatingBadge`, banco e2e) in una
-**nuova sessione**; A3 e A4 non la toccano e possono andare avanti insieme (`08`, «Parallelismo possibile»).
+passo** è la fase **A1** (nucleo: ore, vocabolario dei rating, `RatingBadge`, banco e2e) in una **nuova sessione**, **in coda**
+sopra A0 senza aspettarne il merge (`CLAUDE.md` §0 regola 4): branch da `m3/a0-decisions`, PR in bozza verso `main` con
+`(after #N)`. A3 e A4 non la toccano e possono andare avanti insieme (`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -110,8 +111,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - ⚠️ **Scostamenti dall'elenco del design §11**, scritti in `08`, A0: `trn_bans` nasce in A6 (la richiesta rifiuta un bannato)
   e la schermata resta in A10; la funzione del mock exam nasce in A6, la casella in A9; `trn_trainings` nasce intera in A6.
 - ⚠️ **Un worktree non ha `tiles/`**: per `pnpm e2e:full` serve un hard link a `tiles/basemap.pmtiles` della cartella
-  principale (trovato da Carmine in T20b). ⚠️ **La PR #124** (aperta, di Carmine) propone le fasi in coda: quando è unita, il
-  branch di una fase può partire da quello della fase prima; `08` non dipende da come finisce.
+  principale (trovato da Carmine in T20b).
+- ⚠️ **Le fasi vanno in coda** (PR #124, unita durante A0; nota `2026-09-25-le-fasi-in-coda`): la fase dopo parte dal branch
+  della fase prima e la sua PR va verso `main` in bozza con `(after #N)`; una correzione sotto sale con un merge, mai un rebase;
+  una fase che aspetta una risposta di Carmine non si mette in coda sopra la domanda. Il revisore pubblica da solo i suoi
+  rilievi sulla PR; le decisioni e il merge restano di Carmine.
 
 ### Che cosa ha lasciato il design (25 settembre 2026, branch `m3/design`)
 
