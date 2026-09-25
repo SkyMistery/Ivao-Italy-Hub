@@ -1234,13 +1234,24 @@ il blocco risponde `signedIn: false`.
   contestato, o dopo il ritiro (Carmine, 23 settembre: «non possiamo avere GB di dati di tracce inutili»). Job giornaliero
   `TrackRetentionJob` (T13a). Restano PIREP, piani, errori ed esiti dei controlli.
 - Job mensile del modulo, con una riga nel log dei job.
+- **Fatto in T20a** (nota `2026-09-25-la-conservazione-dei-tour`, piano 1.07): `TourRetentionJob`, il primo del mese. **Un tour su più di
+  un anno** è quello che **dura** più di 12 mesi, `close_at > release_at + 12 mesi` (Carmine, 25 settembre); si conta da `close_at`, e
+  solo sui tour pronti. Un tour **aspetta** finché ha un PIREP in coda, in revisione, da modificare o con una contestazione aperta, o
+  una segnalazione d'award ancora in attesa. Il tour archiviato ha **`purged_at`**: esce dal pubblico (visibilità `Staff`), non si
+  modifica più (`tourPurged`) e le sue decisioni non si riaprono (`reviewPurged`). **Lo snapshot delle regole si snellisce** invece di
+  svuotarsi: il registro ci legge i nomi degli errori confermati, quindi restano le regole con un errore confermato, con codice, titolo
+  e quegli errori. Gli errori suggeriti e non confermati vanno via con gli esiti dei controlli. **Le note** sono `pilot_remarks`,
+  `diversion_note`, `note_to_pilot`, `staff_note`, `override_reason`, `dispute_text`; la storia (`fo_pirep_events`) resta con le sue.
+  Le foto le toglie il nucleo (§1.14). Le segnalazioni sulle leg non sono nell'elenco e restano.
 
 ### 10.0 La richiesta di cancellazione dei dati
 
 Alla richiesta di un pilota (GDPR) si cancellano i suoi PIREP e i suoi dati personali del modulo; **il registro disciplinare resta,
 anonimizzato** (esiti ed errori senza il VID), perché serve alle statistiche e ai contatori aggregati (Carmine, 15 settembre). ⚠️ È
 una regola che conferma la **direzione**, perché è una questione legale; e va coordinata con come il nucleo tratta la stessa richiesta
-per gli altri dati dell'utente (oggi l'export dei dati utente è scartato, la cancellazione non è descritta).
+per gli altri dati dell'utente (oggi l'export dei dati utente è scartato, la cancellazione non è descritta). **Deciso il 25 settembre**
+(Carmine, piano 1.07): il nucleo non ha nessun modo di cancellare o anonimizzare un utente, e la cancellazione **si fa nel nucleo**, in
+**T20b**, con una nota di caso (c) prima del codice; il modulo dei tour è il primo a implementarla.
 
 ### 10.1 Il problema: il registro disciplinare punta al tour
 

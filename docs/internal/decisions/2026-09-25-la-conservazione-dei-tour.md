@@ -71,7 +71,24 @@ nota al pilota), negli award e in `hub_audit_log`, che copia intere le righe aud
   regola della proiezione del nucleo). Il job **salta** un tour che ha segnalazioni ancora in attesa, come per i PIREP aperti: tredici
   mesi senza assegnare un award sono una dimenticanza, e il job non deve renderla definitiva.
 
-## 4. Trovato
+## 4. Il censimento dei dati di una persona, per T20b
+
+Misurato leggendo il codice il 25 settembre 2026 (da rifare in apertura di T20b: il codice cambia). **A** = `[Audited]`, cioè ogni
+scrittura copia la riga in `hub_audit_log`.
+
+| Dove | Tabelle e colonne che nominano una persona | Oggi |
+|---|---|---|
+| Nucleo, utenti | `hub_users` (vid, nomi, email, discord, paese; **A**); `hub_user_staff_positions`, `hub_user_grants` (**A**), `hub_user_tokens`, `hub_personal_tokens` (**A**), tutte con FK in cascata da `hub_users` | nessun codice cancella un utente |
+| Nucleo, servizi | `hub_audit_log` (`vid` di chi agisce, `ip`, `before_json`/`after_json` con la riga intera); `hub_notifications` (`vid`, `address`, `data_json` con tour, rotta, nota al pilota, motivo del ban); `hub_notification_preferences`, `hub_user_preferences` (senza FK) | niente li svuota mai |
+| Nucleo, contenuti | `cms_contact_messages` (`created_by` = il mittente, `participants_json`, oggetto e testo; **A**), `cms_contact_replies` (`author_vid`, testo), `cms_contact_references` (`pirep:{id}` con l'etichetta congelata); `cms_award_signals`, `hub_award_assignments` (**A**) | i fili «non si cancellano mai»; una segnalazione gestita resta |
+| Modulo dei tour | `fo_pireps` (`vid`, chi decide, chi prende, note e testi liberi, controllori); `fo_pirep_flights` (callsign, sessione, piani); `fo_pirep_events` (`by_vid`, nota); `fo_check_results` (`by_vid`, `token_id`); `fo_enrolments`; `fo_bans` (**A**); `fo_leg_issues` (`created_by`, testo) | nessuna FK verso il nucleo; errori, storia, voli ed esiti vanno in cascata dal PIREP |
+
+Due conseguenze per T20b: **anonimizzare il registro** vuol dire tenere la riga di `fo_pireps` e togliere i VID e i testi (cancellarla
+porterebbe via in cascata errori e storia); e **l'audit** tiene copie intere di righe con dati personali (anche di `hub_users`), quindi la
+cancellazione nel nucleo deve dire che cosa fa di `hub_audit_log`, che oggi è immutabile. Nota a margine: la conservazione di T20a
+scrive anch'essa nell'audit (le regole e gli hub cancellati, il briefing svuotato), poche decine di kilobyte per tour.
+
+## 5. Trovato
 
 - Le etichette e i commenti di `retentionMonths` e `retentionMonthsLong` dicevano «mesi di conservazione dei report» e «mesi del registro
   disciplinare». Il registro non si cancella mai, e i report restano; corretti: «mesi dopo la chiusura prima dell'archivio» e «lo stesso,
