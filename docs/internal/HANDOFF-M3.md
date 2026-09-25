@@ -118,8 +118,12 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - ⚠️ **Un errore su una riga di una lista** si nomina con il campo della riga (`minimumHours[0].rating`), o il form non lo mostra.
   - ⚠️ **`web/e2e/address.spec.ts`** va su `/training/team`: nessuna rotta del modulo deve prendere ogni `/training/…`.
 - ⚠️ **Da fare prima della PR**, dopo il merge di #133: `git merge origin/main` nel branch (il conflitto in cima a questo file si
-  risolve tenendo tutti e due i paragrafi, A4 sopra), build e **tutti** i test di nuovo, «Com'è andata» in `08` con i conteggi sul
-  merge, poi la PR verso `main` con il template compilato.
+  risolve tenendo tutti e due i paragrafi, A4 sopra, e con #131 anche il suo e l'avviso sugli esami in cima), build e **tutti** i test
+  di nuovo, «Com'è andata» in `08` con i conteggi sul merge; **la risposta di Carmine sulla issue #134** nella nota degli esami, con il
+  link (se è «no», i trainer tornano nel seme); poi la PR verso `main` con il template compilato.
+- ⚠️ **Un banco e2e locale che ha già girato con il seme di prima** (esami anche ai trainer) lo tiene, perché un seme si applica una
+  volta sola: prima di `pnpm e2e:full`, `DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` (quello di questo worktree è stato
+  ricreato il 26 settembre). La CI parte sempre da un banco nuovo.
 
 ### Che cosa ha lasciato A2 (25 settembre 2026, branch `m3/a2-atc-positions`, PR #129)
 

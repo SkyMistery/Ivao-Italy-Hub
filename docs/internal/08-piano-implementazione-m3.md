@@ -448,9 +448,11 @@ salvate e rilette.
 - **Verificato, in locale** (26 settembre 2026), su un branch temporaneo con A4a unita, poi tolto: `dotnet build` senza avvisi; unità
   750/750 (le 718 di A4a e le 32 nuove); **integrazione intera senza filtro** 302/302 (le 298 e le 4 nuove); `pnpm lint`,
   `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 488 in 63 file; `pnpm e2e` 91; **`pnpm e2e:full` 40**, con le due spec
-  nuove (la sezione nella tavolozza, l'impostazione salvata e riletta, rimessa com'era; il trainer del banco con `View` e
-  `ManageExams` e un 403 sulle impostazioni); la classe nuova di integrazione da sola; `pnpm gen:api` con i due endpoint nuovi.
-  **Da rifare sul branch dopo il merge di #133**, prima della PR.
+  nuove (la sezione nella tavolozza, l'impostazione salvata e riletta, rimessa com'era; il trainer del banco e le impostazioni); le
+  classi nuove di integrazione da sole; `pnpm gen:api` con i due endpoint nuovi. **Dopo lo scostamento 1** (gli esami senza i
+  trainer), di nuovo con A4a: unità 750/750; `TrainingSkeletonTests`, `TrainingXxDivisionTests` e `FlightOpsSkeletonTests` 7/7;
+  `pnpm e2e:full` 40 su un **banco nuovo** — sul banco vecchio il seme di prima era già applicato, e un seme si applica una volta sola.
+  **Tutto da rifare sul branch dopo il merge di #133**, prima della PR.
 - **Non verificato**: la CI (la dirà la PR); le impostazioni con le postazioni vere della divisione (sul banco e nei test ci sono
   quelle delle fixture, 43 d'aeroporto e 29 settori); la schermata guardata a mano, con le due lingue e i due temi.
 
