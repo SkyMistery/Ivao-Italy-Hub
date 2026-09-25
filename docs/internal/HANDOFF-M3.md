@@ -6,6 +6,11 @@
 > il maintainer. Le regole — chi unisce, che cosa non si tocca, come si ottiene una decisione — sono in `CLAUDE.md` §0 e
 > non si ripetono qui.
 
+> ⚠️ **Gli esami: nessun dato personale, solo il VID.** Di un esame (`trn_exams`, fase A10) l'hub **non tiene nessun dato
+> personale** delle persone — né del candidato né dell'esaminatore —: **solo il VID**. Nessun nome, nessun indirizzo, nient'altro
+> della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
+> servono solo per metterli nel calendario.
+
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A3** (nucleo: più permessi alternativi in scrittura, e uno anche alla
 creazione), sul branch `m3/a3-alternative-write-permissions`, **PR #131** verso `main`, da `main` e non in coda (dipende solo da A0).
 La **#129 (A2)** è aperta e pronta: il suo paragrafo qui sotto arriva con il suo merge. **Il prossimo passo** è **A4** (lo scheletro del

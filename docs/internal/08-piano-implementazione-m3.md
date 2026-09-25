@@ -538,7 +538,9 @@ si divide (A10a esami, ban e percorso; A10b blocchi e pagine pubbliche), scritto
    «Banna».
 4. **Gli esami**, `trn_exams` (migrazione): candidato, esaminatore (chi scrive), percorso, rating, postazione, data e ora; lista e form
    generati dietro `Training.ManageExams`, la creazione con `[AlsoWrittenWith]` anche alla creazione (A3); una voce di calendario
-   `exam` (A2) pubblica, senza nomi per i visitatori. Niente esito, niente voto.
+   `exam` (A2) pubblica, senza nomi per i visitatori. Niente esito, niente voto. ⚠️ **Del candidato e dell'esaminatore solo il
+   VID**: nessun nome, nessun indirizzo, nessun altro dato personale nella riga (richiesta del TD, `dalberone`, 25 settembre 2026;
+   in cima a `HANDOFF-M3.md`).
 5. **I ban**: `/staff/training/bans` (lista e form generati, `Training.Ban`, negato all'interessato), «Banna» con motivo e scadenza
    facoltativa, «Togli ban» con chi e quando; mail `banned`; un ban vale per i due percorsi, e i training già aperti vanno avanti.
 
