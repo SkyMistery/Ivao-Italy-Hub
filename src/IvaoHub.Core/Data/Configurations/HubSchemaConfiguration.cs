@@ -1,8 +1,8 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Awards;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Preferences;
-using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -28,6 +28,10 @@ internal sealed class HubUserConfiguration : IEntityTypeConfiguration<HubUser>
         builder.Property(user => user.DiscordId).HasMaxLength(32);
         builder.Property(user => user.Locale).HasMaxLength(8);
         builder.Property(user => user.Email).HasMaxLength(256);
+
+        // Hours with two decimals, up to ten million of them: IVAO's seconds are turned into hours by the reader.
+        builder.Property(user => user.HoursAtc).HasPrecision(9, 2);
+        builder.Property(user => user.HoursPilot).HasPrecision(9, 2);
         builder.Property(user => user.SecurityStamp).HasMaxLength(64).IsRequired();
         builder.HasRowVersion(user => user.RowVersion);
         builder.HasIndex(user => user.IsStaff);
