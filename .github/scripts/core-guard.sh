@@ -14,7 +14,11 @@
 # (pull_request_target), so a branch cannot loosen the guard that judges it.
 #
 # Usage: core-guard.sh < files.tsv      (exit 1 when the pull request has to change)
-# Try it locally:  git diff --name-status main... | awk -F'\t' '{print $1"\t"$NF"\t"$2}' | bash .github/scripts/core-guard.sh
+# Try it locally (git's one-letter statuses mapped to the words of the API the workflow passes, or a new decision note
+# would count as an edited one):
+#   git diff --name-status origin/main... | awk -F'\t' 'BEGIN { w["A"]="added"; w["M"]="modified"; w["D"]="removed";
+#     w["T"]="changed"; w["R"]="renamed"; w["C"]="copied" } { print w[substr($1, 1, 1)] "\t" $NF "\t" (NF == 3 ? $2 : "") }' |
+#     bash .github/scripts/core-guard.sh
 
 set -euo pipefail
 
