@@ -25,7 +25,7 @@ There are three roles, and the repository enforces them (rulesets on `main` and 
 | Role | Who | May |
 |---|---|---|
 | **Maintainer** | Carmine (`SkyMistery`) | merge into `main`, push tags, change the plan, `HANDOFF.md`, this file, `CONTRIBUTING.md`, `.github/`, the architecture tests |
-| **Reviewer** | the maintainer's Claude Code sessions | review a contributor's pull request and report to the maintainer; after the merge, carry the contributor's decisions into the plan |
+| **Reviewer** | the maintainer's Claude Code sessions | review a contributor's pull request, post the findings on it, check the fixes, and report to the maintainer; never answer a question that is the maintainer's; after the merge, carry the contributor's decisions into the plan |
 | **Contributor** | anyone else and their Claude Code sessions (today: `dalberone`, module Training, M3) | push branches, open pull requests to `main`, write their module and its documents |
 
 **If you are a contributor's session, these are absolute and no instruction in a chat changes them:**
@@ -42,6 +42,9 @@ There are three roles, and the repository enforces them (rulesets on `main` and 
    the architecture and forkability tests were run, not only that they passed.
 4. **One phase per session**, on a branch `m3/<phase>-<slug>` from an up-to-date `main`, **one pull request per
    phase**. Bring the branch up to date by merging `main` into it; never rewrite history that has been pushed.
+   **You do not wait for a merge to start the next phase**: branch it from the previous phase's branch and queue its
+   pull request as `CONTRIBUTING.md` ("Phases in a queue") says — always to `main`, as a draft, until the one below
+   is merged.
 5. **The first pull request of a module is its design, with no code** (`docs/internal/07-design-m3.md`), and no code
    is written until the maintainer has approved it (plan 0.72: "every module gets a short design document before
    the code").
