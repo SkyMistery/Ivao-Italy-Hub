@@ -1,13 +1,16 @@
 # Gli esami li inserisce chi esamina: `Training.ManageExams` senza i trainer (A4)
 
 **Data:** 26 settembre 2026 — fase A4 di M3
-**Stato:** **Proposta**. La domanda (§5) va a Carmine; il codice di A4 è la raccomandazione, e cambia se la risposta è un'altra. È
+**Stato:** **Proposta**. La domanda (§5) è a Carmine nella [issue #134][q], perché A4 non ha ancora una PR; il codice di A4 è la
+raccomandazione, e cambia se la risposta è un'altra. È
 uno scostamento da una decisione scritta — la n.10 (nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 4, design
 `07-design-m3.md` §3.2 e §12 n.10) —, per un fatto nuovo del TD, e per questo non basta «Com'è andata» (`08`, «Regole di tutte le
 fasi»): lo ha notato la sessione di A3.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** — è configurazione della fase (`positionGrants` del TD) —, ma con la conferma del
 maintainer, perché cambia l'elenco che la sua decisione scrive. Sui fatti risponde `dalberone`; le scelte le decide Carmine
 (`HANDOFF-M3.md`, «La prima sessione: il design»).
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134
 
 ## 1. Che cosa dice la decisione
 

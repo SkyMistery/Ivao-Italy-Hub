@@ -96,8 +96,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     TA1–9, non ai trainer**, a differenza del design §3.2: **un esame si assegna solo a un esaminatore, e gli esaminatori sono HQ, TC,
     TAC e i TA, mai un trainer** (`dalberone`, 26 settembre 2026), e la regola n.10 di Carmine è che l'esame lo inserisce chi ce l'ha.
     **Vale anche per A3b** (la domanda «anche a un trainer?» della sua sezione ha già la risposta: no) **e per A10**. Cambia l'elenco
-    scritto nella n.10, quindi ha una nota sua, `decisions/2026-09-26-gli-esami-li-inserisce-chi-esamina.md`, **Proposta**: la conferma
-    di Carmine va chiesta, e registrata con il link.
+    scritto nella n.10, quindi ha una nota sua, `decisions/2026-09-26-gli-esami-li-inserisce-chi-esamina.md`, **Proposta**, con la
+    domanda a Carmine nella [issue #134](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134): la risposta va nella nota, con il
+    link al suo commento, prima della PR di A4.
   - **I test**: `TrainingSettingsTests` e `TrainingArchitectureTests` (unità), `TrainingSkeletonTests` e `TrainingXxDivisionTests`
     (integrazione, VID 790009–790013), `schemas.test.ts`, `web/e2e/full/training-skeleton.spec.ts`.
 - **Che cosa deve sapere la fase dopo**:

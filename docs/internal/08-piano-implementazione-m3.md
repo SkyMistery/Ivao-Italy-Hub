@@ -412,7 +412,8 @@ salvate e rilette.
      che A4 arrivi in qualunque installazione: un seme di `positionGrants` si applica una volta sola, e cambiarlo dopo non toglierebbe
      il grant già scritto. Il fatto vale anche per **A3b** (che la sezione della fase, sul branch di A3, lasciava «da chiarire con
      `dalberone` in apertura») e per **A10**. Poiché cambia l'elenco che la decisione n.10 scrive, **ha la sua nota**,
-     `2026-09-26-gli-esami-li-inserisce-chi-esamina`, **Proposta**, con la domanda a Carmine: lo ha fatto notare la sessione di A3.
+     `2026-09-26-gli-esami-li-inserisce-chi-esamina`, **Proposta**, con la domanda a Carmine nella issue #134 (A4 non ha ancora una
+     PR): lo ha fatto notare la sessione di A3.
   2. **Due endpoint di lettura** che il piano non nominava, perché la schermata generata sceglie e non fa scrivere:
      `/api/training/ratings` (i rating con un training pratico, dal vocabolario del nucleo; a ogni membro, perché li useranno anche
      A5 e A6) e `/api/training/positions` (le postazioni della divisione di quei rating, dalla directory, ognuna con il suo rating; a
