@@ -6,10 +6,10 @@
 > il maintainer. Le regole — chi unisce, che cosa non si tocca, come si ottiene una decisione — sono in `CLAUDE.md` §0 e
 > non si ripetono qui.
 
-**Ultimo aggiornamento:** 24 settembre 2026 — **M3 non è cominciato.** Nessun design, nessun codice. **Il prossimo passo
-è la fase di design** (sotto, «La prima sessione»). Nello stesso momento Carmine chiude M2 (T20, poi T21 fuori dal
-repository): le fasi di M2 toccano il nucleo e `flightops`, il design di M3 non tocca il codice, quindi per settimane
-non ci sono conflitti.
+**Ultimo aggiornamento:** 25 settembre 2026 — **il design è deciso.** `07-design-m3.md` sul branch `m3/design`, PR
+#121: i requisiti del TD sono chiusi e Carmine ha deciso le 15 domande di §12, ognuna registrata con il link al suo
+commento. Nessun codice. **Il prossimo passo**, dopo il merge della #121, è la fase **A0** — le note di decisione e
+`08-piano-implementazione-m3.md` — in una **nuova PR** e in una **nuova sessione** (`CLAUDE.md` §0, regola 4).
 
 ## Da leggere, nell'ordine
 
@@ -78,3 +78,40 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato il design (25 settembre 2026, branch `m3/design`)
+
+- **Che cosa c'è**: `07-design-m3.md`, bozza completa per la revisione. §R sono i requisiti del TD, raccolti a domande
+  con `dalberone` in quattro giri e segnati uno per uno (d1–d4); §0–§11 il design sul modello di `05-design-m2.md`; §12 le
+  15 domande per Carmine; §8 le dieci estensioni del nucleo (una non serve), ognuna una PR a sé prima del modulo; §6.1
+  la cancellazione dei dati di una persona sul meccanismo di T20b (piano 1.08), già nel nucleo; §0.6
+  gli scostamenti dal piano. ⚠️ **Il modulo non scrive numeri di rating né regole di IVAO** (revisione del 25
+  settembre): stanno nel vocabolario del nucleo (n.4).
+- **PATS**: il dump del 12 settembre 2026 l'ha fornito `dalberone` e **non entra nel repository**, né in una PR né in
+  una fixture: contiene dati personali. `trainingNEW` è PATS vivo, `exam` gli esami, `training` il vecchio PATS fermo
+  al 2020. Si importano senza errori su MariaDB 11.4.10; i codici numerici non hanno significato senza
+  il codice PHP, che non abbiamo (§P, §7).
+- **Che cosa deve sapere A0**: le 15 decisioni sono in §12, con i link ai due commenti di Carmine; ognuna va nella sua
+  nota. Da tenere presenti: il trainer conduce con un grant con scope (n.1); `[AlsoWrittenWith]` ripetibile e anche alla
+  creazione è un cambio del nucleo con **nota e test della spina dorsale**, prima del modulo (n.2, fase A3); i capi FIR in
+  A11 (n.3); **la regola «il trainee non legge le note riservate del proprio training» ha una nota sua e un test
+  d'integrazione** (n.13); **il feed del calendario non è in M3** e PATS resta acceso solo per quello fino a M6 (n.14);
+  il teorico lo dichiara il trainee (n.15); le postazioni vengono da IVAO, legate al rating dal vocabolario del nucleo,
+  e nelle impostazioni c'è solo `hiddenPositions` (n.5). In §14 del design c'è l'elenco di ciò che il revisore porta nel
+  piano.
+- ⚠️ **`[AlsoWrittenWith]` vale una volta per entità e solo in modifica** (`HubSaveChangesInterceptor`, la prima
+  alternativa e basta): il training lo scrivono tre ruoli senza `Edit`, e un esame lo crea chi non ha `Edit`. È
+  l'estensione n.7.
+- ⚠️ **Un partecipante (`IHasParticipants`) riceve il `View` dell'area sulla riga**: sul training darebbe al trainee la
+  risposta dello staff con le note riservate. Il design non lo usa (§1.1).
+- ⚠️ **Scrivere un grant fa rientrare il titolare** (security stamp): il grant con scope del trainer costa un login a ogni
+  assegnazione (§3.3, §12 n.1). I grant con scope viaggiano nel cookie: vanno tolti a training chiuso.
+- ⚠️ **Una posizione FIR non porta permessi**, e un grant a una posizione si scrive per dipartimento: i capi FIR sono
+  l'estensione n.2.
+- ⚠️ **`ICurrentUser` non ha i rating**: si leggono da `HubDbContext.Users`, e si aggiornano solo al login. I personaggi
+  del banco e2e non hanno rating (n.8).
+- ⚠️ **Il seme dei tipi del calendario non ha `exam`**, anche se il piano §7 lo elenca (n.6); **il nucleo non programma
+  mail nel futuro**: il promemoria è un job del modulo (§5.3).
+- ⚠️ **L'API IVAO** (documentazione pubblica, vista il 25 settembre 2026) ha le postazioni ATC (`/v2/ATCPositions/all`) ma
+  nessun endpoint di training o di esami; **rating e GCA** di un membro stanno nel suo profilo (`/v2/users/me`: `rating`,
+  `gcas`), e l'hub legge solo i rating. I campi di `hours` e delle postazioni **vanno misurati** nella fase del nucleo.
