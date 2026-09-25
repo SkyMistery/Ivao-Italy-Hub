@@ -18,6 +18,13 @@ namespace IvaoHub.Core.Localization;
 /// </summary>
 public sealed class LocaleCatalog
 {
+    /// <summary>
+    /// The key <c>pnpm i18n:sync</c> writes into every copy of a module's language file
+    /// (<c>web/scripts/sync-module-locales.mjs</c>): where the original lives, so that nobody edits the copy. It is not a
+    /// translation, and it is how the file of a module is told from the core's own, which never carry it.
+    /// </summary>
+    public const string ModuleSourceKey = "_source";
+
     private readonly Lazy<FrozenDictionary<string, FrozenDictionary<string, string>>> _byLocale;
     private readonly DivisionOptions _division;
 
@@ -37,7 +44,8 @@ public sealed class LocaleCatalog
     /// <summary>
     /// The text for that key, or <c>null</c> when neither the requested language nor the default
     /// one has it. Keys are the flattened path of the JSON file, exactly as the client writes
-    /// them: <c>nav.home</c>, <c>errors.localized.missing</c>.
+    /// them: <c>nav.home</c>, <c>errors.localized.missing</c>; a module's also with its namespace,
+    /// <c>training:nav.section</c>.
     /// </summary>
     public string? Get(string locale, string key)
     {
@@ -79,21 +87,73 @@ public sealed class LocaleCatalog
             }
 
             var texts = new Dictionary<string, string>(StringComparer.Ordinal);
+            var modules = new List<ModuleWords>();
+
             foreach (var file in Directory.EnumerateFiles(directory, "*.json").OrderBy(name => name, StringComparer.Ordinal))
             {
-                Flatten(JsonNode.Parse(File.ReadAllText(file)), prefix: string.Empty, texts, file);
+                var node = JsonNode.Parse(File.ReadAllText(file));
+
+                if (node is JsonObject words && words.Remove(ModuleSourceKey))
+                {
+                    var own = new Dictionary<string, string>(StringComparer.Ordinal);
+                    Flatten(words, prefix: string.Empty, own, file);
+                    modules.Add(new ModuleWords(Path.GetFileNameWithoutExtension(file), own, file));
+                }
+                else
+                {
+                    Flatten(node, prefix: string.Empty, texts, file);
+                }
             }
 
+            AddModules(modules, texts);
             loaded[locale] = texts.ToFrozenDictionary(StringComparer.Ordinal);
         }
 
         return loaded.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>The words of one module's file: its namespace, which is the name of the file, and its keys.</summary>
+    private sealed record ModuleWords(string Namespace, Dictionary<string, string> Texts, string File);
+
+    /// <summary>
+    /// The words of the modules, over the core's (note 2026-09-26-le-parole-di-piu-moduli). Each key is kept under its
+    /// namespace, as the client asks for it — <c>training:nav.section</c> — and also bare when no other module declares
+    /// it, so that a module's server code keeps asking for <c>mail.flightops.allTours</c>. A bare key two modules
+    /// declare has no answer that would not depend on the order of the files, so it is answered only with its
+    /// namespace; one the core declares stays the core's, and a module declaring it again is refused as before.
+    /// </summary>
+    private static void AddModules(List<ModuleWords> modules, Dictionary<string, string> texts)
+    {
+        var core = texts.Keys.ToHashSet(StringComparer.Ordinal);
+        var declaredBy = modules
+            .SelectMany(module => module.Texts.Keys)
+            .CountBy(key => key, StringComparer.Ordinal)
+            .ToDictionary(StringComparer.Ordinal);
+
+        foreach (var module in modules)
+        {
+            foreach (var (key, text) in module.Texts)
+            {
+                if (core.Contains(key))
+                {
+                    throw DeclaredTwice(key, module.File);
+                }
+
+                texts.Add($"{module.Namespace}:{key}", text);
+
+                if (declaredBy[key] == 1)
+                {
+                    texts.Add(key, text);
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Namespaces are a loading detail of the client, not part of a key: the files of one language
     /// flatten into a single map. Two namespaces claiming the same key would make the answer
-    /// depend on the order the files were read, so it is refused instead.
+    /// depend on the order the files were read, so it is refused instead — except between two
+    /// modules, whose words are kept apart by their namespaces (<see cref="AddModules"/>).
     /// </summary>
     private static void Flatten(JsonNode? node, string prefix, Dictionary<string, string> texts, string file)
     {
@@ -110,9 +170,7 @@ public sealed class LocaleCatalog
             case JsonValue value when value.GetValueKind() == JsonValueKind.String:
                 if (!texts.TryAdd(prefix, value.GetValue<string>()))
                 {
-                    throw new InvalidOperationException(
-                        $"The translation key '{prefix}' is declared twice for the same language; "
-                        + $"the second one is in '{file}'.");
+                    throw DeclaredTwice(prefix, file);
                 }
 
                 break;
@@ -122,4 +180,7 @@ public sealed class LocaleCatalog
                 break;
         }
     }
+
+    private static InvalidOperationException DeclaredTwice(string key, string file) =>
+        new($"The translation key '{key}' is declared twice for the same language; the second one is in '{file}'.");
 }
