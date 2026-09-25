@@ -40,7 +40,7 @@ It is exactly:
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
 `StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
-`LiveStatusStrip`, `StaffSidebar`, `RouteMap`, `MessageThread`.
+`LiveStatusStrip`, `StaffSidebar`, `RouteMap`, `MessageThread`, `RatingBadge`.
 
 `StaffSidebar` is the navigation of the back office, and it is the one entry on this list that
 replaces something Atmosphere ships rather than adding something it lacks. The reason is narrow and
@@ -175,8 +175,17 @@ library. It unwraps longitudes past ±180 on purpose: a flight from Tokyo to Los
 antimeridian, and a line whose points jump from 179 to −179 is drawn straight back across the whole
 world.
 
-`RatingBadge`, `AirportCard` and `EventTimeline` belong to modules that do not exist yet and are not
-to be started early.
+`RatingBadge` draws an IVAO rating — a controller's or a pilot's — as **text**, never as one of IVAO's
+pictures: the short name is the badge (`ADC`, `PP`, what the staff says out loud, like a department's
+code), and the full name is its title and what a screen reader hears, one colour per ladder. It takes
+the short name and not IVAO's number, because the numbers, the order and the rules of the ratings are
+IVAO knowledge that the core keeps in one place, `Core/Ivao/RatingVocabulary.cs`: the server reads the
+short name out of it, and the browser holds no copy. The full names are keys of the core's language
+files, `ratings.Atc.ADC`: IVAO's own English names, which the Italian file keeps as they are, as it does
+the levels of the staff. A short name the files do not know is still drawn, with itself as its name.
+
+`AirportCard` and `EventTimeline` belong to modules that do not exist yet and are not to be started
+early.
 
 ## 4. Colours are tokens, and dark mode is not optional
 

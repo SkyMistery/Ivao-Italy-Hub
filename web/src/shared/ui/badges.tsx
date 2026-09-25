@@ -49,3 +49,30 @@ export function StatusBadge({ active }: { active: boolean }) {
     />
   );
 }
+
+/** Colour per ladder, so a controller's rating and a pilot's are told apart before they are read. */
+const RATING_COLOUR = {
+  Atc: 'blue',
+  Pilot: 'green',
+} as const;
+
+/**
+ * An IVAO rating, as text and never as one of IVAO's pictures (M3, A1, decision note of 25 September 2026). The short
+ * name is the badge — ADC, PP: what the staff says out loud, like a department's code — and the full name, from the
+ * core's language files, is its title and what a screen reader hears.
+ *
+ * It takes the short name, not IVAO's number: the server reads it out of the vocabulary of the ratings, and the browser
+ * holds no copy of IVAO's list. A short name the language files do not know is still drawn, with itself as its name.
+ */
+export function RatingBadge({ kind, shortName }: { kind: string; shortName: string }) {
+  const { t } = useTranslation();
+  const name = t(`ratings.${kind}.${shortName}`, { defaultValue: shortName });
+  const colour = RATING_COLOUR[kind as keyof typeof RATING_COLOUR] ?? 'gray';
+
+  return (
+    <span title={name} className="inline-flex">
+      <Badge variant="flat" color={colour} text={shortName} />
+      <span className="sr-only">{name}</span>
+    </span>
+  );
+}

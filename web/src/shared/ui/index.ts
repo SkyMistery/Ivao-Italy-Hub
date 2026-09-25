@@ -1,6 +1,6 @@
 export { Hero, SectionHeader, StatTile, EmptyState } from './layout-pieces';
 export { CompactPageShells, PageActions, PageShell, type Crumb } from './PageShell';
-export { DepartmentBadge, VisibilityBadge, StatusBadge, type Visibility } from './badges';
+export { DepartmentBadge, VisibilityBadge, StatusBadge, RatingBadge, type Visibility } from './badges';
 export { LocaleSwitcher } from './LocaleSwitcher';
 export { MarkdownContent } from './MarkdownContent';
 export { ConfirmDialog } from './ConfirmDialog';

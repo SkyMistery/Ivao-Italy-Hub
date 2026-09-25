@@ -40,6 +40,9 @@ export const UI_KIT_COMPONENTS = [
   // The twenty-third, decided with the threads of the contacts (note 2026-09-15-contatti-con-risposte §3.1, T14a): a
   // conversation with a department, mounted by the back office and by /me/contacts alike.
   'MessageThread',
+  // The twenty-fourth, and the first the plan listed from the start (§8.3): an IVAO rating as text, with the vocabulary
+  // of the ratings the core keeps (M3, A1, note 2026-09-25-le-ore-e-il-vocabolario-dei-rating).
+  'RatingBadge',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];
