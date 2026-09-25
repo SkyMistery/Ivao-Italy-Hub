@@ -297,9 +297,9 @@ continua a bastare.
 
 - **Classificata prima del codice** (`CLAUDE.md` §5, caso b) e **scritta per prima la nota nuova**,
   `2026-09-25-i-permessi-alternativi-e-la-creazione`: una **scelta tecnica** che dà forma alla decisione n.2 di Carmine, senza
-  domande nuove. **La forma dell'«anche alla creazione»**, che il punto 2 lasciava alla nota, è **una proprietà dell'attributo**,
-  `AlsoOnCreation`: il permesso è lo stesso, la segnatura è di un'alternativa e non dell'entità (sul training nessuna delle tre
-  alternative crea), e chi usa l'attributo oggi non cambia una riga (nota §3.2).
+  domande sulla forma (una per A10, posta in anticipo: sotto, «Trovato» 1). **La forma dell'«anche alla creazione»**, che il punto 2
+  lasciava alla nota, è **una proprietà dell'attributo**, `AlsoOnCreation`: il permesso è lo stesso, la segnatura è di un'alternativa
+  e non dell'entità (sul training nessuna delle tre alternative crea), e chi usa l'attributo oggi non cambia una riga (nota §3.2).
 - **Fatto**: `[AlsoWrittenWith]` ripetibile e con `AlsoOnCreation` (`Core/Division/DomainContracts.cs`); nel guardiano
   (`HubSaveChangesInterceptor`) il blocco della «seconda» alternativa è diventato una funzione sola, `IsWrittenWithAnAlternative`, che
   le prova tutte — in modifica come prima, alla creazione solo quelle segnate, senza scope, su almeno un dipartimento della riga e mai
@@ -318,7 +318,9 @@ continua a bastare.
 - **Trovato, e scritto per chi viene dopo** (nota §3.3 e §5):
   1. ⚠️ **Per A10: eliminare un esame resta di `Edit`.** Crearlo passerà con `AlsoOnCreation`; se lo eliminano TC e TAC basta
      `CrudOptions.DeletePolicy = Training.Edit`, e il guardiano è già d'accordo; se deve eliminarlo anche chi l'ha inserito, è un'altra
-     estensione del nucleo, e la domanda va a Carmine in apertura di A10.
+     estensione del nucleo. **La domanda è già a Carmine**, in anticipo su A10 come ha chiesto `dalberone`: un commento su #131, con
+     tre risposte e la raccomandazione (eliminare un esame vuol dire annullarlo, senza cambiare il nucleo), nella nota §3.5. Solo la
+     risposta che allarga il guardiano cambierebbe il codice di A3; se #131 viene unita prima della risposta, la domanda torna ad A10.
   2. **Per A10**: `MapCrud` chiede all'handler il permesso di scrittura **sulla riga**, prima del guardiano: per gli esami
      `WritePolicy = Training.ManageExams`. Il commento di `CrudOptions.WritePolicy` parla di risorse senza dipartimento, ma il motore
      lo chiede sulla riga anche alle altre.

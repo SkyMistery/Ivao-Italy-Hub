@@ -4,7 +4,9 @@
 **Stato:** **scelta tecnica**, per dare forma nel codice alla decisione n.2 di Carmine (design `07-design-m3.md` §3.4, §8 n.7,
 §12 n.2, deciso sulla PR #121 nel [commento delle risposte][r1]; nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 2),
 che rimanda a questa la forma nel codice. La domanda che il piano lasciava alla nota — «una proprietà dell'attributo o un attributo a
-parte» (`08-piano-implementazione-m3.md`, A3 punto 2) — non apre un bivio (§3.2); nessuna domanda nuova.
+parte» (`08-piano-implementazione-m3.md`, A3 punto 2) — non apre un bivio (§3.2). **Una domanda proposta**, fuori dalla forma decisa
+e posta in anticipo su A10: **chi elimina un esame** (§3.5), a Carmine con un commento su #131; solo una delle tre risposte
+toccherebbe il codice di A3.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono la rete dell'interceptor (`HubSaveChangesInterceptor`, il guardiano
 `EnsureWriteIsAllowed`) e il suo attributo `[AlsoWrittenWith]` (M2, T13), che coprono già un permesso alternativo in modifica; il
 modulo non scrive una tabella per ruolo né un controllo suo. È una PR del nucleo, prima del codice del modulo che la usa (A7, A10),
@@ -82,7 +84,7 @@ Alla creazione il guardiano prova **solo le alternative segnate**, e ognuna:
   l'eccezione di `ISubmittedByMembers` dice lo stesso della riga che un membro manda («deleting is still the department's»). ⚠️ **Da
   sapere per A10**: se un esame lo eliminano solo TC e TAC, A10 lo dice con `CrudOptions.DeletePolicy = Training.Edit` (T6a), e il
   guardiano è già d'accordo; se deve poterlo eliminare anche chi l'ha inserito, è un'altra estensione del nucleo (un'alternativa anche
-  all'eliminazione), con la sua nota: la domanda va a Carmine in apertura di A10.
+  all'eliminazione). La domanda è in §3.5, posta a Carmine in anticipo su A10.
 - **`ContactMessage` e il PIREP**: un'alternativa ciascuno, non segnata; il guardiano fa per loro esattamente ciò che faceva. I test
   che passano dal guardiano con quelle alternative — `ContactThreadTests` (chi legge soltanto risponde), `PirepTests.Review` (il
   validatore di un tour), `PersonalTokenTests` (l'agente di un validatore su una riga di prova) — restano verdi senza essere toccati.
@@ -105,6 +107,31 @@ Alla creazione il guardiano prova **solo le alternative segnate**, e ognuna:
   scope della riga a `PermissionSet` (un permesso con scope non raggiunge mai una riga), che è proprio ciò che questi test provano. È
   un file del maintainer: non si tocca, e lo si dice al revisore (§5).
 
+### 3.5 Una domanda per Carmine: chi elimina un esame (Proposta)
+
+Posta a Carmine con un commento su #131 il 25 settembre, in anticipo su A10, come ha chiesto `dalberone`: se la risposta tocca il
+nucleo, la porta questa PR e non una seconda.
+
+Con A3 un esame lo **crea** e lo **cambia** chi ha `Training.ManageExams` (TC, TAC, TA e trainer; nota di A0 §2 punto 4); **eliminarlo
+resta di `Edit`** (TC e TAC). Un esame annullato su IVAO resterebbe quindi nel calendario pubblico finché TC o TAC non lo tolgono; uno
+rimandato lo sposta chi l'ha inserito.
+
+1. **Lo eliminano TC e TAC**: in A10 `CrudOptions.DeletePolicy = Training.Edit`, e il guardiano è già d'accordo. Nessun cambio del
+   nucleo; chi esamina chiede a TC o TAC di togliere un esame annullato.
+2. **Eliminare un esame vuol dire annullarlo**: in A10 `CrudOptions.Delete` scrive `cancelled_at` invece di togliere la riga, come la
+   libreria dei media ridefinisce già l'eliminazione. È una modifica della riga, che `ManageExams` fa con la sua alternativa; la voce del
+   calendario sparisce (un esame annullato non proietta niente) e la riga resta, nel registro, con chi l'ha annullato. Nessun cambio del
+   nucleo; la riga va via solo con la cancellazione dei dati di una persona.
+3. **Elimina anche chi ha `ManageExams`**: un'estensione del nucleo — un'alternativa che vale anche all'eliminazione (per esempio
+   `AlsoOnDeletion = true`) — aggiunta a questa PR prima del merge, con il suo test della spina dorsale. «Eliminare è di `Edit`»
+   avrebbe un'eccezione.
+
+**Raccomandazione: la 2.** Chi esamina toglie dal calendario un esame annullato il giorno stesso, il guardiano non si allarga, e
+«eliminare è di `Edit`» resta vero ovunque. Se Carmine preferisce il minimo, la 1.
+
+Il resto di A3 non ne dipende: solo la risposta 3 cambia il suo codice, e aspetta la risposta. La risposta entra qui con il link al
+commento di Carmine; se questa PR viene unita prima, la domanda torna in apertura di A10.
+
 ## 4. Alternative scartate
 
 | Alternativa | Perché no |
@@ -112,7 +139,7 @@ Alla creazione il guardiano prova **solo le alternative segnate**, e ognuna:
 | Un attributo a parte, `[AlsoCreatedWith]` | lo stesso permesso scritto due volte, o due attributi per una cosa (§3.2) |
 | Un'interfaccia dell'entità, «le mie alternative creano» | vale per tutte le alternative, e sul training nessuna deve creare (§3.2) |
 | Alla creazione con lo scope della riga | la riga nuova non ne ha uno suo; un permesso dato su una riga ne farebbe nascere altre (§3.2) |
-| Un'alternativa che elimina, già ora | non è nella decisione; serve solo se A10 vuole che chi inserisce un esame lo elimini (§3.3) |
+| Un'alternativa che elimina, già ora | non è nella decisione; è la risposta 3 della domanda di §3.5, non raccomandata |
 | Nel modulo, una tabella per ruolo o un controllo suo prima del salvataggio | `CLAUDE.md` §5 caso (b): il meccanismo c'è e si estende (design §3.4) |
 | `Training.Edit` ai TA e ai trainer | «tutto su ogni training», molto più largo del bisogno (nota di A0, §3) |
 | I test con `TestCurrentUser`, corretto perché passi lo scope | un doppio del maintainer, toccato per far passare test nuovi (`CLAUDE.md` §0 regola 3) |
@@ -144,5 +171,5 @@ Non cambiato: è il comportamento di oggi, e A3 lo ripete per ogni alternativa, 
 - **§16 punto 2** (l'unico handler e la rete dell'interceptor) e **`CLAUDE.md` §2**: la rete dell'interceptor accetta **più**
   permessi alternativi dichiarati dall'entità (`[AlsoWrittenWith]`, ripetibile), ognuno con lo scope della riga, mai per
   l'interessato, senza spostare la riga; uno segnato **`AlsoOnCreation`** vale anche alla creazione, senza scope e su almeno un
-  dipartimento della riga; l'eliminazione resta di `Edit`. È la prima delle due estensioni dell'handler annunciate per M3 (la
-  seconda, i capi FIR, in A11).
+  dipartimento della riga; l'eliminazione resta di `Edit` (salvo la risposta 3 di §3.5). È la prima delle due estensioni dell'handler
+  annunciate per M3 (la seconda, i capi FIR, in A11).

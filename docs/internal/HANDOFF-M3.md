@@ -83,7 +83,8 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 ### Che cosa ha lasciato A3 (25 settembre 2026, branch `m3/a3-alternative-write-permissions`, PR #131)
 
-- **Che cosa c'è** (nota `decisions/2026-09-25-i-permessi-alternativi-e-la-creazione.md`, scelta tecnica, nessuna domanda nuova):
+- **Che cosa c'è** (nota `decisions/2026-09-25-i-permessi-alternativi-e-la-creazione.md`, scelta tecnica; una domanda per A10 posta
+  in anticipo, §3.5):
   - **`[AlsoWrittenWith]` si ripete** (`Core/Division/DomainContracts.cs`), e il guardiano di `HubSaveChangesInterceptor` prova ogni
     alternativa (`IsWrittenWithAnAlternative`): **ne basta una**, ognuna come prima — sul dipartimento della riga con lo scope della
     riga, mai per l'interessato, senza spostare la riga.
@@ -99,7 +100,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **A10**: `trn_exams` con `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true)]`, e `MapCrud` con
     `WritePolicy = Training.ManageExams`, perché il motore chiede il permesso all'handler sulla riga prima del guardiano. ⚠️ **Eliminare
     un esame resta di `Edit`**: con `DeletePolicy = Training.Edit` lo eliminano TC e TAC; se deve poterlo eliminare chi l'ha inserito,
-    è un'altra estensione del nucleo, e la domanda va a Carmine **in apertura di A10**.
+    è un'altra estensione del nucleo. **La domanda è già a Carmine**, con un commento su #131 (nota §3.5; raccomandata: eliminare un
+    esame vuol dire annullarlo, con `CrudOptions.Delete`, senza cambiare il nucleo). Se #131 viene unita senza la risposta, A10 la
+    riprende in apertura.
   - ⚠️ **Un test di permessi con scope non usa `TestCurrentUser`**: il suo `Has` non passa lo scope, e tiene solo i permessi del nucleo.
     `AlternativeWritePermissionTests.AsAsync` scrive senza endpoint con l'identità del cookie (`HubClaims.BuildIdentity`) letta dal vero
     `HttpContextCurrentUser`.
