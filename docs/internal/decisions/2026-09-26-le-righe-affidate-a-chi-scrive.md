@@ -131,6 +131,10 @@ glielo toglie.
 
 ## 5. Le domande per Carmine
 
+Poste il 26 settembre 2026 con [un commento sulla #135][q1], la PR di questa fase.
+
+[q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5841258158
+
 1. **La forma della regola è quella di §3?** Il VID sulla riga (`IHasAssignee`); il permesso segnato nel catalogo (`OnlyForAssignee`);
    chi non ha la riga ripiega su `{Area}.Edit`, nell'handler come nel guardiano; `AlsoOnDeletion` sull'alternativa, che conta solo per
    un permesso segnato. **Raccomandata: sì.** Da questa risposta dipende il codice di questa PR.
