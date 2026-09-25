@@ -1,12 +1,15 @@
 # Le parole di più moduli: il catalogo delle lingue del server con due moduli (A4a)
 
 **Data:** 26 settembre 2026 — fase A4a di M3, PR del nucleo, prima dello scheletro del modulo (A4)
-**Stato:** **Proposta**. La domanda (§5) va a Carmine con un commento sulla PR; il codice di questa PR è la raccomandazione, e
-cambia se la risposta è un'altra. Il codice di A4 aspetta la risposta e il merge (`CONTRIBUTING.md`, «Phases in a queue»).
+**Stato:** **Proposta**. La domanda (§5) è a Carmine in un [commento sulla PR #133][q]; il codice di questa PR è la
+raccomandazione, e cambia se la risposta è un'altra. Il codice di A4 aspetta la risposta e il merge (`CONTRIBUTING.md`, «Phases in a
+queue»).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo c'è — **un solo set di file di lingua**, letto dalla SPA e dal
 back end (piano §16 punto 8), con le parole di un modulo accanto al suo codice e copiate in `locales/` da `pnpm i18n:sync` — e non
 copre un caso che nessuno aveva ancora: **due moduli**. Si estende il meccanismo, non lo si aggira nel modulo. È una PR del nucleo,
 prima del codice del modulo che la usa (`CLAUDE.md` §0 regola 6).
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5840424471
 
 ## 1. Che cosa è successo
 

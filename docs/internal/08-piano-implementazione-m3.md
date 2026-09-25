@@ -363,8 +363,9 @@ continua a bastare.
 
 **Non era nel piano**: l'ha trovata la sessione di A4, il 26 settembre 2026, al primo test d'integrazione dello scheletro, e
 `dalberone` ha scelto di farla subito, come fase del nucleo a sé (`CLAUDE.md` §0 regola 6). Nota nuova
-`2026-09-26-le-parole-di-piu-moduli`, **Proposta**. Branch `m3/a4a-module-locales`, da `main`. **PR del nucleo**, prima di A4, che
-aspetta la risposta e il merge (`CONTRIBUTING.md`, «Phases in a queue»: non si mette in coda sopra un cambio del nucleo in revisione).
+`2026-09-26-le-parole-di-piu-moduli`, **Proposta**. Branch `m3/a4a-module-locales`, da `main`, PR #133. **PR del nucleo**, prima di
+A4, che aspetta la risposta e il merge (`CONTRIBUTING.md`, «Phases in a queue»: non si mette in coda sopra un cambio del nucleo in
+revisione).
 
 1. **Il problema**: `LocaleCatalog` appiattisce tutti i file di una lingua in un solo dizionario e rifiuta una chiave dichiarata due
    volte. Con due moduli si ripetono per forza `_source` (lo scrive `pnpm i18n:sync` in ogni copia) e `nav.section` (lo esige la barra
@@ -380,7 +381,7 @@ come prima.
 **Fatta quando**: i test nuovi e quelli che c'erano passano, e lo scheletro di A4 parte con il suo file di lingua accanto a quello dei
 tour.
 
-**Com'è andata** (26 settembre 2026, branch `m3/a4a-module-locales`):
+**Com'è andata** (26 settembre 2026, branch `m3/a4a-module-locales`, PR #133):
 
 - **Trovata, non pensata**: lo scheletro di A4 compilava e i suoi test di unità passavano; i due test d'integrazione nuovi sono caduti
   all'avvio dell'host, con `The translation key '_source' is declared twice for the same language`. Misurato sui file veri: fra
@@ -390,7 +391,7 @@ tour.
   scelta — fermarsi o fare la fase del nucleo subito — l'ha fatta `dalberone`.
 - **Fatto**: `LocaleCatalog` (`Core/Localization/LocaleCatalog.cs`) come nella nota §3 — `ModuleSourceKey`, i file dei moduli letti a
   parte e aggiunti dopo quelli del nucleo (`AddModules`), l'errore di prima in una funzione sola (`DeclaredTwice`) —; il test nuovo;
-  la nota, **Proposta**, con la domanda a Carmine sulla PR.
+  la nota, **Proposta**, con la domanda a Carmine in un [commento su #133][q133].
 - **Provato che il test cade senza la correzione**: con il comportamento di `main` (la sola costante aggiunta, perché il test la
   nomina) il primo test cade proprio sull'errore dell'avvio, e gli altri due — la regola che resta — passano.
 - **Provato con A4**: su un branch temporaneo, poi tolto, A4a unita con lo scheletro di A4: l'host parte, e passano i quattro test
@@ -401,6 +402,8 @@ tour.
   `dotnet format --verify-no-changes` sui file toccati. Le suite pesanti una alla volta.
 - **Non verificato**: la CI (la dirà la PR); un avvio sull'host di produzione (lo stesso codice dell'host dei test, che legge la
   stessa cartella); una risposta di Carmine diversa da quella raccomandata.
+
+[q133]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5840424471
 
 Design §0.4, §1.6, §3.1, §3.2; note `chi-conduce-e-chi-scrive-un-training`, `il-teorico-lo-dichiara-il-trainee`,
 `rating-e-postazioni-dal-nucleo`, `il-tempo-per-la-data-e-le-voci-della-scheda`. Branch `m3/a4-training-skeleton`.

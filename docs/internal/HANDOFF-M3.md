@@ -7,10 +7,11 @@
 > non si ripetono qui.
 
 **Ultimo aggiornamento:** 26 settembre 2026 — **fase A4a** (nucleo: le parole di più moduli), trovata scrivendo A4, sul branch
-`m3/a4a-module-locales`, PR del nucleo verso `main` con una nota **Proposta** e la domanda a Carmine. **Lo scheletro del modulo
-(A4) è scritto e provato, ma solo in locale** sul branch `m3/a4-training-skeleton` (un commit WIP, mai spinto): senza A4a l'hub non
-parte con due moduli. **Il prossimo passo**: la risposta di Carmine e il merge di A4a; poi `main` entra in A4, si rifanno build e
-test, e A4 apre la sua PR (sotto, «Che cosa ha lasciato A4a»). A5 e A6 vengono dopo A4, in coda (`08`, «Parallelismo possibile»).
+`m3/a4a-module-locales`, **PR #133** del nucleo verso `main`, con una nota **Proposta** e la domanda a Carmine in un commento.
+**Lo scheletro del modulo (A4) è scritto e provato, ma solo in locale** sul branch `m3/a4-training-skeleton` (un commit WIP, mai
+spinto): senza A4a l'hub non parte con due moduli. **Il prossimo passo**: la risposta di Carmine e il merge di A4a; poi `main` entra
+in A4, si rifanno build e test, e A4 apre la sua PR (sotto, «Che cosa ha lasciato A4a»). A5 e A6 vengono dopo A4, in coda (`08`,
+«Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -82,13 +83,14 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A4a (26 settembre 2026, branch `m3/a4a-module-locales`)
+### Che cosa ha lasciato A4a (26 settembre 2026, branch `m3/a4a-module-locales`, PR #133)
 
 - **Perché c'è**: la sessione di A4 ha scritto lo scheletro del modulo, e al primo test d'integrazione l'hub non è partito:
   `LocaleCatalog`, il catalogo delle lingue del server, appiattisce tutti i file di una lingua in un solo dizionario e rifiuta una
   chiave dichiarata due volte, e con due moduli si ripetono per forza `_source` (lo scrive `pnpm i18n:sync` in ogni copia) e
   `nav.section` (lo esige la barra dello staff). `dalberone` ha scelto di fare subito la fase del nucleo, a sé, prima di A4.
-- **Che cosa c'è** (nota `decisions/2026-09-26-le-parole-di-piu-moduli.md`, **Proposta**, la domanda a Carmine sulla PR):
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-parole-di-piu-moduli.md`, **Proposta**, la domanda a Carmine in un
+  [commento su #133](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5840424471)):
   `LocaleCatalog` salta `_source` e la usa per riconoscere il file di un modulo; tiene le chiavi di un modulo anche con il namespace
   (`training:nav.section`); senza namespace, come oggi, quelle che un solo modulo dichiara; una chiave di due moduli solo con il
   namespace; i doppioni che toccano il nucleo ancora rifiutati. Il test nuovo `LocaleCatalogModuleTests` scrive i suoi file di lingua.
