@@ -80,6 +80,38 @@ public sealed class TourStateTests
         Assert.All(after.MediaUses, use => Assert.Equal(Close + Tour.MediaKeptAfterClose, use.UsedUntilUtc));
     }
 
+    /// <summary>
+    /// An archived tour (design M2 §10, T20a) is the staff's only: out of the public, the search and the calendar, as a hidden
+    /// one; its pictures keep the use they had.
+    /// </summary>
+    [Fact]
+    public void AnArchivedTourIsNoLongerPublicAndProjectsOnlyItsPictures()
+    {
+        var tour = ReadyTour();
+        tour.CoverMediaId = 5;
+        tour.PurgedAt = Close.AddMonths(14);
+
+        Assert.False(TourState.IsPublic(tour, Close.AddMonths(14)));
+        Assert.Equal(Visibility.Staff, tour.Visibility);
+
+        var archived = tour.Project(Context(Close.AddMonths(14)))!;
+        Assert.Null(archived.Search);
+        Assert.Empty(archived.Calendar);
+        Assert.Equal([5L], archived.MediaUses.Select(use => use.MediaId));
+    }
+
+    /// <summary>Thirteen months, and twenty five for a tour whose close is more than a year after its release (Carmine, 25 September 2026).</summary>
+    [Fact]
+    public void ATourThatRunsForMoreThanAYearIsKeptLonger()
+    {
+        var settings = new Modules.FlightOps.Settings.FlightOpsSettings();
+        var release = new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        Assert.Equal(13, TourRetentionJob.RetentionMonths(release, release.AddMonths(4), settings));
+        Assert.Equal(13, TourRetentionJob.RetentionMonths(release, release.AddMonths(12), settings));
+        Assert.Equal(25, TourRetentionJob.RetentionMonths(release, release.AddMonths(12).AddDays(1), settings));
+    }
+
     [Fact]
     public void AHiddenTourAndATemplateProjectOnlyTheirPictures()
     {

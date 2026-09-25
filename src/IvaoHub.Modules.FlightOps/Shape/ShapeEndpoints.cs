@@ -35,6 +35,11 @@ public sealed class TourChildren(FlightOpsDbContext database, TourReadiness read
             return (null, Refusal("tourId", "flightops:errors.tourUnknown"));
         }
 
+        if (tour.PurgedAt is not null)
+        {
+            return (null, Refusal("tourId", TourState.PurgedKey));
+        }
+
         row.OwnerDepartment = tour.OwnerDepartment;
         row.OwnerDepartmentMask = tour.OwnerDepartmentMask;
 

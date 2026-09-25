@@ -22,6 +22,7 @@
     "fromTemplate": "New from template",
     "saved": "Tour saved.",
     "readyProblems": "Before it can be marked ready, it still needs:",
+    "purged": "Archived on {{date}}: its rules, hubs, briefing and the details of its reports are gone. The reports and their decisions stay, and nothing on it changes any more.",
     "tabs": {
       "settings": "Settings",
       "briefing": "Briefing",
@@ -215,14 +216,14 @@
       "code": "Country code (two letters)",
       "routeProcedurePrefixes": "Airports whose SID and STAR go in the route (first two letters of the ICAO code)",
       "trackRetentionDays": "Days a report's track is kept after the decision",
-      "retentionMonths": "Months reports are kept",
-      "retentionMonthsLong": "Months the disciplinary record is kept",
+      "retentionMonths": "Months after the close before a tour is archived",
+      "retentionMonthsLong": "The same, for a tour that runs for more than a year",
       "thresholdToleranceMeters": "Take-off distance allowed from the threshold (m)"
     }
   },
   "errors": {
     "profileExists": "This aircraft type already has a profile.",
-    "retentionLongShorter": "The disciplinary record cannot be kept for less time than the reports.",
+    "retentionLongShorter": "A tour that runs for more than a year cannot be archived sooner than the others.",
     "countryCode": "Write the country as its two letter code.",
     "icaoPrefix": "Write the first two letters of the ICAO codes, as ED.",
     "closeBeforeRelease": "The close has to come after the release.",
@@ -236,6 +237,7 @@
     "dailyLimitRequired": "The division's daily limit is off: the tour needs one of its own.",
     "referenceWithoutProfile": "This aircraft has no profile: without its speed the estimated time cannot be computed.",
     "tourHasReports": "This tour has reports and is not deleted: it can be hidden.",
+    "tourPurged": "This tour is archived: it is read, and nothing on it changes any more.",
     "toursNeedDailyLimit": "Some tours still to be flown have no daily limit of their own.",
     "aircraftGroupUnknown": "This aircraft group does not exist.",
     "icao": "Write the airport as its four letter ICAO code.",
@@ -368,6 +370,7 @@
     "disputeNotOpen": "There is no open dispute on this report.",
     "disputeThreadUnreadable": "You cannot read the thread of this dispute, so your answer could not reach the pilot. Ask somebody who reads the department's contacts.",
     "reviewDisputed": "Under an open dispute the decision is reopened by upholding the dispute.",
+    "reviewPurged": "The tour is archived: its plans, checks and rules are gone, and the decision is not reopened.",
     "validatorTour": "Choose a tour of the first level: a subtour is validated with its container.",
     "banTour": "Choose a tour of the first level: a ban on a container holds on its subtours.",
     "banEndsBeforeStart": "The end comes before the start.",
