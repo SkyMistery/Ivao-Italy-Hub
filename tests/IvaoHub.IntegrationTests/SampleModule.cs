@@ -7,6 +7,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Preferences;
+using IvaoHub.Core.Privacy;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -96,6 +97,9 @@ public sealed class SampleModule : ModuleBase
 
         // What a thread may cite of this module (M2, T14): how a tour will say what a report is.
         services.AddScoped<IContactReferenceResolver, SampleReferenceResolver>();
+
+        // Its half of erasing a person (T20b): the rows about them go, the core does the rest.
+        services.AddScoped<IPersonalDataEraser, SampleEraser>();
     }
 
     public override IReadOnlyList<NavItemDescriptor> PublicNavigation =>
