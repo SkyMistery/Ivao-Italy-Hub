@@ -113,7 +113,7 @@ public sealed class PersonalDataErasure(
             lines.AddRange(await EraseCoreAsync(vid, cancellationToken));
             await database.SaveChangesAsync(cancellationToken);
 
-            named += await PersonColumnRewrite.RewriteAsync(database, vid, pseudonym, cancellationToken);
+            named += await PersonColumnRewrite.RewriteAsync(database, new ErasureRequest(vid, pseudonym), cancellationToken);
             await database.SaveChangesAsync(cancellationToken);
 
             await AuditRedaction.EmptyAsync(database, interceptor.TakeErased(database), cancellationToken);
@@ -180,7 +180,7 @@ public sealed class PersonalDataErasure(
             var named = 0;
             foreach (var context in contexts)
             {
-                named += await PersonColumnRewrite.RewriteAsync(context, request.Vid, request.Pseudonym, cancellationToken);
+                named += await PersonColumnRewrite.RewriteAsync(context, request, cancellationToken);
                 await context.SaveChangesAsync(cancellationToken);
 
                 await AuditRedaction.EmptyAsync(context, interceptor.TakeErased(context), cancellationToken);

@@ -1,9 +1,15 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.08 — 25 settembre 2026 (**T20b, la cancellazione dei dati di una persona, nel nucleo**: un'interfaccia per modulo, lo pseudonimo scritto dal nucleo per convenzione sui nomi delle colonne, l'audit ripulito; il modulo dei tour la implementa nella PR successiva)
+**Versione documento:** 1.09 — 25 settembre 2026 (**T20b, le righe che restano con il VID**: un modulo può tenere apposta una riga intera, come un ban in vigore, e il nucleo non ci scrive lo pseudonimo)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.09** (25 set 2026, T20b, tra la PR del nucleo e quella del modulo): **le righe che restano con il VID**. Nota
+`decisions/2026-09-25-le-righe-che-restano-con-il-vid.md`, caso (b). La risposta 2 della nota di 1.08 (un ban in vigore resta con il VID)
+non reggeva nel codice della #119: il nucleo scrive lo pseudonimo dopo l'eraser del modulo, in ogni colonna di ogni tabella. Ora l'eraser
+passa le righe che tiene apposta (`ErasureRequest.Keep`) e il nucleo le salta; le loro righe d'audit prendono lo pseudonimo come le
+altre. Trovato all'inizio della PR del modulo, prima di scriverlo. Toccati: §16 punto 16.
 
 **Changelog 1.08** (25 set 2026, T20b, PR del nucleo): **la cancellazione dei dati di una persona**. Nota
 `decisions/2026-09-25-la-cancellazione-dei-dati-di-una-persona.md`, caso (c). **Quattro risposte di Carmine**, tutte le
@@ -2484,7 +2490,8 @@ Il problema noto (un pezzo nuovo che arriva con un design diverso dal resto dell
     `PersonColumns`), e l'audit (copie delle righe cancellate svuotate, il VID sostituito ovunque, una riga `erasure`). L'interceptor ha
     una **modalità cancellazione**: niente timbri, e una riga cancellata non si ricopia nell'audit. Un modulo nuovo non scrive niente per
     le colonne che seguono la convenzione; una colonna di persona con un altro nome sfuggirebbe, e il test
-    `TheColumnsThatNameAPersonAreTheOnesTheErasureKnows` è l'elenco con cui la revisione la confronta.
+    `TheColumnsThatNameAPersonAreTheOnesTheErasureKnows` è l'elenco con cui la revisione la confronta. Una riga che il modulo tiene
+    **apposta** con il VID — un ban in vigore — la passa a `ErasureRequest.Keep`, e il nucleo non la tocca (piano 1.09).
 
 **E. Come si cambia il sistema mentre si scrive codice** (concordato il 2 set 2026)
 
