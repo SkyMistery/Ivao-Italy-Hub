@@ -87,16 +87,15 @@ che a decidere sia stato Carmine e non una sessione.
 | Vietare al collaboratore **ogni** file del nucleo | Contro la regola (b): un meccanismo che non basta si estende, non si aggira nel modulo. Il nucleo si tocca, ma dichiarato, con una nota e in una PR a sé. |
 | Un hook di Claude Code che blocca `git push` su `main` | Vive sulla macchina del collega e si toglie con una riga; il ruleset vive su GitHub. |
 
-## 6. Che cosa non è verificato
+## 6. Che cosa non è verificato — **verificato il 25 settembre 2026** (§9)
 
-- **Che «Restrict updates» con il solo bypass del ruolo admin funzioni su un repository personale** (non di
-  un'organizzazione) come sulla carta: si verifica con una PR di prova di `dalberone`, che non deve poter unire, e con
-  un push diretto su `main`, che deve essere rifiutato.
-- **Il primo giro di `core-guard` su GitHub**: lo script è provato in locale su cinque casi (solo modulo, nucleo senza
-  nota, nucleo con nota, file del maintainer, questo stesso branch — che la guardia fermerebbe se non fosse di Carmine),
-  ma `pull_request_target` legge il workflow da `main`, quindi il check esiste solo **dopo** il merge di questa PR.
-- Le sessioni Claude di Carmine hanno gli stessi permessi GitHub di Carmine: che non uniscano una PR del collaboratore
-  lo garantisce `CLAUDE.local.md`, non GitHub.
+- ~~**Che «Restrict updates» con il solo bypass del ruolo admin funzioni su un repository personale**~~ — verificato, con
+  una correzione: il bypass **«For pull requests only» non regge** su un repository personale (`viewerCanMergeAsAdmin:
+  false`, merge bloccato anche per Carmine); regge con **«Always»** (§9).
+- ~~**Il primo giro di `core-guard` su GitHub**~~ — verificato: sulla PR #113 di Carmine verde in 8 s, sulla PR #114 di
+  `dalberone` rosso su `CLAUDE.md`.
+- ~~Le sessioni Claude di Carmine hanno gli stessi permessi GitHub di Carmine~~ — dal 25 settembre un `permissions.deny`
+  nelle impostazioni utente di Carmine, e `.claude/settings.json` committato (§7), le fermano prima di GitHub.
 
 ## 7. Addendum del 25 settembre 2026 — i ruleset sono attivi, e due buchi chiusi
 
@@ -114,7 +113,44 @@ che a decidere sia stato Carmine e non una sessione.
   `.claude/settings.json` è **committato** (solo lui: `.claude/*` + `!.claude/settings.json`) con le stesse regole `deny`
   (merge, push su `main`, tag, `--force`), ed è un file riservato al maintainer per la guardia. Un `settings.local.json` lo
   scavalca: è una cintura, non la serratura.
-- Resta da fare la prova di §6 con `dalberone` (push su `main`, PR su `CLAUDE.md`, tag `v0.0.0-test`).
+- ~~Resta da fare la prova di §6 con `dalberone`~~ — fatta, §9.
+
+## 9. La prova con `dalberone` — 25 settembre 2026, tutte e tre rifiutate
+
+Fatte da `dalberone` a mano dal suo terminale (il suo Claude si è rifiutato per `CLAUDE.md` §0, e il `.claude/settings.json`
+committato lo avrebbe fermato comunque); rilette da Carmine attraverso l'API prima di chiudere.
+
+1. **Push diretto su `main`**: `GH013: Repository rule violations found` — «Cannot update this protected ref», «Changes must
+   be made through a pull request», «2 of 2 required status checks are expected». `main` fermo a `3a33bd0`.
+2. **PR #114** (`m3/test-guard`, una riga in `CLAUDE.md`): `core-guard` **rosso** (`event: pull_request_target`, attore
+   `dalberone`), `build-test` non partito, `mergeStateStatus: BLOCKED`; al posto del bottone lui vede «Merging is blocked
+   — Cannot update this protected ref» **senza** la casella di bypass. Chiusa da Carmine con un commento, branch cancellato.
+3. **Tag `v0.0.0-test`**: `GH013` — «Cannot create ref due to creations being restricted». Nessun tag su GitHub.
+
+**Che cosa ha insegnato sul repository personale.** Il bypass del ruleset `main` per il ruolo admin deve essere **«Always»**,
+non «For pull requests only»: con il secondo GitHub rispondeva `viewerCanMergeAsAdmin: false` e bloccava anche Carmine. Con
+«Always», per Carmine ogni merge passa dalla casella **«Merge without waiting for requirements to be met (bypass rules)»** nel
+riquadro della PR — il nome inganna, i requisiti sono già soddisfatti; è solo il modo in cui GitHub dice «l'admin aggiorna un
+ref che gli altri non toccano». Il JSON che regge (riletto da GitHub il 25 settembre):
+
+```json
+{ "name": "main", "target": "branch", "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+  "bypass_actors": [{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }],
+  "rules": [ { "type": "deletion" }, { "type": "non_fast_forward" }, { "type": "update" },
+             { "type": "pull_request", "parameters": { "required_approving_review_count": 0 } },
+             { "type": "required_status_checks", "parameters": { "strict_required_status_checks_policy": false,
+               "required_status_checks": [{ "context": "build-test" }, { "context": "core-guard" }] } } ] }
+```
+
+Il ruleset `release tags` (`refs/tags/v*`, `creation`/`update`/`deletion`, bypass admin «Always») ha retto così com'era.
+
+⚠️ **Da fare prima del 2 novembre 2026** (avviso di GitHub sul run di `core-guard`, trovato da `dalberone`): sui repository
+pubblici `pull_request_target` sarà **bloccato per default** da una regola delle Actions, salvo una *event policy* del
+repository che lo consenta. `core-guard` usa quel trigger di proposito (legge lo script da `main`). La policy si crea in
+Settings → Actions → Policies (o via `POST /repos/{owner}/{repo}/actions/policies`), limitata al solo file
+`.github/workflows/core-guard.yml`. Finché non c'è, il check funziona; dal 2 novembre smetterebbe di partire e, essendo
+obbligatorio, bloccherebbe ogni merge.
 
 ## 8. Da portare nel piano
 
