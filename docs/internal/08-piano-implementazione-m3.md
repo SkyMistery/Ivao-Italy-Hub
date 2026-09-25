@@ -270,7 +270,7 @@ database che ha già gli altri cinque tipi; XX: nessuna postazione nei semi.
 **Fatta quando**: in sviluppo, con il token vero, la tabella si riempie (numeri nella PR) e la directory risponde con le postazioni
 di un rating ATC in un FIR della divisione; `exam` è fra i tipi del calendario dopo un riavvio su un database già avviato.
 
-**Com'è andata** (25 settembre 2026, branch `m3/a2-atc-positions`, PR in bozza in coda dopo #128):
+**Com'è andata** (25 settembre 2026, branch `m3/a2-atc-positions`, PR #129, in coda dopo #128):
 
 - **Misurato prima del codice, con il token vero** (nota nuova `2026-09-25-le-postazioni-atc-e-il-tipo-exam`, §1). La documentazione
   pubblica dell'API sta in `https://api.ivao.aero/docs/{api}-json`: **nessuna** risposta delle postazioni accetta un paese. **Senza

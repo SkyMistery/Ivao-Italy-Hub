@@ -7,7 +7,7 @@
 > non si ripetono qui.
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A2** (nucleo: le postazioni ATC da IVAO, la loro directory, il tipo
-`exam`), sul branch `m3/a2-atc-positions`, PR in bozza verso `main` **in coda dopo #128** (A1, pronta: #125, cioè A0, è unita, e
+`exam`), sul branch `m3/a2-atc-positions`, **PR #129** in bozza verso `main` **in coda dopo #128** (A1, pronta: #125, cioè A0, è unita, e
 `main` è entrato in A1 e da lì qui). **Il prossimo passo** è **A3** (i permessi alternativi) o **A4** (lo scheletro del modulo), che
 non dipendono da A1 e A2 per il codice e partono da `main`; A4 porta `hiddenPositions`, che la directory di A2 lascia al modulo.
 A5 e A6 vengono dopo A4, in coda (`08`, «Parallelismo possibile»).
@@ -82,7 +82,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A2 (25 settembre 2026, branch `m3/a2-atc-positions`, PR in bozza, in coda dopo #128)
+### Che cosa ha lasciato A2 (25 settembre 2026, branch `m3/a2-atc-positions`, PR #129, in coda dopo #128)
 
 - **Che cosa c'è** (nota `decisions/2026-09-25-le-postazioni-atc-e-il-tipo-exam.md`, scelta tecnica, nessuna domanda nuova):
   - **Le postazioni ATC del mondo** in `ref_ivao_atc_positions` (`Core/Ivao/IvaoAtcPosition.cs`: `Callsign` è la chiave,
