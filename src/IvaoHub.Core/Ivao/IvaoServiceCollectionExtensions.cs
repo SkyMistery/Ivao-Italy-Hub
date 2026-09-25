@@ -30,6 +30,9 @@ public static class IvaoServiceCollectionExtensions
         services.AddScoped<IRunwayDirectory, RunwayDirectory>();
         services.AddScoped<IAircraftTypeDirectory, AircraftTypeDirectory>();
         services.AddScoped<IAirportDirectory, AirportDirectory>();
+
+        // IVAO's ratings and their rules, which a module asks rather than writes (M3, A1). Data, so one instance serves all.
+        services.AddSingleton(IvaoRatings.Vocabulary);
         services.AddScoped<RefDataSyncJob>();
 
         // The token of the application, on its own client so a slow token endpoint cannot exhaust

@@ -1522,6 +1522,30 @@
     "PRD": "Public Relations",
     "WD": "Web"
   },
+  "ratings": {
+    "Atc": {
+      "AS1": "ATC Applicant",
+      "AS2": "ATC Trainee",
+      "AS3": "Advanced ATC Trainee",
+      "ADC": "Aerodrome Controller",
+      "APC": "Approach Controller",
+      "ACC": "Centre Controller",
+      "SEC": "Senior Controller",
+      "SAI": "Senior ATC Instructor",
+      "CAI": "Chief ATC Instructor"
+    },
+    "Pilot": {
+      "FS1": "Basic Flight Student",
+      "FS2": "Flight Student",
+      "FS3": "Advanced Flight Student",
+      "PP": "Private Pilot",
+      "SPP": "Senior Private Pilot",
+      "CP": "Commercial Pilot",
+      "ATP": "Airline Transport Pilot",
+      "SFI": "Senior Flight Instructor",
+      "CFI": "Chief Flight Instructor"
+    }
+  },
   "news": {
     "title": "News",
     "description": "What this department announces on the division site.",
