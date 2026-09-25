@@ -194,6 +194,7 @@
     "calendarKinds": {
       "event": "Event",
       "training": "Training",
+      "exam": "Exam",
       "tour": "Tour",
       "meeting": "Meeting",
       "deadline": "Deadline"
