@@ -100,6 +100,9 @@ public sealed class ContentSeeder(
     /// could file an entry under anything, because the kind of an entry is now chosen from this
     /// list rather than typed (decided 7 Sep 2026, note
     /// <c>decisions/2026-09-08-tipi-di-evento-di-divisione.md</c>).</para>
+    /// <para>⚠️ A kind the back office has already written under the key a later release seeds —
+    /// <c>exam</c> before M3, A2 — is left as its authors made it, and the key is remembered all the
+    /// same: adding the seed's would break the unique index on the key, and the start with it.</para>
     /// </summary>
     private async Task SeedCalendarKindsAsync(HashSet<string> applied, CancellationToken cancellationToken)
     {
@@ -109,6 +112,11 @@ public sealed class ContentSeeder(
             logger.LogWarning("No calendar kind seed directory at {Directory}.", directory);
             return;
         }
+
+        // As the column compares them: the collation of the database ignores case.
+        var written = new HashSet<string>(
+            await database.CalendarKinds.AsNoTracking().Select(kind => kind.Key).ToListAsync(cancellationToken),
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (var file in Files(directory))
         {
@@ -127,6 +135,15 @@ public sealed class ContentSeeder(
                 var setting = CalendarKindSettingPrefix + kind.Key;
                 if (!applied.Add(setting))
                 {
+                    continue;
+                }
+
+                if (written.Contains(kind.Key))
+                {
+                    Remember(setting);
+                    logger.LogInformation(
+                        "The calendar kind {Key} had already been written by hand, and is left as it is.",
+                        kind.Key);
                     continue;
                 }
 

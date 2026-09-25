@@ -67,3 +67,16 @@ answers them, and the sectors of one FIR as `/v2/subcenters/all` does, both with
 (`regionMap`, `regionMapPolygon`). What they taught: **no position carries a rating**, so the type of position a rating is
 trained on belongs to the vocabulary of the ratings; the airports' positions are `DEL`, `GND`, `TWR`, `APP`, `DEP` and `ATIS`,
 and the sectors (`CTR`, `FSS`) are only in the second endpoint, which dropped the connection twice out of three attempts.
+
+## The ATC positions of the world (M3, A2)
+
+`atc-positions-world.json` and `subcenters-world.json` are what the fixture client answers for the ATC positions, recorded
+on 25 September 2026 with `node tools/record-ivao-fixtures.mjs --positions world LIRF LIMC LIBD LFPG LIBG LIRR LIMM LIBB LFFF`:
+the positions of the bench's airports and the sectors of their FIRs as IVAO's two answers of the world give them — so a
+French airport and a French FIR are in them, for the division to leave out. Grottaglie (`LIBG`) is there because IVAO lists
+its approach twice: four callsigns of the world come twice, the same station under two identifiers, and the table keeps one.
+
+The tool now asks with `mapType=regionMapPolygon`, as the hub does. Without it IVAO sends two outlines with every sector,
+and the answer of the world takes longer than the fifteen seconds its gateway waits: a `504`, or the connection closed half
+way — what A1 saw twice out of three was that, four times out of four on 25 September. With one outline it comes in about
+five seconds, and the outline is dropped all the same.

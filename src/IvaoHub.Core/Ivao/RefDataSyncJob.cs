@@ -48,14 +48,16 @@ public sealed class RefDataSyncJob(
             var centers = await SyncCentersAsync(countryId, cancellationToken);
             var airports = await SyncAirportsAsync(countryId, cancellationToken);
             var aircraft = await SyncAircraftAsync(cancellationToken);
+            var (positions, sectors) = await SyncAtcPositionsAsync(countryId, cancellationToken);
 
             await database.SaveChangesAsync(cancellationToken);
 
             entry.FinishedAt = clock.UtcNow;
-            entry.Status = Outcome(centers, airports);
+            entry.Status = Outcome(centers, airports, positions, sectors);
             entry.Message = string.Create(
                 CultureInfo.InvariantCulture,
-                $"{centers} centre(s) for {countryId}, {airports} airport(s) of the world, {aircraft} aircraft type(s)");
+                $"{centers} centre(s) for {countryId}, {airports} airport(s) of the world, {aircraft} aircraft type(s)")
+                + string.Create(CultureInfo.InvariantCulture, $", {positions} ATC position(s) and {sectors} sector(s) of the world");
 
             await database.SaveChangesAsync(cancellationToken);
 
@@ -75,16 +77,14 @@ public sealed class RefDataSyncJob(
     }
 
     /// <summary>
-    /// Which of the two halves actually landed. A run that refreshed the centres and got nothing
+    /// Which of the parts actually landed. A run that refreshed the centres and got nothing
     /// back for the airports is not a success: calling it one is how a half stale snapshot goes
-    /// unnoticed for weeks.
+    /// unnoticed for weeks. The two halves of the ATC positions count the same way since M3 (A2).
     /// </summary>
-    private static string Outcome(int centers, int airports) => (centers, airports) switch
-    {
-        (0, 0) => "skipped",
-        (0, _) or (_, 0) => "partial",
-        _ => "succeeded",
-    };
+    private static string Outcome(params int[] parts) =>
+        parts.All(count => count == 0) ? "skipped"
+        : parts.Any(count => count == 0) ? "partial"
+        : "succeeded";
 
     /// <summary>
     /// Turns the running row into a failed one, and nothing else. Everything the run had staged is
@@ -309,6 +309,80 @@ public sealed class RefDataSyncJob(
             row.Order = transponder.Order;
             row.SyncedAt = clock.UtcNow;
         }
+    }
+
+    /// <summary>
+    /// The ATC positions of the world (M3, A2): about 13 000 rows in IVAO's two lists, the positions of the airports and
+    /// the sectors of the FIRs, written like the airports. The halves arrive and are pruned each on its own: one that did
+    /// not come back leaves its rows as they were, and one that did drops only its own rows IVAO no longer lists — a bad
+    /// minute on the sectors must never read as "the world has no sectors".
+    /// </summary>
+    private async Task<(int Positions, int Sectors)> SyncAtcPositionsAsync(
+        string countryId,
+        CancellationToken cancellationToken)
+    {
+        var (positions, sectors) = await ivao.GetAtcPositionsAsync(cancellationToken);
+        if (positions.Count == 0 && sectors.Count == 0)
+        {
+            logger.LogWarning("IVAO returned no ATC position at all; that table is left alone.");
+            return (0, 0);
+        }
+
+        var existing = await database.IvaoAtcPositions.ToDictionaryAsync(
+            position => position.Callsign,
+            StringComparer.OrdinalIgnoreCase,
+            cancellationToken);
+
+        // Change detection off for the loop, for the reason the airports give.
+        var detecting = database.ChangeTracker.AutoDetectChangesEnabled;
+        database.ChangeTracker.AutoDetectChangesEnabled = false;
+
+        try
+        {
+            foreach (var position in positions.Concat(sectors))
+            {
+                if (!existing.TryGetValue(position.Callsign, out var row))
+                {
+                    row = new IvaoAtcPosition { Callsign = position.Callsign };
+                    database.IvaoAtcPositions.Add(row);
+                    existing[position.Callsign] = row;
+                }
+
+                row.PositionType = position.PositionType;
+                row.AirportIcao = position.AirportIcao;
+                row.CenterId = position.CenterId;
+                row.Name = position.Name;
+                row.RawJson = position.RawJson;
+                row.SyncedAt = clock.UtcNow;
+            }
+        }
+        finally
+        {
+            database.ChangeTracker.AutoDetectChangesEnabled = detecting;
+            database.ChangeTracker.DetectChanges();
+        }
+
+        if (positions.Count > 0)
+        {
+            Prune(
+                database.IvaoAtcPositions,
+                existing.Where(pair => pair.Value.AirportIcao is not null).ToDictionary(StringComparer.OrdinalIgnoreCase),
+                positions.Select(position => position.Callsign),
+                countryId,
+                "ATC position");
+        }
+
+        if (sectors.Count > 0)
+        {
+            Prune(
+                database.IvaoAtcPositions,
+                existing.Where(pair => pair.Value.AirportIcao is null).ToDictionary(StringComparer.OrdinalIgnoreCase),
+                sectors.Select(sector => sector.Callsign),
+                countryId,
+                "sector");
+        }
+
+        return (positions.Count, sectors.Count);
     }
 
     /// <summary>

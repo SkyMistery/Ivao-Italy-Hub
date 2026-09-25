@@ -43,7 +43,9 @@
  * records public reference data: the ATC positions of the airports named, as /v2/ATCPositions/all answers them, into
  * atc-positions-<name>.json, and the sectors of the FIRs named, as /v2/subcenters/all answers them, into
  * subcenters-<name>.json (M3, A1). Both without the outline of the sector (regionMap, regionMapPolygon), which is most
- * of the fifty megabytes the two answers weigh for the world.
+ * of what the two answers weigh for the world. They are asked with mapType=regionMapPolygon, one outline instead of two,
+ * as the hub asks them (M3, A2): without it the sectors of the world take longer than IVAO's gateway waits, and the
+ * answer is a 504 or a connection closed half way.
  */
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -289,7 +291,7 @@ if (airportsOnly) {
 }
 
 if (positionsOnly) {
-  // Twenty and thirty megabytes, and IVAO has closed the connection half way through the second one: a few attempts.
+  // Ten and twelve megabytes with one outline; still big enough that a second attempt is worth having.
   const getWorld = async (path) => {
     for (let attempt = 1; ; attempt++) {
       try {
@@ -302,8 +304,12 @@ if (positionsOnly) {
   };
   const codes = new Set(process.argv.slice(4).map((code) => code.toUpperCase()));
   const withoutOutline = ({ regionMap, regionMapPolygon, ...position }) => position;
-  const positions = (await getWorld("/v2/ATCPositions/all")).filter((row) => codes.has(row.airportId)).map(withoutOutline);
-  const subcenters = (await getWorld("/v2/subcenters/all")).filter((row) => codes.has(row.centerId)).map(withoutOutline);
+  const positions = (await getWorld("/v2/ATCPositions/all?mapType=regionMapPolygon"))
+    .filter((row) => codes.has(row.airportId))
+    .map(withoutOutline);
+  const subcenters = (await getWorld("/v2/subcenters/all?mapType=regionMapPolygon"))
+    .filter((row) => codes.has(row.centerId))
+    .map(withoutOutline);
   writeFileSync(join(outDir, `atc-positions-${process.argv[3]}.json`), JSON.stringify(positions, null, 2));
   writeFileSync(join(outDir, `subcenters-${process.argv[3]}.json`), JSON.stringify(subcenters, null, 2));
   const types = (rows) => [...new Set(rows.map((row) => row.position))].join(", ");

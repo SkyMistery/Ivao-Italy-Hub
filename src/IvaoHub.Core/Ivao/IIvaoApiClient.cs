@@ -70,6 +70,17 @@ public interface IIvaoApiClient
     Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)>
         GetFlightPlanVocabulariesAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The ATC positions of the world, in the two lists IVAO keeps: the positions of the airports and the sectors of the
+    /// FIRs (M3, A2). Each half is empty when IVAO could not be asked, and never an exception: they are the heaviest
+    /// answers of the reference data, and the rest of the night's snapshot must not go down with them.
+    /// <para>⚠️ By default a client knows none. A client written before A2 — the doubles of the tests among them — keeps
+    /// compiling and answers what it knows, and the synchronisation keeps the positions it already has.</para>
+    /// </summary>
+    Task<(IReadOnlyList<IvaoAtcPositionDto> Airports, IReadOnlyList<IvaoAtcPositionDto> Sectors)>
+        GetAtcPositionsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<(IReadOnlyList<IvaoAtcPositionDto>, IReadOnlyList<IvaoAtcPositionDto>)>(([], []));
+
     /// <summary>The profile behind a member's access token, as raw JSON.</summary>
     Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default);
 

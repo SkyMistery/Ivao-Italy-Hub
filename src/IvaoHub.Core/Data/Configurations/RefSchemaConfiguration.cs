@@ -96,6 +96,28 @@ internal sealed class IvaoTransponderTypeConfiguration : IEntityTypeConfiguratio
 }
 
 /// <summary>
+/// The ATC positions of the world (M3, A2): an airport position has its airport, a sector its FIR, and the directory
+/// reads them by kind and joins the airports on the first.
+/// </summary>
+internal sealed class IvaoAtcPositionConfiguration : IEntityTypeConfiguration<IvaoAtcPosition>
+{
+    public void Configure(EntityTypeBuilder<IvaoAtcPosition> builder)
+    {
+        builder.ToTable("ref_ivao_atc_positions");
+        builder.HasKey(position => position.Callsign);
+        builder.Property(position => position.Callsign).HasMaxLength(IvaoAtcPosition.MaxCallsignLength).ValueGeneratedNever();
+        builder.Property(position => position.PositionType).HasMaxLength(IvaoAtcPosition.MaxPositionTypeLength).IsRequired();
+        builder.Property(position => position.AirportIcao).HasMaxLength(IvaoAtcPosition.MaxAirportLength);
+        builder.Property(position => position.CenterId).HasMaxLength(IvaoAtcPosition.MaxCenterLength);
+        builder.Property(position => position.Name).HasMaxLength(IvaoAtcPosition.MaxNameLength).IsRequired();
+        builder.Property(position => position.RawJson).HasColumnType("json").IsRequired();
+        builder.HasIndex(position => position.PositionType);
+        builder.HasIndex(position => position.AirportIcao);
+        builder.HasIndex(position => position.CenterId);
+    }
+}
+
+/// <summary>
 /// The outlines of the flight information regions. In <c>ref_</c> like the IVAO snapshots because it
 /// is the same kind of thing — reference data fetched from outside, never edited here — even though
 /// it does not come from IVAO (decision note of 16 September 2026).
