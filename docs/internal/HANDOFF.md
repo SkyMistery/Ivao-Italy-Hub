@@ -16,7 +16,25 @@
 > La event policy delle Actions che consente `pull_request_target` a `core-guard.yml` (obbligatoria dal 2 nov 2026) **esiste dal
 > 25 set** (nota §9, id 5617). **M3 è partito**: `dalberone` ha letto `HANDOFF-M3.md` e lavora al design.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **T0–T20a**. Piano **1.07**. **Il prossimo passo è T20b (la cancellazione dei dati di un pilota, nel nucleo)**, in una chat nuova, dopo il merge di T20a: si apre con una **nota di caso (c)**, decisa con Carmine prima del codice; poi T20c (rifiniture, giro completo, chiusura di M2). T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+**Ultimo aggiornamento:** 25 settembre 2026 — **T0–T20a e la PR del nucleo di T20b**. Piano **1.08**. **Il prossimo passo è la PR del modulo di T20b** (`FlightOpsPersonalData : IPersonalDataEraser`, design §10.0), dopo il merge di quella del nucleo; poi T20c (rifiniture, giro completo, chiusura di M2). T21 (l'app Python del validatore) sta fuori da questo repository e può andare in parallelo.
+
+> **Che cosa ha lasciato T20b, la PR del nucleo** (nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona`, piano 1.08): Carmine ha
+> preso le quattro raccomandazioni (pseudonimo negativo per persona, senza tabella; ban in vigore tenuto con il VID; fili aperti dalla
+> persona cancellati interi; pseudonimo anche sul lavoro da staff). Il codice sta in **`Core/Privacy/`**: `PersonalDataErasure` (anteprima
+> e cancellazione, solo superadmin, mai un superadmin), `IPersonalDataEraser` (la metà di un modulo: cancella o svuota le **sue righe su**
+> la persona, e basta), `PersonColumns` (la convenzione: un intero `Vid`, `…Vid` o `…By` nomina una persona; `participants_json` è l'unica
+> lista), `PersonColumnRewrite` (lo pseudonimo in ogni colonna così, per ogni contesto: quello di un modulo riscrive i tipi del modulo,
+> quello del nucleo i tipi del nucleo), `AuditRedaction` (il walker del JSON dell'audit). L'interceptor ha **`BeginErasure()`**: niente
+> timbri, `created_by` riscrivibile, una riga auditata cancellata o svuotata lascia `erased` senza JSON e le sue copie vengono svuotate, una
+> riga che cambia solo le persone che nomina non lascia niente. Lo pseudonimo viene da `hub_division_settings → privacy.lastPseudonym`
+> (−1, −2, …). Endpoint `GET|POST /api/admin/erasure/{vid}`; pannello `features/admin/erasure/ErasurePanel.tsx` nella pagina dei permessi.
+> ⚠️ **Per la PR del modulo**: il modulo non scrive niente per le colonne che seguono la convenzione, ma deve cancellare o svuotare ciò che
+> è **sulla** persona (note, testi, voli, tracce, iscrizioni, segnalazioni) e lasciare il ban in vigore; un PIREP modificato si riproietta,
+> quindi va controllato che niente riapra un filo. ⚠️ **Trovato**: le notifiche alla casella di un dipartimento su un filo della persona
+> ne portano VID (come stringa), oggetto e testo: vanno via come quelle a lei (`AuditRedaction.Mentions`). ⚠️ Il modello di runtime di EF
+> non sa `IsTableExcludedFromMigrations` (eccezione a runtime). ⚠️ `ErasureTests.TheColumnsThatNameAPersonAreTheOnesTheErasureKnows` è
+> l'elenco delle 77 colonne di persona: una tabella nuova con una colonna così lo fa fallire, e si aggiorna guardandola. Test locali: tutta
+> l'integrazione (286), unità, `pnpm lint typecheck test`.
 
 > **Che cosa ha lasciato T20a** (nota `2026-09-25-la-conservazione-dei-tour`, piano 1.07): T20 è **divisa in tre** (Carmine). La
 > conservazione sta in `Tours/TourRetentionJob.cs`, il primo del mese alle 04:20 (ora del server): un tour **pronto** chiuso da

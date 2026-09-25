@@ -1728,7 +1728,16 @@ chiede il nucleo:
 - **T20b** — il punto 2, **nel nucleo** (Carmine): prima una nota di caso (c) con il meccanismo — un'interfaccia che ogni modulo
   implementa, un'azione del superadmin sull'utente, il nucleo che ripulisce fili, notifiche, preferenze, token e `hub_audit_log` —, poi
   una PR del nucleo, poi il modulo dei tour. Il censimento dei dati personali per tabella è nella nota di T20a, §4, e va rifatto in
-  apertura (T20b lo mette nella sua nota).
+  apertura (T20b lo mette nella sua nota). **Decisa** (nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona`, piano 1.08, le quattro
+  raccomandazioni) e divisa in due PR, branch `m2/t20b-pilot-data-deletion`:
+  - **la PR del nucleo — fatta**: `Core/Privacy/` (`IPersonalDataEraser`, `PersonalDataErasure`, `PersonColumns`, `PersonColumnRewrite`,
+    `AuditRedaction`, `ErasureEndpoints`), la modalità cancellazione di `HubSaveChangesInterceptor`, `ErasurePanel` nella pagina dei
+    permessi. **Com'è andata**, gli scostamenti: il pannello sta sotto quello dei superadmin invece che in una pagina sua (lo stesso
+    precedente, niente rotta né voce di menu); l'helper «persona cancellata» del front end lo scrive il modulo, l'unico che oggi ne ha
+    bisogno; le notifiche **su** la persona (non solo **a** lei) vanno via, perché quelle alla casella di un dipartimento ne portano VID,
+    oggetto e testo. Test: `ErasureTests` (integrazione, con un `SampleEraser` nel modulo di prova), `PersonalDataErasureTests` (unità).
+  - **la PR del modulo dei tour**: `FlightOpsPersonalData : IPersonalDataEraser` e «persona cancellata» nelle pagine del modulo (design
+    §10.0).
 - **T20c** — i punti 3, 4 e 5.
 
 1. **La conservazione** (§10, strada B): job mensile del modulo; dopo 13 o 25 mesi dalla chiusura via tracce, revisioni dei piani, esiti dei

@@ -62,16 +62,19 @@ pseudonimo. È il comportamento giusto (un login nuovo è un consenso nuovo), e 
   se seguono la convenzione, che è già quella di tutto il codice. Un test di architettura elenca le colonne trovate, così una colonna di
   persona con un nome diverso salta all'occhio nella revisione. Le liste di VID in JSON (`participants_json`) le tratta chi le possiede.
 - **Lo pseudonimo** è un numero **negativo**, nuovo a ogni cancellazione, mai riusato, e **senza nessuna tabella che lo leghi al VID**
-  (domanda 1). Dove l'interfaccia mostra un VID (pagina del pilota, liste, link al profilo IVAO), un numero negativo diventa «persona
-  cancellata» senza link: un helper solo, nel nucleo del front end.
+  (domanda 1). Il nucleo lo mostra com'è (un `-3` nell'audit, spiegato dalla riga `erasure`); dove un modulo mostra un VID (pagina del
+  pilota, validazione), un numero negativo diventa «persona cancellata» senza link, e lo fa il modulo nelle sue pagine: oggi è l'unico
+  posto che ne ha bisogno, e se Training ne avrà bisogno anche lui, l'helper passerà nel nucleo (scelta tecnica, presa scrivendo il
+  codice).
 - **Una modalità «cancellazione» dell'interceptor**, accesa solo dal servizio: non timbra `updated_by`/`updated_at`, lascia cambiare
   `created_by`, e per le righe auditate scrive una riga d'audit **senza JSON** (azione `erased`). Tutto il resto resta com'è: proiezioni
   (una riga cancellata toglie le sue voci di ricerca, calendario, segnalazioni), niente scritture in blocco.
 - **`PersonalDataErasure`**, il servizio: anteprima (nucleo + ogni modulo), poi **una transazione per contesto** (un contesto per modulo, come
   tutto l'hub: se un modulo fallisce, la cancellazione si può rilanciare, perché ogni passo è idempotente). Alla fine **una riga d'audit**
   `erasure` con i conteggi per modulo, il superadmin che l'ha fatta e lo pseudonimo, **non il VID**.
-- **Chi e dove**: **solo il superadmin**, da una pagina `/staff/admin/erasure` (campo VID → anteprima → conferma scrivendo di nuovo il VID,
-  con `ConfirmDialog`). Endpoint `GET /api/admin/erasure/{vid}` (anteprima) e `POST /api/admin/erasure/{vid}`. **Niente pulsante per il
+- **Chi e dove**: **solo il superadmin**, da un pannello nella pagina dei permessi, sotto quello dei superadmin (lo stesso precedente:
+  un'azione riservata al superadmin sta lì, senza una voce di menu né una rotta nuove): campo VID → anteprima → conferma con
+  `ConfirmDialog`. Endpoint `GET /api/admin/erasure/{vid}` (anteprima) e `POST /api/admin/erasure/{vid}`. **Niente pulsante per il
   membro**: è irreversibile, e la richiesta arriva come una qualsiasi richiesta alla divisione. Un superadmin non si cancella: prima gli si
   toglie il ruolo.
 
@@ -101,12 +104,22 @@ L'API resta di sola lettura: nessuno può scrivere nell'audit da fuori.
 
 ## 6. Che cosa si tocca
 
-- **PR del nucleo** (prima): `Core/Privacy/` (interfaccia, servizio, endpoint), la modalità dell'interceptor, il walker del JSON dell'audit, la
-  pagina `/staff/admin/erasure` e l'helper «persona cancellata» nel front end, le chiavi i18n, test d'integrazione (un utente con grant,
-  token, notifiche, un filo, un award, righe d'audit; dopo: niente del VID in nessuna tabella del nucleo) e il test di architettura delle
-  colonne. **Nessuna migrazione** se la domanda 1 va come raccomandato.
+- **PR del nucleo** (prima): `Core/Privacy/` (interfaccia, servizio, endpoint), la modalità dell'interceptor, il walker del JSON dell'audit, il
+  pannello nella pagina dei permessi, le chiavi i18n, test d'integrazione (un utente con grant, notifiche, preferenze, un filo suo e una
+  risposta nel filo di un altro, una segnalazione d'award, righe del modulo di prova su di lui e create da lui, righe d'audit; dopo: niente
+  del VID in nessuna tabella del nucleo né nell'audit) e il test che elenca le colonne di persona (`ErasureTests`, dai modelli veri: un
+  test di integrazione e non di architettura, perché i modelli di EF servono costruiti). **Nessuna migrazione.**
 - **PR del modulo** (dopo): `FlightOpsPersonalData : IPersonalDataEraser`, i test (i conteggi del registro uguali prima e dopo, il ban in
   vigore resta, un PIREP aperto sparisce, la pagina del pilota mostra «persona cancellata»).
+
+## 7. Trovato scrivendo il codice
+
+- **Le notifiche su una persona, non solo a lei.** Quelle alla casella di un dipartimento su un filo che la persona ha aperto portano nel
+  `data_json` il suo VID (come stringa), l'oggetto e il testo (`ContactThreads`), e così una segnalazione sulle leg. Vanno via come quelle
+  indirizzate a lei: il nucleo le trova con un `LIKE` e le conferma con lo stesso walker dell'audit (`AuditRedaction.Mentions`).
+- **Il modello di runtime di EF non sa quali tabelle un contesto esclude dalle migrazioni** (`IsTableExcludedFromMigrations` lancia a
+  runtime). La regola è quindi sul tipo: un contesto di modulo riscrive i tipi del suo modulo, quello del nucleo i tipi del nucleo
+  (`PersonColumns.RewrittenBy`), e le tabelle del nucleo che un modulo mappa si riscrivono una volta sola.
 
 ## Da portare nel piano
 
@@ -114,5 +127,6 @@ L'API resta di sola lettura: nessuno può scrivere nell'audit da fuori.
   meccanismo, accanto agli altri; versione e changelog.
 - `05-design-m2.md` §10.0: che cosa fa il modulo dei tour.
 - `06-piano-implementazione-m2.md` parte C, T20b: le due PR.
-- `CLAUDE.md` §2, tabella dei meccanismi: una riga «dati di una persona → `IPersonalDataEraser` + la convenzione `*_vid`/`*_by`» (lo fa
-  Carmine).
+- `CLAUDE.md` §2, tabella dei meccanismi: una riga «dati di una persona → `IPersonalDataEraser` + la convenzione `*_vid`/`*_by`».
+
+Portati nella stessa PR del nucleo (piano 1.08), perché la scrive la sessione di Carmine.

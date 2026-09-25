@@ -1253,6 +1253,13 @@ per gli altri dati dell'utente (oggi l'export dei dati utente è scartato, la ca
 (Carmine, piano 1.07): il nucleo non ha nessun modo di cancellare o anonimizzare un utente, e la cancellazione **si fa nel nucleo**, in
 **T20b**, con una nota di caso (c) prima del codice; il modulo dei tour è il primo a implementarla.
 
+**Deciso in T20b** (Carmine, 25 settembre, nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona`, piano 1.08): il nucleo ha il
+percorso (`IPersonalDataEraser`, lo pseudonimo scritto per convenzione in ogni colonna `vid`/`*_vid`/`*_by`, l'audit ripulito). Il
+modulo dei tour, nella PR che segue quella del nucleo: i PIREP **decisi** restano con lo pseudonimo, senza note, `dispute_text`, ATC ed
+esenzioni, voli, tracce ed esiti dei controlli; quelli in coda, in revisione, da modificare o ritirati **si cancellano**; iscrizioni e
+segnalazioni sulle leg si cancellano; un **ban in vigore resta con il VID** e uno scaduto si anonimizza; nelle sue pagine un VID negativo
+si legge «persona cancellata».
+
 ### 10.1 Il problema: il registro disciplinare punta al tour
 
 **Perché la domanda** (Carmine ha chiesto di argomentarla): il registro disciplinare **non si cancella mai**, ma ogni sua riga è
