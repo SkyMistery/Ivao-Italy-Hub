@@ -24,8 +24,8 @@
 > sessione del tracker, tracce, esiti e la nota libera di una riapertura (le note della storia che cominciano con `flightops:` sono chiavi e
 > restano). Gli altri PIREP, le iscrizioni e le segnalazioni sulle leg vanno via. Un ban **in vigore o futuro** resta intero
 > (`request.Keep(ban)`), uno scaduto perde il motivo. Nel front end `memberName(member, t)` dice «persona cancellata» per un VID negativo.
-> ⚠️ Nelle liste della coda, delle segnalazioni e dei ban il nome si calcola dentro la query, senza `t`: lì resta il numero. ⚠️ Un PIREP
-> rifiutato con la contestazione aperta resta aperto, e il filo della contestazione va via con quelli della persona. ⚠️ **Un worktree non ha
+> ⚠️ Nelle liste della coda, delle segnalazioni e dei ban il nome si calcola dentro la query, senza `t`: lì resta il numero. Una
+> contestazione ancora aperta la chiude il modulo, respinta (Carmine, nota `2026-09-25-la-contestazione-aperta-di-chi-si-cancella`). ⚠️ **Un worktree non ha
 > `tiles/`**: per `pnpm e2e:full` serve un hard link a `tiles/basemap.pmtiles` della cartella principale, o le spec dei tour cadono sui 404
 > della mappa. Test: `PirepTests.Erasure.cs`.
 

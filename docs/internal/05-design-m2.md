@@ -1257,7 +1257,8 @@ per gli altri dati dell'utente (oggi l'export dei dati utente è scartato, la ca
 percorso (`IPersonalDataEraser`, lo pseudonimo scritto per convenzione in ogni colonna `vid`/`*_vid`/`*_by`, l'audit ripulito). Il
 modulo dei tour, nella PR che segue quella del nucleo: i PIREP **decisi** restano con lo pseudonimo, senza note, `dispute_text`, ATC ed
 esenzioni, callsign e sessione dei voli (le righe dei voli restano, con aeroporti e orari), tracce ed esiti dei controlli; quelli in coda, in revisione, da modificare o ritirati **si cancellano**; iscrizioni e
-segnalazioni sulle leg si cancellano; un **ban in vigore resta con il VID** e uno scaduto si anonimizza; nelle sue pagine un VID negativo
+segnalazioni sulle leg si cancellano; una **contestazione ancora aperta si chiude respinta**, fatta dal modulo (Carmine, nota
+`2026-09-25-la-contestazione-aperta-di-chi-si-cancella`); un **ban in vigore resta con il VID** e uno scaduto si anonimizza; nelle sue pagine un VID negativo
 si legge «persona cancellata».
 
 ### 10.1 Il problema: il registro disciplinare punta al tour

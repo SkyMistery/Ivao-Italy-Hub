@@ -1741,8 +1741,9 @@ chiede il nucleo:
   - **la PR del modulo dei tour — fatta**: `People/FlightOpsPersonalData : IPersonalDataEraser` e «persona cancellata» nelle pagine del
     modulo (design §10.0). **Com'è andata**, gli scostamenti: i **voli** di un PIREP tenuto restano come righe (aeroporti, orari, aereo:
     la pagina di validazione li legge), senza callsign, sessione del tracker, piani e traccia, invece di andare via; la **nota libera di
-    una riapertura** va via e le chiavi della storia (`flightops:…`) restano; un PIREP **rifiutato con la contestazione aperta** resta nel
-    registro con la contestazione aperta, mentre il suo filo va via con gli altri fili della persona, e lo staff la chiude come sempre; lo
+    una riapertura** va via e le chiavi della storia (`flightops:…`) restano; una **contestazione ancora aperta** la chiude il modulo,
+    respinta, con un passo nella storia (Carmine, nota `2026-09-25-la-contestazione-aperta-di-chi-si-cancella`): il suo filo va via con
+    gli altri fili della persona, e nessuno deve decidere una contestazione senza il suo testo; lo
     svuotamento del PIREP è quello della conservazione (`TourRetentionJob.Empty`, ora condiviso); nelle **tre liste** (coda, segnalazioni,
     ban) una persona cancellata resta il suo numero negativo, perché lì il nome si calcola nella query dove non c'è `t`, mentre le pagine
     dicono «persona cancellata» (`memberName(member, t)`). Test: `PirepTests.Erasure.cs`.

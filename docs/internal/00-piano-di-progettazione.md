@@ -9,7 +9,9 @@
 PIREP decisi restano con lo pseudonimo e perdono ciò che toglie la conservazione (`TourRetentionJob.Empty`, condiviso) più callsign e
 sessione dei voli, tracce, esiti dei controlli e la nota libera di una riapertura; gli altri PIREP, le iscrizioni e le segnalazioni sulle leg
 vanno via; un ban in vigore resta intero (`ErasureRequest.Keep`), uno scaduto perde il motivo. Le pagine del modulo leggono un VID negativo
-come «persona cancellata». Scelte tecniche e scostamenti in `06-piano-implementazione-m2.md` parte C, T20b. Nessuna domanda nuova.
+come «persona cancellata». **Una domanda nuova, di Carmine** (nota `decisions/2026-09-25-la-contestazione-aperta-di-chi-si-cancella.md`):
+una contestazione ancora aperta la **chiude il modulo, respinta**, perché il suo filo va via con quelli della persona. Scelte tecniche e
+scostamenti in `06-piano-implementazione-m2.md` parte C, T20b. Toccati: `05-design-m2.md` §10.0.
 
 **Changelog 1.09** (25 set 2026, T20b, tra la PR del nucleo e quella del modulo): **le righe che restano con il VID**. Nota
 `decisions/2026-09-25-le-righe-che-restano-con-il-vid.md`, caso (b). La risposta 2 della nota di 1.08 (un ban in vigore resta con il VID)
