@@ -15,7 +15,9 @@ prima del codice del modulo che la usa (`CLAUDE.md` §0 regola 6).
   3 settembre (il commento di `IvaoUserProfileReader` li elenca). **`hours` è un array** di tre righe
   `{ "type": "pilot" | "atc" | "staff", "hours": <intero> }`, in quest'ordine, e i valori sono **secondi**: lo dice lo schema
   pubblico di IVAO (`UserHoursDto`, «the user hours for this connection type in seconds») e lo dicono i numeri, 7 502 599 per
-  l'ATC (2 084,06 ore), 6 273 832 per il pilota (1 742,73), 795 217 da staff (220,89). ⚠️ **Il test del lettore scrive un'altra
+  l'ATC (2 084,05 ore), 6 273 832 per il pilota (1 742,73), 795 217 da staff (220,89), che `dalberone` ha ritrovato uguali sul
+  suo profilo di IVAO. Con il codice di questa fase, un login vero sull'hub di sviluppo ha scritto in `hub_users` proprio
+  2 084,05 e 1 742,73, con i rating 6 (APC) e 5 (PP). ⚠️ **Il test del lettore scrive un'altra
   forma**: `IvaoUserProfileReaderTests.RealShape` ha `"hours": { "atc": 100, "pilot": 200 }`, un oggetto. Allora il campo non si
   leggeva e quella forma non era stata misurata; il test resta verde, perché non la legge. È un test del maintainer e non si
   tocca (`CLAUDE.md` §0 regola 3): lo si dice al revisore.
@@ -47,9 +49,10 @@ prima del codice del modulo che la usa (`CLAUDE.md` §0 regola 6).
 
 ### 2.1 Le ore (n.1)
 
-- `IvaoUserProfileReader` legge le righe `atc` e `pilot` di `hours` e le converte **in ore, con due decimali**; la riga `staff`
-  no, perché non ha uno scopo (il minimo dei dati IVAO, piano §11.4). Una forma diversa, una riga che manca, un numero negativo
-  o scritto come testo valgono null, mai un login fallito, come il resto del lettore.
+- `IvaoUserProfileReader` legge le righe `atc` e `pilot` di `hours` e le converte **in ore, con due decimali arrotondati verso lo
+  zero** (un numero non è mai più di quanto IVAO ha contato); la riga `staff` no, perché non ha uno scopo (i dati IVAO minimi, piano
+  §6.4, la riga GDPR; il design e la nota del 6 settembre la chiamano §11.4). Una forma diversa, una riga che manca, un numero
+  negativo o scritto come testo valgono null, mai un login fallito, come il resto del lettore.
 - **Due colonne su `hub_users`**, `hours_atc` e `hours_pilot`, `decimal(9,2)`, nullable; migrazione additiva `AddConnectionHours`
   del contesto del nucleo. **Ore e non secondi**: che IVAO conti in secondi lo sa il lettore e nessun altro, e il modulo ragiona
   in ore (`minimumHours`, `trainee_hours_at_request`).
@@ -151,5 +154,6 @@ componenti: il badge non lo tocca.
 - **§9.1, riga «Dati di riferimento IVAO»**, e **§4.2** (il perimetro IVAO): il vocabolario dei rating di IVAO, in
   `Core/Ivao/RatingVocabulary.cs`; un modulo gli fa domande e non scrive numeri di rating (lo annunciava la nota di A0).
 - **§8.3**: `RatingBadge` è nell'elenco chiuso, il ventiquattresimo.
-- **§14, rischio «GDPR»**: le ore sono un dato IVAO in più conservato con uno scopo (le soglie del training); la cancellazione dei
-  dati di una persona le toglie con la riga di `hub_users`.
+- **§6.4, la riga GDPR** («dati IVAO minimi»), e **§14, rischio «GDPR»**: le ore sono un dato IVAO in più conservato con uno
+  scopo, le soglie del training, come l'email dal 6 settembre per il servizio notifiche; la cancellazione dei dati di una persona le
+  toglie con la riga di `hub_users`.
