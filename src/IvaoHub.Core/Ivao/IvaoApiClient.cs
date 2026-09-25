@@ -248,6 +248,29 @@ public sealed class IvaoApiClient(
         return (equipments, transponders);
     }
 
+    public async Task<(IReadOnlyList<IvaoAtcPositionDto> Airports, IReadOnlyList<IvaoAtcPositionDto> Sectors)>
+        GetAtcPositionsAsync(CancellationToken cancellationToken = default)
+    {
+        // One outline instead of the two IVAO sends by default: the only way the sectors of the world come back before
+        // its gateway gives up at fifteen seconds (measured on 25 September 2026: without it, a 504 or a connection
+        // closed half way, four times out of four; with it, 12 MB in five seconds). The reader drops the outline.
+        var airportAnswer = await ReadOrNothingAsync("/v2/ATCPositions/all?mapType=regionMapPolygon", cancellationToken);
+        var sectorAnswer = await ReadOrNothingAsync("/v2/subcenters/all?mapType=regionMapPolygon", cancellationToken);
+
+        IReadOnlyList<IvaoAtcPositionDto> airports = airportAnswer is { } airportRoot
+            ? IvaoAtcPositionReader.ReadAirportPositions(Items(airportRoot))
+            : [];
+        IReadOnlyList<IvaoAtcPositionDto> sectors = sectorAnswer is { } sectorRoot
+            ? IvaoAtcPositionReader.ReadSectors(Items(sectorRoot))
+            : [];
+
+        logger.LogInformation(
+            "Read {Airports} airport position(s) and {Sectors} sector(s) of the world from IVAO.",
+            airports.Count,
+            sectors.Count);
+        return (airports, sectors);
+    }
+
     public async Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
         IvaoSessionQuery query,
         CancellationToken cancellationToken = default)
@@ -376,6 +399,24 @@ public sealed class IvaoApiClient(
             cancellationToken: cancellationToken);
 
         return document.RootElement.Clone();
+    }
+
+    /// <summary>
+    /// <see cref="ReadAsync"/>, with a call that fails read as no answer: for the answers whose failure must stay their own
+    /// (the ATC positions). Every other reference call still fails the run, as it always has. Not the caller's
+    /// cancellation: that one is theirs.
+    /// </summary>
+    private async Task<JsonElement?> ReadOrNothingAsync(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await ReadAsync(path, cancellationToken);
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning(exception, "IVAO could not be read at {Path}; it counts as no answer.", path);
+            return null;
+        }
     }
 
     /// <summary>
