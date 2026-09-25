@@ -3,6 +3,7 @@ import { Link, createFileRoute } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { ErasurePanel } from '../../features/admin/erasure/ErasurePanel';
 import { grantColumns } from '../../features/admin/grants/list';
 import { grantsListQuery } from '../../features/admin/grants/queries';
 import { SuperadminPanel } from '../../features/admin/grants/SuperadminPanel';
@@ -72,6 +73,7 @@ function PermissionsPage() {
       />
 
       {bootstrap.user?.isSuperadmin === true ? <SuperadminPanel locales={division.locales} /> : null}
+      {bootstrap.user?.isSuperadmin === true ? <ErasurePanel locales={division.locales} /> : null}
     </PageShell>
   );
 }

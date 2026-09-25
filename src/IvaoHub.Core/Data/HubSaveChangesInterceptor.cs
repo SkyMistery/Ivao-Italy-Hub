@@ -7,6 +7,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,39 @@ public sealed class HubSaveChangesInterceptor(
     // Rows whose projection is out of date although nothing about them changed, waiting for the next
     // save of their context (ProjectionRefresh). Keyed by context for the same reason as above.
     private readonly Dictionary<DbContext, List<IProjectable>> _requested = [];
+
+    // The erasure of a person's data (T20b): how many erasures are running in this scope, and the audited rows each context
+    // deleted or emptied while one was, whose copies in the audit log have to go. See BeginErasure.
+    private int _erasing;
+    private readonly Dictionary<DbContext, List<(string Table, string Key)>> _erased = [];
+
+    /// <summary>
+    /// Puts every save of this scope in erasure mode until the result is disposed (note
+    /// <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c> §3). Only <c>PersonalDataErasure</c> calls it. In this mode:
+    /// <list type="bullet">
+    /// <item>nothing is stamped: a row that loses a person does not become "changed by the superadmin today", and its
+    /// <c>created_by</c> may become the pseudonym, which <see cref="Stamp"/> otherwise forbids;</item>
+    /// <item>an audited row deleted, or changed in anything but the columns that name people, is audited as <c>erased</c>
+    /// <b>without</b> its data, and remembered (<see cref="TakeErased"/>) so that its earlier copies can be emptied too —
+    /// otherwise erasing a row would write it into the audit log once more;</item>
+    /// <item>a row changed only in the columns that name people is not audited at all: its history stays, and the erasure
+    /// writes the pseudonym into it;</item>
+    /// <item>no session is made stale: a grant whose author becomes the pseudonym has not changed for its holder, and the
+    /// person being erased is signed out by losing their row.</item>
+    /// </list>
+    /// The guard and the projections are the same as ever.
+    /// </summary>
+    internal IDisposable BeginErasure()
+    {
+        _erasing++;
+        return new ErasureMode(this);
+    }
+
+    /// <summary>The audited rows this context deleted or emptied in erasure mode since the last call, as table and key.</summary>
+    internal List<(string Table, string Key)> TakeErased(DbContext context) =>
+        _erased.Remove(context, out var rows) ? rows : [];
+
+    private bool IsErasing => _erasing > 0;
 
     /// <summary>
     /// Asks the next save of this context to project these rows again, although none of them is being
@@ -255,14 +289,27 @@ public sealed class HubSaveChangesInterceptor(
                 continue;
             }
 
-            Stamp(entry, vid, now);
+            var erasing = IsErasing && entry.State is not EntityState.Added;
+            if (!erasing)
+            {
+                Stamp(entry, vid, now);
+            }
+
             if (entry.State is EntityState.Added or EntityState.Modified)
             {
                 ModuleBaseDepartment.Keep(modules, entry);
             }
 
             EnsureWriteIsAllowed(context, entry);
-            CollectAudit(entry, pending, vid, now);
+
+            if (erasing)
+            {
+                CollectErasure(context, entry, pending, vid, now);
+            }
+            else
+            {
+                CollectAudit(entry, pending, vid, now);
+            }
 
             if (entry.Entity is IProjectable projectable)
             {
@@ -280,7 +327,7 @@ public sealed class HubSaveChangesInterceptor(
                 pending.Projections.Add(new PendingProjection(projectable, entry.State == EntityState.Deleted));
             }
 
-            if (entry.Entity is IAffectsUserSession session && CanReachUsers(context))
+            if (!erasing && entry.Entity is IAffectsUserSession session && CanReachUsers(context))
             {
                 CollectStaleSession(pending, session);
 
@@ -490,6 +537,37 @@ public sealed class HubSaveChangesInterceptor(
             After: after,
             Vid: vid,
             At: now));
+    }
+
+    /// <summary>
+    /// The audit of a write in erasure mode (<see cref="BeginErasure"/>): a row deleted or emptied leaves a row that says so,
+    /// with no data, and is remembered so that its earlier copies can be emptied; a row that only changed the people it
+    /// names leaves nothing.
+    /// </summary>
+    private void CollectErasure(DbContext context, EntityEntry entry, Pending pending, int vid, DateTime now)
+    {
+        if (entry.State == EntityState.Modified
+            && entry.Properties.Where(property => property.IsModified).All(property => PersonColumns.NamesPeople(property.Metadata)))
+        {
+            return;
+        }
+
+        if (!entry.Metadata.ClrType.IsDefined(typeof(AuditedAttribute), inherit: false))
+        {
+            return;
+        }
+
+        var table = entry.Metadata.GetTableName() ?? entry.Metadata.ClrType.Name;
+        var key = ReadKey(entry);
+
+        if (!_erased.TryGetValue(context, out var erased))
+        {
+            erased = [];
+            _erased[context] = erased;
+        }
+
+        erased.Add((table, key));
+        pending.Audits.Add(new PendingAudit(entry, "erased", table, key, Before: null, After: null, vid, now));
     }
 
     /// <summary>
@@ -796,4 +874,18 @@ public sealed class HubSaveChangesInterceptor(
         DateTime At);
 
     private sealed record PendingProjection(IProjectable Entity, bool Removed);
+
+    private sealed class ErasureMode(HubSaveChangesInterceptor interceptor) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                interceptor._erasing--;
+            }
+        }
+    }
 }

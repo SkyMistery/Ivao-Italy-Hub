@@ -12,6 +12,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Preferences;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
 using IvaoHub.Core.Weather;
 using IvaoHub.Web;
@@ -122,6 +123,9 @@ builder.Services.AddHubModules(
 builder.Services.AddHubContent();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
+
+// Erasing a person's data: the core's half, and each module's IPersonalDataEraser (note 2026-09-25-la-cancellazione-dei-dati-di-una-persona).
+builder.Services.AddScoped<PersonalDataErasure>();
 builder.Services.AddIvaoAuthentication();
 
 // The FIRs and airports of the division, and the job that keeps their snapshot fresh. It reads
@@ -311,6 +315,7 @@ app.MapSearchEndpoint();
 app.MapGrantEndpoints();
 app.MapPersonalTokenEndpoints();
 app.MapSuperadminEndpoints();
+app.MapErasureEndpoints();
 app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();
 

@@ -81,6 +81,7 @@ it. The mechanisms below are **decided** (plan §16): they are not reopened, the
 | Everything the SPA must know at start-up (menu, enabled modules, maintenance, effective permissions, registered blocks) | The one bootstrap endpoint `/api/me`. Nothing hard-wired in the SPA. |
 | Dashboard content, Data blocks of pages | Data blocks **registered by the modules**, composed by the core. Dashboards `/me` and `/staff` are `Dashboard` rows: there is no widget registry, a module's tile is a Data block. |
 | Notifications | The core's notification service; modules publish intents. Never SMTP from a module. |
+| Erasing a person's data (GDPR) | A module registers an `IPersonalDataEraser` that deletes or empties **its rows about** the person; a column that names a person is an integer called `Vid`, `…Vid` or `…By`, and the core writes the pseudonym into it (`PersonColumns`, `decisions/2026-09-25-la-cancellazione-dei-dati-di-una-persona.md`). Never a person column named otherwise, never a delete of a user by hand. |
 | IVAO API | The one typed `IIvaoApiClient`, with cache, Polly retry and circuit breaker. |
 
 Structural rules:
