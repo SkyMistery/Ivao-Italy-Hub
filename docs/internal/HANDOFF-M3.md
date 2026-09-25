@@ -6,10 +6,10 @@
 > il maintainer. Le regole — chi unisce, che cosa non si tocca, come si ottiene una decisione — sono in `CLAUDE.md` §0 e
 > non si ripetono qui.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **il design è deciso.** `07-design-m3.md` sul branch `m3/design`, PR
-#121: i requisiti del TD sono chiusi e Carmine ha deciso le 15 domande di §12, ognuna registrata con il link al suo
-commento. Nessun codice. **Il prossimo passo**, dopo il merge della #121, è la fase **A0** — le note di decisione e
-`08-piano-implementazione-m3.md` — in una **nuova PR** e in una **nuova sessione** (`CLAUDE.md` §0, regola 4).
+**Ultimo aggiornamento:** 25 settembre 2026 — **fase A0**: le otto note di decisione e `08-piano-implementazione-m3.md`,
+sul branch `m3/a0-decisions`, in una PR verso `main`. Il design è deciso e unito (PR #121). Nessun codice. **Il prossimo
+passo**, dopo il merge di A0, è la fase **A1** (nucleo: ore, vocabolario dei rating, `RatingBadge`, banco e2e) in una
+**nuova sessione**; A3 e A4 non la toccano e possono andare avanti insieme (`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -26,6 +26,8 @@ commento. Nessun codice. **Il prossimo passo**, dopo il merge della #121, è la 
    di `06-piano-implementazione-m2.md` (la forma delle fasi: dipende da, perimetro, test, «fatta quando», «Com'è andata»).
 5. **Il modulo che esiste già**: `src/IvaoHub.Modules.FlightOps/` e `web/src/modules/flightops/`. Si legge per capire
    come si scrive un modulo; **non si modifica** e non si importa (un modulo non conosce l'altro).
+6. **Il design e il piano di M3**: `07-design-m3.md` (deciso il 25 settembre 2026), `08-piano-implementazione-m3.md` — le
+   regole di tutte le fasi e la fase che si apre — e le note della fase A0 (`decisions/2026-09-25-*`, elencate in `08`, A0).
 
 ## Che cosa il nucleo dà già a Training
 
@@ -78,6 +80,38 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A0 (25 settembre 2026, branch `m3/a0-decisions`)
+
+- **Che cosa c'è**: otto note in `decisions/`, una per decisione o per gruppo coerente di §12 del design, ognuna con il link
+  al commento di Carmine che la decide — `chi-conduce-e-chi-scrive-un-training` (n.1, n.2, n.3, n.10),
+  `le-note-riservate-e-il-trainee` (n.13, da sola come Carmine ha chiesto), `il-teorico-lo-dichiara-il-trainee` (n.15,
+  n.12), `rating-e-postazioni-dal-nucleo` (n.5 e la correzione 3 della prima revisione), `che-cosa-resta-fuori-da-m3` (n.6,
+  n.8, n.14), `il-training-in-pubblico` (n.4), `la-cancellazione-dei-dati-di-un-trainee` (n.7),
+  `il-tempo-per-la-data-e-le-voci-della-scheda` (n.9, n.11); tutte con «Da portare nel piano», e insieme coprono la §14 del
+  design. E `08-piano-implementazione-m3.md`: le regole di tutte le fasi e le fasi A0–A12, con A11 divisa in A11a (nucleo) e
+  A11b, A12 in A12a (nucleo), A12b, A12c (l'archivio di PATS, solo se arrivano i codici) e A12d; «Com'è andata» di A0 è già
+  scritto.
+- **Che cosa deve sapere la fase dopo**: A1 è una PR del nucleo, e **porta la sua nota nuova**: le note di A0 registrano le
+  decisioni, non la forma nel codice delle estensioni, e `core-guard` vuole una nota **aggiunta** in ogni PR che tocca il
+  nucleo (A1, A2, A3, A11a, A12a). In A1 si misurano con il token vero `hours` del profilo e `/v2/ATCPositions/all`, prima di
+  scrivere il legame postazione→rating.
+- ⚠️ **`ErasureTests.TheColumnsThatNameAPersonAreTheOnesTheErasureKnows` non vede da solo le colonne del training** (il design
+  §6.1 lo dava per scontato): legge due contesti scritti nel test. Si allarga in A12a, con la nota.
+- ⚠️ **Quattro blocchi Data alzano due conteggi scritti in test condivisi** (`uiKit.test.ts`, `DataBlockEndToEndTests`):
+  toccarli è nucleo, e la regola 3 lo vieta a chi non li ha scritti. La domanda va a Carmine **in apertura di A10**.
+- ⚠️ **Il seme dei tipi del calendario** si ricorda chiave per chiave (`exam` arriva anche a un database avviato), ma non guarda
+  se un tipo con la stessa chiave è già stato scritto a mano: da verificare in A2.
+- ⚠️ **`ITheoryExamSource` non esiste nel codice** (il piano la nomina soltanto): nasce in A6, nel modulo. **Non c'è un test di
+  architettura** «un modulo non nomina IVAO», e `ArchitectureTests.cs` è del maintainer: i controlli del training stanno in un
+  file di test del modulo.
+- ⚠️ **L'helper «persona cancellata»** è `memberName` nel front end dei tour (PR #123, piano 1.10): il collaboratore non lo
+  tocca; A12a scrive quello del nucleo e lo dice al revisore.
+- ⚠️ **Scostamenti dall'elenco del design §11**, scritti in `08`, A0: `trn_bans` nasce in A6 (la richiesta rifiuta un bannato)
+  e la schermata resta in A10; la funzione del mock exam nasce in A6, la casella in A9; `trn_trainings` nasce intera in A6.
+- ⚠️ **Un worktree non ha `tiles/`**: per `pnpm e2e:full` serve un hard link a `tiles/basemap.pmtiles` della cartella
+  principale (trovato da Carmine in T20b). ⚠️ **La PR #124** (aperta, di Carmine) propone le fasi in coda: quando è unita, il
+  branch di una fase può partire da quello della fase prima; `08` non dipende da come finisce.
 
 ### Che cosa ha lasciato il design (25 settembre 2026, branch `m3/design`)
 
