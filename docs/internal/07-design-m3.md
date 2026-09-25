@@ -2,15 +2,16 @@
 
 > Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.08).
 > Ingresso: i **requisiti dello staff TD**, raccolti con `dalberone` a domande (§R). Sui fatti — come funziona il
-> training oggi e che cosa lo staff vuole — risponde `dalberone`; **le scelte le decide Carmine**: dove resta una scelta
-> aperta è segnata **⚖️** e raccolta, con una raccomandazione, in §12 «Domande per Carmine». Le fasi si scrivono in
+> training oggi e che cosa lo staff vuole — risponde `dalberone`; **le scelte le decide Carmine**: nel testo sono segnate
+> **⚖️**, e in §12 c'è ognuna con la raccomandazione e **la decisione di Carmine** (25 settembre 2026). Le fasi si scrivono in
 > `08-piano-implementazione-m3.md` **dopo** l'approvazione di questo documento. Il modello è `05-design-m2.md`.
 
-**Stato:** **bozza completa per la revisione di Carmine** (25 settembre 2026): i requisiti sono chiusi con le conferme
-di `dalberone` (R.7), le scelte aperte sono in §12. Nessun codice. Primo giro di revisione (25 settembre): il teorico
-dichiarato dal trainee è uno scostamento dal piano (§0.6, §12 n.15), le regole dei rating di IVAO passano al nucleo
-(§1.7, n.4), i GCA sono nel profilo IVAO (§0.2). Allineato al piano 1.08: la cancellazione dei dati di una persona usa il
-meccanismo del nucleo di T20b (§6.1).
+**Stato:** **deciso** il 25 settembre 2026. I requisiti sono chiusi con le conferme di `dalberone` (R.7); Carmine ha
+deciso le 15 domande di §12 sulla PR #121 ([risposte][r1], [secondo giro][r2]). Due giri di revisione: il teorico
+dichiarato dal trainee è uno scostamento dal piano (§0.6, §12 n.15), le regole dei rating di IVAO stanno nel nucleo
+(§1.7, n.4), i GCA sono nel profilo IVAO (§0.2), il feed del calendario non è in M3 (§12 n.14). Allineato al piano 1.08:
+la cancellazione dei dati di una persona usa il meccanismo del nucleo di T20b (§6.1). Nessun codice: il prossimo passo è
+la fase A0 (§11).
 
 ---
 
@@ -18,7 +19,8 @@ meccanismo del nucleo di T20b (§6.1).
 
 ### 0.1 Che cosa è «fatto»
 
-M3 è fatta quando lo staff TD può **spegnere PATS** (`training.ivao.it`, piano §13):
+M3 è fatta quando lo staff TD può **spegnere PATS** (`training.ivao.it`, piano §13) **tranne il feed del calendario dei
+trainer**, che resta su PATS fino all'iCal del nucleo in M6 (§12 n.14):
 
 - un membro chiede un training — o il mock exam concordato — per il **rating successivo** al suo, ATC o pilota, e l'hub
   applica da solo le regole: conferma del teorico, ore minime, una richiesta alla volta, attesa dopo l'ultimo training
@@ -39,12 +41,14 @@ M3 è fatta quando lo staff TD può **spegnere PATS** (`training.ivao.it`, piano
   settembre 2026: la documentazione pubblica dell'API non ha endpoint di training né di esami). **Rating e GCA** di un
   membro invece arrivano nel suo profilo (`/v2/users/me`: `rating`, `gcas`, misurato il 3 settembre 2026): l'hub legge i
   rating e **non** i GCA.
-- **Group training, GCA, flight briefing** (funzioni del TDCenter di HQ, piano §2.3-ter): non richiesti; ⚖️ §12 n.8.
+- **Group training, GCA, flight briefing** (funzioni del TDCenter di HQ, piano §2.3-ter): fuori da M3 (§12 n.8).
   Una funzione sui GCA sarebbe fattibile senza fonti nuove, leggendo `gcas` dal profilo.
-- **Il feed del calendario per i trainer** non è fuori: i trainer usano quello di PATS per Google Calendar (d4), e il
-  feed iCal del nucleo è previsto solo in M6. ⚖️ §12 n.14.
+- **Il feed del calendario per i trainer**: i trainer usano quello di PATS per Google Calendar (d4), e il feed iCal del
+  nucleo resta in M6, con la domanda aperta del piano §15.9 (§12 n.14). **PATS resta acceso solo per quel feed** fino a
+  M6.
 - **Discord**: M6. **Online Day**: è degli eventi, M4 (il modulo lo legge dal calendario quando esiste, §2.5).
-- **Import dello storico di PATS**: ⚖️ §12 n.6 (§7).
+- **Import dello storico di PATS**: solo un archivio in sola lettura, e solo se otteniamo il significato dei codici
+  (§12 n.6, §7).
 
 ### 0.3 Che cosa M3 non rimette in discussione
 
@@ -87,14 +91,13 @@ il modulo ci entra con il blocco `training.myTraining` (§4.3); le pagine del tr
 | Le postazioni su cui si fa training, per rating e FIR | PATS `facilities` (143 righe) → dall'API IVAO | §1.7 |
 | Richieste, sessioni, disponibilità, calendario, storico | TDCenter di HQ (piano §2.3-ter) | §2 |
 | Il ban di un trainee, con scadenza e revoca | PATS `trainee` (`ban`, `expire_on`, `removed_by`) | §2.9 |
-| Un feed del calendario per il trainer | PATS `GCalendar` | ⚖️ §12 n.14 |
 
 | Non si prende | Perché |
 |---|---|
 | Tabelle doppie per i piloti (`trainingsP`, `sheetsP`, `tasksP`…) | un campo `kind` (ATC o pilota) |
 | Codici numerici senza nome (`status` 0–7, `approved` 0–3) | stati con un nome (§2.1) |
 | Impostazioni chiave/valore (`settings`) | le impostazioni dei moduli del nucleo (§1.6) |
-| Un token del feed scritto dal modulo (`GCalendar.token`) | i token sono del nucleo (⚖️ §12 n.14) |
+| Il feed del calendario dei trainer (`GCalendar`, con il suo token) | resta su PATS fino all'iCal del nucleo in M6 (§12 n.14) |
 | Email come dato del modulo | l'indirizzo è del nucleo (`hub_users.Email`), usato solo dalla coda delle mail |
 
 ### 0.6 Scostamenti dal piano
@@ -105,7 +108,7 @@ Dichiarati qui perché il revisore li trovi senza cercarli; ognuno ha la sua dom
 |---|---|---|---|
 | Gli esiti del teorico li inserisce **lo staff**, a mano o da CSV, dietro `ITheoryExamSource` (§9.2, §14) | il **trainee dichiara** di averlo superato; chi approva lo controlla su IVAO; la dichiarazione passa da `ITheoryExamSource`, che resta il punto dove un giorno entra l'API | è il requisito del TD (d1): oggi PATS fa così, e lo staff non ha gli esiti da inserire | §2.2; ⚖️ §12 n.15 |
 | Le pagine del membro sotto `/me/training` (§8.2) | sotto `/training`; `/me` riceve il blocco `training.myTraining` | `/me` è la dashboard del nucleo, fatta di blocchi | §0.4 |
-| Il feed iCal in M6 (§13), forma ancora aperta (§15.9) | forse anticipato in M3 | i trainer usano quello di PATS (d4) | §8 n.9; ⚖️ §12 n.14 |
+| M3 spegne `training.ivao.it` (§13) | PATS resta acceso **solo per il feed del calendario dei trainer**, fino all'iCal del nucleo in M6 | i trainer lo usano (d4), e il feed non entra in M3 | §12 n.14 |
 
 ---
 
@@ -528,7 +531,7 @@ Due conseguenze, dette prima:
 - **I grant con scope viaggiano nel cookie**: non si lasciano accumulare. Un job notturno toglie quelli dei training
   chiusi (`Completed`, `NoShow`, `Closed`), così il secondo rientro cade di notte e non a report appena pubblicato.
 
-⚖️ §12 n.1: in alternativa un meccanismo nuovo del nucleo, «l'assegnatario della riga», senza grant.
+**Deciso** (§12 n.1): il grant con scope, e il login in più a ogni assegnazione è accettato.
 
 ### 3.4 Più di un permesso scrive il training (estensione n.7)
 
@@ -552,8 +555,8 @@ all'interessato, senza spostare la riga. Le righe figlie non ne hanno bisogno (�
 
 - **`/training`** (pubblico): i prossimi training e gli esami (il blocco `training.upcomingSessions`) e il pulsante
   «Richiedi training». Una pagina di contenuti che spiega il percorso resta del CMS, con lo stesso blocco.
-- **`/training/sessions/{id}`** (pubblico): postazione, rating, data e ora; **nomi** solo a chi ha fatto il login (R.6-bis;
-  ⚖️ §12 n.4). È l'indirizzo delle voci di calendario.
+- **`/training/sessions/{id}`** (pubblico): postazione, rating, data e ora; **VID e nomi** solo a chi ha fatto il login
+  (R.6-bis; §12 n.4: niente VID ai visitatori). È l'indirizzo delle voci di calendario.
 - **`/training/request`** (membri): la richiesta del §2.2, con la finestra della domanda sul teorico.
 - **`/training/mine`** (membri): le mie richieste e i miei training, stato, attesa residua, «pronto per…».
 - **`/training/mine/{id}`** (membri): scegliere la data **tra i riquadri** (d1); leggere il report — voti, commenti per
@@ -590,7 +593,7 @@ A un visitatore i blocchi personali rispondono `signedIn: false`, come `myTours`
 
 - **Una voce per sessione**: il training proietta la sessione in corso e le sessioni `Held` (più voci per riga,
   estensione n.10 di M2, già fatta), tipo `training`, visibilità `Public`, indirizzo `/training/sessions/{id}`. Titolo
-  senza nomi: rating e postazione (⚖️ §12 n.4 per il VID). Una sessione rischedulata o un no-show non restano.
+  senza nomi e senza VID: rating e postazione (§12 n.4). Una sessione rischedulata o un no-show non restano.
 - **Gli esami**: una voce di tipo `exam`, pubblica. ⚠️ Il tipo `exam` è nel piano (§7) ma non nel seme dei tipi
   (`seed/calendar-kinds/kinds.json`: `event`, `training`, `tour`, `meeting`, `deadline`): estensione n.6.
 - **Ricerca**: niente. Un training non è un contenuto da cercare.
@@ -645,7 +648,7 @@ meccanismo suo.
 - **Le colonne seguono la convenzione**: `trainee_vid`, `trainer_vid`, `examiner_vid`, `decided_by`, `assigned_by`,
   `closed_by`, il `vid` e i `*_by` dei ban. Nessuna lista di VID in JSON. Il test che elenca le colonne di persona
   (`ErasureTests`) le vedrà da solo.
-- **`TrainingPersonalData : IPersonalDataEraser`**, proposta (⚖️ §12 n.7), con le quattro risposte di Carmine della nota
+- **`TrainingPersonalData : IPersonalDataEraser`**, **deciso** (§12 n.7), con le quattro risposte di Carmine della nota
   come regola:
   - i **training chiusi** del trainee (`Completed`, `NoShow`, `Closed`, `Rejected`, `Cancelled`) sono **il registro**:
     restano, con lo pseudonimo; vanno via **tutti i testi liberi** che parlano di lui — i due della richiesta, i commenti
@@ -667,7 +670,7 @@ meccanismo suo.
 
 Il dump del §P basta per **misurare** e per **provare** un import, non per farlo: serve il significato dei codici
 (`status`, `approved`, `type`…), che sta nel codice PHP di PATS o nella memoria dello staff, e un dump nuovo al momento
-del passaggio. ⚖️ §12 n.6 — proposta: **un archivio in sola lettura** dei training di `trainingNEW` (2020–2026) e degli
+del passaggio. **Deciso** (§12 n.6): **un archivio in sola lettura** dei training di `trainingNEW` (2020–2026) e degli
 esami di `exam`, mostrato sul percorso del trainee così com'è, senza rimapparlo sulle nuove schede; niente da `training`
 (2014–2020, schema diverso, testi rovinati).
 
@@ -687,7 +690,7 @@ Ognuna è una PR a sé, **prima** del codice del modulo che la usa, con la sua n
 | 6 | **Il tipo `exam`** nel seme dei tipi del calendario (il piano §7 lo elenca già) | no | §5.1 |
 | 7 | **Più permessi alternativi in scrittura** sulla stessa entità (`[AlsoWrittenWith]` ripetibile) e, per l'entità che lo dichiara, **anche alla creazione** | sì, con i test della spina dorsale | §3.4 |
 | 8 | **Il banco e2e con rating e ore**: i personaggi di `/e2e/signin` oggi non hanno rating; il giro del training ne ha bisogno | nella nota di n.1 | §10 |
-| 9 | ⚖️ **Un feed iCal personale**, anticipato da M6: un indirizzo con un token di sola lettura, perché un calendario esterno (Google Calendar) non manda intestazioni; il modulo contribuisce «i miei training» (trainer e trainee). Decide anche la domanda aperta del piano §15.9 | sì | §12 n.14 |
+| 9 | ~~Un feed iCal personale, anticipato da M6~~ **tolta**: il feed non entra in M3, resta in M6 con la domanda aperta del piano §15.9 (Carmine, §12 n.14) | — | §12 n.14 |
 | 10 | **«Persona cancellata»** nel nucleo: l'helper che mostra un VID negativo senza link, oggi nelle pagine dei tour; la nota della cancellazione lo fa passare nel nucleo quando un secondo modulo ne ha bisogno | no (già scritto nella nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona` §3) | §6.1 |
 
 ---
@@ -695,7 +698,7 @@ Ognuna è una PR a sé, **prima** del codice del modulo che la usa, con la sua n
 ## 9. Tabelle e migrazioni
 
 **Nucleo** (additive): colonne delle ore su `hub_users` (n.1), `ref_ivao_atc_positions` (n.5), le colonne del soggetto
-FIR in `hub_user_grants` (n.2), il tipo `exam` (n.6); se deciso, ciò che serve al feed iCal (n.9).
+FIR in `hub_user_grants` (n.2), il tipo `exam` (n.6).
 
 **Modulo**: `trn_trainings`, `trn_slots`, `trn_sessions`, `trn_sheet_items`, `trn_evaluations`, `trn_exams`, `trn_bans`. La
 migrazione `Initial` nasce nella fase dello scheletro con le tabelle di quella fase e non si tocca più; le altre
@@ -714,7 +717,8 @@ arrivano con la loro fase, sempre additive.
   il suo e non quello di un altro; il capo FIR assegna nel suo FIR e non in un altro; il trainee legge il suo training
   **senza** note riservate; una richiesta alla volta **per percorso**, ATC e pilota insieme sì; un TA e un trainer creano
   un esame senza `Edit` (n.7); un bannato non chiede; il promemoria parte una volta; il grant del trainer sparisce a
-  training chiuso; **la cancellazione di una persona** (§6.1): i conteggi del registro uguali prima e dopo, nessun testo
+  training chiuso; **un trainer che è anche trainee non legge le note riservate del proprio training** dall'endpoint
+  dello staff (§12 n.13, con la sua nota); **la cancellazione di una persona** (§6.1): i conteggi del registro uguali prima e dopo, nessun testo
   libero rimasto, i training aperti e gli esami del candidato spariti, il ban in vigore rimasto, «persona cancellata» nelle
   pagine.
 - ⚠️ **Il TD nei test** (HANDOFF-M3, `CONTRIBUTING.md`): i test dei contatti affermano i destinatari esatti del TD, quindi
@@ -747,66 +751,62 @@ Le fasi vere si scrivono in `08-piano-implementazione-m3.md` dopo l'approvazione
 | A9 | Dopo la sessione: rischedula, no-show, scheda con N/A, report, mock exam |
 | A10 | Blocchi Data, pagina pubblica della sessione, percorso del trainee, esami nel calendario, ban |
 | A11 | Nucleo: i capi FIR (n.2); poi nel modulo l'assegnazione e le liste per FIR |
-| A12 | Se deciso: nucleo, il feed iCal personale (n.9); poi nel modulo «i miei training» nel feed |
-| A13 | Conservazione; `TrainingPersonalData : IPersonalDataEraser` e «persona cancellata» nel nucleo (n.10); archivio di PATS se deciso; giro completo |
+| A12 | Conservazione; `TrainingPersonalData : IPersonalDataEraser` e «persona cancellata» nel nucleo (n.10); archivio di PATS se otteniamo il significato dei codici (n.6); giro completo |
 
-I capi FIR e il feed stanno in fondo di proposito: tutto il resto funziona senza, e le due estensioni più delicate non
-bloccano il modulo (⚖️ §12 n.3, n.14). **PATS però non si spegne prima di A12**, se il feed si fa: i trainer lo usano.
+I capi FIR stanno in fondo di proposito: tutto il resto funziona senza, e l'estensione più delicata non blocca il modulo
+(§12 n.3). **Il feed del calendario dei trainer non è in M3** (§12 n.14): a M3 chiusa **PATS resta acceso solo per quel
+feed**, finché l'iCal del nucleo non arriva in M6.
 
 ---
 
-## 12. Domande per Carmine
+## 12. Domande per Carmine — decise il 25 settembre 2026
 
-Ognuna con la raccomandazione. La risposta, con la data e il link al commento sulla PR, entra qui e nella nota della fase
-A0.
+Carmine ha risposto sulla PR #121: alle domande n.1–14 nel [commento delle risposte][r1], alla n.7 riformulata e alla
+n.15 nel [secondo giro][r2]. Qui sotto ogni domanda con la raccomandazione e la decisione; ognuna entra nella nota della
+fase A0.
 
-1. **Il trainer sul suo training** (§3.3). **Raccomandato: il grant con scope per training**, il meccanismo già deciso,
-   con il job notturno che toglie i grant dei training chiusi. Il costo: un nuovo login del trainer a ogni assegnazione.
-   Alternative: un meccanismo nuovo del nucleo, «l'assegnatario della riga» (nessun grant, nessun rientro, ma un pezzo
-   nuovo nell'unico handler); oppure `Training.Conduct` a tutti i trainer senza scope (nessun costo, ma ogni trainer
-   potrebbe scrivere il report di un altro).
-2. **Più permessi alternativi in scrittura** (§3.4, n.7). **Raccomandato: sì, anche alla creazione** per l'entità che lo
-   dichiara: è l'estensione più piccola. L'alternativa è dare `Training.Edit` ai TA, ai capi FIR e ai trainer (per gli
-   esami), che è molto più largo del bisogno.
-3. **I capi FIR** (n.2). **Raccomandato: sì, ma come fase A11**, dopo che il modulo funziona con TC e TAC. Alternativa:
-   rimandarli dopo M3, e intanto assegnano TC e TAC.
-4. **Il VID nel calendario pubblico** (R.6-bis). Lo staff TD lo vuole pubblico; il piano (§9.7) chiede il minimo
-   necessario, e l'elenco pubblico di PATS oggi **non** lo mostra (vista `trainingslist`). **Raccomandato: niente VID a
-   chi non ha fatto il login**; VID e nomi a chi l'ha fatto, sulla pagina della sessione.
-5. **Le postazioni** (n.5). **Raccomandato: da IVAO**, legate al rating dal vocabolario del nucleo (n.4), con
-   `hiddenPositions` nelle impostazioni. Alternativa: un elenco scritto a mano dallo staff, come le 143 righe di PATS.
-6. **Lo storico di PATS** (§7). **Raccomandato: un archivio in sola lettura** di `trainingNEW` ed `exam`, solo se
-   otteniamo il significato dei codici; niente da `training`. Alternativa: nessun import, come per tour ed eventi.
-7. **Che cosa è il registro dei training, alla cancellazione** (§6.1). Il meccanismo è deciso (T20b); resta che cosa il
-   modulo tiene. **Raccomandato**: i training chiusi restano con lo pseudonimo, senza nessun testo libero; quelli aperti e
-   gli esami del candidato si cancellano; il ban in vigore resta. Alternativa: cancellare anche i training chiusi (il
-   percorso di un trainee non servirebbe più a nessuno, ma i conteggi del TD — training per trainer, per rating — cambiano).
-8. **Group training, GCA, flight briefing** (§0.2). **Raccomandato: fuori da M3**, da riprendere se lo staff TD li chiede
-   (i GCA di un membro sono già nel profilo IVAO, `gcas`).
-9. **Tempo massimo per scegliere la data superato** (§2.5). **Raccomandato: chiusura automatica** (`Closed`), solo se
+[r1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/121#issuecomment-5832705237
+[r2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/121#issuecomment-5832839987
+
+1. **Il trainer sul suo training** (§3.3). Raccomandato: il grant con scope per training. **Deciso** ([r1]): **come
+   raccomandato** — un grant `Training.Conduct` con lo scope del training, scritto all'assegnazione con `ModuleGrants`,
+   e il job notturno che toglie i grant dei training chiusi. Il login in più a ogni assegnazione è accettato.
+2. **Più permessi alternativi in scrittura** (§3.4, n.7). **Deciso** ([r1]): **sì** — `[AlsoWrittenWith]` si ripete, e
+   un'entità che lo dichiara lo usa anche alla creazione. È un cambio del nucleo: una PR a sé, con una nota nuova e i test
+   della spina dorsale, prima del codice del modulo che lo usa (fase A3).
+3. **I capi FIR** (n.2). **Deciso** ([r1]): **sì, come fase A11**, dopo che il modulo funziona con TC e TAC.
+4. **Il VID nel calendario pubblico** (R.6-bis). **Deciso** ([r1]): **niente VID ai visitatori**; VID e nomi solo a chi ha
+   fatto il login, sulla pagina della sessione (piano §9.7, il minimo necessario).
+5. **Le postazioni** (n.5). **Deciso** ([r1]): **da IVAO**, con `facilityRatings` e `hiddenPositions` nelle impostazioni.
+   ⚠️ La risposta è stata scritta prima della correzione n.3 della revisione (nessuna regola di IVAO nel modulo), che il
+   secondo giro ha accettato: nel design il legame postazione→rating sta nel **vocabolario del nucleo** (n.4) e nelle
+   impostazioni resta `hiddenPositions`. Chiesto a Carmine di confermarlo sulla PR; se lo vuole nelle impostazioni, torna
+   `facilityRatings` con il predefinito **vuoto**.
+6. **Lo storico di PATS** (§7). **Deciso** ([r1]): **un archivio in sola lettura** di `trainingNEW` ed `exam`, mostrato
+   com'è sul percorso del trainee, **solo se** otteniamo il significato dei codici; niente da `training` (2014–2020).
+7. **Che cosa tiene il registro dei training alla cancellazione** (§6.1). **Deciso** ([r2]): **come raccomandato** — i
+   training chiusi restano con lo pseudonimo e senza nessun testo libero; quelli aperti e gli esami del candidato si
+   cancellano; un ban in vigore resta con VID e motivo. È la regola della nota
+   `2026-09-25-la-cancellazione-dei-dati-di-una-persona`. (La risposta di [r1] era sulla domanda prima della
+   riformulazione, e dice lo stesso: il registro resta, il meccanismo è quello di T20b, il modulo non ne scrive uno suo.)
+8. **Group training, GCA, flight briefing** (§0.2). **Deciso** ([r1]): **fuori da M3**, da riprendere se lo staff TD li
+   chiede.
+9. **Tempo massimo per scegliere la data** (§2.5). **Deciso** ([r1]): **chiusura automatica** (`Closed`), solo se
    l'impostazione c'è; di default non c'è.
-10. **Gli esami li inserisce chi li ha assegnati** (d4, §2.8), quindi `Training.ManageExams` a tutto lo staff del
-    training, e la creazione passa il guardiano con la n.7. **Raccomandato: così.** Alternativa, se la n.7 alla creazione
-    non piace: gli esami li inseriscono solo TC e TAC, per conto di chi esamina.
-11. **Le voci della scheda tradotte** (§1.4). **Raccomandato: sì**, `Localized` con tutte le lingue della divisione, come
-    ogni testo che un utente legge.
-12. **Il sito dell'esame teorico** (§2.2). **Raccomandato: un'impostazione** (`theoryExamUrl`), così il modulo non nomina
-    IVAO (`CLAUDE.md` §3) e chi forka mette il suo.
-13. **Un trainer che è anche trainee** (§3.1). Il nucleo non nega mai la lettura all'interessato, quindi un trainer vede
-    le note riservate sui propri training. **Raccomandato: l'endpoint dello staff le toglie quando chi legge è il
-    trainee della riga**, una regola di forma della risposta e non un'autorizzazione; oppure accettarlo.
-14. **Il feed del calendario dei trainer** (d4: usano quello di PATS per Google Calendar; n.9). Il feed iCal del nucleo
-    è in M6, e la sua forma è una domanda aperta del piano (§15.9). **Raccomandato: anticiparlo in M3 come fase del
-    nucleo (A12)**, nella forma più piccola: un feed **personale**, un token di **sola lettura** nell'indirizzo, creato
-    e revocato dall'utente come i token personali, e il modulo che ci mette «i miei training». Alternative: tenere acceso
-    il feed di PATS finché arriva M6; oppure perderlo fino a M6.
-15. **Il teorico: lo dichiara il trainee o lo inserisce lo staff?** (§0.6, §2.2). Il piano (§9.2, §14) vuole gli esiti
-    inseriti dallo staff a mano o da CSV, dietro `ITheoryExamSource`; il TD chiede che sia il trainee a dichiararlo, con il
-    promemoria a chi approva di controllarlo su IVAO (d1), come fa PATS. **Raccomandato: la dichiarazione del trainee**,
-    dietro `ITheoryExamSource` come il piano chiede: lo staff non ha esiti da inserire (li vede su IVAO, uno per uno), e
-    la verifica resta umana dove c'è già, all'accettazione. Il costo: un trainee può mentire, e se ne accorge chi approva.
-    Alternativa: la strada del piano — lo staff inserisce l'esito prima che il trainee possa chiedere — che sposta il
-    lavoro sullo staff e blocca la richiesta finché qualcuno non l'ha fatto.
+10. **Gli esami nel calendario** (§2.8). **Deciso** ([r1]): li inserisce **chi ha l'esame assegnato**, quindi
+    `Training.ManageExams` a tutto lo staff del training, e la creazione passa il guardiano con la n.7.
+11. **Le voci della scheda** (§1.4). **Deciso** ([r1]): **tradotte**, `Localized` con tutte le lingue della divisione.
+12. **Il sito dell'esame teorico** (§2.2). **Deciso** ([r1]): **un'impostazione** (`theoryExamUrl`), così il modulo non
+    nomina IVAO.
+13. **Un trainer che è anche trainee** (§3.1). **Deciso** ([r1]): l'endpoint dello staff **toglie le note riservate
+    quando chi legge è il trainee della riga**. Perché è una regola su chi legge che cosa, scritta a mano, ha **una sua
+    nota di decisione** (fase A0) e **un test d'integrazione** (§10).
+14. **Il feed del calendario dei trainer** (d4). **Deciso** ([r1]): **non in M3**. Il feed iCal resta in M6, con la
+    domanda aperta del piano §15.9; l'estensione n.9 e la sua fase sono uscite dal design. Fino a M6 i trainer usano il
+    feed di PATS: **PATS resta acceso solo per quello**, quando tutto il resto è passato all'hub.
+15. **Il teorico** (§0.6, §2.2). **Deciso** ([r2]): **come raccomandato** — lo dichiara il trainee, dietro
+    `ITheoryExamSource`, e chi approva lo controlla su IVAO. È lo scostamento dal piano §9.2 e §14 che il piano
+    registrerà dopo il merge (§14).
 
 ---
 
@@ -814,3 +814,21 @@ A0.
 
 Tutti i fatti e le preferenze del TD chiesti durante la stesura sono confermati: R.1–R.7, l'ultimo giro il 25 settembre
 (R.7). Nulla resta aperto da quel lato; le scelte sono in §12.
+
+---
+
+## 14. Da portare nel piano
+
+Lo scrive il revisore dopo il merge (`CLAUDE.md` §0); le note della fase A0 lo ripetono per le loro decisioni.
+
+- **§9.2, riga Training**, e **§14, rischio dello scope `training`**: il teorico lo **dichiara il trainee**, dietro
+  `ITheoryExamSource`, e chi approva lo controlla su IVAO; non gli esiti inseriti dallo staff a mano o da CSV (§12 n.15).
+- **§9.2, riga Training**: group training fuori da M3 (§12 n.8); lo storico di PATS come archivio in sola lettura di
+  `trainingNEW` ed `exam`, solo se si ottiene il significato dei codici (§12 n.6). **§15.7**: il dump di PATS c'è (12
+  settembre 2026), e i codici restano da capire.
+- **§13, riga M3** («Spegne `training.ivao.it`»): PATS resta acceso **solo per il feed del calendario dei trainer** fino
+  all'iCal del nucleo in M6 (§12 n.14); **§15.9** resta aperta. Le fasi sono A0–A12 di `08-piano-implementazione-m3.md`.
+- **§8.2, sitemap**: le pagine del membro sotto `/training`, e il blocco `training.myTraining` in `/me` (§0.4).
+- **§9.7, «Privacy dei membri»**: nel calendario pubblico nessun VID ai visitatori (§12 n.4).
+- **§16 e `CLAUDE.md` §2**: le estensioni del nucleo n.2 (i capi FIR) e n.7 (`[AlsoWrittenWith]` ripetibile, anche alla
+  creazione), ciascuna con la sua nota nella sua fase (A11, A3).

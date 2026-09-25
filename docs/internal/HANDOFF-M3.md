@@ -6,10 +6,10 @@
 > il maintainer. Le regole — chi unisce, che cosa non si tocca, come si ottiene una decisione — sono in `CLAUDE.md` §0 e
 > non si ripetono qui.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **il design è scritto e aspetta Carmine.** `07-design-m3.md` sul branch
-`m3/design`, nella PR #121: i requisiti del TD sono chiusi, le 15 scelte sono in §12 con una raccomandazione
-ciascuna. Nessun codice. **Il prossimo passo** è la fase A0 (le note di decisione e `08-piano-implementazione-m3.md`),
-**dopo** che Carmine ha risposto e approvato.
+**Ultimo aggiornamento:** 25 settembre 2026 — **il design è deciso.** `07-design-m3.md` sul branch `m3/design`, PR
+#121: i requisiti del TD sono chiusi e Carmine ha deciso le 15 domande di §12, ognuna registrata con il link al suo
+commento. Nessun codice. **Il prossimo passo**, dopo il merge della #121, è la fase **A0** — le note di decisione e
+`08-piano-implementazione-m3.md` — in una **nuova PR** e in una **nuova sessione** (`CLAUDE.md` §0, regola 4).
 
 ## Da leggere, nell'ordine
 
@@ -91,8 +91,14 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   una fixture: contiene dati personali. `trainingNEW` è PATS vivo, `exam` gli esami, `training` il vecchio PATS fermo
   al 2020. Si importano senza errori su MariaDB 11.4.10; i codici numerici non hanno significato senza
   il codice PHP, che non abbiamo (§P, §7).
-- **Che cosa deve sapere A0**: le risposte di Carmine alle domande di §12 decidono le estensioni n.2, n.7 e n.9 e
-  l'ordine delle fasi; ogni risposta entra nel design con la data e il link al commento, poi nelle note.
+- **Che cosa deve sapere A0**: le 15 decisioni sono in §12, con i link ai due commenti di Carmine; ognuna va nella sua
+  nota. Da tenere presenti: il trainer conduce con un grant con scope (n.1); `[AlsoWrittenWith]` ripetibile e anche alla
+  creazione è un cambio del nucleo con **nota e test della spina dorsale**, prima del modulo (n.2, fase A3); i capi FIR in
+  A11 (n.3); **la regola «il trainee non legge le note riservate del proprio training» ha una nota sua e un test
+  d'integrazione** (n.13); **il feed del calendario non è in M3** e PATS resta acceso solo per quello fino a M6 (n.14);
+  il teorico lo dichiara il trainee (n.15). In §14 del design c'è l'elenco di ciò che il revisore porta nel piano. ⚠️ Per
+  la n.5 la risposta nomina `facilityRatings` nelle impostazioni, ma il design lo mette nel vocabolario del nucleo dopo la
+  correzione accettata nel secondo giro: la conferma di Carmine è chiesta sulla PR.
 - ⚠️ **`[AlsoWrittenWith]` vale una volta per entità e solo in modifica** (`HubSaveChangesInterceptor`, la prima
   alternativa e basta): il training lo scrivono tre ruoli senza `Edit`, e un esame lo crea chi non ha `Edit`. È
   l'estensione n.7.
