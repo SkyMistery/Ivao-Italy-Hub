@@ -222,3 +222,4 @@ The reviewer reads the pull request with these in hand, and a pull request witho
   "Com'è andata" with every deviation from the design.
 - **Decision notes** as in section 5, one per decision, never edited after the merge.
 - **Commits**: conventional (`feat(training): …`, `feat(core): …`, `test: …`, `docs: …`), one idea each, in English.
+guard test
