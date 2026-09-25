@@ -265,11 +265,15 @@ test('the gallery draws every kind of field the generator learned, and they are 
 
   await expect(page.getByText('Something went wrong!')).toHaveCount(0);
 
+  // The generator's own section: since T20c the gallery also shows the components of the modules, and
+  // the table of the tours' legs has instants of its own.
+  const form = page.locator('[data-ui-kit="SchemaForm"]');
+
   // A day and an instant are native inputs, so a browser brings the calendar and this hub does not
   // have to. What the hub owes is the second line, and it is the half a fixture in UTC could never
   // have shown: the sample holds noon UTC, and the division sits in Rome.
-  await expect(page.locator('input[type="date"]')).toHaveCount(1);
-  const instant = page.locator('input[type="datetime-local"]');
+  await expect(form.locator('input[type="date"]')).toHaveCount(1);
+  const instant = form.locator('input[type="datetime-local"]');
   await expect(instant).toHaveValue('2026-06-01T12:00');
   // Exact, and for a reason worth remembering: "2:00" is a substring of "12:00", so a loose match
   // here passed happily while the echo was showing UTC twice. Noon UTC on the first of June is two

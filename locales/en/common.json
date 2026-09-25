@@ -314,6 +314,7 @@
     "title": "Component gallery",
     "description": "Every custom component of the hub and every block of the registry, with example props.",
     "components": "Components",
+    "moduleComponents": "Components of the modules",
     "blocks": "Blocks",
     "noBlocks": "No block is registered.",
     "sample": {

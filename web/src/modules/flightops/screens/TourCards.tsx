@@ -81,8 +81,9 @@ export function TourCards({ tours }: { tours: readonly TourCard[] }) {
                   </p>
                   {tour.legs === 0 ? null : (
                     <p className="text-muted-foreground text-sm tabular-nums">
-                      {/* ⚠️ Not the editor's `legs.totals`, which says "flown": on a card these are the legs
-                        the tour is made of, and nobody has flown them. Seen on the bench at 1500 px. */}
+                      {/* ⚠️ Not the editor's `legs.totals`: on a card these are the legs the tour is made of,
+                        said to a visitor, and nobody has flown them. Seen on the bench at 1500 px. The
+                        editor's said "flown" in English too, until the gallery showed it (T20c). */}
                       {t('flightops:public.legsAndDistance', {
                         count: tour.legs,
                         distance: Math.round(tour.totalNm),

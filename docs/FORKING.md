@@ -4,16 +4,13 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status: M0 complete (`v0.1.0-m0`).** The foundations and the generic backbone are done and
-> proven end to end. What is here works: configuration, sign-in, permissions, the CRUD engine, the
-> generated back office screens, pages made from templates and published, the module boundary, and
-> the administration screens. What is not here yet is the public site around those pages —
-> navigation, news, documents, the search screen and the calendar are M1. Fork it now if you want to
-> follow along or build a module; wait for M1 if you want to replace a division website today.
->
-> M1 is under way on `main` and is not released: as of 6 September 2026 the media library and the
-> form generator's five new kinds of field are there, the rest is not. Everything below describes
-> the tag, and holds for `main` too.
+> **Status, 25 September 2026: M0, M1 and M2 are on `main`; the only tag is still `v0.1.0-m0`.**
+> M0 is the foundations and the generic backbone: configuration, sign-in, permissions, the CRUD
+> engine, the generated back office screens, the module boundary. M1 is the public site around them:
+> pages from templates, navigation, news, documents, media, search, the calendar, contacts and
+> notifications. M2 is the first module, **the tours** (`flightops`): tours and their legs, the
+> pilots' reports against the network's tracker, automatic checks, validation, disputes and awards.
+> The training module (M3) is being written. Everything below holds for `main`.
 
 ## Forking it, start to finish
 
@@ -217,6 +214,12 @@ Four things, and the first two are where all of the module's own code lives:
    `pnpm i18n:sync` copies them into `locales/`, which is the one set the browser, the back end and
    `pnpm i18n:check` all read, and CI fails if the copies are stale.
 
+   A component a module needs for its own screens — the tours' table of legs is the only one so far —
+   lives in the module too, and the manifest declares it in `components` with a sample drawn from
+   example data. The gallery of the back office (`/staff/admin/ui-kit`) shows it next to the core's,
+   which it cannot import. Like a component of the core it is a decision, not a side effect of a
+   screen: a test in the gallery writes out the names of all of them.
+
 3. **One line in `src/IvaoHub.Web/Modules.cs`** and **one in `web/src/modules/index.ts`**. Those two
    lists are the only places a module is named. Nothing is scanned: which modules a build has is a
    question you answer by opening a file.
@@ -239,7 +242,33 @@ department reorganising its data wants nobody to change anything, not its pages 
 every other verb under `/api/{key}` answers 503. A job of the module asks `IsInMaintenanceAsync` at
 the top of its run for the same reason.
 
-## The base map of the tours, if you enable them
+## The tours module
+
+The tours (`flightops`) are the first module and every build has them: a division with no tours simply
+publishes none. What a fork decides about them is configuration and data, in five places.
+
+### Who manages them
+
+A module belongs to no department; `division.json` gives it a **base department**
+(`"modules": { "flightops": { "baseDepartment": "FOD" } }`), and `positionGrants` gives that department's
+positions the module's permissions — the example file carries the set the module expects, from `Tours.View`
+to `Tours.ManageSettings`. Change the levels there, not in code. A validator of some tours only is a
+grant given to a VID from `/staff/tours/validators`.
+
+### Its settings
+
+The department changes them from `/staff/tours/settings`, and each one starts at a default that assumes
+nothing about your division: daily limits, the report and dispute windows, the tolerances of the checks,
+how long tracks and closed tours are kept (13 months, 25 for a tour that lasts more than a year). Two of
+them name countries, and are worth a look on day one:
+
+- **`northSouthLevelCountries`** — where semicircular levels go north and south instead of east and west.
+  Empty: a country in the code would be a country in the code.
+- **`routeProcedurePrefixes`** — the ICAO prefixes of the countries whose publications want the SID and the
+  STAR written in the route. It starts with `ED` and `LO`, because that is a fact of those countries'
+  publications and not of any division; add or remove as your tours fly.
+
+### The base map
 
 The tours module draws the legs of a tour on a map, and the map underneath it is **a file of your
 installation, not of this repository**: one PMTiles archive of the world, about 180 MB, which this
@@ -262,6 +291,27 @@ codes, on a plain ground — no error, no empty box, no countries. Upload it whe
 underneath.
 
 The data is OpenStreetMap's, under the ODbL, and the maps carry the attribution the licence asks for.
+
+### What it reads from outside
+
+- **The tracker of the network**, through the one IVAO client of the core: a pilot's sessions, every
+  revision of their flight plans, and the track. A report is always about a flight the tracker has.
+- **The weather and the outlines of the FIRs**, the two optional sources above. Without the outlines,
+  the controllers a pilot contacted are proposed by airport only.
+- **An archive of ATC sessions**, optional and off by default: `"atcData": { "source": "none" }`. With
+  `none` the report says the list is not available and the pilot writes it alone. The one source the
+  hub knows today, `vipi`, is a read-only database view of another application of the division
+  (`v_share_atc_sessions`, reached with `ConnectionStrings:AtcData` in `secrets/` and a user that can only
+  `SELECT` on it). The module never names it: the core does.
+
+### The validator's agent
+
+Some checks need navigation data the hub does not have and may not redistribute — where a fix is, which
+airway a route follows. A validator can run them on their own computer with an **agent** that reads a
+report with a **personal token** (`/me/tokens`, audience `flightops.agent`) and sends back only the
+outcome. Nothing is needed on your server to allow it, and the hub works without one: those checks
+then show as "not available" and the validator judges them by eye. If somebody in your division wants
+to write one, [`docs/agent-contract.md`](agent-contract.md) is the whole contract, with `curl` examples.
 
 ## What a division never has to touch
 

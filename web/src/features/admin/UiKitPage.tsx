@@ -5,7 +5,7 @@ import type { Bootstrap } from '../../shared/api/bootstrap';
 import { EmptyState, PageShell, SectionHeader } from '../../shared/ui';
 
 import { compareRegistries, registriesAgree } from './registryDiff';
-import { UI_KIT_BLOCKS, UI_KIT_SECTIONS, type UiKitSection } from './uiKitSections';
+import { UI_KIT_BLOCKS, UI_KIT_MODULE_COMPONENTS, UI_KIT_SECTIONS, type UiKitSection } from './uiKitSections';
 
 /**
  * Every custom component of M0 and every block of the registry, mounted with example props.
@@ -26,6 +26,13 @@ export function UiKitPage({ bootstrap }: { bootstrap: Bootstrap }) {
       <div className="flex flex-col gap-10">
         <RegistrySection bootstrap={bootstrap} />
         <Group title={t('uiKit.components')} sections={UI_KIT_SECTIONS} bootstrap={bootstrap} />
+        {UI_KIT_MODULE_COMPONENTS.length > 0 && (
+          <Group
+            title={t('uiKit.moduleComponents')}
+            sections={UI_KIT_MODULE_COMPONENTS}
+            bootstrap={bootstrap}
+          />
+        )}
         <Group title={t('uiKit.blocks')} sections={UI_KIT_BLOCKS} bootstrap={bootstrap} />
       </div>
     </PageShell>
