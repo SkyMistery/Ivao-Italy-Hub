@@ -12,7 +12,7 @@ namespace IvaoHub.Core.Auth;
 /// <para>The field names were measured against the real payload on 3 September 2026, not guessed.
 /// The email address was deliberately dropped until 6 September 2026, when the notification service
 /// gave it a purpose: it is read here, written to <c>hub_users.Email</c>, and read back by nothing
-/// but the queue. The rule of plan section 11.4 is unchanged — the minimum IVAO data the hub needs,
+/// but the queue. The rule of plan section 6.4 is unchanged — the minimum IVAO data the hub needs,
 /// and "no email unless a module needs one" — this is the module needing one (decision note of
 /// 6 September 2026).</para>
 /// <para>The connection hours joined it on 25 September 2026 for the same reason: the training compares them with its
