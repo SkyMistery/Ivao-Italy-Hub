@@ -35,6 +35,7 @@ import { PublicTourPage, PublicToursPage } from './screens/public';
 import { ReportPage } from './screens/report';
 import { ReviewPage, ReviewQueuePage } from './screens/review';
 import { ErrorForm, ErrorsPage, RuleForm, RulesPage, TourRuleForm } from './screens/rules';
+import { LegGridSample } from './screens/LegGridSample';
 import { FlightOpsSettingsPage } from './screens/settings';
 import { CallsignRuleForm, HubForm, RotationForm, TourConstraintForm } from './screens/shape';
 import {
@@ -57,6 +58,8 @@ import {
 export const flightOpsManifest: ModuleManifest = {
   key: 'flightops',
   blocks: [errorCatalogBlock, tourCardsBlock, reviewQueueBlock, openIssuesBlock, myToursBlock],
+  // The table of the legs, the declared exception to the list and form engine (T7a): the gallery shows it from here (T20c).
+  components: [{ name: 'LegGrid', sample: LegGridSample }],
   routes: [
     // The public side (T10): the cards of every tour a visitor may see, and one tour by its address.
     // Under `_public`, so they wear the header, the footer and the language switcher of the site.

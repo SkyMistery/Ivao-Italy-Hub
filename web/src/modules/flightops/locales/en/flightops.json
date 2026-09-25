@@ -1,4 +1,7 @@
 {
+  "gallery": {
+    "retiredReason": "A runway closed for the season."
+  },
   "nav": {
     "section": "Tours",
     "tours": "Tours",
@@ -387,8 +390,8 @@
   "legs": {
     "row": "Leg {{number}}",
     "empty": "No legs yet: add the first one.",
-    "totals_one": "{{count}} leg flown, {{distance}} NM",
-    "totals_other": "{{count}} legs flown, {{distance}} NM",
+    "totals_one": "{{count}} leg to fly, {{distance}} NM",
+    "totals_other": "{{count}} legs to fly, {{distance}} NM",
     "totalTime": "estimated air time {{time}}",
     "fields": {
       "departureIcao": "Departure",

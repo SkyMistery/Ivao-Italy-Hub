@@ -160,6 +160,17 @@ export interface RouteDefinition {
   readonly validateSearch?: z.ZodType;
 }
 
+/**
+ * A component a module brings for its own screens (M2, T20c, note 2026-09-25-le-rifiniture-di-m2): it lives in the module,
+ * and the gallery of the back office shows it next to the core's, which it cannot import. Adding one is a decision like
+ * adding one to the core's closed list: `uiKit.test.ts` writes their names out.
+ */
+export interface ComponentRegistration {
+  readonly name: string;
+  /** The component drawn with example data and nothing from the server: the gallery is not a page of this installation. */
+  readonly sample: ComponentType;
+}
+
 export interface ModuleManifest {
   readonly key: string;
   /**
@@ -171,4 +182,6 @@ export interface ModuleManifest {
   readonly routes: readonly RouteDefinition[];
   /** Namespaces of `locales/{lng}/<ns>.json` the module brings with it. */
   readonly i18nNamespaces: readonly string[];
+  /** The components of its own, for the gallery; a module with none leaves it out. */
+  readonly components?: readonly ComponentRegistration[];
 }

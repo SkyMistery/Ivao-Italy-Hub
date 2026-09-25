@@ -3,6 +3,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Tours;
 using Xunit;
 
@@ -74,6 +75,10 @@ public sealed class TourStateTests
         Assert.Equal(Visibility.Public, after.Search!.Visibility);
         Assert.Equal("/tours/fo-test-state", after.Search.Url);
         Assert.Equal([Release, Close], after.Calendar.Select(entry => entry.StartsAtUtc));
+
+        // The close is a deadline, so the two entries of one tour do not read the same (T20c).
+        Assert.Equal([Tour.ReleaseCalendarKind, Tour.CloseCalendarKind], after.Calendar.Select(entry => entry.Kind));
+        Assert.Equal(["tour", "deadline"], after.Calendar.Select(entry => entry.Kind));
 
         // The pictures stay a month after the close, and move with it.
         Assert.Equal([7L, 8L], after.MediaUses.Select(use => use.MediaId));
@@ -188,6 +193,23 @@ public sealed class TourStateTests
     };
 
     private static BlockDocumentWalker Walker() => new(["en"]);
+
+    [Fact]
+    public void AReportPutsNothingInSearchNorInTheCalendarEvenWhenDisputed()
+    {
+        // Design M2 §9: only a tour is found and dated; a report is its pilot's and its validators', and there is no
+        // public list of who flew what (T20c). A disputed report opens its thread, and nothing else.
+        var report = new Pirep { Id = 42, Vid = 780001, Status = PirepStatus.Rejected };
+        Assert.Null(report.Project(Context(Release)));
+
+        report.DisputeStatus = DisputeStatus.Open;
+        report.DisputeThread = new ThreadOpeningProjection("flightops.dispute", Department.FOD, "subject", "body", 780001, [], []);
+        var disputed = report.Project(Context(Release))!;
+
+        Assert.Null(disputed.Search);
+        Assert.Empty(disputed.Calendar);
+        Assert.Single(disputed.ThreadOpenings!);
+    }
 
     private static ProjectionContext Context(DateTime now) => new(["en"], "en", Walker(), new StubClock(now));
 

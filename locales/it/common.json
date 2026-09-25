@@ -314,6 +314,7 @@
     "title": "Galleria dei componenti",
     "description": "Tutti i componenti dell'hub e tutti i blocchi del registry, con props di esempio.",
     "components": "Componenti",
+    "moduleComponents": "Componenti dei moduli",
     "blocks": "Blocchi",
     "noBlocks": "Nessun blocco registrato.",
     "sample": {

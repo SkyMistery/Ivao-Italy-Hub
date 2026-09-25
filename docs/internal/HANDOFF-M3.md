@@ -7,10 +7,10 @@
 > non si ripetono qui.
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **fase A1** (nucleo: le ore di connessione, il vocabolario dei rating,
-`RatingBadge`, il banco e2e con un trainee e un trainer), sul branch `m3/a1-ratings-and-hours`, **PR #128** in bozza verso `main`
-**in coda dopo #125** (A0, non ancora unita). **Il prossimo passo** è una fase che non dipende da A1 per il codice — **A3** (i permessi
-alternativi) o **A4** (lo scheletro del modulo), in coda sopra A0 — oppure **A2** (le postazioni ATC e il tipo `exam`) in coda sopra
-A1, perché migra lo stesso contesto e legge il legame postazione→rating del vocabolario (`08`, «Parallelismo possibile»).
+`RatingBadge`, il banco e2e con un trainee e un trainer), sul branch `m3/a1-ratings-and-hours`, **PR #128** verso `main`, **pronta**
+dopo che #125 (A0) è stata unita e `main` è entrato nel branch. **Il prossimo passo** è una fase che non dipende da A1 per il codice
+— **A3** (i permessi alternativi) o **A4** (lo scheletro del modulo), da `main` — oppure **A2** (le postazioni ATC e il tipo `exam`) in
+coda sopra A1, perché migra lo stesso contesto e legge il legame postazione→rating del vocabolario (`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -116,9 +116,12 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - ⚠️ **Lo strumento `--me` ascolta sull'indirizzo di ritorno registrato** (`localhost:5173/auth/callback`): con Vite acceso non
   parte. L'hub di sviluppo della cartella principale è stato fermato per la misura, con il permesso di `dalberone`, e il database di
   sviluppo `ivaohub` ha già la migrazione `AddConnectionHours`.
-- ⚠️ **`main` ha la #126 (T20c) che il branch non ha**: il merge è pulito e provato in locale, ma non fatto. Quando #125 è unita, si
-  unisce `main` in `m3/a1-ratings-and-hours`, si rifanno build e test, si toglie `(after #125)` e la PR passa da bozza a pronta
-  (`CONTRIBUTING.md`, «Phases in a queue»).
+- ~~⚠️ **`main` ha la #126 (T20c) che il branch non ha**~~ **Fatto il 25 settembre**: #125 è stata unita alle 19:18, e `main` (con
+  #125, #126 e #127) è entrato nel branch con un merge; nello stesso commit, come ha chiesto il revisore su #128, le risposte di Carmine
+  su #125 (in `08`, sotto A0 e A10) e la frase che dice che «un tipo di postazione per rating» sostituisce di proposito l'elenco della
+  prima stesura del design (in `08`, sotto A1). Build e test rifatti, `(after #125)` tolto, la PR passata a pronta (`CONTRIBUTING.md`,
+  «Phases in a queue»). Il merge l'ha fatto la sessione di A2, su un branch temporaneo spinto su `m3/a1-ratings-and-hours`: il branch
+  locale del worktree di A1 resta indietro rispetto a `origin`.
 
 ### Che cosa ha lasciato A0 (25 settembre 2026, branch `m3/a0-decisions`, PR #125)
 

@@ -212,6 +212,15 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
     public string SourceId => $"tour:{Id}";
 
+    /// <summary>The kind of the calendar entry of a tour's release: the division's own word for a tour.</summary>
+    public const string ReleaseCalendarKind = "tour";
+
+    /// <summary>
+    /// The kind of the entry of its close: a deadline, so the two entries of one tour do not read the same (T20c, note
+    /// 2026-09-25-le-rifiniture-di-m2). A calendar block that shows only tours shows their releases.
+    /// </summary>
+    public const string CloseCalendarKind = "deadline";
+
     /// <summary>
     /// Search, two calendar entries — release and close (answer 20) — and the files it shows (design M2 §9, §1.14).
     /// A hidden tour, an archived one or a template projects only its files; a draft too, by the interceptor's rule. A ready tour the
@@ -242,8 +251,8 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
         return new ProjectionSnapshot(
             new SearchProjection(Kind: "tour", url, OwnerDepartment, visibility, Title, text),
             [
-                new CalendarProjection("tour", release, EndsAtUtc: null, AllDay: false, OwnerDepartment, visibility, url, Title, Summary),
-                new CalendarProjection("tour", close, EndsAtUtc: null, AllDay: false, OwnerDepartment, visibility, url, Title, Summary),
+                new CalendarProjection(ReleaseCalendarKind, release, EndsAtUtc: null, AllDay: false, OwnerDepartment, visibility, url, Title, Summary),
+                new CalendarProjection(CloseCalendarKind, close, EndsAtUtc: null, AllDay: false, OwnerDepartment, visibility, url, Title, Summary),
             ],
             [],
             media);
