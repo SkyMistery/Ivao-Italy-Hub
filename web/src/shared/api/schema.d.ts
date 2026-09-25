@@ -1102,6 +1102,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/erasure/{vid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ErasurePreview"];
+        put?: never;
+        post: operations["ErasureErase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/audit": {
         parameters: {
             query?: never;
@@ -3471,6 +3487,47 @@ export interface components {
             parameters: components["schemas"]["JsonNode"];
             values: string[];
             errorIds: number[];
+        };
+        /** @description One line of what an erasure does, or did: a count of rows and what becomes of them. */
+        ErasureLine: {
+            /** @description Translation key of what the rows are. A module's is in its own namespace (`flightops:erasure.pireps`). */
+            key: string;
+            /**
+             * Format: int32
+             * @description How many.
+             */
+            count: number;
+            /** @description What becomes of them. */
+            outcome: components["schemas"]["ErasureOutcome"];
+        };
+        /**
+         * @description What becomes of some of a person's rows when their data is erased.
+         * @enum {unknown}
+         */
+        ErasureOutcome: "Deleted" | "Anonymised" | "Kept";
+        /** @description What an erasure would do, for the superadmin to read before confirming. */
+        ErasurePreviewDto: {
+            /**
+             * Format: int32
+             * @description The VID asked about.
+             */
+            vid: number;
+            /** @description Their name, when they have ever signed in: so the superadmin sees whom they are about to erase. */
+            name: null | string;
+            /** @description A super administrator is not erased: the role goes first. */
+            isSuperadmin: boolean;
+            /** @description The core's lines, then each module's. */
+            lines: components["schemas"]["ErasureLine"][];
+        };
+        /** @description What an erasure did. */
+        ErasureResultDto: {
+            /**
+             * Format: int32
+             * @description The number the person is now, in what stayed.
+             */
+            pseudonym: number;
+            /** @description The modules' lines, then the core's. */
+            lines: components["schemas"]["ErasureLine"][];
         };
         /**
          * @description What an error weighs (design M2 §1.7, note 2026-09-14-requisiti-dei-tour §2). Stored by name.
@@ -9315,6 +9372,68 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ErasurePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErasurePreviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ErasureErase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErasureResultDto"];
+                };
             };
             /** @description Bad Request */
             400: {

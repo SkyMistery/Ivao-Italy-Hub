@@ -1452,6 +1452,38 @@
       "vid": "VID"
     }
   },
+  "erasure": {
+    "title": "Erase a person's data",
+    "description": "When somebody asks the division to erase their data. What is about them goes; what the division has to keep stays without their name, under a number nobody can trace back. It cannot be undone.",
+    "lookup": "Show what would be erased",
+    "person": "{{name}}, VID {{vid}}",
+    "neverSignedIn": "VID {{vid}} has never signed in: only what the modules keep about them will go.",
+    "superadmin": "A super administrator is not erased: take the role away first.",
+    "confirm": {
+      "trigger": "Erase",
+      "title": "Erase the data of VID {{vid}}?",
+      "description": "Everything listed goes now, and it cannot be undone. If they sign in again, they are a new member."
+    },
+    "done": "Erased. In what stays, the person is now {{pseudonym}}.",
+    "outcomes": {
+      "Deleted": "Deleted",
+      "Anonymised": "Kept without the name",
+      "Kept": "Kept"
+    },
+    "lines": {
+      "user": "Their account",
+      "access": "Tokens, permissions and positions",
+      "notifications": "Notifications",
+      "awards": "Awards and award signals",
+      "threads": "Threads they opened, with the answers",
+      "participation": "Threads of others they took part in",
+      "named": "Rows naming them as their author",
+      "audit": "Rows of the audit log"
+    },
+    "fields": {
+      "vid": "VID"
+    }
+  },
   "modules": {
     "title": "Modules",
     "description": "What this build was compiled with, and whether each one is accepting changes.",
