@@ -14,9 +14,11 @@
 > **Prova con `dalberone` fatta il 25 set** (nota §9): push su `main`, PR #114 su `CLAUDE.md` e tag `v0.0.0-test` tutti
 > rifiutati; il bypass admin del ruleset deve essere «Always» e ogni merge di Carmine passa dalla casella «bypass rules».
 > La event policy delle Actions che consente `pull_request_target` a `core-guard.yml` (obbligatoria dal 2 nov 2026) **esiste dal
-> 25 set** (nota §9, id 5617). **M3 è partito**: `dalberone` ha letto `HANDOFF-M3.md` e lavora al design.
+> 25 set** (nota §9, id 5617). **M3 è partito**: il design è deciso (#121), A0 (#125) e A1 (#128, il primo codice del nucleo) sono
+> unite il 25 set, e il piano le riporta dalla 1.13. **Le fasi vanno in coda** (nota `2026-09-25-le-fasi-in-coda`, piano 1.11): il
+> collaboratore non aspetta il merge, e il revisore pubblica da solo i rilievi; le decisioni e il merge restano di Carmine.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.12**. Il rapporto è
+**Ultimo aggiornamento:** 25 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.13** (M3 nel piano: design, A0, A1). Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
 chiusura di M3 e di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia con
