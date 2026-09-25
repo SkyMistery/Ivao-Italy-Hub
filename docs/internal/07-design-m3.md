@@ -7,7 +7,9 @@
 > `08-piano-implementazione-m3.md` **dopo** l'approvazione di questo documento. Il modello è `05-design-m2.md`.
 
 **Stato:** **bozza completa per la revisione di Carmine** (25 settembre 2026): i requisiti sono chiusi con le conferme
-di `dalberone` (R.8), le scelte aperte sono in §12. Nessun codice.
+di `dalberone` (R.7), le scelte aperte sono in §12. Nessun codice. Primo giro di revisione (25 settembre): il teorico
+dichiarato dal trainee è uno scostamento dal piano (§0.6, §12 n.15), le regole dei rating di IVAO passano al nucleo
+(§1.7, n.4), i GCA sono nel profilo IVAO (§0.2).
 
 ---
 
@@ -33,8 +35,11 @@ M3 è fatta quando lo staff TD può **spegnere PATS** (`training.ivao.it`, piano
 ### 0.2 Fuori perimetro
 
 - **L'esame vero** e la **verifica del teorico**: stanno su IVAO, e l'API non li espone (piano §14; misurato il 25
-  settembre 2026: la documentazione pubblica dell'API non ha endpoint di rating, training, esami o GCA).
+  settembre 2026: la documentazione pubblica dell'API non ha endpoint di training né di esami). **Rating e GCA** di un
+  membro invece arrivano nel suo profilo (`/v2/users/me`: `rating`, `gcas`, misurato il 3 settembre 2026): l'hub legge i
+  rating e **non** i GCA.
 - **Group training, GCA, flight briefing** (funzioni del TDCenter di HQ, piano §2.3-ter): non richiesti; ⚖️ §12 n.8.
+  Una funzione sui GCA sarebbe fattibile senza fonti nuove, leggendo `gcas` dal profilo.
 - **Il feed del calendario per i trainer** non è fuori: i trainer usano quello di PATS per Google Calendar (d4), e il
   feed iCal del nucleo è previsto solo in M6. ⚖️ §12 n.14.
 - **Discord**: M6. **Online Day**: è degli eventi, M4 (il modulo lo legge dal calendario quando esiste, §2.5).
@@ -90,12 +95,22 @@ il modulo ci entra con il blocco `training.myTraining` (§4.3); le pagine del tr
 | Un token del feed scritto dal modulo (`GCalendar.token`) | i token sono del nucleo (⚖️ §12 n.14) |
 | Email come dato del modulo | l'indirizzo è del nucleo (`hub_users.Email`), usato solo dalla coda delle mail |
 
+### 0.6 Scostamenti dal piano
+
+Dichiarati qui perché il revisore li trovi senza cercarli; ognuno ha la sua domanda in §12.
+
+| Il piano dice | Il design fa | Perché | Dove |
+|---|---|---|---|
+| Gli esiti del teorico li inserisce **lo staff**, a mano o da CSV, dietro `ITheoryExamSource` (§9.2, §14) | il **trainee dichiara** di averlo superato; chi approva lo controlla su IVAO; la dichiarazione passa da `ITheoryExamSource`, che resta il punto dove un giorno entra l'API | è il requisito del TD (d1): oggi PATS fa così, e lo staff non ha gli esiti da inserire | §2.2; ⚖️ §12 n.15 |
+| Le pagine del membro sotto `/me/training` (§8.2) | sotto `/training`; `/me` riceve il blocco `training.myTraining` | `/me` è la dashboard del nucleo, fatta di blocchi | §0.4 |
+| Il feed iCal in M6 (§13), forma ancora aperta (§15.9) | forse anticipato in M3 | i trainer usano quello di PATS (d4) | §8 n.9; ⚖️ §12 n.14 |
+
 ---
 
 ## R. I requisiti raccolti
 
-Ogni punto dice da dove viene: **(d1)**, **(d2)** e **(d3)** sono le risposte di `dalberone` ai gruppi 1, 2 e 3 del
-25 settembre 2026, **(d3-form)** lo screenshot della richiesta di oggi in PATS che ha mandato con il gruppo 3;
+Ogni punto dice da dove viene: **(d1)**, **(d2)**, **(d3)** e **(d4)** sono le risposte di `dalberone` ai gruppi 1–4
+del 25 settembre 2026, **(d3-form)** lo screenshot della richiesta di oggi in PATS che ha mandato con il gruppo 3;
 **(PATS)** è ciò che si legge nel dump di PATS del 12 settembre 2026 (§P).
 
 ### R.1 Chi fa che cosa
@@ -106,7 +121,8 @@ Ogni punto dice da dove viene: **(d1)**, **(d2)** e **(d3)** sono le risposte di
 - **Assegnano il trainer**: HQ, TC, TAC e i **capi FIR** — CH e ACH — **solo per i training del loro FIR** (d1, d2).
 - **Una richiesta accettata e non ancora assegnata è normale**: resta accettata finché qualcuno assegna (d1).
 - **Chi può fare un training**: un trainer con rating ATC **uguale o superiore** a quello del training (ADC da ADC in
-  su, APC da APC in su…); SEC, SAI e CAI fanno tutti i training (d2). Stessa logica per i piloti (d1).
+  su, APC da APC in su…); SEC, SAI e CAI fanno tutti i training (d2). Stessa logica per i piloti (d1). (Nel design è
+  una sola regola, «uguale o superiore», sull'ordine dei rating del nucleo: §1.7.)
 - **L'assegnazione non si rifiuta**: trainer e staff si accordano prima in privato (d2).
 - **Chiunque fa training vede lo storico di tutti i training e quelli aperti** (d2).
 - **Le note riservate allo staff le vedono anche i trainer** (d3); il trainee mai.
@@ -194,7 +210,7 @@ Tutte restano in memoria.
 
 - Group training, GCA holders, flight briefing (le altre funzioni del TDCenter di HQ): `dalberone` non sa se servono.
 
-### R.8 Le conferme del gruppo 4 (d4, 25 settembre 2026)
+### R.7 Le conferme del gruppo 4 (d4, 25 settembre 2026)
 
 - **Promemoria** 24 ore prima.
 - **Mail** anche quando il report è pubblicato e quando il training è chiuso per no-show o nessuna risposta; per il
@@ -257,7 +273,7 @@ FK verso il nucleo: `vid` e i codici delle postazioni sono colonne non vincolate
 | Campo | Che cosa |
 |---|---|
 | `kind` | `Atc` o `Pilot` |
-| `rating` | il rating che si allena (5–7), sempre il successivo a quello del trainee (§2.2) |
+| `rating` | il rating che si allena: il successivo a quello del trainee, tra quelli che hanno un training pratico secondo il vocabolario del nucleo (§1.7, §2.2) |
 | `is_mock_exam` | deciso dall'hub alla richiesta (§2.8), mai dal trainee |
 | `position`, `airport_icao`, `fir` | solo ATC: la postazione scelta (`LIRF_TWR`), il suo aeroporto e il suo FIR |
 | `trainee_vid` | lo stakeholder |
@@ -323,15 +339,19 @@ permesso `Training.ManageSettings`. **I predefiniti non conoscono la divisione**
 | `conflictPolicy` — `Warn`, `Block`, `None` | `Warn` | d1 |
 | `conflictKinds` — tipi di voce del calendario che avvisano | `["event"]` | d1; l'online day si aggiunge qui quando M4 ne crea il tipo |
 | `reminderLeadHours` — anticipo del promemoria | 24 | d3, d4 |
-| `facilityRatings` — quali tipi di postazione per rating | 5: DEL, GND, TWR; 6: APP, DEP; 7: CTR | d2, PATS `facilities` |
 | `hiddenPositions` — postazioni escluse dal training | vuoto | PATS `facilities` |
 | `theoryExamUrl` — il sito dell'esame teorico, nel testo della domanda e nel promemoria | vuoto | d1; ⚖️ §12 n.12 |
 
 ### 1.7 Rating, ore e postazioni: dal nucleo
 
 - **I rating** sono i numeri di IVAO, già salvati al login (`HubUser.RatingAtc`, `RatingPilot`; aggiornati solo a ogni
-  login). Il modulo li legge da `HubDbContext`, come FlightOps (`PirepSubmission`). **I nomi** (ADC, PP…) non esistono
-  nel codice: il vocabolario dei rating è un dato IVAO e sta nel perimetro IVAO del nucleo (estensione n.4).
+  login). Il modulo li legge da `HubDbContext`, come FlightOps (`PirepSubmission`). **Il modulo non scrive mai un numero
+  di rating né una regola di IVAO**: l'ordine dei rating, quali hanno un **training pratico** (per IVAO oggi ADC, APC,
+  ACC e PP, SPP, CP), **quale tipo di postazione** serve a ciascuno, la sigla e il nome sono regole e dati di IVAO, e
+  stanno nel **vocabolario dei rating del perimetro IVAO del nucleo** (estensione n.4). Il modulo chiede al vocabolario
+  «il rating successivo a questo, se ha un training», «questo rating è almeno quello?», «quali postazioni per questo
+  rating». Anche «SEC, SAI e CAI fanno tutti i training» (d2) non è una regola a parte: segue dall'ordine, perché sono
+  sopra ogni rating allenato.
 - **Le ore di connessione** arrivano al login nel campo `hours` del profilo IVAO ma oggi non si leggono (estensione n.1).
 - **Le postazioni ATC**: il nucleo non ne ha un elenco (solo FIR e aeroporti). L'API IVAO lo ha:
   `/v2/ATCPositions/all`, `/v2/airports/{airportId}/ATCPositions`, `/v2/subcenters/all` (documentazione pubblica, vista
@@ -360,10 +380,10 @@ Nessuno stato si cancella: tutto resta in memoria (R.4). Chi può cosa sta in §
 ### 2.2 La richiesta
 
 Pagina `/training/request`, solo con login. **Precompilati** e in sola lettura: VID, nome, rating, ore (d2, d3-form).
-L'hub propone **un solo training**: il rating successivo a quello del trainee nel `kind` scelto (ATC o pilota), se è tra
-quelli che si allenano (5–7) — un AS3 vede «ADC», un ACC niente. Il pilota non sceglie altro; l'ATC sceglie la
-**postazione** scrivendo, dall'elenco del §1.7 filtrato con `facilityRatings` e `hiddenPositions`. Due testi liberi:
-disponibilità, note.
+L'hub propone **un solo training**: il rating successivo a quello del trainee nel `kind` scelto (ATC o pilota), se il
+vocabolario del nucleo gli dà un training pratico (§1.7) — con le regole di IVAO di oggi un AS3 vede «ADC», un ACC niente.
+Il pilota non sceglie altro; l'ATC sceglie la **postazione** scrivendo, dall'elenco del §1.7: le postazioni che il
+vocabolario lega a quel rating, meno `hiddenPositions`. Due testi liberi: disponibilità, note.
 
 I controlli, in quest'ordine, **sul server** (i messaggi come `ProblemDetails`):
 
@@ -377,7 +397,9 @@ I controlli, in quest'ordine, **sul server** (i messaggi come `ProblemDetails`):
 5. **Il mock exam**: deciso dall'hub (§2.8), mostrato come «questo sarà un mock exam, come concordato con il trainer».
 6. **Il teorico**: al clic compare la domanda (d1), con il link di `theoryExamUrl`. **No** → la richiesta si **registra
    come `Rejected` con `TheoryNotPassed`** e il messaggio a schermo lo dice; **nessuna mail** (d4). **Sì** → `Requested`,
-   `theory_confirmed_at`, mail `requestReceived`.
+   `theory_confirmed_at`, mail `requestReceived`. ⚠️ **Scostamento dal piano** (§0.6): il piano vuole gli esiti inseriti
+   dallo staff; qui la risposta la dà il trainee, attraverso `ITheoryExamSource` — l'implementazione di oggi è «chiedilo al
+   trainee», e quando IVAO esporrà gli esiti la domanda sparirà senza toccare il flusso. ⚖️ §12 n.15.
 
 Il trainee **annulla** una richiesta `Requested` (d2).
 
@@ -395,8 +417,9 @@ proposti:
 - **tutto lo staff del training** — HQ (DIR, ADIR), TC, TAC, TA e i trainer (T01–T99) — **per ATC e piloti** (d4): chi
   allena che cosa lo sa lo staff, e l'hub non lo registra; solo chi è entrato almeno una volta nell'hub (il roster è chi
   ha fatto login, piano §16.13);
-- con il **rating** del `kind` del training **uguale o superiore** a quello allenato (d2); SEC, SAI e CAI (8–10)
-  passano sempre, e per i piloti ATP, SFI e CFI;
+- con il **rating** del `kind` del training **uguale o superiore** a quello allenato (d2), secondo l'ordine del
+  vocabolario del nucleo (§1.7): chi sta sopra ogni rating allenato — per IVAO SEC, SAI, CAI e ATP, SFI, CFI — passa
+  quindi sempre, senza una regola scritta nel modulo;
 - mai il trainee stesso.
 
 Il server ricontrolla il rating all'assegnazione. **Assegnare scrive il grant** che fa condurre al trainer quel training
@@ -635,7 +658,7 @@ Ognuna è una PR a sé, **prima** del codice del modulo che la usa, con la sua n
 | 1 | **Ore di connessione**: leggere `hours` dal profilo IVAO al login e salvarle (forma del campo da misurare); il minimo dei dati IVAO, con uno scopo (piano §11.4, come l'email il 6 settembre) | sì, breve | §1.7, §2.2 |
 | 2 | **Permessi del modulo a una posizione FIR, solo sul suo FIR**: un grant a CH e ACH, contato sulle righe `IHasFir` del loro FIR; nell'handler e nel guardiano. Oggi una posizione FIR non porta permessi, un grant a una posizione si scrive per dipartimento e `firStaffScope` vale per tutta la divisione | sì, con i test della spina dorsale | §3.2 |
 | 3 | ~~Leggere il calendario di un giorno~~ **non serve**: il modulo legge il calendario in sola lettura, come FlightOps legge `hub_users` | — | §2.5 |
-| 4 | **Il vocabolario dei rating** IVAO (ATC e pilota: numero, sigla, nome tradotto) nel perimetro IVAO del nucleo, e il componente **`RatingBadge`** nell'elenco chiuso (previsto dal piano §8.3, rimandato ai moduli da `UI-GUIDELINES.md`): un badge **di testo**, niente immagini di IVAO | sì, breve | §1.7 |
+| 4 | **Il vocabolario dei rating** IVAO nel perimetro IVAO del nucleo — ATC e pilota: numero, **ordine**, sigla, nome tradotto, **quali hanno un training pratico**, **quale tipo di postazione** serve a ciascuno — con le domande che il modulo fa (§1.7); e il componente **`RatingBadge`** nell'elenco chiuso (previsto dal piano §8.3, rimandato ai moduli da `UI-GUIDELINES.md`): un badge **di testo**, niente immagini di IVAO. Se le postazioni di IVAO portano già il rating minimo, il legame postazione→rating si misura da lì (n.5) | sì, breve | §1.7 |
 | 5 | **Le postazioni ATC** della divisione da IVAO (`ref_ivao_atc_positions` da `/v2/ATCPositions/all` e `/v2/subcenters/all`, campi da misurare), nella sincronizzazione notturna, con una directory come `IAirportDirectory` | breve (come gli aeroporti di M2) | §1.7 |
 | 6 | **Il tipo `exam`** nel seme dei tipi del calendario (il piano §7 lo elenca già) | no | §5.1 |
 | 7 | **Più permessi alternativi in scrittura** sulla stessa entità (`[AlsoWrittenWith]` ripetibile) e, per l'entità che lo dichiara, **anche alla creazione** | sì, con i test della spina dorsale | §3.4 |
@@ -657,9 +680,10 @@ arrivano con la loro fase, sempre additive.
 
 ## 10. La rete di test
 
-- **Unità**: il rating proposto (AS3 → ADC, ACC → niente; piloti); il trainer adatto (≥, 8–10 sempre); l'attesa per
-  percorso (training, no-show, casella); il mock exam dalla storia; gli avvisi (altri training, voci del calendario, le
-  tre politiche); lo stato «Eseguito» dal fuso della divisione; le soglie di ore; il ban con e senza scadenza.
+- **Unità**: il rating proposto e il trainer adatto **su un vocabolario di prova**, non sui numeri di IVAO (il
+  vocabolario vero ha i suoi test nel nucleo); l'attesa per percorso (training, no-show, casella); il mock exam dalla
+  storia; gli avvisi (altri training, voci del calendario, le tre politiche); lo stato «Eseguito» dal fuso della
+  divisione; le soglie di ore; il ban con e senza scadenza.
 - **Integrazione** (MariaDB vera, database condiviso: **VID `790001–790099`, slug `trn-test-`**): il ciclo con ogni stato
   e ogni uscita; nessuno approva, assegna, conduce o banna il proprio training (superadmin compreso); il trainer conduce
   il suo e non quello di un altro; il capo FIR assegna nel suo FIR e non in un altro; il trainee legge il suo training
@@ -669,8 +693,8 @@ arrivano con la loro fase, sempre additive.
 - ⚠️ **Il TD nei test** (HANDOFF-M3, `CONTRIBUTING.md`): i test dei contatti affermano i destinatari esatti del TD, quindi
   **nessun TC o TAC seminato** nei test del modulo: i permessi si danno con grant a un VID. Da verificare se anche un
   T01–T99 entra nei destinatari.
-- **Architettura**: il modulo non nomina IVAO (rating e postazioni dal nucleo); nessuna chiamata a IVAO se non dal client
-  del nucleo.
+- **Architettura**: il modulo non nomina IVAO (rating e postazioni dal nucleo) e **non scrive numeri di rating**;
+  nessuna chiamata a IVAO se non dal client del nucleo.
 - **Divisione XX**: nessuna stringa italiana, nessun ICAO, nessuna postazione nei semi e nei predefiniti.
 - **Smoke e giro completo** (`pnpm e2e:full`): richiesta → accettazione → assegnazione → disponibilità → scelta → report,
   con i personaggi del banco estesi (n.8).
@@ -722,13 +746,14 @@ A0.
 4. **Il VID nel calendario pubblico** (R.6-bis). Lo staff TD lo vuole pubblico; il piano (§9.7) chiede il minimo
    necessario, e l'elenco pubblico di PATS oggi **non** lo mostra (vista `trainingslist`). **Raccomandato: niente VID a
    chi non ha fatto il login**; VID e nomi a chi l'ha fatto, sulla pagina della sessione.
-5. **Le postazioni** (n.5). **Raccomandato: da IVAO**, con `facilityRatings` e `hiddenPositions` nelle impostazioni.
-   Alternativa: un elenco scritto a mano dallo staff, come le 143 righe di PATS.
+5. **Le postazioni** (n.5). **Raccomandato: da IVAO**, legate al rating dal vocabolario del nucleo (n.4), con
+   `hiddenPositions` nelle impostazioni. Alternativa: un elenco scritto a mano dallo staff, come le 143 righe di PATS.
 6. **Lo storico di PATS** (§7). **Raccomandato: un archivio in sola lettura** di `trainingNEW` ed `exam`, solo se
    otteniamo il significato dei codici; niente da `training`. Alternativa: nessun import, come per tour ed eventi.
 7. **Conservazione e cancellazione** (§6). **Raccomandato: il registro resta**; a una richiesta di cancellazione il VID
    diventa anonimo e i testi liberi del trainee spariscono, attraverso il meccanismo del nucleo che nasce con T20b.
-8. **Group training, GCA, flight briefing** (§0.2). **Raccomandato: fuori da M3**, da riprendere se lo staff TD li chiede.
+8. **Group training, GCA, flight briefing** (§0.2). **Raccomandato: fuori da M3**, da riprendere se lo staff TD li chiede
+   (i GCA di un membro sono già nel profilo IVAO, `gcas`).
 9. **Tempo massimo per scegliere la data superato** (§2.5). **Raccomandato: chiusura automatica** (`Closed`), solo se
    l'impostazione c'è; di default non c'è.
 10. **Gli esami li inserisce chi li ha assegnati** (d4, §2.8), quindi `Training.ManageExams` a tutto lo staff del
@@ -746,10 +771,17 @@ A0.
     nucleo (A12)**, nella forma più piccola: un feed **personale**, un token di **sola lettura** nell'indirizzo, creato
     e revocato dall'utente come i token personali, e il modulo che ci mette «i miei training». Alternative: tenere acceso
     il feed di PATS finché arriva M6; oppure perderlo fino a M6.
+15. **Il teorico: lo dichiara il trainee o lo inserisce lo staff?** (§0.6, §2.2). Il piano (§9.2, §14) vuole gli esiti
+    inseriti dallo staff a mano o da CSV, dietro `ITheoryExamSource`; il TD chiede che sia il trainee a dichiararlo, con il
+    promemoria a chi approva di controllarlo su IVAO (d1), come fa PATS. **Raccomandato: la dichiarazione del trainee**,
+    dietro `ITheoryExamSource` come il piano chiede: lo staff non ha esiti da inserire (li vede su IVAO, uno per uno), e
+    la verifica resta umana dove c'è già, all'accettazione. Il costo: un trainee può mentire, e se ne accorge chi approva.
+    Alternativa: la strada del piano — lo staff inserisce l'esito prima che il trainee possa chiedere — che sposta il
+    lavoro sullo staff e blocca la richiesta finché qualcuno non l'ha fatto.
 
 ---
 
 ## 13. Confermato con `dalberone`
 
-Tutti i fatti e le preferenze del TD chiesti durante la stesura sono confermati: R.1–R.8, l'ultimo giro il 25 settembre
-(R.8). Nulla resta aperto da quel lato; le scelte sono in §12.
+Tutti i fatti e le preferenze del TD chiesti durante la stesura sono confermati: R.1–R.7, l'ultimo giro il 25 settembre
+(R.7). Nulla resta aperto da quel lato; le scelte sono in §12.

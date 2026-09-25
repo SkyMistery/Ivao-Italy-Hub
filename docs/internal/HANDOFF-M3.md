@@ -7,7 +7,7 @@
 > non si ripetono qui.
 
 **Ultimo aggiornamento:** 25 settembre 2026 — **il design è scritto e aspetta Carmine.** `07-design-m3.md` sul branch
-`m3/design`, nella PR della fase: i requisiti del TD sono chiusi, le 14 scelte sono in §12 con una raccomandazione
+`m3/design`, nella PR #121: i requisiti del TD sono chiusi, le 15 scelte sono in §12 con una raccomandazione
 ciascuna. Nessun codice. **Il prossimo passo** è la fase A0 (le note di decisione e `08-piano-implementazione-m3.md`),
 **dopo** che Carmine ha risposto e approvato.
 
@@ -83,7 +83,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 - **Che cosa c'è**: `07-design-m3.md`, bozza completa per la revisione. §R sono i requisiti del TD, raccolti a domande
   con `dalberone` in quattro giri e segnati uno per uno (d1–d4); §0–§11 il design sul modello di `05-design-m2.md`; §12 le
-  14 domande per Carmine; §8 le nove estensioni del nucleo (una non serve), ognuna una PR a sé prima del modulo.
+  15 domande per Carmine; §8 le nove estensioni del nucleo (una non serve), ognuna una PR a sé prima del modulo; §0.6
+  gli scostamenti dal piano. ⚠️ **Il modulo non scrive numeri di rating né regole di IVAO** (revisione del 25
+  settembre): stanno nel vocabolario del nucleo (n.4).
 - **PATS**: il dump del 12 settembre 2026 l'ha fornito `dalberone` e **non entra nel repository**, né in una PR né in
   una fixture: contiene dati personali. `trainingNEW` è PATS vivo, `exam` gli esami, `training` il vecchio PATS fermo
   al 2020. Si importano senza errori su MariaDB 11.4.10; i codici numerici non hanno significato senza
@@ -104,4 +106,5 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - ⚠️ **Il seme dei tipi del calendario non ha `exam`**, anche se il piano §7 lo elenca (n.6); **il nucleo non programma
   mail nel futuro**: il promemoria è un job del modulo (§5.3).
 - ⚠️ **L'API IVAO** (documentazione pubblica, vista il 25 settembre 2026) ha le postazioni ATC (`/v2/ATCPositions/all`) ma
-  niente su rating, training, esami o GCA; i campi di `hours` e delle postazioni **vanno misurati** nella fase del nucleo.
+  nessun endpoint di training o di esami; **rating e GCA** di un membro stanno nel suo profilo (`/v2/users/me`: `rating`,
+  `gcas`), e l'hub legge solo i rating. I campi di `hours` e delle postazioni **vanno misurati** nella fase del nucleo.
