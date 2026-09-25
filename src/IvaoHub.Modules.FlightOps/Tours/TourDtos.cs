@@ -25,7 +25,8 @@ public sealed record TourListDto(
 
 /// <summary>
 /// A tour as its editor loads it. <c>State</c> is what the dates say now (design M2 §1.2.1); <c>IsPublic</c>, whether
-/// anybody outside the staff sees it now — from then on its kind no longer changes. On a subtour the dates are the ones
+/// anybody outside the staff sees it now — from then on its kind no longer changes; <c>PurgedAt</c>, when the retention
+/// archived it (design M2 §10), after which nothing on it changes. On a subtour the dates are the ones
 /// in force, and <c>ReleaseFromParent</c> and <c>CloseFromParent</c> say which of them are its container's.
 /// </summary>
 public sealed record TourDetailDto(
@@ -45,6 +46,7 @@ public sealed record TourDetailDto(
     bool IsPublic,
     bool IsHidden,
     bool ShowPreview,
+    DateTime? PurgedAt,
     DateTime? ReleaseAt,
     DateTime? CloseAt,
     int ReportWindowDays,

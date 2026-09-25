@@ -24,6 +24,9 @@ public enum TourStateKind
 /// </summary>
 public static class TourState
 {
+    /// <summary>The refusal of every write to an archived tour and its rows (design M2 §10, note 2026-09-25-la-conservazione-dei-tour).</summary>
+    public const string PurgedKey = "flightops:errors.tourPurged";
+
     public static TourStateKind Of(Tour tour, DateTime now)
     {
         ArgumentNullException.ThrowIfNull(tour);
@@ -52,14 +55,15 @@ public static class TourState
     }
 
     /// <summary>
-    /// Whether anybody outside the staff sees the tour now: ready, not hidden, and released or shown as a preview.
-    /// From this moment its kind no longer changes (Carmine, 15 September 2026).
+    /// Whether anybody outside the staff sees the tour now: ready, not hidden, not archived, and released or shown as a
+    /// preview. From this moment its kind no longer changes (Carmine, 15 September 2026).
     /// </summary>
     public static bool IsPublic(Tour tour, DateTime now)
     {
         ArgumentNullException.ThrowIfNull(tour);
 
         return !tour.IsHidden
+            && tour.PurgedAt is null
             && Of(tour, now) is not (TourStateKind.Template or TourStateKind.Draft)
             && (tour.ShowPreview || tour.ReleaseAt <= now);
     }

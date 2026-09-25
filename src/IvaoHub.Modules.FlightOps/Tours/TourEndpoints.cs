@@ -176,6 +176,12 @@ public static class TourEndpoints
             return Refused("status", "flightops:errors.templateNeverReady", catalog, currentUser);
         }
 
+        // Nor is an archived tour: shown again, it would be a tour without rules or hubs (§10).
+        if (tour.PurgedAt is not null)
+        {
+            return Refused("status", TourState.PurgedKey, catalog, currentUser);
+        }
+
         var now = clock.UtcNow;
 
         switch (request.Action)

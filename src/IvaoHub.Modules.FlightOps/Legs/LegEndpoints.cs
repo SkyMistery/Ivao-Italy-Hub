@@ -516,6 +516,11 @@ public sealed class LegRequest(
             return (null, Refused("tourId", "flightops:errors.templateHasNoLegs"));
         }
 
+        if (tour.PurgedAt is not null)
+        {
+            return (null, Refused("tourId", TourState.PurgedKey));
+        }
+
         return TourShape.HasLegs(tour.Kind) ? (tour, null) : (null, Refused("tourId", "flightops:errors.kindHasNoLegs"));
     }
 

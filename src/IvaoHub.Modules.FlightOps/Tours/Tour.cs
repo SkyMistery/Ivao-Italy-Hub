@@ -123,6 +123,12 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
     /// <summary>A ready tour the public sees before its release, as a preview (answer 1).</summary>
     public bool ShowPreview { get; set; }
 
+    /// <summary>
+    /// When the retention emptied it (design M2 §10, note 2026-09-25-la-conservazione-dei-tour): an archived row the staff
+    /// still reads, out of the public's sight and changed by nobody. Written by <see cref="TourRetentionJob"/> only.
+    /// </summary>
+    public DateTime? PurgedAt { get; set; }
+
     /// <summary>Null on a template only.</summary>
     public DateTime? ReleaseAt { get; set; }
 
@@ -178,13 +184,15 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
     public int OwnerDepartmentMask { get; set; }
 
     /// <summary>
-    /// Who may read the row, as the global query filter reads it: everybody once it is ready, not hidden and not a
-    /// template; the staff otherwise. Coarse on purpose — a column cannot follow the clock — so a public read also
-    /// asks <see cref="TourState.IsPublic"/>, which adds the release (T10). Computed, so no write can forget it.
+    /// Who may read the row, as the global query filter reads it: everybody once it is ready, not hidden, not a
+    /// template and not archived; the staff otherwise. Coarse on purpose — a column cannot follow the clock — so a public
+    /// read also asks <see cref="TourState.IsPublic"/>, which adds the release (T10). Computed, so no write can forget it.
     /// </summary>
     public Visibility Visibility
     {
-        get => Status == PublishStatus.Published && !IsHidden && !IsTemplate ? Visibility.Public : Visibility.Staff;
+        get => Status == PublishStatus.Published && !IsHidden && !IsTemplate && PurgedAt is null
+            ? Visibility.Public
+            : Visibility.Staff;
 
         // The column is written from the getter; what the database holds is never read back into the row.
         private set { }
@@ -206,7 +214,7 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
     /// <summary>
     /// Search, two calendar entries — release and close (answer 20) — and the files it shows (design M2 §9, §1.14).
-    /// A hidden tour or a template projects only its files; a draft too, by the interceptor's rule. A ready tour the
+    /// A hidden tour, an archived one or a template projects only its files; a draft too, by the interceptor's rule. A ready tour the
     /// public cannot see yet projects for the staff, and <see cref="TourReleaseJob"/> projects it again at its release.
     /// <para>A subtour projects only its files too: search and calendar are its container's (Carmine, 21 September 2026),
     /// so a subtour ready inside a container still in draft, or hidden, is found by nobody.</para>
@@ -217,7 +225,7 @@ public sealed class Tour : IOwnedByDepartment, IAuditable, IVisible, IPublishabl
 
         var media = MediaUses(context);
 
-        if (IsHidden || IsTemplate || IsSubtour || ReleaseAt is not { } release || CloseAt is not { } close || Slug is null)
+        if (IsHidden || PurgedAt is not null || IsTemplate || IsSubtour || ReleaseAt is not { } release || CloseAt is not { } close || Slug is null)
         {
             return media.Count == 0 ? null : new ProjectionSnapshot(null, [], [], media);
         }

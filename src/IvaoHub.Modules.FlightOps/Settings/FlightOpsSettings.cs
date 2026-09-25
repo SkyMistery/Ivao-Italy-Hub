@@ -61,10 +61,13 @@ public sealed record FlightOpsSettings
     /// </summary>
     public int TrackRetentionDays { get; init; } = 90;
 
-    /// <summary>Months the reports are kept (§10); their tracks go much earlier, <see cref="TrackRetentionDays"/>.</summary>
+    /// <summary>
+    /// Months after its close before a tour is archived and loses what weighs (§10, <c>TourRetentionJob</c>); the reports and the
+    /// disciplinary record stay for ever, and the tracks go much earlier, <see cref="TrackRetentionDays"/>.
+    /// </summary>
     public int RetentionMonths { get; init; } = 13;
 
-    /// <summary>Months the disciplinary record is kept (§10).</summary>
+    /// <summary>The same for a tour that runs for more than a year (Carmine, 25 September 2026: its close more than twelve months after its release).</summary>
     public int RetentionMonthsLong { get; init; } = 25;
 
     /// <summary>How far from the threshold a take-off may start, in metres, one value for the whole system (§6.4).</summary>
