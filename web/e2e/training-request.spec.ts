@@ -223,7 +223,10 @@ test('a member asks for a training: a position, the question on the theory, «ye
       theoryPassed: true,
     },
   ]);
-  await expect(page.getByText(words.request.sent.replace('{{rating}}', 'ADC'))).toBeVisible();
+  // Exact: the toast is also announced, for a while, as «Notification …» in a live region of its own.
+  await expect(
+    page.getByText(words.request.sent.replace('{{rating}}', 'ADC'), { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: words.mine.title })).toBeVisible();
   await expect(page.getByText(words.states.Requested!, { exact: true })).toBeVisible();
 });
