@@ -137,7 +137,9 @@ public sealed class DepartmentAuthorizationHandler(
 
         // Without a resource the question is "may they do this at all": holding the permission on
         // any department, or globally, is enough, and the department is checked row by row later.
-        // Denying here would close the list of their own department to every coordinator.
+        // Denying here would close the list of their own department to every coordinator. A permission
+        // that reaches only the rows assigned to the asker answers the same (M3, A3b): there is no row
+        // to be assigned yet, and that is what offers an examiner "new exam" and lists it in /api/me.
         if (resource is not IOwnedByDepartment owned)
         {
             return currentUser.HasAny(permission);
@@ -172,6 +174,19 @@ public sealed class DepartmentAuthorizationHandler(
             && !currentUser.Firs.Contains(fir))
         {
             return false;
+        }
+
+        // A permission that reaches only the rows assigned to whoever asks (M3, A3b, note
+        // 2026-09-26-le-righe-affidate-a-chi-scrive): on any other row — assigned to somebody else, to
+        // nobody, or of an entity that says nothing about it — it is worth what the area's Edit is worth
+        // there, the permission the interceptor's guard falls back to as well. An examiner changes their
+        // own exams, and whoever edits the area every exam.
+        if (catalogue.IsOnlyForAssignee(permission)
+            && (resource as IHasAssignee)?.AssigneeVid != currentUser.Vid)
+        {
+            return catalogue.EditOf(permission) is { } edit
+                && !string.Equals(edit, permission, StringComparison.Ordinal)
+                && IsAllowed(resource, edit);
         }
 
         return true;
