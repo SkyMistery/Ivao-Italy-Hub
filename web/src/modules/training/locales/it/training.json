@@ -25,14 +25,15 @@
     },
     "hints": {
       "rating": "La scheda su cui sta la voce: si scelgono solo i rating che hanno un training pratico.",
+      "section": "Come il trainer segna la voce: la pratica con un voto da 1 a 5, la teoria come fatta, non fatta o da migliorare.",
       "title": "Come la leggono il trainer e il trainee, in ogni lingua della divisione.",
       "sort": "Il posto della voce nella scheda del suo rating: prima i numeri più bassi.",
       "isActive": "Una voce spenta non entra nei report nuovi; i report già scritti la tengono com'era."
     },
     "options": {
       "section": {
-        "Practice": "Pratica — voto da 1 a 5",
-        "Theory": "Teoria — fatta, non fatta, da migliorare"
+        "Practice": "Pratica",
+        "Theory": "Teoria"
       }
     },
     "filters": {

@@ -25,14 +25,15 @@
     },
     "hints": {
       "rating": "The sheet the item is on: only the ratings with a practical training can be chosen.",
+      "section": "How the trainer marks the item: practice with a grade from 1 to 5, theory as done, not done or to improve.",
       "title": "As the trainer and the trainee read it, in every language of the division.",
       "sort": "The place of the item in the sheet of its rating: lower numbers first.",
       "isActive": "An item switched off is left out of new reports; the reports already written keep it as it was."
     },
     "options": {
       "section": {
-        "Practice": "Practice — grade from 1 to 5",
-        "Theory": "Theory — done, not done, to improve"
+        "Practice": "Practice",
+        "Theory": "Theory"
       }
     },
     "filters": {
