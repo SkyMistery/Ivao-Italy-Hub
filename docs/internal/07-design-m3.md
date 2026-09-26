@@ -228,7 +228,8 @@ Tutte restano in memoria.
 - **Si assegna chiunque sia staff del training** — HQ, TC, TAC, TA e i trainer locali — **per piloti e ATC**: chi fa
   che cosa lo sa lo staff, l'hub non lo decide.
 - **Una voce della scheda può restare senza voto**: «N/A».
-- **Gli esami li mette in calendario chi ha l'esame assegnato** (su IVAO).
+- **Gli esami li mette in calendario chi ha l'esame assegnato** (su IVAO). *Precisato il 26 settembre 2026* (nota
+  `2026-09-26-gli-esaminatori`): un esame si assegna solo a HQ, TC, TAC o a un TA, **mai a un trainer**.
 - **Il ban di un trainee serve** (come in PATS); la forma la propone il design, e resta configurabile (§2.9).
 - **I trainer usano il feed per Google Calendar** di PATS.
 
@@ -471,7 +472,8 @@ non ha toccato resta **N/A** (d4).
   trainer e lo staff sul **percorso del trainee** (§4.2), anche se il trainer cambia. Stessa scheda, stesso flusso.
 - **«Pronto per l'esame»** si vede sul percorso e nel blocco del trainee; l'esame si prenota su IVAO.
 - **Gli esami nel calendario** (`trn_exams`): li inserisce **chi ha l'esame assegnato** su IVAO (d4). L'hub non sa chi è
-  l'esaminatore, quindi `Training.ManageExams` va a tutto lo staff del training (§3.2) e la riga registra chi l'ha
+  l'esaminatore, quindi `Training.ManageExams` va a chi può esaminare — TC, TAC e TA, **non i trainer** (nota
+  `2026-09-26-gli-esaminatori`, che corregge «tutto lo staff del training») — (§3.2) e la riga registra chi l'ha
   scritta. Lista e form generati, voce di calendario pubblica (§5.1). Il guardiano chiede `Edit` per creare una riga
   dello staff: ⚖️ §12 n.10.
 
@@ -510,7 +512,7 @@ registra chi e quando. I ban restano nello storico. Nessuno si banna da solo (ne
 | `Training.Conduct` | ✓ tutti | ✓ tutti | | ✓ **solo i training assegnati** (§3.3) | |
 | `Training.Edit` | ✓ | ✓ | | | |
 | `Training.ManageSheets` | ✓ | ✓ | | | |
-| `Training.ManageExams` | ✓ | ✓ | ✓ | ✓ (d4: chi ha l'esame) | |
+| `Training.ManageExams` | ✓ | ✓ | ✓ | — (mai esaminatori: nota `2026-09-26-gli-esaminatori`) | |
 | `Training.Ban` | ✓ | ✓ | | | |
 | `Training.ManageSettings` | ✓ | ✓ | | | |
 
@@ -541,7 +543,7 @@ Il guardiano dell'interceptor lascia scrivere una riga con `{Area}.Edit` oppure 
 due volte:
 
 - **sul training** scrivono tre ruoli senza `Edit`: chi approva (TA), chi assegna (capo FIR), chi conduce (trainer);
-- **un esame** lo crea chi l'ha assegnato (d4), anche un TA o un trainer, che non hanno `Edit`.
+- **un esame** lo crea chi l'ha assegnato (d4), anche un TA, che non ha `Edit` (mai un trainer: nota `2026-09-26-gli-esaminatori`).
 
 Il modulo **non si piega** a una tabella per ruolo (`CLAUDE.md` §5, caso b): si estende il meccanismo perché accetti
 **più alternative** sulla stessa entità, e perché un'entità possa dire che la sua alternativa vale **anche alla
@@ -718,8 +720,8 @@ arrivano con la loro fase, sempre additive.
 - **Integrazione** (MariaDB vera, database condiviso: **VID `790001–790099`, slug `trn-test-`**): il ciclo con ogni stato
   e ogni uscita; nessuno approva, assegna, conduce o banna il proprio training (superadmin compreso); il trainer conduce
   il suo e non quello di un altro; il capo FIR assegna nel suo FIR e non in un altro; il trainee legge il suo training
-  **senza** note riservate; una richiesta alla volta **per percorso**, ATC e pilota insieme sì; un TA e un trainer creano
-  un esame senza `Edit` (n.7); un bannato non chiede; il promemoria parte una volta; il grant del trainer sparisce a
+  **senza** note riservate; una richiesta alla volta **per percorso**, ATC e pilota insieme sì; un TA crea un esame
+  senza `Edit` (n.7) e un trainer no; un bannato non chiede; il promemoria parte una volta; il grant del trainer sparisce a
   training chiuso; **un trainer che è anche trainee non legge le note riservate del proprio training** dall'endpoint
   dello staff (§12 n.13, con la sua nota); **la cancellazione di una persona** (§6.1): i conteggi del registro uguali prima e dopo, nessun testo
   libero rimasto, i training aperti e gli esami del candidato spariti, il ban in vigore rimasto, «persona cancellata» nelle
@@ -797,7 +799,9 @@ raccomandazione e la decisione; ognuna entra nella nota della fase A0.
 9. **Tempo massimo per scegliere la data** (§2.5). **Deciso** ([r1]): **chiusura automatica** (`Closed`), solo se
    l'impostazione c'è; di default non c'è.
 10. **Gli esami nel calendario** (§2.8). **Deciso** ([r1]): li inserisce **chi ha l'esame assegnato**, quindi
-    `Training.ManageExams` a tutto lo staff del training, e la creazione passa il guardiano con la n.7.
+    `Training.ManageExams` a tutto lo staff del training, e la creazione passa il guardiano con la n.7. **Corretta il 26 settembre
+    2026** ([commento sulla #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5844102750), nota
+    `2026-09-26-gli-esaminatori`): gli esaminatori sono HQ, TC, TAC e i TA, mai i trainer; `Training.ManageExams` va a TC, TAC e TA.
 11. **Le voci della scheda** (§1.4). **Deciso** ([r1]): **tradotte**, `Localized` con tutte le lingue della divisione.
 12. **Il sito dell'esame teorico** (§2.2). **Deciso** ([r1]): **un'impostazione** (`theoryExamUrl`), così il modulo non
     nomina IVAO.
