@@ -863,7 +863,97 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
   permessi della sessione di A5 l'ha rifiutato; i test sono stati letti contro il codice. Le pagine e il «fatta quando» sul banco sono di
   A6b.
 
-**Com'è andata (A6b)**: *(a fase chiusa)*
+**Com'è andata (A6b)** (26 settembre 2026, branch `m3/a6b-request-pages`, PR #144, in coda dopo #143):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — le rotte dei membri del manifest (`area: 'member'`, come il report dei tour: il login davanti, e al ritorno la stessa
+  pagina), `SchemaForm` con il suo `id` e `actionsElsewhere`, il suggerimento chiuso (`suggestionsOnly`), `ConfirmDialog` con una domanda
+  nei `children` e `confirmDisabled` (G14, T7a), `Notice`, `useNotice`, `EmptyState`, `RatingBadge`, `describeProblem`, `useMoment` —.
+  **Nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine; **nessun cambio del server**: le due pagine leggono
+  `GET /api/training/mine` di A6a così com'è (`pnpm gen:api` senza differenze).
+- **Fatto**, come il perimetro di A6b qui sopra:
+  1. **`/training/request`** (`web/src/modules/training/screens/request.tsx`): i dati del trainee in sola lettura — VID, nome, e del
+     percorso scelto il rating (`RatingBadge`) e le ore; **mai l'email** —; il percorso, ATC o pilota, a scelta con accanto il training
+     che sarebbe, e nell'indirizzo (`?kind=`); il training proposto, con «questo sarà un mock exam, come concordato con il trainer» quando
+     il server lo dice (R.6); per l'ATC la postazione fra quelle offerte (un suggerimento chiuso); disponibilità e note. **«Richiedi
+     training» apre la domanda sul teorico** (R.2: «Hai superato l'esame teorico per *rating*?», con il sito dell'esame quando
+     `theoryExamUrl` c'è), sì o no, e «Invia la richiesta» si accende solo con una risposta. Con il **«no»** la pagina dice, al posto del
+     form, «Prima di richiedere il training devi superare l'esame teorico *rating*», che la richiesta è registrata come rifiutata e che
+     non arriva nessuna mail; con il **«sì»** la conferma nell'angolo e `/training/mine`. Un percorso che il server rifiuta mostra la
+     frase del rifiuto e, dalla stessa risposta, fino a quando vale il ban (o «finché il dipartimento training non lo toglie»), che il
+     training aperto va chiuso prima, fino a quando e quanti giorni dura ancora l'attesa, la soglia di ore e le ore.
+  2. **`/training/mine`** (`screens/mine.tsx`): per ogni percorso il rating, le ore, il training che si può chiedere con «Richiedi
+     training» (verso `/training/request?kind=…`) o il rifiuto con il suo dettaglio — **l'attesa residua** compresa —, il mock exam, e
+     «pronto per l'esame»; poi **le richieste e i training**, dal più nuovo: lo stato (le parole di R.4), percorso, rating, postazione,
+     mock exam, quando è stata chiesta e il momento del suo stato, il motivo di un rifiuto (dell'hub o dello staff), le caselle del report
+     («pronto per il mock exam», «pronto per l'esame»), i due testi del trainee, e **«Annulla la richiesta»** solo su `Requested`, con
+     `ConfirmDialog` e la versione che il trainee ha visto.
+  3. **Le funzioni pure** in `screens/trainee.ts` (il percorso scelto, il dettaglio di un rifiuto, dove va un rifiuto della richiesta, il
+     momento di uno stato, «pronto per l'esame», i giorni che mancano, le ore) e i pezzi comuni alle due pagine in `screens/parts.tsx`;
+     `api.ts` (`mineQuery`, `useRequestTraining`, `useCancelTraining`, che rileggono la pagina), `schemas.ts` (`requestSchema`,
+     `requestFromFormValues`, `requestSearchSchema`), le due rotte nel manifest, le parole in `training.json` (`request`, `mine`,
+     `states`, `refusal`, `mockExam`, `theoryExam`, `unknown`), in italiano e in inglese, copiate da `pnpm i18n:sync`.
+  4. **I test**: Vitest `schemas.test.ts` (4 nuovi) e `screens/trainee.test.ts` (11); lo smoke `web/e2e/training-request.spec.ts` (5,
+     con l'API finta: la richiesta con il «sì», il «no», i rifiuti al loro posto, un percorso rifiutato con il suo dettaglio e il mock
+     exam dell'altro, `/training/mine` con l'annullamento); il giro sul banco `web/e2e/full/training-request.spec.ts`, **il «fatta
+     quando» di A6**: il trainee del banco chiede il training del rating dopo il suo scegliendo una postazione e lo trova in
+     `/training/mine`; una seconda richiesta ATC è rifiutata (la pagina non la offre, e il server rifiuta quella mandata di lato con
+     `requestOpen` sul campo `kind`); una da pilota passa. All'inizio e nel `finally` annulla le richieste rimaste in attesa.
+- **Scostamenti e precisazioni, piccoli**:
+  1. **La domanda sul teorico è `ConfirmDialog`**, il componente dell'elenco chiuso che fa già domande (G14): la risposta sta nei suoi
+     `children`, e la conferma **manda il form generato** per il suo `id` (`requestSubmit`), così i rifiuti del server arrivano campo per
+     campo come in ogni form. La finestra si apre dal suo pulsante, quindi prima che il form sia mandato: il form non ha regole nel
+     browser (sotto, 2), e un rifiuto del server dopo la risposta non registra niente — il teorico viene per ultimo (A6a) —; la domanda
+     si fa di nuovo, da capo, a ogni «Richiedi training». Il pulsante di `ConfirmDialog` è solo `ghost` o `secondary`: «Richiedi
+     training» è `secondary`.
+  2. **Nessuna regola nel browser**: la postazione obbligatoria e la lunghezza dei testi sono del server, che le rifiuta sul campo con le
+     parole dei file di lingua; `.min(1)` o `.max()` di zod le direbbero con le frasi inglesi di zod.
+  3. **Dove va un rifiuto**: quelli sui campi del form (postazione, testi) sul loro campo; gli altri (`kind`, `rating`, `theoryPassed`)
+     sopra il form, e la pagina rilegge il `GET`, così un rifiuto del percorso mette al posto del form la sua frase con i dettagli. Il
+     form ha per chiave il percorso e basta: un rating che il server ha cambiato tiene i testi scritti e il rifiuto che lo dice.
+  4. **«Annulla» è «Annulla la richiesta»**, e nella finestra «Sì, annulla la richiesta»: il pulsante della finestra che la chiude è
+     «Annulla» (`common.cancel`), e due «Annulla» uno accanto all'altro direbbero due cose opposte.
+  5. **Le date sono in UTC**, e la frase lo dice (l'attesa, il ban, una sessione); il giorno di una richiesta, di una decisione o di una
+     chiusura è una data.
+  6. **Come ci arriva un membro**: dall'indirizzo e dalla mail della richiesta ricevuta (`/training/mine`). Il menu pubblico è
+     editoriale — il TD ci mette una voce —, e `/training` con il pulsante e il blocco di `/me` sono di A10.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **Un difetto del nucleo, non toccato**: nel **suggerimento chiuso** di `SchemaForm` (`Suggest`, `suggestionsOnly`), **chi scrive
+     per cercare e poi clicca un'opzione perde la scelta**: la casella torna vuota. Al `pointerdown` sull'opzione la casella perde il
+     fuoco, `onBlur` rimette il valore di prima perché il testo scritto non è un'opzione, la lista si ridisegna intera sotto il
+     puntatore, e il clic non arriva più all'opzione. Cliccare la casella e poi l'opzione, o scrivere il nominativo intero, funziona.
+     Misurato nel browser il 26 settembre 2026 (in jsdom non si vede: non consegna gli eventi di puntatore). Vale per ogni campo chiuso
+     dell'hub (la voce del menu, le postazioni nascoste delle impostazioni, qui la postazione della richiesta). È codice del nucleo:
+     detto al revisore con una correzione possibile (tenere il fuoco nella casella quando si preme un'opzione), per una PR del nucleo
+     a sé; le spec scelgono la postazione dall'elenco o la scrivono intera, e lo dicono.
+  2. **`pnpm i18n:check` non legge le chiavi con il namespace**: il suo schema (`[\w.-]+`) si ferma ai due punti di `t('training:…')`,
+     quindi le chiavi dei moduli non sono controllate. Le spec leggono le parole dai file di lingua e cadono su una chiave mostrata
+     nuda. Detto al revisore (lo script è del nucleo).
+  3. Nessun VID nuovo: A6b non ha test d'integrazione. Il prossimo libero resta **790022**.
+  4. **Guardato a mano**, e per chi guarda dopo: il pulsante «Richiedi training» è grigio (`secondary`, scostamento 1), più debole del
+     blu di un form senza domanda; un `triggerVariant` primario di `ConfirmDialog` sarebbe un'estensione del nucleo, e sta con il
+     difetto qui sopra fra le cose dette al revisore. L'intestazione del sito è larga 1044 px su un telefono di 375 px, in ogni pagina e
+     anche nella home: è del nucleo, non di questa fase.
+- **La coda**: A6b è nata in coda dopo #143 (A6a, pronta con la CI verde, in attesa della sessione master): la PR #144 è in bozza con
+  `(after #143)` e `Queued after #143.`. Quando #143 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel
+  branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (26 settembre 2026, sul branch da `m3/a6a-request-server`, cece262): `dotnet build` senza avvisi; unità
+  **767/767** (come A6a: la fase non ha C#; `TrainingArchitectureTests` legge anche il TypeScript nuovo del modulo, ed è verde);
+  **integrazione intera senza filtro** **322/322** (come A6a); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test`
+  **509** in **64** file (le 494 in 63 di A6a e 15 nuovi); `pnpm e2e` **96** (le 91 e le 5 nuove); **`pnpm e2e:full` 42** su un **banco
+  nuovo** (le 41 e la spec nuova). La prima corsa, anch'essa su un banco nuovo, è finita 41/42: `tours-rules.spec.ts` è caduta su
+  `net::ERR_NO_BUFFER_SPACE`, un errore di socket di Windows nella navigazione di Chromium e non un'asserzione; rifatta sul banco
+  ricreato, 42/42. `pnpm gen:api` senza differenze (nessun endpoint cambiato); `pnpm i18n:sync` senza differenze dopo il commit che porta
+  le parole; nessun file C# toccato; le regole di `core-guard` rifatte in PowerShell sull'intervallo della fase e sul diff verso `main`:
+  nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`, spento il banco di
+  A5 su richiesta a quella sessione): il trainee chiede ADC su una postazione con il «sì» e lo trova in `/training/mine`, risponde «no» sul
+  percorso pilota e legge la frase di R.2, annulla la richiesta ATC; in italiano e in inglese, tema chiaro e scuro, e largo 375 px.
+- **Non verificato**: la CI (la dirà la PR). **Che i test nuovi cadano su una copia indebolita del codice**: non tentato, perché la
+  modalità di permessi l'ha rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è
+  così che è venuto fuori il difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
+  di A6a prova l'intento in coda). **Un ban, un'attesa, una soglia di ore, il sito dell'esame e un 409 su un annullamento vecchio,
+  attraverso le pagine sul banco**: il banco non ne ha (nessun ban, nessun training completato, nessuna soglia, nessun `theoryExamUrl`);
+  le pagine li mostrano con l'API finta dello smoke, e il lato del server è dei test d'integrazione di A6a.
 
 ### A7 — Accettare, rifiutare, assegnare
 

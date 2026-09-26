@@ -11,15 +11,14 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6a** (la richiesta, il server), sul branch `m3/a6a-request-server`, **PR #143**
-verso `main`: **A6 si è divisa in apertura** in A6a (il server) e A6b (le pagine), come `08` prevedeva. **A5 (#140) è unita** (18:44), e
-`main` è entrato nel branch con un merge insieme alla #141 del maintainer: **il revisore ora è la «sessione master»** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
-`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133) e A4 (#139) sono unite**; la fase del nucleo **A3b** (#135) è
-in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della richiesta), sul branch `m3/a6b-request-pages` preparato da
-`m3/a6a-request-server`, in coda dopo #143; poi **A7**, in coda dopo A6b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
-in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
-con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6b** (la richiesta, le pagine), sul branch `m3/a6b-request-pages`, **PR #144**
+verso `main`, in bozza **in coda dopo #143**. **A6a** (il server) è la **PR #143**, pronta con la CI verde, in attesa della **sessione
+master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del
+collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140)
+sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua. **Il prossimo passo** è **A7** (accettare, rifiutare,
+assegnare), sul branch `m3/a7-approve-and-assign` preparato da `m3/a6b-request-pages`, in coda dopo A6b (dalle fasi del modulo in poi
+tutto migra `TrainingDbContext`: in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C#
+una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -90,6 +89,49 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A6b (26 settembre 2026, branch `m3/a6b-request-pages`, PR #144)
+
+- **Che cosa c'è** (codice del modulo, solo front end: nessun file del nucleo, nessun cambio del server, nessuna nota nuova):
+  - **`/training/request`** (`web/src/modules/training/screens/request.tsx`, rotta `member` nel manifest, `?kind=` per il percorso):
+    i dati del trainee in sola lettura (mai l'email), il percorso con il training che sarebbe, il rating proposto e il mock exam, la
+    postazione (suggerimento chiuso), disponibilità e note; **«Richiedi training» apre la domanda sul teorico** (`ConfirmDialog` con la
+    risposta nei `children`; la conferma manda il form generato per il suo `id`, `requestSubmit`); il «no» lo dice a schermo al posto
+    del form; un percorso rifiutato mostra la frase e i dettagli dal `GET`.
+  - **`/training/mine`** (`screens/mine.tsx`): per percorso rating, ore, che cosa si può chiedere o perché no (l'attesa residua
+    compresa), il mock exam, «pronto per l'esame»; le richieste e i training dal più nuovo, con lo stato, il motivo di un rifiuto, le
+    caselle del report e **«Annulla la richiesta»** su `Requested`.
+  - Le funzioni pure in `screens/trainee.ts` (con i percorsi `MINE` e `REQUEST`), i pezzi comuni in `screens/parts.tsx`
+    (`RefusalDetailText`, `TheoryExamLink`, `StateBadge`); `api.ts` (`mineQuery`, `useRequestTraining`, `useCancelTraining`), `schemas.ts`
+    (`requestSchema`, `requestFromFormValues`, `requestSearchSchema`, `EMPTY_REQUEST`); le parole `request`, `mine`, `states`, `refusal`,
+    `mockExam`, `theoryExam`, `unknown` in `training.json`.
+  - **I test**: `schemas.test.ts` e `screens/trainee.test.ts` (Vitest), `web/e2e/training-request.spec.ts` (lo smoke),
+    `web/e2e/full/training-request.spec.ts` (il «fatta quando» di A6 sul banco).
+- **Che cosa deve sapere la fase dopo**:
+  - **A7** (le pagine dello staff): la pagina del trainee **non cambia** con A7, ma i suoi stati sì: una richiesta `Accepted` non si
+    annulla più (`isCancellable`), e `stateMoment` dice già il giorno della decisione. La mail di una richiesta rifiutata dallo staff
+    porta il motivo, che `/training/mine` mostra già (`rejectionReason`). ⚠️ **Il banco non ha più richieste in attesa dopo il giro**:
+    la spec di A6b annulla le sue; una spec di A7 che vuole una richiesta da accettare la chiede da sé (come trainee, `?as=pilot`) e
+    la chiude alla fine (un training accettato non si annulla dal trainee: la chiude lo staff, A8, o la si rifiuta).
+  - **A8** (le date): i riquadri vanno in `/training/mine/$id` (design §4.1), una rotta `member` come queste due; `/training/mine`
+    oggi non ha un dettaglio per training. `stateMoment` mostra già l'ora di una sessione `Scheduled` (UTC).
+  - ⚠️ **Il suggerimento chiuso del nucleo perde una scelta cliccata dopo aver scritto** (sotto, «Trovato»): finché non si corregge nel
+    nucleo, una spec sceglie dall'elenco (clic sulla casella, poi sull'opzione) o scrive il valore intero.
+  - ⚠️ **`pnpm i18n:check` non controlla le chiavi con il namespace** (`t('training:…')`): una chiave sbagliata del modulo la trovano
+    solo le spec che leggono le parole dai file di lingua.
+  - VID: A6b non ne usa; il prossimo libero resta **790022** (A3b usa 790040–790044 e 790050–790051).
+- **Trovato, non toccato (nucleo)**: nel **suggerimento chiuso** di `SchemaForm` (`Suggest` con `suggestionsOnly`) chi scrive per
+  cercare e poi clicca un'opzione perde la scelta — la casella torna vuota —, perché `onBlur` rimette il valore di prima e la lista si
+  ridisegna sotto il puntatore; misurato nel browser, in jsdom non si vede. Detto al revisore sulla PR con una correzione possibile, per
+  una PR del nucleo a sé.
+- **Anche questo, guardando a mano** (sul banco di anteprima, 5090): «Richiedi training» è un pulsante grigio, perché `ConfirmDialog` ha
+  solo i pulsanti `ghost` e `secondary`; un pulsante primario sarebbe un'estensione del nucleo, detta al revisore. L'intestazione del
+  sito è larga 1044 px su un telefono in ogni pagina (nucleo).
+- **La coda**: la PR #144 è in bozza con `(after #143)` e `Queued after #143.`: **quando #143 sarà unita**, il passo della coda —
+  `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI
+  verde — lo fa la sessione di A6b se è ancora viva, altrimenti quella di A7 prima di cominciare (sul branch di A6b, con un branch
+  temporaneo, e poi il merge in A7). Se il revisore chiede correzioni su #143, si fanno sul suo branch e salgono in A6b e in A7 con un
+  merge.
 
 ### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
 
