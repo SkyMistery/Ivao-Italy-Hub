@@ -20,6 +20,11 @@ migra `TrainingDbContext`: in fila); A7 usa A3, e A3b va avanti per conto suo pr
 unita** (piano 1.15): in C# una chiave di un modulo si chiede con il namespace (`training:…`), e
 `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` lo controlla; il C# del training lo fa già.
 
+**Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
+cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, PR verso `main` **non in coda** (tocca solo il nucleo del front end
+e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, è
+**Proposta**: la decide Carmine.
+
 ## Da leggere, nell'ordine
 
 1. `CLAUDE.md` (tutto, §0 per primo) e `CONTRIBUTING.md`.
@@ -89,6 +94,33 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A6c (26 settembre 2026, branch `m3/a6c-closed-suggestion`)
+
+- **Perché c'è**: la sessione di A6b l'ha trovata scrivendo lo smoke della richiesta (#144): nel **suggerimento chiuso** di `SchemaForm`
+  (`suggestionsOnly`) chi scrive una parte del valore e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su
+  una riga nuova. Vale per ogni campo chiuso dell'hub (menu, postazioni nascoste, postazione della richiesta, aerei dei tour).
+  `dalberone` ha scelto una fase del nucleo a sé, come A4a.
+- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **Proposta**, domanda a Carmine sulla PR):
+  - in `Suggest` (`web/src/shared/forms/SchemaForm.tsx`) **la casella e la sua lista sono un campo solo**: la regola del campo chiuso
+    («uscire con qualcosa che nessuno ha offerto rimette quello che c'era») vale quando il fuoco esce da tutte e due — dall'`onBlur`
+    della casella, o dalla chiusura della lista quando il fuoco non è nella casella —; tornare nella casella dalla lista non ricomincia
+    la ricerca; una scelta scrive `opened`. Nessuna schermata cambiata.
+  - la spec nuova **`web/e2e/closed-suggestion.spec.ts`** (5 prove sull'indirizzo di una voce del menu, con l'API finta), che cade sul
+    codice di `main`.
+- **Che cosa deve sapere la fase dopo**:
+  - **Dopo il merge una spec può scrivere per cercare in un campo chiuso** e poi cliccare l'opzione. Le spec di A6b
+    (`web/e2e/training-request.spec.ts`, `web/e2e/full/training-request.spec.ts`) scelgono la postazione dall'elenco **apposta**, e sono
+    in coda su #144: non si toccano in questa PR; potranno scrivere una parte del nominativo in una fase dopo il merge.
+  - ⚠️ **Non si annulla la pressione su una lista in un popover** (`onMouseDown` con `preventDefault`) per tenere il fuoco altrove:
+    **Chromium non trascina più la barra di scorrimento** di quella lista (misurato: 611 px senza, 0 con). Era la correzione proposta da
+    A6b, fatta per prima e scartata. E **Playwright headless nasconde le barre** (`--hide-scrollbars`): una prova che ne preme una le
+    riaccende con `test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } })` in cima al file.
+  - ⚠️ **Dopo una pressione sulla lista il fuoco sta nella lista** (come prima di A6c): un tasto scritto lì non va nella casella; le
+    frecce e Invio sono di `cmdk`, e un clic sulla casella ci torna con la ricerca di prima.
+  - Nessun VID e nessuno slug usati.
+- **La PR non va in coda**: se #143 o #144 sono unite prima, `main` entra nel branch con un merge; i conflitti stanno in cima a questo
+  file e nella tabella di `08`, e si tengono tutti i paragrafi.
 
 ### Che cosa ha lasciato A5 (26 settembre 2026, branch `m3/a5-sheet-items`, PR #140)
 
