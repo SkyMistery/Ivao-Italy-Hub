@@ -94,7 +94,10 @@ CI fails on a diff after regenerating them, so regenerate before pushing:
 - **Windows shells**: heredocs with non-ASCII characters (`§`, `—`, accents) truncate silently, and backticks inside
   `node -e "…"` are run as commands, leaving holes in the file. Write files with an editor or a script file.
 - **`Localized<T>` serialized into a column** needs `LocalizedJsonConverterFactory`; only HTTP has it registered.
-- **Server-side i18n keys** are flattened: in C# a module key is `threads.x`, never `flightops:threads.x`.
+- **Server-side i18n keys**: in C# a module's key is asked with its namespace, as the browser asks it —
+  `flightops:threads.x`, never `threads.x`. A bare module key answers only while no other module declares it, and then
+  the catalogue silently answers with the key itself; `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer`
+  refuses it. The core's keys, and the mails of the notification types (`mail.{type}`), stay bare.
 - **A new block bumps two counts** written out in tests (`uiKit.test.ts` and `DataBlockEndToEndTests`), and a block
   needs both halves (TypeScript and C#) in the same pull request.
 - **A module with a public page reserves its first URL segment** (`IModule.ReservedSegments`), or a page with that

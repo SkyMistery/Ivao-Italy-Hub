@@ -126,7 +126,7 @@ public sealed class PirepDisputes(
         pirep.DisputeThread = new ThreadOpeningProjection(
             ContactKinds.Dispute,
             pirep.OwnerDepartment,
-            Clip(references.Words(locale, "threads.disputeSubject", ("label", label.Get(locale) ?? label.Values.FirstOrDefault() ?? string.Empty))),
+            Clip(references.Words(locale, "flightops:threads.disputeSubject", ("label", label.Get(locale) ?? label.Values.FirstOrDefault() ?? string.Empty))),
             text,
             pirep.Vid,
             pirep.DecidedByVid is { } decider ? [decider] : [],

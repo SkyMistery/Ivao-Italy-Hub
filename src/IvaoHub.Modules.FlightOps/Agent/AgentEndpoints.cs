@@ -98,7 +98,7 @@ public static class AgentEndpoints
             return result switch
             {
                 AgentWriteResult.Forbidden => Results.StatusCode(StatusCodes.Status403Forbidden),
-                AgentWriteResult.NotWaiting => Conflict(catalog, currentUser, "errors.agentNotWaiting", "agentNotWaiting"),
+                AgentWriteResult.NotWaiting => Conflict(catalog, currentUser, "flightops:errors.agentNotWaiting", "agentNotWaiting"),
                 AgentWriteResult.Refused => CrudProblems.Validation(problems!, new Dictionary<string, string[]>(), catalog, currentUser.Locale),
                 _ => Results.Ok(written),
             };
