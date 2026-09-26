@@ -837,7 +837,8 @@ public sealed class TrainingStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
-    /// What this class leaves: the trainings of its trainees, the grants and positions of its people, their mails, and the
+    /// What this class leaves: the trainings of its trainees, with the entries of the calendar their dated sessions project
+    /// (A8: deleted in bulk, a training would leave them behind), the grants and positions of its people, their mails, and the
     /// address and the powers of the ones that had them — so no later class counts them.
     /// </summary>
     private async Task CleanAsync(CancellationToken cancellationToken)
@@ -846,6 +847,12 @@ public sealed class TrainingStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var training = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
         var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
 
+        var sources = (await training.Trainings.IgnoreQueryFilters().Where(row => Vids.Contains(row.TraineeVid)).Select(row => row.Id).ToListAsync(cancellationToken))
+            .Select(Training.SourceIdOf)
+            .ToList();
+        await hub.CalendarEntries.IgnoreQueryFilters()
+            .Where(entry => entry.SourceModule == TrainingModule.ModuleKey && sources.Contains(entry.SourceId))
+            .ExecuteDeleteAsync(cancellationToken);
         await training.Trainings.IgnoreQueryFilters().Where(row => Vids.Contains(row.TraineeVid)).ExecuteDeleteAsync(cancellationToken);
         await hub.UserGrants.Where(grant => grant.Vid != null && Vids.Contains(grant.Vid.Value)).ExecuteDeleteAsync(cancellationToken);
         await hub.UserStaffPositions.Where(position => Vids.Contains(position.Vid)).ExecuteDeleteAsync(cancellationToken);
