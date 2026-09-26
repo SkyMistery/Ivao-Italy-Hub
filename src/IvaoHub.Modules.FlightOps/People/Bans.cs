@@ -138,7 +138,7 @@ public static class BanEndpoints
         var tour = ban.TourId is { } tourId
             ? (await CrudSource.BackOffice<Tour>(saving.Database).AsNoTracking().FirstAsync(row => row.Id == tourId, saving.CancellationToken))
                 .Title.Resolve(locale, options.DefaultLocale) ?? string.Empty
-            : catalog.Resolve(locale, "mail.flightops.allTours");
+            : catalog.Resolve(locale, "flightops:mail.flightops.allTours");
 
         var data = new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -146,7 +146,7 @@ public static class BanEndpoints
             ["from"] = ban.StartsAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC",
             ["until"] = ban.EndsAt is { } end
                 ? end.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC"
-                : catalog.Resolve(locale, "mail.flightops.forGood"),
+                : catalog.Resolve(locale, "flightops:mail.flightops.forGood"),
             ["reason"] = ban.Reason,
             ["url"] = $"https://{options.Domain}/tours",
         };
