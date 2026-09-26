@@ -3,3 +3,5 @@
  * (design M3 §3.1).
  */
 export const TRAINING_MANAGE_SETTINGS = 'Training.ManageSettings';
+
+export const TRAINING_MANAGE_SHEETS = 'Training.ManageSheets';
