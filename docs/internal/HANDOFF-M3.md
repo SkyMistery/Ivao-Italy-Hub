@@ -91,8 +91,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 ### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`; la PR dopo il merge di A4a, #133)
 
-- **Che cosa c'è** (codice del modulo; una nota sola, **Proposta**, `2026-09-26-gli-esami-li-inserisce-chi-esamina`, per gli esami
-  senza i trainer; lo scostamento grande è la fase del nucleo A4a, trovata qui):
+- **Che cosa c'è** (codice del modulo; una nota sola, **Decisa**, `2026-09-26-gli-esami-li-inserisce-chi-esamina`, per gli esami
+  senza i trainer, che rimanda a quella del maintainer, `2026-09-26-gli-esaminatori`; lo scostamento grande è la fase del nucleo A4a,
+  trovata qui):
   - **Il modulo**: `src/IvaoHub.Modules.Training/` — `TrainingModule` (chiave `training`, la voce `/staff/training/settings`, il
     segmento riservato `training`), `TrainingPermissions` (i nove di design §3.1), `Data/TrainingDbContext` con l'`Initial` senza
     tabelle del modulo, `Settings/TrainingSettings` (i dieci campi di §1.6, `TrainingSettingsValidator` sul vocabolario,
@@ -102,10 +103,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **La configurazione**: i nove `positionGrants` del TD in `config/division.json` e nell'esempio. ⚠️ **`ManageExams` a TC, TAC e
     TA1–9, non ai trainer**, a differenza del design §3.2: **un esame si assegna solo a un esaminatore, e gli esaminatori sono HQ, TC,
     TAC e i TA, mai un trainer** (`dalberone`, 26 settembre 2026), e la regola n.10 di Carmine è che l'esame lo inserisce chi ce l'ha.
-    **Vale anche per A3b** (la domanda «anche a un trainer?» della sua sezione ha già la risposta: no) **e per A10**. Cambia l'elenco
-    scritto nella n.10, quindi ha una nota sua, `decisions/2026-09-26-gli-esami-li-inserisce-chi-esamina.md`, **Proposta**, con la
-    domanda a Carmine nella [issue #134](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134): la risposta va nella nota, con il
-    link al suo commento, prima della PR di A4.
+    **Vale anche per A3b** (la domanda «anche a un trainer?» della sua sezione ha già la risposta: no) **e per A10**. Cambiava
+    l'elenco scritto nella n.10, quindi ha una nota sua, **decisa** da Carmine
+    ([«yes» sulla issue #134](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134#issuecomment-5844363804)), come la sua nota
+    `2026-09-26-gli-esaminatori` (#136), che corregge la n.10.
   - **I test**: `TrainingSettingsTests` e `TrainingArchitectureTests` (unità), `TrainingSkeletonTests` e `TrainingXxDivisionTests`
     (integrazione, VID 790009–790013), `schemas.test.ts`, `web/e2e/full/training-skeleton.spec.ts`.
 - **Che cosa deve sapere la fase dopo**:
@@ -124,10 +125,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     `mail.training.<tipo>`.
   - ⚠️ **Un errore su una riga di una lista** si nomina con il campo della riga (`minimumHours[0].rating`), o il form non lo mostra.
   - ⚠️ **`web/e2e/address.spec.ts`** va su `/training/team`: nessuna rotta del modulo deve prendere ogni `/training/…`.
-- ⚠️ **Da fare prima della PR**, dopo il merge di #133: `git merge origin/main` nel branch (il conflitto in cima a questo file si
-  risolve tenendo tutti e due i paragrafi, A4 sopra, e con #131 anche il suo e l'avviso sugli esami in cima), build e **tutti** i test
-  di nuovo, «Com'è andata» in `08` con i conteggi sul merge; **la risposta di Carmine sulla issue #134** nella nota degli esami, con il
-  link (se è «no», i trainer tornano nel seme); poi la PR verso `main` con il template compilato.
+- ⚠️ **In coda dopo #133**: la PR di A4 è in bozza con `(after #133)`. **Quando #133 è unita**: `git merge origin/main` nel branch,
+  build e **tutti** i test di nuovo, via `(after #133)` e `Queued after #133.`, e la PR pronta (`CONTRIBUTING.md`, «Phases in a
+  queue»). Se nel frattempo è unita anche **#138** del maintainer, il suo test di architettura legge il C# del training: le chiavi
+  sono già tutte `training:…`.
 - ⚠️ **Un banco e2e locale che ha già girato con il seme di prima** (esami anche ai trainer) lo tiene, perché un seme si applica una
   volta sola: prima di `pnpm e2e:full`, `DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` (quello di questo worktree è stato
   ricreato il 26 settembre). La CI parte sempre da un banco nuovo.

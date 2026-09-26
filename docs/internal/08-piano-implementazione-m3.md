@@ -548,13 +548,14 @@ test del modulo: `ForkabilityXxDivisionTests` è condiviso). Unit: i predefiniti
 salvate e rilette.
 **Fatta quando**: l'utente del banco con i permessi del TD vede la sezione Training, cambia un'impostazione e la rilegge.
 
-**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`; la PR si apre dopo il merge di A4a, #133):
+**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`, in coda dopo A4a, #133):
 
 - **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo, dentro meccanismi che ci sono — `IModule`, `ModuleDbContext`,
   le impostazioni dei moduli, `positionGrants`, `SchemaForm`, il vocabolario dei rating (A1) e la directory delle postazioni (A2) —;
   nessun file del nucleo. ⚠️ **Al primo test d'integrazione l'hub non è partito**: il catalogo delle lingue del server non regge due
   moduli (`_source` e `nav.section` ripetuti). `dalberone` ha scelto la fase del nucleo **A4a** subito, a sé (#133, nota
-  `2026-09-26-le-parole-di-piu-moduli`, Proposta); il codice di A4 è rimasto in locale e **aspetta la risposta di Carmine e il merge**.
+  `2026-09-26-le-parole-di-piu-moduli`), e il codice di A4 è rimasto fermo finché Carmine non l'ha decisa (sì, come raccomandato);
+  ora A4 va in coda dopo #133 e ne unisce il branch, che porta anche `main`.
 - **Fatto**, come il perimetro qui sopra:
   1. `IvaoHub.Modules.Training` (solo `Core`), `TrainingDbContext`, `__EFMigrationsHistory_training`, e **`Initial`** senza tabelle
      del modulo: lo snapshot ha le sette tabelle del nucleo escluse, la migrazione soltanto l'`AlterDatabase` del set di caratteri,
@@ -576,8 +577,10 @@ salvate e rilette.
      che A4 arrivi in qualunque installazione: un seme di `positionGrants` si applica una volta sola, e cambiarlo dopo non toglierebbe
      il grant già scritto. Il fatto vale anche per **A3b** (che la sezione della fase, sul branch di A3, lasciava «da chiarire con
      `dalberone` in apertura») e per **A10**. Poiché cambia l'elenco che la decisione n.10 scrive, **ha la sua nota**,
-     `2026-09-26-gli-esami-li-inserisce-chi-esamina`, **Proposta**, con la domanda a Carmine nella issue #134 (A4 non ha ancora una
-     PR): lo ha fatto notare la sessione di A3.
+     `2026-09-26-gli-esami-li-inserisce-chi-esamina`, con la domanda a Carmine nella issue #134 (A4 non aveva ancora una PR): lo ha
+     fatto notare la sessione di A3. **Deciso da Carmine** il 26 settembre 2026, come raccomandato: [«yes» sulla #134][a134], la stessa
+     decisione che ha preso sulla #131 ([commento][c131b]) e che vale nella sua nota `2026-09-26-gli-esaminatori` (#136, piano 1.14),
+     che corregge la n.10. Il seme resta com'è; la nota di A4 è *Decisa* e rimanda a quella.
   2. **Due endpoint di lettura** che il piano non nominava, perché la schermata generata sceglie e non fa scrivere:
      `/api/training/ratings` (i rating con un training pratico, dal vocabolario del nucleo; a ogni membro, perché li useranno anche
      A5 e A6) e `/api/training/positions` (le postazioni della divisione di quei rating, dalla directory, ognuna con il suo rating; a
@@ -609,16 +612,28 @@ salvate e rilette.
   3. ⚠️ **Le impostazioni dei tour hanno lo stesso caso dello scostamento 4 qui sopra**: l'errore di una riga di `northSouthLevelCountries` o
      di `routeProcedurePrefixes` arriva come `…[0]` e non si vede. È codice del maintainer: detto al revisore.
   4. I VID **790009–790013** sono di A4; il prossimo libero è 790014.
-- **Verificato, in locale** (26 settembre 2026), su un branch temporaneo con A4a unita, poi tolto: `dotnet build` senza avvisi; unità
-  750/750 (le 718 di A4a e le 32 nuove); **integrazione intera senza filtro** 302/302 (le 298 e le 4 nuove); `pnpm lint`,
-  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 488 in 63 file; `pnpm e2e` 91; **`pnpm e2e:full` 40**, con le due spec
-  nuove (la sezione nella tavolozza, l'impostazione salvata e riletta, rimessa com'era; il trainer del banco e le impostazioni); le
-  classi nuove di integrazione da sole; `pnpm gen:api` con i due endpoint nuovi. **Dopo lo scostamento 1** (gli esami senza i
-  trainer), di nuovo con A4a: unità 750/750; `TrainingSkeletonTests`, `TrainingXxDivisionTests` e `FlightOpsSkeletonTests` 7/7;
-  `pnpm e2e:full` 40 su un **banco nuovo** — sul banco vecchio il seme di prima era già applicato, e un seme si applica una volta sola.
-  **Tutto da rifare sul branch dopo il merge di #133**, prima della PR.
+- **Dopo le risposte di Carmine** (26 settembre 2026):
+  1. **`m3/a4a-module-locales` unito nel branch**, con `main` (#131, #132, #136, #137): l'unico conflitto era in cima a
+     `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi, A4 sopra A4a sopra A3. `08` si è unito da solo, con il punto 3 di A4 come
+     l'ha scritto #136.
+  2. **A10 era già allineato** da #136 (il test «un TA crea un esame senza `Edit` e un trainer no», e «un TA inserisce un esame» nel
+     «fatta quando»): quello che il revisore chiedeva su #131 ([commento][c131b]) non ha lasciato niente da fare qui.
+  3. **Le chiavi nel C# del modulo** (heads-up di #138 del maintainer, in coda dopo #133): tutte quelle di `training.json` sono già
+     scritte `training:…` (`training:nav.settings`, `training:errors.*`), e le sole nude sono del nucleo (`errors.*`). Niente da
+     cambiare.
+- **Verificato, in locale, sul branch con A4a e `main` uniti** (26 settembre 2026): `dotnet build` senza avvisi; unità **751/751** (le
+  719 di A4a e le 32 nuove); **integrazione intera senza filtro** **311/311** (le 307 e le 4 nuove); `pnpm lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; `pnpm test` 488 in 63 file; `pnpm e2e` 91; **`pnpm e2e:full` 40** su un **banco nuovo**, con
+  le due spec nuove (la sezione nella tavolozza, l'impostazione salvata e riletta, rimessa com'era; il trainer del banco con il solo
+  `View` e un 403 sulle impostazioni); `pnpm gen:api` senza differenze. Prima, su branch temporanei con A4a, poi tolti: le stesse
+  suite, e le classi nuove d'integrazione da sole. ⚠️ Un banco che ha girato con il seme di prima (esami anche ai trainer) lo tiene,
+  perché un seme si applica una volta sola: per questo il banco nuovo.
 - **Non verificato**: la CI (la dirà la PR); le impostazioni con le postazioni vere della divisione (sul banco e nei test ci sono
-  quelle delle fixture, 43 d'aeroporto e 29 settori); la schermata guardata a mano, con le due lingue e i due temi.
+  quelle delle fixture, 43 d'aeroporto e 29 settori); la schermata guardata a mano con tutte e due le lingue e i due temi (`dalberone`
+  l'ha vista sul banco il 26 settembre, in un'altra sessione).
+
+[a134]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134#issuecomment-5844363804
+[c131b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5844102750
 
 ### A5 — Le voci della scheda
 

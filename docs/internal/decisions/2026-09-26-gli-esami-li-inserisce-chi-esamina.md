@@ -1,16 +1,19 @@
 # Gli esami li inserisce chi esamina: `Training.ManageExams` senza i trainer (A4)
 
 **Data:** 26 settembre 2026 — fase A4 di M3
-**Stato:** **Proposta**. La domanda (§5) è a Carmine nella [issue #134][q], perché A4 non ha ancora una PR; il codice di A4 è la
-raccomandazione, e cambia se la risposta è un'altra. È
-uno scostamento da una decisione scritta — la n.10 (nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 4, design
-`07-design-m3.md` §3.2 e §12 n.10) —, per un fatto nuovo del TD, e per questo non basta «Com'è andata» (`08`, «Regole di tutte le
+**Stato:** **Decisa** da Carmine il 26 settembre 2026, **come raccomandato**: [«yes»][a] alla domanda della [issue #134][q] (§5).
+**La decisione vale nella sua nota**, `2026-09-26-gli-esaminatori` (#136, piano 1.14), presa lo stesso giorno sulla #131
+([commento][c]), che corregge la n.10; questa registra come A4 ci è arrivata, e che il seme del commit 969c02e resta. Era uno
+scostamento da una decisione scritta — la n.10 (nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 4, design
+`07-design-m3.md` §3.2 e §12 n.10) —, per un fatto nuovo del TD, e per questo non bastava «Com'è andata» (`08`, «Regole di tutte le
 fasi»): lo ha notato la sessione di A3.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** — è configurazione della fase (`positionGrants` del TD) —, ma con la conferma del
 maintainer, perché cambia l'elenco che la sua decisione scrive. Sui fatti risponde `dalberone`; le scelte le decide Carmine
 (`HANDOFF-M3.md`, «La prima sessione: il design»).
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134#issuecomment-5844363804
+[c]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5844102750
 
 ## 1. Che cosa dice la decisione
 
@@ -51,6 +54,10 @@ ancora in nessuna installazione.
 **Raccomandata: sì.** Se la risposta è no, i trainer tornano nel seme di A4 com'era nel design (una riga di `division.json` e
 dell'esempio, e i tre test che lo controllano).
 
+**Risposta di Carmine, 26 settembre 2026** ([commento sulla issue #134][a]): **sì**. `Training.ManageExams` va a TC, TAC e TA1–9, e i
+trainer tengono `Training.View` e basta; è la stessa decisione presa sulla #131 ([commento][c]) e scritta nella nota
+`2026-09-26-gli-esaminatori`. Il seme del commit 969c02e resta; la issue è chiusa.
+
 ## 6. Che cosa si tocca
 
 - **A4**: il seme di `Training.ManageExams` in `config/division.json` e `division.example.json`; `TrainingArchitectureTests` (i semi
@@ -60,6 +67,5 @@ dell'esempio, e i tre test che lo controllano).
 
 ## Da portare nel piano
 
-- **Design `07-design-m3.md`**, se il revisore lo aggiorna: §2.8 e §3.4 («anche un TA o un trainer» → «chi esamina: HQ, TC, TAC o un
-  TA»), la tabella di §3.2 (`ManageExams` senza trainer), §12 n.10 («a tutto lo staff del training» → «a TC, TAC e TA»).
-- **Piano §9.2, riga Training**, se nomina chi inserisce gli esami: chi esamina — HQ, TC, TAC e i TA —, mai un trainer.
+- Niente di più: il design (§2.8, §3.2, §3.4, §10, §12 n.10), `08` (A3b, A4, A10) e il piano §9.2 li ha già allineati la sessione del
+  maintainer con #136 e la nota `2026-09-26-gli-esaminatori`.
