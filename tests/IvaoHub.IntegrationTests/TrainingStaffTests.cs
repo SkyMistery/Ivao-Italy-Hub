@@ -315,15 +315,26 @@ public sealed class TrainingStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.True(await MayAsync(identity, theirs, TrainingPermissions.Conduct, token));
         Assert.False(await MayAsync(identity, another, TrainingPermissions.Conduct, token));
 
-        // The write guard, on the row: what conducting writes — here the date — goes on theirs and not on the other.
+        // The write guard, on the row: what conducting writes — here a date, as the override of A8 will — goes on theirs and not
+        // on the other.
         var session = DateTime.UtcNow.AddDays(7);
-        await WriteAsync(identity, theirs, training => training.ScheduledStartUtc = session, token);
+        await WriteAsync(
+            identity,
+            theirs,
+            training =>
+            {
+                training.ScheduledStartUtc = session;
+                training.State = TrainingState.Scheduled;
+            },
+            token);
         await Assert.ThrowsAsync<ForbiddenDomainException>(() => WriteAsync(identity, another, training => training.ScheduledStartUtc = session, token));
         Assert.Null((await StoredAsync(another, token)).ScheduledStartUtc);
 
-        // Given to somebody else: the first trainer's grant goes, the second's comes; the dated training keeps its date.
+        // Given to somebody else: the first trainer's grant goes, the second's comes; the dated training keeps its state and date.
         var reassigned = await AssignAsync(coordinator, theirs, SecondTrainerVid, token);
         Assert.Equal(SecondTrainerVid, reassigned.GetProperty("trainer").GetProperty("vid").GetInt32());
+        Assert.Equal(nameof(TrainingState.Scheduled), reassigned.GetProperty("state").GetString());
+        Assert.Equal(session, reassigned.GetProperty("scheduledStartUtc").GetDateTime(), TimeSpan.FromSeconds(1));
         Assert.Equal([SecondTrainerVid], await HoldersOfConductAsync(theirs, token));
 
         // The grant taken signs the first trainer out; signed in again, they hold nothing on it.
