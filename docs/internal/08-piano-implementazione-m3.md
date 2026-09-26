@@ -548,7 +548,95 @@ test del modulo: `ForkabilityXxDivisionTests` è condiviso). Unit: i predefiniti
 salvate e rilette.
 **Fatta quando**: l'utente del banco con i permessi del TD vede la sezione Training, cambia un'impostazione e la rilegge.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo, dentro meccanismi che ci sono — `IModule`, `ModuleDbContext`,
+  le impostazioni dei moduli, `positionGrants`, `SchemaForm`, il vocabolario dei rating (A1) e la directory delle postazioni (A2) —;
+  nessun file del nucleo. ⚠️ **Al primo test d'integrazione l'hub non è partito**: il catalogo delle lingue del server non regge due
+  moduli (`_source` e `nav.section` ripetuti). `dalberone` ha scelto la fase del nucleo **A4a** subito, a sé (#133, nota
+  `2026-09-26-le-parole-di-piu-moduli`), e il codice di A4 è rimasto fermo finché Carmine non l'ha decisa (sì, come raccomandato);
+  ora A4 va in coda dopo #133 e ne unisce il branch, che porta anche `main`.
+- **Fatto**, come il perimetro qui sopra:
+  1. `IvaoHub.Modules.Training` (solo `Core`), `TrainingDbContext`, `__EFMigrationsHistory_training`, e **`Initial`** senza tabelle
+     del modulo: lo snapshot ha le sette tabelle del nucleo escluse, la migrazione soltanto l'`AlterDatabase` del set di caratteri,
+     come l'`Initial` dei tour. Registrato in `Modules.cs`, nel `.sln`, nell'host e nei test di unità.
+  2. `web/src/modules/training/`: il manifest, la sezione «Training» con una voce, **`/staff/training/settings`** (design §4.2), le
+     lingue it ed en copiate da `pnpm i18n:sync`; `modules/index.ts`.
+  3. I nove permessi di §3.1, `DeniedToStakeholder` su `Approve`, `Assign`, `Conduct`, `Edit` e `Ban`; i nove `positionGrants` del TD
+     di §3.2 in `division.json` e in `division.example.json`, **con `ManageExams` senza i trainer** (sotto, scostamento 1).
+  4. **`TrainingSettings`** con i dieci campi di §1.6 e i loro predefiniti — nessuna soglia di ore, `maxResponseDays` e `theoryExamUrl`
+     vuoti (`null`), `hiddenPositions` vuoto, attese 5 e 14 giorni, avviso dopo 3, `Warn`, `["event"]`, promemoria a 24 ore —, dietro
+     `Training.ManageSettings`, schermata generata.
+  5. Il segmento riservato `training`.
+  6. **`TrainingArchitectureTests`**, i controlli del design §10, in un file del modulo.
+- **Scostamenti dal piano, piccoli**:
+  1. ⚠️ **`Training.ManageExams` non va ai trainer (T01–T99)**, che il design §3.2 invece elencava, con `View` e basta. **Il fatto è
+     cambiato**, non la scelta: la decisione n.10 di Carmine è «gli esami li inserisce chi ha l'esame assegnato», e il design dava
+     l'esame anche ai trainer per la risposta d4 («anche un TA o un trainer»); **il 26 settembre 2026 `dalberone` ha precisato che un
+     esame si assegna solo a un esaminatore, e gli esaminatori sono HQ, TC, TAC e i TA, come da regole, mai un trainer**. Tolto prima
+     che A4 arrivi in qualunque installazione: un seme di `positionGrants` si applica una volta sola, e cambiarlo dopo non toglierebbe
+     il grant già scritto. Il fatto vale anche per **A3b** (che la sezione della fase, sul branch di A3, lasciava «da chiarire con
+     `dalberone` in apertura») e per **A10**. Poiché cambia l'elenco che la decisione n.10 scrive, **ha la sua nota**,
+     `2026-09-26-gli-esami-li-inserisce-chi-esamina`, con la domanda a Carmine nella issue #134 (A4 non aveva ancora una PR): lo ha
+     fatto notare la sessione di A3. **Deciso da Carmine** il 26 settembre 2026, come raccomandato: [«yes» sulla #134][a134], la stessa
+     decisione che ha preso sulla #131 ([commento][c131b]) e che vale nella sua nota `2026-09-26-gli-esaminatori` (#136, piano 1.14),
+     che corregge la n.10. Il seme resta com'è; la nota di A4 è *Decisa* e rimanda a quella.
+  2. **Due endpoint di lettura** che il piano non nominava, perché la schermata generata sceglie e non fa scrivere:
+     `/api/training/ratings` (i rating con un training pratico, dal vocabolario del nucleo; a ogni membro, perché li useranno anche
+     A5 e A6) e `/api/training/positions` (le postazioni della divisione di quei rating, dalla directory, ognuna con il suo rating; a
+     chi gestisce le impostazioni). **Il modulo non scrive un numero di rating**: una soglia di ore si sceglie fra quelli del server,
+     e il valore della scelta porta percorso e numero (`Atc:5`), perché i due percorsi numerano i gradini allo stesso modo.
+  3. **Le regole delle impostazioni leggono il nucleo**: il rating di una soglia deve avere un training pratico nel vocabolario, una
+     riga per rating; `conflictKinds` sono tipi del calendario che esistono (la schermata offre quelli del bootstrap e lascia fuori un
+     tipo che non c'è più); `hiddenPositions` sono postazioni su cui la divisione allena — una che IVAO toglie è rifiutata sulla sua
+     riga e resta visibile, così il TD la toglie —; `theoryExamUrl` un indirizzo http o https, la regola dei link della libreria, con
+     `errors.url.absolute` e la lunghezza di `LinkWriteDtoValidator`.
+  4. **L'errore di una riga porta il nome del campo della riga** (`minimumHours[0].rating`, `hiddenPositions[0].callsign`): il form
+     generato non disegna un errore sulla lista intera, e quello sparirebbe.
+  5. **La sezione è per ora solo la voce delle impostazioni**: la lista dei training a `/staff/training` è di A7, e fino ad allora TA
+     e trainer non hanno voci nel back office.
+  6. **«Il modulo non nomina IVAO»** (§10) è un modello e non una prova: nel codice del modulo nessun «ivao» fuori dal nome del
+     prodotto, dal perimetro `IvaoHub.Core.Ivao` e dal pacchetto di Atmosphere; nei suoi file di lingua nessun indirizzo di IVAO;
+     nessun numero accanto a un rating, nessun nome di rating o di tipo di postazione della rete in una stringa (i nomi letti dal
+     vocabolario vero); nessun client HTTP. Due `Theory` mostrano che cosa prende e che cosa lascia passare, ed è provato che cade su
+     file di prova messi e tolti. Il primo giro ha preso davvero una riga: la stringa di connessione della factory di `dotnet ef`
+     nomina il database `ivaohub`, il nome del prodotto — eccezione allargata a ogni maiuscola.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Una posizione del TD senza indirizzo non riceve i messaggi al TD**: `NotificationService.Resolve` salta un membro senza
+     indirizzo, e `NotificationUsesRecipientLocale` sceglie le mail per oggetto e indirizzo. I test del modulo seminano TC, TA1 e T03
+     senza email, e il permesso sulle impostazioni lo danno con un grant a un VID — verificato leggendo i test dei contatti, come il
+     piano chiedeva.
+  2. ⚠️ **`web/e2e/address.spec.ts`** (del maintainer) va su `/training/team` e si aspetta il router delle pagine: una rotta del
+     modulo che prendesse ogni `/training/…` (un `/training/$id`) la farebbe cadere; `/training/request`, `/training/mine` e
+     `/training/sessions/$id` no.
+  3. ⚠️ **Le impostazioni dei tour hanno lo stesso caso dello scostamento 4 qui sopra**: l'errore di una riga di `northSouthLevelCountries` o
+     di `routeProcedurePrefixes` arriva come `…[0]` e non si vede. È codice del maintainer: detto al revisore.
+  4. I VID **790009–790013** sono di A4; il prossimo libero è 790014.
+- **Dopo le risposte di Carmine** (26 settembre 2026):
+  1. **`m3/a4a-module-locales` unito nel branch**, con `main` (#131, #132, #136, #137): l'unico conflitto era in cima a
+     `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi, A4 sopra A4a sopra A3. `08` si è unito da solo, con il punto 3 di A4 come
+     l'ha scritto #136.
+  2. **A10 era già allineato** da #136 (il test «un TA crea un esame senza `Edit` e un trainer no», e «un TA inserisce un esame» nel
+     «fatta quando»): quello che il revisore chiedeva su #131 ([commento][c131b]) non ha lasciato niente da fare qui.
+  3. **Le chiavi nel C# del modulo** (heads-up di #138 del maintainer, in coda dopo #133): tutte quelle di `training.json` sono già
+     scritte `training:…` (`training:nav.settings`, `training:errors.*`), e le sole nude sono del nucleo (`errors.*`). Niente da
+     cambiare.
+  4. **Il passo della coda**: #133 è stata unita alle 11:51 (fa575fb). `main` è entrato nel branch con un merge **che non porta
+     file**: l'albero è lo stesso (122c54e) su cui sono girate tutte le suite qui sotto, come per A2 con #129. Tolti `(after #133)` e
+     `Queued after #133.`, e #139 è passata a pronta.
+- **Verificato, in locale, sul branch con A4a e `main` uniti** (26 settembre 2026): `dotnet build` senza avvisi; unità **751/751** (le
+  719 di A4a e le 32 nuove); **integrazione intera senza filtro** **311/311** (le 307 e le 4 nuove); `pnpm lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; `pnpm test` 488 in 63 file; `pnpm e2e` 91; **`pnpm e2e:full` 40** su un **banco nuovo**, con
+  le due spec nuove (la sezione nella tavolozza, l'impostazione salvata e riletta, rimessa com'era; il trainer del banco con il solo
+  `View` e un 403 sulle impostazioni); `pnpm gen:api` senza differenze. Prima, su branch temporanei con A4a, poi tolti: le stesse
+  suite, e le classi nuove d'integrazione da sole. ⚠️ Un banco che ha girato con il seme di prima (esami anche ai trainer) lo tiene,
+  perché un seme si applica una volta sola: per questo il banco nuovo.
+- **Non verificato**: la CI (la dirà la PR); le impostazioni con le postazioni vere della divisione (sul banco e nei test ci sono
+  quelle delle fixture, 43 d'aeroporto e 29 settori); la schermata guardata a mano con tutte e due le lingue e i due temi (`dalberone`
+  l'ha vista sul banco il 26 settembre, in un'altra sessione).
+
+[a134]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134#issuecomment-5844363804
+[c131b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5844102750
 
 ### A5 — Le voci della scheda
 

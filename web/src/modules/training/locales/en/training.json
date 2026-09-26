@@ -1,0 +1,51 @@
+{
+  "nav": {
+    "section": "Training",
+    "settings": "Training settings"
+  },
+  "kinds": {
+    "Atc": "ATC",
+    "Pilot": "Pilot"
+  },
+  "settings": {
+    "title": "Training settings",
+    "description": "What the training department changes without a release: the rules of a request, the times of the dates, the positions trained on.",
+    "saved": "Settings saved.",
+    "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+    "fields": {
+      "minimumHours": "Minimum hours to ask for a training",
+      "minimumHours.rating": "Rating asked for",
+      "minimumHours.hours": "Hours needed",
+      "cooldownDays": "Days to wait after a training",
+      "noShowCooldownDays": "Days to wait after a no-show",
+      "maxResponseDays": "Days to choose a date before the training closes",
+      "responseReminderDays": "Days without a chosen date before the trainer is alerted",
+      "conflictPolicy": "When a proposed date meets the calendar",
+      "conflictKinds": "Calendar kinds checked",
+      "reminderLeadHours": "Hours before a session the reminder is sent",
+      "hiddenPositions": "Positions not used for training",
+      "hiddenPositions.callsign": "Position",
+      "theoryExamUrl": "Address of the theory exam"
+    },
+    "hints": {
+      "minimumHours": "Connection hours as a controller for an ATC rating, as a pilot for a pilot rating. A member with fewer cannot ask for that rating. No row: no threshold.",
+      "maxResponseDays": "Empty: a training never closes by itself, and the staff closes it by hand.",
+      "conflictKinds": "A proposed date that falls on an entry of one of these kinds is handled as the setting above says.",
+      "hiddenPositions": "The trainees are offered every position of the division a rating is trained on, the military ones included, except these.",
+      "theoryExamUrl": "Shown with the question on the theory exam, and to whoever approves a request."
+    },
+    "options": {
+      "conflictPolicy": {
+        "Warn": "Warn, and let the trainer confirm",
+        "Block": "Refuse the date",
+        "None": "Do not check"
+      }
+    }
+  },
+  "errors": {
+    "ratingNotTrained": "This rating has no practical training.",
+    "ratingTwice": "This rating has more than one row.",
+    "positionUnknown": "The division no longer trains on this position: take it out of the list.",
+    "calendarKindUnknown": "One of these is not a kind of the calendar."
+  }
+}

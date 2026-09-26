@@ -11,13 +11,14 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A4a** (nucleo: le parole di più moduli), trovata scrivendo A4, sul branch
-`m3/a4a-module-locales`, **PR #133**: **Carmine ha risposto sì** (la nota è *Decisa*), e `main` è entrato nel branch come ha chiesto
-il revisore. **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase del nucleo **A3b** (#135, in bozza, in una sessione sua);
-la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i TA. **Il
-prossimo passo** è **A4** (lo scheletro del modulo), sul branch `m3/a4-training-skeleton`, in coda dopo #133; A5 e A6 vengono dopo
-A4, in coda, A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138** (bozza del
-maintainer, in coda dopo #133): in C# una chiave di un modulo si chiede con il namespace (`training:…`).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A4** (lo scheletro del modulo), sul branch `m3/a4-training-skeleton`, **PR #139**
+verso `main`, **pronta**: **A4a (#133) è unita** (11:51), la fase del nucleo trovata scrivendo A4, e `main` è entrato nel branch con
+un merge che non porta file. **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase del nucleo **A3b** (#135, in bozza, in una
+sessione sua); la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i
+TA. **Il prossimo passo** è **A5** (le voci della scheda), sul branch `m3/a5-sheet-items` preparato da `m3/a4-training-skeleton`, in
+coda dopo #139; A6 viene dopo A5, in coda (dalle fasi del modulo in poi tutto migra `TrainingDbContext`: in fila), A7 usa A3, e A3b va
+avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138** (bozza del maintainer, che era in coda dopo #133): in
+C# una chiave di un modulo si chiede con il namespace (`training:…`).
 
 ## Da leggere, nell'ordine
 
@@ -88,6 +89,49 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139)
+
+- **Che cosa c'è** (codice del modulo; una nota sola, **Decisa**, `2026-09-26-gli-esami-li-inserisce-chi-esamina`, per gli esami
+  senza i trainer, che rimanda a quella del maintainer, `2026-09-26-gli-esaminatori`; lo scostamento grande è la fase del nucleo A4a,
+  trovata qui):
+  - **Il modulo**: `src/IvaoHub.Modules.Training/` — `TrainingModule` (chiave `training`, la voce `/staff/training/settings`, il
+    segmento riservato `training`), `TrainingPermissions` (i nove di design §3.1), `Data/TrainingDbContext` con l'`Initial` senza
+    tabelle del modulo, `Settings/TrainingSettings` (i dieci campi di §1.6, `TrainingSettingsValidator` sul vocabolario,
+    `TrainingSettingsSaveValidator` che legge anche i tipi del calendario e le postazioni), `Reference/TrainingReference` (i rating con
+    un training pratico e le loro postazioni, chiesti al nucleo) con `/api/training/ratings` e `/api/training/positions`.
+  - **Il front end**: `web/src/modules/training/` — manifest, `screens/settings.tsx` (il form generato), `schemas.ts`, `api.ts`, le lingue.
+  - **La configurazione**: i nove `positionGrants` del TD in `config/division.json` e nell'esempio. ⚠️ **`ManageExams` a TC, TAC e
+    TA1–9, non ai trainer**, a differenza del design §3.2: **un esame si assegna solo a un esaminatore, e gli esaminatori sono HQ, TC,
+    TAC e i TA, mai un trainer** (`dalberone`, 26 settembre 2026), e la regola n.10 di Carmine è che l'esame lo inserisce chi ce l'ha.
+    **Vale anche per A3b** (la domanda «anche a un trainer?» della sua sezione ha già la risposta: no) **e per A10**. Cambiava
+    l'elenco scritto nella n.10, quindi ha una nota sua, **decisa** da Carmine
+    ([«yes» sulla issue #134](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134#issuecomment-5844363804)), come la sua nota
+    `2026-09-26-gli-esaminatori` (#136), che corregge la n.10.
+  - **I test**: `TrainingSettingsTests` e `TrainingArchitectureTests` (unità), `TrainingSkeletonTests` e `TrainingXxDivisionTests`
+    (integrazione, VID 790009–790013), `schemas.test.ts`, `web/e2e/full/training-skeleton.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **A5** (le voci della scheda): il primo `DbSet` e la migrazione `AddSheetItems`; i rating del form sono `TrainingReference.Ratings`
+    (o `/api/training/ratings`); gli enum come testo vanno in `ConfigureModuleConventions`, come nei tour. ⚠️ **I validatori per il
+    motore CRUD non sono registrati**: A4 non ne ha, e le impostazioni li creano da sé; con il primo `MapCrud` serve
+    `services.AddValidatorsFromAssemblyContaining<TrainingModule>(includeInternalTypes: true)`, come nei tour.
+  - **A6** (la richiesta): le impostazioni si leggono con `ModuleSettingsStore.GetAsync<TrainingSettings>(TrainingModule.ModuleKey)`;
+    `MaxResponseDays` e `TheoryExamUrl` possono essere `null`; le postazioni da offrire sono quelle del rating proposto
+    (`IAtcPositionDirectory.ForRatingAsync`) meno `HiddenPositions`. `TrainingReference.PositionsAsync` le dà tutte, per le impostazioni.
+  - ⚠️ **Il controllo di architettura del modulo morde**: nel codice di `src/IvaoHub.Modules.Training/` e `web/src/modules/training/`
+    niente «IVAO» (nemmeno nei commenti: si scrive «la rete»), nessun numero accanto a un rating, nessun «ADC» o «TWR» in una stringa,
+    nessun client HTTP. I test del modulo possono costruire rating loro (sono esclusi).
+  - ⚠️ **Una chiave del training in C# si legge senza namespace solo se nessun altro modulo la dichiara** (A4a): `nav.section`,
+    `nav.settings`, `settings.title`, `settings.description`, `settings.saved` sono anche dei tour. Le mail di A6 vanno in
+    `mail.training.<tipo>`.
+  - ⚠️ **Un errore su una riga di una lista** si nomina con il campo della riga (`minimumHours[0].rating`), o il form non lo mostra.
+  - ⚠️ **`web/e2e/address.spec.ts`** va su `/training/team`: nessuna rotta del modulo deve prendere ogni `/training/…`.
+- **Il passo della coda è fatto**: #133 è stata unita alle 11:51, `main` è entrato nel branch con un merge che non porta file (l'albero,
+  122c54e, è quello su cui sono girate tutte le suite), e #139 è pronta. Se prima di #139 viene unita **#138** del maintainer, il suo
+  test di architettura legge il C# del training: le chiavi sono già tutte `training:…`.
+- ⚠️ **Un banco e2e locale che ha già girato con il seme di prima** (esami anche ai trainer) lo tiene, perché un seme si applica una
+  volta sola: prima di `pnpm e2e:full`, `DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` (quello di questo worktree è stato
+  ricreato il 26 settembre). La CI parte sempre da un banco nuovo.
 
 ### Che cosa ha lasciato A4a (26 settembre 2026, branch `m3/a4a-module-locales`, PR #133)
 

@@ -263,6 +263,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingRatings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingPositions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -5370,6 +5402,11 @@ export interface components {
          * @enum {unknown}
          */
         PublishStatus: "Draft" | "Published" | "Ready";
+        /**
+         * @description The two ladders a member climbs on IVAO, which keeps them apart: `hub_users.rating_atc` and `rating_pilot`.
+         * @enum {unknown}
+         */
+        RatingKind: "Atc" | "Pilot";
         /** @description A report the validator sent back «to modify», with the address of the form that corrects it. */
         ReportToFixDto: {
             /** Format: int64 */
@@ -6189,6 +6226,26 @@ export interface components {
             arrivalIcao: null | string;
             aircraft: null | string;
         };
+        /** @description A position of the division a training may take place on, with the rating it is trained for. */
+        TrainingPositionDto: {
+            callsign: string;
+            name: string;
+            ratingShortName: string;
+        };
+        /** @description A rating the division trains for, as a form offers it: its ladder, the number the hub keeps, and its words. */
+        TrainingRatingDto: {
+            /** @description The ladder, ATC or pilot. */
+            kind: components["schemas"]["RatingKind"];
+            /**
+             * Format: int32
+             * @description The number a profile carries and `hub_users` keeps; a form sends it back, and never shows it.
+             */
+            number: number;
+            /** @description What the staff says out loud, and what `RatingBadge` draws. */
+            shortName: string;
+            /** @description The key of its name in the language files of the core. */
+            nameKey: string;
+        };
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
             key: string;
@@ -6802,6 +6859,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentContractDto"];
+                };
+            };
+        };
+    };
+    TrainingRatings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingRatingDto"][];
+                };
+            };
+        };
+    };
+    TrainingPositions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingPositionDto"][];
                 };
             };
         };
