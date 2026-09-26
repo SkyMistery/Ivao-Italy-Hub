@@ -11,13 +11,14 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A4a** (nucleo: le parole di più moduli), trovata scrivendo A4, sul branch
-`m3/a4a-module-locales`, **PR #133**: **Carmine ha risposto sì** (la nota è *Decisa*), e `main` è entrato nel branch come ha chiesto
-il revisore. **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase del nucleo **A3b** (#135, in bozza, in una sessione sua);
-la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i TA. **Il
-prossimo passo** è **A4** (lo scheletro del modulo), sul branch `m3/a4-training-skeleton`, in coda dopo #133; A5 e A6 vengono dopo
-A4, in coda, A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138** (bozza del
-maintainer, in coda dopo #133): in C# una chiave di un modulo si chiede con il namespace (`training:…`).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A4** (lo scheletro del modulo), sul branch `m3/a4-training-skeleton`, **PR #139**
+verso `main`, **in bozza, in coda dopo #133** (A4a, la fase del nucleo trovata scrivendo A4: Carmine ha risposto sì, la nota è
+*Decisa*, e `main` è entrato nel branch come ha chiesto il revisore). **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase
+del nucleo **A3b** (#135, in bozza, in una sessione sua); la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice
+che gli esaminatori sono HQ, TC, TAC e i TA. **Il prossimo passo** è **A5** (le voci della scheda), sul branch `m3/a5-sheet-items`
+preparato da `m3/a4-training-skeleton`, in coda dopo #139; A6 viene dopo A5, in coda (dalle fasi del modulo in poi tutto migra
+`TrainingDbContext`: in fila), A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138**
+(bozza del maintainer, in coda dopo #133): in C# una chiave di un modulo si chiede con il namespace (`training:…`).
 
 ## Da leggere, nell'ordine
 
@@ -89,7 +90,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`; la PR dopo il merge di A4a, #133)
+### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139, in coda dopo A4a, #133)
 
 - **Che cosa c'è** (codice del modulo; una nota sola, **Decisa**, `2026-09-26-gli-esami-li-inserisce-chi-esamina`, per gli esami
   senza i trainer, che rimanda a quella del maintainer, `2026-09-26-gli-esaminatori`; lo scostamento grande è la fase del nucleo A4a,

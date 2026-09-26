@@ -548,7 +548,7 @@ test del modulo: `ForkabilityXxDivisionTests` è condiviso). Unit: i predefiniti
 salvate e rilette.
 **Fatta quando**: l'utente del banco con i permessi del TD vede la sezione Training, cambia un'impostazione e la rilegge.
 
-**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`, in coda dopo A4a, #133):
+**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139, in coda dopo A4a, #133):
 
 - **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo, dentro meccanismi che ci sono — `IModule`, `ModuleDbContext`,
   le impostazioni dei moduli, `positionGrants`, `SchemaForm`, il vocabolario dei rating (A1) e la directory delle postazioni (A2) —;
