@@ -11,13 +11,13 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **fase A3** (nucleo: più permessi alternativi in scrittura, e uno anche alla
-creazione), sul branch `m3/a3-alternative-write-permissions`, **PR #131** verso `main`, da `main` e non in coda (dipende solo da A0).
-**A2 (#129) è unita** (21:14) ed è entrata nel branch con un merge. **#131 è approvabile** (revisione del 25 settembre) e Carmine
-ha risposto sugli esami: la 4, e quindi la fase del nucleo **A3b**, prima di A10 (`08`). **A4** (lo scheletro del modulo) è aperta
-in un'altra sessione, sul branch `m3/a4-training-skeleton` da `main`: porta `hiddenPositions`, che la directory di A2 lascia al
-modulo; A5 e A6 vengono dopo A4, in coda, A7 usa A3, e A3b può andare avanti in una sessione sua in qualunque momento prima di A10
-(`08`, «Parallelismo possibile»).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A4a** (nucleo: le parole di più moduli), trovata scrivendo A4, sul branch
+`m3/a4a-module-locales`, **PR #133**: **Carmine ha risposto sì** (la nota è *Decisa*), e `main` è entrato nel branch come ha chiesto
+il revisore. **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase del nucleo **A3b** (#135, in bozza, in una sessione sua);
+la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i TA. **Il
+prossimo passo** è **A4** (lo scheletro del modulo), sul branch `m3/a4-training-skeleton`, in coda dopo #133; A5 e A6 vengono dopo
+A4, in coda, A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138** (bozza del
+maintainer, in coda dopo #133): in C# una chiave di un modulo si chiede con il namespace (`training:…`).
 
 ## Da leggere, nell'ordine
 
@@ -88,6 +88,28 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A4a (26 settembre 2026, branch `m3/a4a-module-locales`, PR #133)
+
+- **Perché c'è**: la sessione di A4 ha scritto lo scheletro del modulo, e al primo test d'integrazione l'hub non è partito:
+  `LocaleCatalog`, il catalogo delle lingue del server, appiattisce tutti i file di una lingua in un solo dizionario e rifiuta una
+  chiave dichiarata due volte, e con due moduli si ripetono per forza `_source` (lo scrive `pnpm i18n:sync` in ogni copia) e
+  `nav.section` (lo esige la barra dello staff). `dalberone` ha scelto di fare subito la fase del nucleo, a sé, prima di A4.
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-parole-di-piu-moduli.md`, **Decisa**: Carmine ha risposto sì in un
+  [commento su #133](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5844250303)):
+  `LocaleCatalog` salta `_source` e la usa per riconoscere il file di un modulo; tiene le chiavi di un modulo anche con il namespace
+  (`training:nav.section`); senza namespace, come prima, quelle che un solo modulo dichiara; una chiave di due moduli solo con il
+  namespace; i doppioni che toccano il nucleo ancora rifiutati. Il test nuovo `LocaleCatalogModuleTests` scrive i suoi file di lingua.
+- **Che cosa deve sapere la fase dopo (A4)**:
+  - **Il codice di A4 è su `m3/a4-training-skeleton`**, spinto, senza PR: unisce questo branch, rifà build e **tutti** i test, e apre
+    la sua PR in coda dopo #133.
+  - ⚠️ **In C# una chiave di un modulo si chiede con il namespace**, `training:<chiave>`: lo impone **#138** (bozza del maintainer, in
+    coda dopo #133, nota `2026-09-26-le-chiavi-dei-moduli-con-il-namespace`), con un test di architettura che rifiuta una chiave di
+    modulo scritta nuda in `src/` e una con il namespace che il file di lingua del modulo non dichiara. Le chiavi del nucleo e le mail
+    dei tipi di notifica (`mail.{tipo}`) restano nude.
+  - ⚠️ **La trappola del fallback senza namespace** (revisore, rilievo 2 su #133): una chiave che un modulo legge nuda in C# **smette
+    di rispondere, in silenzio**, quando un altro modulo la dichiara — `LocaleCatalog.Resolve` risponde con la chiave stessa. #138 la
+    chiude per i tour.
 
 ### Che cosa ha lasciato A3 (25 settembre 2026, branch `m3/a3-alternative-write-permissions`, PR #131)
 
