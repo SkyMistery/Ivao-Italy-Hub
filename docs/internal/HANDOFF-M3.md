@@ -12,13 +12,13 @@
 > servono solo per metterli nel calendario.
 
 **Ultimo aggiornamento:** 26 settembre 2026 — **fase A4** (lo scheletro del modulo), sul branch `m3/a4-training-skeleton`, **PR #139**
-verso `main`, **in bozza, in coda dopo #133** (A4a, la fase del nucleo trovata scrivendo A4: Carmine ha risposto sì, la nota è
-*Decisa*, e `main` è entrato nel branch come ha chiesto il revisore). **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase
-del nucleo **A3b** (#135, in bozza, in una sessione sua); la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice
-che gli esaminatori sono HQ, TC, TAC e i TA. **Il prossimo passo** è **A5** (le voci della scheda), sul branch `m3/a5-sheet-items`
-preparato da `m3/a4-training-skeleton`, in coda dopo #139; A6 viene dopo A5, in coda (dalle fasi del modulo in poi tutto migra
-`TrainingDbContext`: in fila), A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138**
-(bozza del maintainer, in coda dopo #133): in C# una chiave di un modulo si chiede con il namespace (`training:…`).
+verso `main`, **pronta**: **A4a (#133) è unita** (11:51), la fase del nucleo trovata scrivendo A4, e `main` è entrato nel branch con
+un merge che non porta file. **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase del nucleo **A3b** (#135, in bozza, in una
+sessione sua); la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i
+TA. **Il prossimo passo** è **A5** (le voci della scheda), sul branch `m3/a5-sheet-items` preparato da `m3/a4-training-skeleton`, in
+coda dopo #139; A6 viene dopo A5, in coda (dalle fasi del modulo in poi tutto migra `TrainingDbContext`: in fila), A7 usa A3, e A3b va
+avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138** (bozza del maintainer, che era in coda dopo #133): in
+C# una chiave di un modulo si chiede con il namespace (`training:…`).
 
 ## Da leggere, nell'ordine
 
@@ -90,7 +90,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139, in coda dopo A4a, #133)
+### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139)
 
 - **Che cosa c'è** (codice del modulo; una nota sola, **Decisa**, `2026-09-26-gli-esami-li-inserisce-chi-esamina`, per gli esami
   senza i trainer, che rimanda a quella del maintainer, `2026-09-26-gli-esaminatori`; lo scostamento grande è la fase del nucleo A4a,
@@ -126,10 +126,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     `mail.training.<tipo>`.
   - ⚠️ **Un errore su una riga di una lista** si nomina con il campo della riga (`minimumHours[0].rating`), o il form non lo mostra.
   - ⚠️ **`web/e2e/address.spec.ts`** va su `/training/team`: nessuna rotta del modulo deve prendere ogni `/training/…`.
-- ⚠️ **In coda dopo #133**: la PR di A4 è in bozza con `(after #133)`. **Quando #133 è unita**: `git merge origin/main` nel branch,
-  build e **tutti** i test di nuovo, via `(after #133)` e `Queued after #133.`, e la PR pronta (`CONTRIBUTING.md`, «Phases in a
-  queue»). Se nel frattempo è unita anche **#138** del maintainer, il suo test di architettura legge il C# del training: le chiavi
-  sono già tutte `training:…`.
+- **Il passo della coda è fatto**: #133 è stata unita alle 11:51, `main` è entrato nel branch con un merge che non porta file (l'albero,
+  122c54e, è quello su cui sono girate tutte le suite), e #139 è pronta. Se prima di #139 viene unita **#138** del maintainer, il suo
+  test di architettura legge il C# del training: le chiavi sono già tutte `training:…`.
 - ⚠️ **Un banco e2e locale che ha già girato con il seme di prima** (esami anche ai trainer) lo tiene, perché un seme si applica una
   volta sola: prima di `pnpm e2e:full`, `DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` (quello di questo worktree è stato
   ricreato il 26 settembre). La CI parte sempre da un banco nuovo.

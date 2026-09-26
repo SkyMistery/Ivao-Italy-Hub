@@ -548,7 +548,7 @@ test del modulo: `ForkabilityXxDivisionTests` è condiviso). Unit: i predefiniti
 salvate e rilette.
 **Fatta quando**: l'utente del banco con i permessi del TD vede la sezione Training, cambia un'impostazione e la rilegge.
 
-**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139, in coda dopo A4a, #133):
+**Com'è andata** (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139):
 
 - **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo, dentro meccanismi che ci sono — `IModule`, `ModuleDbContext`,
   le impostazioni dei moduli, `positionGrants`, `SchemaForm`, il vocabolario dei rating (A1) e la directory delle postazioni (A2) —;
@@ -621,6 +621,9 @@ salvate e rilette.
   3. **Le chiavi nel C# del modulo** (heads-up di #138 del maintainer, in coda dopo #133): tutte quelle di `training.json` sono già
      scritte `training:…` (`training:nav.settings`, `training:errors.*`), e le sole nude sono del nucleo (`errors.*`). Niente da
      cambiare.
+  4. **Il passo della coda**: #133 è stata unita alle 11:51 (fa575fb). `main` è entrato nel branch con un merge **che non porta
+     file**: l'albero è lo stesso (122c54e) su cui sono girate tutte le suite qui sotto, come per A2 con #129. Tolti `(after #133)` e
+     `Queued after #133.`, e #139 è passata a pronta.
 - **Verificato, in locale, sul branch con A4a e `main` uniti** (26 settembre 2026): `dotnet build` senza avvisi; unità **751/751** (le
   719 di A4a e le 32 nuove); **integrazione intera senza filtro** **311/311** (le 307 e le 4 nuove); `pnpm lint`, `typecheck`,
   `format:check`, `i18n:check` verdi; `pnpm test` 488 in 63 file; `pnpm e2e` 91; **`pnpm e2e:full` 40** su un **banco nuovo**, con
