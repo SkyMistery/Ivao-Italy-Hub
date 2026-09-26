@@ -656,7 +656,78 @@ scritta e riletta.
 **Fatta quando**: dal back office si compone la scheda di un rating ATC con voci pratiche e di teoria in due lingue, e l'ordine si
 rilegge uguale.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (26 settembre 2026, branch `m3/a5-sheet-items`, PR #140):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — `Localized<string>` con `LocalizedRules.Required`, `IOwnedByDepartment` con la maschera e il dipartimento base,
+  `IAuditable`, `[Audited]`, `MapCrud` (filtri, ordine, ricerca, `Delete`), `DataList`, `ListFilter`, `SchemaForm`, il vocabolario dei
+  rating (A1) attraverso `TrainingReference` —; **nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine.
+- **Fatto**, come il perimetro qui sopra:
+  1. **`trn_sheet_items`** (`Sheets/SheetItem.cs`) con la migrazione **`AddSheetItems`**, solo additiva: una tabella e un indice su
+     percorso, rating e ordine. `RatingKind` e `SheetSection` (`Practice`, `Theory`) come testo in `ConfigureModuleConventions`;
+     l'`Initial` di A4 non è toccata.
+  2. **`/api/training/sheet-items`** (`Sheets/SheetItemEndpoints.cs`), una risorsa di `MapCrud` letta e scritta con
+     `Training.ManageSheets`: `filter[kind]` e `filter[rating]`, l'ordine della scheda, la ricerca nel titolo nella lingua di chi legge.
+     La lista porta la sigla del rating (`ratingShortName`) chiesta al vocabolario, perché il modulo non ne scrive. Le regole sono
+     `SheetItemWriteDtoValidator`: un rating con un training pratico sul percorso della voce (`training:errors.ratingNotTrained` sul
+     campo `rating`), il titolo in ogni lingua della divisione, l'ordine da 0 a 999. I validatori del modulo sono registrati per il
+     motore con `AddValidatorsFromAssemblyContaining`, come nei tour (il ⚠️ di A4).
+  3. **«È usata?»** è `ISheetItemReports`, che risponde no (`NoSheetItemReports`) finché A9 non lo sostituisce con le schede compilate:
+     l'eliminazione di una voce usata è rifiutata sul campo `id` con `training:errors.sheetItemUsed`, e la voce si spegne (`isActive`).
+     Il test lo prova sostituendo la risposta, come T6a con `ITourReports`.
+  4. **`/staff/training/sheets`** e **`/staff/training/sheets/$id`** (`web/src/modules/training/screens/sheets.tsx`): la lista
+     generata con i filtri per percorso e per rating — il secondo offre i rating del percorso scelto, e scegliere un rating sceglie il suo
+     percorso —, il form generato, e la voce «Scheda di valutazione» nella sezione Training della barra dello staff, dietro
+     `ManageSheets`. Il rating si sceglie fra quelli del server e il valore della scelta porta il percorso, come le soglie di A4. Una voce
+     nuova chiesta dalla scheda di un rating parte su quella scheda, dopo la sua ultima voce.
+- **Scostamenti e precisazioni, piccoli**:
+  1. ⚠️ **Chi scrive le voci ha `ManageSheets` e `Edit`.** Il test qui sopra dice «chi ha `ManageSheets` (per grant) crea una voce»:
+     nel test la ha insieme a `Training.Edit`, come TC e TAC per posizione (design §3.2). `ManageSheets` è ciò che chiedono la schermata e
+     il motore; il guardiano chiede `Training.Edit` a ogni riga dello staff — il design §3.1 lo scrive: `Edit` «è anche il permesso che il
+     guardiano chiede alle righe dello staff» —, come chiede `Tours.Edit` a chi ha `Tours.ManageAircraft` o `Tours.ManageRules`. Con
+     `ManageSheets` da solo la schermata si apre e il salvataggio risponde 403, e il test lo fissa. **Nessun `[AlsoWrittenWith]`**: nella
+     divisione i due permessi vanno sempre insieme, e l'estensione di A3 è per chi scrive senza `Edit` (il training, gli esami).
+  2. **La lista si legge con `ManageSheets`**, non con `View` come gli aerei e le regole dei tour: il perimetro dice «dietro
+     `Training.ManageSheets`», e il trainer leggerà le voci dalla scheda del suo training (A9), non da questa lista. TA e trainer non
+     hanno la voce nel menu.
+  3. **Le scelte dei rating sono un aiuto solo** (`screens/ratings.ts`), per le impostazioni di A4 e per la scheda, e la loro etichetta è
+     salita da `settings.ratingChoice` a `ratingChoice`; `fromRatingChoice` legge il valore di una scelta, che prima si leggeva dentro
+     `settingsFromFormValues`. Le impostazioni si comportano come prima (i loro test non sono cambiati).
+  4. **Il form legge l'ultima voce della scheda all'apertura** (`isFetchedAfterMount`) e si ridisegna alla versione della riga
+     (`key={rowVersion}`, come le segnalazioni dei tour): `SchemaForm` legge i suoi valori una volta sola, e un altro membro dello staff
+     può aver scritto nel frattempo. Nel giro di una persona sola la cache è già fresca: il salvataggio rilegge le query aperte prima di
+     tornare alla lista.
+  5. **La lista non ha una colonna del percorso**: la sigla del rating lo dice, e i filtri lo scelgono. L'ordine predefinito è quello
+     della scheda (`sort`), come le regole e i menu: una lista senza filtri mescola le schede, e i filtri la stringono a una.
+  6. **Guardata a mano sul banco** (l'anteprima su 5090, in italiano e in inglese, tema scuro e chiaro): la lista, i due filtri, il form
+     nuovo e quello di una voce esistente. La sezione si chiamava con la frase intera («Pratica — voto da 1 a 5»), che nella colonna
+     della lista andava a capo su quattro righe, perché lista e form leggono le stesse parole: ora è una parola, «Pratica» o «Teoria», e
+     come si segna la voce lo dice il suggerimento del campo.
+- **Trovato, e scritto per chi viene dopo**:
+  1. **A9** mette al posto di `NoSheetItemReports` la risposta delle schede compilate (`trn_evaluations`), nella stessa registrazione
+     del modulo (`TryAddScoped`), come T11 dei tour con `PirepTourReports`. Le schede compilate fotografano titolo e sezione della voce
+     (nota `il-tempo-per-la-data-e-le-voci-della-scheda`); una scheda nuova si fa con le voci **attive** del percorso e del rating del
+     training, nell'ordine di `sort`.
+  2. I VID **790014–790016** sono di A5; A3b usa 790040–790044 e 790050–790051: il prossimo libero è **790017**.
+  3. La spec e2e ritrova le sue voci per `trn-bench`, che sta nel titolo in tutte e due le lingue: la ricerca della lista le trova in
+     qualunque lingua cerchi.
+  4. ⚠️ **Per il revisore, non toccato** (codice del maintainer): `TourTests.TheReleaseJobMakesAReadyTourPublicWithoutWritingIt` cade
+     quando il job `tour-release`, pianificato da Quartz ogni quarto d'ora al secondo zero dentro l'host del test, parte nel secondo fra
+     il rilascio che il test scrive (`UtcNow − 1 s`) e la sua chiamata a `RunAsync`: il job parte dall'inizio dell'ultima corsa riuscita
+     e non trova più il tour. È successo una volta, alle 12:45:00, in una corsa intera sul merge con `main`; rifatta, è verde.
+- **La coda si è sciolta durante la fase**: #139 (A4) e #138 del maintainer sono state unite alle 12:22, a PR #140 già aperta in bozza.
+  `main` è entrato nel branch con un merge (48a1219) che porta #138 — il test di architettura sulle chiavi dei moduli con il namespace,
+  che il C# di A5 rispetta già (`training:nav.sheets`, `training:errors.*`) —, e tutto è stato rifatto sul merge; tolti
+  `(after #139)` e `Queued after #139.`.
+- **Verificato, in locale, sul merge con `main`** (26 settembre 2026): `dotnet build` senza avvisi; unità **757/757** (le 751 di A4, le
+  5 nuove e quella di #138); **integrazione intera senza filtro** **315/315** (le 311 e le 4 nuove; la classe nuova da sola 4/4); `pnpm
+  lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 494 in 63 file (6 nuovi); `pnpm e2e` 91; **`pnpm e2e:full` 41**
+  su un **banco nuovo** (le 40 di A4 e la spec nuova); `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `dotnet format
+  --verify-no-changes` sui file C# toccati, test compresi; le regole di `core-guard` rifatte in PowerShell sul diff verso `main`:
+  nessun file del maintainer, nessuno del nucleo. Prima del merge, sul branch da A4: unità 756, integrazione 315, `e2e:full` 41.
+- **Non verificato**: la CI (la dirà la PR). **Che i test nuovi cadano su una copia indebolita del codice** — il rifiuto
+  dell'eliminazione tolto, `[AlsoWrittenWith(ManageSheets, AlsoOnCreation = true)]` messo sull'entità —: la prova è stata rifiutata dalla
+  modalità di permessi della sessione, e non l'ho aggirata; i test sono stati letti contro il codice. La scheda compilata e il report (A9).
 
 ### A6 — La richiesta
 

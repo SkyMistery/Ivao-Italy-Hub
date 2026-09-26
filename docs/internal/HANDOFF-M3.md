@@ -11,14 +11,14 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A4** (lo scheletro del modulo), sul branch `m3/a4-training-skeleton`, **PR #139**
-verso `main`, **pronta**: **A4a (#133) è unita** (11:51), la fase del nucleo trovata scrivendo A4, e `main` è entrato nel branch con
-un merge che non porta file. **A3 (#131) è unita**, con la risposta 4 sugli esami e la fase del nucleo **A3b** (#135, in bozza, in una
-sessione sua); la nota del maintainer `2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i
-TA. **Il prossimo passo** è **A5** (le voci della scheda), sul branch `m3/a5-sheet-items` preparato da `m3/a4-training-skeleton`, in
-coda dopo #139; A6 viene dopo A5, in coda (dalle fasi del modulo in poi tutto migra `TrainingDbContext`: in fila), A7 usa A3, e A3b va
-avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). ⚠️ **#138** (bozza del maintainer, che era in coda dopo #133): in
-C# una chiave di un modulo si chiede con il namespace (`training:…`).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A5** (le voci della scheda di valutazione), sul branch `m3/a5-sheet-items`,
+**PR #140** verso `main`, **pronta a CI verde**: **A4 (#139) è unita** (12:22, dopo A4a, #133), e `main` è entrato nel branch con un
+merge. **A3 (#131) è unita**, con la fase del nucleo **A3b** (#135, in bozza, in una sessione sua); la nota del maintainer
+`2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i TA. **Il prossimo passo** è **A6** (la
+richiesta), sul branch `m3/a6-training-request` preparato da `m3/a5-sheet-items`, in coda dopo #140 (dalle fasi del modulo in poi tutto
+migra `TrainingDbContext`: in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). **#138 è
+unita** (piano 1.15): in C# una chiave di un modulo si chiede con il namespace (`training:…`), e
+`ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` lo controlla; il C# del training lo fa già.
 
 ## Da leggere, nell'ordine
 
@@ -89,6 +89,42 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A5 (26 settembre 2026, branch `m3/a5-sheet-items`, PR #140)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova):
+  - **Le voci della scheda di valutazione**: `trn_sheet_items` (`src/IvaoHub.Modules.Training/Sheets/SheetItem.cs`, migrazione
+    `AddSheetItems`, solo additiva) — percorso, rating, sezione `Practice` (voto 1–5) o `Theory` (fatto, non fatto, da migliorare),
+    titolo `Localized<string>` in ogni lingua della divisione, ordine (`sort`), attiva —, del dipartimento base, `IAuditable`,
+    `[Audited]`. `RatingKind` e `SheetSection` come testo in `ConfigureModuleConventions`.
+  - **`/api/training/sheet-items`** (`Sheets/SheetItemEndpoints.cs`), `MapCrud` letto e scritto con `Training.ManageSheets`, con
+    `filter[kind]`, `filter[rating]`, l'ordine della scheda e la sigla del rating dal vocabolario (`ratingShortName`). Le regole in
+    `SheetItemWriteDtoValidator`. **I validatori del modulo ora sono registrati per il motore** (`AddValidatorsFromAssemblyContaining`).
+  - **«È usata?»**: `ISheetItemReports`, che oggi risponde no (`NoSheetItemReports`); una voce usata non si elimina
+    (`training:errors.sheetItemUsed` sul campo `id`), si spegne.
+  - **Il front end**: `/staff/training/sheets` e `/staff/training/sheets/$id` (`screens/sheets.tsx`), la voce «Scheda di valutazione»
+    nella barra dello staff; le scelte dei rating sono un aiuto solo, `screens/ratings.ts`, con la chiave `ratingChoice` (era
+    `settings.ratingChoice`) e `fromRatingChoice` in `schemas.ts`.
+  - **I test**: `TrainingSheetItemTests` (unità), `TrainingSheetTests` (integrazione, VID 790014–790016), `schemas.test.ts`,
+    `web/e2e/full/training-sheets.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **A6** (la richiesta): il secondo `DbSet` e la sua migrazione, in fila dopo `AddSheetItems`; i validatori per il motore **sono già
+    registrati** (non si registrano due volte). Gli enum nuovi (lo stato, il rifiuto) vanno in `ConfigureModuleConventions` accanto a
+    `RatingKind`. Le scelte dei rating per il form della richiesta: `ratingOptions` in `screens/ratings.ts`.
+  - **A9** (dopo la sessione) mette al posto di `NoSheetItemReports` la risposta delle schede compilate, nella stessa registrazione
+    (`TryAddScoped`), come T11 dei tour con `PirepTourReports`; una scheda nuova si fa con le voci **attive** del percorso e del rating
+    del training, nell'ordine di `sort`, e fotografa titolo e sezione.
+  - ⚠️ **Chi scrive le voci ha `ManageSheets` e `Edit`**: il guardiano chiede `Training.Edit` a ogni riga dello staff (design §3.1),
+    come `Tours.Edit` a chi ha `Tours.ManageAircraft`. Con `ManageSheets` da solo la schermata si apre e il salvataggio risponde 403.
+    Nella divisione i due vanno insieme (TC, TAC); un test d'integrazione lo fissa.
+  - ⚠️ **La lista si legge con `ManageSheets`**, non con `View`: TA e trainer non vedono la voce nel menu; il trainer leggerà le voci
+    dalla scheda del suo training (A9).
+  - ⚠️ **`SchemaForm` legge i suoi valori una volta sola**: un form che calcola un valore iniziale da un'altra query aspetta una lettura
+    fatta dopo l'apertura (`isFetchedAfterMount`), e un form su una riga si ridisegna alla sua versione (`key={rowVersion}`).
+  - VID: il prossimo libero è **790017** (A3b usa 790040–790044 e 790050–790051).
+- **La coda si è sciolta durante A5**: #139 (A4) e #138 del maintainer sono state unite alle 12:22, a PR di A5 già aperta in bozza.
+  `main` è entrato nel branch con un merge (48a1219) che porta #138, e build e test sono stati rifatti sul merge; tolti `(after #139)` e
+  `Queued after #139.`. A6 va in coda dopo #140.
 
 ### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139)
 
