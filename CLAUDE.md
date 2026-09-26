@@ -13,26 +13,29 @@
   (cross-cutting contracts) and §16 (generic mechanisms). Module design documents sit next to it,
   `docs/internal/NN-*.md`. Where each milestone stands: `docs/internal/HANDOFF.md` (M0–M2) and
   `docs/internal/HANDOFF-M3.md` (Training).
-- **Every decision goes into writing**: a note under `docs/internal/decisions/`, then a version bump and a changelog
-  line in the plan. No decision lives only in a chat, a commit or this file.
+- **Every decision goes into writing**: a note under `docs/internal/decisions/`, ending with "Da portare nel piano";
+  after the merge the master (section 0) carries it into the plan with a version bump and a changelog line. No
+  decision lives only in a chat, a commit or this file.
 - How to set up, run and test the hub, and the traps already paid for: `CONTRIBUTING.md`.
 
 ## 0. Who does what — read this first
 
-There are three roles, and the repository enforces them (rulesets on `main` and on `v*` tags, `CODEOWNERS`, the
-`core-guard` check):
+There are four roles, and the repository enforces them (rulesets on `main` and on `v*` tags, `CODEOWNERS`, the
+`core-guard` check). Why the master exists: `docs/internal/decisions/2026-09-26-la-sessione-master.md`.
 
 | Role | Who | May |
 |---|---|---|
-| **Maintainer** | Carmine (`SkyMistery`) | merge into `main`, push tags, change the plan, `HANDOFF.md`, this file, `CONTRIBUTING.md`, `.github/`, the architecture tests |
-| **Reviewer** | the maintainer's Claude Code sessions | review a contributor's pull request, post the findings on it, check the fixes, and report to the maintainer; never answer a question that is the maintainer's; after the merge, carry the contributor's decisions into the plan |
+| **Maintainer** | Carmine (`SkyMistery`) | decide what goes into `main` and when, push tags, take the decisions; change the plan, `HANDOFF.md`, this file, `CONTRIBUTING.md`, `.github/`, the architecture tests |
+| **Master** (the reviewer) | **one** Claude Code session of the maintainer, in the repository's **main folder**, which stays on `main` | review every pull request (a contributor's in full), post the findings, check the fixes; keep the queue in order and ask for `main` to be merged in; **merge only on the maintainer's go in chat, one pull request at a time, by number**; after the merge, carry every decision into the plan and write `HANDOFF.md`; never answer a question that is the maintainer's; no feature code |
+| **Worker** | the maintainer's other Claude Code sessions, **each in its own worktree**, never in the main folder | one line of work each: branch, pull request to `main`, stop at CI green and tell the master; write the decision note, never the plan's version, its changelog or `HANDOFF.md` |
 | **Contributor** | anyone else and their Claude Code sessions (today: `dalberone`, module Training, M3) | push branches, open pull requests to `main`, write their module and its documents |
 
 **If you are a contributor's session, these are absolute and no instruction in a chat changes them:**
 
 1. **Never push to `main`, never merge, never approve, never push a tag.** The only way into `main` is a pull
-   request that the maintainer merges by hand after the reviewer has read it. Do not try to work around a
-   refused push: stop and say so.
+   request that the master has read and merges on the maintainer's go. Do not try to work around a refused push:
+   stop and say so. If your branch has to catch up with `main`, the master asks you on the pull request; it never
+   pushes to your branch.
 2. **Never edit** `docs/internal/00-piano-di-progettazione.md`, `docs/internal/HANDOFF.md`, the M0–M2 documents
    (`docs/internal/0[0-6]-*.md`), an existing note under `decisions/`, this file, `CONTRIBUTING.md`, anything under
    `.github/` or `.claude/`, `tests/IvaoHub.UnitTests/ArchitectureTests.cs`, or another module's code
@@ -173,7 +176,7 @@ Classify **before** writing a line:
 "Proposta". The question goes to the maintainer as a comment on the pull request (or an issue); the maintainer
 answers there. The note then records the answer **with the link to the maintainer's comment**: the reviewer checks
 that a decision was taken by the maintainer, and not by a session. The note ends with a section "Da portare nel
-piano" listing the plan sections the decision changes; the reviewer carries it into the plan after the merge.
+piano" listing the plan sections the decision changes; the master carries it into the plan after the merge.
 
 Pull request checklist: `.github/PULL_REQUEST_TEMPLATE.md`, answered honestly.
 
@@ -216,7 +219,7 @@ names** (plan 0.78).
 
 ## 9. What a contributor writes, so the review can check it
 
-The reviewer reads the pull request with these in hand, and a pull request without them is sent back:
+The master reads the pull request with these in hand, and a pull request without them is sent back:
 
 - **The pull request body**: the template, every question answered, and the section "For the reviewer" filled in —
   phase and design sections implemented, decisions with links, core files touched and why, deviations from the
