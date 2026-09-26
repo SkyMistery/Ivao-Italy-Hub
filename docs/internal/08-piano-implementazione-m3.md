@@ -59,6 +59,7 @@ Per non ripeterle tredici volte:
 | A4a | Nucleo: le parole di più moduli — **trovata scrivendo A4** | A0 | il catalogo delle lingue del server tiene le parole di due moduli, ciascuno con il suo namespace |
 | A4 | Modulo: lo scheletro | A0, A4a | progetto, contesto, `Initial`, catalogo, `positionGrants` del TD, impostazioni, menu, segmento riservato |
 | A5 | Le voci della scheda | A1, A4 | `trn_sheet_items` tradotte, lista e form generati |
+| A6c | Nucleo: il suggerimento chiuso tiene la scelta — **trovata scrivendo A6b** | — | l'opzione cliccata dopo averne scritto una parte è quella scelta: la casella e la sua lista sono un campo solo |
 | A6 | La richiesta | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), `/training/request`, i controlli per percorso, il teorico, l'annullamento, `/training/mine` |
 | A7 | Accettare, rifiutare, assegnare | A3, A6 | le pagine dello staff, il grant del trainer, il job che lo toglie |
 | A8 | Le date | A7 | disponibilità, avvisi, scelta a riquadri, override, calendario, promemoria, chiusura per tempo |
@@ -76,7 +77,8 @@ prova sta nei test), A4 fa nascere il contesto del modulo — e possono andare a
 A0. A2 viene dopo A1 (stesso contesto, e il legame postazione→rating). Dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
 **in fila**, una sopra l'altra. **A3b** (nucleo, aggiunta il 25 settembre 2026 con la risposta di Carmine sulla #131) viene dopo A3,
 di cui estende il meccanismo, e prima di A10, che la usa; non migra il contesto del modulo, quindi può andare avanti in qualunque
-momento fra le due, in una sessione sua, accanto alle fasi del modulo.
+momento fra le due, in una sessione sua, accanto alle fasi del modulo. **A6c** (nucleo, trovata scrivendo A6b il 26 settembre 2026)
+tocca solo il front end del nucleo e non migra niente: va verso `main` quando è pronta, accanto alle fasi del modulo, senza coda.
 **L'ordine del design** (§11) resta: i capi FIR stanno in fondo di proposito, perché tutto il resto funziona senza e l'estensione
 più delicata non blocca il modulo (§12 n.3).
 
@@ -728,6 +730,68 @@ rilegge uguale.
 - **Non verificato**: la CI (la dirà la PR). **Che i test nuovi cadano su una copia indebolita del codice** — il rifiuto
   dell'eliminazione tolto, `[AlsoWrittenWith(ManageSheets, AlsoOnCreation = true)]` messo sull'entità —: la prova è stata rifiutata dalla
   modalità di permessi della sessione, e non l'ho aggirata; i test sono stati letti contro il codice. La scheda compilata e il report (A9).
+
+### A6c — Nucleo: il suggerimento chiuso tiene la scelta
+
+**Non era nel piano**: l'ha trovata la sessione di A6b il 26 settembre 2026, scrivendo lo smoke della richiesta (PR #144), come A4a fu
+trovata scrivendo A4; `dalberone` ha scelto di farla come fase del nucleo a sé (`CLAUDE.md` §0 regola 6). Nota nuova
+`2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, **Proposta**, con la domanda a Carmine in un [commento su #145][q145]. Branch
+`m3/a6c-closed-suggestion`, da `main`, PR #145. **Non va in coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la
+PR va verso `main` accanto a #143 (A6a) e #144 (A6b), come A3b va avanti per conto suo. Sta qui, prima di A6, come A4a prima di A4.
+
+1. **Il problema**: nel suggerimento chiuso di `SchemaForm` (`Suggest` con `suggestionsOnly`) chi scrive una parte del valore per
+   cercare e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su una riga nuova —: la pressione porta il
+   fuoco nella lista, l'`onBlur` della casella rimette quello che c'era perché il testo scritto non è un'opzione, la lista torna intera
+   sotto il puntatore e il clic va a un'altra riga. Vale per ogni campo chiuso dell'hub: l'indirizzo di una voce del menu, le postazioni
+   nascoste delle impostazioni del training, la postazione della richiesta, gli aerei dei tour.
+2. **La proposta** (nota §3): **la casella e la sua lista sono un campo solo** — la regola del campo chiuso vale quando il fuoco esce da
+   tutte e due, anche quando esce dalla lista; tornare nella casella dalla lista non ricomincia la ricerca; una scelta è «quello che
+   c'era».
+
+**Test** (smoke, file nuovo `web/e2e/closed-suggestion.spec.ts`, sull'indirizzo di una voce del menu con l'API finta): l'opzione
+cliccata dopo averne scritto una parte è la scelta, e uscire dopo con un testo che non è un'opzione rimette la scelta; una pressione
+nella lista che non sceglie tiene la ricerca, e uscire da lì rimette il valore di prima; tornando nella casella la ricerca continua;
+Escape chiude e lascia il testo; la barra di scorrimento della lista si trascina. Cade sul codice di `main`.
+**Fatta quando**: la nota è decisa da Carmine, e la spec nuova e quelle che c'erano passano.
+
+**Com'è andata** (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): caso (b), il meccanismo c'è — il campo suggerito chiuso, nota
+  `2026-09-08-dove-puo-portare-una-voce-di-menu` — e ha un difetto; si corregge nel suo posto unico. Un file del nucleo
+  (`web/src/shared/forms/SchemaForm.tsx`, il componente `Suggest`), la nota nuova, la spec nuova; nessun file del maintainer, nessun
+  test che non ho scritto, nessuna schermata cambiata.
+- **Provato che la spec cade sul codice di oggi**, prima della correzione e di nuovo alla fine con `SchemaForm.tsx` di `main`: 4 prove
+  su 5 cadono proprio sul difetto — `/pilots` al posto di `/calendar` dopo il clic sull'opzione; `/pilots` al posto di `cal` dopo la
+  pressione su un'intestazione; 7 opzioni al posto di 1 tornando nella casella; `/pilots` al posto di `e` dopo aver trascinato la barra
+  —; la prova di Escape passa, perché è una promessa del campo di oggi.
+- ⚠️ **Scostamento dalla correzione proposta**: quella che A6b suggeriva — tenere il fuoco nella casella con
+  `onMouseDown={(event) => event.preventDefault()}` sulla lista — l'ho **fatta per prima e scartata**. Le prove erano tutte verdi, ma
+  **la barra di scorrimento della lista non si trascinava più**: Chromium non trascina una barra il cui `mousedown` è annullato
+  (misurato su un riquadro di prova nella pagina dello smoke: 611 px di scorrimento senza, 0 con). Oggi aprire la lista e trascinarne la
+  barra funziona, e le liste sono lunghe (le torri, i tipi di aereo). La forma rimasta è quella della nota §3, e la scelta fra le due è
+  la domanda a Carmine; la prova della barra è nella spec, con le barre accese per quel file (headless le nasconde).
+- **Provato che ogni pezzo serve**: tolto uno alla volta, cade la prova che lo tiene — senza la regola alla chiusura della lista, la
+  seconda (il campo lasciato dalla lista tiene `cal`); senza la guardia sul ritorno nella casella, la terza (7 opzioni); senza la scelta
+  scritta in `opened`, la prova del menu di `back-office.spec.ts` (clicca di nuovo la casella mentre la lista si sta chiudendo, e la
+  lista si riapre stretta sulla scelta).
+- **Trovato, per il revisore** (test del maintainer, non toccati):
+  1. `back-office.spec.ts`, «…a page past the hundredth can still be chosen»: scrive e clicca, e **passava anche con il difetto**,
+     perché la riga cliccata è per caso la prima anche della lista tornata intera (le pagine vengono prima delle schermate).
+  2. `back-office.spec.ts`, «…offers the addresses that exist, and stays open to be read»: il secondo clic sulla casella arriva
+     **mentre la lista si sta ancora chiudendo** (Radix ne anima l'uscita, e Playwright conta visibile un elemento che svanisce). Con la
+     correzione è quel clic a tenere il quarto pezzo; con la prima forma, senza un clic che riaprisse la lista, passava lo stesso.
+- **Verificato, in locale** (26 settembre 2026, sul branch da `main` a 4561b5b), le suite pesanti una alla volta: `dotnet build` senza
+  avvisi; unità **757/757** e **integrazione intera senza filtro** **315/315** (come `main`: nessun C# toccato); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 494 in 63 file (come `main`); `pnpm e2e` **96** (le 91 e le 5 nuove);
+  **`pnpm e2e:full` 41** su un **banco nuovo**, senza la mappa di base; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le regole di
+  `core-guard` rifatte in PowerShell sul diff verso `main`: nessun file del maintainer, uno del nucleo, la nota aggiunta. Con
+  `git merge-tree` contro i branch di #143 e #144: conflitti solo in cima a `HANDOFF-M3.md` e sulla riga della tabella qui sopra, dove
+  si tengono tutte le righe.
+- **Non verificato**: la CI (la dirà la PR); browser diversi da Chromium — Firefox e Safari spostano il fuoco su una pressione con le
+  loro regole, e la correzione legge solo `relatedTarget` e `document.activeElement`, ma nessuna prova ci ha girato —; uno schermo touch
+  (il tocco su un'opzione, il dito che scorre la lista); una risposta di Carmine diversa da quella raccomandata.
+
+[q145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355
 
 ### A6 — La richiesta
 
