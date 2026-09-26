@@ -512,7 +512,10 @@ tour.
      dopo questa PR: in C# una chiave di un modulo si chiede con il namespace.
   3. **`TryAdd` con `DeclaredTwice`** anche per le chiavi dei moduli: una chiave del nucleo scritta come una chiave di modulo con il
      namespace ferma l'avvio con il messaggio di sempre, non con un errore del dizionario; un test in più lo prova.
-  Rifatto tutto sul merge (sotto, nel commento della PR i conteggi).
+  **Rifatto tutto sul merge** (26 settembre 2026): `dotnet build` senza avvisi; unità 719/719; **integrazione intera senza filtro**
+  307/307; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 481 in 62 file; `pnpm e2e` 91; `pnpm e2e:full`
+  38 su un banco nuovo; `pnpm gen:api` senza differenze. ⚠️ La prima corsa dell'integrazione è caduta tutta in dieci secondi perché
+  Docker Desktop si era fermato (`DockerUnavailableException`): riacceso, e rifatta.
 
 [q133]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5840424471
 [a133]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5844250303
