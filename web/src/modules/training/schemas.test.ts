@@ -4,8 +4,12 @@ import type { components } from '../../shared/api/schema';
 import { readFields } from '../../shared/forms';
 
 import {
+  EMPTY_REQUEST,
   emptySheetItem,
   ratingChoice,
+  requestFromFormValues,
+  requestSchema,
+  requestSearchSchema,
   settingsFromFormValues,
   settingsSchema,
   settingsToFormValues,
@@ -155,4 +159,66 @@ test('the address of the list reads the ladder and the rating as the link wrote 
     rating: 3,
     page: 1,
   });
+});
+
+// ---- the request (A6) ---------------------------------------------------------------------------------------------------
+
+const offered = [{ value: 'XXAA_TWR', label: 'XXAA_TWR — Example Tower' }];
+
+test('the form of a request has a field for every value the trainee writes; the ladder, the rating and the answer are the page', () => {
+  const fields = readFields(requestSchema(offered)).map((field) => field.path);
+  const written: readonly (keyof components['schemas']['TrainingRequestWriteDto'])[] = [
+    'kind',
+    'rating',
+    'position',
+    'availabilityText',
+    'notesText',
+    'theoryPassed',
+  ];
+
+  expect(fields.sort()).toEqual(
+    written.filter((key) => key !== 'kind' && key !== 'rating' && key !== 'theoryPassed').sort(),
+  );
+  expect(Object.keys(EMPTY_REQUEST).sort()).toEqual(fields);
+});
+
+test('the position is chosen among the ones offered and nothing else, and on a ladder without positions it is never drawn', () => {
+  const [position] = readFields(requestSchema(offered));
+  expect(position).toMatchObject({ path: 'position', kind: 'suggest', only: true, suggestions: offered });
+
+  const [hidden] = readFields(requestSchema(null));
+  expect(hidden).toMatchObject({ path: 'position', meta: { hidden: true } });
+});
+
+test('a request goes with its ladder, the rating proposed and the answer, and an empty box as nothing', () => {
+  expect(
+    requestFromFormValues(
+      { position: ' XXAA_TWR ', availabilityText: 'Evenings, UTC+2.\n', notesText: '   ' },
+      { kind: 'Atc', number: 5 },
+      false,
+    ),
+  ).toEqual({
+    kind: 'Atc',
+    rating: 5,
+    position: 'XXAA_TWR',
+    availabilityText: 'Evenings, UTC+2.',
+    notesText: null,
+    theoryPassed: false,
+  });
+
+  // A ladder without positions, and no question asked: nothing to answer.
+  expect(requestFromFormValues(EMPTY_REQUEST, { kind: 'Pilot', number: 2 }, null)).toEqual({
+    kind: 'Pilot',
+    rating: 2,
+    position: null,
+    availabilityText: null,
+    notesText: null,
+    theoryPassed: null,
+  });
+});
+
+test('the address of the request reads the ladder a link chose, and only a ladder', () => {
+  expect(requestSearchSchema.parse({ kind: 'Pilot' })).toEqual({ kind: 'Pilot' });
+  expect(requestSearchSchema.parse({})).toEqual({});
+  expect(requestSearchSchema.safeParse({ kind: 'Glider' }).success).toBe(false);
 });
