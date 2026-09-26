@@ -19,7 +19,7 @@ namespace IvaoHub.Core.Content;
 /// <para>Each file is applied <b>once</b>, remembered by a key in <c>hub_division_settings</c>.
 /// That is the whole point of the key: a later release can add a template or a page without
 /// touching one the staff has since edited, and reinstalling does not undo their work. Nothing here
-/// ever updates an existing row.</para>
+/// ever updates an existing row, nor adds one where the staff has already written one at that address.</para>
 /// <para>The text is not in the file. A file carries translation keys, spelled
 /// <c>{ "$t": "seed…" }</c>, and they are resolved here into the languages the division actually
 /// speaks — so a division running in English alone gets its site in English, with no Italian in it
@@ -192,6 +192,15 @@ public sealed class ContentSeeder(
                 continue;
             }
 
+            if (await IsWrittenByHandAsync(seed.Kind, isTemplate: true, seed.Slug, cancellationToken))
+            {
+                Remember(key);
+                logger.LogInformation(
+                    "The content template {Slug} had already been written by hand, and is left as it is.",
+                    seed.Slug);
+                continue;
+            }
+
             var body = seed.Body?.DeepClone() ?? new JsonObject();
             Translate(body);
 
@@ -266,6 +275,17 @@ public sealed class ContentSeeder(
             {
                 if (!applied.Add(key))
                 {
+                    continue;
+                }
+
+                // The page and its menu entry alike: whoever wrote the page has put it where they wanted it.
+                if (await IsWrittenByHandAsync(seed.Kind, isTemplate: false, slug, cancellationToken))
+                {
+                    Remember(key);
+                    logger.LogInformation(
+                        "The {Kind} {Slug} had already been written by hand, and is left as it is.",
+                        seed.Kind,
+                        slug);
                     continue;
                 }
 
@@ -374,6 +394,23 @@ public sealed class ContentSeeder(
                 string.Join(", ", failure.Errors.Select(error => $"{error.Key} {string.Join('/', error.Value)}")));
         }
     }
+
+    /// <summary>
+    /// Whether the back office has already taken the address a later release seeds: a row of the same kind, template
+    /// or not, at the top of the tree with that slug. The unique index on <c>(kind, path, is_template)</c> would refuse
+    /// the seed's row and take the start with it, so the row somebody wrote is left as its authors made it, and the key
+    /// is remembered all the same — the rule the calendar kinds follow since M3, A2 (note
+    /// <c>decisions/2026-09-25-le-postazioni-atc-e-il-tipo-exam.md</c> §2.4). The database compares the slug with the
+    /// collation of the index, which ignores case.
+    /// </summary>
+    private Task<bool> IsWrittenByHandAsync(
+        ContentKind kind,
+        bool isTemplate,
+        string slug,
+        CancellationToken cancellationToken) =>
+        CrudSource.BackOffice<ContentEntry>(database).AnyAsync(
+            row => row.Kind == kind && row.IsTemplate == isTemplate && row.ParentPath == null && row.Slug == slug,
+            cancellationToken);
 
     private static IEnumerable<string> Files(string directory) =>
         Directory.EnumerateFiles(directory, "*.json").OrderBy(name => name, StringComparer.Ordinal);
