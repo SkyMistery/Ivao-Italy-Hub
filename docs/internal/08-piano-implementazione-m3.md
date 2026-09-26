@@ -59,8 +59,9 @@ Per non ripeterle tredici volte:
 | A4a | Nucleo: le parole di più moduli — **trovata scrivendo A4** | A0 | il catalogo delle lingue del server tiene le parole di due moduli, ciascuno con il suo namespace |
 | A4 | Modulo: lo scheletro | A0, A4a | progetto, contesto, `Initial`, catalogo, `positionGrants` del TD, impostazioni, menu, segmento riservato |
 | A5 | Le voci della scheda | A1, A4 | `trn_sheet_items` tradotte, lista e form generati |
-| A6 | La richiesta | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), `/training/request`, i controlli per percorso, il teorico, l'annullamento, `/training/mine` |
-| A7 | Accettare, rifiutare, assegnare | A3, A6 | le pagine dello staff, il grant del trainer, il job che lo toglie |
+| A6a | La richiesta: il server — **A6 divisa in apertura** | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), i controlli per percorso, il teorico, l'annullamento, la mail, gli endpoint del trainee |
+| A6b | La richiesta: le pagine | A6a | `/training/request` con la domanda sul teorico, `/training/mine` con l'annullamento, lo smoke e il giro sul banco |
+| A7 | Accettare, rifiutare, assegnare | A3, A6b | le pagine dello staff, il grant del trainer, il job che lo toglie |
 | A8 | Le date | A7 | disponibilità, avvisi, scelta a riquadri, override, calendario, promemoria, chiusura per tempo |
 | A9 | Dopo la sessione | A5, A8 | rischedula, no-show, scheda con N/A, report, mock exam, le note riservate e il trainee |
 | A10 | Blocchi, pagine pubbliche, percorso, esami, ban | A2, A3, A3b, A9 | i quattro blocchi Data, `/training` e la sessione, il percorso del trainee, `trn_exams`, i ban |
@@ -762,7 +763,21 @@ teorico.
 **Fatta quando**: sul banco il trainee (A1) chiede il training del rating successivo al suo scegliendo una postazione e lo vede in
 `/training/mine`; una seconda richiesta ATC è rifiutata, una da pilota passa.
 
-**Com'è andata**: *(a fase chiusa)*
+**Divisa il 26 settembre 2026 in apertura**, come la frase qui sopra prevede e come T11 dei tour (`06`, T11a e T11b): il server da solo
+è già una PR come quella di T11a — una tabella intera, i controlli nell'ordine del design, il teorico, l'annullamento, la mail e i loro
+test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul banco, la raddoppierebbero.
+
+- **A6a — il server** (branch `m3/a6a-request-server`, preparato come `m3/a6-training-request` e rinominato prima del primo push): i
+  punti 1, 2, 4, 5 e 7; dei punti 3 e 6 gli endpoint — quello che la pagina della richiesta legge (VID, nome, rating e ore, il rating
+  proposto, le postazioni meno `hiddenPositions`, la domanda sul teorico con il suo link) e le richieste e i training del trainee, con
+  un DTO senza campi riservati —; i test unit e d'integrazione. Il «fatta quando» lo prova un test d'integrazione, attraverso l'API.
+- **A6b — le pagine** (branch `m3/a6b-request-pages`, da `m3/a6a-request-server`): il punto 3 e la pagina del punto 6, con «Annulla»;
+  lo smoke della richiesta con la domanda sul teorico; il giro sul banco con `pnpm e2e:full` e il «fatta quando» di A6. Se una pagina
+  chiede al server qualcosa che A6a non dà, è un cambio del modulo nella PR di A6b, detto nel suo «Com'è andata».
+
+**Com'è andata (A6a)**: *(a fase chiusa)*
+
+**Com'è andata (A6b)**: *(a fase chiusa)*
 
 ### A7 — Accettare, rifiutare, assegnare
 
