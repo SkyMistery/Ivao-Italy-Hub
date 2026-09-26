@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IvaoHub.Core.Auth;
@@ -442,15 +443,9 @@ public sealed class HubSaveChangesInterceptor(
             return;
         }
 
-        // The second permission a row may be written with (M2, T13): a validator enabled on one tour decides its reports.
-        // Asked with the row's scope, never of the member the row is about, and never to move the row somewhere else.
-        if (entry.State == EntityState.Modified
-            && entry.Metadata.ClrType.GetCustomAttributes(typeof(AlsoWrittenWithAttribute), inherit: false)
-                is [AlsoWrittenWithAttribute alternative, ..]
-            && (entry.Entity as IHasStakeholder)?.StakeholderVid != currentUser.Vid
-            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments)
-            && owned.OwnerDepartments.Any(department =>
-                currentUser.Has(alternative.Permission, department, (entry.Entity as IHasResourceScope)?.ResourceScope)))
+        // The other permissions a row may be written with (M2, T13; M3, A3): a validator enabled on one tour decides its
+        // reports, whoever examines enters an exam. Any one of them is enough; none of them deletes.
+        if (IsWrittenWithAnAlternative(entry, owned))
         {
             return;
         }
@@ -470,6 +465,35 @@ public sealed class HubSaveChangesInterceptor(
             // a way of taking rows away from a department one row at a time.
             RequireAny(permission, original);
         }
+    }
+
+    /// <summary>
+    /// Whether one of the permissions the entity declares besides <c>Edit</c> lets this write through
+    /// (<see cref="AlsoWrittenWithAttribute"/>), each asked the way the single handler asks it. A change: with the row's
+    /// scope, never by the member the row is about, and never to move the row somewhere else. A creation, only for an
+    /// alternative marked so: without a scope — a new row has none of its own yet, and a permission granted on one row does
+    /// not bring others into existence — on at least one of the row's departments, as <c>Edit</c> is. A deletion: never.
+    /// </summary>
+    private bool IsWrittenWithAnAlternative(EntityEntry entry, IOwnedByDepartment owned)
+    {
+        if (entry.State is not (EntityState.Added or EntityState.Modified)
+            || (entry.Entity as IHasStakeholder)?.StakeholderVid == currentUser.Vid)
+        {
+            return false;
+        }
+
+        var alternatives = entry.Metadata.ClrType.GetCustomAttributes<AlsoWrittenWithAttribute>(inherit: false);
+
+        if (entry.State == EntityState.Added)
+        {
+            return alternatives.Any(alternative => alternative.AlsoOnCreation
+                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department)));
+        }
+
+        var scope = (entry.Entity as IHasResourceScope)?.ResourceScope;
+        return alternatives.Any(alternative =>
+                owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope)))
+            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments);
     }
 
     /// <summary>The departments the row had before this write, read from the original values.</summary>

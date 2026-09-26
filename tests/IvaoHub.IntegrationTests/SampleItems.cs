@@ -62,6 +62,8 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
 
     public DbSet<SampleEvent> Events => Set<SampleEvent>();
 
+    public DbSet<SampleRecord> Records => Set<SampleRecord>();
+
     protected override void ConfigureModel(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SampleItem>(item =>
@@ -85,6 +87,15 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             sample.Ignore(row => row.ProposedAwardId);
             sample.Ignore(row => row.DisputedBy);
             sample.Ignore(row => row.DisputeParticipant);
+        });
+
+        modelBuilder.Entity<SampleRecord>(record =>
+        {
+            record.ToTable("smp_records");
+            record.HasKey(row => row.Id);
+            record.Property(row => row.Title).HasMaxLength(128).IsRequired();
+            record.Ignore(row => row.ResourceScope);
+            record.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
         });
     }
 }

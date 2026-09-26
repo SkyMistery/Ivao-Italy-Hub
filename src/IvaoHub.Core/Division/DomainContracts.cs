@@ -105,18 +105,28 @@ public sealed class PermissionAreaAttribute(string area) : Attribute
 }
 
 /// <summary>
-/// A second permission a write of this entity may pass the interceptor's guard with, besides <c>{Area}.Edit</c>. A
-/// validator enabled on one tour holds <c>Tours.Validate</c> with that tour's scope and nothing else, and taking or
-/// deciding a report is a write of the report (M2, T13, note 2026-09-23-la-validazione §3.1).
-/// <para>The guard asks it the way the handler does: held on one of the row's departments <b>with the row's scope</b>
+/// A permission a write of this entity may pass the interceptor's guard with, besides <c>{Area}.Edit</c>. A validator
+/// enabled on one tour holds <c>Tours.Validate</c> with that tour's scope and nothing else, and taking or deciding a report
+/// is a write of the report (M2, T13, note 2026-09-23-la-validazione §3.1).
+/// <para>An entity may declare several, and any one of them is enough: a training is written by whoever approves it,
+/// assigns it and conducts it, and none of them holds <c>Edit</c> (M3, A3, note
+/// 2026-09-25-i-permessi-alternativi-e-la-creazione).</para>
+/// <para>The guard asks each the way the handler does: held on one of the row's departments <b>with the row's scope</b>
 /// (<see cref="IHasResourceScope"/>), and never by the member the row is about (<see cref="IHasStakeholder"/>), who has
 /// their own narrower way in (<see cref="ISubmittedByMembers"/>). Moving the row between departments still asks for
-/// <c>Edit</c> on both sides.</para>
+/// <c>Edit</c> on both sides, and deleting it asks for <c>Edit</c>.</para>
 /// </summary>
-[AttributeUsage(AttributeTargets.Class)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class AlsoWrittenWithAttribute(string permission) : Attribute
 {
     public string Permission { get; } = permission;
+
+    /// <summary>
+    /// Whether this permission also brings a row into existence, not only changes one: an exam is entered in the calendar
+    /// by whoever examines, who does not hold <c>Edit</c> (M3, A3). Asked <b>without</b> a scope, since a new row has none
+    /// of its own yet, on at least one of the row's departments, as <c>Edit</c> is — and never for a row about the writer.
+    /// </summary>
+    public bool AlsoOnCreation { get; init; }
 }
 
 /// <summary>
