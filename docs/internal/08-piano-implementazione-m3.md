@@ -924,8 +924,11 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
      puntatore, e il clic non arriva più all'opzione. Cliccare la casella e poi l'opzione, o scrivere il nominativo intero, funziona.
      Misurato nel browser il 26 settembre 2026 (in jsdom non si vede: non consegna gli eventi di puntatore). Vale per ogni campo chiuso
      dell'hub (la voce del menu, le postazioni nascoste delle impostazioni, qui la postazione della richiesta). È codice del nucleo:
-     detto al revisore con una correzione possibile (tenere il fuoco nella casella quando si preme un'opzione), per una PR del nucleo
-     a sé; le spec scelgono la postazione dall'elenco o la scrivono intera, e lo dicono.
+     detto al revisore su #144, e le spec scelgono la postazione dall'elenco o la scrivono intera, e lo dicono. **La correzione è la
+     fase del nucleo A6c, PR #145** (da `main`, non in coda, nota `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, «Proposta»): la
+     casella e la sua lista sono un campo solo, e la regola del campo chiuso vale quando il fuoco esce da tutte e due. L'idea scritta qui
+     per prima — tenere il fuoco nella casella annullando la pressione sulla lista — A6c l'ha provata e scartata: la barra di scorrimento
+     della lista non si trascina più.
   2. **`pnpm i18n:check` non legge le chiavi con il namespace**: il suo schema (`[\w.-]+`) si ferma ai due punti di `t('training:…')`,
      quindi le chiavi dei moduli non sono controllate. Le spec leggono le parole dai file di lingua e cadono su una chiave mostrata
      nuda. Detto al revisore (lo script è del nucleo).
