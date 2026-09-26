@@ -1,13 +1,13 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
-using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Privacy;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -45,6 +45,12 @@ public sealed class SampleModule : ModuleBase
     /// </summary>
     public const string DecidePermission = "Sample.Decide";
 
+    /// <summary>
+    /// What entering an exam will be (M3, A3): a permission besides <c>Sample.Edit</c> that brings a record into existence
+    /// as well as changing one (<see cref="SampleRecord"/>).
+    /// </summary>
+    public const string RecordPermission = "Sample.Record";
+
     /// <summary>The rows in the care of several departments, through the generic CRUD engine.</summary>
     public const string ItemsPattern = "/api/sample/items";
 
@@ -75,6 +81,7 @@ public sealed class SampleModule : ModuleBase
         new PermissionDescriptor(ViewPermission, IsGlobal: false),
         new PermissionDescriptor(EditPermission, IsGlobal: false),
         new PermissionDescriptor(DecidePermission, IsGlobal: false, DeniedToStakeholder: true),
+        new PermissionDescriptor(RecordPermission, IsGlobal: false),
     ];
 
     public override IEnumerable<Type> DbContextTypes => [typeof(SampleDbContext)];

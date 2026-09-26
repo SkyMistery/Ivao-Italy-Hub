@@ -1,15 +1,17 @@
 # Le parole di più moduli: il catalogo delle lingue del server con due moduli (A4a)
 
 **Data:** 26 settembre 2026 — fase A4a di M3, PR del nucleo, prima dello scheletro del modulo (A4)
-**Stato:** **Proposta**. La domanda (§5) è a Carmine in un [commento sulla PR #133][q]; il codice di questa PR è la
-raccomandazione, e cambia se la risposta è un'altra. Il codice di A4 aspetta la risposta e il merge (`CONTRIBUTING.md`, «Phases in a
-queue»).
+**Stato:** **Decisa** da Carmine il 26 settembre 2026, **come raccomandato** («Yes, as in §3 of the note»: [la sua risposta][a]
+alla [domanda sulla PR #133][q], §5). Il codice di questa PR è quella risposta; A4 viene dopo, in coda (`CONTRIBUTING.md`, «Phases in
+a queue»).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo c'è — **un solo set di file di lingua**, letto dalla SPA e dal
 back end (piano §16 punto 8), con le parole di un modulo accanto al suo codice e copiate in `locales/` da `pnpm i18n:sync` — e non
 copre un caso che nessuno aveva ancora: **due moduli**. Si estende il meccanismo, non lo si aggira nel modulo. È una PR del nucleo,
 prima del codice del modulo che la usa (`CLAUDE.md` §0 regola 6).
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5840424471
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5844250303
+[r]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5844271855
 
 ## 1. Che cosa è successo
 
@@ -51,6 +53,12 @@ chiavi **senza namespace** (`mail.flightops.allTours`, `mail.{tipo}.subject` per
    notifica (`mail.<modulo>.<tipo>`) restano uniche per costruzione.
 4. **Una chiave che due moduli dichiarano non si legge senza namespace**: non c'è una risposta giusta, e non se ne sceglie una per
    ordine; con il namespace si legge sempre. Oggi il server non chiede nessuna di queste chiavi (sono della barra e delle schermate).
+   ⚠️ **La trappola che lascia** ([rilievo 2 del revisore][r]): **una chiave che un modulo legge nuda in C# smette di rispondere, in
+   silenzio, quando un altro modulo la dichiara.** `LocaleCatalog.Resolve` risponde con la chiave stessa quando non la trova, quindi
+   nulla cade all'avvio né in un test che non guardi quel testo: se un modulo futuro dichiarasse, per esempio, `threads.disputeSubject`,
+   una mail dei tour mostrerebbe il testo `threads.disputeSubject`. Oggi non succede (le quattro chiavi che il training condivide con i
+   tour il C# non le legge). La chiude chiedere in C# ogni chiave di un modulo con il namespace, `<modulo>:<chiave>`: per i tour lo fa
+   **#138** del maintainer, nota `2026-09-26-le-chiavi-dei-moduli-con-il-namespace`.
 5. **Resta rifiutata**, come oggi, una chiave dichiarata due volte **dai file del nucleo**, o da un modulo **e** dal nucleo: un
    modulo non ridefinisce una parola del nucleo.
 
@@ -76,6 +84,10 @@ il namespace, senza namespace solo quelle di un modulo solo, e i doppioni che to
 sì**, perché è la sola forma che non cambia né i tour né la regola dell'ordine. Le alternative sono al §4; la più vicina è leggere i
 moduli solo con il namespace, che però chiede un giro sul codice dei tour.
 
+**Risposta di Carmine, 26 settembre 2026** ([commento su #133][a]): **sì, come al §3** — `_source` saltata, le chiavi di un modulo
+anche con il namespace, senza namespace solo quelle di un modulo solo, i doppioni che toccano il nucleo ancora rifiutati. Il giro sul
+codice dei tour lo fa poi lui stesso, con #138.
+
 ## 6. Che cosa si tocca
 
 - **A4a** (questa PR, nucleo): `src/IvaoHub.Core/Localization/LocaleCatalog.cs`; il test nuovo; questa nota; `08`, la fase A4a.
@@ -86,4 +98,6 @@ moduli solo con il namespace, che però chiede un giro sul codice dei tour.
 - **§16 punto 8** (un solo set di file di lingua): il back end legge i file dei moduli anche con il loro namespace, e una chiave che
   due moduli dichiarano si chiede solo con il namespace.
 - **`CONTRIBUTING.md`**, «Traps already paid for» (la riga «Server-side i18n keys are flattened»): una chiave di un modulo si legge
-  in C# senza namespace solo se nessun altro modulo la dichiara; `<modulo>:<chiave>` va sempre.
+  in C# senza namespace solo se nessun altro modulo la dichiara; `<modulo>:<chiave>` va sempre. E la trappola del §3 punto 4, detta
+  così: **a key a module reads bare in C# stops answering, silently, when another module declares it.** (#138 rovescia la riga: in C#
+  si chiede `<modulo>:<chiave>`.)

@@ -21,6 +21,9 @@ public sealed class WeatherDouble : IWeatherSource
     /// <summary>Every airport <see cref="GetHistoryAsync"/> was asked for.</summary>
     public ConcurrentQueue<string> HistoryAsked { get; } = new();
 
+    /// <summary>History that throws, as a source that does not answer in time does at the send.</summary>
+    public bool HistoryFails { get; set; }
+
     public void AddCurrent(WeatherReport report) => _current.Add(report);
 
     public void AddHistory(WeatherReport report) => _history.Add(report);
@@ -38,6 +41,11 @@ public sealed class WeatherDouble : IWeatherSource
         CancellationToken cancellationToken = default)
     {
         HistoryAsked.Enqueue(icao);
+        if (HistoryFails)
+        {
+            throw new HttpRequestException($"The weather of {icao} did not answer.");
+        }
+
         // A TAF asked for by date is the one in force then, issued before the window — as the real source answers.
         var found = _history
             .Where(report => report.Icao == icao

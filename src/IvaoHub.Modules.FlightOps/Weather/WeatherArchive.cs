@@ -134,7 +134,7 @@ public sealed class WeatherArchive(
         }
         catch (DbUpdateException)
         {
-            database.ChangeTracker.Clear();
+            ForgetBulletins();
         }
 
         var saved = 0;
@@ -152,11 +152,23 @@ public sealed class WeatherArchive(
             }
             finally
             {
-                database.ChangeTracker.Clear();
+                ForgetBulletins();
             }
         }
 
         return saved;
+    }
+
+    /// <summary>
+    /// Lets go of the bulletins the context holds, and of nothing else: at the send the context also tracks the report just
+    /// saved, which the checks write on next — cleared with the rest, their suggestions and their time would not be saved.
+    /// </summary>
+    private void ForgetBulletins()
+    {
+        foreach (var entry in database.ChangeTracker.Entries<WeatherBulletin>().ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
     }
 
     /// <summary>
@@ -200,7 +212,7 @@ public sealed class WeatherArchive(
         catch (Exception exception) when (exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             logger.LogWarning(exception, "The weather of report {Id} could not be filled in at the send.", pirep.Id);
-            database.ChangeTracker.Clear();
+            ForgetBulletins();
             return 0;
         }
     }

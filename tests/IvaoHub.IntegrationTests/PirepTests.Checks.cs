@@ -92,6 +92,36 @@ public sealed partial class PirepTests
     }
 
     /// <summary>
+    /// The weather that does not answer at the send is not a report without its checks: they still run on it, and the queue
+    /// proposes at once what they found — before, the failed fill let go of the report, the checks saved their results but
+    /// not their suggestion, and the queue said nothing until the job came round (the round on the bench, 25 September 2026).
+    /// </summary>
+    [Fact]
+    public async Task TheChecksOfASendSurviveAWeatherThatDoesNotAnswer()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        var error = await CheckedRuleAsync(coordinator, tourId, CheckCatalog.Alternate, token);
+        _weather.HistoryFails = true;
+
+        var id = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA105", Rome, Milan, DateTime.UtcNow.AddDays(-1))), token));
+        Assert.NotEmpty(_weather.HistoryAsked);
+
+        var page = await OkAsync(await coordinator.GetAsync($"{ReviewEndpoints.Pattern}/{id}", token), token);
+        Assert.NotEqual(JsonValueKind.Null, page.GetProperty("checksRanAt").ValueKind);
+        Assert.True(page.GetProperty("errors").EnumerateArray()
+            .Single(entry => entry.GetProperty("id").GetInt64() == error)
+            .GetProperty("suggestedByCheck").GetBoolean());
+
+        var queued = await QueueRowAsync(coordinator, tourId, id, token);
+        Assert.Equal(1, queued.GetProperty("failedChecks").GetInt32());
+        Assert.Equal("Rejected", queued.GetProperty("checkSuggestion").GetString());
+    }
+
+    /// <summary>
     /// A rejected report holds its flight (design M2 §3.4): the pilot flies the leg again, and cannot send the same flight a
     /// second time (note 2026-09-24-i-controlli-dai-pirep-veri §4 — the old system let a controller find it by eye).
     /// </summary>
