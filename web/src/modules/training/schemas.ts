@@ -270,3 +270,58 @@ function written(text: string): string | null {
   const trimmed = text.trim();
   return trimmed === '' ? null : trimmed;
 }
+
+// ---- the staff's side (A7) ----------------------------------------------------------------------------------------------
+
+type TrainingAssignmentDto = components['schemas']['TrainingAssignmentDto'];
+
+/** The views of the staff's list (design M3 §4.2), as `StaffQueue` names them on the server, in the order they are offered. */
+export const STAFF_QUEUES = ['toApprove', 'toAssign', 'inProgress', 'toClose', 'history'] as const;
+
+export type StaffQueue = (typeof STAFF_QUEUES)[number];
+
+/** `/staff/training`: the five of every list, the view and the ladder it is narrowed to. */
+export const staffTrainingsSearchSchema = listSearchSchema.extend({
+  queue: z.enum(STAFF_QUEUES).optional(),
+  kind: z.enum(RATING_KINDS).optional(),
+});
+
+export type StaffTrainingsSearch = z.output<typeof staffTrainingsSearchSchema>;
+
+/** The filters of the list, as the engine reads them: `filter[queue]` and `filter[kind]`, each when it is chosen. */
+export function staffTrainingsFilters(search: {
+  readonly queue?: StaffQueue | undefined;
+  readonly kind?: RatingKind | undefined;
+}): Record<string, string> {
+  return {
+    ...(search.queue === undefined ? {} : { queue: search.queue }),
+    ...(search.kind === undefined ? {} : { kind: search.kind }),
+  };
+}
+
+/**
+ * A refusal of the staff (design M3 §2.3): the reason, as the trainee will read it. No rule here: a reason left out or too long
+ * is the server's to refuse, in the words of the language files.
+ */
+export const rejectSchema = z.object({
+  reason: z.string().meta({ multiline: true }),
+});
+
+export type RejectValues = z.output<typeof rejectSchema>;
+
+/**
+ * An assignment (§2.4): the trainer, chosen among the candidates the server offers — by VID, the value of the choice —, at the
+ * version of the training the page read. Nothing chosen is the server's to refuse.
+ */
+export function assignSchema(trainers: readonly ChoiceOption[]) {
+  return z.object({
+    trainerVid: z.string().meta({ choices: trainers }),
+    rowVersion: z.string().meta({ hidden: true }),
+  });
+}
+
+export type AssignValues = z.output<ReturnType<typeof assignSchema>>;
+
+export function assignFromFormValues(values: AssignValues): TrainingAssignmentDto {
+  return { trainerVid: Number(values.trainerVid), rowVersion: values.rowVersion };
+}

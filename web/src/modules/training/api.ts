@@ -2,23 +2,32 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import type { components } from '../../shared/api/schema';
-import { listQuerySerializer, listSearchSchema, toQuery, type ListSearch } from '../../shared/list';
+import {
+  listQuerySerializer,
+  listSearchSchema,
+  toQuery,
+  type ListSearch,
+  type Page,
+} from '../../shared/list';
 
 import {
   settingsFromFormValues,
   sheetItemFilters,
   sheetItemFromFormValues,
+  staffTrainingsFilters,
   type RatingKind,
   type SettingsFormValues,
   type SheetItemFormValues,
+  type StaffQueue,
   type TrainingSettings,
 } from './schemas';
 
 /**
  * Every call the screens of the training make (M3): the settings through the core's settings of a module, what they are
  * chosen from — the ratings and the positions the division trains, which the module asks of the core (A4) —, the items
- * of the evaluation sheet through the CRUD engine (A5), and the trainee's own side — their page, the request and its
- * cancellation (A6).
+ * of the evaluation sheet through the CRUD engine (A5), the trainee's own side — their page, the request and its
+ * cancellation (A6) —, and the staff's side — the list of the trainings, the page of one, accepting, refusing and
+ * assigning its trainer (A7).
  */
 
 export type TrainingRatingDto = components['schemas']['TrainingRatingDto'];
@@ -31,6 +40,11 @@ export type MyTrainingPathDto = components['schemas']['MyTrainingPathDto'];
 export type TraineeTrainingDto = components['schemas']['TraineeTrainingDto'];
 export type TrainingRequestWriteDto = components['schemas']['TrainingRequestWriteDto'];
 export type TrainingState = components['schemas']['TrainingState'];
+export type StaffTrainingDto = components['schemas']['StaffTrainingDto'];
+export type StaffTrainingRowDto = components['schemas']['StaffTrainingRowDto'];
+export type TrainerCandidateDto = components['schemas']['TrainerCandidateDto'];
+export type TrainingMemberDto = components['schemas']['TrainingMemberDto'];
+export type TrainingAssignmentDto = components['schemas']['TrainingAssignmentDto'];
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
 export const MODULE_KEY = 'training';
@@ -199,6 +213,119 @@ export function useCancelTraining() {
       ),
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: mineKey });
+    },
+  });
+}
+
+// ---- the staff's side (A7) ----------------------------------------------------------------------------------------------
+
+const staffKey = ['training', 'staff'] as const;
+
+/**
+ * A person as the staff's pages name them: the name the hub has, and the VID that always is. (The core's helper for a person
+ * whose data was erased arrives with A12a; no data of a trainee is erased before A12b.)
+ */
+export function memberLabel(member: TrainingMemberDto): string {
+  return member.name === null || member.name === ''
+    ? String(member.vid)
+    : `${member.name} (${String(member.vid)})`;
+}
+
+/** A row of the list as the list draws it: the trainee and the trainer written out, for its columns of text. */
+export type StaffTrainingRow = StaffTrainingRowDto & {
+  readonly traineeName: string;
+  readonly trainerName: string | null;
+};
+
+/**
+ * A page of the staff's list (design M3 §4.2): every training, or those of one view — to approve, to assign, in progress, to
+ * close, the history — and of one ladder, as the search says.
+ */
+export function staffTrainingsQuery(
+  search: ListSearch & {
+    readonly queue?: StaffQueue | undefined;
+    readonly kind?: RatingKind | undefined;
+  },
+) {
+  return queryOptions({
+    queryKey: [...staffKey, 'list', search] as const,
+    queryFn: async (): Promise<Page<StaffTrainingRow>> => {
+      const page = unwrap(
+        await api.GET('/api/training/queue', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer(staffTrainingsFilters(search)),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((row) => ({
+          ...row,
+          traineeName: memberLabel(row.trainee),
+          trainerName: row.trainer === null ? null : memberLabel(row.trainer),
+        })),
+      };
+    },
+  });
+}
+
+/** The page of one training: the request, the decision, the trainer, and what the reader may do on it now. */
+export function staffTrainingQuery(id: number) {
+  return queryOptions({
+    queryKey: [...staffKey, 'one', id] as const,
+    queryFn: async (): Promise<StaffTrainingDto> =>
+      unwrap(await api.GET('/api/training/trainings/{id}', { params: { path: { id } } })),
+  });
+}
+
+/** Whoever may train it (§2.4), asked only by whoever may assign it: the server's rule, never repeated here. */
+export function trainerCandidatesQuery(id: number) {
+  return queryOptions({
+    queryKey: [...staffKey, 'trainers', id] as const,
+    queryFn: async (): Promise<TrainerCandidateDto[]> =>
+      unwrap(await api.GET('/api/training/trainings/{id}/trainers', { params: { path: { id } } })),
+  });
+}
+
+/** The three steps of the staff on a training, each answering with the page as it is afterwards. */
+export type StaffStep =
+  | { readonly step: 'accept'; readonly rowVersion: string }
+  | { readonly step: 'reject'; readonly reason: string; readonly rowVersion: string }
+  | { readonly step: 'assign'; readonly assignment: TrainingAssignmentDto };
+
+export function useStaffStep(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (step: StaffStep): Promise<StaffTrainingDto> => {
+      const path = { params: { path: { id } } };
+      switch (step.step) {
+        case 'accept':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/accept', {
+              ...path,
+              body: { rowVersion: step.rowVersion },
+            }),
+          );
+        case 'reject':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/reject', {
+              ...path,
+              body: { reason: step.reason, rowVersion: step.rowVersion },
+            }),
+          );
+        case 'assign':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/assign', { ...path, body: step.assignment }),
+          );
+      }
+    },
+    onSuccess: async (page) => {
+      queryClient.setQueryData(staffTrainingQuery(id).queryKey, page);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [...staffKey, 'list'] }),
+        queryClient.invalidateQueries({ queryKey: [...staffKey, 'trainers', id] }),
+      ]);
     },
   });
 }

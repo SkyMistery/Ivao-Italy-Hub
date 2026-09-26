@@ -1,3 +1,4 @@
+using System.Globalization;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 
@@ -58,11 +59,18 @@ public enum TrainingRejection
 /// §3.3).</para>
 /// <para>No participants, on purpose (§1.1): the core would give them <c>Training.View</c> on the row, and with it the notes of
 /// the staff.</para>
+/// <para>Three permissions write it besides <c>Training.Edit</c> (§3.4, A3; A7): whoever approves — the advisors —, whoever
+/// assigns, and the trainer, who holds <c>Training.Conduct</c> on the scope of this training alone. Each is asked by the write
+/// guard on this row's scope, never of its trainee, never to move it; none of them at creation, because the trainee creates
+/// it.</para>
 /// <para>It sits at the root of the module because a class of this name in a namespace below the module's would be hidden
 /// there by the module's own namespace.</para>
 /// </summary>
 [Audited]
 [PermissionArea(TrainingPermissions.Area)]
+[AlsoWrittenWith(TrainingPermissions.Approve)]
+[AlsoWrittenWith(TrainingPermissions.Assign)]
+[AlsoWrittenWith(TrainingPermissions.Conduct)]
 public sealed class Training : IOwnedByDepartment, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasFir, IHasResourceScope
 {
     /// <summary>As wide as a callsign in the core's reference of the positions a training copies it from.</summary>
@@ -219,8 +227,19 @@ public sealed class Training : IOwnedByDepartment, IAuditable, IVisible, ISubmit
 
     public string ResourceScope => ScopeOf(Id);
 
+    /// <summary>What every scope of a training starts with.</summary>
+    private const string ScopePrefix = TrainingModule.ModuleKey + ":training:";
+
     /// <summary>The scope of a grant on one training (§3.3): what the assignment writes for the trainer (A7).</summary>
-    public static string ScopeOf(long id) => $"{TrainingModule.ModuleKey}:training:{id}";
+    public static string ScopeOf(long id) => string.Create(CultureInfo.InvariantCulture, $"{ScopePrefix}{id}");
+
+    /// <summary>The training a scope of <see cref="ScopeOf"/> names; none for any other scope.</summary>
+    public static long? IdOf(string? scope) =>
+        scope is not null
+        && scope.StartsWith(ScopePrefix, StringComparison.Ordinal)
+        && long.TryParse(scope.AsSpan(ScopePrefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out var id)
+            ? id
+            : null;
 
     /// <summary>The states of a training still going: only one of them per trainee and ladder (§2.2 point 2).</summary>
     public static bool IsOpen(TrainingState state) =>

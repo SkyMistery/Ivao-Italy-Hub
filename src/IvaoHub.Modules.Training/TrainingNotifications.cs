@@ -10,5 +10,14 @@ public static class TrainingNotifications
     /// <summary>A request of theirs was received (§2.2): not a refusal of the hub, which the screen says instead. Its audience is the trainee.</summary>
     public const string RequestReceived = "training.requestReceived";
 
-    public static readonly IReadOnlyList<string> All = [RequestReceived];
+    /// <summary>The staff accepted a request of theirs (§2.3, A7). Its audience is the trainee.</summary>
+    public const string RequestAccepted = "training.requestAccepted";
+
+    /// <summary>The staff refused a request of theirs, with the reason (§2.3, A7). Its audience is the trainee.</summary>
+    public const string RequestRejected = "training.requestRejected";
+
+    /// <summary>A trainer was assigned to a training, or changed (§2.4, A7). Its audience is the trainee and the trainer, each in their words.</summary>
+    public const string TrainerAssigned = "training.trainerAssigned";
+
+    public static readonly IReadOnlyList<string> All = [RequestReceived, RequestAccepted, RequestRejected, TrainerAssigned];
 }

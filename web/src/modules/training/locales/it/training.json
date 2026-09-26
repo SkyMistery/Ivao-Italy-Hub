@@ -1,6 +1,7 @@
 {
   "nav": {
     "section": "Training",
+    "trainings": "Richieste e training",
     "sheets": "Scheda di valutazione",
     "settings": "Impostazioni del training"
   },
@@ -103,6 +104,112 @@
     "cancelConfirm": "Sì, annulla la richiesta",
     "cancelled": "Richiesta annullata."
   },
+  "staff": {
+    "title": "Richieste e training",
+    "description": "Tutti i training della divisione, dalla richiesta al report: accetta o rifiuta una richiesta, e assegna il suo trainer.",
+    "open": "Apri",
+    "fields": {
+      "createdAt": "Richiesta il",
+      "traineeName": "Trainee",
+      "ratingShortName": "Rating",
+      "position": "Postazione",
+      "state": "Stato",
+      "trainerName": "Trainer"
+    },
+    "options": {
+      "state": {
+        "Requested": "In attesa di accettazione",
+        "Accepted": "Accettata, in attesa del trainer",
+        "Assigned": "Trainer assegnato",
+        "Scheduled": "Programmato",
+        "Completed": "Completato",
+        "Rejected": "Rifiutata",
+        "Cancelled": "Annullata",
+        "Closed": "Chiusa",
+        "NoShow": "No-show"
+      }
+    },
+    "filters": {
+      "queue": "Mostra",
+      "anyQueue": "Tutti i training",
+      "kind": "Percorso",
+      "anyKind": "Tutti i percorsi"
+    },
+    "queues": {
+      "toApprove": "Da approvare",
+      "toAssign": "Da assegnare",
+      "inProgress": "In corso",
+      "toClose": "Da chiudere",
+      "history": "Storico"
+    },
+    "pageTitle": "Training {{rating}} di {{trainee}}",
+    "pageTitleNoRating": "Training di {{trainee}}",
+    "sections": {
+      "request": "La richiesta",
+      "decision": "La decisione",
+      "trainer": "Il trainer"
+    },
+    "request": {
+      "trainee": "Trainee",
+      "rating": "Rating alla richiesta",
+      "hours": "Ore alla richiesta",
+      "requestedAt": "Richiesta il",
+      "position": "Postazione",
+      "airport": "Aeroporto",
+      "fir": "FIR",
+      "availabilityText": "Disponibilità",
+      "notesText": "Note e richieste",
+      "none": "nessuna"
+    },
+    "theoryReminder": {
+      "title": "Prima di accettare, controlla che {{trainee}} abbia superato l'esame teorico {{rating}}.",
+      "declared": "Il trainee ha dichiarato di averlo superato il {{date}}."
+    },
+    "decision": {
+      "accepted": "Accettata da {{name}} il {{date}}.",
+      "rejected": "Rifiutata da {{name}} il {{date}}.",
+      "reason": "Il motivo: {{reason}}",
+      "theory": "Rifiutata dall'hub il {{date}}: il trainee ha risposto di non aver ancora superato l'esame teorico.",
+      "cancelled": "Annullata dal trainee il {{date}}.",
+      "none": "Nessuno ha ancora deciso."
+    },
+    "trainer": {
+      "assigned": "{{name}}, assegnato da {{by}} il {{date}}.",
+      "none": "Ancora nessun trainer: un training accettato ne aspetta uno per tutto il tempo che serve.",
+      "noCandidates": "Nessuno può allenarlo adesso: lo staff del training che è entrato almeno una volta nell'hub e ha su questo percorso un rating almeno {{rating}}.",
+      "noOtherCandidates": "Nessun altro può allenarlo adesso: lo staff del training che è entrato almeno una volta nell'hub e ha su questo percorso un rating almeno {{rating}}."
+    },
+    "assign": {
+      "submit": "Assegna il trainer",
+      "change": "Cambia il trainer",
+      "assigned": "Trainer assegnato: {{name}}. Prima di condurlo, gli verrà chiesto di entrare di nuovo.",
+      "fields": {
+        "trainerVid": "Trainer"
+      },
+      "hints": {
+        "trainerVid": "Lo staff del training che è entrato almeno una volta nell'hub, con su questo percorso un rating almeno quello allenato. Riceve una mail il trainer, e anche il trainee."
+      }
+    },
+    "accept": {
+      "button": "Accetta",
+      "title": "Accettare la richiesta?",
+      "description": "Il trainee riceve una mail. Il trainer si assegna dopo, quando lo si trova.",
+      "done": "Richiesta accettata."
+    },
+    "reject": {
+      "button": "Rifiuta",
+      "title": "Rifiutare la richiesta?",
+      "description": "Il motivo arriva al trainee per mail e nella pagina dei suoi training. Un rifiuto non lo fa aspettare.",
+      "done": "Richiesta rifiutata.",
+      "fields": {
+        "reason": "Motivo"
+      },
+      "hints": {
+        "reason": "Come lo leggerà il trainee: per esempio, le ore di connessione che gli mancano."
+      }
+    },
+    "refused": "Il training non è cambiato."
+  },
   "sheets": {
     "title": "Scheda di valutazione",
     "description": "Le voci che il trainer valuta dopo una sessione, per percorso e rating: quelle pratiche con un voto da 1 a 5, quelle di teoria come fatte, non fatte o da migliorare. Il trainee le legge nel suo report.",
@@ -191,12 +298,30 @@
     "requestRatingNotNext": "Questo non è più il rating che puoi chiedere: ricarica la pagina.",
     "requestPositionUnknown": "Scegli una postazione dall'elenco.",
     "requestPositionNotAsked": "Un training di questo percorso non ha una postazione.",
-    "requestNotCancellable": "Si annulla solo una richiesta che nessuno ha ancora accettato."
+    "requestNotCancellable": "Si annulla solo una richiesta che nessuno ha ancora accettato.",
+    "trainingNotRequested": "Si accetta o si rifiuta solo una richiesta in attesa di accettazione.",
+    "trainingNotAssignable": "Il trainer si assegna solo a un training accettato e ancora in corso.",
+    "trainerIsTrainee": "Nessuno è trainer del proprio training.",
+    "trainerNotStaff": "Può essere trainer solo lo staff del training che è entrato almeno una volta nell'hub.",
+    "trainerRatingTooLow": "Il suo rating su questo percorso è sotto quello di questo training.",
+    "trainerAlready": "È già il trainer di questo training."
   },
   "notifications": {
     "requestReceived": {
       "title": "Le mie richieste di training",
       "description": "Una mail quando una tua richiesta di training viene ricevuta."
+    },
+    "requestAccepted": {
+      "title": "Le mie richieste accettate",
+      "description": "Una mail quando il dipartimento training accetta una tua richiesta di training."
+    },
+    "requestRejected": {
+      "title": "Le mie richieste rifiutate",
+      "description": "Una mail, con il motivo, quando il dipartimento training rifiuta una tua richiesta di training."
+    },
+    "trainerAssigned": {
+      "title": "Trainer assegnati",
+      "description": "Una mail quando a un tuo training viene assegnato un trainer, o quando ti viene assegnato un training da trainer."
     }
   },
   "mail": {
@@ -205,7 +330,21 @@
         "subject": "[Training] Richiesta ricevuta: {{training}}",
         "body": "Abbiamo ricevuto la tua richiesta di training: {{training}}.{{mockExam}}\n\nIl dipartimento training la controllerà, compreso l'esame teorico, e ti scriverà quando sarà accettata o rifiutata. Finché nessuno la accetta, puoi annullarla dalla pagina dei tuoi training.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
       },
-      "mockExam": " Sarà un mock exam, come concordato con il trainer."
+      "mockExam": " Sarà un mock exam, come concordato con il trainer.",
+      "requestAccepted": {
+        "subject": "[Training] Richiesta accettata: {{training}}",
+        "body": "Il dipartimento training ha accettato la tua richiesta di training: {{training}}.\n\nTi verrà assegnato un trainer, e riceverai una mail anche allora.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "requestRejected": {
+        "subject": "[Training] Richiesta rifiutata: {{training}}",
+        "body": "Il dipartimento training ha rifiutato la tua richiesta di training: {{training}}.\n\nIl motivo: {{reason}}\n\nUn rifiuto non ti fa aspettare: quando sei pronto, puoi chiedere di nuovo.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "trainerAssigned": {
+        "subject": "[Training] Trainer assegnato: {{training}}",
+        "body": "{{trainer}} è il trainer del training di {{trainee}}: {{training}}.\n\n{{next}}\n\n{{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "assignedTrainee": "Il tuo trainer proporrà le date della sessione. I tuoi training sono in questa pagina:",
+      "assignedTrainer": "Trovi il training, con le disponibilità del trainee, nella sua pagina del back office. La prossima volta che apri l'hub ti chiede di entrare di nuovo: da lì in poi il training è tuo da condurre. La pagina del training:"
     }
   }
 }
