@@ -1,3 +1,5 @@
+using IvaoHub.Modules.Training.Dates;
+
 namespace IvaoHub.Modules.Training.Staff;
 
 /// <summary>
@@ -58,21 +60,23 @@ public static class StaffQueue
     /// The moment today began in the division's time zone, in UTC: a session that started before it was on a day that is over, and
     /// shows as held (§1.2). A day that begins in a gap of the clock begins at its first moment that exists.
     /// </summary>
-    public static DateTime HeldBefore(DateTime utcNow, TimeZoneInfo zone)
-    {
-        ArgumentNullException.ThrowIfNull(zone);
-
-        var now = DateTime.SpecifyKind(utcNow, DateTimeKind.Utc);
-        var midnight = DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(now, zone).Date, DateTimeKind.Unspecified);
-        while (zone.IsInvalidTime(midnight))
-        {
-            midnight = midnight.AddMinutes(1);
-        }
-
-        return TimeZoneInfo.ConvertTimeToUtc(midnight, zone);
-    }
+    public static DateTime HeldBefore(DateTime utcNow, TimeZoneInfo zone) => DivisionDays.Begins(DivisionDays.Of(utcNow, zone), zone);
 
     /// <summary>Whether a session that starts at <paramref name="scheduledStartUtc"/> shows as held now (§1.2).</summary>
     public static bool IsHeld(DateTime scheduledStartUtc, DateTime utcNow, TimeZoneInfo zone) =>
         scheduledStartUtc < HeldBefore(utcNow, zone);
+
+    /// <summary>
+    /// Whether a training shows as held (§1.2, R.4): dated, and its session on a day that is over in the division's time zone. Never
+    /// written: the pages read it off the date, as the view «to close» does.
+    /// </summary>
+    public static bool IsHeld(Training training, DateTime utcNow, TimeZoneInfo zone) => IsHeld(training, HeldBefore(utcNow, zone));
+
+    /// <summary>The same, given the moment a session starts to show as held — <see cref="HeldBefore"/> —, for a whole page at once.</summary>
+    public static bool IsHeld(Training training, DateTime heldBefore)
+    {
+        ArgumentNullException.ThrowIfNull(training);
+
+        return training.State == TrainingState.Scheduled && training.ScheduledStartUtc is { } start && start < heldBefore;
+    }
 }

@@ -1,4 +1,5 @@
 using IvaoHub.Core.Ivao;
+using IvaoHub.Modules.Training.Dates;
 
 namespace IvaoHub.Modules.Training.Staff;
 
@@ -8,7 +9,8 @@ public sealed record TrainingMemberDto(int Vid, string? Name);
 /// <summary>
 /// A training as the staff's list shows it (design M3 §4.2): what it is, whose it is, where it stands, and who trains it. The
 /// short name of the rating is the core's vocabulary's; the names are the hub's. <c>CreatedAt</c> is when it was asked for,
-/// named as the column the list sorts on.
+/// named as the column the list sorts on. <c>Held</c> says a dated training shows as held (§1.2): its day is over in the
+/// division's time zone, which nothing writes.
 /// </summary>
 public sealed record StaffTrainingRowDto(
     long Id,
@@ -21,7 +23,8 @@ public sealed record StaffTrainingRowDto(
     TrainingMemberDto Trainee,
     TrainingMemberDto? Trainer,
     DateTime CreatedAt,
-    DateTime? ScheduledStartUtc);
+    DateTime? ScheduledStartUtc,
+    bool Held);
 
 /// <summary>
 /// What the reader may do on the training now, as the one handler answers on the row: a button is drawn when it said yes. Never
@@ -29,14 +32,21 @@ public sealed record StaffTrainingRowDto(
 /// </summary>
 /// <param name="CanDecide">Accept or refuse the request (<c>Training.Approve</c>), while it waits.</param>
 /// <param name="CanAssign">Assign the trainer or change them (<c>Training.Assign</c>), while the training is accepted and going on.</param>
-public sealed record StaffTrainingActionsDto(bool CanDecide, bool CanAssign);
+/// <param name="CanConduct">
+/// Propose dates, take one back, set the date by hand (<c>Training.Conduct</c>, A8), while the training has its trainer and goes
+/// on: dates are proposed while it waits for one, and the date is set by hand then or once it has one.
+/// </param>
+/// <param name="CanClose">Close it with a reason (<c>Training.Approve</c>, A8), while it is accepted and going on.</param>
+public sealed record StaffTrainingActionsDto(bool CanDecide, bool CanAssign, bool CanConduct, bool CanClose);
 
 /// <summary>
-/// A training as the staff reads it on its page (design M3 §2.3, §2.4, §4.2): the request with the trainee's rating and hours
-/// when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer, and what the
-/// reader may do. Read with <c>Training.View</c>, which the core never denies, so the trainee of the row reads it too: the fields
-/// the trainee may not read — the notes of the staff, the report's comment for the staff — are not here, and arrive with the one
-/// function of A9 that leaves them out for the row's trainee (note <c>le-note-riservate-e-il-trainee</c>). Never an address.
+/// A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §4.2): the request with the trainee's rating and
+/// hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer, the dates
+/// proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's choice
+/// or set by hand —, the closing with its reason, and what the reader may do. Read with <c>Training.View</c>, which the core never
+/// denies, so the trainee of the row reads it too: the fields the trainee may not read — the notes of the staff, the report's
+/// comment for the staff — are not here, and arrive with the one function of A9 that leaves them out for the row's trainee (note
+/// <c>le-note-riservate-e-il-trainee</c>). Never an address.
 /// </summary>
 public sealed record StaffTrainingDto(
     long Id,
@@ -64,10 +74,14 @@ public sealed record StaffTrainingDto(
     TrainingMemberDto? Trainer,
     TrainingMemberDto? AssignedBy,
     DateTime? AssignedAt,
+    IReadOnlyList<StaffSlotDto> Slots,
     DateTime? ScheduledStartUtc,
+    bool Held,
+    bool DateChosenByTrainee,
     DateTime? CompletedAt,
     TrainingMemberDto? ClosedBy,
     DateTime? ClosedAt,
+    string? CloseReason,
     bool ReadyForMockExam,
     bool ReadyForExam,
     StaffTrainingActionsDto Actions,

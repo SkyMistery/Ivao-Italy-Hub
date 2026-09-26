@@ -5,6 +5,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Dates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Quartz;
@@ -12,10 +13,11 @@ using Quartz;
 namespace IvaoHub.Modules.Training.Staff;
 
 /// <summary>
-/// The night of the training (design M3 §5.3), its first half (A7): takes back the grants the assignment wrote on trainings that
-/// are over — reported, closed, not attended —, because a grant with a scope travels in its holder's cookie and must not pile up
-/// (§3.3). Its holder is asked to sign in again, at night rather than when the report is just published: the cost decided with
-/// the grant (§12 n.1). The closing of the trainings nobody dated in time is its second half, with the dates (A8).
+/// The night of the training (design M3 §5.3). First it closes the trainings whose trainee chose no date in the time the division
+/// gives — only when <c>maxResponseDays</c> is set (§2.5, §12 n.9; A8, <see cref="TrainingDates.CloseUnansweredAsync"/>) —; then it
+/// takes back the grants the assignment wrote on trainings that are over — reported, closed, not attended (A7) —, those closed a
+/// moment before included, because a grant with a scope travels in its holder's cookie and must not pile up (§3.3). Its holder is
+/// asked to sign in again, at night rather than when the report is just published: the cost decided with the grant (§12 n.1).
 /// <para>A grant is also taken back when its training has another trainer, or none: the assignment writes the new grant before
 /// the training and takes the old one after it, and a write that stopped half way leaves one behind. Not in the hour after it
 /// was written, which may be an assignment still under way.</para>
@@ -27,6 +29,7 @@ public sealed class TrainingExpiryJob(
     TrainingDbContext database,
     HubDbContext hub,
     ModuleGrants grants,
+    TrainingDates dates,
     IClock clock,
     ILogger<TrainingExpiryJob> logger) : IJob
 {
@@ -54,11 +57,15 @@ public sealed class TrainingExpiryJob(
 
         try
         {
+            // The closings first, so that the grants of the trainings closed tonight go tonight.
+            var closed = await dates.CloseUnansweredAsync(entry.StartedAt, cancellationToken);
             var taken = await TakeBackAsync(entry.StartedAt, cancellationToken);
 
             entry.FinishedAt = clock.UtcNow;
             entry.Status = "succeeded";
-            entry.Message = string.Create(CultureInfo.InvariantCulture, $"{taken} grant(s) of trainings over or reassigned taken back");
+            entry.Message = string.Create(
+                CultureInfo.InvariantCulture,
+                $"{closed} training(s) with no date chosen in time closed, {taken} grant(s) of trainings over or reassigned taken back");
             await hub.SaveChangesAsync(cancellationToken);
 
             return taken;

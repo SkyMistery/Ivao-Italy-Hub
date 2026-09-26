@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Training.Bans;
+using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Sheets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -14,16 +15,38 @@ namespace IvaoHub.Modules.Training.Data;
 /// <para>Born with no table of its own (A4): its <c>Initial</c> migration holds only the tables of the core that every module
 /// context maps and leaves out of its migrations, and it is never touched again. The tables of the module arrive with the
 /// phases that need them, one additive migration each: the items of the evaluation sheet first (A5), then the trainings, whole,
-/// and the bans (A6a).</para>
+/// and the bans (A6a), then the dates the trainers propose (A8).</para>
 /// </summary>
-public sealed class TrainingDbContext(DbContextOptions<TrainingDbContext> options, ICurrentUser? currentUser = null)
-    : ModuleDbContext(options, currentUser)
+public sealed class TrainingDbContext : ModuleDbContext
 {
+    /// <param name="options">The context's options, as the core registers every context.</param>
+    /// <param name="currentUser">Who reads and writes, for the filters and the guard of the core.</param>
+    /// <param name="vocabulary">
+    /// The core's ratings: every training this context tracks is told the short name of its own (<see cref="Training.RatingShortName"/>),
+    /// because the session it projects into the calendar is called by it (A8), and a projection is worked out by the row itself.
+    /// </param>
+    public TrainingDbContext(DbContextOptions<TrainingDbContext> options, ICurrentUser? currentUser = null, RatingVocabulary? vocabulary = null)
+        : base(options, currentUser)
+    {
+        if (vocabulary is not null)
+        {
+            ChangeTracker.Tracked += (_, tracked) =>
+            {
+                if (tracked.Entry.Entity is Training training)
+                {
+                    training.RatingShortName = vocabulary.Find(training.Kind, training.Rating)?.ShortName;
+                }
+            };
+        }
+    }
+
     public DbSet<SheetItem> SheetItems => Set<SheetItem>();
 
     public DbSet<Training> Trainings => Set<Training>();
 
     public DbSet<TraineeBan> TraineeBans => Set<TraineeBan>();
+
+    public DbSet<TrainingSlot> Slots => Set<TrainingSlot>();
 
     /// <summary>The enums of the training are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
@@ -54,6 +77,7 @@ public sealed class TrainingDbContext(DbContextOptions<TrainingDbContext> option
             training.HasKey(row => row.Id);
             training.Ignore(row => row.StakeholderVid);
             training.Ignore(row => row.ResourceScope);
+            training.Ignore(row => row.RatingShortName);
             training.Property(row => row.Position).HasMaxLength(Training.MaxPositionLength);
             training.Property(row => row.AirportIcao).HasMaxLength(Training.MaxAirportLength);
             training.Property(row => row.Fir).HasMaxLength(Training.MaxFirLength);
@@ -89,6 +113,17 @@ public sealed class TrainingDbContext(DbContextOptions<TrainingDbContext> option
 
             // A member's bans, read at every request of theirs.
             ban.HasIndex(row => row.Vid);
+        });
+
+        modelBuilder.Entity<TrainingSlot>(slot =>
+        {
+            slot.ToTable("trn_slots");
+            slot.HasKey(row => row.Id);
+            slot.Property(row => row.WarningsJson).HasColumnName("warnings_json").HasColumnType("json").IsRequired();
+
+            // A child of its training, in the same context: it goes with it, and its index is the one every reading of the
+            // proposals of a training uses.
+            slot.HasOne<Training>().WithMany().HasForeignKey(row => row.TrainingId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

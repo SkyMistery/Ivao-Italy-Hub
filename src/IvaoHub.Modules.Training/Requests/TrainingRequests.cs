@@ -1,13 +1,17 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Settings;
+using IvaoHub.Modules.Training.Staff;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Modules.Training.Requests;
 
@@ -27,7 +31,9 @@ public sealed class TrainingRequests(
     ModuleSettingsStore settingsStore,
     ITheoryExamSource theory,
     TrainingMail mail,
+    TrainingPeople people,
     ICurrentUser currentUser,
+    IOptions<DivisionOptions> division,
     IClock clock)
 {
     /// <summary>The trainee's page: who they are, where they stand on each ladder, and their trainings. None without their row.</summary>
@@ -70,7 +76,7 @@ public sealed class TrainingRequests(
             theory.AsksTheTrainee,
             settings.TheoryExamUrl,
             paths,
-            [.. history.OrderByDescending(training => training.CreatedAt).ThenByDescending(training => training.Id).Select(ToDto)]);
+            await DtosAsync([.. history.OrderByDescending(training => training.CreatedAt).ThenByDescending(training => training.Id)], cancellationToken));
     }
 
     /// <summary>
@@ -240,30 +246,61 @@ public sealed class TrainingRequests(
     }
 
     /// <summary>The training as its trainee reads it.</summary>
-    public TraineeTrainingDto ToDto(Training training)
+    public async Task<TraineeTrainingDto> ToDtoAsync(Training training, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(training);
 
-        return new TraineeTrainingDto(
-            training.Id,
-            training.Kind,
-            training.Rating,
-            vocabulary.Find(training.Kind, training.Rating)?.ShortName,
-            training.IsMockExam,
-            training.Position,
-            training.State,
-            training.Rejection,
-            training.RejectionReason,
-            training.AvailabilityText,
-            training.NotesText,
-            training.CreatedAt,
-            training.DecidedAt,
-            training.ScheduledStartUtc,
-            training.CompletedAt,
-            training.ClosedAt,
-            training.ReadyForMockExam,
-            training.ReadyForExam,
-            training.RowVersion);
+        return (await DtosAsync([training], cancellationToken))[0];
+    }
+
+    /// <summary>
+    /// Trainings as their trainee reads them, in the order given: with who trains each, and the dates still to come that its
+    /// trainer proposed while it waits for one (A8) — one query for them all, and one for the names.
+    /// </summary>
+    public async Task<IReadOnlyList<TraineeTrainingDto>> DtosAsync(IReadOnlyList<Training> trainings, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(trainings);
+
+        var now = clock.UtcNow;
+        var zone = division.Value.ResolveTimeZone();
+        var waiting = trainings.Where(training => training.State == TrainingState.Assigned).Select(training => training.Id).ToList();
+        List<TrainingSlot> slots = waiting.Count == 0
+            ? []
+            : await database.Slots.AsNoTracking()
+                .Where(slot => waiting.Contains(slot.TrainingId) && slot.StartsAtUtc > now)
+                .OrderBy(slot => slot.StartsAtUtc)
+                .ThenBy(slot => slot.Id)
+                .ToListAsync(cancellationToken);
+        var proposed = slots.ToLookup(slot => slot.TrainingId);
+        var names = await people.NamesAsync(trainings.Select(training => training.TrainerVid), cancellationToken);
+
+        return
+        [
+            .. trainings.Select(training => new TraineeTrainingDto(
+                training.Id,
+                training.Kind,
+                training.Rating,
+                vocabulary.Find(training.Kind, training.Rating)?.ShortName,
+                training.IsMockExam,
+                training.Position,
+                training.State,
+                training.Rejection,
+                training.RejectionReason,
+                training.AvailabilityText,
+                training.NotesText,
+                training.CreatedAt,
+                training.DecidedAt,
+                TrainingPeople.Member(training.TrainerVid, names),
+                [.. proposed[training.Id].Select(slot => new TraineeSlotDto(slot.Id, slot.StartsAtUtc, slot.EndsAtUtc))],
+                training.ScheduledStartUtc,
+                StaffQueue.IsHeld(training, now, zone),
+                training.CompletedAt,
+                training.ClosedAt,
+                training.CloseReason,
+                training.ReadyForMockExam,
+                training.ReadyForExam,
+                training.RowVersion)),
+        ];
     }
 
     /// <summary>Where the trainee stands on one ladder, and the positions its rating proposed is offered on.</summary>
