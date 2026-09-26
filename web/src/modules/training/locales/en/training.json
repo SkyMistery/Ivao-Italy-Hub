@@ -9,6 +9,100 @@
     "Pilot": "Pilot"
   },
   "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+  "unknown": "not available",
+  "theoryExam": "The site of the theory exam",
+  "mockExam": "This will be a mock exam, as agreed with your trainer.",
+  "states": {
+    "Requested": "Waiting for acceptance",
+    "Accepted": "Accepted, waiting for a trainer",
+    "Assigned": "Trainer assigned",
+    "Scheduled": "Scheduled",
+    "Completed": "Completed",
+    "Rejected": "Refused",
+    "Cancelled": "Cancelled",
+    "Closed": "Closed",
+    "NoShow": "No-show"
+  },
+  "refusal": {
+    "bannedUntil": "The ban holds until {{date}} UTC.",
+    "bannedForever": "The ban holds until the training department lifts it.",
+    "open": "Once that training is closed, you can ask for another one.",
+    "waitUntil_one": "You can ask for the next training from {{date}} UTC: {{count}} day to go.",
+    "waitUntil_other": "You can ask for the next training from {{date}} UTC: {{count}} days to go.",
+    "hours": "This training asks for {{minimum}} connection hours, and you have {{hours}}.",
+    "hoursNeeded": "This training asks for {{minimum}} connection hours."
+  },
+  "request": {
+    "title": "Ask for a training",
+    "lead": "Choose the path and say when you are free: the training department receives the request, checks it and assigns you a trainer. Before a training you must have passed the theory exam of the rating.",
+    "you": "Your details",
+    "youHint": "They come from the network at your last sign in and are changed there: they are updated here when you sign in again.",
+    "what": "What you ask for",
+    "next": "Next training: {{rating}}",
+    "nothingNext": "No training to ask for after your rating",
+    "proposed": "The training you ask for:",
+    "send": "Request training",
+    "sent": "Request for the {{rating}} training sent: the training department will check it.",
+    "fields": {
+      "vid": "VID",
+      "name": "Name",
+      "rating": "{{kind}} rating",
+      "hours": "{{kind}} hours",
+      "position": "Position",
+      "availabilityText": "Availability",
+      "notesText": "Notes and wishes"
+    },
+    "hints": {
+      "position": "Type to search among the positions the division trains this rating on.",
+      "availabilityText": "When you can do the training: days and times, with the time zone.",
+      "notesText": "What the training department or the trainer should know."
+    },
+    "theory": {
+      "question": "Have you passed the theory exam for {{rating}}?",
+      "description": "Before a training you must have passed the theory exam of the rating. Whoever approves the request checks it.",
+      "answer": "Your answer",
+      "yes": "Yes, I have passed it",
+      "no": "No, not yet",
+      "confirm": "Send the request"
+    },
+    "declined": {
+      "title": "Before asking for the training you must pass the {{rating}} theory exam.",
+      "description": "The request is recorded as refused, and no email is sent. Once you have passed the theory exam, ask for the training again.",
+      "back": "Back to the request"
+    }
+  },
+  "mine": {
+    "title": "My trainings",
+    "lead": "Your requests and your trainings, ATC and pilot: what you can ask for on each path, and how each request is going.",
+    "trainings": "Requests and trainings",
+    "none": "You have not asked for a training yet.",
+    "noneDescription": "When you ask for one, you find the request here and how it goes on.",
+    "rating": "Your rating",
+    "hours": "Your hours",
+    "canAsk": "You can ask for the training",
+    "readyForExamOn": "Your trainer marked you ready for the {{rating}} exam.",
+    "mockExamBadge": "Mock exam",
+    "requestedAt": "Requested on {{date}}",
+    "moments": {
+      "Accepted": "accepted on {{date}}",
+      "Rejected": "refused on {{date}}",
+      "Scheduled": "session on {{date}} UTC",
+      "Completed": "completed on {{date}}",
+      "Cancelled": "cancelled on {{date}}",
+      "Closed": "closed on {{date}}",
+      "NoShow": "no-show on {{date}}"
+    },
+    "theoryRefusal": "Refused by the hub: you answered that you had not passed the theory exam yet.",
+    "staffRefusal": "Refused by the training department.",
+    "staffRefusalReason": "Refused by the training department: {{reason}}",
+    "readyForMockExam": "Ready for the mock exam",
+    "readyForExam": "Ready for the exam",
+    "cancel": "Cancel the request",
+    "cancelTitle": "Cancel the request?",
+    "cancelDescription": "It stays among your trainings as cancelled, and makes you wait for nothing: you can ask for another one whenever you like.",
+    "cancelConfirm": "Yes, cancel the request",
+    "cancelled": "Request cancelled."
+  },
   "sheets": {
     "title": "Evaluation sheet",
     "description": "The items a trainer marks after a session, per path and rating: the practical ones with a grade from 1 to 5, the theory ones as done, not done or to improve. The trainee reads them in their report.",
@@ -86,6 +180,32 @@
     "ratingTwice": "This rating has more than one row.",
     "positionUnknown": "The division no longer trains on this position: take it out of the list.",
     "calendarKindUnknown": "One of these is not a kind of the calendar.",
-    "sheetItemUsed": "A report has already used this item: switch it off instead of deleting it."
+    "sheetItemUsed": "A report has already used this item: switch it off instead of deleting it.",
+    "requestBanned": "You have a ban from the training: while it holds you cannot ask for a training.",
+    "requestOpen": "You already have a training open on this path: one at a time.",
+    "requestWaiting": "The waiting after your last training on this path is not over yet.",
+    "requestNothingToAsk": "There is no training to ask for on this path after your rating.",
+    "requestHoursUnknown": "The hub does not know your connection hours yet: sign out and sign in again.",
+    "requestHoursTooFew": "You do not have the connection hours this training asks for yet.",
+    "requestNoPosition": "At the moment the division offers no position to train this rating on.",
+    "requestRatingNotNext": "This is no longer the rating you may ask for: reload the page.",
+    "requestPositionUnknown": "Choose a position from the list.",
+    "requestPositionNotAsked": "A training on this path has no position.",
+    "requestNotCancellable": "Only a request nobody has accepted yet can be cancelled."
+  },
+  "notifications": {
+    "requestReceived": {
+      "title": "My training requests",
+      "description": "An email when a request of yours for a training is received."
+    }
+  },
+  "mail": {
+    "training": {
+      "requestReceived": {
+        "subject": "[Training] Request received: {{training}}",
+        "body": "We have received your request for a training: {{training}}.{{mockExam}}\n\nThe training department will check it, the theory exam included, and write to you when it is accepted or refused. Until somebody accepts it, you can cancel it from your trainings page.\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "mockExam": " It will be a mock exam, as agreed with your trainer."
+    }
   }
 }

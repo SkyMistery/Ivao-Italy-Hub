@@ -9,6 +9,100 @@
     "Pilot": "Pilota"
   },
   "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+  "unknown": "non disponibile",
+  "theoryExam": "Il sito dell'esame teorico",
+  "mockExam": "Questo sarà un mock exam, come concordato con il trainer.",
+  "states": {
+    "Requested": "In attesa di accettazione",
+    "Accepted": "Accettata, in attesa del trainer",
+    "Assigned": "Trainer assegnato",
+    "Scheduled": "Programmato",
+    "Completed": "Completato",
+    "Rejected": "Rifiutata",
+    "Cancelled": "Annullata",
+    "Closed": "Chiusa",
+    "NoShow": "No-show"
+  },
+  "refusal": {
+    "bannedUntil": "Il ban vale fino al {{date}} UTC.",
+    "bannedForever": "Il ban vale finché il dipartimento training non lo toglie.",
+    "open": "Quando quel training si chiude, potrai chiederne un altro.",
+    "waitUntil_one": "Potrai chiedere il prossimo training dal {{date}} UTC: manca {{count}} giorno.",
+    "waitUntil_other": "Potrai chiedere il prossimo training dal {{date}} UTC: mancano {{count}} giorni.",
+    "hours": "Questo training chiede {{minimum}} ore di connessione, e ne hai {{hours}}.",
+    "hoursNeeded": "Questo training chiede {{minimum}} ore di connessione."
+  },
+  "request": {
+    "title": "Richiedi un training",
+    "lead": "Scegli il percorso e scrivi quando sei disponibile: il dipartimento training riceve la richiesta, la controlla e ti assegna un trainer. Prima di un training devi aver superato l'esame teorico del rating.",
+    "you": "I tuoi dati",
+    "youHint": "Arrivano dalla rete al tuo ultimo accesso e si cambiano lì: qui si aggiornano quando entri di nuovo.",
+    "what": "Che cosa chiedi",
+    "next": "Prossimo training: {{rating}}",
+    "nothingNext": "Nessun training da chiedere dopo il tuo rating",
+    "proposed": "Il training che chiedi:",
+    "send": "Richiedi training",
+    "sent": "Richiesta del training {{rating}} inviata: il dipartimento training la controllerà.",
+    "fields": {
+      "vid": "VID",
+      "name": "Nome",
+      "rating": "Rating {{kind}}",
+      "hours": "Ore {{kind}}",
+      "position": "Postazione",
+      "availabilityText": "Disponibilità",
+      "notesText": "Note e richieste"
+    },
+    "hints": {
+      "position": "Scrivi per cercare fra le postazioni su cui la divisione allena questo rating.",
+      "availabilityText": "Quando puoi fare il training: giorni e orari, con il fuso orario.",
+      "notesText": "Quello che il dipartimento training o il trainer devono sapere."
+    },
+    "theory": {
+      "question": "Hai superato l'esame teorico per {{rating}}?",
+      "description": "Prima di un training devi aver superato l'esame teorico del rating. Chi approva la richiesta lo controlla.",
+      "answer": "La tua risposta",
+      "yes": "Sì, l'ho superato",
+      "no": "No, non ancora",
+      "confirm": "Invia la richiesta"
+    },
+    "declined": {
+      "title": "Prima di richiedere il training devi superare l'esame teorico {{rating}}.",
+      "description": "La richiesta è registrata come rifiutata, e non ti arriva nessuna mail. Quando avrai superato l'esame teorico, chiedi di nuovo il training.",
+      "back": "Torna alla richiesta"
+    }
+  },
+  "mine": {
+    "title": "I miei training",
+    "lead": "Le tue richieste e i tuoi training, ATC e pilota: che cosa puoi chiedere su ogni percorso, e come va ogni richiesta.",
+    "trainings": "Le richieste e i training",
+    "none": "Non hai ancora chiesto un training.",
+    "noneDescription": "Quando ne chiedi uno, qui trovi la richiesta e come va avanti.",
+    "rating": "Il tuo rating",
+    "hours": "Le tue ore",
+    "canAsk": "Puoi chiedere il training",
+    "readyForExamOn": "Il trainer ti ha segnato pronto per l'esame {{rating}}.",
+    "mockExamBadge": "Mock exam",
+    "requestedAt": "Richiesta il {{date}}",
+    "moments": {
+      "Accepted": "accettata il {{date}}",
+      "Rejected": "rifiutata il {{date}}",
+      "Scheduled": "sessione il {{date}} UTC",
+      "Completed": "completato il {{date}}",
+      "Cancelled": "annullata il {{date}}",
+      "Closed": "chiusa il {{date}}",
+      "NoShow": "no-show il {{date}}"
+    },
+    "theoryRefusal": "Rifiutata dall'hub: avevi risposto di non aver ancora superato l'esame teorico.",
+    "staffRefusal": "Rifiutata dal dipartimento training.",
+    "staffRefusalReason": "Rifiutata dal dipartimento training: {{reason}}",
+    "readyForMockExam": "Pronto per il mock exam",
+    "readyForExam": "Pronto per l'esame",
+    "cancel": "Annulla la richiesta",
+    "cancelTitle": "Annullare la richiesta?",
+    "cancelDescription": "Resta fra i tuoi training come annullata, e non fa aspettare: puoi chiederne un'altra quando vuoi.",
+    "cancelConfirm": "Sì, annulla la richiesta",
+    "cancelled": "Richiesta annullata."
+  },
   "sheets": {
     "title": "Scheda di valutazione",
     "description": "Le voci che il trainer valuta dopo una sessione, per percorso e rating: quelle pratiche con un voto da 1 a 5, quelle di teoria come fatte, non fatte o da migliorare. Il trainee le legge nel suo report.",
@@ -86,6 +180,32 @@
     "ratingTwice": "Questo rating ha più di una riga.",
     "positionUnknown": "La divisione non allena più su questa postazione: toglila dall'elenco.",
     "calendarKindUnknown": "Uno di questi non è un tipo del calendario.",
-    "sheetItemUsed": "Un report ha già usato questa voce: non si elimina, si spegne."
+    "sheetItemUsed": "Un report ha già usato questa voce: non si elimina, si spegne.",
+    "requestBanned": "Hai un ban dal training: finché vale non puoi chiedere un training.",
+    "requestOpen": "Hai già un training aperto su questo percorso: uno alla volta.",
+    "requestWaiting": "L'attesa dopo il tuo ultimo training su questo percorso non è ancora finita.",
+    "requestNothingToAsk": "Dopo il tuo rating non c'è un training da chiedere su questo percorso.",
+    "requestHoursUnknown": "L'hub non conosce ancora le tue ore di connessione: esci ed entra di nuovo.",
+    "requestHoursTooFew": "Non hai ancora le ore di connessione che questo training chiede.",
+    "requestNoPosition": "In questo momento la divisione non offre postazioni su cui allenare questo rating.",
+    "requestRatingNotNext": "Questo non è più il rating che puoi chiedere: ricarica la pagina.",
+    "requestPositionUnknown": "Scegli una postazione dall'elenco.",
+    "requestPositionNotAsked": "Un training di questo percorso non ha una postazione.",
+    "requestNotCancellable": "Si annulla solo una richiesta che nessuno ha ancora accettato."
+  },
+  "notifications": {
+    "requestReceived": {
+      "title": "Le mie richieste di training",
+      "description": "Una mail quando una tua richiesta di training viene ricevuta."
+    }
+  },
+  "mail": {
+    "training": {
+      "requestReceived": {
+        "subject": "[Training] Richiesta ricevuta: {{training}}",
+        "body": "Abbiamo ricevuto la tua richiesta di training: {{training}}.{{mockExam}}\n\nIl dipartimento training la controllerà, compreso l'esame teorico, e ti scriverà quando sarà accettata o rifiutata. Finché nessuno la accetta, puoi annullarla dalla pagina dei tuoi training.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "mockExam": " Sarà un mock exam, come concordato con il trainer."
+    }
   }
 }

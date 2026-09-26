@@ -59,8 +59,9 @@ Per non ripeterle tredici volte:
 | A4a | Nucleo: le parole di più moduli — **trovata scrivendo A4** | A0 | il catalogo delle lingue del server tiene le parole di due moduli, ciascuno con il suo namespace |
 | A4 | Modulo: lo scheletro | A0, A4a | progetto, contesto, `Initial`, catalogo, `positionGrants` del TD, impostazioni, menu, segmento riservato |
 | A5 | Le voci della scheda | A1, A4 | `trn_sheet_items` tradotte, lista e form generati |
-| A6 | La richiesta | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), `/training/request`, i controlli per percorso, il teorico, l'annullamento, `/training/mine` |
-| A7 | Accettare, rifiutare, assegnare | A3, A6 | le pagine dello staff, il grant del trainer, il job che lo toglie |
+| A6a | La richiesta: il server — **A6 divisa in apertura** | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), i controlli per percorso, il teorico, l'annullamento, la mail, gli endpoint del trainee |
+| A6b | La richiesta: le pagine | A6a | `/training/request` con la domanda sul teorico, `/training/mine` con l'annullamento, lo smoke e il giro sul banco |
+| A7 | Accettare, rifiutare, assegnare | A3, A6b | le pagine dello staff, il grant del trainer, il job che lo toglie |
 | A8 | Le date | A7 | disponibilità, avvisi, scelta a riquadri, override, calendario, promemoria, chiusura per tempo |
 | A9 | Dopo la sessione | A5, A8 | rischedula, no-show, scheda con N/A, report, mock exam, le note riservate e il trainee |
 | A10 | Blocchi, pagine pubbliche, percorso, esami, ban | A2, A3, A3b, A9 | i quattro blocchi Data, `/training` e la sessione, il percorso del trainee, `trn_exams`, i ban |
@@ -762,7 +763,204 @@ teorico.
 **Fatta quando**: sul banco il trainee (A1) chiede il training del rating successivo al suo scegliendo una postazione e lo vede in
 `/training/mine`; una seconda richiesta ATC è rifiutata, una da pilota passa.
 
-**Com'è andata**: *(a fase chiusa)*
+**Divisa il 26 settembre 2026 in apertura**, come la frase qui sopra prevede e come T11 dei tour (`06`, T11a e T11b): il server da solo
+è già una PR come quella di T11a — una tabella intera, i controlli nell'ordine del design, il teorico, l'annullamento, la mail e i loro
+test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul banco, la raddoppierebbero.
+
+- **A6a — il server** (branch `m3/a6a-request-server`, preparato come `m3/a6-training-request` e rinominato prima del primo push): i
+  punti 1, 2, 4, 5 e 7; dei punti 3 e 6 gli endpoint — quello che la pagina della richiesta legge (VID, nome, rating e ore, il rating
+  proposto, le postazioni meno `hiddenPositions`, la domanda sul teorico con il suo link) e le richieste e i training del trainee, con
+  un DTO senza campi riservati —; i test unit e d'integrazione. Il «fatta quando» lo prova un test d'integrazione, attraverso l'API.
+- **A6b — le pagine** (branch `m3/a6b-request-pages`, da `m3/a6a-request-server`): il punto 3 e la pagina del punto 6, con «Annulla»;
+  lo smoke della richiesta con la domanda sul teorico; il giro sul banco con `pnpm e2e:full` e il «fatta quando» di A6. Se una pagina
+  chiede al server qualcosa che A6a non dà, è un cambio del modulo nella PR di A6b, detto nel suo «Com'è andata».
+
+**Com'è andata (A6a)** (26 settembre 2026, branch `m3/a6a-request-server`, PR #143):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — `ISubmittedByMembers` con `IHasStakeholder` e l'eccezione del guardiano per chi modifica la propria riga, come il PIREP;
+  `IOwnedByDepartment` con la maschera e il dipartimento base, `IAuditable`, `[Audited]`, `IVisible` con il filtro globale, `IHasFir`,
+  `IHasResourceScope`; il servizio notifiche con i tipi del modulo; le impostazioni del modulo; il vocabolario dei rating (A1) e la
+  directory delle postazioni (A2) —. **Nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine. `ITheoryExamSource` nasce
+  nel modulo, come la nota `il-teorico-lo-dichiara-il-trainee` decide (§2 punto 3).
+- **Fatto**, come il perimetro di A6a qui sopra:
+  1. **`trn_trainings`** (`Training.cs`, alla radice del modulo: sotto, scostamento 7) con **tutte le colonne di §1.2**, e **`trn_bans`**
+     (`Bans/TraineeBan.cs`: il VID, il motivo, fino a quando, chi l'ha tolto e quando; chi l'ha dato è chi ha scritto la riga), nella
+     migrazione **`AddTrainings`**, solo additiva; `TrainingState` e `TrainingRejection` come testo in `ConfigureModuleConventions`;
+     l'`Initial` e `AddSheetItems` non sono toccate. Il training è `ISubmittedByMembers`, `IHasStakeholder` (il trainee),
+     `IOwnedByDepartment` con la maschera, `IAuditable`, `[Audited]`, `IVisible` (`Members`), `IHasFir` (il FIR della postazione),
+     `IHasResourceScope` (`training:training:{id}`, `Training.ScopeOf`), con `row_version`; **niente `IHasParticipants`**. Il ban è
+     `IOwnedByDepartment`, `IAuditable`, `[Audited]`, `IHasStakeholder`, e dice se vale in un momento (`Holds`).
+  2. **Le regole della richiesta, in funzioni pure** (`Requests/RequestRules.cs`): `Standing`, dove sta il trainee su un percorso — il
+     rating proposto, se sarà un mock exam, la prima regola che rifiuta con ciò che serve per dirlo —, e `WaitUntil`, `IsMockExam`,
+     `MinimumHours`, `EndedAt`. L'ordine è quello di §2.2: il ban, una richiesta aperta per percorso, l'attesa, le ore; il mock exam non
+     rifiuta niente; il teorico viene dopo tutte, nella richiesta, perché un «no» si registra.
+  3. **`ITheoryExamSource`** (`Requests/ITheoryExamSource.cs`): `AsksTheTrainee` e `HasPassedAsync(vid, rating, declared)`.
+     L'implementazione di oggi, `TraineeDeclaration`, risponde con la dichiarazione del trainee; registrata con `TryAddScoped`, così un
+     test o un'altra fonte risponde prima. **No** → `Rejected` con `TheoryNotPassed` e `decided_at`, registrato, nessuna mail; **sì** →
+     `Requested` con `theory_confirmed_at` e la mail.
+  4. **Gli endpoint del trainee**, `/api/training/mine` (`Requests/RequestEndpoints.cs`, `Requests/TrainingRequests.cs`): `GET` la sua
+     pagina — VID, nome, e per percorso il suo rating e le sue ore, il rating proposto, il mock exam, se si sceglie una postazione e
+     quali (la directory meno `hiddenPositions`), la prima regola che rifiuta con fino a quando vale il ban, quale training è aperto,
+     fino a quando si aspetta, la soglia di ore —; la domanda sul teorico (`asksTheory`, `theoryExamUrl`); i suoi training, dal più
+     nuovo. `POST` la richiesta, `GET /{id}` un suo training, `POST /{id}/cancel` l'annullamento, solo da `Requested` (409 su una
+     versione vecchia). Il DTO del trainee, **`TraineeTrainingDto`, non ha campi dello staff**, e nessun DTO ha l'email. Un altro membro
+     riceve 404.
+  5. **La mail `training.requestReceived`** (`TrainingNotifications`, dichiarata in `IModule.NotificationTypes`): oggetto e testo in
+     `mail.training.requestReceived`, l'etichetta del profilo in `notifications.requestReceived`, in italiano e in inglese; nella lingua
+     del trainee, con il percorso, la sigla del rating e la postazione, e «sarà un mock exam» quando lo è. `pnpm i18n:sync` e
+     `pnpm gen:api`.
+- **Scostamenti e precisazioni, piccoli**:
+  1. **`reminded_at` è su `trn_trainings`**: il design lo nomina in §5.3 («una colonna `reminded_at` lo fa partire una volta sola») e non
+     nella tabella di §1.2; la sessione in corso sta sul training, quindi anche il suo promemoria, e senza A8 rimigrerebbe la tabella.
+  2. **Una colonna in più, `open_kind`**, scritta dal getter come `is_disputed` dei PIREP: il percorso finché il training è aperto, vuota
+     dopo. In un indice unico con `trainee_vid` fa di «una richiesta aperta per percorso» (§2.2 punto 2) anche un vincolo del database:
+     due richieste mandate nello stesso istante non passano tutte e due, e la seconda riceve lo stesso rifiuto della regola. Un test lo
+     prova scrivendo senza i controlli.
+  3. **Il dettaglio di un rifiuto sta nella pagina, non nel messaggio**: i `ProblemDetails` portano solo chiavi (`CrudProblems`), quindi
+     «fino a quando» del ban (§2.2 punto 1) e «la soglia e le ore» (punto 4) arrivano alla pagina dal `GET` (`bannedUntil`, `waitUntil`,
+     `minimumHours`, `hours`), che A6b mostra accanto al messaggio; il `POST` ridice solo la chiave, sul campo `kind`.
+  4. **La richiesta rimanda il rating** che la pagina ha proposto, e il server la rifiuta sul campo `rating` se non è più quello che
+     propone ora: i rating cambiano al login, e il trainee chiede ciò che ha visto.
+  5. **Due regole senza cui una richiesta non si fa**, al loro posto nell'ordine: «niente da chiedere» (dopo il suo rating non c'è un
+     training pratico, o l'hub non conosce il suo rating) prima delle ore, e «nessuna postazione offerta» per ultima (il rating si allena
+     su una postazione e la divisione, meno quelle nascoste, non ne offre). E **le ore che l'hub non conosce non sono zero** (nota di
+     A1): con una soglia sono un rifiuto loro, «esci ed entra di nuovo».
+  6. **L'attesa conta dall'ultimo training chiuso sul percorso**, alla lettera di §2.2 — la data del report, della decisione o della
+     chiusura, secondo lo stato —. Una richiesta passa solo a attesa finita, quindi è lo stesso che contare da ogni training, tranne se
+     si cambiano le impostazioni a metà: conta l'ultimo.
+  7. **`Training` sta alla radice del modulo** (`IvaoHub.Modules.Training.Training`): in un namespace sotto quello del modulo il nome
+     della classe è nascosto dal namespace `IvaoHub.Modules.Training`, che C# trova prima degli `using`. Il commento della classe lo dice.
+  8. **`Refusals`**, i rifiuti campo per campo, è una classe `internal` del modulo, come quella privata di `PirepSubmission` nei tour:
+     il nucleo non ne ha una, e metterla lì sarebbe un cambio del nucleo con la sua PR. Detto al revisore.
+  9. **I testi**: disponibilità, note, motivo di un rifiuto e di una chiusura fino a 2000 caratteri, come i testi del PIREP; i due
+     commenti del report sono `text`, che il limite della riga non conta, e il loro limite è di A9.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **Il filtro globale nasconde un training a chi non è entrato**: fuori da una richiesta — un test che pulisce o conta — la lettura
+     vuole `IgnoreQueryFilters()` (`TrainingRequestTests` lo fa; nel codice di `src/` è vietato fuori dal motore CRUD).
+  2. **Per A7**: lo staff legge il training con `Training.View`, con un DTO suo; la funzione unica che toglie i campi riservati al trainee
+     della riga è di A9 (nota `le-note-riservate-e-il-trainee`). Il grant del trainer ha lo scope `Training.ScopeOf(id)`.
+  3. **Per A8**: `reminded_at` è sulla riga; **la fine di una sessione non è una colonna del training**: il design la tiene nella
+     disponibilità scelta (`chosen_slot_id`), e l'override, che non ne ha una, deciderà dove tiene la sua. Il tempo da quando le date
+     sono proposte (`responseReminderDays`, `maxResponseDays`) si legge dalle disponibilità.
+  4. **Per A12**: le colonne di persona seguono la convenzione (`trainee_vid`, `trainer_vid`, `decided_by`, `assigned_by`, `closed_by`;
+     nei ban `vid` e `lifted_by`) e il nucleo le rende pseudonimo da solo; i testi liberi li toglie `TrainingPersonalData` (A12b).
+  5. I VID **790017–790021** sono di A6a.
+- **La coda si è sciolta prima della PR**: #140 (A5) è stata unita alle 18:44, mentre girava la prima integrazione intera. `main` è
+  entrato nel branch con un merge (da90c3e) che porta A5, che il branch aveva già, e la #141 del maintainer (la sessione master:
+  `CLAUDE.md`, `CONTRIBUTING.md`, il template, il piano, `HANDOFF.md`, una nota) — nessun file del modulo —, e tutto è stato rifatto sul
+  merge. La PR di A6a è nata verso `main` senza `(after #140)`.
+- **Verificato, in locale, sul merge con `main`** (26 settembre 2026): `dotnet build` senza avvisi; unità **767/767** (le 757 di A5 e le 10
+  nuove); **integrazione intera senza filtro** **322/322** (le 315 e le 7 nuove; la classe nuova da sola 7/7, al primo giro); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 494 in 63 file (nessun file nuovo: A6a non ha codice del front end);
+  `pnpm e2e` 91; **`pnpm e2e:full` 41** su un **banco nuovo**, che all'avvio applica `AddTrainings`; `pnpm gen:api` e `pnpm i18n:sync`
+  senza differenze dopo il commit che li porta; `dotnet format --verify-no-changes` sui file C# toccati, test compresi; le regole di
+  `core-guard` rifatte in PowerShell sul diff verso `main`: nessun file del maintainer, nessuno del nucleo. Prima del merge, sul branch da
+  A5: unità 767, integrazione 322.
+- **Non verificato**: la CI (la dirà la PR). **Due richieste nello stesso istante** attraverso l'API: la chiave del database è provata
+  scrivendo senza i controlli, e il ramo che la trasforma nel rifiuto `requestOpen` (`DbUpdateException` con «Duplicate») è letto, non
+  eseguito, come quello dei PIREP. **Che i test nuovi cadano su una copia indebolita del codice**: non tentato, perché la modalità di
+  permessi della sessione di A5 l'ha rifiutato; i test sono stati letti contro il codice. Le pagine e il «fatta quando» sul banco sono di
+  A6b.
+
+**Com'è andata (A6b)** (26 settembre 2026, branch `m3/a6b-request-pages`, PR #144, in coda dopo #143):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — le rotte dei membri del manifest (`area: 'member'`, come il report dei tour: il login davanti, e al ritorno la stessa
+  pagina), `SchemaForm` con il suo `id` e `actionsElsewhere`, il suggerimento chiuso (`suggestionsOnly`), `ConfirmDialog` con una domanda
+  nei `children` e `confirmDisabled` (G14, T7a), `Notice`, `useNotice`, `EmptyState`, `RatingBadge`, `describeProblem`, `useMoment` —.
+  **Nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine; **nessun cambio del server**: le due pagine leggono
+  `GET /api/training/mine` di A6a così com'è (`pnpm gen:api` senza differenze).
+- **Fatto**, come il perimetro di A6b qui sopra:
+  1. **`/training/request`** (`web/src/modules/training/screens/request.tsx`): i dati del trainee in sola lettura — VID, nome, e del
+     percorso scelto il rating (`RatingBadge`) e le ore; **mai l'email** —; il percorso, ATC o pilota, a scelta con accanto il training
+     che sarebbe, e nell'indirizzo (`?kind=`); il training proposto, con «questo sarà un mock exam, come concordato con il trainer» quando
+     il server lo dice (R.6); per l'ATC la postazione fra quelle offerte (un suggerimento chiuso); disponibilità e note. **«Richiedi
+     training» apre la domanda sul teorico** (R.2: «Hai superato l'esame teorico per *rating*?», con il sito dell'esame quando
+     `theoryExamUrl` c'è), sì o no, e «Invia la richiesta» si accende solo con una risposta. Con il **«no»** la pagina dice, al posto del
+     form, «Prima di richiedere il training devi superare l'esame teorico *rating*», che la richiesta è registrata come rifiutata e che
+     non arriva nessuna mail; con il **«sì»** la conferma nell'angolo e `/training/mine`. Un percorso che il server rifiuta mostra la
+     frase del rifiuto e, dalla stessa risposta, fino a quando vale il ban (o «finché il dipartimento training non lo toglie»), che il
+     training aperto va chiuso prima, fino a quando e quanti giorni dura ancora l'attesa, la soglia di ore e le ore.
+  2. **`/training/mine`** (`screens/mine.tsx`): per ogni percorso il rating, le ore, il training che si può chiedere con «Richiedi
+     training» (verso `/training/request?kind=…`) o il rifiuto con il suo dettaglio — **l'attesa residua** compresa —, il mock exam, e
+     «pronto per l'esame»; poi **le richieste e i training**, dal più nuovo: lo stato (le parole di R.4), percorso, rating, postazione,
+     mock exam, quando è stata chiesta e il momento del suo stato, il motivo di un rifiuto (dell'hub o dello staff), le caselle del report
+     («pronto per il mock exam», «pronto per l'esame»), i due testi del trainee, e **«Annulla la richiesta»** solo su `Requested`, con
+     `ConfirmDialog` e la versione che il trainee ha visto.
+  3. **Le funzioni pure** in `screens/trainee.ts` (il percorso scelto, il dettaglio di un rifiuto, dove va un rifiuto della richiesta, il
+     momento di uno stato, «pronto per l'esame», i giorni che mancano, le ore) e i pezzi comuni alle due pagine in `screens/parts.tsx`;
+     `api.ts` (`mineQuery`, `useRequestTraining`, `useCancelTraining`, che rileggono la pagina), `schemas.ts` (`requestSchema`,
+     `requestFromFormValues`, `requestSearchSchema`), le due rotte nel manifest, le parole in `training.json` (`request`, `mine`,
+     `states`, `refusal`, `mockExam`, `theoryExam`, `unknown`), in italiano e in inglese, copiate da `pnpm i18n:sync`.
+  4. **I test**: Vitest `schemas.test.ts` (4 nuovi) e `screens/trainee.test.ts` (11); lo smoke `web/e2e/training-request.spec.ts` (5,
+     con l'API finta: la richiesta con il «sì», il «no», i rifiuti al loro posto, un percorso rifiutato con il suo dettaglio e il mock
+     exam dell'altro, `/training/mine` con l'annullamento); il giro sul banco `web/e2e/full/training-request.spec.ts`, **il «fatta
+     quando» di A6**: il trainee del banco chiede il training del rating dopo il suo scegliendo una postazione e lo trova in
+     `/training/mine`; una seconda richiesta ATC è rifiutata (la pagina non la offre, e il server rifiuta quella mandata di lato con
+     `requestOpen` sul campo `kind`); una da pilota passa. All'inizio e nel `finally` annulla le richieste rimaste in attesa.
+- **Scostamenti e precisazioni, piccoli**:
+  1. **La domanda sul teorico è `ConfirmDialog`**, il componente dell'elenco chiuso che fa già domande (G14): la risposta sta nei suoi
+     `children`, e la conferma **manda il form generato** per il suo `id` (`requestSubmit`), così i rifiuti del server arrivano campo per
+     campo come in ogni form. La finestra si apre dal suo pulsante, quindi prima che il form sia mandato: il form non ha regole nel
+     browser (sotto, 2), e un rifiuto del server dopo la risposta non registra niente — il teorico viene per ultimo (A6a) —; la domanda
+     si fa di nuovo, da capo, a ogni «Richiedi training». Il pulsante di `ConfirmDialog` è solo `ghost` o `secondary`: «Richiedi
+     training» è `secondary`.
+  2. **Nessuna regola nel browser**: la postazione obbligatoria e la lunghezza dei testi sono del server, che le rifiuta sul campo con le
+     parole dei file di lingua; `.min(1)` o `.max()` di zod le direbbero con le frasi inglesi di zod.
+  3. **Dove va un rifiuto**: quelli sui campi del form (postazione, testi) sul loro campo; gli altri (`kind`, `rating`, `theoryPassed`)
+     sopra il form, e la pagina rilegge il `GET`, così un rifiuto del percorso mette al posto del form la sua frase con i dettagli. Il
+     form ha per chiave il percorso e basta: un rating che il server ha cambiato tiene i testi scritti e il rifiuto che lo dice.
+  4. **«Annulla» è «Annulla la richiesta»**, e nella finestra «Sì, annulla la richiesta»: il pulsante della finestra che la chiude è
+     «Annulla» (`common.cancel`), e due «Annulla» uno accanto all'altro direbbero due cose opposte.
+  5. **Le date sono in UTC**, e la frase lo dice (l'attesa, il ban, una sessione); il giorno di una richiesta, di una decisione o di una
+     chiusura è una data.
+  6. **Come ci arriva un membro**: dall'indirizzo e dalla mail della richiesta ricevuta (`/training/mine`). Il menu pubblico è
+     editoriale — il TD ci mette una voce —, e `/training` con il pulsante e il blocco di `/me` sono di A10.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **Un difetto del nucleo, non toccato**: nel **suggerimento chiuso** di `SchemaForm` (`Suggest`, `suggestionsOnly`), **chi scrive
+     per cercare e poi clicca un'opzione perde la scelta**: la casella torna vuota. Al `pointerdown` sull'opzione la casella perde il
+     fuoco, `onBlur` rimette il valore di prima perché il testo scritto non è un'opzione, la lista si ridisegna intera sotto il
+     puntatore, e il clic non arriva più all'opzione. Cliccare la casella e poi l'opzione, o scrivere il nominativo intero, funziona.
+     Misurato nel browser il 26 settembre 2026 (in jsdom non si vede: non consegna gli eventi di puntatore). Vale per ogni campo chiuso
+     dell'hub (la voce del menu, le postazioni nascoste delle impostazioni, qui la postazione della richiesta). È codice del nucleo:
+     detto al revisore su #144, e le spec scelgono la postazione dall'elenco o la scrivono intera, e lo dicono. **La correzione è la
+     fase del nucleo A6c, PR #145** (da `main`, non in coda, nota `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, «Proposta»): la
+     casella e la sua lista sono un campo solo, e la regola del campo chiuso vale quando il fuoco esce da tutte e due. L'idea scritta qui
+     per prima — tenere il fuoco nella casella annullando la pressione sulla lista — A6c l'ha provata e scartata: la barra di scorrimento
+     della lista non si trascina più.
+  2. **`pnpm i18n:check` non legge le chiavi con il namespace**: il suo schema (`[\w.-]+`) si ferma ai due punti di `t('training:…')`,
+     quindi le chiavi dei moduli non sono controllate. Le spec leggono le parole dai file di lingua e cadono su una chiave mostrata
+     nuda. Detto al revisore (lo script è del nucleo).
+  3. Nessun VID nuovo: A6b non ha test d'integrazione. Il prossimo libero resta **790022**.
+  4. ⚠️ **Una conferma nell'angolo si cerca con il testo esatto** (`{ exact: true }`): il toast di Radix la annuncia anche, per un
+     momento, in una `span` «Notification …» con `aria-live`. In locale era già sparita al controllo; **la prima CI della PR (a0961ae) è
+     caduta lì**, nello smoke, e il test è stato corretto.
+  5. **Guardato a mano**, e per chi guarda dopo: il pulsante «Richiedi training» è grigio (`secondary`, scostamento 1), più debole del
+     blu di un form senza domanda; un `triggerVariant` primario di `ConfirmDialog` sarebbe un'estensione del nucleo, e sta con il
+     difetto qui sopra fra le cose dette al revisore. L'intestazione del sito è larga 1044 px su un telefono di 375 px, in ogni pagina e
+     anche nella home: è del nucleo, non di questa fase.
+- **La coda**: A6b è nata in coda dopo #143 (A6a, pronta con la CI verde, in attesa della sessione master): la PR #144 è in bozza con
+  `(after #143)` e `Queued after #143.`. Quando #143 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel
+  branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (26 settembre 2026, sul branch da `m3/a6a-request-server`, cece262): `dotnet build` senza avvisi; unità
+  **767/767** (come A6a: la fase non ha C#; `TrainingArchitectureTests` legge anche il TypeScript nuovo del modulo, ed è verde);
+  **integrazione intera senza filtro** **322/322** (come A6a); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test`
+  **509** in **64** file (le 494 in 63 di A6a e 15 nuovi); `pnpm e2e` **96** (le 91 e le 5 nuove); **`pnpm e2e:full` 42** su un **banco
+  nuovo** (le 41 e la spec nuova). La prima corsa, anch'essa su un banco nuovo, è finita 41/42: `tours-rules.spec.ts` è caduta su
+  `net::ERR_NO_BUFFER_SPACE`, un errore di socket di Windows nella navigazione di Chromium e non un'asserzione; rifatta sul banco
+  ricreato, 42/42. `pnpm gen:api` senza differenze (nessun endpoint cambiato); `pnpm i18n:sync` senza differenze dopo il commit che porta
+  le parole; nessun file C# toccato; le regole di `core-guard` rifatte in PowerShell sull'intervallo della fase e sul diff verso `main`:
+  nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`, spento il banco di
+  A5 su richiesta a quella sessione): il trainee chiede ADC su una postazione con il «sì» e lo trova in `/training/mine`, risponde «no» sul
+  percorso pilota e legge la frase di R.2, annulla la richiesta ATC; in italiano e in inglese, tema chiaro e scuro, e largo 375 px.
+- **Non verificato**: la CI dopo la correzione dello smoke (la prima corsa è caduta sul toast, sopra; la dirà la PR). **Che i test nuovi
+  cadano su una copia indebolita del codice**: non tentato, perché la
+  modalità di permessi l'ha rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è
+  così che è venuto fuori il difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
+  di A6a prova l'intento in coda). **Un ban, un'attesa, una soglia di ore, il sito dell'esame e un 409 su un annullamento vecchio,
+  attraverso le pagine sul banco**: il banco non ne ha (nessun ban, nessun training completato, nessuna soglia, nessun `theoryExamUrl`);
+  le pagine li mostrano con l'API finta dello smoke, e il lato del server è dei test d'integrazione di A6a.
 
 ### A7 — Accettare, rifiutare, assegnare
 
