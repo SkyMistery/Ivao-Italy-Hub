@@ -11,13 +11,11 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **fase A3** (nucleo: più permessi alternativi in scrittura, e uno anche alla
-creazione), sul branch `m3/a3-alternative-write-permissions`, **PR #131** verso `main`, da `main` e non in coda (dipende solo da A0).
-**A2 (#129) è unita** (21:14) ed è entrata nel branch con un merge. **#131 è approvabile** (revisione del 25 settembre) e Carmine
-ha risposto sugli esami: la 4, e quindi la fase del nucleo **A3b**, prima di A10 (`08`). **A4** (lo scheletro del modulo) è aperta
-in un'altra sessione, sul branch `m3/a4-training-skeleton` da `main`: porta `hiddenPositions`, che la directory di A2 lascia al
-modulo; A5 e A6 vengono dopo A4, in coda, A7 usa A3, e A3b può andare avanti in una sessione sua in qualunque momento prima di A10
-(`08`, «Parallelismo possibile»).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A3b** (nucleo: le righe affidate a chi scrive), sul branch
+`m3/a3b-entrusted-rows`, **PR #135** verso `main`. **A3 (#131) è unita**, con #136 (la nota del maintainer sugli esaminatori), #132 e
+#137, ed è entrata nel branch con un merge. Carmine ha deciso la nota di A3b: sì alla forma, e sì al trainer di A7 con la stessa regola.
+**A4** (lo scheletro del modulo) e **A4a** (#133) vanno avanti in un'altra sessione; A5 la apre la sessione di A4. A7 usa A3 e A3b, A10
+usa A3b.
 
 ## Da leggere, nell'ordine
 
@@ -88,6 +86,44 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
+
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-righe-affidate-a-chi-scrive.md`, caso c, decisa da Carmine sulla #135):
+  - **`IHasAssignee { int? AssigneeVid }`** (`Core/Division/DomainContracts.cs`): la riga dice a chi è affidata.
+  - **`PermissionDescriptor.OnlyForAssignee`** (`CorePermissions.cs`; `PermissionCatalog.IsOnlyForAssignee`, `EditOf`): un permesso
+    segnato raggiunge una riga solo se è affidata a chi chiede. Su ogni altra riga vale come `{Area}.Edit`: nell'unico handler
+    (`HubAuthorization.cs`) e nel guardiano (`HubSaveChangesInterceptor.IsWrittenWithAnAlternative`) allo stesso modo. Senza riga
+    resta `HasAny`. Il catalogo rifiuta il segno su un permesso che legge.
+  - **Nel guardiano**, per un'alternativa segnata:
+    - in modifica la riga è di chi scrive prima e dopo, quindi non si passa e non si prende;
+    - alla creazione (`AlsoOnCreation`) la riga nuova è di chi la crea;
+    - con **`AlsoOnDeletion`**, nuovo su `[AlsoWrittenWith]`, la toglie chi l'aveva. Conta solo per un permesso segnato.
+  - **All'avvio**, prima delle migrazioni, `HubPipeline.InitializeAsync` chiama `PermissionCatalog.VerifyAlternatives` sul modello di
+    ogni contesto. Rifiuta `AlsoOnDeletion` su un permesso non segnato, e un permesso segnato su un'entità che non è `IHasAssignee`
+    (i rilievi del revisore).
+  - Nel modulo di prova: `SampleRecord.AssigneeVid` (migrazione `AddSampleAssignee`) e `Sample.Manage`, segnato e anche
+    `DeniedToStakeholder`. I test: `AssignedRowPermissionTests` (sei, integrazione) e `AssigneePermissionTests` (nove, unità).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10**: la riga degli esami si dichiara così.
+    - `trn_exams` porta `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true, AlsoOnDeletion = true)]` e
+      `IHasAssignee` (`int? IHasAssignee.AssigneeVid => ExaminerVid;`).
+    - Nel catalogo del modulo, `ManageExams` ha `OnlyForAssignee: true`, e anche `DeniedToStakeholder: true` se l'esame dice il suo
+      candidato con `IHasStakeholder`.
+    - `MapCrud` ha `WritePolicy = Training.ManageExams`, senza `DeletePolicy`.
+    - ⚠️ **Un TA deve vedere quali esami sono i suoi** (il revisore): la lista la leggono tutti con `Training.View`, e un'azione
+      sull'esame di un altro è un 403.
+  - **A7**: **Carmine ha scelto la stessa regola per il trainer** (risposta 2 sulla #135).
+    - Il training dichiara il suo trainer con `IHasAssignee`, e `Training.Conduct` è `OnlyForAssignee`.
+    - Niente grant con scope per assegnazione, e niente job notturno.
+    - A7 lo registra nella sua nota, in `08` e in `07`, perché corregge la n.1 del design, nella stessa PR.
+    - ⚠️ `Training.Conduct` va dato per posizione ai TA1–9 e ai T01–T99, perché i `positionGrants` di A4 danno ai trainer solo `View`
+      (R.7: si assegna chiunque sia staff del training). Lo aggiunge A7: una voce nuova del seme si applica al primo avvio che la trova.
+  - ⚠️ **Un'entità con un'alternativa segnata che non è `IHasAssignee` fa fallire l'avvio**, anche quello dei test d'integrazione.
+    Lo stesso per `AlsoOnDeletion` su un permesso non segnato. Il guardiano prende `PermissionCatalog` nel costruttore, dal contenitore.
+- ⚠️ **Trovato, per il revisore**: il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi
+  `DeniedToStakeholder`, e così è da A3. Per un'alternativa non segnata così, l'endpoint lascia passare e la rete ferma chi non ha
+  `Edit`. Per questo `Sample.Manage` è anche `DeniedToStakeholder`, e la nota §3.6 lo chiede agli esami.
 
 ### Che cosa ha lasciato A3 (25 settembre 2026, branch `m3/a3-alternative-write-permissions`, PR #131)
 

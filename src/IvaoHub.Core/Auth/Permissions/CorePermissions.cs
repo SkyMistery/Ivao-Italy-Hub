@@ -13,7 +13,18 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// <para>It is declared here, on the permission, rather than on each entity: one line of catalogue
 /// instead of the same list copied onto every row type that has somebody at stake.</para>
 /// </param>
-public sealed record PermissionDescriptor(string Name, bool IsGlobal, bool DeniedToStakeholder = false);
+/// <param name="OnlyForAssignee">
+/// True when the permission reaches a row only for the member the row is assigned to (<c>IHasAssignee</c>): an examiner
+/// changes the exams assigned to them and no other (M3, A3b, note 2026-09-26-le-righe-affidate-a-chi-scrive). On any other
+/// row it is worth what the area's <c>Edit</c> is worth there, so whoever may edit every row of the area loses nothing.
+/// <para>Declared on the permission, like <paramref name="DeniedToStakeholder"/>, because on a row that has an assignee
+/// other permissions still count for everybody. Never on a permission that reads: the catalogue refuses it.</para>
+/// </param>
+public sealed record PermissionDescriptor(
+    string Name,
+    bool IsGlobal,
+    bool DeniedToStakeholder = false,
+    bool OnlyForAssignee = false);
 
 /// <summary>
 /// The permissions of the core. Modules add their own through <c>IModule.Permissions</c>; nobody
