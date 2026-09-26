@@ -19,7 +19,18 @@
 > trainer (nota `2026-09-26-gli-esaminatori`). **Le fasi vanno in coda** (nota `2026-09-25-le-fasi-in-coda`, piano 1.11): il
 > collaboratore non aspetta il merge, e il revisore pubblica da solo i rilievi; le decisioni e il merge restano di Carmine.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.14** (M3 nel piano: design, A0–A3, gli esaminatori). Il rapporto è
+> **La sessione master** (nota `2026-09-26-la-sessione-master`, piano 1.16). Una sola sessione di Carmine, nella cartella
+> principale che resta su `main`: rivede le PR, ne tiene l'ordine e **le unisce sul via di Carmine**, una per numero («unisci
+> #N»). Porta le note nel piano ed è **l'unica che scrive questo file**. Le altre sessioni di Carmine lavorano ognuna nel suo
+> worktree, si fermano a CI verde, avvisano il master e non toccano versione e changelog del piano né `HANDOFF.md`.
+> Il blocco tecnico:
+> - `gh pr merge` sulla macchina di Carmine chiede conferma nella cartella principale e rifiuta altrove (un hook, non più un
+>   `deny`);
+> - push su `main`, `--force` e tag restano rifiutati ovunque.
+>
+> Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
+
+**Ultimo aggiornamento:** 26 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.16** (la 1.15 porta A4a, la 1.16 la sessione master). Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
 chiusura di M3 e di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia con
