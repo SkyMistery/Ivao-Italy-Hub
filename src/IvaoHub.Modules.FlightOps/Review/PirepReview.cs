@@ -617,9 +617,9 @@ public sealed class PirepReview(
             ["tour"] = Text(tour.Title, locale, options.DefaultLocale),
             ["route"] = $"{pirep.DepartureIcao} → {pirep.ArrivalIcao}",
             ["date"] = pirep.TakeoffAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            ["note"] = pirep.NoteToPilot ?? catalog.Resolve(locale, "mail.flightops.noNote"),
+            ["note"] = pirep.NoteToPilot ?? catalog.Resolve(locale, "flightops:mail.flightops.noNote"),
             ["rules"] = rules.Count == 0
-                ? catalog.Resolve(locale, "mail.flightops.noRules")
+                ? catalog.Resolve(locale, "flightops:mail.flightops.noRules")
                 : string.Join('\n', rules.Select(rule => $"- {rule.Code} {Text(rule.Title, locale, options.DefaultLocale)}")),
             ["url"] = $"https://{options.Domain}/tours/{slug}",
         };

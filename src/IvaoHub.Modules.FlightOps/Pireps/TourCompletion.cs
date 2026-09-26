@@ -88,7 +88,7 @@ public sealed class TourCompletion(
         var locale = division.Value.DefaultLocale;
         var reason = references.Words(
             locale,
-            "awards.tourCompleted",
+            "flightops:awards.tourCompleted",
             ("tour", tour.Title.Resolve(locale, locale) ?? string.Empty));
         enrolment.AwardSignal = new AwardSignalProjection(enrolment.Vid, reason, tour.AwardId);
     }
