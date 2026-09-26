@@ -6,11 +6,18 @@
 > il maintainer. Le regole — chi unisce, che cosa non si tocca, come si ottiene una decisione — sono in `CLAUDE.md` §0 e
 > non si ripetono qui.
 
-**Ultimo aggiornamento:** 25 settembre 2026 — **fase A2** (nucleo: le postazioni ATC da IVAO, la loro directory, il tipo
-`exam`), sul branch `m3/a2-atc-positions`, **PR #129** verso `main`, **pronta**: A0 (#125) e A1 (#128) sono unite, e `main` è
-entrato nel branch. **Il prossimo passo** è **A3** (i permessi alternativi), sul branch `m3/a3-alternative-write-permissions` già
-preparato da `main`, oppure **A4** (lo scheletro del modulo): non dipendono da A2 per il codice e partono da `main`; A4 porta
-`hiddenPositions`, che la directory di A2 lascia al modulo. A5 e A6 vengono dopo A4, in coda (`08`, «Parallelismo possibile»).
+> ⚠️ **Gli esami: nessun dato personale, solo il VID.** Di un esame (`trn_exams`, fase A10) l'hub **non tiene nessun dato
+> personale** delle persone — né del candidato né dell'esaminatore —: **solo il VID**. Nessun nome, nessun indirizzo, nient'altro
+> della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
+> servono solo per metterli nel calendario.
+
+**Ultimo aggiornamento:** 25 settembre 2026 — **fase A3** (nucleo: più permessi alternativi in scrittura, e uno anche alla
+creazione), sul branch `m3/a3-alternative-write-permissions`, **PR #131** verso `main`, da `main` e non in coda (dipende solo da A0).
+**A2 (#129) è unita** (21:14) ed è entrata nel branch con un merge. **#131 è approvabile** (revisione del 25 settembre) e Carmine
+ha risposto sugli esami: la 4, e quindi la fase del nucleo **A3b**, prima di A10 (`08`). **A4** (lo scheletro del modulo) è aperta
+in un'altra sessione, sul branch `m3/a4-training-skeleton` da `main`: porta `hiddenPositions`, che la directory di A2 lascia al
+modulo; A5 e A6 vengono dopo A4, in coda, A7 usa A3, e A3b può andare avanti in una sessione sua in qualunque momento prima di A10
+(`08`, «Parallelismo possibile»).
 
 ## Da leggere, nell'ordine
 
@@ -81,6 +88,44 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A3 (25 settembre 2026, branch `m3/a3-alternative-write-permissions`, PR #131)
+
+- **Che cosa c'è** (nota `decisions/2026-09-25-i-permessi-alternativi-e-la-creazione.md`, scelta tecnica; una domanda per A10 posta
+  in anticipo, §3.5):
+  - **`[AlsoWrittenWith]` si ripete** (`Core/Division/DomainContracts.cs`), e il guardiano di `HubSaveChangesInterceptor` prova ogni
+    alternativa (`IsWrittenWithAnAlternative`): **ne basta una**, ognuna come prima — sul dipartimento della riga con lo scope della
+    riga, mai per l'interessato, senza spostare la riga.
+  - **`AlsoOnCreation = true`** segna un'alternativa che vale **anche alla creazione**: senza scope (conta chi la tiene sul
+    dipartimento, non su una riga), su almeno un dipartimento della riga come `Edit`, mai per una riga su chi scrive. **Nessuna
+    alternativa elimina**: resta di `Edit`.
+  - Nel modulo di prova `SampleRecord` (`smp_records`, migrazione del solo contesto di prova), il permesso `Sample.Record`, e i cinque
+    test della spina dorsale `AlternativeWritePermissionTests`.
+- **Che cosa deve sapere la fase dopo**:
+  - **A7** dichiara sul training `[AlsoWrittenWith(...)]` per `Approve`, `Assign` e `Conduct`, **senza** `AlsoOnCreation` (il
+    training lo crea il trainee, `ISubmittedByMembers`). Lo scope che il training dichiara e quello del grant del trainer
+    (`ModuleGrants`) sono la stessa stringa, `training:training:{id}`, confrontata così com'è.
+  - **A10**: `trn_exams` con `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true)]`, e `MapCrud` con
+    `WritePolicy = Training.ManageExams`, perché il motore chiede il permesso all'handler sulla riga prima del guardiano. ⚠️ **Eliminare
+    un esame resta di `Edit`**: con `DeletePolicy = Training.Edit` lo eliminano TC e TAC; se deve poterlo eliminare chi l'ha inserito,
+    è un'altra estensione del nucleo. **I fatti del TD** (tre commenti su #131, nota §3.5): gli esami si gestiscono su IVAO, all'hub
+    servono solo per il calendario (niente «annullato»); dall'hub un esame lo tolgono **HQ, TC, TAC e il TA a cui è assegnato**,
+    nessun altro, ed è solo una rimozione «cosmetica»; la postazione la decide chi ha l'esame. **Carmine ha scelto la 4, la regola del
+    TD** ([commento su #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5840224757)): la regola nel nucleo
+    arriva con **A3b**, una fase del nucleo con la sua nota (caso c, «Proposta») e i suoi test della spina dorsale, **prima di A10**
+    (in `08`). **Chiarito da `dalberone` il 26 settembre**: un esame si assegna **solo a un esaminatore**, e gli esaminatori sono
+    **solo HQ, TC, TAC e i TA (TA1–9)**, mai i trainer; la conseguenza sui `positionGrants` del TD è di A4.
+  - ⚠️ **Un test di permessi con scope non usa `TestCurrentUser`**: il suo `Has` non passa lo scope, e tiene solo i permessi del nucleo.
+    `AlternativeWritePermissionTests.AsAsync` scrive senza endpoint con l'identità del cookie (`HubClaims.BuildIdentity`) letta dal vero
+    `HttpContextCurrentUser`.
+  - ⚠️ **Gli eseguibili xUnit non ricompilano**: dopo una modifica, `dotnet build` prima di lanciarli.
+- ⚠️ **Trovato per il revisore**, non cambiato (è il comportamento di oggi, che A3 ripete per ogni alternativa): il guardiano guarda
+  l'interessato e lo scope di una riga **solo dopo** la scrittura (nota §5). **Il revisore li ha confermati** ([revisione di A3 su
+  #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5839714140), «approvable as it is»): un compito di
+  rafforzamento del maintainer, che non blocca questa fase.
+- **`main` è andato avanti due volte durante A3**: la #130 di Carmine (il piano con M3), unita nel branch prima del primo push; e
+  **la #129 (A2), unita alle 21:14**, entrata con un merge. L'unico conflitto era in cima a questo file: tenuti tutti e due i
+  paragrafi, A3 sopra; `08` si è unito da solo. Build e test rifatti sul merge.
 
 ### Che cosa ha lasciato A2 (25 settembre 2026, branch `m3/a2-atc-positions`, PR #129)
 
