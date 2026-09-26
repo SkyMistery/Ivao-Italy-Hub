@@ -139,11 +139,16 @@ public sealed class LocaleCatalog
                     throw DeclaredTwice(key, module.File);
                 }
 
-                texts.Add($"{module.Namespace}:{key}", text);
-
-                if (declaredBy[key] == 1)
+                // A key of the core that happens to be spelled like a module's namespaced one is still a key declared twice,
+                // and says so rather than failing on the dictionary.
+                if (!texts.TryAdd($"{module.Namespace}:{key}", text))
                 {
-                    texts.Add(key, text);
+                    throw DeclaredTwice($"{module.Namespace}:{key}", module.File);
+                }
+
+                if (declaredBy[key] == 1 && !texts.TryAdd(key, text))
+                {
+                    throw DeclaredTwice(key, module.File);
                 }
             }
         }

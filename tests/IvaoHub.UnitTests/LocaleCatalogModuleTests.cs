@@ -72,6 +72,19 @@ public sealed class LocaleCatalogModuleTests : IDisposable
     }
 
     [Fact]
+    public void ACoreKeySpelledLikeAModulesStopsTheStartAsADeclaredTwice()
+    {
+        // Not a file anybody writes: what it proves is that the collision says what it is, rather than failing on the map.
+        Write("common.json", """{ "training:nav": { "section": "Not the module's" } }""");
+        Write("training.json", """{ "_source": "web/src/modules/training/locales", "nav": { "section": "Training" } }""");
+
+        var refused = Assert.Throws<InvalidOperationException>(() => Catalog().Get("en", "nav.section"));
+
+        Assert.Contains("'training:nav.section'", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("training.json", refused.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TwoFilesOfTheCoreSayingTheSameKeyStillStopTheStart()
     {
         Write("common.json", """{ "list": { "empty": "Nothing here" } }""");
