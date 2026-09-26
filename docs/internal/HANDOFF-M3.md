@@ -11,14 +11,15 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A5** (le voci della scheda di valutazione), sul branch `m3/a5-sheet-items`,
-**PR #140** verso `main`, **pronta a CI verde**: **A4 (#139) è unita** (12:22, dopo A4a, #133), e `main` è entrato nel branch con un
-merge. **A3 (#131) è unita**, con la fase del nucleo **A3b** (#135, in bozza, in una sessione sua); la nota del maintainer
-`2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i TA. **Il prossimo passo** è **A6** (la
-richiesta), sul branch `m3/a6-training-request` preparato da `m3/a5-sheet-items`, in coda dopo #140 (dalle fasi del modulo in poi tutto
-migra `TrainingDbContext`: in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). **#138 è
-unita** (piano 1.15): in C# una chiave di un modulo si chiede con il namespace (`training:…`), e
-`ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` lo controlla; il C# del training lo fa già.
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6a** (la richiesta, il server), sul branch `m3/a6a-request-server`, **PR #143**
+verso `main`: **A6 si è divisa in apertura** in A6a (il server) e A6b (le pagine), come `08` prevedeva. **A5 (#140) è unita** (18:44), e
+`main` è entrato nel branch con un merge insieme alla #141 del maintainer: **il revisore ora è la «sessione master»** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
+`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133) e A4 (#139) sono unite**; la fase del nucleo **A3b** (#135) è
+in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della richiesta), sul branch `m3/a6b-request-pages` preparato da
+`m3/a6a-request-server`, in coda dopo #143; poi **A7**, in coda dopo A6b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
+in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
+con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -89,6 +90,46 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova; A6 divisa in apertura, scritto in `08`):
+  - **Il training, intero**: `trn_trainings` (`src/IvaoHub.Modules.Training/Training.cs`, **alla radice del modulo**: una classe `Training`
+    in un namespace sotto quello del modulo sarebbe nascosta dal namespace `IvaoHub.Modules.Training`) con tutte le colonne di design §1.2
+    e `reminded_at` (§5.3), `TrainingState` e `TrainingRejection`; **`trn_bans`** (`Bans/TraineeBan.cs`, con `Holds(at)`), solo la tabella
+    e la lettura. Migrazione `AddTrainings`, solo additiva.
+  - **Una richiesta aperta per percorso anche nel database**: `open_kind`, scritta dal getter come `is_disputed` dei PIREP, in un indice
+    unico con `trainee_vid`.
+  - **Le regole** in funzioni pure (`Requests/RequestRules.cs`: `Standing`, `WaitUntil`, `IsMockExam`, `MinimumHours`, `EndedAt`) e
+    **`ITheoryExamSource`** (`Requests/ITheoryExamSource.cs`), oggi la dichiarazione del trainee (`TraineeDeclaration`, `TryAddScoped`).
+  - **Gli endpoint del trainee**, `/api/training/mine` (`Requests/RequestEndpoints.cs`, `Requests/TrainingRequests.cs`): `GET` la pagina
+    (`MyTrainingDto`: VID, nome, `asksTheory`, `theoryExamUrl`, `paths` — per percorso rating e ore, `next`, `isMockExam`, `asksPosition`,
+    `positions`, `refusal` con `bannedUntil`, `openTrainingId`, `waitUntil`, `minimumHours` —, `trainings`); `POST` la richiesta
+    (`TrainingRequestWriteDto`: `kind`, `rating`, `position`, `availabilityText`, `notesText`, `theoryPassed`); `GET /{id}`; `POST
+    /{id}/cancel` con la `rowVersion`. Il DTO del trainee (`TraineeTrainingDto`) non ha campi dello staff; nessun DTO ha l'email. Tutto già
+    in `web/src/shared/api/schema.d.ts`.
+  - **La mail** `training.requestReceived` (`TrainingNotifications`) e gli errori `training:errors.request*`, in `training.json`.
+  - **I test**: `TrainingRequestRulesTests` (unità, su un vocabolario di prova), `TrainingRequestTests` (integrazione, VID 790017–790021).
+- **Che cosa deve sapere la fase dopo**:
+  - **A6b** (le pagine): il server c'è tutto, e le due pagine leggono **un endpoint solo**, `GET /api/training/mine`. ⚠️ **Un rifiuto è una
+    chiave nuda** (`refusal`; nel `POST` i `ProblemDetails` sul campo `kind`): **fino a quando, la soglia e le ore la pagina le prende dal
+    `GET`** — `bannedUntil` (vuoto, con il rifiuto del ban, vuol dire «finché qualcuno non lo toglie»), `waitUntil`, `minimumHours`,
+    `hours` — e le scrive accanto al messaggio. La richiesta **rimanda `next.number`** in `rating`; `asksPosition` dice se si sceglie una
+    postazione fra `positions`. Con `asksTheory` la finestra della domanda, con il link `theoryExamUrl` quando c'è; la risposta va in
+    `theoryPassed`, e **il «no» risponde 201** con il training `Rejected` / `TheoryNotPassed`: il messaggio a schermo lo dice. In
+    `/training/mine` i `trainings` dal più nuovo, «Annulla» solo su `Requested` con la sua `rowVersion` (409 se vecchia), l'attesa residua
+    è `waitUntil` del percorso, «pronto per…» sono `readyForMockExam` e `readyForExam`.
+  - ⚠️ **Un training non si elimina mai**: una spec che ne chiede uno lo **annulla** nel `finally`, e all'inizio annulla quelli che una
+    corsa di prima ha lasciato `Requested`; un rifiuto e un annullamento non fanno aspettare.
+  - **Il banco**: a `?as=pilot` (VID 999002, AS3 e FS3) si propongono il primo rating ATC e il primo pilota con un training pratico; le
+    postazioni sono quelle delle fixture. La sua casella (`bench-pilot@bench.test`) riceve la mail del «sì».
+  - **A7**: lo staff legge il training con `Training.View`, con un DTO suo; la funzione unica che toglie i campi riservati al trainee della
+    riga è di A9. Il grant del trainer ha lo scope `Training.ScopeOf(id)`.
+  - **A8**: `reminded_at` c'è; la fine di una sessione non è una colonna del training (sta nella disponibilità scelta, `chosen_slot_id`).
+  - ⚠️ **Il filtro globale nasconde un training a chi non è entrato**: nei test, pulire e contare vogliono `IgnoreQueryFilters()`.
+  - VID: il prossimo libero è **790022** (A3b usa 790040–790044 e 790050–790051).
+- **La coda si è sciolta prima della PR**: #140 è stata unita alle 18:44; `main` è entrato nel branch con un merge (da90c3e) che non porta
+  file del modulo, tutto è stato rifatto sul merge, e la PR è nata verso `main` senza coda.
 
 ### Che cosa ha lasciato A5 (26 settembre 2026, branch `m3/a5-sheet-items`, PR #140)
 
