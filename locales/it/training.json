@@ -2,17 +2,56 @@
   "_source": "web/src/modules/training/locales",
   "nav": {
     "section": "Training",
+    "sheets": "Scheda di valutazione",
     "settings": "Impostazioni del training"
   },
   "kinds": {
     "Atc": "ATC",
     "Pilot": "Pilota"
   },
+  "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+  "sheets": {
+    "title": "Scheda di valutazione",
+    "description": "Le voci che il trainer valuta dopo una sessione, per percorso e rating: quelle pratiche con un voto da 1 a 5, quelle di teoria come fatte, non fatte o da migliorare. Il trainee le legge nel suo report.",
+    "create": "Nuova voce",
+    "edit": "Modifica voce",
+    "fields": {
+      "title": "Voce",
+      "rating": "Rating",
+      "ratingShortName": "Rating",
+      "section": "Sezione",
+      "sort": "Ordine",
+      "isActive": "Attiva",
+      "updatedAt": "Modificata"
+    },
+    "hints": {
+      "rating": "La scheda su cui sta la voce: si scelgono solo i rating che hanno un training pratico.",
+      "section": "Come il trainer segna la voce: la pratica con un voto da 1 a 5, la teoria come fatta, non fatta o da migliorare.",
+      "title": "Come la leggono il trainer e il trainee, in ogni lingua della divisione.",
+      "sort": "Il posto della voce nella scheda del suo rating: prima i numeri più bassi.",
+      "isActive": "Una voce spenta non entra nei report nuovi; i report già scritti la tengono com'era."
+    },
+    "options": {
+      "section": {
+        "Practice": "Pratica",
+        "Theory": "Teoria"
+      }
+    },
+    "filters": {
+      "kind": "Percorso",
+      "anyKind": "Tutti i percorsi",
+      "rating": "Rating",
+      "anyRating": "Tutti i rating"
+    },
+    "delete": {
+      "title": "Eliminare la voce?",
+      "description": "Si elimina solo una voce che nessun report ha usato; una voce già usata si spegne."
+    }
+  },
   "settings": {
     "title": "Impostazioni del training",
     "description": "Ciò che il dipartimento training cambia senza un rilascio: le regole di una richiesta, i tempi delle date, le postazioni su cui si allena.",
     "saved": "Impostazioni salvate.",
-    "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
     "fields": {
       "minimumHours": "Ore minime per chiedere un training",
       "minimumHours.rating": "Rating richiesto",
@@ -47,6 +86,7 @@
     "ratingNotTrained": "Questo rating non ha un training pratico.",
     "ratingTwice": "Questo rating ha più di una riga.",
     "positionUnknown": "La divisione non allena più su questa postazione: toglila dall'elenco.",
-    "calendarKindUnknown": "Uno di questi non è un tipo del calendario."
+    "calendarKindUnknown": "Uno di questi non è un tipo del calendario.",
+    "sheetItemUsed": "Un report ha già usato questa voce: non si elimina, si spegne."
   }
 }

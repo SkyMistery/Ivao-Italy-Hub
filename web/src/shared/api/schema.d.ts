@@ -2110,6 +2110,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/sheet-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingSheetItemsList"];
+        put?: never;
+        post: operations["TrainingSheetItemsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/sheet-items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingSheetItemsGet"];
+        put: operations["TrainingSheetItemsUpdate"];
+        post?: never;
+        delete: operations["TrainingSheetItemsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4780,6 +4812,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfSheetItemListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["SheetItemListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfTourConstraintListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["TourConstraintListDto"][];
@@ -5776,6 +5831,63 @@ export interface components {
             /** @description What happened to it. */
             change: components["schemas"]["SectionChange"];
         };
+        /** @description An item as the form loads it. */
+        SheetItemDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            section: components["schemas"]["SheetSection"];
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description An item as the list shows it, with the short name of its rating, which the core's vocabulary gives: the module writes no
+         *     name of a rating of its own (design M3 §1.7).
+         */
+        SheetItemListDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            ratingShortName: null | string;
+            section: components["schemas"]["SheetSection"];
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description What a client may set on an item. Its department is the module's base department, which the payload does not carry. */
+        SheetItemWriteDto: {
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            section: components["schemas"]["SheetSection"];
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            sort: number;
+            isActive: boolean;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description Where an item of the evaluation sheet sits, which says how the trainer marks it (design M3 §1.4).
+         * @enum {unknown}
+         */
+        SheetSection: "Practice" | "Theory";
         /** @description An error as a report froze it with its rule (design M2 §5.4). */
         SnapshotErrorDto: {
             /** Format: int64 */
@@ -12782,6 +12894,163 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
+            };
+        };
+    };
+    TrainingSheetItemsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfSheetItemListDto"];
+                };
+            };
+        };
+    };
+    TrainingSheetItemsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SheetItemWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    TrainingSheetItemsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetItemDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingSheetItemsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SheetItemWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingSheetItemsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -6,7 +6,9 @@ import { SchemaForm, type Suggestion } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { Notice, PageShell } from '../../../shared/ui';
 import { positionsQuery, ratingsQuery, settingsQuery, useSaveSettings } from '../api';
-import { ratingChoice, settingsSchema, settingsToFormValues } from '../schemas';
+import { settingsSchema, settingsToFormValues } from '../schemas';
+
+import { ratingOptions } from './ratings';
 
 /**
  * The settings of the training (design M3 §1.6): what the department changes without a release. Kept by the core's
@@ -39,14 +41,7 @@ export function TrainingSettingsPage() {
           {save.isSuccess ? <Notice tone="success" title={t('training:settings.saved')} /> : null}
           <SchemaForm
             schema={settingsSchema({
-              ratings: ratings.map((rating) => ({
-                value: ratingChoice(rating.kind, rating.number),
-                label: t('training:settings.ratingChoice', {
-                  kind: t(`training:kinds.${rating.kind}`),
-                  shortName: rating.shortName,
-                  name: t(rating.nameKey),
-                }),
-              })),
+              ratings: ratingOptions(ratings, t),
               kinds,
               positions: [
                 // A position the core no longer has stays on offer while it is on the list, so that it can be seen and taken out.

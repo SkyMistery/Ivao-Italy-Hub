@@ -1,17 +1,56 @@
 {
   "nav": {
     "section": "Training",
+    "sheets": "Evaluation sheet",
     "settings": "Training settings"
   },
   "kinds": {
     "Atc": "ATC",
     "Pilot": "Pilot"
   },
+  "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+  "sheets": {
+    "title": "Evaluation sheet",
+    "description": "The items a trainer marks after a session, per path and rating: the practical ones with a grade from 1 to 5, the theory ones as done, not done or to improve. The trainee reads them in their report.",
+    "create": "New item",
+    "edit": "Edit item",
+    "fields": {
+      "title": "Item",
+      "rating": "Rating",
+      "ratingShortName": "Rating",
+      "section": "Section",
+      "sort": "Order",
+      "isActive": "Active",
+      "updatedAt": "Changed"
+    },
+    "hints": {
+      "rating": "The sheet the item is on: only the ratings with a practical training can be chosen.",
+      "section": "How the trainer marks the item: practice with a grade from 1 to 5, theory as done, not done or to improve.",
+      "title": "As the trainer and the trainee read it, in every language of the division.",
+      "sort": "The place of the item in the sheet of its rating: lower numbers first.",
+      "isActive": "An item switched off is left out of new reports; the reports already written keep it as it was."
+    },
+    "options": {
+      "section": {
+        "Practice": "Practice",
+        "Theory": "Theory"
+      }
+    },
+    "filters": {
+      "kind": "Path",
+      "anyKind": "Every path",
+      "rating": "Rating",
+      "anyRating": "Every rating"
+    },
+    "delete": {
+      "title": "Delete the item?",
+      "description": "Only an item no report has used is deleted; an item already used is switched off."
+    }
+  },
   "settings": {
     "title": "Training settings",
     "description": "What the training department changes without a release: the rules of a request, the times of the dates, the positions trained on.",
     "saved": "Settings saved.",
-    "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
     "fields": {
       "minimumHours": "Minimum hours to ask for a training",
       "minimumHours.rating": "Rating asked for",
@@ -46,6 +85,7 @@
     "ratingNotTrained": "This rating has no practical training.",
     "ratingTwice": "This rating has more than one row.",
     "positionUnknown": "The division no longer trains on this position: take it out of the list.",
-    "calendarKindUnknown": "One of these is not a kind of the calendar."
+    "calendarKindUnknown": "One of these is not a kind of the calendar.",
+    "sheetItemUsed": "A report has already used this item: switch it off instead of deleting it."
   }
 }

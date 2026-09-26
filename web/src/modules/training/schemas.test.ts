@@ -1,19 +1,27 @@
 import { expect, test } from 'vitest';
 
+import type { components } from '../../shared/api/schema';
 import { readFields } from '../../shared/forms';
 
 import {
+  emptySheetItem,
   ratingChoice,
   settingsFromFormValues,
   settingsSchema,
   settingsToFormValues,
+  sheetItemFilters,
+  sheetItemFromFormValues,
+  sheetItemSchema,
+  sheetItemToFormValues,
+  sheetItemsSearchSchema,
   type TrainingSettings,
 } from './schemas';
 
 /**
  * The form of the settings mirrors `TrainingSettings` (design M3 §1.6), which the core keeps as the module's own JSON and
  * the contract therefore does not describe: so the two are held together here, field by field and value by value. The
- * rating of a threshold is the one field that changes shape on the way, a choice carrying its ladder with its number.
+ * rating of a threshold is the one field that changes shape on the way, a choice carrying its ladder with its number; and
+ * so is the rating of an item of the evaluation sheet (A5), whose form is held to the contract below.
  */
 
 const saved: TrainingSettings = {
@@ -69,4 +77,82 @@ test('nothing chosen is sent as nothing: no time limit, and no site of the exam'
 
 test('a kind the calendar no longer has is left out, because the form has no box to take it off with', () => {
   expect(settingsToFormValues(saved, ['event']).conflictKinds).toEqual(['event']);
+});
+
+// ---- the evaluation sheet (A5) ------------------------------------------------------------------------------------------
+
+const item: components['schemas']['SheetItemDto'] = {
+  id: 7,
+  ownerDepartment: 'TD',
+  kind: 'Pilot',
+  rating: 3,
+  section: 'Theory',
+  title: { it: 'Fraseologia', en: 'Phraseology' },
+  sort: 4,
+  isActive: false,
+  updatedAt: '2026-09-26T10:00:00Z',
+  rowVersion: '2026-09-26T10:00:00.123456Z',
+};
+
+test('the form of an item has a field for every value a client writes, the ladder inside the rating', () => {
+  const fields = readFields(sheetItemSchema([])).map((field) => field.path);
+  const written: readonly (keyof components['schemas']['SheetItemWriteDto'])[] = [
+    'kind',
+    'rating',
+    'section',
+    'title',
+    'sort',
+    'isActive',
+    'rowVersion',
+  ];
+
+  expect(fields.sort()).toEqual(written.filter((key) => key !== 'kind').sort());
+});
+
+test('an item comes back from the form as it went in, in every language of the division', () => {
+  const values = sheetItemToFormValues(item, ['it', 'en']);
+
+  expect(values.rating).toBe(ratingChoice('Pilot', 3));
+  expect(sheetItemFromFormValues(values)).toEqual({
+    kind: 'Pilot',
+    rating: 3,
+    section: 'Theory',
+    title: { it: 'Fraseologia', en: 'Phraseology' },
+    sort: 4,
+    isActive: false,
+    rowVersion: '2026-09-26T10:00:00.123456Z',
+  });
+});
+
+test('a language the item misses is an empty field, for somebody to write', () => {
+  expect(sheetItemToFormValues({ ...item, title: { en: 'Phraseology' } }, ['it', 'en']).title).toEqual({
+    it: '',
+    en: 'Phraseology',
+  });
+});
+
+test('a new item starts on the sheet it was asked from, in the place after its last item, and active', () => {
+  expect(emptySheetItem(ratingChoice('Atc', 5), 3, ['it', 'en'])).toMatchObject({
+    rating: 'Atc:5',
+    section: 'Practice',
+    title: { it: '', en: '' },
+    sort: 3,
+    isActive: true,
+  });
+});
+
+test('the list is narrowed to a ladder, and to a rating only with its ladder', () => {
+  expect(sheetItemFilters({})).toEqual({});
+  expect(sheetItemFilters({ kind: 'Atc' })).toEqual({ kind: 'Atc' });
+  expect(sheetItemFilters({ kind: 'Atc', rating: 5 })).toEqual({ kind: 'Atc', rating: '5' });
+  // The two ladders number their rungs alike: a number alone says no rating.
+  expect(sheetItemFilters({ rating: 5 })).toEqual({});
+});
+
+test('the address of the list reads the ladder and the rating as the link wrote them', () => {
+  expect(sheetItemsSearchSchema.parse({ kind: 'Pilot', rating: '3' })).toMatchObject({
+    kind: 'Pilot',
+    rating: 3,
+    page: 1,
+  });
 });
