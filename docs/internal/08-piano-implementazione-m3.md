@@ -986,7 +986,146 @@ filtri, la pagina con il promemoria.
 **Fatta quando**: sul banco una richiesta si accetta e si assegna, e il trainer, rientrato, ha `Training.Conduct` su quel training
 soltanto.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata (A7)** (26 settembre 2026, branch `m3/a7-approve-and-assign`, PR #146, in coda dopo #144):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — `[AlsoWrittenWith]` ripetuto di A3; l'unico handler, chiesto sulla riga con lo scope e con il «no» all'interessato
+  (`DeniedToStakeholder`, anche al superadmin), come la validazione dei tour; `ModuleGrants` del nucleo per il grant con scope del
+  trainer, come «aggiungi validatore»; `MapCrud` in sola lettura con `CustomFilters`, `Filterable`, `SearchFields` e `ToListPage`;
+  `DataList`, `ListFilter`, `PageShell`, `ConfirmDialog` con un campo generato nei `children` (come la riapertura dei tour),
+  `SchemaForm`, `Notice`, `useNotice`, `RatingBadge`; il servizio notifiche con i tipi del modulo; un job come quelli dei tour, nel
+  fuso della divisione come i job notturni del nucleo; il roster del nucleo (`hub_user_staff_positions`) —. **Nessun file del
+  nucleo**, nessuna nota nuova, nessuna domanda a Carmine, **nessuna migrazione**: la tabella è intera da A6a.
+- **Fatto**, come il perimetro qui sopra:
+  1. **`[AlsoWrittenWith]` sul training** per `Training.Approve`, `Training.Assign` e `Training.Conduct`, senza `AlsoOnCreation`: il
+     guardiano lascia scrivere il training a chi approva (i TA), a chi assegna e al trainer sul suo, ognuno con lo scope della riga, mai
+     al trainee. `Training.IdOf` legge lo scope all'indietro.
+  2. **La lista dello staff**, `/api/training/queue` (`Staff/StaffEndpoints.cs`): una risorsa di `MapCrud` in sola lettura, letta con
+     `Training.View` — TC, TAC, TA e trainer: chi fa training vede tutti i training (R.1) —, con le viste in `filter[queue]`
+     (`toApprove`, `toAssign`, `inProgress`, `toClose`, `history`: `Staff/StaffQueue.cs`), `filter[kind]`, `filter[traineeVid]`,
+     `filter[trainerVid]`, `?q=` sulla postazione e sul VID del trainee; le righe con i nomi del trainee e del trainer (`ToListPage`,
+     una query per pagina).
+  3. **La pagina di un training**, `GET /api/training/trainings/{id}` (`Staff/StaffTrainings.cs`, `StaffTrainingDto`): la richiesta
+     con il rating e le ore alla richiesta, quando il trainee ha dichiarato il teorico, `theoryExamUrl` per il promemoria, la
+     decisione, il trainer, e **che cosa può fare chi legge** (`actions.canDecide`, `actions.canAssign`), cioè la risposta dell'unico
+     handler sulla riga, come la validazione dei tour. Letta con `Training.View`, che il nucleo non nega mai: il DTO dello staff **non
+     ha campi riservati** al trainee, che arrivano con A9 e la sua funzione unica.
+  4. **Accetta e rifiuta** (`/accept`, `/reject`), con `Training.Approve` sulla riga, solo da `Requested`, con la versione vista (409
+     se vecchia). Il rifiuto vuole un motivo (`errors.required`, fino a 2000 caratteri), che il trainee legge nella mail e in
+     `/training/mine`. Mail `requestAccepted` e `requestRejected`.
+  5. **Assegna** (`/assign`, e i candidati in `/trainers`), con `Training.Assign` sulla riga, da `Accepted`, `Assigned` e `Scheduled`:
+     i candidati sono lo staff del training che l'hub conosce (scostamento 1) con il rating del percorso almeno quello allenato, mai il
+     trainee (`Staff/TrainerChoice.cs`), e il server rifà la domanda su quello mandato (`trainerIsTrainee`, `trainerNotStaff`,
+     `trainerRatingTooLow`, `trainerAlready`). **Scrive il grant** `Training.Conduct` con lo scope del training
+     (`ModuleGrants.GiveAsync`, sul dipartimento del training, con il motivo `training: trainer`) **prima** della riga, poi il training
+     (`Accepted` → `Assigned`), poi toglie il grant del trainer di prima; se la riga è cambiata nel frattempo (409) toglie subito il
+     grant appena scritto. Mail `trainerAssigned` al trainee (verso `/training/mine`) e al trainer (verso la pagina del training), ognuno
+     nella sua lingua e con la sua frase.
+  6. **Il job `training-expiry`** (`Staff/TrainingExpiryJob.cs`), la prima metà: ogni notte alle 04:15 nel fuso della divisione,
+     `[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, mai un'eccezione, `RunAsync` per i test. Toglie i grant
+     `Training.Conduct` con lo scope di un training che non è più aperto (`Completed`, `NoShow`, `Closed`; per sicurezza anche
+     `Rejected`, `Cancelled` e uno che non esiste), su ogni dipartimento.
+  7. **Le mail del modulo passano da `TrainingMail`**: la descrizione del training (percorso · rating · postazione), l'indirizzo, la
+     lingua del destinatario. Anche `requestReceived` di A6a la usa ora (un cambio di `Requests/TrainingRequests.cs`, senza toccare i
+     suoi test): una descrizione sola in tutte le mail.
+  8. **Le pagine** (`web/src/modules/training/screens/staff.tsx`): `/staff/training`, la lista generata con i filtri **Mostra** (Da
+     approvare, Da assegnare, In corso, Da chiudere, Storico) e **Percorso**, e la voce «Richieste e training» nella barra dello staff
+     (`Training.View`); `/staff/training/$id`, la schermata dedicata — lo stato con percorso, rating e postazione; **il promemoria del
+     teorico** finché la richiesta aspetta («Prima di accettare, controlla che *trainee* abbia superato l'esame teorico *rating*», il
+     giorno in cui il trainee l'ha dichiarato, il link al sito dell'esame); la richiesta; la decisione; il trainer con la sua scelta
+     (un form generato fra i candidati del server) —, e **Accetta** e **Rifiuta** (il motivo in un campo generato dentro
+     `ConfirmDialog`) solo a chi il server dice. Le funzioni pure in `screens/trainings.ts`, le parole in `training.json`, in italiano
+     e in inglese.
+- **Scostamenti e precisazioni, piccoli**:
+  1. **«Lo staff del training»** (§2.4: HQ, TC, TAC, TA e i trainer) è chi ha, nel roster del nucleo (`hub_user_staff_positions`: chi
+     è entrato almeno una volta), una posizione **del dipartimento base del modulo** — ogni livello: TC, TAC, TA, trainer — **o della
+     direzione** (`Department.HQ`: DIR e ADIR). Non il web (WM, AWM), che per il nucleo raggiunge ogni dipartimento ma non è staff del
+     training; non l'HQ della rete (le posizioni `HQ-…`, senza dipartimento); non chi ha soltanto un grant. Sul banco il web master non
+     è proposto (e non ha rating).
+  2. **Si riassegna anche un training `Scheduled`**, e la data resta: il nuovo trainer la tiene o la cambia con l'override (A8). Si
+     assegna da `Accepted` (che diventa `Assigned`), da `Assigned` e da `Scheduled`; da `Requested` no, prima si accetta. Lo stesso
+     trainer di nuovo è `trainerAlready`.
+  3. **Il job toglie anche il grant di chi non è più il trainer** del suo training: lo lascia una scrittura fermata a metà, perché
+     grant e riga sono due salvataggi di due contesti. Solo dopo un'ora (un'assegnazione può essere ancora in corso), e guardando i
+     grant su ogni dipartimento. Il design dice «i grant dei training chiusi»: è lo stesso patto, reso robusto.
+  4. **Anche un TC o un TAC che assegna se stesso riceve il grant, e rientra**: il costo del grant (§12 n.1) vale per chiunque sia il
+     trainer, e il job lo toglie come agli altri.
+  5. **«Da chiudere»** (eseguiti senza report) è `Scheduled` con la sessione in un giorno già finito nel fuso della divisione:
+     `StaffQueue.HeldBefore` (l'inizio di oggi là, in UTC) nasce qui per la vista, con i suoi test unitari, e **A8 lo riusa** per
+     mostrare «Eseguito» (§1.2). Prima di A8 nessun training è `Scheduled`, e la vista è vuota.
+  6. **L'ordine della lista**: senza un ordine scelto, le code di lavoro (Da approvare, Da assegnare, Da chiudere) dalla richiesta più
+     vecchia, il resto dalla più nuova.
+  7. **Le parole degli stati nella lista** sono in `staff.options.state`, una copia di `states`: la lista generata legge
+     `<labels>.options.<campo>.<valore>`, e i tour ripetono le loro allo stesso modo.
+  8. **Una persona** si scrive «Nome (VID)» con `memberLabel` del modulo (`api.ts`): l'helper del nucleo per la «persona cancellata»
+     è di A12a, e prima di A12b nessun dato di un trainee si cancella.
+  9. **`trainerAssigned` è un tipo solo** (§5.2) per due destinatari: la frase che cambia (`assignedTrainee`, `assignedTrainer`) e la
+     pagina sono nei dati, nella lingua di ognuno. Al trainer la mail dice anche che l'hub gli chiederà di entrare di nuovo.
+  10. **`/training/mine` non cambia**, come aveva scritto A6b: il trainee legge il nome del trainer nella mail, e la pagina di un suo
+      training è di A8.
+  11. **Con un solo trainer adatto** — il banco —, dopo l'assegnazione la pagina non offre «Cambia il trainer» e dice che nessun altro
+      può allenarlo (`noOtherCandidates`): la prima corsa sul banco diceva «nessuno può allenarlo», ed era sbagliato.
+  12. **I momenti della pagina sono giorni** (la richiesta, la dichiarazione del teorico, la decisione, l'assegnazione), come nelle
+      pagine del trainee (A6b): un'ora avrebbe dovuto dire che è UTC. Trovato guardando a mano; una riga dello smoke lo legge.
+- **I due giri sul banco** (il ⚠️ di A6b): Playwright fa girare i file in ordine di nome con un worker solo, e `training-staff.spec.ts`
+  viene **dopo** `training-request.spec.ts`. Il giro di A6b trova i due percorsi del trainee liberi e annulla le sue richieste; quello
+  di A7 chiede la sua (ATC, attraverso l'API: le pagine della richiesta sono di A6b), la fa accettare e assegnare dalle pagine dello
+  staff, e la **lascia `Assigned`**: il trainee annulla solo una richiesta che nessuno ha accettato, e la chiusura dello staff è di A8.
+  Se si ferma prima dell'accettazione, annulla la sua richiesta nel `finally`. **Nessun test di A6b è cambiato.** Il banco va ricreato
+  prima di ogni corsa, come già scritto: su un banco non ricreato il giro di A6b cadrebbe sul training lasciato da A7, e quello di A7
+  lo dice con il suo messaggio. **Per A8**: il training assegnato al trainer del banco resta lì per chi viene dopo in ordine di nome;
+  A8 sceglie se riprenderlo (una spec con un nome che viene dopo `training-staff`) o chiederne uno suo e chiuderlo con la chiusura
+  dello staff.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **PowerShell 5.1 rovina i caratteri non ASCII di un sorgente** riscritto con `Get-Content` e `Set-Content` (legge un file senza
+     BOM come Windows-1252 e lo riscrive in UTF-8 con il BOM): `staff.tsx` ne è uscito con «Ã‚Â·» al posto di «·», e lo smoke l'ha
+     trovato. Ripristinato; un sorgente si tocca solo con l'editor.
+  2. **Un cookie vecchio si prova su un endpoint che chiede un permesso**: `/api/me` risponde anche a chi non è entrato, quindi con il
+     cookie respinto dà 200 e nessun utente, non 401.
+  3. `SearchFields` con `TraineeVid.ToString()` si traduce su MariaDB (`CAST … AS char`): la lista cerca per VID.
+  4. **Per A8**: il trainer conduce con il grant sullo scope `training:training:{id}`, e l'override di TC e TAC passa con il loro
+     `Conduct` per posizione; `StaffQueue.HeldBefore` c'è; `StaffTrainings.IsAssignable` comprende `Scheduled`; il job
+     `training-expiry` ha la sua prima metà, e la chiusura per tempo va nello stesso `RunAsync`, prima di togliere i grant (così una
+     chiusura della notte toglie il grant nella stessa corsa). La pagina dello staff ha le sezioni della richiesta, della decisione e
+     del trainer: le disponibilità e la sessione vanno sotto.
+  5. **Per A9**: il DTO dello staff non ha `StaffComment` né le note della scheda; la funzione unica che li toglie al trainee della
+     riga li aggiunge.
+  6. **Per A10**: le viste della lista sono le code di `approvalQueue`, e `filter[trainerVid]` quella di `trainerQueue`.
+  7. I VID **790022–790031** sono di A7; A3b usa 790040–790044 e 790050–790051: il prossimo libero è **790032**.
+- **Trovato guardando a mano, non toccato (nucleo)**, detto al revisore:
+  1. **Il back office non si usa largo 375 px**: la barra laterale dello staff resta aperta (522 px) e il contenuto resta largo 87 px,
+     in ogni pagina dello staff — anche la lista della scheda di A5 —; con la barra chiusa la pagina è larga quanto l'intestazione
+     (il 1044 px già trovato da A6b).
+  2. **Un select vuoto di `SchemaForm` dice «Select an option» in ogni lingua**: è il segnaposto di Atmosphere, perché `SchemaForm`
+     non ne passa uno; lo fa anche il form di una voce nuova della scheda (A5).
+  3. Scelto un trainer dall'elenco, il primo clic su «Assegna il trainer» a volte chiude soltanto l'elenco (il select di Radix che si
+     chiude), e il secondo assegna; Playwright aspetta che il pulsante riceva il clic e non lo vede.
+- **La coda**: A7 è nata in coda dopo #144 (A6b, in bozza in coda dopo #143): la PR è in bozza con `(after #144)` e `Queued after #144.`.
+  Quando #144 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel branch con un merge, build e tutti
+  i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (26 settembre 2026, sul branch da `m3/a6b-request-pages`, e178b1b): `dotnet build` senza avvisi; unità
+  **773/773** (le 767 di A6b e le 6 nuove; `TrainingArchitectureTests` legge anche il C# e il TypeScript nuovi del modulo, ed è verde);
+  **integrazione intera senza filtro** **329/329** (le 322 e le 7 nuove; la classe nuova da sola 7/7 al primo giro, e con le altre
+  classi del training e `AlternativeWritePermissionTests` 20/20); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm
+  test` **519** in **65** file (le 509 in 64 di A6b e 10 nuovi); `pnpm e2e` **101** (le 96 e le 5 nuove); **`pnpm e2e:full` 43** su un
+  **banco nuovo** di questo worktree (127.0.0.1:5084, `ivaohub_e2e_a7`): le 42 e la spec nuova — rifatto, sempre su un banco nuovo,
+  dopo la correzione dello scostamento 12. La prima corsa delle sole spec del training si era fermata sul difetto dello scostamento 11.
+  `pnpm gen:api` e `pnpm i18n:sync` senza differenze dopo il commit che li porta; `dotnet format --verify-no-changes` sui file C#
+  toccati, test compresi; le regole di `core-guard` rifatte in PowerShell sull'intervallo della fase e sul diff verso `main`: nessun
+  file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`; la sessione di A6b
+  ha spento il suo su richiesta): il trainee del banco chiede un training ATC e uno pilota; lo staff apre la lista e la vista «Da
+  approvare», la pagina della richiesta ATC con il promemoria e il sito dell'esame (impostato per la prova), la accetta e la assegna
+  al trainer del banco — che prima di entrare una volta non era nel roster, e la pagina diceva giusto che nessuno poteva allenarlo —;
+  rifiuta la richiesta pilota con un motivo; il trainer, rientrato, ha `Training.Conduct` sul solo training assegnato, e la pagina
+  senza pulsanti; il trainee legge il rifiuto con il motivo in `/training/mine`, e il training ATC «Trainer assegnato» senza
+  «Annulla»; in Mailpit le mail di richiesta accettata, di richiesta rifiutata (con il motivo) e di trainer assegnato, al trainee e al
+  trainer, con le loro frasi e le loro pagine. In italiano e in inglese, tema scuro e chiaro, e larga 375 px (sopra, «Trovato guardando
+  a mano»).
+- **Non verificato**: la CI (la dirà la PR). **Che i test nuovi cadano su una copia indebolita del codice** — `[AlsoWrittenWith]`
+  tolto, il «no» all'interessato —: non tentato, perché la modalità di permessi l'ha rifiutato in A5; i test sono stati letti contro il
+  codice. **Il job alle 04:15 dal suo trigger**: il test lo fa partire con `RunAsync`, come i job dei tour. **Un training `Scheduled`
+  attraverso le pagine**: prima di A8 niente ne fa uno, quindi «Da chiudere» e la riassegnazione di un training datato (che tiene stato
+  e data) sono provati con righe scritte dal test d'integrazione, non dalle pagine.
 
 ### A8 — Le date
 

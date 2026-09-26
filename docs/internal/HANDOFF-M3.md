@@ -11,14 +11,15 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6b** (la richiesta, le pagine), sul branch `m3/a6b-request-pages`, **PR #144**
-verso `main`, in bozza **in coda dopo #143**. **A6a** (il server) è la **PR #143**, pronta con la CI verde, in attesa della **sessione
-master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del
-collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140)
-sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua. **Il prossimo passo** è **A7** (accettare, rifiutare,
-assegnare), sul branch `m3/a7-approve-and-assign` preparato da `m3/a6b-request-pages`, in coda dopo A6b (dalle fasi del modulo in poi
-tutto migra `TrainingDbContext`: in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C#
-una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A7** (accettare, rifiutare, assegnare), sul branch `m3/a7-approve-and-assign`,
+**PR #146** verso `main`, in bozza **in coda dopo #144** (A6b, le pagine della richiesta, in bozza in coda dopo #143). **A6a** (il server
+della richiesta) è la **PR #143**, pronta con la CI verde, in attesa della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`,
+`CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza
+spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140) sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione
+sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è pronta, da `main` e fuori dalla coda. **Il prossimo passo** è **A8** (le
+date), sul branch `m3/a8-dates` preparato da `m3/a7-approve-and-assign`, in coda dopo A7 (dalle fasi del modulo in poi tutto migra
+`TrainingDbContext`: in fila); A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si
+chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -89,6 +90,56 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A7 (26 settembre 2026, branch `m3/a7-approve-and-assign`, PR #146)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova, nessuna migrazione):
+  - **Il training si scrive anche con `Training.Approve`, `Training.Assign` e `Training.Conduct`** (`[AlsoWrittenWith]` di A3 su
+    `Training.cs`, mai alla creazione), ognuno con lo scope della riga e mai dal trainee; `Training.IdOf` legge uno scope all'indietro.
+  - **Il lato dello staff** in `src/IvaoHub.Modules.Training/Staff/`: la lista `/api/training/queue` (`MapCrud` in sola lettura con
+    `Training.View`, le viste `filter[queue]` = `toApprove`, `toAssign`, `inProgress`, `toClose`, `history` in `StaffQueue`, e
+    `filter[kind]`, `filter[traineeVid]`, `filter[trainerVid]`, `?q=` su postazione e VID del trainee); la pagina
+    `/api/training/trainings/{id}` (`StaffTrainingDto`, con `actions.canDecide` e `actions.canAssign` dall'unico handler sulla riga) e i
+    verbi `/accept`, `/reject` (con il motivo), `/assign`, e `/trainers` (i candidati: `TrainerChoice`); il servizio `StaffTrainings`.
+  - **Il grant del trainer**: assegnare scrive `Training.Conduct` con lo scope del training (`ModuleGrants`, motivo `training: trainer`)
+    prima della riga e toglie quello del trainer di prima; **il job `training-expiry`** (`TrainingExpiryJob`, 04:15 nel fuso della
+    divisione) toglie i grant dei training non più aperti, e quelli lasciati da una scrittura fermata a metà (dopo un'ora).
+  - **Le mail** `requestAccepted`, `requestRejected` (con il motivo) e `trainerAssigned` (al trainee e al trainer, ognuno nella sua
+    lingua), attraverso **`TrainingMail`**, che usa anche la `requestReceived` di A6a.
+  - **Le pagine** `web/src/modules/training/screens/staff.tsx`: `/staff/training` (lista generata, filtri Mostra e Percorso, voce «Richieste
+    e training» nella barra) e `/staff/training/$id` (il promemoria del teorico con il sito dell'esame, la richiesta, la decisione, il
+    trainer e la sua scelta, Accetta e Rifiuta); le funzioni pure in `screens/trainings.ts`.
+  - **I test**: `TrainingStaffRulesTests` (unità), `TrainingStaffTests` (integrazione, VID 790022–790031), `screens/trainings.test.ts` e
+    `schemas.test.ts` (Vitest), `web/e2e/training-staff.spec.ts` (lo smoke), `web/e2e/full/training-staff.spec.ts` (il «fatta quando»).
+- **Che cosa deve sapere la fase dopo**:
+  - **A8** (le date): il trainer conduce con il grant sullo scope `training:training:{id}`, e TC e TAC con `Conduct` per posizione
+    (l'override); `StaffQueue.HeldBefore` dice già da quando una sessione è «Eseguita» nel fuso della divisione, e va riusato;
+    `StaffTrainings.IsAssignable` comprende `Scheduled` (si riassegna tenendo la data); la chiusura per tempo va nello stesso
+    `TrainingExpiryJob.RunAsync`, **prima** di togliere i grant, così la stessa notte li toglie. La pagina dello staff ha le sezioni della
+    richiesta, della decisione e del trainer: le disponibilità e la sessione vanno sotto. La chiusura a mano dello staff è `Training.Approve`
+    (§2.5), come accetta e rifiuta.
+  - ⚠️ **Il banco dopo il giro di A7**: il trainee del banco (999002) resta con un training **ATC `Assigned`** al trainer del banco (999004),
+    che nessuno chiude prima di A8. `training-staff.spec.ts` gira dopo `training-request.spec.ts` (ordine di nome, un worker): il giro di A6b
+    trova i percorsi liberi. Una spec di A8 che vuole un training assegnato può riprendere quello (con un nome che viene dopo
+    `training-staff`), o chiederne uno suo e chiuderlo con la chiusura dello staff; **il banco va ricreato prima di ogni corsa**.
+  - **A9**: il DTO dello staff non ha `StaffComment` né le note della scheda: li aggiunge la funzione unica che li toglie al trainee della
+    riga. **A10**: le viste della lista sono le code di `approvalQueue`, e `filter[trainerVid]` quella di `trainerQueue`.
+  - ⚠️ **Lo staff del training** (i candidati) è chi ha una posizione del dipartimento base o della direzione (DIR, ADIR) nel roster: non il
+    web master, non chi ha solo un grant. Un TC che assegna se stesso riceve anche lui il grant, e rientra.
+  - ⚠️ **Un cookie vecchio si prova su un endpoint con un permesso** (per esempio `/api/training/queue`): `/api/me` con un cookie respinto
+    risponde 200 senza utente, non 401.
+  - ⚠️ **In PowerShell 5.1 un sorgente non si riscrive con `Get-Content`/`Set-Content`**: i caratteri non ASCII si rovinano (è successo a
+    `staff.tsx`, «Ã‚Â·» al posto di «·»). Solo l'editor.
+  - VID: il prossimo libero è **790032** (A3b usa 790040–790044 e 790050–790051).
+- **Trovato guardando a mano, non toccato (nucleo)**, detto al revisore: il back office **non si usa largo 375 px** (la barra laterale
+  dello staff resta aperta a 522 px e il contenuto a 87 px, in ogni pagina dello staff); **un select vuoto di `SchemaForm` dice «Select an
+  option»** in ogni lingua (il segnaposto di Atmosphere: `SchemaForm` non ne passa uno); scelto un valore dall'elenco, **il primo clic su un
+  pulsante a volte chiude soltanto l'elenco**. Sul banco di anteprima il trainer va fatto entrare una volta, o non è nel roster e la pagina
+  dice che nessuno può allenare il training (giusto).
+- **La coda**: la PR è in bozza con `(after #144)` e `Queued after #144.`; #144 è in coda dopo #143. Quando #144 sarà unita, il passo della
+  coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e dal corpo, la PR pronta a
+  CI verde — lo fa la sessione di A7 se è ancora viva, altrimenti quella di A8 prima di cominciare (sul branch di A7, con un branch
+  temporaneo, e poi il merge in A8). Una correzione chiesta su #143 o #144 si fa sul loro branch e sale con un merge.
 
 ### Che cosa ha lasciato A6b (26 settembre 2026, branch `m3/a6b-request-pages`, PR #144)
 
