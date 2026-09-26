@@ -28,7 +28,7 @@ const words = JSON.parse(
     queues: Record<string, string>;
     sections: { trainer: string };
     theoryReminder: { title: string };
-    decision: { reason: string };
+    decision: { reason: string; accepted: string };
     trainer: { none: string };
     assign: { submit: string; change: string; assigned: string; fields: { trainerVid: string } };
     accept: { button: string; done: string };
@@ -288,6 +288,13 @@ test('the page of a request reminds of the theory exam with its site, and the re
   await expect(page.getByText(words.staff.accept.done, { exact: true })).toBeVisible();
   expect(seen.steps).toEqual([{ verb: 'accept', body: { rowVersion: '2026-09-20T10:00:00.123456Z' } }]);
   await expect(page.getByText(words.states.Accepted!, { exact: true })).toBeVisible();
+  // The day of the decision, not an hour that would have to say whose.
+  await expect(
+    page.getByText(
+      filled(words.staff.decision.accepted, { name: 'Test Coordinator (790097)', date: 'Sep 21, 2026' }),
+      { exact: true },
+    ),
+  ).toBeVisible();
   await expect(page.getByRole('heading', { name: words.staff.sections.trainer })).toBeVisible();
   await expect(page.getByRole('button', { name: words.staff.accept.button, exact: true })).toHaveCount(0);
 });

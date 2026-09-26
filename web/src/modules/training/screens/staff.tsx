@@ -207,10 +207,19 @@ function Standing({ training }: { training: StaffTrainingDto }) {
   );
 }
 
+/**
+ * A moment of a request as a day — the day it was asked, decided, assigned —, as the trainee's pages say it (A6b): an hour
+ * would have to say it is UTC's.
+ */
+function useDay(): (value: string) => string {
+  const moment = useMoment();
+  return (value) => moment(value, { time: false });
+}
+
 /** The reminder while a request waits (§2.3, d1): check on the site of the exam that the trainee's «yes» holds. */
 function TheoryReminder({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
-  const moment = useMoment();
+  const day = useDay();
 
   return (
     <Notice
@@ -223,7 +232,7 @@ function TheoryReminder({ training }: { training: StaffTrainingDto }) {
         <span className="flex flex-col gap-1">
           {training.theoryConfirmedAt === null ? null : (
             <span>
-              {t('training:staff.theoryReminder.declared', { date: moment(training.theoryConfirmedAt) })}
+              {t('training:staff.theoryReminder.declared', { date: day(training.theoryConfirmedAt) })}
             </span>
           )}
           {training.theoryExamUrl === null ? null : <TheoryExamLink url={training.theoryExamUrl} />}
@@ -236,7 +245,7 @@ function TheoryReminder({ training }: { training: StaffTrainingDto }) {
 /** The request as the trainee sent it, with their rating and hours when they asked (§2.3). Never their address. */
 function RequestDetails({ training }: { training: StaffTrainingDto }) {
   const { t, i18n } = useTranslation();
-  const moment = useMoment();
+  const day = useDay();
   const place = [training.airportIcao, training.fir].filter((part) => part !== null).join(' · ');
 
   const rows: [string, ReactNode][] = [
@@ -253,7 +262,7 @@ function RequestDetails({ training }: { training: StaffTrainingDto }) {
       t('training:staff.request.hours'),
       formatHours(training.traineeHoursAtRequest, i18n.language) ?? t('training:unknown'),
     ],
-    [t('training:staff.request.requestedAt'), moment(training.requestedAt)],
+    [t('training:staff.request.requestedAt'), day(training.requestedAt)],
     ...(training.position === null
       ? []
       : ([
@@ -284,7 +293,7 @@ function RequestDetails({ training }: { training: StaffTrainingDto }) {
 /** Who decided, when, and why a refusal: the staff's, the hub's own for the theory, or the trainee's cancellation. */
 function DecisionDetails({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
-  const moment = useMoment();
+  const day = useDay();
   const decision = decisionOf(training);
   const name = (member: StaffTrainingDto['decidedBy']) => (member === null ? '' : memberLabel(member));
 
@@ -294,15 +303,13 @@ function DecisionDetails({ training }: { training: StaffTrainingDto }) {
     case 'accepted':
       return (
         <p className="text-sm">
-          {t('training:staff.decision.accepted', { name: name(decision.by), date: moment(decision.at) })}
+          {t('training:staff.decision.accepted', { name: name(decision.by), date: day(decision.at) })}
         </p>
       );
     case 'rejected':
       return (
         <div className="flex flex-col gap-1 text-sm">
-          <p>
-            {t('training:staff.decision.rejected', { name: name(decision.by), date: moment(decision.at) })}
-          </p>
+          <p>{t('training:staff.decision.rejected', { name: name(decision.by), date: day(decision.at) })}</p>
           {decision.reason === null ? null : (
             <p className="whitespace-pre-line">
               {t('training:staff.decision.reason', { reason: decision.reason })}
@@ -311,18 +318,16 @@ function DecisionDetails({ training }: { training: StaffTrainingDto }) {
         </div>
       );
     case 'theory':
-      return <p className="text-sm">{t('training:staff.decision.theory', { date: moment(decision.at) })}</p>;
+      return <p className="text-sm">{t('training:staff.decision.theory', { date: day(decision.at) })}</p>;
     case 'cancelled':
-      return (
-        <p className="text-sm">{t('training:staff.decision.cancelled', { date: moment(decision.at) })}</p>
-      );
+      return <p className="text-sm">{t('training:staff.decision.cancelled', { date: day(decision.at) })}</p>;
   }
 }
 
 /** The trainer, if there is one, and — to whoever may assign — the choice of a trainer, or of another. */
 function TrainerDetails({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
-  const moment = useMoment();
+  const day = useDay();
 
   return (
     <div className="flex flex-col gap-4">
@@ -332,7 +337,7 @@ function TrainerDetails({ training }: { training: StaffTrainingDto }) {
           : t('training:staff.trainer.assigned', {
               name: memberLabel(training.trainer),
               by: training.assignedBy === null ? '' : memberLabel(training.assignedBy),
-              date: training.assignedAt === null ? '' : moment(training.assignedAt),
+              date: training.assignedAt === null ? '' : day(training.assignedAt),
             })}
       </p>
       {training.actions.canAssign ? <AssignTrainer training={training} /> : null}
