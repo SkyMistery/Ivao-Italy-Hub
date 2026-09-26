@@ -735,8 +735,8 @@ rilegge uguale.
 
 **Non era nel piano**: l'ha trovata la sessione di A6b il 26 settembre 2026, scrivendo lo smoke della richiesta (PR #144), come A4a fu
 trovata scrivendo A4; `dalberone` ha scelto di farla come fase del nucleo a sé (`CLAUDE.md` §0 regola 6). Nota nuova
-`2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, **Proposta**, con la domanda a Carmine in un commento sulla PR. Branch
-`m3/a6c-closed-suggestion`, da `main`. **Non va in coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la
+`2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, **Proposta**, con la domanda a Carmine in un [commento su #145][q145]. Branch
+`m3/a6c-closed-suggestion`, da `main`, PR #145. **Non va in coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la
 PR va verso `main` accanto a #143 (A6a) e #144 (A6b), come A3b va avanti per conto suo. Sta qui, prima di A6, come A4a prima di A4.
 
 1. **Il problema**: nel suggerimento chiuso di `SchemaForm` (`Suggest` con `suggestionsOnly`) chi scrive una parte del valore per
@@ -754,7 +754,7 @@ nella lista che non sceglie tiene la ricerca, e uscire da lì rimette il valore 
 Escape chiude e lascia il testo; la barra di scorrimento della lista si trascina. Cade sul codice di `main`.
 **Fatta quando**: la nota è decisa da Carmine, e la spec nuova e quelle che c'erano passano.
 
-**Com'è andata** (26 settembre 2026, branch `m3/a6c-closed-suggestion`):
+**Com'è andata** (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145):
 
 - **Classificata prima del codice** (`CLAUDE.md` §5): caso (b), il meccanismo c'è — il campo suggerito chiuso, nota
   `2026-09-08-dove-puo-portare-una-voce-di-menu` — e ha un difetto; si corregge nel suo posto unico. Un file del nucleo
@@ -790,6 +790,8 @@ Escape chiude e lascia il testo; la barra di scorrimento della lista si trascina
 - **Non verificato**: la CI (la dirà la PR); browser diversi da Chromium — Firefox e Safari spostano il fuoco su una pressione con le
   loro regole, e la correzione legge solo `relatedTarget` e `document.activeElement`, ma nessuna prova ci ha girato —; uno schermo touch
   (il tocco su un'opzione, il dito che scorre la lista); una risposta di Carmine diversa da quella raccomandata.
+
+[q145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355
 
 ### A6 — La richiesta
 

@@ -21,9 +21,9 @@ unita** (piano 1.15): in C# una chiave di un modulo si chiede con il namespace (
 `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` lo controlla; il C# del training lo fa già.
 
 **Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
-cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, PR verso `main` **non in coda** (tocca solo il nucleo del front end
-e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, è
-**Proposta**: la decide Carmine.
+cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
+front end e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`,
+è **Proposta**: la decide Carmine, sulla domanda nella PR.
 
 ## Da leggere, nell'ordine
 
@@ -95,13 +95,14 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A6c (26 settembre 2026, branch `m3/a6c-closed-suggestion`)
+### Che cosa ha lasciato A6c (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145)
 
 - **Perché c'è**: la sessione di A6b l'ha trovata scrivendo lo smoke della richiesta (#144): nel **suggerimento chiuso** di `SchemaForm`
   (`suggestionsOnly`) chi scrive una parte del valore e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su
   una riga nuova. Vale per ogni campo chiuso dell'hub (menu, postazioni nascoste, postazione della richiesta, aerei dei tour).
   `dalberone` ha scelto una fase del nucleo a sé, come A4a.
-- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **Proposta**, domanda a Carmine sulla PR):
+- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **Proposta**, domanda a Carmine in un
+  [commento su #145](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355)):
   - in `Suggest` (`web/src/shared/forms/SchemaForm.tsx`) **la casella e la sua lista sono un campo solo**: la regola del campo chiuso
     («uscire con qualcosa che nessuno ha offerto rimette quello che c'era») vale quando il fuoco esce da tutte e due — dall'`onBlur`
     della casella, o dalla chiusura della lista quando il fuoco non è nella casella —; tornare nella casella dalla lista non ricomincia
