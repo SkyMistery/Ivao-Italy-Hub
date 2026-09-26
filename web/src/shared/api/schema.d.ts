@@ -2142,6 +2142,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingMine"];
+        put?: never;
+        post: operations["TrainingRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/mine/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingMineOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/mine/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingCancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4228,6 +4276,72 @@ export interface components {
             toModify: components["schemas"]["ReportToFixDto"][];
             answered: components["schemas"]["AnsweredThreadDto"][];
             summary: components["schemas"]["PilotSummaryDto"];
+        };
+        /**
+         * @description The trainee's own page of the training (design M3 §4.1), what `/training/request` and `/training/mine` read: who
+         *     they are — never their address, which is the core's and the mail queue's only (§0.5) —, where they stand on each ladder,
+         *     the question on the theory exam, and their trainings, newest first.
+         */
+        MyTrainingDto: {
+            /**
+             * Format: int32
+             * @description The trainee.
+             */
+            vid: number;
+            /** @description Their name as the network gives it, read only: it is changed on the network. */
+            name: string;
+            /** @description Whether the request asks the trainee about the theory exam (ITheoryExamSource). */
+            asksTheory: boolean;
+            /** @description Where the theory exam is taken, for the question; none until the division writes it. */
+            theoryExamUrl: null | string;
+            /** @description One per ladder, in the order of the core's ladders. */
+            paths: components["schemas"]["MyTrainingPathDto"][];
+            /** @description Every training of theirs, requests refused and cancelled included. */
+            trainings: components["schemas"]["TraineeTrainingDto"][];
+        };
+        /**
+         * @description Where the trainee stands on one ladder (§2.2): their rating and hours, the one training the hub proposes and on which
+         *     positions, and the first rule that refuses a request now, with what the page needs to say why — a refusal is a bare key.
+         */
+        MyTrainingPathDto: {
+            /** @description The ladder. */
+            kind: components["schemas"]["RatingKind"];
+            /** @description The trainee's rating as the staff says it; none when the hub does not know it. */
+            ratingShortName: null | string;
+            /**
+             * Format: double
+             * @description Their hours on the ladder; none when the network has said nothing, which is not zero.
+             */
+            hours: null | number;
+            next: null | components["schemas"]["TrainingRatingDto"];
+            /** @description Whether that training would be a mock exam, as agreed with the trainer (§2.8). */
+            isMockExam: boolean;
+            /** @description Whether a request for it chooses a position. */
+            asksPosition: boolean;
+            /** @description The positions offered for it, the hidden ones left out, by callsign. */
+            positions: components["schemas"]["TrainingPositionDto"][];
+            /** @description The i18n key of the first rule that refuses, in the design's order; none when a request may be made. */
+            refusal: null | string;
+            /**
+             * Format: date-time
+             * @description With a ban, until when; none when it holds until somebody lifts it.
+             */
+            bannedUntil: null | string;
+            /**
+             * Format: int64
+             * @description With a training still open on the ladder, which one.
+             */
+            openTrainingId: null | number;
+            /**
+             * Format: date-time
+             * @description While the waiting after the last training runs, until when.
+             */
+            waitUntil: null | string;
+            /**
+             * Format: int32
+             * @description The hours the rating proposed needs, when the division set a threshold.
+             */
+            minimumHours: null | number;
         };
         /**
          * @description One entry of a menu. Exactly one of the two names is set: Key is a
@@ -6338,6 +6452,45 @@ export interface components {
             arrivalIcao: null | string;
             aircraft: null | string;
         };
+        /**
+         * @description A training as its trainee reads it (§1.1, §4.1). It has no field the trainee does not read — no comment of the staff, and
+         *     later no note of the sheet —, so their endpoints cannot hand one over whatever the row holds. `RequestedAt` is when
+         *     they asked for it; `RejectionReason` why the staff refused it, as the mail says it (A7).
+         */
+        TraineeTrainingDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            ratingShortName: null | string;
+            isMockExam: boolean;
+            position: null | string;
+            state: components["schemas"]["TrainingState"];
+            rejection: null | components["schemas"]["TrainingRejection"];
+            rejectionReason: null | string;
+            availabilityText: null | string;
+            notesText: null | string;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            decidedAt: null | string;
+            /** Format: date-time */
+            scheduledStartUtc: null | string;
+            /** Format: date-time */
+            completedAt: null | string;
+            /** Format: date-time */
+            closedAt: null | string;
+            readyForMockExam: boolean;
+            readyForExam: boolean;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description The version of the training the trainee saw when they pressed «cancel». */
+        TrainingCancellation: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description A position of the division a training may take place on, with the rating it is trained for. */
         TrainingPositionDto: {
             callsign: string;
@@ -6358,6 +6511,31 @@ export interface components {
             /** @description The key of its name in the language files of the core. */
             nameKey: string;
         };
+        /** @enum {unknown} */
+        TrainingRejection: "TheoryNotPassed" | "Staff" | null;
+        /** @description What a trainee sends to ask for a training (§2.2). */
+        TrainingRequestWriteDto: {
+            /** @description The ladder. */
+            kind: components["schemas"]["RatingKind"];
+            /**
+             * Format: int32
+             * @description The rating the page proposed: the server asks for it to be the one it proposes now.
+             */
+            rating: number;
+            /** @description The callsign chosen, on a ladder trained on positions; none otherwise. */
+            position: null | string;
+            /** @description When the trainee is free, in their words. */
+            availabilityText: null | string;
+            /** @description Notes and wishes, in their words. */
+            notesText: null | string;
+            /** @description The trainee's answer on the theory exam; none when they were not asked. */
+            theoryPassed: null | boolean;
+        };
+        /**
+         * @description Where a training is (design M3 §2.1). Stored by name, and no state is ever deleted: everything stays on record.
+         * @enum {unknown}
+         */
+        TrainingState: "Requested" | "Accepted" | "Assigned" | "Scheduled" | "Completed" | "Rejected" | "Cancelled" | "Closed" | "NoShow";
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
             key: string;
@@ -13047,6 +13225,144 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTrainingDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingRequestWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    TrainingMineOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeTrainingDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingCancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingCancellation"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

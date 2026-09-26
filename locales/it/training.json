@@ -87,6 +87,32 @@
     "ratingTwice": "Questo rating ha più di una riga.",
     "positionUnknown": "La divisione non allena più su questa postazione: toglila dall'elenco.",
     "calendarKindUnknown": "Uno di questi non è un tipo del calendario.",
-    "sheetItemUsed": "Un report ha già usato questa voce: non si elimina, si spegne."
+    "sheetItemUsed": "Un report ha già usato questa voce: non si elimina, si spegne.",
+    "requestBanned": "Hai un ban dal training: finché vale non puoi chiedere un training.",
+    "requestOpen": "Hai già un training aperto su questo percorso: uno alla volta.",
+    "requestWaiting": "L'attesa dopo il tuo ultimo training su questo percorso non è ancora finita.",
+    "requestNothingToAsk": "Dopo il tuo rating non c'è un training da chiedere su questo percorso.",
+    "requestHoursUnknown": "L'hub non conosce ancora le tue ore di connessione: esci ed entra di nuovo.",
+    "requestHoursTooFew": "Non hai ancora le ore di connessione che questo training chiede.",
+    "requestNoPosition": "In questo momento la divisione non offre postazioni su cui allenare questo rating.",
+    "requestRatingNotNext": "Questo non è più il rating che puoi chiedere: ricarica la pagina.",
+    "requestPositionUnknown": "Scegli una postazione dall'elenco.",
+    "requestPositionNotAsked": "Un training di questo percorso non ha una postazione.",
+    "requestNotCancellable": "Si annulla solo una richiesta che nessuno ha ancora accettato."
+  },
+  "notifications": {
+    "requestReceived": {
+      "title": "Le mie richieste di training",
+      "description": "Una mail quando una tua richiesta di training viene ricevuta."
+    }
+  },
+  "mail": {
+    "training": {
+      "requestReceived": {
+        "subject": "[Training] Richiesta ricevuta: {{training}}",
+        "body": "Abbiamo ricevuto la tua richiesta di training: {{training}}.{{mockExam}}\n\nIl dipartimento training la controllerà, compreso l'esame teorico, e ti scriverà quando sarà accettata o rifiutata. Finché nessuno la accetta, puoi annullarla dalla pagina dei tuoi training.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "mockExam": " Sarà un mock exam, come concordato con il trainer."
+    }
   }
 }
