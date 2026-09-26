@@ -119,6 +119,8 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     nucleo, una spec sceglie dall'elenco (clic sulla casella, poi sull'opzione) o scrive il valore intero.
   - ⚠️ **`pnpm i18n:check` non controlla le chiavi con il namespace** (`t('training:…')`): una chiave sbagliata del modulo la trovano
     solo le spec che leggono le parole dai file di lingua.
+  - ⚠️ **Una conferma nell'angolo (`useNotice`) si cerca in una spec con il testo esatto**: il toast la annuncia anche in una `span`
+    «Notification …»; in locale era già sparita, in CI no, e la prima CI di #144 è caduta lì.
   - VID: A6b non ne usa; il prossimo libero resta **790022** (A3b usa 790040–790044 e 790050–790051).
 - **Trovato, non toccato (nucleo)**: nel **suggerimento chiuso** di `SchemaForm` (`Suggest` con `suggestionsOnly`) chi scrive per
   cercare e poi clicca un'opzione perde la scelta — la casella torna vuota —, perché `onBlur` rimette il valore di prima e la lista si

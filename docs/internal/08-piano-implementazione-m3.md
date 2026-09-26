@@ -930,7 +930,10 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
      quindi le chiavi dei moduli non sono controllate. Le spec leggono le parole dai file di lingua e cadono su una chiave mostrata
      nuda. Detto al revisore (lo script è del nucleo).
   3. Nessun VID nuovo: A6b non ha test d'integrazione. Il prossimo libero resta **790022**.
-  4. **Guardato a mano**, e per chi guarda dopo: il pulsante «Richiedi training» è grigio (`secondary`, scostamento 1), più debole del
+  4. ⚠️ **Una conferma nell'angolo si cerca con il testo esatto** (`{ exact: true }`): il toast di Radix la annuncia anche, per un
+     momento, in una `span` «Notification …» con `aria-live`. In locale era già sparita al controllo; **la prima CI della PR (a0961ae) è
+     caduta lì**, nello smoke, e il test è stato corretto.
+  5. **Guardato a mano**, e per chi guarda dopo: il pulsante «Richiedi training» è grigio (`secondary`, scostamento 1), più debole del
      blu di un form senza domanda; un `triggerVariant` primario di `ConfirmDialog` sarebbe un'estensione del nucleo, e sta con il
      difetto qui sopra fra le cose dette al revisore. L'intestazione del sito è larga 1044 px su un telefono di 375 px, in ogni pagina e
      anche nella home: è del nucleo, non di questa fase.
@@ -948,7 +951,8 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
   nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`, spento il banco di
   A5 su richiesta a quella sessione): il trainee chiede ADC su una postazione con il «sì» e lo trova in `/training/mine`, risponde «no» sul
   percorso pilota e legge la frase di R.2, annulla la richiesta ATC; in italiano e in inglese, tema chiaro e scuro, e largo 375 px.
-- **Non verificato**: la CI (la dirà la PR). **Che i test nuovi cadano su una copia indebolita del codice**: non tentato, perché la
+- **Non verificato**: la CI dopo la correzione dello smoke (la prima corsa è caduta sul toast, sopra; la dirà la PR). **Che i test nuovi
+  cadano su una copia indebolita del codice**: non tentato, perché la
   modalità di permessi l'ha rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è
   così che è venuto fuori il difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
   di A6a prova l'intento in coda). **Un ban, un'attesa, una soglia di ore, il sito dell'esame e un 409 su un annullamento vecchio,
