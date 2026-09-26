@@ -1,13 +1,16 @@
 # Le righe affidate a chi scrive: un permesso che vale solo per chi ha la riga (A3b)
 
-**Data:** 26 settembre 2026 — fase A3b di M3, PR del nucleo, in coda dopo la #131 (A3)
-**Stato:** **Proposta.** Due domande a Carmine (§5), con un commento sulla PR. La prima decide la forma nel codice, e **il codice
-aspetta la risposta**; la seconda riguarda A7 e non cambia il codice di questa fase.
+**Data:** 26 settembre 2026 — fase A3b di M3, PR del nucleo #135
+**Stato:** **decisa** (Carmine, 26 settembre 2026, [il suo commento sulla #135][a1]): **sì** alla forma di §3, e **sì** alla domanda 2
+(il trainer in A7), §5. I tre rilievi del revisore sulla nota ([il suo commento][rv]) sono entrati in §3.2, §3.3, §3.4 e §3.5-bis
+prima del codice.
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: un meccanismo nuovo nell'unico handler e nel guardiano dell'interceptor, che sono
 spina dorsale (piano §16.2). Lo chiede la risposta 4 di Carmine sulla #131 ([il suo commento][c4]; nota
 `2026-09-25-i-permessi-alternativi-e-la-creazione` §3.5); `08-piano-implementazione-m3.md`, A3b.
 
 [c4]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5840224757
+[a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
+[rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250526
 
 ## 1. Che cosa serve
 
@@ -15,8 +18,8 @@ spina dorsale (piano §16.2). Lo chiede la risposta 4 di Carmine sulla #131 ([il
   assegnato**, nessun altro. Toglierlo è solo una rimozione dal calendario: l'annullamento vero si fa su ivao.aero.
 - **I fatti** (`dalberone`, 26 settembre 2026; `08`, A3b punto 3): un esame si assegna **solo a un esaminatore**, e gli esaminatori
   sono **HQ, TC, TAC e i TA (TA1–9)**, mai i trainer. HQ, TC e TAC hanno già `Training.Edit` su ogni esame: la regola nuova serve ai
-  **TA**, ognuno sugli esami **suoi**. Chi tiene `Training.ManageExams` lo propone la nota di A4
-  (`2026-09-26-gli-esami-li-inserisce-chi-esamina`, «Proposta», sul branch di A4): TC, TAC e TA1–9, non più i trainer.
+  **TA**, ognuno sugli esami **suoi**. Chi tiene `Training.ManageExams` lo decide la nota del maintainer `2026-09-26-gli-esaminatori`
+  (Carmine, dopo il merge di A3): TC, TAC e TA1–9, mai i trainer.
 - **Alla creazione** vale la n.10: un esame lo inserisce **chi ce l'ha assegnato**.
 
 ## 2. Perché nessun meccanismo esistente basta
@@ -33,7 +36,7 @@ spina dorsale (piano §16.2). Lo chiede la risposta 4 di Carmine sulla #131 ([il
   perché il grant con scope copriva già quel caso (nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §3). Per gli esami il grant
   non basta, e Carmine ha scelto la regola.
 
-## 3. La proposta (domanda 1)
+## 3. La forma nel codice (domanda 1, decisa)
 
 ### 3.1 La riga dice a chi è affidata
 
@@ -54,6 +57,8 @@ affidata — **conta come `{Area}.Edit`**: la raggiunge chi tiene anche `Edit` s
   `Approve` e `Assign` non dipendono dal trainer, domanda 2).
 - **Mai su un permesso che legge**: la lista si restringe in SQL per dipartimento e mostrerebbe comunque le righe degli altri. Il
   catalogo lo rifiuta quando si compone, come un nome dichiarato due volte.
+- **Mai come alternativa di un'entità che non dice a chi è affidata** (rilievo 2 del revisore): lì il permesso segnato varrebbe solo
+  come `{Area}.Edit`, cioè niente. L'hub lo rifiuta all'avvio (§3.5-bis).
 
 ### 3.3 Nell'unico handler
 
@@ -61,6 +66,10 @@ In `DepartmentAuthorizationHandler`, dopo i dipartimenti, lo scope e il FIR: se 
 chiede, la risposta è quella che la stessa funzione dà per `{Area}.Edit` sulla stessa riga, con tutte le sue regole (anche «negato
 all'interessato»). **Il motore CRUD non cambia**: chiede il permesso di scrittura sulla riga prima e dopo il payload, e prima di
 eliminare, quindi l'endpoint risponde come il guardiano.
+
+**Senza una riga** (rilievo 3 del revisore) la domanda resta quella di sempre, «ha questo permesso da qualche parte?» (`HasAny`): la
+restrizione riguarda le righe, e lì non ce n'è una da guardare. È ciò che fa vedere a un TA «nuovo esame», e che `/api/me` elenca fra i
+suoi permessi. I test di unità dell'handler lo coprono.
 
 ### 3.4 Nel guardiano
 
@@ -72,8 +81,9 @@ In `IsWrittenWithAnAlternative`, per un'alternativa il cui permesso è segnato:
   la crea. Un TA inserisce i suoi esami; HQ, TC e TAC quelli di chiunque;
 - **all'eliminazione**, con **`AlsoOnDeletion`**, proprietà nuova di `[AlsoWrittenWith]` e gemella di `AlsoOnCreation`: la toglie la
   persona a cui era affidata. **Conta solo per un permesso segnato**; su ogni altro non conta, e l'eliminazione chiede `Edit` come in
-  A3. Così la risposta 3 della #131, che Carmine non ha scelto, resta fuori. La segnatura è dell'alternativa e non del permesso,
-  perché eliminare non segue sempre dall'avere la riga: un trainer non deve togliere il suo training.
+  A3. Così la risposta 3 della #131, che Carmine non ha scelto, resta fuori. Dichiararlo su un permesso non segnato è un errore, e l'hub
+  lo **rifiuta all'avvio** invece di ignorarlo in silenzio (rilievo 1 del revisore, §3.5-bis). La segnatura è dell'alternativa e non
+  del permesso, perché eliminare non segue sempre dall'avere la riga: un trainer non deve togliere il suo training.
 
 Tutto il resto come in A3: mai all'interessato, mai per spostare la riga fra dipartimenti, e l'errore è lo stesso
 (`ForbiddenDomainException` con `{Area}.Edit`). Il guardiano riceve il catalogo dal contenitore, come l'handler.
@@ -85,6 +95,18 @@ Tutto il resto come in A3: mai all'interessato, mai per spostare la riga fra dip
 - **I due punti trovati in A3** (l'interessato e lo scope guardati solo dopo la scrittura) restano come sono: sono un compito di
   rafforzamento del maintainer. La regola nuova non li ha, perché guarda chi ha la riga prima e dopo.
 - Nessuna migrazione del nucleo, e nessun cambio del cookie, dei grant, di `positionGrants` o di `/api/me`.
+
+### 3.5-bis All'avvio (i rilievi 1 e 2 del revisore)
+
+Due dichiarazioni sbagliate non devono diventare un 403 che nessuno sa spiegare. L'hub le **rifiuta all'avvio**, prima delle
+migrazioni, sul modello di ogni contesto — quello del nucleo e quelli dei moduli — in `HubPipeline.InitializeAsync`, con
+`PermissionCatalog.VerifyAlternatives`:
+
+1. `AlsoOnDeletion` su un'alternativa il cui permesso non è segnato: non eliminerebbe niente;
+2. un'alternativa con un permesso segnato su un'entità che non è `IHasAssignee`: varrebbe solo come `{Area}.Edit`.
+
+È un controllo all'avvio e non un test di architettura, perché `ArchitectureTests.cs` è del maintainer. I test di unità provano i due
+rifiuti, e ogni avvio dei test d'integrazione fa girare il controllo sui modelli veri.
 
 ### 3.6 Gli esami in A10
 
@@ -99,23 +121,27 @@ public sealed class Exam : IOwnedByDepartment, IAuditable, IHasAssignee /* … *
 ```
 
 Con `new(ManageExams, IsGlobal: false, OnlyForAssignee: true)` nel catalogo del modulo, e `MapCrud` con
-`WritePolicy = Training.ManageExams`, senza `DeletePolicy`. ⚠️ **Per A10**: la lista la leggono tutti con `Training.View`, quindi un TA
-vede anche gli esami degli altri, e un'azione su una riga non sua ha un 403: la schermata deve saperlo (per esempio da un campo della
-riga). Come HQ, TC e TAC scelgono l'esaminatore di un esame che inseriscono per un altro lo decide A10. Se i trainer tenessero ancora
-`ManageExams` (la nota di A4), ognuno raggiungerebbe solo gli esami affidati a lui, ma potrebbe inserirne uno per sé: per questo A4
-glielo toglie.
+`WritePolicy = Training.ManageExams`, senza `DeletePolicy`. ⚠️ **Per A10**:
+
+- **un TA deve vedere quali esami sono i suoi** (il revisore): la lista la leggono tutti con `Training.View`, e senza un segno ogni
+  azione sull'esame di un altro diventa un 403;
+- come HQ, TC e TAC scelgono l'esaminatore di un esame che inseriscono per un altro lo decide A10;
+- se l'esame dice il suo candidato (`IHasStakeholder`), `ManageExams` va segnato anche `DeniedToStakeholder`: il guardiano esclude
+  l'interessato da ogni alternativa, l'handler solo dai permessi segnati così, e l'endpoint e la rete devono dire lo stesso.
 
 ### 3.7 Il modulo di prova e i test della spina dorsale
 
 - **`SampleRecord`** guadagna `AssigneeVid` (la migrazione `AddSampleAssignee`, del solo contesto di prova) e una terza alternativa,
   **`Sample.Manage`**, segnata `OnlyForAssignee` nel catalogo del modulo di prova, con `AlsoOnCreation` e `AlsoOnDeletion`: come un TA
-  con i suoi esami.
+  con i suoi esami. È segnata anche `DeniedToStakeholder`, come §3.6 chiede agli esami, perché sull'interessato l'handler e il
+  guardiano dicano lo stesso.
 - **I test**, sulla MariaDB vera e con l'identità del cookie come in A3 (VID da 790040): una riga affidata a X la cambia e la toglie X
   con `Sample.Manage`, e non Y che lo tiene allo stesso modo; X crea una riga affidata a sé e non una affidata a Y; X non passa la sua
   riga a Y e non prende quella di Y; `Edit` basta ancora, anche su una riga affidata a un altro; l'handler e il guardiano rispondono
   uguale in ogni caso (l'handler chiesto sulla riga, come fa il motore); l'interessato resta escluso come in A3; le alternative di A3
-  ancora non eliminano. E i test di unità dell'handler e del catalogo: il superadmin, chi tiene un permesso su ogni dipartimento, una
-  riga affidata a nessuno, un permesso che legge rifiutato.
+  non guardano a chi è affidata la riga e ancora non eliminano. E i test di unità: nell'handler il superadmin, chi tiene un permesso su
+  ogni dipartimento, una riga affidata a nessuno, un'entità che non dice a chi è affidata, la domanda senza riga (`HasAny`); nel
+  catalogo un permesso che legge rifiutato e i due rifiuti di §3.5-bis.
 
 ## 4. Alternative scartate
 
@@ -150,11 +176,26 @@ Poste il 26 settembre 2026 con [un commento sulla #135][q1], la PR di questa fas
 
    **Raccomandata: sì**, con la nota di A7. Il codice di A3b non cambia in nessun caso; con un no, A7 resta com'è in `08`.
 
+**Decise da Carmine il 26 settembre 2026** ([il suo commento sulla #135][a1]):
+
+1. **Sì, la forma di §3**: `IHasAssignee` sulla riga; `OnlyForAssignee` nel catalogo; una riga non affidata a chi chiede ricade su
+   `{Area}.Edit`, nell'unico handler come nel guardiano; `AlsoOnDeletion` sull'alternativa, che conta solo per un permesso segnato. Il
+   codice di A3b parte.
+2. **Sì, il trainer della n.1 con la stessa regola, in A7**: il training dichiara il suo trainer con `IHasAssignee`, `Training.Conduct` è
+   segnato `OnlyForAssignee` ed è tenuto per posizione come sopra, e spariscono il grant con scope a ogni assegnazione e il suo job
+   notturno. **Lo registra A7**, nella sua nota e in `08`; e poiché corregge la n.1 del design, anche `07` cambia nella stessa PR.
+
+Il revisore ha chiesto tre cose per il codice ([il suo commento][rv]), perché la regola nuova fallisca in modo evidente e non in
+silenzio: il rifiuto di `AlsoOnDeletion` su un permesso non segnato, con un test di unità (§3.4, §3.5-bis); un controllo che ogni
+alternativa segnata stia su un'entità `IHasAssignee` (§3.2, §3.5-bis); la domanda senza riga detta e provata (§3.3). E, per A10, che un
+TA veda quali esami sono i suoi (§3.6).
+
 ## 6. Che cosa si tocca
 
 - **Il nucleo**: `src/IvaoHub.Core/Division/DomainContracts.cs` (`IHasAssignee`, `AlsoOnDeletion`),
-  `src/IvaoHub.Core/Auth/Permissions/CorePermissions.cs` (`OnlyForAssignee`), `PermissionCatalog.cs` (la lettura, e il rifiuto di un
-  permesso che legge), `HubAuthorization.cs` (l'handler), `src/IvaoHub.Core/Data/HubSaveChangesInterceptor.cs` (il guardiano).
+  `src/IvaoHub.Core/Auth/Permissions/CorePermissions.cs` (`OnlyForAssignee`), `PermissionCatalog.cs` (la lettura, il rifiuto di un
+  permesso che legge, `VerifyAlternatives`), `HubAuthorization.cs` (l'handler), `src/IvaoHub.Core/Data/HubSaveChangesInterceptor.cs`
+  (il guardiano), `src/IvaoHub.Web/HubPipeline.cs` (il controllo all'avvio, §3.5-bis).
 - **Il modulo di prova**: `SampleRecords.cs`, `SampleModule.cs`, la migrazione `AddSampleAssignee` e lo snapshot.
 - **File nuovi**: i test della spina dorsale e di unità. **Nessun test che c'era cambia.**
 
@@ -162,6 +203,7 @@ Poste il 26 settembre 2026 con [un commento sulla #135][q1], la PR di questa fas
 
 - **§16 punto 2** e **`CLAUDE.md` §2** (la riga «A permission on one row only»): un permesso segnato `OnlyForAssignee` raggiunge solo
   le righe affidate a chi lo chiede (`IHasAssignee`), nell'unico handler e nel guardiano, e sulle altre conta come `{Area}.Edit`;
-  `AlsoOnDeletion` lo lascia anche eliminare, solo a chi ha la riga.
+  `AlsoOnDeletion` lo lascia anche eliminare, solo a chi ha la riga. L'hub rifiuta all'avvio una dichiarazione che la regola non può
+  onorare.
 - **§9.2, riga Training**: un esame lo cambiano e lo tolgono HQ, TC, TAC e il TA a cui è assegnato (la nota di A3 lo annuncia), con la
-  regola di questa nota. Con un sì alla domanda 2, anche il trainer conduce solo i training affidati a lui, senza grant.
+  regola di questa nota. Con la risposta 2, anche il trainer conduce solo i training affidati a lui, senza grant: lo porta A7.
