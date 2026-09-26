@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -344,6 +345,14 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
     public async Task TheReleaseJobMakesAReadyTourPublicWithoutWritingIt()
     {
         var token = TestContext.Current.CancellationToken;
+
+        // The host runs the job on its own every quarter of an hour, and each run takes the releases since the start
+        // of the last one: a run between the release written below and the test's own took the tour first, and the
+        // test's run found nothing (at 12:45:00 on 26 September 2026). Paused before the tour exists, the only run
+        // that can see it is the test's.
+        var scheduler = await _factory.Services.GetRequiredService<ISchedulerFactory>().GetScheduler(token);
+        await scheduler.PauseJob(new JobKey(TourReleaseJob.JobName), token);
+
         using var advisor = await SignedInAsync(_factory, AdvisorVid, token);
         var slug = $"fo-test-tour-{Guid.NewGuid():N}"[..28];
         var now = DateTime.UtcNow;
@@ -363,10 +372,12 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // Ready but not released, and no preview: the staff finds it, the public does not.
         await AssertProjectedAsync(Id(tour), Visibility.Staff, calendarEntries: 2, token);
 
-        // Time passes: the release is now behind, and nobody saves the tour.
+        // Time passes: the release is now behind, and nobody saves the tour. Released this instant rather than a
+        // second ago, so that a run fired just before the pause, which started before the tour existed, is still
+        // before the release.
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
-        var released = DateTime.UtcNow.AddSeconds(-1);
+        var released = DateTime.UtcNow;
         await database.Tours.IgnoreQueryFilters()
             .Where(row => row.Id == Id(tour))
             .ExecuteUpdateAsync(update => update.SetProperty(row => row.ReleaseAt, released), token);
