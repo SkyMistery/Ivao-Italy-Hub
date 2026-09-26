@@ -91,8 +91,13 @@ public sealed class TrainingRequests(
         ArgumentNullException.ThrowIfNull(payload);
 
         var problems = new Refusals();
+        if (!Enum.IsDefined(payload.Kind))
+        {
+            return (null, problems.Add("kind", "errors.required").Errors);
+        }
+
         var trainee = await TraineeAsync(cancellationToken);
-        if (trainee is null || !Enum.IsDefined(payload.Kind))
+        if (trainee is null)
         {
             return (null, problems.Add("kind", RequestRules.NothingToAsk).Errors);
         }
