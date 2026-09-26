@@ -1,9 +1,30 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.15 — 26 settembre 2026 (**le parole di più moduli**: il catalogo delle lingue del server regge due moduli, e il C# chiede la chiave di un modulo con il suo namespace)
+**Versione documento:** 1.16 — 26 settembre 2026 (**la sessione master**: una sessione di Carmine rivede, tiene l'ordine e unisce sul suo via; le altre lavorano nei worktree e non scrivono il piano)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. **M2, i tour, è chiusa** (T0–T20c, `05-design-m2.md` e `06-piano-implementazione-m2.md`), contata in `decisions/2026-09-25-m2-review.md`. **M3 (Training) la scrive `dalberone`**: design deciso (`07-design-m3.md`, PR #121), fasi A0–A12 in `08-piano-implementazione-m3.md`, A0–A3 unite il 25 set 2026. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.16** (26 set 2026, a M3 avviata): **la sessione master**. Nota `decisions/2026-09-26-la-sessione-master.md`,
+caso (c). Dal 20 settembre 44 PR unite e 15 merge di `main` nei branch, quasi tutti per conflitti nel piano e negli HANDOFF;
+nessuna sessione possedeva l'ordine. **Quattro risposte di Carmine**, tutte le raccomandazioni:
+
+- **il via è di Carmine, l'esecuzione è del master**: «unisci #N» in chat, per numero, e il master unisce una PR alla volta;
+- **le sessioni di lavoro** di Carmine, ognuna nel suo worktree, non scrivono più versione e changelog del piano né
+  `HANDOFF.md`: li scrive solo il master, dopo i merge;
+- **sul branch del collaboratore il master non spinge niente**, glielo chiede sulla PR;
+- **pulizia subito**.
+
+Il **master** è una sola sessione, nella cartella principale che resta su `main`: rivede, tiene l'ordine, unisce, porta le note
+nel piano. La restrizione del 24 settembre resta nella sostanza (solo Carmine decide che cosa entra in `main`) e cambia nella
+forma:
+
+- `gh pr merge` esce dalle regole `deny`, che un hook non può scavalcare;
+- sulla macchina di Carmine un hook chiede conferma nella cartella principale e rifiuta altrove;
+- in `.claude/settings.json` passa ad `ask`, e il lucchetto per il collaboratore resta il ruleset.
+
+Toccati `CLAUDE.md` (§0: quattro ruoli, regola 1; la riga sulle decisioni; §5; §9), `CONTRIBUTING.md`, il template della PR,
+`.claude/settings.json`, §13 e §16.E.
 
 **Changelog 1.15** (26 set 2026, dopo il merge di #133): **le parole di più moduli**, §16 punto 8.
 
@@ -2486,7 +2507,7 @@ Ogni migrazione ha: script idempotente in `tools/migrate-<sorgente>/`, report di
 | ~~**M5 — vIPI dentro l'hub**~~ **sospeso il 13 set 2026** | **Fuori dalla roadmap, senza data** (`decisions/2026-09-13-staccarsi-da-vipi.md`): l'hub linka `atc.it.ivao.aero`. Il numero M5 resta libero perché M6 non cambi nome. Testo di prima: allineamento TFM (il ramo **net10 + EF 9 + Pomelo 9** di vIPI, lavoro nel suo repository), montaggio in-process sotto `/services/vsop`, `atc.it.ivao.aero` → redirect, spegnimento di `quickoverview.ivao.it` (già confluito in vIPI). ⚠️ Fino ad allora l'indirizzo è servito **per proxy** dalla vhost che esiste: il lettore vede un sito solo da subito (decisione del 7 set 2026) | Un solo sito ATC+hub |
 | **M6 — Ecosistema** | API interne per il bot Discord, iCal, prerender SEO, primi moduli opzionali se richiesti, `FORKING.md` rifinito, prima divisione pilota che forka | Prodotto divisionale |
 
-M5 è sospeso (13 set 2026); nulla in M1–M4 ne dipendeva. **L'ordine è Tour → Training → Eventi** (deciso da Carmine il 13 set 2026 dopo il confronto con lo staff di IVAO, `decisions/2026-09-13-ordine-dei-moduli.md`); sostituisce Events → Tour → Training del 1° set 2026. Il tour resta il più avanti, con design e validatore già scritti. Per ora **nessun altro modulo** entra in roadmap. **Due staffisti in parallelo, deciso il 24 set 2026** (`decisions/2026-09-24-un-secondo-sviluppatore.md`, chiude la nota del 13 set §3.5): **M3 lo scrive `dalberone`** con il suo Claude Code, su branch del repository e una PR per fase, a partire dal design (`07-design-m3.md`, poi `08-piano-implementazione-m3.md` e `HANDOFF-M3.md`), mentre Carmine chiude M2; **su `main` unisce solo Carmine**, dopo la revisione del suo Claude (`CLAUDE.md` §0).
+M5 è sospeso (13 set 2026); nulla in M1–M4 ne dipendeva. **L'ordine è Tour → Training → Eventi** (deciso da Carmine il 13 set 2026 dopo il confronto con lo staff di IVAO, `decisions/2026-09-13-ordine-dei-moduli.md`); sostituisce Events → Tour → Training del 1° set 2026. Il tour resta il più avanti, con design e validatore già scritti. Per ora **nessun altro modulo** entra in roadmap. **Due staffisti in parallelo, deciso il 24 set 2026** (`decisions/2026-09-24-un-secondo-sviluppatore.md`, chiude la nota del 13 set §3.5): **M3 lo scrive `dalberone`** con il suo Claude Code, su branch del repository e una PR per fase, a partire dal design (`07-design-m3.md`, poi `08-piano-implementazione-m3.md` e `HANDOFF-M3.md`), mentre Carmine chiude M2; **che cosa entra in `main` lo decide solo Carmine**, dopo la revisione del suo Claude (`CLAUDE.md` §0). **Dal 26 set 2026** (`decisions/2026-09-26-la-sessione-master.md`) una sola sessione di Carmine, il **master**, rivede, tiene l'ordine delle PR e le unisce sul suo via, una per numero; le altre sessioni di Carmine lavorano ognuna nel suo worktree e non scrivono il piano né `HANDOFF.md`.
 
 Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, schermate, permessi, migrazione) prima del codice, come per M0 stesso.
 
@@ -2589,7 +2610,7 @@ Durante il codice emergerà spesso che «serve altro». Il modello regge i cambi
 - **(b) Rientra in un meccanismo generico esistente** — `IProjectable`, `MapCrud`, registry di blocchi/widget, `Localized<T>`, authorization handler: si usa quello. Se il meccanismo non copre il caso al 100 %, **si estende il meccanismo**, mai lo si aggira con un caso speciale.
 - **(c) Serve un meccanismo nuovo o una funzione nuova di modulo**: ci si ferma. Nota di design breve (mezza pagina in `docs/internal/decisions/` o un paragrafo nel design del modulo: cosa serve, perché nessun meccanismo esistente basta, cosa si tocca), decisione insieme, poi aggiornamento del piano. Il task originale si chiude senza quella parte o resta aperto: **non si chiude «a qualunque costo»**.
 
-Reti di sicurezza: la **checklist del template PR** («ho aggiunto una tabella `*_translations`, un handler di autorizzazione, un fetch a mano, una lista o un form non generati, un componente UI fuori dall'elenco? Se sì, perché?») e i **test della spina dorsale** di M0, che rompono la build se si bypassa l'interceptor o l'authorization handler. Le regole operative complete, nella forma che Claude Code legge a ogni sessione, stanno in **`CLAUDE.md`** alla radice del repository. **Dal 24 settembre 2026 è pubblico, in inglese e versionato** (`decisions/2026-09-24-un-secondo-sviluppatore.md`): lo leggono le sessioni di Carmine e quelle di ogni collaboratore, e il suo §0 dice chi unisce, che cosa un collaboratore non tocca e come ottiene una decisione; `CONTRIBUTING.md` ne è la metà pratica (una fase, i test, le trappole già pagate). Le istruzioni personali di Carmine e la procedura di revisione stanno in **`CLAUDE.local.md`**, privato e fuori dal repository come `.claude/`. Fino al 24 settembre `CLAUDE.md` era un file privato di Carmine, in italiano. Terza rete di sicurezza, accanto al template e ai test della spina dorsale: il check **`core-guard`**, che su una PR di un collaboratore ferma i file riservati al maintainer e chiede una nota nuova per ogni file del nucleo.
+Reti di sicurezza: la **checklist del template PR** («ho aggiunto una tabella `*_translations`, un handler di autorizzazione, un fetch a mano, una lista o un form non generati, un componente UI fuori dall'elenco? Se sì, perché?») e i **test della spina dorsale** di M0, che rompono la build se si bypassa l'interceptor o l'authorization handler. Le regole operative complete, nella forma che Claude Code legge a ogni sessione, stanno in **`CLAUDE.md`** alla radice del repository. **Dal 24 settembre 2026 è pubblico, in inglese e versionato** (`decisions/2026-09-24-un-secondo-sviluppatore.md`): lo leggono le sessioni di Carmine e quelle di ogni collaboratore, e il suo §0 dice chi unisce (dal 26 set 2026 il master, sul via di Carmine: `decisions/2026-09-26-la-sessione-master.md`), che cosa un collaboratore non tocca e come ottiene una decisione; `CONTRIBUTING.md` ne è la metà pratica (una fase, i test, le trappole già pagate). Le istruzioni personali di Carmine e la procedura di revisione stanno in **`CLAUDE.local.md`**, privato e fuori dal repository come `.claude/`. Fino al 24 settembre `CLAUDE.md` era un file privato di Carmine, in italiano. Terza rete di sicurezza, accanto al template e ai test della spina dorsale: il check **`core-guard`**, che su una PR di un collaboratore ferma i file riservati al maintainer e chiede una nota nuova per ogni file del nucleo.
 
 ---
 
