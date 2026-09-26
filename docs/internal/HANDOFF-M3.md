@@ -11,15 +11,15 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A7** (accettare, rifiutare, assegnare), sul branch `m3/a7-approve-and-assign`,
-**PR #146** verso `main`, in bozza **in coda dopo #144** (A6b, le pagine della richiesta, in bozza in coda dopo #143). **A6a** (il server
-della richiesta) è la **PR #143**, pronta con la CI verde, in attesa della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`,
-`CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza
-spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140) sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione
-sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è pronta, da `main` e fuori dalla coda. **Il prossimo passo** è **A8** (le
-date), sul branch `m3/a8-dates` preparato da `m3/a7-approve-and-assign`, in coda dopo A7 (dalle fasi del modulo in poi tutto migra
-`TrainingDbContext`: in fila); A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si
-chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A8a** (le date: il server; A8 divisa in apertura come A6), sul branch
+`m3/a8a-dates-server`, **PR #147** verso `main`, in bozza **in coda dopo #146** (A7, in bozza in coda dopo #144, in coda dopo #143).
+**A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in attesa della **sessione master** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
+`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140) sono unite**; la fase del nucleo **A3b**
+(#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è pronta, da `main` e fuori dalla coda.
+**Il prossimo passo** è **A8b** (le date: le pagine), sul branch `m3/a8b-dates-pages` preparato da `m3/a8a-dates-server`, in coda dopo
+A8a; poi A9 (dalle fasi del modulo in poi tutto migra `TrainingDbContext`: in fila); A3b va avanti per conto suo prima di A10 (`08`,
+«Parallelismo possibile»). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -90,6 +90,56 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A8a (27 settembre 2026, branch `m3/a8a-dates-server`, PR #147)
+
+- **A8 è divisa in apertura**, come A6 (scritto in `08`, sotto A8): **A8a il server** (questa), **A8b le pagine** (la prossima, sul branch
+  `m3/a8b-dates-pages` da `m3/a8a-dates-server`). A9 viene dopo A8b.
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova; una migrazione, `AddSlots`, solo additiva):
+  - **`trn_slots`** (`src/IvaoHub.Modules.Training/Dates/TrainingSlot.cs`): le date proposte dal trainer, con inizio, fine, gli avvisi in
+    JSON e i timbri (chi e quando). **Esistono solo mentre il training aspetta la data**: alla scelta, all'override e alla chiusura vanno
+    via tutte, e il training tiene l'inizio della sessione (`scheduled_start_utc`) e quale proposta era (`chosen_slot_id`, vuoto per
+    l'override). La sessione in corso è solo il suo inizio.
+  - **Gli avvisi e le politiche** (`Dates/DateConflicts.cs`, `Dates/DivisionDays.cs`): i giorni che una data tocca nel fuso della
+    divisione; gli altri training `Scheduled` con la sessione in quei giorni e le voci del calendario dei tipi di `conflictKinds` (senza le
+    sessioni dei training, già contate); `Warn` chiede `confirmed`, `Block` rifiuta, `None` non guarda. Nessun nome né VID negli avvisi.
+  - **I verbi** (`Dates/TrainingDates.cs`): dello staff in `/api/training/trainings/{id}` — `GET conflicts?startsAtUtc=&endsAtUtc=`,
+    `POST slots` (le date insieme, con `confirmed` e la `rowVersion`), `POST slots/{slotId}/withdraw`, `POST date` (l'override, solo
+    l'inizio), con `Training.Conduct` sulla riga; `POST close` con un motivo, con `Training.Approve` —; del trainee `POST
+    /api/training/mine/{id}/choose` (`slotId`, `rowVersion`).
+  - **Il calendario**: `Training` è `IProjectable` — una voce `training` pubblica all'inizio della sessione finché è `Scheduled`, titolo
+    «sigla · postazione», indirizzo `/training/sessions/{id}` —. La sigla la dice il contesto del modulo a ogni training che traccia
+    (`TrainingDbContext`, evento `Tracked`; `Training.RatingShortName`, non è una colonna).
+  - **I job**: `training-reminders` (`Dates/TrainingRemindersJob.cs`, ogni quarto d'ora ai minuti 5, 20, 35, 50; `reminded_at` è
+    `[NotAudited]`, il segno prima delle mail); `training-expiry` ora chiude per tempo (solo con `maxResponseDays`, dall'ultima data
+    proposta) prima di togliere i grant.
+  - **I DTO**: `held` («Eseguito», dal giorno dopo nel fuso della divisione) nella riga, nella pagina dello staff e in quella del trainee; il
+    trainee ha `slots` (da venire, senza avvisi), `trainer`, `closeReason`; lo staff `slots` con `warnings`, `proposedBy` e `proposedAt`,
+    `dateChosenByTrainee`, `closeReason`, `actions.canConduct`, `actions.canClose`. Tutto in `web/src/shared/api/schema.d.ts`.
+  - **Le mail** `datesProposed`, `dateConfirmed`, `reminder`, `trainingClosed` (`TrainingMail.SessionAsync` per le due a tutti e due), in
+    UTC; i nomi delle persone in `TrainingPeople`.
+  - **I test**: `TrainingDatesRulesTests` (unità), `TrainingDatesTests` (integrazione, VID 790032–790038, con il «fatta quando» attraverso
+    l'API).
+- **Che cosa deve sapere la fase dopo**:
+  - **A8b** (le pagine): la pagina dello staff chiede `conflicts` prima di scrivere e mostra gli avvisi — con `Warn` li fa confermare e
+    manda `confirmed: true`, con `Block` sono un rifiuto —; la proposta e il ritiro valgono solo in `Assigned`, l'override anche in
+    `Scheduled` (`actions.canConduct`); la chiusura è `actions.canClose`. I riquadri del trainee sono `slots` di `GET
+    /api/training/mine/{id}`; la scelta risponde con il training com'è dopo, e un 409 vuol dire date cambiate nel frattempo. Le mail al
+    trainee puntano già a `/training/mine/{id}`. ⚠️ **Il promemoria in Mailpit sul banco**: il banco non ha un modo di far partire un job a
+    comando (l'unico endpoint del banco è `/e2e/signin`, in `src/IvaoHub.Web`, che è nucleo): o la spec aspetta il giro del quarto
+    d'ora, o serve un modo di far partire il job, che è un cambio del nucleo con la sua nota. Il test d'integrazione di A8a lo prova
+    attraverso il job.
+  - **A9**: la rischedulazione riporta ad `Assigned` e azzera la sessione in corso, e le date si propongono di nuovo; `Training.Project`
+    va esteso alle sessioni `Held` (la voce della sessione in corso sparisce da sola quando il training non è più `Scheduled`).
+  - **A10**: «in attesa di scelta da N giorni» è `TrainingDates.Unanswered` con `now − responseReminderDays`.
+  - ⚠️ **Le parole nuove del modulo arrivano al server solo dopo `pnpm i18n:sync` e una build** (la copia in `locales/`): senza, una mail
+    dice la chiave. ⚠️ **I dati di una mail sono JSON con i caratteri non ASCII in escape**: un test cerca le parti ASCII.
+  - ⚠️ **Un training `Scheduled` con la data scritto in un test si proietta nel calendario**: una pulizia che cancella in blocco toglie
+    anche le sue voci (`TrainingStaffTests.CleanAsync` ora lo fa).
+  - VID: il prossimo libero è **790039**, poi **790045** (A3b usa 790040–790044 e 790050–790051).
+- **La coda**: la PR è in bozza con `(after #146)` e `Queued after #146.`; #146 è in coda dopo #144, in coda dopo #143. Quando #146 sarà
+  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
+  dal corpo, la PR pronta a CI verde — lo fa la sessione di A8a se è ancora viva, altrimenti quella di A8b prima di cominciare.
 
 ### Che cosa ha lasciato A7 (26 settembre 2026, branch `m3/a7-approve-and-assign`, PR #146)
 
