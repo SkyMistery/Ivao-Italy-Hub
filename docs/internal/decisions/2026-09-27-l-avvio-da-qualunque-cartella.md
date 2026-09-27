@@ -2,8 +2,8 @@
 
 **Data:** 27 settembre 2026, notte, dopo la prima installazione di `0.2.0` su `test.it.ivao.aero`
 **Stato:** **Decisa da Carmine in chat, 27 settembre 2026**: «tutte e due» — l'hub trova le sue cartelle anche da dove sta il
-suo assembly, e un avvio fallito scrive il motivo in un file che si scarica via FTP. Il link al commento di Carmine sulla PR lo
-aggiunge il master.
+suo assembly, e un avvio fallito scrive il motivo in un file che si scarica via FTP. Confermata da Carmine sulla PR:
+<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/162#issuecomment-5860389724>.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: i meccanismi ci sono già (`HubPaths`, `diagnostics/startup.txt`), e si
 **estendono**. È un cambio del nucleo, nella sua PR, senza codice di modulo.
 
@@ -50,7 +50,9 @@ motivo va solo su stdout. Anche `wwwroot/` e `appsettings.json` si leggono dalla
   lo stack con le interne. **Mai un segreto**: il
   file non legge la configurazione; e siccome il messaggio di un'eccezione può citare un valore, ogni valore dei file di
   `secrets/`, del file OAuth e di ogni connection string (anche da variabile d'ambiente) viene sostituito da `[redacted]`
-  prima di scrivere. Un test lo prova con una connection string dentro il messaggio.
+  prima di scrivere. Un test lo prova con una connection string dentro il messaggio. ⚠️ **I valori sotto i 6 caratteri
+  non si sostituiscono**: sono interruttori e numeri (`true`, `3306`), e sostituirli guasterebbe il testo; quindi una
+  password del database così corta comparirebbe, se un messaggio la citasse.
 - **Si cancella** al primo avvio riuscito, che scrive `startup.txt` come oggi. Il processo esce comunque con errore e il
   messaggio resta su stdout come prima: il file si aggiunge, non sostituisce niente.
 - **Solo il processo vero**: il gestore si registra quando l'assembly d'ingresso è l'hub. Sotto i test (`WebApplicationFactory`)

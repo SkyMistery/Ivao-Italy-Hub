@@ -220,7 +220,9 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   as to standard output: the time, the version and commit, the environment, the root and how it was found, the
   working directory, and the exception with its cause and stack. It never quotes a value of the configuration that
   could be a secret (the files of `secrets/`, the OAuth file, any key naming a connection string, a password, a
-  secret, a token or a key): those are replaced by `[redacted]`. The next start that succeeds deletes the file.
+  secret, a token or a key): those are replaced by `[redacted]`, when they are six characters or longer — shorter
+  values are flags and numbers, so a password that short would not be hidden. The next start that succeeds deletes
+  the file.
   Measured on the linux-x64 package started from another directory: a missing division file, a missing OAuth
   field, a database that cannot be reached. What stops the process before .NET code runs, or kills it without an
   exception (no ICU, a truncated `.dll`, out of memory), still says so only on standard output, which is in

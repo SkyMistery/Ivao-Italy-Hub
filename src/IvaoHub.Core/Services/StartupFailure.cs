@@ -22,7 +22,11 @@ public static class StartupFailure
 
     public const string Redacted = "[redacted]";
 
-    /// <summary>Shorter values are left alone: they are flags and numbers, and replacing them would garble the text.</summary>
+    /// <summary>
+    /// Shorter values are left alone: they are flags and numbers ("true", "3306"), and replacing them would garble the
+    /// text. The price: a secret this short, a database password of five characters say, would appear if a message
+    /// quoted it.
+    /// </summary>
     private const int ShortestSecret = 6;
 
     /// <summary>What goes into the file, with every one of <paramref name="secrets"/> taken out.</summary>
