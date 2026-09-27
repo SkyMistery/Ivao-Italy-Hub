@@ -11,10 +11,13 @@ import {
 } from '../../shared/list';
 
 import {
+  banFromFormValues,
   settingsFromFormValues,
   sheetItemFilters,
   sheetItemFromFormValues,
   staffTrainingsFilters,
+  type BanFormValues,
+  type BansSearch,
   type RatingKind,
   type SettingsFormValues,
   type SheetItemFormValues,
@@ -29,7 +32,7 @@ import {
  * cancellation (A6), the page of one training and the choice of its date (A8) —, and the staff's side — the list of the
  * trainings, the page of one, accepting, refusing and assigning its trainer (A7), what a date meets, the dates proposed and
  * one taken back, the date set by hand, and the closing (A8); what the session came to — rescheduled, not attended, or
- * reported with the sheet (A9).
+ * reported with the sheet (A9); a trainee's path, and the bans given and lifted (A10a).
  */
 
 export type TrainingRatingDto = components['schemas']['TrainingRatingDto'];
@@ -63,6 +66,8 @@ export type TraineeEvaluationDto = components['schemas']['TraineeEvaluationDto']
 export type TraineeSessionDto = components['schemas']['TraineeSessionDto'];
 export type TrainingEvaluationWriteDto = components['schemas']['TrainingEvaluationWriteDto'];
 export type TrainingReportDto = components['schemas']['TrainingReportDto'];
+export type TraineePathDto = components['schemas']['TraineePathDto'];
+export type TraineeBanDto = components['schemas']['TraineeBanDto'];
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
 export const MODULE_KEY = 'training';
@@ -470,4 +475,113 @@ export async function dateConflicts(
       params: { path: { id }, query: endsAtUtc === null ? { startsAtUtc } : { startsAtUtc, endsAtUtc } },
     }),
   );
+}
+
+// ---- the trainee's path and the bans (A10a) -----------------------------------------------------------------------------
+
+const pathKey = ['training', 'trainees'] as const;
+const bansKey = ['training', 'bans'] as const;
+
+/**
+ * The path of one trainee as the staff reads it (design M3 §4.2): where they stand on each ladder, every training of theirs as the
+ * staff's page of it — without what is reserved when the reader is that trainee —, their bans, and whether the reader may ban
+ * them. `null` when the hub knows nothing of the VID.
+ */
+export function traineePathQuery(vid: number) {
+  return queryOptions({
+    queryKey: [...pathKey, vid] as const,
+    queryFn: async (): Promise<TraineePathDto | null> => {
+      const result = await api.GET('/api/training/trainees/{vid}', { params: { path: { vid } } });
+      return result.response.status === 404 ? null : unwrap(result);
+    },
+  });
+}
+
+/** How a ban stands, in a word: it holds, it is over, or somebody lifted it before its end. Whether it holds is the server's. */
+export type BanStatus = 'Holds' | 'Over' | 'Lifted';
+
+export function banStatus(ban: { readonly holds: boolean; readonly liftedAt: string | null }): BanStatus {
+  if (ban.holds) {
+    return 'Holds';
+  }
+
+  return ban.liftedAt === null ? 'Over' : 'Lifted';
+}
+
+/** A row of the bans as the list draws it: the member and who gave it written out, and how it stands, as a cell draws a word. */
+export interface BanRow extends TraineeBanDto {
+  readonly traineeName: string;
+  readonly givenByName: string | null;
+  readonly status: BanStatus;
+}
+
+/** A page of the bans, newest first unless the reader sorts, and of one member when the search names one. */
+export function bansListQuery(search: BansSearch) {
+  const { vid, ...list } = search;
+  const ordered = list.sort === undefined ? { ...list, dir: 'desc' as const } : list;
+
+  return queryOptions({
+    queryKey: [...bansKey, 'list', search] as const,
+    queryFn: async (): Promise<Page<BanRow>> => {
+      const page = unwrap(
+        await api.GET('/api/training/bans', {
+          params: { query: toQuery(ordered) },
+          querySerializer: listQuerySerializer(vid === undefined ? {} : { vid: String(vid) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((ban) => ({
+          ...ban,
+          traineeName: memberLabel(ban.trainee),
+          givenByName: ban.givenBy === null ? null : memberLabel(ban.givenBy),
+          status: banStatus(ban),
+        })),
+      };
+    },
+  });
+}
+
+/**
+ * «Ban» (§2.9): the ban given, or the refusals field by field — a member who has one already, an end gone by, the reader's own
+ * VID. The trainee is told by mail; the lists and the paths are read again.
+ */
+export function useGiveBan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: BanFormValues): Promise<TraineeBanDto> =>
+      unwrap(await api.POST('/api/training/bans', { body: banFromFormValues(values) })),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bansKey }),
+        queryClient.invalidateQueries({ queryKey: pathKey }),
+      ]);
+    },
+  });
+}
+
+/**
+ * «Lift the ban» (§2.9), at the version the reader saw: who and when are recorded, and the member may ask for trainings again at
+ * once. 409 when somebody moved it meanwhile; the lists and the paths are read again either way.
+ */
+export function useLiftBan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ban: TraineeBanDto): Promise<TraineeBanDto> =>
+      unwrap(
+        await api.POST('/api/training/bans/{id}/lift', {
+          params: { path: { id: ban.id } },
+          body: { rowVersion: ban.rowVersion },
+        }),
+      ),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bansKey }),
+        queryClient.invalidateQueries({ queryKey: pathKey }),
+      ]);
+    },
+  });
 }

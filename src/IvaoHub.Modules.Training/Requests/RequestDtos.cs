@@ -28,6 +28,7 @@ public sealed record MyTrainingDto(
 /// <summary>
 /// Where the trainee stands on one ladder (§2.2): their rating and hours, the one training the hub proposes and on which
 /// positions, and the first rule that refuses a request now, with what the page needs to say why — a refusal is a bare key.
+/// The staff's page of the trainee's path (A10a) reads the same answer, worked out by the same rules.
 /// </summary>
 /// <param name="Kind">The ladder.</param>
 /// <param name="RatingShortName">The trainee's rating as the staff says it; none when the hub does not know it.</param>

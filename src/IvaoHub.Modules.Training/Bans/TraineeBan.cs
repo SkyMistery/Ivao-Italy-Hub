@@ -7,8 +7,9 @@ namespace IvaoHub.Modules.Training.Bans;
 /// ladder, and the trainings already open go on. The shape of the training system of today: who, why, until when — or until
 /// somebody lifts it —, who gave it (who wrote the row) and who lifted it, and when. A ban is never deleted: it stays in the
 /// trainee's history, and lifting it is writing who and when.
-/// <para>A6 makes the table and reads it, for the request; the list, the form, «Ban» and «Lift the ban» are A10's, with
-/// <c>Training.Ban</c>, which nobody uses on a ban of their own (<see cref="IHasStakeholder"/>).</para>
+/// <para>A6 makes the table and reads it, for the request; the list, the form, «Ban» and «Lift the ban» are A10a's
+/// (<see cref="TrainingBans"/>, <see cref="BanEndpoints"/>), with <c>Training.Ban</c>, which nobody uses on a ban of their own
+/// (<see cref="IHasStakeholder"/>).</para>
 /// </summary>
 [Audited]
 [PermissionArea(TrainingPermissions.Area)]

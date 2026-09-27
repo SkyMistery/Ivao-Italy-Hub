@@ -2,6 +2,8 @@
   "nav": {
     "section": "Training",
     "trainings": "Requests and trainings",
+    "trainees": "Trainees",
+    "bans": "Bans",
     "sheets": "Evaluation sheet",
     "settings": "Training settings"
   },
@@ -390,6 +392,87 @@
       "byHub": "Closed by the hub on {{date}}: the trainee chose no date in the time the division gives to choose one."
     }
   },
+  "trainees": {
+    "title": "Trainees",
+    "description": "The path of a trainee: where they stand on each path, every training of theirs with its report, and their bans.",
+    "open": "Open the path",
+    "fields": {
+      "vid": "VID"
+    },
+    "hints": {
+      "vid": "The member's VID: their path opens even with no training yet, to ban them."
+    },
+    "pathDescription": "Where the trainee stands on each path, their bans, and every training of theirs by path and rating.",
+    "ban": "Ban",
+    "sections": {
+      "ladders": "Where they stand",
+      "bans": "Bans",
+      "trainings": "Trainings"
+    },
+    "rating": "Rating",
+    "hours": "Hours",
+    "readyForExamOn": "Ready for the {{rating}} exam, marked by the trainer: the exam is booked on the network's site.",
+    "standing": {
+      "canAsk": "Can ask for the training",
+      "mockExam": "It will be a mock exam, as agreed with the trainer.",
+      "bannedUntil": "Banned from the training until {{date}} UTC.",
+      "bannedForever": "Banned from the training until somebody lifts the ban.",
+      "open": "Has a training open on this path.",
+      "openLink": "Open it",
+      "waiting": "Waiting after the last training on this path.",
+      "waitingUntil": "Waiting after the last training on this path: can ask again from {{date}} UTC.",
+      "hours": "This training asks for {{minimum}} connection hours, and they have {{hours}}.",
+      "hoursUnknown": "This training asks for {{minimum}} connection hours, and the hub does not know theirs.",
+      "noPosition": "At the moment the division offers no position to train this rating on.",
+      "nothingToAsk": "There is no training to ask for on this path after their rating."
+    },
+    "noBans": "No ban.",
+    "allBans": "Their bans in the list",
+    "banForever": "From {{from}} UTC, until somebody lifts it",
+    "banUntil": "From {{from}} UTC to {{until}} UTC",
+    "banReason": "Reason: {{reason}}",
+    "banGivenBy": "Given by {{name}}",
+    "banLiftedBy": "lifted by {{name}} on {{date}} UTC",
+    "noTrainings": "No training yet.",
+    "requestedAt": "asked for on {{date}}",
+    "trainer": "Trainer: {{name}}",
+    "openTraining": "Open the training"
+  },
+  "bans": {
+    "title": "Bans",
+    "description": "The members banned from asking for trainings, on every path: while a ban holds they ask for nothing, and the trainings they have open go on. A ban is never changed nor deleted: to change one, lift it and give another.",
+    "create": "New ban",
+    "formDescription": "The member reads the reason and the end in an email, and asks for no training on any path until the end — or, without one, until somebody lifts the ban.",
+    "give": "Ban",
+    "given": "Ban given.",
+    "toTrainee": "Path",
+    "lift": "Lift the ban",
+    "liftTitle": "Lift the ban?",
+    "liftDescription": "The member may ask for trainings again at once. The ban stays in their history, with who lifted it and when.",
+    "liftConfirm": "Yes, lift the ban",
+    "lifted": "Ban lifted.",
+    "fields": {
+      "traineeName": "Member",
+      "status": "Status",
+      "createdAt": "Since",
+      "endsAt": "Until",
+      "reason": "Reason",
+      "givenByName": "Given by",
+      "vid": "VID of the member"
+    },
+    "hints": {
+      "vid": "Whom the ban is for. Nobody bans themselves.",
+      "reason": "As the member will read it in the email.",
+      "endsAt": "Left empty, the ban holds until somebody lifts it."
+    },
+    "options": {
+      "status": {
+        "Holds": "In force",
+        "Over": "Over",
+        "Lifted": "Lifted"
+      }
+    }
+  },
   "sheets": {
     "title": "Evaluation sheet",
     "description": "The items a trainer marks after a session, per path and rating: the practical ones with a grade from 1 to 5, the theory ones as done, not done or to improve. The trainee reads them in their report.",
@@ -501,7 +584,10 @@
     "reportMockExamAgain": "This training is a mock exam already: the one after it is not another mock exam.",
     "sheetChanged": "The sheet of this training changed meanwhile: reload the page.",
     "evaluationGradeOnTheory": "An item of theory has no grade: it is marked done, not done or to improve.",
-    "evaluationMarkOnPractice": "An item of practice is not marked done: it has a grade from 1 to 5."
+    "evaluationMarkOnPractice": "An item of practice is not marked done: it has a grade from 1 to 5.",
+    "banEndsInThePast": "The end of the ban has already gone by.",
+    "banAlreadyHolds": "A ban already holds on this member: lift it before giving another.",
+    "banNotHolding": "This ban no longer holds: there is nothing to lift."
   },
   "notifications": {
     "requestReceived": {
@@ -539,6 +625,10 @@
     "reportPublished": {
       "title": "Training reports",
       "description": "An email when the trainer publishes the report of a training of yours."
+    },
+    "banned": {
+      "title": "Bans from the training",
+      "description": "An email, with the reason and until when, when the training department bans you from asking for trainings."
     }
   },
   "mail": {
@@ -592,7 +682,13 @@
       "reportPublished": {
         "subject": "[Training] Report published: {{training}}",
         "body": "{{trainer}} has published the report of your training {{training}}: the grades, the comments and the general comment are on the training's page.{{ready}}\n\n{{after}}\n\nThe report: {{url}}\n\n---\nYou can switch these emails off from your profile page."
-      }
+      },
+      "banned": {
+        "subject": "[Training] Ban from the training",
+        "body": "The training department has banned you from asking for trainings, on every path.\n\nThe reason: {{reason}}\n\n{{until}} The trainings you have open go on as they are.\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "bannedUntil": "The ban holds until {{date}} UTC.",
+      "bannedUntilLifted": "The ban holds until the training department lifts it."
     }
   }
 }
