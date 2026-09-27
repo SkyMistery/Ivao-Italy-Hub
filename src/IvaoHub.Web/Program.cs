@@ -62,11 +62,20 @@ builder.Services.AddSingleton(paths);
 builder.Services.AddOptions<SecurityHeadersOptions>()
     .Bind(new ConfigurationBuilder().AddJsonFile(paths.SecurityFile, optional: true).Build());
 
+// The division file, with the host of this installation on top when it has one of its own: a test
+// installation is the same division at another address (note 2026-09-27-l-installazione-di-prova).
+// Read through the options pipeline and not here, so that the installation's settings are the
+// final ones — a test host adds its own after this line.
 var divisionConfiguration = HubConfiguration.DivisionFile(paths);
 builder.Services.AddOptions<DivisionOptions>()
-    .Bind(divisionConfiguration)
+    .Configure<IConfiguration>((division, configuration) =>
+        HubConfiguration.Division(divisionConfiguration, configuration).Bind(division))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+
+// What this installation says about itself, next to AllowedHosts: whether it is private.
+builder.Services.AddOptions<InstallationOptions>()
+    .Bind(builder.Configuration.GetSection(InstallationOptions.SectionName));
 
 // Which modules exist is the explicit list, so the validator can say that division.json names one
 // this build does not have. Every module, not only the enabled ones: naming a module in order to

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { loginHref } from '../../shared/api/client';
 
 /** The reasons the server is willing to name. Anything else is shown as unknown. */
-const KNOWN_REASONS = ['portal', 'correlation', 'nonce', 'profile'] as const;
+const KNOWN_REASONS = ['portal', 'correlation', 'nonce', 'profile', 'staffOnly'] as const;
 
 type KnownReason = (typeof KNOWN_REASONS)[number];
 

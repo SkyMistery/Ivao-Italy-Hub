@@ -23,12 +23,19 @@ public static class StartupDiagnostics
         IReadOnlyList<string> appliedMigrations,
         IReadOnlyList<string> enabledModules,
         DateTime startedAtUtc,
+        string domain,
+        bool preview,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(build);
         ArgumentNullException.ThrowIfNull(appliedMigrations);
         ArgumentNullException.ThrowIfNull(enabledModules);
+
+        // The two answers an administrator checks first after an upload to a test server: which host
+        // the mails will link to, and whether this installation is the private one it is meant to be
+        // (note 2026-09-27-l-installazione-di-prova).
+        var access = preview ? "private: staff only, not indexed" : "public";
 
         var report = new StringBuilder()
             .Append(CultureInfo.InvariantCulture, $"started at    {startedAtUtc:O}\n")
@@ -38,6 +45,8 @@ public static class StartupDiagnostics
             .Append(CultureInfo.InvariantCulture, $"runtime       {build.Dotnet}\n")
             .Append(CultureInfo.InvariantCulture, $"environment   {environment}\n")
             .Append(CultureInfo.InvariantCulture, $"division      {divisionCode}\n")
+            .Append(CultureInfo.InvariantCulture, $"domain        {domain}\n")
+            .Append(CultureInfo.InvariantCulture, $"access        {access}\n")
             .Append(CultureInfo.InvariantCulture, $"root          {paths.Root}\n")
             .Append(CultureInfo.InvariantCulture, $"migrations    {Join(appliedMigrations, "none applied, already up to date")}\n")
             .Append(CultureInfo.InvariantCulture, $"modules       {Join(enabledModules, "none yet")}\n")
