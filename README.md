@@ -214,6 +214,8 @@ folder would empty the media library of every page that shows one.
 That command is how the package is built, not how it is delivered: a delivery starts from the zip
 that the release workflow attaches to the GitHub release of a tag, built on a clean checkout, and
 never from a publish on your own machine. The steps are in [Delivering a release](docs/DELIVERING.md).
+How that package is then put on a server — the folders, the start command, the web server, the
+database and the checks after every deploy — is in [Deploying the hub](docs/DEPLOYING.md).
 
 ## Repository layout
 
@@ -227,7 +229,7 @@ never from a publish on your own machine. The steps are in [Delivering a release
 | `seed/content-templates/` | The page templates a fresh installation starts with, carrying translation keys rather than text |
 | `config/` | `division.json` and the OAuth client configuration |
 | `tests/` | Unit tests and integration tests (Testcontainers, a real MariaDB of the production version) |
-| `docs/` | Public documentation: the [forking guide](docs/FORKING.md), the [UI guidelines](docs/UI-GUIDELINES.md) and [delivering a release](docs/DELIVERING.md) |
+| `docs/` | Public documentation: the [forking guide](docs/FORKING.md), [delivering a release](docs/DELIVERING.md), [deploying the hub](docs/DEPLOYING.md) and the [UI guidelines](docs/UI-GUIDELINES.md) |
 | `tools/` | Walk-throughs meant to be followed by hand, starting with [the M0 demo](tools/demo-m0.md), and the scripts that go with them, such as `prepare-delivery.ps1` |
 
 ## Contributing
