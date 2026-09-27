@@ -377,19 +377,23 @@ function TrainingItem({ training }: { training: StaffTrainingDto }) {
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const moment = useMoment();
   const published = training.state === 'Completed' ? publishedBy(training.sessions) : null;
+  const state = t(`training:states.${shownState(training)}`);
+  const mockExam = training.isMockExam ? t('training:mine.mockExamBadge') : null;
+  const asked = t('training:trainees.requestedAt', {
+    date: moment(training.requestedAt, { time: false }),
+  });
 
   return (
     <AccordionItem value={String(training.id)}>
-      <AccordionTrigger>
+      {/* Its name said in words with their separators: the pieces of the line are drawn apart, and read out glued without it. */}
+      <AccordionTrigger
+        aria-label={[state, training.position, mockExam, asked].filter((part) => part !== null).join(' · ')}
+      >
         <span className="flex flex-wrap items-center gap-2 text-left">
           <StateBadge state={shownState(training)} />
           {training.position === null ? null : <span className="font-mono text-sm">{training.position}</span>}
-          {training.isMockExam ? (
-            <Badge variant="flat" color="purple" text={t('training:mine.mockExamBadge')} />
-          ) : null}
-          <span className="text-muted-foreground text-sm font-normal">
-            {t('training:trainees.requestedAt', { date: moment(training.requestedAt, { time: false }) })}
-          </span>
+          {mockExam === null ? null : <Badge variant="flat" color="purple" text={mockExam} />}
+          <span className="text-muted-foreground text-sm font-normal">{asked}</span>
         </span>
       </AccordionTrigger>
       <AccordionContent>
