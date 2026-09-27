@@ -77,6 +77,7 @@
       "correlation": "The round trip could not be matched to this browser. It usually happens when the page was left open too long, or cookies were cleared halfway through.",
       "nonce": "The answer from IVAO could not be validated. Try again; if it keeps happening, it is a problem on our side.",
       "profile": "IVAO did not tell us who you are, so no account could be opened.",
+      "staffOnly": "This is a private copy of the site, open only to the staff of the division while it is being tested. Nothing about you has been saved.",
       "unknown": "Something went wrong on the way back from IVAO."
     }
   },
