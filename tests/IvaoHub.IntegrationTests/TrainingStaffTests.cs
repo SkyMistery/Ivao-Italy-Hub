@@ -129,7 +129,11 @@ public sealed class TrainingStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Equal("Test Trainee", page.GetProperty("trainee").GetProperty("name").GetString());
             Assert.Equal("https://trn-test.example.invalid/theory", page.GetProperty("theoryExamUrl").GetString());
             Assert.NotEqual(JsonValueKind.Null, page.GetProperty("theoryConfirmedAt").ValueKind);
-            Assert.False(page.TryGetProperty("staffComment", out _));
+
+            // The comment for the staff arrived with A9's one function (note le-note-riservate-e-il-trainee): empty on a request, and
+            // nothing is left out for an advisor, who is not its trainee.
+            Assert.Equal(JsonValueKind.Null, page.GetProperty("staffComment").ValueKind);
+            Assert.False(page.GetProperty("reservedLeftOut").GetBoolean());
             Assert.True(page.GetProperty("actions").GetProperty("canDecide").GetBoolean());
             Assert.False(page.GetProperty("actions").GetProperty("canAssign").GetBoolean());
             var version = page.GetProperty("rowVersion").GetDateTime();

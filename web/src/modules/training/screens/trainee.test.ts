@@ -68,6 +68,10 @@ function training(
     closeReason: null,
     readyForMockExam: false,
     readyForExam: false,
+    cooldownWaived: false,
+    generalComment: null,
+    sheet: [],
+    sessions: [],
     rowVersion: '2026-09-01T10:00:00.000001Z',
     ...overrides,
   };
