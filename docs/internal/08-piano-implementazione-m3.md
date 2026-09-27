@@ -64,8 +64,9 @@ Per non ripeterle tredici volte:
 | A7 | Accettare, rifiutare, assegnare | A3, A6b | le pagine dello staff, il grant del trainer, il job che lo toglie |
 | A8a | Le date: il server — **A8 divisa in apertura** | A7 | `trn_slots`, avvisi e politiche, proposta, scelta, override, «Eseguito», calendario, promemoria, chiusura per tempo e a mano, le mail |
 | A8b | Le date: le pagine | A8a | i riquadri in `/training/mine/$id`, le date e la chiusura nella pagina dello staff, lo smoke e il giro sul banco |
-| A9 | Dopo la sessione | A5, A8b | rischedula, no-show, scheda con N/A, report, mock exam, le note riservate e il trainee |
-| A10 | Blocchi, pagine pubbliche, percorso, esami, ban | A2, A3, A3b, A9 | i quattro blocchi Data, `/training` e la sessione, il percorso del trainee, `trn_exams`, i ban |
+| A9a | Dopo la sessione: il server — **A9 divisa in apertura** | A5, A8b | `trn_sessions`, `trn_evaluations`, rischedula, no-show, scheda con N/A, report, mock exam, le note riservate e il trainee, le mail |
+| A9b | Dopo la sessione: le pagine | A9a | le azioni del dopo sessione nella pagina dello staff, il report nella pagina del trainee, lo smoke e il giro sul banco |
+| A10 | Blocchi, pagine pubbliche, percorso, esami, ban | A2, A3, A3b, A9b | i quattro blocchi Data, `/training` e la sessione, il percorso del trainee, `trn_exams`, i ban |
 | A11a | Nucleo: i capi FIR | A7 | un permesso di modulo a una posizione FIR, contato solo sul suo FIR |
 | A11b | I capi FIR nel modulo | A10, A11a | assegnazione, lista e `approvalQueue` per FIR |
 | A12a | Nucleo: «persona cancellata» e le colonne del training | A10 | l'helper nel nucleo; `ErasureTests` con `TrainingDbContext` |
@@ -1469,7 +1470,143 @@ trainee dai suoi endpoint non le legge mai. Smoke: la scheda e il report.
 **Fatta quando**: il trainer pubblica un report con una voce N/A e «pronto per il mock exam»; il trainee lo legge senza note
 riservate, e la sua richiesta successiva dice «questo sarà un mock exam, come concordato con il trainer».
 
-**Com'è andata**: *(a fase chiusa)*
+**Divisa il 27 settembre 2026 in apertura**, come A6 e A8 (sopra): il server da solo — due tabelle, la rischedula, il no-show, la
+scheda con la fotografia delle voci, il report, la funzione che toglie le note riservate, la sessione tenuta nel calendario, la risposta
+vera a «la voce è usata?», due mail e i loro test — è già una PR come quella di A8a; le pagine, con la scheda come form generato, il
+report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
+
+- **A9a — il server** (branch `m3/a9a-after-the-session-server`, preparato come `m3/a9-after-the-session` e rinominato prima del primo
+  push): i punti 1–7 sul server, con gli endpoint che scrivono e i DTO che le pagine leggono — per lo staff la scheda da compilare e
+  quella compilata, lo storico delle sessioni con gli appunti, il report, che cosa può fare chi legge, e i campi riservati tolti quando
+  chi legge è il trainee della riga; per il trainee il report senza note riservate e le sue sessioni senza appunti —; i test unit e
+  d'integrazione. Il «fatta quando» lo prova un test d'integrazione, attraverso l'API, come in A6a e A8a.
+- **A9b — le pagine** (branch `m3/a9b-after-the-session-pages`, da `m3/a9a-after-the-session-server`): nella pagina dello staff, accanto
+  alla sessione nella sezione «Le date», la rischedula con gli appunti, il no-show, la scheda come form generato dalle voci, il report e
+  «Pubblica», e lo storico delle sessioni; nella pagina del trainee il report e «che cosa succede dopo» per gli stati nuovi; lo smoke
+  della scheda e del report; il giro sul banco con `pnpm e2e:full` e il «fatta quando» di A9. Se una pagina chiede al server qualcosa
+  che A9a non dà, è un cambio del modulo nella PR di A9b, detto nel suo «Com'è andata».
+
+**Com'è andata (A9a)** (27 settembre 2026, branch `m3/a9a-after-the-session-server`, PR #149, in coda dopo #148):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — le righe figlie scritte con il training, come le date di A8a e gli errori di un PIREP (§1.1), sotto il guardiano con i
+  permessi alternativi di A3; `IProjectable` del training, esteso nel suo `Project`; `ISheetItemReports` sostituito nella stessa
+  registrazione (`TryAddScoped`), come T11 dei tour con `PirepTourReports`; `Localized<string>` per la fotografia del titolo; il servizio
+  notifiche con i tipi del modulo; le impostazioni del modulo —. La regola delle note riservate è la nota
+  `le-note-riservate-e-il-trainee`, già decisa in A0 (caso c deciso): qui c'è il suo codice. **Nessun file del nucleo**, nessuna nota
+  nuova, nessuna domanda a Carmine. Una migrazione, **`AddSessionsAndEvaluations`**, solo additiva: due tabelle, tre indici, le chiavi
+  verso il training.
+- **Fatto**, come il perimetro di A9a qui sopra:
+  1. **`trn_sessions`** (`Sessions/TrainingSession.cs`): la data della sessione, l'esito (`Held`, `Rescheduled`, `NoShow`, come testo), gli
+     appunti interni di una sessione rischedulata, i timbri (chi ha registrato l'esito e quando). **`trn_evaluations`**
+     (`Sheets/TrainingEvaluation.cs`): una riga per voce, con la **fotografia** della voce — titolo in ogni lingua, sezione, posto nella
+     scheda — e quale voce era, il voto 1–5 (pratica) o la spunta `Done`, `NotDone`, `ToImprove` (teoria) — nessuno dei due: N/A —, il
+     commento per il trainee e la nota riservata. Figlie del training, con la chiave in cascata; **nessuna chiave verso le voci**, come gli
+     errori di un PIREP verso il catalogo: il report legge la sua copia. Nessuna delle due è `[Audited]`.
+  2. **La scheda** (`Sheets/EvaluationSheet.cs`, funzioni pure): le voci che un report segna sono le **attive** del percorso e del rating
+     del training, nell'ordine di `sort` (`ItemsOf`); `Fill` ne fa la scheda compilata, una copia per voce con la riga del payload che la
+     segna, N/A dove niente la segna, e i rifiuti riga per riga.
+  3. **I verbi dello staff** (`Sessions/TrainingSessions.cs`, `Staff/StaffEndpoints.cs`), con `Training.Conduct` sulla riga — il trainer con il
+     grant sullo scope del training, TC e TAC per posizione —, mai il trainee, **dall'inizio della sessione** (scostamento 1): `POST
+     …/reschedule` (gli appunti, facoltativi: la sessione `Rescheduled`, il training di nuovo `Assigned` senza data, la voce del
+     calendario via, nessuna mail), `POST …/no-show` (la sessione `NoShow`, il training `NoShow` chiuso da chi lo registra, la voce via, la
+     mail `trainingClosed` con l'attesa del no-show), `POST …/report` (la scheda, il commento generale e quello riservato, «pronto per il
+     mock exam», «pronto per l'esame», «togli l'attesa»: la sessione `Held`, il training `Completed`, la mail `reportPublished`). Ognuno
+     risponde con la pagina com'è dopo, i rifiuti campo per campo, 409 su una versione vecchia.
+  4. **«La voce è usata?» risponde davvero**: `EvaluationSheetItemReports` (le schede compilate, sull'indice di `sheet_item_id`) al posto
+     di `NoSheetItemReports`, nella stessa registrazione; una voce che un report ha segnato non si elimina più.
+  5. **Il mock exam**: la casella del report alimenta `RequestRules.IsMockExam` di A6a così com'è — la richiesta dopo sullo stesso rating
+     è un mock exam, e la pagina della richiesta lo dice già (A6b) —; sul report di un mock exam la casella è rifiutata (scostamento 7).
+  6. **Le note riservate e il trainee** (nota `le-note-riservate-e-il-trainee`): **`ReservedFields.For`** (`Staff/ReservedFields.cs`) è
+     la regola, e **`StaffTrainings.PageAsync`** la funzione unica che costruisce la risposta dello staff di un training e la passa per
+     la regola — la risposta di `GET /api/training/trainings/{id}` e di ogni passo —: quando chi legge è il trainee della riga, chiunque
+     sia, toglie `staffComment`, la `staffNote` di ogni voce della scheda e gli `internalNotes` di ogni sessione, e lo dice in
+     `reservedLeftOut`. Gli endpoint del trainee hanno il loro DTO, che quei campi non li ha.
+  7. **Il calendario**: `Training.Project` proietta anche il training `Completed` con la sua data: la sessione tenuta resta (§5.1); la
+     rischedula e il no-show azzerano la data, e la voce se ne va (scostamento 2).
+  8. **I DTO**: lo staff legge `cooldownWaived`, `generalComment`, `staffComment`, `sheet` (la copia del report per un training
+     completato; per uno datato, le voci attive come le segnerebbe un report adesso, senza niente segnato; vuota negli altri stati),
+     `sessions` (data, esito, appunti, chi e quando), `reservedLeftOut`, `actions.canRecordOutcome`; il trainee `cooldownWaived`,
+     `generalComment`, `sheet` (titolo, sezione, voto o spunta, commento per lui) e `sessions` (data ed esito), **senza** campi riservati.
+     Tutto in `web/src/shared/api/schema.d.ts`.
+  9. **Le mail**: il tipo nuovo **`reportPublished`** (chi l'ha pubblicato, le caselle «pronto per…», fino a quando si aspetta, la pagina
+     del training) e **`trainingClosed`** con la frase del no-show; le parole in italiano e in inglese.
+  10. **I test**: `TrainingSessionRulesTests` (unità, 6), `TrainingSessionsTests` (integrazione, 6, VID 790039 e 790045–790049, con il
+      «fatta quando» attraverso l'API).
+- **Scostamenti e precisazioni, piccoli**:
+  1. **L'esito si registra dall'inizio della sessione**, non dal giorno dopo: il design §2.6 dice «dal giorno dopo la data il training si
+     mostra Eseguito» e poi le tre strade; le tre strade valgono appena la sessione è cominciata (`TrainingSessions.IsRecordable`), così il
+     report di una sessione della sera si scrive la sera stessa. «Eseguito» resta ciò che le pagine mostrano dal giorno dopo, e la vista
+     «Da chiudere» resta quella di A7. Prima dell'inizio, una sessione si sposta con la data a mano di A8a.
+  2. **Il training completato tiene la data della sessione tenuta** (`scheduled_start_utc`), e la voce del calendario resta: il design §5.1
+     dice «il training proietta la sessione in corso e le sessioni Held». Un training ha al più una sessione `Held` — solo il report la
+     scrive, e il report chiude il training —, quindi una voce sola, che la riga calcola da sé (una proiezione non legge le righe figlie).
+     La riga `Held` di `trn_sessions` è lo storico. La rischedula e il no-show azzerano la data, come la chiusura di A8a.
+  3. **La mail `trainingClosed` dice l'attesa nei dati** (`after`): il modello di A8a finiva con «una chiusura non ti fa aspettare», falso
+     per un no-show. Le due chiusure di A8a (`TrainingDates.cs`, un file di A8a) mandano la stessa frase (`closedNoWait`); il no-show dice
+     fino a quando si aspetta (`waitUntil`), o che si può chiedere quando si vuole con `noShowCooldownDays` a 0.
+  4. **Il report prende le voci attive al momento della pubblicazione**: una voce spenta nel frattempo, che la pagina manda, è
+     `sheetChanged` sulla lista (`sheet`) e la pagina rilegge; una voce accesa nel frattempo, che la pagina non aveva, entra N/A. Una voce
+     pratica ha solo il voto, una di teoria solo la spunta: il contrario è un rifiuto sul campo della riga (`sheet[i].grade`,
+     `sheet[i].mark`), con l'indice della riga del payload.
+  5. **I limiti dei testi**: commento e nota di una voce e appunti di una sessione fino a 2000 caratteri, come i testi della richiesta; i
+     due commenti del report fino a 10.000 (`Training.MaxCommentLength`), dentro ciò che la loro colonna `text` tiene.
+  6. **Gli appunti della rischedula sono facoltativi**, e la rischedula non manda mail: il design non li dice obbligatori, e §5.2 non ha una
+     mail per la rischedula (la prossima è `datesProposed`).
+  7. **«Pronto per il mock exam» su un mock exam è rifiutato** (`reportMockExamAgain`): la regola di A6a non fa di nuovo mock exam il
+     training dopo un mock exam, quindi la casella direbbe il falso al trainee.
+  8. **Il DTO del trainee porta anche le sessioni passate** (data ed esito, mai gli appunti) e `cooldownWaived`: il design §4.1 nomina il
+     report; una sessione rischedulata o un no-show si leggono così dalla pagina del training (A9b).
+- **Test di A6b, A7 e A8b toccati, e perché**:
+  1. `screens/dates.test.ts` (A8b), `screens/trainee.test.ts` (A6b) e `screens/trainings.test.ts` (A7), Vitest: i costruttori dei DTO hanno i
+     campi nuovi con valori neutri (`cooldownWaived: false`, `generalComment: null`, `staffComment: null`, `sheet: []`, `sessions: []`,
+     `reservedLeftOut: false`, `canRecordOutcome: false`), perché il tipo generato li chiede; prettier ha riscritto su più righe gli oggetti
+     `actions`. Nessuna asserzione è cambiata.
+  2. ⚠️ **Un'asserzione di A7 cambiata**, l'unica: `TrainingStaffTests.AnAdvisorAcceptsARequestAndAssignsNothing` diceva che la pagina dello
+     staff **non ha** `staffComment` (`Assert.False(page.TryGetProperty("staffComment", out _))`): era il segno, in A7, che i campi
+     riservati non c'erano ancora — A7, «Trovato» 5: «il DTO dello staff non ha `StaffComment` né le note della scheda; la funzione unica
+     che li toglie al trainee della riga li aggiunge» —. A9 li aggiunge per design, e l'integrazione intera è caduta lì. Ora la riga dice
+     ciò che A9 rende vero: il campo c'è, vuoto su una richiesta, e a un advisor, che non è il trainee della riga, la pagina non toglie
+     niente (`reservedLeftOut` falso). Nient'altro del test è cambiato. Detto al revisore.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. **Per A9b**: i verbi e i DTO del punto 3 e del punto 8; i rifiuti `state` (`sessionNotRecordable`), `notes`, `sheet` (`sheetChanged`),
+     `sheet[i].grade|mark|traineeComment|staffNote`, `generalComment`, `staffComment`, `readyForMockExam` (`reportMockExamAgain`).
+     ⚠️ **La scheda non è una lista di `SchemaForm`**: le righe hanno campi diversi (il voto per la pratica, la spunta per la teoria) e
+     un'etichetta che viene dai dati (il titolo della voce), e `SchemaForm` disegna le stesse caselle per ogni riga con le etichette dei file
+     di lingua. La pagina di validazione dei tour (`web/src/modules/flightops/screens/review.tsx`) segna gli errori del catalogo con i
+     controlli di Atmosphere: è il precedente da guardare, e da classificare prima di scrivere (una pagina dedicata del modulo con i pezzi
+     dell'elenco chiuso è codice del modulo; un campo di `SchemaForm` con l'etichetta dai dati sarebbe nucleo, con la sua nota).
+  2. **Per A10**: il percorso del trainee usa la stessa funzione (`StaffTrainings.PageAsync` e `ReservedFields.For`); il blocco
+     `training.trainerQueue` ha «report da scrivere» in `actions.canRecordOutcome` (o `TrainingSessions.IsRecordable`).
+  3. I VID **790039** e **790045–790049** sono di A9a; A3b usa 790040–790044 e 790050–790051: il prossimo libero è **790052**.
+  4. **Già detto dalla nota, non toccato**: il training è `[Audited]`, quindi il registro dell'audit copia `staff_comment` quando un report
+     è pubblicato, e chi ha `Audit.View` lo legge dalla schermata del nucleo (nota `le-note-riservate-e-il-trainee` §5). Le note della
+     scheda e gli appunti delle sessioni non ci finiscono: le due tabelle nuove non sono `[Audited]`.
+- **La coda**: A9a è nata in coda dopo #148 (A8b, in bozza in coda dopo #147, dopo #146, dopo #144, dopo #143): la PR è in bozza con
+  `(after #148)` e `Queued after #148.`. Quando #148 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel
+  branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (27 settembre 2026, sul branch da `m3/a8b-dates-pages`, 83c362c): `dotnet build` senza avvisi; unità **788/788**
+  (le 782 di A8b e le 6 nuove; `TrainingArchitectureTests` legge anche il C# nuovo del modulo, e il test di #138 le chiavi `training:` del
+  C#: verdi); **integrazione intera senza filtro** **343/343** (le 337 e le 6 nuove; la classe nuova da sola 6/6 al primo giro). La prima
+  corsa intera è finita 342/343: è caduta l'asserzione di A7 sopra («Test … toccati» 2); cambiata quella riga, le cinque classi del
+  training insieme 32/32 e la corsa intera di nuovo 343/343. `pnpm lint`, `typecheck` (fermato prima dai costruttori di Vitest, sopra),
+  `format:check` (prettier sui due file di Vitest), `i18n:check` verdi, e lo script che confronta le chiavi letterali `training:` del
+  modulo con i file di lingua; `pnpm test` **527** in **66** file (come A8b: la fase non ha codice del front end); `pnpm e2e` **108**;
+  **`pnpm e2e:full` 44** su un **banco nuovo** di questo worktree (127.0.0.1:5092, `ivaohub_e2e_a9`), al primo giro: i giri di A6b, A7 e
+  A8b leggono i DTO nuovi dal server vero e la migrazione nuova parte all'avvio. `pnpm gen:api` e `pnpm i18n:sync` nel commit, senza
+  differenze dopo; `dotnet format --verify-no-changes` sui file C# toccati, test compresi; le regole di `core-guard` rifatte in PowerShell
+  sull'intervallo della fase e sul diff verso `main`: nessun file del maintainer, nessuno del nucleo. **A mano**: niente da guardare, la
+  fase non ha schermate (il banco di anteprima è di A9b).
+- **Non verificato**: la CI (la dirà la PR). **Le pagine**: A9a non ne ha; il «fatta quando» con le pagine è il giro di A9b sul banco.
+  **Che il test della nota cada su una copia indebolita del codice** — la chiamata a `ReservedFields.For` tolta da
+  `StaffTrainings.PageAsync` —: **rifiutata dalla modalità automatica dei permessi** («Security Weaken»), e non l'ho aggirata; la regola è
+  provata da sola dal test di unità (`TheStaffsPageLeavesOutWhatIsReservedWhenItsReaderIsTheTrainee`), e il test d'integrazione è stato
+  letto contro il codice: senza la chiamata, `reservedLeftOut` sarebbe falso e i tre campi pieni. I test nuovi sul codice di A8b non
+  compilano (i tipi e gli endpoint nascono qui). **Due scritture dello stesso training nello stesso momento** (un report e una
+  rischedula): la versione della riga fa della seconda un 409 — provato con una versione vecchia, non con due richieste insieme. **La
+  mail in Mailpit**: i test d'integrazione leggono le mail in coda; la consegna è del servizio del nucleo.
+
+**Com'è andata (A9b)**: *(a fase chiusa)*
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 

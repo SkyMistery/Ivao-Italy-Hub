@@ -11,15 +11,15 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 27 settembre 2026 — **fase A8b** (le date: le pagine), sul branch `m3/a8b-dates-pages`, **PR #148** verso
-`main`, in bozza **in coda dopo #147** (A8a, in bozza in coda dopo #146, A7, in coda dopo #144, A6b, in coda dopo #143, A6a).
-**A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in attesa della **sessione master** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
-`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140) sono unite**; la fase del nucleo **A3b**
-(#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è pronta, da `main` e fuori dalla coda.
-**Il prossimo passo** è **A9** (dopo la sessione), sul branch `m3/a9-after-the-session` preparato da `m3/a8b-dates-pages`, in coda dopo
-A8b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`: in fila); A3b va avanti per conto suo prima di A10 (`08`,
-«Parallelismo possibile»). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A9a** (dopo la sessione: il server; **A9 divisa in apertura** in A9a e A9b), sul
+branch `m3/a9a-after-the-session-server`, **PR #149** verso `main`, in bozza **in coda dopo #148** (A8b, in bozza in coda dopo #147, A8a, in coda dopo
+#146, A7, in coda dopo #144, A6b, in coda dopo #143, A6a). **A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in
+attesa della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un
+branch del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5
+(#140) sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di
+`SchemaForm`) è pronta, da `main` e fuori dalla coda. **Il prossimo passo** è **A9b** (dopo la sessione: le pagine), sul branch
+`m3/a9b-after-the-session-pages` preparato da `m3/a9a-after-the-session-server`, in coda dopo #149; A3b va avanti per conto suo prima di
+A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -90,6 +90,61 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A9a (27 settembre 2026, branch `m3/a9a-after-the-session-server`, PR #149)
+
+- **A9 è divisa in apertura**, come A6 e A8 (scritto in `08`, sotto A9): **A9a il server** (questa), **A9b le pagine** (la prossima, sul
+  branch `m3/a9b-after-the-session-pages` da `m3/a9a-after-the-session-server`). A10 viene dopo A9b.
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova; una migrazione, `AddSessionsAndEvaluations`, solo
+  additiva):
+  - **`trn_sessions`** (`src/IvaoHub.Modules.Training/Sessions/TrainingSession.cs`): le sessioni passate, con la data, l'esito (`Held`,
+    `Rescheduled`, `NoShow`), gli appunti interni di una rischedulata e i timbri (chi ha registrato e quando). **`trn_evaluations`**
+    (`Sheets/TrainingEvaluation.cs`): la scheda compilata, una riga per voce con la **fotografia** della voce (titolo, sezione, posto) e quale
+    voce era, il voto 1–5 o la spunta (`Done`, `NotDone`, `ToImprove`) — nessuno dei due: N/A —, il commento per il trainee e la nota
+    riservata. Figlie del training (chiave in cascata), nessuna chiave verso le voci, nessuna delle due `[Audited]`.
+  - **La scheda** (`Sheets/EvaluationSheet.cs`): `ItemsOf` (le voci attive del percorso e del rating, per `sort`) e `Fill` (la copia per voce,
+    N/A dove niente segna, i rifiuti riga per riga). **«La voce è usata?»** risponde dalle schede compilate (`EvaluationSheetItemReports`).
+  - **I verbi dello staff** (`Sessions/TrainingSessions.cs`), in `/api/training/trainings/{id}`, con `Training.Conduct` sulla riga e **dall'inizio
+    della sessione** (`TrainingSessions.IsRecordable`, `actions.canRecordOutcome`): `POST reschedule` (`notes`, `rowVersion`: la sessione
+    `Rescheduled`, il training di nuovo `Assigned` senza data, nessuna mail), `POST no-show` (`rowVersion`: il training `NoShow`, chiuso da chi
+    lo registra, mail `trainingClosed` con l'attesa del no-show), `POST report` (`sheet` — `itemId`, `grade`, `mark`, `traineeComment`,
+    `staffNote` —, `generalComment`, `staffComment`, `readyForMockExam`, `readyForExam`, `cooldownWaived`, `rowVersion`: la sessione `Held`, il
+    training `Completed`, mail `reportPublished`). Ognuno risponde con la pagina com'è dopo.
+  - **Le note riservate e il trainee**: `StaffTrainings.PageAsync` è la funzione unica che costruisce la risposta dello staff di un training,
+    e `ReservedFields.For` (`Staff/ReservedFields.cs`) la regola: quando chi legge è il trainee della riga toglie `staffComment`, la
+    `staffNote` di ogni voce e gli `internalNotes` di ogni sessione, e lo dice in `reservedLeftOut`. Il DTO del trainee quei campi non li ha.
+  - **Il calendario**: un training `Completed` tiene la data della sessione tenuta e la sua voce resta; la rischedula e il no-show la tolgono.
+  - **I DTO**: lo staff `cooldownWaived`, `generalComment`, `staffComment`, `sheet` (la copia del report per un `Completed`, le voci attive
+    vuote per uno `Scheduled`), `sessions`, `reservedLeftOut`, `actions.canRecordOutcome`; il trainee `cooldownWaived`, `generalComment`,
+    `sheet` (senza note) e `sessions` (data ed esito). Tutto in `web/src/shared/api/schema.d.ts`.
+  - **I test**: `TrainingSessionRulesTests` (unità), `TrainingSessionsTests` (integrazione, VID 790039 e 790045–790049, con il «fatta quando»
+    attraverso l'API).
+- **Che cosa deve sapere la fase dopo**:
+  - **A9b** (le pagine): nella pagina dello staff (`screens/staff.tsx`) le azioni vanno accanto alla sessione nella sezione «Le date», quando
+    `actions.canRecordOutcome`; dopo una rischedula il training è `Assigned` e `dateSteps` ripropone da sola la proposta e l'override. Lo
+    storico delle sessioni è `sessions`; la scheda da compilare è `sheet` di un training `Scheduled`, quella compilata di uno `Completed`;
+    `reservedLeftOut` dice a un trainer che legge il proprio training che le note non gli sono mostrate. La pagina del trainee
+    (`screens/traineeTraining.tsx`) ha `generalComment`, `sheet`, `sessions`, le caselle; «che cosa succede dopo» per `Completed` e `NoShow`
+    (`detail.next.*`). ⚠️ **La scheda non è una lista di `SchemaForm`**: le righe hanno campi diversi (voto per la pratica, spunta per la
+    teoria) e un'etichetta che viene dai dati (il titolo della voce); la pagina di validazione dei tour
+    (`web/src/modules/flightops/screens/review.tsx`) segna gli errori del catalogo con i controlli di Atmosphere. Da classificare prima di
+    scrivere: una pagina dedicata del modulo con i pezzi dell'elenco chiuso è codice del modulo; un campo di `SchemaForm` con l'etichetta dai
+    dati sarebbe nucleo, con la sua nota. ⚠️ I rifiuti di una riga portano l'indice della riga del payload (`sheet[2].grade`).
+  - ⚠️ **Il banco**: una spec di A9b che vuole un training con la sessione passata lo chiede da sé attraverso l'API (come
+    `training-the-dates.spec.ts`), lo data a mano nel passato, e lo porta al report o al no-show, con un nome che viene dopo
+    `training-the-dates`. **Un training `Completed` resta nel calendario pubblico** con la sua sessione: una spec che conta le voci lo sappia.
+    Le voci della scheda sul banco le scrive `training-sheets.spec.ts` (A5), che le toglie alla fine: una spec del report scrive le sue.
+  - ⚠️ **Una voce segnata da un report non si elimina più** (anche sul banco): una spec che scrive voci e poi un report le spegne, non le
+    elimina.
+  - **A10**: il percorso del trainee usa la stessa funzione (`StaffTrainings.PageAsync` con `ReservedFields.For`) e il test della nota va
+    allargato lì; «report da scrivere» del blocco `training.trainerQueue` è `TrainingSessions.IsRecordable`.
+  - VID: il prossimo libero è **790052** (A3b usa 790040–790044 e 790050–790051).
+- **Trovato, detto al revisore**: l'unica asserzione cambiata di una fase sotto, in `TrainingStaffTests` (A7): diceva che la pagina dello
+  staff non ha `staffComment`, il segno di A7 che i campi riservati non c'erano ancora; ora dice che c'è, vuoto su una richiesta, e che a un
+  advisor non si toglie niente (`08`, A9, «Com'è andata (A9a)»).
+- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in coda dopo #147, dopo #146, dopo #144, dopo #143. Quando
+  #148 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal
+  titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A9a se è ancora viva, altrimenti quella di A9b prima di cominciare.
 
 ### Che cosa ha lasciato A8b (27 settembre 2026, branch `m3/a8b-dates-pages`, PR #148)
 
