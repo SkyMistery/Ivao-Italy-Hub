@@ -30,10 +30,11 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 27 settembre 2026, sera — **M2 è chiusa** (T0–T20c). Piano **1.18**: la prima installazione, di
-prova. **La 0.2.0 è consegnata a Ivao.It per `test.it.ivao.aero`**: tag `v0.2.0` su `d36df74`, consegna preparata con
+**Ultimo aggiornamento:** 27 settembre 2026, sera — **M2 è chiusa** (T0–T20c). Piano **1.19**: le righe affidate a chi
+scrive (A3b); la 1.18 ha portato la prima installazione, di prova. **La 0.2.0 è consegnata a Ivao.It per `test.it.ivao.aero`**: tag `v0.2.0` su `d36df74`, consegna preparata con
 `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`.
-M3: unite fino ad A6a (#143); in coda A6b–A10b, A6c e A3b. Il rapporto è
+M3: unite fino ad A6a (#143) e la fase del nucleo A3b (#135); in coda A6b–A10b, A6c e A11a, da rimettere in pari con `main`.
+Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
 chiusura di M3 e di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia con
