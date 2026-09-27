@@ -47,7 +47,7 @@ public static class StartupDiagnostics
             .Append(CultureInfo.InvariantCulture, $"division      {divisionCode}\n")
             .Append(CultureInfo.InvariantCulture, $"domain        {domain}\n")
             .Append(CultureInfo.InvariantCulture, $"access        {access}\n")
-            .Append(CultureInfo.InvariantCulture, $"root          {paths.Root}\n")
+            .Append(CultureInfo.InvariantCulture, $"root          {paths.Root} ({paths.SourceDescription})\n")
             .Append(CultureInfo.InvariantCulture, $"migrations    {Join(appliedMigrations, "none applied, already up to date")}\n")
             .Append(CultureInfo.InvariantCulture, $"modules       {Join(enabledModules, "none yet")}\n")
             .ToString();

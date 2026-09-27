@@ -103,7 +103,8 @@ Si carica **il contenuto della cartella dei file da caricare** dello zip della c
      tmp/restart.txt               ← un file di testo vuoto: serve a riavviare, conta la data
    ```
 
-   `hub-keys/`, `logs/`, `diagnostics/` e `media/` li crea l'applicazione.
+   `hub-keys/`, `logs/`, `diagnostics/` e `media/` li crea l'applicazione. Non importa da quale cartella Passenger la
+   avvii: le sue cartelle le trova anche partendo da dove sta `IvaoHub.Web.dll` (dalla `0.2.1`).
 4. Permessi `755` su `IvaoHub.Web`. Con `dotnet IvaoHub.Web.dll` non servono (provato), ma non costano niente e
    lasciano possibile l'altro comando: li chiede ogni foglio di consegna.
 
@@ -136,7 +137,8 @@ Non nel minuto del riavvio: lasciategli il tempo delle migrazioni.
 
 | Che cosa | Che cosa deve dire |
 |---|---|
-| `diagnostics/startup.txt`, scaricato via FTP | `started at` di **adesso**; `environment Production`; `division IT`; **`domain test.it.ivao.aero`**; **`access private: staff only, not indexed`**; in `migrations` l'elenco applicato; in `modules` `flightops, training` |
+| `diagnostics/startup.txt`, scaricato via FTP | `started at` di **adesso**; `environment Production`; `division IT`; **`domain test.it.ivao.aero`**; **`access private: staff only, not indexed`**; in `root` la cartella dell'applicazione; in `migrations` l'elenco applicato; in `modules` `flightops, training` |
+| `diagnostics/startup-error.txt` | **non deve esserci**: un avvio riuscito lo cancella |
 | `https://test.it.ivao.aero/api/version` | la **versione e il commit** del tag che vi abbiamo detto (per esempio `0.2.0` e il commit di `v0.2.0`), e `.NET 10…`. Il numero da solo non basta: è il commit a dire quale codice gira |
 | `https://test.it.ivao.aero/health` | `Healthy` |
 | `https://test.it.ivao.aero/robots.txt` | `User-agent: *` e `Disallow: /`, e nient'altro |
@@ -151,7 +153,8 @@ Non nel minuto del riavvio: lasciategli il tempo delle migrazioni.
 
 | Sintomo | Causa quasi certa |
 |---|---|
-| Passenger mostra «Web application could not be started» e **`diagnostics/startup.txt` non c'è** | la configurazione. ⚠️ **Il motivo esatto l'applicazione lo scrive solo sulla sua uscita**, che finisce nel log di Passenger: da FTP non si vede, serve chi ha il pannello. Guardate intanto `logs/hub-<data>.log` |
+| Passenger mostra «Web application could not be started» | scaricate **`diagnostics/startup-error.txt`** e mandatecelo: la riga `reason` (e `cause`, se c'è) dice il motivo, le righe sopra quale versione e da quale cartella. Non contiene password né segreti: al loro posto c'è `[redacted]`. Se ha una data **vecchia** è il residuo di un guasto già risolto: un avvio riuscito lo cancella, quindi l'applicazione non è ripartita |
+| «Web application could not be started» e **né `startup.txt` né `startup-error.txt`** | l'applicazione non è arrivata a eseguire il suo codice (manca ICU, un `.dll` troncato, il comando sbagliato): il motivo è solo nel log di Passenger, serve chi ha il pannello |
 | In `logs/hub-<data>.log`: «An error occurred using the connection to database» | password, utente o nome del database nel file dei segreti |
 | «The division file is missing» | manca `config/division.json` |
 | «'ClientId' is required» (o un altro campo di `Ivao`) | un segnaposto del §5 rimasto vuoto |
@@ -191,6 +194,9 @@ MariaDB 11.4.10 e un utente con `GRANT ALL` solo sul suo database:
 - l'avvio con `dotnet IvaoHub.Web.dll` avendo solo .NET 8 installato, con tutti i file a `644` come dopo un FTP; e
   con `./IvaoHub.Web` senza nessun .NET (con `644` risponde `Permission denied`, con `755` parte);
 - le migrazioni da un database vuoto, all'avvio; `diagnostics/startup.txt` con dominio e accesso privato;
+- (dalla `0.2.1`) l'avvio da un'altra cartella di lavoro, con la radice trovata dalla cartella dell'applicazione;
+  `diagnostics/startup-error.txt` per il file della divisione mancante, un campo OAuth mancante e il database
+  irraggiungibile, senza segreti, e cancellato dall'avvio riuscito dopo;
 - `/api/version`, `/health`, robots.txt con `Disallow: /`, sitemap 404, `X-Robots-Tag` e HSTS sulle risposte,
   `400` a un `Host` diverso da `test.it.ivao.aero`, e nessun file fuori da `wwwroot/` servito dall'applicazione;
 - in sviluppo, la frase della pagina di chi non è staff, in italiano e in inglese.

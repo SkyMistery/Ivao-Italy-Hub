@@ -26,14 +26,30 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
-
 // Where config/, locales/, secrets/, hub-keys/, logs/ and diagnostics/ are. In production they sit
-// next to the application; during development they are at the root of the repository.
-var paths = HubPaths.Resolve(builder.Environment.ContentRootPath);
+// next to the application; during development they are at the root of the repository. Found before
+// the host exists, from the working directory and then from the folder of this assembly, because a
+// host may start the process from anywhere (note 2026-09-27-l-avvio-da-qualunque-cartella).
+var paths = HubPaths.Resolve(Directory.GetCurrentDirectory(), AppContext.BaseDirectory);
+
+// From here on a start that fails also says why in diagnostics/startup-error.txt, which an
+// installation served by FTP alone can read; standard output alone is the host's.
+var startupWatch = StartupFailureWatch.Arm(paths);
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+
+    // Found from the folder of the application, the process was started somewhere else: wwwroot/ and
+    // appsettings.json are next to the application too, so the content root follows. Otherwise it
+    // stays where it always was, the web project during development.
+    ContentRootPath = paths.Source == HubRootSource.ApplicationFolder ? AppContext.BaseDirectory : null,
+});
+
+startupWatch?.Attach(builder.Configuration, builder.Environment.EnvironmentName);
 
 // Precedence: appsettings < secrets/*.json < config/ivao-oauth.json < environment variables.
-foreach (var secretFile in HubConfiguration.SecretFiles(paths))
+foreach (var secretFile in paths.SecretFiles())
 {
     builder.Configuration.AddJsonFile(secretFile, optional: true, reloadOnChange: true);
 }
@@ -239,6 +255,11 @@ if (trustedProxies.Count > 0)
 }
 
 var app = builder.Build();
+
+if (startupWatch is not null)
+{
+    app.Lifetime.ApplicationStarted.Register(startupWatch.Started);
+}
 
 if (trustedProxies.Count > 0)
 {
