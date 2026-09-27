@@ -94,6 +94,7 @@ function row(id: number, state: string, overrides: Record<string, unknown> = {})
     trainer: null,
     createdAt: '2026-09-20T10:00:00Z',
     scheduledStartUtc: null,
+    held: false,
     ...overrides,
   };
 }
@@ -125,13 +126,17 @@ function training(state: string, overrides: Record<string, unknown> = {}) {
     trainer: null,
     assignedBy: null,
     assignedAt: null,
+    slots: [],
     scheduledStartUtc: null,
+    held: false,
+    dateChosenByTrainee: false,
     completedAt: null,
     closedBy: null,
     closedAt: null,
+    closeReason: null,
     readyForMockExam: false,
     readyForExam: false,
-    actions: { canDecide: false, canAssign: false },
+    actions: { canDecide: false, canAssign: false, canConduct: false, canClose: false },
     rowVersion: '2026-09-20T10:00:00.123456Z',
     ...overrides,
   };
