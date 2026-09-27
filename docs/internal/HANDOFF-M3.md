@@ -11,16 +11,16 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 27 settembre 2026 — **fase A9b** (dopo la sessione: le pagine), sul branch `m3/a9b-after-the-session-pages`,
-**PR #150** verso `main`, in bozza **in coda dopo #149** (A9a, in bozza in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146,
-A7, in coda dopo #144, A6b, in coda dopo #143, A6a). **A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in attesa
-della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch
-del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140)
-sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è
-pronta, da `main` e fuori dalla coda. **Il prossimo passo** è **A10** (blocchi, pagine pubbliche, percorso, esami, ban), sul branch
-`m3/a10-blocks-exams-bans` preparato da `m3/a9b-after-the-session-pages`, in coda dopo #150; A10 usa anche A3b (#135, `08`,
-«Parallelismo possibile»), che va avanti per conto suo: finché non è unita, la parte di A10 che la usa (cambiare e togliere un esame)
-aspetta. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A10a** (il percorso del trainee e i ban), sul branch `m3/a10a-path-and-bans`,
+**PR #151** verso `main`, in bozza **in coda dopo #150** (A9b, in bozza in coda dopo #149, A9a, in coda dopo #148, A8b, in coda dopo #147,
+A8a, in coda dopo #146, A7, in coda dopo #144, A6b, in coda dopo #143, A6a). **A6a** (il server della richiesta) è la **PR #143**, pronta con
+la CI verde, in attesa della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di
+Carmine e, se un branch del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133),
+A4 (#139) e A5 (#140) sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua — la nota decisa da Carmine, il codice
+approvabile per il revisore, il branch che aspetta `main` e il via —, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è pronta, da
+`main` e fuori dalla coda. **A10 è divisa in tre** (`08`, A10): **A10a** (questa), **A10b** (i quattro blocchi Data e le pagine pubbliche: **il
+prossimo passo**, sul branch `m3/a10b-blocks-and-public-pages` preparato da `m3/a10a-path-and-bans`, in coda dopo #151) e **A10c** (gli
+esami, **solo dopo che #135 è unita**). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -91,6 +91,54 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A10a (27 settembre 2026, branch `m3/a10a-path-and-bans`, PR #151)
+
+- **A10 è divisa in apertura, in tre** (scritto in `08`, sotto A10): **A10a il percorso e i ban** (questa), **A10b i blocchi e le pagine
+  pubbliche** (la prossima, sul branch `m3/a10b-blocks-and-public-pages` da `m3/a10a-path-and-bans`), **A10c gli esami**, solo dopo che
+  **#135** (A3b) è unita: la riga di un esame si dichiara con ciò che A3b porta (`IHasAssignee`, `OnlyForAssignee`, `AlsoOnDeletion`), e una
+  parte che dipende da un cambio del nucleo in revisione non si mette in coda sopra la domanda.
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova, **nessuna migrazione**):
+  - **Il percorso del trainee**, `GET /api/training/trainees/{vid}` (`Staff/TraineePaths.cs`, `Training.View`): dove si trova su ogni
+    percorso — la risposta della sua pagina, `MyTrainingPathDto`, da `TrainingRequests.PathsOfAsync` (i percorsi per un VID qualunque) —,
+    tutti i suoi training come le pagine dello staff (`StaffTrainings.PageAsync`: niente di riservato a un trainer che legge il proprio
+    percorso), i suoi ban, `canBan`. 404 per un VID di cui l'hub non sa niente.
+  - **I ban**, `/api/training/bans` (`Bans/TrainingBans.cs`, `Bans/BanEndpoints.cs`): lista e form generati, letti con `Training.View`,
+    scritti con `Training.Ban` (negato all'interessato, superadmin compreso); non si cambiano (`ReadOnlyRows`), non si eliminano, uno nuovo non
+    si somma a uno in vigore (`banAlreadyHolds`), la fine è ancora da venire (`banEndsInThePast`); **«Togli ban»** è `POST …/{id}/lift` con
+    la `rowVersion`, chi e quando. La mail **`training.banned`**.
+  - **Le pagine**: `/staff/training/trainees` (il VID) e `/staff/training/trainees/$id` (`screens/trainees.tsx`: i percorsi, i ban con «Togli
+    il ban», i training per percorso e rating in un `Accordion` con il report, «Banna»); `/staff/training/bans` e `/staff/training/bans/new`
+    (`screens/bans.tsx`); le funzioni pure in `screens/path.ts`; due voci nella barra dello staff; nella pagina di un training il nome del
+    trainee porta al suo percorso.
+  - **I test**: `TrainingBanRulesTests` (unità), `TrainingTraineeTests` (integrazione, VID 790052–790059, con il test della nota allargato
+    al percorso), `screens/path.test.ts` (Vitest), `web/e2e/training-trainee.spec.ts` (smoke), `web/e2e/full/training-the-trainee.spec.ts`
+    (il «fatta quando» sul banco).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10b** (i blocchi e le pagine pubbliche): `training.myTraining` ha già la sua risposta per percorso (`MyTrainingPathDto` di `GET
+    /api/training/mine`, con il ban in `refusal` e `bannedUntil`) e «pronto per l'esame» è `readyForExam` di `screens/trainee.ts`;
+    `training.trainerQueue` e `training.approvalQueue` sono le viste di `StaffQueue` (A7) e `TrainingDates.Unanswered` (A8a). La voce del
+    calendario porta ancora a `/training/sessions/{id}`, che è di A10b. **I due conteggi dei blocchi** (`uiKit.test.ts`,
+    `DataBlockEndToEndTests`) si alzano con la nota breve che A10 deve aggiungere (Carmine,
+    [commento sulla #125](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/125#issuecomment-5835026941)).
+  - **A10c** (gli esami): la forma della riga è nella nota di A3b §3.6, sul branch di #135; un TA deve vedere quali esami sono i suoi.
+  - ⚠️ **Il banco dopo il giro di A10a**: `training-the-trainee.spec.ts` (il nome viene dopo tutti gli altri giri del training) banna il
+    trainee del banco dal suo percorso e poi toglie il ban: il trainee resta con un ban **tolto** nella storia, e niente in vigore. All'inizio
+    toglie un ban lasciato in vigore da una corsa fermata a metà. Il resto del banco è come dopo A9b.
+  - ⚠️ **La risposta 2 di Carmine sulla #135** (il trainer conduce con la regola di A3b, senza grant con scope né job notturno) **non è in
+    nessuna fase**: A7 (#146) usa il grant con scope. Quando #135 sarà unita serve una fase del modulo che la porti (`08`, A10, «Com'è andata
+    (A10a)», «Trovato» 1). Detto al revisore.
+  - ⚠️ **Il router scrive il `?vid=` di un link fra virgolette nell'`href`** e lo rilegge giusto: una spec guarda l'indirizzo dopo il clic.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, lasciato acceso dalla sessione di A10a con il codice di A10a; lo script è
+    `preview-bench.ps1` nel suo scratchpad): il trainee 999002 ha un ban **tolto** (dato dal percorso e tolto dalla lista, a mano, il 27
+    settembre) e niente in vigore; il resto come dopo A9b — #6 (ATC, LIRF_TWR) aspetta la scelta fra le due date, #7 (pilota) è completato con
+    il report, #8 è il mock exam datato e pronto per un report —. Il trainer è nel roster.
+  - VID: il prossimo libero è **790060**.
+- **Trovato, detto al revisore**: la risposta 2 sulla #135 (sopra); `ConfirmDialog` non ha una dimensione per il suo pulsante (nucleo).
+- **La coda**: la PR è in bozza con `(after #150)` e `Queued after #150.`; #150 è in coda dopo #149, dopo #148, dopo #147, dopo #146, dopo
+  #144, dopo #143. Quando #150 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di
+  nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A10a se è ancora viva, altrimenti quella di A10b
+  prima di cominciare.
 
 ### Che cosa ha lasciato A9b (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150)
 

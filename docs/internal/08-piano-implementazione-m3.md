@@ -1813,7 +1813,131 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
 
 [a1-135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata (A10a)** (27 settembre 2026, branch `m3/a10a-path-and-bans`, PR #151, in coda dopo #150):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — `MapCrud` per la lista e il form dei ban, come i ban dei tour (`ReadOnlyRows` per un ban già dato, `AllowDelete = false`,
+  `BeforeSave` per il ban che vale già, `AfterSave` per la mail); l'unico handler chiesto sulla riga con il «no» all'interessato
+  (`Training.Ban` è `DeniedToStakeholder`, anche per il superadmin); il servizio notifiche con un tipo nuovo del modulo; la funzione unica
+  della risposta dello staff (`StaffTrainings.PageAsync` con `ReservedFields.For`, nota `le-note-riservate-e-il-trainee`), di cui il
+  percorso è il secondo lettore; la pagina del pilota dei tour come modello (una pagina dedicata del modulo e il suo endpoint scritto a
+  mano, come `PilotPageDto` in M2 §8.7); `DataList`, `SchemaForm`, `ConfirmDialog`, `Notice`, e l'`Accordion` di Atmosphere, già usato dal
+  blocco `accordion` —. **Nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine, **nessuna migrazione** (`trn_bans` è
+  intera da A6a).
+- **Fatto**, come il perimetro di A10a qui sopra:
+  1. **Il percorso del trainee** (`Staff/TraineePaths.cs`): `GET /api/training/trainees/{vid}` con `Training.View` — chi fa training legge
+     ogni training (R.1) —: chi è; **dove si trova su ogni percorso**, la stessa risposta della sua pagina (`MyTrainingPathDto`, dalle stesse
+     regole: `TrainingRequests.PathsOfAsync` calcola i percorsi per un VID qualunque, e `MineAsync` la usa per chi è entrato); **tutti i
+     suoi training**, dal più nuovo, ognuno come la pagina dello staff di quel training (`StaffTrainings.PageAsync`: un trainer che legge il
+     proprio percorso non vi trova i campi riservati), senza quelli che l'unico handler non gli lascia leggere; **i suoi ban**; e
+     **`canBan`**, la risposta dell'handler sul ban che scriverebbe (mai su sé stesso). 404 per un VID di cui l'hub non sa niente: nessun
+     utente, nessun training, nessun ban.
+  2. **I ban** (`Bans/TrainingBans.cs`, `Bans/BanEndpoints.cs`): la lista e il form generati in `/api/training/bans`, letti con
+     `Training.View` e scritti con `Training.Ban`; `filter[vid]`, `?q=` sul motivo e sul VID, dal più nuovo. Un ban si dà con un motivo e,
+     se si vuole, una fine ancora da venire (`training:errors.banEndsInThePast`); **non si cambia e non si elimina**; **uno nuovo su un membro
+     che ne ha già uno in vigore è rifiutato** (`training:errors.banAlreadyHolds`, sul campo `vid`). **«Togli ban»** è un verbo suo,
+     `POST /api/training/bans/{id}/lift` con la `rowVersion` (409 se vecchia): chi e quando, solo su un ban in vigore
+     (`training:errors.banNotHolding`), con `Training.Ban` sulla riga. Un ban vale per i due percorsi, e i training già aperti vanno avanti:
+     la richiesta lo legge da A6a.
+  3. **La mail `banned`** (`TrainingNotifications.Banned`, design §5.2): il motivo, fino a quando — o finché qualcuno non lo toglie —, la
+     pagina dei training del membro; la voce del profilo per spegnerla. `TrainingMail` manda ora anche una mail che non parla di un training.
+  4. **Le pagine** (`screens/trainees.tsx`, `screens/bans.tsx`, le funzioni pure in `screens/path.ts`): **`/staff/training/trainees`**, il
+     VID, come la pagina dei piloti dei tour; **`/staff/training/trainees/$id`**, il percorso — per percorso il rating, le ore, che cosa può
+     chiedere o la prima regola che rifiuta, detta dello staff («Ha un ban…», «Aspetta…», «Ha un training aperto…» con il link), il mock
+     exam, **«Pronto per l'esame»** (la lettura di A6b, `readyForExam`); i ban con lo stato, da quando e fino a quando, il motivo, chi l'ha
+     dato e chi l'ha tolto, e **«Togli il ban»** chiesto prima; i training per percorso e rating, ognuno una riga che si apre sul trainer, la
+     sessione, il report pubblicato con chi l'ha pubblicato, le sessioni passate e il link alla sua pagina; **«Banna»** a chi il server dice
+     (`canBan`); l'avviso di `reservedLeftOut` a un trainer che legge il proprio percorso —; **`/staff/training/bans`**, la lista generata (il
+     membro, lo stato, dal, fino al, il motivo, chi l'ha dato), dal più nuovo, con «Percorso» e «Togli il ban»; **`/staff/training/bans/new`**,
+     il form generato, con il membro già scritto quando lo apre il percorso (`?vid=`) e che torna lì. Due voci nella barra dello staff,
+     «Trainee» e «Ban», con `Training.View`. **Nella pagina di un training il nome del trainee porta al suo percorso** (§4.2, «il percorso del
+     trainee a fianco»).
+  5. **I test**: unità `TrainingBanRulesTests` (2), integrazione `TrainingTraineeTests` (5, VID 790052–790059: il «fatta quando» attraverso
+     l'API, la fine già passata e il ban finito, nessuno banna sé stesso e chi legge soltanto non banna, il percorso, e **il test della nota
+     allargato al percorso**, con l'elenco dei campi tolti), Vitest `screens/path.test.ts` (6), lo smoke `web/e2e/training-trainee.spec.ts`
+     (5), il giro sul banco `web/e2e/full/training-the-trainee.spec.ts` (il «fatta quando» di A10a, sotto).
+- **Scostamenti e precisazioni, piccoli**:
+  1. **Un ban non si cambia**: il design (§2.9) dice «un motivo e, se si vuole, una scadenza» e «Togli ban registra chi e quando», niente
+     sul cambiarlo. Per cambiarlo lo si toglie e se ne dà un altro: la mail dice sempre il ban che vale, e la storia tiene ogni ban com'era.
+     Un ban già dato è in sola lettura per il motore (`ReadOnlyRows`: il `PUT` è un 403, il superadmin compreso).
+  2. **Un ban nuovo non si somma a uno in vigore** (`banAlreadyHolds`): due ban insieme direbbero due fini al membro. E **la fine è ancora da
+     venire** (`banEndsInThePast`): un ban già finito non varrebbe mai.
+  3. **Chi banna ha anche `Training.Edit`**, come chi scrive le voci della scheda (A5): il guardiano chiede `Edit` a ogni riga dello staff
+     (§3.1), e nella divisione `Ban` ed `Edit` vanno insieme (TC, TAC; HQ e il web per il nucleo). Nessun `[AlsoWrittenWith]` sul ban.
+  4. **I ban si leggono con `Training.View`**, trainer compresi: il percorso li mostra, e chi allena un trainee deve sapere perché non chiede
+     più. Le voci del menu sono di `Training.View`, i pulsanti di `Training.Ban`.
+  5. **«Pronto per l'esame» sul percorso è la lettura di A6b** (`readyForExam` in `screens/trainee.ts`, il cui tipo ora accetta anche le
+     pagine dello staff). Una prima stesura lo calcolava anche sul server, in un campo di `MyTrainingPathDto`, che l'avrebbe scritto due
+     volte: tolto prima del commit.
+  6. **I training del percorso si aprono uno alla volta** (`Accordion`): con tutti i report aperti il percorso di un trainee con molti
+     training sarebbe lungo pagine.
+  7. **Il percorso esiste anche per un membro senza training** (che l'hub conosce, o che ha un ban): lo staff lo apre per bannarlo prima di
+     una richiesta. 404 solo per un VID di cui l'hub non sa niente.
+  8. **«Il percorso a fianco» del training** (§4.2) è un link dal nome del trainee nella pagina del training: la pagina è già lunga, e il
+     percorso ha la sua.
+  9. **Togliere un ban non manda mail**: §5.2 non ne elenca una.
+- **Codice di fasi sotto toccato, e perché** (nessun test di un'altra fase è cambiato):
+  1. `Requests/TrainingRequests.cs` (A6a): i percorsi si calcolano per un VID qualunque (`PathsOfAsync`), e la pagina del trainee e la
+     richiesta passano il VID di chi è entrato: la risposta è la stessa.
+  2. `TrainingMail.cs` (A7): una mail che non parla di un training (il ban); quelle di un training passano di lì come prima.
+  3. `screens/staff.tsx` (A7): il nome del trainee è un link al suo percorso. `screens/trainee.ts` (A6b): `REFUSALS` ha anche `nothingToAsk`
+     e `noPosition`, e `readyForExam` accetta le pagine dello staff (solo il tipo).
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **La risposta 2 di Carmine sulla #135 non è in nessuna fase della coda.** Carmine ha deciso ([il suo commento][a1-135]) che anche il
+     trainer conduce con la regola di A3b — il training dichiara il suo trainer con `IHasAssignee`, `Training.Conduct` è segnato
+     `OnlyForAssignee` ed è tenuto per posizione, anche da TA1–9 e T01–T99 —, senza il grant con scope a ogni assegnazione né il suo job
+     notturno, e che «lo registra A7, nella sua nota, in `08` e in `07`». A7 (#146) è nata prima che A3b fosse unita, e usa il grant con
+     scope del design n.1. Quando #135 sarà unita, serve una fase del modulo che porti la risposta 2: detto al revisore.
+  2. **Per A10b**: il blocco `training.myTraining` ha già la sua risposta per percorso (`MyTrainingPathDto` di `GET /api/training/mine`), e
+     «pronto per l'esame» è `readyForExam`; le code di `training.trainerQueue` e `training.approvalQueue` sono le viste di `StaffQueue` (A7)
+     e `TrainingDates.Unanswered` (A8a). La voce del calendario porta ancora a `/training/sessions/{id}`, che è di A10b.
+  3. **Per A10c**: la forma della riga di un esame è nella nota di A3b §3.6 (sul branch di #135), con il rilievo del revisore: un TA deve
+     vedere quali esami sono i suoi.
+  4. **Il router scrive il `?vid=` di un link fra virgolette nell'`href`** (`…/bans/new?vid=%22999002%22`) e lo rilegge giusto: la pagina
+     del form ha il VID. Le spec guardano l'indirizzo dopo il clic, non l'`href`.
+  5. **`ConfirmDialog` non ha una dimensione per il suo pulsante** (nucleo, non toccato): «Togli il ban» in una riga della lista è grande
+     quanto un pulsante normale, accanto ai `ghost` piccoli.
+  6. I VID **790052–790059** sono di A10a; il prossimo libero è **790060**.
+- **La coda**: A10a è nata in coda dopo #150 (A9b, in bozza in coda dopo #149, dopo #148, dopo #147, dopo #146, dopo #144, dopo #143): la PR
+  è in bozza con `(after #150)` e `Queued after #150.`. Quando #150 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a
+  queue»): `main` nel branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (27 settembre 2026, sul branch da `m3/a9b-after-the-session-pages`, cbbfc1c): `dotnet build` senza avvisi;
+  unità **790/790** (le 788 di A9b e le 2 nuove; `TrainingArchitectureTests` legge anche il C# e il TypeScript nuovi del modulo, ed è verde);
+  **integrazione intera senza filtro** **348/348** (le 343 e le 5 nuove; la classe nuova da sola 5/5 al primo giro); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi, e lo script che confronta le chiavi letterali `training:` del modulo con i file di lingua;
+  `pnpm test` **546** in **68** file (le 540 in 67 di A9b e le 6 nuove); `pnpm e2e` **120** (le 115 e le 5 nuove); **`pnpm e2e:full` 46** su
+  un **banco nuovo** di questo worktree (127.0.0.1:5094, `ivaohub_e2e_a10`) al primo giro intero, e di nuovo **46/46** su un banco ricreato
+  con una pubblicazione nuova, dopo la correzione trovata a mano (sotto). **Lo smoke nuovo cade sul codice di A9b**: con il manifest del
+  modulo rimesso da `m3/a9b-after-the-session-pages` (senza le rotte nuove), `training-trainee.spec.ts` 4 cadute su 5 — la quinta, «un VID
+  sconosciuto non si trova», vale anche prima —; rimesso com'è sul branch (e toccato), 5/5. `pnpm gen:api` e `pnpm i18n:sync` nel commit
+  che li porta; `dotnet format --verify-no-changes` sui file C# toccati, test compresi; le regole di `core-guard` rifatte in PowerShell
+  sull'intervallo della fase e sul diff verso `main`: nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima
+  (127.0.0.1:5090, `ivaohub_preview`; la sessione di A9b ha spento il suo su richiesta), in italiano: come staff, `/staff/training/trainees`
+  con il VID del trainee del banco, e il suo percorso — ATC e pilota con «Ha un training aperto su questo percorso. Aprilo», «Nessun ban.»,
+  i training per percorso e rating —; il training pilota #7 aperto nella sua riga (il trainer, la sessione in UTC e nell'ora della
+  divisione, «Pubblicato da…», le voci con «Per il trainee…» e «Per lo staff…», «Da migliorare», N/A, i due commenti, le caselle, le sessioni
+  rischedulata con gli appunti ed eseguita, «Apri il training»); **«Banna» dal percorso**, il form con il VID già scritto, un motivo e una
+  fine (4 ottobre, 18:00 UTC; sotto, 20:00 Europe/Rome), dato: di nuovo sul percorso il ban «In vigore» con da quando, fino a quando, il
+  motivo e chi l'ha dato, e i due percorsi «Ha un ban dal training fino al 4 ott 2026, 18:00 UTC.»; come trainee, `/training/request?kind=Atc`
+  e `/training/mine` dicono il ban e fino a quando, e il training ATC aperto va avanti («Scegli la data»); **la mail «[Training] Ban dal
+  training»** in Mailpit, con il motivo, la fine in UTC e «I training che hai già aperti vanno avanti come sono.»; come staff, la lista dei
+  ban (il membro, «In vigore», dal e fino al in UTC e nell'ora della divisione, il motivo, chi l'ha dato, «Percorso» e «Togli il ban»),
+  **«Togli il ban»** chiesto prima e confermato in blu: «Tolto», e il pulsante sparito; il percorso in inglese e a tema scuro, con il ban
+  «Lifted», chi l'ha dato e chi l'ha tolto; nella pagina di #7 il nome del trainee porta al suo percorso; come trainer, niente «Banna»,
+  «Nuovo ban» né «Togli il ban». **Trovato a mano e corretto**: il nome accessibile della riga di un training sul percorso incollava i pezzi
+  («Completatochiesto il 27 set 2026»): la riga ora li dice separati (`aria-label`).
+- **Non verificato**: la CI (la dirà la PR). **Un trainer che legge il proprio percorso sul server vero**: il banco non ha un trainer che sia
+  anche trainee; il test d'integrazione prova la regola sul percorso, e lo smoke disegna l'avviso. **Un 409 di «Togli il ban» dalle pagine**:
+  provato dal test d'integrazione con una versione vecchia, non dalle pagine. **Due ban dati nello stesso momento allo stesso membro**:
+  `banAlreadyHolds` legge gli altri ban prima del salvataggio, e due scritture insieme possono passare tutte e due (nessuna chiave del
+  database lo impedisce); il percorso e la richiesta sanno leggere più ban (A6a). **Le pagine dello staff larghe 375 px**: hanno il difetto
+  noto del nucleo a quella larghezza (A7). **I test nuovi del server sul codice di A9b**: non compilano (gli endpoint, i tipi e la mail
+  nascono qui). **Il test della nota sul percorso su una copia indebolita del codice** (la chiamata a `ReservedFields.For` tolta): non
+  tentato, perché la modalità di permessi l'ha rifiutato ad A9a; il test è stato letto contro il codice.
+
+**Com'è andata (A10b)**: *(a fase chiusa)*
+
+**Com'è andata (A10c)**: *(a fase chiusa)*
 
 ### A11 — I capi FIR
 
