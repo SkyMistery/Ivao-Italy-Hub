@@ -83,7 +83,7 @@ it. The mechanisms below are **decided** (plan §16): they are not reopened, the
 | Any editorial content (page, news, document) | One row in `cms_contents` (`kind`), one `BlockDocument` tree `Content → Section → Block`, one editor, one renderer, one block registry. Templates are `cms_contents` rows with `is_template = true`. |
 | Rich text inside a module (event description, tour briefing…) | The same `BlockDocument`, same editor, same renderer. |
 | A back office list or form | The generic list (Atmosphere `DataTable` driven by a column configuration) and the form generated from the zod schema; on the server `MapCrud<TEntity, TDto>` with the department policy already inside. Hand-written CRUD screens are not accepted. |
-| Validation | The server validates and returns `ProblemDetails`; the client maps them field by field. Rules are not written twice. |
+| Validation | The server validates and returns `ProblemDetails`; the client maps them field by field. Rules are not written twice. A verb that gathers its refusals by hand, outside a validator, uses the core's `Refusals` and answers with `CrudProblems.Validation` (`decisions/2026-09-27-i-rifiuti-di-un-form-nel-nucleo.md`). |
 | Everything the SPA must know at start-up (menu, enabled modules, maintenance, effective permissions, registered blocks) | The one bootstrap endpoint `/api/me`. Nothing hard-wired in the SPA. |
 | Dashboard content, Data blocks of pages | Data blocks **registered by the modules**, composed by the core. Dashboards `/me` and `/staff` are `Dashboard` rows: there is no widget registry, a module's tile is a Data block. |
 | Notifications | The core's notification service; modules publish intents. Never SMTP from a module. |

@@ -30,7 +30,8 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.16** (la 1.15 porta A4a, la 1.16 la sessione master). Il rapporto è
+**Ultimo aggiornamento:** 27 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.17** (la 1.16 la sessione master, la 1.17
+`Refusals` nel nucleo, #152). M3: unite fino ad A6a (#143); in coda A6b–A10a, A6c e A3b. Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
 chiusura di M3 e di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia con
