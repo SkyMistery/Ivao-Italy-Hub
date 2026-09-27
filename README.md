@@ -140,6 +140,24 @@ In development none of this applies: hosts are not filtered, no HSTS or redirect
 with no trusted network the forwarded headers are not read at all, so the address is the one the
 connection really came from.
 
+Two more settings describe the installation, and both are optional. Like `AllowedHosts` they go in
+`secrets/*.json` or in environment variables (`Installation__Domain`, `Installation__Preview`),
+never in `division.json`: a division runs a test installation and a production one from the same
+file.
+
+| Setting | What it does |
+| --- | --- |
+| `Installation:Domain` | The host of this installation, when it is not the division's `domain` — a test copy at `test.hub.example.org`. Every absolute link is built on it: mails, the sitemap, robots.txt. A host name only: no scheme, no port, no path. |
+| `Installation:Preview` | `true` makes the installation private: robots.txt disallows everything, there is no sitemap, every response carries `X-Robots-Tag: noindex, nofollow`, and only the staff of the division and the super administrators can sign in. Anybody else is turned away at the end of the IVAO round trip, before anything about them is written. |
+
+```json
+{
+  "Installation": { "Domain": "test.hub.example.org", "Preview": true }
+}
+```
+
+`diagnostics/startup.txt` says which domain and which access the installation came up with.
+
 ### Configuration files
 
 | File | In the repository | What it is |
