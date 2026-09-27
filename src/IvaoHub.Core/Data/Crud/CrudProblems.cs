@@ -80,6 +80,17 @@ public static class CrudProblems
             extensions: extensions);
     }
 
+    /// <summary>
+    /// The same answer, from the refusals a verb gathered field by field (<see cref="Refusals"/>), the languages that are
+    /// missing included.
+    /// </summary>
+    public static IResult Validation(Refusals refusals, LocaleCatalog catalog, string locale)
+    {
+        ArgumentNullException.ThrowIfNull(refusals);
+
+        return Validation(refusals.Errors, refusals.MissingLocales, catalog, locale);
+    }
+
     /// <summary>A field name as the API spells it, so the client matches it to its own form.</summary>
     public static string FieldName(string propertyName) =>
         string.IsNullOrEmpty(propertyName) ? string.Empty : JsonNamingPolicy.CamelCase.ConvertName(propertyName);

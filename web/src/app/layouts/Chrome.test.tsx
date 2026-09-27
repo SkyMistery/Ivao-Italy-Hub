@@ -71,6 +71,7 @@ const bootstrap: Bootstrap = {
   registries: { blocks: [], permissions: [] },
   calendarKinds: [],
   version: '0.0.0-test',
+  commit: null,
 };
 
 function renderShell(me: Bootstrap = bootstrap) {
@@ -116,7 +117,25 @@ test('the shell of every layout renders under the providers the application moun
       englishCommon.footer.rights
         .replace('{{year}}', String(new Date().getFullYear()))
         .replace('{{division}}', 'IVAO Example')
-        .replace('{{version}}', '0.0.0-test'),
+        .replace('{{build}}', '0.0.0-test'),
+    ),
+  ).toBeInTheDocument();
+});
+
+test('the footer says which package is running: the number and the commit, never the number alone', async () => {
+  // "0.2.0 · 51f946b", the way vIPI says it (note 2026-09-27-la-versione-del-sito). The number is the
+  // name we give the build; the commit is what says which code it is, so a footer that dropped it to
+  // be shorter would answer "which package?" with a name two builds can share. Above, a build with no
+  // commit shows the number alone.
+  renderShell({ ...bootstrap, version: '0.2.0', commit: '51f946b' });
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  expect(
+    screen.getByText(
+      englishCommon.footer.rights
+        .replace('{{year}}', String(new Date().getFullYear()))
+        .replace('{{division}}', 'IVAO Example')
+        .replace('{{build}}', '0.2.0 · 51f946b'),
     ),
   ).toBeInTheDocument();
 });

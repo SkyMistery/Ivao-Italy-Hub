@@ -50,6 +50,7 @@ const bootstrap = {
   registries: { blocks: [], permissions: [] },
   calendarKinds: [],
   version: '0.0.0-test',
+  commit: null,
 };
 
 vi.mock('../../shared/api/client', async () => ({
