@@ -18,7 +18,7 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// changes the exams assigned to them and no other (M3, A3b, note 2026-09-26-le-righe-affidate-a-chi-scrive). On any other
 /// row it is worth what the area's <c>Edit</c> is worth there, so whoever may edit every row of the area loses nothing.
 /// <para>Declared on the permission, like <paramref name="DeniedToStakeholder"/>, because on a row that has an assignee
-/// other permissions still count for everybody. Never on a permission that reads: the catalogue refuses it.</para>
+/// other permissions still count for everybody. Never on the area's <c>View</c> permission: the catalogue refuses it.</para>
 /// </param>
 public sealed record PermissionDescriptor(
     string Name,

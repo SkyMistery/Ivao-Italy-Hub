@@ -17,8 +17,8 @@ namespace IvaoHub.UnitTests;
 /// <item>on a row assigned to the asker the marked permission counts; on any other row — assigned to somebody else, to nobody,
 /// or of an entity that says nothing about it — it is worth what the area's <c>Edit</c> is worth there;</item>
 /// <item>without a row the question is still "held at all?", which is what offers an examiner "new exam";</item>
-/// <item>the catalogue never marks a permission that reads, and refuses <c>AlsoOnDeletion</c> on a permission that is not marked
-/// and a marked permission on an entity that has no assignee (the reviewer's points 1 and 2).</item>
+/// <item>the catalogue never marks the <c>View</c> permission of an area, and refuses <c>AlsoOnDeletion</c> on a permission that
+/// is not marked and a marked permission on an entity that has no assignee (the reviewer's points 1 and 2).</item>
 /// </list>
 /// </summary>
 public sealed class AssigneePermissionTests
@@ -143,7 +143,7 @@ public sealed class AssigneePermissionTests
     }
 
     [Fact]
-    public void TheCatalogueNeverMarksAPermissionThatReads()
+    public void TheCatalogueNeverMarksTheViewPermissionOfAnArea()
     {
         var refused = Assert.Throws<InvalidOperationException>(() => new PermissionCatalog([
             new PermissionDescriptor(View, IsGlobal: false, OnlyForAssignee: true),

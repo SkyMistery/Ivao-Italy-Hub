@@ -39,11 +39,12 @@ public sealed class PermissionCatalog
         {
             if (string.Equals(ViewOf(descriptor.Name), descriptor.Name, StringComparison.Ordinal))
             {
-                // The lists narrow in SQL by department and know nothing of whom a row is assigned to: a permission that
-                // reads would show every row there and refuse most of them one by one (M3, A3b).
+                // The lists narrow in SQL by department and know nothing of whom a row is assigned to: the area's View
+                // would show every row there and refuse most of them one by one (M3, A3b). The catalogue can tell the
+                // area's View apart, and only that one: whether any other permission reads is not written anywhere.
                 throw new InvalidOperationException(
-                    $"The permission '{descriptor.Name}' reads, and a permission that reads is never OnlyForAssignee: "
-                    + "the lists narrow by department and would show the rows anyway.");
+                    $"'{descriptor.Name}' is the View permission of its area, and the area's View permission is never "
+                    + "OnlyForAssignee: the lists narrow by department and would show the rows anyway.");
             }
         }
 

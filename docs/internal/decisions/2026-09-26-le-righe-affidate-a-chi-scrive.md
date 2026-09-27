@@ -11,6 +11,7 @@ spina dorsale (piano §16.2). Lo chiede la risposta 4 di Carmine sulla #131 ([il
 [c4]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5840224757
 [a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
 [rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250526
+[rv2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026
 
 ## 1. Che cosa serve
 
@@ -56,7 +57,8 @@ affidata — **conta come `{Area}.Edit`**: la raggiunge chi tiene anche `Edit` s
   catalogo. **L'interfaccia da sola non basta**: su una riga affidata a qualcuno altri permessi valgono per tutti (su un training
   `Approve` e `Assign` non dipendono dal trainer, domanda 2).
 - **Mai su un permesso che legge**: la lista si restringe in SQL per dipartimento e mostrerebbe comunque le righe degli altri. Il
-  catalogo lo rifiuta quando si compone, come un nome dichiarato due volte.
+  catalogo lo rifiuta quando si compone, come un nome dichiarato due volte. Può riconoscere solo il permesso `View` dell'area, e il
+  messaggio lo dice così (un punto di parole del revisore, [prima del merge][rv2]).
 - **Mai come alternativa di un'entità che non dice a chi è affidata** (rilievo 2 del revisore): lì il permesso segnato varrebbe solo
   come `{Area}.Edit`, cioè niente. L'hub lo rifiuta all'avvio (§3.5-bis).
 
