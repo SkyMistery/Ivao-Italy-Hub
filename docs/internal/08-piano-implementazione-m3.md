@@ -522,10 +522,33 @@ cambiano.
 - **Non verificato**: la CI (la dirà la PR); la regola su un modulo vero (gli esami in A10, il trainer in A7); un avvio che fallisce
   davvero per una dichiarazione sbagliata. I due rifiuti sono provati dai test di unità su `VerifyAlternatives`, e ogni avvio dei test
   d'integrazione fa girare il controllo sui modelli veri, che passano.
+- **Dopo la revisione del codice** ([il revisore][rv135b], 26 settembre 2026): è **approvabile appena il branch è in pari con `main`**.
+  - Il revisore ha rifatto tutto sul merge con `main` a 5dda35e: unità 761, integrazione 317.
+  - Ha provato anche una mutazione dell'handler (il confronto con chi ha la riga rovesciato), che fa cadere 2 dei 9 test di unità.
+- **In pari con `main`** (27 settembre 2026):
+  - `main` era 68 commit più avanti di 5ddba1f: A4, A4a, A5, A6a, #152 (i rifiuti di un form nel nucleo), le altre del maintainer
+    fino a #158, e le correzioni #138, #141 e #142. È entrato nel branch con un merge.
+  - **L'unico conflitto** era in `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi, il più recente sopra: l'intestazione nuova di A3b
+    sopra quella di A6a, e «Che cosa ha lasciato A3b» sopra A6a, A5, A4 e A4a. Dal testo di `main` non manca nessuna riga.
+  - `08` si è unito da solo. `HubPipeline.cs` si è unito da solo con la riga nuova della diagnostica di `main`.
+  - **Il punto di parole del revisore**, fatto: il messaggio di `PermissionCatalog` dice esattamente che cosa controlla, cioè che il
+    permesso `View` dell'area non è mai `OnlyForAssignee`. Il test di unità che lo prova ha preso lo stesso nome.
+  - **Rifatto tutto, una suite alla volta**, sul merge:
+    - `dotnet build` senza avvisi;
+    - unità 794/794: le 785 di `main` e le 9 nuove;
+    - **integrazione intera senza filtro** 336/336: le 330 di `main` e le 6 nuove;
+    - `dotnet format --verify-no-changes` sui file C# della fase;
+    - `pnpm lint`, `typecheck`, `format:check` e `i18n:check` (752 chiavi) verdi;
+    - `pnpm test`: 495 test in 63 file;
+    - `pnpm gen:api` senza differenze;
+    - `pnpm e2e`: 91, con il lucchetto della porta 4173 che si passano le sessioni che lavorano in parallelo;
+    - `pnpm e2e:full`: 41 sul banco di questa sessione (5082). Il database è lo stesso `ivaohub_e2e_a3b` del 26 settembre, portato
+      avanti dalle migrazioni di `main`.
 
 [q135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5841258158
 [a135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
 [rv135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250526
+[rv135b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026
 
 ### A4a — Nucleo: le parole di più moduli
 

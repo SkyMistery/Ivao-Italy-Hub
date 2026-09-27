@@ -105,7 +105,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **`PermissionDescriptor.OnlyForAssignee`** (`CorePermissions.cs`; `PermissionCatalog.IsOnlyForAssignee`, `EditOf`): un permesso
     segnato raggiunge una riga solo se è affidata a chi chiede. Su ogni altra riga vale come `{Area}.Edit`: nell'unico handler
     (`HubAuthorization.cs`) e nel guardiano (`HubSaveChangesInterceptor.IsWrittenWithAnAlternative`) allo stesso modo. Senza riga
-    resta `HasAny`. Il catalogo rifiuta il segno su un permesso che legge.
+    resta `HasAny`. Il catalogo rifiuta il segno sul permesso `View` dell'area, l'unico che sa riconoscere fra quelli che leggono.
   - **Nel guardiano**, per un'alternativa segnata:
     - in modifica la riga è di chi scrive prima e dopo, quindi non si passa e non si prende;
     - alla creazione (`AlsoOnCreation`) la riga nuova è di chi la crea;
@@ -134,7 +134,13 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     Lo stesso per `AlsoOnDeletion` su un permesso non segnato. Il guardiano prende `PermissionCatalog` nel costruttore, dal contenitore.
 - ⚠️ **Trovato, per il revisore**: il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi
   `DeniedToStakeholder`, e così è da A3. Per un'alternativa non segnata così, l'endpoint lascia passare e la rete ferma chi non ha
-  `Edit`. Per questo `Sample.Manage` è anche `DeniedToStakeholder`, e la nota §3.6 lo chiede agli esami.
+  `Edit`. Per questo `Sample.Manage` è anche `DeniedToStakeholder`, e la nota §3.6 lo chiede agli esami. Il revisore l'ha annotato:
+  per A10 la risposta è quella della nota.
+- **In pari con `main` il 27 settembre**, come il revisore ha chiesto prima del merge.
+  - `main` era 68 commit più avanti (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato con un merge.
+  - L'unico conflitto era in questo file, risolto tenendo tutti i paragrafi; `08` si è unito da solo.
+  - Build e suite rifatte (i numeri sono in `08`, A3b, «Com'è andata»).
+  - Il messaggio di `PermissionCatalog` ora dice esattamente che cosa controlla: il permesso `View` dell'area.
 
 ### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
 
