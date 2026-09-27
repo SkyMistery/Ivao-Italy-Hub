@@ -19,11 +19,16 @@
     "Accepted": "Accettata, in attesa del trainer",
     "Assigned": "Trainer assegnato",
     "Scheduled": "Programmato",
+    "Held": "Eseguito",
     "Completed": "Completato",
     "Rejected": "Rifiutata",
     "Cancelled": "Annullata",
     "Closed": "Chiusa",
     "NoShow": "No-show"
+  },
+  "time": {
+    "utc": "{{when}} UTC",
+    "local": "{{when}} ({{zone}})"
   },
   "refusal": {
     "bannedUntil": "Il ban vale fino al {{date}} UTC.",
@@ -103,11 +108,40 @@
     "cancelTitle": "Annullare la richiesta?",
     "cancelDescription": "Resta fra i tuoi training come annullata, e non fa aspettare: puoi chiederne un'altra quando vuoi.",
     "cancelConfirm": "Sì, annulla la richiesta",
-    "cancelled": "Richiesta annullata."
+    "cancelled": "Richiesta annullata.",
+    "closedByStaff": "Chiusa dal dipartimento training: {{reason}}",
+    "closedUnanswered": "Chiusa dall'hub: non hai scelto una data fra quelle proposte dal trainer nel tempo che la divisione dà per sceglierla.",
+    "datesWaiting_one": "Il trainer ha proposto {{count}} data: scegli la tua.",
+    "datesWaiting_other": "Il trainer ha proposto {{count}} date: scegli la tua.",
+    "open": "Apri",
+    "chooseDate": "Scegli la data"
+  },
+  "detail": {
+    "title": "Training {{kind}} {{rating}}",
+    "titleNoRating": "Training {{kind}}",
+    "trainer": "Il tuo trainer: {{name}}",
+    "session": "La sessione",
+    "next": {
+      "Requested": "Il dipartimento training controllerà la richiesta, compreso l'esame teorico, e ti scriverà quando sarà accettata o rifiutata. Finché nessuno la accetta, puoi annullarla.",
+      "Accepted": "Ti verrà assegnato un trainer, e riceverai una mail anche allora.",
+      "Assigned": "Il tuo trainer proporrà le date della sessione: riceverai una mail, e ne sceglierai una qui.",
+      "Scheduled": "Riceverai un promemoria prima della sessione. Una data fissata la cambia solo il trainer: se non ti va più bene, scrivigli.",
+      "Held": "La sessione è passata: il trainer scriverà il report."
+    },
+    "dates": {
+      "title": "Scegli la data della sessione",
+      "lead": "Il tuo trainer ha proposto queste date. Scegline una: la sessione è fissata, e ricevete una mail tutti e due. Se nessuna ti va bene, scrivi al tuo trainer.",
+      "choose": "Scegli questa data",
+      "confirmTitle": "Fissare la sessione il {{when}} UTC?",
+      "confirmDescription": "Il trainer riceve una mail, e anche tu. Una data fissata la cambia solo il trainer.",
+      "confirm": "Sì, fissa la sessione",
+      "chosen": "Sessione fissata: {{when}} UTC.",
+      "moved": "Il trainer ha cambiato le date nel frattempo: guarda quelle di adesso."
+    }
   },
   "staff": {
     "title": "Richieste e training",
-    "description": "Tutti i training della divisione, dalla richiesta al report: accetta o rifiuta una richiesta, e assegna il suo trainer.",
+    "description": "Tutti i training della divisione, dalla richiesta al report: accetta o rifiuta una richiesta, assegna il trainer, proponi le date della sessione, chiudi un training.",
     "open": "Apri",
     "fields": {
       "createdAt": "Richiesta il",
@@ -123,6 +157,7 @@
         "Accepted": "Accettata, in attesa del trainer",
         "Assigned": "Trainer assegnato",
         "Scheduled": "Programmato",
+        "Held": "Eseguito",
         "Completed": "Completato",
         "Rejected": "Rifiutata",
         "Cancelled": "Annullata",
@@ -148,7 +183,9 @@
     "sections": {
       "request": "La richiesta",
       "decision": "La decisione",
-      "trainer": "Il trainer"
+      "trainer": "Il trainer",
+      "dates": "Le date",
+      "closing": "La chiusura"
     },
     "request": {
       "trainee": "Trainee",
@@ -209,7 +246,73 @@
         "reason": "Come lo leggerà il trainee: per esempio, le ore di connessione che gli mancano."
       }
     },
-    "refused": "Il training non è cambiato."
+    "refused": "Il training non è cambiato.",
+    "session": {
+      "title": "La sessione",
+      "chosen": "La data l'ha scelta il trainee fra quelle proposte.",
+      "byHand": "La data è stata fissata a mano.",
+      "held": "Eseguita: la sessione è passata, e il training aspetta il report."
+    },
+    "dates": {
+      "proposedTitle": "Le date proposte",
+      "none": "Nessuna data proposta: il trainee sceglie fra quelle che chi conduce il training propone qui.",
+      "passed": "Già passata: il trainee non la può più scegliere.",
+      "proposedBy": "Proposta da {{name}} il {{date}}.",
+      "noWarnings": "Nessun avviso quando è stata proposta.",
+      "warning": {
+        "training": "Training {{ladder}} {{what}}, {{when}} UTC",
+        "calendar": "{{kind}}: {{what}}, {{when}} UTC"
+      },
+      "met": {
+        "confirmTitle": "Quei giorni c'è già qualcosa nel calendario: guarda gli avvisi, e conferma se le date vanno bene lo stesso.",
+        "refusedTitle": "Quei giorni c'è già qualcosa nel calendario, e la divisione non accetta una data che lo incontra: cambia le date segnate."
+      },
+      "withdraw": {
+        "button": "Ritira",
+        "title": "Ritirare la data del {{when}} UTC?",
+        "description": "Il trainee non la vede più fra quelle da scegliere, e non riceve una mail.",
+        "done": "Data ritirata."
+      },
+      "propose": {
+        "title": "Proponi le date",
+        "lead": "Il trainee le riceve per mail e sceglie la sua fra i riquadri della sua pagina: al massimo 10 alla volta, di 12 ore al massimo ciascuna. Si scrivono in UTC; sotto ogni campo, l'ora di {{zone}}.",
+        "submit": "Proponi le date",
+        "confirm": "Proponi lo stesso",
+        "done_one": "Proposta {{count}} data al trainee: riceve una mail.",
+        "done_other": "Proposte {{count}} date al trainee: riceve una mail.",
+        "fields": {
+          "slots": "Date",
+          "slots.startsAtUtc": "Inizio (UTC)",
+          "slots.endsAtUtc": "Fine (UTC)"
+        }
+      },
+      "setByHand": {
+        "title": "Fissa la data a mano",
+        "lead": "Anche fuori dalle date proposte, e anche nel passato, per una sessione tenuta prima del previsto. Le date proposte vanno via, e il trainee e il trainer ricevono una mail. Si scrive in UTC; sotto il campo, l'ora di {{zone}}.",
+        "submit": "Fissa la data",
+        "confirm": "Fissa lo stesso",
+        "done": "Data fissata: {{when}} UTC.",
+        "fields": {
+          "startsAtUtc": "Inizio della sessione (UTC)"
+        }
+      }
+    },
+    "close": {
+      "button": "Chiudi il training",
+      "title": "Chiudere il training?",
+      "description": "Il trainee riceve una mail con il motivo, e lo legge nella pagina dei suoi training. La sessione fissata e le date proposte vanno via; una chiusura non lo fa aspettare.",
+      "done": "Training chiuso.",
+      "fields": {
+        "reason": "Motivo"
+      },
+      "hints": {
+        "reason": "Come lo leggerà il trainee: per esempio, che non ha scelto una data fra quelle proposte."
+      }
+    },
+    "closing": {
+      "byStaff": "Chiusa da {{name}} il {{date}}.",
+      "byHub": "Chiusa dall'hub il {{date}}: il trainee non ha scelto una data nel tempo che la divisione dà per sceglierla."
+    }
   },
   "sheets": {
     "title": "Scheda di valutazione",
