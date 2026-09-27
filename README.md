@@ -211,6 +211,9 @@ server, so a deployment never overwrites the configuration or the keys. The same
 `media/`: an uploaded file is part of what the installation owns, and a release that replaced the
 folder would empty the media library of every page that shows one.
 
+How to put the package on a server — the folders, the start command, the web server, the database and the checks
+after every deploy — is in [docs/DEPLOYING.md](docs/DEPLOYING.md).
+
 ## Repository layout
 
 | Path | What it holds |
@@ -223,7 +226,7 @@ folder would empty the media library of every page that shows one.
 | `seed/content-templates/` | The page templates a fresh installation starts with, carrying translation keys rather than text |
 | `config/` | `division.json` and the OAuth client configuration |
 | `tests/` | Unit tests and integration tests (Testcontainers, a real MariaDB of the production version) |
-| `docs/` | Public documentation: the [forking guide](docs/FORKING.md) and the [UI guidelines](docs/UI-GUIDELINES.md) |
+| `docs/` | Public documentation: the [forking guide](docs/FORKING.md), the [deployment guide](docs/DEPLOYING.md) and the [UI guidelines](docs/UI-GUIDELINES.md) |
 | `tools/` | Walk-throughs meant to be followed by hand, starting with [the M0 demo](tools/demo-m0.md) |
 
 ## Contributing
