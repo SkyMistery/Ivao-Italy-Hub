@@ -40,7 +40,11 @@ only way to answer, six months later, "but what did we tell them to do?".
 
 - **The version.** The tag is `v` followed by `<Version>` of `Directory.Build.props`, and the rule for
   raising it is written next to the number. The question it answers is "is FTP enough, or does the
-  database have to change too?" — read it before tagging.
+  database have to change too?" — read it before tagging. The contract half of an expand/contract (a
+  migration that drops what the previous release stopped using) is MINOR: FTP is enough for it.
+- **A migration that drops anything.** List the migrations the release adds since the previous delivery
+  (`git diff --name-only v<previous> v<version> -- '*/Migrations/*'`) and read them. If one drops a column,
+  a table or an index, the delivery is still made by FTP, but see section 5.
 - **The release exists.** The tag is pushed by the maintainer, and `release.yml` has finished green: the
   release page shows `ivao-division-hub-v<version>.zip`.
 - **`gh` is signed in** and the repository's `origin` is the one the release belongs to.
@@ -169,7 +173,11 @@ of files, every time:
 - `restart.txt` into `tmp/` **last**, then open the site once;
 - the check that tells a working site from a half-uploaded one: `/api/version` says the new version and
   the tag's commit, `/health` answers, and a page that goes through the server shows real data. A stamp
-  alone says which package started, not that it works.
+  alone says which package started, not that it works;
+- **when the release drops anything from the database** (the contract half of an expand/contract), at the
+  top and in red: which migration and what it drops, and **a fresh copy of the database before the
+  upload**. The migration runs on its own at start-up, on DDL that is not transactional; with the copy,
+  going back is restoring it and uploading the previous package.
 
 Then write down, in the maintainer's notes, what was delivered: the version, the sha256 of the zip, and
 what is left to do.

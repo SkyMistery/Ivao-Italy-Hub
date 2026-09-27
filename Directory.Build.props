@@ -38,6 +38,12 @@
       does the database have to change too?", which is the only one that turns a delivery into
       something to arrange with whoever runs the server.
 
+      ⚠️ THE CONTRACT HALF OF AN EXPAND/CONTRACT IS MINOR. The migration that drops a column no code
+      has used since the previous release is not additive, but FTP is enough for it: MAJOR would say
+      otherwise. It is delivered with open eyes, though: the delivery sheet says so in red and asks
+      for a fresh copy of the database before the upload (docs/DELIVERING.md; note
+      2026-09-27-il-contract-e-minor).
+
       ⚠️ THE NUMBER LIVES HERE, NOT ON THE COMMAND LINE. It is raised in a commit, so that whoever
       reviews that commit sees the promise next to what justifies it. `release.yml` refuses a tag that
       is not exactly "v" followed by this number: the tag names the release, it never renames the

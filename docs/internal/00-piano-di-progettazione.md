@@ -22,7 +22,8 @@ prova**. Cinque note.
   - la regola di vIPI in `Directory.Build.props`;
   - «versione · commit» nel piè di pagina, dal bootstrap;
   - il tag uguale a `v` + versione, o la release si ferma (§11.2, §11.3 punto 1, §16 punto 7);
-  - ⚠️ aperto: la metà «contract» come MINOR.
+  - la metà «contract» di un expand/contract è MINOR, con la copia fresca del database prima del caricamento (nota
+    `2026-09-27-il-contract-e-minor`, **decisa da Carmine**).
 - **La consegna del pacchetto** (`2026-09-27-la-consegna-del-pacchetto`, #158), **decisa da Carmine**: il pacchetto completo è lo
   zip della release del tag; la consegna si prepara in `artifacts/publish/`, con le vecchie in `publish_old/<versione>/`, per
   mezzo di `tools/prepare-delivery.ps1` (§11.3 punti 1 e 6).
@@ -2519,7 +2520,9 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - **La versione** sta in `Directory.Build.props`, con la regola di vIPI: PATCH solo correzioni; MINOR funzionalità nuove e/o
      migrazioni additive; MAJOR se il pacchetto non si consegna con il solo FTP. Il timbro è la versione **con** il commit:
      intero su `/api/version` e in `diagnostics/startup.txt`, corto nel piè di pagina di ogni layout («0.2.0 · 51f946b»),
-     arrivato dal bootstrap. ⚠️ Aperto: la metà «contract» di un expand/contract (raccomandato MINOR).
+     arrivato dal bootstrap. **La metà «contract» di un expand/contract è MINOR** (Carmine, 27 set 2026, nota
+     `2026-09-27-il-contract-e-minor`): il solo FTP basta. Il foglio della consegna lo dice in rosso e chiede una copia
+     fresca del database prima del caricamento.
    - **Il pacchetto completo è lo zip del rilascio GitHub del tag** `v<versione>`, costruito da `release.yml` su un checkout
      pulito, mai un publish locale.
    - **Il master prepara la consegna** con `tools/prepare-delivery.ps1` (Fetch → Diff → Manifest → Zip, runbook
