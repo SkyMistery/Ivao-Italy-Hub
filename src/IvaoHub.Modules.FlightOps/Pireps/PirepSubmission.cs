@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
@@ -992,26 +993,4 @@ public sealed class PirepSubmission(
     private static string? Upper(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim().ToUpperInvariant();
 
     private static string? Trimmed(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
-
-    /// <summary>Refusals as the form reads them: one or more i18n keys per field.</summary>
-    private sealed class Refusals
-    {
-        private readonly Dictionary<string, List<string>> _errors = new(StringComparer.Ordinal);
-
-        public bool IsEmpty => _errors.Count == 0;
-
-        public IReadOnlyDictionary<string, string[]> Errors =>
-            _errors.ToDictionary(entry => entry.Key, entry => entry.Value.Distinct(StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
-
-        public Refusals Add(string field, string key)
-        {
-            if (!_errors.TryGetValue(field, out var keys))
-            {
-                _errors[field] = keys = [];
-            }
-
-            keys.Add(key);
-            return this;
-        }
-    }
 }

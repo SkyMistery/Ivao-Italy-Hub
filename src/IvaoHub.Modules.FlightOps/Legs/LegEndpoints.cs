@@ -562,7 +562,7 @@ public sealed class LegRequest(
             var problems = await readiness.ProblemsAsync(tour, legs, http.RequestAborted);
             if (!problems.IsEmpty)
             {
-                return CrudProblems.Validation(problems.Errors, problems.Localized, catalog, currentUser.Locale);
+                return CrudProblems.Validation(problems, catalog, currentUser.Locale);
             }
         }
 
