@@ -1783,6 +1783,36 @@ senza campi riservati. Smoke: la pagina pubblica, la sessione con e senza login.
 **Fatta quando**: la pagina `/training` mostra a un visitatore i prossimi training ed esami senza VID né nomi, e con il login la pagina
 della sessione li mostra; un TA inserisce un esame; un ban blocca la richiesta successiva.
 
+**Divisa il 27 settembre 2026 in apertura**, in tre parti e non nelle due scritte qui sopra. **A3b (#135) non è unita**: la sua nota è
+decisa da Carmine ([il suo commento sulla #135][a1-135]) e il codice è approvabile, ma il branch aspetta ancora `main` e il via; e di ciò
+che la riga di un esame dichiara — `IHasAssignee`, `OnlyForAssignee`, `AlsoOnDeletion` (nota `2026-09-26-le-righe-affidate-a-chi-scrive`
+§3.6, sul branch di #135) — il nucleo di questo branch non ha niente. Una parte che dipende da un cambio del nucleo ancora in revisione non
+si mette in coda sopra la domanda (regole di tutte le fasi), e non si scrive codice che finge che A3b ci sia: **gli esami vanno in una parte
+loro, l'ultima**. Il resto della prima parte scritta sopra («esami, ban e percorso») non usa A3b e viene per primo; i blocchi e le pagine
+pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
+
+- **A10a — il percorso e i ban** (branch `m3/a10a-path-and-bans`, preparato come `m3/a10-blocks-exams-bans` e rinominato prima del primo
+  push): il punto 3 — il percorso del trainee, l'endpoint e la pagina, con la funzione della risposta dello staff di A9 e il test della
+  nota allargato lì — e il punto 5 — i ban con la lista e il form generati, «Banna» dal percorso, «Togli ban», la mail `banned` —. Nessuna
+  migrazione (`trn_bans` è intera da A6a), nessun file del nucleo. **Test**: integrazione: il percorso per chi guarda, il trainer-trainee
+  senza campi riservati; un bannato non chiede, un ban scaduto o tolto sì; nessuno banna sé stesso, superadmin compreso; chi non ha
+  `Training.Ban` non banna. Smoke: il percorso e i ban. **Fatta quando**: dal percorso lo staff banna il trainee, la sua richiesta successiva
+  è rifiutata per il ban, e tolto il ban la richiesta si può fare.
+- **A10b — i blocchi e le pagine pubbliche** (branch `m3/a10b-blocks-and-public-pages`, da `m3/a10a-path-and-bans`): i punti 1 e 2 — i
+  quattro blocchi nelle due metà, con i due conteggi e la loro nota breve; `/training` e `/training/sessions/{id}` —. Nessuna migrazione.
+  `training.upcomingSessions` mostra i training; gli esami li aggiunge A10c. **Fatta quando**: la pagina `/training` mostra a un
+  visitatore i prossimi training senza VID né nomi, e con il login la pagina della sessione li mostra.
+- **A10c — gli esami** (branch `m3/a10c-exams`, da quello di A10b, **solo dopo che #135 è unita**: `main` entra nel branch con un merge):
+  il punto 4, con la forma di A3b per la riga (nota `le-righe-affidate-a-chi-scrive` §3.6: `[AlsoWrittenWith(ManageExams, AlsoOnCreation =
+  true, AlsoOnDeletion = true)]`, `IHasAssignee` con l'esaminatore, `ManageExams` segnato `OnlyForAssignee` — e `DeniedToStakeholder` se
+  l'esame dice il suo candidato —, `MapCrud` senza `DeletePolicy`); come un TA vede quali esami sono i suoi e come HQ, TC e TAC scelgono
+  l'esaminatore di un esame che inseriscono per un altro (§3.6 lo lascia ad A10); la voce `exam` del calendario; gli esami nel blocco e in
+  `/training`. Una migrazione. **Fatta quando**: un TA inserisce un esame, e solo lui (con HQ, TC e TAC) lo cambia e lo toglie; la pagina
+  `/training` lo mostra a un visitatore senza VID né nomi. Se #135 non è unita quando A10b finisce, A10c aspetta, e la fase dopo A10b è
+  un'altra.
+
+[a1-135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
+
 **Com'è andata**: *(a fase chiusa)*
 
 ### A11 — I capi FIR
