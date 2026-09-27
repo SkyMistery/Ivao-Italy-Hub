@@ -69,7 +69,7 @@ public sealed class FlightOpsReferences(
 
         return Label(locale => Words(
             locale,
-            number is null ? "threads.pirepLabelOpen" : "threads.pirepLabel",
+            number is null ? "flightops:threads.pirepLabelOpen" : "flightops:threads.pirepLabel",
             ("tour", Title(tour, locale)),
             ("number", number?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
             ("from", pirep.DepartureIcao),
@@ -137,7 +137,7 @@ public sealed class FlightOpsReferences(
         return new ContactReferenceTarget(
             Label(locale => Words(
                 locale,
-                "threads.legLabel",
+                "flightops:threads.legLabel",
                 ("tour", Title(pilot.Tour, locale)),
                 ("number", leg.Number.ToString(CultureInfo.InvariantCulture)),
                 ("from", leg.DepartureIcao),
@@ -163,7 +163,7 @@ public sealed class FlightOpsReferences(
         return new ContactReferenceTarget(
             Label(locale => Words(
                 locale,
-                "threads.ruleLabel",
+                "flightops:threads.ruleLabel",
                 ("tour", Title(pilot.Tour, locale)),
                 ("code", rule.Rule.Code),
                 ("title", rule.Rule.Title.Resolve(locale, division.Value.DefaultLocale) ?? string.Empty))),

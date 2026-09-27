@@ -1,5 +1,6 @@
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.FlightOps;
+using IvaoHub.Modules.Training;
 
 namespace IvaoHub.Web;
 
@@ -13,10 +14,11 @@ namespace IvaoHub.Web;
 /// "which modules does this build have?" a question you answer by running the application rather
 /// than by opening a file.</para>
 /// <para>Empty from 13 September 2026, when the ATC module left together with vIPI (note
-/// 2026-09-13-staccarsi-da-vipi), until the tours opened M2 (T5, 16 September 2026).</para>
+/// 2026-09-13-staccarsi-da-vipi), until the tours opened M2 (T5, 16 September 2026); the training followed with M3 (A4,
+/// 25 September 2026).</para>
 /// <para>The order is the order menu entries come out in.</para>
 /// </summary>
 internal static class Modules
 {
-    public static readonly IReadOnlyList<IModule> All = [new FlightOpsModule()];
+    public static readonly IReadOnlyList<IModule> All = [new FlightOpsModule(), new TrainingModule()];
 }

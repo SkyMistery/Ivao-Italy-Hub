@@ -20,12 +20,14 @@ traps this project has already paid for once. How to install and run the hub is 
    merge proves nothing here, because start-up guards and generated files interact. Never force-push a branch that
    is under review.
 6. **Done** means: CI green (`build-test` and `core-guard`), the template's "For the reviewer" filled in,
-   `HANDOFF-M3.md` updated. Then the maintainer asks the reviewer, and merges — or sends it back.
+   `HANDOFF-M3.md` updated. Then the master (the maintainer's reviewing session, CLAUDE.md section 0) reads it and
+   posts its findings; when it is ready, the maintainer gives the go and the master merges it — or sends it back.
+   If your branch must catch up with `main`, the master asks you on the pull request: it never pushes to your branch.
 
 ### Phases in a queue
 
-You do not wait for the merge of one phase to start the next. The reviewer can read several phases in one go, and the
-maintainer merges them in order.
+You do not wait for the merge of one phase to start the next. The master can read several phases in one go, and merges
+them in order on the maintainer's go.
 
 - **Branch** the next phase from the branch of the previous one (`git switch -c m3/<next> m3/<previous>`), still one
   phase per session and one pull request per phase.
@@ -38,7 +40,7 @@ maintainer merges them in order.
 - **A fix asked on a phase below** goes on that phase's branch, and then you merge that branch into every branch
   above it, in order. Merge, never rebase.
 - **When #N is merged**: merge `main` into the next branch, build and run the tests again, remove `(after #N)`, and
-  mark the pull request ready. The reviewer checks that its diff is now only its own phase.
+  mark the pull request ready. The master checks that its diff is now only its own phase.
 - **A phase that needs an answer from the maintainer** (a case (c) note, a core change still under review) does not
   queue on top of the question: the parts that depend on it wait for the answer.
 
@@ -94,7 +96,10 @@ CI fails on a diff after regenerating them, so regenerate before pushing:
 - **Windows shells**: heredocs with non-ASCII characters (`§`, `—`, accents) truncate silently, and backticks inside
   `node -e "…"` are run as commands, leaving holes in the file. Write files with an editor or a script file.
 - **`Localized<T>` serialized into a column** needs `LocalizedJsonConverterFactory`; only HTTP has it registered.
-- **Server-side i18n keys** are flattened: in C# a module key is `threads.x`, never `flightops:threads.x`.
+- **Server-side i18n keys**: in C# a module's key is asked with its namespace, as the browser asks it —
+  `flightops:threads.x`, never `threads.x`. A bare module key answers only while no other module declares it, and then
+  the catalogue silently answers with the key itself; `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer`
+  refuses it. The core's keys, and the mails of the notification types (`mail.{type}`), stay bare.
 - **A new block bumps two counts** written out in tests (`uiKit.test.ts` and `DataBlockEndToEndTests`), and a block
   needs both halves (TypeScript and C#) in the same pull request.
 - **A module with a public page reserves its first URL segment** (`IModule.ReservedSegments`), or a page with that

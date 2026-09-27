@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\IvaoHub.Core\IvaoHub.Core.csproj" />
     <ProjectReference Include="..\..\src\IvaoHub.Modules.FlightOps\IvaoHub.Modules.FlightOps.csproj" />
+    <ProjectReference Include="..\..\src\IvaoHub.Modules.Training\IvaoHub.Modules.Training.csproj" />
   </ItemGroup>
 
 </Project>

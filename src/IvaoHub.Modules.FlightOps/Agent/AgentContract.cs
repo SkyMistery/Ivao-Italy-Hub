@@ -36,10 +36,10 @@ public static class AgentContract
     public const int MaxKeyLength = 64;
 
     /// <summary>
-    /// The title of the answer to a request without an accepted version, worded here: the server's catalogue flattens the
-    /// namespaces, so the key has none.
+    /// The title of the answer to a request without an accepted version, worded here. The server asks a module's key with
+    /// its namespace, as the browser does (note 2026-09-26-le-chiavi-dei-moduli-con-il-namespace).
     /// </summary>
-    public const string VersionTitleKey = "errors.agentContract";
+    public const string VersionTitleKey = "flightops:errors.agentContract";
 
     /// <summary>
     /// The version a request speaks: 400 with the accepted ones when it says none or one the hub does not speak (Carmine, 24

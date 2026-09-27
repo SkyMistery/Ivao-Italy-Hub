@@ -50,6 +50,30 @@ internal static class HubConfiguration
     }
 
     /// <summary>
+    /// The division as this installation reads it: the file, with the installation's own host on
+    /// top when it names one (<see cref="InstallationOptions.DomainKey"/>). One key crosses over and
+    /// no other, so the two files still cannot shadow each other; and it crosses here, once, so that
+    /// <c>DivisionOptions.Domain</c> is the only domain there is to read (note
+    /// 2026-09-27-l-installazione-di-prova).
+    /// </summary>
+    public static IConfiguration Division(IConfiguration divisionFile, IConfiguration application)
+    {
+        ArgumentNullException.ThrowIfNull(divisionFile);
+        ArgumentNullException.ThrowIfNull(application);
+
+        var domain = application[InstallationOptions.DomainKey];
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return divisionFile;
+        }
+
+        return new ConfigurationBuilder()
+            .AddConfiguration(divisionFile)
+            .AddInMemoryCollection([new KeyValuePair<string, string?>("domain", domain.Trim())])
+            .Build();
+    }
+
+    /// <summary>
     /// In production the host list must be explicit. Host header filtering is what keeps a request
     /// carrying a forged <c>Host</c> from being served at all: absolute links, cookies scoped by
     /// host and anything that echoes the host back are only as trustworthy as this list.

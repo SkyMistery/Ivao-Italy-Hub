@@ -63,7 +63,8 @@
     "holds the permission. scope is the department the permission is held on; leave it out for every",
     "department. Each grant is applied once, at the first start that finds it; after that the permissions",
     "screen is the truth, and a grant deleted there does not come back. A global permission is never given",
-    "this way. The grants below are the ones the tours module expects for its base department (FOD)."
+    "this way. The grants below are the ones the tours module expects for its base department (FOD), and the",
+    "training module for its own (TD), where a trainer is a Member of the department."
   ],
   "positionGrants": [
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.View", "scope": "FOD" },
@@ -77,7 +78,16 @@
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageValidators", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.ViewPilots", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.Ban", "scope": "FOD" },
-    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageSettings", "scope": "FOD" }
+    { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.ManageSettings", "scope": "FOD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor", "Member"], "permission": "Training.View", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Training.Approve", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Assign", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Conduct", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Edit", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSheets", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Training.ManageExams", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Ban", "scope": "TD" },
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSettings", "scope": "TD" }
   ],
 
   "$comment.firStaffScope": "all = FIR teams work on every FIR (default). own = each FIR team only sees its own FIR.",

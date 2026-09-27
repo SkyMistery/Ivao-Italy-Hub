@@ -1,9 +1,13 @@
 {
-  "$comment": "Read by every Claude Code session in this repository. Only the maintainer merges into main and pushes tags (CLAUDE.md section 0); these rules make a session refuse before GitHub has to. A local settings.local.json can override them, so they are a belt, not the lock: the lock is the ruleset on main.",
+  "$comment": "Read by every Claude Code session in this repository. Only the maintainer decides what goes into main, and the master session merges it on his go (CLAUDE.md section 0); these rules make a session refuse, or ask its human, before GitHub has to. gh pr merge is 'ask', not 'deny', because a deny cannot be lifted for the master; the maintainer's own machine denies it outside the master with a hook. A local settings.local.json can override them, so they are a belt, not the lock: the lock is the ruleset on main.",
   "permissions": {
-    "deny": [
+    "ask": [
       "Bash(gh pr merge)",
       "Bash(gh pr merge *)",
+      "PowerShell(gh pr merge)",
+      "PowerShell(gh pr merge *)"
+    ],
+    "deny": [
       "Bash(gh api -X PUT *)",
       "Bash(gh api --method PUT *)",
       "Bash(gh api --method=PUT *)",
@@ -17,8 +21,6 @@
       "Bash(git push origin v*)",
       "Bash(git push --tags*)",
       "Bash(git push origin --tags*)",
-      "PowerShell(gh pr merge)",
-      "PowerShell(gh pr merge *)",
       "PowerShell(gh api -X PUT *)",
       "PowerShell(gh api --method PUT *)",
       "PowerShell(git push origin main)",

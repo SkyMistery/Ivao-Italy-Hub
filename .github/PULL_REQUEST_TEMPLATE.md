@@ -22,8 +22,8 @@ Answer honestly: a "yes" is not a rejection, it is a decision that has to be jus
 - [ ] **Do the backbone tests still pass?** Interceptor, authorization handler, `IProjectable`,
       `Localized<T>`.
 - [ ] **Is there a user visible string in the code?** Every one of them is an i18n key.
-- [ ] **Did this change require a decision?** Then the plan has a new version and a changelog line,
-      and there is a note under `docs/internal/decisions/`.
+- [ ] **Did this change require a decision?** Then there is a note under `docs/internal/decisions/`
+      ending with "Da portare nel piano"; the master carries it into the plan after the merge.
 
 ## How it was verified
 

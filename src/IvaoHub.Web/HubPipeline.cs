@@ -223,6 +223,8 @@ internal static class HubPipeline
             applied,
             enabledModules: [.. registry.EnabledKeys],
             scope.ServiceProvider.GetRequiredService<IClock>().UtcNow,
+            division.Domain,
+            scope.ServiceProvider.GetRequiredService<IOptions<InstallationOptions>>().Value.Preview,
             app.Lifetime.ApplicationStopping);
     }
 }

@@ -1,0 +1,117 @@
+{
+  "nav": {
+    "section": "Training",
+    "sheets": "Scheda di valutazione",
+    "settings": "Impostazioni del training"
+  },
+  "kinds": {
+    "Atc": "ATC",
+    "Pilot": "Pilota"
+  },
+  "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+  "sheets": {
+    "title": "Scheda di valutazione",
+    "description": "Le voci che il trainer valuta dopo una sessione, per percorso e rating: quelle pratiche con un voto da 1 a 5, quelle di teoria come fatte, non fatte o da migliorare. Il trainee le legge nel suo report.",
+    "create": "Nuova voce",
+    "edit": "Modifica voce",
+    "fields": {
+      "title": "Voce",
+      "rating": "Rating",
+      "ratingShortName": "Rating",
+      "section": "Sezione",
+      "sort": "Ordine",
+      "isActive": "Attiva",
+      "updatedAt": "Modificata"
+    },
+    "hints": {
+      "rating": "La scheda su cui sta la voce: si scelgono solo i rating che hanno un training pratico.",
+      "section": "Come il trainer segna la voce: la pratica con un voto da 1 a 5, la teoria come fatta, non fatta o da migliorare.",
+      "title": "Come la leggono il trainer e il trainee, in ogni lingua della divisione.",
+      "sort": "Il posto della voce nella scheda del suo rating: prima i numeri più bassi.",
+      "isActive": "Una voce spenta non entra nei report nuovi; i report già scritti la tengono com'era."
+    },
+    "options": {
+      "section": {
+        "Practice": "Pratica",
+        "Theory": "Teoria"
+      }
+    },
+    "filters": {
+      "kind": "Percorso",
+      "anyKind": "Tutti i percorsi",
+      "rating": "Rating",
+      "anyRating": "Tutti i rating"
+    },
+    "delete": {
+      "title": "Eliminare la voce?",
+      "description": "Si elimina solo una voce che nessun report ha usato; una voce già usata si spegne."
+    }
+  },
+  "settings": {
+    "title": "Impostazioni del training",
+    "description": "Ciò che il dipartimento training cambia senza un rilascio: le regole di una richiesta, i tempi delle date, le postazioni su cui si allena.",
+    "saved": "Impostazioni salvate.",
+    "fields": {
+      "minimumHours": "Ore minime per chiedere un training",
+      "minimumHours.rating": "Rating richiesto",
+      "minimumHours.hours": "Ore necessarie",
+      "cooldownDays": "Giorni di attesa dopo un training",
+      "noShowCooldownDays": "Giorni di attesa dopo un no-show",
+      "maxResponseDays": "Giorni per scegliere la data prima che il training si chiuda",
+      "responseReminderDays": "Giorni senza una data scelta prima dell'avviso al trainer",
+      "conflictPolicy": "Quando una data proposta incontra il calendario",
+      "conflictKinds": "Tipi del calendario controllati",
+      "reminderLeadHours": "Ore di anticipo del promemoria di una sessione",
+      "hiddenPositions": "Postazioni non usate per il training",
+      "hiddenPositions.callsign": "Postazione",
+      "theoryExamUrl": "Indirizzo dell'esame teorico"
+    },
+    "hints": {
+      "minimumHours": "Ore di connessione da controllore per un rating ATC, da pilota per un rating pilota. Chi ne ha meno non può chiedere quel rating. Nessuna riga: nessuna soglia.",
+      "maxResponseDays": "Vuoto: un training non si chiude mai da solo, e lo chiude lo staff a mano.",
+      "conflictKinds": "Una data proposta che cade su una voce di uno di questi tipi è trattata come dice l'impostazione qui sopra.",
+      "hiddenPositions": "Ai trainee si offrono tutte le postazioni della divisione su cui si allena un rating, militari comprese, tranne queste.",
+      "theoryExamUrl": "Mostrato con la domanda sull'esame teorico, e a chi approva una richiesta."
+    },
+    "options": {
+      "conflictPolicy": {
+        "Warn": "Avvisa, e il trainer conferma",
+        "Block": "Rifiuta la data",
+        "None": "Non controllare"
+      }
+    }
+  },
+  "errors": {
+    "ratingNotTrained": "Questo rating non ha un training pratico.",
+    "ratingTwice": "Questo rating ha più di una riga.",
+    "positionUnknown": "La divisione non allena più su questa postazione: toglila dall'elenco.",
+    "calendarKindUnknown": "Uno di questi non è un tipo del calendario.",
+    "sheetItemUsed": "Un report ha già usato questa voce: non si elimina, si spegne.",
+    "requestBanned": "Hai un ban dal training: finché vale non puoi chiedere un training.",
+    "requestOpen": "Hai già un training aperto su questo percorso: uno alla volta.",
+    "requestWaiting": "L'attesa dopo il tuo ultimo training su questo percorso non è ancora finita.",
+    "requestNothingToAsk": "Dopo il tuo rating non c'è un training da chiedere su questo percorso.",
+    "requestHoursUnknown": "L'hub non conosce ancora le tue ore di connessione: esci ed entra di nuovo.",
+    "requestHoursTooFew": "Non hai ancora le ore di connessione che questo training chiede.",
+    "requestNoPosition": "In questo momento la divisione non offre postazioni su cui allenare questo rating.",
+    "requestRatingNotNext": "Questo non è più il rating che puoi chiedere: ricarica la pagina.",
+    "requestPositionUnknown": "Scegli una postazione dall'elenco.",
+    "requestPositionNotAsked": "Un training di questo percorso non ha una postazione.",
+    "requestNotCancellable": "Si annulla solo una richiesta che nessuno ha ancora accettato."
+  },
+  "notifications": {
+    "requestReceived": {
+      "title": "Le mie richieste di training",
+      "description": "Una mail quando una tua richiesta di training viene ricevuta."
+    }
+  },
+  "mail": {
+    "training": {
+      "requestReceived": {
+        "subject": "[Training] Richiesta ricevuta: {{training}}",
+        "body": "Abbiamo ricevuto la tua richiesta di training: {{training}}.{{mockExam}}\n\nIl dipartimento training la controllerà, compreso l'esame teorico, e ti scriverà quando sarà accettata o rifiutata. Finché nessuno la accetta, puoi annullarla dalla pagina dei tuoi training.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "mockExam": " Sarà un mock exam, come concordato con il trainer."
+    }
+  }
+}

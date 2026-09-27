@@ -11,11 +11,22 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A3b** (nucleo: le righe affidate a chi scrive), sul branch
-`m3/a3b-entrusted-rows`, **PR #135** verso `main`. **A3 (#131) è unita**, con #136 (la nota del maintainer sugli esaminatori), #132 e
-#137, ed è entrata nel branch con un merge. Carmine ha deciso la nota di A3b: sì alla forma, e sì al trainer di A7 con la stessa regola.
-**A4** (lo scheletro del modulo) e **A4a** (#133) vanno avanti in un'altra sessione; A5 la apre la sessione di A4. A7 usa A3 e A3b, A10
-usa A3b.
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A3b** (nucleo: le righe affidate a chi scrive), sul branch
+`m3/a3b-entrusted-rows`, **PR #135** verso `main`. La nota è decisa da Carmine: sì alla forma, e sì al trainer di A7 con la stessa
+regola. Il revisore ha trovato il codice approvabile appena in pari con `main`
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026)). `main` era 68 commit più avanti di
+5ddba1f (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato nel branch con un merge; build e suite rifatte. Aspettano A3b: A7 (#146), che
+usa la regola per il trainer; A10, per gli esami; A11a (#159), che tocca lo stesso handler e lo stesso guardiano.
+
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6a** (la richiesta, il server), sul branch `m3/a6a-request-server`, **PR #143**
+verso `main`: **A6 si è divisa in apertura** in A6a (il server) e A6b (le pagine), come `08` prevedeva. **A5 (#140) è unita** (18:44), e
+`main` è entrato nel branch con un merge insieme alla #141 del maintainer: **il revisore ora è la «sessione master»** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
+`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133) e A4 (#139) sono unite**; la fase del nucleo **A3b** (#135) è
+in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della richiesta), sul branch `m3/a6b-request-pages` preparato da
+`m3/a6a-request-server`, in coda dopo #143; poi **A7**, in coda dopo A6b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
+in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
+con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -124,6 +135,147 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - ⚠️ **Trovato, per il revisore**: il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi
   `DeniedToStakeholder`, e così è da A3. Per un'alternativa non segnata così, l'endpoint lascia passare e la rete ferma chi non ha
   `Edit`. Per questo `Sample.Manage` è anche `DeniedToStakeholder`, e la nota §3.6 lo chiede agli esami.
+
+### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova; A6 divisa in apertura, scritto in `08`):
+  - **Il training, intero**: `trn_trainings` (`src/IvaoHub.Modules.Training/Training.cs`, **alla radice del modulo**: una classe `Training`
+    in un namespace sotto quello del modulo sarebbe nascosta dal namespace `IvaoHub.Modules.Training`) con tutte le colonne di design §1.2
+    e `reminded_at` (§5.3), `TrainingState` e `TrainingRejection`; **`trn_bans`** (`Bans/TraineeBan.cs`, con `Holds(at)`), solo la tabella
+    e la lettura. Migrazione `AddTrainings`, solo additiva.
+  - **Una richiesta aperta per percorso anche nel database**: `open_kind`, scritta dal getter come `is_disputed` dei PIREP, in un indice
+    unico con `trainee_vid`.
+  - **Le regole** in funzioni pure (`Requests/RequestRules.cs`: `Standing`, `WaitUntil`, `IsMockExam`, `MinimumHours`, `EndedAt`) e
+    **`ITheoryExamSource`** (`Requests/ITheoryExamSource.cs`), oggi la dichiarazione del trainee (`TraineeDeclaration`, `TryAddScoped`).
+  - **Gli endpoint del trainee**, `/api/training/mine` (`Requests/RequestEndpoints.cs`, `Requests/TrainingRequests.cs`): `GET` la pagina
+    (`MyTrainingDto`: VID, nome, `asksTheory`, `theoryExamUrl`, `paths` — per percorso rating e ore, `next`, `isMockExam`, `asksPosition`,
+    `positions`, `refusal` con `bannedUntil`, `openTrainingId`, `waitUntil`, `minimumHours` —, `trainings`); `POST` la richiesta
+    (`TrainingRequestWriteDto`: `kind`, `rating`, `position`, `availabilityText`, `notesText`, `theoryPassed`); `GET /{id}`; `POST
+    /{id}/cancel` con la `rowVersion`. Il DTO del trainee (`TraineeTrainingDto`) non ha campi dello staff; nessun DTO ha l'email. Tutto già
+    in `web/src/shared/api/schema.d.ts`.
+  - **La mail** `training.requestReceived` (`TrainingNotifications`) e gli errori `training:errors.request*`, in `training.json`.
+  - **I test**: `TrainingRequestRulesTests` (unità, su un vocabolario di prova), `TrainingRequestTests` (integrazione, VID 790017–790021).
+- **Che cosa deve sapere la fase dopo**:
+  - **A6b** (le pagine): il server c'è tutto, e le due pagine leggono **un endpoint solo**, `GET /api/training/mine`. ⚠️ **Un rifiuto è una
+    chiave nuda** (`refusal`; nel `POST` i `ProblemDetails` sul campo `kind`): **fino a quando, la soglia e le ore la pagina le prende dal
+    `GET`** — `bannedUntil` (vuoto, con il rifiuto del ban, vuol dire «finché qualcuno non lo toglie»), `waitUntil`, `minimumHours`,
+    `hours` — e le scrive accanto al messaggio. La richiesta **rimanda `next.number`** in `rating`; `asksPosition` dice se si sceglie una
+    postazione fra `positions`. Con `asksTheory` la finestra della domanda, con il link `theoryExamUrl` quando c'è; la risposta va in
+    `theoryPassed`, e **il «no» risponde 201** con il training `Rejected` / `TheoryNotPassed`: il messaggio a schermo lo dice. In
+    `/training/mine` i `trainings` dal più nuovo, «Annulla» solo su `Requested` con la sua `rowVersion` (409 se vecchia), l'attesa residua
+    è `waitUntil` del percorso, «pronto per…» sono `readyForMockExam` e `readyForExam`.
+  - ⚠️ **Un training non si elimina mai**: una spec che ne chiede uno lo **annulla** nel `finally`, e all'inizio annulla quelli che una
+    corsa di prima ha lasciato `Requested`; un rifiuto e un annullamento non fanno aspettare.
+  - **Il banco**: a `?as=pilot` (VID 999002, AS3 e FS3) si propongono il primo rating ATC e il primo pilota con un training pratico; le
+    postazioni sono quelle delle fixture. La sua casella (`bench-pilot@bench.test`) riceve la mail del «sì».
+  - **A7**: lo staff legge il training con `Training.View`, con un DTO suo; la funzione unica che toglie i campi riservati al trainee della
+    riga è di A9. Il grant del trainer ha lo scope `Training.ScopeOf(id)`.
+  - **A8**: `reminded_at` c'è; la fine di una sessione non è una colonna del training (sta nella disponibilità scelta, `chosen_slot_id`).
+  - ⚠️ **Il filtro globale nasconde un training a chi non è entrato**: nei test, pulire e contare vogliono `IgnoreQueryFilters()`.
+  - VID: il prossimo libero è **790022** (A3b usa 790040–790044 e 790050–790051).
+- **La coda si è sciolta prima della PR**: #140 è stata unita alle 18:44; `main` è entrato nel branch con un merge (da90c3e) che non porta
+  file del modulo, tutto è stato rifatto sul merge, e la PR è nata verso `main` senza coda.
+
+### Che cosa ha lasciato A5 (26 settembre 2026, branch `m3/a5-sheet-items`, PR #140)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova):
+  - **Le voci della scheda di valutazione**: `trn_sheet_items` (`src/IvaoHub.Modules.Training/Sheets/SheetItem.cs`, migrazione
+    `AddSheetItems`, solo additiva) — percorso, rating, sezione `Practice` (voto 1–5) o `Theory` (fatto, non fatto, da migliorare),
+    titolo `Localized<string>` in ogni lingua della divisione, ordine (`sort`), attiva —, del dipartimento base, `IAuditable`,
+    `[Audited]`. `RatingKind` e `SheetSection` come testo in `ConfigureModuleConventions`.
+  - **`/api/training/sheet-items`** (`Sheets/SheetItemEndpoints.cs`), `MapCrud` letto e scritto con `Training.ManageSheets`, con
+    `filter[kind]`, `filter[rating]`, l'ordine della scheda e la sigla del rating dal vocabolario (`ratingShortName`). Le regole in
+    `SheetItemWriteDtoValidator`. **I validatori del modulo ora sono registrati per il motore** (`AddValidatorsFromAssemblyContaining`).
+  - **«È usata?»**: `ISheetItemReports`, che oggi risponde no (`NoSheetItemReports`); una voce usata non si elimina
+    (`training:errors.sheetItemUsed` sul campo `id`), si spegne.
+  - **Il front end**: `/staff/training/sheets` e `/staff/training/sheets/$id` (`screens/sheets.tsx`), la voce «Scheda di valutazione»
+    nella barra dello staff; le scelte dei rating sono un aiuto solo, `screens/ratings.ts`, con la chiave `ratingChoice` (era
+    `settings.ratingChoice`) e `fromRatingChoice` in `schemas.ts`.
+  - **I test**: `TrainingSheetItemTests` (unità), `TrainingSheetTests` (integrazione, VID 790014–790016), `schemas.test.ts`,
+    `web/e2e/full/training-sheets.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **A6** (la richiesta): il secondo `DbSet` e la sua migrazione, in fila dopo `AddSheetItems`; i validatori per il motore **sono già
+    registrati** (non si registrano due volte). Gli enum nuovi (lo stato, il rifiuto) vanno in `ConfigureModuleConventions` accanto a
+    `RatingKind`. Le scelte dei rating per il form della richiesta: `ratingOptions` in `screens/ratings.ts`.
+  - **A9** (dopo la sessione) mette al posto di `NoSheetItemReports` la risposta delle schede compilate, nella stessa registrazione
+    (`TryAddScoped`), come T11 dei tour con `PirepTourReports`; una scheda nuova si fa con le voci **attive** del percorso e del rating
+    del training, nell'ordine di `sort`, e fotografa titolo e sezione.
+  - ⚠️ **Chi scrive le voci ha `ManageSheets` e `Edit`**: il guardiano chiede `Training.Edit` a ogni riga dello staff (design §3.1),
+    come `Tours.Edit` a chi ha `Tours.ManageAircraft`. Con `ManageSheets` da solo la schermata si apre e il salvataggio risponde 403.
+    Nella divisione i due vanno insieme (TC, TAC); un test d'integrazione lo fissa.
+  - ⚠️ **La lista si legge con `ManageSheets`**, non con `View`: TA e trainer non vedono la voce nel menu; il trainer leggerà le voci
+    dalla scheda del suo training (A9).
+  - ⚠️ **`SchemaForm` legge i suoi valori una volta sola**: un form che calcola un valore iniziale da un'altra query aspetta una lettura
+    fatta dopo l'apertura (`isFetchedAfterMount`), e un form su una riga si ridisegna alla sua versione (`key={rowVersion}`).
+  - VID: il prossimo libero è **790017** (A3b usa 790040–790044 e 790050–790051).
+- **La coda si è sciolta durante A5**: #139 (A4) e #138 del maintainer sono state unite alle 12:22, a PR di A5 già aperta in bozza.
+  `main` è entrato nel branch con un merge (48a1219) che porta #138, e build e test sono stati rifatti sul merge; tolti `(after #139)` e
+  `Queued after #139.`. A6 va in coda dopo #140.
+
+### Che cosa ha lasciato A4 (26 settembre 2026, branch `m3/a4-training-skeleton`, PR #139)
+
+- **Che cosa c'è** (codice del modulo; una nota sola, **Decisa**, `2026-09-26-gli-esami-li-inserisce-chi-esamina`, per gli esami
+  senza i trainer, che rimanda a quella del maintainer, `2026-09-26-gli-esaminatori`; lo scostamento grande è la fase del nucleo A4a,
+  trovata qui):
+  - **Il modulo**: `src/IvaoHub.Modules.Training/` — `TrainingModule` (chiave `training`, la voce `/staff/training/settings`, il
+    segmento riservato `training`), `TrainingPermissions` (i nove di design §3.1), `Data/TrainingDbContext` con l'`Initial` senza
+    tabelle del modulo, `Settings/TrainingSettings` (i dieci campi di §1.6, `TrainingSettingsValidator` sul vocabolario,
+    `TrainingSettingsSaveValidator` che legge anche i tipi del calendario e le postazioni), `Reference/TrainingReference` (i rating con
+    un training pratico e le loro postazioni, chiesti al nucleo) con `/api/training/ratings` e `/api/training/positions`.
+  - **Il front end**: `web/src/modules/training/` — manifest, `screens/settings.tsx` (il form generato), `schemas.ts`, `api.ts`, le lingue.
+  - **La configurazione**: i nove `positionGrants` del TD in `config/division.json` e nell'esempio. ⚠️ **`ManageExams` a TC, TAC e
+    TA1–9, non ai trainer**, a differenza del design §3.2: **un esame si assegna solo a un esaminatore, e gli esaminatori sono HQ, TC,
+    TAC e i TA, mai un trainer** (`dalberone`, 26 settembre 2026), e la regola n.10 di Carmine è che l'esame lo inserisce chi ce l'ha.
+    **Vale anche per A3b** (la domanda «anche a un trainer?» della sua sezione ha già la risposta: no) **e per A10**. Cambiava
+    l'elenco scritto nella n.10, quindi ha una nota sua, **decisa** da Carmine
+    ([«yes» sulla issue #134](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/134#issuecomment-5844363804)), come la sua nota
+    `2026-09-26-gli-esaminatori` (#136), che corregge la n.10.
+  - **I test**: `TrainingSettingsTests` e `TrainingArchitectureTests` (unità), `TrainingSkeletonTests` e `TrainingXxDivisionTests`
+    (integrazione, VID 790009–790013), `schemas.test.ts`, `web/e2e/full/training-skeleton.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **A5** (le voci della scheda): il primo `DbSet` e la migrazione `AddSheetItems`; i rating del form sono `TrainingReference.Ratings`
+    (o `/api/training/ratings`); gli enum come testo vanno in `ConfigureModuleConventions`, come nei tour. ⚠️ **I validatori per il
+    motore CRUD non sono registrati**: A4 non ne ha, e le impostazioni li creano da sé; con il primo `MapCrud` serve
+    `services.AddValidatorsFromAssemblyContaining<TrainingModule>(includeInternalTypes: true)`, come nei tour.
+  - **A6** (la richiesta): le impostazioni si leggono con `ModuleSettingsStore.GetAsync<TrainingSettings>(TrainingModule.ModuleKey)`;
+    `MaxResponseDays` e `TheoryExamUrl` possono essere `null`; le postazioni da offrire sono quelle del rating proposto
+    (`IAtcPositionDirectory.ForRatingAsync`) meno `HiddenPositions`. `TrainingReference.PositionsAsync` le dà tutte, per le impostazioni.
+  - ⚠️ **Il controllo di architettura del modulo morde**: nel codice di `src/IvaoHub.Modules.Training/` e `web/src/modules/training/`
+    niente «IVAO» (nemmeno nei commenti: si scrive «la rete»), nessun numero accanto a un rating, nessun «ADC» o «TWR» in una stringa,
+    nessun client HTTP. I test del modulo possono costruire rating loro (sono esclusi).
+  - ⚠️ **Una chiave del training in C# si legge senza namespace solo se nessun altro modulo la dichiara** (A4a): `nav.section`,
+    `nav.settings`, `settings.title`, `settings.description`, `settings.saved` sono anche dei tour. Le mail di A6 vanno in
+    `mail.training.<tipo>`.
+  - ⚠️ **Un errore su una riga di una lista** si nomina con il campo della riga (`minimumHours[0].rating`), o il form non lo mostra.
+  - ⚠️ **`web/e2e/address.spec.ts`** va su `/training/team`: nessuna rotta del modulo deve prendere ogni `/training/…`.
+- **Il passo della coda è fatto**: #133 è stata unita alle 11:51, `main` è entrato nel branch con un merge che non porta file (l'albero,
+  122c54e, è quello su cui sono girate tutte le suite), e #139 è pronta. Se prima di #139 viene unita **#138** del maintainer, il suo
+  test di architettura legge il C# del training: le chiavi sono già tutte `training:…`.
+- ⚠️ **Un banco e2e locale che ha già girato con il seme di prima** (esami anche ai trainer) lo tiene, perché un seme si applica una
+  volta sola: prima di `pnpm e2e:full`, `DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` (quello di questo worktree è stato
+  ricreato il 26 settembre). La CI parte sempre da un banco nuovo.
+
+### Che cosa ha lasciato A4a (26 settembre 2026, branch `m3/a4a-module-locales`, PR #133)
+
+- **Perché c'è**: la sessione di A4 ha scritto lo scheletro del modulo, e al primo test d'integrazione l'hub non è partito:
+  `LocaleCatalog`, il catalogo delle lingue del server, appiattisce tutti i file di una lingua in un solo dizionario e rifiuta una
+  chiave dichiarata due volte, e con due moduli si ripetono per forza `_source` (lo scrive `pnpm i18n:sync` in ogni copia) e
+  `nav.section` (lo esige la barra dello staff). `dalberone` ha scelto di fare subito la fase del nucleo, a sé, prima di A4.
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-parole-di-piu-moduli.md`, **Decisa**: Carmine ha risposto sì in un
+  [commento su #133](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/133#issuecomment-5844250303)):
+  `LocaleCatalog` salta `_source` e la usa per riconoscere il file di un modulo; tiene le chiavi di un modulo anche con il namespace
+  (`training:nav.section`); senza namespace, come prima, quelle che un solo modulo dichiara; una chiave di due moduli solo con il
+  namespace; i doppioni che toccano il nucleo ancora rifiutati. Il test nuovo `LocaleCatalogModuleTests` scrive i suoi file di lingua.
+- **Che cosa deve sapere la fase dopo (A4)**:
+  - **Il codice di A4 è su `m3/a4-training-skeleton`**, spinto, senza PR: unisce questo branch, rifà build e **tutti** i test, e apre
+    la sua PR in coda dopo #133.
+  - ⚠️ **In C# una chiave di un modulo si chiede con il namespace**, `training:<chiave>`: lo impone **#138** (bozza del maintainer, in
+    coda dopo #133, nota `2026-09-26-le-chiavi-dei-moduli-con-il-namespace`), con un test di architettura che rifiuta una chiave di
+    modulo scritta nuda in `src/` e una con il namespace che il file di lingua del modulo non dichiara. Le chiavi del nucleo e le mail
+    dei tipi di notifica (`mail.{tipo}`) restano nude.
+  - ⚠️ **La trappola del fallback senza namespace** (revisore, rilievo 2 su #133): una chiave che un modulo legge nuda in C# **smette
+    di rispondere, in silenzio**, quando un altro modulo la dichiara — `LocaleCatalog.Resolve` risponde con la chiave stessa. #138 la
+    chiude per i tour.
 
 ### Che cosa ha lasciato A3 (25 settembre 2026, branch `m3/a3-alternative-write-permissions`, PR #131)
 

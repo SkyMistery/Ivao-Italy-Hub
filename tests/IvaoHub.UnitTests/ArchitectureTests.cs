@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using IvaoHub.Core.Content;
@@ -350,6 +351,96 @@ public sealed class ArchitectureTests
 
         Assert.NotEmpty(inTheBrowser);
         Assert.Equal(onTheServer, inTheBrowser);
+    }
+
+    /// <summary>
+    /// The server asks a module's words the way the browser does, with the module's namespace:
+    /// <c>flightops:threads.legLabel</c>, never <c>threads.legLabel</c>.
+    ///
+    /// <para>The server's catalogue keeps a module's key bare only while no other module declares it (M3, A4a, note
+    /// <c>decisions/2026-09-26-le-parole-di-piu-moduli.md</c>). A bare read therefore works until a second module happens
+    /// to use the same key, and from then on <c>LocaleCatalog.Resolve</c> answers with the key itself: a mail that says
+    /// <c>threads.legLabel</c>, with nothing failing anywhere (note
+    /// <c>decisions/2026-09-26-le-chiavi-dei-moduli-con-il-namespace.md</c>). The rule closes that for good.</para>
+    ///
+    /// <para>It reads every string literal of <c>src/</c> that looks like a key. A bare one that only a module's file
+    /// declares fails; a namespaced one fails when that module's file does not declare it, which is a typo the
+    /// catalogue would answer with the key. A module's file is the one <c>pnpm i18n:sync</c> copied, with
+    /// <c>_source</c>, and its namespace is its file name. The keys of the core's files stay bare. So do the mails of
+    /// the notification types (<c>mail.{type}</c>): the core builds them, and the type carries its module's name.</para>
+    /// </summary>
+    [Fact]
+    public void AModuleKeyIsAskedWithItsNamespaceOnTheServer()
+    {
+        var coreKeys = new HashSet<string>(StringComparer.Ordinal);
+        var moduleKeys = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+
+        foreach (var file in Directory.EnumerateFiles(RepositoryRoot("locales"), "*.json", SearchOption.AllDirectories))
+        {
+            var words = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+            if (words.Remove("_source"))
+            {
+                var name = Path.GetFileNameWithoutExtension(file);
+                if (!moduleKeys.TryGetValue(name, out var keys))
+                {
+                    moduleKeys[name] = keys = new(StringComparer.Ordinal);
+                }
+
+                FlattenKeys(words, string.Empty, keys);
+            }
+            else
+            {
+                FlattenKeys(words, string.Empty, coreKeys);
+            }
+        }
+
+        Assert.NotEmpty(moduleKeys);
+
+        var bareModuleKeys = moduleKeys.Values.SelectMany(keys => keys).Where(key => !coreKeys.Contains(key)).ToHashSet(StringComparer.Ordinal);
+        var literal = new Regex(@"""(?:(?<ns>[a-z][a-z0-9]*):)?(?<key>[A-Za-z]\w*(?:\.\w+)+)""", RegexOptions.CultureInvariant);
+        var wrong = new List<string>();
+
+        foreach (var file in SourceFiles())
+        {
+            var lines = File.ReadAllLines(file);
+            for (var index = 0; index < lines.Length; index++)
+            {
+                foreach (Match match in literal.Matches(lines[index]))
+                {
+                    var key = match.Groups["key"].Value;
+                    var where = $"{Path.GetRelativePath(RepositoryRoot(string.Empty), file)}:{index + 1}";
+
+                    if (!match.Groups["ns"].Success)
+                    {
+                        if (bareModuleKeys.Contains(key))
+                        {
+                            wrong.Add($"{where}: '{key}' is a module's key; ask it with the module's namespace");
+                        }
+                    }
+                    else if (moduleKeys.TryGetValue(match.Groups["ns"].Value, out var declared) && !declared.Contains(key))
+                    {
+                        wrong.Add($"{where}: '{match.Groups["ns"].Value}:{key}' is not in that module's language file");
+                    }
+                }
+            }
+        }
+
+        Assert.Empty(wrong);
+    }
+
+    private static void FlattenKeys(JsonNode? node, string prefix, HashSet<string> keys)
+    {
+        if (node is JsonObject words)
+        {
+            foreach (var (name, child) in words)
+            {
+                FlattenKeys(child, prefix.Length == 0 ? name : $"{prefix}.{name}", keys);
+            }
+        }
+        else
+        {
+            keys.Add(prefix);
+        }
     }
 
     private static IEnumerable<string> SourceFiles() =>
