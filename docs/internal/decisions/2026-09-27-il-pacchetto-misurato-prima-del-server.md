@@ -30,7 +30,7 @@ scelta presa qui è dove sta il foglio in italiano (§3), e resta della revision
   `*.xml` (`/sitemap.xml`).
 - **Il `Cache-Control: no-store` su `/api/*` lo manda già l'applicazione**: la direttiva nginx del piano non serve.
 - **Il rinvio a https lo fa Cloudflare** («Always Use HTTPS»), non l'applicazione.
-- **Quattro cose da guardare prima della produzione**, scritte in `docs/DEPLOYING.md` («Known limits»):
+- **Le cose da guardare prima della produzione**, scritte in `docs/DEPLOYING.md` («Known limits»):
   1. un avvio che fallisce per la configurazione lo dice **solo su stdout**, che con il solo FTP non si legge: vIPI
      l'ha risolto con `diagnostica/avvio-errore.txt`;
   2. Passenger spegne l'applicazione inattiva, e i job pianificati (coda delle mail, dati di riferimento, rilascio dei
@@ -39,8 +39,8 @@ scelta presa qui è dove sta il foglio in italiano (§3), e resta della revision
   3. i forwarded header si leggono **un salto solo** (`ForwardLimit` di ASP.NET Core, 1): se tra Cloudflare e
      l'applicazione ci sono due salti, l'indirizzo creduto può essere quello di Cloudflare. Il controllo è l'indirizzo
      nel registro delle modifiche, sulla prova;
-  4. `<Version>` in `Directory.Build.props` è `0.1.0` e il tag non lo cambia: `/api/version` direbbe 0.1.0 per ogni
-     release. Il timbro affidabile, per ora, è il commit.
+  4. ~~`<Version>` fermo a `0.1.0` qualunque sia il tag~~: misurato prima della #158, che l'ha chiuso (il tag è `v`
+     più `<Version>`, oggi `0.2.0`, e il timbro è la versione con il commit; `docs/DELIVERING.md`).
 
 ## 3. Dove sta il foglio in italiano
 

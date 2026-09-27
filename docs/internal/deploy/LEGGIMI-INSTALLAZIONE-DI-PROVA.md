@@ -6,7 +6,7 @@
 >
 > Il modello è quello di vIPI su `atc.it.ivao.aero` (stesso server, stesso Passenger, stesso FTP), con tre differenze
 > che contano: **il document root è `wwwroot/`**, la password del database **la scrivete voi** in un file che non
-> passa da noi, e il **timbro** da controllare è il commit. La guida generale, in inglese, è `docs/DEPLOYING.md` del
+> passa da noi, e il **timbro** da controllare è la versione **con** il commit. La guida generale, in inglese, è `docs/DEPLOYING.md` del
 > repository; questo foglio ne è la versione per il nostro server.
 
 ## In breve
@@ -23,8 +23,10 @@
 
 ## Che cosa vi consegniamo
 
-1. **Lo zip** `ivao-division-hub-<versione>.zip`, dalla pagina *Releases* del repository. Lo produce GitHub dal tag,
-   non un PC di qualcuno.
+1. **Lo zip della consegna**, preparato con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`) dalla release
+   `ivao-division-hub-v<versione>.zip` che GitHub produce dal tag, non dal PC di qualcuno. Dentro, tre rami che non si
+   mescolano: la cartella dei file da caricare con il suo `MANIFEST.txt` (per la prima installazione è il pacchetto
+   intero), `docs/` con questo foglio e il modello dei segreti, e `restart.txt`. Accanto allo zip, il suo `.sha256`.
 2. **`config/division.json`** della divisione italiana, dal repository allo stesso tag. Non è nello zip apposta: è
    dell'installazione, e un aggiornamento non deve sovrascriverlo.
 3. **`segreti.esempio.json`**, qui accanto: il modello del file dei segreti (§5).
@@ -84,11 +86,14 @@ Non serve una direttiva per `Cache-Control: no-store` su `/api/*`: lo manda già
 
 ## 4. Caricare i file
 
-1. **Se il file manager del pannello sa estrarre uno zip**, caricate solo lo zip e scompattatelo nella cartella
-   vuota `test_hub/`: un trasferimento solo, niente modalità da sbagliare.
+Si carica **il contenuto della cartella dei file da caricare** dello zip della consegna (non `docs/`, non
+`restart.txt`), nella cartella vuota `test_hub/`; `MANIFEST.txt` dice quali file sono e con quale impronta.
+
+1. **Se il file manager del pannello sa estrarre uno zip**, potete caricare lo zip, scompattarlo in una cartella a
+   parte e spostare in `test_hub/` il contenuto di quella cartella: un trasferimento solo, niente modalità da sbagliare.
 2. **Altrimenti FileZilla**, con le regole di vIPI (`LEGGIMI-FTP.md` di vIPI, §2): **trasferimento binario**, non
-   «Auto»; si trascina la **cartella intera**, così le sottocartelle restano. Alla fine la scheda dei trasferimenti
-   falliti dev'essere vuota.
+   «Auto»; si trascina il **contenuto intero** della cartella, così le sottocartelle restano. Alla fine la scheda dei
+   trasferimenti falliti dev'essere vuota.
 3. Poi, a mano, **accanto** ai file del pacchetto:
 
    ```
@@ -99,7 +104,8 @@ Non serve una direttiva per `Cache-Control: no-store` su `/api/*`: lo manda già
    ```
 
    `hub-keys/`, `logs/`, `diagnostics/` e `media/` li crea l'applicazione.
-4. Solo se avete scelto `./IvaoHub.Web` come comando: permessi `755` su `IvaoHub.Web`.
+4. Permessi `755` su `IvaoHub.Web`. Con `dotnet IvaoHub.Web.dll` non servono (provato), ma non costano niente e
+   lasciano possibile l'altro comando: li chiede ogni foglio di consegna.
 
 ## 5. Il file dei segreti
 
@@ -128,7 +134,7 @@ Non nel minuto del riavvio: lasciategli il tempo delle migrazioni.
 | Che cosa | Che cosa deve dire |
 |---|---|
 | `diagnostics/startup.txt`, scaricato via FTP | `started at` di **adesso**; `environment Production`; `division IT`; **`domain test.it.ivao.aero`**; **`access private: staff only, not indexed`**; in `migrations` l'elenco applicato; in `modules` `flightops, training` |
-| `https://test.it.ivao.aero/api/version` | lo **stesso `commit`** della release che vi abbiamo detto, e `.NET 10…`. ⚠️ Il timbro affidabile è il commit: il numero di versione potrebbe non essere quello del tag |
+| `https://test.it.ivao.aero/api/version` | la **versione e il commit** del tag che vi abbiamo detto (per esempio `0.2.0` e il commit di `v0.2.0`), e `.NET 10…`. Il numero da solo non basta: è il commit a dire quale codice gira |
 | `https://test.it.ivao.aero/health` | `Healthy` |
 | `https://test.it.ivao.aero/robots.txt` | `User-agent: *` e `Disallow: /`, e nient'altro |
 | `https://test.it.ivao.aero/sitemap.xml` | **404**: un'installazione privata non ha sitemap |

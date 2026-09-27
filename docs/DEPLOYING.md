@@ -11,11 +11,16 @@ so. What could not be measured from outside a real server is listed at the end.
 ## What you deploy
 
 The package is the zip that `.github/workflows/release.yml` attaches to a GitHub release when a `v*` tag is pushed:
-`ivao-division-hub-<tag>.zip`, built with
+`ivao-division-hub-v<version>.zip`, built by CI from a clean checkout with
 
 ```bash
 dotnet publish src/IvaoHub.Web -c Release -r linux-x64 --self-contained
 ```
+
+**It is never a publish of your own machine.** How that zip is fetched, checked against the tag's commit, cut down to
+the files that changed and handed to whoever uploads is [Delivering a release](DELIVERING.md), with
+`tools/prepare-delivery.ps1`; this page starts where that one ends, on the server. (The measures below were taken on a
+local publish of the same commit, which is fine for measuring and never for delivering.)
 
 It is **self-contained**: the .NET 10 runtime travels inside it, so the server does not need .NET at all. About
 600 files and 140 MB unpacked (measured).
@@ -58,6 +63,9 @@ Two commands start the package, and both were **measured**:
 | --- | --- | --- |
 | `./IvaoHub.Web` | always — the server needs no .NET at all (measured on an image with no `dotnet`) | **required** on `IvaoHub.Web`: FTP does not carry it, so set `755` after every upload of that file. At `644` the shell answers `Permission denied` |
 | `dotnet IvaoHub.Web.dll` | a `dotnet` host of **any** version is installed (measured with 8.0.31 only) | not needed (measured with every file at `644`) |
+
+The sheet of every delivery still asks for `755` on `IvaoHub.Web` after the upload ([Delivering a
+release](DELIVERING.md), step 5): with `dotnet …dll` it is harmless, and it keeps the other command possible.
 
 `dotnet IvaoHub.Web.dll` does **not** need the .NET 10 runtime on the server: the installed `dotnet` reads
 `IvaoHub.Web.runtimeconfig.json`, sees a self-contained application and hands over to the runtime inside the
