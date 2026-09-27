@@ -1,9 +1,37 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.17 — 27 settembre 2026 (**i rifiuti di un form nel nucleo**: `Refusals` accanto a `CrudProblems`, e nessun modulo se ne scrive una sua)
+**Versione documento:** 1.18 — 27 settembre 2026 (**la prima installazione, di prova**: `test.it.ivao.aero`, la versione del sito, la consegna dalla release del tag, i dati condivisi con vIPI senza isolamento dal database)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. **M2, i tour, è chiusa** (T0–T20c, `05-design-m2.md` e `06-piano-implementazione-m2.md`), contata in `decisions/2026-09-25-m2-review.md`. **M3 (Training) la scrive `dalberone`**: design deciso (`07-design-m3.md`, PR #121), fasi A0–A12 in `08-piano-implementazione-m3.md`, A0–A3 unite il 25 set 2026. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.18** (27 set 2026, sera, dopo il merge di #155–#158 e la consegna della 0.2.0): **la prima installazione, di
+prova**. Cinque note.
+
+- **L'installazione di prova** (`2026-09-27-l-installazione-di-prova`, #155): un'installazione ha impostazioni sue,
+  `Installation:Domain` e `Installation:Preview`, fuori da `division.json` (§4.1). La prova è privata: niente indicizzazione, e
+  dentro solo lo staff e i super amministratori, respinti gli altri prima di scrivere qualsiasi cosa di loro (§11.3 punto 8).
+  Chiusi §15 punto 3 per la prova, e il nuovo 2e.
+- **Il pacchetto misurato prima del server** (`2026-09-27-il-pacchetto-misurato-prima-del-server`, #156):
+  - `dotnet IvaoHub.Web.dll` resta il comando, con il perché misurato;
+  - `media/` e non `uploads/`;
+  - il document root è `wwwroot/`;
+  - il `no-store` lo manda l'app;
+  - i limiti da guardare prima della produzione (§2.5, §11.3 punti 2, 3, 9).
+- **La versione del sito** (`2026-09-27-la-versione-del-sito`, #157), **decisa da Carmine**:
+  - la regola di vIPI in `Directory.Build.props`;
+  - «versione · commit» nel piè di pagina, dal bootstrap;
+  - il tag uguale a `v` + versione, o la release si ferma (§11.2, §11.3 punto 1, §16 punto 7);
+  - la metà «contract» di un expand/contract è MINOR, con la copia fresca del database prima del caricamento (nota
+    `2026-09-27-il-contract-e-minor`, **decisa da Carmine**).
+- **La consegna del pacchetto** (`2026-09-27-la-consegna-del-pacchetto`, #158), **decisa da Carmine**: il pacchetto completo è lo
+  zip della release del tag; la consegna si prepara in `artifacts/publish/`, con le vecchie in `publish_old/<versione>/`, per
+  mezzo di `tools/prepare-delivery.ps1` (§11.3 punti 1 e 6).
+- **I dati condivisi senza isolamento** (`2026-09-27-i-dati-condivisi-senza-isolamento`, questa PR), **decisa da Carmine**:
+  - il server non lega un utente a un database solo;
+  - le viste `v_share_` restano come contratto, ognuna nel database del suo padrone;
+  - l'altra app le legge con il suo utente, e la regola la tiene il codice (§2.5, §9.7, §15 punto 2).
+- **Consegnata la 0.2.0** a Ivao.It per `test.it.ivao.aero` (tag `v0.2.0` su `d36df74`).
 
 **Changelog 1.17** (27 set 2026, dopo il merge di #143 e #152): **i rifiuti di un form nel nucleo**, §16 punto 6. Nota
 `decisions/2026-09-27-i-rifiuti-di-un-form-nel-nucleo.md`, caso (b).
@@ -1889,13 +1917,13 @@ Il server di produzione è lo stesso su cui gira oggi `atc.it.ivao.aero`, quindi
 | Fatto | Conseguenza per l'hub |
 |---|---|
 | Sottoscrizione Plesk `it.ivao.aero`; l'app ATC vive in `/var/www/vhosts/it.ivao.aero/public_atc/` | L'hub sarà un'altra cartella della stessa sottoscrizione (`httpdocs/` o `public_hub/`). Stesso utente di sistema (`itivao`). |
-| Le app .NET sono avviate da **Phusion Passenger** (start command `dotnet …/X.dll`), **non** dal .NET Toolkit; riavvio toccando `tmp/restart.txt` | Pacchetto **self-contained linux-x64** (il runtime viaggia nel pacchetto: non dipendiamo dalla versione .NET installata → .NET 10 è possibile). |
+| Le app .NET sono avviate da **Phusion Passenger** (start command `dotnet …/X.dll`), **non** dal .NET Toolkit; riavvio toccando `tmp/restart.txt` | Pacchetto **self-contained linux-x64** (il runtime viaggia nel pacchetto: non dipendiamo dalla versione .NET installata → .NET 10 è possibile). **Lo stesso comando di vIPI vale per l'hub** (misurato il 27 set 2026, nota `2026-09-27-il-pacchetto-misurato-prima-del-server`): un `dotnet` installato di qualunque versione passa la mano al runtime del pacchetto, e non serve il bit di esecuzione; `./IvaoHub.Web` con `755` solo su un server senza .NET. Serve ICU. |
 | Accesso solo **FTP**, confinato alla cartella dell'app; niente shell; i pacchetti li carica **il committente** (staff Ivao.It), non Carmine | Deploy = zip + foglio istruzioni; niente `dotnet ef database update` a mano; le migrazioni girano **all'avvio** dell'app (`Database.Migrate()`), quindi vanno progettate **additive e sicure**. |
 | La cartella dell'app **è stata il document root**: `appsettings.Production.json` fu scaricabile (24–25 ago); ora davanti c'è **Cloudflare** e le direttive nginx negano i file sensibili | I segreti stanno in `secrets/<nome-non-indovinabile>.json` (l'app carica ogni `*.json` di quella cartella, che vince su appsettings); deny nginx su `appsettings*.json`, `*.dll`, `*.pdb`, `diagnostics/`, `secrets/`, `keys/`. Forwarded headers da Cloudflare. |
 | Data Protection: le chiavi devono stare in una cartella **scrivibile e persistente dentro l'app** (`vipi-keys/`), da non cancellare a ogni upload | Stessa soluzione: `hub-keys/` + avviso in grassetto nel foglio di aggiornamento. Perderla slogga tutti. |
 | MariaDB **11.4.10** condivisa: `max_user_connections` ~25–50, pool limitato a 20, `max_allowed_packet` non confermato, **backup non confermato** (A9), utente creato dal pannello con privilegi non verificati | Pool ≤ 15 per l'hub (condivide il tetto con vIPI!), upload file su disco e non in `longblob`, migrazioni che non richiedono `DROP`, e la domanda backup va chiusa **prima** del primo dato reale. |
 | WebSocket passano dal proxy (Blazor Server funziona in produzione) | Se un giorno servisse SignalR nell'hub, è fattibile. |
-| I due database (hub e vIPI) si leggono a vicenda **solo attraverso viste `v_share_`** con un utente MariaDB dedicato di sola lettura (14 set 2026, §9.7) | ⚠️ Da verificare con chi amministra il server: che si possa creare quell'utente con `SELECT` sulle sole viste. Se no, ripiego su un'API HTTP di sola lettura. |
+| I due database (hub e vIPI) si leggono a vicenda **solo attraverso viste `v_share_`** (14 set 2026, §9.7). ✅ Risposta di chi amministra (27 set 2026): **ogni utente della sottoscrizione accede a tutti i database**, e non si può legare un utente a uno solo | Nessun utente dedicato: ognuno legge le viste dell'altro **con il suo utente**, da una stringa di connessione a parte (`AtcData` nell'hub). **Le regole le fa rispettare il codice** — solo viste `v_share_`, solo lettura, un test di architettura — e i segreti diventano la chiave di tutti e due i database (nota `2026-09-27-i-dati-condivisi-senza-isolamento`). |
 | Un pacchetto consegnato in una "finestra cieca" (nessuno che possa ripristinare) è un rischio reale | Finestre di consegna concordate; ogni pacchetto porta un **timbro di versione** visibile (`/api/version`) e una sonda di verifica post-deploy. |
 
 Note residue:
@@ -1972,6 +2000,12 @@ Note residue:
 Sì, si può fare — ma va deciso ora, perché costa poco all'inizio e tantissimo dopo. Principio: **il codice non sa di essere italiano**. Tutto ciò che è specifico della divisione vive in tre posti soltanto.
 
 ### 4.1 I tre punti di personalizzazione
+
+**Divisione e installazione** (27 set 2026, nota `2026-09-27-l-installazione-di-prova`): `division.json` dice come si comporta
+la **divisione**, uguale in ogni sua installazione; ciò che distingue **un'installazione** dall'altra (la prova dalla
+produzione) sta in `secrets/*.json` o nelle variabili d'ambiente, accanto ad `AllowedHosts`: `Installation:Domain` (il suo
+indirizzo, che vince sul `domain` della divisione per ogni link assoluto) e `Installation:Preview` (privata: niente
+indicizzazione, e dentro solo lo staff e i super amministratori).
 
 1. **`division.json`** (o tabella `division_settings` con seed) — **solo ciò di cui il codice ha bisogno per comportarsi**, il minimo indispensabile:
    ```json
@@ -2416,7 +2450,7 @@ Regole che valgono per **ogni** modulo, presente e futuro — si scrivono una vo
 
 - **Maintenance**: con il modulo in manutenzione, i contenuti già pubblicati restano **visibili in sola lettura** (voci di calendario incluse); le *azioni* (prenotare, iscriversi, inviare un PIREP) rispondono 503 con pagina cortese e tradotta; i job del modulo vanno in pausa. Implementato nel nucleo, uguale per tutti.
 - **Widget di dashboard** ~~ogni modulo registra i propri widget~~ **dal 13 set 2026 sono blocchi Data** (`decisions/2026-09-13-le-dashboard-a-tutto-schermo.md`): «le mie prenotazioni», «le mie richieste training», «i miei tour in corso» sono blocchi Data del modulo che rispondono per chi guarda, e `/me`, `/staff`, le dashboard dei dipartimenti e le pagine li compongono con l'editor; il registro dei widget sparisce. Stesso principio del registry dei blocchi: più il sito è flessibile, più è general purpose. I blocchi *Data* che dipendono da un modulo (`eventList`…) sono anch'essi registrati dal modulo, non cablati nel nucleo.
-- **Dati di vIPI** (deciso il 14 set 2026, `decisions/2026-09-14-dati-condivisi-con-vipi.md`): due database sullo stesso server, **ogni dato ha un solo padrone** che lo scrive (l'hub: persone, permessi, contenuti, moduli; vIPI: aeroporti curati, settori, SOP, archivio delle sessioni ATC), e l'altro **legge viste `v_share_` di sola lettura** con un utente MariaDB dedicato, mai scritture incrociate. Nell'hub è un'**integrazione opzionale del nucleo** accesa da `division.json`: nessun modulo nomina vIPI, e senza vIPI il nucleo risponde con i dati IVAO o dichiara il dato non disponibile.
+- **Dati di vIPI** (deciso il 14 set 2026, `decisions/2026-09-14-dati-condivisi-con-vipi.md`): due database sullo stesso server, **ogni dato ha un solo padrone** che lo scrive (l'hub: persone, permessi, contenuti, moduli; vIPI: aeroporti curati, settori, SOP, archivio delle sessioni ATC), e l'altro **legge viste `v_share_` di sola lettura**, mai scritture incrociate. **Dal 27 set 2026** il server non isola i database (ogni utente li raggiunge tutti): l'altro legge con il suo utente, da una stringa di connessione a parte, e la regola «solo viste, solo lettura» la tiene il codice con un test di architettura (nota `2026-09-27-i-dati-condivisi-senza-isolamento`). Nell'hub è un'**integrazione opzionale del nucleo** accesa da `division.json`: nessun modulo nomina vIPI, e senza vIPI il nucleo risponde con i dati IVAO o dichiara il dato non disponibile.
 - **Notifiche**: servizio unico nel **nucleo** (mail ora, Discord in M6): i moduli pubblicano *intenti* di notifica, mai SMTP diretto — un cambiamento al servizio si fa in un punto solo. Preferenze per tipo di notifica in `/me/profile`.
 - **Privacy dei membri**: l'hub **non ha un profilo utente pubblico**. L'unico profilo pubblico è quello ufficiale IVAO (`https://www.ivao.aero/Member.aspx?Id={VID}`): ovunque compaia un membro (classifiche tour, staff directory, partecipanti) si mostra il minimo necessario e si linka lì. Nessuna funzione di export dei dati utente (IVAO non la prevede); per il GDPR ci si allinea alle norme e alla privacy policy IVAO, e ogni modulo documenta nel proprio design cosa conserva di personale e per quanto (così una richiesta di cancellazione ha un percorso noto). **Il percorso esiste dal 25 set 2026** (T20b, piano 1.08, §16 punto 16): il superadmin cancella i dati di una persona; ciò che la riguarda va via, ciò che la divisione deve tenere (il registro disciplinare, il lavoro fatto come staff) resta sotto uno pseudonimo, e un ban in vigore resta con il VID finché non scade. **Nel calendario pubblico nessun VID ai visitatori** (25 set 2026, M3,
 nota `2026-09-25-il-training-in-pubblico`): di un training un visitatore vede postazione, rating, data e ora; VID e nomi solo chi
@@ -2475,20 +2509,67 @@ Tutto passa da `IvaoApiClient` (riuso/aggiornamento di `Ivao.It.IvaoApiSdk`), co
 ### 11.2 CI (GitHub Actions)
 
 `build-test.yml`: restore → build .NET → test unit → test integrazione con Testcontainers MariaDB → `pnpm install/lint/typecheck/build` → genera client OpenAPI e verifica che sia allineato → artefatto `publish/` (`dotnet publish -c Release` con `wwwroot` popolato).
-`release.yml` (su tag): crea la release GitHub con lo zip pronto per Plesk + note. Le divisioni che forkano ereditano la pipeline.
+`release.yml` (su tag): crea la release GitHub con lo zip pronto per Plesk + note. Le divisioni che forkano ereditano la pipeline. **Dal 27 set 2026** il tag dev'essere `v` seguito dalla `<Version>` di `Directory.Build.props`, o la release si ferma prima della suite (nota `2026-09-27-la-versione-del-sito`).
 
 ### 11.3 Deploy su Plesk — il modello di vIPI, riusato
 
 La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao/LEGGIMI-*.md`), perché il server e le persone sono gli stessi.
 
 1. **Pacchetto**: `dotnet publish -c Release -r linux-x64 --self-contained` con `wwwroot` già popolato dalla SPA; asset minificati e precompressi `.br/.gz`; timbro di versione (`AssemblyMetadata` + commit) esposto su `/api/version`. Zip + foglio `LEGGIMI-PACCHETTO-x.y.z.md` con l'elenco dei file e i controlli post-deploy.
+   **Dal 27 set 2026** (note `2026-09-27-la-versione-del-sito` e `2026-09-27-la-consegna-del-pacchetto`):
+   - **La versione** sta in `Directory.Build.props`, con la regola di vIPI: PATCH solo correzioni; MINOR funzionalità nuove e/o
+     migrazioni additive; MAJOR se il pacchetto non si consegna con il solo FTP. Il timbro è la versione **con** il commit:
+     intero su `/api/version` e in `diagnostics/startup.txt`, corto nel piè di pagina di ogni layout («0.2.0 · 51f946b»),
+     arrivato dal bootstrap. **La metà «contract» di un expand/contract è MINOR** (Carmine, 27 set 2026, nota
+     `2026-09-27-il-contract-e-minor`): il solo FTP basta. Il foglio della consegna lo dice in rosso e chiede una copia
+     fresca del database prima del caricamento.
+   - **Il pacchetto completo è lo zip del rilascio GitHub del tag** `v<versione>`, costruito da `release.yml` su un checkout
+     pulito, mai un publish locale.
+   - **Il master prepara la consegna** con `tools/prepare-delivery.ps1` (Fetch → Diff → Manifest → Zip, runbook
+     `docs/DELIVERING.md`) in `artifacts/publish/`, solo la consegna corrente; la precedente va in
+     `artifacts/publish_old/<versione>/` con i suoi fogli.
+   - **Lo zip di consegna** si costruisce da `MANIFEST.txt` (impronte), mai dalla cartella, con la rete dei segreti. Il
+     timbro deve essere `<versione>+<commit del tag>`, o non si consegna.
+   - I fogli per chi carica stanno in `docs/internal/deploy/`, e `config/division.json` si consegna accanto allo zip, preso
+     dallo stesso tag.
+   - Prima consegna: `0.2.0`, su `test.it.ivao.aero`.
 2. **Cartella dell'app** nella sottoscrizione `it.ivao.aero`, avviata da **Passenger** (`dotnet IvaoHub.Web.dll`), `ASPNETCORE_ENVIRONMENT=Production`. Struttura: `wwwroot/`, `config/division.json`, `config/ivao-oauth.json` (compilato dalla divisione), `secrets/<nome-non-indovinabile>.json` (connection string, SMTP, secret — l'app carica ogni `*.json` di `secrets/`), `hub-keys/` (Data Protection, **persistente, mai cancellare**), `uploads/` (documenti), `logs/`, `diagnostics/`.
+   **Misurato il 27 set 2026** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server`):
+   - **Il comando.** `dotnet IvaoHub.Web.dll` va bene su un server che ha un `dotnet` qualunque, come quello di vIPI: passa
+     la mano al runtime del pacchetto, e non serve il bit di esecuzione. `./IvaoHub.Web` con `755` serve solo senza .NET.
+     Serve ICU.
+   - **Le cartelle.** I file caricati stanno in **`media/`**, non `uploads/`. `config/` contiene anche il `security.json` del
+     pacchetto.
+   - **Le impostazioni dell'installazione.** `Installation:Domain` e `Installation:Preview` stanno in `secrets/`, accanto ad
+     `AllowedHosts` e alle reti di Cloudflare (§4.1). Le credenziali OAuth possono stare anche lì, al posto di
+     `config/ivao-oauth.json`.
 3. **Direttive nginx aggiuntive** in Plesk: `deny all` su `secrets/`, `hub-keys/`, `diagnostics/`, `logs/`, `appsettings*.json`, `*.dll`, `*.pdb`, `*.json` alla radice; `Cache-Control: no-store` su `/api/*` (Cloudflare davanti). Verifica dall'esterno con `curl -I` dopo ogni cambio di hosting.
+   **Dal 27 set 2026**:
+   - **Il document root è `wwwroot/`**, e le direttive nginx sono la seconda serratura (elenco in `docs/DEPLOYING.md`).
+     `/media/` e `/tiles/` non si negano, perché sono indirizzi dell'applicazione; nemmeno tutti i `*.json` (le traduzioni)
+     né tutti gli `*.xml` (la sitemap).
+   - **Il `no-store` su `/api/*`** lo manda già l'applicazione.
+   - **Il rinvio a https** lo fa Cloudflare.
 4. **Database**: DB + utente dedicati dal pannello (`GRANT ALL` sul solo schema, verificare che la prima migrazione con `ALTER DATABASE CHARACTER SET utf8mb4` passi); pool `MaximumPoolSize≤15` perché il tetto per utente è condiviso; `max_allowed_packet` confermato ≥ 4 MB o upload solo su disco.
 5. **Migrazioni**: `Database.Migrate()` all'avvio (senza shell non c'è alternativa), con tre regole ferree: solo migrazioni **additive** (mai `DROP`/rename distruttivi nello stesso pacchetto che smette di usare la colonna → pattern *expand/contract* in due release), test CI che applica l'intera catena su una **MariaDB 11.4.10 vera**, e un `diagnostics/startup.txt` che dice quale migrazione ha applicato. Niente consegne con migrazioni nelle finestre in cui nessuno può ripristinare.
 6. **Aggiornamento**: upload via FTP in **binario**, rimettere il bit di esecuzione all'eseguibile, non toccare `hub-keys/`, `secrets/`, `uploads/`; poi `tmp/restart.txt`. Sonda post-deploy (`/api/version`, `/health`, login, una pagina per modulo) eseguita **non** nel minuto del riavvio.
+   **Dal 27 set 2026** (`docs/DELIVERING.md`):
+   - si carica il ramo `full-<versione>/` o `only-<N>-files-<versione>/` dello zip di consegna, controllando le impronte di
+     `MANIFEST.txt`;
+   - gli assembly `IvaoHub.*` e `IvaoHub.Web.deps.json` vanno caricati **sempre tutti insieme**;
+   - `appsettings.Development.json` non si carica mai;
+   - i file tolti dal rilascio restano sul server, e il foglio li nomina;
+   - non si toccano `media/` (non `uploads/`) né `config/division.json`;
+   - il bit di esecuzione serve solo per `./IvaoHub.Web`;
+   - `restart.txt` va in `tmp/` per ultimo, e poi si apre il sito una volta.
 7. **Backup**: conferma scritta da Ivao.It su frequenza, retention, inclusione di `hub-keys/` e `uploads/` (non stanno nel DB) e un ripristino provato. Finché non c'è, si pianifica come se non ci fosse.
-8. **Staging**: sottodominio dedicato nella stessa sottoscrizione, stesso pacchetto, credenziali OAuth di test con i propri login/redirect URL.
+8. **Staging**: sottodominio dedicato nella stessa sottoscrizione, stesso pacchetto, credenziali OAuth di test con i propri login/redirect URL. **Dal 27 set 2026 è l'installazione di prova su `test.it.ivao.aero`** (nota `2026-09-27-l-installazione-di-prova`): un client OAuth IVAO suo, un database suo (`itivao_hub_test`), `Installation:Preview` acceso — non indicizzata, e dentro solo lo staff e i super amministratori, respinti gli altri prima di scrivere qualsiasi cosa di loro. Resta dopo il passaggio in produzione, come banco dove provare ogni pacchetto.
+9. **Da guardare prima della produzione** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server` §2, `docs/DEPLOYING.md` «Known limits»):
+   - un avvio che fallisce per la configurazione lo dice solo su stdout, che con il solo FTP non si legge; vIPI scrive
+     `diagnostica/avvio-errore.txt`;
+   - Passenger spegne l'applicazione inattiva, e con lei i job pianificati: la coda delle mail, i dati di riferimento, il
+     rilascio dei tour. Per vIPI `passenger_min_instances` non si può avere;
+   - i forwarded header si leggono un salto solo (`ForwardLimit` = 1). Si controlla l'indirizzo nel registro, sulla prova.
 
 ---
 
@@ -2547,12 +2628,13 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 ## 15. Decisioni aperte ⚠️
 
 1. ~~Quali moduli inglobare e in che ordine~~ **Deciso il 1° set 2026** (§9, §13): nucleo editoriale + `events`, `flightops`, `training` (`atc` tolto il 13 set 2026); ordine Events → Tour → Training; ~~vIPI montato appena il TFM lo consente~~ vIPI sospeso, raggiunto con un link (13 set 2026); test system sospeso.
-2. ~~**vIPI nell'hub — quando e come**~~ **Sospesa il 13 set 2026** (`decisions/2026-09-13-staccarsi-da-vipi.md`): l'hub linka `atc.it.ivao.aero` e non monta vIPI; la domanda torna solo se Carmine la ripropone. **Dal 14 set 2026 i due siti condividono i dati senza copiarli** (`decisions/2026-09-14-dati-condivisi-con-vipi.md`): due database, un padrone per ogni dato, viste di sola lettura; da verificare sul server l'utente MariaDB dedicato. Testo di prima: il montaggio in-process è la destinazione (§9 riga 7b), il nodo è il TFM. Da verificare in vIPI: può il ramo `net10.0` di `Vipi.Infrastructure` usare EF Core 9 + Pomelo 9 invece di EF Core 10 (le 65+ migrazioni sono generate con EF 10 ma applicate anche da EF 8 — con EF 9 dovrebbero passare)? Se sì, si sblocca insieme l'EOL di net8 e il montaggio. Decidere anche il dominio finale della parte ATC (`it.ivao.aero/services/vsop` con redirect da `atc.it.ivao.aero`, o viceversa proxy).
+2. ~~**vIPI nell'hub — quando e come**~~ **Sospesa il 13 set 2026** (`decisions/2026-09-13-staccarsi-da-vipi.md`): l'hub linka `atc.it.ivao.aero` e non monta vIPI; la domanda torna solo se Carmine la ripropone. **Dal 14 set 2026 i due siti condividono i dati senza copiarli** (`decisions/2026-09-14-dati-condivisi-con-vipi.md`): due database, un padrone per ogni dato, viste di sola lettura. ~~Da verificare sul server l'utente MariaDB dedicato~~ **chiuso il 27 set 2026**: il server non isola i database, ognuno legge le viste dell'altro con il suo utente e la regola la tiene il codice (`decisions/2026-09-27-i-dati-condivisi-senza-isolamento.md`). Testo di prima: il montaggio in-process è la destinazione (§9 riga 7b), il nodo è il TFM. Da verificare in vIPI: può il ramo `net10.0` di `Vipi.Infrastructure` usare EF Core 9 + Pomelo 9 invece di EF Core 10 (le 65+ migrazioni sono generate con EF 10 ma applicate anche da EF 8 — con EF 9 dovrebbero passare)? Se sì, si sblocca insieme l'EOL di net8 e il montaggio. Decidere anche il dominio finale della parte ATC (`it.ivao.aero/services/vsop` con redirect da `atc.it.ivao.aero`, o viceversa proxy).
 2b. ~~Tour system e test system~~ **Deciso**: il tour system è il modulo `flightops` nel monorepo dell'hub (repo separato chiuso, design confluisce). Il test system è sospeso; se tornerà, sarà app separata (auth estratta in libreria solo allora).
 2d. ~~**Storico tour**: importare i leg validati da `tours.th.ivao.aero` per le classifiche, o partire da zero come per gli eventi?~~ **Chiusa il 15 set 2026** (`05-design-m2.md` §0.2, piano 0.79): nessun import; il sistema entra in uso con la stagione 2027, e le classifiche non esistono.
 2c. **Hosting dell'hub** (blocca **la seconda metà di M2**, il deploy, non il modulo Events: diviso
     il 9 set 2026 — e da quel giorno il deploy aspetta anche la persona che carica su Plesk): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
-3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente.
+3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente. **La prova è chiusa il 27 set 2026**: `test.it.ivao.aero`, con il suo client OAuth (§11.3 punto 8). Resta da decidere il nome della produzione.
+2e. **Hosting, per la prova** (27 set 2026): la prima installazione è su `test.it.ivao.aero`, con un database suo (`itivao_hub_test`) sul server condiviso, separato da vIPI e dalla futura produzione. Consegnata la `0.2.0`. Restano da avere per iscritto da Ivao.It `max_allowed_packet`, `sql_mode`, `max_user_connections` e il backup (database, `hub-keys/`, `media/`) con un ripristino provato: **prima del primo dato reale**, cioè prima della produzione.
 4. ~~Editor contenuti~~ **Deciso**: pagine a blocchi con editor a lista (§9.3); il blocco `text` usa markdown con anteprima. Prerender SEO: **no per ora** (§16.11).
 5. ~~Licenza del repository pubblico~~ **Decisa il 3 set 2026**: **Apache-2.0**, copyright «2026 Carmine Granato». Nota in `docs/internal/decisions/2026-09-03-licenza.md`.
 6. ~~Prefisso lingua negli URL~~ **Deciso: no per ora** (§16.11); lingua da profilo → cookie → `Accept-Language`.
@@ -2586,7 +2668,7 @@ validatore o, **dal 27 set 2026** (piano 1.17, nota `2026-09-27-i-rifiuti-di-un-
 (`Core/Data/Crud/`): il solo modo in cui un verbo che non è un form su una riga raccoglie a mano i suoi rifiuti campo per campo, le
 lingue mancanti comprese. Nessun modulo si scrive la sua classe dei rifiuti. **L'unica eccezione dichiarata** è l'editor delle leg dei tour (M2, T7a, piano 0.85): una tabella dove ogni riga si salva da sola e inserire o togliere rinumera le altre, con sei verbi scritti a mano anche lato server (nota `2026-09-18-le-leg-dei-tour`), otto con l'import (T8). **Misurato alla chiusura di M2** (piano 1.12, `decisions/2026-09-25-m2-review.md`): **zero CRUD scritti a mano non dichiarati**; i 42 endpoint a mano del modulo e i 13 del nucleo sono contati **per famiglia** — l'eccezione, verbi di stato su una risorsa del motore, letture composte, il flusso del pilota, il contratto dell'agente, i validatori sui grant — e ognuno ha la sua decisione scritta. **Da M2 la metrica è questa** (Carmine, 25 set 2026, nota `2026-09-25-le-rifiniture-di-m2`, domanda 5), e sostituisce il «verbi a mano appesi a un gruppo `MapCrud`» di M1 (changelog 0.45), che misurava bene un sito editoriale e male un flusso di lavoro: il rapporto di chiusura di ogni milestone porta **(1) CRUD scritti a mano non dichiarati: 0**; **(2) eccezioni dichiarate: al più una per milestone**, ognuna decisa prima del codice con la sua nota; **(3) gli endpoint scritti a mano contati per famiglia** — eccezione dichiarata, verbi di stato o d'azione su una risorsa del motore, letture composte accanto al motore, flusso di un membro, contratto di un programma esterno, verbi su righe del nucleo, fuori da ogni risorsa — **ognuno con la decisione che l'ha voluto**. Un endpoint che non trova la sua famiglia, o la sua decisione, è il difetto da cercare.
    Quando una risorsa non rientra, si estende `CrudOptions` e mai il motore con un ramo che la nomina: oggi può dire che una riga si scrive solo con un permesso in più (`ExtraWritePolicy`), che non ha una create JSON (`MapCreate`), che cosa significa cancellarla (`Delete`), che accetta un filtro che è una domanda invece di un confronto su una colonna (`CustomFilters`) e — **dal 21 set 2026** (T7b, piano 0.86) — che cosa una riga prende da un'altra prima che il suo permesso venga chiesto (`BeforeAuthorize`: le righe figlie di un tour ne prendono la cura, nota `2026-09-21-la-forma-dei-tour`) e — **dal 23 set 2026** (T15a, piano 0.98) — che cosa segue una scrittura salvata (`AfterSave`: la mail di un ban, nota `2026-09-23-completamento-validatori-piloti-ban`). **Una schermata CRUD scritta a mano non si accetta**, e un endpoint scritto a mano accanto al motore è un evento da scrivere nel rapporto di chiusura della milestone. **Eccezione dichiarata di M2** (piano 0.79): l'**editor delle leg a tabella** (`LegGrid`, `05-design-m2.md` §8.4), perché comporre trenta leg una per volta in un form non si regge; salva comunque riga per riga con `row_version` e mostra i `ProblemDetails` sulla cella.
-7. **Un solo endpoint di bootstrap** (`/api/me`): menu pubblico e staff, moduli abilitati / in maintenance, permessi effettivi, widget e blocchi registrati. La SPA non ha nulla di cablato.
+7. **Un solo endpoint di bootstrap** (`/api/me`): menu pubblico e staff, moduli abilitati / in maintenance, permessi effettivi, widget e blocchi registrati. La SPA non ha nulla di cablato. **Dal 27 set 2026** porta anche la versione e il commit corto della build, che il piè di pagina di ogni layout mostra (nota `2026-09-27-la-versione-del-sito`).
 8. **Un solo set di file di lingua** `locales/{lang}/*.json`, letto sia dalla SPA sia dal backend (mail, errori). Niente `.resx`. **Dal 26 set 2026** (M3, A4a, piano 1.15): il back end tiene le parole di ogni modulo (il file che `pnpm i18n:sync` copia, con `_source`) anche sotto il suo namespace, `training:nav.section`; una chiave che due moduli dichiarano si legge **solo** con il namespace, e un doppione che tocca il nucleo ferma ancora l'avvio (nota `2026-09-26-le-parole-di-piu-moduli`). **In C# la chiave di un modulo si chiede sempre con il suo namespace**, come nel browser: senza, risponderebbe solo finché nessun altro modulo la dichiara, e poi in silenzio con la chiave stessa. Senza namespace restano le chiavi del nucleo e le mail dei tipi di notifica (`mail.{tipo}`, il tipo porta già il nome del modulo); lo tiene `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` (nota `2026-09-26-le-chiavi-dei-moduli-con-il-namespace`).
 
 **B. Cose tagliate o accorpate**
