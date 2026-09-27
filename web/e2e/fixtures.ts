@@ -103,6 +103,7 @@ export const anonymousBootstrap = {
     { key: 'deadline', label: { en: 'Deadline', it: 'Scadenza' }, colour: 'orange' },
   ],
   version: '0.0.0-e2e',
+  commit: 'abc1234',
 };
 
 /**

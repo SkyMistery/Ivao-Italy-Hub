@@ -6,10 +6,25 @@ namespace IvaoHub.Core.Services;
 /// <summary>
 /// The stamp exposed by <c>/api/version</c>, so that after an FTP deploy anybody can tell which
 /// package is actually running (plan section 11.3).
+/// <para>Two parts, and neither replaces the other: the <b>version</b> is the number we give the
+/// build, with the rule of <c>Directory.Build.props</c> behind it; the <b>commit</b> is the only thing
+/// that says which code it is. The footer of every page shows both, "0.2.0 · 51f946b"
+/// (<c>decisions/2026-09-27-la-versione-del-sito.md</c>).</para>
 /// </summary>
 public sealed record BuildInfo(string Version, string Commit, DateTime BuiltAt, string Dotnet)
 {
     private const string Unknown = "unknown";
+
+    /// <summary>As many characters of the commit as a screen shows: git's own abbreviation.</summary>
+    public const int ShortCommitLength = 7;
+
+    /// <summary>
+    /// The commit as a screen shows it, next to the version; null when the build carries none — a
+    /// package built outside a git checkout — so that nothing on screen pretends to name a commit.
+    /// <c>/api/version</c> and <c>diagnostics/startup.txt</c> keep the whole one.
+    /// </summary>
+    public string? ShortCommit =>
+        Commit.Length >= ShortCommitLength && Commit.All(char.IsAsciiHexDigit) ? Commit[..ShortCommitLength] : null;
 
     public static BuildInfo FromAssembly(Assembly assembly)
     {
