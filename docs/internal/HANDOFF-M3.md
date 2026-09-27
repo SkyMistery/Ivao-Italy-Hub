@@ -11,15 +11,17 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6a** (la richiesta, il server), sul branch `m3/a6a-request-server`, **PR #143**
-verso `main`: **A6 si è divisa in apertura** in A6a (il server) e A6b (le pagine), come `08` prevedeva. **A5 (#140) è unita** (18:44), e
-`main` è entrato nel branch con un merge insieme alla #141 del maintainer: **il revisore ora è la «sessione master»** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
-`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133) e A4 (#139) sono unite**; la fase del nucleo **A3b** (#135) è
-in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della richiesta), sul branch `m3/a6b-request-pages` preparato da
-`m3/a6a-request-server`, in coda dopo #143; poi **A7**, in coda dopo A6b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
-in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
-con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A11a** (nucleo: i capi FIR), sul branch `m3/a11a-fir-heads-core`, **PR #159** in
+bozza verso `main`, **fuori dalla coda** come A3b (#135) e A6c (#145): per ora **solo la nota**
+(`decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`, «Proposta») **e due domande a Carmine**; **il codice aspetta la risposta e l'unione di
+#135**. **A6a (#143) è unita**, e con lei **#152** del
+maintainer (`Refusals` nel nucleo). La coda del training: **#144** (A6b) è pronta con la CI verde; **#146** (A7), **#147** (A8a), **#148**
+(A8b), **#149** (A9a), **#150** (A9b), **#151** (A10a) e **#153** (A10b) sono in bozza, ognuna in coda dopo quella sotto, e i loro paragrafi
+«Che cosa ha lasciato» stanno sui loro branch finché non sono unite (in cima quello di A10b). **#135** (A3b) è in bozza — la nota decisa da
+Carmine, il codice approvabile — e aspetta `main` e il via; **#145** (A6c) è pronta. La **sessione master** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con `main`,
+lo chiede sulla PR senza spingerci niente. **Le fasi dopo**: A10c (gli esami) quando #135 è unita; A11b, A12a e A12b dopo A10c. In C# una
+chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -90,6 +92,46 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A11a, per ora (27 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159 in bozza)
+
+- **Che cosa c'è**: **solo la nota**, `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`, **«Proposta»**, con due domande a Carmine in [un
+  commento sulla #159](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5857885144). **Nessun codice**, nessun file
+  del nucleo (per `core-guard`: nucleo 0, una nota aggiunta). La forma proposta (nota §3):
+  - **il team di un FIR** come seconda specie di posizione di un grant: in `positionGrants`
+    `{ "firTeam": true, "levels": ["Coordinator", "Assistant"], "permission": "Training.Assign", "scope": "TD" }` (CH, ACH), senza
+    nominare un FIR; la colonna `hub_user_grants.position_fir_team`;
+  - ogni permesso che dà porta **il FIR della posizione** di chi lo tiene (`EffectivePermission.Fir`, nel claim `perm`), e raggiunge
+    solo le righe `IHasFir` di quel FIR: nell'unico handler, nel guardiano (una riga che cambia FIR chiede `Edit` sui due) e nella lista
+    generata di un'entità `IHasFir`; il suo dipartimento non diventa «per vedere»;
+  - **domanda 2**: chi dice che vale solo sul FIR — raccomandata la (a), `firStaffScope` com'è nel piano §4.1, con IT da `all` a `own`
+    in A11b; (b) sempre; (c) grant per grant.
+- **Perché solo la nota** (`08`, A11, «Com'è andata (A11a)»): il codice tocca lo stesso handler e lo stesso guardiano di A3b, e i suoi test
+  migrano lo stesso contesto di prova (`AddSampleAssignee`); una base del nucleo ancora da unire non si usa.
+- **Come si riprende A11a** (in questa sessione, o in una nuova su questo branch):
+  1. aspettare **la risposta di Carmine** sulla #159 **e l'unione di #135**;
+  2. `git fetch`, poi `git merge origin/main` nel branch (mai un rebase), build e test;
+  3. la risposta nella nota, con il link e lo stato «Decisa»; se cambia la forma, la nota si aggiorna prima del codice;
+  4. il codice di nota §3 e §6, i test di §3.9 (VID da **790068**, grep prima; `SampleRecord` migra dopo `AddSampleAssignee`), la prova
+     che i test nuovi cadono sul codice di prima;
+  5. tutte le suite, anche `pnpm e2e:full` su un banco di questa fase (127.0.0.1:5096, `ivaohub_e2e_a11a`), perché cambia la schermata
+     dei permessi; le regole di `core-guard` con lo script `core-guard.ps1` (copiato nello scratchpad di questa sessione); la PR pronta a
+     CI verde.
+  - ⚠️ **Tre file di prova del maintainer da non toccare**, e come la nota li evita (§6): `TestCurrentUser` (la domanda con il FIR ha una
+    risposta predefinita in `ICurrentUser`), `ResourceScopeAndStakeholderTests` (la tupla di `HubClaims.ParsePermission` non cambia),
+    `web/src/app/layouts/staffDestinations.test.tsx` (`/api/me` non cambia).
+- **Che cosa deve sapere A11b**: due righe di `positionGrants` al team del FIR (`Training.View` e `Training.Assign`, `Coordinator` e
+  `Assistant`, `scope: TD`) e, con la (a), `firStaffScope: own` in `config/division.json`; la pagina, l'assegnazione e
+  `training.approvalQueue` seguono l'handler, `/staff/training` il motore; i training dei piloti restano di TC e TAC. ⚠️ Un capo FIR terrà
+  `Training.View` «da qualche parte»: ogni lettore del modulo che non chiede l'handler sulla riga né passa dal motore (il percorso del
+  trainee e i suoi ban, per esempio) va guardato uno per uno.
+- **Trovato, per il revisore** (nota §7): con `firStaffScope: own` la regola del FIR di oggi ferma anche il personale dei dipartimenti — TC,
+  TAC, TA e trainer su ogni training ATC —, contro il piano §4.1; non si vede perché IT ha `all` e nessun test la prova. Il guardiano non
+  guarda il FIR.
+- **La fase dopo**: oggi non ne parte nessuna. A10c aspetta #135; A11b, A12a e A12b vengono dopo A10c; A12c solo con i codici di PATS. Quando
+  il codice di A11a sarà fatto e la PR pronta, la sessione prepara il branch della fase dopo (A10c da `m3/a10b-blocks-and-public-pages`, se
+  #135 è unita) e la avvia.
+- VID: A11a non ne usa ancora; il prossimo libero resta **790068**.
 
 ### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
 

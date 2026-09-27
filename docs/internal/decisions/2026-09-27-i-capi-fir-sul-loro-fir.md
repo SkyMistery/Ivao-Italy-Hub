@@ -1,18 +1,19 @@
 # I capi FIR: un permesso di un modulo al team di un FIR, contato sul suo FIR (A11a)
 
-**Data:** 27 settembre 2026 — fase A11a di M3, PR del nucleo
-**Stato:** **Proposta** — due domande per Carmine (§5), in un commento sulla PR. **Il codice aspetta la risposta e l'unione di #135**
+**Data:** 27 settembre 2026 — fase A11a di M3, PR del nucleo #159
+**Stato:** **Proposta** — due domande per Carmine (§5), in [un commento sulla #159][q1]. **Il codice aspetta la risposta e l'unione di #135**
 (A3b): tocca lo stesso handler e lo stesso guardiano, e i suoi test migrano il contesto di prova che A3b migra con `AddSampleAssignee`
 (`08-piano-implementazione-m3.md`, regole di tutte le fasi; A10, la divisione; «Com'è andata (A10b)»).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono tre meccanismi che ci sono — i grant a una posizione (M2, nota
 `2026-09-13-moduli-non-subordinati-ai-dipartimenti` §3.2), la regola del FIR dell'unico handler (`IHasFir` e `firStaffScope`, M0) e il
 filtro di dipartimento delle liste generate —, sulla strada che la nota `2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento` §3
 indicava per i CH: «i CH gestiscono i training della propria FIR» come «una regola, non nove grant scritti a mano che qualcuno dovrà
-ricordarsi di revocare». **Che** i capi FIR ci siano l'ha deciso Carmine (design
-`07-design-m3.md` §8 n.2 e §12 n.3, [le risposte sulla #121][r1]; nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 3);
-la **forma** nel codice è di questa nota, e apre due scelte che sono sue.
+ricordarsi di revocare». **Che** i capi FIR ci siano l'ha deciso Carmine (design `07-design-m3.md` §8 n.2 e §12 n.3, [le risposte sulla
+#121][r1]; nota `2026-09-25-chi-conduce-e-chi-scrive-un-training` §2 punto 3); la **forma** nel codice è di questa nota, e apre due
+scelte che sono sue.
 
 [r1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/121#issuecomment-5832705237
+[q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5857885144
 
 ## 1. Che cosa serve
 
@@ -174,6 +175,8 @@ un altro al suo. Il training, del resto, non cambia il suo FIR dopo la richiesta
 
 ## 5. Le domande per Carmine
 
+Poste il 27 settembre 2026 con [un commento sulla #159][q1], la PR di questa fase.
+
 1. **La forma è quella di §3?** Il team di un FIR come soggetto di un grant a una posizione (`firTeam` con i livelli); il permesso scritto
    nel cookie con il FIR della posizione, contato dall'unico handler, dal guardiano (anche prima e dopo la scrittura) e dalle liste
    generate; il suo dipartimento non «per vedere»; il filtro globale no. **Raccomandata: sì.** Da questa risposta dipende il codice di A11a.
@@ -195,10 +198,11 @@ un altro al suo. Il training, del resto, non cambia il suo FIR dopo la richiesta
 - **Il nucleo**: `Auth/UserGrant.cs` (il soggetto, `IsHeldThrough`) e la migrazione `AddGrantFirTeam` del contesto del nucleo;
   `Division/DivisionOptions.cs` e `DivisionOptionsValidator.cs` (il seme); `Division/DomainContracts.cs` (`StaffPositionSubject`);
   `Auth/PositionGrantSeeder.cs` (l'impronta); `Auth/GrantDtos.cs` e `GrantWriteDtoValidator.cs`;
-  `Auth/Permissions/EffectivePermissionsCalculator.cs` (`EffectivePermission.Fir`, `PermissionSet`); `Auth/HubClaims.cs` (il claim e i dipartimenti «per vedere»); `Auth/ICurrentUser.cs`;
-  `Auth/UserSyncService.cs` (`firStaffScope` al calcolo); `Auth/Permissions/HubAuthorization.cs`; `Data/HubSaveChangesInterceptor.cs` (il
-  guardiano e le sessioni); `Data/Crud/MapCrudExtensions.cs` (la lista); la schermata dei permessi (`web/src/features/admin/grants/`) e le
-  sue parole (`locales/*/common.json`).
+  `Auth/Permissions/EffectivePermissionsCalculator.cs` (`EffectivePermission.Fir`, `PermissionSet`); `Auth/HubClaims.cs` (il claim e i
+  dipartimenti «per vedere»); `Auth/ICurrentUser.cs`; `Auth/UserSyncService.cs` (`firStaffScope` al calcolo);
+  `Auth/Permissions/HubAuthorization.cs`; `Data/HubSaveChangesInterceptor.cs` (il guardiano e le sessioni);
+  `Data/Crud/MapCrudExtensions.cs` (la lista); la schermata dei permessi (`web/src/features/admin/grants/`) e le sue parole
+  (`locales/*/common.json`).
 - **Senza toccare i file di prova del maintainer**: `ICurrentUser` guadagna la domanda con il FIR con una risposta predefinita
   (`PermissionSet`), così `TestCurrentUser` non cambia; `HubClaims.ParsePermission` tiene la sua firma, che
   `ResourceScopeAndStakeholderTests` confronta; il calcolo prende `firStaffScope` con `all` come valore predefinito, così i test che lo

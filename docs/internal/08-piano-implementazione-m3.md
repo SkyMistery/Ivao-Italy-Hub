@@ -1003,7 +1003,57 @@ stesso; chi lascia la posizione lo perde; il guardiano lascia scrivere la riga d
 (A11b): il capo FIR assegna nel suo FIR e non in un altro, e vede solo i suoi nella lista e nel blocco.
 **Fatta quando**: un CH assegna un training del suo FIR e riceve un rifiuto su quello di un altro FIR.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata (A11a)** (27 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159 in bozza verso `main`, fuori dalla coda) — **la
+prima parte: la nota e le domande; il codice aspetta**:
+
+- **Perché A11a adesso, e solo con la nota** (la scelta della sessione di A10b, sopra in A10, «Com'è andata (A10b)»): A10c aspetta #135
+  (A3b), A11b, A12a e A12b vengono dopo A10c, A12c solo con i codici di PATS. Il codice di A11a tocca lo stesso handler e lo stesso
+  guardiano di A3b, e i suoi test migrerebbero lo stesso contesto di prova (`AddSampleAssignee`): una base del nucleo ancora da unire
+  non si usa, e due fasi che migrano lo stesso contesto non vanno avanti insieme. Il branch è nato da `main` (51f946b, preparato dalla
+  sessione di A10b) e ha preso `main` fino a 32e8acd prima del primo commit, senza merge (nessun commit suo); la PR va verso `main`
+  senza `(after #N)`, come #135 e #145.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(b)**, tre meccanismi che si estendono — i grant a una posizione, la
+  regola del FIR dell'unico handler (`IHasFir`, `firStaffScope`), il filtro di dipartimento delle liste generate —, con due scelte che
+  sono di Carmine: la nota è **«Proposta»**.
+- **Fatto**: la nota `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`; la PR #159 in bozza; le due domande a Carmine in [un commento
+  sulla #159][q159]. **La forma proposta** (nota §3): il **team di un FIR** come seconda specie di posizione di un grant (`positionGrants`
+  con `"firTeam": true` e i livelli, senza nominare un FIR; la colonna `hub_user_grants.position_fir_team`); ogni permesso che dà porta
+  **il FIR della posizione** di chi lo tiene (`EffectivePermission.Fir`, nel claim `perm`), e raggiunge solo le righe `IHasFir` di quel
+  FIR; il FIR della riga viaggia con ogni domanda dell'handler e del guardiano, come lo scope, e una riga che cambia FIR chiede `Edit` sui
+  due FIR; la lista generata di un'entità `IHasFir` tiene anche le righe del FIR di chi legge, e il suo dipartimento non diventa «per
+  vedere». **Domanda 2**: chi dice che il permesso vale solo sul FIR — raccomandata la (a), `firStaffScope` com'è nel piano §4.1, con
+  IT da `all` a `own` in A11b; (b) sempre; (c) grant per grant.
+- **Scostamenti dal piano e dal design, scritti nella nota**:
+  1. **anche la lista generata**, non solo l'handler e il guardiano (qui sopra e design §8 n.2): senza, la lista per FIR di A11b
+     (design §4.2) sarebbe un filtro scritto a mano nel modulo;
+  2. **il soggetto non nomina un FIR** (qui sopra: «un soggetto FIR del grant a una posizione»): è il team di ogni FIR, e il FIR lo dà
+     la posizione di chi lo tiene, così `positionGrants` non scrive codici di FIR, che vengono da IVAO;
+  3. **`firStaffScope` resta l'interruttore**, nella raccomandazione della domanda 2: il design lo diceva «per tutta la divisione» come
+     un limite; la nota lo tiene perché è l'unica regola del FIR che c'è e il piano §4.1 le dà proprio questo significato. La lettera del
+     design è la (b).
+- **Trovato** (nota §7, e per chi viene dopo):
+  1. ⚠️ **Con `firStaffScope: own` la regola del FIR di oggi ferma tutti** quelli che non hanno il FIR della riga, il personale dei
+     dipartimenti compreso: TC, TAC, TA e trainer su ogni training ATC. Il piano §4.1 dice che limita i team FIR, e mai i coordinatori
+     di dipartimento. Non si vede perché IT ha `all` e nessun test la prova. **Il guardiano non guarda il FIR**.
+  2. **Per A11b**: un capo FIR terrà `Training.View` «da qualche parte», e alla domanda senza riga l'handler gli dice sì; ogni lettore
+     del modulo che non chiede l'handler sulla riga né passa dal motore (il percorso del trainee e i suoi ban, per esempio) va guardato
+     uno per uno.
+  3. **Per il codice**: né `/api/me` né `HubClaims.ParsePermission` cambiano, perché un test del nucleo costruisce la risposta di
+     `/api/me` (`staffDestinations.test.tsx`) e un altro confronta la tupla di `ParsePermission`
+     (`ResourceScopeAndStakeholderTests`); `ICurrentUser` guadagna la domanda con il FIR con una risposta predefinita, così
+     `TestCurrentUser` resta com'è (nota §6).
+- **Dove aspetta**: **la risposta di Carmine** sulla #159 **e l'unione di #135**. **Come si riprende**, in questa sessione o in una
+  nuova su questo branch: `git fetch`, poi `git merge origin/main` (mai un rebase) quando #135 è unita; la risposta nella nota, con il
+  link e lo stato «Decisa» (se cambia la forma, la nota prima del codice); il codice di nota §3 e §6 e i test di §3.9 (VID da 790068,
+  grep prima); la prova che i test nuovi cadono sul codice di prima; tutte le suite, anche `pnpm e2e:full` sul banco di questa fase
+  (127.0.0.1:5096, `ivaohub_e2e_a11a`), perché cambia la schermata dei permessi; la PR pronta a CI verde.
+- **Verificato**: la nota letta contro il codice di `main` (32e8acd) e contro quello del training sui branch della coda (A7–A10b); le
+  regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD` (nessun file del maintainer, nessuno del nucleo, una nota
+  aggiunta). **Non verificato**: la CI (la dice la PR); il comportamento con `own`, letto e non provato, perché oggi nessun test lo copre.
+
+[q159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5857885144
+
+**Com'è andata (A11b)**: *(a fase chiusa)*
 
 ### A12 — Cancellazione, conservazione, archivio di PATS, giro completo
 
