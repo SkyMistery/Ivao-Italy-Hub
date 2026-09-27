@@ -39,11 +39,14 @@ What the package brings, and what belongs to the installation and must never be 
 | `hub-keys/` | written at the first start | Data Protection keys. **Persistent: never delete it**, or everybody is signed out and the stored IVAO tokens become unreadable |
 | `media/` | written by uploads | the media library, on disk. **Persistent: never delete it** |
 | `tiles/basemap.pmtiles` | **installation**, optional | the base map of the tours (`docs/FORKING.md`); without it maps draw on a neutral ground |
-| `logs/`, `diagnostics/` | written by the application | the log of the day, and `diagnostics/startup.txt` |
+| `logs/`, `diagnostics/` | written by the application | the log of the day; `diagnostics/startup.txt` after a start, `diagnostics/startup-error.txt` after a start that failed |
 | `tmp/restart.txt` | **installation** | Passenger restarts the application when this file's date changes |
 
-The application finds its folders by looking for `config/division.json` from its working directory upwards. If the
-host starts the process from another directory, set `IVAOHUB_ROOT` to the application folder.
+The application finds its folders by looking for `config/division.json` from its working directory upwards, then from
+its own folder (the one holding `IvaoHub.Web.dll`) upwards, so it does not matter from which directory the host starts
+the process. Found from its own folder, that folder is also where it serves `wwwroot/` from. `diagnostics/startup.txt`
+says where the root is and how it was found. `IVAOHUB_ROOT` overrides both, for an installation that keeps its folders
+somewhere else.
 
 ## What the server needs
 
@@ -184,6 +187,7 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | Check | Expected |
 | --- | --- |
 | `diagnostics/startup.txt`, read over FTP | `started at` is now; the `version` and `commit` of the release; `domain` and `access` as intended |
+| `diagnostics/startup-error.txt` | **absent**: a start that succeeds deletes it. If it is there, the start failed, and the file says why |
 | `curl -s https://<host>/api/version` | the same version and commit, and `.NET 10…` |
 | `curl -s https://<host>/health` | `Healthy` |
 | `curl -s https://<host>/robots.txt` | a private installation: `Disallow: /`; a public one: its disallowed paths and the sitemap |
@@ -212,10 +216,15 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
 
 ## Known limits
 
-- **A start that fails on its configuration says why only on standard output.** Measured: a missing OAuth field
-  stops the process with a clear message on stdout, and leaves nothing in `logs/` and no `diagnostics/startup.txt`;
-  a database that cannot be reached leaves one line in `logs/hub-<date>.log`. With FTP only, stdout is in
-  Passenger's log, which only the host can read — ask for it.
+- **A start that fails writes why to `diagnostics/startup-error.txt`**, next to where `startup.txt` would be, as well
+  as to standard output: the time, the version and commit, the environment, the root and how it was found, the
+  working directory, and the exception with its cause and stack. It never quotes a value of the configuration that
+  could be a secret (the files of `secrets/`, the OAuth file, any key naming a connection string, a password, a
+  secret, a token or a key): those are replaced by `[redacted]`. The next start that succeeds deletes the file.
+  Measured on the linux-x64 package started from another directory: a missing division file, a missing OAuth
+  field, a database that cannot be reached. What stops the process before .NET code runs, or kills it without an
+  exception (no ICU, a truncated `.dll`, out of memory), still says so only on standard output, which is in
+  Passenger's log.
 - **Passenger stops an idle application** and starts it again on the next request. The scheduled jobs (the mail
   queue, the reference data, the release of the tours) only run while the process is alive. `passenger_min_instances
   1` keeps one alive, where the host allows it.

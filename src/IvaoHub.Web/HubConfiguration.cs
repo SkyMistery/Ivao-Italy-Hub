@@ -20,20 +20,6 @@ internal static class HubConfiguration
         StringComparison.Ordinal);
 
     /// <summary>
-    /// Every <c>*.json</c> under <c>secrets/</c>, in a stable order. The folder is never in the
-    /// repository and the web server denies access to it (plan section 11.3).
-    /// </summary>
-    public static IEnumerable<string> SecretFiles(HubPaths paths)
-    {
-        if (!Directory.Exists(paths.Secrets))
-        {
-            return [];
-        }
-
-        return Directory.EnumerateFiles(paths.Secrets, "*.json").OrderBy(file => file, StringComparer.Ordinal);
-    }
-
-    /// <summary>
     /// The division file is loaded on its own so that its keys never mix with the settings of the
     /// application. Missing or unreadable, the application does not start.
     /// </summary>

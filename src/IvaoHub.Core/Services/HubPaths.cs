@@ -5,10 +5,12 @@ namespace IvaoHub.Core.Services;
 /// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>seed/</c>, <c>media/</c>, <c>tiles/</c>.
 /// </summary>
 /// <remarks>
-/// In production they sit next to the application, which is also the content root. During
-/// development the content root is the web project while those folders are at the root of the
-/// repository, so the root is found by walking up until <c>config/division.json</c> appears.
-/// <c>IVAOHUB_ROOT</c> overrides everything, which is what the tests use.
+/// In production they sit next to the application. During development the content root is the web
+/// project while those folders are at the root of the repository, so the root is found by walking up
+/// until <c>config/division.json</c> appears: from the content root first, then from the folder of
+/// the application, because a host may start the process from any working directory (note
+/// 2026-09-27-l-avvio-da-qualunque-cartella). <c>IVAOHUB_ROOT</c> overrides everything, which is what
+/// the tests use.
 /// </remarks>
 public sealed class HubPaths
 {
@@ -18,9 +20,26 @@ public sealed class HubPaths
     private const string Marker = "config/division.json";
     private const int MaxLevels = 6;
 
-    private HubPaths(string root) => Root = root;
+    private HubPaths(string root, HubRootSource source)
+    {
+        // AppContext.BaseDirectory ends with a separator; a root is written without one.
+        Root = Path.TrimEndingDirectorySeparator(root);
+        Source = source;
+    }
 
     public string Root { get; }
+
+    /// <summary>How the root was found, written into the diagnostics so that a wrong one can be explained.</summary>
+    public HubRootSource Source { get; }
+
+    /// <summary><see cref="Source"/> in words, for the diagnostics files.</summary>
+    public string SourceDescription => Source switch
+    {
+        HubRootSource.Pinned => $"set by {RootVariable}",
+        HubRootSource.ContentRoot => "found from the content root",
+        HubRootSource.ApplicationFolder => "found from the folder of the application",
+        _ => $"not found: no {Marker} above the content root nor above the folder of the application",
+    };
 
     public string Config => Path.Combine(Root, "config");
     public string Locales => Path.Combine(Root, "locales");
@@ -55,27 +74,68 @@ public sealed class HubPaths
     /// </summary>
     public string SecurityFile => Path.Combine(Config, "security.json");
 
-    public static HubPaths Resolve(string contentRoot)
+    /// <summary>
+    /// Every <c>*.json</c> under <c>secrets/</c>, in a stable order. The folder is never in the
+    /// repository and the web server denies access to it (plan section 11.3).
+    /// </summary>
+    public IEnumerable<string> SecretFiles() => Directory.Exists(Secrets)
+        ? Directory.EnumerateFiles(Secrets, "*.json").OrderBy(file => file, StringComparer.Ordinal)
+        : [];
+
+    public static HubPaths Resolve(string contentRoot) => Resolve(contentRoot, applicationFolder: null);
+
+    /// <summary>
+    /// The root: <see cref="RootVariable"/> when set; else the first folder holding the marker above
+    /// <paramref name="contentRoot"/>, then above <paramref name="applicationFolder"/>; else the
+    /// application folder, which is where an installation is told to put the division file.
+    /// </summary>
+    public static HubPaths Resolve(string contentRoot, string? applicationFolder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(contentRoot);
 
         var pinned = Environment.GetEnvironmentVariable(RootVariable);
         if (!string.IsNullOrWhiteSpace(pinned))
         {
-            return new HubPaths(Path.GetFullPath(pinned));
+            return new HubPaths(Path.GetFullPath(pinned), HubRootSource.Pinned);
         }
 
-        var directory = new DirectoryInfo(Path.GetFullPath(contentRoot));
+        if (FindMarker(contentRoot) is { } fromContentRoot)
+        {
+            return new HubPaths(fromContentRoot, HubRootSource.ContentRoot);
+        }
+
+        if (!string.IsNullOrWhiteSpace(applicationFolder) && FindMarker(applicationFolder) is { } fromApplication)
+        {
+            return new HubPaths(fromApplication, HubRootSource.ApplicationFolder);
+        }
+
+        return new HubPaths(
+            Path.GetFullPath(string.IsNullOrWhiteSpace(applicationFolder) ? contentRoot : applicationFolder),
+            HubRootSource.NotFound);
+    }
+
+    private static string? FindMarker(string start)
+    {
+        var directory = new DirectoryInfo(Path.GetFullPath(start));
         for (var level = 0; level < MaxLevels && directory is not null; level++)
         {
             if (File.Exists(Path.Combine(directory.FullName, Marker)))
             {
-                return new HubPaths(directory.FullName);
+                return directory.FullName;
             }
 
             directory = directory.Parent;
         }
 
-        return new HubPaths(Path.GetFullPath(contentRoot));
+        return null;
     }
+}
+
+/// <summary>How <see cref="HubPaths.Resolve(string, string?)"/> found the root.</summary>
+public enum HubRootSource
+{
+    Pinned,
+    ContentRoot,
+    ApplicationFolder,
+    NotFound,
 }
