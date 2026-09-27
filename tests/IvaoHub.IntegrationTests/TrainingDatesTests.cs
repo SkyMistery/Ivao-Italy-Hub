@@ -462,6 +462,48 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A box of a date left empty (A8b): the page sends it as it is, and the server says it is required on its own field — never
+    /// that an empty start has gone by, or that an empty end comes before the start.
+    /// </summary>
+    [Fact]
+    public async Task ADateLeftEmptyIsRequiredOnItsOwnField()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var day = Day(60);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
+        await GiveConductAsync(ScopedTrainerVid, id, token);
+        await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
+
+        using var trainer = await SignedInAsync(ScopedTrainerVid, token);
+        var version = (await PageAsync(trainer, id, token)).GetProperty("rowVersion").GetDateTime();
+
+        // Two dates, one box left empty on each: required, each on its own field, the other box of the row left alone.
+        object[] halves =
+        [
+            new { startsAtUtc = (DateTime?)null, endsAtUtc = day.AddHours(18) },
+            new { startsAtUtc = day.AddDays(1).AddHours(16), endsAtUtc = (DateTime?)null },
+        ];
+        using (var refused = await StepAsync(trainer, id, "slots", new { slots = halves, confirmed = false, rowVersion = version }, token))
+        {
+            var problem = await ProblemAsync(refused, token);
+            Assert.Equal(["errors.required"], Keys(problem, "slots[0].startsAtUtc"));
+            Assert.Equal(["errors.required"], Keys(problem, "slots[1].endsAtUtc"));
+            Assert.Empty(Keys(problem, "slots[0].endsAtUtc"));
+            Assert.Empty(Keys(problem, "slots[1].startsAtUtc"));
+        }
+
+        Assert.Empty(await SlotsOfAsync(id, token));
+
+        // The date set by hand with no start: required, and the training still waits for its date.
+        using (var empty = await StepAsync(trainer, id, "date", new { startsAtUtc = (DateTime?)null, confirmed = false, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(empty, "startsAtUtc", "errors.required", token);
+        }
+
+        Assert.Equal(TrainingState.Assigned, (await StoredAsync(id, token)).State);
+    }
+
+    /// <summary>
     /// The «done when» of A8 (<c>08-piano-implementazione-m3.md</c>), through the API: the trainer proposes two dates, one of them
     /// warned of another training that day; the trainee chooses one; its session is in the public calendar with no name; and the
     /// reminder leaves once. The pages and the mailbox are A8b's round on the bench.
