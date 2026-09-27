@@ -7,7 +7,9 @@ using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
+using IvaoHub.Modules.Training.Sessions;
 using IvaoHub.Modules.Training.Settings;
+using IvaoHub.Modules.Training.Sheets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -35,7 +37,9 @@ public enum StaffResult
 /// a write that failed is taken back here or by the job of the night (<see cref="TrainingExpiryJob"/>).</para>
 /// <para>The mails go after the save, through the one notification service (<see cref="TrainingMail"/>).</para>
 /// <para>The dates of a training (A8) are <see cref="TrainingDates"/>'s: the page shows them — the dates proposed with their
-/// warnings, the session and whether it shows as held — and says whether the reader may conduct it or close it.</para>
+/// warnings, the session and whether it shows as held — and says whether the reader may conduct it or close it. What its session
+/// came to (A9) is <see cref="TrainingSessions"/>'s: the page shows the sessions that are over, the sheet and the report, and says
+/// whether the reader may record it — without what is reserved when the reader is the trainee (<see cref="ReservedFields"/>).</para>
 /// </summary>
 public sealed class StaffTrainings(
     TrainingDbContext database,
@@ -71,8 +75,10 @@ public sealed class StaffTrainings(
         state is TrainingState.Accepted or TrainingState.Assigned or TrainingState.Scheduled;
 
     /// <summary>
-    /// The page of one training: the request, the decision, the trainer, the dates proposed and the session, the closing, and what
-    /// the reader may do on it now.
+    /// The page of one training: the request, the decision, the trainer, the dates proposed and the session, the sessions that are
+    /// over, the sheet and the report, the closing, and what the reader may do on it now. The one place the staff's answer on a
+    /// training is built: every endpoint of the staff answers with it, and it leaves out what is reserved when the reader is the
+    /// training's trainee (<see cref="ReservedFields"/>; note <c>le-note-riservate-e-il-trainee</c>).
     /// </summary>
     public async Task<StaffTrainingDto> PageAsync(Training training, CancellationToken cancellationToken)
     {
@@ -83,10 +89,16 @@ public sealed class StaffTrainings(
             .OrderBy(slot => slot.StartsAtUtc)
             .ThenBy(slot => slot.Id)
             .ToListAsync(cancellationToken);
+        var sessions = await database.Sessions.AsNoTracking()
+            .Where(session => session.TrainingId == training.Id)
+            .OrderBy(session => session.StartsAtUtc)
+            .ThenBy(session => session.Id)
+            .ToListAsync(cancellationToken);
         var names = await people.NamesAsync(
             [
                 training.TraineeVid, training.DecidedBy, training.TrainerVid, training.AssignedBy, training.ClosedBy,
                 .. slots.Select(slot => (int?)slot.CreatedBy),
+                .. sessions.Select(session => (int?)session.CreatedBy),
             ],
             cancellationToken);
         var settings = await settingsStore.GetAsync<TrainingSettings>(TrainingModule.ModuleKey, cancellationToken);
@@ -96,8 +108,9 @@ public sealed class StaffTrainings(
         var canAssign = IsAssignable(training.State) && await MayAsync(training, TrainingPermissions.Assign);
         var canConduct = TrainingDates.IsDatable(training.State) && await MayAsync(training, TrainingPermissions.Conduct);
         var canClose = TrainingDates.IsClosable(training.State) && await MayAsync(training, TrainingPermissions.Approve);
+        var canRecordOutcome = TrainingSessions.IsRecordable(training, clock.UtcNow) && await MayAsync(training, TrainingPermissions.Conduct);
 
-        return new StaffTrainingDto(
+        var page = new StaffTrainingDto(
             training.Id,
             training.Kind,
             training.Rating,
@@ -141,8 +154,63 @@ public sealed class StaffTrainings(
             training.CloseReason,
             training.ReadyForMockExam,
             training.ReadyForExam,
-            new StaffTrainingActionsDto(canDecide, canAssign, canConduct, canClose),
+            training.CooldownWaived,
+            training.GeneralComment,
+            training.StaffComment,
+            await SheetAsync(training, cancellationToken),
+            [
+                .. sessions.Select(session => new StaffSessionDto(
+                    session.Id,
+                    session.StartsAtUtc,
+                    session.Outcome,
+                    session.InternalNotes,
+                    TrainingPeople.Member(session.CreatedBy, names)!,
+                    session.CreatedAt)),
+            ],
+            ReservedLeftOut: false,
+            new StaffTrainingActionsDto(canDecide, canAssign, canConduct, canClose, canRecordOutcome),
             training.RowVersion);
+
+        return ReservedFields.For(page, currentUser.Vid);
+    }
+
+    /// <summary>
+    /// The sheet of a training as the staff reads it (§1.4, §2.7): the copy its report keeps, once completed; while it is dated, the
+    /// items a report would mark now — the active ones of its ladder and rating, in the order of the sheet —, with nothing marked; none
+    /// otherwise.
+    /// </summary>
+    private async Task<IReadOnlyList<StaffEvaluationDto>> SheetAsync(Training training, CancellationToken cancellationToken)
+    {
+        if (training.State == TrainingState.Completed)
+        {
+            var filled = await database.Evaluations.AsNoTracking()
+                .Where(evaluation => evaluation.TrainingId == training.Id)
+                .OrderBy(evaluation => evaluation.Sort)
+                .ThenBy(evaluation => evaluation.Id)
+                .ToListAsync(cancellationToken);
+
+            return
+            [
+                .. filled.Select(evaluation => new StaffEvaluationDto(
+                    evaluation.SheetItemId,
+                    evaluation.Section,
+                    evaluation.Title,
+                    evaluation.Grade,
+                    evaluation.Mark,
+                    evaluation.TraineeComment,
+                    evaluation.StaffNote)),
+            ];
+        }
+
+        if (training.State != TrainingState.Scheduled)
+        {
+            return [];
+        }
+
+        var items = await EvaluationSheet.ItemsOf(CrudSource.BackOffice<SheetItem>(database).AsNoTracking(), training.Kind, training.Rating)
+            .ToListAsync(cancellationToken);
+
+        return [.. items.Select(item => new StaffEvaluationDto(item.Id, item.Section, item.Title, null, null, null, null))];
     }
 
     /// <summary>The rows of one page of the list, with the names of the trainees and of the trainers: one query for the page.</summary>

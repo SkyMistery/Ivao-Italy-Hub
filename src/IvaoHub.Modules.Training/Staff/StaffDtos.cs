@@ -1,5 +1,6 @@
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Training.Dates;
+using IvaoHub.Modules.Training.Sessions;
 
 namespace IvaoHub.Modules.Training.Staff;
 
@@ -37,16 +38,21 @@ public sealed record StaffTrainingRowDto(
 /// on: dates are proposed while it waits for one, and the date is set by hand then or once it has one.
 /// </param>
 /// <param name="CanClose">Close it with a reason (<c>Training.Approve</c>, A8), while it is accepted and going on.</param>
-public sealed record StaffTrainingActionsDto(bool CanDecide, bool CanAssign, bool CanConduct, bool CanClose);
+/// <param name="CanRecordOutcome">
+/// Record how the session went (<c>Training.Conduct</c>, A9) — rescheduled, not attended, or reported —, once its session has started.
+/// </param>
+public sealed record StaffTrainingActionsDto(bool CanDecide, bool CanAssign, bool CanConduct, bool CanClose, bool CanRecordOutcome);
 
 /// <summary>
-/// A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §4.2): the request with the trainee's rating and
-/// hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer, the dates
-/// proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's choice
-/// or set by hand —, the closing with its reason, and what the reader may do. Read with <c>Training.View</c>, which the core never
-/// denies, so the trainee of the row reads it too: the fields the trainee may not read — the notes of the staff, the report's
-/// comment for the staff — are not here, and arrive with the one function of A9 that leaves them out for the row's trainee (note
-/// <c>le-note-riservate-e-il-trainee</c>). Never an address.
+/// A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2): the request with the trainee's
+/// rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
+/// the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
+/// choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, and what the reader
+/// may do. Never an address. <c>Sheet</c> is the copy a completed training's report keeps; while the training is dated, the active
+/// items of its ladder and rating as a report would mark them now, with nothing marked; none otherwise. Read with
+/// <c>Training.View</c>, which the core never denies, so the trainee of the row reads it too: the one rule of <c>ReservedFields</c>
+/// leaves out what is reserved when they do — <c>StaffComment</c>, the <c>StaffNote</c> of every item of the sheet, the
+/// <c>InternalNotes</c> of every session — and says so in <c>ReservedLeftOut</c> (note <c>le-note-riservate-e-il-trainee</c>).
 /// </summary>
 public sealed record StaffTrainingDto(
     long Id,
@@ -84,6 +90,12 @@ public sealed record StaffTrainingDto(
     string? CloseReason,
     bool ReadyForMockExam,
     bool ReadyForExam,
+    bool CooldownWaived,
+    string? GeneralComment,
+    string? StaffComment,
+    IReadOnlyList<StaffEvaluationDto> Sheet,
+    IReadOnlyList<StaffSessionDto> Sessions,
+    bool ReservedLeftOut,
     StaffTrainingActionsDto Actions,
     DateTime RowVersion);
 

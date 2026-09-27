@@ -67,7 +67,8 @@ public enum TrainingRejection
 /// it.</para>
 /// <para>Its session is in the division's one calendar (§5.1, A8; note <c>il-training-in-pubblico</c>): the training projects
 /// the session in hand (<see cref="IProjectable"/>), public, with its rating and position and nobody's name or VID, and the
-/// interceptor keeps the entry where the date is, in the same transaction, until the training stops being dated.</para>
+/// interceptor keeps the entry where the date is, in the same transaction, until the training stops being dated — or for good
+/// once its report records the session as held (A9).</para>
 /// <para>It sits at the root of the module because a class of this name in a namespace below the module's would be hidden
 /// there by the module's own namespace.</para>
 /// </summary>
@@ -88,8 +89,14 @@ public sealed class Training
     /// <summary>As wide as a FIR of that reference.</summary>
     public const int MaxFirLength = 8;
 
-    /// <summary>The bound of a text of the request and of a reason of the staff. The report's comments are A9's to bound.</summary>
+    /// <summary>The bound of a text of the request, of a reason of the staff, of a note or a comment on one item or one session.</summary>
     public const int MaxTextLength = 2000;
+
+    /// <summary>
+    /// The bound of the report's two comments (A9): room for a long debriefing, and within what their column holds — a column of
+    /// <c>text</c> keeps 65,535 bytes, and a character takes four at most.
+    /// </summary>
+    public const int MaxCommentLength = 10_000;
 
     public long Id { get; set; }
 
@@ -155,7 +162,9 @@ public sealed class Training
 
     /// <summary>
     /// When the session in hand starts (A8): the date the trainee chose, or the one set by hand; none while it is still to be
-    /// fixed, and none again once the training closes without it. A session already over is a row of the sessions (A9).
+    /// fixed, and none again once the training closes without it — rescheduled, not attended, closed. Once its outcome is recorded
+    /// the session is a row of the sessions (A9); a completed training keeps here the date of the session its report is about,
+    /// which the calendar keeps showing (§5.1).
     /// </summary>
     public DateTime? ScheduledStartUtc { get; set; }
 
@@ -265,16 +274,17 @@ public sealed class Training
     public static string SessionPath(long id) => string.Create(CultureInfo.InvariantCulture, $"/training/sessions/{id}");
 
     /// <summary>
-    /// The session in hand, in the calendar (§5.1; note <c>il-training-in-pubblico</c>): one public entry of the kind
-    /// <see cref="CalendarKind"/> while the training is dated, at its start, titled with its rating and its position — never a name
-    /// nor a VID —, pointing at the page of the session. Nothing otherwise: a training closed without a session held leaves the
-    /// calendar. The sessions held join with A9. Nothing in the search either (§5.1).
+    /// The session in the calendar (§5.1; note <c>il-training-in-pubblico</c>): one public entry of the kind <see cref="CalendarKind"/>
+    /// while the training is dated, at its start, titled with its rating and its position — never a name nor a VID —, pointing at the
+    /// page of the session; and it stays once the report is published, for the session held (A9). Nothing otherwise: a session
+    /// rescheduled or not attended, or a training closed without a session held, leaves the calendar. A training holds one session
+    /// at most, because only its report records one as held. Nothing in the search either (§5.1).
     /// </summary>
     public ProjectionSnapshot? Project(ProjectionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (State != TrainingState.Scheduled || ScheduledStartUtc is not { } start)
+        if (State is not (TrainingState.Scheduled or TrainingState.Completed) || ScheduledStartUtc is not { } start)
         {
             return null;
         }

@@ -1,6 +1,7 @@
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
+using IvaoHub.Modules.Training.Sessions;
 using IvaoHub.Modules.Training.Staff;
 
 namespace IvaoHub.Modules.Training.Requests;
@@ -56,12 +57,14 @@ public sealed record MyTrainingPathDto(
 
 /// <summary>
 /// A training as its trainee reads it (§1.1, §4.1). It has no field the trainee does not read — no comment of the staff, no
-/// warning of a date, and later no note of the sheet —, so their endpoints cannot hand one over whatever the row holds.
+/// warning of a date, no note of the sheet, no note of a session —, so their endpoints cannot hand one over whatever the row holds.
 /// <c>RequestedAt</c> is when they asked for it; <c>RejectionReason</c> why the staff refused it, as the mail says it (A7).
 /// <c>Trainer</c> is who trains it, as the mail of the assignment names them; <c>Slots</c> the dates proposed to choose from, the
 /// ones still to come, while the training waits for its date (A8); <c>Held</c> says a dated training shows as held, from the day
 /// after its session in the division's time zone (§1.2); <c>CloseReason</c> why the staff closed it — none when the hub did,
-/// because the trainee chose no date in time (A8).
+/// because the trainee chose no date in time (A8). The report (A9): the trainer's boxes, the general comment and the sheet with the
+/// grades, the marks and the comments for the trainee — empty until it is published —; <c>Sessions</c> the sessions that are over,
+/// rescheduled, not attended or held, with nothing the staff wrote of them.
 /// </summary>
 public sealed record TraineeTrainingDto(
     long Id,
@@ -86,6 +89,10 @@ public sealed record TraineeTrainingDto(
     string? CloseReason,
     bool ReadyForMockExam,
     bool ReadyForExam,
+    bool CooldownWaived,
+    string? GeneralComment,
+    IReadOnlyList<TraineeEvaluationDto> Sheet,
+    IReadOnlyList<TraineeSessionDto> Sessions,
     DateTime RowVersion);
 
 /// <summary>What a trainee sends to ask for a training (§2.2).</summary>

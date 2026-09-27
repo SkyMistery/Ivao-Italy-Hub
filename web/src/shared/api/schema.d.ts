@@ -2398,6 +2398,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/trainings/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingReschedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingNoShow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6229,6 +6277,11 @@ export interface components {
             /** @description What happened to it. */
             change: components["schemas"]["SectionChange"];
         };
+        /**
+         * @description What a session of a training came to (design M3 §1.3, §2.6). Stored by name.
+         * @enum {unknown}
+         */
+        SessionOutcome: "Held" | "Rescheduled" | "NoShow";
         /** @description An item as the form loads it. */
         SheetItemDto: {
             /** Format: int64 */
@@ -6326,11 +6379,44 @@ export interface components {
             errors: components["schemas"]["SnapshotErrorDto"][];
         };
         /**
+         * @description An item of the sheet as the staff reads it (design M3 §4.2): which item, its section and title, how the session went on it — a
+         *     grade, a mark, or neither: not applicable —, the comment the trainee reads, and the note of the staff — reserved: left out when the
+         *     reader is the trainee of the row (note `le-note-riservate-e-il-trainee`). On a completed training, the copy its report keeps;
+         *     on a dated one, the item as a report would mark it now, with nothing marked yet.
+         */
+        StaffEvaluationDto: {
+            /** Format: int64 */
+            itemId: number;
+            section: components["schemas"]["SheetSection"];
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            grade: null | number;
+            mark: null | components["schemas"]["TheoryMark"];
+            traineeComment: null | string;
+            staffNote: null | string;
+        };
+        /**
          * @description Seniority of a staff position inside its department. The vocabulary lives here because the
          *     column needs it; `StaffRoleMap`, which produces it from a raw IVAO position, arrives in F2.
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /**
+         * @description A session that is over, as the staff reads it (design M3 §4.2): when it was, what it came to, the internal notes of a session
+         *     rescheduled — reserved: left out when the reader is the trainee of the row (note `le-note-riservate-e-il-trainee`) —, and who
+         *     recorded it when.
+         */
+        StaffSessionDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            startsAtUtc: string;
+            outcome: components["schemas"]["SessionOutcome"];
+            internalNotes: null | string;
+            recordedBy: components["schemas"]["TrainingMemberDto"];
+            /** Format: date-time */
+            recordedAt: string;
+        };
         /** @description A date proposed, as the staff reads it (§4.2): when, what the hub warned about then, and who proposed it when. */
         StaffSlotDto: {
             /** Format: int64 */
@@ -6360,15 +6446,19 @@ export interface components {
             canConduct: boolean;
             /** @description Close it with a reason (`Training.Approve`, A8), while it is accepted and going on. */
             canClose: boolean;
+            /** @description Record how the session went (`Training.Conduct`, A9) — rescheduled, not attended, or reported —, once its session has started. */
+            canRecordOutcome: boolean;
         };
         /**
-         * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §4.2): the request with the trainee's rating and
-         *     hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer, the dates
-         *     proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's choice
-         *     or set by hand —, the closing with its reason, and what the reader may do. Read with `Training.View`, which the core never
-         *     denies, so the trainee of the row reads it too: the fields the trainee may not read — the notes of the staff, the report's
-         *     comment for the staff — are not here, and arrive with the one function of A9 that leaves them out for the row's trainee (note
-         *     `le-note-riservate-e-il-trainee`). Never an address.
+         * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2): the request with the trainee's
+         *     rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
+         *     the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
+         *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, and what the reader
+         *     may do. Never an address. `Sheet` is the copy a completed training's report keeps; while the training is dated, the active
+         *     items of its ladder and rating as a report would mark them now, with nothing marked; none otherwise. Read with
+         *     `Training.View`, which the core never denies, so the trainee of the row reads it too: the one rule of `ReservedFields`
+         *     leaves out what is reserved when they do — `StaffComment`, the `StaffNote` of every item of the sheet, the
+         *     `InternalNotes` of every session — and says so in `ReservedLeftOut` (note `le-note-riservate-e-il-trainee`).
          */
         StaffTrainingDto: {
             /** Format: int64 */
@@ -6416,6 +6506,12 @@ export interface components {
             closeReason: null | string;
             readyForMockExam: boolean;
             readyForExam: boolean;
+            cooldownWaived: boolean;
+            generalComment: null | string;
+            staffComment: null | string;
+            sheet: components["schemas"]["StaffEvaluationDto"][];
+            sessions: components["schemas"]["StaffSessionDto"][];
+            reservedLeftOut: boolean;
             actions: components["schemas"]["StaffTrainingActionsDto"];
             /** Format: date-time */
             rowVersion: string;
@@ -6478,6 +6574,8 @@ export interface components {
             /** Format: int32 */
             yearlyMax: null | number;
         };
+        /** @enum {unknown} */
+        TheoryMark: "Done" | "NotDone" | "ToImprove" | null;
         /** @description A filter or a sequence rule of an `Open` tour as the form loads it: its kind, and its parameters. */
         TourConstraintDto: {
             /** Format: int64 */
@@ -6849,6 +6947,24 @@ export interface components {
             arrivalIcao: null | string;
             aircraft: null | string;
         };
+        /**
+         * @description An item of the report as its trainee reads it (design M3 §4.1): its section and title as the report copied them, the grade or the
+         *     mark — neither: not applicable —, and the comment written for them. Never the note of the staff.
+         */
+        TraineeEvaluationDto: {
+            section: components["schemas"]["SheetSection"];
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            grade: null | number;
+            mark: null | components["schemas"]["TheoryMark"];
+            traineeComment: null | string;
+        };
+        /** @description A session that is over, as its trainee reads it (design M3 §4.1): when it was, and what it came to. Never a note. */
+        TraineeSessionDto: {
+            /** Format: date-time */
+            startsAtUtc: string;
+            outcome: components["schemas"]["SessionOutcome"];
+        };
         /** @description A date proposed, as its trainee chooses it: nothing but when (§4.1). The warnings are the staff's. */
         TraineeSlotDto: {
             /** Format: int64 */
@@ -6860,12 +6976,14 @@ export interface components {
         };
         /**
          * @description A training as its trainee reads it (§1.1, §4.1). It has no field the trainee does not read — no comment of the staff, no
-         *     warning of a date, and later no note of the sheet —, so their endpoints cannot hand one over whatever the row holds.
+         *     warning of a date, no note of the sheet, no note of a session —, so their endpoints cannot hand one over whatever the row holds.
          *     `RequestedAt` is when they asked for it; `RejectionReason` why the staff refused it, as the mail says it (A7).
          *     `Trainer` is who trains it, as the mail of the assignment names them; `Slots` the dates proposed to choose from, the
          *     ones still to come, while the training waits for its date (A8); `Held` says a dated training shows as held, from the day
          *     after its session in the division's time zone (§1.2); `CloseReason` why the staff closed it — none when the hub did,
-         *     because the trainee chose no date in time (A8).
+         *     because the trainee chose no date in time (A8). The report (A9): the trainer's boxes, the general comment and the sheet with the
+         *     grades, the marks and the comments for the trainee — empty until it is published —; `Sessions` the sessions that are over,
+         *     rescheduled, not attended or held, with nothing the staff wrote of them.
          */
         TraineeTrainingDto: {
             /** Format: int64 */
@@ -6897,6 +7015,10 @@ export interface components {
             closeReason: null | string;
             readyForMockExam: boolean;
             readyForExam: boolean;
+            cooldownWaived: boolean;
+            generalComment: null | string;
+            sheet: components["schemas"]["TraineeEvaluationDto"][];
+            sessions: components["schemas"]["TraineeSessionDto"][];
             /** Format: date-time */
             rowVersion: string;
         };
@@ -6955,11 +7077,34 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /** @description How a report marks one item of the sheet (design M3 §1.4, §2.7): the item, and how the session went on it. */
+        TrainingEvaluationWriteDto: {
+            /**
+             * Format: int64
+             * @description The item of the sheet, as the page read it.
+             */
+            itemId: number;
+            /**
+             * Format: int32
+             * @description A practice item's grade, from one to five; none when the session did not touch it.
+             */
+            grade: null | number;
+            mark: null | components["schemas"]["TheoryMark"];
+            /** @description What the trainee reads of the item. */
+            traineeComment: null | string;
+            /** @description What the staff and the trainers read of it, and the trainee never does. */
+            staffNote: null | string;
+        };
         /** @description A person as the staff's pages name them: the VID that always is, and the name the hub has — none when it has none. */
         TrainingMemberDto: {
             /** Format: int32 */
             vid: number;
             name: null | string;
+        };
+        /** @description A session the trainee did not come to (§2.6), at the version of the training seen. */
+        TrainingNoShowDto: {
+            /** Format: date-time */
+            rowVersion: string;
         };
         /** @description A position of the division a training may take place on, with the rating it is trained for. */
         TrainingPositionDto: {
@@ -6989,6 +7134,30 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /**
+         * @description The report (design M3 §2.7): the sheet — how the session went on each item, an item left out being not applicable (d4) —, the
+         *     comment for the trainee and the one for the staff, which the trainee never reads, the trainer's three boxes, and the version of
+         *     the training seen. Published at once, by whoever conducts the training (d2): there is no pass or fail.
+         */
+        TrainingReportDto: {
+            /** @description How the session went on the items of the sheet the page read, one entry per item marked. */
+            sheet: null | components["schemas"]["TrainingEvaluationWriteDto"][];
+            /** @description What the trainee reads of the session as a whole. */
+            generalComment: null | string;
+            /** @description What the staff and the trainers read of it, and the trainee never does. */
+            staffComment: null | string;
+            /** @description The next training on this rating is a mock exam (§2.8); never on a mock exam. */
+            readyForMockExam: boolean;
+            /** @description The trainee may book the exam on the network. */
+            readyForExam: boolean;
+            /** @description No waiting after this training (R.5). */
+            cooldownWaived: boolean;
+            /**
+             * Format: date-time
+             * @description The version of the training seen.
+             */
+            rowVersion: string;
+        };
         /** @description What a trainee sends to ask for a training (§2.2). */
         TrainingRequestWriteDto: {
             /** @description The ladder. */
@@ -7006,6 +7175,15 @@ export interface components {
             notesText: null | string;
             /** @description The trainee's answer on the theory exam; none when they were not asked. */
             theoryPassed: null | boolean;
+        };
+        /**
+         * @description A session rescheduled for too little traffic (design M3 §2.6, R.5): what whoever conducted it writes of it for the staff — the
+         *     internal notes, which may be left empty and which the trainee never reads —, and the version of the training seen.
+         */
+        TrainingRescheduleDto: {
+            notes: null | string;
+            /** Format: date-time */
+            rowVersion: string;
         };
         /** @description The trainee's choice among the dates proposed (§2.5), at the version of their training they saw. */
         TrainingSlotChoiceDto: {
@@ -14442,6 +14620,174 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TrainingClosureDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingReschedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingRescheduleDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingNoShow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingNoShowDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingReportDto"];
             };
         };
         responses: {

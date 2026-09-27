@@ -3,7 +3,7 @@ namespace IvaoHub.Modules.Training;
 /// <summary>
 /// The kinds of notification of the training (design M3 §5.2), declared to the core through <c>IModule.NotificationTypes</c>.
 /// The words are in the module's language file: the mail under <c>mail.{type}</c>, the label of the profile under
-/// <c>notifications.{name}</c> of the <c>training</c> namespace. The others of §5.2 arrive with the phases that send them.
+/// <c>notifications.{name}</c> of the <c>training</c> namespace. The ban's (§2.9) arrives with A10.
 /// </summary>
 public static class TrainingNotifications
 {
@@ -30,10 +30,17 @@ public static class TrainingNotifications
 
     /// <summary>
     /// The training was closed (§2.5, A8): by the staff with a reason, or by the hub when no date was chosen in the time the division
-    /// gives; A9 sends it for a no-show too (§5.2). Its audience is the trainee.
+    /// gives; or because the trainee did not come to the session, with the waiting it brings (§2.6, §5.2, A9). Its audience is the
+    /// trainee.
     /// </summary>
     public const string TrainingClosed = "training.trainingClosed";
 
+    /// <summary>The report of the session was published (§2.7, §5.2, A9): the trainee reads it on the page of the training. Its audience is the trainee.</summary>
+    public const string ReportPublished = "training.reportPublished";
+
     public static readonly IReadOnlyList<string> All =
-        [RequestReceived, RequestAccepted, RequestRejected, TrainerAssigned, DatesProposed, DateConfirmed, Reminder, TrainingClosed];
+    [
+        RequestReceived, RequestAccepted, RequestRejected, TrainerAssigned, DatesProposed, DateConfirmed, Reminder, TrainingClosed,
+        ReportPublished,
+    ];
 }

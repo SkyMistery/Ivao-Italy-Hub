@@ -3,6 +3,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Dates;
+using IvaoHub.Modules.Training.Sessions;
 using IvaoHub.Modules.Training.Sheets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -15,7 +16,8 @@ namespace IvaoHub.Modules.Training.Data;
 /// <para>Born with no table of its own (A4): its <c>Initial</c> migration holds only the tables of the core that every module
 /// context maps and leaves out of its migrations, and it is never touched again. The tables of the module arrive with the
 /// phases that need them, one additive migration each: the items of the evaluation sheet first (A5), then the trainings, whole,
-/// and the bans (A6a), then the dates the trainers propose (A8).</para>
+/// and the bans (A6a), then the dates the trainers propose (A8), then the sessions that are over and the sheets the reports
+/// filled (A9).</para>
 /// </summary>
 public sealed class TrainingDbContext : ModuleDbContext
 {
@@ -48,6 +50,10 @@ public sealed class TrainingDbContext : ModuleDbContext
 
     public DbSet<TrainingSlot> Slots => Set<TrainingSlot>();
 
+    public DbSet<TrainingSession> Sessions => Set<TrainingSession>();
+
+    public DbSet<TrainingEvaluation> Evaluations => Set<TrainingEvaluation>();
+
     /// <summary>The enums of the training are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -57,6 +63,8 @@ public sealed class TrainingDbContext : ModuleDbContext
         configurationBuilder.Properties<SheetSection>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<TrainingState>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<TrainingRejection>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<SessionOutcome>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<TheoryMark>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -124,6 +132,31 @@ public sealed class TrainingDbContext : ModuleDbContext
             // A child of its training, in the same context: it goes with it, and its index is the one every reading of the
             // proposals of a training uses.
             slot.HasOne<Training>().WithMany().HasForeignKey(row => row.TrainingId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TrainingSession>(session =>
+        {
+            session.ToTable("trn_sessions");
+            session.HasKey(row => row.Id);
+            session.Property(row => row.InternalNotes).HasMaxLength(Training.MaxTextLength);
+
+            // A child of its training, like the dates: its history goes only with it.
+            session.HasOne<Training>().WithMany().HasForeignKey(row => row.TrainingId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TrainingEvaluation>(evaluation =>
+        {
+            evaluation.ToTable("trn_evaluations");
+            evaluation.HasKey(row => row.Id);
+            evaluation.Property(row => row.TraineeComment).HasMaxLength(Training.MaxTextLength);
+            evaluation.Property(row => row.StaffNote).HasMaxLength(Training.MaxTextLength);
+
+            // A child of its training: the sheet its report filled, read in the order of the sheet.
+            evaluation.HasOne<Training>().WithMany().HasForeignKey(row => row.TrainingId).OnDelete(DeleteBehavior.Cascade);
+            evaluation.HasIndex(row => new { row.TrainingId, row.Sort });
+
+            // No key towards the items: the report reads its copy of them. «Does a report mark this item?» reads this index.
+            evaluation.HasIndex(row => row.SheetItemId);
         });
     }
 }

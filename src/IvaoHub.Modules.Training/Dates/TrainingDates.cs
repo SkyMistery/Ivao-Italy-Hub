@@ -389,7 +389,11 @@ public sealed class TrainingDates(
             training.TraineeVid,
             training,
             TrainingMail.MinePathOf(training.Id),
-            (data, locale) => data["why"] = mail.Word(locale, "training:mail.training.closedByStaff", "reason", reason),
+            (data, locale) =>
+            {
+                data["why"] = mail.Word(locale, "training:mail.training.closedByStaff", "reason", reason);
+                data["after"] = mail.Word(locale, "training:mail.training.closedNoWait");
+            },
             cancellationToken);
 
         return (StaffResult.Done, null);
@@ -440,7 +444,11 @@ public sealed class TrainingDates(
                 training.TraineeVid,
                 training,
                 TrainingMail.MinePathOf(training.Id),
-                (data, locale) => data["why"] = mail.Word(locale, "training:mail.training.closedUnanswered"),
+                (data, locale) =>
+                {
+                    data["why"] = mail.Word(locale, "training:mail.training.closedUnanswered");
+                    data["after"] = mail.Word(locale, "training:mail.training.closedNoWait");
+                },
                 cancellationToken);
             closed++;
         }
