@@ -2891,6 +2891,7 @@ export interface components {
             registries: components["schemas"]["BootstrapRegistries"];
             calendarKinds: components["schemas"]["BootstrapCalendarKind"][];
             version: string;
+            commit: null | string;
         };
         BootstrapUser: {
             /** Format: int32 */

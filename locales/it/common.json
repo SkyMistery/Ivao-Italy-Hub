@@ -84,7 +84,7 @@
     "toggle": "Passa da chiaro a scuro"
   },
   "footer": {
-    "rights": "© {{year}} {{division}}. Tutti i diritti riservati. · v{{version}}",
+    "rights": "© {{year}} {{division}}. Tutti i diritti riservati. · {{build}}",
     "partOf": "Parte della International Virtual Aviation Organisation",
     "legalHeading": "IVAO",
     "about": "Il sito ufficiale di {{division}}: eventi, training, tour e tutto quello che fa la divisione.",

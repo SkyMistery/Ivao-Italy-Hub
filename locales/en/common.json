@@ -84,7 +84,7 @@
     "toggle": "Switch between light and dark"
   },
   "footer": {
-    "rights": "© {{year}} {{division}}. All rights reserved. · v{{version}}",
+    "rights": "© {{year}} {{division}}. All rights reserved. · {{build}}",
     "partOf": "Part of the International Virtual Aviation Organisation",
     "legalHeading": "IVAO",
     "about": "The official website of {{division}}: events, training, tours and everything the division does.",
