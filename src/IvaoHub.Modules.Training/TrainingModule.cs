@@ -1,11 +1,14 @@
 using FluentValidation;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.Training.Bans;
+using IvaoHub.Modules.Training.Blocks;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
+using IvaoHub.Modules.Training.Public;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Requests;
 using IvaoHub.Modules.Training.Sessions;
@@ -32,7 +35,8 @@ namespace IvaoHub.Modules.Training;
 /// closing of a training that found no date, by the staff or by the night; A9 what the session came to: rescheduled with the notes
 /// of the staff, not attended, or reported with the evaluation sheet, the comments and the boxes that make the next training a mock
 /// exam — and what the trainee of a training never reads of it, even from the staff's side; A10a the trainee's path as the staff
-/// reads it, and the bans.
+/// reads it, and the bans; A10b the sessions as the site shows them, with the people only to a signed in reader, and the four blocks
+/// of the pages and the dashboards.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): its rows have a base
 /// department, <c>division.json → modules.training.baseDepartment</c>, and who does what is the grants of
 /// <c>positionGrants</c>, never a rule written here. Nor does it know the network's rules: the ratings, what comes after one,
@@ -57,6 +61,20 @@ public sealed class TrainingModule : ModuleBase
         new NavItemDescriptor("training:nav.bans", "/staff/training/bans", TrainingPermissions.View),
         new NavItemDescriptor("training:nav.sheets", "/staff/training/sheets", TrainingPermissions.ManageSheets),
         new NavItemDescriptor("training:nav.settings", "/staff/training/settings", TrainingPermissions.ManageSettings),
+    ];
+
+    /// <summary>
+    /// The blocks of the training (design M3 §4.3, A10b), all always live because each answers for whoever is looking: the sessions
+    /// still to be held, with the people only to a signed in reader; the reader's own training; their trainings to move as a trainer;
+    /// and the requests to accept and the trainings to assign. Each has its other half in <c>web/src/modules/training/blocks/</c>; the
+    /// manifest test reads this literal.
+    /// </summary>
+    public override IReadOnlyList<BlockDescriptor> Blocks =>
+    [
+        new BlockDescriptor("training.upcomingSessions", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("training.myTraining", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("training.trainerQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("training.approvalQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>The pages of the training, the public ones and the member's, live under <c>/training</c>, so no page may be «training».</summary>
@@ -102,6 +120,13 @@ public sealed class TrainingModule : ModuleBase
         services.AddScoped<TrainingBans>();
         services.AddScoped<TraineePaths>();
 
+        // The sessions as the site shows them, and the four blocks (A10b).
+        services.AddScoped<PublicSessions>();
+        services.AddScoped<IDataBlockProvider, UpcomingSessionsProvider>();
+        services.AddScoped<IDataBlockProvider, MyTrainingProvider>();
+        services.AddScoped<IDataBlockProvider, TrainerQueueProvider>();
+        services.AddScoped<IDataBlockProvider, ApprovalQueueProvider>();
+
         services.AddScoped<TrainingExpiryJob>();
         services.AddScoped<TrainingRemindersJob>();
         services.AddQuartz(quartz => quartz
@@ -126,5 +151,6 @@ public sealed class TrainingModule : ModuleBase
         endpoints.MapStaffEndpoints();
         endpoints.MapTraineePathEndpoints();
         endpoints.MapBanEndpoints();
+        endpoints.MapPublicSessionEndpoints();
     }
 }
