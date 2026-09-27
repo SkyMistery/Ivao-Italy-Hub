@@ -110,6 +110,10 @@ function training(id: number, state: string, overrides: Record<string, unknown> 
     closeReason: null,
     readyForMockExam: false,
     readyForExam: false,
+    cooldownWaived: false,
+    generalComment: null,
+    sheet: [],
+    sessions: [],
     rowVersion: '2026-09-26T10:00:00.123456Z',
     ...overrides,
   };
