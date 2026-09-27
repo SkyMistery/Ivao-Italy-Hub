@@ -11,14 +11,14 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 27 settembre 2026 — **fase A8a** (le date: il server; A8 divisa in apertura come A6), sul branch
-`m3/a8a-dates-server`, **PR #147** verso `main`, in bozza **in coda dopo #146** (A7, in bozza in coda dopo #144, in coda dopo #143).
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A8b** (le date: le pagine), sul branch `m3/a8b-dates-pages`, **PR #148** verso
+`main`, in bozza **in coda dopo #147** (A8a, in bozza in coda dopo #146, A7, in coda dopo #144, A6b, in coda dopo #143, A6a).
 **A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in attesa della **sessione master** di Carmine (nota
 `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
 `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140) sono unite**; la fase del nucleo **A3b**
 (#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è pronta, da `main` e fuori dalla coda.
-**Il prossimo passo** è **A8b** (le date: le pagine), sul branch `m3/a8b-dates-pages` preparato da `m3/a8a-dates-server`, in coda dopo
-A8a; poi A9 (dalle fasi del modulo in poi tutto migra `TrainingDbContext`: in fila); A3b va avanti per conto suo prima di A10 (`08`,
+**Il prossimo passo** è **A9** (dopo la sessione), sul branch `m3/a9-after-the-session` preparato da `m3/a8b-dates-pages`, in coda dopo
+A8b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`: in fila); A3b va avanti per conto suo prima di A10 (`08`,
 «Parallelismo possibile»). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
@@ -90,6 +90,49 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A8b (27 settembre 2026, branch `m3/a8b-dates-pages`, PR #148)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova, nessuna migrazione; un cambio piccolo del server del
+  modulo, sotto):
+  - **`/training/mine/$id`** (`web/src/modules/training/screens/traineeTraining.tsx`, rotta `member`): lo stato («Eseguito» dal giorno
+    dopo la sessione), il trainer, **i riquadri delle date da scegliere** con «Scegli questa data» (chiesto ancora una volta; un 409 dice
+    che il trainer ha cambiato le date e la pagina mostra quelle di adesso), la sessione, che cosa succede dopo, perché si è chiuso.
+    `/training/mine` porta a ogni training («Scegli la data» quando ci sono date).
+  - **La pagina dello staff** (`screens/staff.tsx`), sezione **«Le date»** sotto il trainer: la sessione (scelta dal trainee o fissata a
+    mano, «Eseguita»), le date proposte con i loro avvisi e chi le ha proposte, «Ritira», **«Proponi le date»** e **«Fissa la data a
+    mano»** (i form generati, con il campo `datetime` del nucleo); **«Chiudi il training»** in alto e la sezione «La chiusura». La lista
+    dice «Eseguito».
+  - **Gli avvisi prima di scrivere**, in `useDatesWriter` (`staff.tsx`): `GET …/conflicts` per ogni data intera; con `Warn` e qualcosa
+    trovato, un avviso sotto il form e «Proponi lo stesso» / «Fissa lo stesso», che manda di nuovo il form (`confirmed: true`, solo per le
+    stesse date); con `Block` il server rifiuta sul campo e la pagina mostra ciò che ha trovato. L'ultima parola è del server.
+  - **I momenti in UTC e sotto nel fuso della divisione** (`WhenText` in `parts.tsx`, `spanText` in `screens/dates.ts`).
+  - **Il server**: `TrainingSlotWriteDto` e `TrainingDateWriteDto` hanno le date nullabili, e una casella vuota è `errors.required` sul
+    suo campo (prima una data vuota «era già passata»); un fatto nuovo in `TrainingDatesTests`.
+  - **I test**: `screens/dates.test.ts` (Vitest), `web/e2e/training-dates.spec.ts` (lo smoke), `web/e2e/full/training-the-dates.spec.ts`
+    (il «fatta quando» di A8 sul banco).
+- **Che cosa deve sapere la fase dopo**:
+  - **A9** (dopo la sessione): la rischedulazione riporta il training ad `Assigned`, e la sezione «Le date» ripropone da sola la proposta
+    e l'override (`dateSteps` guarda `actions.canConduct` e lo stato); le azioni del dopo sessione vanno accanto alla sessione `Held`
+    (`shownState` in `api.ts`). La pagina del trainee ha «che cosa succede dopo» per ogni stato che va avanti (`detail.next.*`):
+    `Completed` e `NoShow`, e il report per il trainee (design §4.1), sono di A9.
+  - ⚠️ **Il banco dopo il giro di A8b**: `training-the-dates.spec.ts` riprende il training ATC che A7 lascia `Assigned` e alla fine
+    **chiude** sia quello sia il training pilota che chiede per sé: dopo il giro il trainee del banco non ha training aperti. Una spec di A9
+    che vuole un training con la sessione passata lo chiede da sé (richiesta, accettazione e assegnazione attraverso l'API, come fa questa
+    spec) e lo data a mano nel passato — l'override lo permette —, con un nome che viene dopo `training-the-dates`. Il banco va ricreato
+    prima di ogni corsa.
+  - ⚠️ **La voce del calendario porta a `/training/sessions/{id}`, che ancora non c'è** (la pagina pubblica della sessione è di A10): un
+    visitatore che la clicca trova «non trovato». Detto al revisore.
+  - ⚠️ **Il promemoria in Mailpit non si aspetta nel giro sul banco** (fino a 15 minuti di CI): lo prova il test d'integrazione di A8a, e
+    l'ha visto a mano A8b sul banco di anteprima (un promemoria a testa al giro delle 03:20, nessuno a quello delle 03:35).
+  - ⚠️ **`pnpm i18n:check` non vede le chiavi `t('training:…')`**: A8b ne ha avuta una inesistente in un commit, trovata con uno script
+    che confronta le chiavi letterali del modulo con i file di lingua (lo trovi descritto in `08`, A8b, «Trovato» 4). Estenderlo è nucleo.
+  - VID: A8b non ne usa; il prossimo libero resta **790039**, poi **790045** (A3b usa 790040–790044 e 790050–790051).
+- **Trovato, non toccato (nucleo)**, detto al revisore: `useMoment` non dà il giorno della settimana (i riquadri dicono solo la data);
+  `pnpm i18n:check` e le chiavi con il namespace (sopra).
+- **La coda**: la PR è in bozza con `(after #147)` e `Queued after #147.`; #147 è in coda dopo #146, dopo #144, dopo #143. Quando #147 sarà
+  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
+  dal corpo, la PR pronta a CI verde — lo fa la sessione di A8b se è ancora viva, altrimenti quella di A9 prima di cominciare.
 
 ### Che cosa ha lasciato A8a (27 settembre 2026, branch `m3/a8a-dates-server`, PR #147)
 
