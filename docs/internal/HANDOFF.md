@@ -30,9 +30,12 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 27 settembre 2026, sera — **M2 è chiusa** (T0–T20c). Piano **1.19**: le righe affidate a chi
-scrive (A3b); la 1.18 ha portato la prima installazione, di prova. **La 0.2.0 è consegnata a Ivao.It per `test.it.ivao.aero`**: tag `v0.2.0` su `d36df74`, consegna preparata con
-`tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`.
+**Ultimo aggiornamento:** 28 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.20**: l'avvio da qualunque cartella
+(#162); la 1.19 ha portato le righe affidate a chi scrive (A3b), la 1.18 la prima installazione, di prova. **Su
+`test.it.ivao.aero` c'è la 0.2.1** (tag `v0.2.1` su `fa089de`, caricata da Carmine via FTP in `webapp/` dello staging lasciato
+da Ivao.It), consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio
+`docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`. ⚠️ **Non parte ancora**: Passenger risponde «Web application could not
+be started» e in `webapp/` non compare niente; serve il log di Passenger da chi amministra il pannello.
 M3: unite fino ad A6a (#143) e la fase del nucleo A3b (#135); in coda A6b–A10b, A6c e A11a, da rimettere in pari con `main`.
 Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con

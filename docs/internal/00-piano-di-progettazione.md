@@ -1,9 +1,27 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.19 — 27 settembre 2026 (**le righe affidate a chi scrive**: un permesso che raggiunge solo le righe affidate a chi lo chiede, A3b)
+**Versione documento:** 1.20 — 28 settembre 2026 (**l'avvio da qualunque cartella**: l'hub trova le sue cartelle anche dalla sua, e un avvio fallito scrive il motivo in un file; la 0.2.1)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. **M2, i tour, è chiusa** (T0–T20c, `05-design-m2.md` e `06-piano-implementazione-m2.md`), contata in `decisions/2026-09-25-m2-review.md`. **M3 (Training) la scrive `dalberone`**: design deciso (`07-design-m3.md`, PR #121), fasi A0–A12 in `08-piano-implementazione-m3.md`, A0–A3 unite il 25 set 2026, A6a e la fase del nucleo A3b il 27. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.20** (28 set 2026, dopo il merge di #162 e il tag `v0.2.1`): **l'avvio da qualunque cartella**, §11.3. Nota
+`decisions/2026-09-27-l-avvio-da-qualunque-cartella.md`, caso (b), **decisa da Carmine** ([il suo commento sulla #162][d120]).
+
+- **Perché:** la 0.2.0 caricata su `test.it.ivao.aero` non parte («Web application could not be started» di Passenger) e non
+  lascia niente in `webapp/`: né `logs/`, né `hub-keys/`, né `diagnostics/`. Il motivo stava solo su stdout, che con il solo FTP
+  non si legge.
+- **L'hub trova le sue cartelle** cercando `config/division.json` sopra la cartella di lavoro e poi sopra quella del suo
+  assembly; `IVAOHUB_ROOT` vince su tutte e due. Trovate dalla sua cartella, anche `wwwroot/` e `appsettings.json` la seguono.
+  `startup.txt` dice come è stata trovata la radice (§11.3 punti 2 e 5).
+- **Un avvio fallito** scrive `diagnostics/startup-error.txt`: versione, commit, radice, cartella di lavoro e motivo, con ogni
+  valore dei segreti sostituito da `[redacted]` (tranne quelli sotto i 6 caratteri); il primo avvio riuscito lo cancella. Chiude
+  il primo trattino di §11.3 punto 9.
+- **La prova** (§11.3 punto 8): l'installazione sta ora nello staging che Ivao.It ha lasciato alla divisione, `webapp/` con
+  `logs/` accanto, database `itivao_test`; carica Carmine via FTP. La 0.2.1 non parte ancora e non scrive niente: si aspetta il
+  log di Passenger da chi amministra il pannello.
+
+[d120]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/162#issuecomment-5860389724
 
 **Changelog 1.19** (27 set 2026, sera, dopo il merge di #135): **le righe affidate a chi scrive**, §16 punto 2. Nota
 `decisions/2026-09-26-le-righe-affidate-a-chi-scrive.md`, caso (c), **decisa da Carmine** ([il suo commento sulla #135][d119]).
@@ -2549,7 +2567,7 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - I fogli per chi carica stanno in `docs/internal/deploy/`, e `config/division.json` si consegna accanto allo zip, preso
      dallo stesso tag.
    - Prima consegna: `0.2.0`, su `test.it.ivao.aero`.
-2. **Cartella dell'app** nella sottoscrizione `it.ivao.aero`, avviata da **Passenger** (`dotnet IvaoHub.Web.dll`), `ASPNETCORE_ENVIRONMENT=Production`. Struttura: `wwwroot/`, `config/division.json`, `config/ivao-oauth.json` (compilato dalla divisione), `secrets/<nome-non-indovinabile>.json` (connection string, SMTP, secret — l'app carica ogni `*.json` di `secrets/`), `hub-keys/` (Data Protection, **persistente, mai cancellare**), `uploads/` (documenti), `logs/`, `diagnostics/`.
+2. **Cartella dell'app** nella sottoscrizione `it.ivao.aero`, avviata da **Passenger** (`dotnet IvaoHub.Web.dll`), `ASPNETCORE_ENVIRONMENT=Production`. Struttura: `wwwroot/`, `config/division.json`, `config/ivao-oauth.json` (compilato dalla divisione), `secrets/<nome-non-indovinabile>.json` (connection string, SMTP, secret — l'app carica ogni `*.json` di `secrets/`), `hub-keys/` (Data Protection, **persistente, mai cancellare**), `uploads/` (documenti), `logs/`, `diagnostics/` (`startup.txt`, e `startup-error.txt` dopo un avvio fallito). **Dal 28 set 2026** l'hub trova queste cartelle anche dalla cartella del suo assembly, quindi la cartella di lavoro in cui Passenger lo avvia non conta (nota `2026-09-27-l-avvio-da-qualunque-cartella`).
    **Misurato il 27 set 2026** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server`):
    - **Il comando.** `dotnet IvaoHub.Web.dll` va bene su un server che ha un `dotnet` qualunque, come quello di vIPI: passa
      la mano al runtime del pacchetto, e non serve il bit di esecuzione. `./IvaoHub.Web` con `755` serve solo senza .NET.
@@ -2567,7 +2585,7 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - **Il `no-store` su `/api/*`** lo manda già l'applicazione.
    - **Il rinvio a https** lo fa Cloudflare.
 4. **Database**: DB + utente dedicati dal pannello (`GRANT ALL` sul solo schema, verificare che la prima migrazione con `ALTER DATABASE CHARACTER SET utf8mb4` passi); pool `MaximumPoolSize≤15` perché il tetto per utente è condiviso; `max_allowed_packet` confermato ≥ 4 MB o upload solo su disco.
-5. **Migrazioni**: `Database.Migrate()` all'avvio (senza shell non c'è alternativa), con tre regole ferree: solo migrazioni **additive** (mai `DROP`/rename distruttivi nello stesso pacchetto che smette di usare la colonna → pattern *expand/contract* in due release), test CI che applica l'intera catena su una **MariaDB 11.4.10 vera**, e un `diagnostics/startup.txt` che dice quale migrazione ha applicato. Niente consegne con migrazioni nelle finestre in cui nessuno può ripristinare.
+5. **Migrazioni**: `Database.Migrate()` all'avvio (senza shell non c'è alternativa), con tre regole ferree: solo migrazioni **additive** (mai `DROP`/rename distruttivi nello stesso pacchetto che smette di usare la colonna → pattern *expand/contract* in due release), test CI che applica l'intera catena su una **MariaDB 11.4.10 vera**, e un `diagnostics/startup.txt` che dice quale migrazione ha applicato (e, dal 28 set 2026, come ha trovato la radice). Niente consegne con migrazioni nelle finestre in cui nessuno può ripristinare.
 6. **Aggiornamento**: upload via FTP in **binario**, rimettere il bit di esecuzione all'eseguibile, non toccare `hub-keys/`, `secrets/`, `uploads/`; poi `tmp/restart.txt`. Sonda post-deploy (`/api/version`, `/health`, login, una pagina per modulo) eseguita **non** nel minuto del riavvio.
    **Dal 27 set 2026** (`docs/DELIVERING.md`):
    - si carica il ramo `full-<versione>/` o `only-<N>-files-<versione>/` dello zip di consegna, controllando le impronte di
@@ -2579,10 +2597,12 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - il bit di esecuzione serve solo per `./IvaoHub.Web`;
    - `restart.txt` va in `tmp/` per ultimo, e poi si apre il sito una volta.
 7. **Backup**: conferma scritta da Ivao.It su frequenza, retention, inclusione di `hub-keys/` e `uploads/` (non stanno nel DB) e un ripristino provato. Finché non c'è, si pianifica come se non ci fosse.
-8. **Staging**: sottodominio dedicato nella stessa sottoscrizione, stesso pacchetto, credenziali OAuth di test con i propri login/redirect URL. **Dal 27 set 2026 è l'installazione di prova su `test.it.ivao.aero`** (nota `2026-09-27-l-installazione-di-prova`): un client OAuth IVAO suo, un database suo (`itivao_hub_test`), `Installation:Preview` acceso — non indicizzata, e dentro solo lo staff e i super amministratori, respinti gli altri prima di scrivere qualsiasi cosa di loro. Resta dopo il passaggio in produzione, come banco dove provare ogni pacchetto.
+8. **Staging**: sottodominio dedicato nella stessa sottoscrizione, stesso pacchetto, credenziali OAuth di test con i propri login/redirect URL. **Dal 27 set 2026 è l'installazione di prova su `test.it.ivao.aero`** (nota `2026-09-27-l-installazione-di-prova`): un client OAuth IVAO suo, un database suo (`itivao_hub_test`), `Installation:Preview` acceso — non indicizzata, e dentro solo lo staff e i super amministratori, respinti gli altri prima di scrivere qualsiasi cosa di loro. Resta dopo il passaggio in produzione, come banco dove provare ogni pacchetto. **Dal 28 set 2026** sta nello staging che Ivao.It ha lasciato alla divisione: `webapp/` è la cartella dell'applicazione (document root `webapp/wwwroot`), con `logs/` accanto, il database è `itivao_test`, e carica Carmine via FTP.
 9. **Da guardare prima della produzione** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server` §2, `docs/DEPLOYING.md` «Known limits»):
-   - un avvio che fallisce per la configurazione lo dice solo su stdout, che con il solo FTP non si legge; vIPI scrive
-     `diagnostica/avvio-errore.txt`;
+   - ~~un avvio che fallisce per la configurazione lo dice solo su stdout~~ — **chiuso il 28 set 2026** (0.2.1, nota
+     `2026-09-27-l-avvio-da-qualunque-cartella`): scrive anche `diagnostics/startup-error.txt`, come vIPI
+     `diagnostica/avvio-errore.txt`. Resta cieco solo un processo che non arriva al codice dell'hub o che non può scrivere
+     nella sua cartella: lì serve il log di Passenger;
    - Passenger spegne l'applicazione inattiva, e con lei i job pianificati: la coda delle mail, i dati di riferimento, il
      rilascio dei tour. Per vIPI `passenger_min_instances` non si può avere;
    - i forwarded header si leggono un salto solo (`ForwardLimit` = 1). Si controlla l'indirizzo nel registro, sulla prova.
