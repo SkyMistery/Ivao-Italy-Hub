@@ -114,7 +114,10 @@ Si carica **il contenuto della cartella dei file da caricare** dello zip della c
    stessa regola di vIPI (`LEGGIMI-SEGRETI.md`): la cartella è negata dal server, il nome è la seconda serratura.
    ⚠️ Tutto minuscolo: `secrets`, non `Secrets`. Permessi `700` sulla cartella e `600` sul file, se l'FTP li accetta.
 2. **Dentro, scrivete voi la password** del database al posto di `SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE`, e ClientId e
-   ClientSecret che vi dà Carmine al posto degli altri due segnaposto.
+   ClientSecret che vi dà Carmine al posto degli altri due segnaposto. La password compare **due volte**: in `Default`
+   (il database dell'hub) e in `AtcData`, la riga con cui l'hub legge **solo** la vista condivisa di vIPI,
+   `itivao_atc.v_share_atc_sessions`, con lo stesso utente (il server non lega un utente a un database solo). `AtcData`
+   resta spenta finché `division.json` non dice `atcData: vipi`: tenerla scritta non costa niente.
 3. **Il resto non si tocca**: il nome del database e dell'utente (se ne avete scelti altri, correggeteli), gli
    indirizzi del login, `AllowedHosts`, le reti fidate (il server stesso e gli intervalli di Cloudflare) e le due
    righe dell'installazione di prova, `Domain` e `Preview`.

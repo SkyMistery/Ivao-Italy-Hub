@@ -2,7 +2,8 @@
   "$leggimi": "Modello del file dei segreti dell'installazione di prova (LEGGIMI-INSTALLAZIONE-DI-PROVA.md, paragrafo 5). Va in secrets/ con un nome che nessuno può indovinare. La password del database la scrivete voi, qui, sul server: non viaggia in nessun pacchetto.",
 
   "ConnectionStrings": {
-    "Default": "Server=localhost;Port=3306;Database=itivao_hub_test;User ID=itivao_hub_test;Password=SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE;MaximumPoolSize=15;ConnectionIdleTimeout=60;DefaultCommandTimeout=30"
+    "Default": "Server=localhost;Port=3306;Database=itivao_hub_test;User ID=itivao_hub_test;Password=SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE;MaximumPoolSize=15;ConnectionIdleTimeout=60;DefaultCommandTimeout=30",
+    "AtcData": "Server=localhost;Port=3306;Database=itivao_atc;User ID=itivao_hub_test;Password=SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE;MaximumPoolSize=5;ConnectionIdleTimeout=60;DefaultCommandTimeout=30"
   },
 
   "Ivao": {

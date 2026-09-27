@@ -188,7 +188,13 @@ Pull request checklist: `.github/PULL_REQUEST_TEMPLATE.md`, answered honestly.
   package that stops using the column. A module's `Initial` migration is born in its skeleton phase and never
   touched afterwards. CI applies the whole chain on a real MariaDB 11.4.10.
 - Secrets live in `secrets/` and in environment variables, never in the repository. Data Protection keys live in
-  `hub-keys/`.
+  `hub-keys/`. What sets one installation apart from another of the same division (its own `Installation:Domain`, a
+  private `Installation:Preview`) lives there too, never in `division.json` (`decisions/2026-09-27-l-installazione-di-prova.md`).
+- **The server does not isolate databases**: every user reaches every database, so a secrets file opens them all.
+  Another application's database is read **only through its `v_share_` views, read-only**, in the core's shared
+  context; never its tables, never a write (`decisions/2026-09-27-i-dati-condivisi-senza-isolamento.md`).
+- A release is the GitHub release of a tag `v<Version>`, and `<Version>` in `Directory.Build.props` follows the rule
+  written next to it; a delivery is prepared from it with `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`).
 - Uploads go to disk, never into `longblob`. Every package exposes `/api/version` and `/health`.
 - OAuth: `config/ivao-oauth.json` (gitignored). Every developer uses **their own** IVAO test OAuth client; credentials
   are never pasted into a chat nor committed. The application refuses to start if the file is incomplete.
