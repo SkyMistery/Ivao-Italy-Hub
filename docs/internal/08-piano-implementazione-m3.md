@@ -1935,7 +1935,134 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   nascono qui). **Il test della nota sul percorso su una copia indebolita del codice** (la chiamata a `ReservedFields.For` tolta): non
   tentato, perché la modalità di permessi l'ha rifiutato ad A9a; il test è stato letto contro il codice.
 
-**Com'è andata (A10b)**: *(a fase chiusa)*
+**Com'è andata (A10b)** (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153, in coda dopo #151):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — i blocchi Data nelle due metà (`IDataBlockProvider` con `BlockDescriptor` `AlwaysLive`, `BlockRegistration` nel manifest),
+  come i cinque dei tour; l'unico handler chiesto sulla riga per i blocchi dello staff (`Training.Conduct`, `Approve`, `Assign`, mai sulla
+  propria riga); le code che le fasi sotto hanno già scritto — le viste di `StaffQueue` (A7), `TrainingDates.Unanswered` (A8a),
+  `TrainingSessions.IsRecordable` (A9a), la risposta di `TrainingRequests.MineAsync` (A6a, A10a); le pagine pubbliche di un modulo come
+  rotte `public` del manifest, sotto il segmento che A4 riserva, come `/tours` (M2, T10); `CrudSource.BackOffice` per leggere la sessione
+  pubblica di un training, che il filtro dei membri nasconde a un visitatore, e poi solo ciò che la voce del calendario già mostra (come
+  `MyTours.ToursCompletedAsync` legge i tour nascosti); `EmptyState`, `NotFound`, `Notice`, `RatingBadge`, `loginHref` del nucleo e i pezzi
+  del modulo (`WhenText`, `StateBadge`) —. **Nessuna migrazione**, nessuna domanda a Carmine. **File del nucleo**: solo i due conteggi dei
+  blocchi, come Carmine ha deciso ([commento sulla PR #125][c125], risposta 2), con la nota breve che `core-guard` chiede,
+  `decisions/2026-09-27-i-conteggi-dei-blocchi-del-training.md`.
+- **Fatto**, come il perimetro di A10b qui sopra:
+  1. **Una regola sola per la sessione pubblica**: `Training.SessionIsPublic` — datato, o completato con la sessione del suo report —, un'
+     espressione che leggono il database e la proiezione nel calendario (`Training.Project` la usa al posto della condizione che aveva
+     dentro). Un test di unità prova che la pagina della sessione e la voce del calendario non si contraddicono in nessuno stato.
+  2. **Le sessioni del sito** (`Public/PublicSessions.cs`): `GET /api/training/sessions` — le sessioni ancora da tenere, le più vicine
+     prima, al massimo 50 — e `GET /api/training/sessions/{id}` — la sessione di un training che ne ha una pubblica, anche tenuta, 404
+     altrimenti —, anonimi. `PublicSessionDto`: percorso, rating (la sigla), postazione, inizio, `held` (il giorno è finito nel fuso della
+     divisione, o il report è pubblicato); **trainee e trainer, per VID e nome, solo a chi ha fatto il login** — per un visitatore i nomi
+     non si chiedono nemmeno (nota `il-training-in-pubblico`).
+  3. **I quattro blocchi** (`Blocks/`, le metà in `web/src/modules/training/blocks/`), tutti `AlwaysLive` perché rispondono per chi guarda
+     (nota `frozen-e-visibilita`):
+     - **`training.upcomingSessions`**: la lista di `/training`, dallo stesso servizio e disegnata dallo stesso componente
+       (`UpcomingSessionList`); una proprietà, `limit`; `signedIn` accanto, per l'invito ad accedere.
+     - **`training.myTraining`**: la risposta di `GET /api/training/mine` con `signedIn: true`. Per percorso il training aperto e che cosa
+       aspetta — «Il trainer ha proposto N date: scegli la tua» con «Scegli la data», la sessione in UTC e a Roma, «Eseguito» e il report
+       che il trainer scriverà —, che cosa si può chiedere o la prima regola che rifiuta (l'attesa, un ban anche accanto a un training
+       aperto), «pronto per l'esame», l'ultimo report; i pezzi di `/training/mine` (sotto).
+     - **`training.trainerQueue`**: i training di cui il lettore è il trainer e che l'handler gli lascia condurre, in tre parti
+       (`Staff/TrainerQueue.cs`, funzioni pure): **in evidenza le scelte in ritardo** dopo `responseReminderDays` — i giorni dall'ultima data
+       proposta, `TrainingDates.Unanswered` —, le date da proporre, i report da scrivere (`IsRecordable`).
+     - **`training.approvalQueue`**: le viste «da approvare» e «da assegnare» di `StaffQueue`, dalla richiesta più vecchia, filtrate
+       dall'handler (`Approve`, `Assign`, mai sulla propria riga): quante e le 10 più vecchie, e il titolo di ognuna un link alla lista
+       filtrata.
+     A un visitatore i tre personali rispondono soltanto `signedIn: false`. Nessuno entra da solo in `/me` o `/staff`: ce li mette chi
+     compone la dashboard, come `myTours` in M2.
+  4. **Le pagine** (`screens/public.tsx`, le funzioni pure in `screens/site.ts`): **`/training`** — «Richiedi training», «I miei training»
+     a chi ha fatto il login, «I prossimi training» con la loro pagina, e a un visitatore «Accedi per vedere chi fa ogni training» —;
+     **`/training/sessions/$id`** — lo stato (programmato o eseguito), il percorso, «Training ADC · LIRF_TWR», postazione, rating, data e
+     ora in UTC e nel fuso della divisione, con il login trainee e trainer, senza «Accedi per vedere il trainee e il trainer» —. L'indirizzo
+     delle voci del calendario (A8a) ora porta a una pagina.
+  5. **I pezzi in comune**: `AskOrRefusal` e `ReadyForExamLine` escono da `PathCard` (`screens/mine.tsx`) in `screens/parts.tsx`, e
+     `lastReported` da `readyForExam` (`screens/trainee.ts`): `/training/mine` e il blocco del trainee li disegnano con gli stessi pezzi.
+  6. **I due conteggi**: `uiKit.test.ts` da 38 a 42 blocchi, `DataBlockEndToEndTests` da 13 a 17 blocchi Data — il numero e la frase del
+     commento accanto che dice da che cosa viene —, con la nota breve.
+  7. **I test**: unità `TrainingBlocksRulesTests` (5); integrazione `TrainingBlocksTests` (5, VID 790060–790067: il «fatta quando»
+     attraverso l'API, i blocchi personali a un visitatore, il blocco del trainee uguale alla sua pagina, la coda del trainer con la
+     soglia, la coda dello staff secondo l'handler); Vitest `blocks/reading.test.ts` (4) e `screens/site.test.ts` (2); lo smoke
+     `web/e2e/training-public.spec.ts` (8: le due pagine con e senza login, una sessione che non c'è, i blocchi su una pagina e sulle due
+     dashboard); il giro sul banco `web/e2e/full/training-upcoming.spec.ts` (sotto).
+- **Scostamenti e precisazioni, piccoli**:
+  1. **«I prossimi training» sono le sessioni `Scheduled` dal giorno di oggi nel fuso della divisione**: una sessione di oggi, cominciata o
+     no, resta finché non si mostra «Eseguita» (§1.2), come la vista «In corso» di A7. Un training completato non è più «prossimo», ma la
+     sua pagina resta: la voce del calendario della sessione tenuta c'è ancora (A9a).
+  2. **`training.upcomingSessions` ha una proprietà, `limit`** (10 se non scritta, 0 tutte fino a 50): il design non ne dice, e una pagina
+     del CMS che spiega il percorso ne mostra poche. Nessun filtro per percorso: non chiesto.
+  3. **Con il login anche il blocco e `/training` dicono chi** (trainee e trainer, per nome e VID), come la pagina della sessione: la nota
+     dice «senza nomi per chi non ha fatto il login», e chi ha fatto il login li legge già lì.
+  4. **La coda del trainer è di chi è il trainer** (`TrainerVid`), non di chi può condurre: TC e TAC conducono ogni training per posizione, e
+     la loro tessera sarebbe la lista intera.
+  5. **«In attesa di scelta»** sono i training con date ancora da venire che il trainee non ha scelto per più di `responseReminderDays`
+     giorni dall'ultima proposta; con tutte le date passate il training torna fra «date da proporre»; prima della soglia non c'è niente da
+     muovere, e non si mostra.
+  6. **La coda dello staff mostra quante sono e le 10 più vecchie**, leggendone al massimo 500 prima dei permessi, come la coda dei
+     validatori dei tour (T13b).
+  7. **La pagina della sessione dice solo postazione, rating, data e ora**, e se è eseguita: niente mock exam, niente del report (nota).
+  8. **`training.myTraining` è la risposta intera di `/api/training/mine`**, compresi gli elenchi delle postazioni offerte: qualche KB in
+     più su `/me`, per non avere una seconda risposta da tenere in pari.
+  9. **I blocchi non hanno un titolo loro**, come quelli dei tour: su una pagina il titolo è della sezione; le parti delle due code hanno il
+     loro.
+  10. **Nessuna voce di menu**: `/training` entra nel menu pubblico quando il web team la aggiunge (il menu è del CMS).
+- **Codice di fasi sotto toccato, e perché** (nessun test di un'altra fase è cambiato; i due conteggi non sono del training):
+  1. `Training.cs` (A6a, A8a, A9a): `SessionIsPublic`, che `Project` ora legge; il comportamento non cambia, e i test di A8a e A9a sulla
+     proiezione lo provano.
+  2. `screens/mine.tsx`, `screens/parts.tsx` (A6b, A9b), `screens/trainee.ts` (A6b): i pezzi in comune (sopra); `/training/mine` è identica,
+     e lo smoke di A6b lo prova. `api.ts`: le due letture nuove.
+- **Il giro sul banco** (`training-upcoming.spec.ts`, un nome che viene dopo tutti gli altri giri del training): il trainee chiede un
+  training ATC attraverso l'API — la richiesta è nella coda dello staff —, lo staff lo accetta e lo assegna al trainer del banco — che,
+  rientrato, lo trova fra le date da proporre —, e lo data a mano fra tre giorni; il blocco del trainee lo nomina. Un **visitatore** legge
+  `/training` — la sessione per rating e postazione, **nessun nome né VID** nella pagina, «Richiedi training» — e il blocco dal server vero,
+  senza persone; **dal calendario segue la voce della sessione alla sua pagina**, che dice postazione, rating, data e ora e offre
+  l'accesso; **con il login** la pagina della sessione e `/training` dicono «Bench Pilot (999002)» e «Bench Trainer (999004)». Chiuso dallo
+  staff, il training esce da `/training` e la sua pagina non si trova. All'inizio i tre blocchi personali dicono a un visitatore soltanto
+  `signedIn: false`. **Nessun test di un'altra fase è cambiato**; il training resta chiuso, senza attesa.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. **Trovato a mano e corretto**: il blocco del trainer diceva «i tuoi training aspettano il loro giorno» anche a chi non allena nessun
+     training (il web master): ora «Nessun training da muovere, per ora.».
+  2. **Per A10c**: gli esami entrano in `PublicSessions` (la lista e il blocco) e in `/training`; la voce `exam` del calendario ha bisogno di
+     un indirizzo — la pagina di un esame o `/training` —, da decidere lì. La regola pubblica di un esame, come quella di un training, va
+     scritta una volta e letta dalla proiezione e dalle pagine.
+  3. **Le pagine pubbliche non hanno i metadati SEO** (`PageMetadata`), come `/tours`; la sitemap non conosce le pagine dei moduli (nucleo).
+  4. Nel pannello del browser **lo screenshot della galleria `/staff/admin/ui-kit` non arriva** (la pagina non smette di disegnarsi): i
+     quattro blocchi lì si sono letti dal testo, e disegnano gli esempi.
+  5. I VID **790060–790067** sono di A10b; il prossimo libero è **790068**.
+- **La coda**: A10b è nata in coda dopo #151 (A10a, in bozza in coda dopo #150, dopo #149, dopo #148, dopo #147, dopo #146, dopo #144, dopo
+  #143): la PR è in bozza con `(after #151)` e `Queued after #151.`. Quando #151 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases
+  in a queue»): `main` nel branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde. **A10c aspetta
+  #135** (A3b), ancora in bozza. **La fase dopo è A11a** (i capi FIR nel nucleo), da `main` e fuori dalla coda come A3b e A6c: la nota e la
+  domanda a Carmine subito; il codice dopo la risposta e dopo l'unione di #135, perché tocca lo stesso handler e lo stesso guardiano e
+  migrerebbe lo stesso contesto di prova, e una base del nucleo ancora da unire non si usa (sopra, la divisione di A10). A11b, A12a e A12b
+  vengono dopo A10c.
+- **Verificato, in locale** (27 settembre 2026, sul branch da `m3/a10a-path-and-bans`, 36f7b7a): `dotnet build` senza avvisi; unità
+  **795/795** (le 790 di A10a e le 5 nuove; `TrainingArchitectureTests` legge anche il C# e il TypeScript nuovi del modulo, ed è verde);
+  **integrazione intera senza filtro** **353/353** (le 348 e le 5 nuove; la classe nuova da sola 5/5 al primo giro); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi, e lo script che confronta le chiavi letterali `training:` del modulo con i file di lingua;
+  `pnpm test` **552** in **70** file (le 546 in 68 di A10a e le 6 nuove in 2); `pnpm e2e` **128** (le 120 e le 8 nuove); **`pnpm e2e:full`
+  47** su un **banco nuovo** di questo worktree (127.0.0.1:5095, `ivaohub_e2e_a10b`) al primo giro intero, e di nuovo **47/47** su un banco
+  ricreato con una pubblicazione nuova, dopo la correzione trovata a mano. **Lo smoke nuovo cade sul codice di A10a**: con il manifest del
+  modulo rimesso da `m3/a10a-path-and-bans` (senza le rotte pubbliche e senza i blocchi), `training-public.spec.ts` 7 cadute su 8 — l'ottava,
+  «una sessione senza pagina non si trova», vale anche prima —; rimesso com'è sul branch (e toccato), 8/8. `pnpm gen:api` e `pnpm i18n:sync`
+  nei commit che li portano; `dotnet format --verify-no-changes` sui file C# toccati, test compresi; le regole di `core-guard` rifatte in
+  PowerShell sull'intervallo della fase e sul diff verso `main`: nessun file del maintainer, **nucleo 2** (i due conteggi) con la nota
+  aggiunta, quindi passa. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`; la sessione di A10a ha spento il suo su
+  richiesta), con le dashboard `me` e `staff` composte con i quattro blocchi attraverso l'API del contenuto, come farebbe il web team: da
+  visitatore `/training` (nessuna sessione in programma: «Nessun training in programma.») e la pagina della sessione #7 (pilota, eseguita:
+  «Eseguito · Pilota», PP, data e ora, «Accedi per vedere il trainee e il trainer», nessun nome); come trainee `/me` — ATC con «Il trainer ha
+  proposto 2 date: scegli la tua» e «Scegli la data», pilota con il mock exam eseguito, «il trainer scriverà il report», «Ultimo report… Leggi
+  il report» —; dalla pagina di #6 **scelta la prima data** (29 settembre, 18:00 UTC); `/training` con il login («Trainee: Bench Pilot
+  (999002) · Trainer: Bench Trainer (999004)», «I miei training») e da visitatore (nessun nome né VID nel testo della pagina, «Accedi per
+  vedere chi fa ogni training»), la pagina di #6 da visitatore; in italiano e in inglese, a tema scuro e chiaro, larghe 375 px; come trainer
+  `/staff` — «Report da scrivere» con il mock exam di Bench Pilot e il link al training, «Nessuna richiesta aspetta te.», e la sessione di #6
+  nel calendario interno —; come web master `/staff` in inglese a tema scuro; la galleria con i quattro blocchi e i loro esempi (dal testo).
+- **Non verificato**: la CI (la dirà la PR). **Le parti «in attesa» della coda del trainer e le due code dello staff piene sul server vero, a
+  mano**: il banco di anteprima non ha né una scelta in ritardo né richieste in attesa; le provano il test d'integrazione (con la soglia) e lo
+  smoke, e il giro sul banco legge le due code dal server vero con una richiesta e un'assegnazione. **I test nuovi del server sul codice di
+  A10a**: non compilano (i provider, gli endpoint e i DTO nascono qui). **Un capo FIR nella coda dello staff**: è di A11b.
 
 **Com'è andata (A10c)**: *(a fase chiusa)*
 
