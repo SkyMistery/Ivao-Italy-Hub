@@ -17,7 +17,8 @@
 settembre alle 14:34: la sessione di A6b non c'era più, e **il passo della coda di #144** — `main` nel branch, tutti i test, via la coda, la PR
 pronta a CI verde — e il merge verso l'alto fino ad A10b li ha fatti la sessione di A10b (`08`, «Com'è andata (A10b)»). La **sessione master** di
 Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
-`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139), A5 (#140) e A6a (#143) sono unite**; la fase del nucleo **A3b** (#135)
+`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139), A5 (#140) e A6a (#143) sono unite**, e con loro **#152** del
+maintainer (`Refusals` nel nucleo: la copia del training la toglie A10c, sotto); la fase del nucleo **A3b** (#135)
 è in bozza in una sessione sua — la nota decisa da Carmine, il codice approvabile per il revisore, il branch che aspetta `main` e il via —, e
 **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è pronta, da `main` e fuori dalla coda. **A10 è divisa in tre** (`08`, A10): **A10a** (#151),
 **A10b** (questa) e **A10c** (gli esami, **solo dopo che #135 è unita**: ancora in bozza, quindi A10c aspetta). **Il prossimo passo** è la fase del
@@ -122,7 +123,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **A10c** (gli esami, **solo dopo che #135 è unita**): gli esami entrano in `PublicSessions` (la lista, il blocco `training.upcomingSessions`
     e `/training`) senza VID né nomi per i visitatori; la regola pubblica di un esame si scrive una volta e la leggono la proiezione e le pagine,
     come `Training.SessionIsPublic`; la voce `exam` del calendario ha bisogno di un indirizzo (la pagina di un esame, o `/training`): da
-    decidere lì. I due conteggi non si alzano: nessun blocco nuovo.
+    decidere lì. I due conteggi non si alzano: nessun blocco nuovo. ⚠️ **A10c toglie anche `src/IvaoHub.Modules.Training/Refusals.cs`** e usa
+    `IvaoHub.Core.Data.Crud.Refusals` con `CrudProblems.Validation(Refusals, …)`: lo chiede la nota di #152
+    (`2026-09-27-i-rifiuti-di-un-form-nel-nucleo`, unita il 27 settembre alle 15:28, [commento di
+    Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298)) alla prima fase del collaboratore aperta dopo
+    il merge — A10b era già aperta, e A11a è del nucleo — e va scritto nel suo «Com'è andata» con quel link.
   - **A11a** (i capi FIR nel nucleo, la fase dopo): parte da `main`, fuori dalla coda, con la nota e la domanda a Carmine; oggi l'handler conosce
     già un filtro per FIR (`FirStaffScope.Own` su una riga `IHasFir`, in `HubAuthorization`), e nel nucleo l'unica riga `IHasFir` è il
     training: i test della spina dorsale vorranno con ogni probabilità il FIR sulla riga di prova, cioè una migrazione del contesto di prova,
@@ -142,9 +147,12 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   training — corretto in «Nessun training da muovere, per ora.» —; le pagine pubbliche dei moduli non hanno metadati SEO e la sitemap non le
   conosce (nucleo, come `/tours`); nel pannello del browser lo screenshot della galleria non arriva.
 - **La coda**: la PR è in bozza con `(after #151)` e `Queued after #151.`; #151 è in coda dopo #150, dopo #149, dopo #148, dopo #147, dopo
-  #146, dopo #144, dopo #143. Quando #151 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i
-  test di nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A10b se è ancora viva, altrimenti quella
-  della fase dopo prima di cominciare.
+  #146, dopo #144. **#143 è stata unita alle 14:34 e il passo della coda di #144 l'ha fatto la sessione di A10b** (la sessione di A6b non c'era
+  più): `main` in `m3/a6b-request-pages` (f5e3cd6), tutte le suite, via la coda da #144, pronta a CI verde; poi il merge verso l'alto fino ad
+  A10b, in ordine (`08`, «Com'è andata (A10b)»). **#152 (`Refusals` nel nucleo) è arrivata dopo**, alle 15:28: la coda non l'ha ancora, e se il
+  revisore la vuole in #144 lo chiede sulla PR. Quando #151 sarà unita, il passo della coda di A10b — `main` nel branch con un merge (mai un
+  rebase), build e **tutti** i test di nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A10b se è
+  ancora viva, altrimenti quella della fase dopo prima di cominciare.
 
 ### Che cosa ha lasciato A10a (27 settembre 2026, branch `m3/a10a-path-and-bans`, PR #151)
 

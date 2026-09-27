@@ -2031,8 +2031,22 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   4. Nel pannello del browser **lo screenshot della galleria `/staff/admin/ui-kit` non arriva** (la pagina non smette di disegnarsi): i
      quattro blocchi lì si sono letti dal testo, e disegnano gli esempi.
   5. I VID **790060–790067** sono di A10b; il prossimo libero è **790068**.
-- **La coda**: A10b è nata in coda dopo #151 (A10a, in bozza in coda dopo #150, dopo #149, dopo #148, dopo #147, dopo #146, dopo #144, dopo
-  #143): la PR è in bozza con `(after #151)` e `Queued after #151.`. Quando #151 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases
+- **Il passo della coda di #144, fatto da questa sessione**: **#143 (A6a) è stata unita il 27 settembre alle 14:34**, mentre A10b lavorava, e
+  la sessione di A6b non c'era più. Su un branch temporaneo da `origin/m3/a6b-request-pages`: `main` dentro con un merge (**f5e3cd6**: porta solo
+  `TourTests.cs` di #142), poi build e **tutte** le suite sul merge, una alla volta — unità **767/767**, integrazione intera **322/322**, `pnpm
+  lint`, `typecheck`, `format:check`, `i18n:check` verdi, `pnpm gen:api` senza differenze, `pnpm test` **509**, `pnpm e2e` **96**, `pnpm e2e:full`
+  **42/42** su un banco nuovo al primo giro —; il push su `m3/a6b-request-pages`, e da #144 via `(after #143)` e `Queued after #143.`, con il
+  passo della coda scritto nel suo corpo; pronta a CI verde. Poi **il merge verso l'alto, in ordine**, ognuno su un branch temporaneo da
+  `origin` e spinto con `git push origin HEAD:<branch>`: A7 (69781af), A8a (c8cf468), A8b (ce39ecf), A9a (29a3e54), A9b (18d175f), A10a
+  (2d4b0d6), e A10b; ogni merge pulito (solo `TourTests.cs`), con la build senza avvisi e la suite di unità di quel branch (773, 782, 782,
+  788, 788, 790); l'integrazione e i giri di quei branch sono della loro CI, che parte al push. Le sessioni di A8b, A9a, A9b e A10a, vive,
+  sono state avvisate prima e hanno aspettato. **Nel frattempo è arrivata anche #152** (alle 15:28, `Refusals` nel nucleo, nota
+  `2026-09-27-i-rifiuti-di-un-form-nel-nucleo`): non tocca il training, e la coda non l'ha ancora; se il revisore vuole #144 in pari anche
+  con lei, lo chiede sulla PR. ⚠️ **La nota chiede che la copia `src/IvaoHub.Modules.Training/Refusals.cs` la tolga la prima fase del
+  collaboratore aperta dopo #152**: A10b era già aperta, e A11a è del nucleo (non si mescola con il modulo, `CLAUDE.md` §0 regola 6), quindi
+  tocca alla prossima fase del modulo, A10c.
+- **La coda**: A10b è nata in coda dopo #151 (A10a, in bozza in coda dopo #150, dopo #149, dopo #148, dopo #147, dopo #146, dopo #144; #143 è
+  unita): la PR è in bozza con `(after #151)` e `Queued after #151.`. Quando #151 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases
   in a queue»): `main` nel branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde. **A10c aspetta
   #135** (A3b), ancora in bozza. **La fase dopo è A11a** (i capi FIR nel nucleo), da `main` e fuori dalla coda come A3b e A6c: la nota e la
   domanda a Carmine subito; il codice dopo la risposta e dopo l'unione di #135, perché tocca lo stesso handler e lo stesso guardiano e
@@ -2044,7 +2058,9 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   `typecheck`, `format:check`, `i18n:check` verdi, e lo script che confronta le chiavi letterali `training:` del modulo con i file di lingua;
   `pnpm test` **552** in **70** file (le 546 in 68 di A10a e le 6 nuove in 2); `pnpm e2e` **128** (le 120 e le 8 nuove); **`pnpm e2e:full`
   47** su un **banco nuovo** di questo worktree (127.0.0.1:5095, `ivaohub_e2e_a10b`) al primo giro intero, e di nuovo **47/47** su un banco
-  ricreato con una pubblicazione nuova, dopo la correzione trovata a mano. **Lo smoke nuovo cade sul codice di A10a**: con il manifest del
+  ricreato con una pubblicazione nuova, dopo la correzione trovata a mano; **e di nuovo tutto dopo il merge che porta `main` dopo #143**
+  (e025855, sopra): unità **795/795**, integrazione intera **353/353**, `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi, `pnpm
+  test` **552**, `pnpm e2e` **128**, `pnpm e2e:full` **47/47** su un banco ricreato. **Lo smoke nuovo cade sul codice di A10a**: con il manifest del
   modulo rimesso da `m3/a10a-path-and-bans` (senza le rotte pubbliche e senza i blocchi), `training-public.spec.ts` 7 cadute su 8 — l'ottava,
   «una sessione senza pagina non si trova», vale anche prima —; rimesso com'è sul branch (e toccato), 8/8. `pnpm gen:api` e `pnpm i18n:sync`
   nei commit che li portano; `dotnet format --verify-no-changes` sui file C# toccati, test compresi; le regole di `core-guard` rifatte in
