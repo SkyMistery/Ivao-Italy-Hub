@@ -1,11 +1,12 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
-using Microsoft.EntityFrameworkCore;
 using IvaoHub.Core.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog.Context;
 
@@ -165,12 +166,22 @@ internal static class HubPipeline
         // Fails here, with the list of the fields that are wrong, rather than on the first request.
         scope.ServiceProvider.GetRequiredService<IStartupValidator>().Validate();
 
+        // The permissions the entities say they are also written with, checked against the catalogue before anything is
+        // written (M3, A3b): a mark the write guard could not honour stops the start here, rather than turning into a 403
+        // nobody can explain. Building a model reads no table.
+        var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
+        var catalogue = scope.ServiceProvider.GetRequiredService<PermissionCatalog>();
+        foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes).Prepend(typeof(HubDbContext)))
+        {
+            var model = ((DbContext)scope.ServiceProvider.GetRequiredService(contextType)).Model;
+            catalogue.VerifyAlternatives(model.GetEntityTypes().Select(entity => entity.ClrType));
+        }
+
         var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
         var applied = await initializer.MigrateAsync(app.Lifetime.ApplicationStopping);
 
         // Then the contexts of the modules, each with its own migration history table. A module
         // with no table of its own -- the module the integration tests add -- declares none and nothing happens here.
-        var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
         foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes))
         {
             var context = (DbContext)scope.ServiceProvider.GetRequiredService(contextType);
