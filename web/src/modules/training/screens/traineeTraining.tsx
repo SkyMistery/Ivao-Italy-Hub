@@ -178,11 +178,8 @@ function DatesToChoose({
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <H2>{t('training:detail.dates.title')}</H2>
-        <p className="text-sm">
-          {training.trainer === null
-            ? t('training:detail.dates.leadNoTrainer')
-            : t('training:detail.dates.lead', { trainer: memberLabel(training.trainer) })}
-        </p>
+        {/* The trainer is named once, above: here, what the tiles are for. */}
+        <p className="text-sm">{t('training:detail.dates.lead')}</p>
       </div>
       <ul className="grid gap-3 sm:grid-cols-2">
         {slots.map((slot) => {
