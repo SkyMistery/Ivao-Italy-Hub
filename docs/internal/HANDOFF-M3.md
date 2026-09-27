@@ -11,15 +11,16 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 27 settembre 2026 — **fase A9a** (dopo la sessione: il server; **A9 divisa in apertura** in A9a e A9b), sul
-branch `m3/a9a-after-the-session-server`, **PR #149** verso `main`, in bozza **in coda dopo #148** (A8b, in bozza in coda dopo #147, A8a, in coda dopo
-#146, A7, in coda dopo #144, A6b, in coda dopo #143, A6a). **A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in
-attesa della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un
-branch del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5
-(#140) sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di
-`SchemaForm`) è pronta, da `main` e fuori dalla coda. **Il prossimo passo** è **A9b** (dopo la sessione: le pagine), sul branch
-`m3/a9b-after-the-session-pages` preparato da `m3/a9a-after-the-session-server`, in coda dopo #149; A3b va avanti per conto suo prima di
-A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A9b** (dopo la sessione: le pagine), sul branch `m3/a9b-after-the-session-pages`,
+**PR #150** verso `main`, in bozza **in coda dopo #149** (A9a, in bozza in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146,
+A7, in coda dopo #144, A6b, in coda dopo #143, A6a). **A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in attesa
+della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch
+del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140)
+sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è
+pronta, da `main` e fuori dalla coda. **Il prossimo passo** è **A10** (blocchi, pagine pubbliche, percorso, esami, ban), sul branch
+`m3/a10-blocks-exams-bans` preparato da `m3/a9b-after-the-session-pages`, in coda dopo #150; A10 usa anche A3b (#135, `08`,
+«Parallelismo possibile»), che va avanti per conto suo: finché non è unita, la parte di A10 che la usa (cambiare e togliere un esame)
+aspetta. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -90,6 +91,55 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A9b (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150)
+
+- **Che cosa c'è** (codice del modulo, solo front end: nessun file del nucleo, nessun cambio del server, nessuna nota nuova, nessuna
+  migrazione):
+  - **La pagina dello staff** (`web/src/modules/training/screens/staff.tsx`): nella sezione «Le date», accanto alla sessione, quando il
+    server dice `actions.canRecordOutcome` (dall'inizio della sessione), **«Rischedula»** (gli appunti interni in un campo generato dentro
+    `ConfirmDialog`; dopo, il training è `Assigned` e la sezione ripropone da sola la proposta e la data a mano) e **«No-show»** (chiesto
+    prima). La sezione **«Il report»**: la scheda — per voce i voti da 1 a 5 o le spunte, con **«N/A» per primo e scelto**, il commento per
+    il trainee e la nota per lo staff, con i controlli di Atmosphere (`RadioGroupRoot`, `Textarea`) — e il form generato del report (i due
+    commenti, «pronto per il mock exam» mai su un mock exam, «pronto per l'esame», «nessuna attesa»), con **«Pubblica il report»** chiesto
+    prima; per un training completato il report pubblicato. La sezione **«Le sessioni»** (lo storico), e l'avviso di **`reservedLeftOut`**
+    in cima a un trainer che legge il proprio training.
+  - **La pagina del trainee** (`screens/traineeTraining.tsx`): il report (voti, spunte, N/A, i commenti per lui, il commento generale, le
+    caselle) **senza niente dello staff**, le sessioni passate, e «che cosa succede dopo» per `Completed` e `NoShow` con l'attesa o la
+    richiesta successiva — un mock exam quando il server lo dice — dal percorso di `GET /api/training/mine`. **`/training/mine`**: «Il
+    trainer ha pubblicato il report.» e «Leggi il report».
+  - **I pezzi**: le funzioni pure in `screens/report.ts` (la scheda come la manda il report — **una voce per ogni riga a schermo**, così
+    `sheet[2]` di un rifiuto è la terza riga —, i rifiuti divisi fra il form, le righe e la pagina, che cosa rilegge la pagina, chi ha
+    pubblicato, che cosa viene dopo sul percorso), `ReportView`, `ReportBoxes` e `SessionList` in `screens/parts.tsx` (per lo staff e per il
+    trainee), i passi `reschedule`, `noShow` e `report` di `useStaffStep`, `reportSchema` e `rescheduleSchema` in `schemas.ts`.
+  - **I test**: `screens/report.test.ts` e `schemas.test.ts` (Vitest), `web/e2e/training-report.spec.ts` (lo smoke),
+    `web/e2e/full/training-the-report.spec.ts` (il «fatta quando» di A9 sul banco, con la rischedula dalla pagina e la mail del report).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10**: `ReportView`, `ReportBoxes` e `SessionList` leggono il DTO dello staff e quello del trainee: il percorso del trainee e il
+    blocco `training.myTraining` («l'ultimo report») li riusano; «report da scrivere» di `training.trainerQueue` è
+    `actions.canRecordOutcome`. ⚠️ **La scheda non è un campo di `SchemaForm`** (A9a, «Trovato» 1): A9b l'ha disegnata nella pagina con i
+    controlli di Atmosphere, come la validazione dei tour; se Carmine la vuole nel form generato, è un'estensione del nucleo (`08`, A9b,
+    scostamento 1).
+  - ⚠️ **Il banco dopo il giro di A9b**: `training-the-report.spec.ts` (il nome viene dopo tutti i giri del training) lascia un training
+    **pilota `Completed`** del trainee del banco, con la sua sessione di ieri nel calendario pubblico, «pronto per il mock exam» e senza
+    attesa: la richiesta pilota successiva del trainee è un **mock exam**. Le tre voci della scheda che scrive (segno `trn-report` nel titolo)
+    le spegne alla fine. Una spec di A10 che vuole un percorso libero usa l'ATC, o sa del mock exam; il banco va ricreato prima di ogni
+    corsa.
+  - ⚠️ **Il log delle richieste dice 500 per un rifiuto del dominio** che il client riceve come 400 (`UseExceptionHandler` fuori da
+    `UseSerilogRequestLogging`, nucleo): un ERR con la traccia nel log del banco, per esempio eliminando una voce usata, non è un errore
+    della spec. Detto al revisore.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, lasciato acceso dalla sessione di A9b con il codice di A9b; lo script è
+    `preview-bench.ps1` nel suo scratchpad): il training pilota #7 è **completato** (rischedulato una volta, poi il report con 4/5, «Da
+    migliorare», N/A, «pronto per il mock exam», senza attesa); **#8** è il pilota successivo del trainee, un **mock exam** datato a ieri e
+    assegnato al trainer del banco, **pronto per un report** scritto a mano; #6 (ATC, LIRF_TWR) aspetta ancora la scelta fra le due date;
+    per il rating PP ci sono tre voci della scheda scritte da A9b (due di pratica e una di teoria). Il trainer è nel roster.
+  - VID: A9b non ne usa; il prossimo libero resta **790052** (A3b usa 790040–790044 e 790050–790051).
+- **Trovato, detto al revisore**: lo scostamento della scheda (sopra) e il log del nucleo (sopra); le asserzioni di A6b, A7 e A8b non sono
+  cambiate: i loro costruttori dei DTO finti dello smoke hanno i campi nuovi con valori neutri (`08`, A9b).
+- **La coda**: la PR è in bozza con `(after #149)` e `Queued after #149.`; #149 è in coda dopo #148, dopo #147, dopo #146, dopo #144, dopo
+  #143. Quando #149 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la
+  coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A9b se è ancora viva, altrimenti quella di A10 prima di
+  cominciare.
 
 ### Che cosa ha lasciato A9a (27 settembre 2026, branch `m3/a9a-after-the-session-server`, PR #149)
 
