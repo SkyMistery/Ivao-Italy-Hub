@@ -1,4 +1,4 @@
-import { Badge, Subtle } from '@ivao/atmosphere-react';
+import { Badge, Button, Subtle } from '@ivao/atmosphere-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,10 +6,11 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
-import { ConfirmDialog, useNotice } from '../../../shared/ui';
+import { ConfirmDialog, RatingBadge, useNotice } from '../../../shared/ui';
 import {
   memberLabel,
   useCancelTraining,
+  type MyTrainingPathDto,
   type SessionOutcome,
   type ShownState,
   type TraineeEvaluationDto,
@@ -19,13 +20,24 @@ import {
 
 import { closingOf, spanText } from './dates';
 import { OUTCOME_COLOURS, evaluationSays } from './report';
-import { MINE, STATE_COLOURS, daysUntil, formatHours, isTheoryRefusal, type RefusalDetail } from './trainee';
+import {
+  MINE,
+  REQUEST,
+  STATE_COLOURS,
+  daysUntil,
+  formatHours,
+  isTheoryRefusal,
+  readyForExam,
+  refusalDetail,
+  type RefusalDetail,
+} from './trainee';
 
 /**
  * The pieces the trainee's pages share (design M3 §4.1), and what the staff's page shares with them: what is said beside a
- * refusal, the site of the theory exam, the state of a training, when a date or a session is, how a training ended, «cancel»,
- * a report as it was published, the trainer's boxes, and the sessions that are over. Pieces of the module's own screens, drawn
- * from Atmosphere and the core's closed list, and not a component of the list: nothing outside the training draws them.
+ * refusal, what may be asked for on a ladder and «ready for the exam», the site of the theory exam, the state of a training, when a
+ * date or a session is, how a training ended, «cancel», a report as it was published, the trainer's boxes, and the sessions that are
+ * over. Pieces of the module's own screens and blocks, drawn from Atmosphere and the core's closed list, and not a component of the
+ * list: nothing outside the training draws them.
  */
 
 /**
@@ -77,6 +89,57 @@ export function RefusalDetailText({ detail, mineLink }: { detail: RefusalDetail;
       );
     }
   }
+}
+
+/**
+ * What a trainee may ask for on one ladder (§2.2, d4): the training proposed, a mock exam when the server says so, and «Request
+ * training» — or the first rule that refuses, with what the answer says beside it, the waiting that still runs included. Their page
+ * of the trainings (A6b) and the block of their own training (A10b) say it the same way.
+ */
+export function AskOrRefusal({ path }: { path: MyTrainingPathDto }) {
+  const { t } = useTranslation();
+  const detail = refusalDetail(path);
+
+  return path.refusal === null && path.next !== null ? (
+    <div className="flex flex-col gap-2">
+      <p className="flex flex-wrap items-center gap-2 text-sm">
+        <span>{t('training:mine.canAsk')}</span>
+        <RatingBadge kind={path.kind} shortName={path.next.shortName} />
+      </p>
+      {path.isMockExam ? <p className="text-sm">{t('training:mockExam')}</p> : null}
+      <div>
+        <Button asChild size="sm">
+          <RouterAnchor href={`${REQUEST}?kind=${path.kind}`}>{t('training:request.send')}</RouterAnchor>
+        </Button>
+      </div>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-1 text-sm">
+      <p>{t(path.refusal ?? 'training:errors.requestNothingToAsk')}</p>
+      {detail === null ? null : (
+        <p className="text-muted-foreground">
+          <RefusalDetailText detail={detail} mineLink={false} />
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** «Ready for the exam» on a ladder, when the trainer's box on its last report still says it (`readyForExam`); nothing otherwise. */
+export function ReadyForExamLine({
+  path,
+  trainings,
+}: {
+  path: MyTrainingPathDto;
+  trainings: readonly TraineeTrainingDto[];
+}) {
+  const { t } = useTranslation();
+
+  return path.next !== null && readyForExam(path, trainings) ? (
+    <p className="text-sm font-semibold">
+      {t('training:mine.readyForExamOn', { rating: path.next.shortName })}
+    </p>
+  ) : null;
 }
 
 /** Where the theory exam is taken, as the division wrote it in the settings (§12 n.12): it opens beside the hub. */

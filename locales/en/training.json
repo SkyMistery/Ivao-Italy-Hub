@@ -16,6 +16,55 @@
   "unknown": "not available",
   "theoryExam": "The site of the theory exam",
   "mockExam": "This will be a mock exam, as agreed with your trainer.",
+  "public": {
+    "title": "Training",
+    "lead": "The training sessions of the division, ATC and pilot: position, rating, date and time. Asking for a training needs you to sign in.",
+    "upcoming": "Upcoming training sessions",
+    "none": "No training session is scheduled.",
+    "people": "Trainee: {{trainee}} · Trainer: {{trainer}}",
+    "signIn": "Sign in to see who is in each session.",
+    "back": "All training sessions",
+    "session": {
+      "title": "Training {{title}}",
+      "position": "Position",
+      "rating": "Rating",
+      "when": "Date and time",
+      "trainee": "Trainee",
+      "trainer": "Trainer",
+      "signIn": "Sign in to see the trainee and the trainer."
+    }
+  },
+  "blocks": {
+    "signIn": "Sign in to see your trainings.",
+    "upcomingSessions": {
+      "label": "Upcoming training sessions",
+      "fields": {
+        "limit": "At most (0: all)"
+      }
+    },
+    "myTraining": {
+      "label": "My training",
+      "datesToCome": "Your trainer will propose the dates of the session.",
+      "lastReport": "Last report: {{date}}."
+    },
+    "trainerQueue": {
+      "label": "My trainings to move",
+      "waiting": "Waiting for the trainee's choice",
+      "waitingDays_one": "no choice for {{count}} day",
+      "waitingDays_other": "no choice for {{count}} days",
+      "toPropose": "Dates to propose",
+      "toReport": "Reports to write",
+      "empty": "No training to move, for now."
+    },
+    "approvalQueue": {
+      "label": "Requests to approve and to assign",
+      "toApprove_one": "{{count}} request to approve",
+      "toApprove_other": "{{count}} requests to approve",
+      "toAssign_one": "{{count}} training to assign",
+      "toAssign_other": "{{count}} trainings to assign",
+      "empty": "No request is waiting for you."
+    }
+  },
   "states": {
     "Requested": "Waiting for acceptance",
     "Accepted": "Accepted, waiting for a trainer",

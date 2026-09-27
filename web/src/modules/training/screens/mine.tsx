@@ -10,16 +10,8 @@ import { EmptyState, Notice, RatingBadge } from '../../../shared/ui';
 import { mineQuery, shownState, type MyTrainingPathDto, type TraineeTrainingDto } from '../api';
 
 import { choosableSlots } from './dates';
-import { CancelRequest, OutcomeText, RefusalDetailText, ReportBoxes, StateBadge } from './parts';
-import {
-  REQUEST,
-  formatHours,
-  isCancellable,
-  mineTrainingHref,
-  readyForExam,
-  refusalDetail,
-  stateMoment,
-} from './trainee';
+import { AskOrRefusal, CancelRequest, OutcomeText, ReadyForExamLine, ReportBoxes, StateBadge } from './parts';
+import { REQUEST, formatHours, isCancellable, mineTrainingHref, stateMoment } from './trainee';
 
 /**
  * The trainee's trainings (design M3 §4.1), `/training/mine`, for a signed in member: where they stand on each ladder — their
@@ -99,7 +91,6 @@ function PathCard({
   trainings: readonly TraineeTrainingDto[];
 }) {
   const { t, i18n } = useTranslation();
-  const detail = refusalDetail(path);
 
   return (
     <section className="bg-card text-card-foreground border-border flex flex-col gap-3 rounded-lg border p-4">
@@ -117,35 +108,8 @@ function PathCard({
         <dd className="tabular-nums">{formatHours(path.hours, i18n.language) ?? t('training:unknown')}</dd>
       </dl>
 
-      {path.refusal === null && path.next !== null ? (
-        <div className="flex flex-col gap-2">
-          <p className="flex flex-wrap items-center gap-2 text-sm">
-            <span>{t('training:mine.canAsk')}</span>
-            <RatingBadge kind={path.kind} shortName={path.next.shortName} />
-          </p>
-          {path.isMockExam ? <p className="text-sm">{t('training:mockExam')}</p> : null}
-          <div>
-            <Button asChild size="sm">
-              <RouterAnchor href={`${REQUEST}?kind=${path.kind}`}>{t('training:request.send')}</RouterAnchor>
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1 text-sm">
-          <p>{t(path.refusal ?? 'training:errors.requestNothingToAsk')}</p>
-          {detail === null ? null : (
-            <p className="text-muted-foreground">
-              <RefusalDetailText detail={detail} mineLink={false} />
-            </p>
-          )}
-        </div>
-      )}
-
-      {path.next !== null && readyForExam(path, trainings) ? (
-        <p className="text-sm font-semibold">
-          {t('training:mine.readyForExamOn', { rating: path.next.shortName })}
-        </p>
-      ) : null}
+      <AskOrRefusal path={path} />
+      <ReadyForExamLine path={path} trainings={trainings} />
     </section>
   );
 }
