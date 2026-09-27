@@ -29,6 +29,31 @@
     "utc": "{{when}} UTC",
     "local": "{{when}} ({{zone}})"
   },
+  "outcomes": {
+    "Held": "Held",
+    "Rescheduled": "Rescheduled",
+    "NoShow": "No-show"
+  },
+  "marks": {
+    "Done": "Done",
+    "NotDone": "Not done",
+    "ToImprove": "To improve"
+  },
+  "report": {
+    "notApplicable": "N/A",
+    "grade": "{{grade}}/5",
+    "forTrainee": "For the trainee: {{comment}}",
+    "forStaff": "For the staff: {{note}}",
+    "generalComment": "General comment",
+    "staffComment": "Comment for the staff",
+    "noSheet": "The sheet of this rating had no items when the report was published: it has the comments and the boxes.",
+    "publishedBy": "Published by {{name}} on {{date}}.",
+    "publishedOn": "Published on {{date}}."
+  },
+  "sessions": {
+    "internalNotes": "Internal notes: {{notes}}",
+    "recordedBy": "Recorded by {{name}} on {{date}}."
+  },
   "refusal": {
     "bannedUntil": "The ban holds until {{date}} UTC.",
     "bannedForever": "The ban holds until the training department lifts it.",
@@ -103,6 +128,9 @@
     "staffRefusalReason": "Refused by the training department: {{reason}}",
     "readyForMockExam": "Ready for the mock exam",
     "readyForExam": "Ready for the exam",
+    "cooldownWaived": "Waiting waived by the trainer",
+    "reportReady": "Your trainer has published the report.",
+    "readReport": "Read the report",
     "cancel": "Cancel the request",
     "cancelTitle": "Cancel the request?",
     "cancelDescription": "It stays among your trainings as cancelled, and makes you wait for nothing: you can ask for another one whenever you like.",
@@ -125,8 +153,13 @@
       "Accepted": "A trainer will be assigned to you, and you will receive an email then too.",
       "Assigned": "Your trainer will propose the dates of the session: you will receive an email, and choose one of them here.",
       "Scheduled": "You will receive a reminder before the session. Only your trainer changes a date once it is fixed: if it no longer suits you, write to them.",
-      "Held": "The session is over: your trainer will write the report."
+      "Held": "The session is over: your trainer will write the report.",
+      "Completed": "The training is completed: your trainer's report is below.",
+      "NoShow": "Your trainer marked the session as a no-show, because you were not there: the training is closed without a report."
     },
+    "askAgain": "You can ask for the next training on this path whenever you want.",
+    "report": "The report",
+    "sessions": "The sessions",
     "dates": {
       "title": "Choose the date of the session",
       "lead": "Your trainer proposed these dates. Choose one: the session is fixed, and you both receive an email. If none of them suits you, write to your trainer.",
@@ -140,7 +173,7 @@
   },
   "staff": {
     "title": "Requests and trainings",
-    "description": "Every training of the division, from the request to the report: accept or refuse a request, assign the trainer, propose the dates of the session, close a training.",
+    "description": "Every training of the division, from the request to the report: accept or refuse a request, assign the trainer, propose the dates of the session, write the report, close a training.",
     "open": "Open",
     "fields": {
       "createdAt": "Requested on",
@@ -179,11 +212,14 @@
     },
     "pageTitle": "{{rating}} training of {{trainee}}",
     "pageTitleNoRating": "Training of {{trainee}}",
+    "reserved": "This training is yours: the notes the staff writes for itself — on the sheet, in the report and on a session rescheduled — are not shown to you.",
     "sections": {
       "request": "The request",
       "decision": "The decision",
       "trainer": "The trainer",
       "dates": "The dates",
+      "sessions": "The sessions",
+      "report": "The report",
       "closing": "The closing"
     },
     "request": {
@@ -250,7 +286,48 @@
       "title": "The session",
       "chosen": "The trainee chose the date among the ones proposed.",
       "byHand": "The date was set by hand.",
-      "held": "Held: the session is over, and the training waits for its report."
+      "held": "Held: the session is over, and the training waits for its report.",
+      "recordable": "The session has started: record how it went. Held: write the report below. Too little traffic: reschedule it. The trainee did not come: mark a no-show."
+    },
+    "reschedule": {
+      "button": "Reschedule",
+      "title": "Reschedule the session?",
+      "description": "For too little traffic: the session stays among the ones that are over, with your notes, and the training waits for its date again — propose new dates. No report, and the trainee receives no email: the next one is the dates proposed.",
+      "done": "Session rescheduled: propose the new dates.",
+      "fields": {
+        "notes": "Internal notes"
+      },
+      "hints": {
+        "notes": "For the staff and the trainers only: the trainee never reads them. They may be left empty."
+      }
+    },
+    "noShow": {
+      "button": "No-show",
+      "title": "Mark the session as a no-show?",
+      "description": "The trainee did not come: the training closes without a report, the trainee receives an email, and waits the days of a no-show before asking again.",
+      "confirm": "Yes, mark a no-show",
+      "done": "No-show recorded: the training is closed."
+    },
+    "report": {
+      "lead": "For each item of the sheet: a grade from 1 to 5 for practice; done, not done or to improve for theory; N/A when the session did not touch it. Then a comment the trainee reads, and a note for the staff they never read. Last, the report as a whole: there is no pass or fail.",
+      "noItems": "The sheet of this rating has no items: the report has the comments and the boxes only. The training department writes the items in the evaluation sheet.",
+      "traineeComment": "Comment for the trainee",
+      "staffNote": "Note for the staff",
+      "publish": "Publish the report",
+      "publishTitle": "Publish the report?",
+      "publishDescription": "The trainee reads it straight away on the page of the training and receives an email; the notes and the comment for the staff never reach them. The training is completed, and the report is not changed afterwards.",
+      "done": "Report published: the trainee receives an email.",
+      "fields": {
+        "generalComment": "General comment for the trainee",
+        "staffComment": "Comment for the staff",
+        "readyForMockExam": "Ready for the mock exam",
+        "readyForExam": "Ready for the exam",
+        "cooldownWaived": "No waiting after this training"
+      },
+      "hints": {
+        "generalComment": "How the session went as a whole, as the trainee will read it.",
+        "staffComment": "For the staff and the trainers only: the trainee never reads it."
+      }
     },
     "dates": {
       "proposedTitle": "The dates proposed",

@@ -372,3 +372,66 @@ export type DateValues = z.output<typeof dateSchema>;
 export const closeSchema = rejectSchema;
 
 export type CloseValues = RejectValues;
+
+// ---- after the session (A9) ---------------------------------------------------------------------------------------------
+
+type TrainingReportDto = components['schemas']['TrainingReportDto'];
+type TrainingEvaluationWriteDto = components['schemas']['TrainingEvaluationWriteDto'];
+
+/**
+ * A session rescheduled for too little traffic (design M3 §2.6, R.5): the internal notes, for the staff and the trainers only —
+ * the trainee never reads them. They may be left empty; one too long is the server's to refuse.
+ */
+export const rescheduleSchema = z.object({
+  notes: z.string().meta({ multiline: true }),
+});
+
+export type RescheduleValues = z.output<typeof rescheduleSchema>;
+
+/** The notes as the server takes them: empty ones are none. */
+export function notesFromFormValues(values: RescheduleValues): string | null {
+  return written(values.notes);
+}
+
+/**
+ * The report as a whole (§2.7), the part of it the generated form draws: the comment for the trainee and the one for the staff,
+ * and the trainer's three boxes. The sheet is not a field of this form: its rows are the items of the training's rating, each
+ * with a label that is the item's title and a mark that is a grade or a tick by its section, which the page draws beside the
+ * form (A9b). On a mock exam «ready for the mock exam» is carried unticked and never drawn: its next training is not one again.
+ */
+export function reportSchema(isMockExam: boolean) {
+  return z.object({
+    generalComment: z.string().meta({ multiline: true }),
+    staffComment: z.string().meta({ multiline: true }),
+    readyForMockExam: z.boolean().meta({ hidden: isMockExam }),
+    readyForExam: z.boolean(),
+    cooldownWaived: z.boolean(),
+  });
+}
+
+export type ReportValues = z.output<ReturnType<typeof reportSchema>>;
+
+export const EMPTY_REPORT: ReportValues = {
+  generalComment: '',
+  staffComment: '',
+  readyForMockExam: false,
+  readyForExam: false,
+  cooldownWaived: false,
+};
+
+/** The report as the server takes it: the sheet the page wrote, the form's comments — an empty one as none — and its boxes. */
+export function reportFromFormValues(
+  values: ReportValues,
+  sheet: readonly TrainingEvaluationWriteDto[],
+  rowVersion: string,
+): TrainingReportDto {
+  return {
+    sheet: [...sheet],
+    generalComment: written(values.generalComment),
+    staffComment: written(values.staffComment),
+    readyForMockExam: values.readyForMockExam,
+    readyForExam: values.readyForExam,
+    cooldownWaived: values.cooldownWaived,
+    rowVersion,
+  };
+}

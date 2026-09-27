@@ -10,7 +10,7 @@ import { EmptyState, Notice, RatingBadge } from '../../../shared/ui';
 import { mineQuery, shownState, type MyTrainingPathDto, type TraineeTrainingDto } from '../api';
 
 import { choosableSlots } from './dates';
-import { CancelRequest, OutcomeText, RefusalDetailText, StateBadge } from './parts';
+import { CancelRequest, OutcomeText, RefusalDetailText, ReportBoxes, StateBadge } from './parts';
 import {
   REQUEST,
   formatHours,
@@ -151,8 +151,9 @@ function PathCard({
 }
 
 /**
- * A request or a training of theirs: its state, what it is, when, how it ended without a report, what the report marked, and
- * its page — where the dates the trainer proposed are chosen, said here when there are some.
+ * A request or a training of theirs: its state, what it is, when, how it ended without a report, that its report is published and
+ * what the trainer's boxes on it say, and its page — where the dates the trainer proposed are chosen, said here when there are
+ * some, and where the report is read.
  */
 function TrainingItem({ training }: { training: TraineeTrainingDto }) {
   const { t } = useTranslation();
@@ -197,16 +198,9 @@ function TrainingItem({ training }: { training: TraineeTrainingDto }) {
           <p className="text-sm font-semibold">{t('training:mine.datesWaiting', { count: toChoose })}</p>
         )}
 
-        {training.readyForMockExam || training.readyForExam ? (
-          <div className="flex flex-wrap gap-2">
-            {training.readyForMockExam ? (
-              <Badge variant="flat" color="green" text={t('training:mine.readyForMockExam')} />
-            ) : null}
-            {training.readyForExam ? (
-              <Badge variant="flat" color="green" text={t('training:mine.readyForExam')} />
-            ) : null}
-          </div>
-        ) : null}
+        {training.state === 'Completed' ? <p className="text-sm">{t('training:mine.reportReady')}</p> : null}
+
+        <ReportBoxes training={training} />
 
         {(
           [
@@ -223,10 +217,15 @@ function TrainingItem({ training }: { training: TraineeTrainingDto }) {
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        {/* Its page: the dates to choose from while there are some, and everything said of it (A8). */}
+        {/* Its page: the dates to choose from while there are some (A8), the report once it is published (A9), and everything
+            said of it. */}
         <Button asChild size="sm" variant={toChoose === 0 ? 'ghost' : 'primary'}>
           <RouterAnchor href={mineTrainingHref(training.id)}>
-            {toChoose === 0 ? t('training:mine.open') : t('training:mine.chooseDate')}
+            {toChoose > 0
+              ? t('training:mine.chooseDate')
+              : training.state === 'Completed'
+                ? t('training:mine.readReport')
+                : t('training:mine.open')}
           </RouterAnchor>
         </Button>
         {isCancellable(training) ? <CancelRequest training={training} /> : null}

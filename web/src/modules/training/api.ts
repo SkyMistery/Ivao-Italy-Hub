@@ -28,7 +28,8 @@ import {
  * of the evaluation sheet through the CRUD engine (A5), the trainee's own side — their page, the request and its
  * cancellation (A6), the page of one training and the choice of its date (A8) —, and the staff's side — the list of the
  * trainings, the page of one, accepting, refusing and assigning its trainer (A7), what a date meets, the dates proposed and
- * one taken back, the date set by hand, and the closing (A8).
+ * one taken back, the date set by hand, and the closing (A8); what the session came to — rescheduled, not attended, or
+ * reported with the sheet (A9).
  */
 
 export type TrainingRatingDto = components['schemas']['TrainingRatingDto'];
@@ -53,6 +54,15 @@ export type DateConflictsDto = components['schemas']['DateConflictsDto'];
 export type TrainingSlotWriteDto = components['schemas']['TrainingSlotWriteDto'];
 export type TrainingSlotsWriteDto = components['schemas']['TrainingSlotsWriteDto'];
 export type TrainingDateWriteDto = components['schemas']['TrainingDateWriteDto'];
+export type SheetSection = components['schemas']['SheetSection'];
+export type TheoryMark = components['schemas']['TheoryMark'];
+export type SessionOutcome = components['schemas']['SessionOutcome'];
+export type StaffEvaluationDto = components['schemas']['StaffEvaluationDto'];
+export type StaffSessionDto = components['schemas']['StaffSessionDto'];
+export type TraineeEvaluationDto = components['schemas']['TraineeEvaluationDto'];
+export type TraineeSessionDto = components['schemas']['TraineeSessionDto'];
+export type TrainingEvaluationWriteDto = components['schemas']['TrainingEvaluationWriteDto'];
+export type TrainingReportDto = components['schemas']['TrainingReportDto'];
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
 export const MODULE_KEY = 'training';
@@ -347,7 +357,8 @@ export function trainerCandidatesQuery(id: number) {
 
 /**
  * The steps of the staff on a training, each answering with the page as it is afterwards: accept, refuse, assign (A7); the dates
- * proposed, one taken back, the date set by hand, and the closing (A8).
+ * proposed, one taken back, the date set by hand, and the closing (A8); the session rescheduled with its internal notes, not
+ * attended, or reported (A9).
  */
 export type StaffStep =
   | { readonly step: 'accept'; readonly rowVersion: string }
@@ -356,7 +367,10 @@ export type StaffStep =
   | { readonly step: 'propose'; readonly proposal: TrainingSlotsWriteDto }
   | { readonly step: 'withdraw'; readonly slotId: number; readonly rowVersion: string }
   | { readonly step: 'date'; readonly date: TrainingDateWriteDto }
-  | { readonly step: 'close'; readonly reason: string; readonly rowVersion: string };
+  | { readonly step: 'close'; readonly reason: string; readonly rowVersion: string }
+  | { readonly step: 'reschedule'; readonly notes: string | null; readonly rowVersion: string }
+  | { readonly step: 'noShow'; readonly rowVersion: string }
+  | { readonly step: 'report'; readonly report: TrainingReportDto };
 
 export function useStaffStep(id: number) {
   const queryClient = useQueryClient();
@@ -402,6 +416,24 @@ export function useStaffStep(id: number) {
               ...path,
               body: { reason: step.reason, rowVersion: step.rowVersion },
             }),
+          );
+        case 'reschedule':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/reschedule', {
+              ...path,
+              body: { notes: step.notes, rowVersion: step.rowVersion },
+            }),
+          );
+        case 'noShow':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/no-show', {
+              ...path,
+              body: { rowVersion: step.rowVersion },
+            }),
+          );
+        case 'report':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/report', { ...path, body: step.report }),
           );
       }
     },

@@ -1,4 +1,4 @@
-import { Badge, H1, H2 } from '@ivao/atmosphere-react';
+import { Badge, Button, H1, H2 } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouteContext } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -12,6 +12,7 @@ import { ConfirmDialog, NotFound, RatingBadge, useNotice } from '../../../shared
 import {
   memberLabel,
   mineOneQuery,
+  mineQuery,
   shownState,
   useChooseDate,
   type TraineeSlotDto,
@@ -19,15 +20,26 @@ import {
 } from '../api';
 
 import { choosableSlots, spanText } from './dates';
-import { CancelRequest, OutcomeText, StateBadge, WhenText } from './parts';
-import { MINE, isCancellable, stateMoment } from './trainee';
+import {
+  CancelRequest,
+  OutcomeText,
+  RefusalDetailText,
+  ReportView,
+  SessionList,
+  StateBadge,
+  WhenText,
+} from './parts';
+import { nextOnTheLadder } from './report';
+import { MINE, REQUEST, isCancellable, stateMoment } from './trainee';
 
 /**
- * The page of one training of the trainee's (design M3 §4.1; A8), `/training/mine/$id`, for its signed in trainee — the mails of
- * its dates point here: where it stands and what comes next, who trains it, and, while it waits for its date, **the dates the
- * trainer proposed as tiles**, one of which the trainee chooses (§2.5, d1); then the session, and «held» from the day after it;
- * or why it ended without a report. Read from `GET /api/training/mine/{id}`, whose DTO has no field of the staff's: no warning of
- * a date, no note (§1.1). Another member's training is not found.
+ * The page of one training of the trainee's (design M3 §4.1; A8, A9), `/training/mine/$id`, for its signed in trainee — the mails
+ * of its dates and of its report point here: where it stands and what comes next, who trains it, and, while it waits for its
+ * date, **the dates the trainer proposed as tiles**, one of which the trainee chooses (§2.5, d1); then the session, and «held»
+ * from the day after it; **the report** once it is published — the grades, the marks, the comments for the trainee, the general
+ * comment and the trainer's boxes —; the sessions that are over, rescheduled or not attended too; or why it ended without a
+ * report. Read from `GET /api/training/mine/{id}`, whose DTO has no field of the staff's: no warning of a date, no note of the
+ * sheet, no comment of the staff, no note of a session (§1.1). Another member's training is not found.
  */
 export function TraineeTrainingPage() {
   const { t } = useTranslation();
@@ -119,14 +131,36 @@ function TrainingScreen({ training }: { training: TraineeTrainingDto }) {
 
       <OutcomeText training={training} />
 
-      {/* What comes next, as the trainee is told it: a state that goes on has one; one that ended has said it above. */}
+      {/* What comes next, as the trainee is told it: a state that goes on has one, and so has one its session ended (A9); a
+          training refused or closed has said it above. */}
       {shown === 'Requested' ||
       shown === 'Accepted' ||
       shown === 'Scheduled' ||
       shown === 'Held' ||
       (shown === 'Assigned' && slots.length === 0) ? (
         <p>{t(`training:detail.next.${shown}`)}</p>
+      ) : shown === 'Completed' || shown === 'NoShow' ? (
+        <AfterItEnded training={training} />
       ) : null}
+
+      {training.state === 'Completed' ? (
+        <section className="flex flex-col gap-3">
+          <H2>{t('training:detail.report')}</H2>
+          {training.completedAt === null ? null : (
+            <p className="text-muted-foreground text-sm">
+              {t('training:report.publishedOn', { date: moment(training.completedAt, { time: false }) })}
+            </p>
+          )}
+          <ReportView report={training} audience="trainee" />
+        </section>
+      ) : null}
+
+      {training.sessions.length === 0 ? null : (
+        <section className="flex flex-col gap-3">
+          <H2>{t('training:detail.sessions')}</H2>
+          <SessionList sessions={training.sessions} timezone={bootstrap.division.timezone} />
+        </section>
+      )}
 
       {/* The two texts of the request, together: what the trainee wrote when they asked. */}
       {training.availabilityText === null && training.notesText === null ? null : (
@@ -152,6 +186,41 @@ function TrainingScreen({ training }: { training: TraineeTrainingDto }) {
         </div>
       ) : null}
     </article>
+  );
+}
+
+/**
+ * What comes next after a training whose session ended it (§2.6, §2.7): reported — the report is below — or not attended; then,
+ * from the trainee's own trainings, what the ladder allows now: until when the waiting runs, or the next training to ask for —
+ * a mock exam, as agreed with the trainer, when the server says so (§2.8). Nothing more when something else refuses a request
+ * now: their trainings page says it.
+ */
+function AfterItEnded({ training }: { training: TraineeTrainingDto }) {
+  const { t } = useTranslation();
+  const mine = useQuery(mineQuery());
+  const next = nextOnTheLadder(mine.data?.paths.find((path) => path.kind === training.kind));
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p>{t(`training:detail.next.${training.state}`)}</p>
+      {next === null ? null : next.kind === 'wait' ? (
+        <p className="text-sm">
+          <RefusalDetailText detail={{ kind: 'waitUntil', until: next.until }} mineLink={false} />
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2 text-sm">
+          <p>{t('training:detail.askAgain')}</p>
+          {next.mockExam ? <p className="font-semibold">{t('training:mockExam')}</p> : null}
+          <div>
+            <Button asChild size="sm">
+              <RouterAnchor href={`${REQUEST}?kind=${next.ladder}`}>
+                {t('training:request.send')}
+              </RouterAnchor>
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

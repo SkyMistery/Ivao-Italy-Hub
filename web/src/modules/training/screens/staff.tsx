@@ -1,4 +1,14 @@
-import { Badge, Button, H2, H3, Subtle } from '@ivao/atmosphere-react';
+import {
+  Badge,
+  Button,
+  H2,
+  H3,
+  Label,
+  RadioGroupItem,
+  RadioGroupRoot,
+  Subtle,
+  Textarea,
+} from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams, useRouteContext, useSearch } from '@tanstack/react-router';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
@@ -21,21 +31,27 @@ import {
   useRereadStaffTraining,
   useStaffStep,
   type DateWarning,
+  type StaffEvaluationDto,
   type StaffSlotDto,
   type StaffTrainingDto,
   type StaffTrainingRow,
 } from '../api';
 import {
   EMPTY_PROPOSAL,
+  EMPTY_REPORT,
   RATING_KINDS,
   STAFF_QUEUES,
   assignFromFormValues,
   assignSchema,
   closeSchema,
   dateSchema,
+  notesFromFormValues,
   proposalFromFormValues,
   proposalSchema,
   rejectSchema,
+  reportFromFormValues,
+  reportSchema,
+  rescheduleSchema,
   staffTrainingsSearchSchema,
   type AssignValues,
   type CloseValues,
@@ -43,6 +59,8 @@ import {
   type ProposalValues,
   type RatingKind,
   type RejectValues,
+  type ReportValues,
+  type RescheduleValues,
   type StaffQueue,
   type StaffTrainingsSearch,
 } from '../schemas';
@@ -61,20 +79,33 @@ import {
   type Met,
   type WrittenDate,
 } from './dates';
-import { StateBadge, TheoryExamLink, WhenText } from './parts';
+import { ReportView, SessionList, StateBadge, TheoryExamLink, WhenText } from './parts';
+import {
+  NOT_APPLICABLE,
+  UNWRITTEN_ROW,
+  asksRereading,
+  choicesOf,
+  publishedBy,
+  recordsOutcome,
+  refusalOn,
+  sheetEntries,
+  splitReportRefusal,
+  type RowWritten,
+} from './report';
 import { STAFF_TRAININGS, decisionOf, listOrder, staffTrainingHref, trainerChoices } from './trainings';
 import { formatHours, splitRefusal } from './trainee';
 
 /**
- * The staff's side of the trainings (design M3 §2.3, §2.4, §2.5, §4.2), over the servers of A7 and A8: the list of every training,
- * generated, with its views — to approve, to assign, in progress, to close, the history —; and the page of one, like the
- * validation page of the tours: the request with the trainee's rating and hours, the reminder to check the theory exam, the
- * decision, the trainer; its dates — the ones proposed with what the hub warned of, the proposal, the date set by hand, the
- * session —, how it was closed, and what the reader may do.
+ * The staff's side of the trainings (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2), over the servers of A7, A8 and A9: the list of
+ * every training, generated, with its views — to approve, to assign, in progress, to close, the history —; and the page of one,
+ * like the validation page of the tours: the request with the trainee's rating and hours, the reminder to check the theory exam,
+ * the decision, the trainer; its dates — the ones proposed with what the hub warned of, the proposal, the date set by hand, the
+ * session and, once it has started, the three roads after it —; the sessions that are over; the sheet and the report, written
+ * and published; how it was closed, and what the reader may do.
  *
  * Everything the page may do is the server's answer (`actions`): a button is drawn when the handler said yes on the row, and a
- * refusal comes back field by field. Who may train a training, and what a date meets, are the server's answers too, never worked
- * out here.
+ * refusal comes back field by field. Who may train a training, what a date meets and which items a report marks are the server's
+ * answers too, never worked out here. What is reserved never reaches a trainer reading their own training (`reservedLeftOut`).
  */
 
 const columns: readonly ColumnSpec<StaffTrainingRow>[] = [
@@ -168,6 +199,7 @@ export function StaffTrainingPage() {
 
 function StaffTrainingScreen({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
+  const { bootstrap } = useRouteContext({ from: '/_staff' });
   const trainee = memberLabel(training.trainee);
   const accepted = decisionOf(training).kind === 'accepted';
 
@@ -193,6 +225,9 @@ function StaffTrainingScreen({ training }: { training: StaffTrainingDto }) {
       <div className="flex flex-col gap-8">
         <Standing training={training} />
 
+        {/* A trainer reading their own training (note le-note-riservate-e-il-trainee): what is reserved is not on the page. */}
+        {training.reservedLeftOut ? <Notice tone="info" title={t('training:staff.reserved')} /> : null}
+
         {/* The reminder of whoever approves (§2.3, note il-teorico-lo-dichiara-il-trainee): the trainee's word is checked. */}
         {training.state === 'Requested' ? <TheoryReminder training={training} /> : null}
 
@@ -214,6 +249,24 @@ function StaffTrainingScreen({ training }: { training: StaffTrainingDto }) {
         {training.state === 'Assigned' || training.state === 'Scheduled' ? (
           <Section title={t('training:staff.sections.dates')}>
             <Dates training={training} />
+          </Section>
+        ) : null}
+
+        {/* The sessions that are over (§1.3, A9): rescheduled with their notes, not attended, held. */}
+        {training.sessions.length === 0 ? null : (
+          <Section title={t('training:staff.sections.sessions')}>
+            <SessionList sessions={training.sessions} timezone={bootstrap.division.timezone} />
+          </Section>
+        )}
+
+        {/* The report (§2.7): written by whoever conducts the training once its session has started, then read as published. */}
+        {recordsOutcome(training) ? (
+          <Section title={t('training:staff.sections.report')}>
+            <WriteReport training={training} />
+          </Section>
+        ) : training.state === 'Completed' ? (
+          <Section title={t('training:staff.sections.report')}>
+            <Published training={training} />
           </Section>
         ) : null}
 
@@ -555,9 +608,10 @@ function DecisionActions({ training }: { training: StaffTrainingDto }) {
 // ---- the dates (A8) -------------------------------------------------------------------------------------------------------
 
 /**
- * The dates of a training (§2.5): the session once it has one — whose choice its date was, and held from the day after it —; while
- * it waits for one, the dates proposed with what the hub warned of when they were written; and, to whoever conducts it, the
- * proposal of dates and the date set by hand.
+ * The dates of a training (§2.5): the session once it has one — whose choice its date was, and held from the day after it —, and
+ * once it has started, to whoever conducts the training, the three roads after it (§2.6); while it waits for one, the dates
+ * proposed with what the hub warned of when they were written; and, to whoever conducts it, the proposal of dates and the date
+ * set by hand.
  */
 function Dates({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
@@ -577,6 +631,7 @@ function Dates({ training }: { training: StaffTrainingDto }) {
               : t('training:staff.session.byHand')}
           </p>
           {training.held ? <p>{t('training:staff.session.held')}</p> : null}
+          {recordsOutcome(training) ? <AfterTheSession training={training} /> : null}
         </div>
       ) : null}
 
@@ -1066,6 +1121,339 @@ function ClosingDetails({ training }: { training: StaffTrainingDto }) {
         })}
       </p>
       <p className="whitespace-pre-line">{t('training:staff.decision.reason', { reason: closing.reason })}</p>
+    </div>
+  );
+}
+
+// ---- after the session (A9) -----------------------------------------------------------------------------------------------
+
+/**
+ * The three roads after the session (§2.6), beside it, once it has started and to whoever conducts the training: held — the
+ * report below —, rescheduled for too little traffic, or not attended. The server records them from the start of the session,
+ * so an evening's report is written the same evening (A9a).
+ */
+function AfterTheSession({ training }: { training: StaffTrainingDto }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p>{t('training:staff.session.recordable')}</p>
+      <div className="flex flex-wrap gap-2">
+        <Reschedule training={training} />
+        <NoShow training={training} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The session rescheduled for too little traffic (§2.6, R.5), with internal notes the trainee never reads: it stays among the
+ * sessions that are over, the training waits for its date again — the proposal and the date set by hand are back above —, and
+ * nobody is written to: the next mail is the dates proposed.
+ */
+function Reschedule({ training }: { training: StaffTrainingDto }) {
+  const { t } = useTranslation();
+  const notice = useNotice();
+  const step = useStaffStep(training.id);
+  const refused = useRefused(training.id);
+  const [notes, setNotes] = useState<RescheduleValues>({ notes: '' });
+
+  return (
+    <ConfirmDialog
+      triggerText={t('training:staff.reschedule.button')}
+      triggerVariant="secondary"
+      title={t('training:staff.reschedule.title')}
+      description={t('training:staff.reschedule.description')}
+      confirmText={t('training:staff.reschedule.button')}
+      // Blue: nothing is lost, the dates are proposed again. The no-show, which closes the training, stays red.
+      confirmVariant="primary"
+      disabled={step.isPending}
+      // Written afresh every time: the dialog's field starts empty whenever it opens.
+      onOpenChange={(open) => {
+        if (open) {
+          setNotes({ notes: '' });
+        }
+      }}
+      onConfirm={() =>
+        step.mutate(
+          { step: 'reschedule', notes: notesFromFormValues(notes), rowVersion: training.rowVersion },
+          {
+            onSuccess: () => notice({ tone: 'success', title: t('training:staff.reschedule.done') }),
+            onError: refused,
+          },
+        )
+      }
+    >
+      <SchemaForm<RescheduleValues>
+        schema={rescheduleSchema}
+        defaults={{ notes: '' }}
+        locales={[]}
+        labels="training:staff.reschedule"
+        onChange={setNotes}
+      />
+    </ConfirmDialog>
+  );
+}
+
+/**
+ * The trainee did not come (§2.6, d2), asked first: the training closes, the trainee is written to, and the waiting of a no-show
+ * runs. The session stays among the ones that are over.
+ */
+function NoShow({ training }: { training: StaffTrainingDto }) {
+  const { t } = useTranslation();
+  const notice = useNotice();
+  const step = useStaffStep(training.id);
+  const refused = useRefused(training.id);
+
+  return (
+    <ConfirmDialog
+      triggerText={t('training:staff.noShow.button')}
+      triggerVariant="secondary"
+      title={t('training:staff.noShow.title')}
+      description={t('training:staff.noShow.description')}
+      confirmText={t('training:staff.noShow.confirm')}
+      confirmVariant="destructive"
+      disabled={step.isPending}
+      onConfirm={() =>
+        step.mutate(
+          { step: 'noShow', rowVersion: training.rowVersion },
+          {
+            onSuccess: () => notice({ tone: 'success', title: t('training:staff.noShow.done') }),
+            onError: refused,
+          },
+        )
+      }
+    />
+  );
+}
+
+/**
+ * The report (§2.7), written once the session has started and published at once by whoever conducts the training (d2): the sheet
+ * — the items of the training's ladder and rating the server says a report marks now, each with a grade from 1 to 5 on practice
+ * or a mark on theory, or «N/A» when the session did not touch it (d4), a comment the trainee reads and a note they never do —,
+ * then the generated form of the report as a whole: the general comment, the comment for the staff, and the boxes — ready for the
+ * mock exam, never on a mock exam; ready for the exam; the waiting taken away. «Publish» is asked first: the trainee reads it
+ * straight away, and it is not changed afterwards.
+ *
+ * The sheet is drawn here and not by the generated form: its rows are labelled by the items' titles and marked by their section,
+ * which a field of the form does not do — the way the validation page of the tours marks the errors of its catalogue (A9b). Each
+ * row sends what it holds, a row nobody wrote in as not applicable; a refusal lands on the row it is about (`sheet[2].grade`), on
+ * a field of the form, or above it, and a sheet that changed meanwhile, or a training somebody else moved, reads the page again,
+ * keeping what was written.
+ */
+function WriteReport({ training }: { training: StaffTrainingDto }) {
+  const { t, i18n } = useTranslation();
+  const notice = useNotice();
+  const step = useStaffStep(training.id);
+  const reread = useRereadStaffTraining(training.id);
+  const [written, setWritten] = useState<Readonly<Record<number, RowWritten>>>({});
+  const [sheetProblem, setSheetProblem] = useState<ApiError | null>(null);
+  const [problem, setProblem] = useState<ApiError | null>(null);
+  const schema = useMemo(() => reportSchema(training.isMockExam), [training.isMockExam]);
+  const formId = `training-${String(training.id)}-report`;
+
+  const write = (item: StaffEvaluationDto, change: Partial<RowWritten>) =>
+    setWritten((current) => ({
+      ...current,
+      [item.itemId]: { ...(current[item.itemId] ?? UNWRITTEN_ROW), ...change },
+    }));
+
+  const submit = async (values: ReportValues) => {
+    setProblem(null);
+    setSheetProblem(null);
+
+    try {
+      await step.mutateAsync({
+        step: 'report',
+        report: reportFromFormValues(values, sheetEntries(training.sheet, written), training.rowVersion),
+      });
+      notice({ tone: 'success', title: t('training:staff.report.done') });
+    } catch (error) {
+      const rereads = asksRereading(error);
+      if (rereads) {
+        void reread();
+      }
+
+      const { form, sheet, page } = splitReportRefusal(error);
+      // The rows of a sheet read again are not the ones the refusal counted.
+      setSheetProblem(rereads ? null : sheet);
+      setProblem(page);
+      if (form !== null) {
+        throw form;
+      }
+    }
+  };
+
+  // «Publish», once asked, sends the form: the report as a whole is its, and so are the refusals on it.
+  const publish = () => {
+    const form = document.getElementById(formId);
+    if (form instanceof HTMLFormElement) {
+      form.requestSubmit();
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-muted-foreground text-sm">{t('training:staff.report.lead')}</p>
+
+      {problem === null ? null : (
+        <Notice tone="error" title={describeProblem(problem, t, i18n.language) ?? t('errors.unknown')} />
+      )}
+
+      {training.sheet.length === 0 ? (
+        <Notice tone="info" title={t('training:staff.report.noItems')} />
+      ) : (
+        <ul className="flex flex-col gap-4">
+          {training.sheet.map((item, index) => (
+            <SheetRow
+              key={item.itemId}
+              item={item}
+              index={index}
+              written={written[item.itemId] ?? UNWRITTEN_ROW}
+              problem={sheetProblem}
+              onChange={(change) => write(item, change)}
+            />
+          ))}
+        </ul>
+      )}
+
+      <SchemaForm<ReportValues>
+        id={formId}
+        schema={schema}
+        defaults={EMPTY_REPORT}
+        locales={[]}
+        labels="training:staff.report"
+        onSubmit={submit}
+        actionsElsewhere
+      />
+
+      <div>
+        <ConfirmDialog
+          triggerText={t('training:staff.report.publish')}
+          triggerVariant="secondary"
+          title={t('training:staff.report.publishTitle')}
+          description={t('training:staff.report.publishDescription')}
+          confirmText={t('training:staff.report.publish')}
+          confirmVariant="primary"
+          disabled={step.isPending}
+          onConfirm={publish}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One item of the sheet as the trainer marks it (§1.4, R.5): its title — the label of its row, from the item — and its section;
+ * the grades of practice or the marks of theory, «N/A» first and chosen until something else is; the comment the trainee reads,
+ * and the note of the staff they never read. A refusal of the row lands under the control it is about.
+ */
+function SheetRow({
+  item,
+  index,
+  written,
+  problem,
+  onChange,
+}: {
+  item: StaffEvaluationDto;
+  index: number;
+  written: RowWritten;
+  problem: ApiError | null;
+  onChange: (change: Partial<RowWritten>) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const read = useLocalized();
+  const title = read(item.title);
+  const id = `training-sheet-${String(item.itemId)}`;
+  const refusal = (field: string) =>
+    describeProblem(refusalOn(problem, `sheet[${String(index)}].${field}`), t, i18n.language);
+
+  const choiceLabel = (choice: string) =>
+    choice === NOT_APPLICABLE
+      ? t('training:report.notApplicable')
+      : item.section === 'Practice'
+        ? choice
+        : t(`training:marks.${choice}`);
+
+  return (
+    <li className="border-border flex flex-col gap-3 rounded-md border p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="font-semibold">{title}</span>
+        <Subtle>{t(`training:sheets.options.section.${item.section}`)}</Subtle>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <RadioGroupRoot
+          aria-label={title}
+          value={written.choice}
+          onValueChange={(choice) => onChange({ choice })}
+          className="flex flex-wrap gap-x-5 gap-y-2"
+        >
+          {choicesOf(item.section).map((choice) => {
+            const option = `${id}-${choice}`;
+
+            return (
+              <div key={choice} className="flex items-center gap-2">
+                <RadioGroupItem id={option} value={choice} />
+                <Label htmlFor={option} className="cursor-pointer font-normal">
+                  {choiceLabel(choice)}
+                </Label>
+              </div>
+            );
+          })}
+        </RadioGroupRoot>
+        <RowRefusal text={refusal(item.section === 'Practice' ? 'grade' : 'mark')} />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={`${id}-traineeComment`}>{t('training:staff.report.traineeComment')}</Label>
+          <Textarea
+            id={`${id}-traineeComment`}
+            rows={3}
+            value={written.traineeComment}
+            onChange={(event) => onChange({ traineeComment: event.target.value })}
+          />
+          <RowRefusal text={refusal('traineeComment')} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={`${id}-staffNote`}>{t('training:staff.report.staffNote')}</Label>
+          <Textarea
+            id={`${id}-staffNote`}
+            rows={3}
+            value={written.staffNote}
+            onChange={(event) => onChange({ staffNote: event.target.value })}
+          />
+          <RowRefusal text={refusal('staffNote')} />
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/** What the server refused on a control of a row, in the words of the language files; nothing when it refused nothing there. */
+function RowRefusal({ text }: { text: string | null }) {
+  return text === null ? null : (
+    <p role="alert" className="text-destructive text-sm">
+      {text}
+    </p>
+  );
+}
+
+/** The report as it was published (§2.7): who published it and when, and the report — without what is reserved from its trainee. */
+function Published({ training }: { training: StaffTrainingDto }) {
+  const { t } = useTranslation();
+  const day = useDay();
+  const published = publishedBy(training.sessions);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {published === null ? null : (
+        <p className="text-sm">
+          {t('training:report.publishedBy', { name: memberLabel(published.by), date: day(published.at) })}
+        </p>
+      )}
+      <ReportView report={training} audience="staff" />
     </div>
   );
 }

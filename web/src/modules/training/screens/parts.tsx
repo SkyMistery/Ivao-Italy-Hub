@@ -4,18 +4,28 @@ import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { describeProblem } from '../../../shared/forms';
+import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { ConfirmDialog, useNotice } from '../../../shared/ui';
-import { useCancelTraining, type ShownState, type TraineeTrainingDto } from '../api';
+import {
+  memberLabel,
+  useCancelTraining,
+  type SessionOutcome,
+  type ShownState,
+  type TraineeEvaluationDto,
+  type TraineeTrainingDto,
+  type TrainingMemberDto,
+} from '../api';
 
 import { closingOf, spanText } from './dates';
+import { OUTCOME_COLOURS, evaluationSays } from './report';
 import { MINE, STATE_COLOURS, daysUntil, formatHours, isTheoryRefusal, type RefusalDetail } from './trainee';
 
 /**
  * The pieces the trainee's pages share (design M3 §4.1), and what the staff's page shares with them: what is said beside a
- * refusal, the site of the theory exam, the state of a training, when a date or a session is, how a training ended, and «cancel».
- * Pieces of the module's own screens, drawn from Atmosphere and the core's closed list, and not a component of the list: nothing
- * outside the training draws them.
+ * refusal, the site of the theory exam, the state of a training, when a date or a session is, how a training ended, «cancel»,
+ * a report as it was published, the trainer's boxes, and the sessions that are over. Pieces of the module's own screens, drawn
+ * from Atmosphere and the core's closed list, and not a component of the list: nothing outside the training draws them.
  */
 
 /**
@@ -181,5 +191,191 @@ export function CancelRequest({ training }: { training: TraineeTrainingDto }) {
         })
       }
     />
+  );
+}
+
+/**
+ * A report as it was published, as a page reads it: the staff's answer (A9a) with the notes of the staff — none when the reader
+ * is the training's trainee (`reservedLeftOut`) —, or the trainee's, which has no field of the staff's at all.
+ */
+interface PublishedReport {
+  readonly sheet: readonly (TraineeEvaluationDto & { readonly staffNote?: string | null })[];
+  readonly generalComment: string | null;
+  readonly staffComment?: string | null;
+  readonly readyForMockExam: boolean;
+  readonly readyForExam: boolean;
+  readonly cooldownWaived: boolean;
+}
+
+/**
+ * A report as it was published (design M3 §2.7, §4.1, §4.2): every item of its sheet in the order the report copied it — its
+ * title and section as they were then, the grade, the mark or «N/A» (d4) —, the comment written for the trainee under each and,
+ * for the staff, the note of the staff; then the general comment, the comment for the staff, and the trainer's boxes. It draws
+ * what it is handed: the trainee's answer has no note of the staff's (§4.1), and neither has the page of a trainer reading their
+ * own training. The staff read who each text is for; the trainee reads the comments that are theirs.
+ */
+export function ReportView({ report, audience }: { report: PublishedReport; audience: 'staff' | 'trainee' }) {
+  const { t } = useTranslation();
+  const read = useLocalized();
+
+  return (
+    <div className="flex flex-col gap-4">
+      {report.sheet.length === 0 ? (
+        <p className="text-muted-foreground text-sm">{t('training:report.noSheet')}</p>
+      ) : (
+        // The lines between the items in the colour of the border around them: without one they take the colour of the text.
+        <ul className="border-border divide-border flex flex-col divide-y rounded-md border">
+          {report.sheet.map((item, index) => (
+            // The report's own copy, in the order it keeps: nothing reorders it while it is read.
+            <li key={index} className="flex flex-col gap-1 p-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold">{read(item.title)}</span>
+                <EvaluationBadge item={item} />
+              </div>
+              <Subtle>{t(`training:sheets.options.section.${item.section}`)}</Subtle>
+              {item.traineeComment === null ? null : (
+                <p className="whitespace-pre-line">
+                  {audience === 'staff'
+                    ? t('training:report.forTrainee', { comment: item.traineeComment })
+                    : item.traineeComment}
+                </p>
+              )}
+              {item.staffNote === undefined || item.staffNote === null ? null : (
+                <p className="text-muted-foreground whitespace-pre-line">
+                  {t('training:report.forStaff', { note: item.staffNote })}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {report.generalComment === null ? null : (
+        <div className="flex flex-col gap-1 text-sm">
+          <span className="font-semibold">{t('training:report.generalComment')}</span>
+          <p className="whitespace-pre-line">{report.generalComment}</p>
+        </div>
+      )}
+      {report.staffComment === undefined || report.staffComment === null ? null : (
+        <div className="flex flex-col gap-1 text-sm">
+          <span className="font-semibold">{t('training:report.staffComment')}</span>
+          <p className="whitespace-pre-line">{report.staffComment}</p>
+        </div>
+      )}
+
+      <ReportBoxes training={report} />
+    </div>
+  );
+}
+
+/** How the session went on an item (§1.4): the grade of practice, the mark of theory, or «N/A» when it did not touch it (d4). */
+function EvaluationBadge({ item }: { item: TraineeEvaluationDto }) {
+  const { t } = useTranslation();
+  const says = evaluationSays(item);
+
+  switch (says.kind) {
+    case 'grade':
+      return <Badge variant="flat" color="blue" text={t('training:report.grade', { grade: says.grade })} />;
+    case 'mark':
+      return (
+        <Badge
+          variant="flat"
+          color={says.mark === 'Done' ? 'green' : says.mark === 'ToImprove' ? 'orange' : 'red'}
+          text={t(`training:marks.${says.mark}`)}
+        />
+      );
+    case 'notApplicable':
+      return <Badge variant="flat" color="gray" text={t('training:report.notApplicable')} />;
+  }
+}
+
+/**
+ * The trainer's boxes on a report (§2.7, §2.8), as badges: ready for the mock exam, ready for the exam, and the waiting taken away
+ * after it. Nothing when none is ticked.
+ */
+export function ReportBoxes({
+  training,
+}: {
+  training: {
+    readonly readyForMockExam: boolean;
+    readonly readyForExam: boolean;
+    readonly cooldownWaived: boolean;
+  };
+}) {
+  const { t } = useTranslation();
+  const boxes = [
+    training.readyForMockExam ? t('training:mine.readyForMockExam') : null,
+    training.readyForExam ? t('training:mine.readyForExam') : null,
+    training.cooldownWaived ? t('training:mine.cooldownWaived') : null,
+  ].filter((box) => box !== null);
+
+  if (boxes.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {boxes.map((box) => (
+        <Badge key={box} variant="flat" color="green" text={box} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The sessions of a training that are over (§1.3), the earliest first: when each was, in UTC and where the division lives, and
+ * what it came to — held, rescheduled or a no-show. The staff's answer adds the internal notes of a session rescheduled and who
+ * recorded it when; the trainee's has neither, and none is drawn (§4.1).
+ */
+export function SessionList({
+  sessions,
+  timezone,
+}: {
+  sessions: readonly {
+    readonly startsAtUtc: string;
+    readonly outcome: SessionOutcome;
+    readonly internalNotes?: string | null;
+    readonly recordedBy?: TrainingMemberDto;
+    readonly recordedAt?: string;
+  }[];
+  timezone: string;
+}) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+
+  return (
+    <ul className="flex flex-col gap-3">
+      {sessions.map((session, index) => (
+        // The server's order, the earliest first, which nothing changes while the list is on screen.
+        <li
+          key={index}
+          className="border-border flex flex-col gap-2 rounded-md border p-3 text-sm sm:flex-row sm:items-start sm:justify-between"
+        >
+          <div className="flex min-w-0 flex-col gap-2">
+            <WhenText startsAtUtc={session.startsAtUtc} timezone={timezone} emphasis />
+            {session.internalNotes === undefined || session.internalNotes === null ? null : (
+              <p className="whitespace-pre-line">
+                {t('training:sessions.internalNotes', { notes: session.internalNotes })}
+              </p>
+            )}
+            {session.recordedBy === undefined || session.recordedAt === undefined ? null : (
+              <Subtle>
+                {t('training:sessions.recordedBy', {
+                  name: memberLabel(session.recordedBy),
+                  date: moment(session.recordedAt, { time: false }),
+                })}
+              </Subtle>
+            )}
+          </div>
+          <div>
+            <Badge
+              variant="flat"
+              color={OUTCOME_COLOURS[session.outcome]}
+              text={t(`training:outcomes.${session.outcome}`)}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
