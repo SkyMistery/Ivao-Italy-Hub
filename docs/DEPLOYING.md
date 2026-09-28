@@ -258,7 +258,7 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   stopped the hub after **10–30 s** without requests, and the first request after the silence took **8–10 s** instead of
   0.2 s. Version 0.2.4 cuts about 40% of it (ReadyToRun, the modules' migrations only when pending, TieredPGO off):
   measured on one CPU, the first answer after a start went from 4.0 to 2.4 s; on the host, 0.2.4 was ready in 4.2 s and
-  answered at 5.4 s (median of eight). Version 0.2.6 skips the migrations and the seeds on a start that changed nothing:
+  answered at 5.4 s (median of eight). Version 0.2.7 skips the migrations and the seeds on a start that changed nothing:
   measured on one CPU, 2.17 → 1.91 s, **about 0.7 s less** on the host by estimate. *Not yet measured on the server*: its
   `diagnostics/starts.txt` says how long each start takes there, and where the time goes. Where the idle time is not yours to change, that is what a little-visited site feels like
   (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`, `docs/internal/decisions/2026-09-28-un-avvio-piu-veloce.md`).
