@@ -14,6 +14,8 @@ la cancellazione dei dati di una persona usa il meccanismo del nucleo di T20b, e
 `ErasureRequest.Keep` (§6.1). Nessun codice: il prossimo passo è
 la fase A0 (§11). **Corretto con A7b** (28 settembre 2026): il trainer conduce i training affidati a lui con la regola delle righe
 affidate del nucleo, senza grant e senza job (§3.3, §12 n.1; [risposta 2 di Carmine sulla #135][a2-135], [decisione sulla #146][d146]).
+**Precisato con A11b** (29 settembre 2026): che cosa legge un capo FIR sul percorso di un trainee (§4.2), come dice la nota dei capi
+FIR decisa sulla #159: un permesso tenuto sul FIR non raggiunge una riga che il FIR non lo dice.
 
 [a2-135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
 [d146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982
@@ -588,7 +590,9 @@ all'interessato, senza spostare la riga. Le righe figlie non ne hanno bisogno (�
   rating e il promemoria del teorico; le azioni che chi guarda può fare (§3); le disponibilità con gli avvisi; lo storico
   delle sessioni con gli appunti; la scheda (form generato dalle voci); il report. Il **percorso del trainee** a fianco.
 - **`/staff/training/trainees/{vid}`**: il percorso di un trainee — tutti i training per percorso e rating, «pronto
-  per…», attesa, ban — come la pagina del pilota di M2 (§8.7); da qui «Banna».
+  per…», attesa, ban — come la pagina del pilota di M2 (§8.7); da qui «Banna». A un capo FIR i soli training del suo FIR,
+  senza «dove si trova» sui percorsi e senza i ban (A11b): un ban non dice un FIR, e «dove si trova» viene dai ban e da tutti i
+  training (nota `2026-09-27-i-capi-fir-sul-loro-fir` §3.2).
 - **`/staff/training/sheets`**, **`/staff/training/exams`**, **`/staff/training/bans`**, **`/staff/training/settings`**:
   liste e form generati.
 
