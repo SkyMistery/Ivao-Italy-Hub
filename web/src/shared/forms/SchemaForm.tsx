@@ -392,6 +392,17 @@ function Suggest({
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLInputElement>(null);
 
+  // ⚠️ The box and its list are **one field** (A6c, 26 September 2026). Pressing the list — an
+  // option, a heading, its scrollbar — moves the focus into it, and that is not leaving the field.
+  // It counted as leaving: a closed field with part of a value typed put back what it held (the
+  // rule below), the list grew back to every row under the pointer, and the click landed on
+  // another row, so the option pressed was never chosen. Measured in a browser; in jsdom a click
+  // reaches its element whatever has moved under it. The list is allowed the focus rather than
+  // denied it: cancelling the press would keep the box focused, and would also stop a scrollbar
+  // from dragging — measured too.
+  const list = useRef<HTMLDivElement>(null);
+  const inList = (node: EventTarget | null) => node instanceof Node && list.current?.contains(node) === true;
+
   // ⚠️ What narrows the list is what somebody has typed **since it opened**, not what the field
   // happened to hold. Opening the address of an entry that already has one would otherwise answer
   // "nothing matches": the value is a whole address, and it matches nothing but itself.
@@ -424,12 +435,26 @@ function Suggest({
     groups.set(heading, [...(groups.get(heading) ?? []), suggestion]);
   }
 
+  // A closed field keeps only what was offered. What is typed is a way of searching the list, so
+  // leaving the field with something nobody offered puts back what was there — and the server
+  // refuses that value anyway, which is what makes this a rule.
+  const keepWhatWasOffered = () => {
+    if (only && !suggestions.some((suggestion) => suggestion.value === value)) {
+      onChange(opened);
+    }
+  };
+
   return (
     <PopoverRoot
       open={open}
       onOpenChange={(next) => {
         if (next) {
           setOpened(value);
+        } else if (document.activeElement !== box.current) {
+          // Closing with the focus in the list or already past it — a click elsewhere after a press
+          // on the list, Tab or Escape from there — is leaving the field, and the box had no blur
+          // to say so.
+          keepWhatWasOffered();
         }
 
         setOpen(next);
@@ -445,8 +470,12 @@ function Suggest({
             onChange(event.target.value);
             setOpen(true);
           }}
-          onFocus={() => {
-            setOpened(value);
+          onFocus={(event) => {
+            // Back from the list is not arriving: the search goes on from where it was.
+            if (!inList(event.relatedTarget)) {
+              setOpened(value);
+            }
+
             setOpen(true);
           }}
           onKeyDown={(event) => {
@@ -454,18 +483,16 @@ function Suggest({
               setOpen(false);
             }
           }}
-          onBlur={() => {
-            // A closed field keeps only what was offered. What is typed is a way of searching the
-            // list, so leaving the box with something nobody offered puts back what was there —
-            // and the server refuses that value anyway, which is what makes this a rule.
-            if (only && !suggestions.some((suggestion) => suggestion.value === value)) {
-              onChange(opened);
+          onBlur={(event) => {
+            if (!inList(event.relatedTarget)) {
+              keepWhatWasOffered();
             }
           }}
         />
       </PopoverAnchor>
 
       <PopoverContent
+        ref={list}
         align="start"
         className="w-(--radix-popover-trigger-width) p-0"
         // The box keeps the focus: this list is read while typing, and a popover that stole it
@@ -493,6 +520,9 @@ function Suggest({
                     value={suggestion.value}
                     onSelect={() => {
                       onChange(suggestion.value);
+                      // What was there, from now on, is the choice: the box may be entered again from
+                      // the list while it is still closing, and that is not an arrival that reads it.
+                      setOpened(suggestion.value);
                       setOpen(false);
                     }}
                   >
