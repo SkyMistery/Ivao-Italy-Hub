@@ -137,6 +137,29 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - ⚠️ **Un training `Scheduled` con la data scritto in un test si proietta nel calendario**: una pulizia che cancella in blocco toglie
     anche le sue voci (`TrainingStaffTests.CleanAsync` ora lo fa).
   - VID: il prossimo libero è **790039**, poi **790045** (A3b usa 790040–790044 e 790050–790051).
+- **Le correzioni della revisione di #147** (28 settembre 2026; il dettaglio con i commit è in `08`, «Com'è andata (A8a)»):
+  - **Gli avvisi salvati con una data si fermano a ciò che ogni lettore del training può leggere** (`DateConflicts.Kept`, il tetto del
+    nucleo `VisibilityCeiling.For(Staff)`): chi propone vede e conferma tutto ciò che legge; la data tiene le voci di tutti, dei membri e
+    dello staff, mai quelle di un solo dipartimento. La forma degli avvisi non cambia.
+  - **La chiusura tiene la data della sessione** (il registro, design §6) e toglie solo le date proposte: il calendario, il promemoria e
+    «Eseguito» guardano lo stato. ⚠️ **Per A9a**: il suo commento di `Training.ScheduledStartUtc` («… closed») e il suo scostamento 2
+    («come la chiusura di A8a») non valgono più (`08`, «Com'è andata (A8a)», correzione 3).
+  - **La chiusura dell'hub** si riconosce da `closed_by` e `close_reason` vuoti: nessun segno nuovo, lo dicono la mail e i dati.
+  - **I test dei rifiuti**: il trainer con `View` per posizione e senza grant sul training, uno dello staff che è trainee di un training
+    suo, i limiti di una proposta, gli stati e i 409; VID **790072–790073** (790074–790079 restano della correzione di A8a, liberi).
+  - **Il giro dello staff chiude ciò che lascia** (`web/e2e/full/training-staff.spec.ts`): il training ATC del giro nel `finally`, e
+    all'inizio quello che un giro precedente ha lasciato aperto, con la chiusura dello staff (revisione di #146, punto 2). Sullo stesso
+    banco, mai ricreato, le spec del training passano giro dopo giro. ⚠️ Al terzo giro della giornata sullo stesso banco due spec dei
+    tour (M2) si sono viste rifiutare un report, con un 400; non l'ho indagato (`08`, «Com'è andata (A8a)», correzione 13).
+  - ⚠️ **Per A12**: l'eraser cancella i training aperti **passando dal change tracker**, non con `ExecuteDelete`: la voce del calendario
+    di un training datato è una proiezione, e la toglie solo l'interceptor quando salva la riga (revisione di #147).
+  - ⚠️ **`open_kind` lo scrive solo il getter** (`Training.cs`, `OpenKind`; l'indice unico in `TrainingDbContext`): un cambio di stato
+    con `ExecuteUpdate`, o qualsiasi scrittura che salta l'entità, lo lascia impostato, e la chiave unica blocca allora **per sempre** il
+    percorso di quel trainee. Due esempi: una chiusura notturna in `training-expiry`, o l'eraser di A12b. La chiusura per tempo di A8a
+    passa dall'entità (controllato; il test della notte prova che dopo la chiusura il percorso è libero). Lo chiede la revisione di
+    #143, punto 2.
+  - **La coda è in pari con `main`** attraverso A7 (`3073b59`, con A6b e `main` dopo #135 e #160–#172), entrato con un merge. Il
+    catalogo di A3b non tocca A8a: nessun permesso del training è `OnlyForAssignee`, fino ad A7b.
 - **La coda**: la PR è in bozza con `(after #146)` e `Queued after #146.`; #146 è in coda dopo #144, in coda dopo #143. Quando #146 sarà
   unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
   dal corpo, la PR pronta a CI verde — lo fa la sessione di A8a se è ancora viva, altrimenti quella di A8b prima di cominciare.
