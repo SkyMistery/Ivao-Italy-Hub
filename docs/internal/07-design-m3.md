@@ -12,7 +12,11 @@ dichiarato dal trainee è uno scostamento dal piano (§0.6, §12 n.15), le regol
 (§1.7, n.4), i GCA sono nel profilo IVAO (§0.2), il feed del calendario non è in M3 (§12 n.14). Allineato al piano 1.09:
 la cancellazione dei dati di una persona usa il meccanismo del nucleo di T20b, e un ban in vigore resta con
 `ErasureRequest.Keep` (§6.1). Nessun codice: il prossimo passo è
-la fase A0 (§11).
+la fase A0 (§11). **Corretto con A7b** (28 settembre 2026): il trainer conduce i training affidati a lui con la regola delle righe
+affidate del nucleo, senza grant e senza job (§3.3, §12 n.1; [risposta 2 di Carmine sulla #135][a2-135], [decisione sulla #146][d146]).
+
+[a2-135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
+[d146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982
 
 ---
 
@@ -270,7 +274,9 @@ FK verso il nucleo: `vid` e i codici delle postazioni sono colonne non vincolate
   la risposta dello staff, note riservate comprese. Il trainee legge il suo training dai **suoi** endpoint, con un DTO
   senza note (come i PIREP di un pilota in M2); il trainer ha già `Training.View` per posizione.
 - **`IHasFir`**: il FIR della postazione; vuoto per i piloti. Serve ai capi FIR (§3.2, estensione n.2).
-- **`IHasResourceScope`**: `training:training:{id}`, per il trainer assegnato (§3.3).
+- **`IHasAssignee`**: il trainer assegnato (`trainer_vid`), a cui la riga è affidata: `Training.Conduct` raggiunge solo i training
+  affidati a chi lo tiene (§3.3). Nessuno scope: nessun grant si scrive su un training (A7b; fino ad A7 era `IHasResourceScope`,
+  `training:training:{id}`).
 - **`IVisible`**: `Members`, ristretto al trainee e a chi ha `Training.View`, come un PIREP (design M2 §1.1).
 - **Le righe figlie** (disponibilità, sessioni, voti) sono **classi semplici** che si scrivono con il training, come
   `PirepError` e `PirepEvent` in M2: l'autorizzazione è quella del training.
@@ -429,9 +435,10 @@ proposti:
   quindi sempre, senza una regola scritta nel modulo;
 - mai il trainee stesso.
 
-Il server ricontrolla il rating all'assegnazione. **Assegnare scrive il grant** che fa condurre al trainer quel training
-(§3.3) e manda `trainerAssigned` a trainee e trainer. Riassegnare toglie il grant al trainer di prima. Un training resta
-`Accepted` senza trainer quanto serve (d1).
+Il server ricontrolla il rating all'assegnazione. **Assegnare affida il training al trainer** (`trainer_vid`), che da lì lo
+conduce con il `Training.Conduct` della sua posizione (§3.3), e manda `trainerAssigned` a trainee e trainer. Riassegnare lo
+affida a un altro, e il trainer di prima non lo conduce più. Nessun grant cambia, e nessuno deve rientrare (A7b). Un training
+resta `Accepted` senza trainer quanto serve (d1).
 
 ### 2.5 Le date
 
@@ -509,7 +516,7 @@ registra chi e quando. I ban restano nello storico. Nessuno si banna da solo (ne
 | `Training.View` | ✓ | ✓ | ✓ | ✓ (d2) | ✓ solo il suo FIR (estensione n.2) |
 | `Training.Approve` | ✓ | ✓ | ✓ (d1) | | |
 | `Training.Assign` | ✓ | ✓ | | | ✓ solo il suo FIR (d1, d2) |
-| `Training.Conduct` | ✓ tutti | ✓ tutti | | ✓ **solo i training assegnati** (§3.3) | |
+| `Training.Conduct` | ✓ tutti | ✓ tutti | ✓ **solo i training assegnati** (§3.3, A7b) | ✓ **solo i training assegnati** (§3.3) | |
 | `Training.Edit` | ✓ | ✓ | | | |
 | `Training.ManageSheets` | ✓ | ✓ | | | |
 | `Training.ManageExams` | ✓ | ✓ | ✓ | — (mai esaminatori: nota `2026-09-26-gli-esaminatori`) | |
@@ -521,20 +528,28 @@ HQ (DIR, ADIR) e il web (WM, AWM) tutto per il nucleo; il superadmin tutto. Scri
 
 ### 3.3 Il trainer conduce solo i suoi training
 
-È il caso che il nucleo ha già deciso (`CLAUDE.md` §2: «un permesso su una riga sola»; nota
-`2026-09-15-permessi-su-una-riga-e-chi-ha-interesse`): **all'assegnazione** il modulo scrive con `ModuleGrants` un grant
-`Training.Conduct` al trainer con lo scope del training (`training:training:{id}`), come «aggiungi validatore» in M2.
-Il trainer resta quello che è — `Training.View` per posizione — più una riga.
+Con la **regola delle righe affidate** del nucleo (A3b, nota `2026-09-26-le-righe-affidate-a-chi-scrive`; `CLAUDE.md` §2, «a
+permission that reaches only the rows assigned to the writer»), decisa per il trainer da Carmine ([risposta 2 sulla #135][a2-135])
+e portata da **A7b** ([decisione sulla #146][d146], nota `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`):
 
-Due conseguenze, dette prima:
+- il training **dice a chi è affidato** (`IHasAssignee`): al suo trainer, `trainer_vid`;
+- `Training.Conduct` è **segnato `OnlyForAssignee`** nel catalogo del modulo, e lo tengono **per posizione** TC, TAC, i TA e i
+  trainer (§3.2). Ognuno raggiunge i training affidati a lui; su ogni altro il permesso **conta come `Training.Edit`**, che hanno
+  TC e TAC (l'override di §2.5) e nessun altro. L'unico handler e il guardiano dell'interceptor rispondono con la stessa regola,
+  e il training dichiara la sua area (`[PermissionArea("Training")]`), così il guardiano chiede `Training.Edit` e non
+  `Trainings.Edit`;
+- resta **negato all'interessato** (§3.1): un trainee che fosse anche il trainer del proprio training non lo conduce, superadmin
+  compreso — l'handler lo dice prima di guardare a chi è affidata la riga;
+- **nessun grant**: assegnare e riassegnare cambiano solo `trainer_vid`. Il trainer non rientra, nessun grant con scope viaggia
+  nel cookie, e nessun job li toglie (§5.3). Il training non si elimina: `Training.Conduct` non toglie niente, e la lista dello
+  staff è in sola lettura.
 
-- **Scrivere un grant chiede al titolare di rientrare** (cambia il suo security stamp, `CONTRIBUTING.md`): un trainer
-  appena assegnato rifà il login alla richiesta successiva. In M2 capita di rado (si abilita un validatore); qui a ogni
-  assegnazione.
-- **I grant con scope viaggiano nel cookie**: non si lasciano accumulare. Un job notturno toglie quelli dei training
-  chiusi (`Completed`, `NoShow`, `Closed`), così il secondo rientro cade di notte e non a report appena pubblicato.
+Si perdono il grant con scope come traccia nella schermata dei permessi — resta l'assegnazione nel registro del training (chi, quando)
+— e la possibilità di dare `Conduct` a mano su un training a una seconda persona, che nessuno chiede (nota di A3b, §5).
 
-**Deciso** (§12 n.1): il grant con scope, e il login in più a ogni assegnazione è accettato.
+**Deciso** (§12 n.1, corretta il 26 settembre 2026): la regola delle righe affidate. Fino ad A7b il trainer ha condotto con un grant
+`Training.Conduct` con lo scope del training (`training:training:{id}`), scritto all'assegnazione e tolto di notte dal job
+`training-expiry` a training chiuso, con un rientro del trainer a ogni grant scritto o tolto.
 
 ### 3.4 Più di un permesso scrive il training (estensione n.7)
 
@@ -625,8 +640,8 @@ dal profilo (preferenze del nucleo).
 
 - **`training-reminders`**, ogni 15 minuti: le sessioni che iniziano entro `reminderLeadHours` e non hanno ancora il
   promemoria; una colonna `reminded_at` lo fa partire una volta sola (il nucleo non programma mail nel futuro).
-- **`training-expiry`**, ogni notte: chiude i training oltre `maxResponseDays`, se impostato; toglie i grant con scope
-  dei training chiusi (§3.3).
+- **`training-expiry`**, ogni notte: chiude i training oltre `maxResponseDays`, se impostato. Non tocca i grant: il trainer non
+  ne ha (§3.3, A7b; fino ad A7b toglieva quelli dei training chiusi).
 
 Convenzioni di M2: `[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, mai un'eccezione, `RunAsync` per i test.
 
@@ -721,8 +736,9 @@ arrivano con la loro fase, sempre additive.
   e ogni uscita; nessuno approva, assegna, conduce o banna il proprio training (superadmin compreso); il trainer conduce
   il suo e non quello di un altro; il capo FIR assegna nel suo FIR e non in un altro; il trainee legge il suo training
   **senza** note riservate; una richiesta alla volta **per percorso**, ATC e pilota insieme sì; un TA crea un esame
-  senza `Edit` (n.7) e un trainer no; un bannato non chiede; il promemoria parte una volta; il grant del trainer sparisce a
-  training chiuso; **un trainer che è anche trainee non legge le note riservate del proprio training** dall'endpoint
+  senza `Edit` (n.7) e un trainer no; un bannato non chiede; il promemoria parte una volta; il trainer conduce il training
+  affidato a lui senza nessun grant e senza rientrare, e riassegnato non lo conduce più (A7b); **un trainer che è anche trainee non
+  legge le note riservate del proprio training** dall'endpoint
   dello staff (§12 n.13, con la sua nota); **la cancellazione di una persona** (§6.1): i conteggi del registro uguali prima e dopo, nessun testo
   libero rimasto, i training aperti e gli esami del candidato spariti, il ban in vigore rimasto, «persona cancellata» nelle
   pagine.
@@ -751,7 +767,7 @@ Le fasi vere si scrivono in `08-piano-implementazione-m3.md` dopo l'approvazione
 | A4 | Modulo: scheletro, `Initial`, catalogo, `positionGrants`, impostazioni, menu, segmento riservato |
 | A5 | Voci della scheda |
 | A6 | La richiesta: form, controlli per percorso, domanda sul teorico, annullamento, `/training/mine`, mail |
-| A7 | Accettare, rifiutare, assegnare (TC e TAC); il grant del trainer e il job che lo toglie |
+| A7 | Accettare, rifiutare, assegnare (TC e TAC); il grant del trainer e il job che lo toglie — sostituiti da A7b con la regola delle righe affidate (§3.3) |
 | A8 | Le date: disponibilità, avvisi, scelta a riquadri, override, calendario, promemoria, chiusura per tempo |
 | A9 | Dopo la sessione: rischedula, no-show, scheda con N/A, report, mock exam |
 | A10 | Blocchi Data, pagina pubblica della sessione, percorso del trainee, esami nel calendario, ban |
@@ -776,7 +792,11 @@ raccomandazione e la decisione; ognuna entra nella nota della fase A0.
 
 1. **Il trainer sul suo training** (§3.3). Raccomandato: il grant con scope per training. **Deciso** ([r1]): **come
    raccomandato** — un grant `Training.Conduct` con lo scope del training, scritto all'assegnazione con `ModuleGrants`,
-   e il job notturno che toglie i grant dei training chiusi. Il login in più a ogni assegnazione è accettato.
+   e il job notturno che toglie i grant dei training chiusi. Il login in più a ogni assegnazione è accettato. **Corretta il 26
+   settembre 2026** ([risposta 2 sulla #135][a2-135]; il momento l'ha deciso la [decisione sulla #146][d146], nota
+   `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`): il trainer conduce con la regola delle righe affidate di A3b —
+   `IHasAssignee` sul training, `Training.Conduct` segnato `OnlyForAssignee` e tenuto per posizione da TC, TAC, TA e trainer —,
+   senza grant né job, e senza login in più. A7 ha scritto il grant; **A7b** l'ha tolto.
 2. **Più permessi alternativi in scrittura** (§3.4, n.7). **Deciso** ([r1]): **sì** — `[AlsoWrittenWith]` si ripete, e
    un'entità che lo dichiara lo usa anche alla creazione. È un cambio del nucleo: una PR a sé, con una nota nuova e i test
    della spina dorsale, prima del codice del modulo che lo usa (fase A3).

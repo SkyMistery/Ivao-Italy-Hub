@@ -11,18 +11,19 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 28 settembre 2026 — **fase A10c** (gli esami nel calendario), sul branch `m3/a10c-exams`, **PR #178** verso
-`main`, in bozza **in coda dopo #153** (A10b, in bozza in coda dopo #151, A10a, in coda dopo #150, A9b, in coda dopo #149, A9a, in coda dopo #148,
-A8b, in coda dopo #147, A8a, in coda dopo #146, A7, in coda dopo #144, A6b). Il branch è nato da quello di A10b (8b4cb95), che ha già `main` fino a
-#172 — **A3b (#135) compresa**, unita il 27 settembre alle 20:24 UTC e scesa nella coda il 28 settembre con il merge verso l'alto che il revisore
-ha chiesto sulla #144 —; `main` è andato avanti ancora (#173–#176, e **#145, A6c, unita il 28 settembre**, che tocca questo file): la PR è
-in conflitto e senza CI, come la coda sotto, e `main` entra in ogni branch al suo passo della coda. La **sessione master** di Carmine (nota
+**Ultimo aggiornamento:** 28 settembre 2026 — **fase A7b** (il trainer sulla regola delle righe affidate), sul branch
+`m3/a7b-trainer-assignee`, **PR #181** verso `main`, in bozza **in coda dopo #178** (A10c, in bozza in coda dopo #153, A10b, in coda dopo #151,
+A10a, in coda dopo #150, A9b, in coda dopo #149, A9a, in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146, A7, in coda dopo #144,
+A6b). Il branch è nato da quello di A10c (cc14598), che ha già `main` fino a #172 — **A3b (#135) compresa**, unita il 27 settembre alle 20:24 UTC e
+scesa nella coda il 28 settembre con il merge verso l'alto che il revisore ha chiesto sulla #144 —; `main` è andato avanti ancora (#173–#177, e
+**#145, A6c, unita il 28 settembre**, che tocca questo file): la PR è in conflitto e senza CI, come la coda sotto, e `main` entra in ogni branch
+al suo passo della coda. La **sessione master** di Carmine (nota
 `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con `main`, lo
 chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139), A5 (#140), A6a (#143) e A3b (#135) sono unite**, e con loro **#152**
 del maintainer (`Refusals` nel nucleo: la copia del training l'ha tolta A10c); **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è da `main`
-e unita il 28 settembre. **A10 è divisa in tre** (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (questa). **A7b** (il trainer sulla regola
-delle righe affidate, decisa da Carmine sulla #146) è scritta in `08` e parte dalla cima della coda. **A11a** (i capi FIR nel nucleo, #159) è in
-una sessione sua, da `main` e fuori dalla coda. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+e unita il 28 settembre. **A10 è divisa in tre** (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178). **A7b** (questa) porta il trainer
+sulla regola delle righe affidate, com'è decisa da Carmine sulla #146: nessun grant, nessun job che lo toglie. **A11a** (i capi FIR nel nucleo, #159)
+è in una sessione sua, da `main` e fuori dalla coda. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -93,6 +94,47 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A7b (28 settembre 2026, branch `m3/a7b-trainer-assignee`, PR #181)
+
+- **Che cosa c'è** (codice del modulo e configurazione; nessun file del nucleo, nessuna nota nuova, nessuna domanda a Carmine, nessuna
+  migrazione): **il trainer sulla regola delle righe affidate** di A3b, come l'ha decisa Carmine ([risposta 2 sulla
+  #135](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425), [decisione sulla
+  #146](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982), nota
+  `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`):
+  - il training **dichiara il suo trainer** (`IHasAssignee` con `TrainerVid`, in `Training.cs`) e non ha più uno scope suo
+    (`IHasResourceScope`, `ScopeOf`, `IdOf` via);
+  - **`Training.Conduct` è `OnlyForAssignee`** (e `DeniedToStakeholder`, com'era), e `positionGrants` lo dà ai quattro livelli del TD: TC,
+    TAC, TA, trainer. Ognuno conduce i training affidati a lui; su ogni altro il permesso vale `Training.Edit` (TC e TAC);
+  - **assegnare scrive solo la riga**: nessun grant, nessun rientro del trainer. **`training-expiry`** chiude soltanto (per tempo, con
+    `maxResponseDays`) e **`RunAsync` restituisce quanti training ha chiuso**;
+  - le parole dell'avviso e della mail dell'assegnazione non chiedono più al trainer di rientrare;
+  - `07` corretto (§1.1, §2.4, §3.2, §3.3, §5.3, §10, §11, §12 n.1).
+- **Che cosa deve sapere la fase dopo**:
+  - **Chi conduce un training** è il suo trainer (con `Conduct` per posizione) e chi ha `Training.Edit`; mai chi la riga riguarda. Si chiede
+    all'unico handler sulla riga (`StaffTrainings.MayAsync`), come prima: nessun codice del modulo guarda `TrainerVid` per decidere.
+  - ⚠️ **Il guardiano lascia scrivere il training a chi tiene `Approve`** (i TA), qualunque cosa scrivano: le tre alternative si sommano
+    (A7). Chi conduce lo decide l'endpoint.
+  - ⚠️ **Al trainee di un training il guardiano risponde con l'eccezione del membro sulla propria riga**, che non chiede permessi: che un
+    trainee non conduca il proprio training lo dice l'handler (`DeniedToStakeholder`), prima di tutto.
+  - ⚠️ **In un'installazione già avviata** la voce di `positionGrants` di `Training.Conduct` è nuova (i livelli fanno l'impronta): la
+    vecchia, a TC e TAC, resta come riga doppione. **I grant con scope scritti da A7** (motivo `training: trainer`) restano, inerti: il
+    job non li toglie più. Sui banchi ce ne sono.
+  - **`DELETE` di un training non esiste**: la lista dello staff è in sola lettura, e `DELETE` risponde 404.
+  - **Il giro dello staff** (`full/training-staff.spec.ts`) fa entrare il trainer all'inizio e non lo fa più rientrare; anche i giri delle
+    date, del report e dei prossimi training usano la sessione del trainer aperta all'inizio.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, acceso da A7b con la sua build e spento a fine fase, con il database che
+    resta; lo script è `preview-bench.ps1` nello scratchpad di A7b): **#6 è chiuso** (motivo «trn-test: chiuso per l'anteprima di A7b.»);
+    **#9** (ATC, ADC, LIMC_TWR) è **assegnato** al trainer del banco e aspetta le date; #8 (il mock exam) come prima. Il trainer tiene
+    `Training.Conduct` per posizione, e i tre grant con scope che A7 aveva scritto lì (#6, #7, #8), inerti.
+  - **A11b** parte solo quando #159 (A11a) è unita; altrimenti la prossima nell'ordine di `08` è **A12a** (nucleo).
+  - VID: A7b non ne usa di nuovi (riusa quelli delle classi che cambia); il range del training è tutto assegnato.
+- **Trovato, detto al revisore**: la premessa del punto 3 del revisore («the guard says no») non vale per il training, per l'eccezione del
+  membro (`08`, A7b, scostamento 4); i candidati non si ricavano da chi tiene `Conduct` (scostamento 3); `DELETE` risponde 404, non 405.
+- **La coda**: la PR è in bozza con `(after #178)` e `Queued after #178.`, **in conflitto con `main` e senza CI** (l'handoff, dopo #145 e
+  #176), come la coda sotto. Quando #178 sarà unita, il passo della coda di A7b — `main` nel branch con un merge (mai un rebase),
+  l'intestazione di A7b in cima a questo file e i blocchi nuovi di `main` sotto, build e **tutti** i test di nuovo, via la coda dal titolo
+  e dal corpo, la PR pronta a CI verde — lo fa la sessione di A7b se è ancora viva, altrimenti quella della fase dopo prima di cominciare.
 
 ### Che cosa ha lasciato A10c (28 settembre 2026, branch `m3/a10c-exams`, PR #178)
 
