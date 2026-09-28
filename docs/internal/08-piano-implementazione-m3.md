@@ -2518,7 +2518,151 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
     nessun file del maintainer, nucleo 2 (i due conteggi) con la nota, quindi passa.
   - **A10c può partire** (sopra, sotto A10: i tre punti del revisore per la riga di un esame, e la copia di `Refusals.cs` da togliere).
 
-**Com'è andata (A10c)**: *(a fase chiusa)*
+**Com'è andata (A10c)** (28 settembre 2026, branch `m3/a10c-exams`, PR #178, in coda dopo #153):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — la regola delle righe affidate di A3b, com'è scritta per gli esami nella sua nota §3.6 (`IHasAssignee`, `OnlyForAssignee`,
+  `AlsoOnDeletion`) con i tre punti del revisore sulla #146; `MapCrud` per la lista e il form, senza `DeletePolicy`, con `ToListPage` per
+  chiedere all'unico handler su ogni riga; `IPermissionHolders` del nucleo per sapere chi esamina, com'è il digest dei validatori dei
+  tour (T13); `IProjectable` per la voce `exam` del calendario (il tipo è nel seme da A2); `PublicSessions` e il blocco
+  `training.upcomingSessions` di A10b; `Refusals` del nucleo (#152) —. **Nessun file del nucleo** (i tipi generati dell'API a parte),
+  nessuna nota nuova, nessuna domanda a Carmine. **Una migrazione**, `AddExams` del contesto del training (la tabella e due indici).
+- **Fatto**, come il perimetro di A10c qui sopra:
+  1. **`trn_exams`** (`Exams/Exam.cs`): il candidato e l'esaminatore **solo per VID** (`candidate_vid`, `examiner_vid`), il percorso, il
+     rating, la postazione di un esame ATC, l'inizio; `[Audited]`, **`[PermissionArea("Training")]`**, **`[AlsoWrittenWith(ManageExams,
+     AlsoOnCreation = true, AlsoOnDeletion = true)]`**, `IHasAssignee` con l'esaminatore, nessun `IHasStakeholder`. Nel catalogo
+     `Training.ManageExams` è **`OnlyForAssignee`**, e resta negato a nessuno (design §3.1). Niente esito, niente voto, niente stato.
+  2. **La lista e il form** (`Exams/ExamEndpoints.cs`, `Exams/TrainingExams.cs`): `/api/training/exams`, letta con `Training.View` e
+     scritta con `Training.ManageExams`, **senza `DeletePolicy`**; ogni riga dice **`mine`** (il lettore è l'esaminatore) e **`mayEdit`**
+     (la risposta dell'unico handler sulla riga); `filter[examinerVid]` («Io»), `filter[kind]`, `?q=` sulla postazione e sul VID del
+     candidato. **`/api/training/exam-choices`**, con `ManageExams`: gli esaminatori che l'unico handler lascia dare al lettore — un TA
+     solo sé stesso, chi ha `Edit` tutti — per nome, e le postazioni. Le regole del form: un rating che la divisione allena, la postazione
+     di un esame ATC fra quelle della divisione per quel rating e nessuna per un esame pilota, la data, il candidato, un esaminatore che
+     non è il candidato (`examinerIsCandidate`) e che mette esami in calendario (`examinerNotExaminer`).
+  3. **Il calendario**: ogni esame è **una voce pubblica di tipo `exam`**, al suo inizio, con il titolo rating · postazione, senza nomi
+     né VID, che porta a **`/training`**; togliere l'esame toglie la voce.
+  4. **Il sito**: `GET /api/training/sessions/exams`, anonimo — gli esami ancora da venire (dal giorno di oggi nel fuso della divisione,
+     i più vicini prima, al massimo 50), con i due VID **solo a chi ha fatto il login** —; nel blocco `training.upcomingSessions` gli esami
+     sono **`exams`**, accanto a `items`; **`/training`** e il blocco li disegnano con le sessioni **in un elenco solo** (`upcomingLines` in
+     `screens/site.ts`), un esame come «Esame ADC · LIRF_TWR», senza una pagina sua.
+  5. **Le pagine dello staff** (`screens/exams.tsx`): **`/staff/training/exams`**, la lista generata (quando, il rating, la postazione, il
+     candidato e l'esaminatore per VID, «Tuo»), «Io» per restringerla ai propri, «Modifica» solo dove il server dice `mayEdit`, «Nuovo
+     esame» a chi tiene `ManageExams`; **`/staff/training/exams/$id`**, il form generato, con l'esaminatore già scelto quando è il lettore, e
+     «Elimina» chiesto prima. La voce «Esami» nella barra dello staff, con `Training.View`.
+  6. **Via `src/IvaoHub.Modules.Training/Refusals.cs`**: i verbi del modulo usano `IvaoHub.Core.Data.Crud.Refusals`, come chiede la nota
+     di #152 (`2026-09-27-i-rifiuti-di-un-form-nel-nucleo`) alla prima fase del collaboratore aperta dopo il merge ([commento di Carmine
+     sulla #143][c143]). Le risposte non cambiano: stesse chiavi, ognuna una volta, nello stesso ordine; gli endpoint passano ancora il
+     dizionario a `CrudProblems.Validation`, come la nota lascia fare a un verbo finché non lo si tocca per altro.
+  7. **I test**: unità `TrainingExamRulesTests` (5); integrazione `TrainingExamTests` (9, VID 790090–790094 e 790068–790071); Vitest
+     `screens/upcoming.test.ts` (2) e `exams.test.ts` (3); lo smoke `web/e2e/training-exams.spec.ts` (8); il giro sul banco
+     `web/e2e/full/training-exams.spec.ts` (sotto).
+- **I tre punti del revisore sulla #146**, ognuno con il suo test (e ognuno fatto cadere sul codice indebolito, sotto):
+  1. **L'area dell'entità**: `[PermissionArea("Training")]` su `Exam`; TC e TAC, con `Edit` e non esaminatori, cambiano, passano a un
+     altro e tolgono l'esame di un TA **dall'endpoint** (`TheCoordinatorAndTheAssistantWriteAnAdvisorsExamThroughTheEndpoint`), e l'handler
+     e il guardiano dicono sì tutti e due (`TheHandlerAndTheGuardAnswerAlikeOnEveryExam`).
+  2. **DELETE**: lo fanno il TA a cui l'esame è assegnato e chi ha `Edit`, nessun altro — né un altro TA, né un trainer, né un membro
+     (`AnExamIsTakenOffTheCalendarByItsExaminerAndByWhoeverEditsTheAreaOnly`) —, con `AlsoOnDeletion` e **senza `DeletePolicy`**: un
+     `DeletePolicy = Training.Edit`, la risposta del punto 2 per A7, toglierebbe al TA il suo esame, contro la risposta 4 di Carmine sulla
+     #131.
+  3. **Chi ha interesse**: la nota di A3b §3.6 chiede `DeniedToStakeholder` solo «se l'esame dice il suo candidato». **L'esame non lo dice**
+     (niente `IHasStakeholder`), e `ManageExams` resta negato a nessuno, com'è nel design §3.1 e nel test di A4 che lo tiene
+     (`TrainingSettingsTests.FiveOfTheNinePermissionsAreDeniedToWhoeverATrainingIsAbout`). Così l'handler e il guardiano dicono lo stesso
+     anche sul TA che fosse candidato ed esaminatore — sì, tutti e due, su una riga che nessun endpoint lascia nascere: il form rifiuta il
+     candidato esaminatore (`examinerIsCandidate`) — (lo stesso test del punto 1), e un test di unità tiene insieme l'esame e il catalogo:
+     un esame «sul» candidato con il permesso non negato è il caso del punto 3, e cade.
+- **Scostamenti e precisazioni, piccoli**:
+  1. **La voce `exam` porta a `/training`** (A10b, «Per A10c» 2: da decidere qui). Una pagina per esame direbbe rating, postazione, data e
+     ora come la voce e la riga di `/training`; l'esame vero è della rete. Un esame passato non è più fra i prossimi di `/training`, ma la
+     sua voce resta nel calendario, con il suo titolo.
+  2. **Degli esami solo il VID anche nelle pagine**: la lista dello staff e `/training` con il login mostrano i VID del candidato e
+     dell'esaminatore, **mai i nomi**. La richiesta del TD (in cima a `HANDOFF-M3.md`) parla di ciò che l'hub tiene; qui vale anche per ciò
+     che mostra, e la nota `il-training-in-pubblico` — VID e nomi a chi ha fatto il login — è rispettata mostrando meno. I nomi ci sono
+     solo nella scelta dell'esaminatore del form: è lo staff che l'hub conosce, non un dato dell'esame.
+  3. **L'esame non dice il suo candidato come la persona di cui è** (niente `IHasStakeholder`), com'è nel design (§3.1: `ManageExams` non
+     è negato all'interessato): l'esame è una voce del calendario, non una decisione sul candidato. Una prima stesura lo faceva, con
+     `ManageExams` negato all'interessato, e il test di A4 sui cinque permessi negati l'ha fermata: cambiare §3.1 è di Carmine. Resta il form,
+     che rifiuta sul campo un esaminatore che è il candidato; un TC candidato di un esame lo può cambiare, come il design lascia.
+  4. **Il rating di un esame è uno di quelli che la divisione allena** (il vocabolario del nucleo, `HasPracticalTraining`), come per le
+     voci della scheda: l'esame alla fine di un percorso del modulo. ⚠️ **Gli esami di PATS arrivano al rating 8** (§P: SEC, ATP): se il TD
+     deve mettere in calendario anche quelli, è una domanda, perché il vocabolario del nucleo non dice quali rating hanno un esame e il
+     modulo non può scriverlo (estensione del nucleo, perimetro IVAO).
+  5. **Chi esamina è chi tiene `Training.ManageExams` sul dipartimento base**, come lo calcola un login (`IPermissionHolders`): TC, TAC, i
+     TA e la direzione, e anche il web master e il superadmin, che tengono tutto per il nucleo. Nessuna regola di livelli scritta nel
+     modulo: la dice `positionGrants`.
+  6. **La lista la leggono tutti con `Training.View`**, trainer compresi, e la voce del menu è di `View`, come i ban di A10a (la nota di
+     A3b §3.6: «la lista la leggono tutti con `Training.View`»); i pulsanti sono di `ManageExams`, e «Modifica» solo dove il server dice
+     `mayEdit`. Un TA che apre a mano il form dell'esame di un altro riceve il 403 al salvataggio.
+  7. **La postazione di un esame ATC** è una della divisione per quel rating (il direttorio del nucleo), scritta come il direttorio la
+     scrive; le postazioni nascoste (`hiddenPositions`) valgono per le richieste di training, non per gli esami. Il form offre le
+     postazioni di tutti i rating allenati (un suggerimento chiuso, raggruppato per rating), e il server rifiuta quella di un altro.
+  8. **Nessuna durata**: un esame ha l'inizio (§1.5, «data e ora»), e la sua voce del calendario nessuna fine. **Una data passata si può
+     scrivere**: l'esame resta la traccia nel calendario.
+  9. **Nel blocco gli esami sono `exams`, accanto a `items`**: il test di A10b legge `items`, che non cambia. La pagina e il blocco li
+     mettono in un elenco solo, e il `limit` del blocco vale per i due insieme (il server ne dà al massimo `limit` di ognuno).
+  10. **Se la lettura degli esami cade, `/training` disegna le sessioni e lo dice** (`public.examsUnread`), senza ripetere la lettura.
+  11. **Il `View` che ogni permesso di un'area porta con sé** (A11a): chi riceve `ManageExams` per posizione — TC, TAC, TA — tiene già
+      `Training.View` per posizione. Non cambia niente per nessuno.
+- **Codice di fasi sotto toccato, e perché** (nessun test di un'altra fase è cambiato):
+  1. `Requests/TrainingRequests.cs` (A6a) e `Sheets/EvaluationSheet.cs` (A9a): solo l'`using` del nucleo, per `Refusals`.
+  2. `Public/PublicSessions.cs`, `Blocks/UpcomingSessionsProvider.cs`, `screens/public.tsx`, `screens/site.ts`, `blocks/upcomingSessions.tsx`,
+     `blocks/index.ts` (A10b): gli esami accanto alle sessioni; ciò che il server risponde delle sessioni e le loro righe sono gli stessi.
+     Le parole di `/training` e del blocco (`public.lead`, `upcoming`, `none`, il nome del blocco) dicono anche gli esami.
+  3. `Data/TrainingDbContext.cs`: la tabella, e il vocabolario dato anche agli esami che il contesto segue.
+- **La prova sul codice indebolito** (i tre punti del revisore), ognuna rimessa com'era e seguita da una build dei file toccati: senza
+  `[PermissionArea]` cadono 1 test di unità e 4 d'integrazione, fra cui quello di TC e TAC dall'endpoint; con `DeletePolicy =
+  Training.Edit` cadono i 2 test in cui il TA toglie il suo esame; con l'esame «sul» candidato (`IHasStakeholder`) e il permesso non negato
+  — il caso del punto 3 — cadono il test di unità che tiene insieme l'esame e il catalogo e quello in cui l'handler e il guardiano devono dire
+  lo stesso («The guard refused a write the handler allows»). **I test nuovi sul codice di A10b non compilano**: l'entità, gli endpoint e i
+  DTO nascono qui.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **Gli smoke di A10b non fingono la lettura degli esami**: la loro finzione di `/api/training/sessions/*` le risponde 404, e la
+     pagina disegna le sessioni con l'avviso; i loro test passano senza essere toccati. Lo smoke nuovo finge la lettura.
+  2. **Il test di A4 sui cinque permessi negati all'interessato** (design §3.1) ha fermato una prima stesura che segnava `ManageExams`
+     `DeniedToStakeholder`: è il posto dove il design di chi può che cosa è scritto in un test, e il revisore lo trova lì.
+  3. `PermissionCatalog.VerifyAlternatives` non guarda ancora `[PermissionArea]`: la piccola PR del nucleo che il revisore ha annunciato
+     sulla #146 lo farà; `Exam` la passerà.
+  4. I VID **790068–790071** e **790090–790094** sono di A10c.
+  5. ⚠️ **La colonna booleana del nucleo** (`col.boolean`) ha le parole di un interruttore, «Attivo» e «Non attivo»: una colonna sì/no che
+     non è un interruttore la scrive il modulo come parola sua (`col.badge` con le sue `options`), come «Tuo» nella lista degli esami.
+- **La coda**: A10c è nata in coda dopo #153 (A10b, in bozza in coda dopo #151, dopo #150, dopo #149, dopo #148, dopo #147, dopo #146, dopo
+  #144): la PR è in bozza con `(after #153)` e `Queued after #153.`. Il branch è quello di A10b a 8b4cb95, che ha già `main` fino a #172
+  (A3b compresa, il merge verso l'alto della coda del 28 settembre); **`main` è andato avanti ancora** (#173–#176, e #145 di A6c, unita il
+  28 settembre, che tocca `HANDOFF-M3.md`): la PR è in conflitto e senza CI, come la coda sotto, e `main` non si insegue — lo prende ogni
+  branch al suo passo della coda (la sessione che coordina, il 28 settembre). Quando #153 sarà unita, il passo della coda
+  (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel branch con un merge, con l'intestazione di A10c in cima all'handoff e i blocchi
+  nuovi di `main` sotto, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (28 settembre 2026, sul branch da `m3/a10b-blocks-and-public-pages`, 8b4cb95): **prima di scrivere codice**, sul
+  branch com'era (un avanzamento veloce, nessuna combinazione nuova): `dotnet build` senza avvisi, unità **846/846**, integrazione intera
+  **381/381**, `pnpm lint`, `typecheck` e `pnpm test` **554**. **Sul codice finale**, una suite alla volta: `dotnet build` senza avvisi;
+  unità **851/851** (le 846 e le 5 nuove; `TrainingArchitectureTests` legge anche il C# e il TypeScript nuovi); **integrazione intera
+  senza filtro** **390/390** al primo giro (le 381 e le 9 nuove); la classe nuova da sola 9/9 — al suo primo giro 4/9, perché senza gli
+  altri test il database non aveva le postazioni della rete: il test fa ora girare `RefDataSyncJob`, come quelli della richiesta —; `pnpm
+  lint`, `typecheck`, `format:check`, `i18n:check` (782 chiavi) verdi, e lo script delle chiavi letterali `training:` (374, nessuna manca);
+  `pnpm test` **559** in **72** file (i 554 in 70 e i 5 nuovi in 2); `pnpm e2e` **139/139** al primo giro, con il lucchetto della porta
+  4173 (i 131 e gli 8 nuovi); **`pnpm e2e:full` 48/48** al primo giro su un **banco nuovo** di questo worktree (127.0.0.1:5099,
+  `ivaohub_e2e_a10c`), di nuovo **48/48** su un banco ricreato dopo l'ultima correzione del server, e una terza volta **48/48** dopo la
+  correzione della colonna «Tuo» (sotto), con lo smoke di nuovo **139/139** e `pnpm test` **559**; `pnpm gen:api` e `pnpm i18n:sync`
+  nei commit che li portano; `dotnet ef migrations has-pending-model-changes` senza modifiche; `dotnet format --verify-no-changes` sui 12
+  file C# della fase, test compresi; le regole di `core-guard` rifatte in PowerShell: sull'intervallo della fase nessun file del
+  maintainer e nessuno del nucleo; verso `main`, i due conteggi di A10b con la sua nota. **La prova sul codice indebolito**: sopra.
+  **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`, con la build di questa fase), in italiano: come web master
+  `/staff/training/exams` vuota, con «Nuovo esame» e «Esaminatore: Chiunque», e «Esami» nel menu fra «Trainee» e «Ban»; il form — il rating
+  fra quelli allenati, la postazione dal suggerimento chiuso (LIRR_NE_CTR fra i settori di Roma), data e ora con l'ora di Roma sotto, il VID
+  del candidato, l'esaminatore già scelto, «Bench Coordinator (999001)», fra quelli che il server offre —; salvato, nella lista con
+  «Modifica»; `/training` con il login («Esame ACC · LIRR_NE_CTR», «Candidato: 999002 · Esaminatore: 999001», dopo il training del 29
+  settembre); il calendario della settimana, con la voce «Esame» del 2 ottobre che porta a `/training`; da visitatore `/training` senza
+  VID né nomi (letto dal testo della pagina); come trainer la lista senza «Modifica» né «Nuovo esame». **Trovato a mano e corretto**: la
+  colonna «Tuo» diceva «Attivo» e «Non attivo» — la colonna booleana del nucleo ha le parole di un interruttore —: ora «Sì» e «No», parole
+  del modulo, e lo smoke le legge.
+- **Non verificato**: **la CI**: la PR è in conflitto con `main` sull'handoff (#145, A6c, unita il 28 settembre, e #176), come tutta la
+  coda sotto, e un conflitto non fa partire `build-test`; per la sessione che coordina il merge di `main` entra nel branch al passo della
+  coda, quando #153 sarà unita. **Un TA sul banco**: il banco non ne ha, e il suo giro inserisce l'esame con il web master;
+  che un TA scriva solo i suoi esami lo provano i test d'integrazione, con l'identità del cookie. **Gli esami SEC e ATP** (sopra, 4).
+  **Le pagine dello staff larghe 375 px**: hanno il difetto noto del nucleo a quella larghezza (A7). **La PR del nucleo del revisore**
+  che farà rifiutare a `VerifyAlternatives` un'entità senza `[PermissionArea]`: non c'è ancora; `Exam` la dichiara. **A mano, la pagina in
+  inglese e a tema chiaro**, e **un 409** del form degli esami dalle pagine: provati dallo smoke e dal motore (`MapCrud`), non a mano.
+
+[c143]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298
 
 ### A11 — I capi FIR
 
