@@ -132,11 +132,27 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Anche questo, guardando a mano** (sul banco di anteprima, 5090): «Richiedi training» è un pulsante grigio, perché `ConfirmDialog` ha
   solo i pulsanti `ghost` e `secondary`; un pulsante primario sarebbe un'estensione del nucleo, detta al revisore. L'intestazione del
   sito è larga 1044 px su un telefono in ogni pagina (nucleo).
-- **La coda**: la PR #144 è in bozza con `(after #143)` e `Queued after #143.`: **quando #143 sarà unita**, il passo della coda —
-  `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI
-  verde — lo fa la sessione di A6b se è ancora viva, altrimenti quella di A7 prima di cominciare (sul branch di A6b, con un branch
-  temporaneo, e poi il merge in A7). Se il revisore chiede correzioni su #143, si fanno sul suo branch e salgono in A6b e in A7 con un
-  merge.
+- **La coda**: #143 è unita (27 settembre), e il passo della coda l'ha fatto la sessione di A10b, in cima alla coda (f5e3cd6). Ha segnato
+  la PR pronta prima della correzione di Invio che il revisore aveva chiesto, e la PR è tornata in bozza
+  ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5857989492)). Con le correzioni qui sotto torna pronta a
+  CI verde, senza coda.
+- **Le correzioni della revisione** (28 settembre 2026, [la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5855612519);
+  i dettagli, commit per commit, in `08`, A6b):
+  - **`main` è entrato nel branch** (3c79786: A3b, #135, e #160–#172), come il master ha chiesto su #144. Il catalogo di A3b non cambia
+    niente di A6b.
+  - **Invio nella postazione apre la domanda sul teorico**, come il pulsante (2d20da4). Ogni invio del form passa da `letThrough`
+    (`onSubmitCapture` di `RequestForm`), e va avanti solo quello che parte dalla conferma della finestra; la risposta si dimentica quando
+    la finestra si chiude. ⚠️ Per una spec: con la domanda, Invio nel form apre la finestra e non manda niente, e la richiesta parte solo
+    da «Invia la richiesta».
+  - **«Torna alla richiesta» dopo un «no» tiene quello che il trainee ha scritto** (edfe7cb): il form resta montato, nascosto, mentre si
+    legge il rifiuto dell'hub.
+  - **L'etichetta di una postazione** è la chiave `training:positionChoice` (2912154), con `positionLabel` in `screens/ratings.ts`, che
+    usano anche le impostazioni.
+  - ⚠️ **Restano da fare**, scritti in `08` con il perché:
+    - i nit di `mine.tsx` (`CardRoot`, il `' · '` in una chiave, `line-clamp-3`) li fa una fase in cima alla coda, perché A8b, A9b e A10b
+      cambiano quel file;
+    - `canCancel` dal server, al posto di `isCancellable` e `readyForExam`, quando A7 e A8 aggiungono stati;
+    - `Training/Refusals.cs` lo toglie A10c.
 
 ### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
 
