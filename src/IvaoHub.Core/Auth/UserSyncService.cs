@@ -66,11 +66,7 @@ public sealed class UserSyncService(
         ArgumentNullException.ThrowIfNull(profile);
 
         var options = division.Value;
-        var firIds = await firs.GetFirIdsAsync(cancellationToken);
-
-        var parsed = profile.StaffPositions
-            .Select(raw => (Raw: raw, Position: StaffRoleMap.Parse(raw, options.Code, firIds)))
-            .ToArray();
+        var parsed = await ParsePositionsAsync(profile, cancellationToken);
 
         foreach (var (raw, position) in parsed.Where(entry => entry.Position is null))
         {
@@ -161,6 +157,34 @@ public sealed class UserSyncService(
             catalogue);
 
         return new SignedInUser(user, positions, permissions);
+    }
+
+    /// <summary>
+    /// Whether this login would make the person staff of this division, or they already are a super administrator here:
+    /// the two who may enter a private installation (note 2026-09-27-l-installazione-di-prova). It reads and never writes,
+    /// because it is asked before the login writes anything, so that a person turned away leaves no row behind.
+    /// <para>Staff is the rule <see cref="UpsertAsync"/> writes into <c>is_staff</c>: a position of this division that the
+    /// map recognises. The super administrator is the column and never <c>division.json</c>: the one the file bootstraps
+    /// passes because the first start already wrote their placeholder row with the flag set (plan section 4.1).</para>
+    /// </summary>
+    public async Task<bool> IsStaffOrSuperadminAsync(IvaoUserProfile profile, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+
+        var parsed = await ParsePositionsAsync(profile, cancellationToken);
+
+        return parsed.Any(entry => entry.Position is not null)
+            || await database.Users.AnyAsync(user => user.Vid == profile.Vid && user.IsSuperadmin, cancellationToken);
+    }
+
+    private async Task<(string Raw, StaffPosition? Position)[]> ParsePositionsAsync(
+        IvaoUserProfile profile,
+        CancellationToken cancellationToken)
+    {
+        var code = division.Value.Code;
+        var firIds = await firs.GetFirIdsAsync(cancellationToken);
+
+        return [.. profile.StaffPositions.Select(raw => (Raw: raw, Position: StaffRoleMap.Parse(raw, code, firIds)))];
     }
 
     /// <summary>

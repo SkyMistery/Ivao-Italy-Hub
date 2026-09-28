@@ -167,6 +167,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/diagnostics/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RequestDiagnostics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/effective-rules": {
         parameters: {
             query?: never;
@@ -3147,6 +3163,7 @@ export interface components {
             registries: components["schemas"]["BootstrapRegistries"];
             calendarKinds: components["schemas"]["BootstrapCalendarKind"][];
             version: string;
+            commit: null | string;
         };
         BootstrapUser: {
             /** Format: int32 */
@@ -3828,7 +3845,8 @@ export interface components {
          * @description One thing the hub found on the days a date touches (design M3 §2.5), as it was when the date was looked at: another training
          *     with its session then — its ladder, rating and position, which the public calendar shows too, and never whose it is —, or an
          *     entry of the calendar of one of the kinds of `conflictKinds`, with its title and its address. A date the trainer proposes
-         *     keeps its warnings (TrainingSlot), so nobody's name or VID is in them.
+         *     keeps its warnings (TrainingSlot) for whoever reads the training, so nobody's name or VID is in them, and no entry
+         *     that only one department reads (`DateConflicts.Kept`).
          */
         DateWarning: {
             /** @description A training, or an entry of the calendar. */
@@ -3976,6 +3994,26 @@ export interface components {
          * @enum {unknown}
          */
         ExemptionStatus: "Online" | "NotOnline" | "Unverifiable";
+        /** @description What the forwarded headers middleware was told to do, as it holds it. */
+        ForwardingSettings: {
+            /** @description Whether the middleware runs at all: only when `ForwardedHeaders:TrustedNetworks` lists a network. */
+            inPipeline: boolean;
+            /** @description Which of the forwarded headers it applies. */
+            headers: string;
+            /**
+             * Format: int32
+             * @description How many entries, from the right, it may consume; `null` is no limit.
+             */
+            forwardLimit: null | number;
+            /** @description The networks whose headers it believes. */
+            trustedNetworks: string[];
+            /** @description The single addresses whose headers it believes. */
+            trustedProxies: string[];
+            /** @description The header it reads the address from. */
+            forwardedForHeaderName: string;
+            /** @description The header it reads the scheme from. */
+            forwardedProtoHeaderName: string;
+        };
         /** @description A grant as the form loads it, with the audit trail and the version to write back. */
         GrantDetailDto: {
             /** Format: int64 */
@@ -5921,6 +5959,50 @@ export interface components {
             /** Format: date-time */
             takeoffAt: string;
         };
+        /** @description An address with its family, because `::ffff:127.0.0.1` and `127.0.0.1` are not in the same network. */
+        RequestAddress: {
+            /** @description As the hub writes it, in the audit log too; `null` when there is none. */
+            address: null | string;
+            /** @description `IPv4`, `IPv6`, `IPv4-mapped IPv6`, or `none`. */
+            family: string;
+            /**
+             * Format: int32
+             * @description The port, `0` when a forwarded address came without one.
+             */
+            port: number;
+        };
+        /** @description What the hub sees of one request. Every header is listed as it arrived, before the forwarded headers ran. */
+        RequestDiagnosticsResponse: {
+            /** @description Who opened the connection: the last proxy, or the visitor if there is none. */
+            neighbour: components["schemas"]["RequestAddress"];
+            /** @description The address the hub works with: the audit log, the rate limit of the login. */
+            believed: components["schemas"]["RequestAddress"];
+            /** @description Whether the forwarded headers middleware replaced the address. */
+            addressForwarded: boolean;
+            /** @description The scheme of the hop from the neighbour. */
+            schemeReceived: string;
+            /** @description The scheme the hub works with: HSTS, the redirection to https, the secure cookie. */
+            scheme: string;
+            /** @description Whether the forwarded headers middleware replaced the scheme. */
+            schemeForwarded: boolean;
+            /** @description What HSTS and the redirection to https decide on. */
+            isHttps: boolean;
+            /** @description The `Host` header as it arrived. */
+            host: string;
+            /** @description The forwarding headers, and those the installation named, with their values as they arrived. */
+            headers: components["schemas"]["RequestHeader"][];
+            /** @description The name of every header that arrived, never a value. */
+            headerNames: string[];
+            /** @description What the forwarded headers middleware was told to do. */
+            forwarding: components["schemas"]["ForwardingSettings"];
+        };
+        /** @description A header as it arrived: every line, and how many comma separated entries they hold together. */
+        RequestHeader: {
+            name: string;
+            values: string[];
+            /** Format: int32 */
+            entries: number;
+        };
         /** @description What the reader may do on this report now. */
         ReviewActionsDto: {
             canTake: boolean;
@@ -7652,6 +7734,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SearchResponseDto"];
+                };
+            };
+        };
+    };
+    RequestDiagnostics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestDiagnosticsResponse"];
                 };
             };
         };

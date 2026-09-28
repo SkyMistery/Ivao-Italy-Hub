@@ -1,3 +1,4 @@
+import { ApiError } from '../../../shared/api/problem';
 import type { ChoiceOption } from '../../../shared/forms';
 import { memberLabel, type StaffTrainingDto, type TrainerCandidateDto, type TrainingMemberDto } from '../api';
 import type { StaffTrainingsSearch } from '../schemas';
@@ -47,6 +48,14 @@ export function trainerChoices(candidates: readonly TrainerCandidateDto[]): Choi
         .filter((part) => part !== null && part !== '')
         .join(' · '),
     }));
+}
+
+/**
+ * Whether a step came back as a conflict: somebody else moved the training since the page was read. The page is read again
+ * then, and the form it draws anew keeps no sentence of the one it replaced: a conflict is said in a notice instead.
+ */
+export function isConflict(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409;
 }
 
 /** What the page says of the decision on a request. */

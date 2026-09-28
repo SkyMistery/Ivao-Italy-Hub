@@ -68,6 +68,30 @@ public sealed class DivisionOptionsValidationTests
         Assert.Contains(result.Failures, failure => failure.Contains("'icaoPrefixes'", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("https://hub.example.org")]
+    [InlineData("hub.example.org/")]
+    [InlineData("hub.example.org:8443")]
+    [InlineData("hub example.org")]
+    public void RejectsADomainThatIsNotAHostName(string domain)
+    {
+        // Every absolute link is "https://" + the domain, and since 27 September 2026 an
+        // administrator can type it on the server as Installation:Domain: a scheme or a slash
+        // written there would go out in every mail.
+        var result = Validate(Valid() with { Domain = domain });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure => failure.Contains("'domain'", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("test.hub.example.org")]
+    [InlineData("localhost")]
+    public void AcceptsAHostName(string domain)
+    {
+        Assert.True(Validate(Valid() with { Domain = domain }).Succeeded);
+    }
+
     [Fact]
     public void AcceptsNoIcaoPrefixAtAll()
     {

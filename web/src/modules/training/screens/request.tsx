@@ -1,7 +1,7 @@
 import { Button, H1, H2, Label, Lead, RadioGroupItem, RadioGroupRoot, Subtle } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
@@ -26,6 +26,7 @@ import {
 } from '../schemas';
 
 import { RefusalDetailText, TheoryExamLink } from './parts';
+import { positionLabel } from './ratings';
 import { MINE, chosenPath, formatHours, isTheoryRefusal, refusalDetail, splitRefusal } from './trainee';
 
 /**
@@ -33,10 +34,10 @@ import { MINE, chosenPath, formatHours, isTheoryRefusal, refusalDetail, splitRef
  * for a signed in member: who they are, read only and never their address; the ladder; the one training the hub proposes on
  * it; a position among the ones offered, when the rating is trained on one; and two texts in their own words.
  *
- * «Request training» asks the question on the theory first (R.2). A «no» is sent as well, and the hub records it as a request
- * it refused by itself: the screen says so, and no mail goes. Every rule is the server's: this page offers what
- * `GET /api/training/mine` says may be asked, and a refusal lands where it belongs — on its field, or above the form for the
- * request as a whole, whose details come from the same answer the page reads again.
+ * «Request training» asks the question on the theory first (R.2), and so does Enter in the form. A «no» is sent as well, and
+ * the hub records it as a request it refused by itself: the screen says so, and no mail goes. Every rule is the server's: this
+ * page offers what `GET /api/training/mine` says may be asked, and a refusal lands where it belongs — on its field, or above
+ * the form for the request as a whole, whose details come from the same answer the page reads again.
  */
 export function RequestPage() {
   const { t, i18n } = useTranslation();
@@ -70,6 +71,7 @@ function RequestScreen({ mine, wanted }: { mine: MyTrainingDto; wanted: RatingKi
   // A request the hub refused because the theory is not passed: the screen says so in place of the form, until the trainee
   // goes back to the form or to the other ladder.
   const [declined, setDeclined] = useState<TraineeTrainingDto | null>(null);
+  const isDeclined = declined !== null && declined.kind === path?.kind;
 
   const choose = (kind: RatingKind) => {
     setDeclined(null);
@@ -92,14 +94,24 @@ function RequestScreen({ mine, wanted }: { mine: MyTrainingDto; wanted: RatingKi
         <section className="flex flex-col gap-4">
           <H2>{t('training:request.what')}</H2>
           <PathChoice paths={mine.paths} value={path.kind} onChange={choose} />
-          {declined !== null && declined.kind === path.kind ? (
+          {isDeclined ? (
             <Declined mine={mine} training={declined} onBack={() => setDeclined(null)} />
           ) : path.refusal !== null || path.next === null ? (
             <Refused path={path} />
-          ) : (
-            // Keyed on the ladder only: a rating the server moved on keeps what the trainee wrote, and the refusal that says so.
-            <RequestForm key={path.kind} mine={mine} path={path} next={path.next} onDeclined={setDeclined} />
-          )}
+          ) : null}
+          {path.refusal === null && path.next !== null ? (
+            // Only out of sight while the hub's refusal is on the screen: «back to the request» finds what the trainee wrote
+            // (review of #144). Keyed on the ladder only: a rating the server moved on keeps it too, and the refusal that says so.
+            <div hidden={isDeclined}>
+              <RequestForm
+                key={path.kind}
+                mine={mine}
+                path={path}
+                next={path.next}
+                onDeclined={setDeclined}
+              />
+            </div>
+          ) : null}
         </section>
       )}
     </article>
@@ -218,6 +230,12 @@ function RequestForm({
   const send = useRequestTraining();
   const [answer, setAnswer] = useState<boolean | null>(null);
   const [problem, setProblem] = useState<ApiError | null>(null);
+  // True only while the dialog's confirmation submits the form: the one submission `letThrough` lets go on.
+  const confirming = useRef(false);
+  // The answer that confirmation gave, which the submission it started sends once the form has validated.
+  const confirmed = useRef<boolean | null>(null);
+  // Where «request training» is drawn: the question opens by its button, as `ConfirmDialog` keeps its `open` to itself.
+  const actions = useRef<HTMLDivElement>(null);
 
   // The positions offered follow the answer the page reads: a closed suggestion, as the server accepts no other.
   const schema = useMemo(
@@ -226,11 +244,11 @@ function RequestForm({
         path.asksPosition
           ? path.positions.map((position) => ({
               value: position.callsign,
-              label: `${position.callsign} — ${position.name}`,
+              label: positionLabel(position, t),
             }))
           : null,
       ),
-    [path],
+    [path, t],
   );
 
   const submit = async (values: RequestFormValues) => {
@@ -238,7 +256,9 @@ function RequestForm({
 
     let training: TraineeTrainingDto;
     try {
-      training = await send.mutateAsync(requestFromFormValues(values, next, mine.asksTheory ? answer : null));
+      training = await send.mutateAsync(
+        requestFromFormValues(values, next, mine.asksTheory ? confirmed.current : null),
+      );
     } catch (error) {
       const { form, page } = splitRefusal(error, FORM_FIELDS);
       setProblem(page);
@@ -257,12 +277,33 @@ function RequestForm({
     await navigate({ href: MINE });
   };
 
-  // The answer sends the form: it is the question «request training» asks (R.2), and the form is what is sent with it.
+  // The answer sends the form: it is the question «request training» asks (R.2), and the form is what is sent with it. The
+  // submission begins and passes `letThrough` inside `requestSubmit`, so the permission to go on ends with the call.
   const sendWithAnswer = () => {
     const form = document.getElementById(REQUEST_FORM);
     if (form instanceof HTMLFormElement) {
-      form.requestSubmit();
+      confirmed.current = answer;
+      confirming.current = true;
+      try {
+        form.requestSubmit();
+      } finally {
+        confirming.current = false;
+      }
     }
+  };
+
+  // Every submission of the form passes here before the form sees it. With the question to ask, only the dialog's
+  // confirmation goes on. Enter in the position submits the form as well (review of #144): it is the one single-line box of a
+  // form whose buttons are elsewhere, where HTML submits on Enter, and the form's hint tells a screen reader so. Enter then
+  // asks the question, as the button does, and nothing is sent without its answer — never one given and then cancelled.
+  const letThrough = (event: FormEvent<HTMLDivElement>) => {
+    if (!mine.asksTheory || confirming.current) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    actions.current?.querySelector('button')?.click();
   };
 
   const cancel = (
@@ -272,7 +313,7 @@ function RequestForm({
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6" onSubmitCapture={letThrough}>
       <div className="flex flex-col gap-3">
         <p className="flex flex-wrap items-center gap-2">
           <span>{t('training:request.proposed')}</span>
@@ -299,7 +340,7 @@ function RequestForm({
       />
 
       {mine.asksTheory ? (
-        <div className="flex flex-wrap items-center gap-3">
+        <div ref={actions} className="flex flex-wrap items-center gap-3">
           <ConfirmDialog
             triggerText={t('training:request.send')}
             triggerVariant="secondary"
@@ -309,12 +350,9 @@ function RequestForm({
             confirmVariant="primary"
             disabled={send.isPending}
             confirmDisabled={answer === null}
-            // Asked afresh every time: the answer is the trainee's word for this request.
-            onOpenChange={(open) => {
-              if (open) {
-                setAnswer(null);
-              }
-            }}
+            // Asked afresh every time, and forgotten when the dialog closes: the answer is the trainee's word for this
+            // request, never what the next question starts from.
+            onOpenChange={() => setAnswer(null)}
             onConfirm={sendWithAnswer}
           >
             <TheoryAnswer value={answer} onChange={setAnswer} />

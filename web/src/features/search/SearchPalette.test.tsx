@@ -57,6 +57,7 @@ const bootstrap = {
   registries: { blocks: [], permissions: [] },
   calendarKinds: [],
   version: '0.0.0-test',
+  commit: null,
 } as never;
 
 test('control and K opens the palette, and it offers the screens of the back office', async () => {

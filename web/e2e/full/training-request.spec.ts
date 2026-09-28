@@ -78,7 +78,13 @@ test('the trainee asks for the next ATC training on a position and finds it; a s
 
     // ⚠️ Chosen from the list: the closed suggestion of the core loses a choice clicked after typing (found in A6b).
     await page.getByLabel(words.request.fields.position, { exact: true }).click();
-    await page.getByRole('option', { name: `${position!.callsign} — ${position!.name}` }).click();
+    await page
+      .getByRole('option', {
+        name: words.positionChoice
+          .replace('{{callsign}}', position!.callsign)
+          .replace('{{name}}', position!.name),
+      })
+      .click();
     await page
       .getByLabel(words.request.fields.availabilityText, { exact: true })
       .fill(`Evenings after 18 UTC, run ${stamp}.`);
@@ -173,6 +179,7 @@ function englishTraining() {
     readFileSync(fileURLToPath(new URL('../../../locales/en/training.json', import.meta.url)), 'utf8'),
   ) as {
     kinds: { Atc: string; Pilot: string };
+    positionChoice: string;
     states: { Requested: string };
     request: {
       title: string;

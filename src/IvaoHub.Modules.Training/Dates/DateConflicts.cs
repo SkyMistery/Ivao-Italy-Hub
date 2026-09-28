@@ -1,4 +1,5 @@
 using IvaoHub.Core.Content;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Training.Settings;
 
@@ -8,8 +9,9 @@ namespace IvaoHub.Modules.Training.Dates;
 /// The warnings of a date (design M3 §2.5), as queries and pure functions, so that the database and a test ask the same thing:
 /// on the days the date touches in the division's time zone (<see cref="DivisionDays.Touched"/>), the other trainings with their
 /// session then, whoever trains them; the entries of the calendar of the kinds the division checks (<c>conflictKinds</c>) that
-/// touch those days — read from the core's calendar as it is, the trainings' own sessions left out because the first already
-/// counts them —; and what the division's policy makes of what was found.
+/// touch those days — read from the core's calendar as whoever writes the date reads it, the trainings' own sessions left out
+/// because the first already counts them —; which of those entries a date may keep; and what the division's policy makes of
+/// what was found.
 /// </summary>
 public static class DateConflicts
 {
@@ -18,6 +20,9 @@ public static class DateConflicts
 
     /// <summary>The policy wants a date with a warning confirmed (<see cref="ConflictPolicy.Warn"/>), and it was not.</summary>
     public const string NotConfirmed = "training:errors.dateNotConfirmed";
+
+    /// <summary>What a page for the staff may carry, as the core's ceiling says it: the entries a date may keep.</summary>
+    private static readonly IReadOnlyList<Visibility> KeptVisibilities = VisibilityCeiling.For(Visibility.Staff);
 
     /// <summary>The other trainings with their session on those days: dated, starting between the two moments, not this one.</summary>
     public static IQueryable<Training> Sessions(IQueryable<Training> trainings, long except, DateTime from, DateTime to)
@@ -43,6 +48,21 @@ public static class DateConflicts
             && !(entry.SourceModule == TrainingModule.ModuleKey && entry.SourceId.StartsWith(Training.SourcePrefix))
             && entry.StartsAtUtc < to
             && (entry.EndsAtUtc == null ? entry.StartsAtUtc >= from : entry.EndsAtUtc > from));
+    }
+
+    /// <summary>
+    /// The entries a date may keep among its warnings (§2.5). A date proposed keeps them (<see cref="TrainingSlot"/>), and whoever
+    /// reads the training reads them, not only whoever proposed it — who may read more of the calendar: the direction reads the
+    /// entries of every department that only that department reads. So a date keeps what a page for the staff may carry, the
+    /// core's ceiling (<see cref="VisibilityCeiling"/>): the entries of everybody, of the members and of the staff, never those of
+    /// one department, which stay with whoever was shown them. The other trainings need no ceiling: a warning of theirs says what
+    /// the public calendar says of their session.
+    /// </summary>
+    public static IEnumerable<CalendarEntry> Kept(IEnumerable<CalendarEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+
+        return entries.Where(entry => KeptVisibilities.Contains(entry.Visibility));
     }
 
     /// <summary>What was found, as the trainer is warned of it: by time, a session before an entry at the same moment.</summary>

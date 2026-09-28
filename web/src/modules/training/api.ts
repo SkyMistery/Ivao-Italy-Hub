@@ -444,6 +444,14 @@ export function useStaffStep(id: number) {
         queryClient.invalidateQueries({ queryKey: [...staffKey, 'trainers', id] }),
       ]);
     },
+    // A step refused is read against the training as the server has it now: after a 409 somebody else moved it, and the page
+    // — the form keyed on its version with it — and the trainers it may be given are drawn again from there.
+    onError: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: staffTrainingQuery(id).queryKey }),
+        queryClient.invalidateQueries({ queryKey: [...staffKey, 'trainers', id] }),
+      ]);
+    },
   });
 }
 

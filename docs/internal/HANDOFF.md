@@ -30,7 +30,29 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.16** (la 1.15 porta A4a, la 1.16 la sessione master). Il rapporto è
+**Ultimo aggiornamento:** 28 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.22**: la diagnostica della richiesta (#168)
+e la sua misura, la coda del codice aggiornata e sette correzioni di una revisione del piano; la 1.21 ha portato l'hosting
+misurato sulla prova (#164–#166), la 1.20 l'avvio da qualunque cartella (#162).
+**L'hub è online su `test.it.ivao.aero` con la 0.2.2** (tag `v0.2.2` su `94925a8`), caricata da Carmine via FTP in `webapp/`
+dello staging lasciato da Ivao.It, database `itivao_test`. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
+causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in `diagnostics/startup-error.txt`).
+Consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio generale
+`docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`, **riscritto dalla #169 com'è il server** (`webapp/`, `itivao_test`,
+carica Carmine); un foglio con la versione solo quando una consegna ha istruzioni sue. Il login dello staff funziona, e
+`startup.txt` dice `access private: staff only, not indexed`.
+**La diagnostica della richiesta** (`GET /api/admin/diagnostics/request`, un JSON del super amministratore, non una pagina) ha
+trovato perché il registro scrive `127.0.0.1` per tutti: **un salto in più** davanti all'hub. `X-Forwarded-For` arriva con tre
+voci, l'ultima `127.0.0.1`, e il limite 1 prende quella; la correzione, `ForwardLimit = null`, è la 0.2.3 (piano §11.3 punto 9).
+⚠️ **Da risolvere prima della produzione**: l'indirizzo del visitatore (0.2.3), l'avvio a freddo di 8–10 s, gli header della
+home (piano §11.3 punti 3 e 9). **La coda del codice** (Carmine, piano 1.22): 1 ✅ diagnostica della richiesta (0.2.2) → 2
+l'indirizzo del visitatore, `ForwardLimit = null` (0.2.3) → 3 avvio più veloce + `diagnostics/starts.txt` + le due correzioni
+della revisione della #162, `division.json` accanto all'assembly per primo e le parti delle stringhe di connessione nascoste in
+`startup-error.txt` (0.2.4) → 4 il controllo all'avvio di A3b (`PermissionCatalog.VerifyAlternatives`) rinforzato, prima di
+A10 (0.2.5) → 5 job che recuperano + POST dell'operazione pianificata di Plesk (0.3.0) → 6 la strada A della #164, solo se sul
+server l'avvio scende sotto ~3 s.
+M3: unite fino ad A6a (#143) e la fase del nucleo A3b (#135); in coda A6b–A10b, A6c e A11a, **ancora aperte e in conflitto** con
+`main`, da rimettere in pari.
+Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
 chiusura di M3 e di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia con
