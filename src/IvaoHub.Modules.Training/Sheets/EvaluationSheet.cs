@@ -1,3 +1,4 @@
+using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 
 namespace IvaoHub.Modules.Training.Sheets;
