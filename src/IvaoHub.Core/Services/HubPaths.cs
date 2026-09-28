@@ -5,12 +5,13 @@ namespace IvaoHub.Core.Services;
 /// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>seed/</c>, <c>media/</c>, <c>tiles/</c>.
 /// </summary>
 /// <remarks>
-/// In production they sit next to the application. During development the content root is the web
-/// project while those folders are at the root of the repository, so the root is found by walking up
-/// until <c>config/division.json</c> appears: from the content root first, then from the folder of
-/// the application, because a host may start the process from any working directory (note
-/// 2026-09-27-l-avvio-da-qualunque-cartella). <c>IVAOHUB_ROOT</c> overrides everything, which is what
-/// the tests use.
+/// In production they sit next to the application, and an application folder holding
+/// <c>config/division.json</c> is the root. During development the content root is the web project while
+/// those folders are at the root of the repository, so otherwise the root is found by walking up until
+/// <c>config/division.json</c> appears: from the content root first, then from the folder of the
+/// application, because a host may start the process from any working directory (notes
+/// 2026-09-27-l-avvio-da-qualunque-cartella, 2026-09-28-un-avvio-piu-veloce). <c>IVAOHUB_ROOT</c> overrides
+/// everything, which is what the tests use.
 /// </remarks>
 public sealed class HubPaths
 {
@@ -85,10 +86,17 @@ public sealed class HubPaths
     public static HubPaths Resolve(string contentRoot) => Resolve(contentRoot, applicationFolder: null);
 
     /// <summary>
-    /// The root: <see cref="RootVariable"/> when set; else the first folder holding the marker above
-    /// <paramref name="contentRoot"/>, then above <paramref name="applicationFolder"/>; else the
-    /// application folder, which is where an installation is told to put the division file.
+    /// The root: <see cref="RootVariable"/> when set; else <paramref name="applicationFolder"/> itself when it holds the
+    /// marker; else the first folder holding the marker above <paramref name="contentRoot"/>, then above
+    /// <paramref name="applicationFolder"/>; else the application folder, which is where an installation is told to put
+    /// the division file.
     /// </summary>
+    /// <remarks>
+    /// The application's own division file comes before the walk from the content root because the walk climbs: an
+    /// installation started from its own folder, with another installation's <c>config/division.json</c> a few levels
+    /// higher in the same FTP tree, took that one and said nothing. During development the application folder is
+    /// <c>bin/</c>, which never holds a division file, so the walk from the web project finds the repository as before.
+    /// </remarks>
     public static HubPaths Resolve(string contentRoot, string? applicationFolder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(contentRoot);
@@ -97,6 +105,11 @@ public sealed class HubPaths
         if (!string.IsNullOrWhiteSpace(pinned))
         {
             return new HubPaths(Path.GetFullPath(pinned), HubRootSource.Pinned);
+        }
+
+        if (!string.IsNullOrWhiteSpace(applicationFolder) && HasMarker(applicationFolder))
+        {
+            return new HubPaths(Path.GetFullPath(applicationFolder), HubRootSource.ApplicationFolder);
         }
 
         if (FindMarker(contentRoot) is { } fromContentRoot)
@@ -119,7 +132,7 @@ public sealed class HubPaths
         var directory = new DirectoryInfo(Path.GetFullPath(start));
         for (var level = 0; level < MaxLevels && directory is not null; level++)
         {
-            if (File.Exists(Path.Combine(directory.FullName, Marker)))
+            if (HasMarker(directory.FullName))
             {
                 return directory.FullName;
             }
@@ -129,6 +142,8 @@ public sealed class HubPaths
 
         return null;
     }
+
+    private static bool HasMarker(string folder) => File.Exists(Path.Combine(Path.GetFullPath(folder), Marker));
 }
 
 /// <summary>How <see cref="HubPaths.Resolve(string, string?)"/> found the root.</summary>
