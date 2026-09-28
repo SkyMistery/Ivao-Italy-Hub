@@ -7,9 +7,10 @@ import { anonymousBootstrap, stubTheApi } from './fixtures';
 
 /**
  * The trainee's pages in a browser, with the API stubbed (M3, A6b): the request with the question on the theory — a «yes»
- * that goes and lands in `/training/mine`, a «no» that is sent, recorded and said on the screen —, each refusal where it
- * belongs, a ladder the server refuses with what it says beside it, and a request cancelled. What the server decides is
- * proved by `TrainingRequestTests` (A6a); the round against the real server is `full/training-request.spec.ts`.
+ * that goes and lands in `/training/mine`, a «no» that is sent, recorded and said on the screen, Enter in the position that
+ * asks it too —, each refusal where it belongs, a ladder the server refuses with what it says beside it, and a request
+ * cancelled. What the server decides is proved by `TrainingRequestTests` (A6a); the round against the real server is
+ * `full/training-request.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -38,6 +39,11 @@ const words = JSON.parse(
   };
   errors: Record<string, string>;
 };
+
+/** The core's words the question is drawn with: its «Cancel». */
+const core = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../locales/en/common.json', import.meta.url)), 'utf8'),
+) as { common: { cancel: string } };
 
 const EXAM = 'https://exam.example.org/theory';
 
@@ -262,6 +268,81 @@ test('«no» to the theory is sent all the same, and the screen says why the req
   await expect(page).toHaveURL(/\/training\/request$/);
   expect(sent).toHaveLength(1);
   expect(sent[0]).toMatchObject({ kind: 'Atc', position: 'XXBB_TWR', theoryPassed: false });
+});
+
+test('Enter in the position asks the question, as the button does: nothing goes without its answer', async ({
+  page,
+}) => {
+  const sent: Record<string, unknown>[] = [];
+
+  await stubTheTrainee(page, {
+    answer: () => mine([atc, pilot]),
+    request: (body) => {
+      sent.push(body);
+      return { status: 201, body: training(43, 'Requested') };
+    },
+  });
+
+  await page.goto('/training/request');
+  const position = page.getByLabel(words.request.fields.position!, { exact: true });
+  await position.fill('XXAA_TWR');
+
+  // The one single-line box of a form whose buttons are elsewhere: HTML submits the form on Enter there, and the form's hint
+  // says so (review of #144). It opens the question, with no answer chosen, and sends nothing.
+  await position.press('Enter');
+  const question = page.getByRole('alertdialog');
+  await expect(question.getByText(words.request.theory.question.replace('{{rating}}', 'ADC'))).toBeVisible();
+  await expect(question.getByRole('button', { name: words.request.theory.confirm })).toBeDisabled();
+  expect(sent).toEqual([]);
+
+  // Answered, it goes: the same request the button sends.
+  await question.getByRole('radio', { name: words.request.theory.yes }).check();
+  await question.getByRole('button', { name: words.request.theory.confirm }).click();
+  await expect(page).toHaveURL(/\/training\/mine$/);
+  expect(sent).toEqual([
+    {
+      kind: 'Atc',
+      rating: 5,
+      position: 'XXAA_TWR',
+      availabilityText: null,
+      notesText: null,
+      theoryPassed: true,
+    },
+  ]);
+});
+
+test('an answer taken back with «Cancel» is not sent by Enter: the question is asked again, afresh', async ({
+  page,
+}) => {
+  const sent: Record<string, unknown>[] = [];
+
+  await stubTheTrainee(page, {
+    answer: () => mine([atc, pilot]),
+    request: (body) => {
+      sent.push(body);
+      return {
+        status: 201,
+        body: training(44, 'Rejected', { rejection: 'TheoryNotPassed', decidedAt: '2026-09-26T10:00:00Z' }),
+      };
+    },
+  });
+
+  await page.goto('/training/request');
+  const position = page.getByLabel(words.request.fields.position!, { exact: true });
+  await position.fill('XXAA_TWR');
+
+  // «No», and then «Cancel»: the trainee did not send it.
+  await page.getByRole('button', { name: words.request.send, exact: true }).click();
+  const question = page.getByRole('alertdialog');
+  await question.getByRole('radio', { name: words.request.theory.no }).check();
+  await question.getByRole('button', { name: core.common.cancel, exact: true }).click();
+  await expect(question).toHaveCount(0);
+
+  // Enter in the box asks again, with no answer chosen, and nothing has gone — no refusal recorded without its confirmation.
+  await position.press('Enter');
+  await expect(question.getByRole('radio', { name: words.request.theory.no })).not.toBeChecked();
+  await expect(question.getByRole('button', { name: words.request.theory.confirm })).toBeDisabled();
+  expect(sent).toEqual([]);
 });
 
 test('each refusal of the request lands where it belongs: a field on its field, the request above the form', async ({
