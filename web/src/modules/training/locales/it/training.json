@@ -311,7 +311,7 @@
     "assign": {
       "submit": "Assegna il trainer",
       "change": "Cambia il trainer",
-      "assigned": "Trainer assegnato: {{name}}. Prima di condurlo, gli verrà chiesto di entrare di nuovo.",
+      "assigned": "Trainer assegnato: {{name}}. Da ora il training è suo da condurre.",
       "fields": {
         "trainerVid": "Trainer"
       },
@@ -747,7 +747,7 @@
         "body": "{{trainer}} è il trainer del training di {{trainee}}: {{training}}.\n\n{{next}}\n\n{{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
       },
       "assignedTrainee": "Il tuo trainer proporrà le date della sessione. I tuoi training sono in questa pagina:",
-      "assignedTrainer": "Trovi il training, con le disponibilità del trainee, nella sua pagina del back office. La prossima volta che apri l'hub ti chiede di entrare di nuovo: da lì in poi il training è tuo da condurre. La pagina del training:",
+      "assignedTrainer": "Trovi il training, con le disponibilità del trainee, nella sua pagina del back office: da ora è tuo da condurre. La pagina del training:",
       "datesProposed": {
         "subject": "[Training] Date proposte: {{training}}",
         "body": "{{trainer}} ha proposto le date per la sessione del tuo training {{training}}, in UTC:\n\n{{dates}}\n\nScegli la tua nella pagina del training: {{url}}\n\nSe nessuna ti va bene, scrivi al tuo trainer.\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."

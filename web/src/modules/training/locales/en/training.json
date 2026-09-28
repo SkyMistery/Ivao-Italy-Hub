@@ -311,7 +311,7 @@
     "assign": {
       "submit": "Assign the trainer",
       "change": "Change the trainer",
-      "assigned": "Trainer assigned: {{name}}. They will be asked to sign in again before they can conduct it.",
+      "assigned": "Trainer assigned: {{name}}. The training is theirs to conduct from now on.",
       "fields": {
         "trainerVid": "Trainer"
       },
@@ -747,7 +747,7 @@
         "body": "{{trainer}} is the trainer of the training of {{trainee}}: {{training}}.\n\n{{next}}\n\n{{url}}\n\n---\nYou can switch these emails off from your profile page."
       },
       "assignedTrainee": "Your trainer will propose the dates of the session. Your trainings are on this page:",
-      "assignedTrainer": "You find the training, with the trainee's availability, on its page in the back office. The next time you open the hub it asks you to sign in again: from then on the training is yours to conduct. The page of the training:",
+      "assignedTrainer": "You find the training, with the trainee's availability, on its page in the back office: it is yours to conduct from now on. The page of the training:",
       "datesProposed": {
         "subject": "[Training] Dates proposed: {{training}}",
         "body": "{{trainer}} has proposed the dates for the session of your training {{training}}, in UTC:\n\n{{dates}}\n\nChoose yours on the training's page: {{url}}\n\nIf none of them suits you, write to your trainer.\n\n---\nYou can switch these emails off from your profile page."
