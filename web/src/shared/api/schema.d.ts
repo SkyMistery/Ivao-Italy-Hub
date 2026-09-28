@@ -3797,7 +3797,8 @@ export interface components {
          * @description One thing the hub found on the days a date touches (design M3 §2.5), as it was when the date was looked at: another training
          *     with its session then — its ladder, rating and position, which the public calendar shows too, and never whose it is —, or an
          *     entry of the calendar of one of the kinds of `conflictKinds`, with its title and its address. A date the trainer proposes
-         *     keeps its warnings (TrainingSlot), so nobody's name or VID is in them.
+         *     keeps its warnings (TrainingSlot) for whoever reads the training, so nobody's name or VID is in them, and no entry
+         *     that only one department reads (`DateConflicts.Kept`).
          */
         DateWarning: {
             /** @description A training, or an entry of the calendar. */

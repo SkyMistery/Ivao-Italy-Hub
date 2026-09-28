@@ -20,7 +20,7 @@ public enum DateWarningKind
 /// with its session then — its ladder, rating and position, which the public calendar shows too, and never whose it is —, or an
 /// entry of the calendar of one of the kinds of <c>conflictKinds</c>, with its title and its address. A date the trainer proposes
 /// keeps its warnings (<see cref="TrainingSlot"/>) for whoever reads the training, so nobody's name or VID is in them, and no entry
-/// that only one department reads (<see cref="DateConflicts.Kept"/>).
+/// that only one department reads (<c>DateConflicts.Kept</c>).
 /// </summary>
 /// <param name="Kind">A training, or an entry of the calendar.</param>
 /// <param name="StartsAtUtc">When it starts: the session of the training, the entry.</param>
