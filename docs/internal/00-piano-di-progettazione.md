@@ -1,9 +1,47 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.20 — 28 settembre 2026 (**l'avvio da qualunque cartella**: l'hub trova le sue cartelle anche dalla sua, e un avvio fallito scrive il motivo in un file; la 0.2.1)
+**Versione documento:** 1.21 — 28 settembre 2026 (**l'hosting misurato sulla prova**: gli header dei file statici, i job con Passenger, l'indirizzo del visitatore, l'avvio a freddo)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. **M2, i tour, è chiusa** (T0–T20c, `05-design-m2.md` e `06-piano-implementazione-m2.md`), contata in `decisions/2026-09-25-m2-review.md`. **M3 (Training) la scrive `dalberone`**: design deciso (`07-design-m3.md`, PR #121), fasi A0–A12 in `08-piano-implementazione-m3.md`, A0–A3 unite il 25 set 2026, A6a e la fase del nucleo A3b il 27. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.21** (28 set 2026, dopo il merge di #164, #165 e #166): **l'hosting misurato sulla prova**. La 0.2.1 gira su
+`test.it.ivao.aero` dalla mattina del 28 (la causa del 500 era l'utente del database d'esempio rimasto nel file dei segreti, letta
+in `diagnostics/startup-error.txt`), e quattro note misurano da fuori che cosa fa l'hosting. Tutte caso (b), **decise da Carmine**.
+
+- **Gli header dei file statici** (`2026-09-28-gli-header-dei-file-statici`, #164): con il document root su `wwwroot/` il server
+  web consegna da sé `index.html`, quindi chi entra da `/` fa tutta la visita **senza CSP** e con la home incorniciabile; da
+  `/staff` la stessa pagina arriva con la policy. **Deciso: strada A** ([commento][d121a]): `index.html` fuori da `wwwroot/`, lo
+  serve solo l'hub. Provato via FTP: senza indice `/` e `/robots.txt` arrivano all'hub. Il codice di A **aspetta** la misura
+  dell'avvio a freddo ([commento][d121b]). Limite accettato: i file statici di un'installazione privata senza `X-Robots-Tag`.
+- **I job quando Passenger spegne l'hub** (`2026-09-28-i-job-quando-passenger-spegne-l-hub`, #165): Passenger spegne l'hub dopo
+  **10–30 s** di inattività, e un job gira solo se il processo è vivo nel secondo del suo cron. **Deciso** ([commento][d121c]): i
+  job **recuperano** secondo `hub_jobs_log`, con un esecutore solo per job, le mail salvate una per una, il riepilogo uno al
+  giorno e i fusi espliciti; prima `diagnostics/starts.txt`. **Niente Worker Cloudflare** ([commento][d121d]): l'orologio è
+  un'**operazione pianificata di Plesk** della sottoscrizione della divisione, che chiama un POST protetto da un token; la
+  regola dei dati che esistono solo «adesso».
+- **L'indirizzo del visitatore dietro i proxy** (`2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy`, #165): lo schema arriva
+  (`https`), l'indirizzo no: il registro scrive **`127.0.0.1` per tutti**, e il limite del login è uno solo per tutto il sito.
+  L'origine risponde anche senza Cloudflare, e resta così. **Deciso** ([commento][d121c], [commento][d121e]): una **pagina
+  diagnostica** del super amministratore che mostra come l'hub vede la richiesta, poi `ForwardLimit = null` con quello che la
+  pagina mostra.
+- **L'avvio a freddo** (`2026-09-28-l-avvio-a-freddo`, #166): sul server **8–10 s**, misurato in locale a una CPU 3,0 s, per lo
+  più CPU (modelli EF, JIT, tabella delle rotte). **Deciso** ([commento][d121f]): ReadyToRun condizionato al RID, le migrazioni
+  dei moduli solo se pendenti, TieredPGO spento (stima sul server ~4,9 s); la durata dei passi in `starts.txt`; il marcatore
+  d'inizializzazione si decide con i numeri del server. **I 2–3 s non si raggiungono dal codice.**
+- **L'ordine del codice** (Carmine, 28 set 2026, in chat): 1 pagina diagnostica degli header (0.2.2) → 2 avvio più veloce +
+  `diagnostics/starts.txt` (0.2.3) → 3 correzione dell'indirizzo, `ForwardLimit = null` (0.2.4) → 4 job che recuperano + POST
+  dell'operazione pianificata di Plesk (0.3.0; Ivao.It ha confermato che l'operazione pianificata si può fare) → 5 la strada A
+  della #164, solo se sul server l'avvio scende sotto ~3 s.
+- **Toccati:** §2.5 riga di Passenger, §5.2 riga «Job», §6.4, §11.3 punti 1, 2, 3, 5, 6 e 9, §15 punto 2c, design M0 §2.3.
+  `docs/DEPLOYING.md` cambia solo quando arriva il codice.
+
+[d121a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/164#issuecomment-5865067394
+[d121b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/164#issuecomment-5865536250
+[d121c]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623
+[d121d]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865413362
+[d121e]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865694616
+[d121f]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/166#issuecomment-5867344587
 
 **Changelog 1.20** (28 set 2026, dopo il merge di #162 e il tag `v0.2.1`): **l'avvio da qualunque cartella**, §11.3. Nota
 `decisions/2026-09-27-l-avvio-da-qualunque-cartella.md`, caso (b), **decisa da Carmine** ([il suo commento sulla #162][d120]).
@@ -1951,7 +1989,7 @@ Il server di produzione è lo stesso su cui gira oggi `atc.it.ivao.aero`, quindi
 | Fatto | Conseguenza per l'hub |
 |---|---|
 | Sottoscrizione Plesk `it.ivao.aero`; l'app ATC vive in `/var/www/vhosts/it.ivao.aero/public_atc/` | L'hub sarà un'altra cartella della stessa sottoscrizione (`httpdocs/` o `public_hub/`). Stesso utente di sistema (`itivao`). |
-| Le app .NET sono avviate da **Phusion Passenger** (start command `dotnet …/X.dll`), **non** dal .NET Toolkit; riavvio toccando `tmp/restart.txt` | Pacchetto **self-contained linux-x64** (il runtime viaggia nel pacchetto: non dipendiamo dalla versione .NET installata → .NET 10 è possibile). **Lo stesso comando di vIPI vale per l'hub** (misurato il 27 set 2026, nota `2026-09-27-il-pacchetto-misurato-prima-del-server`): un `dotnet` installato di qualunque versione passa la mano al runtime del pacchetto, e non serve il bit di esecuzione; `./IvaoHub.Web` con `755` solo su un server senza .NET. Serve ICU. |
+| Le app .NET sono avviate da **Phusion Passenger** (start command `dotnet …/X.dll`), **non** dal .NET Toolkit; riavvio toccando `tmp/restart.txt` | Pacchetto **self-contained linux-x64** (il runtime viaggia nel pacchetto: non dipendiamo dalla versione .NET installata → .NET 10 è possibile). **Lo stesso comando di vIPI vale per l'hub** (misurato il 27 set 2026, nota `2026-09-27-il-pacchetto-misurato-prima-del-server`): un `dotnet` installato di qualunque versione passa la mano al runtime del pacchetto, e non serve il bit di esecuzione; `./IvaoHub.Web` con `755` solo su un server senza .NET. Serve ICU. **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`): Passenger spegne l'hub dopo **10–30 s** di inattività, e il risveglio costa **8–10 s** sul server di prova (mediana 8,4 s); l'inattività non la decide la divisione. È quasi tutta CPU: modelli EF (~30%), lavoro d'inizializzazione sul database (~33%), tabella delle rotte alla prima richiesta (~14%), avvio di .NET (~10%). ReadyToRun, le migrazioni dei moduli solo se pendenti e TieredPGO spento lo portano a **~4,9 s stimati**; **i 2–3 s non si raggiungono dal codice**: solo un processo che resta vivo, cioè l'host. |
 | Accesso solo **FTP**, confinato alla cartella dell'app; niente shell; i pacchetti li carica **il committente** (staff Ivao.It), non Carmine | Deploy = zip + foglio istruzioni; niente `dotnet ef database update` a mano; le migrazioni girano **all'avvio** dell'app (`Database.Migrate()`), quindi vanno progettate **additive e sicure**. |
 | La cartella dell'app **è stata il document root**: `appsettings.Production.json` fu scaricabile (24–25 ago); ora davanti c'è **Cloudflare** e le direttive nginx negano i file sensibili | I segreti stanno in `secrets/<nome-non-indovinabile>.json` (l'app carica ogni `*.json` di quella cartella, che vince su appsettings); deny nginx su `appsettings*.json`, `*.dll`, `*.pdb`, `diagnostics/`, `secrets/`, `keys/`. Forwarded headers da Cloudflare. |
 | Data Protection: le chiavi devono stare in una cartella **scrivibile e persistente dentro l'app** (`vipi-keys/`), da non cancellare a ogni upload | Stessa soluzione: `hub-keys/` + avviso in grassetto nel foglio di aggiornamento. Perderla slogga tutti. |
@@ -2176,7 +2214,7 @@ ivao-division-hub/
 - **API**: minimal API o controller con `[ApiController]`, DTO espliciti, `ProblemDetails` per gli errori, **nessun versionamento** (`/api/...`: frontend e backend viaggiano nello stesso pacchetto, §16.10). OpenAPI generato (`Microsoft.AspNetCore.OpenApi` + Scalar UI in dev).
 - **Client TypeScript generato** dall'OpenAPI in CI (`openapi-typescript` + `openapi-fetch`): il frontend non scrive mai fetch a mano e rompe la build se il contratto cambia.
 - **Persistenza**: EF Core code-first, migrazioni per modulo, `DateTime` sempre UTC (`datetime(6)`), chiavi `int`/`bigint` autoincrement per le tabelle interne e **VID IVAO come identificatore naturale dell'utente**.
-- **Job**: Quartz.NET in-process (Plesk = un processo): sync periodico dati IVAO (whazzup, ATC online, booking), invio mail in coda, pulizia sessioni. Tabella `jobs_log`.
+- **Job**: Quartz.NET in-process (Plesk = un processo): sync periodico dati IVAO (whazzup, ATC online, booking), invio mail in coda, pulizia sessioni. Tabella `jobs_log`. **Dal 28 set 2026** (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub`) «un processo» non è più vero: Passenger spegne e riavvia l'hub, a volte due processi insieme, e un cron gira solo se il processo è vivo in quel secondo. Quindi un job è **dovuto secondo il suo registro** (`hub_jobs_log`: un'occorrenza del cron fra l'ultimo giro riuscito e adesso), non secondo l'ora in cui il processo è vivo; c'è **un solo esecutore per job** fra più processi; l'orologio fuori dall'hub è un **POST pianificato** (un'operazione pianificata di Plesk, con un token dell'installazione), che fa il lavoro dovuto dentro la richiesta. **La regola dei dati «adesso»**: ciò che va campionato ogni minuto non passa mai dall'hub; ciò che va campionato a ore fisse passa dal POST pianificato; tutto il resto recupera.
 - **Cache**: `IMemoryCache`/`HybridCache` per le risposte API IVAO (whazzup 15–60 s, dati statici ore). Niente Redis.
 - **Configurazione**: `appsettings.json` + variabili d'ambiente Plesk per i segreti (`IVAO__ClientSecret`, `ConnectionStrings__Default`, `Smtp__Password`). Mai segreti nel repo.
 - **Logging**: Serilog → file rolling in `logs/` + console; livello configurabile; correlation id per richiesta.
@@ -2251,7 +2289,7 @@ Un `IvaoApiClient` con `client_credentials` (scope in `ApiScopes`, separati da q
 
 ### 6.4 Sicurezza trasversale
 
-CSRF: cookie `SameSite=Lax` + header custom `X-Requested-With` richiesto sulle mutazioni + antiforgery token per i form. CSP restrittiva (self + `static.ivao.aero` per il logo). Rate limiting su `/auth/*` e sulle API pubbliche. HSTS. Segreti solo via env. GDPR: pagina privacy, export/cancellazione dati utente su richiesta, retention log 90 giorni, dati IVAO minimi (niente email se non serve al modulo — dal 6 set 2026 serve al servizio notifiche, e `hub_users.email` esiste per quello soltanto: nessun DTO la espone, e un test di architettura lo verifica; dal 25 set 2026 servono anche le **ore di connessione**, ATC e pilota, per le soglie del training — M3, A1, nota `2026-09-25-le-ore-e-il-vocabolario-dei-rating` —, e la cancellazione dei dati di una persona le toglie con la sua riga di `hub_users`).
+CSRF: cookie `SameSite=Lax` + header custom `X-Requested-With` richiesto sulle mutazioni + antiforgery token per i form. CSP restrittiva (self + `static.ivao.aero` per il logo). **Dal 28 set 2026** (nota `2026-09-28-gli-header-dei-file-statici`): gli header di sicurezza valgono su ciò che **attraversa l'hub**; i documenti ci passano sempre una volta entrata la strada A (`index.html` fuori da `wwwroot/`), i file statici no, ed è voluto: per un file che non è un documento contano gli header del documento che lo chiede, e `nosniff` lo manda l'hosting. Rate limiting su `/auth/*` e sulle API pubbliche. HSTS. Segreti solo via env. GDPR: pagina privacy, export/cancellazione dati utente su richiesta, retention log 90 giorni, dati IVAO minimi (niente email se non serve al modulo — dal 6 set 2026 serve al servizio notifiche, e `hub_users.email` esiste per quello soltanto: nessun DTO la espone, e un test di architettura lo verifica; dal 25 set 2026 servono anche le **ore di connessione**, ATC e pilota, per le soglie del training — M3, A1, nota `2026-09-25-le-ore-e-il-vocabolario-dei-rating` —, e la cancellazione dei dati di una persona le toglie con la sua riga di `hub_users`).
 
 ---
 
@@ -2567,6 +2605,11 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - I fogli per chi carica stanno in `docs/internal/deploy/`, e `config/division.json` si consegna accanto allo zip, preso
      dallo stesso tag.
    - Prima consegna: `0.2.0`, su `test.it.ivao.aero`.
+
+   **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`, deciso, codice nella PR 2 della coda): il pacchetto si pubblica
+   **ReadyToRun**, condizionato al RID (il banco e2e pubblica senza `-r`), e con **TieredPGO spento**. Pesa 172 MB invece di 139
+   (73 MB compresso invece di 59); la build è deterministica, quindi la prima consegna cambia 53 DLL e da lì le consegne a pochi
+   file restano piccole come oggi.
 2. **Cartella dell'app** nella sottoscrizione `it.ivao.aero`, avviata da **Passenger** (`dotnet IvaoHub.Web.dll`), `ASPNETCORE_ENVIRONMENT=Production`. Struttura: `wwwroot/`, `config/division.json`, `config/ivao-oauth.json` (compilato dalla divisione), `secrets/<nome-non-indovinabile>.json` (connection string, SMTP, secret — l'app carica ogni `*.json` di `secrets/`), `hub-keys/` (Data Protection, **persistente, mai cancellare**), `uploads/` (documenti), `logs/`, `diagnostics/` (`startup.txt`, e `startup-error.txt` dopo un avvio fallito). **Dal 28 set 2026** l'hub trova queste cartelle anche dalla cartella del suo assembly, quindi la cartella di lavoro in cui Passenger lo avvia non conta (nota `2026-09-27-l-avvio-da-qualunque-cartella`).
    **Misurato il 27 set 2026** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server`):
    - **Il comando.** `dotnet IvaoHub.Web.dll` va bene su un server che ha un `dotnet` qualunque, come quello di vIPI: passa
@@ -2577,6 +2620,12 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - **Le impostazioni dell'installazione.** `Installation:Domain` e `Installation:Preview` stanno in `secrets/`, accanto ad
      `AllowedHosts` e alle reti di Cloudflare (§4.1). Le credenziali OAuth possono stare anche lì, al posto di
      `config/ivao-oauth.json`.
+
+   **Dal 28 set 2026** (note `2026-09-28-i-job-quando-passenger-spegne-l-hub` e `2026-09-28-l-avvio-a-freddo`, codice nella PR 2
+   della coda): accanto a `startup.txt`, che si riscrive a ogni avvio, **`diagnostics/starts.txt`** tiene una riga per ogni avvio
+   e per ogni arresto (ora, pid, versione, vita, richieste servite, arresto ordinato o no), con un tetto di righe; per ogni avvio
+   anche la **memoria** usata, **quanto è durato** e la durata dei suoi passi (modelli, migrazioni, seeder, avvio di Kestrel). È
+   la misura del server su cui si decidono il marcatore d'inizializzazione e la strada A degli header.
 3. **Direttive nginx aggiuntive** in Plesk: `deny all` su `secrets/`, `hub-keys/`, `diagnostics/`, `logs/`, `appsettings*.json`, `*.dll`, `*.pdb`, `*.json` alla radice; `Cache-Control: no-store` su `/api/*` (Cloudflare davanti). Verifica dall'esterno con `curl -I` dopo ogni cambio di hosting.
    **Dal 27 set 2026**:
    - **Il document root è `wwwroot/`**, e le direttive nginx sono la seconda serratura (elenco in `docs/DEPLOYING.md`).
@@ -2584,8 +2633,19 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
      né tutti gli `*.xml` (la sitemap).
    - **Il `no-store` su `/api/*`** lo manda già l'applicazione.
    - **Il rinvio a https** lo fa Cloudflare.
+
+   **Dal 28 set 2026**:
+   - **Il document root su `wwwroot/` non basta per gli header** (nota `2026-09-28-gli-header-dei-file-statici`): il server web
+     consegna da sé `index.html`, senza CSP. **Decisa la strada A**: `index.html` sta fuori da `wwwroot/` e lo serve solo l'hub;
+     provato sulla prova che `/` senza indice arriva all'hub. Il codice è l'ultimo della coda, e solo se l'avvio sul server
+     scende sotto ~3 s. Tra i controlli dopo ogni deploy, `curl -sI /` con la CSP.
+   - **I limiti di un'installazione privata**: i file statici (`assets/`, `locales/`, `branding/`) non portano `X-Robots-Tag`;
+     accettato, e se va chiuso una regola di Cloudflare sul nome host, mai una direttiva nel pacchetto.
+   - **L'origine risponde anche senza Cloudflare** (nota `2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy` §7): chi ne
+     conosce l'indirizzo salta firewall, limiti e cache di Cloudflare, e contro l'hub resta solo il limite del login. **Resta
+     così** per decisione di Carmine: il server accetta ogni connessione, e l'amministratore lo considera giusto.
 4. **Database**: DB + utente dedicati dal pannello (`GRANT ALL` sul solo schema, verificare che la prima migrazione con `ALTER DATABASE CHARACTER SET utf8mb4` passi); pool `MaximumPoolSize≤15` perché il tetto per utente è condiviso; `max_allowed_packet` confermato ≥ 4 MB o upload solo su disco.
-5. **Migrazioni**: `Database.Migrate()` all'avvio (senza shell non c'è alternativa), con tre regole ferree: solo migrazioni **additive** (mai `DROP`/rename distruttivi nello stesso pacchetto che smette di usare la colonna → pattern *expand/contract* in due release), test CI che applica l'intera catena su una **MariaDB 11.4.10 vera**, e un `diagnostics/startup.txt` che dice quale migrazione ha applicato (e, dal 28 set 2026, come ha trovato la radice). Niente consegne con migrazioni nelle finestre in cui nessuno può ripristinare.
+5. **Migrazioni**: `Database.Migrate()` all'avvio (senza shell non c'è alternativa), con tre regole ferree: solo migrazioni **additive** (mai `DROP`/rename distruttivi nello stesso pacchetto che smette di usare la colonna → pattern *expand/contract* in due release), test CI che applica l'intera catena su una **MariaDB 11.4.10 vera**, e un `diagnostics/startup.txt` che dice quale migrazione ha applicato (e, dal 28 set 2026, come ha trovato la radice). Niente consegne con migrazioni nelle finestre in cui nessuno può ripristinare. **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`, codice nella PR 2 della coda): anche i moduli chiedono prima le migrazioni pendenti e chiamano `MigrateAsync` solo se ce n'è una, come il nucleo; oggi la chiamano sempre, e con una CPU sola a volte si ferma fino a un secondo. Il **marcatore d'inizializzazione** (saltare migrazioni e seeder quando pacchetto, configurazione e database non sono cambiati) resta **aperto**: si decide con i numeri di `diagnostics/starts.txt` sul server.
 6. **Aggiornamento**: upload via FTP in **binario**, rimettere il bit di esecuzione all'eseguibile, non toccare `hub-keys/`, `secrets/`, `uploads/`; poi `tmp/restart.txt`. Sonda post-deploy (`/api/version`, `/health`, login, una pagina per modulo) eseguita **non** nel minuto del riavvio.
    **Dal 27 set 2026** (`docs/DELIVERING.md`):
    - si carica il ramo `full-<versione>/` o `only-<N>-files-<versione>/` dello zip di consegna, controllando le impronte di
@@ -2596,6 +2656,13 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - non si toccano `media/` (non `uploads/`) né `config/division.json`;
    - il bit di esecuzione serve solo per `./IvaoHub.Web`;
    - `restart.txt` va in `tmp/` per ultimo, e poi si apre il sito una volta.
+
+   **Dal 28 set 2026** (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` §8, codice nella PR 4 della coda):
+   l'**operazione pianificata di Plesk** fa parte dell'installazione, come `tmp/restart.txt`. Sta nella sottoscrizione della
+   divisione, mai sull'account di una persona, e chiama a ore fisse (per esempio :05 e :35, per i METAR) un POST dell'hub
+   protetto da un token dell'installazione, in `secrets/`. Ivao.It ha confermato che si può fare; come la chiama il pannello
+   (una GET senza intestazioni o un comando con `curl`) lo decide la PR del codice. Le ore le sceglie chi la configura: con due
+   chiamate l'ora, una mail può aspettare fino a mezz'ora quando nessuno usa il sito.
 7. **Backup**: conferma scritta da Ivao.It su frequenza, retention, inclusione di `hub-keys/` e `uploads/` (non stanno nel DB) e un ripristino provato. Finché non c'è, si pianifica come se non ci fosse.
 8. **Staging**: sottodominio dedicato nella stessa sottoscrizione, stesso pacchetto, credenziali OAuth di test con i propri login/redirect URL. **Dal 27 set 2026 è l'installazione di prova su `test.it.ivao.aero`** (nota `2026-09-27-l-installazione-di-prova`): un client OAuth IVAO suo, un database suo (`itivao_hub_test`), `Installation:Preview` acceso — non indicizzata, e dentro solo lo staff e i super amministratori, respinti gli altri prima di scrivere qualsiasi cosa di loro. Resta dopo il passaggio in produzione, come banco dove provare ogni pacchetto. **Dal 28 set 2026** sta nello staging che Ivao.It ha lasciato alla divisione: `webapp/` è la cartella dell'applicazione (document root `webapp/wwwroot`), con `logs/` accanto, il database è `itivao_test`, e carica Carmine via FTP.
 9. **Da guardare prima della produzione** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server` §2, `docs/DEPLOYING.md` «Known limits»):
@@ -2605,7 +2672,24 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
      nella sua cartella: lì serve il log di Passenger;
    - Passenger spegne l'applicazione inattiva, e con lei i job pianificati: la coda delle mail, i dati di riferimento, il
      rilascio dei tour. Per vIPI `passenger_min_instances` non si può avere;
+     **misurato e deciso il 28 set 2026** (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub`): sulla prova l'hub si spegne
+     dopo **10–30 s** di silenzio, e ogni richiesta dopo un minuto paga un avvio (7 su 7). Un job gira solo se il processo è
+     vivo nel secondo del suo cron, quindi i job notturni non girano quasi mai, le mail partono solo quando qualcuno usa il
+     sito, il riepilogo delle 07:00 e i METAR di quell'ora si perdono, un processo ucciso a metà lotto rispedisce mail e due
+     processi insieme fanno due volte lo stesso lavoro. La strada decisa (§5.2): i job **recuperano** secondo `hub_jobs_log`,
+     con un esecutore solo, le mail salvate una per una, il riepilogo uno al giorno e i fusi espliciti; l'orologio è
+     l'operazione pianificata di Plesk (punto 6). **Resta all'host**: l'operazione pianificata, e la domanda a Ivao.It
+     sull'inattività di Passenger (`passenger_min_instances` o l'idle time), che Carmine pone con quella di vIPI sulle morti a
+     hh:56;
    - i forwarded header si leggono un salto solo (`ForwardLimit` = 1). Si controlla l'indirizzo nel registro, sulla prova.
+     **Misurato il 28 set 2026** (nota `2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy`): lo schema arriva (`https`, HSTS
+     e cookie `secure`), l'indirizzo no. **Il registro scrive `127.0.0.1` per tutti**, e il limite di 10 accessi al minuto su
+     `/auth/*` è **uno solo per tutto il sito**: la sera di un evento, gente vera riceverebbe `429`. Nessuno falsifica
+     l'indirizzo, ma solo perché l'hub non ne legge nessuno. **Da risolvere prima della produzione.** La strada decisa: una
+     **pagina diagnostica** solo per il super amministratore (PR 1 della coda), che mostra il vicino grezzo con la sua famiglia,
+     l'indirizzo creduto, lo schema prima e dopo e gli header grezzi; poi `ForwardLimit = null` (PR 3), con quello che la
+     pagina mostra. Se l'indirizzo arriva in un altro header, il nome viene dalla configurazione, mai dal codice. Dopo la
+     correzione si rifanno le prove, anche quella sull'origine.
 
 ---
 
@@ -2668,7 +2752,7 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 2b. ~~Tour system e test system~~ **Deciso**: il tour system è il modulo `flightops` nel monorepo dell'hub (repo separato chiuso, design confluisce). Il test system è sospeso; se tornerà, sarà app separata (auth estratta in libreria solo allora).
 2d. ~~**Storico tour**: importare i leg validati da `tours.th.ivao.aero` per le classifiche, o partire da zero come per gli eventi?~~ **Chiusa il 15 set 2026** (`05-design-m2.md` §0.2, piano 0.79): nessun import; il sistema entra in uso con la stagione 2027, e le classifiche non esistono.
 2c. **Hosting dell'hub** (blocca **la seconda metà di M2**, il deploy, non il modulo Events: diviso
-    il 9 set 2026 — e da quel giorno il deploy aspetta anche la persona che carica su Plesk): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging.
+    il 9 set 2026 — e da quel giorno il deploy aspetta anche la persona che carica su Plesk): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging. **Misurato il 28 set 2026** sulla prova (nota `2026-09-28-gli-header-dei-file-statici` §4 e §6.3): su Plesk `/` senza indice e `/robots.txt` arrivano all'hub, quindi l'hosting non tiene per sé nessuno dei due; **Cloudflare mette in cache `/robots.txt`**, e la cache di quell'indirizzo va svuotata quando cambia `Installation:Preview` o si toglie il file messo a mano. Quel file (`Disallow: /`) non entra mai nel pacchetto, e si toglie quando c'è la release con la strada A.
 3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente. **La prova è chiusa il 27 set 2026**: `test.it.ivao.aero`, con il suo client OAuth (§11.3 punto 8). Resta da decidere il nome della produzione.
 2e. **Hosting, per la prova** (27 set 2026): la prima installazione è su `test.it.ivao.aero`, con un database suo (`itivao_hub_test`) sul server condiviso, separato da vIPI e dalla futura produzione. Consegnata la `0.2.0`. Restano da avere per iscritto da Ivao.It `max_allowed_packet`, `sql_mode`, `max_user_connections` e il backup (database, `hub-keys/`, `media/`) con un ripristino provato: **prima del primo dato reale**, cioè prima della produzione.
 4. ~~Editor contenuti~~ **Deciso**: pagine a blocchi con editor a lista (§9.3); il blocco `text` usa markdown con anteprima. Prerender SEO: **no per ora** (§16.11).
