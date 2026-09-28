@@ -15,9 +15,9 @@ namespace IvaoHub.Modules.Training.Dates;
 
 /// <summary>
 /// The date of a training (design M3 §2.5): the dates the trainer proposes — each with the warnings the division checks, which its
-/// policy shows and asks to confirm, refuses, or leaves alone —, the trainee's choice among them, the date set by hand, and the
-/// closing of a training that found no date: by the staff with a reason, or by the night when the division gives the trainee a
-/// time to choose (§12 n.9).
+/// policy shows and asks to confirm, refuses, or leaves alone, and which the date keeps as far as every reader of the training may
+/// read them —, the trainee's choice among them, the date set by hand, and the closing of a training that found no date: by the
+/// staff with a reason, or by the night when the division gives the trainee a time to choose (§12 n.9).
 /// <para>Every write is a write of the training. The proposals are child rows written with it (§1.1), so proposing and
 /// withdrawing touch it: the write guard then asks for the training's own permission — the trainer's <c>Training.Conduct</c> on
 /// its scope (A7), the staff's by position —, and a version the writer did not see is a 409. The proposals live only while the
@@ -102,15 +102,16 @@ public sealed class TrainingDates(
         ArgumentNullException.ThrowIfNull(training);
 
         var settings = await SettingsAsync(cancellationToken);
-        var warnings = await WarningsAsync(training, Utc(startsAtUtc), endsAtUtc is { } end ? Utc(end) : null, settings, cancellationToken);
+        var found = await WarningsAsync(training, Utc(startsAtUtc), endsAtUtc is { } end ? Utc(end) : null, settings, cancellationToken);
 
-        return new DateConflictsDto(settings.ConflictPolicy, warnings);
+        return new DateConflictsDto(settings.ConflictPolicy, found.Shown);
     }
 
     /// <summary>
     /// The trainer's dates (§2.5), proposed together: each written whole, to come, ending after it starts and within a session's
     /// length, not proposed already, with no more of them waiting than the trainee is fairly offered; each with its warnings, which
-    /// the policy turns into a refusal of that date or into a confirmation asked of the proposal. Mails the trainee once.
+    /// the policy turns into a refusal of that date or into a confirmation asked of the proposal. Each keeps the warnings every
+    /// reader of the training may read (<see cref="DateConflicts.Kept"/>). Mails the trainee once.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> ProposeAsync(
         Training training,
@@ -190,15 +191,16 @@ public sealed class TrainingDates(
             return (StaffResult.Refused, refusals.Errors);
         }
 
-        // The policy on each date: a blocked one is refused on its own row, a warned one asks the proposal to be confirmed.
+        // The policy on each date, on what its writer is shown: a blocked one is refused on its own row, a warned one asks the
+        // proposal to be confirmed.
         var settings = await SettingsAsync(cancellationToken);
-        var warnings = new List<IReadOnlyList<DateWarning>>();
+        var warnings = new List<Found>();
         for (var index = 0; index < moments.Count; index++)
         {
             var found = await WarningsAsync(training, moments[index].Start, moments[index].End, settings, cancellationToken);
             warnings.Add(found);
 
-            if (DateConflicts.Refusal(settings.ConflictPolicy, found.Count, payload.Confirmed) is { } refusal)
+            if (DateConflicts.Refusal(settings.ConflictPolicy, found.Shown.Count, payload.Confirmed) is { } refusal)
             {
                 refusals.Add(refusal == DateConflicts.Blocked ? $"slots[{index}].startsAtUtc" : "confirmed", refusal);
             }
@@ -215,7 +217,7 @@ public sealed class TrainingDates(
                 TrainingId = training.Id,
                 StartsAtUtc = moment.Start,
                 EndsAtUtc = moment.End,
-                WarningsJson = DateWarnings.Write(warnings[index]),
+                WarningsJson = DateWarnings.Write(warnings[index].Kept),
             })
             .ToList();
 
@@ -290,8 +292,8 @@ public sealed class TrainingDates(
 
         var start = Utc(written);
         var settings = await SettingsAsync(cancellationToken);
-        var warnings = await WarningsAsync(training, start, endsAtUtc: null, settings, cancellationToken);
-        if (DateConflicts.Refusal(settings.ConflictPolicy, warnings.Count, payload.Confirmed) is { } refusal)
+        var found = await WarningsAsync(training, start, endsAtUtc: null, settings, cancellationToken);
+        if (DateConflicts.Refusal(settings.ConflictPolicy, found.Shown.Count, payload.Confirmed) is { } refusal)
         {
             return Refuse(refusal == DateConflicts.Blocked ? "startsAtUtc" : "confirmed", refusal);
         }
@@ -347,8 +349,8 @@ public sealed class TrainingDates(
 
     /// <summary>
     /// A training closed by the staff (§2.5, R.3: the trainee never answered, or anything else), with <c>Training.Approve</c> and a
-    /// reason the trainee reads: accepted and still going on — dated too, whose session then leaves the calendar. Nobody closes a
-    /// training of their own. The trainer's grant goes the same night (A7).
+    /// reason the trainee reads: accepted and still going on — dated too, whose session then leaves the calendar and stays on
+    /// record. Nobody closes a training of their own. The trainer's grant goes the same night (A7).
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> CloseAsync(
         Training training,
@@ -399,6 +401,10 @@ public sealed class TrainingDates(
     /// Closes, as the hub, the trainings the trainee has let wait longer than <c>maxResponseDays</c> (§2.5, §12 n.9), and mails
     /// them; nothing when the division has not set it, which is the default. One at a time: a trainee who chooses meanwhile keeps
     /// the date, and the next night looks again. Returns how many were closed.
+    /// <para>The hub's closing is told by what it leaves empty: nobody closed it, and no reason was written. The hub closes for this
+    /// one reason, which its mail names (<c>closedUnanswered</c>), and a page tells it by the reason left empty. Through the row,
+    /// never around it: the key of one open training per ladder reads a column that only the row writes
+    /// (<see cref="Training.OpenKind"/>).</para>
     /// </summary>
     public async Task<int> CloseUnansweredAsync(DateTime now, CancellationToken cancellationToken)
     {
@@ -450,9 +456,10 @@ public sealed class TrainingDates(
 
     /// <summary>
     /// The warnings of a moment (§2.5), as the division's policy asks: none when it is not to look. The other trainings are read as
-    /// the staff reads them, every one; the calendar as whoever writes the date reads it.
+    /// the staff reads them, every one; the calendar as whoever writes the date reads it, and all of it is shown to them and counted
+    /// by the policy — but a date keeps only what every reader of the training may read (<see cref="DateConflicts.Kept"/>).
     /// </summary>
-    private async Task<IReadOnlyList<DateWarning>> WarningsAsync(
+    private async Task<Found> WarningsAsync(
         Training training,
         DateTime startsAtUtc,
         DateTime? endsAtUtc,
@@ -461,7 +468,7 @@ public sealed class TrainingDates(
     {
         if (settings.ConflictPolicy == ConflictPolicy.None)
         {
-            return [];
+            return new Found([], []);
         }
 
         var (from, to) = DivisionDays.Touched(startsAtUtc, endsAtUtc, division.Value.ResolveTimeZone());
@@ -474,7 +481,9 @@ public sealed class TrainingDates(
             ? []
             : await DateConflicts.Entries(hub.CalendarEntries.AsNoTracking(), kinds, from, to).ToListAsync(cancellationToken);
 
-        return DateConflicts.Warnings(sessions, entries, vocabulary);
+        return new Found(
+            DateConflicts.Warnings(sessions, entries, vocabulary),
+            DateConflicts.Warnings(sessions, DateConflicts.Kept(entries), vocabulary));
     }
 
     /// <summary>The training dated: at that start, from that proposal or by hand; its reminder to leave again, its proposals gone.</summary>
@@ -488,8 +497,10 @@ public sealed class TrainingDates(
     }
 
     /// <summary>
-    /// The training closed, by somebody with their reason or by the hub: its session in hand and its proposals gone with it, so the
-    /// calendar lets it go too.
+    /// The training closed, by somebody with their reason or by the hub, and its proposals gone with it. The date of its session
+    /// stays on record, with which proposal it was and whether it was reminded: the register keeps states and dates (§6), and a
+    /// session that may have been held is not erased. Nothing else needs it gone: only a dated training is in the calendar, is
+    /// reminded or shows as held.
     /// </summary>
     private void Close(Training training, int? by, string? reason, IEnumerable<TrainingSlot> slots, DateTime? at = null)
     {
@@ -497,9 +508,6 @@ public sealed class TrainingDates(
         training.ClosedBy = by;
         training.ClosedAt = at ?? clock.UtcNow;
         training.CloseReason = reason;
-        training.ScheduledStartUtc = null;
-        training.ChosenSlotId = null;
-        training.RemindedAt = null;
         database.Slots.RemoveRange(slots);
     }
 
@@ -550,4 +558,7 @@ public sealed class TrainingDates(
 
     private static (StaffResult, IReadOnlyDictionary<string, string[]>) Refuse(string field, string key) =>
         (StaffResult.Refused, new Refusals().Add(field, key).Errors);
+
+    /// <summary>What the hub found on the days of a date: every warning its writer is shown, and those the date may keep.</summary>
+    private sealed record Found(IReadOnlyList<DateWarning> Shown, IReadOnlyList<DateWarning> Kept);
 }

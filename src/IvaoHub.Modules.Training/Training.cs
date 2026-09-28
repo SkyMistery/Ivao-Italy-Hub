@@ -155,7 +155,8 @@ public sealed class Training
 
     /// <summary>
     /// When the session in hand starts (A8): the date the trainee chose, or the one set by hand; none while it is still to be
-    /// fixed, and none again once the training closes without it. A session already over is a row of the sessions (A9).
+    /// fixed. A training closed keeps it on record (§6), no longer in hand: only a dated training is in the calendar, is reminded
+    /// or shows as held. A session already over is a row of the sessions (A9).
     /// </summary>
     public DateTime? ScheduledStartUtc { get; set; }
 

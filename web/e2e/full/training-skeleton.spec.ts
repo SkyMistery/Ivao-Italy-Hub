@@ -11,7 +11,9 @@ import { benchUrl, readInEnglish, signIn, whileWaitingFor } from './bench';
  * The skeleton of the training (M3, A4), through the real screens registered from the module manifest: the section is
  * offered in the back office, and its settings are changed and read back after a reload. The bench signs in as the web
  * team, which reaches every department and so holds the training's permissions on its base department too; the bench's
- * trainer holds what `division.json` gives a trainer, and the settings are not part of it.
+ * trainer holds what `division.json` gives a trainer, and the settings are not part of it. A grant on one training alone — the
+ * one the round of the staff assigns them (A7), which the night takes back once that training is over — is not a power over
+ * the department, and a bench that survives between runs may still have it: it is left out.
  *
  * The settings are put back as they were in a `finally`: the bench survives between runs.
  */
@@ -71,10 +73,10 @@ test('the trainer of the bench views the trainings, and neither holds exams nor 
   expect(signedIn.status(), await signedIn.text()).toBe(200);
 
   const me = (await (await context.request.get('/api/me')).json()) as {
-    permissions: { name: string; department: string | null }[];
+    permissions: { name: string; department: string | null; resourceScope: string | null }[];
   };
   const held = me.permissions
-    .filter((permission) => permission.department === 'TD')
+    .filter((permission) => permission.department === 'TD' && permission.resourceScope === null)
     .map((permission) => permission.name);
 
   // An exam is assigned only to an examiner, never to a trainer (the training department, 26 September 2026).
