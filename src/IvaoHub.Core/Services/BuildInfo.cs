@@ -26,6 +26,9 @@ public sealed record BuildInfo(string Version, string Commit, DateTime BuiltAt, 
     public string? ShortCommit =>
         Commit.Length >= ShortCommitLength && Commit.All(char.IsAsciiHexDigit) ? Commit[..ShortCommitLength] : null;
 
+    /// <summary>The version and the short commit in one word, <c>0.2.5+4d424f9</c>, as the files of <c>diagnostics/</c> write it.</summary>
+    public string Stamp => ShortCommit is { } commit ? $"{Version}+{commit}" : Version;
+
     public static BuildInfo FromAssembly(Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);

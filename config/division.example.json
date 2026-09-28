@@ -65,7 +65,10 @@
     "screen is the truth, and a grant deleted there does not come back. A global permission is never given",
     "this way. The grants below are the ones the tours module expects for its base department (FOD), and the",
     "training module for its own (TD), where a trainer is a Member of the department: whoever holds Training.Conduct",
-    "conducts the trainings assigned to them, and Training.Edit every training."
+    "conducts the trainings assigned to them, and Training.Edit every training.",
+    "A grant may go to the team of a FIR instead: \"firTeam\": true with its levels (Coordinator is the chief of",
+    "a FIR, Assistant the assistant chief, Advisor a FIR advisor) and no department. It names no FIR, and it is",
+    "only taken for a permission of an area whose rows say their FIR, such as the trainings."
   ],
   "positionGrants": [
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.View", "scope": "FOD" },
@@ -91,7 +94,7 @@
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSettings", "scope": "TD" }
   ],
 
-  "$comment.firStaffScope": "all = FIR teams work on every FIR (default). own = each FIR team only sees its own FIR.",
+  "$comment.firStaffScope": "How far a grant to the team of a FIR reaches. all (default) = on the whole department, like any grant. own = each chief on the rows of their own FIR only. The department staff is never held to a FIR. A change reaches each chief at their next sign in.",
   "firStaffScope": "all",
 
   "$comment.atcData": [

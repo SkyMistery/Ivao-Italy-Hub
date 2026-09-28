@@ -81,12 +81,16 @@ public interface IAffectsUserSession
     StaffPositionSubject? AffectedPosition => null;
 }
 
-/// <summary>A position as a subject: a department and the levels of it that count.</summary>
-public sealed record StaffPositionSubject(Department Department, IReadOnlyList<StaffLevel> Levels);
+/// <summary>
+/// A position as a subject: a department and the levels of it that count — or, with <paramref name="FirTeam"/>, the team of a
+/// FIR at those levels, whichever FIR it is, with no department (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir).
+/// </summary>
+public sealed record StaffPositionSubject(Department? Department, IReadOnlyList<StaffLevel> Levels, bool FirTeam = false);
 
 /// <summary>
-/// A row that belongs to a FIR. Used when the division sets <c>firStaffScope = own</c>; no entity
-/// of M0 implements it, but the handler already knows what to do with it.
+/// A row that belongs to a FIR: a training, whose FIR is its position's. A permission a FIR team holds on its own FIR reaches the
+/// rows that say that FIR and no other (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir): the single handler, the write guard
+/// and the lists of the CRUD engine all ask it. The lists narrow on it in SQL, so it is a column called <c>Fir</c>.
 /// </summary>
 public interface IHasFir
 {

@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -72,6 +72,16 @@ const REACT_CORE = ['react', 'react-dom', 'scheduler'];
 /** Language files live at the root of the repository and are shared with the backend. */
 const LOCALES_DIR = fileURLToPath(new URL('../locales', import.meta.url));
 
+/**
+ * The languages there are files for, one per directory under `locales/`: what the SPA may ask
+ * `/locales/{lng}/` for at all (`SHIPPED_LANGUAGES` in `app/i18n.ts`). Read from the directories, as
+ * the backend's `LocaleCatalog` does, so a division that adds a language adds no line here.
+ */
+const SHIPPED_LANGUAGES = readdirSync(LOCALES_DIR, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+
 async function listFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true, recursive: true });
   return entries.filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name));
@@ -121,6 +131,9 @@ export default defineConfig({
     tailwindcss(),
     divisionLocales(),
   ],
+  define: {
+    __HUB_LANGUAGES__: JSON.stringify(SHIPPED_LANGUAGES),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

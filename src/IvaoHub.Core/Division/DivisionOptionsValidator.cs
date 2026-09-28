@@ -134,6 +134,14 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
                 failures.Add($"division.json: 'positionGrants[{index}]' names no level. Use \"Coordinator\", \"Assistant\", \"Advisor\" or \"Member\".");
             }
 
+            // A position is a department's, or the team of a FIR's (M3, A11a): one of the two, never both and never neither.
+            if ((seed.Department is not null) == seed.FirTeam)
+            {
+                failures.Add(
+                    $"division.json: 'positionGrants[{index}]' must name either a 'department' or \"firTeam\": true, "
+                    + "not both and not neither.");
+            }
+
             if (string.IsNullOrWhiteSpace(seed.Permission))
             {
                 failures.Add($"division.json: 'positionGrants[{index}]' names no permission.");

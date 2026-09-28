@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 
 import { bootstrapQuery } from '../features/me/queries';
+import { useDivisionLanguage } from '../shared/i18n/useDivisionLanguage';
 import { NotFound } from '../shared/ui';
 
 /**
@@ -20,7 +21,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => ({
     bootstrap: await context.queryClient.ensureQueryData(bootstrapQuery),
   }),
-  component: () => <Outlet />,
+  component: Root,
   notFoundComponent: () => (
     <div className="bg-body text-foreground min-h-screen px-4 py-16">
       <div className="mx-auto max-w-2xl">
@@ -29,3 +30,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     </div>
   ),
 });
+
+/** The one place that knows the division before any route draws: its languages hold from here down. */
+function Root() {
+  const { bootstrap } = Route.useRouteContext();
+  useDivisionLanguage(bootstrap.division);
+
+  return <Outlet />;
+}
