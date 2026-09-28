@@ -70,6 +70,7 @@ function RequestScreen({ mine, wanted }: { mine: MyTrainingDto; wanted: RatingKi
   // A request the hub refused because the theory is not passed: the screen says so in place of the form, until the trainee
   // goes back to the form or to the other ladder.
   const [declined, setDeclined] = useState<TraineeTrainingDto | null>(null);
+  const isDeclined = declined !== null && declined.kind === path?.kind;
 
   const choose = (kind: RatingKind) => {
     setDeclined(null);
@@ -92,14 +93,24 @@ function RequestScreen({ mine, wanted }: { mine: MyTrainingDto; wanted: RatingKi
         <section className="flex flex-col gap-4">
           <H2>{t('training:request.what')}</H2>
           <PathChoice paths={mine.paths} value={path.kind} onChange={choose} />
-          {declined !== null && declined.kind === path.kind ? (
+          {isDeclined ? (
             <Declined mine={mine} training={declined} onBack={() => setDeclined(null)} />
           ) : path.refusal !== null || path.next === null ? (
             <Refused path={path} />
-          ) : (
-            // Keyed on the ladder only: a rating the server moved on keeps what the trainee wrote, and the refusal that says so.
-            <RequestForm key={path.kind} mine={mine} path={path} next={path.next} onDeclined={setDeclined} />
-          )}
+          ) : null}
+          {path.refusal === null && path.next !== null ? (
+            // Only out of sight while the hub's refusal is on the screen: «back to the request» finds what the trainee wrote
+            // (review of #144). Keyed on the ladder only: a rating the server moved on keeps it too, and the refusal that says so.
+            <div hidden={isDeclined}>
+              <RequestForm
+                key={path.kind}
+                mine={mine}
+                path={path}
+                next={path.next}
+                onDeclined={setDeclined}
+              />
+            </div>
+          ) : null}
         </section>
       )}
     </article>

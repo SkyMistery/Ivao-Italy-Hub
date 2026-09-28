@@ -27,7 +27,7 @@ const words = JSON.parse(
     sent: string;
     fields: Record<string, string>;
     theory: { question: string; yes: string; no: string; confirm: string };
-    declined: { title: string };
+    declined: { title: string; back: string };
   };
   mine: {
     title: string;
@@ -255,7 +255,10 @@ test('«no» to the theory is sent all the same, and the screen says why the req
 
   await page.goto('/training/request');
   // A position written out whole is one of the ones offered, and stays when the box is left.
-  await page.getByLabel(words.request.fields.position!, { exact: true }).fill('XXBB_TWR');
+  const position = page.getByLabel(words.request.fields.position!, { exact: true });
+  const availability = page.getByLabel(words.request.fields.availabilityText!, { exact: true });
+  await position.fill('XXBB_TWR');
+  await availability.fill('Weekends, mornings.');
 
   await page.getByRole('button', { name: words.request.send, exact: true }).click();
   const question = page.getByRole('alertdialog');
@@ -268,6 +271,11 @@ test('«no» to the theory is sent all the same, and the screen says why the req
   await expect(page).toHaveURL(/\/training\/request$/);
   expect(sent).toHaveLength(1);
   expect(sent[0]).toMatchObject({ kind: 'Atc', position: 'XXBB_TWR', theoryPassed: false });
+
+  // «Back to the request» finds what the trainee wrote (review of #144): it was only out of sight.
+  await page.getByRole('button', { name: words.request.declined.back, exact: true }).click();
+  await expect(position).toHaveValue('XXBB_TWR');
+  await expect(availability).toHaveValue('Weekends, mornings.');
 });
 
 test('Enter in the position asks the question, as the button does: nothing goes without its answer', async ({
