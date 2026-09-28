@@ -78,7 +78,9 @@ package (the host trace says "Executing as a self-contained app as per config fi
 
 Passenger chooses the port. ASP.NET Core does not read Passenger's `PORT` variable, so the start command has to
 pass it on, for example `dotnet IvaoHub.Web.dll --urls http://127.0.0.1:$PORT`. How the port reaches the command
-depends on how the host wired Passenger: copy what it does for its other .NET application. *Not measured here.*
+depends on how the host wired Passenger: copy what it does for its other .NET application. Measured on a Plesk host
+(28 September 2026): its Passenger started the hub with `dotnet IvaoHub.Web.dll` and nothing after it, the application
+folder as working directory, and the host's own wiring handed the port over.
 
 `ASPNETCORE_ENVIRONMENT` may be left unset: ASP.NET Core's default is `Production`, which is what the hub expects.
 
@@ -192,11 +194,11 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | `curl -s https://<host>/api/version` | the same version and commit, and `.NET 10…` |
 | `curl -s https://<host>/health` | `Healthy` |
 | `curl -s https://<host>/robots.txt` | a private installation: `Disallow: /`; a public one: its disallowed paths and the sitemap |
-| `curl -sI https://<host>/` | a private installation carries `X-Robots-Tag: noindex, nofollow` |
+| `curl -sI https://<host>/` | a private installation carries `X-Robots-Tag: noindex, nofollow`. ⚠️ With the document root on `wwwroot/`, a Plesk + Passenger host serves `/` (`index.html`) from the web server and today it carries **none** of the hub's headers, only what the host adds: check a deep address such as `/staff` instead, which reaches the hub and must show `Content-Security-Policy`, `X-Robots-Tag` and `X-Correlation-Id`. Fixed by `docs/internal/decisions/2026-09-28-gli-header-dei-file-statici.md` (Known limits) |
 | Sign in with IVAO as a member of staff | your name in the bar |
 | A private installation: sign in as somebody who is not staff | the page "The sign in did not complete" with the sentence about a private copy, and no row for them |
 | The deny checks of the section above | 403, 404, or the page of the site |
-| As super administrator, change something harmless, then read the audit log | the address recorded is **yours**, not `127.0.0.1` nor a Cloudflare address: that is how you know `TrustedNetworks` is right |
+| As super administrator, change something harmless, then read the audit log | the address recorded is **yours**, not `127.0.0.1` nor a Cloudflare address: that is how you know `TrustedNetworks` is right. ⚠️ Behind Plesk + Passenger the hub records `127.0.0.1` for everybody today, whatever `TrustedNetworks` says (Known limits); the next row shows why. Fixed by `docs/internal/decisions/2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy.md` |
 | As super administrator, open `https://<host>/api/admin/diagnostics/request` in the browser | how the hub sees your request: `believed.address` is yours and `scheme` is `https`. If not, the same answer says why: the neighbour and its family, the forwarding headers as they arrived and how many entries each holds, the names of every header, and the settings of the forwarded headers. Nothing of it is stored |
 
 ## Updating
@@ -230,17 +232,36 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   exception (no ICU, a truncated `.dll`, out of memory), still says so only on standard output, which is in
   Passenger's log.
 - **Passenger stops an idle application** and starts it again on the next request. The scheduled jobs (the mail
-  queue, the reference data, the release of the tours) only run while the process is alive. `passenger_min_instances
-  1` keeps one alive, where the host allows it.
-- **Forwarded headers** are processed one hop deep (the ASP.NET Core default). Whether the address the application
-  believes is the visitor's depends on the headers Passenger passes on: the audit log check above is how to know, and
-  `/api/admin/diagnostics/request` is how to know why.
+  queue, the reference data, the release of the tours) only run while the process is alive
+  (`docs/internal/decisions/2026-09-28-i-job-quando-passenger-spegne-l-hub.md`). `passenger_min_instances 1` keeps one
+  alive, where the host allows it.
+- **The cold start is paid by a visitor.** Measured on a Plesk + Passenger host (28 September 2026): Passenger stopped the
+  hub after **10–30 s** without requests, and the first request after the silence took **8–10 s** instead of 0.2 s. Where
+  the idle time is not yours to change, that is what a little-visited site feels like until the start gets faster
+  (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`).
+- **The address of the visitor behind Plesk + Passenger.** Forwarded headers are processed one hop deep (the ASP.NET
+  Core default). Measured on a Plesk + Passenger host behind Cloudflare (28 September 2026): the forwarded scheme
+  arrives (`https`, HSTS, `Secure` cookies), the visitor's address does not, and the hub sees **every visitor as
+  `127.0.0.1`**. The audit log then does not say who changed a row, and the limit of ten sign ins a minute per address
+  becomes **one limit for the whole site**. `/api/admin/diagnostics/request` shows which headers do arrive; the fix is
+  the core change of `docs/internal/decisions/2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy.md`. Solve it before
+  a public installation.
+- **The home page without the hub's headers.** With the document root on `wwwroot/`, the web server hands out
+  `index.html` for `/` by itself, so the first document of a visit carries no `Content-Security-Policy`, no
+  `X-Frame-Options` and, on a private installation, no `X-Robots-Tag`, and the single page application keeps running
+  without them. Deep addresses reach the hub and carry them all (measured on a Plesk host). The fix moves `index.html`
+  out of `wwwroot/` (`docs/internal/decisions/2026-09-28-gli-header-dei-file-statici.md`). The other static files
+  (`assets/`, `locales/`, `branding/`) never carry the hub's headers, by design: they are not documents.
 - The runtime uses the server garbage collector, which reserves more memory on a machine with many cores. On a host
   that caps memory, `DOTNET_gcServer=0` in the environment of the process turns it off. *Not measured on a server.*
 
 ## Not measured
 
-- Passenger itself: how the port reaches the process, the restart through `tmp/restart.txt`, and what it passes in
-  `X-Forwarded-For`. The package was run in Linux containers, behind no proxy but a trusted neighbour.
-- A real IVAO sign in on a deployed host.
+Measured on a Plesk + Passenger host since the first version of this page (28 September 2026): the start with
+`dotnet IvaoHub.Web.dll` and the port handed over by the host, the restart through `tmp/restart.txt` and one visit, a
+real IVAO sign in, and the address and the scheme the hub believes (Known limits). Still not measured:
+
+- Which header, if any, carries the visitor's address past Passenger: `/api/admin/diagnostics/request` is the
+  measure.
+- The page a member who is not staff meets on a private installation, on a deployed host (measured in development).
 - Whether the zip, unpacked by a hosting panel, keeps the execute bit that `zip` records on Linux.

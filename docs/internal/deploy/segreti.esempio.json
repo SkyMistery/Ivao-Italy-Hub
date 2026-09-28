@@ -1,15 +1,15 @@
 {
-  "$leggimi": "Modello del file dei segreti dell'installazione di prova (LEGGIMI-INSTALLAZIONE-DI-PROVA.md, paragrafo 5). Va in secrets/ con un nome che nessuno può indovinare. La password del database la scrivete voi, qui, sul server: non viaggia in nessun pacchetto.",
+  "$leggimi": "Modello del file dei segreti dell'installazione di prova (LEGGIMI-INSTALLAZIONE-DI-PROVA.md, paragrafo 3). Va in webapp/secrets/ con un nome che nessuno può indovinare. Ogni SCRIVI-QUI va sostituito, nessuno escluso: il nome del database, l'utente e la password sono quelli che ha dato Ivao.It, e l'utente compare in due righe come la password. Un nome lasciato come nel modello non entra nel database, e l'hub non parte.",
 
   "ConnectionStrings": {
-    "Default": "Server=localhost;Port=3306;Database=itivao_hub_test;User ID=itivao_hub_test;Password=SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE;MaximumPoolSize=15;ConnectionIdleTimeout=60;DefaultCommandTimeout=30",
-    "AtcData": "Server=localhost;Port=3306;Database=itivao_atc;User ID=itivao_hub_test;Password=SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE;MaximumPoolSize=5;ConnectionIdleTimeout=60;DefaultCommandTimeout=30"
+    "Default": "Server=localhost;Port=3306;Database=SCRIVI-QUI-IL-NOME-DEL-DATABASE;User ID=SCRIVI-QUI-L-UTENTE-DEL-DATABASE;Password=SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE;MaximumPoolSize=15;ConnectionIdleTimeout=60;DefaultCommandTimeout=30",
+    "AtcData": "Server=localhost;Port=3306;Database=itivao_atc;User ID=SCRIVI-QUI-L-UTENTE-DEL-DATABASE;Password=SCRIVI-QUI-LA-PASSWORD-DEL-DATABASE;MaximumPoolSize=5;ConnectionIdleTimeout=60;DefaultCommandTimeout=30"
   },
 
   "Ivao": {
     "Authority": "https://api.ivao.aero",
-    "ClientId": "SCRIVI-QUI-IL-CLIENT-ID-CHE-TI-DA-CARMINE",
-    "ClientSecret": "SCRIVI-QUI-IL-CLIENT-SECRET-CHE-TI-DA-CARMINE",
+    "ClientId": "SCRIVI-QUI-IL-CLIENT-ID-DEL-CLIENT-DI-PROVA",
+    "ClientSecret": "SCRIVI-QUI-IL-CLIENT-SECRET-DEL-CLIENT-DI-PROVA",
     "LoginUrl": "https://test.it.ivao.aero/auth/login",
     "RedirectUri": "https://test.it.ivao.aero/auth/callback",
     "PostLogoutRedirectUri": "https://test.it.ivao.aero/",
@@ -51,5 +51,21 @@
   "Installation": {
     "Domain": "test.it.ivao.aero",
     "Preview": true
+  },
+
+  "$leggimi-Serilog": "Facoltativo, spento: l'hub scrive già il suo log in webapp/logs/. Per averne una copia anche nella logs/ alla radice dell'FTP, rinominate la chiave qui sotto da $esempio-Serilog a Serilog. Il percorso è relativo alla cartella di lavoro, webapp/. Non misurato sul server.",
+
+  "$esempio-Serilog": {
+    "WriteTo": [
+      {
+        "Name": "File",
+        "Args": {
+          "path": "../logs/hub-.log",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 30,
+          "shared": true
+        }
+      }
+    ]
   }
 }
