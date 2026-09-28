@@ -105,8 +105,8 @@ scope (`PermissionSet.Has`, e `ICurrentUser.Has` con il FIR della riga accanto a
   FIR è condivisa in lettura.
 - **`/api/me` non cambia**: il browser usa i permessi per mostrare menu e pulsanti e non guarda nemmeno lo scope (`holdsPermission`), come
   per il validatore di un tour; sulla riga risponde il server (nel training, le `actions` delle pagine dello staff).
-- **«`Edit` implica `View`» tiene il FIR.** Un **deny** al team toglie il permesso come ogni deny, sul suo dipartimento e non su un FIR
-  solo: nessuno chiede di più.
+- **Il `View` che il calcolo scrive accanto a ogni permesso di un'area** («`Edit` implica `View`», e nel codice anche gli altri) **tiene
+  il FIR.** Un **deny** al team toglie il permesso come ogni deny, sul suo dipartimento e non su un FIR solo: nessuno chiede di più.
 
 ### 3.3 Nell'unico handler
 
@@ -131,10 +131,13 @@ un training dal suo FIR a un altro, né da un altro al suo. Il training, del res
   un FIR non è del TD, e non ne vede né le righe `Visibility.Department` né le liste.
 - **La lista generata di un'entità `IHasFir`** tiene, oltre alle righe dei dipartimenti di chi legge, quelle **del dipartimento e del FIR
   dei suoi permessi con un FIR che sono il permesso di lettura della lista** (punto 2 del revisore), in SQL. `TryNarrowToDepartments`
-  riceve quel permesso (`CrudOptions.EffectiveReadPolicy`), e conta solo i permessi con un FIR che hanno il suo nome; «`Edit` implica
-  `View`» è già dentro, perché il calcolo scrive il `View` accanto all'`Edit`, con lo stesso FIR. Un capo che tiene dal team
-  `Training.Assign` — che non implica `View` — e `Training.View` da un grant a un VID su un altro dipartimento non vede le righe del suo
-  FIR. Tutto dal cookie, senza un claim nuovo. Chi ha solo quei permessi non riceve il 403 «nessun dipartimento» su quella lista; su
+  riceve quel permesso (`CrudOptions.EffectiveReadPolicy`), e conta solo i permessi con un FIR che hanno il suo nome. Ciò che lo implica
+  è già dentro: il calcolo scrive il `View` di un'area accanto a **ogni** permesso dell'area che dà — `Edit` e anche gli altri, com'è
+  scritto nel codice —, con lo stesso FIR; così un capo che tiene dal team `Training.Assign` tiene anche `Training.View` sul suo FIR, e
+  ne vede le righe. Chi tiene sul suo FIR un permesso che non è la lettura della lista e non la implica — di un'altra area, o una lista
+  che si legge con un altro permesso, come le voci della scheda con `ManageSheets` — e la lettura da un grant su un altro dipartimento
+  non vede le righe del suo FIR. Tutto dal cookie, senza un claim nuovo. Chi ha solo quei permessi non riceve il 403 «nessun
+  dipartimento» su quella lista; su
   un'entità che il FIR non lo dice non contano, e la lista gli resta chiusa come oggi. Il FIR dell'entità dev'essere una colonna, come
   quello del training.
 - **Il filtro globale di `Visibility.Department` non cambia**: nessuna riga `IHasFir` è visibile per dipartimento (il training è
@@ -185,13 +188,13 @@ un training dal suo FIR a un altro, né da un altro al suo. Il training, del res
   4. **chi lascia la posizione lo perde**: il calcolo vero, rifatto senza la posizione FIR, non glielo dà più;
   5. con `all` il grant al team vale sul dipartimento; con `own` il personale dei dipartimenti non è fermato dal FIR;
   6. la lista generata mostra al capo le righe del suo FIR e basta; una lista di righe senza FIR gli resta chiusa; e **il caso negativo del
-     punto 2**: con dal team un permesso che non è quello di lettura della lista, e la lettura da un grant su un altro dipartimento, le
-     righe del suo FIR non ci sono;
+     punto 2**: con sul suo FIR un permesso che non è la lettura della lista né la implica (di un'altra area), e la lettura da un grant su
+     un altro dipartimento, le righe del suo FIR non ci sono;
   7. scrivere un grant al team fa rientrare chi tiene la posizione.
 - **I test di unità**: `PermissionSet` con il FIR e senza, e `HasAny`; il claim che va e torna, un cookie vecchio, e **un claim con il FIR
   letto da chi non conosce il FIR** (`ParsePermission` e `PermissionSet` senza FIR) **che non raggiunge nessuna riga**; **«un dipartimento
-  illeggibile non è ogni dipartimento»** (il punto 1); il calcolo con `own` e con `all`, con due FIR, con `Edit` che implica `View`, con un
-  grant a un VID; l'impronta del seme e il seme saltato su un'area senza FIR; i due validatori, e il rifiuto di un grant al team su un'area
+  illeggibile non è ogni dipartimento»** (il punto 1); il calcolo con `own` e con `all`, con due FIR, con il `View` implicato sullo stesso
+  FIR, con un grant a un VID; l'impronta del seme e il seme saltato su un'area senza FIR; i due validatori, e il rifiuto di un grant al team su un'area
   senza un'entità `IHasFir` (il punto 3).
 
 ## 4. Alternative scartate
