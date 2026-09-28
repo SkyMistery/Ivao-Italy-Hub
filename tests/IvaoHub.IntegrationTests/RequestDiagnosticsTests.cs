@@ -6,7 +6,6 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Services;
 using IvaoHub.Web;
 using IvaoHub.Web.Endpoints;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -31,9 +30,6 @@ public sealed class RequestDiagnosticsTests(MariaDbFixture mariaDb) : IAsyncLife
 
     /// <summary>The proxy in front of the test host, the only neighbour it believes.</summary>
     private const string TrustedPeer = "10.20.30.40";
-
-    /// <summary>The header the peer filter reads; the test server has no socket, so the neighbour is said in a header.</summary>
-    private const string PeerHeader = "X-Test-Peer";
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -119,7 +115,7 @@ public sealed class RequestDiagnosticsTests(MariaDbFixture mariaDb) : IAsyncLife
         Assert.Equal(TrustedPeer, neighbour.GetProperty("address").GetString());
         Assert.Equal("IPv4", neighbour.GetProperty("family").GetString());
 
-        // One hop deep, the default of ASP.NET Core: the rightmost entry is believed, and the raw header still has both.
+        // The walk stops at the rightmost entry, which is nobody the list trusts; the raw header still has both.
         Assert.True(body.GetProperty("addressForwarded").GetBoolean());
         Assert.Equal("198.51.100.9", body.GetProperty("believed").GetProperty("address").GetString());
         var forwardedFor = Header(body, "X-Forwarded-For");
@@ -139,7 +135,7 @@ public sealed class RequestDiagnosticsTests(MariaDbFixture mariaDb) : IAsyncLife
 
         var forwarding = body.GetProperty("forwarding");
         Assert.True(forwarding.GetProperty("inPipeline").GetBoolean());
-        Assert.Equal(1, forwarding.GetProperty("forwardLimit").GetInt32());
+        Assert.Equal(JsonValueKind.Null, forwarding.GetProperty("forwardLimit").ValueKind);
         Assert.Equal($"{TrustedPeer}/32", Assert.Single(forwarding.GetProperty("trustedNetworks").EnumerateArray()).GetString());
     }
 
@@ -194,7 +190,7 @@ public sealed class RequestDiagnosticsTests(MariaDbFixture mariaDb) : IAsyncLife
         builder.UseSetting($"{HubConfiguration.TrustedProxiesKey}:0", $"{TrustedPeer}/32");
         builder.UseSetting($"{RequestDiagnosticsEndpoints.ExtraHeadersKey}:0", "X-Visitor-Address");
         builder.UseSetting($"{RequestDiagnosticsEndpoints.ExtraHeadersKey}:1", "Cookie");
-        builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, PeerStartupFilter>());
+        builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, TestPeerStartupFilter>());
     });
 
     private static HttpClient SignedInClient(WebApplicationFactory<Program> host) =>
@@ -218,7 +214,7 @@ public sealed class RequestDiagnosticsTests(MariaDbFixture mariaDb) : IAsyncLife
         params (string Name, string Value)[] headers)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, Address);
-        request.Headers.Add(PeerHeader, peer);
+        request.Headers.Add(TestPeerStartupFilter.Header, peer);
         foreach (var (name, value) in headers)
         {
             request.Headers.TryAddWithoutValidation(name, value);
@@ -278,25 +274,5 @@ public sealed class RequestDiagnosticsTests(MariaDbFixture mariaDb) : IAsyncLife
         }
 
         await database.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>Puts the neighbour the test names under the request, before anything of the hub runs.</summary>
-    private sealed class PeerStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => builder =>
-        {
-            builder.Use(async (context, continuation) =>
-            {
-                if (System.Net.IPAddress.TryParse(context.Request.Headers[PeerHeader].ToString(), out var peer))
-                {
-                    context.Connection.RemoteIpAddress = peer;
-                    context.Connection.RemotePort = 50000;
-                }
-
-                await continuation();
-            });
-
-            next(builder);
-        };
     }
 }

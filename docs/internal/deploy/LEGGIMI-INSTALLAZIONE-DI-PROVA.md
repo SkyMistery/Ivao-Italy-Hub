@@ -138,14 +138,15 @@ controllano con `curl -s` (GET), non con `curl -I`: a una richiesta HEAD l'API r
 | `curl -sI` su `/secrets/<nome del file>.json`, `/config/division.json`, `/appsettings.json`, `/IvaoHub.Web.dll`, `/hub-keys/`, `/diagnostics/startup.txt` | 404, oppure la pagina del sito (`/hub-keys/` risponde così): **mai il file** |
 | L'accesso con IVAO di **Carmine** | entra, e in alto compare il suo nome: è il super amministratore del primo avvio |
 | L'accesso di un socio che **non** è staff | la pagina «L'accesso non è andato a buon fine» con la frase «Questa è una copia privata del sito, aperta solo allo staff…». **Di lui non resta niente** nel database. *Non ancora provato su questo server* |
-| Dalla `0.2.2`, da super amministratore, `https://test.it.ivao.aero/api/admin/diagnostics/request` nel browser | un JSON con `scheme` `https`. Oggi `believed.address` sarà quasi certamente `127.0.0.1` (limite noto qui sotto): si copia la risposta intera, perché è la misura che serve alla correzione (nota `decisions/2026-09-28-la-diagnostica-della-richiesta.md`, §5) |
+| Prima di tutto, nello stesso browser, `https://test.it.ivao.aero/cdn-cgi/trace` | la riga `ip=`: è il tuo indirizzo come lo vede Cloudflare, e le due righe qui sotto lo confrontano con quello |
+| Da super amministratore, `https://test.it.ivao.aero/api/admin/diagnostics/request` nel browser | un JSON con `scheme` `https` e, **dalla `0.2.3`**, `believed.address` uguale alla riga `ip=`. Mai `127.0.0.1`, mai un indirizzo di Cloudflare. Se non lo è, si copia la risposta intera: dice che cosa è arrivato e dove il middleware si è fermato (nota `decisions/2026-09-28-la-catena-dei-proxy.md`) |
+| Dalla `0.2.3`, da super amministratore: in `/staff/links` si crea un link («ip test», `https://example.org`), si salva e si cancella; poi in `/staff/admin/audit` si legge la colonna `ip` delle due righe | il tuo indirizzo, lo stesso della riga `ip=`. È questa la prova che il limite degli accessi al login conta ogni visitatore per conto suo |
 
 **I limiti noti, che oggi sono il risultato atteso** (piano §11.3; vanno risolti prima della produzione):
 
 | Che cosa si vede | Perché | Che cosa lo corregge |
 |---|---|---|
 | `curl -sI https://test.it.ivao.aero/` risponde 200 **senza** `content-security-policy` né `x-robots-tag` (solo il `nosniff` dell'hosting) | la home, `index.html`, la consegna il server web da `wwwroot/` senza passare dall'hub. Da lì la visita gira senza CSP | nota `decisions/2026-09-28-gli-header-dei-file-statici.md`, strada A (in coda, e solo se l'avvio a freddo scende abbastanza) |
-| Nel registro delle modifiche l'indirizzo è **`127.0.0.1`** per tutti | all'hub l'indirizzo del visitatore non arriva: vede solo Passenger. Il limite di 10 accessi al minuto sul login è quindi **uno per tutto il sito** | nota `decisions/2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy.md`: la pagina diagnostica della riga sopra, poi la correzione del nucleo |
 | La prima richiesta dopo un po' di silenzio aspetta **8–10 s** | Passenger spegne l'hub inattivo dopo 10–30 s, e non si può cambiare da qui | nota `decisions/2026-09-28-l-avvio-a-freddo.md` |
 | I lavori pianificati (la coda delle mail, i dati di riferimento, l'uscita dei tour) girano solo mentre l'hub è acceso | lo stesso spegnimento | nota `decisions/2026-09-28-i-job-quando-passenger-spegne-l-hub.md` |
 
@@ -213,12 +214,16 @@ il server fa il backup, e come si ripristina, va avuto per iscritto da Ivao.It p
 - gli header dell'hub su tutto ciò che passa dall'hub, e intatti attraverso Passenger e Cloudflare; la home e i file
   statici senza (limite noto);
 - lo schema `https` creduto dall'hub (HSTS, cookie `secure`), e l'indirizzo del visitatore no: `127.0.0.1` nel registro;
+- con la pagina diagnostica della `0.2.2`, perché: `X-Forwarded-For` arriva, in due righe, con tre voci (il visitatore, un
+  nodo di Cloudflare, `127.0.0.1` del server web davanti a Passenger), e l'hub, che risaliva di un solo passo, si fermava
+  alla terza. La `0.2.3` risale finché chi scrive è fidato (nota `decisions/2026-09-28-la-catena-dei-proxy.md`);
 - l'avvio a freddo di 8–10 s dopo 10–30 s di silenzio.
 
 **Non ancora verificato**:
 
 - la pagina di chi non è staff, sul server (in sviluppo sì, in italiano e in inglese);
-- quale header porta, se lo porta, l'indirizzo del visitatore fino all'hub: lo dirà la pagina diagnostica della `0.2.2`;
+- l'indirizzo del visitatore creduto dalla `0.2.3`, sul server: i test mandano la catena misurata qui, il server non l'ha
+  ancora mostrato (le due prove della tabella dei controlli);
 - il log anche in `logs/` alla radice (§3, punto 4);
 - i lavori pianificati dopo uno spegnimento di Passenger.
 

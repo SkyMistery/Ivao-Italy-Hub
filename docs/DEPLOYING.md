@@ -119,7 +119,7 @@ lock if a deny rule is ever lost. Never put the file in a zip or a mail.
 | `ConnectionStrings:Default` | the installation's own database and user. **`MaximumPoolSize` at most 15**: on shared hosting the connections per user are capped for everybody together |
 | `Ivao` | the installation's own OAuth client. The three URLs must match **character for character** what is registered with IVAO for that client: `https`, the host, no trailing slash on the first two. The application refuses to start while a field is missing |
 | `AllowedHosts` | the host names this installation answers to, `;` separated, never `*`. Required in production (measured: a request with another `Host` gets 400) |
-| `ForwardedHeaders:TrustedNetworks` | the networks whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed. Required in production. Behind Passenger the application's peer is the local machine, so the loopback addresses belong here, with the ranges Cloudflare publishes at <https://www.cloudflare.com/ips/> |
+| `ForwardedHeaders:TrustedNetworks` | the networks whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed. Required in production. Behind Passenger the application's peer is the local machine, so the loopback addresses belong here, with the ranges Cloudflare publishes at <https://www.cloudflare.com/ips/>. The hub walks `X-Forwarded-For` back from the right while the address that wrote an entry is in this list, and believes the first one that is not: list the proxies that really stand in front, never a network a visitor can come from |
 | `Diagnostics:RequestHeaders` | optional: more header names whose value `/api/admin/diagnostics/request` shows, when the visitor's address may arrive in a header the hub does not know. `Cookie` and `Authorization` are never shown |
 | `Installation:Domain` | the host every absolute link is built on — mails, sitemap, robots.txt — when it is not `division.json → domain`, as on a test installation. A host name only |
 | `Installation:Preview` | `true` for a private installation: not indexed (robots.txt, no sitemap, `X-Robots-Tag` on every response) and **open to the staff of the division and the super administrators only**; anybody else is turned away at the end of the IVAO round trip, before anything about them is written |
@@ -198,7 +198,7 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | Sign in with IVAO as a member of staff | your name in the bar |
 | A private installation: sign in as somebody who is not staff | the page "The sign in did not complete" with the sentence about a private copy, and no row for them |
 | The deny checks of the section above | 403, 404, or the page of the site |
-| As super administrator, change something harmless, then read the audit log | the address recorded is **yours**, not `127.0.0.1` nor a Cloudflare address: that is how you know `TrustedNetworks` is right. ⚠️ Behind Plesk + Passenger the hub records `127.0.0.1` for everybody today, whatever `TrustedNetworks` says (Known limits); the next row shows why. Fixed by `docs/internal/decisions/2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy.md` |
+| As super administrator, change something harmless, then read the audit log | the address recorded is **yours** (behind Cloudflare, the `ip=` line of `https://<host>/cdn-cgi/trace` in the same browser), never `127.0.0.1` nor a Cloudflare address: that is how you know `TrustedNetworks` is right. If it is not, the next row shows why |
 | As super administrator, open `https://<host>/api/admin/diagnostics/request` in the browser | how the hub sees your request: `believed.address` is yours and `scheme` is `https`. If not, the same answer says why: the neighbour and its family, the forwarding headers as they arrived and how many entries each holds, the names of every header, and the settings of the forwarded headers. Nothing of it is stored |
 
 ## Updating
@@ -239,13 +239,6 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   hub after **10–30 s** without requests, and the first request after the silence took **8–10 s** instead of 0.2 s. Where
   the idle time is not yours to change, that is what a little-visited site feels like until the start gets faster
   (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`).
-- **The address of the visitor behind Plesk + Passenger.** Forwarded headers are processed one hop deep (the ASP.NET
-  Core default). Measured on a Plesk + Passenger host behind Cloudflare (28 September 2026): the forwarded scheme
-  arrives (`https`, HSTS, `Secure` cookies), the visitor's address does not, and the hub sees **every visitor as
-  `127.0.0.1`**. The audit log then does not say who changed a row, and the limit of ten sign ins a minute per address
-  becomes **one limit for the whole site**. `/api/admin/diagnostics/request` shows which headers do arrive; the fix is
-  the core change of `docs/internal/decisions/2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy.md`. Solve it before
-  a public installation.
 - **The home page without the hub's headers.** With the document root on `wwwroot/`, the web server hands out
   `index.html` for `/` by itself, so the first document of a visit carries no `Content-Security-Policy`, no
   `X-Frame-Options` and, on a private installation, no `X-Robots-Tag`, and the single page application keeps running
@@ -259,9 +252,11 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
 
 Measured on a Plesk + Passenger host since the first version of this page (28 September 2026): the start with
 `dotnet IvaoHub.Web.dll` and the port handed over by the host, the restart through `tmp/restart.txt` and one visit, a
-real IVAO sign in, and the address and the scheme the hub believes (Known limits). Still not measured:
+real IVAO sign in, and what carries the visitor's address past Passenger: `X-Forwarded-For`, in two header lines, with
+the visitor, a Cloudflare node and the host's own web server (`127.0.0.1`), and two entries of `X-Forwarded-Proto`. Still
+not measured:
 
-- Which header, if any, carries the visitor's address past Passenger: `/api/admin/diagnostics/request` is the
-  measure.
+- The visitor's address that version 0.2.3 believes on that host (the audit log check of "After every deploy: the
+  checks"): the tests send the chain measured there, the server has not shown it yet.
 - The page a member who is not staff meets on a private installation, on a deployed host (measured in development).
 - Whether the zip, unpacked by a hosting panel, keeps the execute bit that `zip` records on Linux.
