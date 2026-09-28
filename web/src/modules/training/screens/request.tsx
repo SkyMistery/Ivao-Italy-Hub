@@ -26,6 +26,7 @@ import {
 } from '../schemas';
 
 import { RefusalDetailText, TheoryExamLink } from './parts';
+import { positionLabel } from './ratings';
 import { MINE, chosenPath, formatHours, isTheoryRefusal, refusalDetail, splitRefusal } from './trainee';
 
 /**
@@ -243,11 +244,11 @@ function RequestForm({
         path.asksPosition
           ? path.positions.map((position) => ({
               value: position.callsign,
-              label: `${position.callsign} — ${position.name}`,
+              label: positionLabel(position, t),
             }))
           : null,
       ),
-    [path],
+    [path, t],
   );
 
   const submit = async (values: RequestFormValues) => {
