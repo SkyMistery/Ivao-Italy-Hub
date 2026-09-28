@@ -117,6 +117,11 @@ lo leggono come «tutto permesso» (va bene) ma non trovano la riga `Sitemap:` (
 Search Console, o con una regola del pannello). Il file a mano in `webapp/wwwroot/` **non deve mai entrare nel pacchetto**:
 direbbe `Disallow: /` anche alla produzione.
 
+**Misurato dopo (§6.3): l'hosting non tiene per sé `/robots.txt`**, che senza il file a mano arriva all'hub. Resta una
+cosa da sapere: **Cloudflare mette in cache `/robots.txt`** (per estensione, `cf-cache-status: HIT`, anche la risposta
+dell'hub, che non manda `Cache-Control`). Quando un'installazione passa da privata a pubblica, o quando si toglie il file a
+mano, per un po' il bordo può servire ancora il `Disallow: /` vecchio: si svuota la cache di quell'indirizzo in Cloudflare.
+
 ## 5. Le domande, e che cosa ha deciso Carmine
 
 Carmine ha risposto sulla pull request il 28 settembre 2026, **tutte e tre come raccomandato**
@@ -164,7 +169,7 @@ Che cosa conferma:
   fallback rifiuta `/api`. È un limite di misura, non un guasto: `/api/version` si controlla con `curl -s` (GET), come
   dice già `DEPLOYING.md`. Per lo stesso motivo HEAD su `/embed/…` risponde con la pagina del sito.
 
-Resta da misurare **con l'FTP**, quindi da Carmine o da chi amministra (§6.1 e §6.2).
+Restava da misurare **con l'FTP**, quindi da Carmine (§6.1 e §6.2); com'è andata è nel §6.3.
 
 ### 6.1. La prova di A: `/` senza `index.html` arriva all'hub?
 
@@ -205,6 +210,21 @@ Facoltativa ora, necessaria prima di togliere il file per sempre (decisione 2). 
    torna il 404 di Apache del 27 settembre, l'hosting tiene per sé `/robots.txt` (§4) e il file a mano resta.
 4. Rinominare `robots.txt.off` di nuovo in `robots.txt`.
 
+### 6.3. Com'è andata (28 settembre 2026, 07:45–07:50 UTC circa)
+
+Le due prove le ha fatte Carmine via FTP, le misure questa sessione da fuori.
+
+- **§6.1 riuscita.** Con `index.html.off`: `/`, `/index.html` e `/?prova=1` rispondono `404` **con**
+  `content-security-policy` identica a `security.json`, `x-frame-options: DENY`, `x-robots-tag: noindex, nofollow` e
+  `x-correlation-id`, `cf-cache-status: DYNAMIC`. Risponde l'hub: **la strada A funziona su questo hosting**. La prima
+  risposta ha impiegato **7,7 s** (l'hub era spento, avvio a freddo, come misurato dalla #165); le altre 0,2 s. Rimesso
+  `index.html`: `/` di nuovo 200 dal server web.
+- **§6.2 riuscita.** Con `robots.txt.off`: `/robots.txt?prova=1` risponde `200`, `User-agent: *` / `Disallow: /`, con
+  `x-correlation-id` e `x-robots-tag`: **risponde l'hub**, il 404 di Apache del 27 settembre non si ripete (allora
+  l'applicazione non partiva ancora; la causa precisa non si è vista). Anche qui 8,2 s la prima volta, poi 0,2 s.
+  `/robots.txt` senza parametro dava ancora il file a mano: `cf-cache-status: HIT`, `Age` di un'ora. Il file a mano è
+  stato rimesso al suo posto (decisione 2: si toglie quando c'è la release con A).
+
 ## 7. Limiti, accettati
 
 - **I file statici di un'installazione privata** (`assets/`, `locales/`, `branding/`) non portano `X-Robots-Tag`, né
@@ -221,4 +241,5 @@ Facoltativa ora, necessaria prima di togliere il file per sempre (decisione 2). 
   Tra i limiti dell'installazione privata: i file statici senza `X-Robots-Tag` (§7), e la regola di Cloudflare se va chiuso.
 - **§16** (meccanismi) e la nota `2026-09-12-gli-header-di-sicurezza`: gli header valgono su ciò che attraversa l'hub;
   i documenti ci passano sempre, i file statici no, ed è voluto.
-- **§15 punto 2c** (hosting): `/robots.txt` su Plesk, se la misura del §6.2 conferma che l'hosting lo tiene per sé.
+- **§15 punto 2c** (hosting): su Plesk `/` senza indice e `/robots.txt` arrivano all'hub (misurato, §6.3); Cloudflare
+  mette in cache `/robots.txt`, da svuotare quando cambia `Installation:Preview` o si toglie il file a mano (§4).
