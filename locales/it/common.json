@@ -1440,8 +1440,7 @@
     "hints": {
       "expiresAt": "Vuoto significa che il permesso non scade.",
       "vid": "Per un solo membro. Lascialo vuoto per dare il permesso a una posizione.",
-      "positionLevels": "Chi ha una posizione di questo dipartimento a uno di questi livelli ha il permesso, e lo perde con la posizione.",
-      "positionFirTeam": "Per i capi di ogni FIR a questi livelli (il capo è coordinator, il vice assistant). Se la divisione tiene i team FIR sul loro FIR, ognuno ha il permesso solo sulle righe del suo. Solo per un permesso le cui righe dicono il loro FIR."
+      "positionLevels": "Chi ha una posizione di questo dipartimento a uno di questi livelli ha il permesso, e lo perde con la posizione. Per il team di un FIR il capo è il coordinator e il vice l'assistant: se la divisione tiene i team FIR sul loro FIR, ognuno lo ha solo sulle righe del suo, e così si dà solo un permesso le cui righe dicono il loro FIR."
     }
   },
   "superadmins": {

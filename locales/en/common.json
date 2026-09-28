@@ -1440,8 +1440,7 @@
     "hints": {
       "expiresAt": "Empty means the grant never expires.",
       "vid": "For one member. Leave it empty to give the permission to a position.",
-      "positionLevels": "Whoever holds a position of this department at one of these levels holds the permission, and stops holding it with the position.",
-      "positionFirTeam": "For the chiefs of every FIR at these levels (the chief is a coordinator, the assistant chief an assistant). When the division keeps FIR teams to their own FIR, each holds the permission on the rows of their FIR only. Only for a permission whose rows say their FIR."
+      "positionLevels": "Whoever holds a position of this department at one of these levels holds the permission, and stops holding it with the position. For the team of a FIR, the chief is the coordinator and the assistant chief the assistant: when the division keeps FIR teams to their own FIR, each holds it on the rows of their FIR only, and only a permission whose rows say their FIR can be given this way."
     }
   },
   "superadmins": {
