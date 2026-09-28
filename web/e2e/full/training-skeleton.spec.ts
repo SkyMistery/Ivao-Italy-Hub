@@ -11,9 +11,9 @@ import { benchUrl, readInEnglish, signIn, whileWaitingFor } from './bench';
  * The skeleton of the training (M3, A4), through the real screens registered from the module manifest: the section is
  * offered in the back office, and its settings are changed and read back after a reload. The bench signs in as the web
  * team, which reaches every department and so holds the training's permissions on its base department too; the bench's
- * trainer holds what `division.json` gives a trainer, and the settings are not part of it. A grant on one training alone — the
- * one the round of the staff assigns them (A7), which the night takes back once that training is over — is not a power over
- * the department, and a bench that survives between runs may still have it: it is left out.
+ * trainer holds what `division.json` gives a trainer — viewing the trainings, and conducting the ones assigned to them (A7b)
+ * —, and the settings are not part of it. A grant on one training alone, which the assignments of A7 wrote before A7b, is not
+ * a power over the department, and a bench that survived from then may still have one: it is left out.
  *
  * The settings are put back as they were in a `finally`: the bench survives between runs.
  */
@@ -64,7 +64,7 @@ test('the training section is offered, and its settings are saved and read back'
   }
 });
 
-test('the trainer of the bench views the trainings, and neither holds exams nor manages the settings', async ({
+test('the trainer of the bench views and conducts the trainings, and neither holds exams nor manages the settings', async ({
   browser,
 }) => {
   const context = await browser.newContext({ baseURL: benchUrl });
@@ -79,8 +79,12 @@ test('the trainer of the bench views the trainings, and neither holds exams nor 
     .filter((permission) => permission.department === 'TD' && permission.resourceScope === null)
     .map((permission) => permission.name);
 
-  // An exam is assigned only to an examiner, never to a trainer (the training department, 26 September 2026).
-  expect([...new Set(held.filter((name) => name.startsWith('Training.')))]).toEqual(['Training.View']);
+  // Conducting reaches only the trainings assigned to them (A7b); an exam is assigned only to an examiner, never to a trainer
+  // (the training department, 26 September 2026).
+  expect([...new Set(held.filter((name) => name.startsWith('Training.')))]).toEqual([
+    'Training.Conduct',
+    'Training.View',
+  ]);
 
   expect((await context.request.get(settingsUrl)).status()).toBe(403);
 
