@@ -7,7 +7,7 @@
   4,2 s (mediana), prima risposta a 5,4 s; due volte su otto Passenger ha spento l'hub 20–30 ms dopo la prima risposta di
   un avvio lento, e la pagina ha pagato un secondo avvio (12 s + 7 s).
 
-Versione **0.2.5**, PATCH: nessuna migrazione (il marcatore è una riga di una tabella che c'è), nessuna pagina.
+Versione **0.2.6**, PATCH: nessuna migrazione (il marcatore è una riga di una tabella che c'è), nessuna pagina.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono `InitializeAsync`, `hub_division_settings` (che tiene già
 le chiavi «applicato una volta» dei seeder e l'hash dei superadmin) e `diagnostics/starts.txt`. Nessun meccanismo nuovo.
 
@@ -30,7 +30,7 @@ Il primo avvio dopo un caricamento (build nuova) fa tutto come prima e poi scriv
 ## 2. Dove sta, e quando si scrive
 
 - **Nel database**: la riga `startup.initialised` di `hub_division_settings`, un JSON con la chiave (§3), lo stamp della build
-  (`0.2.5+abc1234`) e l'ora. Nessuna tabella nuova, nessuna migrazione. Pesate le alternative:
+  (`0.2.6+abc1234`) e l'ora. Nessuna tabella nuova, nessuna migrazione. Pesate le alternative:
   - **un file in `diagnostics/`**: più economico da leggere (niente query), ma un database ripristinato da una copia vecchia,
     o un'installazione puntata su un altro database, troverebbe un file che dice «già fatto» per uno schema che non ha visto.
     Nel database il marcatore viaggia **con** i dati che descrive: una copia vecchia porta il suo marcatore vecchio, o nessuno.
@@ -84,8 +84,8 @@ non vede. Quindi gli ingressi, passo per passo:
 Subito dopo `ready in`, nella riga `START`:
 
 ```
-… START   pid 8        0.2.5+abc1234  ready in 1.20 s  initialisation skipped (marker of 0.2.5+abc1234, 2026-09-28 16:40:02Z): migrations, module migrations, position grants, content  previous: …  steps ms: …, models 655, marker 286, superadmins 68, reference data 7, …
-… START   pid 9        0.2.6+def5678  ready in 1.73 s  initialisation full: another build (the marker is of 0.2.5+abc1234)  previous: …  steps ms: …, marker 275, migrations 26, …, content 227, marker written 83, superadmins 20, …
+… START   pid 8        0.2.6+abc1234  ready in 1.36 s  initialisation skipped (marker of 0.2.6+abc1234, 2026-09-28 16:40:02Z): migrations, module migrations, position grants, content  previous: …  steps ms: …, models 655, marker 286, superadmins 68, reference data 7, …
+… START   pid 9        0.2.7+def5678  ready in 1.73 s  initialisation full: another build (the marker is of 0.2.6+abc1234)  previous: …  steps ms: …, marker 275, migrations 26, …, content 227, marker written 83, superadmins 20, …
 ```
 
 - `initialisation full:` dice perché: `no marker`, `another build (the marker is of …)`, `the configuration changed`,
