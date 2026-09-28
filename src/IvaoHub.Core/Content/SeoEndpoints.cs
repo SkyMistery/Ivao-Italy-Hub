@@ -3,6 +3,7 @@ using System.Text;
 using System.Xml;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -56,8 +57,16 @@ public static class SeoEndpoints
     private static async Task<IResult> SitemapAsync(
         HubDbContext database,
         IOptions<DivisionOptions> division,
+        IOptions<InstallationOptions> installation,
         HttpContext http)
     {
+        // A private installation has no address to offer a crawler, so it has no sitemap at all
+        // (note 2026-09-27-l-installazione-di-prova).
+        if (installation.Value.Preview)
+        {
+            return Results.NotFound();
+        }
+
         var rows = await database.Contents
             .AsNoTracking()
             .Where(content => !content.IsTemplate)
@@ -126,8 +135,14 @@ public static class SeoEndpoints
         writer.WriteEndElement();
     }
 
-    private static IResult Robots(IOptions<DivisionOptions> division)
+    private static IResult Robots(IOptions<DivisionOptions> division, IOptions<InstallationOptions> installation)
     {
+        // A private installation asks to be left alone everywhere, and names no sitemap: it has none.
+        if (installation.Value.Preview)
+        {
+            return Results.Text("User-agent: *\nDisallow: /\n", "text/plain", Encoding.UTF8);
+        }
+
         var text = new StringBuilder("User-agent: *\n");
 
         foreach (var path in Disallowed)

@@ -545,6 +545,79 @@ namespace IvaoHub.Modules.Training.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("IvaoHub.Modules.Training.Bans.TraineeBan", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("EndsAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("ends_at");
+
+                    b.Property<DateTime?>("LiftedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("lifted_at");
+
+                    b.Property<int?>("LiftedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("lifted_by");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Vid")
+                        .HasColumnType("int")
+                        .HasColumnName("vid");
+
+                    b.HasKey("Id")
+                        .HasName("pk_trn_bans");
+
+                    b.HasIndex("Vid")
+                        .HasDatabaseName("ix_trn_bans_vid");
+
+                    b.ToTable("trn_bans", (string)null);
+                });
+
             modelBuilder.Entity("IvaoHub.Modules.Training.Sheets.SheetItem", b =>
                 {
                     b.Property<long>("Id")
@@ -623,6 +696,216 @@ namespace IvaoHub.Modules.Training.Data.Migrations
                         .HasDatabaseName("ix_trn_sheet_items_kind_rating_sort");
 
                     b.ToTable("trn_sheet_items", (string)null);
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Training.Training", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AirportIcao")
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("airport_icao");
+
+                    b.Property<DateTime?>("AssignedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<int?>("AssignedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("assigned_by");
+
+                    b.Property<string>("AvailabilityText")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("availability_text");
+
+                    b.Property<long?>("ChosenSlotId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("chosen_slot_id");
+
+                    b.Property<string>("CloseReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("close_reason");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("closed_at");
+
+                    b.Property<int?>("ClosedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("closed_by");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("completed_at");
+
+                    b.Property<bool>("CooldownWaived")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("cooldown_waived");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("decided_at");
+
+                    b.Property<int?>("DecidedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("decided_by");
+
+                    b.Property<string>("Fir")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("fir");
+
+                    b.Property<string>("GeneralComment")
+                        .HasColumnType("text")
+                        .HasColumnName("general_comment");
+
+                    b.Property<bool>("IsMockExam")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_mock_exam");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("NotesText")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("notes_text");
+
+                    b.Property<string>("OpenKind")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("open_kind");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<string>("Position")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)")
+                        .HasColumnName("position");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int")
+                        .HasColumnName("rating");
+
+                    b.Property<bool>("ReadyForExam")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("ready_for_exam");
+
+                    b.Property<bool>("ReadyForMockExam")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("ready_for_mock_exam");
+
+                    b.Property<string>("Rejection")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("rejection");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<DateTime?>("RemindedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("reminded_at");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)");
+
+                    b.Property<DateTime?>("ScheduledStartUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("scheduled_start_utc");
+
+                    b.Property<string>("StaffComment")
+                        .HasColumnType("text")
+                        .HasColumnName("staff_comment");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("state");
+
+                    b.Property<DateTime?>("TheoryConfirmedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("theory_confirmed_at");
+
+                    b.Property<decimal?>("TraineeHoursAtRequest")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("trainee_hours_at_request");
+
+                    b.Property<int?>("TraineeRatingAtRequest")
+                        .HasColumnType("int")
+                        .HasColumnName("trainee_rating_at_request");
+
+                    b.Property<int>("TraineeVid")
+                        .HasColumnType("int")
+                        .HasColumnName("trainee_vid");
+
+                    b.Property<int?>("TrainerVid")
+                        .HasColumnType("int")
+                        .HasColumnName("trainer_vid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("visibility");
+
+                    b.HasKey("Id")
+                        .HasName("pk_trn_trainings");
+
+                    b.HasIndex("State", "ScheduledStartUtc")
+                        .HasDatabaseName("ix_trn_trainings_state_scheduled_start_utc");
+
+                    b.HasIndex("TraineeVid", "OpenKind")
+                        .IsUnique()
+                        .HasDatabaseName("ix_trn_trainings_trainee_vid_open_kind");
+
+                    b.HasIndex("TrainerVid", "State")
+                        .HasDatabaseName("ix_trn_trainings_trainer_vid_state");
+
+                    b.ToTable("trn_trainings", (string)null);
                 });
 
             modelBuilder.Entity("IvaoHub.Core.Content.ContactReference", b =>

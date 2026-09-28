@@ -11,14 +11,22 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A5** (le voci della scheda di valutazione), sul branch `m3/a5-sheet-items`,
-**PR #140** verso `main`, **pronta a CI verde**: **A4 (#139) è unita** (12:22, dopo A4a, #133), e `main` è entrato nel branch con un
-merge. **A3 (#131) è unita**, con la fase del nucleo **A3b** (#135, in bozza, in una sessione sua); la nota del maintainer
-`2026-09-26-gli-esaminatori` (#136, piano 1.14) dice che gli esaminatori sono HQ, TC, TAC e i TA. **Il prossimo passo** è **A6** (la
-richiesta), sul branch `m3/a6-training-request` preparato da `m3/a5-sheet-items`, in coda dopo #140 (dalle fasi del modulo in poi tutto
-migra `TrainingDbContext`: in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). **#138 è
-unita** (piano 1.15): in C# una chiave di un modulo si chiede con il namespace (`training:…`), e
-`ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` lo controlla; il C# del training lo fa già.
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A3b** (nucleo: le righe affidate a chi scrive), sul branch
+`m3/a3b-entrusted-rows`, **PR #135** verso `main`. La nota è decisa da Carmine: sì alla forma, e sì al trainer di A7 con la stessa
+regola. Il revisore ha trovato il codice approvabile appena in pari con `main`
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026)). `main` era 68 commit più avanti di
+5ddba1f (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato nel branch con un merge; build e suite rifatte. Aspettano A3b: A7 (#146), che
+usa la regola per il trainer; A10, per gli esami; A11a (#159), che tocca lo stesso handler e lo stesso guardiano.
+
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6a** (la richiesta, il server), sul branch `m3/a6a-request-server`, **PR #143**
+verso `main`: **A6 si è divisa in apertura** in A6a (il server) e A6b (le pagine), come `08` prevedeva. **A5 (#140) è unita** (18:44), e
+`main` è entrato nel branch con un merge insieme alla #141 del maintainer: **il revisore ora è la «sessione master»** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
+`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133) e A4 (#139) sono unite**; la fase del nucleo **A3b** (#135) è
+in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della richiesta), sul branch `m3/a6b-request-pages` preparato da
+`m3/a6a-request-server`, in coda dopo #143; poi **A7**, in coda dopo A6b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
+in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
+con il namespace (`training:…`, #138).
 
 **Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
 cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
@@ -125,6 +133,90 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - Nessun VID e nessuno slug usati.
 - **La PR non va in coda**: se #143 o #144 sono unite prima, `main` entra nel branch con un merge; i conflitti stanno in cima a questo
   file e nella tabella di `08`, e si tengono tutti i paragrafi.
+
+### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
+
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-righe-affidate-a-chi-scrive.md`, caso c, decisa da Carmine sulla #135):
+  - **`IHasAssignee { int? AssigneeVid }`** (`Core/Division/DomainContracts.cs`): la riga dice a chi è affidata.
+  - **`PermissionDescriptor.OnlyForAssignee`** (`CorePermissions.cs`; `PermissionCatalog.IsOnlyForAssignee`, `EditOf`): un permesso
+    segnato raggiunge una riga solo se è affidata a chi chiede. Su ogni altra riga vale come `{Area}.Edit`: nell'unico handler
+    (`HubAuthorization.cs`) e nel guardiano (`HubSaveChangesInterceptor.IsWrittenWithAnAlternative`) allo stesso modo. Senza riga
+    resta `HasAny`. Il catalogo rifiuta il segno sul permesso `View` dell'area, l'unico che sa riconoscere fra quelli che leggono.
+  - **Nel guardiano**, per un'alternativa segnata:
+    - in modifica la riga è di chi scrive prima e dopo, quindi non si passa e non si prende;
+    - alla creazione (`AlsoOnCreation`) la riga nuova è di chi la crea;
+    - con **`AlsoOnDeletion`**, nuovo su `[AlsoWrittenWith]`, la toglie chi l'aveva. Conta solo per un permesso segnato.
+  - **All'avvio**, prima delle migrazioni, `HubPipeline.InitializeAsync` chiama `PermissionCatalog.VerifyAlternatives` sul modello di
+    ogni contesto. Rifiuta `AlsoOnDeletion` su un permesso non segnato, e un permesso segnato su un'entità che non è `IHasAssignee`
+    (i rilievi del revisore).
+  - Nel modulo di prova: `SampleRecord.AssigneeVid` (migrazione `AddSampleAssignee`) e `Sample.Manage`, segnato e anche
+    `DeniedToStakeholder`. I test: `AssignedRowPermissionTests` (sei, integrazione) e `AssigneePermissionTests` (nove, unità).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10**: la riga degli esami si dichiara così.
+    - `trn_exams` porta `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true, AlsoOnDeletion = true)]` e
+      `IHasAssignee` (`int? IHasAssignee.AssigneeVid => ExaminerVid;`).
+    - Nel catalogo del modulo, `ManageExams` ha `OnlyForAssignee: true`, e anche `DeniedToStakeholder: true` se l'esame dice il suo
+      candidato con `IHasStakeholder`.
+    - `MapCrud` ha `WritePolicy = Training.ManageExams`, senza `DeletePolicy`.
+    - ⚠️ **Un TA deve vedere quali esami sono i suoi** (il revisore): la lista la leggono tutti con `Training.View`, e un'azione
+      sull'esame di un altro è un 403.
+  - **A7**: **Carmine ha scelto la stessa regola per il trainer** (risposta 2 sulla #135).
+    - Il training dichiara il suo trainer con `IHasAssignee`, e `Training.Conduct` è `OnlyForAssignee`.
+    - Niente grant con scope per assegnazione, e niente job notturno.
+    - A7 lo registra nella sua nota, in `08` e in `07`, perché corregge la n.1 del design, nella stessa PR.
+    - ⚠️ `Training.Conduct` va dato per posizione ai TA1–9 e ai T01–T99, perché i `positionGrants` di A4 danno ai trainer solo `View`
+      (R.7: si assegna chiunque sia staff del training). Lo aggiunge A7: una voce nuova del seme si applica al primo avvio che la trova.
+  - ⚠️ **Un'entità con un'alternativa segnata che non è `IHasAssignee` fa fallire l'avvio**, anche quello dei test d'integrazione.
+    Lo stesso per `AlsoOnDeletion` su un permesso non segnato. Il guardiano prende `PermissionCatalog` nel costruttore, dal contenitore.
+- ⚠️ **Trovato, per il revisore**: il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi
+  `DeniedToStakeholder`, e così è da A3. Per un'alternativa non segnata così, l'endpoint lascia passare e la rete ferma chi non ha
+  `Edit`. Per questo `Sample.Manage` è anche `DeniedToStakeholder`, e la nota §3.6 lo chiede agli esami. Il revisore l'ha annotato:
+  per A10 la risposta è quella della nota.
+- **In pari con `main` il 27 settembre**, come il revisore ha chiesto prima del merge.
+  - `main` era 68 commit più avanti (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato con un merge.
+  - L'unico conflitto era in questo file, risolto tenendo tutti i paragrafi; `08` si è unito da solo.
+  - Build e suite rifatte (i numeri sono in `08`, A3b, «Com'è andata»).
+  - Il messaggio di `PermissionCatalog` ora dice esattamente che cosa controlla: il permesso `View` dell'area.
+
+### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova; A6 divisa in apertura, scritto in `08`):
+  - **Il training, intero**: `trn_trainings` (`src/IvaoHub.Modules.Training/Training.cs`, **alla radice del modulo**: una classe `Training`
+    in un namespace sotto quello del modulo sarebbe nascosta dal namespace `IvaoHub.Modules.Training`) con tutte le colonne di design §1.2
+    e `reminded_at` (§5.3), `TrainingState` e `TrainingRejection`; **`trn_bans`** (`Bans/TraineeBan.cs`, con `Holds(at)`), solo la tabella
+    e la lettura. Migrazione `AddTrainings`, solo additiva.
+  - **Una richiesta aperta per percorso anche nel database**: `open_kind`, scritta dal getter come `is_disputed` dei PIREP, in un indice
+    unico con `trainee_vid`.
+  - **Le regole** in funzioni pure (`Requests/RequestRules.cs`: `Standing`, `WaitUntil`, `IsMockExam`, `MinimumHours`, `EndedAt`) e
+    **`ITheoryExamSource`** (`Requests/ITheoryExamSource.cs`), oggi la dichiarazione del trainee (`TraineeDeclaration`, `TryAddScoped`).
+  - **Gli endpoint del trainee**, `/api/training/mine` (`Requests/RequestEndpoints.cs`, `Requests/TrainingRequests.cs`): `GET` la pagina
+    (`MyTrainingDto`: VID, nome, `asksTheory`, `theoryExamUrl`, `paths` — per percorso rating e ore, `next`, `isMockExam`, `asksPosition`,
+    `positions`, `refusal` con `bannedUntil`, `openTrainingId`, `waitUntil`, `minimumHours` —, `trainings`); `POST` la richiesta
+    (`TrainingRequestWriteDto`: `kind`, `rating`, `position`, `availabilityText`, `notesText`, `theoryPassed`); `GET /{id}`; `POST
+    /{id}/cancel` con la `rowVersion`. Il DTO del trainee (`TraineeTrainingDto`) non ha campi dello staff; nessun DTO ha l'email. Tutto già
+    in `web/src/shared/api/schema.d.ts`.
+  - **La mail** `training.requestReceived` (`TrainingNotifications`) e gli errori `training:errors.request*`, in `training.json`.
+  - **I test**: `TrainingRequestRulesTests` (unità, su un vocabolario di prova), `TrainingRequestTests` (integrazione, VID 790017–790021).
+- **Che cosa deve sapere la fase dopo**:
+  - **A6b** (le pagine): il server c'è tutto, e le due pagine leggono **un endpoint solo**, `GET /api/training/mine`. ⚠️ **Un rifiuto è una
+    chiave nuda** (`refusal`; nel `POST` i `ProblemDetails` sul campo `kind`): **fino a quando, la soglia e le ore la pagina le prende dal
+    `GET`** — `bannedUntil` (vuoto, con il rifiuto del ban, vuol dire «finché qualcuno non lo toglie»), `waitUntil`, `minimumHours`,
+    `hours` — e le scrive accanto al messaggio. La richiesta **rimanda `next.number`** in `rating`; `asksPosition` dice se si sceglie una
+    postazione fra `positions`. Con `asksTheory` la finestra della domanda, con il link `theoryExamUrl` quando c'è; la risposta va in
+    `theoryPassed`, e **il «no» risponde 201** con il training `Rejected` / `TheoryNotPassed`: il messaggio a schermo lo dice. In
+    `/training/mine` i `trainings` dal più nuovo, «Annulla» solo su `Requested` con la sua `rowVersion` (409 se vecchia), l'attesa residua
+    è `waitUntil` del percorso, «pronto per…» sono `readyForMockExam` e `readyForExam`.
+  - ⚠️ **Un training non si elimina mai**: una spec che ne chiede uno lo **annulla** nel `finally`, e all'inizio annulla quelli che una
+    corsa di prima ha lasciato `Requested`; un rifiuto e un annullamento non fanno aspettare.
+  - **Il banco**: a `?as=pilot` (VID 999002, AS3 e FS3) si propongono il primo rating ATC e il primo pilota con un training pratico; le
+    postazioni sono quelle delle fixture. La sua casella (`bench-pilot@bench.test`) riceve la mail del «sì».
+  - **A7**: lo staff legge il training con `Training.View`, con un DTO suo; la funzione unica che toglie i campi riservati al trainee della
+    riga è di A9. Il grant del trainer ha lo scope `Training.ScopeOf(id)`.
+  - **A8**: `reminded_at` c'è; la fine di una sessione non è una colonna del training (sta nella disponibilità scelta, `chosen_slot_id`).
+  - ⚠️ **Il filtro globale nasconde un training a chi non è entrato**: nei test, pulire e contare vogliono `IgnoreQueryFilters()`.
+  - VID: il prossimo libero è **790022** (A3b usa 790040–790044 e 790050–790051).
+- **La coda si è sciolta prima della PR**: #140 è stata unita alle 18:44; `main` è entrato nel branch con un merge (da90c3e) che non porta
+  file del modulo, tutto è stato rifatto sul merge, e la PR è nata verso `main` senza coda.
 
 ### Che cosa ha lasciato A5 (26 settembre 2026, branch `m3/a5-sheet-items`, PR #140)
 

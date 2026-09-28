@@ -114,7 +114,11 @@ public sealed class PermissionAreaAttribute(string area) : Attribute
 /// <para>The guard asks each the way the handler does: held on one of the row's departments <b>with the row's scope</b>
 /// (<see cref="IHasResourceScope"/>), and never by the member the row is about (<see cref="IHasStakeholder"/>), who has
 /// their own narrower way in (<see cref="ISubmittedByMembers"/>). Moving the row between departments still asks for
-/// <c>Edit</c> on both sides, and deleting it asks for <c>Edit</c>.</para>
+/// <c>Edit</c> on both sides, and deleting it asks for <c>Edit</c> unless the alternative is marked
+/// <see cref="AlsoOnDeletion"/>.</para>
+/// <para>A permission the catalogue marks <c>OnlyForAssignee</c> counts only on a row assigned to the writer
+/// (<see cref="IHasAssignee"/>): before the write and after it, as the new row is, as the removed row was. An examiner writes
+/// the exams assigned to them and no other (M3, A3b, note 2026-09-26-le-righe-affidate-a-chi-scrive).</para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class AlsoWrittenWithAttribute(string permission) : Attribute
@@ -127,6 +131,14 @@ public sealed class AlsoWrittenWithAttribute(string permission) : Attribute
     /// of its own yet, on at least one of the row's departments, as <c>Edit</c> is — and never for a row about the writer.
     /// </summary>
     public bool AlsoOnCreation { get; init; }
+
+    /// <summary>
+    /// Whether this permission also takes a row away, for the member the row is assigned to: an examiner takes their own exam
+    /// off the calendar (M3, A3b). It counts only for a permission the catalogue marks <c>OnlyForAssignee</c>, and the hub
+    /// refuses to start with it on any other (<c>PermissionCatalog.VerifyAlternatives</c>): every other alternative still
+    /// deletes nothing, and deleting stays <c>Edit</c>'s.
+    /// </summary>
+    public bool AlsoOnDeletion { get; init; }
 }
 
 /// <summary>
@@ -198,6 +210,21 @@ public interface IHasStakeholder
 public interface IHasParticipants
 {
     IReadOnlyCollection<int> ParticipantVids { get; }
+}
+
+/// <summary>
+/// A row <b>assigned</b> to one member, who looks after it: an exam and its examiner (M3, A3b, note
+/// 2026-09-26-le-righe-affidate-a-chi-scrive). A permission the catalogue marks <c>OnlyForAssignee</c>
+/// (<c>PermissionDescriptor.OnlyForAssignee</c>) reaches such a row only for that member; for anybody else it is worth what
+/// <c>{Area}.Edit</c> is worth on the row — in the single handler and in the interceptor's guard alike.
+/// <para>The third relation a row can have with a person, beside <see cref="IHasStakeholder"/>, who may not decide the row, and
+/// <see cref="IHasParticipants"/>, who read it: this one says which of those holding a permission the row belongs to. The row
+/// answers with a column of its own, whose name ends in <c>Vid</c> like every column that names a person.</para>
+/// </summary>
+public interface IHasAssignee
+{
+    /// <summary>The VID of the member the row is assigned to; null when it is assigned to nobody.</summary>
+    int? AssigneeVid { get; }
 }
 
 /// <summary>

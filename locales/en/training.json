@@ -87,6 +87,32 @@
     "ratingTwice": "This rating has more than one row.",
     "positionUnknown": "The division no longer trains on this position: take it out of the list.",
     "calendarKindUnknown": "One of these is not a kind of the calendar.",
-    "sheetItemUsed": "A report has already used this item: switch it off instead of deleting it."
+    "sheetItemUsed": "A report has already used this item: switch it off instead of deleting it.",
+    "requestBanned": "You have a ban from the training: while it holds you cannot ask for a training.",
+    "requestOpen": "You already have a training open on this path: one at a time.",
+    "requestWaiting": "The waiting after your last training on this path is not over yet.",
+    "requestNothingToAsk": "There is no training to ask for on this path after your rating.",
+    "requestHoursUnknown": "The hub does not know your connection hours yet: sign out and sign in again.",
+    "requestHoursTooFew": "You do not have the connection hours this training asks for yet.",
+    "requestNoPosition": "At the moment the division offers no position to train this rating on.",
+    "requestRatingNotNext": "This is no longer the rating you may ask for: reload the page.",
+    "requestPositionUnknown": "Choose a position from the list.",
+    "requestPositionNotAsked": "A training on this path has no position.",
+    "requestNotCancellable": "Only a request nobody has accepted yet can be cancelled."
+  },
+  "notifications": {
+    "requestReceived": {
+      "title": "My training requests",
+      "description": "An email when a request of yours for a training is received."
+    }
+  },
+  "mail": {
+    "training": {
+      "requestReceived": {
+        "subject": "[Training] Request received: {{training}}",
+        "body": "We have received your request for a training: {{training}}.{{mockExam}}\n\nThe training department will check it, the theory exam included, and write to you when it is accepted or refused. Until somebody accepts it, you can cancel it from your trainings page.\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "mockExam": " It will be a mock exam, as agreed with your trainer."
+    }
   }
 }

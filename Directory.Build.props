@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>0.1.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -17,8 +16,51 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <!-- In CI the assembly carries no absolute path of the runner, so the same commit builds the same
+         binary wherever it is built. -->
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      THE VERSION OF THE SITE, and the three rules that give it a meaning.
+
+      A number promises a rule, and a version people believe while it says nothing is worse than no
+      version at all. So this is the rule, and it holds for the number below:
+
+        PATCH  x.y.Z  fixes only: no migration, no new page or section.
+        MINOR  x.Y.0  new features, and/or ADDITIVE migrations.
+        MAJOR  X.0.0  the package cannot be delivered by FTP alone: the database has to be replaced,
+                      or the new code cannot read the data already in production.
+
+      ⚠️ MAJOR is not a judgement of importance. It is the answer to one question, "is FTP enough, or
+      does the database have to change too?", which is the only one that turns a delivery into
+      something to arrange with whoever runs the server.
+
+      ⚠️ THE CONTRACT HALF OF AN EXPAND/CONTRACT IS MINOR. The migration that drops a column no code
+      has used since the previous release is not additive, but FTP is enough for it: MAJOR would say
+      otherwise. It is delivered with open eyes, though: the delivery sheet says so in red and asks
+      for a fresh copy of the database before the upload (docs/DELIVERING.md; note
+      2026-09-27-il-contract-e-minor).
+
+      ⚠️ THE NUMBER LIVES HERE, NOT ON THE COMMAND LINE. It is raised in a commit, so that whoever
+      reviews that commit sees the promise next to what justifies it. `release.yml` refuses a tag that
+      is not exactly "v" followed by this number: the tag names the release, it never renames the
+      package.
+
+      ⚠️ The number is not the whole stamp: the site shows "0.2.0 · <commit>". The number is the name
+      we give a build; the commit is the only thing that says which code it is, and two builds under
+      the same number can be two different codes. The SDK writes the commit after the "+" of the
+      informational version (Source Link, from the .git of the checkout), `BuildInfo` reads it from
+      there, and `/api/version`, `diagnostics/startup.txt` and the footer of every page show it.
+
+      Its shape is kept by a test (`BuildInfoTests`): three numbers separated by dots, no "v" in front,
+      no suffix.
+    -->
+    <Version>0.2.4</Version>
+    <!-- The default, written out because `BuildInfo` depends on it: without it the commit is gone. -->
+    <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">

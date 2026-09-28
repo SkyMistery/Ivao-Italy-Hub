@@ -51,6 +51,13 @@ public sealed class SampleModule : ModuleBase
     /// </summary>
     public const string RecordPermission = "Sample.Record";
 
+    /// <summary>
+    /// What an examiner's hold on their exams will be (M3, A3b): a permission besides <c>Sample.Edit</c> that reaches a record
+    /// only for the member it is assigned to — to change it, to create it and to take it away (<see cref="SampleRecord"/>).
+    /// Denied to the member a record is about as well, so that the single handler and the guard say the same thing of them.
+    /// </summary>
+    public const string ManagePermission = "Sample.Manage";
+
     /// <summary>The rows in the care of several departments, through the generic CRUD engine.</summary>
     public const string ItemsPattern = "/api/sample/items";
 
@@ -82,6 +89,7 @@ public sealed class SampleModule : ModuleBase
         new PermissionDescriptor(EditPermission, IsGlobal: false),
         new PermissionDescriptor(DecidePermission, IsGlobal: false, DeniedToStakeholder: true),
         new PermissionDescriptor(RecordPermission, IsGlobal: false),
+        new PermissionDescriptor(ManagePermission, IsGlobal: false, DeniedToStakeholder: true, OnlyForAssignee: true),
     ];
 
     public override IEnumerable<Type> DbContextTypes => [typeof(SampleDbContext)];
