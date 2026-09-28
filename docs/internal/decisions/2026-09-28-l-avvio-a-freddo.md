@@ -1,9 +1,14 @@
 # L'avvio a freddo: dove vanno i secondi e che cosa li taglia
 
 **Data:** 28 settembre 2026
-**Stato:** **Proposta**. Le domande sono nel §7 e vanno a Carmine come commento sulla pull request. Nessun codice di
-produzione in questa nota: il codice arriva in una PR del nucleo dopo la sua risposta, con il salto di versione secondo la
-regola di `Directory.Build.props`.
+**Stato:** **Decisa da Carmine sulla PR, 28 settembre 2026**
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/166#issuecomment-5867344587>):
+- domande 1 e 4: **sì**, come raccomandato;
+- domanda 2: il marcatore **si decide dopo i numeri del server**;
+- domanda 3: **d'accordo**, la strada A della #164 si decide con la misura del server in mano.
+
+Nessun codice di produzione in questa nota. Il codice arriva in una PR del nucleo, PATCH, con il salto di versione secondo la
+regola di `Directory.Build.props` (§7).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: ogni taglio proposto estende un meccanismo che c'è già (il pacchetto
 self-contained, `InitializeAsync`, `hub_jobs_log`, `diagnostics/starts.txt` deciso con la #165). Nessun meccanismo nuovo.
 **Da dove viene:** la misura della #165 (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` §5) e la decisione della #164
@@ -215,6 +220,21 @@ resti vivo, cioè l'host (la domanda a Ivao.It della #165).
 
 ## 7. Le domande a Carmine
 
+**Risposta di Carmine, 28 set 2026**
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/166#issuecomment-5867344587>):
+
+- **Domanda 1: sì.** Una PR del nucleo, PATCH e senza migrazione, con tre cose:
+  - ReadyToRun condizionato al RID;
+  - le migrazioni dei moduli solo se pendenti;
+  - TieredPGO spento.
+- **Domanda 2: prima i numeri del server.** Il marcatore non è né deciso né scartato: si riprende quando `starts.txt`, con i
+  tempi dei passi, dice quanto costano sul server i passi che salterebbe.
+- **Domanda 3: d'accordo.** La strada A della #164 si decide con la misura del server in mano; sotto i ~3 s, A come deciso.
+- **Domanda 4: sì.** La durata dei passi dell'avvio entra in `diagnostics/starts.txt`, nella PR che arriva prima fra quella
+  di `starts.txt` della #165 e quella della domanda 1.
+
+Le domande com'erano state poste:
+
 1. **La PR del nucleo con ReadyToRun, le migrazioni dei moduli solo se pendenti e TieredPGO spento?** Raccomandato: **sì**,
    PATCH. Il costo: il pacchetto passa da 59 a 73 MB compresso, e la prima consegna cambia 53 DLL invece di 4.
 2. **Il marcatore d'inizializzazione?** Raccomandato: **sì, ma dopo**, in una PR sua, deciso con i numeri di `starts.txt` sul
@@ -229,7 +249,10 @@ resti vivo, cioè l'host (la domanda a Ivao.It della #165).
 
 - **§2.5**, la riga di Passenger: l'avvio a freddo misurato (8–10 s sul server), che cosa lo compone (§3) e che cosa lo
   taglia (§4), e che i 2–3 s non si raggiungono dal codice (§5).
-- **§11.3 punto 1** (Pacchetto): ReadyToRun, se deciso (domanda 1), con dimensioni e determinismo.
-- **§11.3 punto 5** (Migrazioni): i moduli controllano le migrazioni pendenti come il nucleo; il marcatore, se deciso.
+- **§11.3 punto 1** (Pacchetto): ReadyToRun (deciso, domanda 1), con dimensioni e determinismo; TieredPGO spento.
+- **§11.3 punto 5** (Migrazioni): i moduli controllano le migrazioni pendenti come il nucleo. Il marcatore resta aperto, da
+  decidere con i numeri del server (domanda 2).
+- **La strada A della #164** (nota `2026-09-28-gli-header-dei-file-statici`): il suo codice aspetta anche la misura del server
+  dopo la PR della domanda 1 (domanda 3).
 - **§11.3 punto 2**: la durata dei passi dell'avvio in `diagnostics/starts.txt` (domanda 4).
 - **`docs/DEPLOYING.md`**, «Known limits»: il costo di un risveglio, quando i tagli sono nel codice.
