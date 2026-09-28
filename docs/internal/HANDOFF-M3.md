@@ -108,7 +108,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     ([commento su #146](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982)): dopo
     l'unione di #135 la fase **A7b** porta il trainer sulla regola di A3b (`IHasAssignee` sul training, `Training.Conduct` segnato
     `OnlyForAssignee` e tenuto per posizione da TA e trainer, via il grant e la sua metà del job). Nota
-    `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`; la lista della fase è in `08`, A7b.
+    `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`; la lista della fase è in `08`, A7b. ⚠️ **A7b arriva prima di ogni
+    installazione con trainer veri** ([il revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5877192345)):
+    fino ad allora, con tre assegnazioni insieme il trainer che la riga nomina può restare senza grant, e la notte non lo ridà.
   - **Le mail** `requestAccepted`, `requestRejected` (con il motivo) e `trainerAssigned` (al trainee e al trainer, ognuno nella sua
     lingua), attraverso **`TrainingMail`**, che usa anche la `requestReceived` di A6a.
   - **Le pagine** `web/src/modules/training/screens/staff.tsx`: `/staff/training` (lista generata, filtri Mostra e Percorso, voce «Richieste
@@ -148,7 +150,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Le correzioni della revisione** (28 settembre 2026, [la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855673527);
   i dettagli, commit per commit, in `08`, A7):
   - **Un 409 non toglie più il grant al trainer che il training nomina** (d23a812): il `catch` dell'assegnazione rilegge il training e
-    toglie il grant solo se la riga non nomina quel trainer. Il test nuovo di `TrainingStaffTests` cade sul codice di prima.
+    toglie il grant solo se la riga non nomina quel trainer. Il test nuovo di `TrainingStaffTests` cade sul codice di prima. Dopo la
+    seconda revisione (1feb55a) rilettura e rimozione stanno in `TakeBackAfterConflictAsync`, che non lancia mai: se falliscono, il 409
+    esce lo stesso, e il grant che non hanno potuto giudicare resta alla notte.
   - **Dopo un 409 la pagina dello staff si rilegge** (caf6d4e): `useStaffStep` invalida la pagina e i trainer su un errore, il form si
     ridisegna con la versione nuova, e il conflitto dell'assegnazione lo dice un avviso (`useRefused`, `isConflict`).
   - **Il giro sul banco** (2327c05): lo scheletro lascia fuori i grant con scope; la spec dello staff annulla all'inizio una richiesta
