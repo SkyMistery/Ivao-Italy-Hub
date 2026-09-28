@@ -44,6 +44,26 @@ public sealed class StartsLogTests : IDisposable
     }
 
     [Fact]
+    public void TheStartLineSaysRightAfterTheTimeWhetherTheInitialisationWasSkipped()
+    {
+        var line = StartsLog.StartLine(
+            Now,
+            4242,
+            Build,
+            TimeSpan.FromMilliseconds(1204),
+            "none, first start in this file",
+            Memory,
+            [new StartupStep("models", TimeSpan.FromMilliseconds(700)), new StartupStep("marker", TimeSpan.FromMilliseconds(41))],
+            "initialisation skipped (marker of 0.2.4+0123456, 2026-09-28 20:00:00Z): migrations, content");
+
+        Assert.Equal(
+            "2026-09-28 21:14:07Z  START   pid 4242     0.2.4+0123456  ready in 1.20 s  " +
+            "initialisation skipped (marker of 0.2.4+0123456, 2026-09-28 20:00:00Z): migrations, content  " +
+            "previous: none, first start in this file  memory 180 MB (peak 210 MB, managed heap 45 MB)  steps ms: models 700, marker 41",
+            line);
+    }
+
+    [Fact]
     public void TheStopLineSaysHowLongItLivedWhatItAnsweredAndTheMemory()
     {
         Assert.Equal(
