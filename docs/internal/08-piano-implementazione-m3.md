@@ -1091,8 +1091,8 @@ stesso; chi lascia la posizione lo perde; il guardiano lascia scrivere la riga d
 (A11b): il capo FIR assegna nel suo FIR e non in un altro, e vede solo i suoi nella lista e nel blocco.
 **Fatta quando**: un CH assegna un training del suo FIR e riceve un rifiuto su quello di un altro FIR.
 
-**Com'è andata (A11a)** (27–28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159 verso `main`, fuori dalla coda) — **la nota,
-decisa il 28 settembre; il codice in corso** (questo paragrafo si completa a fine fase):
+**Com'è andata (A11a)** (27–28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159 verso `main`, fuori dalla coda) — **la nota
+e le domande il 27, la nota decisa e il codice il 28**:
 
 - **Perché A11a adesso, e solo con la nota** (la scelta della sessione di A10b, sopra in A10, «Com'è andata (A10b)»): A10c aspetta #135
   (A3b), A11b, A12a e A12b vengono dopo A10c, A12c solo con i codici di PATS. Il codice di A11a tocca lo stesso handler e lo stesso
@@ -1143,12 +1143,80 @@ decisa il 28 settembre; il codice in corso** (questo paragrafo si completa a fin
   4. il senso nuovo di `firStaffScope` per chi è già su `own` o su `all` andrà in `FORKING.md` e in `division.example.json`;
   5. i tre rami di `IsWrittenWithAnAlternative` con il FIR della riga, e la migrazione di prova dopo `AddSampleAssignee`.
 - **#135 è unita** (27 settembre, 20:24) e **`main` (4d424f9, con #135 e #160–#172) è entrato nel branch con un merge** il 28 settembre:
-  l'unico conflitto era in `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi. Il codice parte da qui: nota §3 e §6, i test di §3.9 con i
-  VID **790080–790089** (790068–790079 sono delle correzioni di A7 e A8a), `pnpm e2e:full` sul banco di questa fase, **127.0.0.1:5098**
-  (`ivaohub_e2e_a11a`), perché cambia la schermata dei permessi; lo smoke su 4173 sotto il lucchetto delle sessioni in parallelo.
+  l'unico conflitto era in `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi. Il codice parte da qui, con i VID **790080–790089**
+  (790068–790079 sono delle correzioni di A7 e A8a) e il banco **127.0.0.1:5098** (`ivaohub_e2e_a11a`).
+- **Il codice** (28 settembre), come nota §3 e §6:
+  1. **Il soggetto**: `UserGrant.PositionFirTeam` (la migrazione `AddGrantFirTeam` del nucleo, una colonna booleana), `IsHeldThrough` e
+     `HeldThrough` (le posizioni FIR, con un FIR e senza dipartimento, ai livelli del grant), `StaffPositionSubject` con il team;
+     `PositionGrantSeed.FirTeam` con `Department` facoltativo e il validatore di `division.json` («un dipartimento o il team, uno
+     solo»); il seme che salta con un avviso un grant al team su un'area senza FIR, e l'impronta `firTeam|…` (quella di un seme di oggi
+     non cambia); i DTO e il validatore della schermata (un soggetto solo fra tre; i livelli per le due posizioni; `firTeamArea`); la
+     casella nel form generato e la colonna nella lista (`web/src/features/admin/grants/`), le parole in `common.json` ed `errors.json`.
+  2. **Le aree con il FIR**: `PermissionCatalog.LearnAreasWithAFir` e `IsOfAnAreaWithAFir`, imparate da `HubPipeline.InitializeAsync`
+     dagli stessi modelli di `VerifyAlternatives`, con l'area del guardiano (`HubSaveChangesInterceptor.PermissionAreaOf`, prima privata).
+  3. **Il permesso sul FIR**: `EffectivePermission.Fir`; il calcolo lo scrive con `own`, uno per FIR (`Calculate(…, firStaffScope)`, `all`
+     se non si dice); `PermissionSet.Has(…, fir)` e `ICurrentUser.Has(…, scope, fir)`, con la risposta predefinita; nel claim
+     `Nome:DIP@scope#FIR`, letto da `HubClaims.ReadPermission` (il lettore del cookie scarta un claim illeggibile), e `ParsePermission`, con
+     la sua firma, che rifiuta un dipartimento che non sa leggere; `BuildIdentity` che non porta «per vedere» il dipartimento di un
+     permesso con un FIR.
+  4. **L'unico handler**: la domanda sulla riga porta il FIR; la regola di `firStaffScope` di prima è tolta.
+  5. **Il guardiano**: `RequireAny` e i tre rami di `IsWrittenWithAnAlternative` con il FIR della riga (quello di prima per
+     un'eliminazione); una riga che cambia FIR chiede `Edit` sui due, e nessuna alternativa la sposta; le sessioni di chi tiene una
+     posizione FIR ai livelli di un grant al team (`HoldersOf`).
+  6. **La lista**: `TryNarrowToDepartments` riceve il permesso di lettura della lista e, su un'entità `IHasFir`, tiene le righe del
+     dipartimento e del FIR dei permessi con un FIR che hanno quel nome; nessun 403 «nessun dipartimento» a chi ne ha.
+  7. **I documenti pubblici**: `docs/FORKING.md` e i commenti di `config/division.example.json` (come si scrive un grant al team, che
+     cosa vuol dire `firStaffScope`, che cosa cambia per chi è già su `own` o su `all`).
+  8. **I test**: la spina dorsale `FirTeamPermissionTests` (6, su un host con `own` e due FIR finti, `XXAA` e `XXBB`, dati da una
+     directory dei FIR di prova: nessuna riga nei dati di riferimento condivisi); `SampleRecord` con il FIR (`AddSampleFir`, dopo
+     `AddSampleAssignee`) e la sua lista generata `/api/sample/records`; le unità `FirTeamPermissionRulesTests` (11); Vitest
+     `grants/firTeam.test.ts` (2); lo smoke `web/e2e/permissions-fir-team.spec.ts` (il form manda il team e i livelli).
+- **Scostamenti e precisazioni del codice**:
+  1. **`UserSyncService` carica anche i grant al team**: il login, il ricalcolo e «chi tiene un permesso» leggevano solo i grant `Vid = …`
+     o `PositionDepartment != null`, e un grant al team sarebbe rimasto fuori in silenzio. La nota nominava il file solo per
+     `firStaffScope`; il test «chi lascia la posizione» passa dal login vero e lo prova.
+  2. **L'handler ha un costruttore scritto**, non più primario: `division` non si legge più, e un parametro primario non letto ferma la
+     build (CS9113); resta nella firma, perché tre test di unità costruiscono l'handler con quei tre argomenti.
+  3. **Ogni permesso di un'area implica il suo `View`, non solo `Edit`**: il calcolo scrive il `View` accanto a ogni permesso dell'area
+     (`ViewOf`), con lo stesso FIR. L'esempio del punto 2 del revisore («`Training.Assign` non implica `View`») non si può costruire: un
+     capo con `Assign` dal team legge le righe del suo FIR, com'è giusto. Corretto nella nota (§3.5), e il caso negativo del test 6 è un
+     permesso di un'altra area.
+  4. **I sette test di §3.9 sono sei**: «l'handler e il guardiano dicono lo stesso» è in ognuno.
+  5. **L'aiuto della casella del team sta nell'aiuto dei livelli**: `SchemaForm` disegna un booleano come interruttore e non ne mostra
+     l'aiuto.
+  6. **Cambiare `firStaffScope` arriva a ogni capo al suo login dopo**: il calcolo lo legge al login, e il cookie lo porta. Scritto in
+     `FORKING.md`; in IT il passaggio ad `own` arriva in A11b insieme ai primi grant al team, quindi nessun cookie vecchio ha un permesso
+     del team.
+- **Trovato, scrivendo il codice**:
+  1. **La regola del calcolo** (punto 3 qui sopra) è più larga del suo commento («Edit implies View»): non cambiata, detta al revisore.
+  2. **Il vecchio calcolo delle sessioni** di un grant a una posizione avrebbe preso, per un soggetto senza dipartimento, anche le
+     posizioni HQ: `HoldersOf` chiede una posizione con un FIR.
+  3. **Il test delle sessioni regge anche sul guardiano di `main`**, per la stessa ragione (sotto, «Verificato»).
 - **Verificato, per la nota** (27 settembre): la nota letta contro il codice di `main` (32e8acd) e contro quello del training sui branch
   della coda (A7–A10b); le regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD` (nessun file del maintainer, nessuno del
   nucleo, una nota aggiunta).
+- **Verificato, in locale** (28 settembre, sul branch dopo il merge di `main` 4d424f9, una suite alla volta):
+  1. `dotnet build IvaoHub.sln`: 0 avvisi, 0 errori; `dotnet format --verify-no-changes` sui 27 file C# toccati: pulito;
+  2. unità **828/828** (rifatte sullo stato finale, dopo l'ultimo ritocco alle lingue); integrazione intera, senza filtro,
+     **351/351**; le due classi nuove da sole, 11/11 e 6/6;
+  3. **la prova sul codice vecchio**: con `HubAuthorization.cs`, `HubSaveChangesInterceptor.cs`, `HubPipeline.cs` e
+     `MapCrudExtensions.cs` rimessi come su `main`, cadono **5 test di integrazione su 6** e **1 di unità su 11**, quello
+     dell'handler. Reggono dalle due parti i test di unità dei pezzi che restano (il claim, il calcolo, il catalogo, i validatori) e
+     quello delle sessioni, perché il vecchio calcolo prendeva già le posizioni senza dipartimento («Trovato, scrivendo il codice» 2 e
+     3). Rimessi i file della fase e toccati, perché la build li ricompilasse, tornano 11/11 e 6/6;
+  4. `pnpm lint`, `pnpm typecheck` e `pnpm format:check` puliti; `pnpm i18n:check`: 752 chiavi in en e it; `pnpm test`: **497/497** in
+     64 file; `pnpm gen:api`: le quattro righe di `positionFirTeam` in `schema.d.ts`, nel commit;
+  5. `pnpm e2e` **92/92**, con il lucchetto dello smoke su 4173. La prima volta era caduto il mio spec nuovo sull'ultima riga: la lista
+     aggiunge `?page=1…` all'indirizzo;
+  6. `pnpm e2e:full` **41/41** sul banco della fase, 127.0.0.1:5098, con `ivaohub_e2e_a11a` ricreato;
+  7. le regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD`: nessun file del maintainer, 31 del nucleo, una nota
+     aggiunta, PASS.
+- **Non verificato**:
+  1. la CI: la dirà la PR;
+  2. la regola sul modulo vero, che arriva in A11b con i grant al team e `own`;
+  3. un cookie emesso sotto `all` dopo il passaggio a `own`: tiene il permesso del team su tutto il dipartimento fino al login dopo.
+     È scritto in `FORKING.md`, e in IT non ce n'è;
+  4. la schermata provata a mano in un browser: la disegna lo smoke, che spunta il team e guarda che cosa manda il form.
 
 [q159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5857885144
 [r159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416
