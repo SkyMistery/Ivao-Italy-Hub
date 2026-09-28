@@ -30,12 +30,17 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 28 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.20**: l'avvio da qualunque cartella
-(#162); la 1.19 ha portato le righe affidate a chi scrive (A3b), la 1.18 la prima installazione, di prova. **Su
-`test.it.ivao.aero` c'è la 0.2.1** (tag `v0.2.1` su `fa089de`, caricata da Carmine via FTP in `webapp/` dello staging lasciato
-da Ivao.It), consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio
-`docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`. ⚠️ **Non parte ancora**: Passenger risponde «Web application could not
-be started» e in `webapp/` non compare niente; serve il log di Passenger da chi amministra il pannello.
+**Ultimo aggiornamento:** 28 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.21**: l'hosting misurato sulla prova,
+quattro note (#164–#166); la 1.20 ha portato l'avvio da qualunque cartella (#162), la 1.19 le righe affidate a chi scrive (A3b).
+**L'hub è online su `test.it.ivao.aero` con la 0.2.1** (tag `v0.2.1` su `fa089de`, caricata da Carmine via FTP in `webapp/`
+dello staging lasciato da Ivao.It; la causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in
+`diagnostics/startup-error.txt`), consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio
+`docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`. Il login dello staff funziona, e `startup.txt` dice `access private:
+staff only, not indexed`. ⚠️ **Da risolvere prima della produzione**: l'indirizzo `127.0.0.1` per tutti (registro e limite del
+login), l'avvio a freddo di 8–10 s, gli header della home (piano §11.3 punti 3 e 9). **La coda del codice** (Carmine, piano
+1.21): 1 pagina diagnostica degli header (0.2.2) → 2 avvio più veloce + `diagnostics/starts.txt` (0.2.3) → 3 correzione
+dell'indirizzo, `ForwardLimit = null` (0.2.4) → 4 job che recuperano + POST dell'operazione pianificata di Plesk (0.3.0) → 5 la
+strada A della #164, solo se sul server l'avvio scende sotto ~3 s.
 M3: unite fino ad A6a (#143) e la fase del nucleo A3b (#135); in coda A6b–A10b, A6c e A11a, da rimettere in pari con `main`.
 Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
