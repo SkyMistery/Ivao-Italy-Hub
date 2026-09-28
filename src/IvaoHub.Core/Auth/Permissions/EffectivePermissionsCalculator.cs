@@ -118,9 +118,11 @@ public static class EffectivePermissionsCalculator
     /// The catalogue is core plus modules: a grant naming a module permission is honoured on an
     /// installation that has that module and ignored on one that does not, which is the same rule
     /// that has always applied to a permission the code no longer declares.
-    /// <para><paramref name="firStaffScope"/> is the division's: with <c>own</c>, what a grant to the team of a FIR gives is
-    /// held on the FIR of the position it comes through (M3, A11a); with <c>all</c> — the default, and a division that does
-    /// not say — on the grant's department, as any other grant.</para>
+    /// <para><paramref name="firStaffScope"/> is the division's, and the hub's callers pass it (<c>UserSyncService</c>): with
+    /// <c>own</c>, what a grant to the team of a FIR gives is held on the FIR of the position it comes through (M3, A11a);
+    /// with <c>all</c>, on the grant's department, as any other grant. Left out, it is <c>own</c>, the side that closes: a
+    /// caller that forgets gives a FIR team less than the division says, never a whole department. It keeps a default so
+    /// that a computation with no grant to a FIR team, for which the two are the same, need not say it.</para>
     /// </remarks>
     public static IReadOnlyList<EffectivePermission> Calculate(
         IEnumerable<StaffPosition> positions,
@@ -128,7 +130,7 @@ public static class EffectivePermissionsCalculator
         bool isSuperadmin,
         DateTime nowUtc,
         PermissionCatalog catalogue,
-        FirStaffScope firStaffScope = FirStaffScope.All)
+        FirStaffScope firStaffScope = FirStaffScope.Own)
     {
         ArgumentNullException.ThrowIfNull(positions);
         ArgumentNullException.ThrowIfNull(grants);

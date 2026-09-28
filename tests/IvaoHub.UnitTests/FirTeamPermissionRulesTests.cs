@@ -159,8 +159,9 @@ public sealed class FirTeamPermissionRulesTests
         var all = EffectivePermissionsCalculator.Calculate(positions, grants, false, DateTime.UtcNow, Catalogue, FirStaffScope.All);
         Assert.Equal([(string?)null], all.Where(held => held.Name == Assign).Select(held => held.Fir));
 
-        // Without saying, the computation is the one of a division that does not keep FIR teams to their FIR.
-        Assert.Equal(all, EffectivePermissionsCalculator.Calculate(positions, grants, false, DateTime.UtcNow, Catalogue));
+        // Without saying, the computation takes the side that closes: a caller that forgets the division's scope holds the team
+        // to its FIRs, never to the whole department (the reviewer's point 3 on the code).
+        Assert.Equal(own, EffectivePermissionsCalculator.Calculate(positions, grants, false, DateTime.UtcNow, Catalogue));
     }
 
     [Fact]
