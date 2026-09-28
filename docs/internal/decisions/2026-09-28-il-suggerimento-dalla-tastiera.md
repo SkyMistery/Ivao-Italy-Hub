@@ -1,8 +1,11 @@
 # Il campo suggerito si sceglie dalla tastiera
 
 **Data:** 28 settembre 2026. PR del nucleo, di una sessione di lavoro del maintainer, dopo l'unione di #145 (A6c).
-**Stato:** **Proposta**. La domanda è al §5, sulla pull request; il codice della PR è la risposta raccomandata e cambia se la
-risposta è un'altra.
+**Stato:** **decisa** (Carmine, 28 settembre 2026, [il suo commento su #177][a]), **come raccomandato**, alla [domanda][q] del §5. Il
+codice di questa PR è quella risposta.
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/177#issuecomment-5877325873
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/177#issuecomment-5877368293
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**. Il meccanismo c'è: il campo suggerito del generatore di form (`Suggest` in
 `web/src/shared/forms/SchemaForm.tsx`, piano §16.6; chiuso con `suggestionsOnly`, nota `2026-09-08-dove-puo-portare-una-voce-di-menu`).
 Il difetto è nel suo posto unico, e lì si corregge. Nessuna schermata lo aggira. PR del nucleo a sé (`CLAUDE.md` §0, regola 6), fuori
@@ -121,6 +124,11 @@ punto 4 rimetterebbe il valore di partenza: tolta quella riga, la prova Vitest c
 
 **Raccomandata: sì.** Usa il meccanismo di `cmdk` invece di rifarlo, cambia solo `Suggest`, e toglie la causa del difetto di #144
 senza togliere l'invio con Invio a nessun form.
+
+La domanda è nel [commento su #177][q], del 28 settembre 2026.
+
+**Risposta di Carmine, 28 settembre 2026** (in chat, pubblicata nel [commento su #177][a]): **sì, come raccomandato**, i quattro
+punti sopra.
 
 ## 6. Che cosa si tocca
 
