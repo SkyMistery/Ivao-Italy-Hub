@@ -292,8 +292,9 @@ public sealed class StaffTrainings(
     /// <summary>
     /// Assigns the trainer, or changes them (§2.4): somebody the rule of <see cref="TrainerChoice"/> lets train it, asked again
     /// here whatever the page offered. Writes their grant on this training and takes the previous trainer's away (§3.3); an
-    /// accepted training becomes <c>Assigned</c>, a dated one keeps its date. The dates the previous trainer proposed and the
-    /// trainee has not chosen go with them (A8): they were that trainer's. Mails the trainee and the trainer.
+    /// accepted training becomes <c>Assigned</c>, a dated one keeps its date. Every date proposed that the trainee has not chosen
+    /// goes (A8), whoever proposed it — the previous trainer, or the coordinator or the assistant, who conduct every training —:
+    /// the new trainer proposes their own. Mails the trainee and the trainer.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> AssignAsync(
         Training training,

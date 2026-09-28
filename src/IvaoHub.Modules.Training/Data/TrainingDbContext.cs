@@ -30,6 +30,9 @@ public sealed class TrainingDbContext : ModuleDbContext
     {
         if (vocabulary is not null)
         {
+            // ⚠️ Only a training this context tracks is told its short name. One read with AsNoTracking and handed to the core's
+            // ProjectionRefresh, or one of a context built without the vocabulary (dotnet ef's, a test's by hand), projects the
+            // title of its session with no rating: its position alone, and a pilot's training, which has none, becomes "#id".
             ChangeTracker.Tracked += (_, tracked) =>
             {
                 if (tracked.Entry.Entity is Training training)

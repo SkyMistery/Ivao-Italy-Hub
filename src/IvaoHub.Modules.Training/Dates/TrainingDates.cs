@@ -387,6 +387,10 @@ public sealed class TrainingDates(
     /// Closes, as the hub, the trainings the trainee has let wait longer than <c>maxResponseDays</c> (§2.5, §12 n.9), and mails
     /// them; nothing when the division has not set it, which is the default. One at a time: a trainee who chooses meanwhile keeps
     /// the date, and the next night looks again. Returns how many were closed.
+    /// <para>The hub's closing is told by what it leaves empty: nobody closed it, and no reason was written. The hub closes for this
+    /// one reason, which its mail names (<c>closedUnanswered</c>), and a page tells it by the reason left empty. Through the row,
+    /// never around it: the key of one open training per ladder reads a column that only the row writes
+    /// (<see cref="Training.OpenKind"/>).</para>
     /// </summary>
     public async Task<int> CloseUnansweredAsync(DateTime now, CancellationToken cancellationToken)
     {
