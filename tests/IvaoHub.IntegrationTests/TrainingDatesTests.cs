@@ -308,7 +308,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await AssertRefusedAsync(again, "state", TrainingDates.NotChoosable, token);
         }
 
-        // Closed by the staff with a reason: no session held, so the calendar lets it go; the trainee reads why.
+        // Closed by the staff with a reason: the calendar lets its session go, the record keeps its date; the trainee reads why.
         using var advisor = await SignedInAsync(AdvisorVid, token);
         var closedVersion = (await PageAsync(advisor, id, token)).GetProperty("rowVersion").GetDateTime();
         using (var noReason = await StepAsync(advisor, id, "close", new { reason = "  ", rowVersion = closedVersion }, token))
@@ -320,7 +320,8 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(nameof(TrainingState.Closed), closed.GetProperty("state").GetString());
         Assert.Equal("trn-test: no answer", closed.GetProperty("closeReason").GetString());
         Assert.Equal(AdvisorVid, closed.GetProperty("closedBy").GetProperty("vid").GetInt32());
-        Assert.Equal(JsonValueKind.Null, closed.GetProperty("scheduledStartUtc").ValueKind);
+        Assert.Equal(second, closed.GetProperty("scheduledStartUtc").GetDateTime());
+        Assert.True(closed.GetProperty("dateChosenByTrainee").GetBoolean());
         Assert.Empty(await CalendarOfAsync(id, token));
         Assert.Contains("trn-test: no answer", await MailAsync(TraineeVid, TrainingNotifications.TrainingClosed, token), StringComparison.Ordinal);
 

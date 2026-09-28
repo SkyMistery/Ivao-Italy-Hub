@@ -335,8 +335,8 @@ public sealed class TrainingDates(
 
     /// <summary>
     /// A training closed by the staff (§2.5, R.3: the trainee never answered, or anything else), with <c>Training.Approve</c> and a
-    /// reason the trainee reads: accepted and still going on — dated too, whose session then leaves the calendar. Nobody closes a
-    /// training of their own. The trainer's grant goes the same night (A7).
+    /// reason the trainee reads: accepted and still going on — dated too, whose session then leaves the calendar and stays on
+    /// record. Nobody closes a training of their own. The trainer's grant goes the same night (A7).
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> CloseAsync(
         Training training,
@@ -479,8 +479,10 @@ public sealed class TrainingDates(
     }
 
     /// <summary>
-    /// The training closed, by somebody with their reason or by the hub: its session in hand and its proposals gone with it, so the
-    /// calendar lets it go too.
+    /// The training closed, by somebody with their reason or by the hub, and its proposals gone with it. The date of its session
+    /// stays on record, with which proposal it was and whether it was reminded: the register keeps states and dates (§6), and a
+    /// session that may have been held is not erased. Nothing else needs it gone: only a dated training is in the calendar, is
+    /// reminded or shows as held.
     /// </summary>
     private void Close(Training training, int? by, string? reason, IEnumerable<TrainingSlot> slots, DateTime? at = null)
     {
@@ -488,9 +490,6 @@ public sealed class TrainingDates(
         training.ClosedBy = by;
         training.ClosedAt = at ?? clock.UtcNow;
         training.CloseReason = reason;
-        training.ScheduledStartUtc = null;
-        training.ChosenSlotId = null;
-        training.RemindedAt = null;
         database.Slots.RemoveRange(slots);
     }
 
