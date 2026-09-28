@@ -2,15 +2,15 @@
 
 > Documento **interno** (italiano). Fonte di verità: `00-piano-di-progettazione.md` (versione 1.23).
 > Ingresso: quello che il piano e le note hanno già deciso sugli eventi (§R.1), quello che dicono gli strumenti di oggi
-> (§R.2), la documentazione pubblica dell'API di IVAO (§9) e **i requisiti dell'ED dati da Carmine** in tre giri di
-> risposte il 29 settembre 2026 (§R.3). Le scelte sono segnate **⚖️**; in §17 ci sono quelle già prese in quei giri e quelle
-> ancora aperte, ognuna con la raccomandazione. Le fasi si scrivono in `10-piano-implementazione-m4.md` **dopo**
+> (§R.2), la documentazione pubblica dell'API di IVAO (§9) e **i requisiti dell'ED dati da Carmine** in quattro giri di
+> risposte il 29 settembre 2026 (§R.3). Le scelte sono segnate **⚖️**; in §17 ci sono tutte, con la raccomandazione e la
+> risposta di Carmine. Le fasi si scrivono in `10-piano-implementazione-m4.md` **dopo**
 > l'approvazione di questo documento. I modelli sono `05-design-m2.md` e `07-design-m3.md`.
 
-**Stato:** **proposta, seconda stesura**, 29 settembre 2026. Nessun codice. La prima stesura (28 settembre) faceva
-ipotesi sul lavoro dell'ED; questa le sostituisce con le risposte di Carmine (§R.3). **Le risposte date in chat vanno
-confermate da Carmine con un commento sulla PR**, perché la decisione porti il suo link (`CLAUDE.md` §5); le domande ancora
-aperte sono in §17.2. Il prossimo passo è la fase E0 (§16).
+**Stato:** **deciso in chat da Carmine il 29 settembre 2026, da confermare sulla PR**. Nessun codice. La prima stesura
+(28 settembre) faceva ipotesi sul lavoro dell'ED; questa le sostituisce con le risposte di Carmine (§R.3), e Carmine ha
+risposto in chat anche alle sette domande che restavano (§17.2). **Le risposte date in chat vanno confermate da Carmine con
+un commento sulla PR**, perché la decisione porti il suo link (`CLAUDE.md` §5). Il prossimo passo è la fase E0 (§16).
 
 ---
 
@@ -18,7 +18,7 @@ aperte sono in §17.2. Il prossimo passo è la fase E0 (§16).
 
 ### 0.1 Che cosa è «fatto»
 
-M4 si fa in **due blocchi** (Carmine, §17.1 n.8), con un calendario solo:
+M4 si fa in **tre blocchi** (Carmine, §17.1 n.8 e §17.2 n.6), con un calendario solo:
 
 **M4a — gli eventi e le prenotazioni.** Basta a **spegnere `ivao-booking`** (piano §13, riga M4):
 
@@ -44,6 +44,10 @@ M4 si fa in **due blocchi** (Carmine, §17.1 n.8), con un calendario solo:
   sistema** e **validato** da chi ne ha il permesso (oggi l'MD); le **regole di award dell'evento** decidono quali award
   segnalare, e l'award lo assegna una persona (§5.2–§5.4).
 
+**M4c — gli eventi in presenza.** Un evento che non ha un roster può chiedere altro (§17.2 n.6): chi viene di persona
+**si iscrive** rispondendo alle **domande dell'evento** — che materiale porta (PC, monitor…), se viene alle cene — e
+**prenota le attività parallele** a posti limitati, come un turno a un simulatore di volo (§4-bis).
+
 ### 0.2 Fuori perimetro
 
 - **Lo storico di `ivao-booking`**: nessun import (piano §12 punto 3, `CLAUDE.md` §7).
@@ -52,10 +56,12 @@ M4 si fa in **due blocchi** (Carmine, §17.1 n.8), con un calendario solo:
   scritto dallo staff, quello di uno slot privato resta vuoto (§3.2).
 - **Le rotazioni, lo stato condiviso fra le postazioni la sera dell'evento**: del **Gate Manager** e del suo ponte su
   `atc.it.ivao.aero`. L'hub gli dà le prenotazioni (§7.4) e nient'altro.
-- **La prenotazione della postazione su IVAO** (`atc.ivao.aero`): resta di IVAO; l'hub non la scrive (servirebbe il
-  token del controllore con `bookings:write`).
+- **Scrivere la prenotazione della postazione su IVAO** per il controllore, dal roster: Carmine la vorrebbe (§17.2 n.3), ma
+  chiede il token IVAO del controllore con `bookings:write`, cioè il consenso a quello scope al login e un token conservato
+  dall'hub per conto del membro. È un **meccanismo nuovo** (`CLAUDE.md` §5, caso c): una nota sua, dopo M4, con la
+  sicurezza del token davanti. In M4 l'hub **legge** le prenotazioni di IVAO accanto al roster.
 - **Gli eventi di HQ che non coinvolgono la divisione**, e qualunque evento letto da un'API: l'API pubblica non ne ha (§9.2).
-- **Mail a tutti i membri per un evento nuovo** (⚖️ §17.2 n.5); il **feed iCal** (M6, piano §15.9).
+- **Mail a tutti i membri per un evento nuovo**: no (§17.2 n.5); il **feed iCal** (M6, piano §15.9).
 
 ### 0.3 Che cosa M4 non rimette in discussione
 
@@ -85,7 +91,7 @@ M4 si fa in **due blocchi** (Carmine, §17.1 n.8), con un calendario solo:
 | Rotte pubbliche e dei membri | `/events`, `/events/{slug}`, `/events/{slug}/roster`, `/events/mine` (segmento riservato `events`) |
 | Rotte dello staff | `/staff/events/...` |
 | Namespace i18n | `events` |
-| Fasi e branch | `E0`…`E15`, `m4/e<N>-<slug>` |
+| Fasi e branch | `E0`…`E17`, `m4/e<N>-<slug>` |
 
 La sitemap del piano (§8.2) scrive `/me/bookings`: come in M3, `/me` è la dashboard del nucleo fatta di blocchi, e il
 modulo ci entra con il blocco `events.myEvents` (§7.3); le pagine del membro stanno sotto `/events/mine`.
@@ -158,7 +164,7 @@ modulo ci entra con il blocco `events.myEvents` (§7.3); le pagine del membro st
 
 ### R.3 I requisiti dell'ED (Carmine, 29 settembre 2026, in chat)
 
-Tre giri: **(c1)** le risposte alle domande della prima stesura, **(c2)** le precisazioni, **(c3)** le ultime. Da
+Quattro giri: **(c1)** le risposte alle domande della prima stesura, **(c2)** le precisazioni, **(c3)** le ultime, **(c4)** le risposte a §17.2. Da
 confermare con un commento sulla PR (§17.1).
 
 **Chi fa che cosa**
@@ -242,6 +248,11 @@ ricerca, e il membro vede le sue prenotazioni passate in `/events/mine`; «preno
 libere e compatibili e dice quali erano già prese; la penalità è proporzionale (§4.5); il periodo dei dati dei piloti è di
 24 mesi, un'impostazione.
 
+**Il quarto giro** (c4, risposte alle domande di §17.2): **non tutti gli eventi hanno un roster**; un evento **in presenza**
+può chiedere a chi viene **che materiale porta** (PC, monitor…), **se partecipa alle cene** organizzate, e fargli
+**prenotare le attività parallele** (per esempio i simulatori di volo) (§4-bis). E la prenotazione su IVAO si potrebbe fare
+in automatico (§0.2).
+
 ---
 
 ## 1. Il modello
@@ -271,7 +282,7 @@ verso il nucleo: VID, ICAO, callsign, id di award e di file sono colonne non vin
 | Campo | Che cosa |
 |---|---|
 | `slug` | univoco; `/events/{slug}` |
-| `kind` | una chiave del **vocabolario dei tipi del calendario**: `rfe`, `rfo`, `mse`, `onlineDay`, `event`… (⚖️ §17.2 n.1) |
+| `kind` | una chiave del **vocabolario dei tipi del calendario**: `rfe`, `rfo`, `mse`, `onlineDay`, `event`… (⚖️ §17.2 n.1: sì) |
 | `public_slots`, `private_slots` | i due interruttori che fanno il comportamento; il tipo li **preimposta** (`kindPresets`, §1.12): RFE pubblici, RFO entrambi, MSE privati, evento libero e online day nessuno |
 | `whole_division` | l'evento vale su tutti gli aeroporti e le postazioni della divisione (l'online day) invece che sui suoi scali |
 | `organizer`, `external_url` | `Division`, `Network` (HQ in collaborazione), `OtherDivision`; la pagina di chi organizza |
@@ -281,7 +292,8 @@ verso il nucleo: VID, ICAO, callsign, id di award e di file sono colonne non vin
 | `starts_at_utc`, `ends_at_utc` | la finestra dell'evento |
 | `visible_from_utc` | l'uscita programmata; vuoto = alla pubblicazione (§2.2) |
 | `booking_opens_at_utc` | da quando si prenota; si chiude slot per slot, all'EOBT (§3.3) |
-| `has_roster`, `shift_minutes` | l'evento ha un roster ATC; durata del turno (predefinita dall'impostazione, 60) |
+| `has_roster`, `shift_minutes` | l'evento ha un roster ATC (non tutti ce l'hanno); durata del turno (predefinita dall'impostazione, 60) |
+| `in_person`, `venue` | evento in presenza (M4c, §4-bis): iscrizione con domande e attività; il luogo, testo tradotto |
 | `status`, `published_at` | `PublishStatus` del nucleo |
 | `visibility` | `Public` o `Members` |
 | `cancelled_at`, `cancelled_by`, `cancellation_note` | l'annullamento (§2.3) |
@@ -372,7 +384,8 @@ Righe figlie dell'evento, area `Events`. Un criterio nuovo è una riga dell'elen
 
 Una riga per evento, **solo numeri, per sempre** (c3): slot pubblici e privati, prenotati, prenotati e volati, prenotati
 e non volati, **volati senza prenotare**, disponibilità ATC date, turni, controllati, no-show, giustificati, PIREP mandati
-e accettati, award segnalati. Calcolata dopo l'evento (§5.1), ricalcolabile dallo staff.
+e accettati, award segnalati; per un evento in presenza, iscritti, le somme delle risposte e i posti presi nelle attività.
+Calcolata dopo l'evento (§5.1), ricalcolabile dallo staff.
 
 ### 1.11 Le preferenze del membro
 
@@ -386,17 +399,18 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
 
 | Impostazione | Predefinito | Fonte |
 |---|---|---|
-| `kindPresets` — per tipo di evento, gli interruttori `public_slots`, `private_slots`, `has_roster`, `whole_division` | vuoto; IT: `rfe`, `rfo`, `mse`, `onlineDay` | c1, c2 |
-| `bookingGapMinutes` — distanza minima fra due prenotazioni dello stesso pilota | 30 | c1; ⚖️ §17.2 n.6 |
+| `kindPresets` — per tipo di evento, gli interruttori `public_slots`, `private_slots`, `has_roster`, `whole_division`, `in_person` | vuoto; IT: `rfe`, `rfo`, `mse`, `onlineDay` | c1, c2 |
+| `bookingGapMinutes` — distanza minima fra due prenotazioni dello stesso pilota | **10** | c1; §17.2 n.6 |
 | `shiftMinutes` — durata del turno se l'evento non la dice | 60 | c1 |
 | `minimumAtcRating` — il rating minimo per candidarsi, dal vocabolario | nessuno; IT: AS3 | c1 |
-| `maxConsecutiveShifts` (y), `breakShifts` (x) | 2, 1 | c1; ⚖️ §17.2 n.6 |
-| `applicationsCloseDays` (x+y), `rosterPublishDays` (x) | 10, 7 | c2; ⚖️ §17.2 n.6 |
+| `maxConsecutiveShifts` (y), `breakShifts` (x) | 2, 1 | c1; §17.2 n.6 |
+| `applicationsCloseDays` (x+y), `rosterPublishDays` (x) | **3**, **2**: lo staff ha un giorno per correggere | c2; §17.2 n.6 |
 | `experienceMonths` — quanto indietro guardare le postazioni aperte | 12 | c1 |
 | `noShowWeight` — peso della penalità (§4.5) | 1 | c3 |
-| `attendanceMinimumMinutes` — minuti in un turno per dire «c'era» | 30 | ⚖️ §17.2 n.6 |
-| `reportDays` — giorni dopo l'evento per mandare un PIREP di supporto | 14 | ⚖️ §17.2 n.6 |
+| `attendanceMinimumMinutes` — minuti in un turno per dire «c'era» | 30 | §17.2 n.6 |
+| `reportDays` — giorni dopo l'evento per mandare un PIREP di supporto | 14 | §17.2 n.6 |
 | `pilotRetentionMonths` — prenotazioni e PIREP dei piloti dopo l'evento | 24 | c3 |
+| `inPersonRetentionMonths` — iscrizioni e attività di un evento in presenza dopo l'evento | 3 | §4-bis |
 
 ### 1.13 Dal nucleo, senza scriverlo nel modulo
 
@@ -435,7 +449,7 @@ Per l'ATC: **candidature aperte** fino a inizio − `applicationsCloseDays`; **r
 - **L'uscita programmata** ha la forma dei tour: la riga è pubblicata e la **data** dice da quando si vede. Alle tre
   domande della nota `il-documento-dice-di-se`: esce la riga com'è (è già passata dai controlli); il rifiuto non può
   capitare all'ora X; il contrario (sparire a una data) è la fine dell'evento (§2.4). La proiezione segue con il job
-  `events-release` (§8.4). Tour ed eventi hanno la stessa forma: al terzo modulo passa nel nucleo (⚖️ §17.2 n.4).
+  `events-release` (§8.4). Tour ed eventi hanno la stessa forma: al terzo modulo passa nel nucleo (⚖️ §17.2 n.4: sì).
 
 ### 2.3 Annullare, eliminare
 
@@ -582,6 +596,43 @@ Un turno senza nessuno resta **scoperto**, in evidenza (blocco `events.atcCovera
 
 ---
 
+## 4-bis. Gli eventi in presenza (M4c)
+
+Carmine (§17.2 n.6): un evento che non ha un roster può chiedere altro — **se vieni di persona, che materiale porti (PC,
+monitor…), se partecipi alle cene organizzate, se vuoi prenotare le attività parallele** (per esempio i simulatori di
+volo). È **una funzione del modulo** (`CLAUDE.md` §5, caso c, decisa qui): nessun meccanismo del nucleo la copre, e non
+ne serve uno nuovo — lo staff scrive le domande come righe, e il form del membro è il `SchemaForm` di sempre, con lo schema
+costruito dalle righe.
+
+### 4-bis.1 Il modello
+
+- **`evt_questions`**: le domande dell'evento — `label` tradotta, `type` da un **elenco chiuso** (`YesNo`, `Choice`,
+  `MultiChoice`, `Quantity`, `Text`), le scelte tradotte, obbligatoria o no, ordine. Righe figlie dell'evento, area
+  `Events`. «Che materiale porti» è una `MultiChoice` (PC, monitor…) o una `Quantity` per voce; «vieni alla cena del
+  sabato» è un `YesNo`.
+- **`evt_registrations`**: l'iscrizione di un membro — `vid`, `answers` (per domanda, validate dal server secondo il tipo),
+  `created_at`. Univoca su `(event_id, vid)`. `ISubmittedByMembers`, `IHasStakeholder`, area `EventBookings`.
+- **`evt_activities`**: un'attività parallela — `name` tradotto, luogo, finestra, **durata del turno** e **posti per turno**
+  (due simulatori = 2 posti ogni 30 minuti). Righe figlie dell'evento, area `EventBookings`.
+- **`evt_activity_bookings`**: un posto preso — `activity_id`, `starts_at_utc`, `vid`. Solo per chi è iscritto all'evento.
+  I posti si contano con un blocco sulla riga dell'attività (`SELECT … FOR UPDATE`), perché un turno ha più posti e un
+  indice univoco non basta; un membro non prende due turni sovrapposti.
+
+### 4-bis.2 Come va
+
+- **Lo staff** (`Events.Edit` per domande e attività, `EventBookings.Edit` per le iscrizioni) prepara domande e attività,
+  vede le iscrizioni e le **somme** (quanti a cena, quanti monitor), toglie un'iscrizione.
+- **Il membro**, con il login, si iscrive dalla pagina dell'evento rispondendo alle domande, prenota i turni delle attività,
+  cambia risposte e turni o si ritira **fino all'inizio dell'evento**; tutto in `/events/mine`.
+- **Mail**: `registrationReceived` (con il riepilogo delle risposte e dei turni), `eventChanged` e `eventCancelled` anche a
+  chi è iscritto.
+- **Dati personali**: le risposte parlano di una persona e di un posto fisico, quindi si tengono **poco**:
+  `inPersonRetentionMonths` (3) dopo l'evento, poi si cancellano; le somme restano nelle statistiche. Visibili solo allo
+  staff con `EventBookings.View` e al membro.
+- Un evento in presenza può avere anche slot o roster: gli interruttori sono indipendenti (§1.2).
+
+---
+
 ## 5. Dopo l'evento (M4b)
 
 ### 5.1 Le verifiche e le statistiche
@@ -639,8 +690,8 @@ Cinque aree, perché ogni capacità che si delega a un altro dipartimento è **u
 | `Events.Delete` | eliminare un evento senza righe dei membri (`DeletePolicy`) | no |
 | `Events.ManageSettings` | impostazioni del modulo | no |
 | `EventRoutes.View`, `.Edit` | le rotte | no |
-| `EventBookings.View` | slot e prenotazioni con i VID; l'esportazione per il Gate Manager | no |
-| `EventBookings.Edit` | slot, import, generatore; togliere una prenotazione | no |
+| `EventBookings.View` | slot, prenotazioni, iscrizioni e attività con i VID; l'esportazione per il Gate Manager | no |
+| `EventBookings.Edit` | slot, import, generatore, attività; togliere una prenotazione o un'iscrizione | no |
 | `EventAtc.View` | postazioni, disponibilità, roster, registro di affidabilità | no |
 | `EventAtc.Edit` | postazioni, correggere il roster, confermare o giustificare un no-show | **sì** |
 | `EventReports.View` | i PIREP di supporto | no |
@@ -663,7 +714,7 @@ Ogni area ha il suo `View` e il suo `Edit`: il guardiano chiede `{Area}.Edit` pe
 - **Tutte con `scope: ED`**: l'ED è in ogni evento, quindi chi collabora lavora su ogni evento **nella sua parte** senza
   essere nel «a cura di» (§1.1). Lo scope indipendente dal dipartimento della posizione il nucleo lo ha già
   (`PositionGrantSeed.Scope`, e il suo commento porta proprio l'esempio dell'AOD sulle postazioni degli eventi).
-- **AOD, FOD, MD: tutti i livelli** (c1: «chiunque del FOD»); ⚖️ §17.2 n.2 per AOD e MD.
+- **AOD, FOD, MD: tutti i livelli** (c1: «chiunque del FOD»); ⚖️ §17.2 n.2: sì, anche per AOD e MD.
 - **Lo staff dei FIR** con `"firTeam": true` (A11a): vale solo su un'area con un'entità `IHasFir`, e `EventAtc` ce l'ha
   (postazioni e turni).
 - HQ (DIR, ADIR) e il web (WM, AWM) tutto per il nucleo; il superadmin tutto. `Awards.Assign` resta del nucleo. Qualcuno
@@ -674,7 +725,7 @@ Ogni area ha il suo `View` e il suo `Edit`: il guardiano chiede `{Area}.Edit` pe
 La nota `ordine-dei-moduli` §3.3 teme «una sfumatura» nell'unico handler. **Non serve**: `Events.Delete` lo tengono solo EC
 ed EAC, e nessuna riga di collaborazione lo dà, quindi chi collabora non elimina su nessuna riga. È lo stesso modo in cui
 `Tours.Delete` sta solo a coordinator e assistant del FOD (`TourEndpoints`, `DeletePolicy`). Il limite, detto: chi un giorno
-desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazione visibile, come per i tour. ⚖️ §17.2 n.2.
+desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazione visibile, come per i tour. ⚖️ §17.2 n.2: sì.
 
 ⚠️ **Da verificare nella fase dello scheletro**:
 - che le schermate delle aree `EventAtc`, `EventRoutes` ed `EventReports` leggano quello che serve dell'evento padre attraverso
@@ -698,6 +749,7 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   - **slot privati**: per scalo, verso e ora, con il form del volo;
   - **ATC**: le postazioni e «dai la tua disponibilità» fino alla chiusura; il roster, pubblicato, in
     **`/events/{slug}/roster`**;
+  - **in presenza**: luogo, «iscriviti» con le domande, le attività con i turni e i posti liberi (§4-bis);
   - **il giorno dell'evento**: la `LiveStatusStrip` con chi è online sugli scali dell'evento (§9.1).
 - **`/events/mine`** (membri): le mie prenotazioni (anche passate), le mie disponibilità e i miei turni, il mio **registro
   ATC**, i miei PIREP di supporto con «manda il PIREP», e la preferenza del §1.11.
@@ -713,6 +765,7 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   - **ATC**: postazioni; disponibilità; il **roster** come lista generata per postazione e ora, con il perché di ogni turno, gli
     avvisi, «aggiungi», «sposta», «togli»; dopo l'evento, i no-show da confermare;
   - **PIREP di supporto**: lista generata con la verifica di ogni voce, «accetta», «rifiuta»;
+  - **In presenza**: domande e attività (liste e form generati), iscrizioni con le somme, turni delle attività;
   - **Statistiche**: i numeri del §1.10.
 - **`/staff/events/controllers`**: il registro di affidabilità di tutti, con «togli il no-show».
 - **`/staff/events/settings`**: impostazioni generate.
@@ -778,6 +831,7 @@ Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-po
 | `atcShiftChanged`, `atcShiftRemoved` | controllore | dopo la pubblicazione | c1 |
 | `reportsToValidate` | validatori | una volta al giorno, se ce ne sono | c1 |
 | `reportDecided` | membro | PIREP di supporto accettato o rifiutato | |
+| `registrationReceived` | membro | iscrizione a un evento in presenza, con risposte e turni delle attività | §4-bis |
 | *(nucleo)* un award da assegnare | chi ha `Awards.Assign` | un segnale nuovo in coda | c1; estensione n.5 |
 
 Tutte disattivabili dal profilo (c1). Modelli in `web/src/modules/events/locales/{it,en}/events.json`.
@@ -807,8 +861,8 @@ La documentazione pubblica (`https://api.ivao.aero/docs/{core,data,tracker,atc}-
   `from`, `to`, `page`, `perPage` (massimo 100). Il client del nucleo la usa oggi **con il VID** (`SearchSessionsAsync`, M2);
   la ricerca **senza VID**, per aeroporto e finestra, è l'estensione n.2.
 - **`/v2/atc/bookings/daily?date=&position=`** e `/v2/atc/bookings`: le prenotazioni delle postazioni su IVAO (utente,
-  postazione, inizio, fine, training o esame). Accanto al roster sarebbero utili per vedere chi ha anche prenotato su
-  IVAO: **facoltative**, ⚖️ §17.2 n.3.
+  postazione, inizio, fine, training o esame). **Si leggono accanto al roster**, per vedere chi ha anche prenotato su IVAO
+  (§17.2 n.3). Scriverle per il controllore è fuori da M4 (§0.2).
 - **Nessun endpoint di eventi** in nessuna delle quattro.
 - **Il «chi è online adesso»** della pagina è `GetNetworkStatusAsync` (whazzup, 60 secondi di cache): letto alla richiesta,
   mai campionato.
@@ -872,6 +926,7 @@ spegnilo»).
 | Disponibilità ATC | cancellate a roster pubblicato + la fine dell'evento | — |
 | **Turni ATC ed esiti** (il registro di affidabilità) | **per sempre** | c3 |
 | PIREP di supporto **ATC** | come i turni | c3 |
+| Iscrizioni a un evento in presenza e turni delle attività | `inPersonRetentionMonths` (3) dopo la fine, poi cancellati; le somme restano | §4-bis |
 | Chi ha volato senza prenotare | mai salvato per VID: solo il numero | — |
 
 ### 11.1 La cancellazione dei dati di una persona
@@ -914,7 +969,7 @@ Ognuna è una PR a sé, **prima** del codice del modulo che la usa, con la sua n
 | 3 | **Il VID e la storia per VID** in `IAtcActivitySource`: le sessioni di un controllore negli ultimi mesi, per postazione | breve | M4b |
 | 4 | **Il vocabolario dei rating**: il rating preferito per un tipo di postazione e il minimo di una postazione (§1.13), se non risponde già; si misura nella fase | breve, se serve | M4b |
 | 5 | **Una mail a chi assegna gli award** quando entra un segnale nuovo in coda, spegnibile dal profilo; vale anche per i tour | sì, breve | M4b |
-| 6 | **Le prenotazioni ATC della rete** (`/v2/atc/bookings/daily`) dietro un'interfaccia del nucleo | breve | M4b, facoltativa (§17.2 n.3) |
+| 6 | **Le prenotazioni ATC della rete** (`/v2/atc/bookings/daily`) dietro un'interfaccia del nucleo, in lettura | breve | M4b (§17.2 n.3) |
 | 7 | ~~Cancellare solo con il permesso sul dipartimento di base~~ **non serve** (§6.3) | — | — |
 | 8 | **VID e slug dei test** di Events in `CONTRIBUTING.md` (per esempio `761001–761099`, `evt-test-`, dopo un grep) | no; lo scrive il master | M4a |
 
@@ -930,7 +985,7 @@ di un grant indipendente dal dipartimento della posizione; `TokenAudiences`; `Pr
 
 **Modulo**: M4a `evt_events`, `evt_event_airports`, `evt_routes`, `evt_slots`, `evt_bookings`; M4b `evt_atc_positions`,
 `evt_atc_availability` (con le finestre), `evt_atc_shifts`, `evt_reports`, `evt_report_items`, `evt_award_rules`,
-`evt_event_stats`. La migrazione `Initial` nasce nella fase dello scheletro e non si tocca più; le altre arrivano con la
+`evt_event_stats`; M4c `evt_questions`, `evt_registrations`, `evt_activities`, `evt_activity_bookings`. La migrazione `Initial` nasce nella fase dello scheletro e non si tocca più; le altre arrivano con la
 loro fase, sempre additive.
 
 ---
@@ -956,7 +1011,9 @@ loro fase, sempre additive.
   - un PIREP accettato proietta i segnali delle regole soddisfatte, e nessun altro;
   - l'esportazione con un token `events.bookings`, senza, e con un'altra audience;
   - la conservazione: prenotazioni dei piloti cancellate dopo il periodo, turni e statistiche no;
-  - la cancellazione di una persona (§11.1).
+  - la cancellazione di una persona (§11.1);
+  - in presenza: le risposte validate per tipo, una domanda obbligatoria senza risposta rifiutata; **l'ultimo posto di un
+    turno preso da due membri nello stesso istante**: uno vince; iscrizioni cancellate dopo `inPersonRetentionMonths`.
 - ⚠️ **L'ED e l'MD nei test**: i test dei contatti affermano i destinatari esatti dell'ED e dell'MD, quindi **nessuno staff ED
   o MD seminato con un'email** nei test del modulo; i permessi con grant a un VID.
 - **Architettura**: il modulo non nomina IVAO né vIPI, non scrive ICAO né rating, nessuna chiamata HTTP.
@@ -964,7 +1021,8 @@ loro fase, sempre additive.
 - **Fixture di IVAO**: tracker per VID e per aeroporto, registrati con `tools/record-ivao-fixtures.mjs`; nessuna chiamata
   vera nei test.
 - **Smoke e giro completo**: M4a — evento RFO, incolla gli slot, genera i privati, pubblica, un pilota prenota una rotazione
-  e un privato, ritira; M4b — disponibilità, roster proposto, corretto, pubblicato; PIREP di supporto, validato, segnale.
+  e un privato, ritira; M4b — disponibilità, roster proposto, corretto, pubblicato; PIREP di supporto, validato, segnale;
+  M4c — un evento in presenza, iscrizione con le risposte, un turno al simulatore.
 
 ---
 
@@ -998,7 +1056,16 @@ lo stesso contesto e vanno in fila, quelle del nucleo possono correre in paralle
 | E12 | Pubblicazione per data, mail, `/events/{slug}/roster`, turni in `/me`, modifiche notificate, `events.atcCoverage` | M |
 | E13 | Dopo l'evento: verifiche, statistiche, no-show proposti e confermati, registro di affidabilità, `events.staffQueue` | G |
 | E14 | PIREP di supporto: manuale, automatico con la preferenza, verifica, validazione, riepilogo, regole di award, segnali | G |
-| E15 | Conservazione, `EventsPersonalData`, giro completo di M4b; le prenotazioni ATC di IVAO se decise (n.6) | M |
+| E15 | Conservazione, `EventsPersonalData`, giro completo di M4b; le prenotazioni ATC di IVAO accanto al roster (n.6) | M |
+
+**M4c — gli eventi in presenza**
+
+| Fase | Contenuto | Misura |
+|---|---|---|
+| E16 | Domande e iscrizione: tabelle, form costruito dalle domande, somme per lo staff, `/events/mine`, mail | M |
+| E17 | Attività parallele: turni e posti, prenotazione con il blocco, conservazione breve, giro completo di M4c | M |
+
+M4c non dipende da M4b: può venire prima, se il primo evento in presenza arriva prima.
 
 ---
 
@@ -1006,7 +1073,7 @@ lo stesso contesto e vanno in fila, quelle del nucleo possono correre in paralle
 
 ### 17.1 Decise in chat il 29 settembre 2026 — da confermare sulla PR
 
-Carmine ha risposto in chat, in tre giri, alle domande della prima stesura e alle precisazioni (§R.3). Una risposta in chat
+Carmine ha risposto in chat, nei primi tre giri, alle domande della prima stesura e alle precisazioni (§R.3). Una risposta in chat
 non ha un link: **un suo commento sulla PR che confermi questa sezione** la rende la decisione registrata.
 
 1. **Chi risponde sui fatti dell'ED**: Carmine stesso (§R.3).
@@ -1033,22 +1100,30 @@ non ha un link: **un suo commento sulla PR che confermi questa sezione** la rend
 16. **Rotazione intera** prende le tratte libere e compatibili; **penalità** proporzionale (§4.5).
 17. **Stand**: fuori da M4, da vedere dopo.
 
-### 17.2 Ancora aperte
+### 17.2 Le sette domande della seconda stesura — decise in chat il 29 settembre 2026, da confermare sulla PR
+
+Poste sulla PR ([commento][q2]); Carmine ha risposto in chat. Come §17.1, aspettano il suo commento di conferma.
+
+[q2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/180#issuecomment-5880359954
 
 1. **Il tipo dell'evento come chiave del vocabolario del calendario** (§1.2), con `kindPresets` per gli interruttori.
-   Raccomandato: **sì**; un fork rinomina i tipi senza codice.
+   Raccomandato: sì. **Deciso: sì.**
 2. **I permessi** (§6.2, §6.3): collaboratori con `scope: ED` invece del «a cura di»; `Events.Delete` e le impostazioni solo a
-   EC ed EAC; AOD e MD a **tutti i livelli** come il FOD. Raccomandato: **sì**. In alternativa AOD e MD solo coordinator e
-   assistant.
-3. **Le prenotazioni ATC di IVAO accanto al roster** (§9.1, n.6). Raccomandato: **sì, in fondo a M4b**, e si possono togliere; senza,
-   il roster funziona uguale.
-4. **L'uscita programmata** con la forma dei tour (§2.2). Raccomandato: **sì**, nel nucleo al terzo modulo.
-5. **Mail di massa per un evento nuovo**. Raccomandato: **no**.
-6. **I predefiniti** (§1.12): distanza fra prenotazioni 30 minuti; 2 turni di fila e 1 di pausa; candidature chiuse 10 giorni
-   prima, roster pubblicato 7 giorni prima; 30 minuti per dire «c'era»; 14 giorni per il PIREP di supporto. Raccomandato:
-   **questi**, tutti cambiabili dalle impostazioni.
-7. **Lo spegnimento di `ivao-booking`** (E9). Raccomandato: **dopo il primo evento vero fatto sull'hub**, con il Gate Manager
-   già passato all'hub; `booking.it.ivao.aero` con un 301 verso `/events`.
+   EC ed EAC; AOD e MD a tutti i livelli come il FOD. Raccomandato: sì. **Deciso: sì.**
+3. **Le prenotazioni ATC di IVAO accanto al roster** (§9.1, n.6). Raccomandato: sì, in fondo a M4b. **Deciso: sì**, e
+   Carmine vorrebbe anche **fare la prenotazione su IVAO in automatico**: fuori da M4, un meccanismo nuovo con una nota sua
+   (§0.2).
+4. **L'uscita programmata** con la forma dei tour (§2.2). Raccomandato: sì, nel nucleo al terzo modulo. **Deciso: sì, come
+   raccomandato.**
+5. **Mail di massa per un evento nuovo**. Raccomandato: no. **Deciso: no.**
+6. **I predefiniti** (§1.12). **Deciso**: **10 minuti** fra due prenotazioni di un pilota; candidature chiuse **3 giorni**
+   prima e roster pubblicato **2 giorni** prima; il resto come raccomandato (2 turni di fila e 1 di pausa, 30 minuti per dire
+   «c'era», 14 giorni per il PIREP di supporto). **E una richiesta nuova**: non tutti gli eventi hanno un roster, e un evento
+   **in presenza** può chiedere materiale portato, cene e attività parallele prenotabili come i simulatori. Diventa M4c
+   (§4-bis), con le scelte di forma del design (domande da un elenco chiuso di tipi, attività a turni con posti, dati tenuti 3
+   mesi).
+7. **Lo spegnimento di `ivao-booking`** (E9). Raccomandato: dopo il primo evento vero fatto sull'hub, con il Gate Manager già
+   passato all'hub; poi un 301 verso `/events`. **Deciso: come raccomandato.**
 
 ---
 
@@ -1060,7 +1135,7 @@ Lo scrive il master dopo il merge (`CLAUDE.md` §0); le note della fase E0 lo ri
   niente training ed esami; la prenotazione come riga a sé; niente iscrizioni (§0.6).
 - **§8.2, sitemap**: `/events/mine`, `/events/{slug}/roster`, il blocco `events.myEvents` in `/me`; l'evento concluso
   sparisce dal pubblico.
-- **§9.2, riga Events**: RFE, RFO, MSE, eventi liberi, online day; slot pubblici con rotazioni, privati generati dalla
+- **§9.2, riga Events**: RFE, RFO, MSE, eventi liberi, online day, eventi in presenza con iscrizione e attività; slot pubblici con rotazioni, privati generati dalla
   capacità; roster ATC proposto dal sistema; PIREP di supporto validati; gli eventi di HQ a mano (l'API non li ha); il Gate
   Manager legge l'hub con un token personale.
 - **§9.2 e §12 punto 3**: `ivao-booking` spento dopo il primo evento sull'hub (§17.2 n.7).
@@ -1071,8 +1146,10 @@ Lo scrive il master dopo il merge (`CLAUDE.md` §0); le note della fase E0 lo ri
   staff; chi ha volato senza prenotare solo come numero.
 - **§10, tabella dell'API**: `/v2/tracker/sessions` anche senza VID; `/v2/atc/bookings/daily` alla richiesta; niente job ogni
   5 minuti.
-- **§13, riga M4**: due blocchi, M4a (spegne `ivao-booking`) e M4b; «chi collabora non cancella» precisato (§6.3); fasi
-  E0–E15 di `10-piano-implementazione-m4.md`.
+- **§13, riga M4**: tre blocchi, M4a (spegne `ivao-booking`), M4b (ATC e dopo evento), M4c (eventi in presenza); «chi
+  collabora non cancella» precisato (§6.3); fasi E0–E17 di `10-piano-implementazione-m4.md`.
+- **§15, aperte**: scrivere la prenotazione della postazione su IVAO per il controllore, con il suo token conservato
+  dall'hub — da studiare con una nota sua (§0.2, §17.2 n.3).
 - **§9.1, Award**: la mail a chi assegna (estensione n.5).
 - **Nota `il-documento-dice-di-se` §2**: l'uscita programmata di un evento ha la forma dei tour.
 - **`CONTRIBUTING.md`**: VID e slug dei test di Events (n.8).
