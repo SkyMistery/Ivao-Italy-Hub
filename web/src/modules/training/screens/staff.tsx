@@ -33,7 +33,14 @@ import {
 } from '../schemas';
 
 import { StateBadge, TheoryExamLink } from './parts';
-import { STAFF_TRAININGS, decisionOf, listOrder, staffTrainingHref, trainerChoices } from './trainings';
+import {
+  STAFF_TRAININGS,
+  decisionOf,
+  isConflict,
+  listOrder,
+  staffTrainingHref,
+  trainerChoices,
+} from './trainings';
 import { formatHours } from './trainee';
 
 /**
@@ -353,6 +360,7 @@ function TrainerDetails({ training }: { training: StaffTrainingDto }) {
 function AssignTrainer({ training }: { training: StaffTrainingDto }) {
   const { t, i18n } = useTranslation();
   const notice = useNotice();
+  const refused = useRefused();
   const step = useStaffStep(training.id);
   const candidates = useQuery(trainerCandidatesQuery(training.id));
   const choices = useMemo(() => trainerChoices(candidates.data ?? []), [candidates.data]);
@@ -388,14 +396,27 @@ function AssignTrainer({ training }: { training: StaffTrainingDto }) {
 
   return (
     <SchemaForm<AssignValues>
-      // Keyed on the version: a training somebody else moved since is drawn again when it arrives.
+      // Keyed on the version: a training somebody else moved since — read again after a conflict — is drawn again when it
+      // arrives, and the next assignment is sent from there.
       key={training.rowVersion}
       schema={schema}
       defaults={{ trainerVid: '', rowVersion: training.rowVersion }}
       locales={[]}
       labels="training:staff.assign"
       onSubmit={async (values) => {
-        const page = await step.mutateAsync({ step: 'assign', assignment: assignFromFormValues(values) });
+        let page: StaffTrainingDto;
+        try {
+          page = await step.mutateAsync({ step: 'assign', assignment: assignFromFormValues(values) });
+        } catch (error) {
+          // The form is about to be drawn anew with the version the server has now: the conflict is said where it stays.
+          if (isConflict(error)) {
+            refused(error);
+            return;
+          }
+
+          throw error;
+        }
+
         notice({
           tone: 'success',
           title: t('training:staff.assign.assigned', {
@@ -410,18 +431,15 @@ function AssignTrainer({ training }: { training: StaffTrainingDto }) {
   );
 }
 
-/** Accept and refuse (§2.3), while the request waits and the handler lets the reader decide it. */
-function DecisionActions({ training }: { training: StaffTrainingDto }) {
+/**
+ * A step the server refused, said in a notice: it stays while the page is read again after a conflict and its buttons and
+ * form are drawn anew.
+ */
+function useRefused(): (error: unknown) => void {
   const { t, i18n } = useTranslation();
   const notice = useNotice();
-  const step = useStaffStep(training.id);
-  const [reason, setReason] = useState('');
 
-  if (!training.actions.canDecide) {
-    return null;
-  }
-
-  const failed = (error: unknown) => {
+  return (error) => {
     const why = describeProblem(error, t, i18n.language);
     notice({
       tone: 'error',
@@ -429,6 +447,19 @@ function DecisionActions({ training }: { training: StaffTrainingDto }) {
       ...(why === null ? {} : { description: why }),
     });
   };
+}
+
+/** Accept and refuse (§2.3), while the request waits and the handler lets the reader decide it. */
+function DecisionActions({ training }: { training: StaffTrainingDto }) {
+  const { t } = useTranslation();
+  const notice = useNotice();
+  const failed = useRefused();
+  const step = useStaffStep(training.id);
+  const [reason, setReason] = useState('');
+
+  if (!training.actions.canDecide) {
+    return null;
+  }
 
   return (
     <div className="flex flex-wrap gap-2">
