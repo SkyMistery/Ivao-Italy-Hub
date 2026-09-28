@@ -1,0 +1,220 @@
+# L'indirizzo del visitatore dietro più proxy
+
+**Data:** 28 settembre 2026
+**Stato:** **Decisa da Carmine sulla PR, 28 settembre 2026**: le due domande del §6 (5 e 6 del commento), tutte e due come
+raccomandato — <https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>. `ForwardLimit = null` si fa
+dopo la prova 3 del §5, **qualunque cosa dica**. La prova 3 ha dato `127.0.0.1` (§8). La domanda nuova del §8, la pagina
+diagnostica, ha la risposta di Carmine: **sì**, in chat, riportata in
+<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865694616>.
+**Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo è quello deciso il 3 settembre
+(`2026-09-03-proxy-fidati.md`, design M0 §2.3), e si **estende**. Cambio del nucleo, nella sua PR.
+**Da dove viene:** piano §11.3 punto 9, terzo trattino; `docs/DEPLOYING.md` «Known limits».
+
+## 1. Che cosa fa l'hub oggi
+
+- `src/IvaoHub.Web/Program.cs:238-256`: se `ForwardedHeaders:TrustedNetworks` non è vuota (in produzione è obbligatoria,
+  `src/IvaoHub.Web/HubConfiguration.cs:136-174`), il middleware legge `X-Forwarded-For` e `X-Forwarded-Proto` e crede solo
+  a chi sta in quelle reti. **`ForwardLimit` non è impostato: vale 1**, il default di ASP.NET Core. Il middleware entra alla
+  riga 266.
+- Con il limite 1 il middleware guarda **solo la voce più a destra** di ciascun header: se il vicino (Passenger, cioè
+  `127.0.0.1`) è fidato, l'indirizzo diventa l'ultima voce di `X-Forwarded-For` e lo schema l'ultima di
+  `X-Forwarded-Proto`. Poi si ferma, anche se quella voce è a sua volta un proxy fidato.
+- Su quell'indirizzo poggiano:
+  - la colonna `ip` di `hub_audit_log` (`src/IvaoHub.Core/Data/HubSaveChangesInterceptor.cs:745`);
+  - il limite di 10 accessi al minuto **per indirizzo** su `/auth/*` (`src/IvaoHub.Web/Program.cs:177-187`,
+    `src/IvaoHub.Web/Endpoints/AuthEndpoints.cs:17`).
+- Sullo schema poggiano HSTS e la redirezione a https (`Program.cs:279`, `:283`) e il cookie `Secure`.
+
+## 2. Che cosa si rompe, e quando
+
+La catena è visitatore → Cloudflare → nginx di Plesk → (forse Apache) → Passenger → hub. Cloudflare mette in
+`X-Forwarded-For` l'indirizzo del visitatore (aggiunto in coda a quel che il visitatore ha mandato). **Che cosa fanno i salti
+dopo non lo sappiamo**:
+
+| Se dietro Cloudflare… | `X-Forwarded-For` che arriva all'hub | Con il limite 1 l'hub crede |
+|---|---|---|
+| nessuno aggiunge niente | `visitatore` | il visitatore ✅ |
+| nginx aggiunge chi gli ha parlato (`$proxy_add_x_forwarded_for`, come fa di solito un proxy di Plesk; non verificato su questo server) | `visitatore, <Cloudflare>` | **un indirizzo di Cloudflare** ❌ |
+| nginx aggiunge, e Apache con `mod_remoteip` toglie le voci dei proxy di cui si fida | dipende da quali reti conosce Apache | da misurare |
+
+Nel secondo caso, che è il più probabile:
+
+1. **Il registro scrive l'indirizzo del nodo di Cloudflare**, non quello di chi ha scritto: la colonna non serve più a niente.
+2. **Il limite del login diventa condiviso**: tutti i visitatori che passano dallo stesso nodo (per l'Italia, quasi tutti da
+   Milano) hanno *un* contatore di 10 accessi al minuto. La sera di un evento, gente vera riceve `429`.
+3. **Lo schema**: se nginx aggiunge anche a `X-Forwarded-Proto` il suo, e fra Cloudflare e il server si parla in http,
+   l'ultima voce è `http`: l'hub rimanda a https una richiesta già https, e il sito gira in tondo.
+
+## 3. Le strade
+
+| | Che cosa | Costo | Limite |
+|---|---|---|---|
+| **a. `ForwardLimit = null`** | il middleware risale da destra **finché chi parla sta in `TrustedNetworks`**, e si ferma al primo indirizzo che non ci sta | una riga in `Program.cs` e un test con tre salti | è sicuro quanto la lista, che già oggi contiene solo le porte d'ingresso. Un residuo, che c'è già oggi: tutto ciò che parte da un indirizzo di Cloudflare è creduto su quel che dichiara |
+| **b. `ForwardLimit` configurabile** | un numero per installazione | una chiave in più, che chi installa deve contare | si rompe in silenzio quando l'hosting cambia un salto. Peggio di (a) |
+| **c. Leggere `CF-Connecting-IP`** | l'header di Cloudflare | poco codice | il codice saprebbe di Cloudflare (forkabilità, `CLAUDE.md` §3); e dopo nginx l'hub non vede più se la richiesta è passata davvero da Cloudflare, quindi chi raggiunge il server direttamente lo falsifica. **Scartata** |
+| **d. `real_ip` in nginx** | `set_real_ip_from` con le reti di Cloudflare e `real_ip_header CF-Connecting-IP` nelle direttive aggiuntive di Plesk | niente codice | vale finché qualcuno tiene quella configurazione sull'host; è una **seconda serratura**, non la prima |
+
+## 4. La raccomandazione
+
+**Prima la misura del §5, poi (a)**, se il registro mostra un indirizzo di Cloudflare. (a) non peggiora nessun caso rispetto
+a oggi: dove la catena è di un salto si comporta come il limite 1, dove è di due o tre trova il visitatore, e lo schema viene
+dalla stessa voce dell'indirizzo. Se la misura dà già l'indirizzo giusto, (a) si fa lo stesso, perché la prossima modifica
+dell'hosting non ce lo dica il registro sbagliato: è una riga.
+
+## 5. Che cosa si può misurare adesso, e che cosa no
+
+L'installazione di prova risponde dal 28 set mattina (`0.2.1`, `fa089de`; il `500` delle 06:50 UTC era l'utente del
+database d'esempio rimasto nel file dei segreti). Tre prove, senza codice:
+
+1. **Lo schema — misurato, 28 set 07:00 UTC ✅.** Le risposte dell'hub (`/api/version`, `/auth/login`) portano
+   `strict-transport-security: max-age=2592000`, i trenta giorni dell'hub, che l'hub manda solo a una richiesta che crede https;
+   i cookie di `/auth/login` hanno `secure`; il `redirect_uri` verso IVAO è `https://`. `http://` riceve `301` da Cloudflare.
+   Nessun giro in tondo: l'ultima voce di `X-Forwarded-Proto` che arriva all'hub è `https`.
+2. **Chi falsifica non passa — misurato, 28 set 07:00 UTC.** Dieci `GET /auth/login` in 3 secondi (una da sola, poi nove),
+   ognuna con un `X-Forwarded-For` inventato diverso (`198.51.100.1`…`.12`): `302` fino alla decima, poi `429`.
+   ⚠️ **Letta di nuovo dopo la prova 3**: il `429` non dice che l'header è stato scartato. Dice solo che tutte le richieste
+   sono finite nello stesso contatore, e con la prova 3 quel contatore è `127.0.0.1`, lo stesso per **tutti** i visitatori.
+3. **L'indirizzo — misurato da Carmine, 28 set 2026: (b), `127.0.0.1`.** La prova, nello stesso browser: aprire
+   `https://test.it.ivao.aero/cdn-cgi/trace` e annotare la riga `ip=` (l'indirizzo come lo vede Cloudflare); entrare come
+   super amministratore; in `/staff/links` creare un link («ip test», `https://example.org`), salvarlo e cancellarlo; in
+   `/staff/admin/audit` leggere la colonna `ip` delle due righe. I tre casi erano: **(a)** uguale a `ip=`; **(b)** `127.0.0.1`
+   o `::1`, cioè l'indirizzo del visitatore non arriva all'hub; **(c)** un indirizzo di Cloudflare, cioè la seconda riga del
+   §2. Il registro ha scritto `127.0.0.1`. Che cosa vuol dire: §8.
+
+Da fuori si vede anche che `/` risponde `200` **senza** `strict-transport-security` né `x-robots-tag`: sembra servito da nginx
+dalla cartella `wwwroot/`, non dall'hub. Non riguarda questa nota (è il tema delle intestazioni dei file serviti da Plesk).
+
+- **Che cosa resta cieco anche allora**: la catena esatta degli header (quanti salti, chi aggiunge). Il middleware di ASP.NET
+  Core non la scrive nel log, nemmeno a `Debug` (scrive solo il proxy sconosciuto a cui si ferma, e su una catena pulita non
+  si ferma su nessuno). Leggerla vuol dire una riga di codice che scrive gli header grezzi a `Debug`: la si aggiunge solo se la
+  prova 3 sorprende.
+
+## 6. Le domande a Carmine
+
+**Risposta di Carmine, 28 set 2026: sì a tutte e due, come raccomandato**
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>, domande 5 e 6). `ForwardLimit = null` si
+fa dopo la prova 3 del §5, qualunque cosa mostri; la domanda sull'origine la pone lui a chi amministra il server.
+
+1. **(a), `ForwardLimit = null`, nel nucleo?** Raccomandato: **sì**, dopo la prova 3 del §5, anche se la prova dà
+   l'indirizzo giusto.
+2. **Chiedi a chi amministra il server** se l'origine accetta connessioni solo dalle reti di Cloudflare? Raccomandato: **sì**,
+   nello stesso messaggio della nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` (§6, domanda 4). Non cambia (a), ma dice
+   quanto vale il residuo del §3. **Superata dalla misura del §7**: la risposta è no, e non serve chiederla.
+
+## 7. L'origine risponde anche senza Cloudflare (misurato dal master)
+
+**Il fatto.** Il 28 set, 07:31 UTC, il master ha trovato l'indirizzo del server: è quello dell'host FTP della divisione, e qui
+non lo si scrive. Chiamato direttamente, forzando la risoluzione di `test.it.ivao.aero` su quell'indirizzo, risponde:
+- sulla 443, `/api/version` risponde `200` dall'hub (Kestrel), con le intestazioni dell'hub e `0.2.1+fa089de`;
+- sulla 80, il nginx dell'origine risponde `301` verso https.
+
+Il nome pubblico invece punta a Cloudflare. **L'origine accetta connessioni da chiunque, senza passare da Cloudflare**: la
+domanda 2 del §6 ha già la risposta.
+
+**Che cosa vuol dire per (a).** Chi chiama l'origine direttamente, dall'indirizzo `C`, con un `X-Forwarded-For: F` inventato:
+- **se il nginx dell'origine aggiunge chi gli ha parlato** (`$proxy_add_x_forwarded_for`), all'hub arriva `F, C` da
+  `127.0.0.1`. `127.0.0.1` è fidato, quindi l'hub prende `C`. `C` non sta in `TrustedNetworks`, quindi (a) si ferma lì, e con
+  il limite 1 di oggi si ferma lì comunque. L'hub registra `C`, il vero chiamante, e il limite del login conta `C`: **(a)
+  non apre niente**, il ragionamento del master regge;
+- **se invece il nginx passa l'header del cliente così com'è**, senza aggiungere né riscrivere, all'hub arriva `F` da
+  `127.0.0.1`, e l'hub crede `F`. **Con il limite 1 come con (a)**: il difetto non verrebbe da (a), ma dalla catena
+  dell'origine, e aggirerebbe il limite del login cambiando l'header a ogni richiesta.
+
+**La prova sull'origine — misurata da Carmine, 28 set 2026, da rileggere con il §8.** Carmine ha rifatto la prova 2
+direttamente sull'origine, dal suo terminale: undici `GET /auth/login` in un minuto, con la risoluzione di `test.it.ivao.aero`
+forzata su quell'indirizzo (`curl --resolve`), ognuna con un `X-Forwarded-For` inventato diverso (`203.0.113.1`…`.11`).
+Risultato: **`302` fino alla decima, poi `429`**. L'header inventato non è stato creduto. ⚠️ Nella prima stesura avevo
+concluso che il nginx dell'origine aggiunge chi gli ha parlato. **È sbagliato**: dopo la prova 3 del §5 la spiegazione è
+un'altra. All'hub **non arriva nessun** `X-Forwarded-For`, quindi ogni chiamante è `127.0.0.1` e tutti finiscono nello stesso
+contatore. Oggi nessuno può falsificare l'indirizzo, perché l'hub non ne legge nessuno. Il ragionamento sui due casi qui
+sopra torna valido quando l'hub leggerà di nuovo un header (§8), e allora la prova va ripetuta.
+
+**Che cosa si perde di Cloudflare.** Chi conosce l'indirizzo dell'origine salta tutto quello che Cloudflare fa davanti: le
+regole del firewall, la limitazione delle richieste, la protezione dagli attacchi di volume e la cache. Contro l'hub resta
+solo il limite del login dell'hub stesso, che oggi è uno per tutti (§8).
+
+**Che cosa si può fare, sull'host** (nessuna è codice dell'hub):
+- l'origine accetta la 443 **solo dalle reti di Cloudflare**, con il firewall del server o con le regole nginx
+  `allow`/`deny` della sottoscrizione;
+- oppure le *Authenticated Origin Pulls* di Cloudflare: l'origine chiede il certificato client di Cloudflare.
+
+Tutte e due dipendono da chi amministra il server, e sullo stesso server c'è anche vIPI. **Decisa da Carmine in chat, 28 set
+2026: non si chiede.** Il server accetta ogni connessione e, da quello che ha capito dall'amministratore, va bene così.
+L'origine resta raggiungibile senza Cloudflare; contro chi la chiama direttamente resta il limite del login dell'hub.
+
+## 8. Che cosa dice il `127.0.0.1` (prova 3 del §5)
+
+**I fatti, messi insieme.**
+- Il registro scrive `127.0.0.1`: l'indirizzo che l'hub crede è quello del suo vicino, Passenger.
+- Lo schema invece arriva, ed è `https` (prova 1): l'hub manda HSTS, e `HstsMiddleware` lo manda solo a una richiesta che
+  crede https. Fra Passenger e l'hub si parla in http, quindi lo schema può venire solo da un `X-Forwarded-Proto` creduto.
+  Allora il middleware gira, e `127.0.0.1` sta nelle reti fidate: il file dei segreti è giusto. *Dedotto, non visto.*
+- Uno schema creduto e un indirizzo no si spiegano con **un `X-Forwarded-Proto` che arriva all'hub e un `X-Forwarded-For`
+  che non arriva**, o che arriva vuoto. Il middleware applica le due voci ciascuna per conto suo.
+
+**Che cosa si rompe, oggi.**
+1. **Il registro scrive `127.0.0.1` per tutti**: non serve a sapere da dove viene una modifica.
+2. **Il limite del login è uno solo per tutto il sito**: 10 accessi al minuto, sommando tutti i visitatori. Sull'installazione
+   di prova, privata, non si vede. In produzione, la sera di un evento, gente vera riceverebbe `429` all'accesso. **Va
+   risolto prima della produzione.**
+3. Nessuno può falsificare l'indirizzo, ma solo perché l'hub non ne legge nessuno.
+
+**Le due ipotesi** (la seconda l'ha posta il master), che la pagina diagnostica deve saper distinguere:
+1. **Passenger non passa `X-Forwarded-For` a un'applicazione generica**, o lo passa sotto un altro nome (per esempio solo
+   `X-Real-IP`), mentre lo schema arriva.
+2. **L'header arriva, ma il middleware lo scarta** perché vede il vicino come IPv6 con dentro un IPv4 (`::ffff:127.0.0.1`),
+   e `TrustedNetworks` elenca solo `127.0.0.1/32` e `::1/128`. In quel caso scarterebbe anche `X-Forwarded-Proto`.
+
+Che cosa dicono i fatti sulla 2, **dedotto e non misurato**:
+- HSTS lo decide `Request.IsHttps` (`HstsMiddleware`: l'assembly `Microsoft.AspNetCore.HttpsPolicy` 10.0.9 non guarda
+  altro). Fra Passenger e l'hub non c'è TLS, quindi `IsHttps` può essere vero solo se il middleware dei forwarded header ha
+  applicato uno schema.
+- Il middleware riconosce gli indirizzi IPv6 che contengono un IPv4: l'assembly `Microsoft.AspNetCore.HttpOverrides`
+  10.0.9 usa `IsIPv4MappedToIPv6` e `MapToIPv4` nel confronto con le reti fidate.
+- Un vicino `::ffff:127.0.0.1` scartato si scriverebbe proprio così nel registro, perché è
+  `RemoteIpAddress.ToString()`. Carmine ha letto `127.0.0.1`.
+
+Tre indizi contro la 2, che resta possibile finché la pagina non mostra la famiglia dell'indirizzo. La 1 non la dice nessun
+indizio da fuori.
+
+**Che cosa mostra la pagina (i)**:
+- l'indirizzo del vicino **grezzo, con la sua famiglia** (IPv4, IPv6, IPv6 con dentro un IPv4), cioè quello che il
+  middleware sposta in `X-Original-For`;
+- l'indirizzo creduto;
+- `Request.Scheme` prima e dopo il middleware (il prima si legge da `X-Original-Proto`);
+- gli header grezzi `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Real-IP` e `Forwarded`, e il loro
+  numero di voci.
+
+Nessun nome di un fornitore nel codice (§3): un header come `CF-Connecting-IP`, se servisse, arriva dalla configurazione.
+
+**Che cosa non si sa**: che cosa passano davvero all'hub il nginx di Plesk e Passenger. Forse l'indirizzo del visitatore
+arriva in un altro header, come `X-Real-IP`, che i proxy di Plesk di solito impostano, o come `CF-Connecting-IP`, che
+Cloudflare manda sempre. Forse Passenger non passa gli header `X-Forwarded-*` all'applicazione. Da fuori non si vede.
+
+**Le strade.**
+
+| | Che cosa | Costo | Limite |
+|---|---|---|---|
+| **i. Una pagina diagnostica nel nucleo** | un indirizzo **solo per il super amministratore** che mostra come l'hub vede la richiesta, con il contenuto elencato sopra. Mostra solo l'indirizzo di chi guarda | poco codice, un test; serve per ogni installazione futura, non solo questa | è codice del nucleo: una PR sua, dopo il sì |
+| **ii. Chiedere all'amministratore** che cosa passano nginx e Passenger | niente codice | lento, e la risposta è una descrizione, non una misura |
+| **iii. Una riga di log a `Debug`** con gli header grezzi, accesa dal file dei segreti | pochissimo codice | si legge scaricando `logs/` via FTP; resta nel codice un log di header, che va tenuto spento |
+
+**Raccomandazione: (i)**, e poi `ForwardLimit = null` (§6, già deciso) **insieme** a quello che la pagina mostra. Se
+l'indirizzo arriva in un header che non è `X-Forwarded-For`, il nome si legge dalla configurazione
+(`ForwardedHeadersOptions.ForwardedForHeaderName`). Non va mai scritto nel codice: un nome come `CF-Connecting-IP` farebbe
+sapere al codice di Cloudflare (`CLAUDE.md` §3). Dopo la correzione si rifanno le prove 2 e 3 e la prova sull'origine del §7.
+**Domanda a Carmine**: (i)? **Risposta: sì**, in chat il 28 set 2026, riportata sulla PR
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865694616>). La pagina è una PR del nucleo, sua; poi la
+correzione.
+
+## Da portare nel piano
+
+- **§11.3 punto 9**, terzo trattino: il risultato della misura e la strada decisa.
+- **§11.3 punto 3**: l'origine risponde anche senza Cloudflare, e resta così per decisione di Carmine (§7).
+- **§11.3 punto 9**, terzo trattino, e **`docs/DEPLOYING.md`** «Known limits»: sull'installazione di prova l'hub vede ogni
+  visitatore come `127.0.0.1`, quindi il registro non dice chi è e il limite del login è uno per tutti (§8). **Da risolvere
+  prima della produzione.**
+- **Design M0 §2.3**: il paragrafo di `ForwardedHeaders:TrustedNetworks` dice che il middleware risale la catena finché chi
+  parla è fidato.
+- **`docs/DEPLOYING.md`** «Known limits» (la riga dei forwarded header) e «Not measured» (che cosa passa Passenger in
+  `X-Forwarded-For`): quando la misura c'è.

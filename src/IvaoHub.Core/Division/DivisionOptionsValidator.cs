@@ -46,6 +46,15 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
         {
             failures.Add("division.json: 'domain' is required.");
         }
+        else if (Uri.CheckHostName(options.Domain) == UriHostNameType.Unknown)
+        {
+            // Every absolute link is "https://" + this, so a scheme or a path written into it would
+            // go out in every mail. Checked here because it can also come from the installation's
+            // own Installation:Domain, which an administrator types by hand on the server.
+            failures.Add(
+                $"division.json: 'domain' ({options.Domain}), or Installation:Domain of this installation, "
+                + "must be a host name such as \"hub.example.org\": no scheme, no port, no path.");
+        }
 
         if (options.Locales.Length == 0)
         {

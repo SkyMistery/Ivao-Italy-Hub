@@ -13,10 +13,38 @@ env:
   CI: 'true'
 
 jobs:
+  # The tag names the release and Directory.Build.props numbers the package, and the two must say
+  # the same thing: the build takes its number from the file and never from the tag, so a tag v0.3.0
+  # on a commit that still says 0.2.0 would publish a zip called v0.3.0 whose site says 0.2.0. The
+  # number is raised in a pull request, where its rule is written; the tag follows it, first and
+  # cheaply, before the whole suite runs (note 2026-09-27-la-versione-del-sito).
+  tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Check that the tag is v followed by the version of the package
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(dotnet msbuild src/IvaoHub.Web/IvaoHub.Web.csproj -getProperty:Version -nologo | tr -d '[:space:]')"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error title=The tag is not the version of the package::The tag is '$TAG', but Directory.Build.props says <Version>$version</Version>, so the package would be built as $version. Raise the Version in a pull request (the rule is written next to it), then tag v<Version> on the merged commit."
+            exit 1
+          fi
+          echo "The tag $TAG is the version of the package, $version."
+
   # A tag is not a promise that the commit was ever green: it can be pushed onto anything, and the
   # build-test workflow only runs on pushes to main and on pull requests. Publishing without
   # checking would make "the release is broken" a thing that can happen quietly.
   verify:
+    needs: tag
     uses: ./.github/workflows/build-test.yml
 
   release:

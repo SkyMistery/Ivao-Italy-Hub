@@ -14,10 +14,13 @@ import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
  * Who is who: the trainee is the pilot of the tours (`?as=pilot`, AS3), the staff is the bench's web master (every permission,
  * and no rating: not a trainer), the trainer is `?as=trainer` (a trainer's position, SEC).
  *
- * ⚠️ It leaves the training assigned: a trainee cancels only a request nobody accepted, and nothing closes a training before the
- * staff's closure of A8. So it runs after the request of A6b (`training-request.spec.ts`, which wants no training open on either
- * ladder at its start: Playwright runs the files in the order of their names, one worker), on a bench recreated before the run.
- * A training of an earlier run still open on the ladder is said as such, not worked around.
+ * ⚠️ It leaves the training assigned: a trainee cancels only a request nobody accepted, and on A7's code nothing closes an
+ * accepted training — the staff's closure is A8's. So it runs after the request of A6b (`training-request.spec.ts`, which wants
+ * no training open on either ladder at its start: Playwright runs the files in the order of their names, one worker), and on
+ * A7's code alone a second run on a bench that survived the first finds the ATC path taken, here and in A6b's round, and says
+ * so rather than working around it. What it can take back, it does: a request an earlier run left waiting, at the start, and
+ * this run's, if it stopped before the acceptance. A grant of the trainer on a training that is over is the night's to take
+ * back (`training-expiry`), and a bench that survives between runs may still show one: it is let be.
  */
 
 const words = englishTraining();
@@ -41,6 +44,9 @@ interface MyTraining {
 const BENCH_TRAINER = 999004;
 const TRAINER_ADDRESS = 'bench-trainer@bench.test';
 
+/** The states of a training still going (design M3 §2.1): a trainer's grant on one of these is a training they conduct. */
+const GOING = ['Requested', 'Accepted', 'Assigned', 'Scheduled'];
+
 test('a request is accepted and assigned, and the trainer, signed in again, conducts that training alone', async ({
   page,
   context,
@@ -56,11 +62,13 @@ test('a request is accepted and assigned, and the trainer, signed in again, cond
   try {
     // ---------------------------------------------------------------- the trainee asks, as A6 has them ask
     await signIn(trainee, 'pilot');
+    // A request an earlier run left waiting — it stopped before the acceptance — is taken back first.
+    await cancelWaiting(trainee.request);
     const before = await mine(trainee.request);
     const atc = before.paths.find((path) => path.kind === 'Atc')!;
     expect(
       atc.refusal,
-      'the trainee may ask for an ATC training: a bench recreated before the run has none of theirs open',
+      "the trainee may ask for an ATC training: on A7's code nothing closes one an earlier run accepted (the staff's closure is A8's), so the bench is recreated before a second run",
     ).toBeNull();
     const position = atc.positions[0]!.callsign;
 
@@ -147,9 +155,16 @@ test('a request is accepted and assigned, and the trainer, signed in again, cond
         permissions: { name: string; department: string | null; resourceScope: string | null }[];
       }
     ).permissions.filter((permission) => permission.name === 'Training.Conduct');
-    expect(conduct).toEqual([
-      { name: 'Training.Conduct', department: 'TD', resourceScope: `training:training:${String(requested)}` },
-    ]);
+    const ours = `training:training:${String(requested)}`;
+    expect(conduct).toContainEqual({ name: 'Training.Conduct', department: 'TD', resourceScope: ours });
+
+    // No other training still going, and never the whole department. A grant on a training that is over waits for the night
+    // to take it back, and a bench that survives between runs may still hold one of an earlier run.
+    for (const other of conduct.filter((permission) => permission.resourceScope !== ours)) {
+      const id = /^training:training:(\d+)$/.exec(other.resourceScope ?? '')?.[1];
+      expect(id, `Training.Conduct beyond one training: ${JSON.stringify(other)}`).toBeDefined();
+      expect(GOING).not.toContain(await stateOf(context.request, Number(id)));
+    }
 
     // And the mail that told them, with the training in its subject: one of this run's.
     await expect
@@ -195,6 +210,24 @@ async function mine(request: APIRequestContext): Promise<MyTraining> {
   const response = await request.get('/api/training/mine');
   expect(response.status(), await response.text()).toBe(200);
   return (await response.json()) as MyTraining;
+}
+
+/** The trainee's requests still waiting, cancelled at the version they have: the one open state a trainee closes. */
+async function cancelWaiting(request: APIRequestContext): Promise<void> {
+  for (const training of (await mine(request)).trainings.filter((row) => row.state === 'Requested')) {
+    const cancelled = await request.post(`/api/training/mine/${String(training.id)}/cancel`, {
+      headers: asTheClientDoes,
+      data: { rowVersion: training.rowVersion },
+    });
+    expect(cancelled.status(), await cancelled.text()).toBe(200);
+  }
+}
+
+/** The state of a training, as the staff's page of it says. */
+async function stateOf(request: APIRequestContext, id: number): Promise<string> {
+  const response = await request.get(`/api/training/trainings/${String(id)}`);
+  expect(response.status(), await response.text()).toBe(200);
+  return ((await response.json()) as { state: string }).state;
 }
 
 /** The messages Mailpit holds for one address, newest first: its ID and its subject. */

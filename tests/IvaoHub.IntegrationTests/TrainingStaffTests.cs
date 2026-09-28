@@ -27,9 +27,10 @@ namespace IvaoHub.IntegrationTests;
 /// The staff's side of a training (M3, A7; design M3 §2.3, §2.4, §3.3, §4.2, §5.3), through the real host: an advisor — by a
 /// grant, without <c>Training.Edit</c> — accepts and does not assign; a refusal carries the reason the trainee reads; the
 /// coordinator assigns a trainer with the rating and not one below it; the trainer gets the grant on that training alone, in
-/// <c>/api/me</c> with its scope, conducts it and no other, and loses it when the training is given to somebody else; nobody
-/// approves or assigns a training of their own, the super administrator included; the night takes the grant back once the
-/// training is over; and the list holds its views for whoever reads trainings.
+/// <c>/api/me</c> with its scope, conducts it and no other, and loses it when the training is given to somebody else; an
+/// assignment from a version somebody moved is a conflict, which takes back the grant it wrote and never the one of the trainer
+/// the training names; nobody approves or assigns a training of their own, the super administrator included; the night takes
+/// the grant back once the training is over; and the list holds its views for whoever reads trainings.
 /// <para>⚠️ The staff of the training is seeded without an address (<c>CONTRIBUTING.md</c>, "Tests": the contacts tests count the
 /// recipients of the training department): the trainers hold a trainer's position and no mailbox. The trainer whose mail is
 /// looked for holds a position of the direction instead — the direction is staff of the training too (§2.4) —, and their
@@ -346,6 +347,42 @@ public sealed class TrainingStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var again = await SignedInAsync(TrainerVid, token);
         Assert.Empty(await ConductScopesAsync(again, token));
         Assert.False(await MayAsync(await IdentityOfAsync(TrainerVid, token), theirs, TrainingPermissions.Conduct, token));
+    }
+
+    [Fact]
+    public async Task AnAssignmentFromAVersionSomebodyMovedIsAConflictAndTakesNothingFromTheTrainerTheTrainingNames()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Accepted, token);
+
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var version = (await PageAsync(coordinator, id, token)).GetProperty("rowVersion").GetDateTime();
+        var identity = await IdentityOfAsync(CoordinatorVid, token);
+
+        // The same trainer twice from the version the page showed — a double submit, or two coordinators at once: the second
+        // read the training before the first saved it, finds the grant the first wrote, and its save is a conflict.
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => AsAsync(identity, async services =>
+        {
+            var staff = services.GetRequiredService<StaffTrainings>();
+            var read = (await staff.FindAsync(id, tracked: true, token))!;
+
+            await AssignAsync(coordinator, id, TrainerVid, token);
+
+            return await staff.AssignAsync(read, new TrainingAssignmentDto(TrainerVid, version), token);
+        }));
+
+        // The training is the first one's, and so is the grant: the conflict took nothing from the trainer it names.
+        Assert.Equal(TrainerVid, (await StoredAsync(id, token)).TrainerVid);
+        Assert.Equal([TrainerVid], await HoldersOfConductAsync(id, token));
+
+        // Somebody else from that old version: a 409, and the grant this assignment wrote goes back with it.
+        using (var stale = await StepAsync(coordinator, id, "assign", new { trainerVid = SecondTrainerVid, rowVersion = version }, token))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        }
+
+        Assert.Equal(TrainerVid, (await StoredAsync(id, token)).TrainerVid);
+        Assert.Equal([TrainerVid], await HoldersOfConductAsync(id, token));
     }
 
     [Fact]

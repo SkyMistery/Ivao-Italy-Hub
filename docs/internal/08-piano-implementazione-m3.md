@@ -62,6 +62,7 @@ Per non ripeterle tredici volte:
 | A6a | La richiesta: il server — **A6 divisa in apertura** | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), i controlli per percorso, il teorico, l'annullamento, la mail, gli endpoint del trainee |
 | A6b | La richiesta: le pagine | A6a | `/training/request` con la domanda sul teorico, `/training/mine` con l'annullamento, lo smoke e il giro sul banco |
 | A7 | Accettare, rifiutare, assegnare | A3, A6b | le pagine dello staff, il grant del trainer, il job che lo toglie |
+| A7b | Il trainer sulla regola delle righe affidate — **decisa da Carmine sulla #146** | A3b (#135), A7–A10a | `IHasAssignee` sul training, `Training.Conduct` segnato `OnlyForAssignee` e per posizione a TA e trainer; via il grant con scope e la metà di `training-expiry` che lo toglie |
 | A8a | Le date: il server — **A8 divisa in apertura** | A7 | `trn_slots`, avvisi e politiche, proposta, scelta, override, «Eseguito», calendario, promemoria, chiusura per tempo e a mano, le mail |
 | A8b | Le date: le pagine | A8a | i riquadri in `/training/mine/$id`, le date e la chiusura nella pagina dello staff, lo smoke e il giro sul banco |
 | A9 | Dopo la sessione | A5, A8b | rischedula, no-show, scheda con N/A, report, mock exam, le note riservate e il trainee |
@@ -461,7 +462,95 @@ Nota di A3 `2026-09-25-i-permessi-alternativi-e-la-creazione` §3.5: la domanda,
 cambiano.
 **Fatta quando**: la nota è decisa da Carmine e i test della spina dorsale passano, compresi quelli che c'erano.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135):
+
+- **La nota prima del codice** (`CLAUDE.md` §5, caso c): `2026-09-26-le-righe-affidate-a-chi-scrive`, «Proposta», con due domande a
+  Carmine sulla #135 ([il commento][q135]). La PR è partita in bozza, in coda sopra la #131, con la sola nota. **Carmine ha risposto sì a
+  tutte e due** ([il suo commento][a135]): la forma della nota §3, e il trainer di A7 con la stessa regola. Il revisore ha chiesto tre cose
+  per il codice ([i suoi rilievi][rv135]), entrate nella nota prima del codice. Intanto **la #131 (A3) è stata unita**, con #136 (la nota
+  del maintainer `2026-09-26-gli-esaminatori`), #132 e #137: `main` è entrato nel branch con un merge senza conflitti, e la PR ha perso
+  «(after #131)».
+- **Fatto**, come la nota §3:
+  - `IHasAssignee` (`Core/Division/DomainContracts.cs`);
+  - `PermissionDescriptor.OnlyForAssignee`, letto con `PermissionCatalog.IsOnlyForAssignee`, e `PermissionCatalog.EditOf`;
+  - nell'unico handler, un permesso segnato vale come `{Area}.Edit` su una riga non affidata a chi chiede, e senza riga resta `HasAny`;
+  - nel guardiano, un'alternativa segnata conta solo per chi ha la riga: prima e dopo in modifica, la riga nuova alla creazione, e con
+    **`AlsoOnDeletion`** (nuovo su `[AlsoWrittenWith]`) all'eliminazione. Il guardiano prende il catalogo dal contenitore;
+  - `PermissionCatalog.VerifyAlternatives`, chiamato all'avvio da `HubPipeline.InitializeAsync` prima delle migrazioni, sul modello di
+    ogni contesto.
+
+  Nel modulo di prova: `SampleRecord.AssigneeVid` (la migrazione `AddSampleAssignee`, del solo contesto di prova) e `Sample.Manage`.
+  I test: sei della spina dorsale, `AssignedRowPermissionTests`, e nove di unità, `AssigneePermissionTests`.
+- **Scostamenti dal piano, piccoli e scritti nella nota**:
+  1. **Due domande e non una**: la seconda, sul trainer di A7, l'ha voluta `dalberone`. È decisa, e la registra A7.
+  2. **I rilievi 1 e 2 del revisore sono un controllo all'avvio** in `src/IvaoHub.Web/HubPipeline.cs`, un file del nucleo che il piano
+     non nominava, e non un test di architettura, perché `ArchitectureTests.cs` è del maintainer. Il catalogo rifiuta anche il segno su un
+     permesso che legge, come la nota proponeva.
+  3. **`Sample.Manage` è anche `DeniedToStakeholder`**, perché sull'interessato l'handler e il guardiano dicano lo stesso (sotto,
+     «Trovato» 1).
+  4. **I test chiedono anche l'handler**, sulla riga come fa il motore (prima e dopo il payload, e sulla riga nuova). I test di A3
+     provavano solo il guardiano.
+- **Trovato, e scritto per chi viene dopo**:
+  1. **Il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi `DeniedToStakeholder`**, e così è da A3.
+     Con un'alternativa che non è segnata così, l'endpoint lascia passare e la rete ferma chi non ha `Edit`. Non è un buco, perché la
+     rete è la più stretta delle due, ma le due non dicono lo stesso. Per A10: se l'esame dice il suo candidato, `ManageExams` va segnato
+     `DeniedToStakeholder` (nota §3.6).
+  2. **Per A10** (nota §3.6): la dichiarazione degli esami, e un TA che deve vedere nella lista quali esami sono i suoi.
+  3. **Per A7**: la risposta 2 di Carmine. `Training.Conduct` va dato per posizione ai TA1–9 e ai T01–T99, perché i `positionGrants`
+     di A4 danno ai trainer solo `View`: una voce nuova del seme si applica al primo avvio che la trova.
+- **Verificato, in locale** (26 settembre 2026, sul merge con `main` che porta A3), una suite alla volta:
+  - `dotnet build` senza avvisi;
+  - unità 724/724: le 715 di `main` e le 9 nuove;
+  - **integrazione intera senza filtro** 313/313: le 307 di `main` e le 6 nuove. La classe nuova da sola passa 6/6;
+  - `pnpm lint`, `typecheck`, `format:check` e `i18n:check` verdi;
+  - `pnpm test`: 481 test in 62 file;
+  - `pnpm gen:api` senza differenze;
+  - `pnpm e2e`: 91;
+  - `pnpm e2e:full`: 38, sul banco di questa sessione (porta 5082, database nuovo `ivaohub_e2e_a3b`), senza la mappa di base,
+    perché la porta 5080 e `ivaohub_e2e` li usa la sessione di A4;
+  - `dotnet format --verify-no-changes` sui file toccati, e le regole di `core-guard` rifatte in PowerShell.
+
+  **Sul guardiano e sull'handler di `main`**, rimessi per la prova, cadono 4 dei 6 test d'integrazione e 2 dei 9 di unità. Restano
+  verdi solo le garanzie che valgono già prima: l'interessato escluso, le alternative non segnate, la domanda senza riga, il
+  catalogo. Poi il codice è tornato com'era, confrontato con il diff salvato.
+
+  Due inciampi:
+  1. ⚠️ **Dopo la prova, la prima build non ha ricompilato.** I file rimessi con `Copy-Item` avevano la data della copia, più vecchia
+     dei binari della prova, e la suite di unità ha girato sui binari vecchi. Li ho toccati e ricompilati, e ogni corsa qui sopra
+     viene dopo quella build.
+  2. ⚠️ **Una corsa intera sul codice finale ha fatto cadere un test dei contatti all'avvio dell'host**: «Unable to connect to any of
+     the specified MySQL hosts», sul container di Testcontainers, dopo il controllo nuovo. La classe da sola è passata 11/11, e la
+     corsa intera rifatta 313/313.
+- **Non verificato**: la CI (la dirà la PR); la regola su un modulo vero (gli esami in A10, il trainer in A7); un avvio che fallisce
+  davvero per una dichiarazione sbagliata. I due rifiuti sono provati dai test di unità su `VerifyAlternatives`, e ogni avvio dei test
+  d'integrazione fa girare il controllo sui modelli veri, che passano.
+- **Dopo la revisione del codice** ([il revisore][rv135b], 26 settembre 2026): è **approvabile appena il branch è in pari con `main`**.
+  - Il revisore ha rifatto tutto sul merge con `main` a 5dda35e: unità 761, integrazione 317.
+  - Ha provato anche una mutazione dell'handler (il confronto con chi ha la riga rovesciato), che fa cadere 2 dei 9 test di unità.
+- **In pari con `main`** (27 settembre 2026):
+  - `main` era 68 commit più avanti di 5ddba1f: A4, A4a, A5, A6a, #152 (i rifiuti di un form nel nucleo), le altre del maintainer
+    fino a #158, e le correzioni #138, #141 e #142. È entrato nel branch con un merge.
+  - **L'unico conflitto** era in `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi, il più recente sopra: l'intestazione nuova di A3b
+    sopra quella di A6a, e «Che cosa ha lasciato A3b» sopra A6a, A5, A4 e A4a. Dal testo di `main` non manca nessuna riga.
+  - `08` si è unito da solo. `HubPipeline.cs` si è unito da solo con la riga nuova della diagnostica di `main`.
+  - **Il punto di parole del revisore**, fatto: il messaggio di `PermissionCatalog` dice esattamente che cosa controlla, cioè che il
+    permesso `View` dell'area non è mai `OnlyForAssignee`. Il test di unità che lo prova ha preso lo stesso nome.
+  - **Rifatto tutto, una suite alla volta**, sul merge:
+    - `dotnet build` senza avvisi;
+    - unità 794/794: le 785 di `main` e le 9 nuove;
+    - **integrazione intera senza filtro** 336/336: le 330 di `main` e le 6 nuove;
+    - `dotnet format --verify-no-changes` sui file C# della fase;
+    - `pnpm lint`, `typecheck`, `format:check` e `i18n:check` (752 chiavi) verdi;
+    - `pnpm test`: 495 test in 63 file;
+    - `pnpm gen:api` senza differenze;
+    - `pnpm e2e`: 91, con il lucchetto della porta 4173 che si passano le sessioni che lavorano in parallelo;
+    - `pnpm e2e:full`: 41 sul banco di questa sessione (5082). Il database è lo stesso `ivaohub_e2e_a3b` del 26 settembre, portato
+      avanti dalle migrazioni di `main`.
+
+[q135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5841258158
+[a135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
+[rv135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250526
+[rv135b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026
 
 ### A4a — Nucleo: le parole di più moduli
 
@@ -955,13 +1044,70 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
   nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`, spento il banco di
   A5 su richiesta a quella sessione): il trainee chiede ADC su una postazione con il «sì» e lo trova in `/training/mine`, risponde «no» sul
   percorso pilota e legge la frase di R.2, annulla la richiesta ATC; in italiano e in inglese, tema chiaro e scuro, e largo 375 px.
-- **Non verificato**: la CI dopo la correzione dello smoke (la prima corsa è caduta sul toast, sopra; la dirà la PR). **Che i test nuovi
-  cadano su una copia indebolita del codice**: non tentato, perché la
-  modalità di permessi l'ha rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è
-  così che è venuto fuori il difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
+- **La CI** (`build-test` e `core-guard`) è verde dopo la correzione dello smoke: su e156e9b ed e178b1b, e sul merge del passo della coda
+  dopo #143 (f5e3cd6).
+- **Non verificato**: **che i test nuovi cadano su una copia indebolita del codice**: non tentato, perché la modalità di permessi l'ha
+  rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è così che è venuto fuori il
+  difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
   di A6a prova l'intento in coda). **Un ban, un'attesa, una soglia di ore, il sito dell'esame e un 409 su un annullamento vecchio,
   attraverso le pagine sul banco**: il banco non ne ha (nessun ban, nessun training completato, nessuna soglia, nessun `theoryExamUrl`);
   le pagine li mostrano con l'API finta dello smoke, e il lato del server è dei test d'integrazione di A6a.
+- **Le correzioni della revisione** (28 settembre 2026, [la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5855612519);
+  la PR era tornata in bozza perché il passo della coda dopo #143 l'aveva segnata pronta prima di questa correzione,
+  [commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5857989492)). Su un branch temporaneo da
+  `origin/m3/a6b-request-pages` (f5e3cd6), spinto sul branch della fase; il merge verso l'alto della coda lo fa una volta sola la sessione
+  che coordina le correzioni.
+  1. **`main` nel branch** (3c79786), come il master ha chiesto su #144
+     ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5859555627)): A3b (#135) e le PR del maintainer
+     #160–#172. L'unico conflitto era in `HANDOFF-M3.md`. L'intestazione resta quella di A6b, che i branch sopra riscrivono per conto
+     loro; in «Lo stato» restano tutti i paragrafi, quello di A3b subito sotto quello di A6b, così il merge verso l'alto non tocca le righe
+     che i branch sopra hanno cambiato. `08` si è unito da solo. **Il catalogo di A3b non cambia niente di A6b**: le pagine del trainee sono
+     solo front end, e gli endpoint di A6a che leggono chiedono solo di essere entrati (`HubPolicies.SignedIn`); il training non ha
+     `IHasAssignee`, `[AlsoWrittenWith]` né permessi `OnlyForAssignee` (li porta A7, per il trainer). `TrainingRequestTests` è verde dopo il
+     merge.
+  2. **Invio nella postazione mandava la richiesta senza la domanda sul teorico** (da correggere; 2d20da4). Con `asksTheory` il form non
+     ha un pulsante di invio (`actionsElsewhere`), e la postazione è la sua sola casella di una riga. Per l'invio implicito dell'HTML, Invio
+     lì manda il form, e `form.submitHint` lo dice anche a chi usa un lettore di schermo. La richiesta partiva senza risposta se la finestra
+     non si era mai aperta (il server risponde `theoryPassed: errors.required`), o con una risposta data e poi annullata.
+     - **Ora ogni invio del form passa da una guardia** (`letThrough`, sull'evento `submit` in fase di cattura, prima che `SchemaForm` lo
+       veda). Va avanti solo l'invio che parte dalla conferma della finestra, dentro `requestSubmit`, con la risposta data; ogni altro invio
+       **apre la domanda come fa il pulsante** e non manda niente. La risposta si dimentica quando la finestra si chiude.
+     - **Perché Invio apre la domanda**, invece di non fare niente come nella strada del revisore (un ref che `sendWithAnswer` imposta e
+       `submit` controlla): con un Invio muto, «Premi Invio per salvare» sarebbe falso per questo form; così Invio porta al salvataggio,
+       passando dalla domanda. E la guardia prende la conferma nel momento in cui l'invio comincia, quindi una conferma che il form poi
+       rifiutasse non resterebbe indietro per l'invio dopo.
+     - **La finestra si apre dal suo pulsante** (un `click` sul pulsante di `ConfirmDialog`), perché `ConfirmDialog` tiene per sé il suo
+       `open`. Un `open` controllato sarebbe un cambio del nucleo, e qui non serve.
+     - **Lo smoke** ha due casi nuovi: Invio con la finestra mai aperta; «No», «Annulla», poi Invio. **Cadono tutti e due sul codice di
+       prima**, provato prima della correzione: la domanda non compare, e la richiesta parte.
+  3. **«Torna alla richiesta» dopo un «no» perdeva i testi** (nit; edfe7cb), perché il pulsante di `Declined` rimontava `RequestForm`. Il
+     form ora resta montato, **solo nascosto** mentre si legge il rifiuto dell'hub, e tornando c'è com'era. Il caso del «no» dello smoke
+     torna indietro e rilegge postazione e disponibilità; **cade sul codice di prima** (la postazione torna vuota).
+  4. **L'etichetta della postazione** (nit; 2912154): `` `${callsign} — ${name}` `` è nella chiave `training:positionChoice`, nelle due
+     lingue, come `ratingChoice`, con una funzione sola accanto a `ratingOptions` (`positionLabel`, `screens/ratings.ts`). La stessa
+     composizione era scritta anche nelle impostazioni (A4), che ora usano la stessa funzione. Il giro sul banco cerca l'opzione con le
+     stesse parole, lette dal file di lingua.
+  5. **La riga vecchia di «Non verificato»** qui sopra (nit): la CI dopo la correzione dello smoke è verde, e ora la voce «La CI» lo dice.
+  6. **Restano fuori, con il perché**:
+     - **I nit di `screens/mine.tsx`**: il `CardRoot` di Atmosphere al posto della card fatta a mano, il separatore `' · '` in una chiave,
+       `line-clamp-3` sui testi del trainee senza un modo di leggere il resto. A8b, A9b e A10b cambiano `mine.tsx`, e il merge verso l'alto
+       andrebbe in conflitto: **li fa una fase in cima alla coda**.
+     - **`canCancel` dal server** al posto di `isCancellable`, e `readyForExam`, in `trainee.ts`: oggi dicono la stessa cosa di A6a. Il
+       revisore dice di farlo **quando A7 e A8 aggiungono stati**.
+     - **`src/IvaoHub.Modules.Training/Refusals.cs`**: la copia del modulo la toglie **A10c**, che usa `Refusals` del nucleo (#152), come è
+       scritto in `HANDOFF-M3.md` sul branch di A10b.
+     - **La scelta da tastiera nel suggerimento chiuso** (scrivere, freccia giù, Invio) non funziona, anche su `main`. `Suggest` è del
+       nucleo, e il maintainer la prende come seguito (revisione di #145): non toccato.
+  7. **Verificato, in locale** (28 settembre 2026, sul merge e le tre correzioni, 2912154): `dotnet build` senza avvisi; unità **817/817**
+     (le 767 di A6b e le nuove di `main`); **integrazione intera senza filtro 345/345**; `pnpm lint`, `typecheck`, `format:check`,
+     `i18n:check` verdi; `pnpm test` **510** in **64** file; `pnpm e2e` **98** (le 96 e i due casi di Invio); **`pnpm e2e:full` 42/42** su un
+     banco nuovo (127.0.0.1:5096, `ivaohub_e2e_a6b`, creato dal primo avvio). `pnpm gen:api` senza differenze; `pnpm i18n:sync` fatto, e le
+     copie in `locales/` sono nel commit dell'etichetta. **I test nuovi cadono sul codice di prima**: con lo smoke della richiesta scritto e
+     `request.tsx` ancora com'era (dopo il merge), 3 casi su 7 cadono — i due di Invio (la domanda non compare) e quello del «no» al
+     ritorno (la postazione è vuota) —; con le correzioni, 7 su 7.
+  8. **Non verificato**: Invio con un lettore di schermo vero, e in un browser diverso da Chromium (lo smoke gira solo lì; la guardia sta
+     sull'evento `submit`, che l'invio implicito manda in ogni browser). Invio sul banco: il giro completo sceglie la postazione dall'elenco
+     e manda con il pulsante, come prima; Invio lo prova lo smoke, con l'API finta. Nessuna prova a mano sul banco di anteprima.
 
 ### A7 — Accettare, rifiutare, assegnare
 
@@ -997,6 +1143,14 @@ soltanto.
   `SchemaForm`, `Notice`, `useNotice`, `RatingBadge`; il servizio notifiche con i tipi del modulo; un job come quelli dei tour, nel
   fuso della divisione come i job notturni del nucleo; il roster del nucleo (`hub_user_staff_positions`) —. **Nessun file del
   nucleo**, nessuna nota nuova, nessuna domanda a Carmine, **nessuna migrazione**: la tabella è intera da A6a.
+- ⚠️ **Lo scostamento dalla risposta 2 su #135**, trovato da Carmine alla revisione ([il suo commento su #146][d146], 27 settembre
+  2026). A7 scrive un grant con scope a ogni assegnazione e aggiunge il job che lo toglie (i punti 5 e 6 qui sotto): è il contrario della
+  [risposta 2 di Carmine su #135][a2-135] (26 settembre 2026). Quella risposta portava il trainer sulla regola di A3b — `IHasAssignee` sul
+  training, `Training.Conduct` segnato `OnlyForAssignee` e tenuto per posizione — e toglieva il grant per assegnazione e il suo job.
+  A3b non era unita, quindi A7 non poteva usare la regola senza aspettarla; ma il design sul branch diceva ancora n.1, e gli scostamenti
+  qui sotto non nominavano la risposta. **La decisione: A7 resta com'è, e dopo l'unione di #135 una fase A7b porta il trainer sulla
+  regola** (sotto, dopo A7; nota `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`). Il punto d'arrivo è la risposta 2: cambia
+  solo il momento.
 - **Fatto**, come il perimetro qui sopra:
   1. **`[AlsoWrittenWith]` sul training** per `Training.Approve`, `Training.Assign` e `Training.Conduct`, senza `AlsoOnCreation`: il
      guardiano lascia scrivere il training a chi approva (i TA), a chi assegna e al trainer sul suo, ognuno con lo scope della riga, mai
@@ -1127,6 +1281,139 @@ soltanto.
   codice. **Il job alle 04:15 dal suo trigger**: il test lo fa partire con `RunAsync`, come i job dei tour. **Un training `Scheduled`
   attraverso le pagine**: prima di A8 niente ne fa uno, quindi «Da chiudere» e la riassegnazione di un training datato (che tiene stato
   e data) sono provati con righe scritte dal test d'integrazione, non dalle pagine.
+- **Le correzioni della revisione** (28 settembre 2026: [la revisione][r146], [la decisione di Carmine][d146], [i tre punti della regola
+  di A3b][m146]). Sul branch temporaneo `fix/a7-review`, da `69781af`, spinto su `m3/a7-approve-and-assign`.
+  1. **Un 409 poteva togliere il grant al trainer a cui il training è assegnato** (d23a812).
+     - Il difetto: `ModuleGrants.GiveAsync` non fa niente se il grant c'è già, ma il `catch` del 409 lo toglieva lo stesso. Con due
+       assegnazioni dello stesso trainer dalla stessa versione (un doppio invio, o due coordinatori insieme) la seconda trovava il grant
+       della prima, prendeva il 409 e lo toglieva: il training restava `Assigned` a un trainer senza `Training.Conduct`.
+     - La correzione: il `catch` rilegge il training e toglie il grant **solo se la riga non nomina quel trainer**. L'altra strada
+       proposta dal revisore, togliere solo il grant che questa richiesta ha scritto, da sola non bastava: la richiesta che scrive il
+       grant può essere proprio quella che perde il salvataggio (la prima lo scrive, la seconda lo trova e salva la riga per prima, la
+       prima prende il 409).
+     - Il test nuovo di `TrainingStaffTests` fa due assegnazioni dello stesso trainer dalla stessa versione: la seconda legge il
+       training prima che la prima salvi, attraverso `StaffTrainings` con l'identità del coordinatore, come gli altri test del
+       guardiano della classe. Poi assegna un altro trainer dalla versione vecchia: 409, e il suo grant se ne va. **Sul codice di prima
+       cade** dove cerca il grant (atteso `[790025]`, trovato `[]`).
+     - Il revisore avrebbe accettato anche un buco noto fino ad A7b, «se A7b arriva prima di ogni installazione». Non vale più: il
+       maintainer ha fatto la prima installazione di prova (#160, #167, #169).
+     - ⚠️ Resta una finestra di tre richieste insieme: un'assegnazione di X trova il grant proprio mentre il `catch` di un'altra, che
+       ha letto sulla riga un trainer diverso, lo toglie. Grant e riga sono due salvataggi di due contesti; A7b toglie il grant, e con
+       lui la finestra.
+  2. **Il giro completo non passava due volte sullo stesso banco** (2327c05).
+     - L'asserzione dello scheletro (`full/training-skeleton.spec.ts`, di A4, una sessione di `dalberone`) lascia fuori i grant con
+       scope: il trainer tiene `Training.View` sul dipartimento, e un grant su un training solo non è un potere sul dipartimento.
+     - La spec dello staff annulla all'inizio una richiesta rimasta in attesa da un giro fermato prima di accettarla. Il suo «quel
+       training soltanto» rifiuta ancora un grant su tutto il dipartimento o su un training ancora in corso, ma lascia stare quello su un
+       training finito, che aspetta la notte (`training-expiry`).
+     - **Quello che resta fuori, e perché.** Sul codice di A7 **nessuna API chiude un training accettato**: il trainee annulla solo
+       `Requested`, lo staff rifiuta solo `Requested`, e assegnare lo lascia aperto. La chiusura dello staff è di A8a (`/close`), e
+       nemmeno lei toglie il grant: lo toglie la notte. Quindi **un secondo giro di A7 da solo**, su un banco sopravvissuto al primo,
+       trova ancora il percorso ATC occupato, in `full/training-request.spec.ts` (A6b) e in `full/training-staff.spec.ts`, e lo dice
+       con il suo messaggio.
+     - **La chiusura va sul branch di A8a**, che ha `/close`: nel `finally` della spec dello staff, e all'inizio per un training ATC
+       lasciato aperto da un giro prima. La aggiunge la correzione di A8a, che prova lì due giri di fila (deciso con la sessione
+       «Verifica risposte e correzioni», 28 settembre).
+     - `web/e2e/full/README.md` non si tocca: per `core-guard` è un file del nucleo, condiviso, già esistente sotto `web/e2e/` e senza
+       «training» nel nome. La riga del revisore «fino ad allora il giro vuole un banco nuovo» sta quindi nell'intestazione della spec,
+       qui e in `HANDOFF-M3.md`.
+  3. **La pagina dopo un 409** (caf6d4e, il primo nit).
+     - `useStaffStep` rilegge la pagina e i trainer su un errore. Dopo un conflitto il form, che ha la chiave sulla versione, si
+       ridisegna con quella nuova, e il passo dopo parte da lì.
+     - Il form ridisegnato non tiene la frase di quello di prima: il conflitto dell'assegnazione lo dice un avviso, come già accetta e
+       rifiuta (`useRefused`, uno per i tre; `isConflict` in `screens/trainings.ts`, con il suo test). Un rifiuto di un campo resta
+       sotto il campo: la versione riletta è la stessa, e il form non si ridisegna.
+     - Lo smoke nuovo risponde 409 all'assegnazione e dà la pagina assegnata da qualcun altro. **Senza `onError` cade** dove la pagina
+       deve nominare l'altro trainer; **sul codice di prima**, già all'avviso.
+  4. **`Department.HQ` in `StaffTrainings.cs`** («la direzione», il secondo nit): resta, con il §2.4 che lo regge. Se A7b ricava i
+     candidati da chi tiene `Training.Conduct`, possono dirlo le `positionGrants`: è nella lista di A7b.
+  5. **Dalla decisione di Carmine** (842745a): lo scostamento qui sopra, la fase A7b qui sotto e la nota
+     `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`.
+  6. **I tre punti della regola di A3b** ([il commento del revisore][m146], 28 settembre): nella lista di A7b. La parte di A10c
+     (`Training.ManageExams`) la scrive la sessione di A10b sul suo branch.
+  7. **`main` nel branch, con A6b** (a00fcd5): `b4bd304`, cioè A6b con `main` a 3c79786 (A3b, #135, e #160–#172) e le correzioni di
+     A6b, come il master ha chiesto su #144 per tutta la coda. Nessun conflitto. `HANDOFF-M3.md` tiene l'intestazione di A7, e i blocchi
+     nuovi (A3b) stanno sotto quello di A7: i branch sopra riscrivono l'intestazione e mettono il loro blocco sopra, quindi il merge verso
+     l'alto resta pulito.
+  8. **Il punto 3 del master su #144** (se il catalogo di A3b cambia qualcosa su cui A7 conta): **niente**.
+     - Nessun permesso del training è segnato `OnlyForAssignee`: il ramo nuovo dell'handler e i casi nuovi del guardiano non valgono per
+       il training.
+     - Le tre alternative del training (`Approve`, `Assign`, `Conduct`) non sono segnate e non hanno `AlsoOnDeletion`:
+       `PermissionCatalog.VerifyAlternatives` le lascia passare all'avvio.
+     - Togliere un training resta di `Edit`, come prima. A7b sarà il primo permesso del training segnato.
+  - **Verificato, in locale** (28 settembre 2026, dopo il merge, su a00fcd5 e i documenti):
+    - `dotnet build` senza avvisi; unità **823/823**; **integrazione intera senza filtro** **353/353** (`TrainingStaffTests` da sola 8/8,
+      anche prima del merge);
+    - `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **521** in **65** file; `pnpm gen:api` e `pnpm i18n:sync`
+      senza differenze; `pnpm e2e` **104**, con il lucchetto del 4173; `dotnet format --verify-no-changes` sui file C# toccati.
+    - **Le prove sul codice di prima**: il test nuovo del 409 cade sul `StaffTrainings.cs` di `69781af` (atteso `[790025]`, trovato
+      `[]`) e passa con la correzione; lo smoke nuovo cade senza `onError` (la pagina non nomina l'altro trainer) e sul codice di prima
+      (all'avviso); la vecchia asserzione dello scheletro cade sul banco con gli avanzi (riceve anche `Training.Conduct`).
+    - **Il giro sul banco 5084** (`ivaohub_e2e_a7`). Sul banco com'era, con gli avanzi della vecchia sessione di A7 (il training 3, ATC
+      `Assigned` a 999004, con il suo grant con scope), le spec del training: il banco, la scheda e lo scheletro passano, e cadono solo la
+      richiesta di A6b e la spec dello staff, sul percorso ATC. Poi il banco ricreato, e **`pnpm e2e:full` due volte di fila senza
+      svuotarlo**: il primo giro **43/43**; il secondo **41/43**. Nel secondo cadono solo `full/training-request.spec.ts` (A6b) e
+      `full/training-staff.spec.ts`, sul percorso ATC che il primo giro ha lasciato aperto, ognuna con il suo messaggio; lo scheletro
+      passa.
+  - **Non verificato**:
+    - la CI (la dirà la PR);
+    - due giri di fila che passano entrambi: vogliono la chiusura di A8a, e li prova la correzione di A8a sul 5086;
+    - la finestra di tre richieste del punto 1, che non ha un test: servirebbe una terza assegnazione fra la lettura e la rimozione nel
+      `catch`.
+
+### A7b — Il trainer sulla regola delle righe affidate
+
+**Aggiunta il 27 settembre 2026** dalla [decisione di Carmine su #146][d146] (nota `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`):
+porta il trainer sulla [risposta 2 di Carmine su #135][a2-135]. Il punto d'arrivo è quello; cambia solo il momento. **Parte solo dopo
+l'unione di #135** (A3b, unita il 27 settembre 2026), dalla cima della coda quando comincia, perché cambia i test di A7–A10a; in coda come
+le altre. Branch `m3/a7b-trainer-assignee`. Codice del modulo: la regola è del nucleo da A3b, e se le mancasse qualcosa è una fase del
+nucleo a sé, con la sua nota.
+
+1. **Il training dichiara il suo trainer** con `IHasAssignee`: l'assegnatario è `TrainerVid`.
+2. **`Training.Conduct` è segnato `OnlyForAssignee`** nel catalogo del modulo, e lo tengono **per posizione** i TA e i trainer
+   (`positionGrants` del TD in `config/division.json` e `division.example.json`; oggi solo TC e TAC). Su una riga che non è sua il
+   permesso conta come `Training.Edit`: TC e TAC, che hanno `Edit`, restano con l'override di A8; un TA o un trainer no.
+3. **Via il grant con scope scritto all'assegnazione**: in `StaffTrainings.AssignAsync`, `GiveAsync` prima della riga, il `catch` del
+   409, `TakeAsync` del trainer di prima e `GrantReason`.
+4. **Via la metà di `training-expiry` che lo toglie** (dalla [revisione di A8a][r147-a7b]): in `TrainingExpiryJob` vanno via «closings
+   first so the grants go tonight» e `TakeBackAsync`, e cambia il ritorno di `RunAsync`.
+5. **Via le parole che dicono al trainer che dovrà rientrare**: nella mail `trainerAssigned` (A7, scostamento 9) e nell'avviso
+   `staff.assign.assigned`.
+6. **Il guardiano** (dalla revisione di A8a): l'`[AlsoWrittenWith(Conduct)]` sul training deve rispettare la regola dell'assegnatario,
+   altrimenti `Touch` rifiuta le scritture del trainer.
+7. **I tre punti che la regola di A3b chiede** ([il commento del revisore su #146][m146], 28 settembre 2026):
+   - **`[PermissionArea("Training")]` su ogni entità la cui alternativa è segnata.** Senza, il guardiano ricade sull'`Edit` dell'area
+     presa dal nome del `DbSet`, mentre l'handler ricade su quello del prefisso del permesso. `Training` ce l'ha da A6a; va su ogni altra
+     entità che A7b segnasse. **Un test della spina dorsale**: TC e TAC (`Edit`, non assegnatari) cambiano la riga attraverso
+     l'endpoint.
+   - **Che cosa fa DELETE**: `DeletePolicy = Training.Edit` (oppure `AllowDelete = false`) su ogni `MapCrud` del training con
+     `Training.Conduct` come `WritePolicy`, con un test. Oggi la lista dello staff è in sola lettura, con `WritePolicy = Training.Edit`.
+   - **`DeniedToStakeholder` insieme a `OnlyForAssignee`**: il training è `IHasStakeholder`, e `Conduct` è `DeniedToStakeholder` da A4.
+     Resta, e un test lo prova con un trainee che è anche l'assegnatario, uguale nell'handler e nel guardiano.
+8. **I candidati** (il nit del revisore su #146): se A7b li ricava da chi tiene `Training.Conduct` per posizione, «la direzione» che
+   `StaffTrainings.StaffAsync` oggi scrive con `Department.HQ` possono dirla le `positionGrants`. ⚠️ Il web (WM, AWM), che il nucleo
+   fa arrivare a ogni dipartimento, A7 lo lascia fuori di proposito (scostamento 1): resta fuori.
+9. **I test di A7–A10a che seminano il grant** si adattano:
+   - i `GiveConductAsync` dei test e l'asserzione `HoldersOfConductAsync` (dalla revisione di A8a);
+   - `TheNightTakesBackTheGrantOfATrainingThatIsOver` e il test del 409 delle correzioni di A7;
+   - la spec del giro dello staff, che guarda il `Training.Conduct` per posizione in `/api/me` e la risposta dell'handler sulla riga,
+     non più uno scope.
+10. **I documenti**: la modifica a `07` (§3.3, §5.3 per `training-expiry`, §12 n.1) nella PR di A7b; il commento in cima a
+    `TrainingDates.cs` (dalla revisione di A8a); `HANDOFF-M3.md`.
+
+**Test**: integrazione: il trainer assegnato conduce il suo training e non un altro, **senza nessun grant scritto**; riassegnato, non
+conduce più quello; TC e TAC lo cambiano senza esserne gli assegnatari; il trainee che fosse anche l'assegnatario no, nell'handler e nel
+guardiano; DELETE come deciso; `training-expiry` non tocca più i grant. Smoke e giro sul banco come in A7.
+**Fatta quando**: sul banco una richiesta si accetta e si assegna, e il trainer, **senza rientrare** (nessun grant cambia), conduce quel
+training e non un altro.
+
+**Com'è andata**: *(a fase chiusa)*
+
+[d146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982
+[r146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855673527
+[m146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5869116757
+[a2-135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
+[r147-a7b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/147#issuecomment-5855683074
 
 ### A8 — Le date
 

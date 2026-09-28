@@ -1,3 +1,4 @@
+using IvaoHub.Core.Services;
 using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Web;
@@ -45,6 +46,10 @@ public sealed class ContentSecurityPolicyOptions
 
 internal static class SecurityHeadersPipeline
 {
+    public const string PreviewRobotsHeader = "X-Robots-Tag";
+
+    public const string PreviewRobotsValue = "noindex, nofollow";
+
     /// <summary>
     /// Sends the headers on every response, computed once at start up.
     ///
@@ -58,6 +63,15 @@ internal static class SecurityHeadersPipeline
     {
         var options = app.Services.GetRequiredService<IOptions<SecurityHeadersOptions>>().Value;
         var headers = options.Headers.ToArray();
+
+        // A private installation asks not to be indexed on every answer, not only in robots.txt: a
+        // crawler that reaches a page through a link elsewhere never reads that file first, and the
+        // header is what search engines honour for a page they already hold (note
+        // 2026-09-27-l-installazione-di-prova).
+        if (app.Services.GetRequiredService<IOptions<InstallationOptions>>().Value.Preview)
+        {
+            headers = [.. headers, new KeyValuePair<string, string>(PreviewRobotsHeader, PreviewRobotsValue)];
+        }
         var policy = options.ContentSecurityPolicy.Enabled ? options.ContentSecurityPolicy.Compose() : null;
 
         return app.Use(async (context, next) =>
