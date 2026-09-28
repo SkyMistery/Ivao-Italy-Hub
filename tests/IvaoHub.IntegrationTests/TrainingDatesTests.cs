@@ -204,6 +204,37 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// What a date keeps of its warnings is read by whoever reads the training (review of A8a): whoever proposes it may read more of
+    /// the calendar — the direction reads the entries each department keeps for itself —, so the date keeps what the staff at large
+    /// may read, and an entry of one department stays with whoever was shown it.
+    /// </summary>
+    [Fact]
+    public async Task ADateKeepsOnlyTheWarningsEveryReaderOfTheTrainingMayRead()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var day = Day(35);
+
+        // That evening: an event of the events department for its own people, and one for the whole staff.
+        await SeedEventAsync(day.AddHours(19), day.AddHours(21), token, Visibility.Department, "trn-test department");
+        await SeedEventAsync(day.AddHours(20), day.AddHours(22), token, Visibility.Staff, "trn-test staff");
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: TrainerVid);
+        await WriteSettingsAsync(new { conflictPolicy = "Warn", conflictKinds = new[] { EventKind } }, token);
+
+        // The direction conducts every training and reads every department's entries: it is shown both, and confirms them.
+        using var director = await SignedInAsync(TrainerVid, token);
+        var shown = await director.GetFromJsonAsync<JsonElement>(Conflicts(id, day.AddHours(16), day.AddHours(18)), token);
+        Assert.Equal(["trn-test department", "trn-test staff"], Titles(shown.GetProperty("warnings")));
+        await ProposeAsync(director, id, token, Slot(day.AddHours(16), day.AddHours(18)));
+
+        // The date keeps the staff's alone: a trainer of the department, who reads the training but not that entry, does not read
+        // it through the date either.
+        using var trainer = await SignedInAsync(ScopedTrainerVid, token);
+        var slot = Assert.Single((await PageAsync(trainer, id, token)).GetProperty("slots").EnumerateArray());
+        Assert.Equal(["trn-test staff"], Titles(slot.GetProperty("warnings")));
+        Assert.DoesNotContain("trn-test department", Assert.Single(await SlotsOfAsync(id, token)).WarningsJson, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task TheTraineeChoosesADateAndItsSessionIsInThePublicCalendarWithoutANameUntilTheTrainingCloses()
     {
@@ -565,6 +596,10 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private static IEnumerable<string?> Keys(JsonElement problem, string field) =>
         problem.GetProperty("errors").TryGetProperty(field, out var keys) ? keys.EnumerateArray().Select(key => key.GetString()) : [];
 
+    /// <summary>The English titles of warnings of the calendar, in their order.</summary>
+    private static IEnumerable<string?> Titles(JsonElement warnings) =>
+        warnings.EnumerateArray().Select(warning => warning.GetProperty("title").GetProperty("en").GetString());
+
     private static async Task AssertRefusedAsync(HttpResponseMessage response, string field, string key, CancellationToken cancellationToken)
     {
         var problem = await ProblemAsync(response, cancellationToken);
@@ -689,22 +724,30 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
             .GiveAsync(vid, TrainingPermissions.Conduct, Department.TD, Training.ScopeOf(id), GrantReason, cancellationToken));
     }
 
-    /// <summary>An event of this class's own kind, public, as the staff writes one in the calendar.</summary>
-    private async Task SeedEventAsync(DateTime start, DateTime end, CancellationToken cancellationToken)
+    /// <summary>
+    /// An event of this class's own kind, of the events department, as the staff writes one in the calendar: public unless said
+    /// otherwise, with its English title.
+    /// </summary>
+    private async Task SeedEventAsync(
+        DateTime start,
+        DateTime end,
+        CancellationToken cancellationToken,
+        Visibility visibility = Visibility.Public,
+        string english = "trn-test evening")
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
         database.CalendarEntries.Add(new CalendarEntry
         {
             OwnerDepartment = Department.ED,
-            Visibility = Visibility.Public,
+            Visibility = visibility,
             Kind = EventKind,
             SourceModule = ProjectionSource.Core,
             SourceId = $"{EventSourcePrefix}{Guid.NewGuid():N}",
             StartsAtUtc = start,
             EndsAtUtc = end,
             Url = "/trn-test-event",
-            Title = "trn-test serata".L("trn-test evening"),
+            Title = "trn-test serata".L(english),
         });
         await database.SaveChangesAsync(cancellationToken);
     }
