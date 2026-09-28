@@ -6,8 +6,7 @@ namespace IvaoHub.Modules.Training;
 /// The permissions of the training (design M3 §3.1). All of them are held on a department — the base department of the
 /// module — and who holds them is <c>division.json → positionGrants</c> (§3.2), never this file.
 /// <para>Five are denied to whoever a training is about: nobody approves, assigns, conducts, edits or bans on a training of
-/// their own, the super administrator included (§3, §10). And a sixth to whoever an exam is about: nobody writes their own exam
-/// (A10c).</para>
+/// their own, the super administrator included (§3, §10).</para>
 /// <para>One reaches only the rows assigned to whoever holds it (<c>OnlyForAssignee</c>, note
 /// 2026-09-26-le-righe-affidate-a-chi-scrive): an examiner writes the exams assigned to them, and on any other exam the permission
 /// is worth what <see cref="Edit"/> is worth there (A10c).</para>
@@ -37,9 +36,8 @@ public static class TrainingPermissions
     /// <summary>
     /// The exams in the calendar, put there by whoever holds the exam (§12 n.10). An exam is assigned only to an examiner — the
     /// direction, the coordinator and the assistant of the training department, or one of its advisors — and never to a
-    /// trainer, so the trainers do not hold it. It reaches only the exams assigned to whoever holds it, and never one they are the
-    /// candidate of (A10c): an advisor enters, changes and takes off the calendar their own exams, and whoever holds
-    /// <see cref="Edit"/> every exam.
+    /// trainer, so the trainers do not hold it. It reaches only the exams assigned to whoever holds it (A10c): an advisor enters,
+    /// changes and takes off the calendar their own exams, and whoever holds <see cref="Edit"/> every exam.
     /// </summary>
     public const string ManageExams = "Training.ManageExams";
 
@@ -55,7 +53,7 @@ public static class TrainingPermissions
         new(Conduct, IsGlobal: false, DeniedToStakeholder: true),
         new(Edit, IsGlobal: false, DeniedToStakeholder: true),
         new(ManageSheets, IsGlobal: false),
-        new(ManageExams, IsGlobal: false, DeniedToStakeholder: true, OnlyForAssignee: true),
+        new(ManageExams, IsGlobal: false, OnlyForAssignee: true),
         new(Ban, IsGlobal: false, DeniedToStakeholder: true),
         new(ManageSettings, IsGlobal: false),
     ];

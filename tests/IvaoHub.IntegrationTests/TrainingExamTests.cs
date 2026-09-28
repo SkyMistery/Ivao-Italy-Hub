@@ -33,8 +33,9 @@ namespace IvaoHub.IntegrationTests;
 /// <item>the coordinator and the assistant, who hold <c>Edit</c> and do not examine, change and remove it through the endpoint: the
 /// exam declares its area, so the write guard asks <c>Training.Edit</c> and not <c>Exams.Edit</c> (the reviewer's point 1 on #146);
 /// </item>
-/// <item>DELETE is the examiner's and whoever edits the area's, nobody else's (point 2); the candidate writes nothing on their own
-/// exam, and the handler and the guard answer alike, the candidate who is also the examiner included (point 3);</item>
+/// <item>DELETE is the examiner's and whoever edits the area's, nobody else's (point 2); the handler and the guard answer alike on
+/// every exam, the candidate who would be the examiner too included, and the endpoint never lets the candidate be the examiner
+/// (point 3);</item>
 /// <item>the list says which exams are the reader's and which they may change; the form offers an advisor themselves as examiner and
 /// the coordinator every examiner; an exam is refused field by field;</item>
 /// <item>a visitor reads the exams still to come on <c>/training</c> and in the block with no VID and no name, a signed in member reads
@@ -273,11 +274,11 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// The reviewer's point 3 on #146, and the rule of A3b once more on the exams themselves: the single handler — asked on the row, as
     /// the CRUD engine asks it — and the write guard — with no endpoint in the way — give the same answer on every exam: the advisor's own
     /// and another's, created, changed and removed; the coordinator on an advisor's; the trainer; and the advisor who is both the
-    /// candidate and the examiner, whom <c>DeniedToStakeholder</c> keeps out of the handler as the guard keeps them out of the
-    /// alternative. The candidate who is not the examiner is refused too, and through the endpoint the candidate is never the examiner.
+    /// candidate and the examiner, on whom the two agree because the exam is about nobody and <c>ManageExams</c> is denied to nobody
+    /// (design M3 §3.1). Such an exam exists only written by hand: through the endpoint the candidate is never the examiner.
     /// </summary>
     [Fact]
-    public async Task TheHandlerAndTheGuardAnswerAlikeOnEveryExamAndTheCandidateWritesNone()
+    public async Task TheHandlerAndTheGuardAnswerAlikeOnEveryExam()
     {
         var token = TestContext.Current.CancellationToken;
         var (_, pilot) = Trained();
@@ -302,30 +303,17 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await AlikeAsync(coordinator, await FindAsync(theirs, token), expected: true, Change(theirs, starts.AddHours(2)), token);
         await AlikeAsync(advisor, await FindAsync(mine, token), expected: true, Remove(mine), token);
 
-        // The advisor is the candidate and the examiner both: a row no endpoint lets exist, written here as the installation.
+        // The advisor is the candidate and the examiner both: a row no endpoint lets exist, written here as the installation. The exam
+        // is about nobody, so both let its examiner write it, as any exam of theirs.
         var theirOwn = await AddExamAsync(pilot, null, starts, AdvisorVid, AdvisorVid, token);
-        await AlikeAsync(advisor, await FindAsync(theirOwn, token), expected: false, Change(theirOwn, starts.AddHours(1)), token);
-        await AlikeAsync(advisor, await FindAsync(theirOwn, token), expected: false, Remove(theirOwn), token);
-        await AlikeAsync(advisor, New(pilot, starts, AdvisorVid, AdvisorVid), expected: false, database => database.Exams.Add(New(pilot, starts, AdvisorVid, AdvisorVid)), token);
+        await AlikeAsync(advisor, await FindAsync(theirOwn, token), expected: true, Change(theirOwn, starts.AddHours(1)), token);
+        await AlikeAsync(advisor, await FindAsync(theirOwn, token), expected: true, Remove(theirOwn), token);
+        await AlikeAsync(advisor, New(pilot, starts, AdvisorVid, AdvisorVid), expected: true, database => database.Exams.Add(New(pilot, starts, AdvisorVid, AdvisorVid)), token);
 
-        // Through the endpoint the candidate is never the examiner, and the coordinator who is the candidate does not change their exam.
+        // Through the endpoint the candidate is never the examiner: refused on its field, before any permission is asked.
         using var advisorClient = await SignedInAsync(AdvisorVid, token);
         var refused = await ReadAsync(await PostAsync(advisorClient, Body(pilot, null, starts, AdvisorVid, AdvisorVid), token), HttpStatusCode.BadRequest, token);
         Assert.Contains(TrainingExams.ExaminerIsCandidate, Refusal(refused, "examinerVid"));
-
-        var theCoordinators = await AddExamAsync(pilot, null, starts, CoordinatorVid, AdvisorVid, token);
-        using var coordinatorClient = await SignedInAsync(CoordinatorVid, token);
-        using (var changed = await PutAsync(coordinatorClient, theCoordinators, Body(pilot, null, starts.AddHours(1), CoordinatorVid, AdvisorVid), token))
-        {
-            Assert.Equal(HttpStatusCode.Forbidden, changed.StatusCode);
-        }
-
-        using (var removed = await DeleteAsync(coordinatorClient, theCoordinators, token))
-        {
-            Assert.Equal(HttpStatusCode.Forbidden, removed.StatusCode);
-        }
-
-        Assert.NotNull(await FindAsync(theCoordinators, token));
     }
 
     /// <summary>

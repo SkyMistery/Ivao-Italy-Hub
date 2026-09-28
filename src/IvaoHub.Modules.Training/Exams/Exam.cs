@@ -17,8 +17,10 @@ namespace IvaoHub.Modules.Training.Exams;
 /// theirs; whoever edits the area (<c>Training.Edit</c>: the coordinator, the assistant, the direction) does it on every exam, and
 /// chooses the examiner of one they enter for somebody else. The single handler and the write guard ask the same, through the
 /// catalogue (<c>OnlyForAssignee</c>), the alternative below and the area this class declares — without which the guard would fall
-/// back on <c>Exams.Edit</c>, which nobody holds. Nobody writes an exam they are the candidate of (<see cref="IHasStakeholder"/>),
-/// the super administrator included.</para>
+/// back on <c>Exams.Edit</c>, which nobody holds.</para>
+/// <para>It does not say its candidate as the member it is about (no <see cref="IHasStakeholder"/>): design M3 §3.1 does not deny
+/// <c>Training.ManageExams</c> to anybody, and an exam is an entry of the calendar, not a decision on the candidate. The candidate
+/// who would be the examiner too is refused by the rules of the form, before any permission is asked.</para>
 /// <para>It has no state: an exam is public for as long as it is on the calendar. It projects one public entry of the kind
 /// <see cref="CalendarKind"/> (§5.1; note <c>il-training-in-pubblico</c>), titled with its rating and its position and nobody's name
 /// or VID, pointing at the public page of the training, where the exams still to come are listed (A10c).</para>
@@ -26,7 +28,7 @@ namespace IvaoHub.Modules.Training.Exams;
 [Audited]
 [PermissionArea(TrainingPermissions.Area)]
 [AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true, AlsoOnDeletion = true)]
-public sealed class Exam : IOwnedByDepartment, IAuditable, IHasAssignee, IHasStakeholder, IProjectable
+public sealed class Exam : IOwnedByDepartment, IAuditable, IHasAssignee, IProjectable
 {
     /// <summary>What the source of every projection of an exam starts with, in the module's projections.</summary>
     public const string SourcePrefix = "exam:";
@@ -76,9 +78,6 @@ public sealed class Exam : IOwnedByDepartment, IAuditable, IHasAssignee, IHasSta
     public DateTime RowVersion { get; set; }
 
     int? IHasAssignee.AssigneeVid => ExaminerVid;
-
-    /// <summary>The candidate, who writes nothing on their own exam.</summary>
-    public int? StakeholderVid => CandidateVid;
 
     /// <summary>
     /// The short name of its rating, as the core's vocabulary says it now — the rating may change after the exam was read —: what its

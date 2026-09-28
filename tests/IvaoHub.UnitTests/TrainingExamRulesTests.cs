@@ -33,24 +33,28 @@ public sealed class TrainingExamRulesTests
     private static readonly PermissionCatalog Catalogue = new([.. CorePermissions.All, .. TrainingPermissions.All]);
 
     /// <summary>
-    /// <c>Training.ManageExams</c> reaches only the exams assigned to whoever holds it, and never one they are the candidate of — so that
-    /// the handler says of the candidate who is also the examiner what the guard says (the reviewer's point 3 on #146).
+    /// <c>Training.ManageExams</c> reaches only the exams assigned to whoever holds it, and on any other is worth <c>Training.Edit</c>; it
+    /// is denied to nobody, as design M3 §3.1 has it.
     /// </summary>
     [Fact]
-    public void ManagingExamsReachesTheExamsAssignedToTheWriterAndNeverTheirOwnAsTheCandidate()
+    public void ManagingExamsReachesTheExamsAssignedToTheWriter()
     {
         Assert.True(Catalogue.IsOnlyForAssignee(TrainingPermissions.ManageExams));
-        Assert.True(Catalogue.IsDeniedToStakeholder(TrainingPermissions.ManageExams));
+        Assert.False(Catalogue.IsDeniedToStakeholder(TrainingPermissions.ManageExams));
         Assert.Equal(TrainingPermissions.Edit, Catalogue.EditOf(TrainingPermissions.ManageExams));
     }
 
     /// <summary>
     /// The exam declares what the rule asks of it (note §3.6, the reviewer's points 1 and 2 on #146): its area, so that the guard falls
     /// back on <c>Training.Edit</c> as the handler does and not on <c>Exams.Edit</c>; the alternative, at creation and at deletion; the
-    /// examiner it is assigned to and the candidate it is about. The check the hub runs when it starts accepts it.
+    /// examiner it is assigned to. The check the hub runs when it starts accepts it.
+    /// <para>And the point 3: the exam and the catalogue say the same of the member a row is about. The guard keeps whoever a row is about
+    /// out of every alternative, the handler only out of a permission denied to them: an exam about its candidate with
+    /// <c>ManageExams</c> not denied to them would have the handler say yes and the guard no to the candidate who examines. The exam is
+    /// about nobody, and the permission is denied to nobody.</para>
     /// </summary>
     [Fact]
-    public void TheExamDeclaresItsAreaItsAlternativeItsExaminerAndItsCandidate()
+    public void TheExamDeclaresItsAreaItsAlternativeAndItsExaminer()
     {
         Assert.Equal(TrainingPermissions.Area, typeof(Exam).GetCustomAttribute<PermissionAreaAttribute>()?.Area);
 
@@ -61,7 +65,9 @@ public sealed class TrainingExamRulesTests
 
         var exam = new Exam { CandidateVid = 790068, ExaminerVid = 790090 };
         Assert.Equal(790090, ((IHasAssignee)exam).AssigneeVid);
-        Assert.Equal(790068, ((IHasStakeholder)exam).StakeholderVid);
+        Assert.Equal(
+            typeof(IHasStakeholder).IsAssignableFrom(typeof(Exam)),
+            Catalogue.IsDeniedToStakeholder(TrainingPermissions.ManageExams));
 
         Catalogue.VerifyAlternatives([typeof(Exam), typeof(Training)]);
     }

@@ -174,7 +174,6 @@ public sealed class TrainingDbContext : ModuleDbContext
         {
             exam.ToTable("trn_exams");
             exam.HasKey(row => row.Id);
-            exam.Ignore(row => row.StakeholderVid);
             exam.Ignore(row => row.RatingShortName);
             exam.Property(row => row.Position).HasMaxLength(Training.MaxPositionLength);
             exam.HasRowVersion(row => row.RowVersion);
