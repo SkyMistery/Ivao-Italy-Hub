@@ -118,6 +118,7 @@ lock if a deny rule is ever lost. Never put the file in a zip or a mail.
 | `Ivao` | the installation's own OAuth client. The three URLs must match **character for character** what is registered with IVAO for that client: `https`, the host, no trailing slash on the first two. The application refuses to start while a field is missing |
 | `AllowedHosts` | the host names this installation answers to, `;` separated, never `*`. Required in production (measured: a request with another `Host` gets 400) |
 | `ForwardedHeaders:TrustedNetworks` | the networks whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed. Required in production. Behind Passenger the application's peer is the local machine, so the loopback addresses belong here, with the ranges Cloudflare publishes at <https://www.cloudflare.com/ips/> |
+| `Diagnostics:RequestHeaders` | optional: more header names whose value `/api/admin/diagnostics/request` shows, when the visitor's address may arrive in a header the hub does not know. `Cookie` and `Authorization` are never shown |
 | `Installation:Domain` | the host every absolute link is built on — mails, sitemap, robots.txt — when it is not `division.json → domain`, as on a test installation. A host name only |
 | `Installation:Preview` | `true` for a private installation: not indexed (robots.txt, no sitemap, `X-Robots-Tag` on every response) and **open to the staff of the division and the super administrators only**; anybody else is turned away at the end of the IVAO round trip, before anything about them is written |
 | `Smtp` | optional. Without it nothing is sent and nothing is lost: notifications queue up. On a test installation, leaving it out keeps test data from mailing real people |
@@ -196,6 +197,7 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | A private installation: sign in as somebody who is not staff | the page "The sign in did not complete" with the sentence about a private copy, and no row for them |
 | The deny checks of the section above | 403, 404, or the page of the site |
 | As super administrator, change something harmless, then read the audit log | the address recorded is **yours**, not `127.0.0.1` nor a Cloudflare address: that is how you know `TrustedNetworks` is right |
+| As super administrator, open `https://<host>/api/admin/diagnostics/request` in the browser | how the hub sees your request: `believed.address` is yours and `scheme` is `https`. If not, the same answer says why: the neighbour and its family, the forwarding headers as they arrived and how many entries each holds, the names of every header, and the settings of the forwarded headers. Nothing of it is stored |
 
 ## Updating
 
@@ -231,7 +233,8 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   queue, the reference data, the release of the tours) only run while the process is alive. `passenger_min_instances
   1` keeps one alive, where the host allows it.
 - **Forwarded headers** are processed one hop deep (the ASP.NET Core default). Whether the address the application
-  believes is the visitor's depends on the headers Passenger passes on: the audit log check above is how to know.
+  believes is the visitor's depends on the headers Passenger passes on: the audit log check above is how to know, and
+  `/api/admin/diagnostics/request` is how to know why.
 - The runtime uses the server garbage collector, which reserves more memory on a machine with many cores. On a host
   that caps memory, `DOTNET_gcServer=0` in the environment of the process turns it off. *Not measured on a server.*
 

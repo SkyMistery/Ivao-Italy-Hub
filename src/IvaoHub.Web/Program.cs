@@ -261,6 +261,10 @@ if (startupWatch is not null)
     app.Lifetime.ApplicationStarted.Register(startupWatch.Started);
 }
 
+// Before the forwarded headers, which rewrite what they read: the diagnostics of the request show it as it arrived
+// (note 2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy). It copies one address's request and nothing else.
+app.UseRequestDiagnosticsCapture();
+
 if (trustedProxies.Count > 0)
 {
     app.UseForwardedHeaders();
@@ -341,13 +345,15 @@ app.MapSeoEndpoints();
 app.MapSearchEndpoint();
 
 // The administration of the hub itself: who holds which permission, who administers the system,
-// what happened, and which modules are open. Three of the four are the CRUD engine in global mode.
+// what happened, which modules are open, and how a request reaches the hub. Three of them are the CRUD
+// engine in global mode; the last is read by a super administrator installing the hub behind its proxies.
 app.MapGrantEndpoints();
 app.MapPersonalTokenEndpoints();
 app.MapSuperadminEndpoints();
 app.MapErasureEndpoints();
 app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();
+app.MapRequestDiagnosticsEndpoints(forwardedHeadersInPipeline: trustedProxies.Count > 0);
 
 // Last, so that a module cannot shadow a route of the core by mapping the same pattern first.
 app.MapModuleEndpoints();
