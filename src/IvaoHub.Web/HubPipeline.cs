@@ -185,15 +185,16 @@ internal static class HubPipeline
         timings.Step("models");
 
         var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
-        var applied = await initializer.MigrateAsync(app.Lifetime.ApplicationStopping);
+        var applied = (await initializer.MigrateAsync(app.Lifetime.ApplicationStopping)).ToList();
         timings.Step("migrations");
 
-        // Then the contexts of the modules, each with its own migration history table. A module
-        // with no table of its own -- the module the integration tests add -- declares none and nothing happens here.
+        // Then the contexts of the modules, each with its own migration history table, and like the core's only when
+        // something is pending. A module with no table of its own -- the module the integration tests add -- declares
+        // none and nothing happens here.
         foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes))
         {
             var context = (DbContext)scope.ServiceProvider.GetRequiredService(contextType);
-            await context.Database.MigrateAsync(app.Lifetime.ApplicationStopping);
+            applied.AddRange(await initializer.MigrateAsync(context, app.Lifetime.ApplicationStopping));
         }
 
         timings.Step("module migrations");
