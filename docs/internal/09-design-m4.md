@@ -7,10 +7,11 @@
 > risposta di Carmine. Le fasi si scrivono in `10-piano-implementazione-m4.md` **dopo**
 > l'approvazione di questo documento. I modelli sono `05-design-m2.md` e `07-design-m3.md`.
 
-**Stato:** **deciso in chat da Carmine il 29 settembre 2026, da confermare sulla PR**. Nessun codice. La prima stesura
-(28 settembre) faceva ipotesi sul lavoro dell'ED; questa le sostituisce con le risposte di Carmine (§R.3), e Carmine ha
-risposto in chat anche alle sette domande che restavano (§17.2). **Le risposte date in chat vanno confermate da Carmine con
-un commento sulla PR**, perché la decisione porti il suo link (`CLAUDE.md` §5). Il prossimo passo è la fase E0 (§16).
+**Stato:** **deciso** il 29 settembre 2026. Nessun codice. La prima stesura (28 settembre) faceva ipotesi sul lavoro
+dell'ED; questa le sostituisce con le risposte di Carmine (§R.3), date in chat in quattro giri insieme alle sette domande
+della seconda stesura (§17.2), e **confermate sulla PR** ([conferma][ok]). Il prossimo passo è la fase E0 (§16).
+
+[ok]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/180#issuecomment-5880522987
 
 ---
 
@@ -164,8 +165,8 @@ modulo ci entra con il blocco `events.myEvents` (§7.3); le pagine del membro st
 
 ### R.3 I requisiti dell'ED (Carmine, 29 settembre 2026, in chat)
 
-Quattro giri: **(c1)** le risposte alle domande della prima stesura, **(c2)** le precisazioni, **(c3)** le ultime, **(c4)** le risposte a §17.2. Da
-confermare con un commento sulla PR (§17.1).
+Quattro giri: **(c1)** le risposte alle domande della prima stesura, **(c2)** le precisazioni, **(c3)** le ultime,
+**(c4)** le risposte a §17.2. Confermati da Carmine sulla PR ([conferma][ok]).
 
 **Chi fa che cosa**
 - **Chiunque dell'ED** crea l'evento, carica gli slot, assegna gli stand (c1).
@@ -1071,10 +1072,10 @@ M4c non dipende da M4b: può venire prima, se il primo evento in presenza arriva
 
 ## 17. Domande per Carmine
 
-### 17.1 Decise in chat il 29 settembre 2026 — da confermare sulla PR
+### 17.1 Decise il 29 settembre 2026
 
-Carmine ha risposto in chat, nei primi tre giri, alle domande della prima stesura e alle precisazioni (§R.3). Una risposta in chat
-non ha un link: **un suo commento sulla PR che confermi questa sezione** la rende la decisione registrata.
+Carmine ha risposto in chat, nei primi tre giri, alle domande della prima stesura e alle precisazioni (§R.3), e ha
+**confermato questa sezione sulla PR** ([conferma][ok]: «Confermo 17.1 e 2»).
 
 1. **Chi risponde sui fatti dell'ED**: Carmine stesso (§R.3).
 2. **Eventi di HQ**: solo quelli in collaborazione, scritti a mano con la loro scheda.
@@ -1085,7 +1086,7 @@ non ha un link: **un suo commento sulla PR che confermi questa sezione** la rend
 6. **Slot privati**: generati dalla capacità per evento (movimenti, o arrivi e partenze, per ora); il pilota scrive l'altro
    aeroporto e l'altro orario; l'arrivo può avere la partenza collegata.
 7. **Import**: CSV o tabella incollata; niente `.xlsx`.
-8. **Due blocchi**, M4a e M4b, un calendario solo.
+8. **Due blocchi**, M4a e M4b, un calendario solo (il terzo, M4c, si è aggiunto con §17.2 n.6).
 9. **ATC**: roster proposto dal sistema (rating minimo AS3, rating preferito per tipo di postazione, esperienza, pause),
    corretto dallo staff, pubblicato esattamente x giorni prima, candidature chiuse x+y giorni prima, modifiche notificate.
 10. **No-show**: proposti dal sistema, confermati o giustificati da ED, AOD o staff del FIR; contano per sempre, pesati;
@@ -1100,9 +1101,9 @@ non ha un link: **un suo commento sulla PR che confermi questa sezione** la rend
 16. **Rotazione intera** prende le tratte libere e compatibili; **penalità** proporzionale (§4.5).
 17. **Stand**: fuori da M4, da vedere dopo.
 
-### 17.2 Le sette domande della seconda stesura — decise in chat il 29 settembre 2026, da confermare sulla PR
+### 17.2 Le sette domande della seconda stesura — decise il 29 settembre 2026
 
-Poste sulla PR ([commento][q2]); Carmine ha risposto in chat. Come §17.1, aspettano il suo commento di conferma.
+Poste sulla PR ([commento][q2]); Carmine ha risposto in chat (c4) e ha **confermato sulla PR** ([conferma][ok]).
 
 [q2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/180#issuecomment-5880359954
 
