@@ -65,25 +65,6 @@ public sealed class AllowedAircraftCheck(FlightOpsDbContext database, IAircraftT
             [.. (allowed.GroupIds ?? []).Distinct().Order()]);
 }
 
-/// <summary>Refusals, one or more i18n keys per field, in the shape the form reads.</summary>
-internal sealed class TourProblems
-{
-    public Dictionary<string, string[]> Errors { get; } = new(StringComparer.Ordinal);
-
-    public Dictionary<string, string[]> Localized { get; } = new(StringComparer.Ordinal);
-
-    public bool IsEmpty => Errors.Count == 0;
-
-    public void Add(string field, string key) =>
-        Errors[field] = Errors.TryGetValue(field, out var keys) ? [.. keys, key] : [key];
-
-    public void Missing(string field, IReadOnlyList<string> locales)
-    {
-        Add(field, Core.Localization.LocalizedRules.MissingMessageKey);
-        Localized[field] = [.. locales];
-    }
-}
-
 /// <summary>
 /// What a write of a tour may refuse only by looking at other rows (design M2 §1.2): run by the CRUD engine before
 /// every save, and by the two copies of a template before theirs, so the three roads into <c>fo_tours</c> answer the
@@ -155,7 +136,7 @@ public sealed class TourSaving(
     {
         ArgumentNullException.ThrowIfNull(tour);
 
-        var problems = new TourProblems();
+        var problems = new Refusals();
         var now = clock.UtcNow;
 
         // A subtour is one level down, and has no award: the award is its container's (§2.7).
@@ -283,7 +264,7 @@ public sealed class TourSaving(
     /// its kind does not take it or what it names does not exist (note 2026-09-22-il-tour-open). Read only when it changes,
     /// so a later save of the settings does not answer for an airport the snapshot has since lost.
     /// </summary>
-    private async Task ReadGoalAsync(Tour tour, OpenGoal goal, TourProblems problems, CancellationToken cancellationToken)
+    private async Task ReadGoalAsync(Tour tour, OpenGoal goal, Refusals problems, CancellationToken cancellationToken)
     {
         var (parameters, wrong) = OpenCatalog.Read(goal, OpenCatalog.Parse(tour.OpenGoalJson));
         var unknown = wrong.Count == 0
@@ -303,7 +284,7 @@ public sealed class TourSaving(
     /// it. A ready subtour with a date of its own outside the container's new period refuses the save: it would stop
     /// being one that could be marked ready.
     /// </summary>
-    private async Task KeepTheSubtoursWithTheContainerAsync(Tour container, TourProblems problems, CancellationToken cancellationToken)
+    private async Task KeepTheSubtoursWithTheContainerAsync(Tour container, Refusals problems, CancellationToken cancellationToken)
     {
         var subtours = await CrudSource.BackOffice<Tour>(database)
             .Where(row => row.ParentTourId == container.Id)
@@ -386,11 +367,11 @@ public sealed class TourReadiness(
     IAirportDirectory airports,
     IOptions<DivisionOptions> division)
 {
-    internal Task<TourProblems> ProblemsAsync(Tour tour, CancellationToken cancellationToken) =>
+    internal Task<Refusals> ProblemsAsync(Tour tour, CancellationToken cancellationToken) =>
         ProblemsAsync(tour, change: null, cancellationToken);
 
     /// <summary>The problems of the tour with these legs, the legs as a write is about to leave them.</summary>
-    internal Task<TourProblems> ProblemsAsync(Tour tour, IReadOnlyList<Leg> legs, CancellationToken cancellationToken) =>
+    internal Task<Refusals> ProblemsAsync(Tour tour, IReadOnlyList<Leg> legs, CancellationToken cancellationToken) =>
         ProblemsAsync(tour, parts => parts with { Legs = legs }, cancellationToken);
 
     /// <summary>The parts of a tour's shape as they are stored: the rows a check reads when no write hands them in.</summary>
@@ -416,14 +397,14 @@ public sealed class TourReadiness(
     /// The problems of the tour with its parts as a write is about to leave them — <paramref name="change"/> applied to
     /// the parts as they are stored — or, with no change, as they are.
     /// </summary>
-    internal async Task<TourProblems> ProblemsAsync(
+    internal async Task<Refusals> ProblemsAsync(
         Tour tour,
         Func<TourParts, TourParts>? change,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tour);
 
-        var problems = new TourProblems();
+        var problems = new Refusals();
         var locales = division.Value.Locales;
 
         if (tour.IsTemplate)

@@ -190,7 +190,7 @@ public static class TourEndpoints
                 var problems = await readiness.ProblemsAsync(tour, http.RequestAborted);
                 if (!problems.IsEmpty)
                 {
-                    return CrudProblems.Validation(problems.Errors, problems.Localized, catalog, currentUser.Locale);
+                    return CrudProblems.Validation(problems, catalog, currentUser.Locale);
                 }
 
                 tour.Status = PublishStatus.Published;
@@ -254,7 +254,7 @@ public static class TourEndpoints
 
         var problems = await readiness.ProblemsAsync(tour, http.RequestAborted);
 
-        return Results.Ok(new TourReadyProblemsDto(problems.Errors, problems.Localized));
+        return Results.Ok(new TourReadyProblemsDto(problems.Errors, problems.MissingLocales));
     }
 
     private static async Task<IResult> CreateFromTemplateAsync(

@@ -8,7 +8,7 @@ import { Notice, PageShell } from '../../../shared/ui';
 import { positionsQuery, ratingsQuery, settingsQuery, useSaveSettings } from '../api';
 import { settingsSchema, settingsToFormValues } from '../schemas';
 
-import { ratingOptions } from './ratings';
+import { positionLabel, ratingOptions } from './ratings';
 
 /**
  * The settings of the training (design M3 §1.6): what the department changes without a release. Kept by the core's
@@ -50,7 +50,7 @@ export function TrainingSettingsPage() {
                   .map((callsign): Suggestion => ({ value: callsign, label: callsign })),
                 ...positions.map((position): Suggestion => ({
                   value: position.callsign,
-                  label: `${position.callsign} — ${position.name}`,
+                  label: positionLabel(position, t),
                   group: position.ratingShortName,
                 })),
               ],

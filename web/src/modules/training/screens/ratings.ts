@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import type { ChoiceOption } from '../../../shared/forms';
-import type { TrainingRatingDto } from '../api';
+import type { TrainingPositionDto, TrainingRatingDto } from '../api';
 import { ratingChoice } from '../schemas';
 
 /**
@@ -18,4 +18,15 @@ export function ratingOptions(ratings: readonly TrainingRatingDto[], t: TFunctio
       name: t(rating.nameKey),
     }),
   }));
+}
+
+/**
+ * A position the division trains on, as a suggestion shows it: its callsign and its name, put together by the words of the
+ * language on screen, like a rating. Written once for the settings (A4) and the request (A6b).
+ */
+export function positionLabel(
+  position: Pick<TrainingPositionDto, 'callsign' | 'name'>,
+  t: TFunction,
+): string {
+  return t('training:positionChoice', { callsign: position.callsign, name: position.name });
 }

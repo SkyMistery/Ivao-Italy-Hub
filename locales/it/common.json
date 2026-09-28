@@ -77,6 +77,7 @@
       "correlation": "Il giro di andata e ritorno non è stato riconosciuto da questo browser. Succede quando la pagina resta aperta troppo a lungo o i cookie vengono cancellati a metà.",
       "nonce": "La risposta di IVAO non è stata validata. Riprova; se continua, il problema è dalla nostra parte.",
       "profile": "IVAO non ci ha detto chi sei, quindi non è stato possibile aprire un account.",
+      "staffOnly": "Questa è una copia privata del sito, aperta solo allo staff della divisione finché è in prova. Di te non è stato salvato niente.",
       "unknown": "Qualcosa è andato storto al ritorno da IVAO."
     }
   },
@@ -84,7 +85,7 @@
     "toggle": "Passa da chiaro a scuro"
   },
   "footer": {
-    "rights": "© {{year}} {{division}}. Tutti i diritti riservati. · v{{version}}",
+    "rights": "© {{year}} {{division}}. Tutti i diritti riservati. · {{build}}",
     "partOf": "Parte della International Virtual Aviation Organisation",
     "legalHeading": "IVAO",
     "about": "Il sito ufficiale di {{division}}: eventi, training, tour e tutto quello che fa la divisione.",

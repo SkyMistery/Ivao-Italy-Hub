@@ -11,6 +11,7 @@
     "Pilot": "Pilot"
   },
   "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+  "positionChoice": "{{callsign}} — {{name}}",
   "unknown": "not available",
   "theoryExam": "The site of the theory exam",
   "mockExam": "This will be a mock exam, as agreed with your trainer.",

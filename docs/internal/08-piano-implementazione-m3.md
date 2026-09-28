@@ -461,7 +461,95 @@ Nota di A3 `2026-09-25-i-permessi-alternativi-e-la-creazione` §3.5: la domanda,
 cambiano.
 **Fatta quando**: la nota è decisa da Carmine e i test della spina dorsale passano, compresi quelli che c'erano.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135):
+
+- **La nota prima del codice** (`CLAUDE.md` §5, caso c): `2026-09-26-le-righe-affidate-a-chi-scrive`, «Proposta», con due domande a
+  Carmine sulla #135 ([il commento][q135]). La PR è partita in bozza, in coda sopra la #131, con la sola nota. **Carmine ha risposto sì a
+  tutte e due** ([il suo commento][a135]): la forma della nota §3, e il trainer di A7 con la stessa regola. Il revisore ha chiesto tre cose
+  per il codice ([i suoi rilievi][rv135]), entrate nella nota prima del codice. Intanto **la #131 (A3) è stata unita**, con #136 (la nota
+  del maintainer `2026-09-26-gli-esaminatori`), #132 e #137: `main` è entrato nel branch con un merge senza conflitti, e la PR ha perso
+  «(after #131)».
+- **Fatto**, come la nota §3:
+  - `IHasAssignee` (`Core/Division/DomainContracts.cs`);
+  - `PermissionDescriptor.OnlyForAssignee`, letto con `PermissionCatalog.IsOnlyForAssignee`, e `PermissionCatalog.EditOf`;
+  - nell'unico handler, un permesso segnato vale come `{Area}.Edit` su una riga non affidata a chi chiede, e senza riga resta `HasAny`;
+  - nel guardiano, un'alternativa segnata conta solo per chi ha la riga: prima e dopo in modifica, la riga nuova alla creazione, e con
+    **`AlsoOnDeletion`** (nuovo su `[AlsoWrittenWith]`) all'eliminazione. Il guardiano prende il catalogo dal contenitore;
+  - `PermissionCatalog.VerifyAlternatives`, chiamato all'avvio da `HubPipeline.InitializeAsync` prima delle migrazioni, sul modello di
+    ogni contesto.
+
+  Nel modulo di prova: `SampleRecord.AssigneeVid` (la migrazione `AddSampleAssignee`, del solo contesto di prova) e `Sample.Manage`.
+  I test: sei della spina dorsale, `AssignedRowPermissionTests`, e nove di unità, `AssigneePermissionTests`.
+- **Scostamenti dal piano, piccoli e scritti nella nota**:
+  1. **Due domande e non una**: la seconda, sul trainer di A7, l'ha voluta `dalberone`. È decisa, e la registra A7.
+  2. **I rilievi 1 e 2 del revisore sono un controllo all'avvio** in `src/IvaoHub.Web/HubPipeline.cs`, un file del nucleo che il piano
+     non nominava, e non un test di architettura, perché `ArchitectureTests.cs` è del maintainer. Il catalogo rifiuta anche il segno su un
+     permesso che legge, come la nota proponeva.
+  3. **`Sample.Manage` è anche `DeniedToStakeholder`**, perché sull'interessato l'handler e il guardiano dicano lo stesso (sotto,
+     «Trovato» 1).
+  4. **I test chiedono anche l'handler**, sulla riga come fa il motore (prima e dopo il payload, e sulla riga nuova). I test di A3
+     provavano solo il guardiano.
+- **Trovato, e scritto per chi viene dopo**:
+  1. **Il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi `DeniedToStakeholder`**, e così è da A3.
+     Con un'alternativa che non è segnata così, l'endpoint lascia passare e la rete ferma chi non ha `Edit`. Non è un buco, perché la
+     rete è la più stretta delle due, ma le due non dicono lo stesso. Per A10: se l'esame dice il suo candidato, `ManageExams` va segnato
+     `DeniedToStakeholder` (nota §3.6).
+  2. **Per A10** (nota §3.6): la dichiarazione degli esami, e un TA che deve vedere nella lista quali esami sono i suoi.
+  3. **Per A7**: la risposta 2 di Carmine. `Training.Conduct` va dato per posizione ai TA1–9 e ai T01–T99, perché i `positionGrants`
+     di A4 danno ai trainer solo `View`: una voce nuova del seme si applica al primo avvio che la trova.
+- **Verificato, in locale** (26 settembre 2026, sul merge con `main` che porta A3), una suite alla volta:
+  - `dotnet build` senza avvisi;
+  - unità 724/724: le 715 di `main` e le 9 nuove;
+  - **integrazione intera senza filtro** 313/313: le 307 di `main` e le 6 nuove. La classe nuova da sola passa 6/6;
+  - `pnpm lint`, `typecheck`, `format:check` e `i18n:check` verdi;
+  - `pnpm test`: 481 test in 62 file;
+  - `pnpm gen:api` senza differenze;
+  - `pnpm e2e`: 91;
+  - `pnpm e2e:full`: 38, sul banco di questa sessione (porta 5082, database nuovo `ivaohub_e2e_a3b`), senza la mappa di base,
+    perché la porta 5080 e `ivaohub_e2e` li usa la sessione di A4;
+  - `dotnet format --verify-no-changes` sui file toccati, e le regole di `core-guard` rifatte in PowerShell.
+
+  **Sul guardiano e sull'handler di `main`**, rimessi per la prova, cadono 4 dei 6 test d'integrazione e 2 dei 9 di unità. Restano
+  verdi solo le garanzie che valgono già prima: l'interessato escluso, le alternative non segnate, la domanda senza riga, il
+  catalogo. Poi il codice è tornato com'era, confrontato con il diff salvato.
+
+  Due inciampi:
+  1. ⚠️ **Dopo la prova, la prima build non ha ricompilato.** I file rimessi con `Copy-Item` avevano la data della copia, più vecchia
+     dei binari della prova, e la suite di unità ha girato sui binari vecchi. Li ho toccati e ricompilati, e ogni corsa qui sopra
+     viene dopo quella build.
+  2. ⚠️ **Una corsa intera sul codice finale ha fatto cadere un test dei contatti all'avvio dell'host**: «Unable to connect to any of
+     the specified MySQL hosts», sul container di Testcontainers, dopo il controllo nuovo. La classe da sola è passata 11/11, e la
+     corsa intera rifatta 313/313.
+- **Non verificato**: la CI (la dirà la PR); la regola su un modulo vero (gli esami in A10, il trainer in A7); un avvio che fallisce
+  davvero per una dichiarazione sbagliata. I due rifiuti sono provati dai test di unità su `VerifyAlternatives`, e ogni avvio dei test
+  d'integrazione fa girare il controllo sui modelli veri, che passano.
+- **Dopo la revisione del codice** ([il revisore][rv135b], 26 settembre 2026): è **approvabile appena il branch è in pari con `main`**.
+  - Il revisore ha rifatto tutto sul merge con `main` a 5dda35e: unità 761, integrazione 317.
+  - Ha provato anche una mutazione dell'handler (il confronto con chi ha la riga rovesciato), che fa cadere 2 dei 9 test di unità.
+- **In pari con `main`** (27 settembre 2026):
+  - `main` era 68 commit più avanti di 5ddba1f: A4, A4a, A5, A6a, #152 (i rifiuti di un form nel nucleo), le altre del maintainer
+    fino a #158, e le correzioni #138, #141 e #142. È entrato nel branch con un merge.
+  - **L'unico conflitto** era in `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi, il più recente sopra: l'intestazione nuova di A3b
+    sopra quella di A6a, e «Che cosa ha lasciato A3b» sopra A6a, A5, A4 e A4a. Dal testo di `main` non manca nessuna riga.
+  - `08` si è unito da solo. `HubPipeline.cs` si è unito da solo con la riga nuova della diagnostica di `main`.
+  - **Il punto di parole del revisore**, fatto: il messaggio di `PermissionCatalog` dice esattamente che cosa controlla, cioè che il
+    permesso `View` dell'area non è mai `OnlyForAssignee`. Il test di unità che lo prova ha preso lo stesso nome.
+  - **Rifatto tutto, una suite alla volta**, sul merge:
+    - `dotnet build` senza avvisi;
+    - unità 794/794: le 785 di `main` e le 9 nuove;
+    - **integrazione intera senza filtro** 336/336: le 330 di `main` e le 6 nuove;
+    - `dotnet format --verify-no-changes` sui file C# della fase;
+    - `pnpm lint`, `typecheck`, `format:check` e `i18n:check` (752 chiavi) verdi;
+    - `pnpm test`: 495 test in 63 file;
+    - `pnpm gen:api` senza differenze;
+    - `pnpm e2e`: 91, con il lucchetto della porta 4173 che si passano le sessioni che lavorano in parallelo;
+    - `pnpm e2e:full`: 41 sul banco di questa sessione (5082). Il database è lo stesso `ivaohub_e2e_a3b` del 26 settembre, portato
+      avanti dalle migrazioni di `main`.
+
+[q135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5841258158
+[a135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
+[rv135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250526
+[rv135b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026
 
 ### A4a — Nucleo: le parole di più moduli
 
@@ -955,13 +1043,70 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
   nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`, spento il banco di
   A5 su richiesta a quella sessione): il trainee chiede ADC su una postazione con il «sì» e lo trova in `/training/mine`, risponde «no» sul
   percorso pilota e legge la frase di R.2, annulla la richiesta ATC; in italiano e in inglese, tema chiaro e scuro, e largo 375 px.
-- **Non verificato**: la CI dopo la correzione dello smoke (la prima corsa è caduta sul toast, sopra; la dirà la PR). **Che i test nuovi
-  cadano su una copia indebolita del codice**: non tentato, perché la
-  modalità di permessi l'ha rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è
-  così che è venuto fuori il difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
+- **La CI** (`build-test` e `core-guard`) è verde dopo la correzione dello smoke: su e156e9b ed e178b1b, e sul merge del passo della coda
+  dopo #143 (f5e3cd6).
+- **Non verificato**: **che i test nuovi cadano su una copia indebolita del codice**: non tentato, perché la modalità di permessi l'ha
+  rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è così che è venuto fuori il
+  difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
   di A6a prova l'intento in coda). **Un ban, un'attesa, una soglia di ore, il sito dell'esame e un 409 su un annullamento vecchio,
   attraverso le pagine sul banco**: il banco non ne ha (nessun ban, nessun training completato, nessuna soglia, nessun `theoryExamUrl`);
   le pagine li mostrano con l'API finta dello smoke, e il lato del server è dei test d'integrazione di A6a.
+- **Le correzioni della revisione** (28 settembre 2026, [la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5855612519);
+  la PR era tornata in bozza perché il passo della coda dopo #143 l'aveva segnata pronta prima di questa correzione,
+  [commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5857989492)). Su un branch temporaneo da
+  `origin/m3/a6b-request-pages` (f5e3cd6), spinto sul branch della fase; il merge verso l'alto della coda lo fa una volta sola la sessione
+  che coordina le correzioni.
+  1. **`main` nel branch** (3c79786), come il master ha chiesto su #144
+     ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5859555627)): A3b (#135) e le PR del maintainer
+     #160–#172. L'unico conflitto era in `HANDOFF-M3.md`. L'intestazione resta quella di A6b, che i branch sopra riscrivono per conto
+     loro; in «Lo stato» restano tutti i paragrafi, quello di A3b subito sotto quello di A6b, così il merge verso l'alto non tocca le righe
+     che i branch sopra hanno cambiato. `08` si è unito da solo. **Il catalogo di A3b non cambia niente di A6b**: le pagine del trainee sono
+     solo front end, e gli endpoint di A6a che leggono chiedono solo di essere entrati (`HubPolicies.SignedIn`); il training non ha
+     `IHasAssignee`, `[AlsoWrittenWith]` né permessi `OnlyForAssignee` (li porta A7, per il trainer). `TrainingRequestTests` è verde dopo il
+     merge.
+  2. **Invio nella postazione mandava la richiesta senza la domanda sul teorico** (da correggere; 2d20da4). Con `asksTheory` il form non
+     ha un pulsante di invio (`actionsElsewhere`), e la postazione è la sua sola casella di una riga. Per l'invio implicito dell'HTML, Invio
+     lì manda il form, e `form.submitHint` lo dice anche a chi usa un lettore di schermo. La richiesta partiva senza risposta se la finestra
+     non si era mai aperta (il server risponde `theoryPassed: errors.required`), o con una risposta data e poi annullata.
+     - **Ora ogni invio del form passa da una guardia** (`letThrough`, sull'evento `submit` in fase di cattura, prima che `SchemaForm` lo
+       veda). Va avanti solo l'invio che parte dalla conferma della finestra, dentro `requestSubmit`, con la risposta data; ogni altro invio
+       **apre la domanda come fa il pulsante** e non manda niente. La risposta si dimentica quando la finestra si chiude.
+     - **Perché Invio apre la domanda**, invece di non fare niente come nella strada del revisore (un ref che `sendWithAnswer` imposta e
+       `submit` controlla): con un Invio muto, «Premi Invio per salvare» sarebbe falso per questo form; così Invio porta al salvataggio,
+       passando dalla domanda. E la guardia prende la conferma nel momento in cui l'invio comincia, quindi una conferma che il form poi
+       rifiutasse non resterebbe indietro per l'invio dopo.
+     - **La finestra si apre dal suo pulsante** (un `click` sul pulsante di `ConfirmDialog`), perché `ConfirmDialog` tiene per sé il suo
+       `open`. Un `open` controllato sarebbe un cambio del nucleo, e qui non serve.
+     - **Lo smoke** ha due casi nuovi: Invio con la finestra mai aperta; «No», «Annulla», poi Invio. **Cadono tutti e due sul codice di
+       prima**, provato prima della correzione: la domanda non compare, e la richiesta parte.
+  3. **«Torna alla richiesta» dopo un «no» perdeva i testi** (nit; edfe7cb), perché il pulsante di `Declined` rimontava `RequestForm`. Il
+     form ora resta montato, **solo nascosto** mentre si legge il rifiuto dell'hub, e tornando c'è com'era. Il caso del «no» dello smoke
+     torna indietro e rilegge postazione e disponibilità; **cade sul codice di prima** (la postazione torna vuota).
+  4. **L'etichetta della postazione** (nit; 2912154): `` `${callsign} — ${name}` `` è nella chiave `training:positionChoice`, nelle due
+     lingue, come `ratingChoice`, con una funzione sola accanto a `ratingOptions` (`positionLabel`, `screens/ratings.ts`). La stessa
+     composizione era scritta anche nelle impostazioni (A4), che ora usano la stessa funzione. Il giro sul banco cerca l'opzione con le
+     stesse parole, lette dal file di lingua.
+  5. **La riga vecchia di «Non verificato»** qui sopra (nit): la CI dopo la correzione dello smoke è verde, e ora la voce «La CI» lo dice.
+  6. **Restano fuori, con il perché**:
+     - **I nit di `screens/mine.tsx`**: il `CardRoot` di Atmosphere al posto della card fatta a mano, il separatore `' · '` in una chiave,
+       `line-clamp-3` sui testi del trainee senza un modo di leggere il resto. A8b, A9b e A10b cambiano `mine.tsx`, e il merge verso l'alto
+       andrebbe in conflitto: **li fa una fase in cima alla coda**.
+     - **`canCancel` dal server** al posto di `isCancellable`, e `readyForExam`, in `trainee.ts`: oggi dicono la stessa cosa di A6a. Il
+       revisore dice di farlo **quando A7 e A8 aggiungono stati**.
+     - **`src/IvaoHub.Modules.Training/Refusals.cs`**: la copia del modulo la toglie **A10c**, che usa `Refusals` del nucleo (#152), come è
+       scritto in `HANDOFF-M3.md` sul branch di A10b.
+     - **La scelta da tastiera nel suggerimento chiuso** (scrivere, freccia giù, Invio) non funziona, anche su `main`. `Suggest` è del
+       nucleo, e il maintainer la prende come seguito (revisione di #145): non toccato.
+  7. **Verificato, in locale** (28 settembre 2026, sul merge e le tre correzioni, 2912154): `dotnet build` senza avvisi; unità **817/817**
+     (le 767 di A6b e le nuove di `main`); **integrazione intera senza filtro 345/345**; `pnpm lint`, `typecheck`, `format:check`,
+     `i18n:check` verdi; `pnpm test` **510** in **64** file; `pnpm e2e` **98** (le 96 e i due casi di Invio); **`pnpm e2e:full` 42/42** su un
+     banco nuovo (127.0.0.1:5096, `ivaohub_e2e_a6b`, creato dal primo avvio). `pnpm gen:api` senza differenze; `pnpm i18n:sync` fatto, e le
+     copie in `locales/` sono nel commit dell'etichetta. **I test nuovi cadono sul codice di prima**: con lo smoke della richiesta scritto e
+     `request.tsx` ancora com'era (dopo il merge), 3 casi su 7 cadono — i due di Invio (la domanda non compare) e quello del «no» al
+     ritorno (la postazione è vuota) —; con le correzioni, 7 su 7.
+  8. **Non verificato**: Invio con un lettore di schermo vero, e in un browser diverso da Chromium (lo smoke gira solo lì; la guardia sta
+     sull'evento `submit`, che l'invio implicito manda in ogni browser). Invio sul banco: il giro completo sceglie la postazione dall'elenco
+     e manda con il pulsante, come prima; Invio lo prova lo smoke, con l'API finta. Nessuna prova a mano sul banco di anteprima.
 
 ### A7 — Accettare, rifiutare, assegnare
 
