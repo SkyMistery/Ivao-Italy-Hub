@@ -2201,7 +2201,28 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   l'esaminatore di un esame che inseriscono per un altro (§3.6 lo lascia ad A10); la voce `exam` del calendario; gli esami nel blocco e in
   `/training`. Una migrazione. **Fatta quando**: un TA inserisce un esame, e solo lui (con HQ, TC e TAC) lo cambia e lo toglie; la pagina
   `/training` lo mostra a un visitatore senza VID né nomi. Se #135 non è unita quando A10b finisce, A10c aspetta, e la fase dopo A10b è
-  un'altra.
+  un'altra: così è andata, e la fase dopo A10b è stata A11a.
+
+  **#135 è unita il 27 settembre 2026 alle 20:24 UTC: A10c può partire.** Il branch `m3/a10c-exams` l'ha preparato la sessione di A11a da
+  quello di A10b (67ab179), e `main` ci entra con un merge: da A10b, che l'ha preso il 28 settembre con il merge verso l'alto della coda
+  chiesto dal revisore ([commento sulla #144][m144]; sotto, «Com'è andata (A10b)»), o da solo. **Dal revisore, il 28 settembre**
+  ([commento sulla #146][m146]), tre cose che la regola di A3b chiede alla riga di un esame, e che A10c scrive e prova:
+  1. **L'area dell'entità, dichiarata**: `[PermissionArea("Training")]` su `Exam`. Su una riga non affidata a chi scrive l'handler ripiega
+     sull'`Edit` dell'area del permesso (`PermissionCatalog.EditOf`: `Training.ManageExams` → `Training.Edit`), il guardiano sull'`Edit`
+     dell'area dell'entità (`[PermissionArea]`, altrimenti il nome del `DbSet`: `Exams.Edit`, che nessuno ha). Senza l'attributo, TC e TAC
+     che cambiano l'esame di un TA avrebbero «sì» dall'endpoint e un `ForbiddenDomainException` dal guardiano. Con **un test della spina
+     dorsale: TC e TAC, che hanno `Edit` e non sono gli esaminatori, cambiano l'esame dall'endpoint**.
+  2. **Dire e provare che cosa fa DELETE**: un esame lo tolgono **HQ, TC, TAC e il TA a cui è assegnato, nessun altro** ([risposta 4 di
+     Carmine sulla #131][c131]). Quindi `AlsoOnDeletion = true` sull'alternativa e `MapCrud` senza `DeletePolicy`, come la nota di A3b §3.6,
+     e i test di chi lo toglie e di chi no. Il punto 2 del revisore è scritto per A7, dove `Training.Conduct` non ha `AlsoOnDeletion` e la
+     risposta è `DeletePolicy = Training.Edit` (o `AllowDelete = false`): sull'esame il TA non toglierebbe più il suo, contro la risposta di
+     Carmine.
+  3. **Chi ha interesse** (nota di A3b §3.6): se l'esame nomina il suo candidato (`IHasStakeholder`), `ManageExams` è anche
+     `DeniedToStakeholder`, altrimenti un candidato che è anche l'esaminatore avrebbe «sì» dall'handler e «no» dal guardiano.
+
+  Il revisore proporrà una piccola PR del nucleo perché il controllo all'avvio (`PermissionCatalog.VerifyAlternatives`) rifiuti il punto 1 e
+  altre due dichiarazioni silenziose: se è unita prima di A10c, un esame dichiarato male non fa partire l'hub. ⚠️ A10c toglie anche la copia
+  `src/IvaoHub.Modules.Training/Refusals.cs` (la nota di #152; `HANDOFF-M3.md`, A10b).
 
 [a1-135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
 
@@ -2471,6 +2492,31 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   mano**: il banco di anteprima non ha né una scelta in ritardo né richieste in attesa; le provano il test d'integrazione (con la soglia) e lo
   smoke, e il giro sul banco legge le due code dal server vero con una richiesta e un'assegnazione. **I test nuovi del server sul codice di
   A10a**: non compilano (i provider, gli endpoint e i DTO nascono qui). **Un capo FIR nella coda dello staff**: è di A11b.
+- **In pari con `main` dopo #135** (28 settembre 2026): **#135 (A3b) è stata unita il 27 settembre alle 20:24 UTC**, e il revisore ha chiesto
+  alla coda un merge di `main` ([commento sulla #144][m144]). Dopo le correzioni di revisione di A6b, A7 e A8a, la sessione che coordina ha
+  portato `main` (a 4d424f9: #152, #135 e le PR del maintainer da #154 a #172) nella coda fino ad A10a (9e82ad1), e **A10b l'ha preso con un
+  merge** (5e349b4, mai un rebase): **nessun conflitto**, `08` e `HANDOFF-M3.md` compresi. `main` è andato avanti ancora durante il passo
+  (#173 e #174, fino alle 17:17 UTC): non si insegue, e se il revisore vuole anche loro lo chiede sulla PR.
+  - **Il punto 3 del revisore** («se il catalogo di A3b cambia qualcosa su cui le fasi contano»): **per A10b niente**. Nessun permesso del
+    training è segnato `OnlyForAssignee` né ha `AlsoOnDeletion`, e `Training` dichiara già la sua area (`[PermissionArea]`), quindi
+    `VerifyAlternatives` passa a ogni avvio — dei test d'integrazione e del banco — e sul training il ramo nuovo dell'handler non scatta mai.
+    I blocchi dello staff chiedono all'unico handler `Approve`, `Assign` e `Conduct` sulla riga, come prima; le pagine pubbliche leggono
+    soltanto. Quando A7b segnerà `Training.Conduct` con il trainer come assegnatario, `training.trainerQueue` resterà la stessa: elenca solo
+    i training di cui il lettore è il trainer, cioè le righe affidate a lui. E `TrainingBlocksTests` dà `Conduct` al trainer su tutto il
+    dipartimento, non con il grant sulla riga che A7b toglie: il test resta vero anche dopo.
+  - **Dalle correzioni delle fasi sotto, niente da cambiare qui**: un training chiuso ora tiene la data della sua sessione (A8a), ma la regola
+    pubblica (`SessionIsPublic`), «tenuta» (`StaffQueue.IsHeld`), «da registrare» (`IsRecordable`) e la coda del trainer leggono anche lo
+    stato, e il blocco del trainee mostra la data solo a un training programmato: una sessione chiusa non è né in `/training` né nella sua
+    pagina, come prima.
+  - **Rifatto tutto, una suite alla volta**, sul merge: `dotnet build` senza avvisi; unità **846/846**; **integrazione intera senza filtro**
+    **381/381**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (777 chiavi) verdi,
+    e lo script delle chiavi `training:`; `pnpm test` **554** in **70** file; `pnpm e2e` **131/131**, con il lucchetto della porta 4173, al
+    quarto giro — nei primi due un test del nucleo diverso (`calendar.spec.ts:98`, poi `smoke.spec.ts:52`) ha aspettato invano che la pagina
+    si disegnasse, e il terzo si è chiuso con un crash del runner (0xC0000409) prima di cominciare; quei due spec, ripetuti cinque volte,
+    passano 45/45 —; `pnpm e2e:full` **47/47** al primo giro su un banco nuovo (127.0.0.1:5095, `ivaohub_e2e_a10b` ricreato); `dotnet format
+    --verify-no-changes` sui file C# della fase; le regole di `core-guard` in PowerShell, sull'intervallo della fase e sul diff verso `main`:
+    nessun file del maintainer, nucleo 2 (i due conteggi) con la nota, quindi passa.
+  - **A10c può partire** (sopra, sotto A10: i tre punti del revisore per la riga di un esame, e la copia di `Refusals.cs` da togliere).
 
 **Com'è andata (A10c)**: *(a fase chiusa)*
 
