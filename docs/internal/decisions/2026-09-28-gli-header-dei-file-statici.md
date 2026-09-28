@@ -1,7 +1,9 @@
 # Gli header dei file che il server web consegna da sé
 
 **Data:** 28 settembre 2026
-**Stato:** **Proposta** — le tre domande del §5 vanno a Carmine sulla pull request; il codice viene dopo la sua risposta.
+**Stato:** **decisa da Carmine sulla pull request, 28 settembre 2026**, tutte e tre le risposte come raccomandato
+([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/164#issuecomment-5865067394)): §5. Il codice della strada A
+viene in una pull request del nucleo dopo questa, e dopo la prova del §6.1 sul server.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo esiste (gli header di `config/security.json`,
 `SecurityHeaders.cs`) e non copre un modo di ospitare l'hub che `docs/DEPLOYING.md` stesso raccomanda. Si estende il
 meccanismo, non lo si aggira; l'estensione è del nucleo, quindi una pull request sua (`CLAUDE.md` §0, regola 6).
@@ -39,7 +41,7 @@ Che cosa se ne ricava:
   `Referrer-Policy` non servono: il browser applica quelle del documento che li chiede. `nosniff`, l'unico che conta per
   loro, l'hosting lo manda già.
 - `/branding/`, una cartella di `wwwroot/` **senza** `index.html`, va a Passenger e non al server web. È l'indizio che
-  una cartella senza indice arriva all'applicazione (§3, strada A); per `/` stesso va provato (§6).
+  una cartella senza indice arriva all'applicazione (§3, strada A); per `/` stesso va provato (§6.1).
 
 ## 2. Perché il meccanismo di oggi non basta
 
@@ -66,7 +68,7 @@ Passenger come oggi `/branding/`; `assets/`, `locales/` e `branding/` restano st
   l'indice), un test che il pacchetto pubblicato non abbia `wwwroot/index.html`, e in `DEPLOYING.md` e nel foglio
   italiano il perché, `spa` nella riga dei `deny` (serve solo se il document root è la cartella dell'applicazione) e il
   controllo `curl -sI /` con la CSP. Da verificare nella fase: come la suite e2e completa monta la SPA.
-- Resta fuori: i file statici di un'installazione privata senza `X-Robots-Tag` (domanda 3).
+- Resta fuori: i file statici di un'installazione privata senza `X-Robots-Tag` (domanda 3; accettato, §7).
 
 **B. Document root su una cartella vuota: tutto passa dall'applicazione.** Nessuna riga di codice, un'impostazione del
 pannello; l'hub serve già `wwwroot/` da sé e nient'altro (misurato il 27 settembre). Ma ogni JS, CSS e JSON passa da
@@ -107,35 +109,106 @@ lo leggono come «tutto permesso» (va bene) ma non trovano la riga `Sitemap:` (
 Search Console, o con una regola del pannello). Il file a mano in `webapp/wwwroot/` **non deve mai entrare nel pacchetto**:
 direbbe `Disallow: /` anche alla produzione.
 
-## 5. Le domande per Carmine
+## 5. Le domande, e che cosa ha deciso Carmine
+
+Carmine ha risposto sulla pull request il 28 settembre 2026, **tutte e tre come raccomandato**
+([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/164#issuecomment-5865067394)).
 
 1. **Quale strada?** Raccomandazione: **A**, in una pull request del nucleo dopo questa, con la versione `0.2.2` (nessuna
    migrazione). B come ripiego solo se serve la CSP sulla prova prima di A.
+   **Deciso: A**, `0.2.2`, nessuna migrazione — **dopo** la prova del §6.1 sul server di prova.
 2. **Sulla prova, intanto?** Raccomandazione: **niente di più** del `robots.txt` a mano. È privata all'accesso e senza dati
-   veri, e l'applicazione non parte ancora: il buco della CSP lì conta poco per qualche giorno. Il file a mano si toglie
-   solo quando la release con A è sul server **e** una misura mostra che `/robots.txt` arriva all'applicazione.
+   veri: il buco della CSP lì conta poco per qualche giorno. Il file a mano si toglie solo quando la release con A è sul
+   server **e** una misura mostra che `/robots.txt` arriva all'applicazione.
+   **Deciso così.**
 3. **I file statici di un'installazione privata, senza `X-Robots-Tag`?** Sono JS, CSS, JSON e immagini, non pagine; un
-   motore obbediente li salta per il `Disallow: /`. Raccomandazione: **accettarlo e scriverlo** tra i limiti della nota
-   dell'installazione di prova; se Carmine vuole chiuderlo, **una regola di Cloudflare** sul nome host (E), chiesta a chi
-   amministra, non una direttiva nel pacchetto.
+   motore obbediente li salta per il `Disallow: /`. Raccomandazione: **accettarlo e scriverlo** tra i limiti; se un giorno
+   va chiuso, **una regola di Cloudflare** sul nome host (E), chiesta a chi amministra, non una direttiva nel pacchetto.
+   **Deciso così**: il limite è scritto qui sotto (§7), e la pull request di A lo porta in `DEPLOYING.md` e nel foglio
+   italiano.
 
-## 6. Che cosa aspetta che l'applicazione parta
+## 6. Con l'applicazione accesa
 
-Da rimisurare, e da scrivere nella nota della fase A:
+L'applicazione gira su `test.it.ivao.aero` dalla mattina del 28 settembre (`0.2.1`, commit `fa089de`). **Rimisurato da
+fuori alle 07:05 UTC circa**:
 
-- `/health` e `/api/version`: la versione e il commit, e `Cache-Control: no-store`;
-- la CSP e `X-Robots-Tag` su un indirizzo profondo (`curl -sI /staff`): che l'applicazione li mandi davvero dietro
-  Passenger, e che `nosniff` non arrivi doppio in modo rotto (l'hosting lo aggiunge già);
-- **la prova di A prima del codice**: rinominare per un minuto `wwwroot/index.html` sul server, `curl -sI /`, e
-  aspettarsi dall'applicazione un 404 (il fallback non trova l'indice) **con** la CSP e `X-Correlation-Id`: vuol dire
-  che `/` senza indice arriva all'hub. Poi si rimette il file. Serve chi ha l'FTP;
-- `/robots.txt` senza il file a mano (rinominarlo per un minuto): se risponde l'hub o ancora Apache (§4);
-- `/secrets/…` e `/config/division.json`: 404 dell'applicazione, non più il 500 di Passenger.
+| Indirizzo | Risposta | Chi risponde |
+|---|---|---|
+| `/`, `/index.html` | 200, **nessun** header dell'hub: solo il `nosniff` dell'hosting | il server web, come prima |
+| `/staff` (GET e HEAD) | 200, **lo stesso `index.html`** di `/` (stessa impronta SHA-256), con CSP identica a `security.json`, `X-Frame-Options: DENY`, `Referrer-Policy`, COOP, HSTS (`max-age=2592000`), `X-Robots-Tag: noindex, nofollow`, `X-Correlation-Id` | l'hub |
+| `/health` | 200 `Healthy`, gli stessi header, `Cache-Control: no-store, no-cache` | l'hub |
+| `/api/version` (GET) | 200, `0.2.1`, `fa089de…`, `.NET 10.0.12`, `Cache-Control: no-store` | l'hub |
+| `/sitemap.xml` | 404 con gli header: un'installazione privata non ha sitemap | l'hub |
+| `/secrets/x.json`, `/config/division.json`, `/appsettings.json`, `/IvaoHub.Web.dll`, `/diagnostics/startup.txt` | 404 dell'applicazione, con gli header: prima era il 500 di Passenger | l'hub |
+| `/hub-keys/`, `/branding/` | 200, la pagina del sito (il fallback della SPA), con gli header | l'hub |
+| `/assets/index-….js` | 200, solo `nosniff`, `cf-cache-status: HIT` | il server web, poi Cloudflare |
+| `/robots.txt` | 200, il file a mano, `cf-cache-status: HIT` (Cloudflare lo tiene in cache) | il server web, poi Cloudflare |
+
+Che cosa conferma:
+
+- **Il buco è quello del §1, e solo quello**: la stessa pagina arriva con la policy da `/staff` e senza da `/`. Gli header
+  dell'hub attraversano Passenger e Cloudflare intatti, e `nosniff` arriva **una volta sola**.
+- La **cornice del blocco interattivo** qui non si vede: `/embed/guidelines` risponde 401 a chi non è entrato, con la
+  policy della pagina; la sua policy propria si misura da dentro, con una pagina pubblicata che ha il blocco.
+- ⚠️ `curl -I` (HEAD) su un indirizzo `GET` dell'API risponde **404**: gli endpoint `MapGet` non accettano HEAD, e il
+  fallback rifiuta `/api`. È un limite di misura, non un guasto: `/api/version` si controlla con `curl -s` (GET), come
+  dice già `DEPLOYING.md`. Per lo stesso motivo HEAD su `/embed/…` risponde con la pagina del sito.
+
+Resta da misurare **con l'FTP**, quindi da Carmine o da chi amministra (§6.1 e §6.2).
+
+### 6.1. La prova di A: `/` senza `index.html` arriva all'hub?
+
+È la condizione di Carmine prima del codice. Dura un minuto; in quel minuto la home risponde 404 (gli indirizzi profondi
+funzionano).
+
+1. Con FileZilla, in `webapp/wwwroot/`, **rinominare** (non cancellare) `index.html` in `index.html.off`.
+2. Dal terminale:
+
+   ```bash
+   curl -sI https://test.it.ivao.aero/
+   ```
+
+3. **Riuscita** se risponde `HTTP/1.1 404 Not Found` **con** le righe `content-security-policy:`, `x-robots-tag:` e
+   `x-correlation-id:`: è l'hub che risponde (404 perché oggi il fallback cerca l'indice proprio lì, e non lo trova).
+   **Fallita** se risponde 403, un elenco dei file della cartella, o un 404 **senza** `x-correlation-id`: allora il server
+   web tiene per sé `/` e la strada A va ripensata prima di scrivere codice.
+4. Subito dopo, in FileZilla, **rinominare** `index.html.off` di nuovo in `index.html`, e controllare che la home torni:
+
+   ```bash
+   curl -sI https://test.it.ivao.aero/
+   ```
+
+   deve dire di nuovo `HTTP/1.1 200 OK`.
+
+### 6.2. `/robots.txt` arriva all'hub senza il file a mano?
+
+Facoltativa ora, necessaria prima di togliere il file per sempre (decisione 2). Stessa durata.
+
+1. In `webapp/wwwroot/`, rinominare `robots.txt` in `robots.txt.off`.
+2. Dal terminale, con un parametro inventato perché Cloudflare ha la versione vecchia in cache:
+
+   ```bash
+   curl -sD - "https://test.it.ivao.aero/robots.txt?prova=1"
+   ```
+
+3. **L'hub risponde** se il testo è `User-agent: *` e `Disallow: /` **e** tra le righe c'è `x-correlation-id:`. Se invece
+   torna il 404 di Apache del 27 settembre, l'hosting tiene per sé `/robots.txt` (§4) e il file a mano resta.
+4. Rinominare `robots.txt.off` di nuovo in `robots.txt`.
+
+## 7. Limiti, accettati
+
+- **I file statici di un'installazione privata** (`assets/`, `locales/`, `branding/`) non portano `X-Robots-Tag`, né
+  con A né oggi: non sono pagine, e il `Disallow: /` di `robots.txt` li copre per i motori che lo leggono. Se un giorno
+  va chiuso, una regola di Cloudflare sul nome host, chiesta a chi amministra; mai una direttiva nel pacchetto (decisione
+  3).
+- **I file statici non portano gli header dell'hub** nemmeno con A: per un file che non è un documento contano solo quelli
+  del documento che lo chiede, e `nosniff` lo aggiunge l'hosting (misurato).
 
 ## Da portare nel piano
 
 - **§11.3** (produzione): il document root su `wwwroot/` non basta per gli header, e `index.html` sta fuori da `wwwroot/`
-  perché li serva l'applicazione (se passa A); il controllo `curl -sI /` con la CSP tra quelli dopo ogni deploy.
+  perché li serva l'applicazione (strada A, decisa); il controllo `curl -sI /` con la CSP tra quelli dopo ogni deploy.
+  Tra i limiti dell'installazione privata: i file statici senza `X-Robots-Tag` (§7), e la regola di Cloudflare se va chiuso.
 - **§16** (meccanismi) e la nota `2026-09-12-gli-header-di-sicurezza`: gli header valgono su ciò che attraversa l'hub;
   i documenti ci passano sempre, i file statici no, ed è voluto.
-- **§15 punto 2c** (hosting): `/robots.txt` su Plesk, se la misura del §6 conferma che l'hosting lo tiene per sé.
+- **§15 punto 2c** (hosting): `/robots.txt` su Plesk, se la misura del §6.2 conferma che l'hosting lo tiene per sé.
