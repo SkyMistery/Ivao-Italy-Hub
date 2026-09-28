@@ -57,6 +57,14 @@ process before; a `STOP` line how long the process lived, how many requests it a
 and the memory; a `SIGNAL` line that the system asked it to stop. A start that says `!!` follows a process that died
 without closing. It holds no secret.
 
+A start that finds nothing changed since the last start that initialised the database (the same build, the same
+division options and installation settings, the same `seed/`) skips the migrations, the grants to positions and the
+content seed: its `START` line says `initialisation skipped` and which steps; the first start after an upload says
+`initialisation full` and why. The mark is the row `startup.initialised` of `hub_division_settings`. After changing
+something **in the database by hand** that a start should act on (a template's seed setting deleted to seed it again),
+delete that row too, and the next start does everything
+(`docs/internal/decisions/2026-09-28-il-marcatore-d-inizializzazione.md`).
+
 ## What the server needs
 
 - **Linux x64** with glibc, **ICU** (`libicu`) and OpenSSL — the native pieces every .NET application on Linux uses.
@@ -200,7 +208,7 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | --- | --- |
 | `diagnostics/startup.txt`, read over FTP | `started at` is now; the `version` and `commit` of the release; `domain` and `access` as intended |
 | `diagnostics/startup-error.txt` | **absent**: a start that succeeds deletes it. If it is there, the start failed, and the file says why |
-| `diagnostics/starts.txt`, its last lines | a `START` of now with the release's version and commit, and its `ready in`. One `!!` right after the upload is the old process being replaced; more of them in the days after are worth reading |
+| `diagnostics/starts.txt`, its last lines | a `START` of now with the release's version and commit, its `ready in` and `initialisation full` (`another build`, or `no marker` the first time); the starts after it, at the next visits, say `initialisation skipped`. One `!!` right after the upload is the old process being replaced; more of them in the days after are worth reading |
 | `curl -s https://<host>/api/version` | the same version and commit, and `.NET 10…` |
 | `curl -s https://<host>/health` | `Healthy` |
 | `curl -s https://<host>/robots.txt` | a private installation: `Disallow: /`; a public one: its disallowed paths and the sitemap |
@@ -249,9 +257,10 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
 - **The cold start is paid by a visitor.** Measured on a Plesk + Passenger host (28 September 2026, version 0.2.1): Passenger
   stopped the hub after **10–30 s** without requests, and the first request after the silence took **8–10 s** instead of
   0.2 s. Version 0.2.4 cuts about 40% of it (ReadyToRun, the modules' migrations only when pending, TieredPGO off):
-  measured on one CPU, the first answer after a start went from 4.0 to 2.4 s, which on that host would be **about 5 s**.
-  *Not yet measured on the server*: its `diagnostics/starts.txt` says how long each start takes there, and where the time
-  goes. Where the idle time is not yours to change, that is what a little-visited site feels like
+  measured on one CPU, the first answer after a start went from 4.0 to 2.4 s; on the host, 0.2.4 was ready in 4.2 s and
+  answered at 5.4 s (median of eight). Version 0.2.5 skips the migrations and the seeds on a start that changed nothing:
+  measured on one CPU, 2.17 → 1.91 s, **about 0.7 s less** on the host by estimate. *Not yet measured on the server*: its
+  `diagnostics/starts.txt` says how long each start takes there, and where the time goes. Where the idle time is not yours to change, that is what a little-visited site feels like
   (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`, `docs/internal/decisions/2026-09-28-un-avvio-piu-veloce.md`).
 - **The home page without the hub's headers.** With the document root on `wwwroot/`, the web server hands out
   `index.html` for `/` by itself, so the first document of a visit carries no `Content-Security-Policy`, no
