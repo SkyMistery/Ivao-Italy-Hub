@@ -790,9 +790,37 @@ Escape chiude e lascia il testo; la barra di scorrimento della lista si trascina
 - **Non verificato**: la CI (la dirà la PR); browser diversi da Chromium — Firefox e Safari spostano il fuoco su una pressione con le
   loro regole, e la correzione legge solo `relatedTarget` e `document.activeElement`, ma nessuna prova ci ha girato —; uno schermo touch
   (il tocco su un'opzione, il dito che scorre la lista); una risposta di Carmine diversa da quella raccomandata.
+- **Le correzioni della revisione** (28 settembre 2026; [i rilievi del revisore][r145], letti su `b065e49`: approvabile appena la nota
+  registra la risposta):
+  1. **La risposta di Carmine registrata** (afec5ce): la nota è *decisa*, con la riga di stato e il §5 che citano
+     [il suo commento][a145]; lo dicono anche l'intestazione di questa sezione e le parti di A6c in `HANDOFF-M3.md`.
+  2. **Tab dalla lista** (b04604f), una frase nella nota al §3.2. Il rilievo: la lista sta in un portale di Radix in fondo a `<body>`
+     e dopo non c'è niente che prende il fuoco, quindi in un Chrome vero il Tab andrebbe alla barra del browser, la lista non si
+     chiuderebbe sul Tab, e la regola si applicherebbe al fuoco o al clic successivo. **Misurato, non va così**: finché la lista è
+     aperta Radix mette uno `<span data-radix-focus-guard tabindex="0">` all'inizio e in fondo a `<body>`, dopo il portale. Il Tab
+     arriva lì, la lista si chiude e `/pilots` torna sul Tab stesso; Shift+Tab va all'ultimo link della pagina (`/legal`), con lo
+     stesso esito. Misurato con una spec usa-e-getta, mai spinta, su una porta mia (4197), nel Chromium headless di Playwright e nel
+     Chrome installato con la finestra (`channel: 'chrome'`, `--headed`). La frase dice questo, per scelta di `dalberone`, e che nessuna
+     prova della spec lo tiene.
+     - ⚠️ Letto, e raggiunto solo con uno script: se il fuoco lasciasse la pagina dalla lista senza posarsi altrove (un `blur()` da
+       script), un clic di ritorno nella casella avrebbe `relatedTarget` nullo e conterebbe come un arrivo: `cal` diventerebbe «quello
+       che c'era», e uscendo resterebbe `cal`. Nessuno dei gesti provati ci porta: il Tab si ferma sulla guardia; passando a
+       un'altra scheda e tornando il fuoco resta nella lista, e la ricerca continua (ma con l'emulazione del fuoco di Playwright,
+       quindi non è una prova piena).
+  3. **Il punto 4 lo tiene solo il tempo** (rilievo, scritto qui): la scelta scritta in `opened` la vede una prova solo se si torna
+     nella casella mentre la lista si sta ancora chiudendo, perché Radix ne anima l'uscita; a lista sparita il ritorno è un arrivo
+     che rilegge il valore, e il punto 4 non serve. Il 26 settembre, tolto il punto 4, cadeva la prova del menu di
+     `back-office.spec.ts`, e solo quella. Il revisore nomina anche la seconda metà della seconda prova della spec. Letta sul codice,
+     la spec non lo tiene: la prova che sceglie è la prima, e prima di tornare nella casella aspetta che la lista sia nascosta
+     (`toBeHidden`), quindi quel ritorno è un arrivo; la seconda non sceglie niente. Non l'ho rifatto oggi: togliere il pezzo per
+     prova è stato rifiutato dalla modalità di permessi della sessione, e non l'ho aggirato.
+  4. **La scelta da sola tastiera** (rilievo, scritto qui) — scrivere, freccia giù, Invio — **non funziona neanche su `main`**: la
+     casella sta fuori dalla radice di `cmdk`, che quindi non riceve né le frecce né Invio. Per lo stesso motivo Invio in una casella
+     chiusa invia il form, e questo conta per #144 (A6b). Non è di questa PR: il maintainer la prende come seguito.
 
 [q145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355
 [a145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813
+[r145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855612725
 
 ### A6 — La richiesta
 
