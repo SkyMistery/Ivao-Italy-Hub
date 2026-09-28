@@ -157,3 +157,36 @@ test('the language switcher actually switches', async ({ page }) => {
  * ignores it and complains. The test above is what says the handler still runs. Do not "fix" it by
  * removing `onValueChange`.
  */
+
+/**
+ * A browser speaks a regional tag, and the language files exist once per language. Until
+ * 28 September 2026 every load from `en-GB` or `it-IT` asked for `/locales/en-GB/*.json` first, one
+ * 404 per namespace, and only then for the language that has files (test.it.ivao.aero's log).
+ */
+for (const [locale, divisionName] of [
+  ['en-GB', 'IVAO Example'],
+  ['it-IT', 'IVAO Esempio'],
+] as const) {
+  test.describe(`a browser in ${locale}`, () => {
+    test.use({ locale });
+
+    test('reads the hub in its language and asks /locales/ only for files that exist', async ({ page }) => {
+      const asked: { url: string; status: number }[] = [];
+      page.on('response', (response) => {
+        if (new URL(response.url()).pathname.startsWith('/locales/')) {
+          asked.push({ url: new URL(response.url()).pathname, status: response.status() });
+        }
+      });
+
+      await page.goto('/');
+      await expect(page.getByRole('heading').first()).toHaveText(divisionName);
+      await page.waitForLoadState('networkidle');
+
+      expect(asked.length).toBeGreaterThan(0);
+      for (const { url, status } of asked) {
+        expect(url, `${url} answered ${status}`).toMatch(/^\/locales\/[a-z]+\/[^/]+\.json$/);
+        expect(status, url).toBe(200);
+      }
+    });
+  });
+}
