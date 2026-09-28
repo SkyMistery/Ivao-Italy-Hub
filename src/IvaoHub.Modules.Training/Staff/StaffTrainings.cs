@@ -319,8 +319,14 @@ public sealed class StaffTrainings(
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Somebody moved the training meanwhile: the grant just written would name a trainer the training does not have.
-            await grants.TakeAsync(payload.TrainerVid, TrainingPermissions.Conduct, department, scope, CancellationToken.None);
+            // Somebody moved the training meanwhile, and the grant goes back — unless the training now names this very trainer:
+            // two assignments of the same person from one version, and the other one saved the row. Whichever of the two wrote
+            // the grant, it is the trainer's now, and taking it would leave them the training without it.
+            if ((await FindAsync(training.Id, tracked: false, CancellationToken.None))?.TrainerVid != payload.TrainerVid)
+            {
+                await grants.TakeAsync(payload.TrainerVid, TrainingPermissions.Conduct, department, scope, CancellationToken.None);
+            }
+
             throw;
         }
 
