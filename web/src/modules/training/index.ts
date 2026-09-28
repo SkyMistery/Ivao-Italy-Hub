@@ -5,12 +5,14 @@ import { TRAINING_MANAGE_SETTINGS, TRAINING_MANAGE_SHEETS, TRAINING_VIEW } from 
 import {
   banFormSearchSchema,
   bansSearchSchema,
+  examsSearchSchema,
   requestSearchSchema,
   sheetItemFormSearchSchema,
   sheetItemsSearchSchema,
   staffTrainingsSearchSchema,
 } from './schemas';
 import { BanForm, BansPage } from './screens/bans';
+import { ExamForm, ExamsPage } from './screens/exams';
 import { MinePage } from './screens/mine';
 import { PublicSessionPage, TrainingPublicPage } from './screens/public';
 import { RequestPage } from './screens/request';
@@ -28,7 +30,8 @@ import { TraineeLookupPage, TraineePathPage } from './screens/trainees';
  * chosen by the trainee on the page of their training, or set by hand —, the session, and the closing; A9 what the session
  * came to — rescheduled, not attended, or reported with the sheet —, on the same two pages of a training; A10a a trainee's
  * path as the staff reads it, and the bans; A10b the public side — the sessions still to be held and the page of one — and the
- * four blocks of the pages and the dashboards.
+ * four blocks of the pages and the dashboards; A10c the exams in the calendar, the list and the form of the staff, and the exams
+ * still to come beside the sessions.
  */
 export const trainingManifest: ModuleManifest = {
   key: 'training',
@@ -94,6 +97,21 @@ export const trainingManifest: ModuleManifest = {
       path: '/staff/training/trainees/$id',
       permission: TRAINING_VIEW,
       component: TraineePathPage,
+    },
+    // The exams in the calendar (A10c): read by whoever does training; entering one asks more, and which ones the reader may
+    // change is the server's answer on each row.
+    {
+      area: 'staff',
+      path: '/staff/training/exams',
+      permission: TRAINING_VIEW,
+      validateSearch: examsSearchSchema,
+      component: ExamsPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/training/exams/$id',
+      permission: TRAINING_VIEW,
+      component: ExamForm,
     },
     {
       area: 'staff',

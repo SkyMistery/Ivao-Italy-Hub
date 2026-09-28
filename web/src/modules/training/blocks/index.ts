@@ -65,8 +65,8 @@ function exampleRow(
 }
 
 /**
- * The sessions still to be held (§4.1): on `/training`, on a page of the site, on a dashboard. One property, how many at most;
- * nothing written, the ten soonest. Who is in them only for a signed in reader, as the server answers.
+ * The sessions still to be held and the exams still to come (§4.1, A10c): on `/training`, on a page of the site, on a dashboard. One
+ * property, how many at most; nothing written, the ten soonest. Who is in them only for a signed in reader, as the server answers.
  */
 export const upcomingSessionsBlock: BlockRegistration = {
   type: 'training.upcomingSessions',
@@ -101,6 +101,17 @@ export const upcomingSessionsBlock: BlockRegistration = {
         held: false,
         trainee: { vid: 100003, name: 'Robin Pilot' },
         trainer: exampleTrainer,
+      },
+    ],
+    exams: [
+      {
+        id: 51,
+        kind: exampleAtc.kind,
+        ratingShortName: exampleAtc.shortName,
+        position: 'XXXX_BOX',
+        startsAtUtc: inDays(3),
+        candidateVid: exampleTrainee.vid,
+        examinerVid: 100005,
       },
     ],
   } satisfies UpcomingSessionsData,

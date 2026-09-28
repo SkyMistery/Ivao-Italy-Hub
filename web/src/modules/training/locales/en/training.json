@@ -3,6 +3,7 @@
     "section": "Training",
     "trainings": "Requests and trainings",
     "trainees": "Trainees",
+    "exams": "Exams",
     "bans": "Bans",
     "sheets": "Evaluation sheet",
     "settings": "Training settings"
@@ -18,10 +19,13 @@
   "mockExam": "This will be a mock exam, as agreed with your trainer.",
   "public": {
     "title": "Training",
-    "lead": "The training sessions of the division, ATC and pilot: position, rating, date and time. Asking for a training needs you to sign in.",
-    "upcoming": "Upcoming training sessions",
-    "none": "No training session is scheduled.",
+    "lead": "The training sessions and the exams of the division, ATC and pilot: position, rating, date and time. Asking for a training needs you to sign in.",
+    "upcoming": "Upcoming training sessions and exams",
+    "none": "No training session or exam is scheduled.",
     "people": "Trainee: {{trainee}} · Trainer: {{trainer}}",
+    "exam": "Exam {{title}}",
+    "examPeople": "Candidate: {{candidate}} · Examiner: {{examiner}}",
+    "examsUnread": "The exams to come cannot be read right now.",
     "signIn": "Sign in to see who is in each session.",
     "back": "All training sessions",
     "session": {
@@ -37,7 +41,7 @@
   "blocks": {
     "signIn": "Sign in to see your trainings.",
     "upcomingSessions": {
-      "label": "Upcoming training sessions",
+      "label": "Upcoming training sessions and exams",
       "fields": {
         "limit": "At most (0: all)"
       }
@@ -523,6 +527,39 @@
       }
     }
   },
+  "exams": {
+    "title": "Exams",
+    "description": "The exams in the division's calendar. The exam itself is booked, held and graded on the network: here it is only put in the calendar. Whoever examines enters their own exams; an advisor changes and takes off the calendar only the exams assigned to them. Of the candidate and of the examiner, the VID only.",
+    "create": "New exam",
+    "edit": "Edit exam",
+    "formDescription": "The exam goes into the public calendar by its rating, position, date and time, with nobody's name or VID; signed in members read the two VIDs on the training page.",
+    "fields": {
+      "startsAtUtc": "Date and time",
+      "ratingShortName": "Rating",
+      "rating": "Rating",
+      "position": "Position",
+      "candidate": "Candidate",
+      "candidateVid": "VID of the candidate",
+      "examiner": "Examiner",
+      "examinerVid": "Examiner",
+      "mine": "Yours"
+    },
+    "hints": {
+      "rating": "The rating examined: only the ratings with a practical training can be chosen.",
+      "position": "For an ATC exam only: a position of the division the rating is trained on. Empty for a pilot's exam.",
+      "candidateVid": "Who is examined, by VID only. Nobody examines themselves.",
+      "examinerVid": "The exam is assigned to them: they change it and take it off the calendar. An advisor enters only their own exams."
+    },
+    "filters": {
+      "examiner": "Examiner",
+      "anyExaminer": "Anybody",
+      "mine": "Me"
+    },
+    "delete": {
+      "title": "Take the exam off the calendar?",
+      "description": "The exam leaves the calendar of the hub. The exam itself stays as it is on the network."
+    }
+  },
   "sheets": {
     "title": "Evaluation sheet",
     "description": "The items a trainer marks after a session, per path and rating: the practical ones with a grade from 1 to 5, the theory ones as done, not done or to improve. The trainee reads them in their report.",
@@ -637,7 +674,10 @@
     "evaluationMarkOnPractice": "An item of practice is not marked done: it has a grade from 1 to 5.",
     "banEndsInThePast": "The end of the ban has already gone by.",
     "banAlreadyHolds": "A ban already holds on this member: lift it before giving another.",
-    "banNotHolding": "This ban no longer holds: there is nothing to lift."
+    "banNotHolding": "This ban no longer holds: there is nothing to lift.",
+    "examPositionNotAsked": "An exam on this path has no position.",
+    "examinerIsCandidate": "Nobody examines themselves: the examiner is not the candidate.",
+    "examinerNotExaminer": "Only somebody who puts exams in the calendar, and has signed in to the hub at least once, can be the examiner."
   },
   "notifications": {
     "requestReceived": {

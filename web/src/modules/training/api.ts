@@ -12,12 +12,15 @@ import {
 
 import {
   banFromFormValues,
+  examFromFormValues,
   settingsFromFormValues,
   sheetItemFilters,
   sheetItemFromFormValues,
   staffTrainingsFilters,
   type BanFormValues,
   type BansSearch,
+  type ExamFormValues,
+  type ExamsSearch,
   type RatingKind,
   type SettingsFormValues,
   type SheetItemFormValues,
@@ -32,8 +35,9 @@ import {
  * cancellation (A6), the page of one training and the choice of its date (A8) —, and the staff's side — the list of the
  * trainings, the page of one, accepting, refusing and assigning its trainer (A7), what a date meets, the dates proposed and
  * one taken back, the date set by hand, and the closing (A8); what the session came to — rescheduled, not attended, or
- * reported with the sheet (A9); a trainee's path, and the bans given and lifted (A10a); and the site's — the sessions still to
- * be held, and one session by the address of its entry of the calendar (A10b).
+ * reported with the sheet (A9); a trainee's path, and the bans given and lifted (A10a); the site's — the sessions still to
+ * be held, and one session by the address of its entry of the calendar (A10b); and the exams in the calendar, as the staff writes
+ * them and as the site shows the ones still to come (A10c).
  */
 
 export type TrainingRatingDto = components['schemas']['TrainingRatingDto'];
@@ -70,6 +74,10 @@ export type TrainingReportDto = components['schemas']['TrainingReportDto'];
 export type TraineePathDto = components['schemas']['TraineePathDto'];
 export type TraineeBanDto = components['schemas']['TraineeBanDto'];
 export type PublicSessionDto = components['schemas']['PublicSessionDto'];
+export type ExamDto = components['schemas']['ExamDto'];
+export type ExamRowDto = components['schemas']['ExamRowDto'];
+export type ExamChoicesDto = components['schemas']['ExamChoicesDto'];
+export type PublicExamDto = components['schemas']['PublicExamDto'];
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
 export const MODULE_KEY = 'training';
@@ -621,6 +629,118 @@ export function publicSessionQuery(id: number) {
     queryFn: async (): Promise<PublicSessionDto | null> => {
       const result = await api.GET('/api/training/sessions/{id}', { params: { path: { id } } });
       return result.response.status === 404 ? null : unwrap(result);
+    },
+  });
+}
+
+/**
+ * The exams still to come, the soonest first (§4.1, A10c): beside the sessions on `/training`. Anonymous; the candidate and the
+ * examiner, by VID, only for a signed in reader. Not asked again when it fails: the sessions are drawn without it, and the page says
+ * the exams could not be read.
+ */
+export function upcomingExamsQuery() {
+  return queryOptions({
+    queryKey: [...sessionsKey, 'exams'] as const,
+    queryFn: async (): Promise<PublicExamDto[]> => unwrap(await api.GET('/api/training/sessions/exams')),
+    retry: false,
+  });
+}
+
+// ---- the exams (A10c) ---------------------------------------------------------------------------------------------------
+
+const examsKey = ['training', 'exams'] as const;
+
+/** A row of the exams as the list draws it: the candidate and the examiner by VID, as text — a VID is a name, not a quantity. */
+export interface ExamRow extends ExamRowDto {
+  readonly candidate: string;
+  readonly examiner: string;
+}
+
+/**
+ * A page of the exams (design M3 §4.2), the latest first unless the reader sorts, and only the reader's own — the exams assigned to
+ * them — when the search says so. Whether each is the reader's and whether they may change it are the server's answers (`mine`,
+ * `mayEdit`).
+ */
+export function examsListQuery(search: ExamsSearch, reader: number | undefined) {
+  const { mine, ...list } = search;
+  const ordered = list.sort === undefined ? { ...list, dir: 'desc' as const } : list;
+  const filters = mine === true && reader !== undefined ? { examinerVid: String(reader) } : {};
+
+  return queryOptions({
+    queryKey: [...examsKey, 'list', search, reader] as const,
+    queryFn: async (): Promise<Page<ExamRow>> => {
+      const page = unwrap(
+        await api.GET('/api/training/exams', {
+          params: { query: toQuery(ordered) },
+          querySerializer: listQuerySerializer(filters),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((exam) => ({
+          ...exam,
+          candidate: String(exam.candidateVid),
+          examiner: String(exam.examinerVid),
+        })),
+      };
+    },
+  });
+}
+
+export function examQuery(id: number) {
+  return queryOptions({
+    queryKey: [...examsKey, 'one', id] as const,
+    queryFn: async (): Promise<ExamDto> =>
+      unwrap(await api.GET('/api/training/exams/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+/**
+ * What the form of an exam chooses from (§2.8): the examiners the reader may give an exam to — themselves, for an advisor — and the
+ * positions of the division. Asked only by whoever puts exams in the calendar.
+ */
+export function examChoicesQuery() {
+  return queryOptions({
+    queryKey: [...examsKey, 'choices'] as const,
+    queryFn: async (): Promise<ExamChoicesDto> => unwrap(await api.GET('/api/training/exam-choices')),
+  });
+}
+
+/** An exam entered or changed: the lists of the staff and the site's exams are read again. */
+export function useSaveExam(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: ExamFormValues): Promise<ExamDto> =>
+      id === null
+        ? unwrap(await api.POST('/api/training/exams', { body: examFromFormValues(values) }))
+        : unwrap(
+            await api.PUT('/api/training/exams/{id}', {
+              params: { path: { id: String(id) } },
+              body: examFromFormValues(values),
+            }),
+          ),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: examsKey }),
+        queryClient.invalidateQueries({ queryKey: [...sessionsKey, 'exams'] }),
+      ]);
+    },
+  });
+}
+
+/** An exam taken off the calendar (§2.8): only a removal from the hub, the exam itself is the network's. */
+export function useDeleteExam() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/training/exams/{id}', { params: { path: { id: String(id) } } })),
+    // Not awaited: the screen that deleted still observes the row it deleted.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: examsKey });
+      void queryClient.invalidateQueries({ queryKey: [...sessionsKey, 'exams'] });
     },
   });
 }
