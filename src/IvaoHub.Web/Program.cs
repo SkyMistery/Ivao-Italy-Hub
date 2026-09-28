@@ -244,6 +244,14 @@ if (trustedProxies.Count > 0)
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+        // No limit on the hops: the middleware walks the chain back from the right while the one who
+        // wrote the entry sits in the list, and stops at the first address that does not. One hop, the
+        // default, believed the web server in front of Passenger, 127.0.0.1, for every visitor (note
+        // 2026-09-28-la-catena-dei-proxy). The two headers can carry a different number of entries
+        // there (three addresses, two schemes), which is why RequireHeaderSymmetry stays false.
+        options.ForwardLimit = null;
+        options.RequireHeaderSymmetry = false;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
 
