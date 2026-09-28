@@ -131,9 +131,16 @@ senza togliere l'invio con Invio a nessun form.
   - questa nota.
 - **Nessuna schermata, nessuno schema, nessuna parola.** La casella diventa `role="combobox"`: le prove che la cercano per etichetta
   non cambiano. Nessuna prova esistente la cercava come `textbox`.
-- **#144 (A6b, dalberone):** il caso della sua spec smoke `training-request.spec.ts` che fa `fill('XXAA_TWR')` e subito Invio per
-  aprire la domanda avrà bisogno di **Invio per scegliere, poi Invio per chiedere**, quando le due PR saranno in `main`. La sua spec
-  non si tocca qui: il caso preciso lo dice la PR dopo averlo eseguito, e lo chiede il revisore su #144.
+- **#144 (A6b, dalberone), misurato il 28 settembre 2026** unendo la testa di #144 (`b4bd304`) a questo ramo in un worktree di
+  prova. Della sua spec smoke `web/e2e/training-request.spec.ts` cade **un caso solo**, «Enter in the position asks the question, as
+  the button does» (riga 281): fa `fill('XXAA_TWR')` e subito Invio, e ora quell'Invio sceglie la postazione illuminata invece di
+  aprire la domanda. L'altro caso con Invio («an answer taken back with «Cancel»», riga 322) passa così com'è: lì la casella è
+  raggiunta di nuovo, non si cerca niente, niente è illuminato, e Invio è del form. Con un Invio in più dopo il `fill` (sceglie,
+  la casella tiene `XXAA_TWR`, niente è partito) il caso passa com'era, 7 prove su 7.
+- **Chi adatta la spec del collaboratore: la nostra parte**, per decisione di Carmine del 28 settembre 2026 in chat, riferita dal
+  master. Il cambio è del comportamento del nucleo, non del modulo. Se #144 entra in `main` prima di questa PR, `main` si unisce qui
+  e si cambia **solo** quel caso, tenendo ciò che afferma: nessuna richiesta parte senza la risposta sulla teoria. Se entra prima
+  questa PR, il caso lo adatta #144 quando si rimette in pari.
 
 ## Da portare nel piano
 
