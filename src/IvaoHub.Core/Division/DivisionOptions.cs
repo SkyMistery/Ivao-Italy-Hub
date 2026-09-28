@@ -121,7 +121,11 @@ public sealed record DivisionOptions
     /// </summary>
     public int[] SuperAdmins { get; init; } = [];
 
-    /// <summary>How far the authority of a FIR team reaches.</summary>
+    /// <summary>
+    /// How far the authority of a FIR team reaches: with <c>own</c>, a permission a grant gives to the team of a FIR is held on the
+    /// rows of that FIR alone; with <c>all</c>, on its department, as any other grant. The staff of the departments is never held
+    /// to a FIR (plan section 4.1; M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir).
+    /// </summary>
     public FirStaffScope FirStaffScope { get; init; } = FirStaffScope.All;
 
     /// <summary>
@@ -139,8 +143,16 @@ public sealed record DivisionOptions
 /// <summary>One grant to a position, as <c>division.json</c> writes it.</summary>
 public sealed class PositionGrantSeed
 {
-    /// <summary>The department of the position.</summary>
-    public Department Department { get; init; }
+    /// <summary>The department of the position; absent for a grant to the team of a FIR.</summary>
+    public Department? Department { get; init; }
+
+    /// <summary>
+    /// True for a grant to the team of a FIR instead of a department's position (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir):
+    /// whoever holds a FIR position at one of <see cref="Levels"/> — the chief is a coordinator, the assistant chief an assistant —
+    /// holds it, on the FIR of that position when <see cref="DivisionOptions.FirStaffScope"/> is <c>own</c>. It names no FIR, and
+    /// it is only taken for a permission of an area whose rows say their FIR.
+    /// </summary>
+    public bool FirTeam { get; init; }
 
     /// <summary>The levels of it that hold the grant.</summary>
     public StaffLevel[] Levels { get; init; } = [];

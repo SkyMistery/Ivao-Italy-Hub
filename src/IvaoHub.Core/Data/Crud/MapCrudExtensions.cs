@@ -186,7 +186,7 @@ public static class MapCrudExtensions
             // A personal view: the reader's own rows, whatever department they sit in.
             query = TakingPart(query, participating, scope.CurrentUser.Vid);
         }
-        else if (!TryNarrowToDepartments(scope.CurrentUser, options.SharedForReading, ref query, out var forbidden))
+        else if (!TryNarrowToDepartments(scope.CurrentUser, options.EffectiveReadPolicy, options.SharedForReading, ref query, out var forbidden))
         {
             return forbidden!;
         }
@@ -428,9 +428,14 @@ public static class MapCrudExtensions
     /// plus whatever rows the resource declares shared for reading. Whoever reaches every
     /// department sees the lot; a member who somehow holds the permission but belongs to no
     /// department sees nothing, and is told so rather than shown an empty list.
+    /// <para>On a row that says its FIR (<see cref="IHasFir"/>), the list also holds the rows of a FIR the reader holds
+    /// <paramref name="readPermission"/> on, through the team of that FIR (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir):
+    /// that FIR's and that department's, and with that permission only — another one held on the FIR opens nothing here. The
+    /// department such a permission is held on is not one the reader belongs to, so it reaches nothing else.</para>
     /// </summary>
     private static bool TryNarrowToDepartments<TEntity>(
         ICurrentUser currentUser,
+        string readPermission,
         Expression<Func<TEntity, bool>>? shared,
         ref IQueryable<TEntity> query,
         out IResult? forbidden)
@@ -443,7 +448,17 @@ public static class MapCrudExtensions
             return true;
         }
 
-        if (currentUser.Departments.Count == 0)
+        // What implies the list's reading is already in the set: the calculator writes an area's View next to every permission of
+        // the area it gives — Edit and the others — with the same FIR.
+        var onTheirFir = typeof(IHasFir).IsAssignableFrom(typeof(TEntity))
+            ? currentUser.Permissions
+                .Where(held => held.Fir is not null && string.Equals(held.Name, readPermission, StringComparison.Ordinal))
+                .Select(held => (held.Department, Fir: held.Fir!))
+                .Distinct()
+                .ToArray()
+            : [];
+
+        if (currentUser.Departments.Count == 0 && onTheirFir.Length == 0)
         {
             forbidden = Results.StatusCode(StatusCodes.Status403Forbidden);
             return false;
@@ -454,16 +469,7 @@ public static class MapCrudExtensions
 
         // One of theirs: the row's department in their list, or — for a row in the care of several
         // departments (M2) — a bit in common between the row's mask and theirs.
-        Expression readable = DepartmentMask.IsStoredOn(typeof(TEntity))
-            ? Expression.NotEqual(
-                Expression.And(
-                    Expression.Property(entity, DepartmentMask.PropertyName),
-                    Expression.Constant(DepartmentMask.Of(departments))),
-                Expression.Constant(0))
-            : Expression.Call(
-                Expression.Constant(departments),
-                typeof(List<Department>).GetMethod(nameof(List<Department>.Contains), [typeof(Department)])!,
-                Expression.Property(entity, nameof(IOwnedByDepartment.OwnerDepartment)));
+        var readable = InDepartments<TEntity>(entity, departments);
 
         // "Mine, or one of the ones this resource shares." The engine is not told what makes a row
         // shared, only that some are: a template is a template to `ContentEntry` and to nobody else
@@ -475,9 +481,37 @@ public static class MapCrudExtensions
                 new ParameterSwap(shared.Parameters[0], entity).Visit(shared.Body)!);
         }
 
+        // "Or of a FIR they read this list on." The FIR is a column (IHasFir says so), compared by the database, which does not
+        // mind the case, as the single handler does not.
+        foreach (var (department, fir) in onTheirFir)
+        {
+            var firColumn = typeof(TEntity).GetProperty(nameof(IHasFir.Fir))
+                ?? throw new InvalidOperationException(
+                    $"{typeof(TEntity).Name} says its FIR (IHasFir) through something that is not a property called Fir: the "
+                    + "lists narrow on it in SQL, so it has to be a column.");
+
+            var sameFir = Expression.Equal(Expression.Property(entity, firColumn), Expression.Constant(fir, typeof(string)));
+            readable = Expression.OrElse(
+                readable,
+                department is { } one ? Expression.AndAlso(sameFir, InDepartments<TEntity>(entity, [one])) : sameFir);
+        }
+
         query = query.Where(Expression.Lambda<Func<TEntity, bool>>(readable, entity));
         return true;
     }
+
+    /// <summary>A row of one of these departments: in the list, or — in the care of several (M2) — a bit in common.</summary>
+    private static Expression InDepartments<TEntity>(ParameterExpression entity, List<Department> departments) =>
+        DepartmentMask.IsStoredOn(typeof(TEntity))
+            ? Expression.NotEqual(
+                Expression.And(
+                    Expression.Property(entity, DepartmentMask.PropertyName),
+                    Expression.Constant(DepartmentMask.Of(departments))),
+                Expression.Constant(0))
+            : Expression.Call(
+                Expression.Constant(departments),
+                typeof(List<Department>).GetMethod(nameof(List<Department>.Contains), [typeof(Department)])!,
+                Expression.Property(entity, nameof(IOwnedByDepartment.OwnerDepartment)));
 
     private static bool TryApplyFilters<TEntity, TListDto, TDetailDto, TWriteDto>(
         IQueryCollection request,

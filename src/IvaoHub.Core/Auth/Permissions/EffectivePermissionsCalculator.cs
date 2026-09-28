@@ -18,11 +18,17 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// nothing else. It is how "this validator, on this tour" is said without a second mechanism
 /// (decision note of 15 September 2026); null is the ordinary case, held across the department.
 /// </param>
+/// <param name="Fir">
+/// When set, the permission is held on the rows of <b>that FIR</b> only (<see cref="IHasFir"/>): what a
+/// grant to the team of a FIR gives when the division keeps FIR teams to their FIR (M3, A11a, note
+/// 2026-09-27-i-capi-fir-sul-loro-fir). Null is the ordinary case, held on every row whatever its FIR.
+/// </param>
 public readonly record struct EffectivePermission(
     string Name,
     Department? Department,
     string Source,
-    string? ResourceScope = null);
+    string? ResourceScope = null,
+    string? Fir = null);
 
 /// <summary>
 /// Answering "does this person hold that permission?" against a set of effective permissions.
@@ -36,13 +42,16 @@ public static class PermissionSet
     /// True when the set holds the permission on that department. A permission with no department
     /// is held everywhere, and a super administrator holds everything: that is the whole point of
     /// the role (design M0 section 3.3).
+    /// <para><paramref name="resourceScope"/> and <paramref name="fir"/> are what the row being asked about says of itself
+    /// (<c>IHasResourceScope</c>, <c>IHasFir</c>): together with the department, where the row is.</para>
     /// </summary>
     public static bool Has(
         IEnumerable<EffectivePermission> permissions,
         bool isSuperadmin,
         string permission,
         Department department,
-        string? resourceScope = null)
+        string? resourceScope = null,
+        string? fir = null)
     {
         ArgumentNullException.ThrowIfNull(permissions);
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
@@ -51,7 +60,8 @@ public static class PermissionSet
             || permissions.Any(held =>
                 string.Equals(held.Name, permission, StringComparison.Ordinal)
                 && (held.Department is null || held.Department == department)
-                && Reaches(held, resourceScope));
+                && Reaches(held, resourceScope)
+                && ReachesFir(held, fir));
     }
 
     /// <summary>
@@ -62,6 +72,15 @@ public static class PermissionSet
     private static bool Reaches(EffectivePermission held, string? resourceScope) =>
         held.ResourceScope is null
         || string.Equals(held.ResourceScope, resourceScope, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Whether a held permission reaches a row of that FIR (M3, A11a). One held without a FIR reaches every row, as it always
+    /// has; one held on a FIR reaches <b>only</b> a row that says the same FIR — never a row of another FIR, a row with no
+    /// FIR, or a row that does not say one. FIRs are compared as IVAO writes them, without regard to case.
+    /// </summary>
+    private static bool ReachesFir(EffectivePermission held, string? fir) =>
+        held.Fir is null
+        || (fir is not null && string.Equals(held.Fir, fir, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// True when the set holds the permission somewhere: on one department, on all of them, or as
@@ -99,13 +118,17 @@ public static class EffectivePermissionsCalculator
     /// The catalogue is core plus modules: a grant naming a module permission is honoured on an
     /// installation that has that module and ignored on one that does not, which is the same rule
     /// that has always applied to a permission the code no longer declares.
+    /// <para><paramref name="firStaffScope"/> is the division's: with <c>own</c>, what a grant to the team of a FIR gives is
+    /// held on the FIR of the position it comes through (M3, A11a); with <c>all</c> — the default, and a division that does
+    /// not say — on the grant's department, as any other grant.</para>
     /// </remarks>
     public static IReadOnlyList<EffectivePermission> Calculate(
         IEnumerable<StaffPosition> positions,
         IEnumerable<UserGrant> grants,
         bool isSuperadmin,
         DateTime nowUtc,
-        PermissionCatalog catalogue)
+        PermissionCatalog catalogue,
+        FirStaffScope firStaffScope = FirStaffScope.All)
     {
         ArgumentNullException.ThrowIfNull(positions);
         ArgumentNullException.ThrowIfNull(grants);
@@ -143,11 +166,21 @@ public static class EffectivePermissionsCalculator
 
         foreach (var grant in active.Where(grant => grant.Effect == GrantEffect.Grant))
         {
-            effective.Add(new EffectivePermission(
-                grant.Value,
-                grant.Department,
-                $"{GrantSourcePrefix}{grant.Id}",
-                grant.ResourceScope));
+            // A grant to the team of a FIR, when the division keeps FIR teams to their FIR (M3, A11a): one permission for each
+            // FIR the member heads, held on that FIR's rows alone. Anything else is held across its department.
+            IEnumerable<string?> firs = grant.PositionFirTeam && firStaffScope == FirStaffScope.Own
+                ? grant.HeldThrough(held).Select(position => position.Fir).Distinct(StringComparer.OrdinalIgnoreCase)
+                : [null];
+
+            foreach (var fir in firs)
+            {
+                effective.Add(new EffectivePermission(
+                    grant.Value,
+                    grant.Department,
+                    $"{GrantSourcePrefix}{grant.Id}",
+                    grant.ResourceScope,
+                    fir));
+            }
         }
 
         // Edit implies View, in one place, before the denies so that an explicit deny still wins.
@@ -174,7 +207,8 @@ public static class EffectivePermissionsCalculator
             .ThenBy(permission => Rank(permission.Source))
             .ThenBy(permission => permission.Source, StringComparer.Ordinal)
             .ThenBy(permission => permission.ResourceScope, StringComparer.Ordinal)
-            .DistinctBy(permission => (permission.Name, permission.Department, permission.ResourceScope))];
+            .ThenBy(permission => permission.Fir, StringComparer.Ordinal)
+            .DistinctBy(permission => (permission.Name, permission.Department, permission.ResourceScope, permission.Fir))];
     }
 
     /// <summary>Which source is worth keeping when the same permission is reached more than once.</summary>
