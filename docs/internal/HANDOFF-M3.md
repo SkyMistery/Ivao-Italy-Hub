@@ -104,6 +104,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **Il grant del trainer**: assegnare scrive `Training.Conduct` con lo scope del training (`ModuleGrants`, motivo `training: trainer`)
     prima della riga e toglie quello del trainer di prima; **il job `training-expiry`** (`TrainingExpiryJob`, 04:15 nel fuso della
     divisione) toglie i grant dei training non più aperti, e quelli lasciati da una scrittura fermata a metà (dopo un'ora).
+    ⚠️ **È uno scostamento dalla risposta 2 su #135**, e Carmine ha deciso che resta fino ad A7b
+    ([commento su #146](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982)): dopo
+    l'unione di #135 la fase **A7b** porta il trainer sulla regola di A3b (`IHasAssignee` sul training, `Training.Conduct` segnato
+    `OnlyForAssignee` e tenuto per posizione da TA e trainer, via il grant e la sua metà del job). Nota
+    `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`; la lista della fase è in `08`, A7b.
   - **Le mail** `requestAccepted`, `requestRejected` (con il motivo) e `trainerAssigned` (al trainee e al trainer, ognuno nella sua
     lingua), attraverso **`TrainingMail`**, che usa anche la `requestReceived` di A6a.
   - **Le pagine** `web/src/modules/training/screens/staff.tsx`: `/staff/training` (lista generata, filtri Mostra e Percorso, voce «Richieste
@@ -122,6 +127,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     che nessuno chiude prima di A8. `training-staff.spec.ts` gira dopo `training-request.spec.ts` (ordine di nome, un worker): il giro di A6b
     trova i percorsi liberi. Una spec di A8 che vuole un training assegnato può riprendere quello (con un nome che viene dopo
     `training-staff`), o chiederne uno suo e chiuderlo con la chiusura dello staff; **il banco va ricreato prima di ogni corsa**.
+    Dopo le correzioni della revisione vale ancora, **su A7 da solo**: nessuna API di A7 chiude un training accettato, quindi un secondo
+    giro sullo stesso banco cade sul percorso ATC occupato in `full/training-request.spec.ts` (A6b) e in `full/training-staff.spec.ts`,
+    ognuno con il suo messaggio. La chiusura nel `finally` della spec dello staff, e all'inizio per un training ATC lasciato aperto da un
+    giro prima, la aggiunge la correzione di A8a, che ha `/close`.
   - **A9**: il DTO dello staff non ha `StaffComment` né le note della scheda: li aggiunge la funzione unica che li toglie al trainee della
     riga. **A10**: le viste della lista sono le code di `approvalQueue`, e `filter[trainerVid]` quella di `trainerQueue`.
   - ⚠️ **Lo staff del training** (i candidati) è chi ha una posizione del dipartimento base o della direzione (DIR, ADIR) nel roster: non il
@@ -136,10 +145,23 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   option»** in ogni lingua (il segnaposto di Atmosphere: `SchemaForm` non ne passa uno); scelto un valore dall'elenco, **il primo clic su un
   pulsante a volte chiude soltanto l'elenco**. Sul banco di anteprima il trainer va fatto entrare una volta, o non è nel roster e la pagina
   dice che nessuno può allenare il training (giusto).
-- **La coda**: la PR è in bozza con `(after #144)` e `Queued after #144.`; #144 è in coda dopo #143. Quando #144 sarà unita, il passo della
-  coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e dal corpo, la PR pronta a
-  CI verde — lo fa la sessione di A7 se è ancora viva, altrimenti quella di A8 prima di cominciare (sul branch di A7, con un branch
-  temporaneo, e poi il merge in A8). Una correzione chiesta su #143 o #144 si fa sul loro branch e sale con un merge.
+- **Le correzioni della revisione** (28 settembre 2026, [la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855673527);
+  i dettagli, commit per commit, in `08`, A7):
+  - **Un 409 non toglie più il grant al trainer che il training nomina** (d23a812): il `catch` dell'assegnazione rilegge il training e
+    toglie il grant solo se la riga non nomina quel trainer. Il test nuovo di `TrainingStaffTests` cade sul codice di prima.
+  - **Dopo un 409 la pagina dello staff si rilegge** (caf6d4e): `useStaffStep` invalida la pagina e i trainer su un errore, il form si
+    ridisegna con la versione nuova, e il conflitto dell'assegnazione lo dice un avviso (`useRefused`, `isConflict`).
+  - **Il giro sul banco** (2327c05): lo scheletro lascia fuori i grant con scope; la spec dello staff annulla all'inizio una richiesta
+    rimasta in attesa, e lascia stare il grant su un training finito, che aspetta la notte. Quello che resta fuori è scritto sopra, al ⚠️
+    del banco. `web/e2e/full/README.md` non si tocca: per `core-guard` è un file del nucleo.
+  - **La decisione di Carmine** (842745a): la nota nuova, lo scostamento in `08` e la fase **A7b**, con quello che le hanno aggiunto la
+    revisione di A8a e i tre punti della regola di A3b.
+  - **`main` è entrato con A6b** (a00fcd5: `b4bd304`, con `main` a 3c79786), come il master ha chiesto su #144. Il catalogo di A3b non
+    cambia niente di A7: nessun permesso del training è segnato `OnlyForAssignee`, e le tre alternative del training passano il
+    controllo all'avvio.
+- **La coda**: la PR è in bozza con `(after #144)` e `Queued after #144.`. Quando #144 sarà unita, il passo della coda (`CONTRIBUTING.md`,
+  «Phases in a queue») e la PR pronta a CI verde. Il merge verso l'alto delle correzioni (A8a…A10b) lo fa una volta sola la sessione
+  «Verifica risposte e correzioni». Una correzione chiesta su #144 si fa sul suo branch e sale con un merge.
 
 ### Che cosa ha lasciato A6b (26 settembre 2026, branch `m3/a6b-request-pages`, PR #144)
 

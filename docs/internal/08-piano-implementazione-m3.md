@@ -1326,10 +1326,39 @@ soltanto.
        deve nominare l'altro trainer; **sul codice di prima**, già all'avviso.
   4. **`Department.HQ` in `StaffTrainings.cs`** («la direzione», il secondo nit): resta, con il §2.4 che lo regge. Se A7b ricava i
      candidati da chi tiene `Training.Conduct`, possono dirlo le `positionGrants`: è nella lista di A7b.
-  5. **Dalla decisione di Carmine**: lo scostamento qui sopra, la fase A7b qui sotto e la nota
+  5. **Dalla decisione di Carmine** (842745a): lo scostamento qui sopra, la fase A7b qui sotto e la nota
      `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`.
   6. **I tre punti della regola di A3b** ([il commento del revisore][m146], 28 settembre): nella lista di A7b. La parte di A10c
      (`Training.ManageExams`) la scrive la sessione di A10b sul suo branch.
+  7. **`main` nel branch, con A6b** (a00fcd5): `b4bd304`, cioè A6b con `main` a 3c79786 (A3b, #135, e #160–#172) e le correzioni di
+     A6b, come il master ha chiesto su #144 per tutta la coda. Nessun conflitto. `HANDOFF-M3.md` tiene l'intestazione di A7, e i blocchi
+     nuovi (A3b) stanno sotto quello di A7: i branch sopra riscrivono l'intestazione e mettono il loro blocco sopra, quindi il merge verso
+     l'alto resta pulito.
+  8. **Il punto 3 del master su #144** (se il catalogo di A3b cambia qualcosa su cui A7 conta): **niente**.
+     - Nessun permesso del training è segnato `OnlyForAssignee`: il ramo nuovo dell'handler e i casi nuovi del guardiano non valgono per
+       il training.
+     - Le tre alternative del training (`Approve`, `Assign`, `Conduct`) non sono segnate e non hanno `AlsoOnDeletion`:
+       `PermissionCatalog.VerifyAlternatives` le lascia passare all'avvio.
+     - Togliere un training resta di `Edit`, come prima. A7b sarà il primo permesso del training segnato.
+  - **Verificato, in locale** (28 settembre 2026, dopo il merge, su a00fcd5 e i documenti):
+    - `dotnet build` senza avvisi; unità **823/823**; **integrazione intera senza filtro** **353/353** (`TrainingStaffTests` da sola 8/8,
+      anche prima del merge);
+    - `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **521** in **65** file; `pnpm gen:api` e `pnpm i18n:sync`
+      senza differenze; `pnpm e2e` **104**, con il lucchetto del 4173; `dotnet format --verify-no-changes` sui file C# toccati.
+    - **Le prove sul codice di prima**: il test nuovo del 409 cade sul `StaffTrainings.cs` di `69781af` (atteso `[790025]`, trovato
+      `[]`) e passa con la correzione; lo smoke nuovo cade senza `onError` (la pagina non nomina l'altro trainer) e sul codice di prima
+      (all'avviso); la vecchia asserzione dello scheletro cade sul banco con gli avanzi (riceve anche `Training.Conduct`).
+    - **Il giro sul banco 5084** (`ivaohub_e2e_a7`). Sul banco com'era, con gli avanzi della vecchia sessione di A7 (il training 3, ATC
+      `Assigned` a 999004, con il suo grant con scope), le spec del training: il banco, la scheda e lo scheletro passano, e cadono solo la
+      richiesta di A6b e la spec dello staff, sul percorso ATC. Poi il banco ricreato, e **`pnpm e2e:full` due volte di fila senza
+      svuotarlo**: il primo giro **43/43**; il secondo **41/43**. Nel secondo cadono solo `full/training-request.spec.ts` (A6b) e
+      `full/training-staff.spec.ts`, sul percorso ATC che il primo giro ha lasciato aperto, ognuna con il suo messaggio; lo scheletro
+      passa.
+  - **Non verificato**:
+    - la CI (la dirà la PR);
+    - due giri di fila che passano entrambi: vogliono la chiusura di A8a, e li prova la correzione di A8a sul 5086;
+    - la finestra di tre richieste del punto 1, che non ha un test: servirebbe una terza assegnazione fra la lettura e la rimozione nel
+      `catch`.
 
 ### A7b — Il trainer sulla regola delle righe affidate
 
