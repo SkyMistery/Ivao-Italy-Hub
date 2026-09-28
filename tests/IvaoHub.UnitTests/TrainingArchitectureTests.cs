@@ -61,17 +61,18 @@ public sealed partial class TrainingArchitectureTests
         StaffLevel[] advisors = [StaffLevel.Coordinator, StaffLevel.Assistant, StaffLevel.Advisor];
         StaffLevel[] heads = [StaffLevel.Coordinator, StaffLevel.Assistant];
 
-        // Design M3 §3.2: coordinator and assistant everything, the advisors (TA1–9) view, approve and put exams in the
-        // calendar, the trainers (T01–T99) view. A trainer conducts only the trainings assigned to them, through a grant on
-        // the one row (§3.3, A7), so conducting is not given here; and an exam is assigned only to an examiner — the direction,
-        // the coordinator, the assistant or an advisor —, never to a trainer (the training department, 26 September 2026), so
-        // neither are the exams, which whoever holds one puts in the calendar (§12 n.10).
+        // Design M3 §3.2: coordinator and assistant everything, the advisors (TA1–9) view, approve, conduct and put exams in the
+        // calendar, the trainers (T01–T99) view and conduct. Conducting reaches only the trainings assigned to whoever holds it
+        // (§3.3, A7b: Carmine's answer 2 on #135), so the advisors and the trainers hold it by their position and conduct what they
+        // are given; and an exam is assigned only to an examiner — the direction, the coordinator, the assistant or an advisor —,
+        // never to a trainer (the training department, 26 September 2026), so the trainers do not hold the exams, which whoever
+        // holds one puts in the calendar (§12 n.10).
         var design = new Dictionary<string, StaffLevel[]>(StringComparer.Ordinal)
         {
             [TrainingPermissions.View] = everybody,
             [TrainingPermissions.Approve] = advisors,
             [TrainingPermissions.Assign] = heads,
-            [TrainingPermissions.Conduct] = heads,
+            [TrainingPermissions.Conduct] = everybody,
             [TrainingPermissions.Edit] = heads,
             [TrainingPermissions.ManageSheets] = heads,
             [TrainingPermissions.ManageExams] = advisors,

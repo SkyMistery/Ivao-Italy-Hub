@@ -30,15 +30,16 @@ namespace IvaoHub.Modules.Training;
 /// training system of today and is designed in <c>docs/internal/07-design-m3.md</c>. A4 is its skeleton: the context, the
 /// permissions, the settings, and what the settings are chosen from; A5 the items of the evaluation sheet; A6a the training
 /// itself, from the trainee's side: the request, its checks and its cancellation, and the trainee's own trainings; A7 the
-/// staff's side of it: the list, accepting and refusing a request, assigning the trainer with the grant that lets them conduct
-/// it, and the job of the night that takes that grant back once the training is over; A8 the date: the trainer's proposals with
-/// the warnings of the calendar, the trainee's choice, the date set by hand, the session in the calendar, its reminder, and the
-/// closing of a training that found no date, by the staff or by the night; A9 what the session came to: rescheduled with the notes
-/// of the staff, not attended, or reported with the evaluation sheet, the comments and the boxes that make the next training a mock
-/// exam — and what the trainee of a training never reads of it, even from the staff's side; A10a the trainee's path as the staff
-/// reads it, and the bans; A10b the sessions as the site shows them, with the people only to a signed in reader, and the four blocks
-/// of the pages and the dashboards; A10c the exams in the calendar, which whoever examines enters, changes and takes off it, on the
-/// rows assigned to them.
+/// staff's side of it: the list, accepting and refusing a request, and assigning the trainer, who conducts the trainings assigned
+/// to them and no other; A8 the date: the trainer's proposals with the warnings of the calendar, the trainee's choice, the date set
+/// by hand, the session in the calendar, its reminder, and the closing of a training that found no date, by the staff or by the
+/// night; A9 what the session came to: rescheduled with the notes of the staff, not attended, or reported with the evaluation
+/// sheet, the comments and the boxes that make the next training a mock exam — and what the trainee of a training never reads of
+/// it, even from the staff's side; A10a the trainee's path as the staff reads it, and the bans; A10b the sessions as the site
+/// shows them, with the people only to a signed in reader, and the four blocks of the pages and the dashboards; A10c the exams in
+/// the calendar, which whoever examines enters, changes and takes off it, on the rows assigned to them; A7b the trainer on the
+/// same rule, with no grant of their own: the training says who its trainer is, and they conduct it with the permission of their
+/// position.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): its rows have a base
 /// department, <c>division.json → modules.training.baseDepartment</c>, and who does what is the grants of
 /// <c>positionGrants</c>, never a rule written here. Nor does it know the network's rules: the ratings, what comes after one,
@@ -112,9 +113,8 @@ public sealed class TrainingModule : ModuleBase
         services.AddScoped<TrainingRequests>();
         services.TryAddScoped<ITheoryExamSource, TraineeDeclaration>();
 
-        // The staff's side (A7), the dates (A8), and their jobs: the night that closes the trainings nobody dated in time and
-        // takes back the grants of the trainers of trainings that are over, in the division's own zone like the core's nightly
-        // jobs; and the reminders of the sessions, every quarter of an hour.
+        // The staff's side (A7), the dates (A8), and their jobs: the night that closes the trainings nobody dated in time, in the
+        // division's own zone like the core's nightly jobs; and the reminders of the sessions, every quarter of an hour.
         services.AddScoped<StaffTrainings>();
         services.AddScoped<TrainingDates>();
         services.AddScoped<TrainingSessions>();

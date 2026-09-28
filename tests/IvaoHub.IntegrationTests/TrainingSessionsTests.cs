@@ -80,11 +80,14 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         await SeedPersonAsync(OtherTraineeVid, "Other", "Trainee", email: null, token);
         await SeedPersonAsync(StrangerVid, "Some", "Member", email: null, token);
 
-        // A trainer of the department, who conducts only by the grant on one training; and a trainer who is a trainee too.
-        await SeedPersonAsync(TrainerVid, "Scoped", "Trainer", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{code}-T96");
+        // A trainer of the department, who conducts the trainings assigned to them with the Training.Conduct of their position
+        // (A7b); and a trainer who is a trainee too.
+        await SeedPersonAsync(TrainerVid, "Department", "Trainer", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{code}-T96");
         await SeedPersonAsync(TrainerTraineeVid, "Trainer", "Trainee", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{code}-T97");
 
-        // The coordinator conducts every training, and manages the sheet: grants to their VID.
+        // The coordinator conducts every training, and manages the sheet: grants to their VID. A training assigned to somebody else
+        // they conduct with Training.Edit (A7b), and they hold neither Approve nor Assign, so the write guard lets them through on
+        // Edit alone.
         await SeedPersonAsync(CoordinatorVid, "Test", "Coordinator", email: null, token, isStaff: true);
         await GrantAsync(CoordinatorVid, TrainingPermissions.View, token);
         await GrantAsync(CoordinatorVid, TrainingPermissions.Conduct, token);
@@ -113,7 +116,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         var session = DateTime.UtcNow.AddHours(-2);
         var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerVid, start: session);
-        await GiveConductAsync(TrainerVid, id, token);
 
         // Before the report: the trainer may record the session, and the page shows the sheet a report would fill — the active items.
         using var trainer = await SignedInAsync(TrainerVid, token);
@@ -232,7 +234,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         var session = DateTime.UtcNow.AddHours(-1);
         var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerVid, start: session);
-        await GiveConductAsync(TrainerVid, id, token);
         Assert.Single(await CalendarOfAsync(id, token));
 
         using var trainer = await SignedInAsync(TrainerVid, token);
@@ -301,7 +302,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         var session = DateTime.UtcNow.AddDays(-1);
         var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerVid, start: session);
-        await GiveConductAsync(TrainerVid, id, token);
 
         // The coordinator, who conducts every training, records it.
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
@@ -333,10 +333,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.Contains(TrainingMail.Moment(session), mail, StringComparison.Ordinal);
         Assert.Contains(TrainingMail.Moment(stored.ClosedAt!.Value.AddDays(9)), mail, StringComparison.Ordinal);
         Assert.Contains($"/training/mine/{id}", mail, StringComparison.Ordinal);
-
-        // The night takes the trainer's grant back: the training is over.
-        await RunExpiryAsync(token);
-        Assert.Empty(await HoldersOfConductAsync(id, token));
     }
 
     [Fact]
@@ -346,12 +342,11 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
 
         var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: CoordinatorVid, start: DateTime.UtcNow.AddHours(-1));
-        var other = await AddTrainingAsync(OtherTraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerVid, start: DateTime.UtcNow.AddHours(-1));
-        await GiveConductAsync(TrainerVid, other, token);
+        await AddTrainingAsync(OtherTraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerVid, start: DateTime.UtcNow.AddHours(-1));
 
-        // A trainer who is the trainee of a training holds the grant on it — as if assigned to themselves —, and still may not.
+        // A trainer who is the trainee of a training assigned to themselves — a row no assignment writes — holds Training.Conduct by
+        // their position, and still may not: it is denied to whoever the training is about.
         var theirOwn = await AddTrainingAsync(TrainerTraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerTraineeVid, start: DateTime.UtcNow.AddHours(-1));
-        await GiveConductAsync(TrainerTraineeVid, theirOwn, token);
         var version = (await StoredAsync(id, token)).RowVersion;
 
         // The trainee on their own training; the trainer of another training; a member with no permission.
@@ -400,6 +395,43 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         Assert.Empty(await SessionsOfAsync(id, token));
         Assert.Empty(await SessionsOfAsync(later, token));
+    }
+
+    /// <summary>
+    /// The reviewer's point 1 on #146, the backbone through the endpoint (A7b): the coordinator — <c>Training.Conduct</c> and
+    /// <c>Training.Edit</c>, neither <c>Approve</c> nor <c>Assign</c>, which the write guard would let through anyway — is not the
+    /// trainer of a training and conducts it all the same: the session rescheduled, then the date set again by hand. On a training
+    /// assigned to somebody else <c>Training.Conduct</c> is worth <c>Training.Edit</c>, in the single handler (the area of the
+    /// permission) and in the write guard (the area the training declares, <c>[PermissionArea("Training")]</c>): without that
+    /// declaration the guard would ask <c>Trainings.Edit</c>, which nobody holds, and refuse what the endpoint allowed. The assistant
+    /// holds the same by position (design M3 §3.2).
+    /// </summary>
+    [Fact]
+    public async Task TheCoordinatorConductsATrainingAssignedToSomebodyElseThroughTheEndpoint()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
+        var id = await AddTrainingAsync(OtherTraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerVid, start: DateTime.UtcNow.AddHours(-1));
+
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var page = await PageAsync(coordinator, id, token);
+        Assert.Equal(TrainerVid, page.GetProperty("trainer").GetProperty("vid").GetInt32());
+        Assert.True(page.GetProperty("actions").GetProperty("canRecordOutcome").GetBoolean());
+
+        var rescheduled = await DoneAsync(await StepAsync(coordinator, id, "reschedule", Body("reschedule", page.GetProperty("rowVersion").GetDateTime()), token), token);
+        Assert.Equal(nameof(TrainingState.Assigned), rescheduled.GetProperty("state").GetString());
+        Assert.True(rescheduled.GetProperty("actions").GetProperty("canConduct").GetBoolean());
+
+        var starts = DateTime.UtcNow.AddDays(3);
+        var dated = await DoneAsync(
+            await StepAsync(coordinator, id, "date", new { startsAtUtc = starts, confirmed = true, rowVersion = rescheduled.GetProperty("rowVersion").GetDateTime() }, token),
+            token);
+        Assert.Equal(nameof(TrainingState.Scheduled), dated.GetProperty("state").GetString());
+
+        // Written by the coordinator, and still the trainer's: conducting a training gives it to nobody.
+        var stored = await StoredAsync(id, token);
+        Assert.Equal((TrainerVid, CoordinatorVid), (stored.TrainerVid, stored.UpdatedBy));
+        Assert.Single(await SessionsOfAsync(id, token));
     }
 
     /// <summary>
@@ -469,7 +501,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         var untouched = await AddItemAsync(pilot, SheetSection.Theory, "weather", sort: 922, token);
 
         var id = await AddTrainingAsync(TraineeVid, RatingKind.Pilot, TrainingState.Scheduled, token, trainer: TrainerVid, start: DateTime.UtcNow.AddHours(-3));
-        await GiveConductAsync(TrainerVid, id, token);
 
         // The report: one item graded, the other left not applicable, ready for the mock exam, the waiting taken away.
         using var trainer = await SignedInAsync(TrainerVid, token);
@@ -518,18 +549,16 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.Contains("mock exam", mail, StringComparison.Ordinal);
         AssertNothingReserved(mail);
 
-        // The mock exam's own report may not mark it ready for another: the next one after a mock exam is a training again. A grant
-        // written signs its holder out: the trainer signs in again.
+        // The mock exam's own report may not mark it ready for another: the next one after a mock exam is a training again. Given to
+        // the same trainer, it is theirs to report in the session they already have: nothing about them changed (A7b).
         await DateInThePastAsync(mockExam, TrainerVid, token);
-        await GiveConductAsync(TrainerVid, mockExam, token);
-        using var again = await SignedInAsync(TrainerVid, token);
-        var mockVersion = (await PageAsync(again, mockExam, token)).GetProperty("rowVersion").GetDateTime();
-        using (var refused = await StepAsync(again, mockExam, "report", Report(mockVersion, [], readyForMockExam: true), token))
+        var mockVersion = (await PageAsync(trainer, mockExam, token)).GetProperty("rowVersion").GetDateTime();
+        using (var refused = await StepAsync(trainer, mockExam, "report", Report(mockVersion, [], readyForMockExam: true), token))
         {
             await AssertRefusedAsync(refused, "readyForMockExam", TrainingSessions.MockExamAgain, token);
         }
 
-        await DoneAsync(await StepAsync(again, mockExam, "report", Report(mockVersion, [], readyForExam: true, cooldownWaived: true), token), token);
+        await DoneAsync(await StepAsync(trainer, mockExam, "report", Report(mockVersion, [], readyForExam: true, cooldownWaived: true), token), token);
         path = Path(await trainee.GetFromJsonAsync<JsonElement>(RequestEndpoints.Pattern, token), RatingKind.Pilot);
         Assert.False(path.GetProperty("isMockExam").GetBoolean());
     }
@@ -678,12 +707,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         }
     }
 
-    private async Task RunExpiryAsync(CancellationToken cancellationToken)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<TrainingExpiryJob>().RunAsync(cancellationToken);
-    }
-
     private async Task<Training> StoredAsync(long id, CancellationToken cancellationToken)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
@@ -725,17 +748,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         var source = Training.SourceIdOf(id);
         return await scope.ServiceProvider.GetRequiredService<HubDbContext>().CalendarEntries.IgnoreQueryFilters().AsNoTracking()
             .Where(entry => entry.SourceModule == TrainingModule.ModuleKey && entry.SourceId == source)
-            .ToListAsync(cancellationToken);
-    }
-
-    /// <summary>Who holds <c>Training.Conduct</c> on this training by a grant with its scope.</summary>
-    private async Task<List<int>> HoldersOfConductAsync(long id, CancellationToken cancellationToken)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var scopeOf = Training.ScopeOf(id);
-        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().UserGrants.AsNoTracking()
-            .Where(grant => grant.Value == TrainingPermissions.Conduct && grant.ResourceScope == scopeOf && grant.Vid != null)
-            .Select(grant => grant.Vid!.Value)
             .ToListAsync(cancellationToken);
     }
 
@@ -821,14 +833,6 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         var item = await database.SheetItems.IgnoreQueryFilters().SingleAsync(row => row.Id == id, cancellationToken);
         item.Title = new Localized<string>(Division().Locales.Select(locale => KeyValuePair.Create(locale, title)));
         await database.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>The grant the assignment writes (A7): <c>Training.Conduct</c> on this training alone.</summary>
-    private async Task GiveConductAsync(int vid, long id, CancellationToken cancellationToken)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        Assert.Null(await scope.ServiceProvider.GetRequiredService<ModuleGrants>()
-            .GiveAsync(vid, TrainingPermissions.Conduct, Department.TD, Training.ScopeOf(id), GrantReason, cancellationToken));
     }
 
     private async Task<int> MailsAsync(int vid, string type, CancellationToken cancellationToken)

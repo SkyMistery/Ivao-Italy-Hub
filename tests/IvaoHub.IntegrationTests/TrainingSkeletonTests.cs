@@ -84,13 +84,16 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
             Assert.Equal(seeded.Count, seeded.Distinct().Count());
         }
 
-        // Design M3 §3.2: the coordinator everything, the advisor views, approves and puts exams in the calendar, the trainer
-        // views — an exam is assigned only to an examiner, never to a trainer — all of it on the training department.
+        // Design M3 §3.2: the coordinator everything, the advisor views, approves, conducts and puts exams in the calendar, the
+        // trainer views and conducts — conducting reaches only the trainings assigned to whoever holds it (§3.3, A7b), and an exam is
+        // assigned only to an examiner, never to a trainer — all of it on the training department.
         Assert.Equal(TrainingPermissions.All.Select(permission => permission.Name).Order(StringComparer.Ordinal), await TrainingPermissionsOfAsync(CoordinatorVid, token));
         Assert.Equal(
-            new[] { TrainingPermissions.View, TrainingPermissions.Approve, TrainingPermissions.ManageExams }.Order(StringComparer.Ordinal),
+            new[] { TrainingPermissions.View, TrainingPermissions.Approve, TrainingPermissions.Conduct, TrainingPermissions.ManageExams }.Order(StringComparer.Ordinal),
             await TrainingPermissionsOfAsync(AdvisorVid, token));
-        Assert.Equal([TrainingPermissions.View], await TrainingPermissionsOfAsync(TrainerVid, token));
+        Assert.Equal(
+            new[] { TrainingPermissions.View, TrainingPermissions.Conduct }.Order(StringComparer.Ordinal),
+            await TrainingPermissionsOfAsync(TrainerVid, token));
 
         // The section of the back office is there for whoever may follow its entry, and for nobody else.
         Assert.Contains("/staff/training/settings", await StaffEntriesOfAsync(CoordinatorVid, token));

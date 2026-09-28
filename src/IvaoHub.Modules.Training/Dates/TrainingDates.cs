@@ -19,10 +19,10 @@ namespace IvaoHub.Modules.Training.Dates;
 /// read them —, the trainee's choice among them, the date set by hand, and the closing of a training that found no date: by the
 /// staff with a reason, or by the night when the division gives the trainee a time to choose (§12 n.9).
 /// <para>Every write is a write of the training. The proposals are child rows written with it (§1.1), so proposing and
-/// withdrawing touch it: the write guard then asks for the training's own permission — the trainer's <c>Training.Conduct</c> on
-/// its scope (A7), the staff's by position —, and a version the writer did not see is a 409. The proposals live only while the
-/// training waits for a date and all go when it has one or closes (§1.3, §6); the training keeps the date, and which proposal it
-/// was (§1.2).</para>
+/// withdrawing touch it: the write guard then asks for the training's own permission — <c>Training.Conduct</c>, which reaches the
+/// training assigned to the writer alone (A7b), or <c>Training.Edit</c>, which the coordinator and the assistant hold —, and a
+/// version the writer did not see is a 409. The proposals live only while the training waits for a date and all go when it has
+/// one or closes (§1.3, §6); the training keeps the date, and which proposal it was (§1.2).</para>
 /// <para>A date fixed puts the session into the calendar by itself: the training projects it (<see cref="Training.Project"/>).
 /// The mails go after the save, through <see cref="TrainingMail"/>: the dates proposed to the trainee, the date fixed to both, the
 /// closing to the trainee.</para>
@@ -350,7 +350,7 @@ public sealed class TrainingDates(
     /// <summary>
     /// A training closed by the staff (§2.5, R.3: the trainee never answered, or anything else), with <c>Training.Approve</c> and a
     /// reason the trainee reads: accepted and still going on — dated too, whose session then leaves the calendar and stays on
-    /// record. Nobody closes a training of their own. The trainer's grant goes the same night (A7).
+    /// record. Nobody closes a training of their own. Its trainer conducts it no more: nothing is left to conduct.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> CloseAsync(
         Training training,

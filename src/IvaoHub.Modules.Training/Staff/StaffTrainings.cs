@@ -31,10 +31,10 @@ public enum StaffResult
 /// Every write is a write of the training, which the interceptor lets whoever approves, assigns or conducts make
 /// (<c>AlsoWrittenWith</c>, A3); who may do what on a training is the one handler's answer, asked on the row — nobody approves or
 /// assigns a training of their own, the super administrator included (§3).
-/// <para>Assigning writes the grant that lets the trainer conduct this training alone (§3.3): <c>Training.Conduct</c> with the
-/// training's scope, through the core's <see cref="ModuleGrants"/>, and takes the previous trainer's away. The grant and the row
-/// are two saves of two contexts: the grant goes first, so a trainer never holds the training without it, and one left behind by
-/// a write that failed is taken back here or by the job of the night (<see cref="TrainingExpiryJob"/>).</para>
+/// <para>Assigning gives the training to its trainer and to nobody else (§3.3, A7b): the row says who its trainer is, and
+/// <c>Training.Conduct</c>, which the trainer holds by their position, reaches the trainings assigned to them alone. No grant is
+/// written and none is taken back: the trainer conducts from their next request, without signing in again, and whoever had the
+/// training before them conducts it no more.</para>
 /// <para>The mails go after the save, through the one notification service (<see cref="TrainingMail"/>).</para>
 /// <para>The dates of a training (A8) are <see cref="TrainingDates"/>'s: the page shows them — the dates proposed with their
 /// warnings, the session and whether it shows as held — and says whether the reader may conduct it or close it. What its session
@@ -45,7 +45,6 @@ public sealed class StaffTrainings(
     TrainingDbContext database,
     HubDbContext hub,
     RatingVocabulary vocabulary,
-    ModuleGrants grants,
     ModuleSettingsStore settingsStore,
     TrainingMail mail,
     TrainingPeople people,
@@ -55,9 +54,6 @@ public sealed class StaffTrainings(
     IOptions<DivisionOptions> division,
     IClock clock)
 {
-    /// <summary>What marks the grants the assignment writes, among the grants of the back office.</summary>
-    public const string GrantReason = "training: trainer";
-
     /// <summary>A training as the staff reaches it, past the filter of the members: the handler says who may read it.</summary>
     public Task<Training?> FindAsync(long id, bool tracked, CancellationToken cancellationToken)
     {
@@ -359,10 +355,11 @@ public sealed class StaffTrainings(
 
     /// <summary>
     /// Assigns the trainer, or changes them (§2.4): somebody the rule of <see cref="TrainerChoice"/> lets train it, asked again
-    /// here whatever the page offered. Writes their grant on this training and takes the previous trainer's away (§3.3); an
-    /// accepted training becomes <c>Assigned</c>, a dated one keeps its date. Every date proposed that the trainee has not chosen
-    /// goes (A8), whoever proposed it — the previous trainer, or the coordinator or the assistant, who conduct every training —:
-    /// the new trainer proposes their own. Mails the trainee and the trainer.
+    /// here whatever the page offered. The training is theirs to conduct from then on, and no longer the previous trainer's
+    /// (§3.3, A7b): the row alone says so, and nobody's grants change. An accepted training becomes <c>Assigned</c>, a dated one
+    /// keeps its date. Every date proposed that the trainee has not chosen goes (A8), whoever proposed it — the previous trainer,
+    /// or the coordinator or the assistant, who conduct every training —: the new trainer proposes their own. A version somebody
+    /// moved meanwhile is a conflict. Mails the trainee and the trainer.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> AssignAsync(
         Training training,
@@ -399,16 +396,6 @@ public sealed class StaffTrainings(
             return Refuse("trainerVid", refusal);
         }
 
-        var department = training.OwnerDepartment;
-        var scope = Training.ScopeOf(training.Id);
-        var previous = training.TrainerVid;
-
-        // The grant first: the trainer never holds the training without it.
-        if (await grants.GiveAsync(payload.TrainerVid, TrainingPermissions.Conduct, department, scope, GrantReason, cancellationToken) is { } refused)
-        {
-            return Refuse("trainerVid", refused);
-        }
-
         database.Entry(training).Property(row => row.RowVersion).OriginalValue = payload.RowVersion;
         training.TrainerVid = payload.TrainerVid;
         training.AssignedBy = currentUser.Vid;
@@ -419,28 +406,7 @@ public sealed class StaffTrainings(
         }
 
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.TrainingId == training.Id).ToListAsync(cancellationToken));
-
-        try
-        {
-            await database.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Somebody moved the training meanwhile, and the grant goes back — unless the training now names this very trainer:
-            // two assignments of the same person from one version, and the other one saved the row. Whichever of the two wrote
-            // the grant, it is the trainer's now, and taking it would leave them the training without it.
-            if ((await FindAsync(training.Id, tracked: false, CancellationToken.None))?.TrainerVid != payload.TrainerVid)
-            {
-                await grants.TakeAsync(payload.TrainerVid, TrainingPermissions.Conduct, department, scope, CancellationToken.None);
-            }
-
-            throw;
-        }
-
-        if (previous is { } before)
-        {
-            await grants.TakeAsync(before, TrainingPermissions.Conduct, department, scope, cancellationToken);
-        }
+        await database.SaveChangesAsync(cancellationToken);
 
         await TellAssignedAsync(training, payload.TrainerVid, cancellationToken);
 
@@ -484,7 +450,9 @@ public sealed class StaffTrainings(
     /// <summary>
     /// The staff of the training the hub knows (§2.4; plan §16.13, the roster is whoever signed in): whoever holds a position of the
     /// direction or of the module's department — its coordinator, assistant, advisors and trainers —, with those positions and
-    /// their ratings. With <paramref name="only"/>, that member alone, if they are.
+    /// their ratings. With <paramref name="only"/>, that member alone, if they are. Each of them holds <c>Training.Conduct</c> on the
+    /// module's department — the department's own by the division's grants to positions (§3.2), the direction by the core —, so
+    /// whoever is given a training conducts it (A7b).
     /// </summary>
     private async Task<List<StaffMember>> StaffAsync(Department department, int? only, CancellationToken cancellationToken)
     {
