@@ -37,7 +37,11 @@ interface Rating {
 
 interface Choices {
   readonly examiners: readonly { readonly vid: number; readonly name: string | null }[];
-  readonly positions: readonly { readonly callsign: string; readonly name: string; readonly ratingShortName: string }[];
+  readonly positions: readonly {
+    readonly callsign: string;
+    readonly name: string;
+    readonly ratingShortName: string;
+  }[];
 }
 
 interface ExamRow {
@@ -76,7 +80,10 @@ test('an exam is entered by whoever examines it, a trainer may not touch it, a v
     const position = choices.positions.find((candidate) => candidate.ratingShortName === rating.shortName)!;
     expect(position, 'a position of the division for the rating').toBeDefined();
     expect(choices.examiners.map((examiner) => examiner.vid)).toContain(EXAMINER);
-    expect(choices.examiners.map((examiner) => examiner.vid), 'a trainer examines nobody').not.toContain(999004);
+    expect(
+      choices.examiners.map((examiner) => examiner.vid),
+      'a trainer examines nobody',
+    ).not.toContain(999004);
 
     // ---------------------------------------------------------------- entered from the form, by its examiner
     const day = daysAhead(4);
@@ -130,7 +137,9 @@ test('an exam is entered by whoever examines it, a trainer may not touch it, a v
       },
     });
     expect(changed.status(), await changed.text()).toBe(403);
-    const removed = await trainer.request.delete(`/api/training/exams/${String(exam.id)}`, { headers: asTheClientDoes });
+    const removed = await trainer.request.delete(`/api/training/exams/${String(exam.id)}`, {
+      headers: asTheClientDoes,
+    });
     expect(removed.status(), await removed.text()).toBe(403);
 
     // ---------------------------------------------------------------- /training, to a visitor: where and when, and nobody
@@ -163,7 +172,10 @@ test('an exam is entered by whoever examines it, a trainer may not touch it, a v
     await staffPage.goto(`/staff/training/exams/${String(exam.id)}`);
     await expect(staffPage.getByRole('heading', { level: 1, name: words.exams.edit })).toBeVisible();
     await staffPage.getByRole('button', { name: englishCommon.common.delete, exact: true }).click();
-    await staffPage.getByRole('alertdialog').getByRole('button', { name: englishCommon.common.delete, exact: true }).click();
+    await staffPage
+      .getByRole('alertdialog')
+      .getByRole('button', { name: englishCommon.common.delete, exact: true })
+      .click();
     await expect(staffPage).toHaveURL(/\/staff\/training\/exams(\?.*)?$/);
     expect(await examsOf(context.request)).toEqual([]);
 
@@ -208,7 +220,9 @@ async function examsOf(request: APIRequestContext): Promise<ExamRow[]> {
 /** The exams of this run taken off the calendar, through the API: a run leaves the bench as it found it. */
 async function removeTheExams(staff: APIRequestContext): Promise<void> {
   for (const exam of await examsOf(staff)) {
-    const response = await staff.delete(`/api/training/exams/${String(exam.id)}`, { headers: asTheClientDoes });
+    const response = await staff.delete(`/api/training/exams/${String(exam.id)}`, {
+      headers: asTheClientDoes,
+    });
     expect(response.status(), await response.text()).toBe(204);
   }
 }
@@ -232,7 +246,13 @@ function englishTraining() {
     exams: {
       create: string;
       edit: string;
-      fields: { rating: string; position: string; startsAtUtc: string; candidateVid: string; examinerVid: string };
+      fields: {
+        rating: string;
+        position: string;
+        startsAtUtc: string;
+        candidateVid: string;
+        examinerVid: string;
+      };
     };
   };
 }

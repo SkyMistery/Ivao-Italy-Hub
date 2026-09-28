@@ -25,7 +25,14 @@ import { englishCommon } from './locales';
 const words = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/training.json', import.meta.url)), 'utf8'),
 ) as {
-  public: { upcoming: string; none: string; signIn: string; exam: string; examPeople: string; examsUnread: string };
+  public: {
+    upcoming: string;
+    none: string;
+    signIn: string;
+    exam: string;
+    examPeople: string;
+    examsUnread: string;
+  };
   exams: {
     title: string;
     create: string;
@@ -53,7 +60,13 @@ const otherAdvisor = { vid: 790096, name: 'Other Advisor' };
 /** An advisor of the training department: reads the training and enters their own exams, and holds no Edit. */
 const advisorBootstrap = {
   ...staffBootstrap,
-  user: { ...staffBootstrap.user, vid: advisor.vid, lastName: 'Advisor', positions: ['XX-TA1'], departments: ['TD'] },
+  user: {
+    ...staffBootstrap.user,
+    vid: advisor.vid,
+    lastName: 'Advisor',
+    positions: ['XX-TA1'],
+    departments: ['TD'],
+  },
   permissions: [
     { name: 'Training.View', department: 'TD' },
     { name: 'Training.Approve', department: 'TD' },
@@ -78,7 +91,14 @@ const trainerBootstrap = {
 /** A member who is not of the staff: reads who is in a session or an exam, and nothing of the back office. */
 const memberBootstrap = {
   ...staffBootstrap,
-  user: { ...staffBootstrap.user, vid: 790093, lastName: 'Member', isStaff: false, positions: [], departments: [] },
+  user: {
+    ...staffBootstrap.user,
+    vid: 790093,
+    lastName: 'Member',
+    isStaff: false,
+    positions: [],
+    departments: [],
+  },
   permissions: [],
 };
 
@@ -190,13 +210,22 @@ test('an advisor sees which exams are theirs, is offered a step only on those, a
   const seen = await stubTheExams(page, {
     rows: [
       row(61),
-      row(62, { examinerVid: otherAdvisor.vid, candidateVid: 790098, mine: false, mayEdit: false, startsAtUtc: at(4, 9) }),
+      row(62, {
+        examinerVid: otherAdvisor.vid,
+        candidateVid: 790098,
+        mine: false,
+        mayEdit: false,
+        startsAtUtc: at(4, 9),
+      }),
     ],
   });
 
   await page.goto('/staff/training/exams');
   await expect(page.getByRole('heading', { level: 1, name: words.exams.title })).toBeVisible();
-  await expect(page.getByRole('link', { name: words.exams.create })).toHaveAttribute('href', '/staff/training/exams/new');
+  await expect(page.getByRole('link', { name: words.exams.create })).toHaveAttribute(
+    'href',
+    '/staff/training/exams/new',
+  );
 
   // Both exams, by the VIDs of the candidate and the examiner; a step only on the reader's own, the latest first.
   const mine = page.getByRole('row').filter({ hasText: '790099' });
@@ -217,7 +246,9 @@ test('an advisor sees which exams are theirs, is offered a step only on those, a
   await expect.poll(() => seen.lists.at(-1)).toContain(`filter[examinerVid]=${String(advisor.vid)}`);
 });
 
-test('an advisor enters an exam of their own, and a refusal of the server lands under its field', async ({ page }) => {
+test('an advisor enters an exam of their own, and a refusal of the server lands under its field', async ({
+  page,
+}) => {
   let refuse = true;
   const seen = await stubTheExams(page, {
     write: () =>
@@ -272,7 +303,7 @@ test('an advisor enters an exam of their own, and a refusal of the server lands 
   await expect(page).toHaveURL(/\/staff\/training\/exams(\?.*)?$/);
 });
 
-test("the coordinator changes an exam somebody else examines, and takes it off the calendar asked first", async ({
+test('the coordinator changes an exam somebody else examines, and takes it off the calendar asked first', async ({
   page,
 }) => {
   const seen = await stubTheExams(page, {
@@ -280,7 +311,9 @@ test("the coordinator changes an exam somebody else examines, and takes it off t
     rows: [row(61, { examinerVid: otherAdvisor.vid, mine: false, mayEdit: true })],
     examiners: [otherAdvisor, advisor],
     write: (method) =>
-      method === 'DELETE' ? { status: 204, body: null } : { status: 200, body: detail(61, { examinerVid: advisor.vid }) },
+      method === 'DELETE'
+        ? { status: 204, body: null }
+        : { status: 200, body: detail(61, { examinerVid: advisor.vid }) },
   });
 
   await page.goto('/staff/training/exams/61');
@@ -293,7 +326,10 @@ test("the coordinator changes an exam somebody else examines, and takes it off t
   await page.getByRole('option', { name: 'Test Advisor (790097)', exact: true }).click();
   await page.getByRole('button', { name: englishCommon.common.save, exact: true }).click();
   await expect(page).toHaveURL(/\/staff\/training\/exams(\?.*)?$/);
-  expect(seen.sent[0]).toMatchObject({ method: 'PUT', body: { examinerVid: advisor.vid, rowVersion: detail(61).rowVersion } });
+  expect(seen.sent[0]).toMatchObject({
+    method: 'PUT',
+    body: { examinerVid: advisor.vid, rowVersion: detail(61).rowVersion },
+  });
 
   // Taken off the calendar, asked first.
   await page.goto('/staff/training/exams/61');
@@ -336,7 +372,11 @@ function session(id: number, startsAtUtc: string, people: Record<string, unknown
 }
 
 /** An exam still to come, as `/api/training/sessions/exams` answers it. */
-function exam(id: number, startsAtUtc: string, vids: { candidateVid: number; examinerVid: number } | null = null) {
+function exam(
+  id: number,
+  startsAtUtc: string,
+  vids: { candidateVid: number; examinerVid: number } | null = null,
+) {
   return {
     id,
     kind: 'Pilot',
@@ -348,11 +388,22 @@ function exam(id: number, startsAtUtc: string, vids: { candidateVid: number; exa
   };
 }
 
-async function stubTheSite(page: Page, sessions: unknown[], exams: unknown[], bootstrap: unknown = anonymousBootstrap) {
+async function stubTheSite(
+  page: Page,
+  sessions: unknown[],
+  exams: unknown[],
+  bootstrap: unknown = anonymousBootstrap,
+) {
   await stubTheApi(page);
   await page.route('**/api/me', (route) => route.fulfill(json(bootstrap)));
-  await page.route((url) => url.pathname === '/api/training/sessions', (route) => route.fulfill(json(sessions)));
-  await page.route((url) => url.pathname === '/api/training/sessions/exams', (route) => route.fulfill(json(exams)));
+  await page.route(
+    (url) => url.pathname === '/api/training/sessions',
+    (route) => route.fulfill(json(sessions)),
+  );
+  await page.route(
+    (url) => url.pathname === '/api/training/sessions/exams',
+    (route) => route.fulfill(json(exams)),
+  );
 }
 
 test('/training shows a visitor the exams to come beside the sessions, in their order and with nobody named', async ({
@@ -379,22 +430,31 @@ test('/training shows a visitor the exams to come beside the sessions, in their 
 });
 
 test('a signed in member reads the candidate and the examiner of an exam by VID', async ({ page }) => {
-  await stubTheSite(page, [], [exam(51, at(1, 9), { candidateVid: 790099, examinerVid: 790097 })], memberBootstrap);
+  await stubTheSite(
+    page,
+    [],
+    [exam(51, at(1, 9), { candidateVid: 790099, examinerVid: 790097 })],
+    memberBootstrap,
+  );
 
   await page.goto('/training');
   await expect(
-    page.getByText(filled(words.public.examPeople, { candidate: '790099', examiner: '790097' }), { exact: true }),
+    page.getByText(filled(words.public.examPeople, { candidate: '790099', examiner: '790097' }), {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.getByText(words.public.none, { exact: true })).toHaveCount(0);
 });
 
 test('when the exams cannot be read, /training still shows the sessions and says so', async ({ page }) => {
   await stubTheApi(page);
-  await page.route((url) => url.pathname === '/api/training/sessions', (route) =>
-    route.fulfill(json([session(41, at(2, 18))])),
+  await page.route(
+    (url) => url.pathname === '/api/training/sessions',
+    (route) => route.fulfill(json([session(41, at(2, 18))])),
   );
-  await page.route((url) => url.pathname === '/api/training/sessions/exams', (route) =>
-    route.fulfill(json({ title: 'Boom', status: 500 }, 500)),
+  await page.route(
+    (url) => url.pathname === '/api/training/sessions/exams',
+    (route) => route.fulfill(json({ title: 'Boom', status: 500 }, 500)),
   );
 
   await page.goto('/training');
