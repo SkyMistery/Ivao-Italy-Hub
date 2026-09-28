@@ -158,6 +158,34 @@ L'origine resta raggiungibile senza Cloudflare; contro chi la chiama direttament
    risolto prima della produzione.**
 3. Nessuno può falsificare l'indirizzo, ma solo perché l'hub non ne legge nessuno.
 
+**Le due ipotesi** (la seconda l'ha posta il master), che la pagina diagnostica deve saper distinguere:
+1. **Passenger non passa `X-Forwarded-For` a un'applicazione generica**, o lo passa sotto un altro nome (per esempio solo
+   `X-Real-IP`), mentre lo schema arriva.
+2. **L'header arriva, ma il middleware lo scarta** perché vede il vicino come IPv6 con dentro un IPv4 (`::ffff:127.0.0.1`),
+   e `TrustedNetworks` elenca solo `127.0.0.1/32` e `::1/128`. In quel caso scarterebbe anche `X-Forwarded-Proto`.
+
+Che cosa dicono i fatti sulla 2, **dedotto e non misurato**:
+- HSTS lo decide `Request.IsHttps` (`HstsMiddleware`: l'assembly `Microsoft.AspNetCore.HttpsPolicy` 10.0.9 non guarda
+  altro). Fra Passenger e l'hub non c'è TLS, quindi `IsHttps` può essere vero solo se il middleware dei forwarded header ha
+  applicato uno schema.
+- Il middleware riconosce gli indirizzi IPv6 che contengono un IPv4: l'assembly `Microsoft.AspNetCore.HttpOverrides`
+  10.0.9 usa `IsIPv4MappedToIPv6` e `MapToIPv4` nel confronto con le reti fidate.
+- Un vicino `::ffff:127.0.0.1` scartato si scriverebbe proprio così nel registro, perché è
+  `RemoteIpAddress.ToString()`. Carmine ha letto `127.0.0.1`.
+
+Tre indizi contro la 2, che resta possibile finché la pagina non mostra la famiglia dell'indirizzo. La 1 non la dice nessun
+indizio da fuori.
+
+**Che cosa mostra la pagina (i)**:
+- l'indirizzo del vicino **grezzo, con la sua famiglia** (IPv4, IPv6, IPv6 con dentro un IPv4), cioè quello che il
+  middleware sposta in `X-Original-For`;
+- l'indirizzo creduto;
+- `Request.Scheme` prima e dopo il middleware (il prima si legge da `X-Original-Proto`);
+- gli header grezzi `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Real-IP` e `Forwarded`, e il loro
+  numero di voci.
+
+Nessun nome di un fornitore nel codice (§3): un header come `CF-Connecting-IP`, se servisse, arriva dalla configurazione.
+
 **Che cosa non si sa**: che cosa passano davvero all'hub il nginx di Plesk e Passenger. Forse l'indirizzo del visitatore
 arriva in un altro header, come `X-Real-IP`, che i proxy di Plesk di solito impostano, o come `CF-Connecting-IP`, che
 Cloudflare manda sempre. Forse Passenger non passa gli header `X-Forwarded-*` all'applicazione. Da fuori non si vede.
@@ -166,7 +194,7 @@ Cloudflare manda sempre. Forse Passenger non passa gli header `X-Forwarded-*` al
 
 | | Che cosa | Costo | Limite |
 |---|---|---|---|
-| **i. Una pagina diagnostica nel nucleo** | un indirizzo **solo per il super amministratore** che mostra come l'hub vede la richiesta: indirizzo e schema del vicino e creduti, e gli header di inoltro ricevuti (`X-Forwarded-*`, `Forwarded`, `X-Real-IP`, `CF-Connecting-IP`, `X-Original-*`). Mostra solo l'indirizzo di chi guarda | poco codice, un test; serve per ogni installazione futura, non solo questa | è codice del nucleo: una PR sua, dopo il sì |
+| **i. Una pagina diagnostica nel nucleo** | un indirizzo **solo per il super amministratore** che mostra come l'hub vede la richiesta, con il contenuto elencato sopra. Mostra solo l'indirizzo di chi guarda | poco codice, un test; serve per ogni installazione futura, non solo questa | è codice del nucleo: una PR sua, dopo il sì |
 | **ii. Chiedere all'amministratore** che cosa passano nginx e Passenger | niente codice | lento, e la risposta è una descrizione, non una misura |
 | **iii. Una riga di log a `Debug`** con gli header grezzi, accesa dal file dei segreti | pochissimo codice | si legge scaricando `logs/` via FTP; resta nel codice un log di header, che va tenuto spento |
 
