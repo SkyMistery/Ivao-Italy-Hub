@@ -7,12 +7,12 @@
 > risposta di Carmine. Le fasi si scrivono in `10-piano-implementazione-m4.md` **dopo**
 > l'approvazione di questo documento. I modelli sono `05-design-m2.md` e `07-design-m3.md`.
 
-**Stato:** **deciso** il 29 settembre 2026; §17.3 (i suggerimenti accolti lo stesso giorno) aspetta la conferma sulla PR.
-Nessun codice. La prima stesura (28 settembre) faceva ipotesi sul lavoro
+**Stato:** **deciso** il 29 settembre 2026, §17.3 compresa ([conferma di §17.3][ok3]). Nessun codice. La prima stesura (28 settembre) faceva ipotesi sul lavoro
 dell'ED; questa le sostituisce con le risposte di Carmine (§R.3), date in chat in quattro giri insieme alle sette domande
 della seconda stesura (§17.2), e **confermate sulla PR** ([conferma][ok]). Il prossimo passo è la fase E0 (§16).
 
 [ok]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/180#issuecomment-5880522987
+[ok3]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/180#issuecomment-5880732900
 
 ---
 
@@ -1195,9 +1195,12 @@ Poste sulla PR ([commento][q2]); Carmine ha risposto in chat (c4) e ha **conferm
 7. **Lo spegnimento di `ivao-booking`** (E9). Raccomandato: dopo il primo evento vero fatto sull'hub, con il Gate Manager già
    passato all'hub; poi un 301 verso `/events`. **Deciso: come raccomandato.**
 
-### 17.3 I suggerimenti del design — decisi il 29 settembre 2026, da confermare sulla PR
+### 17.3 I suggerimenti del design — decisi il 29 settembre 2026
 
-Proposti da questa sessione dopo la decisione; Carmine ha risposto in chat (c5). Aspettano il suo commento di conferma.
+Proposti da questa sessione dopo la decisione ([riassunto][q3]); Carmine ha risposto in chat (c5) e ha **confermato sulla PR**
+([conferma][ok3]: «confermo 17.3»), compresa la lettura del n.6.
+
+[q3]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/180#issuecomment-5880708981
 
 1. **Limiti a chi prenota e non vola** (§3.7): un registro del pilota come quello del controllore. **Deciso: sì**, con **il
    numero di prenotazioni non volate da cui la regola vale** e **i limiti per fascia oraria e per evento** configurabili.
