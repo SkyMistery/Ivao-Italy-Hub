@@ -30,7 +30,7 @@ import {
   type FieldErrors,
   type UseFormReturn,
 } from 'react-hook-form';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { z } from 'zod';
 
 import { ICON_NAMES } from '../icons';
@@ -356,6 +356,13 @@ function readSource(value: unknown, defaultLocale: string | undefined): string {
 }
 
 /**
+ * The `value` of `cmdk`'s root that no option carries: "nothing is lit". An empty string would not
+ * do — `cmdk` reads it as "light the first option" — and no address, callsign or aircraft type holds
+ * a NUL.
+ */
+const NOTHING_LIT = '\u0000';
+
+/**
  * A field that **offers** without demanding: the address of a menu entry is the case it was built
  * for — the pages of the site, grouped by the department that wrote them, and an address of
  * somewhere else typed in full.
@@ -369,6 +376,14 @@ function readSource(value: unknown, defaultLocale: string | undefined): string {
  * finds "Città" here too — and it is `shouldFilter={false}` because that filtering is ours: `cmdk`
  * would match on its own idea of the text and throw away a page whose address matches while its
  * title does not.
+ *
+ * ⚠️ The box drives the list from the keyboard (28 September 2026, note
+ * `2026-09-28-il-suggerimento-dalla-tastiera`). It sits outside `cmdk`'s root — the root is inside
+ * the popover, the box is its anchor — so `cmdk` never heard a key typed in it: the arrows did not
+ * move through the options, Enter did not choose one, and Enter in the only line of a form with no
+ * button sent the form. The box now hands the arrows and Enter to the root, and `cmdk` moves and
+ * chooses as it does for its own input; which option is lit is held here (`value` on the root), so
+ * the box can say it to a screen reader and decide what Enter means.
  */
 function Suggest({
   id,
@@ -438,11 +453,72 @@ function Suggest({
   // A closed field keeps only what was offered. What is typed is a way of searching the list, so
   // leaving the field with something nobody offered puts back what was there — and the server
   // refuses that value anyway, which is what makes this a rule.
+  const offered = suggestions.some((suggestion) => suggestion.value === value);
   const keepWhatWasOffered = () => {
-    if (only && !suggestions.some((suggestion) => suggestion.value === value)) {
+    if (only && !offered) {
       onChange(opened);
     }
   };
+
+  // The option lit in the list, by its `value` — what `cmdk` calls the value of its root, and what
+  // it chooses on Enter. Held here rather than by `cmdk`, so that the box decides when something is
+  // lit at all.
+  //
+  // ⚠️ **Nothing is lit until somebody searches or moves.** The list opens on focus, and a lit
+  // option there would turn the Enter of somebody who only walked through the field into a choice
+  // they never made. `cmdk` lights its first option by itself whenever its value is empty, so
+  // "nothing" is a value no option carries.
+  const [lit, setLit] = useState(NOTHING_LIT);
+  const root = useRef<HTMLDivElement>(null);
+
+  // What `cmdk` is told is lit. In a closed field that somebody is searching, the first option still
+  // shown is lit unless an arrow lit another: what is typed there is a search, and Enter finishes it —
+  // part of a callsign, Enter, and the one it matches is chosen. In an open field what is typed is
+  // the value, and only an arrow or the pointer lights an option.
+  const shown = [...groups.values()].flat();
+  const lighting =
+    only && typed !== '' && !shown.some((suggestion) => suggestion.value === lit)
+      ? (shown[0]?.value ?? NOTHING_LIT)
+      : lit;
+
+  // What `cmdk` itself chooses on Enter: the row it has marked, and nothing else.
+  const litOption = () => list.current?.querySelector('[cmdk-item][aria-selected="true"]') ?? null;
+
+  // A key typed in the box, handed to the list as if it were typed in `cmdk`'s own input. A new event,
+  // because an event is dispatched once; `cmdk` handles it before `dispatchEvent` returns.
+  const toList = (key: string) =>
+    root.current?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+
+  // Opening from the box lights nothing, or the first option when an arrow opened it: the arrow's
+  // promise is "take me into the list".
+  const show = (from: string = NOTHING_LIT) => {
+    if (!open) {
+      setLit(from);
+    }
+
+    setOpen(true);
+  };
+
+  // ⚠️ The box points at the list and at the lit row, so that a screen reader follows the arrows
+  // while the focus stays in the box. Both ids are `cmdk`'s — it overwrites any id given to its list
+  // or its rows. The list's arrives through its `ref`, which also draws the box again once the list
+  // is on the page: Radix mounts a popover's content one pass after it opens. The row's is read from
+  // the page and set on the box by hand, since its rows are drawn after the box: React does not own
+  // that attribute, and nothing else writes it.
+  const [listbox, setListbox] = useState<string>();
+  const holdListbox = useCallback((node: HTMLDivElement | null) => setListbox(node?.id), []);
+
+  useLayoutEffect(() => {
+    const row = [...(list.current?.querySelectorAll('[cmdk-item]') ?? [])].find(
+      (candidate) => candidate.getAttribute('data-value') === lighting,
+    );
+
+    if (open && row !== undefined) {
+      box.current?.setAttribute('aria-activedescendant', row.id);
+    } else {
+      box.current?.removeAttribute('aria-activedescendant');
+    }
+  });
 
   return (
     <PopoverRoot
@@ -466,9 +542,18 @@ function Suggest({
           id={id}
           value={value}
           autoComplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={open ? listbox : undefined}
           onChange={(event) => {
             onChange(event.target.value);
-            setOpen(true);
+            // In an open field what is typed is the value again: a row lit before it is not a choice.
+            if (open && !only) {
+              setLit(NOTHING_LIT);
+            }
+
+            show();
           }}
           onFocus={(event) => {
             // Back from the list is not arriving: the search goes on from where it was.
@@ -476,12 +561,55 @@ function Suggest({
               setOpened(value);
             }
 
-            setOpen(true);
+            show();
           }}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setOpen(false);
+              return;
             }
+
+            // The arrows move through the list, and open it first when it is closed. Never the caret:
+            // in a one line box they would only jump it to an end.
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault();
+
+              if (!open) {
+                show(shown[0]?.value);
+              } else {
+                // Up from nothing lit is the last option, as it is in any list; `cmdk` would stay put.
+                toList(event.key === 'ArrowUp' && litOption() === null ? 'End' : event.key);
+              }
+
+              return;
+            }
+
+            if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+              return;
+            }
+
+            // ⚠️ Enter chooses the lit option, and then it is **only** a choice: without
+            // `preventDefault` the browser also sends the form — the only line of a form with no
+            // button does exactly that (the request of a training, #144).
+            if (open && litOption() !== null) {
+              event.preventDefault();
+              toList('Enter');
+              return;
+            }
+
+            // Nothing lit. In a closed field something typed that nobody offered is a search nobody
+            // finished, and sending it would send a value the server refuses: Enter opens the list
+            // instead. An empty box is not a search, and neither is what the field held on arrival.
+            if (only && !offered && typed !== '') {
+              event.preventDefault();
+              show();
+              return;
+            }
+
+            // Otherwise what the box holds is a value — chosen, or typed in an open field — and Enter
+            // is the form's again: it sends it, as in any line of a form. Deliberately: a field that
+            // swallowed Enter would be the one line of a form where it does nothing.
+            setOpen(false);
           }}
           onBlur={(event) => {
             if (!inList(event.relatedTarget)) {
@@ -508,8 +636,14 @@ function Suggest({
           }
         }}
       >
-        <CommandRoot shouldFilter={false}>
-          <CommandList>
+        <CommandRoot
+          ref={root}
+          shouldFilter={false}
+          value={lighting}
+          // `cmdk` says "nothing" with an empty string, which to itself means "light the first".
+          onValueChange={(next) => setLit(next === '' ? NOTHING_LIT : next)}
+        >
+          <CommandList ref={holdListbox}>
             {matching.length === 0 ? <CommandEmpty>{empty}</CommandEmpty> : null}
 
             {[...groups].map(([heading, items]) => (
