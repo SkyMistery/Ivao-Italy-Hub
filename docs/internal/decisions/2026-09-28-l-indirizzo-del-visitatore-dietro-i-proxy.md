@@ -1,8 +1,9 @@
 # L'indirizzo del visitatore dietro più proxy
 
 **Data:** 28 settembre 2026
-**Stato:** **Proposta.** Le domande sono al §6, poste a Carmine sulla PR; il codice arriva solo dopo la sua risposta e
-dopo la misura del §5.
+**Stato:** **Decisa da Carmine sulla PR, 28 settembre 2026**: le due domande del §6 (5 e 6 del commento), tutte e due come
+raccomandato — <https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>. `ForwardLimit = null` si fa
+dopo la prova 3 del §5, **qualunque cosa dica**.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo è quello deciso il 3 settembre
 (`2026-09-03-proxy-fidati.md`, design M0 §2.3), e si **estende**. Cambio del nucleo, nella sua PR.
 **Da dove viene:** piano §11.3 punto 9, terzo trattino; `docs/DEPLOYING.md` «Known limits».
@@ -60,22 +61,36 @@ dell'hosting non ce lo dica il registro sbagliato: è una riga.
 
 ## 5. Che cosa si può misurare adesso, e che cosa no
 
-- **Adesso quasi niente.** Il 28 set, 06:50 UTC, `https://test.it.ivao.aero/health` risponde `500` (l'applicazione non
-  parte). Si vede solo che davanti c'è Cloudflare (`Server: cloudflare`, `CF-RAY … MXP`); dei salti dietro, niente.
-- **Quando parte**, tre prove sull'installazione di prova, senza codice:
-  1. **L'indirizzo**: come super amministratore cambiare qualcosa di innocuo e leggere il registro
-     (`docs/DEPLOYING.md`, «After every deploy: the checks»). Il tuo indirizzo ✅; `127.0.0.1` vuol dire che `X-Forwarded-For` non arriva;
-     un indirizzo di Cloudflare vuol dire la seconda riga del §2.
-  2. **Chi falsifica non passa**: undici richieste in un minuto a `/auth/login`, ciascuna con un `X-Forwarded-For` diverso
-     inventato. L'undicesima deve rispondere `429`: il limite non si aggira cambiando l'header.
-  3. **Lo schema**: `curl -sI https://test.it.ivao.aero/` porta `Strict-Transport-Security` con `max-age=2592000` (i trenta
-     giorni dell'hub, non un valore di Cloudflare) e nessun rinvio; `Set-Cookie`, dove c'è, ha `secure`.
+L'installazione di prova risponde dal 28 set mattina (`0.2.1`, `fa089de`; il `500` delle 06:50 UTC era l'utente del
+database d'esempio rimasto nel file dei segreti). Tre prove, senza codice:
+
+1. **Lo schema — misurato, 28 set 07:00 UTC ✅.** Le risposte dell'hub (`/api/version`, `/auth/login`) portano
+   `strict-transport-security: max-age=2592000`, i trenta giorni dell'hub, che l'hub manda solo a una richiesta che crede https;
+   i cookie di `/auth/login` hanno `secure`; il `redirect_uri` verso IVAO è `https://`. `http://` riceve `301` da Cloudflare.
+   Nessun giro in tondo: l'ultima voce di `X-Forwarded-Proto` che arriva all'hub è `https`.
+2. **Chi falsifica non passa — misurato, 28 set 07:00 UTC ✅.** Dieci `GET /auth/login` in 3 secondi (una da sola, poi nove),
+   ognuna con un `X-Forwarded-For` inventato diverso (`198.51.100.1`…`.12`): `302` fino alla decima, poi `429`. L'header del
+   visitatore non viene creduto. ⚠️ La prova **non distingue** l'indirizzo del visitatore da quello di un nodo di
+   Cloudflare: nei due casi il contatore è uno solo.
+3. **L'indirizzo — serve Carmine, da fare.** Nello stesso browser: aprire `https://test.it.ivao.aero/cdn-cgi/trace` e
+   annotare la riga `ip=` (l'indirizzo come lo vede Cloudflare); entrare come super amministratore; in `/staff/links` creare
+   un link («ip test», `https://example.org`), salvarlo e cancellarlo; in `/staff/admin/audit` leggere la colonna `ip` delle
+   due righe. **(a)** uguale a `ip=` ✅ la catena ha un salto solo e il limite 1 basta; **(b)** `127.0.0.1` o `::1`:
+   `X-Forwarded-For` non arriva; **(c)** un altro indirizzo pubblico, nelle reti di Cloudflare: la seconda riga del §2.
+
+Da fuori si vede anche che `/` risponde `200` **senza** `strict-transport-security` né `x-robots-tag`: sembra servito da nginx
+dalla cartella `wwwroot/`, non dall'hub. Non riguarda questa nota (è il tema delle intestazioni dei file serviti da Plesk).
+
 - **Che cosa resta cieco anche allora**: la catena esatta degli header (quanti salti, chi aggiunge). Il middleware di ASP.NET
   Core non la scrive nel log, nemmeno a `Debug` (scrive solo il proxy sconosciuto a cui si ferma, e su una catena pulita non
   si ferma su nessuno). Leggerla vuol dire una riga di codice che scrive gli header grezzi a `Debug`: la si aggiunge solo se la
   prova 1 sorprende.
 
 ## 6. Le domande a Carmine
+
+**Risposta di Carmine, 28 set 2026: sì a tutte e due, come raccomandato**
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>, domande 5 e 6). `ForwardLimit = null` si
+fa dopo la prova 3 del §5, qualunque cosa mostri; la domanda sull'origine la pone lui a chi amministra il server.
 
 1. **(a), `ForwardLimit = null`, nel nucleo?** Raccomandato: **sì**, dopo la prova 1, anche se la prova dà l'indirizzo giusto.
 2. **Chiedi a chi amministra il server** se l'origine accetta connessioni solo dalle reti di Cloudflare? Raccomandato: **sì**,

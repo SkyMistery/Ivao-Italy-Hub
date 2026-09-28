@@ -1,8 +1,11 @@
 # I job pianificati quando Passenger spegne l'hub
 
 **Data:** 28 settembre 2026
-**Stato:** **Proposta.** Le domande sono al §6, poste a Carmine sulla PR; il codice arriva solo dopo la sua risposta, in PR
-sue.
+**Stato:** **Decisa da Carmine sulla PR, 28 settembre 2026**. Le domande 1, 2 e 4 del §6 come raccomandato
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>). La domanda 3 **no**: al posto del
+Worker Cloudflare c'è un'operazione pianificata di Plesk che chiama l'hub con un POST protetto da un token
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865413362>, §6 e §8). Il codice arriva in PR sue:
+prima `diagnostics/starts.txt`, poi i job che recuperano insieme all'indirizzo chiamato dall'operazione pianificata.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: lo scheduler (Quartz) e il registro dei giri (`hub_jobs_log`) ci sono già,
 e si **estendono**; nessun job nuovo, nessun bus, niente shell. È un cambio del nucleo: la sua PR, con questa nota.
 **Da dove viene:** piano §11.3 punto 9, secondo trattino; `docs/DEPLOYING.md` «Known limits».
@@ -75,6 +78,10 @@ Che cosa vuol dire per l'hub, con il traffico di una divisione:
 
 ## 4. La raccomandazione
 
+> **Superata in parte dalla decisione** (§6): i passi 1 e 2 restano; il passo 3 è sostituito dalla strada **E** chiamata da
+> un'operazione pianificata di Plesk (§8). La raccomandazione resta com'era scritta, perché la nota dice che cosa è stato
+> proposto e che cosa è stato deciso.
+
 Tre passi, in quest'ordine:
 
 1. **Prima misurare** (nucleo, piccolo): `diagnostics/starts.txt`, una riga a ogni avvio e una a ogni arresto — ora, pid,
@@ -83,29 +90,62 @@ Tre passi, in quest'ordine:
    quanto dura ogni giro.
 2. **B, i job che recuperano**, nel nucleo, con le quattro correzioni del §3 (un esecutore, mail salvate una per una, riepilogo
    uno al giorno, i fusi espliciti — §7). Serve in ogni caso: qualunque cosa faccia l'host, un processo che si spegne c'è sempre.
-3. **A, un ping ogni 5 minuti** su `/health` di prova e di produzione, da un Worker Cloudflare suo (`hub-keepalive`, non dentro
-   `atc-archiver`, che serve i tour di vIPI). Con B basta un processo ogni tanto: 5 minuti sono il ritardo massimo di una mail, e
-   12 avvii l'ora invece di 60. Il sorgente nel repository (`tools/keepalive-worker/`, l'indirizzo come variabile del Worker):
-   la lezione di vIPI è che un Worker che vive solo sulla dashboard si perde alla prima ripubblicazione.
+3. ~~**A, un ping ogni 5 minuti** su `/health` da un Worker Cloudflare suo~~ — **scartato da Carmine** (§6, domanda 3): il
+   Worker starebbe sul suo account personale, e niente della divisione può dipendere da un account personale.
 
 E, a parte, **C chiesto comunque a Ivao.It** per `test.it.ivao.aero` e per la produzione, nello stesso messaggio della domanda
-di vIPI sulle morti a hh:56: non costa niente, e se lo concedono il ping diventa una riserva.
+di vIPI sulle morti a hh:56: non costa niente.
 
 ## 5. Che cosa si può misurare adesso, e che cosa no
 
-- **Adesso no**: il 28 set, 06:50 UTC, `https://test.it.ivao.aero/health` risponde `500` dopo 16 s e `/api/version` `500`
-  dopo 5 s, attraverso Cloudflare: l'applicazione non parte ancora (si aspetta il log di Passenger). Nessuna vita dell'hub,
-  nessun giro di job è misurabile.
-- **Quando parte**, con il passo 1: quante vite l'ora e quanto lunghe, senza traffico (l'installazione di prova è privata,
-  quindi è la notte della produzione) e con un ping; quanto dura un avvio; quanto dura ogni giro in `hub_jobs_log`, in
-  particolare `RefDataSyncJob`, il più lungo. Una misura sulla prova **non** dice il traffico di giorno della produzione.
+L'installazione di prova risponde dal 28 set mattina (`0.2.1`, `fa089de`; il `500` delle 06:50 UTC era l'utente del
+database d'esempio rimasto nel file dei segreti).
+
+**Misurato da fuori, 28 set 07:00–07:29 UTC**: una `GET /api/version` dopo pause crescenti, e il tempo fino al primo byte.
+Un tempo intorno a 0,2 s vuol dire processo vivo; intorno a 8–11 s vuol dire che Passenger ha dovuto avviarlo.
+
+| Pausa prima della richiesta | Tempo al primo byte |
+|---|---|
+| 5 s, 10 s, 5 s | 0,21 · 0,19 · 0,29 s |
+| 20 s | **11,0 s** |
+| 30 s | 0,34 s, poi **7,8 s** |
+| 45 s | 0,20 s |
+| 60 s, 90 s, 120 s, 180 s, 300 s, 600 s, 120 s | **7,8 · 10,0 · 8,2 · 8,4 · 9,4 · 9,0 · 7,8 s** |
+
+- **Oltre un minuto di silenzio, ogni richiesta paga un avvio a freddo di 8–10 s**, sempre (7 su 7). Fra 20 e 45 s a volte
+  sì e a volte no: la finestra d'inattività sta fra i 10 e i 30 secondi, come quella misurata su vIPI (§2).
+- ⚠️ **Il traffico non era solo il mio**: in quella mezz'ora Carmine e il master usavano la stessa installazione, quindi un
+  tempo breve dopo una pausa lunga (i 0,34 s dopo 30 s, i 0,20 s dopo 45 s) può essere un processo svegliato da loro. Un
+  tempo lungo, invece, è per forza un avvio.
+- **Che cosa ne segue per la decisione**: ogni chiamata dell'operazione pianificata sveglierà un hub spento e pagherà un
+  avvio intero prima di fare il lavoro. Il lavoro va fatto **dentro** la richiesta, perché Passenger non spegne un processo
+  mentre risponde, e l'operazione pianificata deve aspettare una risposta che arriva dopo l'avvio più il lavoro.
+
+**Non misurabile da fuori**: quante vite l'ora e quanto lunghe, quanta memoria usa il processo, quanto dura l'avvio visto
+da dentro, quanto dura ogni giro. Lo diranno `diagnostics/starts.txt` (passo 1) e `hub_jobs_log`, in particolare per
+`RefDataSyncJob`, il giro più lungo. Una misura sulla prova **non** dice il traffico di giorno della produzione.
 
 ## 6. Le domande a Carmine
 
+**Risposta di Carmine, 28 set 2026: sì alle domande 1, 2 e 4, come raccomandato**
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>). La domanda a Ivao.It (4) la pone lui.
+
+**La domanda 3: no, sostituita** da una seconda risposta
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865413362>). Niente Worker Cloudflare: starebbe sul
+suo account personale, e niente della divisione può dipendere da un account personale. **L'orologio è un'operazione
+pianificata di Plesk della sottoscrizione della divisione** («Recupera un URL»). Chiama l'hub a ore fisse (per esempio ai
+minuti :05 e :35, per i METAR) con un **POST a un indirizzo dell'hub protetto da un token** (per esempio `/api/jobs/run`).
+L'hub si sveglia, esegue quello che è dovuto (domanda 1) e risponde, e Passenger lo spegne di nuovo. È la strada **E** del
+§3, ed è quella che ha suggerito chi amministra il server («un'API leggera che fa solo questi compiti, chiamata a orari
+definiti, così il sito è libero di scaricarsi»). Niente seconda applicazione: su questo hosting Passenger avvierebbe e
+spegnerebbe anche quella. Se il pannello lo permette, Carmine lo chiede all'amministratore.
+Nella stessa risposta ha chiesto di scrivere nella nota la regola dei dati che esistono solo «adesso» (§8) e due misure in
+più in `diagnostics/starts.txt` (§8).
+
 1. **B, i job che recuperano, nel nucleo?** Raccomandato: **sì**, con le quattro correzioni del §3, nella sua PR.
 2. **Prima `diagnostics/starts.txt`?** Raccomandato: **sì**, piccolo e subito, nella PR di B o prima.
-3. **Il ping?** Raccomandato: **sì, un Worker Cloudflare suo, ogni 5 minuti, su `/health` di prova e di produzione, con il
-   sorgente in `tools/keepalive-worker/`**. In alternativa: nessun ping, e le mail della notte partono al mattino.
+3. **Il ping?** Raccomandato: sì, un Worker Cloudflare suo, ogni 5 minuti, su `/health`. **Risposta: no**, un'operazione
+   pianificata di Plesk (sopra, e §8).
 4. **Scrivi a Ivao.It** per `passenger_min_instances` o l'idle time di `test.it.ivao.aero` e della produzione? Raccomandato:
    **sì**, con la domanda di vIPI sulle morti a hh:56.
 
@@ -117,10 +157,43 @@ girano nell'ora del server; i commenti di quattro (`PirepWithdrawalJob`, `TrackR
 dice UTC, il fuso della divisione dove conta l'ora locale di chi legge (il riepilogo delle 07:00). Nessuna domanda: è una
 correzione.
 
+## 8. Che cosa è deciso, in una pagina
+
+**La regola dei dati che esistono solo «adesso»** (Carmine, seconda risposta):
+
+- quello che va **campionato ogni minuto non passa mai dall'hub**, e da nessuna applicazione avviata da Passenger;
+- quello che va **campionato a ore fisse passa dal POST pianificato**;
+- **tutto il resto recupera** (domanda 1).
+
+Oggi l'unico dato che si perde mentre l'hub dorme sono i **METAR di ripiego (IVAO, VATSIM) degli aeroporti che NOAA non
+ha**. Verificato nel codice: NOAA tiene **30 giorni** di METAR e TAF (`src/IvaoHub.Core/Weather/NoaaWeatherClient.cs:65-100`,
+`WeatherReport.cs:61`), e all'invio del PIREP l'hub se li riprende (`WeatherArchive.cs:180-218`). IVAO e VATSIM, invece,
+danno solo il bollettino corrente (`src/IvaoHub.Core/Weather/WeatherSource.cs:7-13`), e il TAF non ha ripiego. Secondo
+Carmine, e non verificato qui, le tracce arrivano dopo dal tracker di IVAO e le sessioni ATC le archivia vIPI, fuori
+dall'hub. Per questo `WeatherJob` è il job che il POST pianificato deve chiamare alle sue ore (:05 e :35).
+
+**`diagnostics/starts.txt`** (domanda 2) scrive per ogni avvio anche **la memoria usata dal processo** e **quanto è durato
+l'avvio**. Così una settimana sull'installazione di prova dice quanto costa ogni risveglio. Se quei numeri lo chiedono, resta
+possibile più avanti un'applicazione separata per i job, con una nota sua.
+
+**Il POST pianificato**, da decidere nella PR del codice con la sua nota:
+
+- **Uno solo**, che esegue quello che è dovuto e risponde; mai un indirizzo per job.
+- **Il lavoro si fa dentro la richiesta**: il processo non è inattivo finché risponde (§5).
+- **Il token è un segreto dell'installazione** (`secrets/`), non di una persona: non è un token personale (`CLAUDE.md` §2),
+  perché chi chiama è l'hosting, non un utente.
+- ⚠️ **Non verificato**: se «Recupera un URL» di Plesk sa fare un POST con un'intestazione, o solo una GET. Con la sola GET
+  il token finirebbe nell'indirizzo, e quindi nei log di nginx e di Cloudflare. Carmine lo chiede all'amministratore.
+- **Le mail partono al ritmo delle chiamate**: con due chiamate l'ora, fino a mezz'ora di ritardo quando nessuno usa il sito.
+  Le ore dell'operazione pianificata le decide chi la configura, non il codice.
+
 ## Da portare nel piano
 
-- **§11.3 punto 9**, secondo trattino: che cosa si rompe (§2), la strada decisa, e che cosa resta all'host.
-- **§5.2**, la riga «Job»: «Quartz.NET in-process (Plesk = un processo)» non è più vero — Passenger ne spegne e ne avvia, e a
-  volte due insieme; un job è dovuto per il suo registro, non per l'ora in cui il processo è vivo; un solo esecutore per job.
-- **§11.3 punto 2**: `diagnostics/starts.txt` accanto a `startup.txt`, se la domanda 2 è sì.
+- **§11.3 punto 9**, secondo trattino: che cosa si rompe (§2), la misura del §5, la strada decisa (§8), e che cosa resta
+  all'host (l'operazione pianificata, la domanda sull'inattività).
+- **§5.2**, la riga «Job»: «Quartz.NET in-process (Plesk = un processo)» non è più vero. Passenger spegne e avvia processi,
+  a volte due insieme; un job è dovuto secondo il suo registro, non secondo l'ora in cui il processo è vivo; c'è un solo
+  esecutore per job; l'orologio fuori dall'hub è il POST pianificato; vale la regola dei dati «adesso» (§8).
+- **§11.3 punto 2**: `diagnostics/starts.txt` accanto a `startup.txt`, con memoria e durata dell'avvio.
+- **§11.3 punto 6 o un punto nuovo**: l'operazione pianificata di Plesk fa parte dell'installazione, come `tmp/restart.txt`.
 - **`docs/DEPLOYING.md`** «Known limits»: la riga su Passenger, quando B è nel codice (non prima: oggi quella riga è vera).
