@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
@@ -125,6 +126,7 @@ public static class StartupFailure
     /// OAuth file, read again here because the failure may have come before they were loaded, and
     /// every value of <paramref name="configuration"/> whose key names a connection string, a
     /// password, a secret, a token or a key, wherever it came from (an environment variable, say). A
+    /// connection string gives its parts too: the host, the database, the user, the password. A
     /// file that cannot be read gives nothing, and is not the reason reported.
     /// </summary>
     public static IReadOnlyCollection<string> SecretValues(HubPaths paths, IConfiguration? configuration)
@@ -156,11 +158,54 @@ public static class StartupFailure
     /// <summary>Words that make a key a secret wherever it comes from, the environment included.</summary>
     private static readonly string[] SecretWords = ["ConnectionStrings", "Password", "Secret", "Token", "Key"];
 
+    private const string ConnectionStringsSection = "ConnectionStrings:";
+
     private static bool IsSecretKey(string key) =>
         SecretWords.Any(word => key.Contains(word, StringComparison.OrdinalIgnoreCase));
 
-    private static IEnumerable<string> Values(IConfiguration configuration, Func<string, bool>? keep = null) =>
-        configuration.AsEnumerable()
-            .Where(pair => !string.IsNullOrEmpty(pair.Value) && (keep is null || keep(pair.Key)))
-            .Select(pair => pair.Value!);
+    /// <summary>
+    /// The values, and a connection string's parts one by one as well: a driver's message quotes the host, the user or
+    /// the password alone ("Access denied for user 'hub'@'db.example.org'"), never the whole string, and the whole
+    /// string would not match it.
+    /// </summary>
+    private static IEnumerable<string> Values(IConfiguration configuration, Func<string, bool>? keep = null)
+    {
+        foreach (var (key, value) in configuration.AsEnumerable())
+        {
+            if (string.IsNullOrEmpty(value) || (keep is not null && !keep(key)))
+            {
+                continue;
+            }
+
+            yield return value;
+
+            if (key.StartsWith(ConnectionStringsSection, StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var part in ConnectionStringParts(value))
+                {
+                    yield return part;
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<string> ConnectionStringParts(string connectionString)
+    {
+        var builder = new DbConnectionStringBuilder();
+        try
+        {
+            builder.ConnectionString = connectionString;
+        }
+        catch (ArgumentException)
+        {
+            // Not a connection string the builder can read: the whole value is still redacted.
+            return [];
+        }
+
+        return builder.Values.OfType<object>()
+            .Select(part => Convert.ToString(part, CultureInfo.InvariantCulture))
+            .Where(part => !string.IsNullOrEmpty(part))
+            .Select(part => part!)
+            .ToArray();
+    }
 }
