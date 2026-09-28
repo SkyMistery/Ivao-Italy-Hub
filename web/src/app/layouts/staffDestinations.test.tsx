@@ -50,6 +50,7 @@ const bootstrap = {
   registries: { blocks: [], permissions: [] },
   calendarKinds: [],
   version: '0.0.0-test',
+  commit: null,
 } satisfies Bootstrap;
 
 test('a department is marked by its own code and not by an icon every one of them shares', () => {

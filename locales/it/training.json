@@ -13,6 +13,7 @@
     "Pilot": "Pilota"
   },
   "ratingChoice": "{{kind}} · {{shortName}} — {{name}}",
+  "positionChoice": "{{callsign}} — {{name}}",
   "unknown": "non disponibile",
   "theoryExam": "Il sito dell'esame teorico",
   "mockExam": "Questo sarà un mock exam, come concordato con il trainer.",

@@ -163,9 +163,10 @@ public sealed class Training
 
     /// <summary>
     /// When the session in hand starts (A8): the date the trainee chose, or the one set by hand; none while it is still to be
-    /// fixed, and none again once the training closes without it — rescheduled, not attended, closed. Once its outcome is recorded
-    /// the session is a row of the sessions (A9); a completed training keeps here the date of the session its report is about,
-    /// which the calendar keeps showing (§5.1).
+    /// fixed, and none again once the session is rescheduled or not attended. A training closed keeps it on record (§6), no
+    /// longer in hand: it leaves the calendar, is not reminded and does not show as held. Once its outcome is recorded the session
+    /// is a row of the sessions (A9); a completed training keeps here the date of the session its report is about, which the
+    /// calendar keeps showing (§5.1).
     /// </summary>
     public DateTime? ScheduledStartUtc { get; set; }
 

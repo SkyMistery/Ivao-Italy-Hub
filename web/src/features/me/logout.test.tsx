@@ -60,6 +60,7 @@ function bootstrap(user: Bootstrap['user']): Bootstrap {
     registries: { blocks: [], permissions: [] },
     calendarKinds: [],
     version: '0.0.0-test',
+    commit: null,
   };
 }
 

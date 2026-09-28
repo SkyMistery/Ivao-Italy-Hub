@@ -44,7 +44,7 @@ test('the home page renders inside its shell', async ({ page }) => {
       englishCommon.footer.rights
         .replace('{{year}}', String(new Date().getFullYear()))
         .replace('{{division}}', 'IVAO Example')
-        .replace('{{version}}', '0.0.0-e2e'),
+        .replace('{{build}}', '0.0.0-e2e · abc1234'),
     ),
   ).toBeVisible();
 });

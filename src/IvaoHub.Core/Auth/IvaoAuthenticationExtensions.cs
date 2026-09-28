@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Security.Claims;
 using IvaoHub.Core.Auth.Permissions;
-using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
@@ -45,6 +44,7 @@ public static class IvaoAuthenticationExtensions
         services.AddScoped<PositionGrantSeeder>();
         services.AddScoped<ModuleGrants>();
         services.AddScoped<IvaoUserTokenStore>();
+        services.AddScoped<IvaoSignIn>();
         // Scoped, because it reads through the request context; the cache behind it is a singleton.
         services.AddScoped<ISecurityStampCache, SecurityStampCache>();
 
@@ -256,56 +256,29 @@ public static class IvaoAuthenticationExtensions
     }
 
     /// <summary>
-    /// The IVAO identity is exchanged for the application identity here: the row in
-    /// <c>hub_users</c> is written, the effective permissions are computed and the compact
-    /// principal that will live in the cookie is built. The large IVAO claims are dropped.
+    /// The IVAO identity is exchanged for the application identity here, by <see cref="IvaoSignIn"/>:
+    /// this only hands it what the round trip collected, and turns a refusal into the page that
+    /// names it.
     /// </summary>
     private static async Task OnTicketReceived(TicketReceivedContext context)
     {
-        var services = context.HttpContext.RequestServices;
-        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(IvaoAuthenticationExtensions));
+        var items = context.HttpContext.Items;
+        var tokens = items[TokensItemKey] as IvaoUserTokens;
+        items.Remove(TokensItemKey);
 
-        if (context.HttpContext.Items[ProfileItemKey] is not IvaoUserProfile profile)
+        var outcome = await context.HttpContext.RequestServices.GetRequiredService<IvaoSignIn>().CompleteAsync(
+            items[ProfileItemKey] as IvaoUserProfile,
+            tokens,
+            context.HttpContext.RequestAborted);
+
+        if (outcome.Principal is null)
         {
-            logger.LogError("The IVAO user info did not contain a VID; the login cannot be completed.");
             context.HandleResponse();
-            context.Response.Redirect($"{LoginErrorPath}?code=profile");
+            context.Response.Redirect($"{LoginErrorPath}?code={outcome.Refusal}");
             return;
         }
 
-        var sync = services.GetRequiredService<UserSyncService>();
-        var signedIn = await sync.UpsertAsync(profile, context.HttpContext.RequestAborted);
-
-        if (context.HttpContext.Items[TokensItemKey] is IvaoUserTokens tokens)
-        {
-            var store = services.GetRequiredService<IvaoUserTokenStore>();
-            await store.SaveAsync(profile.Vid, tokens, context.HttpContext.RequestAborted);
-            context.HttpContext.Items.Remove(TokensItemKey);
-        }
-
-        var division = services.GetRequiredService<IOptions<DivisionOptions>>().Value;
-
-        var identity = HubClaims.BuildIdentity(
-            signedIn.User.Vid,
-            signedIn.User.FirstName,
-            signedIn.User.LastName,
-            signedIn.User.Locale ?? division.DefaultLocale,
-            signedIn.User.SecurityStamp,
-            signedIn.User.IsSuperadmin,
-            signedIn.User.IsStaff,
-            signedIn.Positions,
-            signedIn.Permissions);
-
-        context.Principal = new ClaimsPrincipal(identity);
-
-        services.GetRequiredService<ISecurityStampCache>().Invalidate(signedIn.User.Vid);
-
-        if (signedIn.User.IsSuperadmin)
-        {
-            // Every login taken as a super administrator is worth a line: the role bypasses every
-            // policy, so it must never be invisible (plan section 6.3).
-            logger.LogWarning("VID {Vid} signed in as a super administrator.", signedIn.User.Vid);
-        }
+        context.Principal = outcome.Principal;
     }
 
     /// <summary>

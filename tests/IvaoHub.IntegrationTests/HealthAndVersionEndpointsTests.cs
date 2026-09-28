@@ -52,6 +52,24 @@ public sealed class HealthAndVersionEndpointsTests(MariaDbFixture mariaDb) : IAs
         Assert.True(body.GetProperty("builtAt").GetDateTime() > DateTime.UnixEpoch);
     }
 
+    /// <summary>
+    /// The footer of every page shows "0.2.0 · 51f946b", and it reads both halves from the bootstrap rather than from a
+    /// second request (CLAUDE.md §2): the same version as <c>/api/version</c>, and the first seven characters of its commit
+    /// (note 2026-09-27-la-versione-del-sito).
+    /// </summary>
+    [Fact]
+    public async Task TheBootstrapCarriesTheStampTheFooterShows()
+    {
+        using var client = _factory.CreateClient();
+        var token = TestContext.Current.CancellationToken;
+
+        var version = await client.GetFromJsonAsync<JsonElement>("/api/version", token);
+        var bootstrap = await client.GetFromJsonAsync<JsonElement>("/api/me", token);
+
+        Assert.Equal(version.GetProperty("version").GetString(), bootstrap.GetProperty("version").GetString());
+        Assert.Equal(version.GetProperty("commit").GetString()![..7], bootstrap.GetProperty("commit").GetString());
+    }
+
     [Fact]
     public async Task StartUpMigratesTheDatabaseAndWritesTheDiagnosticsFile()
     {

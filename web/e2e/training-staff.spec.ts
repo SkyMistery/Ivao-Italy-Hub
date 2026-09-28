@@ -9,8 +9,9 @@ import { staffBootstrap, stubTheApi } from './fixtures';
  * The staff's side of the trainings in a browser, with the API stubbed (M3, A7): the list narrows to a view and to a ladder,
  * asked of the server; the page of a request reminds whoever approves to check the theory exam, with its site, and the request
  * is accepted, or refused with a reason the dialog asks for first; the trainer is chosen among the ones the server offers, and
- * its refusal lands under the field; a reader the server lets do nothing sees no button. What the server decides is proved by
- * `TrainingStaffTests` (integration); the round against the real server is `full/training-staff.spec.ts`.
+ * its refusal lands under the field; a step somebody else overtook reads the page again; a reader the server lets do nothing
+ * sees no button. What the server decides is proved by `TrainingStaffTests` (integration); the round against the real server is
+ * `full/training-staff.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -29,13 +30,21 @@ const words = JSON.parse(
     sections: { trainer: string };
     theoryReminder: { title: string };
     decision: { reason: string; accepted: string };
-    trainer: { none: string };
+    trainer: { none: string; assigned: string };
     assign: { submit: string; change: string; assigned: string; fields: { trainerVid: string } };
     accept: { button: string; done: string };
     reject: { button: string; done: string; fields: { reason: string } };
+    refused: string;
   };
   errors: Record<string, string>;
 };
+
+/** The core's sentence for a conflict, which the page says in its notice. */
+const conflict = (
+  JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../locales/en/errors.json', import.meta.url)), 'utf8'),
+  ) as { errors: { conflict: { title: string } } }
+).errors.conflict.title;
 
 /** A sentence of the language file with its values in. */
 const filled = (sentence: string, values: Record<string, string>) =>
@@ -174,8 +183,9 @@ interface Seen {
 }
 
 /**
- * The staff's side of the API: the list as `rows` says it, the page as it stands — each step changes it, as `step` answers —,
- * the trainers the server offers, and what is sent kept for the test to read.
+ * The staff's side of the API: the list as `rows` says it, the page as it stands — each step changes it, as `step` answers, and
+ * a refused one may say what somebody else made of it meanwhile (`now`) —, the trainers the server offers, and what is sent
+ * kept for the test to read.
  */
 async function stubTheStaff(
   page: Page,
@@ -188,7 +198,7 @@ async function stubTheStaff(
     bootstrap?: unknown;
     initial?: Record<string, unknown>;
     rows?: unknown[];
-    step?: (verb: string, body: Record<string, unknown>) => { status: number; body: unknown };
+    step?: (verb: string, body: Record<string, unknown>) => { status: number; body: unknown; now?: unknown };
   } = {},
 ): Promise<Seen> {
   const seen: Seen = { queue: [], steps: [] };
@@ -213,6 +223,8 @@ async function stubTheStaff(
     const answer = step(verb, body);
     if (answer.status === 200) {
       current = answer.body;
+    } else if (answer.now !== undefined) {
+      current = answer.now;
     }
     return route.fulfill(json(answer.body, answer.status));
   });
@@ -399,6 +411,77 @@ test('the trainer is chosen among the ones the server offers, and its refusal la
   ]);
   await expect(page.getByText(words.states.Assigned!, { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: words.staff.assign.change, exact: true })).toBeVisible();
+});
+
+test('a step somebody else overtook reads the page again, says so, and the next one goes from the version read', async ({
+  page,
+}) => {
+  const read = '2026-09-21T09:00:00.123456Z';
+  const moved = '2026-09-21T10:00:00.123456Z';
+  const seen = await stubTheStaff(page, {
+    initial: accepted(),
+    step: (_verb, body) =>
+      body.rowVersion === read
+        ? {
+            // Somebody else gave the training to another trainer in the meantime.
+            status: 409,
+            body: { title: 'Conflict', status: 409 },
+            now: accepted({
+              state: 'Assigned',
+              trainer: { vid: 790096, name: 'Other Trainer' },
+              assignedBy: coordinator,
+              assignedAt: '2026-09-21T10:00:00Z',
+              rowVersion: moved,
+            }),
+          }
+        : {
+            status: 200,
+            body: accepted({
+              state: 'Assigned',
+              trainer,
+              assignedBy: coordinator,
+              assignedAt: '2026-09-21T11:00:00Z',
+              rowVersion: '2026-09-21T11:00:00.123456Z',
+            }),
+          },
+  });
+
+  await page.goto('/staff/training/41');
+  await expect(page.getByText(words.staff.trainer.none)).toBeVisible();
+
+  const field = page.getByText(words.staff.assign.fields.trainerVid, { exact: true }).locator('..');
+  const chooseTheTrainer = async () => {
+    await field.getByRole('combobox').click();
+    await page.getByRole('option', { name: 'Test Trainer (790098) · SEC · XX-T01', exact: true }).click();
+  };
+
+  await chooseTheTrainer();
+  await page.getByRole('button', { name: words.staff.assign.submit, exact: true }).click();
+
+  // Said where it stays, and the page as the server has it now: the other trainer, whom the button changes.
+  await expect(page.getByText(words.staff.refused, { exact: true })).toBeVisible();
+  await expect(page.getByText(conflict, { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(
+      filled(words.staff.trainer.assigned, {
+        name: 'Other Trainer (790096)',
+        by: 'Test Coordinator (790097)',
+        date: 'Sep 21, 2026',
+      }),
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  // The form drawn anew: the next assignment is sent from the version read again, not from the one refused.
+  await chooseTheTrainer();
+  await page.getByRole('button', { name: words.staff.assign.change, exact: true }).click();
+  await expect(
+    page.getByText(filled(words.staff.assign.assigned, { name: 'Test Trainer (790098)' }), { exact: true }),
+  ).toBeVisible();
+  expect(seen.steps).toEqual([
+    { verb: 'assign', body: { trainerVid: 790098, rowVersion: read } },
+    { verb: 'assign', body: { trainerVid: 790098, rowVersion: moved } },
+  ]);
 });
 
 test('a reader the server lets do nothing on a training sees no button, and still the reminder', async ({
