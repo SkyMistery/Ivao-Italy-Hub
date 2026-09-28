@@ -41,7 +41,7 @@ namespace IvaoHub.IntegrationTests;
 public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
     // The range the training module owns in the shared database (CONTRIBUTING.md): 790001–790031 are A1's to A7's, 790040–790044
-    // and 790050–790051 A3b's.
+    // and 790050–790051 A3b's; 790072–790079 were handed to the review of A8a.
     private const int TraineeVid = 790032;
     private const int TrainerVid = 790033;
     private const int ScopedTrainerVid = 790034;
@@ -49,9 +49,11 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int AdvisorVid = 790036;
     private const int OtherTraineeVid = 790037;
     private const int StrangerVid = 790038;
+    private const int UnassignedTrainerVid = 790072;
+    private const int StaffTraineeVid = 790073;
 
     private static readonly int[] Vids =
-        [TraineeVid, TrainerVid, ScopedTrainerVid, CoordinatorVid, AdvisorVid, OtherTraineeVid, StrangerVid];
+        [TraineeVid, TrainerVid, ScopedTrainerVid, CoordinatorVid, AdvisorVid, OtherTraineeVid, StrangerVid, UnassignedTrainerVid, StaffTraineeVid];
 
     private const string GrantReason = "trn-test";
 
@@ -399,6 +401,194 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.False(moved.GetProperty("held").GetBoolean());
         using var otherTrainee = await SignedInAsync(OtherTraineeVid, token);
         Assert.True((await otherTrainee.GetFromJsonAsync<JsonElement>(Mine(yesterday), token)).GetProperty("held").GetBoolean());
+    }
+
+    /// <summary>
+    /// §3.3 on the verbs of the dates (review of A8a): a trainer of the department reads every training and conducts only the one given
+    /// to them — with <c>Training.View</c> by position and no grant on this training, they neither ask what a date meets nor propose,
+    /// withdraw or set one. Nor does the trainee, not even one of the staff who conducts every other training: nobody conducts a
+    /// training of their own (§3.1). Nothing is written.
+    /// </summary>
+    [Fact]
+    public async Task OnlyWhoeverConductsTheTrainingTouchesItsDates()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var day = Day(45);
+        var (topAtc, topPilot) = (Ladder(RatingKind.Atc)[^1], Ladder(RatingKind.Pilot)[^1]);
+        await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
+
+        // A trainer of the department who does not train this training: another trainer does, by the grant on it.
+        await SeedPersonAsync(
+            UnassignedTrainerVid, "Unassigned", "Trainer", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{Division().Code}-T93");
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
+        await GiveConductAsync(ScopedTrainerVid, id, token);
+        await AddSlotAsync(id, proposedDaysAgo: 1, token);
+        var slot = Assert.Single(await SlotsOfAsync(id, token)).Id;
+
+        // One of the staff of the training who conducts every training, as a coordinator does, and asks for one of their own.
+        await SeedPersonAsync(StaffTraineeVid, "Staff", "Trainee", email: null, token, isStaff: true);
+        foreach (var permission in new[] { TrainingPermissions.View, TrainingPermissions.Conduct, TrainingPermissions.Edit })
+        {
+            await GrantAsync(StaffTraineeVid, permission, token);
+        }
+
+        var own = await AddTrainingAsync(StaffTraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
+        await AddSlotAsync(own, proposedDaysAgo: 1, token);
+        var ownSlot = Assert.Single(await SlotsOfAsync(own, token)).Id;
+
+        using var unassigned = await SignedInAsync(UnassignedTrainerVid, token);
+        using var staffTrainee = await SignedInAsync(StaffTraineeVid, token);
+        foreach (var (reader, training, proposal) in new[] { (unassigned, id, slot), (staffTrainee, own, ownSlot) })
+        {
+            // Each reads the training, and may not conduct it.
+            var page = await PageAsync(reader, training, token);
+            Assert.False(page.GetProperty("actions").GetProperty("canConduct").GetBoolean());
+            var version = page.GetProperty("rowVersion").GetDateTime();
+
+            using (var conflicts = await reader.GetAsync(Conflicts(training, day.AddHours(16), day.AddHours(18)), token))
+            {
+                Assert.Equal(HttpStatusCode.Forbidden, conflicts.StatusCode);
+            }
+
+            (string Verb, object Body)[] steps =
+            [
+                ("slots", new { slots = new[] { Slot(day.AddHours(16), day.AddHours(18)) }, confirmed = true, rowVersion = version }),
+                ($"slots/{proposal}/withdraw", new { rowVersion = version }),
+                ("date", new { startsAtUtc = day.AddHours(16), confirmed = true, rowVersion = version }),
+            ];
+            foreach (var (verb, body) in steps)
+            {
+                using var refused = await StepAsync(reader, training, verb, body, token);
+                Assert.True(refused.StatusCode == HttpStatusCode.Forbidden, $"{verb}: {refused.StatusCode}");
+            }
+        }
+
+        // The same member of the staff conducts the trainings of others: what refuses them is whose training it is.
+        Assert.True((await PageAsync(staffTrainee, id, token)).GetProperty("actions").GetProperty("canConduct").GetBoolean());
+
+        // The trainee, who reads their training from their own page, takes back no date either.
+        using var trainee = await SignedInAsync(TraineeVid, token);
+        using (var theirs = await StepAsync(trainee, id, $"slots/{slot}/withdraw", new { rowVersion = (await StoredAsync(id, token)).RowVersion }, token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, theirs.StatusCode);
+        }
+
+        // Nothing was written: each still waits for its date, with the one date proposed.
+        foreach (var (training, proposal) in new[] { (id, slot), (own, ownSlot) })
+        {
+            Assert.Equal(TrainingState.Assigned, (await StoredAsync(training, token)).State);
+            Assert.Equal(proposal, Assert.Single(await SlotsOfAsync(training, token)).Id);
+        }
+    }
+
+    /// <summary>
+    /// The rules of a proposal the other tests leave out (review of A8a): a date longer than a session; more dates waiting than the
+    /// trainee is fairly offered, proposed together or one on top of those waiting; and the states — dates are proposed and taken back
+    /// only while the training waits for its date, and set by hand only while it has its trainer and goes on.
+    /// </summary>
+    [Fact]
+    public async Task ADateLastsASessionTenWaitAtMostAndEachVerbHasItsStates()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var day = Day(55);
+        await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: TrainerVid);
+        using var trainer = await SignedInAsync(TrainerVid, token);
+        var version = (await PageAsync(trainer, id, token)).GetProperty("rowVersion").GetDateTime();
+
+        // Longer than a session.
+        var start = day.AddHours(8);
+        object[] tooLong = [Slot(start, start + TrainingDates.MaxSlotLength + TimeSpan.FromMinutes(30))];
+        using (var refused = await StepAsync(trainer, id, "slots", new { slots = tooLong, confirmed = false, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(refused, "slots[0].endsAtUtc", TrainingDates.SlotTooLong, token);
+        }
+
+        // Half an hour each, one an hour: more than ten at once are too many; ten wait, and one more on top is too many.
+        object[] Hourly(int from, int count) =>
+            [.. Enumerable.Range(from, count).Select(hour => Slot(day.AddHours(hour), day.AddHours(hour).AddMinutes(30)))];
+        using (var eleven = await StepAsync(trainer, id, "slots", new { slots = Hourly(0, TrainingDates.MaxOpenSlots + 1), confirmed = false, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(eleven, "slots", TrainingDates.SlotsTooMany, token);
+        }
+
+        var ten = await DoneAsync(await StepAsync(trainer, id, "slots", new { slots = Hourly(0, TrainingDates.MaxOpenSlots), confirmed = false, rowVersion = version }, token), token);
+        Assert.Equal(TrainingDates.MaxOpenSlots, ten.GetProperty("slots").GetArrayLength());
+        version = ten.GetProperty("rowVersion").GetDateTime();
+        using (var more = await StepAsync(trainer, id, "slots", new { slots = Hourly(12, 1), confirmed = false, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(more, "slots", TrainingDates.SlotsTooMany, token);
+        }
+
+        // Dated, the training takes no date proposed and gives none back.
+        var dated = await DoneAsync(await StepAsync(trainer, id, "date", new { startsAtUtc = day.AddHours(20), confirmed = false, rowVersion = version }, token), token);
+        version = dated.GetProperty("rowVersion").GetDateTime();
+        using (var proposed = await StepAsync(trainer, id, "slots", new { slots = Hourly(12, 1), confirmed = false, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(proposed, "state", TrainingDates.NotProposable, token);
+        }
+
+        var gone = ten.GetProperty("slots")[0].GetProperty("id").GetInt64();
+        using (var withdrawn = await StepAsync(trainer, id, $"slots/{gone}/withdraw", new { rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(withdrawn, "state", TrainingDates.NotProposable, token);
+        }
+
+        // Set by hand only while it has its trainer and goes on: not before a trainer is assigned, not once it is over.
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        foreach (var (kind, state) in new[] { (RatingKind.Atc, TrainingState.Accepted), (RatingKind.Pilot, TrainingState.Closed) })
+        {
+            var other = await AddTrainingAsync(OtherTraineeVid, kind, state, token);
+            var body = new { startsAtUtc = day.AddHours(20), confirmed = false, rowVersion = (await PageAsync(coordinator, other, token)).GetProperty("rowVersion").GetDateTime() };
+            using var set = await StepAsync(coordinator, other, "date", body, token);
+            await AssertRefusedAsync(set, "state", TrainingDates.NotSettable, token);
+        }
+    }
+
+    /// <summary>
+    /// A version gone stale is a conflict (review of A8a): the trainer who proposes from a page read before another proposal, and the
+    /// trainee who chooses among dates that changed since they read them. Nothing is written, and the page read again writes.
+    /// </summary>
+    [Fact]
+    public async Task AVersionGoneStaleIsAConflictForTheProposalAndForTheChoice()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var day = Day(65);
+        await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: TrainerVid);
+        using var trainer = await SignedInAsync(TrainerVid, token);
+        var (first, second, third) = (day.AddHours(16), day.AddDays(1).AddHours(16), day.AddDays(2).AddHours(16));
+
+        // Two proposals from the same page: the second finds the training moved, and writes nothing.
+        var read = (await PageAsync(trainer, id, token)).GetProperty("rowVersion").GetDateTime();
+        await DoneAsync(await StepAsync(trainer, id, "slots", new { slots = new[] { Slot(first, first.AddHours(2)) }, confirmed = false, rowVersion = read }, token), token);
+        using (var staleProposal = await StepAsync(trainer, id, "slots", new { slots = new[] { Slot(second, second.AddHours(2)) }, confirmed = false, rowVersion = read }, token))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, staleProposal.StatusCode);
+        }
+
+        Assert.Equal([first], (await SlotsOfAsync(id, token)).Select(slot => slot.StartsAtUtc));
+        Assert.Equal(1, await MailsAsync(TraineeVid, TrainingNotifications.DatesProposed, token));
+
+        // The trainee reads the date to choose; the trainer proposes another meanwhile; the choice from the page read before is a
+        // conflict, and the training still waits.
+        using var trainee = await SignedInAsync(TraineeVid, token);
+        var mine = await trainee.GetFromJsonAsync<JsonElement>(Mine(id), token);
+        var chosen = Assert.Single(mine.GetProperty("slots").EnumerateArray()).GetProperty("id").GetInt64();
+        await ProposeAsync(trainer, id, token, Slot(third, third.AddHours(2)));
+        using (var staleChoice = await trainee.PostAsJsonAsync(Choose(id), new { slotId = chosen, rowVersion = mine.GetProperty("rowVersion").GetDateTime() }, token))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, staleChoice.StatusCode);
+        }
+
+        Assert.Equal(TrainingState.Assigned, (await StoredAsync(id, token)).State);
+        Assert.Equal(2, (await SlotsOfAsync(id, token)).Count);
+        Assert.Equal(0, await MailsAsync(TraineeVid, TrainingNotifications.DateConfirmed, token));
+
+        // Read again, the same choice is written.
+        var again = await trainee.GetFromJsonAsync<JsonElement>(Mine(id), token);
+        var dated = await DoneAsync(await trainee.PostAsJsonAsync(Choose(id), new { slotId = chosen, rowVersion = again.GetProperty("rowVersion").GetDateTime() }, token), token);
+        Assert.Equal(first, dated.GetProperty("scheduledStartUtc").GetDateTime());
     }
 
     [Fact]
