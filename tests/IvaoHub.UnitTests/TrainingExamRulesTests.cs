@@ -42,11 +42,6 @@ public sealed class TrainingExamRulesTests
         Assert.True(Catalogue.IsOnlyForAssignee(TrainingPermissions.ManageExams));
         Assert.True(Catalogue.IsDeniedToStakeholder(TrainingPermissions.ManageExams));
         Assert.Equal(TrainingPermissions.Edit, Catalogue.EditOf(TrainingPermissions.ManageExams));
-
-        // No other permission of the training is marked: the trainer's comes with A7b.
-        Assert.Equal(
-            [TrainingPermissions.ManageExams],
-            TrainingPermissions.All.Where(permission => permission.OnlyForAssignee).Select(permission => permission.Name));
     }
 
     /// <summary>
