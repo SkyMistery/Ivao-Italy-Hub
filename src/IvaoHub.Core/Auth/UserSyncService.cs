@@ -126,7 +126,7 @@ public sealed class UserSyncService(
         await ReplacePositionsAsync(profile.Vid, parsed, cancellationToken);
 
         var grants = await database.UserGrants
-            .Where(grant => grant.Vid == profile.Vid || grant.PositionDepartment != null)
+            .Where(grant => grant.Vid == profile.Vid || grant.PositionDepartment != null || grant.PositionFirTeam)
             .ToListAsync(cancellationToken);
 
         // A grant only survives while the person is staff: losing every position suspends them,
@@ -154,7 +154,8 @@ public sealed class UserSyncService(
             grants,
             user.IsSuperadmin,
             clock.UtcNow,
-            catalogue);
+            catalogue,
+            options.FirStaffScope);
 
         return new SignedInUser(user, positions, permissions);
     }
@@ -213,13 +214,13 @@ public sealed class UserSyncService(
             .ToArray();
 
         var grants = await database.UserGrants
-            .Where(grant => grant.Vid == vid || grant.PositionDepartment != null)
+            .Where(grant => grant.Vid == vid || grant.PositionDepartment != null || grant.PositionFirTeam)
             .ToListAsync(cancellationToken);
 
         return new SignedInUser(
             user,
             parsed,
-            EffectivePermissionsCalculator.Calculate(parsed, grants, user.IsSuperadmin, clock.UtcNow, catalogue));
+            EffectivePermissionsCalculator.Calculate(parsed, grants, user.IsSuperadmin, clock.UtcNow, catalogue, options.FirStaffScope));
     }
 
     /// <summary>
@@ -257,8 +258,8 @@ public sealed class UserSyncService(
         foreach (var user in users)
         {
             var held = positions.GetValueOrDefault(user.Vid) ?? [];
-            var own = grants.Where(grant => grant.Vid == user.Vid || grant.PositionDepartment != null);
-            var permissions = EffectivePermissionsCalculator.Calculate(held, own, user.IsSuperadmin, now, catalogue);
+            var own = grants.Where(grant => grant.Vid == user.Vid || grant.PositionDepartment != null || grant.PositionFirTeam);
+            var permissions = EffectivePermissionsCalculator.Calculate(held, own, user.IsSuperadmin, now, catalogue, options.FirStaffScope);
             if (PermissionSet.HasAny(permissions, user.IsSuperadmin, permission))
             {
                 holders.Add(new PermissionHolder(user.Vid, user.IsSuperadmin, permissions));

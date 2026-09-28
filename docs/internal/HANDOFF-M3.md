@@ -11,6 +11,18 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
+**Ultimo aggiornamento:** 28 settembre 2026 — **fase A11a** (nucleo: i capi FIR), sul branch `m3/a11a-fir-heads-core`, **PR #159**
+verso `main`, **fuori dalla coda** come A3b e A6c. **La nota è decisa** (`decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`: sì alla
+forma, con i cinque rilievi del revisore dentro; la (a), `firStaffScope`, con IT a `own` in A11b), **A3b (#135) è unita** dal 27
+settembre, e **il codice di A11a è fatto**. **Il revisore l'ha trovato approvabile** dopo due cose
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5877193067)), fatte: `main` (663a355, con #145 e
+#171–#176) è entrato nel branch con un merge, e la versione è **0.3.0**. In più il calcolo, se non gli si dice `firStaffScope`, ora
+chiude. La PR aspetta la CI e il via di Carmine. **A6c (#145) è unita** il 28 settembre. La coda del training (#144, #146–#151, #153) è
+ancora aperta, con le sue correzioni in sessioni sue; i paragrafi «Che cosa ha lasciato» delle fasi della coda stanno sui loro branch
+finché non sono unite. **Le fasi dopo**: A10c (gli esami), che l'unione di #135 libera, da `m3/a10b-blocks-and-public-pages` con `main` dentro, avviata da questa
+sessione a fine A11a; A11b, A12a e A12b dopo A10c, e A11b anche dopo l'unione di #159. In C# una chiave di un modulo si chiede con il
+namespace (`training:…`, #138).
+
 **Ultimo aggiornamento:** 27 settembre 2026 — **fase A3b** (nucleo: le righe affidate a chi scrive), sul branch
 `m3/a3b-entrusted-rows`, **PR #135** verso `main`. La nota è decisa da Carmine: sì alla forma, e sì al trainer di A7 con la stessa
 regola. Il revisore ha trovato il codice approvabile appena in pari con `main`
@@ -105,6 +117,43 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A11a (28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159)
+
+- **Che cosa c'è** (nucleo; nota `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`, **decisa** da Carmine sulla #159,
+  [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723), con i cinque
+  [rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416) dentro):
+  - **Il team di un FIR** come seconda specie di posizione di un grant: `UserGrant.PositionFirTeam` (migrazione `AddGrantFirTeam`), in
+    `positionGrants` `{ "firTeam": true, "levels": [...], "permission": "...", "scope": "..." }` senza `department` e senza nominare un
+    FIR (il `Coordinator` è il capo, l'`Assistant` il vice, l'`Advisor` un CHA). Il seme e la schermata dei permessi lo accettano solo per
+    un permesso di un'area che ha un'entità `IHasFir` (le impara il catalogo all'avvio: `LearnAreasWithAFir`, `IsOfAnAreaWithAFir`).
+  - **Con `firStaffScope: own`** ogni permesso che dà porta il FIR della posizione (`EffectivePermission.Fir`; nel claim
+    `Nome:DIP@#FIR`, letto chiuso da chi non conosce il FIR) e raggiunge solo le righe `IHasFir` di quel FIR: nell'unico handler, nel
+    guardiano (una riga che cambia FIR chiede `Edit` sui due) e nella lista generata (solo con i permessi che sono la sua lettura). Con
+    `all` è del dipartimento come ogni grant. Il personale dei dipartimenti non è mai fermato dal FIR: la regola di prima è tolta.
+  - Un claim con un dipartimento illeggibile non vale più niente (era «ogni dipartimento»).
+  - I test: `FirTeamPermissionTests` (spina dorsale, 6), `FirTeamPermissionRulesTests` (unità, 11), `grants/firTeam.test.ts`, lo smoke
+    `permissions-fir-team.spec.ts`.
+- **Che cosa deve sapere A11b** (il modulo):
+  - In `config/division.json` due righe al team del FIR — `Training.View` e `Training.Assign`, livelli `Coordinator` e `Assistant`,
+    `scope: TD` — e **`firStaffScope: own`** (risposta 2 di Carmine). Il training è già `IHasFir` e la sua area è `Training`: i grant
+    passano. La pagina, l'assegnazione e `training.approvalQueue` seguono l'unico handler, `/staff/training` il motore; i training dei
+    piloti restano di TC e TAC; un capo FIR assegna un training già accettato (non ha `Approve`).
+  - ⚠️ **Ogni permesso di un'area implica il suo `View`** (il calcolo), sullo stesso FIR: un capo con `Assign` dal team legge i training
+    del suo FIR anche senza il grant di `View`. E alla domanda senza riga l'handler gli dice sì: ogni lettore del modulo che non chiede
+    l'handler sulla riga né passa dal motore (il percorso del trainee e i suoi ban, per esempio) va guardato uno per uno.
+  - ⚠️ **Cambiare `firStaffScope` arriva a ogni capo al suo login dopo** (il calcolo lo legge al login): mettere `own` insieme ai grant.
+  - ⚠️ **`PermissionHolder.Has` non passa il FIR** (dalla lettura del codice): un capo FIR non è mai «titolare» di una riga, quindi nessun
+    digest né notifica «a chi può farlo» gli arriva. Se A11b ne vuole una, `Has` deve prendere il FIR: modifica del nucleo, una PR a sé.
+  - ⚠️ **`/api/me` non porta il FIR**, com'è deciso: un bottone disegnato dai permessi di `/api/me` compare anche sulle righe degli altri
+    FIR, e il server risponde 403. Ogni bottone su una riga del training passa dagli `actions` che l'handler ha risposto su quella riga.
+  - Il calcolo, se non gli si dice `firStaffScope`, prende `own`, il lato che chiude; i chiamanti dell'hub passano quello della divisione.
+- **Per chi scrive un test con i FIR**: l'host di `FirTeamPermissionTests` mostra come dire `own` e due FIR finti senza toccare i dati di
+  riferimento condivisi (una directory dei FIR di prova); VID **790080–790089** sono di A11a.
+- **Trovato, detto al revisore**: la regola del calcolo è più larga del suo commento («Edit implies View»); il vecchio calcolo delle
+  sessioni di un grant a una posizione senza dipartimento avrebbe preso anche le posizioni HQ.
+- **La fase dopo**: **A10c** (gli esami), da `m3/a10b-blocks-and-public-pages` con `main` dentro, in coda dopo #153; A11b, A12a e A12b dopo
+  A10c, e A11b anche dopo l'unione di #159, perché usa il team del FIR. Questa sessione prepara il branch di A10c e la avvia.
 
 ### Che cosa ha lasciato A6c (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145)
 

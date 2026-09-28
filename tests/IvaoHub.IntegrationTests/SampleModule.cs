@@ -65,6 +65,12 @@ public sealed class SampleModule : ModuleBase
     public const string VisiblePattern = "/api/sample/visible";
 
     /// <summary>
+    /// The records through the generic engine, read only (M3, A11a): the list a FIR team reads the rows of its own FIR in, the
+    /// way the list of the trainings will be read by the chiefs of a FIR.
+    /// </summary>
+    public const string RecordsPattern = "/api/sample/records";
+
+    /// <summary>
     /// Deciding one row, the way a validator decides one report: the permission is checked
     /// <b>against the row</b>, so the scope of the row and the member it is about both count.
     /// </summary>
@@ -154,6 +160,18 @@ public sealed class SampleModule : ModuleBase
             options.ToList = SampleItemMapping.ToDto;
             options.ToDetail = SampleItemMapping.ToDto;
             options.Apply = SampleItemMapping.Apply;
+        });
+
+        // The records, read only, as the list of a module that a FIR team reads is mapped (M3, A11a).
+        endpoints.MapCrud<SampleRecord, SampleRecordDto, SampleRecordDto, SampleRecordDto>(RecordsPattern, options =>
+        {
+            options.PermissionArea = PermissionArea;
+            options.Name = "SampleRecords";
+            options.ReadOnly = true;
+            options.ContextType = typeof(SampleDbContext);
+            options.DefaultOrder = record => record.Id;
+            options.ToList = SampleRecordDto.Of;
+            options.ToDetail = SampleRecordDto.Of;
         });
 
         // And through the filter: what an anonymous page of the module would list.
