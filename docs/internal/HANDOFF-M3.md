@@ -161,6 +161,18 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
       cambiano quel file;
     - `canCancel` dal server, al posto di `isCancellable` e `readyForExam`, quando A7 e A8 aggiungono stati;
     - `Training/Refusals.cs` lo toglie A10c.
+- **`main` dopo #177** (28–29 settembre 2026; i dettagli in `08`, A6b): `main` è entrato nel branch con due merge, come il revisore ha
+  chiesto per unire la PR: c90dea9 (A6c, #145, #173–#176, **#177**, la scelta da tastiera nel campo suggerito, e #179) e 4b9f6bd
+  (**A11a, #159**, unita nel frattempo). Tutte e due le volte l'unico conflitto era qui: i blocchi di A11a e di A6c stanno subito sotto
+  questo.
+  - ⚠️ **Per una spec, da #177**: in un campo chiuso che si cerca, il primo Invio sceglie l'opzione accesa (la prima mostrata) e non manda
+    il form; il form parte dal secondo. Per questo il caso dello smoke «Enter in the position asks the question» ha **un Invio in più**
+    dopo il `fill` (c3db117, [la correzione del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930)).
+    `letThrough` non cambia.
+  - Con A6c e #177 dentro, una spec può scrivere una parte del nominativo e sceglierlo, con un clic o con Invio; le spec di A6b scelgono
+    ancora dall'elenco.
+  - Suite rifatte sull'head con A11a: unità 836, integrazione intera 359, `pnpm test` 529, smoke 111, `e2e:full` 42/42 su un
+    banco nuovo.
 
 ### Che cosa ha lasciato A11a (28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159)
 

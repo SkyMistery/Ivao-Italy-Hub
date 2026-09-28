@@ -1217,6 +1217,42 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
   8. **Non verificato**: Invio con un lettore di schermo vero, e in un browser diverso da Chromium (lo smoke gira solo lì; la guardia sta
      sull'evento `submit`, che l'invio implicito manda in ogni browser). Invio sul banco: il giro completo sceglie la postazione dall'elenco
      e manda con il pulsante, come prima; Invio lo prova lo smoke, con l'API finta. Nessuna prova a mano sul banco di anteprima.
+- **`main` dopo #177, e un Invio in più** (28–29 settembre 2026; [la revisione dopo le correzioni](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877191956),
+  approvabile appena `main` entra nel branch, e [la correzione che vale](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930):
+  il maintainer ha unito prima #177, quindi l'adattamento spetta a questo branch). Su un branch temporaneo da
+  `origin/m3/a6b-request-pages` (b4bd304), spinto sul branch della fase con un push solo; i branch sopra prendono `main` al loro passo
+  della coda.
+  1. **`main` nel branch, in due merge**:
+     - c90dea9, `origin/main` a 1ae9100: A6c (#145), le correzioni di hosting del maintainer #173–#176, **#177** (la scelta da tastiera
+       nel campo suggerito, nota `2026-09-28-il-suggerimento-dalla-tastiera`) e #179 (i giri dei tour si riprendono i loro report); #171
+       e #172 c'erano già da 3c79786;
+     - 4b9f6bd, `origin/main` a efe057a: **A11a (#159)**, unita mentre giravano le suite del primo merge. Senza, #144 restava in
+       conflitto, e una PR in conflitto non ha la CI e non si unisce; la sessione che coordina le correzioni era d'accordo. Se `main` si
+       muove ancora prima del push, non si insegue.
+     - Tutte e due le volte l'unico conflitto era in `HANDOFF-M3.md`: l'intestazione resta quella del branch, che i branch sopra
+       riscrivono per conto loro; in «Lo stato» i blocchi nuovi di `main` vanno subito sotto quello di A6b, nel loro ordine (A11a, poi
+       A6c, sopra A3b), così il merge verso l'alto non tocca le righe che i branch sopra hanno cambiato. Dei blocchi di `main` non si
+       toglie niente; `08` si è unito da solo.
+     - **A11a e le pagine di A6b**: le pagine leggono gli endpoint del trainee di A6a, che chiedono solo di essere entrati; la regola del
+       FIR di A11a vale per i grant al team di un FIR, che il training avrà con A11b. L'integrazione intera, con `TrainingRequestTests`, è
+       verde dopo il merge.
+  2. **Un Invio in più** (c3db117) nel caso dello smoke «Enter in the position asks the question, as the button does». Da #177 Invio su
+     un'opzione accesa la sceglie e non manda il form, e in un campo chiuso che si cerca è accesa la prima opzione mostrata. Il caso
+     scriveva `XXAA_TWR` e premeva Invio una volta: quell'Invio ora sceglie la postazione, e la domanda non compare. Con un Invio in più
+     dopo il `fill` il primo sceglie, il secondo manda il form e `letThrough` fa la domanda, come prima; le asserzioni non cambiano. Il caso
+     «an answer taken back with «Cancel»» passa così com'è (non si cerca niente, niente è acceso, e Invio è del form), e `letThrough` non
+     cambia. **Misurato**: la spec sul solo primo merge (c90dea9) dà 6 su 7, e cade proprio quel caso; con la riga, 7 su 7.
+  3. **Verificato, in locale** (29 settembre 2026, su 4b9f6bd, con A11a): `dotnet build` senza avvisi; unità **836/836** (le 825 e
+     le 11 di A11a); **integrazione intera senza filtro 359/359** (le 353 e le 6 di A11a); `pnpm lint`, `typecheck`, `format:check`,
+     `i18n:check` verdi; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm test` **529** in **68** file; `pnpm e2e` **111/111**
+     al primo giro (le 110 e quella di A11a), sotto il lucchetto della porta 4173; **`pnpm e2e:full` 42/42** al primo giro su un banco
+     nuovo (127.0.0.1:5096, `ivaohub_e2e_a6b_main2`, creato dal primo avvio). Prima, sul solo primo merge (c3db117), tutto verde anche
+     lì: unità 825/825, integrazione 353/353, `pnpm test` 527 in 67 file, smoke 110/110, `e2e:full` 42/42 su `ivaohub_e2e_a6b_main`. Le
+     regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD`: nessun file del maintainer, nessuno del nucleo.
+  4. **Non verificato**: come sopra (8), Invio con un lettore di schermo vero, in un browser diverso da Chromium e sul banco; nessuna prova
+     a mano sul banco di anteprima. Il primo caso dello smoke sceglie ancora la postazione dall'elenco, e il suo commento dice ancora il
+     perché di prima di A6c (un clic dopo aver scritto andava perso): con A6c e #177 dentro, una spec può scrivere una parte del
+     nominativo. Resta com'è: l'adattamento chiesto era una riga. La CI su questo head si legge dopo il push.
 
 ### A7 — Accettare, rifiutare, assegnare
 
