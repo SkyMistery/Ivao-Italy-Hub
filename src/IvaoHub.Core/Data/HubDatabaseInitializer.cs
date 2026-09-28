@@ -15,20 +15,34 @@ public sealed class HubDatabaseInitializer(HubDbContext database, ILogger<HubDat
 
     public async Task<IReadOnlyList<string>> MigrateAsync(CancellationToken cancellationToken = default)
     {
-        var pending = (await database.Database.GetPendingMigrationsAsync(cancellationToken)).ToArray();
+        AppliedMigrations = await MigrateAsync(database, cancellationToken);
+        return AppliedMigrations;
+    }
+
+    /// <summary>
+    /// The same for the context of a module, with its own history table. Asked first and applied only when something is
+    /// pending: <c>MigrateAsync</c> takes the migration lock, creates the history table if needed and opens a transaction
+    /// even with nothing to do, and on one CPU that cost a start up to a second (note 2026-09-28-l-avvio-a-freddo, §3).
+    /// </summary>
+    public async Task<IReadOnlyList<string>> MigrateAsync(DbContext context, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var name = context.GetType().Name;
+        var pending = (await context.Database.GetPendingMigrationsAsync(cancellationToken)).ToArray();
 
         if (pending.Length == 0)
         {
-            logger.LogInformation("Database is up to date, no migration to apply.");
+            logger.LogInformation("{Context} is up to date, no migration to apply.", name);
         }
         else
         {
-            logger.LogInformation("Applying {Count} migration(s): {Migrations}.", pending.Length, string.Join(", ", pending));
-            await database.Database.MigrateAsync(cancellationToken);
-            logger.LogInformation("Migrations applied.");
+            logger.LogInformation(
+                "{Context}: applying {Count} migration(s): {Migrations}.", name, pending.Length, string.Join(", ", pending));
+            await context.Database.MigrateAsync(cancellationToken);
+            logger.LogInformation("{Context}: migrations applied.", name);
         }
 
-        AppliedMigrations = pending;
         return pending;
     }
 }

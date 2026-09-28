@@ -117,7 +117,8 @@ internal static class MeEndpoints
                     .ThenBy(kind => kind.Key)
                     .Select(kind => new BootstrapCalendarKind(kind.Key, kind.Label, kind.Colour))
                     .ToListAsync(cancellationToken)],
-                Version: build.Version));
+                Version: build.Version,
+                Commit: build.ShortCommit));
         });
     }
 
@@ -198,7 +199,12 @@ internal sealed record BootstrapResponse(
     BootstrapNavigation Navigation,
     BootstrapRegistries Registries,
     IReadOnlyList<BootstrapCalendarKind> CalendarKinds,
-    string Version);
+    // The stamp the footer of every page shows, "0.2.0 · 51f946b": the number of this build (three
+    // numbers, Directory.Build.props) and seven characters of its commit, null for a build made outside
+    // a git checkout. From the server's stamp and not baked into the client: the server is the one
+    // that knows which code is running (note 2026-09-27-la-versione-del-sito).
+    string Version,
+    string? Commit);
 
 /// <summary>
 /// One word of the division's calendar vocabulary, as everybody who draws a chip needs it: the key

@@ -138,6 +138,50 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   temporaneo, e poi il merge in A7). Se il revisore chiede correzioni su #143, si fanno sul suo branch e salgono in A6b e in A7 con un
   merge.
 
+### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
+
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-righe-affidate-a-chi-scrive.md`, caso c, decisa da Carmine sulla #135):
+  - **`IHasAssignee { int? AssigneeVid }`** (`Core/Division/DomainContracts.cs`): la riga dice a chi è affidata.
+  - **`PermissionDescriptor.OnlyForAssignee`** (`CorePermissions.cs`; `PermissionCatalog.IsOnlyForAssignee`, `EditOf`): un permesso
+    segnato raggiunge una riga solo se è affidata a chi chiede. Su ogni altra riga vale come `{Area}.Edit`: nell'unico handler
+    (`HubAuthorization.cs`) e nel guardiano (`HubSaveChangesInterceptor.IsWrittenWithAnAlternative`) allo stesso modo. Senza riga
+    resta `HasAny`. Il catalogo rifiuta il segno sul permesso `View` dell'area, l'unico che sa riconoscere fra quelli che leggono.
+  - **Nel guardiano**, per un'alternativa segnata:
+    - in modifica la riga è di chi scrive prima e dopo, quindi non si passa e non si prende;
+    - alla creazione (`AlsoOnCreation`) la riga nuova è di chi la crea;
+    - con **`AlsoOnDeletion`**, nuovo su `[AlsoWrittenWith]`, la toglie chi l'aveva. Conta solo per un permesso segnato.
+  - **All'avvio**, prima delle migrazioni, `HubPipeline.InitializeAsync` chiama `PermissionCatalog.VerifyAlternatives` sul modello di
+    ogni contesto. Rifiuta `AlsoOnDeletion` su un permesso non segnato, e un permesso segnato su un'entità che non è `IHasAssignee`
+    (i rilievi del revisore).
+  - Nel modulo di prova: `SampleRecord.AssigneeVid` (migrazione `AddSampleAssignee`) e `Sample.Manage`, segnato e anche
+    `DeniedToStakeholder`. I test: `AssignedRowPermissionTests` (sei, integrazione) e `AssigneePermissionTests` (nove, unità).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10**: la riga degli esami si dichiara così.
+    - `trn_exams` porta `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true, AlsoOnDeletion = true)]` e
+      `IHasAssignee` (`int? IHasAssignee.AssigneeVid => ExaminerVid;`).
+    - Nel catalogo del modulo, `ManageExams` ha `OnlyForAssignee: true`, e anche `DeniedToStakeholder: true` se l'esame dice il suo
+      candidato con `IHasStakeholder`.
+    - `MapCrud` ha `WritePolicy = Training.ManageExams`, senza `DeletePolicy`.
+    - ⚠️ **Un TA deve vedere quali esami sono i suoi** (il revisore): la lista la leggono tutti con `Training.View`, e un'azione
+      sull'esame di un altro è un 403.
+  - **A7**: **Carmine ha scelto la stessa regola per il trainer** (risposta 2 sulla #135).
+    - Il training dichiara il suo trainer con `IHasAssignee`, e `Training.Conduct` è `OnlyForAssignee`.
+    - Niente grant con scope per assegnazione, e niente job notturno.
+    - A7 lo registra nella sua nota, in `08` e in `07`, perché corregge la n.1 del design, nella stessa PR.
+    - ⚠️ `Training.Conduct` va dato per posizione ai TA1–9 e ai T01–T99, perché i `positionGrants` di A4 danno ai trainer solo `View`
+      (R.7: si assegna chiunque sia staff del training). Lo aggiunge A7: una voce nuova del seme si applica al primo avvio che la trova.
+  - ⚠️ **Un'entità con un'alternativa segnata che non è `IHasAssignee` fa fallire l'avvio**, anche quello dei test d'integrazione.
+    Lo stesso per `AlsoOnDeletion` su un permesso non segnato. Il guardiano prende `PermissionCatalog` nel costruttore, dal contenitore.
+- ⚠️ **Trovato, per il revisore**: il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi
+  `DeniedToStakeholder`, e così è da A3. Per un'alternativa non segnata così, l'endpoint lascia passare e la rete ferma chi non ha
+  `Edit`. Per questo `Sample.Manage` è anche `DeniedToStakeholder`, e la nota §3.6 lo chiede agli esami. Il revisore l'ha annotato:
+  per A10 la risposta è quella della nota.
+- **In pari con `main` il 27 settembre**, come il revisore ha chiesto prima del merge.
+  - `main` era 68 commit più avanti (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato con un merge.
+  - L'unico conflitto era in questo file, risolto tenendo tutti i paragrafi; `08` si è unito da solo.
+  - Build e suite rifatte (i numeri sono in `08`, A3b, «Com'è andata»).
+  - Il messaggio di `PermissionCatalog` ora dice esattamente che cosa controlla: il permesso `View` dell'area.
+
 ### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
 
 - **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova; A6 divisa in apertura, scritto in `08`):
