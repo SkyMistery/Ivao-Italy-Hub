@@ -33,7 +33,8 @@ cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145
 front end e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`,
 è **decisa** da Carmine il 27 settembre 2026, come raccomandato
 ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813)): la casella e la sua lista sono un
-campo solo.
+campo solo. Il revisore l'ha trovata approvabile appena la nota registra la risposta: il 28 settembre la risposta è registrata, e
+`main` è entrato nel branch con un merge (#142–#172), con build e suite rifatte.
 
 ## Da leggere, nell'ordine
 
@@ -133,6 +134,18 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - Nessun VID e nessuno slug usati.
 - **La PR non va in coda**: se #143 o #144 sono unite prima, `main` entra nel branch con un merge; i conflitti stanno in cima a questo
   file e nella tabella di `08`, e si tengono tutti i paragrafi.
+- **Dopo la risposta e la revisione** (28 settembre 2026;
+  [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855612725)):
+  - la nota è decisa, con la risposta e il link; lo dicono anche `08` e questo file;
+  - `main` è entrato nel branch con un merge (b468d24: #142–#172, fra cui A6a, A3b e #152), con i conflitti solo in `08` e qui,
+    risolti tenendo tutto; build e suite rifatte (i numeri sono in `08`, A6c, «Le correzioni della revisione»);
+  - ⚠️ **il Tab dalla lista non esce dalla pagina**: finché la lista è aperta, Radix mette uno
+    `<span data-radix-focus-guard tabindex="0">` in fondo a `<body>`, dopo il portale. Il Tab ci arriva, e la lista si chiude con la
+    regola (misurato; nota §3.2);
+  - ⚠️ **la scelta da sola tastiera** (scrivere, freccia giù, Invio) non funziona, neanche su `main`: la casella sta fuori dalla radice
+    di `cmdk`, e per questo Invio in una casella chiusa invia il form (conta per #144). La prende il maintainer come seguito;
+  - il punto 4 (la scelta scritta in `opened`) lo tiene solo il tempo: lo vede la prova del menu di `back-office.spec.ts`, che torna
+    nella casella mentre la lista si sta chiudendo.
 
 ### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
 

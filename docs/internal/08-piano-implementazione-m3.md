@@ -825,8 +825,9 @@ rilegge uguale.
 **Non era nel piano**: l'ha trovata la sessione di A6b il 26 settembre 2026, scrivendo lo smoke della richiesta (PR #144), come A4a fu
 trovata scrivendo A4; `dalberone` ha scelto di farla come fase del nucleo a sé (`CLAUDE.md` §0 regola 6). Nota nuova
 `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, **Decisa** da Carmine il 27 settembre 2026 come raccomandato ([risposta su
-#145][a145]), sulla domanda in un [commento su #145][q145]. Branch `m3/a6c-closed-suggestion`, da `main`, PR #145. **Non va in coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la
-PR va verso `main` accanto a #143 (A6a) e #144 (A6b), come A3b va avanti per conto suo. Sta qui, prima di A6, come A4a prima di A4.
+#145][a145]), sulla domanda in un [commento su #145][q145]. Branch `m3/a6c-closed-suggestion`, da `main`, PR #145. **Non va in
+coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la PR va verso `main` accanto a #143 (A6a) e #144
+(A6b), come A3b va avanti per conto suo. Sta qui, prima di A6, come A4a prima di A4.
 
 1. **Il problema**: nel suggerimento chiuso di `SchemaForm` (`Suggest` con `suggestionsOnly`) chi scrive una parte del valore per
    cercare e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su una riga nuova —: la pressione porta il
@@ -896,16 +897,33 @@ Escape chiude e lascia il testo; la barra di scorrimento della lista si trascina
        che c'era», e uscendo resterebbe `cal`. Nessuno dei gesti provati ci porta: il Tab si ferma sulla guardia; passando a
        un'altra scheda e tornando il fuoco resta nella lista, e la ricerca continua (ma con l'emulazione del fuoco di Playwright,
        quindi non è una prova piena).
-  3. **Il punto 4 lo tiene solo il tempo** (rilievo, scritto qui): la scelta scritta in `opened` la vede una prova solo se si torna
-     nella casella mentre la lista si sta ancora chiudendo, perché Radix ne anima l'uscita; a lista sparita il ritorno è un arrivo
-     che rilegge il valore, e il punto 4 non serve. Il 26 settembre, tolto il punto 4, cadeva la prova del menu di
+  3. **Il punto 4 lo tiene solo il tempo** (rilievo, scritto qui con 6e42143): la scelta scritta in `opened` la vede una prova solo
+     se si torna nella casella mentre la lista si sta ancora chiudendo, perché Radix ne anima l'uscita; a lista sparita il ritorno è
+     un arrivo che rilegge il valore, e il punto 4 non serve. Il 26 settembre, tolto il punto 4, cadeva la prova del menu di
      `back-office.spec.ts`, e solo quella. Il revisore nomina anche la seconda metà della seconda prova della spec. Letta sul codice,
      la spec non lo tiene: la prova che sceglie è la prima, e prima di tornare nella casella aspetta che la lista sia nascosta
      (`toBeHidden`), quindi quel ritorno è un arrivo; la seconda non sceglie niente. Non l'ho rifatto oggi: togliere il pezzo per
      prova è stato rifiutato dalla modalità di permessi della sessione, e non l'ho aggirato.
-  4. **La scelta da sola tastiera** (rilievo, scritto qui) — scrivere, freccia giù, Invio — **non funziona neanche su `main`**: la
-     casella sta fuori dalla radice di `cmdk`, che quindi non riceve né le frecce né Invio. Per lo stesso motivo Invio in una casella
-     chiusa invia il form, e questo conta per #144 (A6b). Non è di questa PR: il maintainer la prende come seguito.
+  4. **La scelta da sola tastiera** (rilievo, scritto qui con 6e42143) — scrivere, freccia giù, Invio — **non funziona neanche su
+     `main`**: la casella sta fuori dalla radice di `cmdk`, che quindi non riceve né le frecce né Invio. Per lo stesso motivo Invio in
+     una casella chiusa invia il form, e questo conta per #144 (A6b). Non è di questa PR: il maintainer la prende come seguito.
+  5. **`main` unito nel branch** (b468d24), come il revisore ha chiesto: #142–#172, fra cui A6a (#143), A3b (#135) e i rifiuti di un
+     form nel nucleo (#152); nessuno tocca `SchemaForm.tsx` o la spec. Due conflitti, solo nei documenti, risolti tenendo tutto il
+     testo di `main` e rimettendo le parti di A6c: la tabella delle fasi qui sopra (le righe A6a, A6b e A7 di `main`, con A6c prima di
+     A6a, come A4a prima di A4) e la cima di «Lo stato» in `HANDOFF-M3.md` (A6c, poi A3b e A6a). Rispetto a `main` i due documenti
+     perdono una riga sola, quella del «Parallelismo possibile» che A6c allunga.
+
+  **Rifatto tutto sul merge** (28 settembre 2026), le suite pesanti una alla volta: `dotnet build` da capo (`--no-incremental`) senza
+  avvisi; unità **817/817**; **integrazione intera senza filtro** **345/345**; `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+  verdi; `pnpm test` 495 in 63 file; `pnpm e2e` **96** (con le 5 di `closed-suggestion.spec.ts`), sotto il lucchetto della 4173;
+  **`pnpm e2e:full` 41** su un **banco nuovo** (porta 5097, `ivaohub_e2e_a6c`), senza la mappa di base; `pnpm gen:api` e
+  `pnpm i18n:sync` senza differenze; le regole di `core-guard` rifatte in PowerShell sul diff verso `main` (qui non c'è la bash di
+  Git): nessun file del maintainer, uno del nucleo (`SchemaForm.tsx`), con la nota aggiunta. ⚠️ La prima corsa di `pnpm e2e` è caduta
+  su una prova del maintainer che A6c non tocca: `public-lists.spec.ts`, «a document whose slug is a department code is still
+  reachable», il cui titolo non è comparso in 5 s. Il suo file da solo, tre volte (`--repeat-each 3`), ha dato 15/15, e la seconda
+  corsa intera 96/96.
+  **Non verificato**: la CI su questo head, che leggo una volta alla fine; la prova del punto 4 (qui sopra); browser diversi da
+  Chromium e Chrome, e uno schermo touch, come prima.
 
 [q145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355
 [a145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813
