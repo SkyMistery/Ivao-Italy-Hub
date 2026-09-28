@@ -26,14 +26,34 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+// How long each step of the start takes, counted from the creation of the process: a visitor waits for all of it
+// when the host starts the hub for their request (note 2026-09-28-l-avvio-a-freddo). Written to diagnostics/starts.txt.
+var timings = StartupTimings.Begin();
 
 // Where config/, locales/, secrets/, hub-keys/, logs/ and diagnostics/ are. In production they sit
-// next to the application; during development they are at the root of the repository.
-var paths = HubPaths.Resolve(builder.Environment.ContentRootPath);
+// next to the application; during development they are at the root of the repository. Found before
+// the host exists, from the working directory and then from the folder of this assembly, because a
+// host may start the process from anywhere (note 2026-09-27-l-avvio-da-qualunque-cartella).
+var paths = HubPaths.Resolve(Directory.GetCurrentDirectory(), AppContext.BaseDirectory);
+
+// From here on a start that fails also says why in diagnostics/startup-error.txt, which an
+// installation served by FTP alone can read; standard output alone is the host's.
+var startupWatch = StartupFailureWatch.Arm(paths);
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+
+    // Found from the folder of the application, the process was started somewhere else: wwwroot/ and
+    // appsettings.json are next to the application too, so the content root follows. Otherwise it
+    // stays where it always was, the web project during development.
+    ContentRootPath = paths.Source == HubRootSource.ApplicationFolder ? AppContext.BaseDirectory : null,
+});
+
+startupWatch?.Attach(builder.Configuration, builder.Environment.EnvironmentName);
 
 // Precedence: appsettings < secrets/*.json < config/ivao-oauth.json < environment variables.
-foreach (var secretFile in HubConfiguration.SecretFiles(paths))
+foreach (var secretFile in paths.SecretFiles())
 {
     builder.Configuration.AddJsonFile(secretFile, optional: true, reloadOnChange: true);
 }
@@ -62,11 +82,20 @@ builder.Services.AddSingleton(paths);
 builder.Services.AddOptions<SecurityHeadersOptions>()
     .Bind(new ConfigurationBuilder().AddJsonFile(paths.SecurityFile, optional: true).Build());
 
+// The division file, with the host of this installation on top when it has one of its own: a test
+// installation is the same division at another address (note 2026-09-27-l-installazione-di-prova).
+// Read through the options pipeline and not here, so that the installation's settings are the
+// final ones — a test host adds its own after this line.
 var divisionConfiguration = HubConfiguration.DivisionFile(paths);
 builder.Services.AddOptions<DivisionOptions>()
-    .Bind(divisionConfiguration)
+    .Configure<IConfiguration>((division, configuration) =>
+        HubConfiguration.Division(divisionConfiguration, configuration).Bind(division))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+
+// What this installation says about itself, next to AllowedHosts: whether it is private.
+builder.Services.AddOptions<InstallationOptions>()
+    .Bind(builder.Configuration.GetSection(InstallationOptions.SectionName));
 
 // Which modules exist is the explicit list, so the validator can say that division.json names one
 // this build does not have. Every module, not only the enabled ones: naming a module in order to
@@ -219,6 +248,14 @@ if (trustedProxies.Count > 0)
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+        // No limit on the hops: the middleware walks the chain back from the right while the one who
+        // wrote the entry sits in the list, and stops at the first address that does not. One hop, the
+        // default, believed the web server in front of Passenger, 127.0.0.1, for every visitor (note
+        // 2026-09-28-la-catena-dei-proxy). The two headers can carry a different number of entries
+        // there (three addresses, two schemes), which is why RequireHeaderSymmetry stays false.
+        options.ForwardLimit = null;
+        options.RequireHeaderSymmetry = false;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
 
@@ -230,6 +267,20 @@ if (trustedProxies.Count > 0)
 }
 
 var app = builder.Build();
+timings.Step("services");
+
+if (startupWatch is not null)
+{
+    app.Lifetime.ApplicationStarted.Register(startupWatch.Started);
+}
+
+// One line per start and per stop in diagnostics/starts.txt, and the requests counted in between: first in the
+// pipeline, so that it counts them all (notes 2026-09-28-i-job-quando-passenger-spegne-l-hub, 2026-09-28-un-avvio-piu-veloce).
+StartsWatch.Arm(app, paths, timings);
+
+// Before the forwarded headers, which rewrite what they read: the diagnostics of the request show it as it arrived
+// (note 2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy). It copies one address's request and nothing else.
+app.UseRequestDiagnosticsCapture();
 
 if (trustedProxies.Count > 0)
 {
@@ -311,13 +362,15 @@ app.MapSeoEndpoints();
 app.MapSearchEndpoint();
 
 // The administration of the hub itself: who holds which permission, who administers the system,
-// what happened, and which modules are open. Three of the four are the CRUD engine in global mode.
+// what happened, which modules are open, and how a request reaches the hub. Three of them are the CRUD
+// engine in global mode; the last is read by a super administrator installing the hub behind its proxies.
 app.MapGrantEndpoints();
 app.MapPersonalTokenEndpoints();
 app.MapSuperadminEndpoints();
 app.MapErasureEndpoints();
 app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();
+app.MapRequestDiagnosticsEndpoints(forwardedHeadersInPipeline: trustedProxies.Count > 0);
 
 // Last, so that a module cannot shadow a route of the core by mapping the same pattern first.
 app.MapModuleEndpoints();
@@ -331,12 +384,13 @@ if (app.Environment.IsEnvironment(HubEnvironments.E2E))
 }
 
 app.MapSpaFallback();
+timings.Step("endpoints");
 
 // Migrations, super administrator bootstrap and diagnostics: everything that needs a database, and
 // therefore everything the build time OpenAPI tool must not do.
 if (!HubConfiguration.IsOpenApiDocumentGeneration)
 {
-    await app.InitializeAsync(paths);
+    await app.InitializeAsync(paths, timings);
 }
 
 app.Run();

@@ -384,7 +384,7 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
             {t('footer.rights', {
               year: new Date().getFullYear(),
               division,
-              version: bootstrap.version,
+              build: buildStamp(bootstrap),
             })}
           </p>
 
@@ -395,6 +395,18 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
       </div>
     </footer>
   );
+}
+
+/**
+ * Which package is running, as the footer of every layout says it: "0.2.0 · 51f946b" (Carmine,
+ * 27 September 2026, the way vIPI says it). The number is the name we give the build, with the rule
+ * of `Directory.Build.props` behind it; the commit is the only thing that says which code it is, and
+ * two builds under one number can be two codes. Both come from the server's stamp in the bootstrap,
+ * never from the client's own build: the server is the one that knows what is running. A build with
+ * no commit shows the number alone rather than a made-up one.
+ */
+function buildStamp(bootstrap: Bootstrap): string {
+  return bootstrap.commit ? `${bootstrap.version} · ${bootstrap.commit}` : bootstrap.version;
 }
 
 /** One account of the division: a mark, with the words it was given as its name. */

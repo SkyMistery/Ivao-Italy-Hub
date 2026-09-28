@@ -1,10 +1,11 @@
 import { expect, test } from 'vitest';
 
+import { ApiError } from '../../../shared/api/problem';
 import { listSearchSchema } from '../../../shared/list';
 import { memberLabel, type StaffTrainingDto, type TrainerCandidateDto, type TrainingState } from '../api';
 import type { StaffTrainingsSearch } from '../schemas';
 
-import { decisionOf, listOrder, staffTrainingHref, trainerChoices } from './trainings';
+import { decisionOf, isConflict, listOrder, staffTrainingHref, trainerChoices } from './trainings';
 
 /**
  * What the staff's pages of the trainings read out of what the server answered (A7): the order of the list when the reader
@@ -152,4 +153,15 @@ test('the decision is read from the state: none, accepted, refused with its reas
 
 test('the page of a training is under the list, by its identifier', () => {
   expect(staffTrainingHref(41)).toBe('/staff/training/41');
+});
+
+test('a conflict is the server saying somebody else moved the training, and no other refusal', () => {
+  expect(isConflict(new ApiError(409, { title: 'Conflict' }))).toBe(true);
+  expect(
+    isConflict(
+      new ApiError(400, { title: 'Refused', errors: { trainerVid: ['training:errors.trainerAlready'] } }),
+    ),
+  ).toBe(false);
+  expect(isConflict(new ApiError(403, { title: 'Forbidden' }))).toBe(false);
+  expect(isConflict(new Error('offline'))).toBe(false);
 });

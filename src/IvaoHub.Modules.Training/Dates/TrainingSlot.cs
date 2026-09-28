@@ -21,7 +21,10 @@ public sealed class TrainingSlot : IAuditable
 
     public DateTime EndsAtUtc { get; set; }
 
-    /// <summary>The warnings when it was written (<see cref="DateWarnings"/>): nobody's name or VID in them.</summary>
+    /// <summary>
+    /// The warnings when it was written (<see cref="DateWarnings"/>): nobody's name or VID in them, and only the entries of the
+    /// calendar every reader of the training may read (<see cref="DateConflicts.Kept"/>).
+    /// </summary>
     public string WarningsJson { get; set; } = "[]";
 
     /// <summary>When it was proposed.</summary>
