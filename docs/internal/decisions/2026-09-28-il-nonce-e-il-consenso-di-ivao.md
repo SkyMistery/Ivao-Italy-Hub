@@ -1,8 +1,9 @@
 # Il nonce e il consenso di IVAO: il primo accesso riparte una volta
 
 **Data:** 28 settembre 2026
-**Stato:** correzione urgente chiesta da Carmine in chat il 28 set 2026 (sessione di lavoro `fix/first-sign-in-nonce`),
-versione `0.2.5`. Il cambio di comportamento è piccolo e dentro un meccanismo che esiste già: va letto da Carmine nella PR.
+**Stato:** **Proposta**. Correzione urgente chiesta da Carmine in chat il 28 set 2026 (sessione di lavoro
+`fix/first-sign-in-nonce`, PR #174), versione `0.2.6`. Il secondo giro automatico è un cambio di comportamento: la conferma
+di Carmine, con il link al suo commento sulla PR, si scrive qui quando c'è.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: la gestione dei fallimenti del giro IVAO (`OnRemoteFailure`,
 piano §6.1) si estende, non se ne aggiunge un'altra. Cambio del nucleo, nella sua PR.
 
