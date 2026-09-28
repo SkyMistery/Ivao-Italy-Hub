@@ -3,8 +3,9 @@
 **Data:** 28 settembre 2026
 **Stato:** **Decisa da Carmine sulla PR, 28 settembre 2026**: le due domande del §6 (5 e 6 del commento), tutte e due come
 raccomandato — <https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>. `ForwardLimit = null` si fa
-dopo la prova 3 del §5, **qualunque cosa dica**. La prova 3 ha dato `127.0.0.1` (§8): **resta aperta una domanda nuova**,
-la pagina diagnostica del §8.
+dopo la prova 3 del §5, **qualunque cosa dica**. La prova 3 ha dato `127.0.0.1` (§8). La domanda nuova del §8, la pagina
+diagnostica, ha la risposta di Carmine: **sì**, in chat, riportata in
+<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865694616>.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo è quello deciso il 3 settembre
 (`2026-09-03-proxy-fidati.md`, design M0 §2.3), e si **estende**. Cambio del nucleo, nella sua PR.
 **Da dove viene:** piano §11.3 punto 9, terzo trattino; `docs/DEPLOYING.md` «Known limits».
@@ -202,7 +203,9 @@ Cloudflare manda sempre. Forse Passenger non passa gli header `X-Forwarded-*` al
 l'indirizzo arriva in un header che non è `X-Forwarded-For`, il nome si legge dalla configurazione
 (`ForwardedHeadersOptions.ForwardedForHeaderName`). Non va mai scritto nel codice: un nome come `CF-Connecting-IP` farebbe
 sapere al codice di Cloudflare (`CLAUDE.md` §3). Dopo la correzione si rifanno le prove 2 e 3 e la prova sull'origine del §7.
-**Domanda a Carmine**: (i)?
+**Domanda a Carmine**: (i)? **Risposta: sì**, in chat il 28 set 2026, riportata sulla PR
+(<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865694616>). La pagina è una PR del nucleo, sua; poi la
+correzione.
 
 ## Da portare nel piano
 
