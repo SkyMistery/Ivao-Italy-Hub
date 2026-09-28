@@ -26,6 +26,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Serilog;
 
+// How long each step of the start takes, counted from the creation of the process: a visitor waits for all of it
+// when the host starts the hub for their request (note 2026-09-28-l-avvio-a-freddo). Written to diagnostics/starts.txt.
+var timings = StartupTimings.Begin();
+
 // Where config/, locales/, secrets/, hub-keys/, logs/ and diagnostics/ are. In production they sit
 // next to the application; during development they are at the root of the repository. Found before
 // the host exists, from the working directory and then from the folder of this assembly, because a
@@ -263,11 +267,16 @@ if (trustedProxies.Count > 0)
 }
 
 var app = builder.Build();
+timings.Step("services");
 
 if (startupWatch is not null)
 {
     app.Lifetime.ApplicationStarted.Register(startupWatch.Started);
 }
+
+// One line per start and per stop in diagnostics/starts.txt, and the requests counted in between: first in the
+// pipeline, so that it counts them all (notes 2026-09-28-i-job-quando-passenger-spegne-l-hub, 2026-09-28-un-avvio-piu-veloce).
+StartsWatch.Arm(app, paths, timings);
 
 // Before the forwarded headers, which rewrite what they read: the diagnostics of the request show it as it arrived
 // (note 2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy). It copies one address's request and nothing else.
@@ -375,12 +384,13 @@ if (app.Environment.IsEnvironment(HubEnvironments.E2E))
 }
 
 app.MapSpaFallback();
+timings.Step("endpoints");
 
 // Migrations, super administrator bootstrap and diagnostics: everything that needs a database, and
 // therefore everything the build time OpenAPI tool must not do.
 if (!HubConfiguration.IsOpenApiDocumentGeneration)
 {
-    await app.InitializeAsync(paths);
+    await app.InitializeAsync(paths, timings);
 }
 
 app.Run();
