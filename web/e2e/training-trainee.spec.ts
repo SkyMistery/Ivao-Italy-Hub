@@ -10,9 +10,10 @@ import { englishCommon } from './locales';
  * A trainee's path and the bans in a browser, with the API stubbed (M3, A10a): the path is asked by VID and shows where the trainee
  * stands on each ladder, their bans and every training of theirs, which opens on its report; «ban» from the path opens the form with
  * the member written and goes back there, and a refusal of the server lands under its field; the list of the bans lifts one, asked
- * first; a trainer reading their own path is told that what is reserved is not shown, and a reader who may not ban sees no button.
- * What the server decides is proved by `TrainingTraineeTests` (integration); the round against the real server is
- * `full/training-the-trainee.spec.ts`.
+ * first; a trainer reading their own path is told that what is reserved is not shown, and a reader who may not ban sees no button;
+ * a head of a FIR (A11b), to whom the server sends the trainings of their FIR and neither the ladders nor the bans, is told so.
+ * What the server decides is proved by `TrainingTraineeTests` and `TrainingFirHeadsTests` (integration); the round against the real
+ * server is `full/training-the-trainee.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -35,6 +36,8 @@ const words = JSON.parse(
     banReason: string;
     openTraining: string;
     noBans: string;
+    firOnly: string;
+    noTrainingsOnFir: string;
   };
   bans: {
     title: string;
@@ -90,6 +93,23 @@ const trainerBootstrap = {
     departments: ['TD'],
   },
   permissions: [{ name: 'Training.View', department: 'TD' }],
+};
+
+/** The chief of a FIR (A11b): a position of the FIR and no department; the FIR of each permission is the server's, not in `/api/me`. */
+const chiefBootstrap = {
+  ...staffBootstrap,
+  user: {
+    ...staffBootstrap.user,
+    vid: 790096,
+    lastName: 'Chief',
+    positions: ['XXAA-CH'],
+    departments: [],
+    firs: ['XXAA'],
+  },
+  permissions: [
+    { name: 'Training.View', department: 'TD' },
+    { name: 'Training.Assign', department: 'TD' },
+  ],
 };
 
 function ladder(kind: 'Atc' | 'Pilot', overrides: Record<string, unknown> = {}) {
@@ -459,4 +479,39 @@ test('a trainer reading their own path is told what is not shown, and one who ma
   await page.getByRole('button', { name: new RegExp(words.states.Completed!) }).click();
   await expect(page.getByText('Good readbacks.', { exact: false })).toBeVisible();
   await expect(page.getByText(words.report.staffComment, { exact: true })).toHaveCount(0);
+});
+
+test("a head of a FIR reads the trainings of their FIR on the path, and is told the rest is the training department's", async ({
+  page,
+}) => {
+  // What the server sends a head of a FIR (A11b): the trainings of their FIR, and no ladders nor bans — none, not an empty list.
+  const firOnly = { ladders: null, bans: null, canBan: false };
+  await stubThePath(page, {
+    bootstrap: chiefBootstrap,
+    current: path({ ...firOnly, trainings: [training(41, 'Accepted')] }),
+  });
+  await page.route('**/api/training/trainees/790098', (route) =>
+    route.fulfill(json(path({ ...firOnly, trainee: trainer, trainings: [] }))),
+  );
+
+  await page.goto('/staff/training/trainees/790099');
+  await expect(page.getByRole('heading', { level: 1, name: 'Test Trainee (790099)' })).toBeVisible();
+  await expect(page.getByText(words.trainees.firOnly, { exact: true })).toBeVisible();
+
+  // The training of their FIR, and neither where the trainee stands nor the bans: no heading, no «no ban», no «ban».
+  await expect(
+    page.getByRole('heading', { name: words.trainees.sections.trainings, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(words.states.Accepted!, { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: words.trainees.sections.ladders, exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole('heading', { name: words.trainees.sections.bans, exact: true })).toHaveCount(0);
+  await expect(page.getByText(words.trainees.noBans, { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: words.trainees.ban, exact: true })).toHaveCount(0);
+
+  // A trainee with no training on their FIR: said so, not «no training yet».
+  await page.goto('/staff/training/trainees/790098');
+  await expect(page.getByRole('heading', { level: 1, name: 'Test Trainer (790098)' })).toBeVisible();
+  await expect(page.getByText(words.trainees.noTrainingsOnFir, { exact: true })).toBeVisible();
 });

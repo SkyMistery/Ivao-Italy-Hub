@@ -7466,15 +7466,19 @@ export interface components {
         TraineePathDto: {
             /** @description The member, by VID and by the name the hub has. */
             trainee: components["schemas"]["TrainingMemberDto"];
-            /** @description Where they stand on each ladder, in the order of the core's ladders. */
-            ladders: components["schemas"]["MyTrainingPathDto"][];
             /**
-             * @description Their trainings, each as the staff's page of it (`StaffTrainings.PageAsync`): so a trainer who reads their own path reads it
-             *     without what is reserved, as on the page of each training (note `le-note-riservate-e-il-trainee`).
+             * @description Where they stand on each ladder, in the order of the core's ladders; none to a reader who may not read their bans — a head of a
+             *     FIR (A11b) —, because it is worked out from the bans and from every training of theirs.
+             */
+            ladders: null | components["schemas"]["MyTrainingPathDto"][];
+            /**
+             * @description Their trainings the reader may read, each as the staff's page of it (`StaffTrainings.PageAsync`): so a trainer who reads their
+             *     own path reads it without what is reserved, as on the page of each training (note `le-note-riservate-e-il-trainee`), and a
+             *     head of a FIR reads the ones of their FIR (A11b).
              */
             trainings: components["schemas"]["StaffTrainingDto"][];
-            /** @description Their bans, the newest first: the ones that hold, the ones over and the ones lifted. */
-            bans: components["schemas"]["TraineeBanDto"][];
+            /** @description Their bans, the newest first: the ones that hold, the ones over and the ones lifted; none to a reader who may not read them. */
+            bans: null | components["schemas"]["TraineeBanDto"][];
             /** @description Whether the reader may ban them now: `Training.Ban`, never on themselves. */
             canBan: boolean;
         };
