@@ -28,6 +28,14 @@ in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della 
 in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
 con il namespace (`training:…`, #138).
 
+**Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
+cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
+front end e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`,
+è **decisa** da Carmine il 27 settembre 2026, come raccomandato
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813)): la casella e la sua lista sono un
+campo solo. Il revisore l'ha trovata approvabile appena la nota registra la risposta: il 28 settembre la risposta è registrata, e
+`main` è entrato nel branch con un merge (#142–#172), con build e suite rifatte.
+
 ## Da leggere, nell'ordine
 
 1. `CLAUDE.md` (tutto, §0 per primo) e `CONTRIBUTING.md`.
@@ -97,6 +105,47 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A6c (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145)
+
+- **Perché c'è**: la sessione di A6b l'ha trovata scrivendo lo smoke della richiesta (#144): nel **suggerimento chiuso** di `SchemaForm`
+  (`suggestionsOnly`) chi scrive una parte del valore e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su
+  una riga nuova. Vale per ogni campo chiuso dell'hub (menu, postazioni nascoste, postazione della richiesta, aerei dei tour).
+  `dalberone` ha scelto una fase del nucleo a sé, come A4a.
+- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **decisa** da Carmine il 27 settembre 2026
+  come raccomandato — [la sua risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813) — alla
+  [domanda su #145](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355)):
+  - in `Suggest` (`web/src/shared/forms/SchemaForm.tsx`) **la casella e la sua lista sono un campo solo**: la regola del campo chiuso
+    («uscire con qualcosa che nessuno ha offerto rimette quello che c'era») vale quando il fuoco esce da tutte e due — dall'`onBlur`
+    della casella, o dalla chiusura della lista quando il fuoco non è nella casella —; tornare nella casella dalla lista non ricomincia
+    la ricerca; una scelta scrive `opened`. Nessuna schermata cambiata.
+  - la spec nuova **`web/e2e/closed-suggestion.spec.ts`** (5 prove sull'indirizzo di una voce del menu, con l'API finta), che cade sul
+    codice di `main`.
+- **Che cosa deve sapere la fase dopo**:
+  - **Dopo il merge una spec può scrivere per cercare in un campo chiuso** e poi cliccare l'opzione. Le spec di A6b
+    (`web/e2e/training-request.spec.ts`, `web/e2e/full/training-request.spec.ts`) scelgono la postazione dall'elenco **apposta**, e sono
+    in coda su #144: non si toccano in questa PR; potranno scrivere una parte del nominativo in una fase dopo il merge.
+  - ⚠️ **Non si annulla la pressione su una lista in un popover** (`onMouseDown` con `preventDefault`) per tenere il fuoco altrove:
+    **Chromium non trascina più la barra di scorrimento** di quella lista (misurato: 611 px senza, 0 con). Era la correzione proposta da
+    A6b, fatta per prima e scartata. E **Playwright headless nasconde le barre** (`--hide-scrollbars`): una prova che ne preme una le
+    riaccende con `test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } })` in cima al file.
+  - ⚠️ **Dopo una pressione sulla lista il fuoco sta nella lista** (come prima di A6c): un tasto scritto lì non va nella casella; le
+    frecce e Invio sono di `cmdk`, e un clic sulla casella ci torna con la ricerca di prima.
+  - Nessun VID e nessuno slug usati.
+- **La PR non va in coda**: se #143 o #144 sono unite prima, `main` entra nel branch con un merge; i conflitti stanno in cima a questo
+  file e nella tabella di `08`, e si tengono tutti i paragrafi.
+- **Dopo la risposta e la revisione** (28 settembre 2026;
+  [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855612725)):
+  - la nota è decisa, con la risposta e il link; lo dicono anche `08` e questo file;
+  - `main` è entrato nel branch con un merge (b468d24: #142–#172, fra cui A6a, A3b e #152), con i conflitti solo in `08` e qui,
+    risolti tenendo tutto; build e suite rifatte (i numeri sono in `08`, A6c, «Le correzioni della revisione»);
+  - ⚠️ **il Tab dalla lista non esce dalla pagina**: finché la lista è aperta, Radix mette uno
+    `<span data-radix-focus-guard tabindex="0">` in fondo a `<body>`, dopo il portale. Il Tab ci arriva, e la lista si chiude con la
+    regola (misurato; nota §3.2);
+  - ⚠️ **la scelta da sola tastiera** (scrivere, freccia giù, Invio) non funziona, neanche su `main`: la casella sta fuori dalla radice
+    di `cmdk`, e per questo Invio in una casella chiusa invia il form (conta per #144). La prende il maintainer come seguito;
+  - il punto 4 (la scelta scritta in `opened`) lo tiene solo il tempo: lo vede la prova del menu di `back-office.spec.ts`, che torna
+    nella casella mentre la lista si sta chiudendo.
 
 ### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
 
