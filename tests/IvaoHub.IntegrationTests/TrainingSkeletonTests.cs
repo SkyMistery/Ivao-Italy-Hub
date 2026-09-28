@@ -77,11 +77,17 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
             var seeded = await scope.ServiceProvider.GetRequiredService<HubDbContext>().UserGrants.AsNoTracking()
                 .Where(grant => grant.Reason == "division.json" && grant.Value.StartsWith(TrainingPermissions.Area + "."))
-                .Select(grant => grant.Value)
+                .Select(grant => new { grant.Value, grant.PositionFirTeam })
                 .ToListAsync(token);
 
-            Assert.Equal(TrainingPermissions.All.Count, seeded.Count);
-            Assert.Equal(seeded.Count, seeded.Distinct().Count());
+            // One per permission to the training department, and two to the team of a FIR: the heads of a FIR view and assign the
+            // trainings of their FIR (design M3 §3.2, A11b; note 2026-09-27-i-capi-fir-sul-loro-fir, Carmine's answer 2 on #159).
+            var toTheDepartment = seeded.Where(grant => !grant.PositionFirTeam).Select(grant => grant.Value).ToList();
+            Assert.Equal(TrainingPermissions.All.Count, toTheDepartment.Count);
+            Assert.Equal(toTheDepartment.Count, toTheDepartment.Distinct().Count());
+            Assert.Equal(
+                new[] { TrainingPermissions.Assign, TrainingPermissions.View },
+                seeded.Where(grant => grant.PositionFirTeam).Select(grant => grant.Value).Order(StringComparer.Ordinal));
         }
 
         // Design M3 §3.2: the coordinator everything, the advisor views, approves, conducts and puts exams in the calendar, the
