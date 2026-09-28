@@ -17,6 +17,9 @@ Le due ipotesi del §8 (l'`X-Forwarded-For` non arriva; oppure arriva e il middl
 
 `GET /api/admin/diagnostics/request`, in `src/IvaoHub.Web/Endpoints/RequestDiagnosticsEndpoints.cs`.
 
+- **Un endpoint a mano, di sola lettura, del nucleo** (non un CRUD, nessuna riga dietro): per il conto per famiglia di §16.6 sta
+  nella famiglia **amministrazione del sistema, riservata al super amministratore**, accanto a `/api/admin/superadmins`.
+
 - **Solo il super amministratore**, con l'autorizzazione che c'è: `SignedIn` sull'endpoint e `ICurrentUser.IsSuperadmin` nel
   corpo, come l'elenco dei super amministratori (`GrantEndpoints.MapSuperadminEndpoints`). Nessun handler nuovo, nessun
   permesso nuovo: chi ha tutto il catalogo (il direttore) riceve `403`.
