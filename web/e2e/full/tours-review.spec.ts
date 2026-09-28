@@ -82,7 +82,7 @@ test('a validator takes a pilot’s report, rejects it with an error, and the pi
   const flight = replayFlight({ vid: pilotVid, departure: benchAirports.rome, arrival: benchAirports.milan });
   const made: { rules: number[]; errors: number[] } = { rules: [], errors: [] };
 
-  await removeBenchTours(context, 'bench-review-');
+  await removeBenchTours(context, 'bench-review-', pilotContext);
   try {
     await validate();
   } finally {
@@ -93,7 +93,7 @@ test('a validator takes a pilot’s report, rejects it with an error, and the pi
     for (const error of made.errors) {
       await context.request.delete(`/api/flightops/errors/${error}`, { headers: asTheClientDoes });
     }
-    await removeBenchTours(context, 'bench-review-');
+    await removeBenchTours(context, 'bench-review-', pilotContext);
     await pilotContext.close();
   }
 

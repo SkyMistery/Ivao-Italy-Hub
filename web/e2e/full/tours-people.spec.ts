@@ -90,7 +90,7 @@ test('a tour flown to the end signals its award, and the award is assigned from 
   const flight = replayFlight({ vid: pilotVid, departure: benchAirports.rome, arrival: benchAirports.milan });
   const made: { award?: number } = {};
 
-  await removeBenchTours(context, 'bench-people-');
+  await removeBenchTours(context, 'bench-people-', pilotContext);
   try {
     await complete();
   } finally {
@@ -98,7 +98,7 @@ test('a tour flown to the end signals its award, and the award is assigned from 
     if (made.award !== undefined) {
       await revokeAndDelete(context.request, made.award);
     }
-    await removeBenchTours(context, 'bench-people-');
+    await removeBenchTours(context, 'bench-people-', pilotContext);
     await pilotContext.close();
   }
 
