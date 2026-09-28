@@ -31,7 +31,8 @@ import { TraineeLookupPage, TraineePathPage } from './screens/trainees';
  * came to — rescheduled, not attended, or reported with the sheet —, on the same two pages of a training; A10a a trainee's
  * path as the staff reads it, and the bans; A10b the public side — the sessions still to be held and the page of one — and the
  * four blocks of the pages and the dashboards; A10c the exams in the calendar, the list and the form of the staff, and the exams
- * still to come beside the sessions.
+ * still to come beside the sessions; A11b the heads of a FIR, who read and assign the trainings of their FIR on the same screens,
+ * as the server answers them.
  */
 export const trainingManifest: ModuleManifest = {
   key: 'training',
@@ -69,8 +70,8 @@ export const trainingManifest: ModuleManifest = {
       path: '/training/mine/$id',
       component: TraineeTrainingPage,
     },
-    // The staff's side (A7): every training, open and closed, to whoever holds `Training.View` (R.1); what they may do on one
-    // is the server's answer on its page.
+    // The staff's side (A7): every training, open and closed, to whoever holds `Training.View` (R.1) — a head of a FIR the ones of
+    // their FIR (A11b), which the server narrows the list to —; what they may do on one is the server's answer on its page.
     {
       area: 'staff',
       path: '/staff/training',
