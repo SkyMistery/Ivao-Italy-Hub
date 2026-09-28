@@ -145,10 +145,11 @@ punti sopra.
   aprire la domanda. L'altro caso con Invio («an answer taken back with «Cancel»», riga 322) passa così com'è: lì la casella è
   raggiunta di nuovo, non si cerca niente, niente è illuminato, e Invio è del form. Con un Invio in più dopo il `fill` (sceglie,
   la casella tiene `XXAA_TWR`, niente è partito) il caso passa com'era, 7 prove su 7.
-- **Chi adatta la spec del collaboratore: la nostra parte**, per decisione di Carmine del 28 settembre 2026 in chat, riferita dal
-  master. Il cambio è del comportamento del nucleo, non del modulo. Se #144 entra in `main` prima di questa PR, `main` si unisce qui
-  e si cambia **solo** quel caso, tenendo ciò che afferma: nessuna richiesta parte senza la risposta sulla teoria. Se entra prima
-  questa PR, il caso lo adatta #144 quando si rimette in pari.
+- **Chi adatta la spec del collaboratore: #144 stessa.** Carmine ha scelto, il 28 settembre 2026 in chat (riferito dal master), di
+  unire questa PR per prima, senza aspettare #144. Quando #144 unisce `main`, aggiunge **un Invio** dopo il `fill('XXAA_TWR')` del
+  caso della riga 281. Glielo ha chiesto il master sulla PR ([commento su #144][c144]). Qui la spec del collaboratore non si tocca.
+
+[c144]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930
 
 ## Da portare nel piano
 
