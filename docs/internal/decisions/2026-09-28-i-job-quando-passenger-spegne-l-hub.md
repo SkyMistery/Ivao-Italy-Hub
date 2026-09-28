@@ -168,9 +168,10 @@ correzione.
 Oggi l'unico dato che si perde mentre l'hub dorme sono i **METAR di ripiego (IVAO, VATSIM) degli aeroporti che NOAA non
 ha**. Verificato nel codice: NOAA tiene **30 giorni** di METAR e TAF (`src/IvaoHub.Core/Weather/NoaaWeatherClient.cs:65-100`,
 `WeatherReport.cs:61`), e all'invio del PIREP l'hub se li riprende (`WeatherArchive.cs:180-218`). IVAO e VATSIM, invece,
-danno solo il bollettino corrente (`src/IvaoHub.Core/Weather/WeatherSource.cs:7-13`), e il TAF non ha ripiego. Secondo
-Carmine, e non verificato qui, le tracce arrivano dopo dal tracker di IVAO e le sessioni ATC le archivia vIPI, fuori
-dall'hub. Per questo `WeatherJob` è il job che il POST pianificato deve chiamare alle sue ore (:05 e :35).
+danno solo il bollettino corrente (`src/IvaoHub.Core/Weather/WeatherSource.cs:7-13`), e il TAF non ha ripiego. Dalla
+lettura del codice fatta dal revisore (il master), e **non verificato in questa nota**: le tracce le chiede dopo il volo
+il tracker di IVAO, e le sessioni ATC vengono dall'archiviatore di vIPI attraverso le viste `v_share_`, fuori dall'hub. Per
+questo `WeatherJob` è il job che il POST pianificato deve chiamare alle sue ore (:05 e :35).
 
 **`diagnostics/starts.txt`** (domanda 2) scrive per ogni avvio anche **la memoria usata dal processo** e **quanto è durato
 l'avvio**. Così una settimana sull'installazione di prova dice quanto costa ogni risveglio. Se quei numeri lo chiedono, resta
@@ -182,8 +183,15 @@ possibile più avanti un'applicazione separata per i job, con una nota sua.
 - **Il lavoro si fa dentro la richiesta**: il processo non è inattivo finché risponde (§5).
 - **Il token è un segreto dell'installazione** (`secrets/`), non di una persona: non è un token personale (`CLAUDE.md` §2),
   perché chi chiama è l'hosting, non un utente.
-- ⚠️ **Non verificato**: se «Recupera un URL» di Plesk sa fare un POST con un'intestazione, o solo una GET. Con la sola GET
-  il token finirebbe nell'indirizzo, e quindi nei log di nginx e di Cloudflare. Carmine lo chiede all'amministratore.
+- ⚠️ **Il pannello, non verificato**. Ci sono due strade. Carmine chiede all'amministratore quale è concessa.
+  - «Recupera un URL» è, a quanto ne sa il master, una semplice GET senza intestazioni.
+  - «Esegui un comando» con `curl -X POST -H "…"` fa il POST con l'intestazione, ma solo se il pannello concede i comandi alla
+    sottoscrizione.
+- **Il codice non dipende dalla strada**. Il token si accetta in un'intestazione, e la strada consigliata è quella. Accettarlo
+  anche nell'indirizzo (una GET con `?token=…`) ha un costo: il token finisce nei log di nginx, di Cloudflare e dei proxy,
+  quindi va trattato come un segreto a vista. Serve allora un token solo per questo indirizzo, che non apre nient'altro, si
+  cambia senza toccare il resto e non fa niente oltre a far girare quello che è già dovuto. Un chiamante che lo ruba può solo
+  far lavorare l'hub prima del tempo. Se sia accettabile si decide nella PR del codice, secondo la risposta dell'amministratore.
 - **Le mail partono al ritmo delle chiamate**: con due chiamate l'ora, fino a mezz'ora di ritardo quando nessuno usa il sito.
   Le ore dell'operazione pianificata le decide chi la configura, non il codice.
 

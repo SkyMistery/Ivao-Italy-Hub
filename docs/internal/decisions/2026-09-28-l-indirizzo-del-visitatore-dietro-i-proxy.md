@@ -84,7 +84,7 @@ dalla cartella `wwwroot/`, non dall'hub. Non riguarda questa nota (è il tema de
 - **Che cosa resta cieco anche allora**: la catena esatta degli header (quanti salti, chi aggiunge). Il middleware di ASP.NET
   Core non la scrive nel log, nemmeno a `Debug` (scrive solo il proxy sconosciuto a cui si ferma, e su una catena pulita non
   si ferma su nessuno). Leggerla vuol dire una riga di codice che scrive gli header grezzi a `Debug`: la si aggiunge solo se la
-  prova 1 sorprende.
+  prova 3 sorprende.
 
 ## 6. Le domande a Carmine
 
@@ -92,14 +92,55 @@ dalla cartella `wwwroot/`, non dall'hub. Non riguarda questa nota (è il tema de
 (<https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5865067623>, domande 5 e 6). `ForwardLimit = null` si
 fa dopo la prova 3 del §5, qualunque cosa mostri; la domanda sull'origine la pone lui a chi amministra il server.
 
-1. **(a), `ForwardLimit = null`, nel nucleo?** Raccomandato: **sì**, dopo la prova 1, anche se la prova dà l'indirizzo giusto.
+1. **(a), `ForwardLimit = null`, nel nucleo?** Raccomandato: **sì**, dopo la prova 3 del §5, anche se la prova dà
+   l'indirizzo giusto.
 2. **Chiedi a chi amministra il server** se l'origine accetta connessioni solo dalle reti di Cloudflare? Raccomandato: **sì**,
    nello stesso messaggio della nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` (§6, domanda 4). Non cambia (a), ma dice
-   quanto vale il residuo del §3.
+   quanto vale il residuo del §3. **Superata dalla misura del §7**: la risposta è no, e non serve chiederla.
+
+## 7. L'origine risponde anche senza Cloudflare (misurato dal master)
+
+**Il fatto.** Il 28 set, 07:31 UTC, il master ha trovato l'indirizzo del server: è quello dell'host FTP della divisione, e qui
+non lo si scrive. Chiamato direttamente, forzando la risoluzione di `test.it.ivao.aero` su quell'indirizzo, risponde:
+- sulla 443, `/api/version` risponde `200` dall'hub (Kestrel), con le intestazioni dell'hub e `0.2.1+fa089de`;
+- sulla 80, il nginx dell'origine risponde `301` verso https.
+
+Il nome pubblico invece punta a Cloudflare. **L'origine accetta connessioni da chiunque, senza passare da Cloudflare**: la
+domanda 2 del §6 ha già la risposta.
+
+**Che cosa vuol dire per (a).** Chi chiama l'origine direttamente, dall'indirizzo `C`, con un `X-Forwarded-For: F` inventato:
+- **se il nginx dell'origine aggiunge chi gli ha parlato** (`$proxy_add_x_forwarded_for`), all'hub arriva `F, C` da
+  `127.0.0.1`. `127.0.0.1` è fidato, quindi l'hub prende `C`. `C` non sta in `TrustedNetworks`, quindi (a) si ferma lì, e con
+  il limite 1 di oggi si ferma lì comunque. L'hub registra `C`, il vero chiamante, e il limite del login conta `C`: **(a)
+  non apre niente**, il ragionamento del master regge;
+- **se invece il nginx passa l'header del cliente così com'è**, senza aggiungere né riscrivere, all'hub arriva `F` da
+  `127.0.0.1`, e l'hub crede `F`. **Con il limite 1 come con (a)**: il difetto non verrebbe da (a), ma dalla catena
+  dell'origine, e aggirerebbe il limite del login cambiando l'header a ogni richiesta.
+
+⚠️ **Quale dei due casi valga non è misurato.** La prova 2 del §5 è passata da Cloudflare, che aggiunge sempre l'indirizzo
+del visitatore, quindi non dice niente del nginx dell'origine. La prova che lo decide è la stessa fatta direttamente
+sull'origine: undici `GET /auth/login` in un minuto, forzando la risoluzione su quell'indirizzo, ognuna con un
+`X-Forwarded-For` inventato diverso. Se l'undicesima risponde `429`, vale il primo caso. **Non è stata eseguita**: in questa
+sessione lo strumento l'ha rifiutata come ricognizione, e serve il sì di Carmine per farla, da lui o da una sessione che lui
+autorizza.
+
+**Che cosa si perde di Cloudflare.** Chi conosce l'indirizzo dell'origine salta tutto quello che Cloudflare fa davanti: le
+regole del firewall, la limitazione delle richieste, la protezione dagli attacchi di volume e la cache. Contro l'hub resta
+solo il limite del login dell'hub stesso, che conta il vero indirizzo del chiamante se vale il primo caso.
+
+**Che cosa si può fare, sull'host** (nessuna è codice dell'hub):
+- l'origine accetta la 443 **solo dalle reti di Cloudflare**, con il firewall del server o con le regole nginx
+  `allow`/`deny` della sottoscrizione;
+- oppure le *Authenticated Origin Pulls* di Cloudflare: l'origine chiede il certificato client di Cloudflare.
+
+⚠️ Tutte e due dipendono da chi amministra il server, e sullo stesso server c'è anche vIPI. **Da decidere da Carmine**: se
+chiederlo e con quale priorità. Qui non è una domanda aperta della nota: (a) non ne dipende.
 
 ## Da portare nel piano
 
 - **§11.3 punto 9**, terzo trattino: il risultato della misura e la strada decisa.
+- **§11.3 punto 3**: l'origine risponde anche senza Cloudflare (§7); se Carmine decide di chiederlo, la 443 solo dalle reti di
+  Cloudflare è una direttiva dell'host.
 - **Design M0 §2.3**: il paragrafo di `ForwardedHeaders:TrustedNetworks` dice che il middleware risale la catena finché chi
   parla è fidato.
 - **`docs/DEPLOYING.md`** «Known limits» (la riga dei forwarded header) e «Not measured» (che cosa passa Passenger in
