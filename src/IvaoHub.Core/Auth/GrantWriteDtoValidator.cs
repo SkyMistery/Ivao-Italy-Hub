@@ -42,10 +42,10 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
             .Must(value => !catalogue.IsGlobal(value)).WithMessage("errors.grant.globalPermission")
             .When(grant => !string.IsNullOrWhiteSpace(grant.Value));
 
-        // A member or a position, and exactly one of them (M2, note
-        // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2).
+        // A member, a department's position or the team of a FIR, and exactly one of them (M2, note
+        // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2; M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir).
         RuleFor(grant => grant.Vid)
-            .Must((grant, vid) => (vid is > 0) != (grant.PositionDepartment is not null))
+            .Must((grant, vid) => (vid is > 0 ? 1 : 0) + (grant.PositionDepartment is not null ? 1 : 0) + (grant.PositionFirTeam ? 1 : 0) == 1)
             .WithMessage("errors.grant.subject");
 
         RuleFor(grant => grant.Vid)
@@ -53,14 +53,20 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
                 .AsNoTracking()
                 .AnyAsync(user => user.Vid == vid && (user.IsStaff || user.IsSuperadmin), cancellationToken))
             .WithMessage("errors.grant.notStaff")
-            .When(grant => grant.Vid is > 0 && grant.PositionDepartment is null);
+            .When(grant => grant.Vid is > 0 && grant.PositionDepartment is null && !grant.PositionFirTeam);
 
-        // A position is a department at one or more levels: a department alone would be everybody in
+        // A position is a department — or the team of a FIR — at one or more levels: a department alone would be everybody in
         // it, which is a decision the staff positions already make.
         RuleFor(grant => grant.PositionLevels)
             .Must(levels => levels is { Count: > 0 })
             .WithMessage("errors.grant.levelsRequired")
-            .When(grant => grant.PositionDepartment is not null);
+            .When(grant => grant.PositionDepartment is not null || grant.PositionFirTeam);
+
+        // The team of a FIR holds a permission on the rows of its FIR, so only a permission of an area whose rows say their FIR:
+        // anywhere else it would reach no row, and say "yes" only to the question asked without one (M3, A11a, note §3.1).
+        RuleFor(grant => grant.Value)
+            .Must(catalogue.IsOfAnAreaWithAFir).WithMessage("errors.grant.firTeamArea")
+            .When(grant => grant.PositionFirTeam && catalogue.IsKnown(grant.Value));
 
         // A grant that expired before it was written is a row nobody will ever notice is doing
         // nothing. It is refused now rather than debugged in six months.

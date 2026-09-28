@@ -181,12 +181,21 @@ internal static class HubPipeline
         // nobody can explain. Building a model reads no table.
         var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
         var catalogue = scope.ServiceProvider.GetRequiredService<PermissionCatalog>();
+        var areasWithAFir = new HashSet<string>(StringComparer.Ordinal);
         foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes).Prepend(typeof(HubDbContext)))
         {
             var model = ((DbContext)scope.ServiceProvider.GetRequiredService(contextType)).Model;
-            catalogue.VerifyAlternatives(model.GetEntityTypes().Select(entity => entity.ClrType));
+            var entities = model.GetEntityTypes().Select(entity => entity.ClrType).ToArray();
+            catalogue.VerifyAlternatives(entities);
+
+            // The areas whose rows say their FIR, the only ones a grant to the team of a FIR may name a permission of (M3,
+            // A11a): the seed of positionGrants and the permissions screen ask the catalogue, from here on.
+            areasWithAFir.UnionWith(entities
+                .Where(entity => typeof(IHasFir).IsAssignableFrom(entity))
+                .Select(entity => HubSaveChangesInterceptor.PermissionAreaOf(contextType, entity)));
         }
 
+        catalogue.LearnAreasWithAFir(areasWithAFir);
         timings.Step("models");
 
         var division = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value;
