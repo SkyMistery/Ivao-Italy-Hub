@@ -55,10 +55,25 @@ public sealed class HubPathsTests : IDisposable
 
         Assert.Equal(repository, paths.Root);
         Assert.Equal(HubRootSource.ContentRoot, paths.Source);
+    }
 
-        // An application folder with a division file of its own does not take over from the content root.
-        var otherInstallation = Installation("other");
-        Assert.Equal(repository, HubPaths.Resolve(webProject, otherInstallation).Root);
+    [Fact]
+    public void AnApplicationFolderWithItsOwnDivisionFileWinsOverOneHigherUp()
+    {
+        // One FTP tree, two installations: the test one inside the production one's folder. Started from its own folder,
+        // the walk from the working directory would reach the production file first; before 0.2.4 it took it silently.
+        var above = Installation("httpdocs");
+        var application = Installation(Path.Combine("httpdocs", "test", "webapp"));
+        var working = Folder(Path.Combine("httpdocs", "test", "webapp", "logs"));
+
+        var paths = HubPaths.Resolve(working, application + Path.DirectorySeparatorChar);
+
+        Assert.Equal(application, paths.Root);
+        Assert.Equal(HubRootSource.ApplicationFolder, paths.Source);
+        Assert.NotEqual(above, paths.Root);
+
+        // The same from the working directory a host would pick, the application folder itself.
+        Assert.Equal(application, HubPaths.Resolve(application, application).Root);
     }
 
     [Fact]

@@ -93,6 +93,46 @@ public sealed class StartupFailureTests : IDisposable
     }
 
     [Fact]
+    public void TheConnectionStringsPartsAreRedactedWhenAMessageQuotesThemAlone()
+    {
+        // From the environment, where a connection string arrives as ConnectionStrings__Default.
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Default"] = ConnectionString })
+            .Build();
+        Assert.Contains("correct-horse-battery", StartupFailure.SecretValues(_paths, configuration));
+        Assert.Contains("db.example.org", StartupFailure.SecretValues(_paths, configuration));
+
+        // From a secrets file, as on a server; the driver quotes the parts, never the string.
+        Directory.CreateDirectory(_paths.Secrets);
+        File.WriteAllText(
+            Path.Combine(_paths.Secrets, "installation.json"),
+            $$"""{ "ConnectionStrings": { "Default": "{{ConnectionString}}" } }""");
+
+        var exception = Thrown(new InvalidOperationException(
+            "Access denied for user 'hub'@'db.example.org' (using password: correct-horse-battery)."));
+
+        var report = Report(exception, StartupFailure.SecretValues(_paths, configuration: null));
+
+        Assert.DoesNotContain("correct-horse-battery", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("db.example.org", report, StringComparison.Ordinal);
+        Assert.Contains($"(using password: {StartupFailure.Redacted}).", report, StringComparison.Ordinal);
+
+        // Parts shorter than six characters stay, as every short value does: the user "hub" is a word of the text.
+        Assert.Contains("user 'hub'", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AValueThatIsNotAConnectionStringIsStillRedactedWhole()
+    {
+        const string Broken = "Server=db.example.org;Password='never closed";
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Default"] = Broken })
+            .Build();
+
+        Assert.Equal([Broken], StartupFailure.SecretValues(_paths, configuration));
+    }
+
+    [Fact]
     public void AnUnreadableSecretsFileIsTheReasonAndNotASecondFailure()
     {
         Directory.CreateDirectory(_paths.Secrets);

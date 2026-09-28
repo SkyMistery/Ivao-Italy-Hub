@@ -95,6 +95,10 @@ what must not be uploaded. The list is grouped, and each group has its rule:
 - **The runtime and third-party libraries** change only with a package or SDK upgrade. When the runtime
   itself changed (`libcoreclr.so`, `System.Private.CoreLib.dll`), deliver the full package: a half-replaced
   runtime does not start, and its error does not look like the cause.
+  One exception, once: **0.2.4 is the first ReadyToRun package**, and against an earlier one it changes 49
+  third-party libraries (EF, Pomelo, Quartz, Serilog…, now compiled ahead of time) besides the hub's own files,
+  62 files in all, and not the runtime. They go; from the next release on, the build being deterministic, they
+  stay the same.
 - **`appsettings.Development.json` is never delivered.** It is in the release, it carries the local database
   password, and production does not read it. Diff writes it already commented out.
 - **Removed files** are listed at the bottom: they stay on the server, harmless because nothing names them

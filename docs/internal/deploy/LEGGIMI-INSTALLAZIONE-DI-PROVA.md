@@ -120,6 +120,10 @@ FIR e aeroporti della divisione; quelli dopo applicano solo le migrazioni che ma
 **L'avvio a freddo è normale**: Passenger spegne l'hub dopo **10–30 s** senza richieste, e la prima richiesta dopo il
 silenzio aspetta **8–10 s** (misurato il 28 settembre 2026, nota `decisions/2026-09-28-l-avvio-a-freddo.md`, che dice
 dove vanno quei secondi e che cosa li taglia). Non è un guasto; lo è se l'attesa finisce con l'errore di Passenger.
+Dalla 0.2.4 l'avvio è più corto (stima ~5 s, nota `decisions/2026-09-28-un-avvio-piu-veloce.md`), e
+`webapp/diagnostics/starts.txt` scrive una riga per ogni avvio e ogni arresto: quanto è durato l'avvio (`ready in`), dove
+sono andati i secondi (`steps ms`), quando è uscita la prima risposta (`first answer at`, nella riga `STOP`). Un `!!` subito
+dopo il caricamento è il processo vecchio sostituito; nei giorni dopo va letto.
 
 ## 5. I controlli
 

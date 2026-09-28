@@ -22,8 +22,9 @@ the files that changed and handed to whoever uploads is [Delivering a release](D
 `tools/prepare-delivery.ps1`; this page starts where that one ends, on the server. (The measures below were taken on a
 local publish of the same commit, which is fine for measuring and never for delivering.)
 
-It is **self-contained**: the .NET 10 runtime travels inside it, so the server does not need .NET at all. About
-600 files and 140 MB unpacked (measured).
+It is **self-contained**: the .NET 10 runtime travels inside it, so the server does not need .NET at all. Since 0.2.4
+it is also **ReadyToRun**: the hub's code and its libraries are compiled ahead of time, so that a start spends less
+time in the JIT. About 600 files and 170 MB unpacked, 73 MB zipped (measured; 140 and 59 MB before ReadyToRun).
 
 What the package brings, and what belongs to the installation and must never be overwritten by a deploy:
 
@@ -39,14 +40,22 @@ What the package brings, and what belongs to the installation and must never be 
 | `hub-keys/` | written at the first start | Data Protection keys. **Persistent: never delete it**, or everybody is signed out and the stored IVAO tokens become unreadable |
 | `media/` | written by uploads | the media library, on disk. **Persistent: never delete it** |
 | `tiles/basemap.pmtiles` | **installation**, optional | the base map of the tours (`docs/FORKING.md`); without it maps draw on a neutral ground |
-| `logs/`, `diagnostics/` | written by the application | the log of the day; `diagnostics/startup.txt` after a start, `diagnostics/startup-error.txt` after a start that failed |
+| `logs/`, `diagnostics/` | written by the application | the log of the day; `diagnostics/startup.txt` after a start, `diagnostics/startup-error.txt` after a start that failed, and `diagnostics/starts.txt`, one line for every start and every stop (below) |
 | `tmp/restart.txt` | **installation** | Passenger restarts the application when this file's date changes |
 
-The application finds its folders by looking for `config/division.json` from its working directory upwards, then from
-its own folder (the one holding `IvaoHub.Web.dll`) upwards, so it does not matter from which directory the host starts
-the process. Found from its own folder, that folder is also where it serves `wwwroot/` from. `diagnostics/startup.txt`
-says where the root is and how it was found. `IVAOHUB_ROOT` overrides both, for an installation that keeps its folders
-somewhere else.
+The application finds its folders from `config/division.json`: its own folder (the one holding `IvaoHub.Web.dll`)
+when the file is there, otherwise the first folder holding it from its working directory upwards, then from its own
+folder upwards. So it does not matter from which directory the host starts the process, and a `config/division.json`
+of another installation higher in the same tree is never taken for its own. Found from its own folder, that folder is
+also where it serves `wwwroot/` from. `diagnostics/startup.txt` says where the root is and how it was found.
+`IVAOHUB_ROOT` overrides all of it, for an installation that keeps its folders somewhere else.
+
+`diagnostics/starts.txt` keeps one line for every start and every stop of the process, appended, and trims itself to
+the newest thousand lines past two thousand. A `START` line says how long the start took (from the creation of the
+process to the moment it accepts requests), where the time went step by step, the memory, and what happened to the
+process before; a `STOP` line how long the process lived, how many requests it answered, when its first answer left
+and the memory; a `SIGNAL` line that the system asked it to stop. A start that says `!!` follows a process that died
+without closing. It holds no secret.
 
 ## What the server needs
 
@@ -191,6 +200,7 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | --- | --- |
 | `diagnostics/startup.txt`, read over FTP | `started at` is now; the `version` and `commit` of the release; `domain` and `access` as intended |
 | `diagnostics/startup-error.txt` | **absent**: a start that succeeds deletes it. If it is there, the start failed, and the file says why |
+| `diagnostics/starts.txt`, its last lines | a `START` of now with the release's version and commit, and its `ready in`. One `!!` right after the upload is the old process being replaced; more of them in the days after are worth reading |
 | `curl -s https://<host>/api/version` | the same version and commit, and `.NET 10…` |
 | `curl -s https://<host>/health` | `Healthy` |
 | `curl -s https://<host>/robots.txt` | a private installation: `Disallow: /`; a public one: its disallowed paths and the sitemap |
@@ -224,7 +234,8 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   as to standard output: the time, the version and commit, the environment, the root and how it was found, the
   working directory, and the exception with its cause and stack. It never quotes a value of the configuration that
   could be a secret (the files of `secrets/`, the OAuth file, any key naming a connection string, a password, a
-  secret, a token or a key): those are replaced by `[redacted]`, when they are six characters or longer — shorter
+  secret, a token or a key, and each part of a connection string: host, database, user, password): those are replaced
+  by `[redacted]`, when they are six characters or longer — shorter
   values are flags and numbers, so a password that short would not be hidden. The next start that succeeds deletes
   the file.
   Measured on the linux-x64 package started from another directory: a missing division file, a missing OAuth
@@ -235,10 +246,13 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   queue, the reference data, the release of the tours) only run while the process is alive
   (`docs/internal/decisions/2026-09-28-i-job-quando-passenger-spegne-l-hub.md`). `passenger_min_instances 1` keeps one
   alive, where the host allows it.
-- **The cold start is paid by a visitor.** Measured on a Plesk + Passenger host (28 September 2026): Passenger stopped the
-  hub after **10–30 s** without requests, and the first request after the silence took **8–10 s** instead of 0.2 s. Where
-  the idle time is not yours to change, that is what a little-visited site feels like until the start gets faster
-  (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`).
+- **The cold start is paid by a visitor.** Measured on a Plesk + Passenger host (28 September 2026, version 0.2.1): Passenger
+  stopped the hub after **10–30 s** without requests, and the first request after the silence took **8–10 s** instead of
+  0.2 s. Version 0.2.4 cuts about 40% of it (ReadyToRun, the modules' migrations only when pending, TieredPGO off):
+  measured on one CPU, the first answer after a start went from 4.0 to 2.4 s, which on that host would be **about 5 s**.
+  *Not yet measured on the server*: its `diagnostics/starts.txt` says how long each start takes there, and where the time
+  goes. Where the idle time is not yours to change, that is what a little-visited site feels like
+  (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`, `docs/internal/decisions/2026-09-28-un-avvio-piu-veloce.md`).
 - **The home page without the hub's headers.** With the document root on `wwwroot/`, the web server hands out
   `index.html` for `/` by itself, so the first document of a visit carries no `Content-Security-Policy`, no
   `X-Frame-Options` and, on a private installation, no `X-Robots-Tag`, and the single page application keeps running
