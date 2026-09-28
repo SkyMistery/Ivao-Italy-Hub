@@ -52,7 +52,11 @@ dalla casella alla sua lista. Quattro punti, tutti in `Suggest`; nessuna scherma
 2. **Quando la lista si chiude con il fuoco fuori dalla casella** — un clic altrove dopo una pressione sulla lista, Tab o Escape da
    dentro la lista — **la regola la applica la chiusura** (`onOpenChange(false)` di Radix): la casella non ha avuto un `blur` che lo
    dicesse. Radix chiude per un clic fuori solo al `click`, quando il fuoco si è già spostato; Escape premuto **nella casella** non
-   la applica, come oggi (il testo resta finché non si esce).
+   la applica, come oggi (il testo resta finché non si esce). **Tab dalla lista resta nella pagina** (rilievo del revisore; misurato
+   il 28 settembre 2026 nel Chrome installato, con la finestra, e in Chromium headless): la lista sta in un portale di Radix in fondo a
+   `<body>`, ma finché è aperta Radix mette dopo il portale uno `<span data-radix-focus-guard tabindex="0">`. Il Tab arriva lì, fuori
+   dalla lista: la lista si chiude, e la regola rimette il valore di prima sul Tab stesso. Shift+Tab porta all'ultimo link della
+   pagina, con lo stesso esito. Nessuna prova della spec lo copre.
 3. **Tornare nella casella dalla lista non è arrivarci**: l'`onFocus` non rimette `opened`. Altrimenti il testo scritto diventerebbe
    «quello che c'era», e la regola lo rimetterebbe all'uscita.
 4. **Una scelta scrive `opened`**: da quel momento «quello che c'era» è la scelta. Serve perché si può rientrare nella casella dalla
