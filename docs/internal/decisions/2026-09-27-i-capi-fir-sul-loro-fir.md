@@ -5,6 +5,8 @@
 correggesse prima del codice i punti 1 e 2 del revisore e rispondesse ai punti 3–5 ([i suoi rilievi][rv]); **la (a)** alla domanda 2. I
 cinque punti sono entrati in §3.1, §3.2, §3.4, §3.5, §3.7 e §6 prima del codice (§5). #135 (A3b), che toccava lo stesso handler, lo stesso
 guardiano e lo stesso contesto di prova, è unita dal 27 settembre, e `main` è entrato nel branch con un merge.
+**Versione:** **0.3.0**, MINOR per la regola scritta accanto al numero in `Directory.Build.props`: una migrazione additiva del nucleo
+(`AddGrantFirTeam`) e una capacità nuova. L'ha chiesta il revisore nella lettura del codice ([il suo commento][cr]); `main` era a 0.2.7.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono tre meccanismi che ci sono — i grant a una posizione (M2, nota
 `2026-09-13-moduli-non-subordinati-ai-dipartimenti` §3.2), la regola del FIR dell'unico handler (`IHasFir` e `firStaffScope`, M0) e il
 filtro di dipartimento delle liste generate —, sulla strada che la nota `2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento` §3
@@ -17,6 +19,7 @@ scelte che sono sue.
 [q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5857885144
 [rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416
 [a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723
+[cr]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5877193067
 
 ## 1. Che cosa serve
 
@@ -271,8 +274,12 @@ Poste il 27 settembre 2026 con [un commento sulla #159][q1], la PR di questa fas
   (`locales/*/common.json`).
 - **Senza toccare i file di prova del maintainer**: `ICurrentUser` guadagna la domanda con il FIR con una risposta predefinita
   (`PermissionSet`), così `TestCurrentUser` non cambia; `HubClaims.ParsePermission` tiene la sua firma, che
-  `ResourceScopeAndStakeholderTests` confronta; il calcolo prende `firStaffScope` con `all` come valore predefinito, così i test che lo
-  chiamano non cambiano.
+  `ResourceScopeAndStakeholderTests` confronta; il calcolo prende `firStaffScope` con un valore predefinito, così i test che lo
+  chiamano non cambiano. **Il valore predefinito è `own`, il lato che chiude** (dalla lettura del codice del revisore, [il suo
+  commento][cr], punto 3): con `all` un chiamante che lo dimentica darebbe ai capi FIR tutto il dipartimento. Il revisore lo chiedeva
+  obbligatorio; così però non compilerebbero tre test del maintainer (`EffectivePermissionsTests`, `ReachesEveryDepartmentTests`,
+  `ResourceScopeAndStakeholderTests`), che il collaboratore non tocca, e per loro, senza grant al team, i due valori sono lo stesso.
+  Il predefinito della divisione (`division.json`) resta `all`, e i chiamanti dell'hub passano il suo.
 - **I documenti pubblici**: `config/division.example.json` e `docs/FORKING.md` — come si scrive un grant al team di un FIR (solo su
   un'area che ha righe con il FIR), che cosa vuol dire `firStaffScope` (il perimetro dei team FIR, mai del personale dei dipartimenti), e
   che cosa cambia per chi è già su `own` o su `all` (§3.7).

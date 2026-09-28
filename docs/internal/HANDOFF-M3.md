@@ -14,10 +14,12 @@
 **Ultimo aggiornamento:** 28 settembre 2026 — **fase A11a** (nucleo: i capi FIR), sul branch `m3/a11a-fir-heads-core`, **PR #159**
 verso `main`, **fuori dalla coda** come A3b e A6c. **La nota è decisa** (`decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`: sì alla
 forma, con i cinque rilievi del revisore dentro; la (a), `firStaffScope`, con IT a `own` in A11b), **A3b (#135) è unita** dal 27
-settembre, `main` (4d424f9) è entrato nel branch con un merge, e **il codice di A11a è fatto**: tutte le suite passano in locale, e la PR
-aspetta la CI e la lettura del revisore. La coda del training (#144, #146–#151, #153) e #145 (A6c) sono ancora aperte, con le loro
-correzioni in sessioni loro; i paragrafi «Che cosa ha lasciato» delle fasi della coda stanno sui loro branch finché non sono unite. **Le
-fasi dopo**: A10c (gli esami), che l'unione di #135 libera, da `m3/a10b-blocks-and-public-pages` con `main` dentro, avviata da questa
+settembre, e **il codice di A11a è fatto**. **Il revisore l'ha trovato approvabile** dopo due cose
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5877193067)), fatte: `main` (663a355, con #145 e
+#171–#176) è entrato nel branch con un merge, e la versione è **0.3.0**. In più il calcolo, se non gli si dice `firStaffScope`, ora
+chiude. La PR aspetta la CI e il via di Carmine. **A6c (#145) è unita** il 28 settembre. La coda del training (#144, #146–#151, #153) è
+ancora aperta, con le sue correzioni in sessioni sue; i paragrafi «Che cosa ha lasciato» delle fasi della coda stanno sui loro branch
+finché non sono unite. **Le fasi dopo**: A10c (gli esami), che l'unione di #135 libera, da `m3/a10b-blocks-and-public-pages` con `main` dentro, avviata da questa
 sessione a fine A11a; A11b, A12a e A12b dopo A10c, e A11b anche dopo l'unione di #159. In C# una chiave di un modulo si chiede con il
 namespace (`training:…`, #138).
 
@@ -141,6 +143,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     del suo FIR anche senza il grant di `View`. E alla domanda senza riga l'handler gli dice sì: ogni lettore del modulo che non chiede
     l'handler sulla riga né passa dal motore (il percorso del trainee e i suoi ban, per esempio) va guardato uno per uno.
   - ⚠️ **Cambiare `firStaffScope` arriva a ogni capo al suo login dopo** (il calcolo lo legge al login): mettere `own` insieme ai grant.
+  - ⚠️ **`PermissionHolder.Has` non passa il FIR** (dalla lettura del codice): un capo FIR non è mai «titolare» di una riga, quindi nessun
+    digest né notifica «a chi può farlo» gli arriva. Se A11b ne vuole una, `Has` deve prendere il FIR: modifica del nucleo, una PR a sé.
+  - ⚠️ **`/api/me` non porta il FIR**, com'è deciso: un bottone disegnato dai permessi di `/api/me` compare anche sulle righe degli altri
+    FIR, e il server risponde 403. Ogni bottone su una riga del training passa dagli `actions` che l'handler ha risposto su quella riga.
+  - Il calcolo, se non gli si dice `firStaffScope`, prende `own`, il lato che chiude; i chiamanti dell'hub passano quello della divisione.
 - **Per chi scrive un test con i FIR**: l'host di `FirTeamPermissionTests` mostra come dire `own` e due FIR finti senza toccare i dati di
   riferimento condivisi (una directory dei FIR di prova); VID **790080–790089** sono di A11a.
 - **Trovato, detto al revisore**: la regola del calcolo è più larga del suo commento («Edit implies View»); il vecchio calcolo delle
