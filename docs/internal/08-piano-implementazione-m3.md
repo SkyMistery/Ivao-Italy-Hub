@@ -735,8 +735,8 @@ rilegge uguale.
 
 **Non era nel piano**: l'ha trovata la sessione di A6b il 26 settembre 2026, scrivendo lo smoke della richiesta (PR #144), come A4a fu
 trovata scrivendo A4; `dalberone` ha scelto di farla come fase del nucleo a sé (`CLAUDE.md` §0 regola 6). Nota nuova
-`2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, **Proposta**, con la domanda a Carmine in un [commento su #145][q145]. Branch
-`m3/a6c-closed-suggestion`, da `main`, PR #145. **Non va in coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la
+`2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, **Decisa** da Carmine il 27 settembre 2026 come raccomandato ([risposta su
+#145][a145]), sulla domanda in un [commento su #145][q145]. Branch `m3/a6c-closed-suggestion`, da `main`, PR #145. **Non va in coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la
 PR va verso `main` accanto a #143 (A6a) e #144 (A6b), come A3b va avanti per conto suo. Sta qui, prima di A6, come A4a prima di A4.
 
 1. **Il problema**: nel suggerimento chiuso di `SchemaForm` (`Suggest` con `suggestionsOnly`) chi scrive una parte del valore per
@@ -792,6 +792,7 @@ Escape chiude e lascia il testo; la barra di scorrimento della lista si trascina
   (il tocco su un'opzione, il dito che scorre la lista); una risposta di Carmine diversa da quella raccomandata.
 
 [q145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355
+[a145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813
 
 ### A6 — La richiesta
 

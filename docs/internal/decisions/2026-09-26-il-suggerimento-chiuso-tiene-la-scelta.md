@@ -1,13 +1,15 @@
 # Il suggerimento chiuso tiene la scelta cliccata dopo aver scritto (A6c)
 
 **Data:** 26 settembre 2026 — fase A6c di M3, PR del nucleo, trovata dalla sessione di A6b (#144) scrivendo lo smoke della richiesta
-**Stato:** **Proposta** — la domanda a Carmine è al §5, in un [commento sulla PR #145][q]. Il codice di questa PR è la proposta del §3.
+**Stato:** **decisa** (Carmine, 27 settembre 2026, [il suo commento su #145][a]), **come raccomandato**: «Yes: the closed suggestion is
+fixed as in §3 of the note», alla [domanda][q] del §5. Il codice di questa PR è quella risposta.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo c'è — il campo suggerito del generatore di form, con l'insieme
 chiuso (`suggestionsOnly`, nota `2026-09-08-dove-puo-portare-una-voce-di-menu`, piano §16.6) — e ha un difetto che nessun test vedeva.
 Si corregge il meccanismo nel suo posto unico (`Suggest` in `web/src/shared/forms/SchemaForm.tsx`), non lo si aggira nelle schermate.
 PR del nucleo a sé (`CLAUDE.md` §0 regola 6); **non va in coda**: non tocca il modulo e non migra niente.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813
 
 ## 1. Che cosa è successo
 
@@ -81,7 +83,12 @@ punto 3 la terza, il punto 4 la prova del menu di `back-office.spec.ts` (clicca 
 e due —, e **non** tenendo il fuoco nella casella come proponeva A6b, che ferma la barra di scorrimento della lista? **Raccomandata:
 sì**, perché è la sola forma che aggiusta la scelta senza togliere niente di ciò che oggi funziona, e sta tutta in `Suggest`.
 
-La domanda è nel [commento su #145][q], del 26 settembre 2026; la risposta di Carmine entra qui, con la data e il link al suo commento.
+La domanda è nel [commento su #145][q], del 26 settembre 2026.
+
+**Risposta di Carmine, 27 settembre 2026** ([commento su #145][a]): **sì, come al §3** — la casella e la sua lista sono un campo solo,
+e la regola del campo chiuso vale quando il fuoco lascia tutte e due; **non** tenendo il fuoco nella casella, che ferma la barra di
+scorrimento della lista. Chiede di registrare qui la risposta, con il link al suo commento; il revisore legge e prova il codice prima
+del merge.
 
 ## 6. Che cosa si tocca
 

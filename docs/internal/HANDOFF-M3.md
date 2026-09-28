@@ -23,7 +23,9 @@ unita** (piano 1.15): in C# una chiave di un modulo si chiede con il namespace (
 **Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
 cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
 front end e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`,
-è **Proposta**: la decide Carmine, sulla domanda nella PR.
+è **decisa** da Carmine il 27 settembre 2026, come raccomandato
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813)): la casella e la sua lista sono un
+campo solo.
 
 ## Da leggere, nell'ordine
 
@@ -101,8 +103,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   (`suggestionsOnly`) chi scrive una parte del valore e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su
   una riga nuova. Vale per ogni campo chiuso dell'hub (menu, postazioni nascoste, postazione della richiesta, aerei dei tour).
   `dalberone` ha scelto una fase del nucleo a sé, come A4a.
-- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **Proposta**, domanda a Carmine in un
-  [commento su #145](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355)):
+- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **decisa** da Carmine il 27 settembre 2026
+  come raccomandato — [la sua risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813) — alla
+  [domanda su #145](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355)):
   - in `Suggest` (`web/src/shared/forms/SchemaForm.tsx`) **la casella e la sua lista sono un campo solo**: la regola del campo chiuso
     («uscire con qualcosa che nessuno ha offerto rimette quello che c'era») vale quando il fuoco esce da tutte e due — dall'`onBlur`
     della casella, o dalla chiusura della lista quando il fuoco non è nella casella —; tornare nella casella dalla lista non ricomincia
