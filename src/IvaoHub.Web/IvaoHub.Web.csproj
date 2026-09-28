@@ -20,6 +20,21 @@
       `dotnet build` writes it, and `dotnet publish -r <rid>` has no reason to write it again.
     -->
     <OpenApiGenerateDocumentsOnBuild Condition="'$(RuntimeIdentifier)' != ''">false</OpenApiGenerateDocumentsOnBuild>
+
+    <!--
+      The cold start (note 2026-09-28-l-avvio-a-freddo, decided with #166). Passenger stops an idle hub and the next
+      visitor pays the whole start, most of it the JIT.
+
+      ReadyToRun compiles our code and the libraries ahead of time: about one second less on one CPU, a package of
+      ~170 MB instead of ~140. It needs a runtime identifier, and only the package has one: `dotnet build`, the tests and
+      the e2e bench (a publish without `-r`) stay as they were. The output is deterministic: two releases differ only in
+      the hub's own assemblies, so a delivery stays small after the first one.
+
+      TieredPGO off: the JIT stops instrumenting methods to optimise them better later, which costs a few percent on hot
+      paths no division's traffic reaches, and saves a tenth of a second at every start. It lands in runtimeconfig.json.
+    -->
+    <PublishReadyToRun Condition="'$(RuntimeIdentifier)' != ''">true</PublishReadyToRun>
+    <TieredPGO>false</TieredPGO>
   </PropertyGroup>
 
   <ItemGroup>

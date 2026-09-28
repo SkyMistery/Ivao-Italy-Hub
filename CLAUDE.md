@@ -77,7 +77,7 @@ it. The mechanisms below are **decided** (plan §16): they are not reopened, the
 | Translated field | JSON column `{ "it": …, "en": … }` on the row, mapped to `Localized<T>`; one EF converter, one React component `LocaleFields`, one validator "every language of the division before publishing". **No `*_translations` tables.** |
 | Department ownership, visibility, draft/published, audit | Interfaces `IOwnedByDepartment`, `IVisible`, `IPublishable`, `IAuditable` + the one `SaveChangesInterceptor` + the global query filter + the **one** authorization handler (staff positions ∪ grants vs `owner_department`). Never a hand-written "may this user edit this row?". |
 | A permission | Named `<Area>.<Action>` and added to the module's catalogue; the department scope is implied by the resource. No handlers are added. |
-| A permission on **one row only**; who has a stake does not decide; who takes part reads (plan 0.79) | `hub_user_grants.resource_scope` + `IHasResourceScope`; `IHasStakeholder` + `DeniedToStakeholder` in the catalogue (it applies to the superadmin too); `IHasParticipants`. All inside the **one** handler (`decisions/2026-09-15-permessi-su-una-riga-e-chi-ha-interesse.md`). |
+| A permission on **one row only**; who has a stake does not decide; who takes part reads (plan 0.79); a permission that reaches only the rows **assigned to the writer** (plan 1.19) | `hub_user_grants.resource_scope` + `IHasResourceScope`; `IHasStakeholder` + `DeniedToStakeholder` in the catalogue (it applies to the superadmin too); `IHasParticipants`; `IHasAssignee` + `OnlyForAssignee` in the catalogue (on any other row it counts as `{Area}.Edit`), with `AlsoOnDeletion` on the entity's alternative. All inside the **one** handler and the interceptor's guard (`decisions/2026-09-15-permessi-su-una-riga-e-chi-ha-interesse.md`, `decisions/2026-09-26-le-righe-affidate-a-chi-scrive.md`). |
 | An external program of the user that calls the hub | A **personal token** with its `audience`, permissions rebuilt on every request; never the cookie (`decisions/2026-09-15-token-personali-e-agente-del-validatore.md`, `decisions/2026-09-24-i-token-personali.md`). |
 | Calendar entry, search index row, award signal, use of a file with an expiry, opening of a contact thread | The entity implements `IProjectable`; the interceptor upserts by `source_module` + `source_id` **in the same transaction**. No event bus, no MediatR, no reconciliation job. |
 | Any editorial content (page, news, document) | One row in `cms_contents` (`kind`), one `BlockDocument` tree `Content → Section → Block`, one editor, one renderer, one block registry. Templates are `cms_contents` rows with `is_template = true`. |
@@ -188,7 +188,13 @@ Pull request checklist: `.github/PULL_REQUEST_TEMPLATE.md`, answered honestly.
   package that stops using the column. A module's `Initial` migration is born in its skeleton phase and never
   touched afterwards. CI applies the whole chain on a real MariaDB 11.4.10.
 - Secrets live in `secrets/` and in environment variables, never in the repository. Data Protection keys live in
-  `hub-keys/`.
+  `hub-keys/`. What sets one installation apart from another of the same division (its own `Installation:Domain`, a
+  private `Installation:Preview`) lives there too, never in `division.json` (`decisions/2026-09-27-l-installazione-di-prova.md`).
+- **The server does not isolate databases**: every user reaches every database, so a secrets file opens them all.
+  Another application's database is read **only through its `v_share_` views, read-only**, in the core's shared
+  context; never its tables, never a write (`decisions/2026-09-27-i-dati-condivisi-senza-isolamento.md`).
+- A release is the GitHub release of a tag `v<Version>`, and `<Version>` in `Directory.Build.props` follows the rule
+  written next to it; a delivery is prepared from it with `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`).
 - Uploads go to disk, never into `longblob`. Every package exposes `/api/version` and `/health`.
 - OAuth: `config/ivao-oauth.json` (gitignored). Every developer uses **their own** IVAO test OAuth client; credentials
   are never pasted into a chat nor committed. The application refuses to start if the file is incomplete.

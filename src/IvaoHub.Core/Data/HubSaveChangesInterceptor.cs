@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
@@ -41,6 +42,7 @@ public sealed class HubSaveChangesInterceptor(
     ProjectionWriter projections,
     ProjectionContext projectionContext,
     IMemoryCache cache,
+    PermissionCatalog catalogue,
     IHttpContextAccessor? httpContext = null,
     ModuleRegistry? modules = null) : SaveChangesInterceptor
 {
@@ -443,8 +445,9 @@ public sealed class HubSaveChangesInterceptor(
             return;
         }
 
-        // The other permissions a row may be written with (M2, T13; M3, A3): a validator enabled on one tour decides its
-        // reports, whoever examines enters an exam. Any one of them is enough; none of them deletes.
+        // The other permissions a row may be written with (M2, T13; M3, A3, A3b): a validator enabled on one tour decides its
+        // reports, whoever examines enters an exam and changes the exams assigned to them. Any one of them is enough; only one
+        // that reaches the rows assigned to the writer deletes, and only such a row.
         if (IsWrittenWithAnAlternative(entry, owned))
         {
             return;
@@ -472,28 +475,67 @@ public sealed class HubSaveChangesInterceptor(
     /// (<see cref="AlsoWrittenWithAttribute"/>), each asked the way the single handler asks it. A change: with the row's
     /// scope, never by the member the row is about, and never to move the row somewhere else. A creation, only for an
     /// alternative marked so: without a scope — a new row has none of its own yet, and a permission granted on one row does
-    /// not bring others into existence — on at least one of the row's departments, as <c>Edit</c> is. A deletion: never.
+    /// not bring others into existence — on at least one of the row's departments, as <c>Edit</c> is. A deletion, only for an
+    /// alternative marked so whose permission reaches only the rows assigned to the writer, with the row's scope.
+    /// <para>Such a permission (<c>OnlyForAssignee</c> in the catalogue, M3, A3b) counts only on a row assigned to the writer
+    /// (<see cref="IHasAssignee"/>): as the new row is, as the removed row was, and before and after a change, so a row is
+    /// neither handed over nor taken. On any other row it does not count and <c>Edit</c> decides, which is what the single
+    /// handler answers.</para>
     /// </summary>
     private bool IsWrittenWithAnAlternative(EntityEntry entry, IOwnedByDepartment owned)
     {
-        if (entry.State is not (EntityState.Added or EntityState.Modified)
-            || (entry.Entity as IHasStakeholder)?.StakeholderVid == currentUser.Vid)
+        if ((entry.Entity as IHasStakeholder)?.StakeholderVid == currentUser.Vid)
         {
             return false;
         }
 
         var alternatives = entry.Metadata.ClrType.GetCustomAttributes<AlsoWrittenWithAttribute>(inherit: false);
+        var scope = (entry.Entity as IHasResourceScope)?.ResourceScope;
+        var theirs = alternatives.Any(alternative => catalogue.IsOnlyForAssignee(alternative.Permission))
+            && IsAssignedToTheWriter(entry);
 
-        if (entry.State == EntityState.Added)
+        bool Reaches(AlsoWrittenWithAttribute alternative) =>
+            theirs || !catalogue.IsOnlyForAssignee(alternative.Permission);
+
+        return entry.State switch
         {
-            return alternatives.Any(alternative => alternative.AlsoOnCreation
-                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department)));
+            EntityState.Added => alternatives.Any(alternative => alternative.AlsoOnCreation
+                && Reaches(alternative)
+                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department))),
+
+            EntityState.Modified => alternatives.Any(alternative => Reaches(alternative)
+                    && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope)))
+                && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments),
+
+            EntityState.Deleted => theirs && alternatives.Any(alternative => alternative.AlsoOnDeletion
+                && catalogue.IsOnlyForAssignee(alternative.Permission)
+                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope))),
+
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// Whether the row is assigned to the writer (<see cref="IHasAssignee"/>): the new row for a creation, the row as it was for
+    /// a deletion, and both for a change.
+    /// </summary>
+    private bool IsAssignedToTheWriter(EntityEntry entry)
+    {
+        if (entry.Entity is not IHasAssignee { AssigneeVid: var now })
+        {
+            return false;
         }
 
-        var scope = (entry.Entity as IHasResourceScope)?.ResourceScope;
-        return alternatives.Any(alternative =>
-                owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope)))
-            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments);
+        var then = entry.State == EntityState.Added
+            ? now
+            : (entry.OriginalValues.ToObject() as IHasAssignee)?.AssigneeVid;
+
+        return entry.State switch
+        {
+            EntityState.Added => now == currentUser.Vid,
+            EntityState.Deleted => then == currentUser.Vid,
+            _ => now == currentUser.Vid && then == currentUser.Vid,
+        };
     }
 
     /// <summary>The departments the row had before this write, read from the original values.</summary>

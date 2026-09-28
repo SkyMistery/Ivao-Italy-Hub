@@ -11,17 +11,31 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 27 settembre 2026 — **fase A11a** (nucleo: i capi FIR), sul branch `m3/a11a-fir-heads-core`, **PR #159** in
-bozza verso `main`, **fuori dalla coda** come A3b (#135) e A6c (#145): per ora **solo la nota**
-(`decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`, «Proposta») **e due domande a Carmine**; **il codice aspetta la risposta e l'unione di
-#135**. **A6a (#143) è unita**, e con lei **#152** del
-maintainer (`Refusals` nel nucleo). La coda del training: **#144** (A6b) è pronta con la CI verde; **#146** (A7), **#147** (A8a), **#148**
-(A8b), **#149** (A9a), **#150** (A9b), **#151** (A10a) e **#153** (A10b) sono in bozza, ognuna in coda dopo quella sotto, e i loro paragrafi
-«Che cosa ha lasciato» stanno sui loro branch finché non sono unite (in cima quello di A10b). **#135** (A3b) è in bozza — la nota decisa da
-Carmine, il codice approvabile — e aspetta `main` e il via; **#145** (A6c) è pronta. La **sessione master** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con `main`,
-lo chiede sulla PR senza spingerci niente. **Le fasi dopo**: A10c (gli esami) quando #135 è unita; A11b, A12a e A12b dopo A10c. In C# una
-chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 28 settembre 2026 — **fase A11a** (nucleo: i capi FIR), sul branch `m3/a11a-fir-heads-core`, **PR #159** in
+bozza verso `main`, **fuori dalla coda** come A3b e A6c. **La nota è decisa** (`decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`: sì alla
+forma, con i cinque rilievi del revisore dentro; la (a), `firStaffScope`, con IT a `own` in A11b), **A3b (#135) è unita** dal 27
+settembre, e `main` (4d424f9) è entrato nel branch con un merge: il codice di A11a è in corso. La coda del training (#144, #146–#151,
+#153) e #145 (A6c) sono ancora aperte, con le loro correzioni in sessioni loro; i paragrafi «Che cosa ha lasciato» delle fasi della coda
+stanno sui loro branch finché non sono unite. **Le fasi dopo**: A10c (gli esami), che l'unione di #135 libera, da
+`m3/a10b-blocks-and-public-pages` con `main` dentro, avviata da questa sessione a fine A11a; A11b, A12a e A12b dopo A10c. In C# una chiave
+di un modulo si chiede con il namespace (`training:…`, #138).
+
+**Ultimo aggiornamento:** 27 settembre 2026 — **fase A3b** (nucleo: le righe affidate a chi scrive), sul branch
+`m3/a3b-entrusted-rows`, **PR #135** verso `main`. La nota è decisa da Carmine: sì alla forma, e sì al trainer di A7 con la stessa
+regola. Il revisore ha trovato il codice approvabile appena in pari con `main`
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026)). `main` era 68 commit più avanti di
+5ddba1f (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato nel branch con un merge; build e suite rifatte. Aspettano A3b: A7 (#146), che
+usa la regola per il trainer; A10, per gli esami; A11a (#159), che tocca lo stesso handler e lo stesso guardiano.
+
+**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6a** (la richiesta, il server), sul branch `m3/a6a-request-server`, **PR #143**
+verso `main`: **A6 si è divisa in apertura** in A6a (il server) e A6b (le pagine), come `08` prevedeva. **A5 (#140) è unita** (18:44), e
+`main` è entrato nel branch con un merge insieme alla #141 del maintainer: **il revisore ora è la «sessione master»** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
+`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133) e A4 (#139) sono unite**; la fase del nucleo **A3b** (#135) è
+in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della richiesta), sul branch `m3/a6b-request-pages` preparato da
+`m3/a6a-request-server`, in coda dopo #143; poi **A7**, in coda dopo A6b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
+in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
+con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -93,45 +107,73 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A11a, per ora (27 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159 in bozza)
+### Che cosa ha lasciato A11a, per ora (28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159 in bozza)
 
-- **Che cosa c'è**: **solo la nota**, `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`, **«Proposta»**, con due domande a Carmine in [un
-  commento sulla #159](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5857885144). **Nessun codice**, nessun file
-  del nucleo (per `core-guard`: nucleo 0, una nota aggiunta). La forma proposta (nota §3):
-  - **il team di un FIR** come seconda specie di posizione di un grant: in `positionGrants`
+- **La nota è decisa**, `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`: Carmine
+  ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723)) ha detto sì alla forma, alla condizione
+  che la nota correggesse prima del codice i punti 1 e 2 del revisore e rispondesse ai 3–5
+  ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416)), e ha scelto la (a): `firStaffScope` com'è nel
+  piano §4.1, con IT da `all` a `own` in A11b. La forma (nota §3):
+  - **il team di un FIR** come seconda specie di posizione di un grant — in `positionGrants`
     `{ "firTeam": true, "levels": ["Coordinator", "Assistant"], "permission": "Training.Assign", "scope": "TD" }` (CH, ACH), senza
-    nominare un FIR; la colonna `hub_user_grants.position_fir_team`;
-  - ogni permesso che dà porta **il FIR della posizione** di chi lo tiene (`EffectivePermission.Fir`, nel claim `perm`), e raggiunge
-    solo le righe `IHasFir` di quel FIR: nell'unico handler, nel guardiano (una riga che cambia FIR chiede `Edit` sui due) e nella lista
-    generata di un'entità `IHasFir`; il suo dipartimento non diventa «per vedere»;
-  - **domanda 2**: chi dice che vale solo sul FIR — raccomandata la (a), `firStaffScope` com'è nel piano §4.1, con IT da `all` a `own`
-    in A11b; (b) sempre; (c) grant per grant.
-- **Perché solo la nota** (`08`, A11, «Com'è andata (A11a)»): il codice tocca lo stesso handler e lo stesso guardiano di A3b, e i suoi test
-  migrano lo stesso contesto di prova (`AddSampleAssignee`); una base del nucleo ancora da unire non si usa.
-- **Come si riprende A11a** (in questa sessione, o in una nuova su questo branch):
-  1. aspettare **la risposta di Carmine** sulla #159 **e l'unione di #135**;
-  2. `git fetch`, poi `git merge origin/main` nel branch (mai un rebase), build e test;
-  3. la risposta nella nota, con il link e lo stato «Decisa»; se cambia la forma, la nota si aggiorna prima del codice;
-  4. il codice di nota §3 e §6, i test di §3.9 (VID da **790068**, grep prima; `SampleRecord` migra dopo `AddSampleAssignee`), la prova
-     che i test nuovi cadono sul codice di prima;
-  5. tutte le suite, anche `pnpm e2e:full` su un banco di questa fase (127.0.0.1:5096, `ivaohub_e2e_a11a`), perché cambia la schermata
-     dei permessi; le regole di `core-guard` con lo script `core-guard.ps1` (copiato nello scratchpad di questa sessione); la PR pronta a
-     CI verde.
-  - ⚠️ **Tre file di prova del maintainer da non toccare**, e come la nota li evita (§6): `TestCurrentUser` (la domanda con il FIR ha una
-    risposta predefinita in `ICurrentUser`), `ResourceScopeAndStakeholderTests` (la tupla di `HubClaims.ParsePermission` non cambia),
-    `web/src/app/layouts/staffDestinations.test.tsx` (`/api/me` non cambia).
-- **Che cosa deve sapere A11b**: due righe di `positionGrants` al team del FIR (`Training.View` e `Training.Assign`, `Coordinator` e
-  `Assistant`, `scope: TD`) e, con la (a), `firStaffScope: own` in `config/division.json`; la pagina, l'assegnazione e
-  `training.approvalQueue` seguono l'handler, `/staff/training` il motore; i training dei piloti restano di TC e TAC. ⚠️ Un capo FIR terrà
-  `Training.View` «da qualche parte»: ogni lettore del modulo che non chiede l'handler sulla riga né passa dal motore (il percorso del
-  trainee e i suoi ban, per esempio) va guardato uno per uno.
-- **Trovato, per il revisore** (nota §7): con `firStaffScope: own` la regola del FIR di oggi ferma anche il personale dei dipartimenti — TC,
-  TAC, TA e trainer su ogni training ATC —, contro il piano §4.1; non si vede perché IT ha `all` e nessun test la prova. Il guardiano non
-  guarda il FIR.
-- **La fase dopo**: oggi non ne parte nessuna. A10c aspetta #135; A11b, A12a e A12b vengono dopo A10c; A12c solo con i codici di PATS. Quando
-  il codice di A11a sarà fatto e la PR pronta, la sessione prepara il branch della fase dopo (A10c da `m3/a10b-blocks-and-public-pages`, se
-  #135 è unita) e la avvia.
-- VID: A11a non ne usa ancora; il prossimo libero resta **790068**.
+    nominare un FIR; la colonna `hub_user_grants.position_fir_team` —, accettato solo su un'area che ha un'entità `IHasFir`;
+  - con `own`, ogni permesso che dà porta **il FIR della posizione** di chi lo tiene (`EffectivePermission.Fir`), nel claim `perm` dentro il
+    pezzo dello scope, dopo un `#` (`Training.Assign:TD@#LIRR`), così un lettore che non conosce il FIR lo legge chiuso; e un dipartimento
+    che il lettore del cookie non sa leggere non vale più «ogni dipartimento»;
+  - raggiunge solo le righe `IHasFir` di quel FIR, nell'unico handler, nel guardiano (i tre rami delle alternative; una riga che cambia FIR
+    chiede `Edit` sui due) e nella lista generata di un'entità `IHasFir`, solo con i permessi che sono quello di lettura della lista; il suo
+    dipartimento non diventa «per vedere»; la regola del FIR di oggi, che fermava anche il personale dei dipartimenti, lascia il posto a
+    questa.
+- **`main` è entrato nel branch** con un merge (4d424f9, con #135 e #160–#172); l'unico conflitto era in questo file, risolto tenendo tutti
+  i paragrafi. **Il codice è in corso**: questo paragrafo si riscrive a fine fase.
+- **Per il codice**: VID **790080–790089** (le altre sessioni hanno 790068–790079); il banco `e2e:full` di questa fase è
+  **127.0.0.1:5098**, `ivaohub_e2e_a11a`; lo smoke su 4173 sotto il lucchetto `%TEMP%\ivaohub-smoke-4173.lock`. ⚠️ Tre file di prova del
+  maintainer da non toccare (nota §6): `TestCurrentUser`, `ResourceScopeAndStakeholderTests` (la tupla di `ParsePermission`),
+  `web/src/app/layouts/staffDestinations.test.tsx` (`/api/me` non cambia).
+
+### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
+
+- **Che cosa c'è** (nota `decisions/2026-09-26-le-righe-affidate-a-chi-scrive.md`, caso c, decisa da Carmine sulla #135):
+  - **`IHasAssignee { int? AssigneeVid }`** (`Core/Division/DomainContracts.cs`): la riga dice a chi è affidata.
+  - **`PermissionDescriptor.OnlyForAssignee`** (`CorePermissions.cs`; `PermissionCatalog.IsOnlyForAssignee`, `EditOf`): un permesso
+    segnato raggiunge una riga solo se è affidata a chi chiede. Su ogni altra riga vale come `{Area}.Edit`: nell'unico handler
+    (`HubAuthorization.cs`) e nel guardiano (`HubSaveChangesInterceptor.IsWrittenWithAnAlternative`) allo stesso modo. Senza riga
+    resta `HasAny`. Il catalogo rifiuta il segno sul permesso `View` dell'area, l'unico che sa riconoscere fra quelli che leggono.
+  - **Nel guardiano**, per un'alternativa segnata:
+    - in modifica la riga è di chi scrive prima e dopo, quindi non si passa e non si prende;
+    - alla creazione (`AlsoOnCreation`) la riga nuova è di chi la crea;
+    - con **`AlsoOnDeletion`**, nuovo su `[AlsoWrittenWith]`, la toglie chi l'aveva. Conta solo per un permesso segnato.
+  - **All'avvio**, prima delle migrazioni, `HubPipeline.InitializeAsync` chiama `PermissionCatalog.VerifyAlternatives` sul modello di
+    ogni contesto. Rifiuta `AlsoOnDeletion` su un permesso non segnato, e un permesso segnato su un'entità che non è `IHasAssignee`
+    (i rilievi del revisore).
+  - Nel modulo di prova: `SampleRecord.AssigneeVid` (migrazione `AddSampleAssignee`) e `Sample.Manage`, segnato e anche
+    `DeniedToStakeholder`. I test: `AssignedRowPermissionTests` (sei, integrazione) e `AssigneePermissionTests` (nove, unità).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10**: la riga degli esami si dichiara così.
+    - `trn_exams` porta `[AlsoWrittenWith(TrainingPermissions.ManageExams, AlsoOnCreation = true, AlsoOnDeletion = true)]` e
+      `IHasAssignee` (`int? IHasAssignee.AssigneeVid => ExaminerVid;`).
+    - Nel catalogo del modulo, `ManageExams` ha `OnlyForAssignee: true`, e anche `DeniedToStakeholder: true` se l'esame dice il suo
+      candidato con `IHasStakeholder`.
+    - `MapCrud` ha `WritePolicy = Training.ManageExams`, senza `DeletePolicy`.
+    - ⚠️ **Un TA deve vedere quali esami sono i suoi** (il revisore): la lista la leggono tutti con `Training.View`, e un'azione
+      sull'esame di un altro è un 403.
+  - **A7**: **Carmine ha scelto la stessa regola per il trainer** (risposta 2 sulla #135).
+    - Il training dichiara il suo trainer con `IHasAssignee`, e `Training.Conduct` è `OnlyForAssignee`.
+    - Niente grant con scope per assegnazione, e niente job notturno.
+    - A7 lo registra nella sua nota, in `08` e in `07`, perché corregge la n.1 del design, nella stessa PR.
+    - ⚠️ `Training.Conduct` va dato per posizione ai TA1–9 e ai T01–T99, perché i `positionGrants` di A4 danno ai trainer solo `View`
+      (R.7: si assegna chiunque sia staff del training). Lo aggiunge A7: una voce nuova del seme si applica al primo avvio che la trova.
+  - ⚠️ **Un'entità con un'alternativa segnata che non è `IHasAssignee` fa fallire l'avvio**, anche quello dei test d'integrazione.
+    Lo stesso per `AlsoOnDeletion` su un permesso non segnato. Il guardiano prende `PermissionCatalog` nel costruttore, dal contenitore.
+- ⚠️ **Trovato, per il revisore**: il guardiano esclude l'interessato da ogni alternativa, l'handler solo dai permessi
+  `DeniedToStakeholder`, e così è da A3. Per un'alternativa non segnata così, l'endpoint lascia passare e la rete ferma chi non ha
+  `Edit`. Per questo `Sample.Manage` è anche `DeniedToStakeholder`, e la nota §3.6 lo chiede agli esami. Il revisore l'ha annotato:
+  per A10 la risposta è quella della nota.
+- **In pari con `main` il 27 settembre**, come il revisore ha chiesto prima del merge.
+  - `main` era 68 commit più avanti (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato con un merge.
+  - L'unico conflitto era in questo file, risolto tenendo tutti i paragrafi; `08` si è unito da solo.
+  - Build e suite rifatte (i numeri sono in `08`, A3b, «Com'è andata»).
+  - Il messaggio di `PermissionCatalog` ora dice esattamente che cosa controlla: il permesso `View` dell'area.
 
 ### Che cosa ha lasciato A6a (26 settembre 2026, branch `m3/a6a-request-server`, PR #143)
 

@@ -1,11 +1,12 @@
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
-using Microsoft.EntityFrameworkCore;
 using IvaoHub.Core.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog.Context;
 
@@ -158,39 +159,63 @@ internal static class HubPipeline
     /// application before it touches the database, and a half migrated database is worse than a
     /// site that is down and says why.
     /// </summary>
-    public static async Task InitializeAsync(this WebApplication app, HubPaths paths)
+    /// <remarks>
+    /// Every step is timed into <paramref name="timings"/>, which <c>diagnostics/starts.txt</c> writes when the host is
+    /// ready: the server's own numbers for the cold start a visitor pays (note 2026-09-28-l-avvio-a-freddo).
+    /// </remarks>
+    public static async Task InitializeAsync(this WebApplication app, HubPaths paths, StartupTimings timings)
     {
         await using var scope = app.Services.CreateAsyncScope();
 
         // Fails here, with the list of the fields that are wrong, rather than on the first request.
         scope.ServiceProvider.GetRequiredService<IStartupValidator>().Validate();
+        timings.Step("validation");
+
+        // The permissions the entities say they are also written with, checked against the catalogue before anything is
+        // written (M3, A3b): a mark the write guard could not honour stops the start here, rather than turning into a 403
+        // nobody can explain. Building a model reads no table.
+        var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
+        var catalogue = scope.ServiceProvider.GetRequiredService<PermissionCatalog>();
+        foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes).Prepend(typeof(HubDbContext)))
+        {
+            var model = ((DbContext)scope.ServiceProvider.GetRequiredService(contextType)).Model;
+            catalogue.VerifyAlternatives(model.GetEntityTypes().Select(entity => entity.ClrType));
+        }
+
+        timings.Step("models");
 
         var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
-        var applied = await initializer.MigrateAsync(app.Lifetime.ApplicationStopping);
+        var applied = (await initializer.MigrateAsync(app.Lifetime.ApplicationStopping)).ToList();
+        timings.Step("migrations");
 
-        // Then the contexts of the modules, each with its own migration history table. A module
-        // with no table of its own -- the module the integration tests add -- declares none and nothing happens here.
-        var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
+        // Then the contexts of the modules, each with its own migration history table, and like the core's only when
+        // something is pending. A module with no table of its own -- the module the integration tests add -- declares
+        // none and nothing happens here.
         foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes))
         {
             var context = (DbContext)scope.ServiceProvider.GetRequiredService(contextType);
-            await context.Database.MigrateAsync(app.Lifetime.ApplicationStopping);
+            applied.AddRange(await initializer.MigrateAsync(context, app.Lifetime.ApplicationStopping));
         }
+
+        timings.Step("module migrations");
 
         // Reads division.json only when the database holds no super administrator at all, and
         // leaves an audit row whenever the effective set has moved (plan section 6.3).
         await scope.ServiceProvider.GetRequiredService<SuperadminService>()
             .BootstrapAsync(app.Lifetime.ApplicationStopping);
+        timings.Step("superadmins");
 
         // The grants to positions the division starts with, applied once and then the table's (M2).
         await scope.ServiceProvider.GetRequiredService<PositionGrantSeeder>()
             .SeedAsync(app.Lifetime.ApplicationStopping);
+        timings.Step("position grants");
 
         // The system templates and the pages built from them, each applied once and never again:
         // a release may add one without undoing what the staff has done to the ones already there
         // (design M0 section 5.6, design M1 section 8.2).
         await scope.ServiceProvider.GetRequiredService<ContentSeeder>()
             .SeedAsync(app.Lifetime.ApplicationStopping);
+        timings.Step("content");
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
@@ -201,6 +226,8 @@ internal static class HubPipeline
             await scope.ServiceProvider.GetRequiredService<RefDataSyncJob>()
                 .RunAsync(app.Lifetime.ApplicationStopping);
         }
+
+        timings.Step("reference data");
 
         var division = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value;
 
@@ -215,5 +242,6 @@ internal static class HubPipeline
             division.Domain,
             scope.ServiceProvider.GetRequiredService<IOptions<InstallationOptions>>().Value.Preview,
             app.Lifetime.ApplicationStopping);
+        timings.Step("startup.txt");
     }
 }

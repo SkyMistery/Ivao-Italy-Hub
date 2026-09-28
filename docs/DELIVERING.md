@@ -40,7 +40,11 @@ only way to answer, six months later, "but what did we tell them to do?".
 
 - **The version.** The tag is `v` followed by `<Version>` of `Directory.Build.props`, and the rule for
   raising it is written next to the number. The question it answers is "is FTP enough, or does the
-  database have to change too?" — read it before tagging.
+  database have to change too?" — read it before tagging. The contract half of an expand/contract (a
+  migration that drops what the previous release stopped using) is MINOR: FTP is enough for it.
+- **A migration that drops anything.** List the migrations the release adds since the previous delivery
+  (`git diff --name-only v<previous> v<version> -- '*/Migrations/*'`) and read them. If one drops a column,
+  a table or an index, the delivery is still made by FTP, but see section 5.
 - **The release exists.** The tag is pushed by the maintainer, and `release.yml` has finished green: the
   release page shows `ivao-division-hub-v<version>.zip`.
 - **`gh` is signed in** and the repository's `origin` is the one the release belongs to.
@@ -91,6 +95,10 @@ what must not be uploaded. The list is grouped, and each group has its rule:
 - **The runtime and third-party libraries** change only with a package or SDK upgrade. When the runtime
   itself changed (`libcoreclr.so`, `System.Private.CoreLib.dll`), deliver the full package: a half-replaced
   runtime does not start, and its error does not look like the cause.
+  One exception, once: **0.2.4 is the first ReadyToRun package**, and against an earlier one it changes 49
+  third-party libraries (EF, Pomelo, Quartz, Serilog…, now compiled ahead of time) besides the hub's own files,
+  62 files in all, and not the runtime. They go; from the next release on, the build being deterministic, they
+  stay the same.
 - **`appsettings.Development.json` is never delivered.** It is in the release, it carries the local database
   password, and production does not read it. Diff writes it already commented out.
 - **Removed files** are listed at the bottom: they stay on the server, harmless because nothing names them
@@ -169,7 +177,11 @@ of files, every time:
 - `restart.txt` into `tmp/` **last**, then open the site once;
 - the check that tells a working site from a half-uploaded one: `/api/version` says the new version and
   the tag's commit, `/health` answers, and a page that goes through the server shows real data. A stamp
-  alone says which package started, not that it works.
+  alone says which package started, not that it works;
+- **when the release drops anything from the database** (the contract half of an expand/contract), at the
+  top and in red: which migration and what it drops, and **a fresh copy of the database before the
+  upload**. The migration runs on its own at start-up, on DDL that is not transactional; with the copy,
+  going back is restoring it and uploading the previous package.
 
 Then write down, in the maintainer's notes, what was delivered: the version, the sha256 of the zip, and
 what is left to do.
