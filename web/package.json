@@ -2,7 +2,6 @@
   "name": "ivao-hub-web",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
   "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=22"

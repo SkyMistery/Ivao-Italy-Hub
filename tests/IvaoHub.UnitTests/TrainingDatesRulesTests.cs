@@ -14,9 +14,9 @@ namespace IvaoHub.UnitTests;
 /// <summary>
 /// The rules of the date of a training (M3, A8; design M3 §1.2, §2.5, §5.1, §5.3) with no database: the days a date touches in the
 /// division's time zone; the warnings — another training with its session that day, whoever trains it, and an entry of the calendar
-/// of a kind the division checks, the trainings' own sessions never twice —; what the three policies make of them; a session shown
-/// as held from the day after its own, there; the session in the calendar with its rating and position and nobody's name; and which
-/// trainings the reminder and the closing by time pick.
+/// of a kind the division checks, the trainings' own sessions never twice —; which entries a date keeps for every reader of the
+/// training; what the three policies make of them; a session shown as held from the day after its own, there; the session in the
+/// calendar with its rating and position and nobody's name; and which trainings the reminder and the closing by time pick.
 /// <para>The queries are the ones the database is asked, run here on lists. The ratings are a vocabulary of this test's making, not
 /// the network's (design M3 §10).</para>
 /// </summary>
@@ -107,6 +107,22 @@ public sealed class TrainingDatesRulesTests
         Assert.Equal((DateWarningKind.Calendar, "event", Day.AddHours(19), Day.AddHours(21), "/events/1"), (warning.Kind, warning.CalendarKind, warning.StartsAtUtc, warning.EndsAtUtc!.Value, warning.Url));
         Assert.Equal("trn-test 1", warning.Title!.Get("en"));
         Assert.Null(warning.TrainingId);
+    }
+
+    [Fact]
+    public void ADateKeepsOnlyTheEntriesEveryReaderOfTheTrainingMayRead()
+    {
+        // Whoever proposes the date may read an entry of one department alone — the direction reads them all —; the date keeps
+        // what a page for the staff may carry.
+        CalendarEntry[] found =
+        [
+            Entry(1, "event", Day.AddHours(19), null, visibility: Visibility.Public),
+            Entry(2, "event", Day.AddHours(19), null, visibility: Visibility.Members),
+            Entry(3, "event", Day.AddHours(19), null, visibility: Visibility.Staff),
+            Entry(4, "event", Day.AddHours(19), null, visibility: Visibility.Department),
+        ];
+
+        Assert.Equal([1L, 2L, 3L], DateConflicts.Kept(found).Select(entry => entry.Id));
     }
 
     [Fact]
@@ -252,12 +268,14 @@ public sealed class TrainingDatesRulesTests
         ScheduledStartUtc = start,
     };
 
-    private static CalendarEntry Entry(long id, string kind, DateTime start, DateTime? end, string? source = null) => new()
+    private static CalendarEntry Entry(long id, string kind, DateTime start, DateTime? end, string? source = null, Visibility visibility = Visibility.Public) => new()
     {
         Id = id,
         Kind = kind,
         StartsAtUtc = start,
         EndsAtUtc = end,
+        Visibility = visibility,
+        OwnerDepartment = Department.ED,
         SourceModule = source is null ? ProjectionSource.Core : TrainingModule.ModuleKey,
         SourceId = source ?? $"staff:{id}",
         Url = $"/events/{id}",

@@ -20,20 +20,6 @@ internal static class HubConfiguration
         StringComparison.Ordinal);
 
     /// <summary>
-    /// Every <c>*.json</c> under <c>secrets/</c>, in a stable order. The folder is never in the
-    /// repository and the web server denies access to it (plan section 11.3).
-    /// </summary>
-    public static IEnumerable<string> SecretFiles(HubPaths paths)
-    {
-        if (!Directory.Exists(paths.Secrets))
-        {
-            return [];
-        }
-
-        return Directory.EnumerateFiles(paths.Secrets, "*.json").OrderBy(file => file, StringComparer.Ordinal);
-    }
-
-    /// <summary>
     /// The division file is loaded on its own so that its keys never mix with the settings of the
     /// application. Missing or unreadable, the application does not start.
     /// </summary>
@@ -47,6 +33,30 @@ internal static class HubConfiguration
         }
 
         return new ConfigurationBuilder().AddJsonFile(paths.DivisionFile, optional: false).Build();
+    }
+
+    /// <summary>
+    /// The division as this installation reads it: the file, with the installation's own host on
+    /// top when it names one (<see cref="InstallationOptions.DomainKey"/>). One key crosses over and
+    /// no other, so the two files still cannot shadow each other; and it crosses here, once, so that
+    /// <c>DivisionOptions.Domain</c> is the only domain there is to read (note
+    /// 2026-09-27-l-installazione-di-prova).
+    /// </summary>
+    public static IConfiguration Division(IConfiguration divisionFile, IConfiguration application)
+    {
+        ArgumentNullException.ThrowIfNull(divisionFile);
+        ArgumentNullException.ThrowIfNull(application);
+
+        var domain = application[InstallationOptions.DomainKey];
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return divisionFile;
+        }
+
+        return new ConfigurationBuilder()
+            .AddConfiguration(divisionFile)
+            .AddInMemoryCollection([new KeyValuePair<string, string?>("domain", domain.Trim())])
+            .Build();
     }
 
     /// <summary>
