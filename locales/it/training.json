@@ -27,7 +27,7 @@
     "exam": "Esame {{title}}",
     "examPeople": "Candidato: {{candidate}} · Esaminatore: {{examiner}}",
     "examsUnread": "Gli esami in programma non si possono leggere ora.",
-    "signIn": "Accedi per vedere chi fa ogni training.",
+    "signIn": "Accedi per vedere chi fa ogni training ed esame.",
     "back": "Tutti i training",
     "session": {
       "title": "Training {{title}}",
@@ -543,13 +543,19 @@
       "candidateVid": "VID del candidato",
       "examiner": "Esaminatore",
       "examinerVid": "Esaminatore",
-      "mine": "Tuo"
+      "whose": "Tuo"
     },
     "hints": {
       "rating": "Il rating dell'esame: si scelgono solo i rating con un training pratico.",
       "position": "Solo per un esame ATC: una postazione della divisione su cui si allena il rating. Vuota per un esame pilota.",
       "candidateVid": "Chi fa l'esame, solo con il VID. Nessuno esamina sé stesso.",
       "examinerVid": "L'esame è assegnato a lui: lo cambia e lo toglie dal calendario. Un advisor inserisce solo i suoi esami."
+    },
+    "options": {
+      "whose": {
+        "Mine": "Sì",
+        "Other": "No"
+      }
     },
     "filters": {
       "examiner": "Esaminatore",

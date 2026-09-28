@@ -27,7 +27,7 @@
     "exam": "Exam {{title}}",
     "examPeople": "Candidate: {{candidate}} · Examiner: {{examiner}}",
     "examsUnread": "The exams to come cannot be read right now.",
-    "signIn": "Sign in to see who is in each session.",
+    "signIn": "Sign in to see who is in each session and exam.",
     "back": "All training sessions",
     "session": {
       "title": "Training {{title}}",
@@ -543,13 +543,19 @@
       "candidateVid": "VID of the candidate",
       "examiner": "Examiner",
       "examinerVid": "Examiner",
-      "mine": "Yours"
+      "whose": "Yours"
     },
     "hints": {
       "rating": "The rating examined: only the ratings with a practical training can be chosen.",
       "position": "For an ATC exam only: a position of the division the rating is trained on. Empty for a pilot's exam.",
       "candidateVid": "Who is examined, by VID only. Nobody examines themselves.",
       "examinerVid": "The exam is assigned to them: they change it and take it off the calendar. An advisor enters only their own exams."
+    },
+    "options": {
+      "whose": {
+        "Mine": "Yes",
+        "Other": "No"
+      }
     },
     "filters": {
       "examiner": "Examiner",

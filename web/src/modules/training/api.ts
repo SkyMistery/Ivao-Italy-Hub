@@ -650,10 +650,14 @@ export function upcomingExamsQuery() {
 
 const examsKey = ['training', 'exams'] as const;
 
-/** A row of the exams as the list draws it: the candidate and the examiner by VID, as text — a VID is a name, not a quantity. */
+/**
+ * A row of the exams as the list draws it: the candidate and the examiner by VID, as text — a VID is a name, not a quantity —, and
+ * whether it is the reader's as a word of the module: the core's yes and no of a column are the words of a switch, on and off.
+ */
 export interface ExamRow extends ExamRowDto {
   readonly candidate: string;
   readonly examiner: string;
+  readonly whose: 'Mine' | 'Other';
 }
 
 /**
@@ -682,6 +686,7 @@ export function examsListQuery(search: ExamsSearch, reader: number | undefined) 
           ...exam,
           candidate: String(exam.candidateVid),
           examiner: String(exam.examinerVid),
+          whose: exam.mine ? ('Mine' as const) : ('Other' as const),
         })),
       };
     },

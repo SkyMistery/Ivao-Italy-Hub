@@ -40,7 +40,7 @@ const columns: readonly ColumnSpec<ExamRow>[] = [
   col.text('position'),
   col.text('candidate'),
   col.text('examiner'),
-  col.boolean('mine'),
+  col.badge('whose', 'training:exams'),
 ];
 
 function NewExamButton() {

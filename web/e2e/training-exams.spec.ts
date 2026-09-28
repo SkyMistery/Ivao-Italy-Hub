@@ -38,6 +38,7 @@ const words = JSON.parse(
     create: string;
     edit: string;
     fields: Record<string, string>;
+    options: { whose: { Mine: string; Other: string } };
     filters: { mine: string };
     delete: { title: string };
   };
@@ -238,6 +239,10 @@ test('an advisor sees which exams are theirs, is offered a step only on those, a
   );
   await expect(theirs.getByRole('link', { name: englishCommon.common.edit })).toHaveCount(0);
   expect(seen.lists.at(-1)).toContain('dir=desc');
+
+  // Whose, in the module's words — the core's yes and no of a column are a switch's, «active» and «inactive».
+  await expect(mine.getByText(words.exams.options.whose.Mine, { exact: true })).toBeVisible();
+  await expect(theirs.getByText(words.exams.options.whose.Other, { exact: true })).toBeVisible();
 
   // «Me»: the exams assigned to the reader.
   await page.locator('#exams-examiner').click();
