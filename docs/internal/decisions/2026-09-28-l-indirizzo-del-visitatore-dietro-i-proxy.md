@@ -117,12 +117,13 @@ domanda 2 del §6 ha già la risposta.
   `127.0.0.1`, e l'hub crede `F`. **Con il limite 1 come con (a)**: il difetto non verrebbe da (a), ma dalla catena
   dell'origine, e aggirerebbe il limite del login cambiando l'header a ogni richiesta.
 
-⚠️ **Quale dei due casi valga non è misurato.** La prova 2 del §5 è passata da Cloudflare, che aggiunge sempre l'indirizzo
-del visitatore, quindi non dice niente del nginx dell'origine. La prova che lo decide è la stessa fatta direttamente
-sull'origine: undici `GET /auth/login` in un minuto, forzando la risoluzione su quell'indirizzo, ognuna con un
-`X-Forwarded-For` inventato diverso. Se l'undicesima risponde `429`, vale il primo caso. **Non è stata eseguita**: in questa
-sessione lo strumento l'ha rifiutata come ricognizione, e serve il sì di Carmine per farla, da lui o da una sessione che lui
-autorizza.
+**Vale il primo caso — misurato da Carmine, 28 set 2026.** La prova 2 del §5 era passata da Cloudflare, che aggiunge sempre
+l'indirizzo del visitatore, quindi non diceva niente del nginx dell'origine. Carmine l'ha rifatta direttamente sull'origine,
+dal suo terminale. Undici `GET /auth/login` in un minuto, con la risoluzione di `test.it.ivao.aero` forzata su quell'indirizzo
+(`curl --resolve`), ognuna con un `X-Forwarded-For` inventato diverso (`203.0.113.1`…`.11`): **`302` fino alla decima, poi
+`429`**. L'header del chiamante non viene creduto neanche senza Cloudflare. Il nginx dell'origine aggiunge chi gli ha
+parlato, o lo mette al posto dell'header del chiamante: dall'esterno i due casi non si distinguono, e per l'hub fanno lo
+stesso. **(a) non apre niente.**
 
 **Che cosa si perde di Cloudflare.** Chi conosce l'indirizzo dell'origine salta tutto quello che Cloudflare fa davanti: le
 regole del firewall, la limitazione delle richieste, la protezione dagli attacchi di volume e la cache. Contro l'hub resta
@@ -133,14 +134,16 @@ solo il limite del login dell'hub stesso, che conta il vero indirizzo del chiama
   `allow`/`deny` della sottoscrizione;
 - oppure le *Authenticated Origin Pulls* di Cloudflare: l'origine chiede il certificato client di Cloudflare.
 
-⚠️ Tutte e due dipendono da chi amministra il server, e sullo stesso server c'è anche vIPI. **Da decidere da Carmine**: se
-chiederlo e con quale priorità. Qui non è una domanda aperta della nota: (a) non ne dipende.
+Tutte e due dipendono da chi amministra il server, e sullo stesso server c'è anche vIPI. **Decisa da Carmine in chat, 28 set
+2026: non si chiede.** Il server accetta ogni connessione e, da quello che ha capito dall'amministratore, va bene così.
+L'origine resta raggiungibile senza Cloudflare; contro chi la chiama direttamente resta il limite del login dell'hub, che
+conta il vero indirizzo del chiamante (sopra).
 
 ## Da portare nel piano
 
 - **§11.3 punto 9**, terzo trattino: il risultato della misura e la strada decisa.
-- **§11.3 punto 3**: l'origine risponde anche senza Cloudflare (§7); se Carmine decide di chiederlo, la 443 solo dalle reti di
-  Cloudflare è una direttiva dell'host.
+- **§11.3 punto 3**: l'origine risponde anche senza Cloudflare, e resta così per decisione di Carmine (§7). Un
+  `X-Forwarded-For` falsificato non passa nemmeno da lì (misurato).
 - **Design M0 §2.3**: il paragrafo di `ForwardedHeaders:TrustedNetworks` dice che il middleware risale la catena finché chi
   parla è fidato.
 - **`docs/DEPLOYING.md`** «Known limits» (la riga dei forwarded header) e «Not measured» (che cosa passa Passenger in
