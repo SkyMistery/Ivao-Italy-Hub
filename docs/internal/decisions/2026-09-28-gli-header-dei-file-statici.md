@@ -3,7 +3,8 @@
 **Data:** 28 settembre 2026
 **Stato:** **decisa da Carmine sulla pull request, 28 settembre 2026**, tutte e tre le risposte come raccomandato
 ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/164#issuecomment-5865067394)): §5. Il codice della strada A
-viene in una pull request del nucleo dopo questa, e dopo la prova del §6.1 sul server.
+viene in una pull request del nucleo dopo questa, dopo la prova del §6.1 sul server **e dopo la nota sull'avvio a
+freddo** (§3, strada A, il suo costo misurato).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo esiste (gli header di `config/security.json`,
 `SecurityHeaders.cs`) e non copre un modo di ospitare l'hub che `docs/DEPLOYING.md` stesso raccomanda. Si estende il
 meccanismo, non lo si aggira; l'estensione è del nucleo, quindi una pull request sua (`CLAUDE.md` §0, regola 6).
@@ -61,9 +62,16 @@ Passenger come oggi `/branding/`; `assets/`, `locales/` e `branding/` restano st
   da copiare, niente che si allontana da `security.json`, e l'interruttore `enabled` continua a spegnere tutto senza
   ricompilare. Vale per qualsiasi hosting con il document root su `wwwroot/`, quindi anche per chi fa un fork.
 - Costa: `index.html` (meno di 1 kB) passa da Passenger a ogni primo caricamento. Quando Passenger ha spento
-  l'applicazione inattiva, la home aspetta l'avvio; oggi lo aspetta comunque la prima chiamata a `/api/me`, con una pagina
-  bianca invece che ferma. Se l'applicazione non parte, `/` mostra l'errore di Passenger invece di una SPA che non carica:
-  più onesto.
+  l'applicazione inattiva, la home aspetta l'avvio; oggi lo aspetta comunque la prima chiamata a `/api/me`, ma con la SPA
+  già caricata invece che con la pagina bianca del browser. Se l'applicazione non parte, `/` mostra l'errore di Passenger
+  invece di una SPA che non carica: più onesto.
+- ⚠️ **Quanto costa davvero, misurato dopo la decisione** (sessione della #165, 28 settembre 2026, 7 prove su 7 dopo
+  almeno 60 s di silenzio): su `test.it.ivao.aero` Passenger spegne l'hub dopo **10–30 s** di inattività, e un avvio a
+  freddo costa **8–10 s**. Il tempo di inattività non lo decide la divisione. Con A, quindi, chi apre la home di un sito
+  poco visitato vede **una pagina bianca per 8–10 s**. **Carmine** (in chat con il master, 28 settembre 2026, riferito dal
+  master a questa sessione; non c'è un commento sulla PR): A **resta decisa**, ma **il codice di A aspetta la nota
+  sull'avvio a freddo** (un'altra sessione di lavoro, «Measure and cut the hub's cold start»): la pull request del nucleo
+  non si apre prima.
 - Tocca il nucleo: `IvaoHub.Web.csproj` (la copia della build), `HubPipeline.cs`, `Program.cs`, `HubPaths` (dove sta
   l'indice), un test che il pacchetto pubblicato non abbia `wwwroot/index.html`, e in `DEPLOYING.md` e nel foglio
   italiano il perché, `spa` nella riga dei `deny` (serve solo se il document root è la cartella dell'applicazione) e il
@@ -116,7 +124,8 @@ Carmine ha risposto sulla pull request il 28 settembre 2026, **tutte e tre come 
 
 1. **Quale strada?** Raccomandazione: **A**, in una pull request del nucleo dopo questa, con la versione `0.2.2` (nessuna
    migrazione). B come ripiego solo se serve la CSP sulla prova prima di A.
-   **Deciso: A**, `0.2.2`, nessuna migrazione — **dopo** la prova del §6.1 sul server di prova.
+   **Deciso: A**, `0.2.2`, nessuna migrazione — **dopo** la prova del §6.1 sul server di prova. Poi, saputo il costo
+   dell'avvio a freddo (§3): il codice aspetta anche la nota sull'avvio a freddo.
 2. **Sulla prova, intanto?** Raccomandazione: **niente di più** del `robots.txt` a mano. È privata all'accesso e senza dati
    veri: il buco della CSP lì conta poco per qualche giorno. Il file a mano si toglie solo quando la release con A è sul
    server **e** una misura mostra che `/robots.txt` arriva all'applicazione.
