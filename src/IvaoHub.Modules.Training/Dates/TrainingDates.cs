@@ -350,7 +350,8 @@ public sealed class TrainingDates(
     /// <summary>
     /// A training closed by the staff (§2.5, R.3: the trainee never answered, or anything else), with <c>Training.Approve</c> and a
     /// reason the trainee reads: accepted and still going on — dated too, whose session then leaves the calendar and stays on
-    /// record. Nobody closes a training of their own. Its trainer conducts it no more: nothing is left to conduct.
+    /// record. Nobody closes a training of their own. Nothing is left for its trainer to conduct: every step of theirs asks for a
+    /// training that goes on.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> CloseAsync(
         Training training,
