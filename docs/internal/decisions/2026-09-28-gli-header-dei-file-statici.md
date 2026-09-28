@@ -68,10 +68,10 @@ Passenger come oggi `/branding/`; `assets/`, `locales/` e `branding/` restano st
 - ⚠️ **Quanto costa davvero, misurato dopo la decisione** (sessione della #165, 28 settembre 2026, 7 prove su 7 dopo
   almeno 60 s di silenzio): su `test.it.ivao.aero` Passenger spegne l'hub dopo **10–30 s** di inattività, e un avvio a
   freddo costa **8–10 s**. Il tempo di inattività non lo decide la divisione. Con A, quindi, chi apre la home di un sito
-  poco visitato vede **una pagina bianca per 8–10 s**. **Carmine** (in chat con il master, 28 settembre 2026, riferito dal
-  master a questa sessione; non c'è un commento sulla PR): A **resta decisa**, ma **il codice di A aspetta la nota
-  sull'avvio a freddo** (un'altra sessione di lavoro, «Measure and cut the hub's cold start»): la pull request del nucleo
-  non si apre prima.
+  poco visitato vede **una pagina bianca per 8–10 s**. **Carmine** sulla pull request, 28 settembre 2026
+  ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/164#issuecomment-5865536250)): A **resta decisa**, ma **il
+  codice di A aspetta la nota sull'avvio a freddo** (un'altra sessione di lavoro misura dove vanno i secondi e che cosa
+  li taglia): la pull request del nucleo parte dopo che quella nota è decisa.
 - Tocca il nucleo: `IvaoHub.Web.csproj` (la copia della build), `HubPipeline.cs`, `Program.cs`, `HubPaths` (dove sta
   l'indice), un test che il pacchetto pubblicato non abbia `wwwroot/index.html`, e in `DEPLOYING.md` e nel foglio
   italiano il perché, `spa` nella riga dei `deny` (serve solo se il document root è la cartella dell'applicazione) e il
@@ -125,7 +125,8 @@ Carmine ha risposto sulla pull request il 28 settembre 2026, **tutte e tre come 
 1. **Quale strada?** Raccomandazione: **A**, in una pull request del nucleo dopo questa, con la versione `0.2.2` (nessuna
    migrazione). B come ripiego solo se serve la CSP sulla prova prima di A.
    **Deciso: A**, `0.2.2`, nessuna migrazione — **dopo** la prova del §6.1 sul server di prova. Poi, saputo il costo
-   dell'avvio a freddo (§3): il codice aspetta anche la nota sull'avvio a freddo.
+   dell'avvio a freddo (§3): il codice aspetta anche la nota sull'avvio a freddo
+   ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/164#issuecomment-5865536250)).
 2. **Sulla prova, intanto?** Raccomandazione: **niente di più** del `robots.txt` a mano. È privata all'accesso e senza dati
    veri: il buco della CSP lì conta poco per qualche giorno. Il file a mano si toglie solo quando la release con A è sul
    server **e** una misura mostra che `/robots.txt` arriva all'applicazione.
