@@ -49,6 +49,7 @@ function render<TValues extends Record<string, unknown>>(
     mediaLibrary?: MediaLibraryQuery;
     division?: { defaultLocale: string; timezone: string };
     onSuggestSearch?: (field: string, typed: string) => void;
+    actionsElsewhere?: boolean;
   } = {},
 ) {
   return renderWithProviders(
@@ -62,6 +63,7 @@ function render<TValues extends Record<string, unknown>>(
       {...(extras.mediaLibrary === undefined ? {} : { mediaLibrary: extras.mediaLibrary })}
       {...(extras.division === undefined ? {} : { division: extras.division })}
       {...(extras.onSuggestSearch === undefined ? {} : { onSuggestSearch: extras.onSuggestSearch })}
+      {...(extras.actionsElsewhere === undefined ? {} : { actionsElsewhere: extras.actionsElsewhere })}
     />,
     { i18n: createTestI18n({ test: extras.labels ?? {} }) },
   );
@@ -568,6 +570,175 @@ test('nothing is asked for a field nobody is typing in', async () => {
 
   // Still filtered in memory, which is what a form with a short list wants.
   expect(await screen.findByText('I tour')).toBeInTheDocument();
+});
+
+// ---- 9. a suggested field chosen from the keyboard alone ---------------------------------------
+
+// Three options, two of them matched by "tour": enough for an arrow to have somewhere to go.
+const keyboardOptions = [
+  { value: '/about', label: 'Chi siamo', group: 'Web' },
+  { value: '/tours', label: 'I tour', group: 'Flight Ops' },
+  { value: '/tours-2027', label: 'I tour del 2027', group: 'Flight Ops' },
+];
+
+const closedKeyboard = z.object({
+  path: z.string().meta({ suggestions: keyboardOptions, suggestionsOnly: true }),
+});
+
+const openKeyboard = z.object({ path: z.string().meta({ suggestions: keyboardOptions }) });
+
+// The row the box points at, which is what a screen reader reads while the focus stays in the box.
+function litRow(box: HTMLElement): HTMLElement | null {
+  const id = box.getAttribute('aria-activedescendant');
+  return id === null ? null : document.getElementById(id);
+}
+
+test('part of a closed field typed, then Enter, chooses the option it matches, and does not send the form', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(closedKeyboard, { path: '' }, { labels: suggestLabels, onSubmit });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'tour');
+
+  // A search lights the first option it still shows, and the box says which.
+  expect(box).toHaveAttribute('aria-expanded', 'true');
+  expect(box).toHaveAttribute('aria-controls', screen.getByRole('listbox').id);
+  expect(litRow(box)).toHaveTextContent('I tour');
+
+  await user.keyboard('{Enter}');
+
+  expect(box).toHaveValue('/tours');
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  expect(box).toHaveAttribute('aria-expanded', 'false');
+  expect(box).not.toHaveAttribute('aria-activedescendant');
+  // ⚠️ Enter was a choice and nothing else: the browser's own Enter would have sent the form too.
+  expect(onSubmit).not.toHaveBeenCalled();
+});
+
+test('the arrows move through the options from the box, and Enter chooses the one they lit', async () => {
+  const user = userEvent.setup();
+
+  render(closedKeyboard, { path: '' }, { labels: suggestLabels });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'tour');
+
+  await user.keyboard('{ArrowDown}');
+  expect(litRow(box)).toHaveTextContent('I tour del 2027');
+  expect(litRow(box)).toHaveAttribute('aria-selected', 'true');
+
+  await user.keyboard('{ArrowUp}');
+  expect(litRow(box)).toHaveTextContent('I tour');
+
+  await user.keyboard('{ArrowDown}{Enter}');
+  expect(box).toHaveValue('/tours-2027');
+  // The focus never left the box: typing goes on where the choice put it.
+  expect(box).toHaveFocus();
+});
+
+test('an arrow opens a closed list on its first option, and up from nothing lit is the last one', async () => {
+  const user = userEvent.setup();
+
+  render(closedKeyboard, { path: '/about' }, { labels: suggestLabels });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+
+  // Arriving lights nothing: the list is there to read, not yet a choice.
+  expect(screen.getByRole('listbox')).toBeInTheDocument();
+  expect(box).not.toHaveAttribute('aria-activedescendant');
+
+  await user.keyboard('{ArrowUp}');
+  expect(litRow(box)).toHaveTextContent('I tour del 2027');
+
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+  await user.keyboard('{ArrowDown}');
+  expect(screen.getByRole('listbox')).toBeInTheDocument();
+  expect(litRow(box)).toHaveTextContent('Chi siamo');
+});
+
+test('Enter in a suggested field nobody searched sends the form, as in any line of it', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(closedKeyboard, { path: '/about' }, { labels: suggestLabels, onSubmit });
+
+  // The list opens on focus, and a lit option there would turn this Enter into a choice nobody made.
+  await user.click(screen.getByRole('combobox', { name: 'Address' }));
+  await user.keyboard('{Enter}');
+
+  expect(onSubmit).toHaveBeenCalledWith({ path: '/about' });
+});
+
+test('a search nobody finished is never sent: Enter opens the list again instead', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(closedKeyboard, { path: '/about' }, { labels: suggestLabels, onSubmit, actionsElsewhere: true });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.clear(box);
+  await user.type(box, 'nowhere');
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+  // ⚠️ A form with no button of its own and this box as its only line: the browser sends it on Enter
+  // (the request of a training, #144). The text is not a value, so the list comes back and says so.
+  await user.keyboard('{Enter}');
+
+  expect(onSubmit).not.toHaveBeenCalled();
+  expect(screen.getByRole('listbox')).toBeInTheDocument();
+  expect(box).toHaveValue('nowhere');
+});
+
+test('after a choice made from the keyboard, the choice is what the field puts back', async () => {
+  const user = userEvent.setup();
+
+  render(closedKeyboard, { path: '/about' }, { labels: suggestLabels });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.clear(box);
+  await user.type(box, 'tour{Enter}');
+  expect(box).toHaveValue('/tours');
+
+  // ⚠️ Point 4 of note `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, held here without a
+  // race: the focus stayed in the box through the choice, so no arrival read the value again, and
+  // only the choice itself can have made `/tours` what was there.
+  await user.type(box, ' and more');
+  await user.tab();
+
+  expect(box).toHaveValue('/tours');
+});
+
+test('in an open field Enter keeps what is typed, unless an arrow lit an option', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+
+  render(openKeyboard, { path: '' }, { labels: suggestLabels, onSubmit });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, '/tour');
+
+  // What is typed is the value here, so a search lights nothing.
+  expect(screen.getAllByRole('option')).toHaveLength(2);
+  expect(box).not.toHaveAttribute('aria-activedescendant');
+
+  await user.keyboard('{ArrowDown}{Enter}');
+  expect(box).toHaveValue('/tours');
+  expect(onSubmit).not.toHaveBeenCalled();
+
+  await user.clear(box);
+  await user.type(box, '/tour{Enter}');
+  expect(onSubmit).toHaveBeenCalledWith({ path: '/tour' });
 });
 
 // ---- and the property none of the five may weaken --------------------------------------------
