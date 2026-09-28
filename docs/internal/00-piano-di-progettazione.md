@@ -1,9 +1,62 @@
 # IVAO Division Hub — Piano di progettazione
 
 **Progetto:** nuovo sito/hub della divisione italiana IVAO (sostituisce `it.ivao.aero`), progettato per essere forkabile da altre divisioni.
-**Versione documento:** 1.21 — 28 settembre 2026 (**l'hosting misurato sulla prova**: gli header dei file statici, i job con Passenger, l'indirizzo del visitatore, l'avvio a freddo)
+**Versione documento:** 1.22 — 28 settembre 2026 (**la diagnostica della richiesta e la sua misura**: un salto in più davanti all'hub; la coda del codice aggiornata; sette correzioni di una revisione del piano)
 **Autore:** Carmine (IT-DIV), con supporto Claude
 **Stato:** architettura, catalogo moduli (§9), contratti (§9.7), **meccanismi generici** (§16) e **modello unico dei contenuti** (§9.3) decisi; restano aperte solo le voci di §15 (per lo più informazioni da recuperare). **M0 è chiusa** (F0–F9, tag `v0.1.0-m0`): le fondamenta e la spina dorsale generica di §16 esistono e sono dimostrate end-to-end, come §16.15 chiedeva. **M1 ha design e piano di implementazione** (`03-design-m1.md` e `04-piano-implementazione-m1.md`, 5 set 2026): perimetro, set dei blocchi e convenzioni decisi, tredici fasi G0-G12 più la mezza G11a; **sono chiuse tutte**, e la chiusura è contata in `decisions/2026-09-07-m1-review.md`. **M2, i tour, è chiusa** (T0–T20c, `05-design-m2.md` e `06-piano-implementazione-m2.md`), contata in `decisions/2026-09-25-m2-review.md`. **M3 (Training) la scrive `dalberone`**: design deciso (`07-design-m3.md`, PR #121), fasi A0–A12 in `08-piano-implementazione-m3.md`, A0–A3 unite il 25 set 2026, A6a e la fase del nucleo A3b il 27. Le sezioni marcate ⚠️ richiedono ancora una decisione
+
+**Changelog 1.22** (28 set 2026, sera, dopo il merge di #168 e #169 e la consegna della 0.2.2): **la diagnostica della richiesta
+e la sua misura**. Nota `decisions/2026-09-28-la-diagnostica-della-richiesta.md`, caso (b), **decisa da Carmine** (la strada (i)
+della nota sui proxy, [commento][d121e]).
+
+- **La diagnostica della richiesta** (#168, **0.2.2**, tag `v0.2.2` su `94925a8`, caricata sulla prova da Carmine):
+  `GET /api/admin/diagnostics/request`, **solo il super amministratore** (`SignedIn` e `IsSuperadmin`, come
+  `/api/admin/superadmins`: nessun handler né permesso nuovo), **un JSON e non una pagina** (una PATCH non porta pagine, e chi la
+  legge ne copia i valori parola per parola), e **niente resta**. Mostra il vicino grezzo con la sua famiglia, l'indirizzo
+  creduto, lo schema prima e dopo, gli header dei proxy **come sono arrivati** (copiati prima del middleware, che consuma le voci)
+  e i soli nomi degli altri. Un header in più si nomina in `Diagnostics:RequestHeaders`, nel file dei segreti; `Cookie`,
+  `Authorization` e `Proxy-Authorization` mai. In locale un vicino IPv4 dentro IPv6, fra le reti fidate, è creduto (§11.3
+  punti 5 e 9, §16.6, design M0 §2.3).
+- **La misura** (Carmine, 28 set 2026, con la 0.2.2 sulla prova): `X-Forwarded-For` arriva **su due righe**, «visitatore, nodo
+  Cloudflare» e `127.0.0.1`, cioè **tre voci**; il limite 1 prende la più a destra, `127.0.0.1`. **Non regge nessuna delle due
+  ipotesi** della nota sui proxy: l'header arriva, e l'indirizzo è un IPv4 semplice. **La causa è un salto in più.** Con
+  `ForwardLimit = null`, già deciso ([commento][d121c], risposta 5), la risalita dà il visitatore: `127.0.0.1` fidato → il nodo
+  Cloudflare, dentro `172.64.0.0/13`, fidato → il visitatore. È la PR 2 della coda, anticipata per la misura (§11.3 punto 9).
+  L'indirizzo vero del visitatore non si scrive da nessuna parte.
+- **La coda del codice** (Carmine, 28 set 2026, in chat; sostituisce «L'ordine del codice» della 1.21):
+  1. ✅ diagnostica della richiesta (0.2.2, caricata);
+  2. l'indirizzo del visitatore, `ForwardLimit = null` (0.2.3, anticipata per la misura);
+  3. avvio più veloce + `diagnostics/starts.txt` + due correzioni trovate rivedendo la #162: vince per primo il
+     `config/division.json` accanto all'assembly dell'applicazione (`HubPaths.cs`), e in `startup-error.txt` si nascondono
+     anche le **parti** delle stringhe di connessione (password, utente, host), non solo i valori interi (`StartupFailure.cs`)
+     (0.2.4);
+  4. **nuova**: il controllo all'avvio di A3b (`PermissionCatalog.VerifyAlternatives`) si rinforza e rifiuta un permesso segnato
+     il cui `EditOf` non è l'`Edit` dell'area dell'entità, `OnlyForAssignee` su un permesso `.Edit`, un'alternativa segnata su
+     un'entità che non è `IOwnedByDepartment`, e un'entità con chi ha interesse il cui permesso segnato non porta
+     `DeniedToStakeholder` — **prima di A10** (0.2.5); i punti per A7 e A10 sono scritti anche sulla #146 ([commento][d122b]);
+  5. job che recuperano + POST dell'operazione pianificata di Plesk (0.3.0);
+  6. la strada A della #164, solo se sul server l'avvio scende sotto ~3 s.
+
+  Nel corpo del piano i numeri della coda seguono questa (§11.3 punti 1, 2, 5, 6 e 9, design M0 §2.3).
+- **Correzioni di una revisione a freddo** (verificate dal master):
+  - **La decisione sull'origine**: la 1.21 dice che l'origine resta aperta «per decisione di Carmine», ma i commenti che cita
+    ([commento][d121c], [commento][d121e]) dicono il contrario. Il commento giusto è [questo][d122a]: Carmine non lo chiede, perché alla domanda ha risposto
+    la misura, e l'origine resta aperta. Corretto il link in §11.3 punto 3; il changelog 1.21 resta com'è.
+  - **Il database della prova** è `itivao_test`, non `itivao_hub_test` (§11.3 punto 8, §15 punto 2e).
+  - **Non è una pagina**: la «pagina diagnostica» della 1.21 è **la diagnostica della richiesta**, un JSON (§11.3 punto 9, design
+    M0 §2.3, `HANDOFF.md`).
+  - **Il database dedicato**: §11.3 punto 4 prometteva un utente con `GRANT ALL` sul solo schema, che il server non ha (§2.5,
+    piano 1.18).
+  - **Il foglio della consegna**: il `LEGGIMI-PACCHETTO-x.y.z.md` di §11.3 punto 1 non esiste; la 0.2.1 e la 0.2.2 sono andate con
+    il foglio generale `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`, riscritto dalla #169 com'è il server (`webapp/`,
+    `itivao_test`, carica Carmine). Un foglio con la versione si scrive solo quando una consegna ha istruzioni sue.
+  - **L'aggiornamento**: la prima frase di §11.3 punto 6 (bit di esecuzione, `uploads/`) è superata dall'elenco sotto.
+  - **Chi carica**: sulla prova Carmine, dal 28 set 2026; per la produzione è da decidere (§2.5 riga dell'FTP, §15 punto 2c).
+- **Toccati:** §2.5 riga dell'FTP, §11.3 punti 1, 2, 3, 4, 5, 6, 8 e 9, §15 punti 2c e 2e, §16.6, design M0 §2.3, `HANDOFF.md`.
+  `docs/DEPLOYING.md` l'ha aggiornato la #168.
+
+[d122a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/165#issuecomment-5869107095
+[d122b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5869116757
 
 **Changelog 1.21** (28 set 2026, dopo il merge di #164, #165 e #166): **l'hosting misurato sulla prova**. La 0.2.1 gira su
 `test.it.ivao.aero` dalla mattina del 28 (la causa del 500 era l'utente del database d'esempio rimasto nel file dei segreti, letta
@@ -1990,7 +2043,7 @@ Il server di produzione è lo stesso su cui gira oggi `atc.it.ivao.aero`, quindi
 |---|---|
 | Sottoscrizione Plesk `it.ivao.aero`; l'app ATC vive in `/var/www/vhosts/it.ivao.aero/public_atc/` | L'hub sarà un'altra cartella della stessa sottoscrizione (`httpdocs/` o `public_hub/`). Stesso utente di sistema (`itivao`). |
 | Le app .NET sono avviate da **Phusion Passenger** (start command `dotnet …/X.dll`), **non** dal .NET Toolkit; riavvio toccando `tmp/restart.txt` | Pacchetto **self-contained linux-x64** (il runtime viaggia nel pacchetto: non dipendiamo dalla versione .NET installata → .NET 10 è possibile). **Lo stesso comando di vIPI vale per l'hub** (misurato il 27 set 2026, nota `2026-09-27-il-pacchetto-misurato-prima-del-server`): un `dotnet` installato di qualunque versione passa la mano al runtime del pacchetto, e non serve il bit di esecuzione; `./IvaoHub.Web` con `755` solo su un server senza .NET. Serve ICU. **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`): Passenger spegne l'hub dopo **10–30 s** di inattività, e il risveglio costa **8–10 s** sul server di prova (mediana 8,4 s); l'inattività non la decide la divisione. È quasi tutta CPU: modelli EF (~30%), lavoro d'inizializzazione sul database (~33%), tabella delle rotte alla prima richiesta (~14%), avvio di .NET (~10%). ReadyToRun, le migrazioni dei moduli solo se pendenti e TieredPGO spento lo portano a **~4,9 s stimati**; **i 2–3 s non si raggiungono dal codice**: solo un processo che resta vivo, cioè l'host. |
-| Accesso solo **FTP**, confinato alla cartella dell'app; niente shell; i pacchetti li carica **il committente** (staff Ivao.It), non Carmine | Deploy = zip + foglio istruzioni; niente `dotnet ef database update` a mano; le migrazioni girano **all'avvio** dell'app (`Database.Migrate()`), quindi vanno progettate **additive e sicure**. |
+| Accesso solo **FTP**, confinato alla cartella dell'app; niente shell; i pacchetti li carica **il committente** (staff Ivao.It), non Carmine. **Dal 28 set 2026** sull'installazione di prova carica **Carmine**, via FTP in `webapp/` (§11.3 punto 8); chi carica in produzione è ancora da decidere | Deploy = zip + foglio istruzioni; niente `dotnet ef database update` a mano; le migrazioni girano **all'avvio** dell'app (`Database.Migrate()`), quindi vanno progettate **additive e sicure**. |
 | La cartella dell'app **è stata il document root**: `appsettings.Production.json` fu scaricabile (24–25 ago); ora davanti c'è **Cloudflare** e le direttive nginx negano i file sensibili | I segreti stanno in `secrets/<nome-non-indovinabile>.json` (l'app carica ogni `*.json` di quella cartella, che vince su appsettings); deny nginx su `appsettings*.json`, `*.dll`, `*.pdb`, `diagnostics/`, `secrets/`, `keys/`. Forwarded headers da Cloudflare. |
 | Data Protection: le chiavi devono stare in una cartella **scrivibile e persistente dentro l'app** (`vipi-keys/`), da non cancellare a ogni upload | Stessa soluzione: `hub-keys/` + avviso in grassetto nel foglio di aggiornamento. Perderla slogga tutti. |
 | MariaDB **11.4.10** condivisa: `max_user_connections` ~25–50, pool limitato a 20, `max_allowed_packet` non confermato, **backup non confermato** (A9), utente creato dal pannello con privilegi non verificati | Pool ≤ 15 per l'hub (condivide il tetto con vIPI!), upload file su disco e non in `longblob`, migrazioni che non richiedono `DROP`, e la domanda backup va chiusa **prima** del primo dato reale. |
@@ -2587,7 +2640,7 @@ Tutto passa da `IvaoApiClient` (riuso/aggiornamento di `Ivao.It.IvaoApiSdk`), co
 
 La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao/LEGGIMI-*.md`), perché il server e le persone sono gli stessi.
 
-1. **Pacchetto**: `dotnet publish -c Release -r linux-x64 --self-contained` con `wwwroot` già popolato dalla SPA; asset minificati e precompressi `.br/.gz`; timbro di versione (`AssemblyMetadata` + commit) esposto su `/api/version`. Zip + foglio `LEGGIMI-PACCHETTO-x.y.z.md` con l'elenco dei file e i controlli post-deploy.
+1. **Pacchetto**: `dotnet publish -c Release -r linux-x64 --self-contained` con `wwwroot` già popolato dalla SPA; asset minificati e precompressi `.br/.gz`; timbro di versione (`AssemblyMetadata` + commit) esposto su `/api/version`. Zip + ~~foglio `LEGGIMI-PACCHETTO-x.y.z.md` con l'elenco dei file e i controlli post-deploy~~ foglio della consegna (sotto, «Dal 28 set 2026»).
    **Dal 27 set 2026** (note `2026-09-27-la-versione-del-sito` e `2026-09-27-la-consegna-del-pacchetto`):
    - **La versione** sta in `Directory.Build.props`, con la regola di vIPI: PATCH solo correzioni; MINOR funzionalità nuove e/o
      migrazioni additive; MAJOR se il pacchetto non si consegna con il solo FTP. Il timbro è la versione **con** il commit:
@@ -2606,10 +2659,15 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
      dallo stesso tag.
    - Prima consegna: `0.2.0`, su `test.it.ivao.aero`.
 
-   **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`, deciso, codice nella PR 2 della coda): il pacchetto si pubblica
+   **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`, deciso, codice nella PR 3 della coda): il pacchetto si pubblica
    **ReadyToRun**, condizionato al RID (il banco e2e pubblica senza `-r`), e con **TieredPGO spento**. Pesa 172 MB invece di 139
    (73 MB compresso invece di 59); la build è deterministica, quindi la prima consegna cambia 53 DLL e da lì le consegne a pochi
    file restano piccole come oggi.
+
+   **Il foglio della consegna** (piano 1.22): un foglio con la versione (`LEGGIMI-PACCHETTO-x.y.z.md`) si scrive **solo quando
+   una consegna ha istruzioni sue**, per esempio una migrazione che toglie qualcosa; altrimenti va il foglio generale
+   `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`, riscritto dalla #169 com'è il server (`webapp/`, `itivao_test`,
+   carica Carmine). La 0.2.1 e la 0.2.2 sono andate così.
 2. **Cartella dell'app** nella sottoscrizione `it.ivao.aero`, avviata da **Passenger** (`dotnet IvaoHub.Web.dll`), `ASPNETCORE_ENVIRONMENT=Production`. Struttura: `wwwroot/`, `config/division.json`, `config/ivao-oauth.json` (compilato dalla divisione), `secrets/<nome-non-indovinabile>.json` (connection string, SMTP, secret — l'app carica ogni `*.json` di `secrets/`), `hub-keys/` (Data Protection, **persistente, mai cancellare**), `uploads/` (documenti), `logs/`, `diagnostics/` (`startup.txt`, e `startup-error.txt` dopo un avvio fallito). **Dal 28 set 2026** l'hub trova queste cartelle anche dalla cartella del suo assembly, quindi la cartella di lavoro in cui Passenger lo avvia non conta (nota `2026-09-27-l-avvio-da-qualunque-cartella`).
    **Misurato il 27 set 2026** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server`):
    - **Il comando.** `dotnet IvaoHub.Web.dll` va bene su un server che ha un `dotnet` qualunque, come quello di vIPI: passa
@@ -2621,7 +2679,7 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
      `AllowedHosts` e alle reti di Cloudflare (§4.1). Le credenziali OAuth possono stare anche lì, al posto di
      `config/ivao-oauth.json`.
 
-   **Dal 28 set 2026** (note `2026-09-28-i-job-quando-passenger-spegne-l-hub` e `2026-09-28-l-avvio-a-freddo`, codice nella PR 2
+   **Dal 28 set 2026** (note `2026-09-28-i-job-quando-passenger-spegne-l-hub` e `2026-09-28-l-avvio-a-freddo`, codice nella PR 3
    della coda): accanto a `startup.txt`, che si riscrive a ogni avvio, **`diagnostics/starts.txt`** tiene una riga per ogni avvio
    e per ogni arresto (ora, pid, versione, vita, richieste servite, arresto ordinato o no), con un tetto di righe; per ogni avvio
    anche la **memoria** usata, **quanto è durato** e la durata dei suoi passi (modelli, migrazioni, seeder, avvio di Kestrel). È
@@ -2643,10 +2701,15 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
      accettato, e se va chiuso una regola di Cloudflare sul nome host, mai una direttiva nel pacchetto.
    - **L'origine risponde anche senza Cloudflare** (nota `2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy` §7): chi ne
      conosce l'indirizzo salta firewall, limiti e cache di Cloudflare, e contro l'hub resta solo il limite del login. **Resta
-     così** per decisione di Carmine: il server accetta ogni connessione, e l'amministratore lo considera giusto.
+     così** ([il commento di Carmine][d122a], piano 1.22): non lo chiede all'host, perché alla domanda ha risposto la misura —
+     il server accetta ogni connessione, e l'amministratore lo considera giusto.
 4. **Database**: DB + utente dedicati dal pannello (`GRANT ALL` sul solo schema, verificare che la prima migrazione con `ALTER DATABASE CHARACTER SET utf8mb4` passi); pool `MaximumPoolSize≤15` perché il tetto per utente è condiviso; `max_allowed_packet` confermato ≥ 4 MB o upload solo su disco.
-5. **Migrazioni**: `Database.Migrate()` all'avvio (senza shell non c'è alternativa), con tre regole ferree: solo migrazioni **additive** (mai `DROP`/rename distruttivi nello stesso pacchetto che smette di usare la colonna → pattern *expand/contract* in due release), test CI che applica l'intera catena su una **MariaDB 11.4.10 vera**, e un `diagnostics/startup.txt` che dice quale migrazione ha applicato (e, dal 28 set 2026, come ha trovato la radice). Niente consegne con migrazioni nelle finestre in cui nessuno può ripristinare. **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`, codice nella PR 2 della coda): anche i moduli chiedono prima le migrazioni pendenti e chiamano `MigrateAsync` solo se ce n'è una, come il nucleo; oggi la chiamano sempre, e con una CPU sola a volte si ferma fino a un secondo. Il **marcatore d'inizializzazione** (saltare migrazioni e seeder quando pacchetto, configurazione e database non sono cambiati) resta **aperto**: si decide con i numeri di `diagnostics/starts.txt` sul server.
-6. **Aggiornamento**: upload via FTP in **binario**, rimettere il bit di esecuzione all'eseguibile, non toccare `hub-keys/`, `secrets/`, `uploads/`; poi `tmp/restart.txt`. Sonda post-deploy (`/api/version`, `/health`, login, una pagina per modulo) eseguita **non** nel minuto del riavvio.
+   **Dal 27 set 2026** (§2.5, piano 1.18, nota `2026-09-27-i-dati-condivisi-senza-isolamento`): il server **non isola i
+   database**. Database e utente si creano dal pannello, ma ogni utente della sottoscrizione raggiunge tutti i database: un
+   `GRANT ALL` sul solo schema non c'è, e il file dei segreti apre tutti i database del server. Sulla prova il database è
+   `itivao_test` (punto 8).
+5. **Migrazioni**: `Database.Migrate()` all'avvio (senza shell non c'è alternativa), con tre regole ferree: solo migrazioni **additive** (mai `DROP`/rename distruttivi nello stesso pacchetto che smette di usare la colonna → pattern *expand/contract* in due release), test CI che applica l'intera catena su una **MariaDB 11.4.10 vera**, e un `diagnostics/startup.txt` che dice quale migrazione ha applicato (e, dal 28 set 2026, come ha trovato la radice). Niente consegne con migrazioni nelle finestre in cui nessuno può ripristinare. **Dal 28 set 2026** (0.2.2, nota `2026-09-28-la-diagnostica-della-richiesta`) la diagnostica ha **tre voci**: `diagnostics/startup.txt` (con `startup-error.txt` dopo un avvio fallito), `/api/version` e **`GET /api/admin/diagnostics/request`**, la diagnostica della richiesta: solo per il super amministratore, un JSON su come l'hub vede la richiesta di chi guarda, e niente resta (punto 9). **Dal 28 set 2026** (nota `2026-09-28-l-avvio-a-freddo`, codice nella PR 3 della coda): anche i moduli chiedono prima le migrazioni pendenti e chiamano `MigrateAsync` solo se ce n'è una, come il nucleo; oggi la chiamano sempre, e con una CPU sola a volte si ferma fino a un secondo. Il **marcatore d'inizializzazione** (saltare migrazioni e seeder quando pacchetto, configurazione e database non sono cambiati) resta **aperto**: si decide con i numeri di `diagnostics/starts.txt` sul server.
+6. **Aggiornamento**: upload via FTP in **binario**, ~~rimettere il bit di esecuzione all'eseguibile~~, non toccare `hub-keys/`, `secrets/`, ~~`uploads/`~~; poi `tmp/restart.txt` (le parti barrate sono superate dall'elenco del 27 set qui sotto: il bit solo per `./IvaoHub.Web`, e `media/` al posto di `uploads/`). Sonda post-deploy (`/api/version`, `/health`, login, una pagina per modulo) eseguita **non** nel minuto del riavvio.
    **Dal 27 set 2026** (`docs/DELIVERING.md`):
    - si carica il ramo `full-<versione>/` o `only-<N>-files-<versione>/` dello zip di consegna, controllando le impronte di
      `MANIFEST.txt`;
@@ -2657,14 +2720,14 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
    - il bit di esecuzione serve solo per `./IvaoHub.Web`;
    - `restart.txt` va in `tmp/` per ultimo, e poi si apre il sito una volta.
 
-   **Dal 28 set 2026** (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` §8, codice nella PR 4 della coda):
+   **Dal 28 set 2026** (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` §8, codice nella PR 5 della coda):
    l'**operazione pianificata di Plesk** fa parte dell'installazione, come `tmp/restart.txt`. Sta nella sottoscrizione della
    divisione, mai sull'account di una persona, e chiama a ore fisse (per esempio :05 e :35, per i METAR) un POST dell'hub
    protetto da un token dell'installazione, in `secrets/`. Ivao.It ha confermato che si può fare; come la chiama il pannello
    (una GET senza intestazioni o un comando con `curl`) lo decide la PR del codice. Le ore le sceglie chi la configura: con due
    chiamate l'ora, una mail può aspettare fino a mezz'ora quando nessuno usa il sito.
 7. **Backup**: conferma scritta da Ivao.It su frequenza, retention, inclusione di `hub-keys/` e `uploads/` (non stanno nel DB) e un ripristino provato. Finché non c'è, si pianifica come se non ci fosse.
-8. **Staging**: sottodominio dedicato nella stessa sottoscrizione, stesso pacchetto, credenziali OAuth di test con i propri login/redirect URL. **Dal 27 set 2026 è l'installazione di prova su `test.it.ivao.aero`** (nota `2026-09-27-l-installazione-di-prova`): un client OAuth IVAO suo, un database suo (`itivao_hub_test`), `Installation:Preview` acceso — non indicizzata, e dentro solo lo staff e i super amministratori, respinti gli altri prima di scrivere qualsiasi cosa di loro. Resta dopo il passaggio in produzione, come banco dove provare ogni pacchetto. **Dal 28 set 2026** sta nello staging che Ivao.It ha lasciato alla divisione: `webapp/` è la cartella dell'applicazione (document root `webapp/wwwroot`), con `logs/` accanto, il database è `itivao_test`, e carica Carmine via FTP.
+8. **Staging**: sottodominio dedicato nella stessa sottoscrizione, stesso pacchetto, credenziali OAuth di test con i propri login/redirect URL. **Dal 27 set 2026 è l'installazione di prova su `test.it.ivao.aero`** (nota `2026-09-27-l-installazione-di-prova`): un client OAuth IVAO suo, un database suo (~~`itivao_hub_test`~~ `itivao_test`, piano 1.22), `Installation:Preview` acceso — non indicizzata, e dentro solo lo staff e i super amministratori, respinti gli altri prima di scrivere qualsiasi cosa di loro. Resta dopo il passaggio in produzione, come banco dove provare ogni pacchetto. **Dal 28 set 2026** sta nello staging che Ivao.It ha lasciato alla divisione: `webapp/` è la cartella dell'applicazione (document root `webapp/wwwroot`), con `logs/` accanto, il database è `itivao_test`, e carica Carmine via FTP.
 9. **Da guardare prima della produzione** (nota `2026-09-27-il-pacchetto-misurato-prima-del-server` §2, `docs/DEPLOYING.md` «Known limits»):
    - ~~un avvio che fallisce per la configurazione lo dice solo su stdout~~ — **chiuso il 28 set 2026** (0.2.1, nota
      `2026-09-27-l-avvio-da-qualunque-cartella`): scrive anche `diagnostics/startup-error.txt`, come vIPI
@@ -2685,11 +2748,27 @@ La procedura ricalca quella già rodata per `atc.it.ivao.aero` (`deploy/atc-ivao
      **Misurato il 28 set 2026** (nota `2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy`): lo schema arriva (`https`, HSTS
      e cookie `secure`), l'indirizzo no. **Il registro scrive `127.0.0.1` per tutti**, e il limite di 10 accessi al minuto su
      `/auth/*` è **uno solo per tutto il sito**: la sera di un evento, gente vera riceverebbe `429`. Nessuno falsifica
-     l'indirizzo, ma solo perché l'hub non ne legge nessuno. **Da risolvere prima della produzione.** La strada decisa: una
-     **pagina diagnostica** solo per il super amministratore (PR 1 della coda), che mostra il vicino grezzo con la sua famiglia,
-     l'indirizzo creduto, lo schema prima e dopo e gli header grezzi; poi `ForwardLimit = null` (PR 3), con quello che la
-     pagina mostra. Se l'indirizzo arriva in un altro header, il nome viene dalla configurazione, mai dal codice. Dopo la
-     correzione si rifanno le prove, anche quella sull'origine.
+     l'indirizzo, ma solo perché l'hub non ne legge nessuno. **Da risolvere prima della produzione.** La strada decisa: la
+     **diagnostica della richiesta**, solo per il super amministratore (PR 1 della coda), che mostra il vicino grezzo con la sua
+     famiglia, l'indirizzo creduto, lo schema prima e dopo e gli header grezzi; poi `ForwardLimit = null` (PR 2), con quello che
+     la diagnostica mostra. Se l'indirizzo arriva in un altro header, il nome viene dalla configurazione, mai dal codice.
+     **La diagnostica c'è dal 28 set 2026** (0.2.2, nota `2026-09-28-la-diagnostica-della-richiesta`):
+     `GET /api/admin/diagnostics/request`, **un JSON e non una pagina** — una PATCH non porta pagine, e chi la legge ne copia i
+     valori parola per parola, nomi di header e indirizzi che nessuna lingua traduce. Mostra il vicino grezzo con la famiglia
+     (`IPv4`, `IPv6`, `IPv4-mapped IPv6`), l'indirizzo creduto, se il middleware ha sostituito indirizzo e schema, lo schema
+     prima e dopo, `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Real-IP` e `Forwarded` **come sono arrivati**
+     (copiati prima del middleware, che toglie da `X-Forwarded-For` le voci che consuma) con il numero di voci, il solo nome di
+     ogni altro header, e la configurazione dei proxy fidati. Un header in più si nomina in `Diagnostics:RequestHeaders`, nel
+     file dei segreti. **In locale** un vicino `::ffff:10.20.30.40` con `10.20.30.40/32` fra le reti fidate è creduto: la
+     seconda ipotesi della nota sui proxy, nella forma «IPv4 dentro IPv6 scartato», con ASP.NET Core 10 non si verifica. Sulla
+     prova si apre nello stesso browser, da super amministratore, e si copia la risposta intera.
+     **Misurato il 28 set 2026 con la 0.2.2** (Carmine): `X-Forwarded-For` arriva **su due righe**, «visitatore, nodo
+     Cloudflare» e `127.0.0.1`, cioè **tre voci**; il limite 1 prende la più a destra, `127.0.0.1`. **Non regge nessuna delle due
+     ipotesi**: l'header arriva (Passenger lo passa), e l'indirizzo è un IPv4 semplice. **La causa è un salto in più** fra
+     Cloudflare e l'hub. Con `ForwardLimit = null` ([commento][d121c], risposta 5) la risalita dà il visitatore: `127.0.0.1`
+     fidato → il nodo Cloudflare, dentro `172.64.0.0/13`, fidato → il visitatore, il primo che non sta nelle reti fidate. È la
+     PR 2 della coda (0.2.3), anticipata per la misura. L'indirizzo vero del visitatore non si scrive né qui né nelle note. Dopo
+     la correzione si rifanno le prove, anche quella sull'origine.
 
 ---
 
@@ -2752,9 +2831,9 @@ Ogni modulo dopo M0 riceve il proprio breve documento di design (modello dati, s
 2b. ~~Tour system e test system~~ **Deciso**: il tour system è il modulo `flightops` nel monorepo dell'hub (repo separato chiuso, design confluisce). Il test system è sospeso; se tornerà, sarà app separata (auth estratta in libreria solo allora).
 2d. ~~**Storico tour**: importare i leg validati da `tours.th.ivao.aero` per le classifiche, o partire da zero come per gli eventi?~~ **Chiusa il 15 set 2026** (`05-design-m2.md` §0.2, piano 0.79): nessun import; il sistema entra in uso con la stagione 2027, e le classifiche non esistono.
 2c. **Hosting dell'hub** (blocca **la seconda metà di M2**, il deploy, non il modulo Events: diviso
-    il 9 set 2026 — e da quel giorno il deploy aspetta anche la persona che carica su Plesk): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging. **Misurato il 28 set 2026** sulla prova (nota `2026-09-28-gli-header-dei-file-statici` §4 e §6.3): su Plesk `/` senza indice e `/robots.txt` arrivano all'hub, quindi l'hosting non tiene per sé nessuno dei due; **Cloudflare mette in cache `/robots.txt`**, e la cache di quell'indirizzo va svuotata quando cambia `Installation:Preview` o si toglie il file messo a mano. Quel file (`Disallow: /`) non entra mai nel pacchetto, e si toglie quando c'è la release con la strada A.
+    il 9 set 2026 — e da quel giorno il deploy aspetta anche la persona che carica su Plesk; **dal 28 set 2026** sulla prova carica Carmine, per la produzione è ancora da decidere): chiedere a Ivao.It (stesse domande A9 di vIPI, già scritte): dove sta la cartella dell'hub nella sottoscrizione, se il document root può essere diverso dalla cartella dell'app, privilegi dell'utente DB, `max_allowed_packet`, `sql_mode`, backup con retention e ripristino provato, se esiste un sottodominio di staging. **Misurato il 28 set 2026** sulla prova (nota `2026-09-28-gli-header-dei-file-statici` §4 e §6.3): su Plesk `/` senza indice e `/robots.txt` arrivano all'hub, quindi l'hosting non tiene per sé nessuno dei due; **Cloudflare mette in cache `/robots.txt`**, e la cache di quell'indirizzo va svuotata quando cambia `Installation:Preview` o si toglie il file messo a mano. Quel file (`Disallow: /`) non entra mai nel pacchetto, e si toglie quando c'è la release con la strada A.
 3. **Dominio di staging** e nomi finali (`beta.it.ivao.aero`?), perché login URL e redirect URL vanno registrati su IVAO per ogni ambiente. **La prova è chiusa il 27 set 2026**: `test.it.ivao.aero`, con il suo client OAuth (§11.3 punto 8). Resta da decidere il nome della produzione.
-2e. **Hosting, per la prova** (27 set 2026): la prima installazione è su `test.it.ivao.aero`, con un database suo (`itivao_hub_test`) sul server condiviso, separato da vIPI e dalla futura produzione. Consegnata la `0.2.0`. Restano da avere per iscritto da Ivao.It `max_allowed_packet`, `sql_mode`, `max_user_connections` e il backup (database, `hub-keys/`, `media/`) con un ripristino provato: **prima del primo dato reale**, cioè prima della produzione.
+2e. **Hosting, per la prova** (27 set 2026): la prima installazione è su `test.it.ivao.aero`, con un database suo (~~`itivao_hub_test`~~ `itivao_test`, piano 1.22) sul server condiviso, separato da vIPI e dalla futura produzione (separato di nome: il server non isola i database, punto 2). Consegnata la `0.2.0`; dal 28 set 2026 gira la `0.2.2`. Restano da avere per iscritto da Ivao.It `max_allowed_packet`, `sql_mode`, `max_user_connections` e il backup (database, `hub-keys/`, `media/`) con un ripristino provato: **prima del primo dato reale**, cioè prima della produzione.
 4. ~~Editor contenuti~~ **Deciso**: pagine a blocchi con editor a lista (§9.3); il blocco `text` usa markdown con anteprima. Prerender SEO: **no per ora** (§16.11).
 5. ~~Licenza del repository pubblico~~ **Decisa il 3 set 2026**: **Apache-2.0**, copyright «2026 Carmine Granato». Nota in `docs/internal/decisions/2026-09-03-licenza.md`.
 6. ~~Prefisso lingua negli URL~~ **Deciso: no per ora** (§16.11); lingua da profilo → cookie → `Accept-Language`.
@@ -2786,7 +2865,7 @@ policy **in più** di quella di scrittura (`CrudOptions.DeletePolicy`): chi modi
 il server, il client mostra** i `ProblemDetails` campo per campo. **La risposta a un rifiuto la scrive sempre `CrudProblems`**, da un
 validatore o, **dal 27 set 2026** (piano 1.17, nota `2026-09-27-i-rifiuti-di-un-form-nel-nucleo`), da **`Refusals`**
 (`Core/Data/Crud/`): il solo modo in cui un verbo che non è un form su una riga raccoglie a mano i suoi rifiuti campo per campo, le
-lingue mancanti comprese. Nessun modulo si scrive la sua classe dei rifiuti. **L'unica eccezione dichiarata** è l'editor delle leg dei tour (M2, T7a, piano 0.85): una tabella dove ogni riga si salva da sola e inserire o togliere rinumera le altre, con sei verbi scritti a mano anche lato server (nota `2026-09-18-le-leg-dei-tour`), otto con l'import (T8). **Misurato alla chiusura di M2** (piano 1.12, `decisions/2026-09-25-m2-review.md`): **zero CRUD scritti a mano non dichiarati**; i 42 endpoint a mano del modulo e i 13 del nucleo sono contati **per famiglia** — l'eccezione, verbi di stato su una risorsa del motore, letture composte, il flusso del pilota, il contratto dell'agente, i validatori sui grant — e ognuno ha la sua decisione scritta. **Da M2 la metrica è questa** (Carmine, 25 set 2026, nota `2026-09-25-le-rifiniture-di-m2`, domanda 5), e sostituisce il «verbi a mano appesi a un gruppo `MapCrud`» di M1 (changelog 0.45), che misurava bene un sito editoriale e male un flusso di lavoro: il rapporto di chiusura di ogni milestone porta **(1) CRUD scritti a mano non dichiarati: 0**; **(2) eccezioni dichiarate: al più una per milestone**, ognuna decisa prima del codice con la sua nota; **(3) gli endpoint scritti a mano contati per famiglia** — eccezione dichiarata, verbi di stato o d'azione su una risorsa del motore, letture composte accanto al motore, flusso di un membro, contratto di un programma esterno, verbi su righe del nucleo, fuori da ogni risorsa — **ognuno con la decisione che l'ha voluto**. Un endpoint che non trova la sua famiglia, o la sua decisione, è il difetto da cercare.
+lingue mancanti comprese. Nessun modulo si scrive la sua classe dei rifiuti. **L'unica eccezione dichiarata** è l'editor delle leg dei tour (M2, T7a, piano 0.85): una tabella dove ogni riga si salva da sola e inserire o togliere rinumera le altre, con sei verbi scritti a mano anche lato server (nota `2026-09-18-le-leg-dei-tour`), otto con l'import (T8). **Misurato alla chiusura di M2** (piano 1.12, `decisions/2026-09-25-m2-review.md`): **zero CRUD scritti a mano non dichiarati**; i 42 endpoint a mano del modulo e i 13 del nucleo sono contati **per famiglia** — l'eccezione, verbi di stato su una risorsa del motore, letture composte, il flusso del pilota, il contratto dell'agente, i validatori sui grant — e ognuno ha la sua decisione scritta. **Da M2 la metrica è questa** (Carmine, 25 set 2026, nota `2026-09-25-le-rifiniture-di-m2`, domanda 5), e sostituisce il «verbi a mano appesi a un gruppo `MapCrud`» di M1 (changelog 0.45), che misurava bene un sito editoriale e male un flusso di lavoro: il rapporto di chiusura di ogni milestone porta **(1) CRUD scritti a mano non dichiarati: 0**; **(2) eccezioni dichiarate: al più una per milestone**, ognuna decisa prima del codice con la sua nota; **(3) gli endpoint scritti a mano contati per famiglia** — eccezione dichiarata, verbi di stato o d'azione su una risorsa del motore, letture composte accanto al motore, flusso di un membro, contratto di un programma esterno, verbi su righe del nucleo, fuori da ogni risorsa — **ognuno con la decisione che l'ha voluto**. Un endpoint che non trova la sua famiglia, o la sua decisione, è il difetto da cercare. **Dal 28 set 2026** (nota `2026-09-28-la-diagnostica-della-richiesta`, piano 1.22) il nucleo ha un endpoint a mano in più, di sola lettura e senza righe dietro: `GET /api/admin/diagnostics/request`, fra i verbi del nucleo **fuori da ogni risorsa**, alla voce **amministrazione del sistema, riservata al super amministratore**, accanto a `/api/admin/superadmins` (M0, appena fuori dal motore).
    Quando una risorsa non rientra, si estende `CrudOptions` e mai il motore con un ramo che la nomina: oggi può dire che una riga si scrive solo con un permesso in più (`ExtraWritePolicy`), che non ha una create JSON (`MapCreate`), che cosa significa cancellarla (`Delete`), che accetta un filtro che è una domanda invece di un confronto su una colonna (`CustomFilters`) e — **dal 21 set 2026** (T7b, piano 0.86) — che cosa una riga prende da un'altra prima che il suo permesso venga chiesto (`BeforeAuthorize`: le righe figlie di un tour ne prendono la cura, nota `2026-09-21-la-forma-dei-tour`) e — **dal 23 set 2026** (T15a, piano 0.98) — che cosa segue una scrittura salvata (`AfterSave`: la mail di un ban, nota `2026-09-23-completamento-validatori-piloti-ban`). **Una schermata CRUD scritta a mano non si accetta**, e un endpoint scritto a mano accanto al motore è un evento da scrivere nel rapporto di chiusura della milestone. **Eccezione dichiarata di M2** (piano 0.79): l'**editor delle leg a tabella** (`LegGrid`, `05-design-m2.md` §8.4), perché comporre trenta leg una per volta in un form non si regge; salva comunque riga per riga con `row_version` e mostra i `ProblemDetails` sulla cella.
 7. **Un solo endpoint di bootstrap** (`/api/me`): menu pubblico e staff, moduli abilitati / in maintenance, permessi effettivi, widget e blocchi registrati. La SPA non ha nulla di cablato. **Dal 27 set 2026** porta anche la versione e il commit corto della build, che il piè di pagina di ogni layout mostra (nota `2026-09-27-la-versione-del-sito`).
 8. **Un solo set di file di lingua** `locales/{lang}/*.json`, letto sia dalla SPA sia dal backend (mail, errori). Niente `.resx`. **Dal 26 set 2026** (M3, A4a, piano 1.15): il back end tiene le parole di ogni modulo (il file che `pnpm i18n:sync` copia, con `_source`) anche sotto il suo namespace, `training:nav.section`; una chiave che due moduli dichiarano si legge **solo** con il namespace, e un doppione che tocca il nucleo ferma ancora l'avvio (nota `2026-09-26-le-parole-di-piu-moduli`). **In C# la chiave di un modulo si chiede sempre con il suo namespace**, come nel browser: senza, risponderebbe solo finché nessun altro modulo la dichiara, e poi in silenzio con la chiave stessa. Senza namespace restano le chiavi del nucleo e le mail dei tipi di notifica (`mail.{tipo}`, il tipo porta già il nome del modulo); lo tiene `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` (nota `2026-09-26-le-chiavi-dei-moduli-con-il-namespace`).
