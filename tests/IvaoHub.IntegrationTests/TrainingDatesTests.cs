@@ -646,10 +646,12 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await AddSlotAsync(recent, proposedDaysAgo: 1, token);
         var none = await AddTrainingAsync(TraineeVid, RatingKind.Pilot, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
 
-        // No time set — the default —: nothing closes by itself.
+        // No time set — the default —: nothing closes by itself, and the ladder stays taken — the key of «one open training per
+        // ladder» refuses a second.
         await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
         await RunExpiryAsync(token);
         Assert.Equal(TrainingState.Assigned, (await StoredAsync(waiting, token)).State);
+        await Assert.ThrowsAnyAsync<DbUpdateException>(() => AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Requested, token));
 
         // Three days to choose: the first closes, as the hub, and its trainer's grant goes the same night.
         await WriteSettingsAsync(new { conflictPolicy = "None", maxResponseDays = 3 }, token);
@@ -661,6 +663,9 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Empty(await SlotsOfAsync(waiting, token));
         Assert.Empty(await HoldersOfConductAsync(waiting, token));
         Assert.Equal(1, await MailsAsync(TraineeVid, TrainingNotifications.TrainingClosed, token));
+
+        // Closed through the row, not around it: the key reads a column only the row writes, and the ladder is free again.
+        await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Requested, token);
 
         Assert.Equal(TrainingState.Assigned, (await StoredAsync(recent, token)).State);
         Assert.Single(await SlotsOfAsync(recent, token));
