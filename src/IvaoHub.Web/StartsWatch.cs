@@ -79,7 +79,14 @@ internal sealed class StartsWatch
         {
             var now = DateTime.UtcNow;
             return StartsLog.StartLine(
-                now, pid, _build, took, StartsLog.Previous(lines, now, pid, StartsLog.IsHubRunning), memory, _timings.Steps);
+                now,
+                pid,
+                _build,
+                took,
+                StartsLog.Previous(lines, now, pid, StartsLog.IsHubRunning),
+                memory,
+                _timings.Steps,
+                _timings.Initialisation);
         });
     }
 

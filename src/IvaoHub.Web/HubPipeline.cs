@@ -17,6 +17,9 @@ internal static class HubPipeline
 {
     private const string CorrelationIdHeader = "X-Correlation-Id";
 
+    /// <summary>What a start skips when the initialisation marker matches it, as <c>starts.txt</c> names the steps.</summary>
+    public static readonly IReadOnlyList<string> SkippableSteps = ["migrations", "module migrations", "position grants", "content"];
+
     /// <summary>What the generated client puts in X-Requested-With on every mutation.</summary>
     public const string RequestedWithValue = "hub";
 
@@ -162,6 +165,8 @@ internal static class HubPipeline
     /// <remarks>
     /// Every step is timed into <paramref name="timings"/>, which <c>diagnostics/starts.txt</c> writes when the host is
     /// ready: the server's own numbers for the cold start a visitor pays (note 2026-09-28-l-avvio-a-freddo).
+    /// <para>The steps in <see cref="SkippableSteps"/> run only when the initialisation marker does not match this start
+    /// (note 2026-09-28-il-marcatore-d-inizializzazione); the others run at every start.</para>
     /// </remarks>
     public static async Task InitializeAsync(this WebApplication app, HubPaths paths, StartupTimings timings)
     {
@@ -184,38 +189,66 @@ internal static class HubPipeline
 
         timings.Step("models");
 
-        var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
-        var applied = (await initializer.MigrateAsync(app.Lifetime.ApplicationStopping)).ToList();
-        timings.Step("migrations");
+        var division = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value;
+        var build = scope.ServiceProvider.GetRequiredService<BuildInfo>();
 
-        // Then the contexts of the modules, each with its own migration history table, and like the core's only when
-        // something is pending. A module with no table of its own -- the module the integration tests add -- declares
-        // none and nothing happens here.
-        foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes))
-        {
-            var context = (DbContext)scope.ServiceProvider.GetRequiredService(contextType);
-            applied.AddRange(await initializer.MigrateAsync(context, app.Lifetime.ApplicationStopping));
-        }
+        // A plain wake -- the same code, the same configuration, the same seed files as the last start that initialised
+        // the database -- skips what that start already did (note 2026-09-28-il-marcatore-d-inizializzazione). The key
+        // holds every input of the skipped steps; the mark is written only after all of them have succeeded.
+        var key = InitialisationKey.Compute(
+            build,
+            [
+                typeof(HubPipeline).Assembly,
+                typeof(HubDbContext).Assembly,
+                .. registry.All.Select(module => module.GetType().Assembly),
+                .. registry.All.SelectMany(module => module.DbContextTypes).Select(type => type.Assembly),
+            ],
+            division,
+            registry.EnabledKeys,
+            app.Environment.EnvironmentName,
+            paths.Seed);
 
-        timings.Step("module migrations");
+        List<string> applied = [];
+        var outcome = await scope.ServiceProvider.GetRequiredService<InitialisationMarker>().RunAsync(
+            key,
+            async cancellationToken =>
+            {
+                var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
+                applied.AddRange(await initializer.MigrateAsync(cancellationToken));
+                timings.Step("migrations");
 
-        // Reads division.json only when the database holds no super administrator at all, and
-        // leaves an audit row whenever the effective set has moved (plan section 6.3).
+                // Then the contexts of the modules, each with its own migration history table, and like the core's only
+                // when something is pending. A module with no table of its own -- the module the integration tests add --
+                // declares none and nothing happens here.
+                foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes))
+                {
+                    var context = (DbContext)scope.ServiceProvider.GetRequiredService(contextType);
+                    applied.AddRange(await initializer.MigrateAsync(context, cancellationToken));
+                }
+
+                timings.Step("module migrations");
+
+                // The grants to positions the division starts with, applied once and then the table's (M2).
+                await scope.ServiceProvider.GetRequiredService<PositionGrantSeeder>().SeedAsync(cancellationToken);
+                timings.Step("position grants");
+
+                // The system templates and the pages built from them, each applied once and never again:
+                // a release may add one without undoing what the staff has done to the ones already there
+                // (design M0 section 5.6, design M1 section 8.2).
+                await scope.ServiceProvider.GetRequiredService<ContentSeeder>().SeedAsync(cancellationToken);
+                timings.Step("content");
+            },
+            timings,
+            app.Lifetime.ApplicationStopping);
+
+        timings.Initialisation = outcome.Describe(SkippableSteps);
+
+        // At every start, the mark or not: it reads division.json only when the database holds no super administrator at
+        // all, and leaves an audit row whenever the effective set has moved (plan section 6.3) -- the set can be changed
+        // in the database by hand, by anybody who reaches it, and this is where that becomes visible.
         await scope.ServiceProvider.GetRequiredService<SuperadminService>()
             .BootstrapAsync(app.Lifetime.ApplicationStopping);
         timings.Step("superadmins");
-
-        // The grants to positions the division starts with, applied once and then the table's (M2).
-        await scope.ServiceProvider.GetRequiredService<PositionGrantSeeder>()
-            .SeedAsync(app.Lifetime.ApplicationStopping);
-        timings.Step("position grants");
-
-        // The system templates and the pages built from them, each applied once and never again:
-        // a release may add one without undoing what the staff has done to the ones already there
-        // (design M0 section 5.6, design M1 section 8.2).
-        await scope.ServiceProvider.GetRequiredService<ContentSeeder>()
-            .SeedAsync(app.Lifetime.ApplicationStopping);
-        timings.Step("content");
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
@@ -229,11 +262,9 @@ internal static class HubPipeline
 
         timings.Step("reference data");
 
-        var division = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value;
-
         await StartupDiagnostics.WriteAsync(
             paths,
-            scope.ServiceProvider.GetRequiredService<BuildInfo>(),
+            build,
             app.Environment.EnvironmentName,
             division.Code,
             applied,
