@@ -133,7 +133,7 @@
       "title": "Scegli la data della sessione",
       "lead": "Il tuo trainer ha proposto queste date. Scegline una: la sessione è fissata, e ricevete una mail tutti e due. Se nessuna ti va bene, scrivi al tuo trainer.",
       "choose": "Scegli questa data",
-      "confirmTitle": "Fissare la sessione il {{when}} UTC?",
+      "confirmTitle": "Fissare la sessione il {{when}} UTC, cioè {{local}}?",
       "confirmDescription": "Il trainer riceve una mail, e anche tu. Una data fissata la cambia solo il trainer.",
       "confirm": "Sì, fissa la sessione",
       "chosen": "Sessione fissata: {{when}} UTC.",
@@ -262,7 +262,8 @@
       "noWarnings": "Nessun avviso quando è stata proposta.",
       "warning": {
         "training": "Training {{ladder}} {{what}}, {{when}} UTC",
-        "calendar": "{{kind}}: {{what}}, {{when}} UTC"
+        "calendar": "{{kind}}: {{what}}, {{when}} UTC",
+        "anyKind": "Nel calendario"
       },
       "met": {
         "confirmTitle": "Quei giorni c'è già qualcosa nel calendario: guarda gli avvisi, e conferma se le date vanno bene lo stesso.",
