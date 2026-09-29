@@ -2559,6 +2559,12 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
 
   I nit restano scritti lì: la corsa di due ban nello stesso istante (dichiarata), la ricerca per VID senza un test, la copia di
   `Refusals` che A10c toglie.
+- **Dopo le risposte di Carmine su #149 e #150** (29 settembre 2026, sul branch temporaneo `fix3/a10a`, con A9a e A9b nuove unite):
+  ⚠️ **un test di A10a toccato, e perché**: l'aiuto `TrainingTraineeTests.ReportedWithNotesAsync` datava la seconda sessione a mano dieci
+  minuti fa, che ora si rifiuta ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158): nessuno
+  data un training nel passato). La data un'ora avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta
+  `scheduled_start_utc` a dieci minuti fa come fa l'installazione, come in A9a; la versione si rilegge dalla pagina. Le asserzioni non
+  cambiano. Le spec del banco di A10a non datano né chiudono niente.
 
 **Com'è andata (A10b)**: *(a fase chiusa)*
 

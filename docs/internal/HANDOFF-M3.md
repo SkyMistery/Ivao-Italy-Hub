@@ -152,6 +152,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   sopra. Nit: due ban nello stesso istante sullo stesso membro possono passare tutti e due `banAlreadyHolds` (letto prima di salvare,
   dichiarato, rischio basso); la ricerca per VID (`BanEndpoints.cs`) non ha un test; `new Refusals()` in `TrainingBans.cs` è ancora la copia
   del modulo, che A10c toglie.
+- **Dopo le risposte di Carmine su #149 e #150** (29 settembre 2026): l'aiuto `TrainingTraineeTests.ReportedWithNotesAsync` non data più la
+  sessione nel passato — ora si rifiuta —: la data un'ora avanti e la sposta a dieci minuti fa come l'installazione
+  (`StartedAMomentAgoAsync`, come in A9a). ⚠️ Una fase dopo che vuole una sessione cominciata fa lo stesso (`08`, A10a, l'ultima voce).
 
 ### Che cosa ha lasciato A9b (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150)
 
