@@ -2717,6 +2717,13 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
     --verify-no-changes` sui file C# della fase; le regole di `core-guard` in PowerShell, sull'intervallo della fase e sul diff verso `main`:
     nessun file del maintainer, nucleo 2 (i due conteggi) con la nota, quindi passa.
   - **A10c può partire** (sopra, sotto A10: i tre punti del revisore per la riga di un esame, e la copia di `Refusals.cs` da togliere).
+- **La revisione di #153** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/153#issuecomment-5891400128);
+  la sessione di A10b non c'era più, il nit l'ha corretto la sessione che coordina la coda): approvabile.
+  1. **Il limite di `training.upcomingSessions` non scritto** era 50 sul server (`PublicSessions.MaxItems`) e 10 nel browser (`.default(10)`),
+     mentre questo piano dice «10 se non scritto»: un blocco salvato con `{}` (l'API, un seme) ne mostrava 50. Ora il server fa come i blocchi
+     del nucleo, `?? DefaultLimit` con `DefaultLimit = 10`; lo zero resta «tutte, fino a 50», e lo schema zod ha `.max(50)`.
+  2. **Scritto, non cambiato**: `TrainingBlocksTests` cerca la sessione a +3 h con `Assert.Single` in una lista di 50 al massimo, sul
+     database condiviso. Diventerebbe instabile solo se altre classi lasciassero più di 49 training datati più vicini.
 
 **Com'è andata (A10c)**: *(a fase chiusa)*
 
