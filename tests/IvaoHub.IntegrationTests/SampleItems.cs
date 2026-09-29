@@ -96,6 +96,7 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             record.Property(row => row.Title).HasMaxLength(128).IsRequired();
             record.Ignore(row => row.ResourceScope);
             record.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
+            record.Property(row => row.Fir).HasMaxLength(8);
         });
     }
 }

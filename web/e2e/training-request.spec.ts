@@ -294,6 +294,8 @@ test('Enter in the position asks the question, as the button does: nothing goes 
   await page.goto('/training/request');
   const position = page.getByLabel(words.request.fields.position!, { exact: true });
   await position.fill('XXAA_TWR');
+  // The first Enter chooses the option lit by the search, and sends nothing (the suggested field's keyboard, #177).
+  await position.press('Enter');
 
   // The one single-line box of a form whose buttons are elsewhere: HTML submits the form on Enter there, and the form's hint
   // says so (review of #144). It opens the question, with no answer chosen, and sends nothing.

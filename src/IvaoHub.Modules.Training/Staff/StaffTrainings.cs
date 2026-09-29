@@ -11,6 +11,7 @@ using IvaoHub.Modules.Training.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Modules.Training.Staff;
@@ -42,6 +43,7 @@ public sealed class StaffTrainings(
     HubDbContext hub,
     RatingVocabulary vocabulary,
     ModuleGrants grants,
+    ILogger<StaffTrainings> logger,
     ModuleSettingsStore settingsStore,
     TrainingMail mail,
     TrainingPeople people,
@@ -358,14 +360,8 @@ public sealed class StaffTrainings(
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Somebody moved the training meanwhile, and the grant goes back — unless the training now names this very trainer:
-            // two assignments of the same person from one version, and the other one saved the row. Whichever of the two wrote
-            // the grant, it is the trainer's now, and taking it would leave them the training without it.
-            if ((await FindAsync(training.Id, tracked: false, CancellationToken.None))?.TrainerVid != payload.TrainerVid)
-            {
-                await grants.TakeAsync(payload.TrainerVid, TrainingPermissions.Conduct, department, scope, CancellationToken.None);
-            }
-
+            // Somebody moved the training meanwhile: the conflict is what the reader hears, whatever happens to the grant.
+            await TakeBackAfterConflictAsync(training.Id, payload.TrainerVid, department, scope);
             throw;
         }
 
@@ -377,6 +373,29 @@ public sealed class StaffTrainings(
         await TellAssignedAsync(training, payload.TrainerVid, cancellationToken);
 
         return (StaffResult.Done, null);
+    }
+
+    /// <summary>
+    /// After a conflict on an assignment, the grant it gave goes back — unless the training now names this very trainer: two
+    /// assignments of the same person from one version, and the other one saved the row. Whichever of the two wrote the grant, it
+    /// is the trainer's now, and taking it would leave them the training without it.
+    /// <para>Never throws, so the conflict still reaches the reader as a 409. A grant this cannot judge, because the training
+    /// could not be read again, stays: the night takes it back an hour after it was written if the training names somebody else
+    /// (<see cref="TrainingExpiryJob"/>).</para>
+    /// </summary>
+    private async Task TakeBackAfterConflictAsync(long id, int trainerVid, Department department, string scope)
+    {
+        try
+        {
+            if ((await FindAsync(id, tracked: false, CancellationToken.None))?.TrainerVid != trainerVid)
+            {
+                await grants.TakeAsync(trainerVid, TrainingPermissions.Conduct, department, scope, CancellationToken.None);
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogWarning(exception, "After a conflict on training {Training}, the grant of {Trainer} is left to the night", id, trainerVid);
+        }
     }
 
     /// <summary>

@@ -17,6 +17,9 @@ public sealed class PermissionCatalog
 {
     private readonly Dictionary<string, PermissionDescriptor> _byName;
 
+    // Learnt once, when the hub starts (LearnAreasWithAFir); none until then, which refuses every grant to a FIR team.
+    private volatile IReadOnlySet<string> _areasWithAFir = new HashSet<string>(StringComparer.Ordinal);
+
     public PermissionCatalog(IEnumerable<PermissionDescriptor> descriptors)
     {
         ArgumentNullException.ThrowIfNull(descriptors);
@@ -82,6 +85,28 @@ public sealed class PermissionCatalog
     /// </summary>
     public bool IsOnlyForAssignee(string name) =>
         _byName.TryGetValue(name, out var found) && found.OnlyForAssignee;
+
+    /// <summary>
+    /// Remembers the permission areas that have an entity which says its FIR (<see cref="IHasFir"/>): the only areas a grant to
+    /// the team of a FIR may name a permission of (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir §3.1). Anywhere else such a
+    /// grant would reach no row, and answer "yes" only to the question asked without one.
+    /// <para>The hub calls it when it starts, from the model of every context, next to <see cref="VerifyAlternatives"/>; the
+    /// area of an entity is the one the write guard asks <c>Edit</c> of.</para>
+    /// </summary>
+    public void LearnAreasWithAFir(IEnumerable<string> areas)
+    {
+        ArgumentNullException.ThrowIfNull(areas);
+        _areasWithAFir = areas.ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <summary>Whether a grant to the team of a FIR may name this permission: its area has rows that say their FIR.</summary>
+    public bool IsOfAnAreaWithAFir(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        var dot = name.IndexOf('.', StringComparison.Ordinal);
+        return dot > 0 && _areasWithAFir.Contains(name[..dot]);
+    }
 
     /// <summary>
     /// The view permission of the same area, so that "Edit implies View" is decided in one place.

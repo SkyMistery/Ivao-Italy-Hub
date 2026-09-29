@@ -31,6 +31,12 @@ public static class IvaoAuthenticationExtensions
 
     private const string ProfileItemKey = "ivao.profile";
 
+    /// <summary>
+    /// Marks the round trip that is already the second one, inside the protected state: the one mark
+    /// that decides whether a nonce failure starts the round again or ends on the error page.
+    /// </summary>
+    internal const string SecondRoundItemKey = "ivao.second-round";
+
     public static IServiceCollection AddIvaoAuthentication(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -285,10 +291,16 @@ public static class IvaoAuthenticationExtensions
     /// Every failure of the IVAO round trip goes through here. Without this the handler rethrows and
     /// the failure comes out as an unhandled exception: a page that tells the user nothing and
     /// leaves us nothing either.
-    /// <para>It deliberately does not bounce back to the login: if the fault is stable, IVAO still
-    /// has its session open and sends the browser straight back, which is an infinite loop.</para>
+    /// <para>It does not bounce back to the login as a rule: if the fault is stable, IVAO still has
+    /// its session open and sends the browser straight back, which is an infinite loop.</para>
+    /// <para>The one exception is the nonce, and it is started again <b>once</b>. IVAO's consent
+    /// screen, the page a member meets the first time they sign in to this client, posts the
+    /// request on without the nonce, so that first return carries a nonce that is not ours; the
+    /// second round finds the consent already given, IVAO answers straight away with our nonce, and
+    /// it goes through (note 2026-09-28-il-nonce-e-il-consenso-di-ivao). The mark of the second
+    /// round travels inside the protected state, so a second failure ends on the error page.</para>
     /// </summary>
-    private static Task OnRemoteFailure(RemoteFailureContext context)
+    private static async Task OnRemoteFailure(RemoteFailureContext context)
     {
         var code = Classify(context.Failure, context.Request.Query["error"]);
         context.HandleResponse();
@@ -297,15 +309,37 @@ public static class IvaoAuthenticationExtensions
             .GetRequiredService<ILoggerFactory>()
             .CreateLogger(typeof(IvaoAuthenticationExtensions));
 
+        // How many nonce cookies came back tells the two ways a nonce fails apart: none is a cookie
+        // the browser did not send, one or more is a nonce in the id_token that is none of ours.
+        var nonceCookies = (context.Options as OpenIdConnectOptions)?.NonceCookie.Name is { } noncePrefix
+            ? context.Request.Cookies.Keys.Count(name => name.StartsWith(noncePrefix, StringComparison.Ordinal))
+            : 0;
+
+        var secondRound = context.Properties?.Items.ContainsKey(SecondRoundItemKey) == true;
+
         // Never the code or a token: those are credentials.
         logger.LogWarning(
             context.Failure,
-            "IVAO login failed, classified as {Code}. Error reported by the portal: {PortalError}.",
+            "IVAO login failed, classified as {Code}. Error reported by the portal: {PortalError}. "
+            + "Nonce cookies sent back: {NonceCookies}. Second round: {SecondRound}.",
             code,
-            string.IsNullOrWhiteSpace(context.Request.Query["error"]) ? "none" : context.Request.Query["error"].ToString());
+            string.IsNullOrWhiteSpace(context.Request.Query["error"]) ? "none" : context.Request.Query["error"].ToString(),
+            nonceCookies,
+            secondRound);
+
+        // Only with the state read back: without it there is no return address to carry over, and
+        // nothing to say whether this is already the second round.
+        if (code == "nonce" && context.Properties is { } properties && !secondRound)
+        {
+            var again = new AuthenticationProperties { RedirectUri = SafeReturnUrl(properties.RedirectUri) };
+            again.Items[SecondRoundItemKey] = "1";
+
+            logger.LogInformation("IVAO login starts a second round after a nonce failure.");
+            await context.HttpContext.ChallengeAsync(HubClaims.IvaoScheme, again);
+            return;
+        }
 
         context.Response.Redirect($"{LoginErrorPath}?code={code}");
-        return Task.CompletedTask;
     }
 
     /// <summary>

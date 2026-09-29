@@ -153,6 +153,11 @@ builder.Services.AddHubContent();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<HubDatabaseInitializer>();
 
+// The mark of the last complete initialisation, and the timings of this start, which say whether it was skipped
+// (note 2026-09-28-il-marcatore-d-inizializzazione).
+builder.Services.AddScoped<InitialisationMarker>();
+builder.Services.AddSingleton(timings);
+
 // Erasing a person's data: the core's half, and each module's IPersonalDataEraser (note 2026-09-25-la-cancellazione-dei-dati-di-una-persona).
 builder.Services.AddScoped<PersonalDataErasure>();
 builder.Services.AddIvaoAuthentication();
