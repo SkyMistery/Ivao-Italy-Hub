@@ -238,7 +238,7 @@ public sealed class TrainingSessions(
                     training.ReadyForExam ? mail.Word(locale, "training:mail.training.readyForExam") : null,
                 ];
 
-                data["trainer"] = author;
+                TrainingMail.Name(data, "trainer", currentUser.Vid, author);
                 data["ready"] = string.Concat(ready.OfType<string>().Select(sentence => $"\n\n{sentence}"));
                 data["after"] = training.CooldownWaived
                     ? mail.Word(locale, "training:mail.training.waitWaived")

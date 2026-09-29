@@ -15,7 +15,8 @@ namespace IvaoHub.Modules.Training;
 /// notification service, which drops whoever switched the type off or has no address.
 /// <para>One place for what every mail of the module says of a training, so the request received (A6a), the staff's
 /// decisions (A7) and the dates (A8) say it alike. A moment is written in UTC, and the sentence around it says so, as the pages
-/// do (A6b).</para>
+/// do (A6b). A person a mail names besides its recipient — the trainer to the trainee, the trainee to the trainer — carries their VID
+/// beside their name (<see cref="Name"/>), so that erasing their data takes the mail too (A12b).</para>
 /// </summary>
 public sealed class TrainingMail(
     HubDbContext hub,
@@ -122,11 +123,33 @@ public sealed class TrainingMail(
 
         void Fill(IDictionary<string, string> data, string locale, string next)
         {
-            data["trainee"] = trainee;
-            data["trainer"] = trainer;
+            Name(data, "trainee", training.TraineeVid, trainee);
+            if (training.TrainerVid is { } named)
+            {
+                Name(data, "trainer", named, trainer);
+            }
+            else
+            {
+                data["trainer"] = trainer;
+            }
+
             data["session"] = Moment(start);
             data["next"] = Word(locale, next);
         }
+    }
+
+    /// <summary>
+    /// A person a mail names, the way the core finds a mail about them when their data is erased (note
+    /// <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c> §7; A12b): the words under <paramref name="key"/> — their name and
+    /// VID, as the sentence says them — and the VID alone under <c>{key}Vid</c>, a name the erasure reads as a person's, as the mails of
+    /// the threads carry their sender's. Without it, a mail to somebody else that names them would keep their name after the erasure.
+    /// </summary>
+    public static void Name(IDictionary<string, string> data, string key, int vid, string words)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+
+        data[key] = words;
+        data[key + "Vid"] = vid.ToString(CultureInfo.InvariantCulture);
     }
 
     /// <summary>A word of the language files, in the recipient's language.</summary>

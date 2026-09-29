@@ -569,7 +569,15 @@ public sealed class TrainingDates(
             TrainingMail.MinePathOf(training.Id),
             (data, _) =>
             {
-                data["trainer"] = trainer;
+                if (training.TrainerVid is { } named)
+                {
+                    TrainingMail.Name(data, "trainer", named, trainer);
+                }
+                else
+                {
+                    data["trainer"] = trainer;
+                }
+
                 data["dates"] = dates;
             },
             cancellationToken);

@@ -443,8 +443,8 @@ public sealed class StaffTrainings(
 
         void Fill(IDictionary<string, string> data, string locale, string next)
         {
-            data["trainer"] = trainer;
-            data["trainee"] = trainee;
+            TrainingMail.Name(data, "trainer", trainerVid, trainer);
+            TrainingMail.Name(data, "trainee", training.TraineeVid, trainee);
             data["next"] = mail.Word(locale, next);
         }
     }
